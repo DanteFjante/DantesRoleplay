@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="DantesRoleplay.DataAccess/DantesRoleplay.DataAccess.csproj" />
+  <Project Path="DantesRoleplay.MCPServer/DantesRoleplay.MCPServer.csproj" />
+  <Project Path="DantesRoleplay.Tests/DantesRoleplay.Tests.csproj" />
+  <Project Path="DantesRoleplay/DantesRoleplay.csproj" />
+</Solution>

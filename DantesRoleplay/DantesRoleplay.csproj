@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>DantesRoleplay</RootNamespace>
+  </PropertyGroup>
+
+  <!--
+    The core project has NO package references, and that is the point. It holds domain types and
+    the interfaces the rest of the solution talks to. Entity Framework, SQLite and Jint all live
+    in projects that reference this one, never the other way round.
+
+    If a PackageReference ever needs to be added here, that is a signal something belongs in
+    DataAccess or RuleAccess instead.
+  -->
+
+  <ItemGroup>
+    <!-- Bootstrap contracts are authored as markdown and embedded, so the seeded operating
+         manual travels with the assembly and cannot go missing at runtime. -->
+    <EmbeddedResource Include="Bootstrap\**\*.md" />
+  </ItemGroup>
+
+</Project>

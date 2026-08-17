@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      DataAccess, not just the core project. The tests exercise DantesRoleplayDbContext,
+      ProcedureStore, OperationLog and WorldStore, all of which live here — and this reference is
+      also what brings Microsoft.EntityFrameworkCore and Microsoft.Data.Sqlite into scope
+      transitively, which is what SqliteFixture needs.
+
+      The core project comes along with it (DataAccess references it), so it is not listed twice.
+    -->
+    <ProjectReference Include="..\DantesRoleplay.DataAccess\DantesRoleplay.DataAccess.csproj" />
+
+    <!--
+      RuleAccess brings the Jint sandbox. Its tests are the ones that matter most in this
+      solution: they are the evidence that AI-written JavaScript cannot reach anything it should
+      not, and a claim like that is worth nothing unless something tries it every build.
+    -->
+    <ProjectReference Include="..\DantesRoleplay.RuleAccess\DantesRoleplay.RuleAccess.csproj" />
+  </ItemGroup>
+
+</Project>

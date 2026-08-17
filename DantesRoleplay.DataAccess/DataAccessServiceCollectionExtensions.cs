@@ -1,0 +1,113 @@
+using DantesRoleplay.DataAccess.Bootstrap;
+using DantesRoleplay.Effects;
+using DantesRoleplay.Mechanics;
+using DantesRoleplay.Operations;
+using DantesRoleplay.Procedures;
+using DantesRoleplay.World;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace DantesRoleplay.DataAccess;
+
+/// <summary>
+/// Which database engine backs the kernel.
+///
+/// SQLite is the default and the right choice while the schema is moving: one file you can copy
+/// to snapshot and delete to reset. Postgres exists as an option because the entity-component
+/// model stores everything as JSON, and JSONB indexes that far better than SQLite's json1 —
+/// so the day this stops being a single-user prototype, the switch is a connection string.
+/// See ARCHITECTURE.md §8.3.
+/// </summary>
+public enum DatabaseProvider
+{
+    Sqlite,
+    Postgres
+}
+
+public static class DataAccessServiceCollectionExtensions
+{
+    /// <summary>
+    /// Registers the kernel. A host wires everything up with one call and needs to know nothing
+    /// else about the internals.
+    /// </summary>
+    /// <param name="connectionString">
+    /// For SQLite this may be a bare file path — the directory is created and it is turned into
+    /// a proper connection string.
+    /// </param>
+    public static IServiceCollection AddDantesRoleplayDataAccess(
+        this IServiceCollection services,
+        string connectionString,
+        DatabaseProvider provider = DatabaseProvider.Sqlite)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+
+        services.AddDbContext<DantesRoleplayDbContext>(options =>
+        {
+            switch (provider)
+            {
+                case DatabaseProvider.Sqlite:
+                    options.UseSqlite(NormaliseSqlite(connectionString));
+                    break;
+
+                case DatabaseProvider.Postgres:
+                    // Requires the Npgsql.EntityFrameworkCore.PostgreSQL package. Left as a throw
+                    // rather than a silent fallback so switching provider fails loudly and early.
+                    throw new NotSupportedException(
+                        "Postgres support needs the Npgsql.EntityFrameworkCore.PostgreSQL package. " +
+                        "Add it to DantesRoleplay.DataAccess and replace this branch with " +
+                        "options.UseNpgsql(connectionString).");
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(provider), provider, null);
+            }
+        });
+
+        services.AddScoped<IProcedureStore, ProcedureStore>();
+        services.AddScoped<IOperationLog, OperationLog>();
+        services.AddScoped<IWorldStore, WorldStore>();
+        services.AddScoped<IEffectApplier, EffectApplier>();
+        services.AddScoped<IMechanicStore, MechanicStore>();
+        services.AddScoped<ProcedureSeeder>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Applies pending migrations, then seeds bootstrap contracts from the embedded markdown
+    /// files. Called once by the host at startup.
+    ///
+    /// Migrate rather than EnsureCreated: the world schema is fixed, but the kernel still gains
+    /// tables when a subsystem lands (mechanics, events), and EnsureCreated cannot evolve a
+    /// database that already holds contracts you wrote.
+    /// </summary>
+    public static async Task InitialiseDantesRoleplayAsync(
+        this IServiceProvider services,
+        CancellationToken cancellationToken = default)
+    {
+        using var scope = services.CreateScope();
+
+        var db = scope.ServiceProvider.GetRequiredService<DantesRoleplayDbContext>();
+        await db.Database.MigrateAsync(cancellationToken);
+
+        var seeder = scope.ServiceProvider.GetRequiredService<ProcedureSeeder>();
+        await seeder.SeedAsync(cancellationToken);
+    }
+
+    private static string NormaliseSqlite(string connectionStringOrPath)
+    {
+        if (connectionStringOrPath.Contains('=', StringComparison.Ordinal))
+        {
+            return connectionStringOrPath;
+        }
+
+        var full = Path.GetFullPath(connectionStringOrPath);
+        var directory = Path.GetDirectoryName(full);
+
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        return $"Data Source={full}";
+    }
+}
