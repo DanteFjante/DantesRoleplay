@@ -69,6 +69,7 @@ public static class DataAccessServiceCollectionExtensions
         services.AddScoped<IEffectApplier, EffectApplier>();
         services.AddScoped<IMechanicStore, MechanicStore>();
         services.AddScoped<IProjectionResolver, ProjectionResolver>();
+        services.AddScoped<IMechanicComposer, MechanicComposer>();
 
         // Missing until the end-to-end walk went looking for it. commit takes IActionRunner as a
         // parameter for every kind, not only "action", so an unregistered runner made the whole

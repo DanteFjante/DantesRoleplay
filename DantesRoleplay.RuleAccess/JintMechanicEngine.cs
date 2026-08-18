@@ -83,7 +83,8 @@ public sealed class JintMechanicEngine : IMechanicEngine
                 {
                     roles = projection.Roles,
                     input = projection.Input,
-                    seed = projection.Seed
+                    seed = projection.Seed,
+                    children = projection.Children
                 },
                 Json);
 
@@ -242,10 +243,17 @@ public sealed class JintMechanicEngine : IMechanicEngine
             var payload = JSON.parse(__payload);
             var random = makeRandom(payload.seed);
 
+            function freezeDeep(value) {
+              if (!value || typeof value !== 'object' || Object.isFrozen(value)) { return value; }
+              Object.keys(value).forEach(function (key) { freezeDeep(value[key]); });
+              return Object.freeze(value);
+            }
+
             var ctx = {
               roles: payload.roles,
               input: JSON.parse(payload.input || '{}'),
               seed: payload.seed,
+              children: freezeDeep(payload.children || {}),
 
               random: random,
 

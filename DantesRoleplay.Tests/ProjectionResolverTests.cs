@@ -233,23 +233,42 @@ public sealed class ProjectionResolverTests : IDisposable
     // ---- the caller's own arguments --------------------------------------------------
 
     [Fact]
-    public async Task Input_reaches_the_mechanic_and_malformed_input_becomes_an_empty_object()
+    public async Task A_valid_object_input_reaches_the_mechanic_unchanged()
     {
         await using var db = _fixture.CreateContext();
         await WorldAsync(db);
         var resolver = new ProjectionResolver(db);
 
+        const string input = "{ \"cost\" : 4 }";
         var good = await resolver.ResolveAsync(
-            Requires("{}"), new Dictionary<string, string>(), """{"cost":4}""", seed: 7);
+            Requires("{}"), new Dictionary<string, string>(), input, seed: 7);
 
-        // Not an error: the harness does JSON.parse on this, and failing here with a worse message
-        // than the one the caller already got would help nobody.
-        var bad = await resolver.ResolveAsync(
-            Requires("{}"), new Dictionary<string, string>(), "not json at all");
-
-        Assert.Contains("cost", good.Projection!.Input);
+        Assert.True(good.Ok, string.Join("; ", good.Problems));
+        Assert.Equal(input, good.Projection!.Input);
         Assert.Equal(7, good.Projection.Seed);
-        Assert.Equal("{}", bad.Projection!.Input);
+    }
+
+    [Theory]
+    [InlineData(" ")]
+    [InlineData("not json at all")]
+    [InlineData("null")]
+    [InlineData("[]")]
+    [InlineData("\"text\"")]
+    [InlineData("4")]
+    [InlineData("true")]
+    public async Task An_invalid_input_root_is_rejected_without_a_projection(string input)
+    {
+        await using var db = _fixture.CreateContext();
+        await WorldAsync(db);
+        var resolver = new ProjectionResolver(db);
+
+        var result = await resolver.ResolveAsync(
+            Requires("{}"), new Dictionary<string, string>(), input, seed: 7);
+
+        Assert.False(result.Ok);
+        Assert.Null(result.Projection);
+        Assert.Single(result.Problems);
+        Assert.StartsWith("INVALID_INPUT:", result.Problems[0]);
     }
 
     // ---- the whole chain -----------------------------------------------------------------

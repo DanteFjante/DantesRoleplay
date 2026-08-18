@@ -185,6 +185,53 @@ public sealed class MechanicStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task Invalid_child_bindings_are_caught_before_a_parent_is_activated()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new MechanicStore(db);
+
+        var checks = await store.CheckAsync(Request(requirements: """
+            {
+              "roles":{"encounter":{"components":[]}},
+              "children":{
+                "rolls":{
+                  "mechanicId":"mechanic.test.child",
+                  "roleBindings":{"subject":"$item"}
+                }
+              }
+            }
+            """));
+
+        var childDeclarations = checks.Single(c => c.Name == "child-declarations");
+        Assert.False(childDeclarations.Passed);
+        Assert.True(childDeclarations.Blocking);
+        Assert.Contains("$item", childDeclarations.Detail);
+    }
+
+    [Fact]
+    public async Task Ambiguous_child_input_selection_is_caught_before_a_parent_is_activated()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new MechanicStore(db);
+
+        var checks = await store.CheckAsync(Request(requirements: """
+            {
+              "children":{
+                "child":{
+                  "mechanicId":"mechanic.test.child",
+                  "roleBindings":{},
+                  "inputFromParentProperty":"childInput"
+                }
+              }
+            }
+            """));
+
+        var childDeclarations = checks.Single(c => c.Name == "child-declarations");
+        Assert.False(childDeclarations.Passed);
+        Assert.Contains("inherit", childDeclarations.Detail);
+    }
+
+    [Fact]
     public async Task Naming_a_component_that_does_not_exist_is_reported_as_a_typo_not_a_silence()
     {
         await using var db = _fixture.CreateContext();

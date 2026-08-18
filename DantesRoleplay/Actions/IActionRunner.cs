@@ -26,7 +26,7 @@ public sealed record ActionRequest
     public IReadOnlyDictionary<string, string> RoleEntityIds { get; init; } =
         new Dictionary<string, string>(StringComparer.Ordinal);
 
-    /// <summary>Free-form JSON passed to the mechanic as ctx.input.</summary>
+    /// <summary>A JSON object passed unchanged to the mechanic as ctx.input.</summary>
     public string Input { get; init; } = "{}";
 
     /// <summary>Ruleset scope to prefer; shared mechanics remain eligible.</summary>

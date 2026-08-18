@@ -186,7 +186,55 @@ The risk `ARCHITECTURE.md` §2 calls the major one. Three things answer it, all 
   and `stealth` plus the fixed source reference in this component. A duplicate-name demo entity
   was caught during dependency verification and its mistaken test attachment was removed through
   a dry-run-first audited effect.
-- ⬜ Slice 4, skill-aware fixed-DC ability-check integration, is next and has not started.
+- ✅ Slice 4 is installed in the live database: ability-check contract v2 and mechanic v3 validate
+  closed raw/named-skill input, derive proficiency from level, and emit no effects. Seeded actions
+  prove level 4/5/16/17 bonuses of +2/+3/+5/+6, a level-5 Stealth/Acrobatics delta of +3, an
+  alternate Strength (Intimidation) check, raw replay, empty proficiency behavior, rejected
+  malformed/derived input, and normal natural-1/natural-20 total resolution. Test state was
+  restored to level 5 with Perception and Stealth.
+- ✅ A post-completion Slice 4 audit closed the only evidence gap: disposable fixtures proved that
+  missing skill state and an invalid level are rejected. The rule itself needed no revision; both
+  fixtures were deleted through a dry-run-first transaction.
+- ✅ Feature 3 is installed only in the live database: ability-check contract v3 and the owning
+  ability-check mechanic v4 implement closed `rollCircumstances`, seeded normal/Advantage/
+  Disadvantage selection, non-stacking, cancellation, tie handling, and the result envelope.
+  Fixed-seed actions verified normal, Advantage, Disadvantage, mixed cancellation, preserved skill
+  arithmetic, natural 1/20 total behavior, malformed-input rejection, zero effects, and byte-stable
+  Orban state. The catalog rejected a parallel D20 contract as an overlap, so this convention
+  correctly remains with its owning ability-check rule.
+- ✅ Feature 3 was independently reverified before Feature 4 planning: fresh normal, Advantage,
+  Disadvantage, cancellation, tie, replay, proficient Stealth, and invalid-derived-input actions
+  selected mechanic v4, applied zero effects, and left exact actor bytes unchanged. Component
+  discovery confirms no Feature 3 fixture remains.
+- ✅ Feature 4 Slice 1 is verified live: the existing proficiency-state contract is v2, the closed
+  `dnd2024.saving-throw-proficiencies` component and scoped recorder are live, and Orban's final
+  canonical state is `con,wis` plus the fixed source reference. Add/set, empty/missing semantics,
+  canonicalization, replay, intent routing, and ten invalid-input state-preservation cases passed.
+- ✅ Feature 4 is verified live: procedure.mechanic.dnd2024.saving-throw v1 and
+  mechanic.dnd2024.saving-throw v2 resolve closed fixed-DC character saves from ability, level,
+  and save-proficiency state. All ability modifiers, the exact +3 proficiency delta, level
+  boundaries +2/+3/+5/+6, D20 circumstance modes/tie/cancellation, natural 1/20 total behavior,
+  voluntary failure, replay, routing, malformed input, missing/corrupt state, zero effects, and
+  final canonical Orban state passed. The temporary negative-state fixtures were deleted.
+- ℹ️ The catalog's lexical near-duplicate warnings were addressed by revising the existing owner
+  rather than creating a parallel contract; every blocking authoring check passed. Feature 4 Slice
+  2 fixed-DC saving-throw resolution is the next review-gated pass.
+- ✅ `ruleset/dnd2024/TERRA-FEATURE-PLANNING-GUIDE.md` now defines the reusable standard for Terra
+  to plan later features: live discovery, ownership analysis, recursive dependency descent,
+  complete slice specifications, adversarial acceptance matrices, evidence, quality audit, and a
+  planning-only stop gate.
+- ✅ Further ruleset development is ordered in `ruleset/dnd2024/ROADMAP.md`, and
+  `ruleset/dnd2024/TERRA-IMPLEMENTATION-HANDOFF.md` captures the exact execution and evidence bar
+  for lower-cost continuation.
+- ✅ Feature 5 now has a planning-only recursive dependency plan at
+  `ruleset/dnd2024/feature-05/FEATURE-5-DEPENDENCY-PLAN.md`. It authorizes only the
+  zero-effect individual Initiative resolver. Persistent arbitrary-roster ordering is correctly
+  blocked on a separately planned mechanic-composition capability; no caller-supplied Initiative
+  totals or copied participant state are accepted as a shortcut.
+- ✅ Feature 5 Slice 0 is verified. Shared action/projection input now preserves valid JSON-object
+  text and rejects null, array, scalar, whitespace-only, and malformed input before mechanic
+  selection; focused regression passed 32/32 and the full suite passed 227/227. The draft
+  Initiative resolver remains inactive and Feature 5 Slice 1 is now the next isolated leaf.
 - ✅ `procedure.system.create-feature` v4 establishes this as the repository-wide workflow: plan
   to verified leaves, implement one lowest unimplemented slice, query it back, then stop for
   review. Runtime game contracts/mechanics remain database-only; repository documents record only

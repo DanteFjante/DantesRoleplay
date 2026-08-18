@@ -3,7 +3,7 @@ id: procedure.action.run
 category: mechanic
 name: Resolve what a player is trying to do
 governs: commit(kind: "action"), resolving an action, deciding an outcome during play
-revised-by: Claude Opus 5, 2026-08-18 — rewritten for the three-verb surface, and corrected: an action selects a rule and RUNS it; there is no candidate-only mode and no caller dry run
+revised-by: Claude Opus 5, 2026-08-18 — rewritten for the three-verb surface, and corrected: an action selects a rule and RUNS it; there is no candidate-only mode and no caller dry run; Codex, 2026-08-19 — closed the action-input boundary so only JSON objects reach mechanics
 status: active
 ---
 
@@ -22,6 +22,9 @@ rule being run and the world changing.
    `roleEntityIds: {"<role>": "<entityId>"}` using the rule's own role names — the kernel never
    guesses what a role means.
 5. Call `commit(kind: "action", payload: {"intent": "...", "roleEntityIds": {...}, "input": "{}"})`.
+   `input` is JSON text whose root must be an object. Omit it or use `{}` when the action has no
+   arguments. `null`, arrays, scalars, whitespace-only text, and malformed JSON are rejected
+   before any mechanic is selected; a valid object is passed unchanged to `ctx.input`.
    **This runs the rule.** The action selects the best-ranked ACTIVE rule matching your intent —
    you cannot name one, and there is no caller-facing dry run. Use words the rule you read
    actually matches, or a different rule will answer.
@@ -40,8 +43,13 @@ rule being run and the world changing.
   a rule is missing or you have not run the one that exists.
 - Do not use `commit(kind: "effects")` to hand-apply what a rule should decide. Direct effects are
   for setting the world up; rules are for resolving what happens in it.
+- An explicit input must be a valid JSON object. Do not rely on invalid input being treated as
+  `{}`; correct the caller payload before retrying.
 - If the rule fails or is stopped by a limit, say so plainly and revise it. Retrying an unchanged
   rule produces the same failure.
 - The whole run is one transaction. A rule that proposes five changes and gets the fourth wrong
   applies none of them — so a partial outcome is never something you need to reason about. A rule
   that proposes no changes at all is a legitimate success: narration is an outcome.
+- A rule may use declared child mechanics. They run first under derived replay seeds and are visible
+  to the parent only as frozen `ctx.children` data; if any child fails, the parent does not run and
+  no effects are applied.

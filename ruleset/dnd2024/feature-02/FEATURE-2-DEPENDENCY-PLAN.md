@@ -1,6 +1,6 @@
 # Feature 2 dependency plan — proficient character skill checks
 
-Status: **Slice 3 complete; stopped for review before Slice 4**  
+Status: **Feature 2 complete — all four slices implemented and acceptance-tested**
 Last updated: 2026-08-18
 
 Planning-method evidence:
@@ -110,8 +110,8 @@ This is deliberately narrower than "implement proficiency":
   tools, saving throws, attacks, passive checks, contested checks, class/background automation,
   and granting or revoking proficiencies during advancement.
 
-Slices 1–3 were implemented after their reviews and are complete. The workflow stops here:
-Slice 4 may start only after this result is reviewed.
+All four slices were implemented after their review gates and are complete. Further work starts
+from the ruleset roadmap; this plan remains the evidence record for Feature 2.
 
 ## Source basis
 
@@ -129,7 +129,7 @@ components refer to that registry entity plus a section locator instead of copyi
 license, and URL fields into every actor component.
 
 [srd-page]: https://www.dndbeyond.com/srd
-[srd-pdf]: https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.pdf
+[srd-pdf]: https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf
 [cc-by]: https://creativecommons.org/licenses/by/4.0/
 
 ## Recursive dependency analysis
@@ -149,15 +149,15 @@ proficient character skill checks
 │  ├─ stable vocabulary of 18 SRD skill IDs                  [implemented: Slice 3]
 │  ├─ advisory default ability for each skill                [implemented: Slice 3]
 │  └─ centralized SRD 5.2.1 source identity                 [implemented: Slice 1]
-└─ skill-aware ability-check integration                     [missing: Slice 4]
-   ├─ all dependencies above                                 [must be verified first]
-   ├─ no caller-supplied ability or proficiency modifiers    [existing invariant]
-   ├─ proficiency bonus added at most once                   [new invariant]
-   └─ skill intent routing only after the rule is skill-aware [new invariant]
+└─ skill-aware ability-check integration                     [implemented: Slice 4]
+   ├─ all dependencies above                                 [verified]
+   ├─ no caller-supplied ability or proficiency modifiers    [verified]
+   ├─ proficiency bonus added at most once                   [verified]
+   └─ skill intent routing only after the rule is skill-aware [verified]
 ```
 
-The recursion bottomed out at the source registry. With Slices 1–3 verified, the next lowest
-unimplemented dependency is Slice 4: skill-aware ability-check integration.
+The recursion bottomed out at the source registry. Slice 4 consumed the verified leaves and closed
+the feature without introducing a second check mechanic.
 
 ### Existing dependency evidence
 
@@ -181,7 +181,7 @@ Details are in [Feature 1's runbook](../feature-01/FEATURE-1-RUNBOOK.md).
 | 1 ✅ | Central SRD source registry | Slice 0 reviewed | Verified: database contract/definition/entity query back exactly; duplicate rejected without change |
 | 2 ✅ | Character level and proficiency derivation contract | Slice 1 verified | Verified: all ten band boundaries pass; eight invalid inputs leave state unchanged; no bonus is stored |
 | 3 ✅ | Skill vocabulary and character proficiency state | Slices 1–2 verified | Verified: all 18 IDs/default abilities, empty and multi-skill states, eight rejection cases with byte-stable state, and no stored derived data |
-| 4 | Skill-aware ability-check revision | Slices 1–3 verified | Proficient/nonproficient, alternate pairing, routing, errors, non-stacking, replay, and no-effect tests pass |
+| 4 ✅ | Skill-aware ability-check revision | Slices 1–3 verified | Verified: proficiency delta and bands, alternate pairing, routing, malformed/missing state, replay, natural rolls, and zero effects |
 
 Every slice is its own implementation pass. Completing a slice updates this table with contract
 versions, commit operation IDs, query-back evidence, and test results, then stops for review.
@@ -382,6 +382,28 @@ the caller to name the ability and permits a nondefault pairing.
 
 ## Slice 4 — extend the fixed-DC ability check for skills
 
+Implementation evidence (2026-08-18): the live contract is revision 2 (operation
+`fd857d40134c4fe8b64b169d3e0c0b72`); the live mechanic is revision 3 after correcting the
+database engine's direct-source execution model (operation `1fdbef15cec7434eb1bb1ce2c3ca6db6`).
+Seed `202608180401` produced Stealth `9 + 3 + 3 = 15` and Acrobatics `9 + 3 = 12` for
+`creature.orban`; both actions had zero effects. Acceptance actions then verified levels
+4/5/16/17 at +2/+3/+5/+6, Strength (Intimidation) without remapping, raw replay, empty skill
+state, rejected null/wrong-case/extra derived input, natural 20 failure, and natural 1 success.
+Temporary level and skill state was restored to level 5 with `perception` and `stealth`.
+
+Post-completion audit (2026-08-18): contract query `1d2974a5509a4868b3dbc7747a5e0215`,
+mechanic query `fdf8e6ac094641778dd54409773f1c17`, and actor query
+`116eb379731d48e7ac6165bcaa73b2e7` confirmed the live versions and restored state. The audit found
+that two contracted negative cases had been described but not actually run. Disposable fixtures
+were dry-run/created by `d04e55cf1911421d9660af90cb3b7b08` / `3327aac302d041d1b02e6c9632cfb2de`
+and queried by `903b56f239034247b09512c2ed3c5a45`. Missing proficiency state failed with
+`737a06512c674b7cb73ea95dee0d6cfb`; invalid level state failed with
+`add69213d03f44c7b67d3eb0ffb5fc32`. Fixture deletion dry-run
+`78b83c8c146e49aca8f97d73d0df2ce7` and commit `0f660680365045d9975db308d47ba3b1`
+closed the gap. Final queries `2b2b7a7f33f24144b7c7df760d99660b` and
+`7240a4b6ce0e441eaaa978f0cb9db47b` prove Orban is restored and both fixtures are deleted. No
+mechanic revision was needed.
+
 ### Artifacts
 
 1. Revision of `procedure.mechanic.dnd2024.check.ability`.
@@ -458,7 +480,7 @@ The result envelope retains `test: "ability-check"` and adds `skill`, `defaultAb
     intent still selects it and has unchanged arithmetic.
 14. Replay at least one recorded seed exactly; assert every result has an empty effects list.
 15. Query back both revisions, inspect history, record all operation IDs and the full regression
-    result, mark Slice 4 complete, and stop.
+    result, mark Slice 4 complete, and stop. **Completed and post-audited 2026-08-18.**
 
 ## Plan-change rule
 

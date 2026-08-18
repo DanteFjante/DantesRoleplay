@@ -114,7 +114,8 @@ public static class VerbSurface
             "Resolve what someone is trying to do. The best-ranked active rule matching the "
             + "intent is selected, run in the sandbox, and what it proposes is applied in one "
             + "transaction. You cannot name the rule — read it first with "
-            + "query(kind: \"mechanics\") so you know which roles it declares.",
+            + "query(kind: \"mechanics\") so you know which roles it declares. Input, when supplied, "
+            + "must be JSON-object text.",
             "{intent, roleEntityIds?, input?, scope?, seed?}",
             """
             {"intent":"what the player is trying to do","roleEntityIds":{"<role>":"<entity-id>"},"input":"{}"}

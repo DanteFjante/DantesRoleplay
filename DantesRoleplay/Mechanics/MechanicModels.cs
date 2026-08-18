@@ -19,6 +19,14 @@ public sealed record MechanicRequirements
     public Dictionary<string, RoleRequirement> Roles { get; init; } = [];
 
     /// <summary>
+    /// Child mechanics this mechanic may invoke. These declarations are interpreted by the host
+    /// before the parent source runs; JavaScript receives only their serialised results. That
+    /// keeps composition inside the same strict, string-only sandbox boundary as every other
+    /// mechanic input.
+    /// </summary>
+    public Dictionary<string, ChildMechanicRequirement> Children { get; init; } = [];
+
+    /// <summary>
     /// Everything the mechanic may read, flattened. Used by the resolver to build one query, and
     /// by the supervision view to answer "what can this rule see?" without reading its source.
     /// </summary>
@@ -40,6 +48,76 @@ public sealed record MechanicRequirements
         string.IsNullOrWhiteSpace(json)
             ? new MechanicRequirements()
             : JsonSerializer.Deserialize<MechanicRequirements>(json, JsonOptions) ?? new MechanicRequirements();
+
+    /// <summary>Checks declarations that cannot be validated by deserialisation alone.</summary>
+    public IReadOnlyList<string> CompositionProblems()
+    {
+        var problems = new List<string>();
+
+        foreach (var (key, child) in Children)
+        {
+            if (string.IsNullOrWhiteSpace(key) || key.Any(char.IsWhiteSpace))
+                problems.Add("A child result key must be non-empty and contain no whitespace.");
+
+            if (child is null || string.IsNullOrWhiteSpace(child.MechanicId))
+            {
+                problems.Add($"Child '{key}' must name a mechanicId.");
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(child.ForEachContentsOf) &&
+                !Roles.ContainsKey(child.ForEachContentsOf))
+            {
+                problems.Add(
+                    $"Child '{key}' iterates contents of undeclared parent role '{child.ForEachContentsOf}'.");
+            }
+
+            foreach (var (childRole, source) in child.RoleBindings)
+            {
+                if (string.IsNullOrWhiteSpace(childRole) || string.IsNullOrWhiteSpace(source))
+                {
+                    problems.Add($"Child '{key}' has an empty role binding.");
+                    continue;
+                }
+
+                if (source != "$item" && !Roles.ContainsKey(source))
+                    problems.Add($"Child '{key}' binds '{childRole}' from undeclared parent role '{source}'.");
+
+                if (source == "$item" && string.IsNullOrWhiteSpace(child.ForEachContentsOf))
+                    problems.Add($"Child '{key}' uses '$item' but does not declare forEachContentsOf.");
+            }
+
+            if (!child.InheritInput && !IsJsonObject(child.Input))
+                problems.Add($"Child '{key}' has input that is not a JSON object.");
+
+            if (!string.IsNullOrWhiteSpace(child.InputFromParentProperty) && child.InheritInput)
+                problems.Add($"Child '{key}' cannot inherit the full parent input and select an input property at once.");
+
+            if (!string.IsNullOrWhiteSpace(child.InputFromParentProperty) &&
+                child.InputFromParentProperty.Trim() != child.InputFromParentProperty)
+            {
+                problems.Add($"Child '{key}' has an untrimmed inputFromParentProperty.");
+            }
+
+            if (child.InputForEachItem && string.IsNullOrWhiteSpace(child.ForEachContentsOf))
+                problems.Add($"Child '{key}' uses inputForEachItem but does not declare forEachContentsOf.");
+        }
+
+        return problems;
+    }
+
+    private static bool IsJsonObject(string json)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            return document.RootElement.ValueKind == JsonValueKind.Object;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
 }
 
 /// <param name="Components">
@@ -64,6 +142,42 @@ public sealed record RoleRequirement(
     string Description = "",
     bool IncludeContents = false);
 
+/// <summary>
+/// A host-side child invocation declaration. The dictionary key in
+/// <see cref="MechanicRequirements.Children"/> is the result key exposed at <c>ctx.children</c>.
+/// Role binding values refer to a parent role; <c>$item</c> means the current member of the
+/// declared container role. With <see cref="ForEachContentsOf"/> present one result is produced
+/// for every contained entity, in the stable projected order.
+/// </summary>
+public sealed record ChildMechanicRequirement
+{
+    public string MechanicId { get; init; } = string.Empty;
+
+    public Dictionary<string, string> RoleBindings { get; init; } = [];
+
+    public string ForEachContentsOf { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Child input defaults to the parent's already-validated JSON object. A static object may
+    /// be supplied when inheritance is disabled.
+    /// </summary>
+    public bool InheritInput { get; init; } = true;
+
+    public string Input { get; init; } = "{}";
+
+    /// <summary>
+    /// Optional top-level key whose object value becomes the child input. This keeps child input
+    /// closed even when the parent also needs sibling metadata such as a tie decision.
+    /// </summary>
+    public string InputFromParentProperty { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Select an object from <see cref="InputFromParentProperty"/> by the current `$item` id.
+    /// This is valid only with <see cref="ForEachContentsOf"/>.
+    /// </summary>
+    public bool InputForEachItem { get; init; }
+}
+
 // ---- what the mechanic is handed ------------------------------------------------------
 
 /// <summary>
@@ -78,7 +192,7 @@ public sealed record MechanicProjection
     /// <summary>Role name to the entity filling it. A missing optional role is simply absent.</summary>
     public Dictionary<string, EntityProjection> Roles { get; init; } = [];
 
-    /// <summary>Free-form JSON from the caller — the specifics of this particular action.</summary>
+    /// <summary>JSON-object text from the caller — the specifics of this particular action.</summary>
     public string Input { get; init; } = "{}";
 
     /// <summary>
@@ -88,6 +202,12 @@ public sealed record MechanicProjection
     /// With the seed in the audit log, "why did that happen?" is answerable months later.
     /// </summary>
     public long Seed { get; init; }
+
+    /// <summary>
+    /// Results of host-orchestrated child mechanics. These are serialised into the sandbox and
+    /// never carry a live CLR callback or database capability.
+    /// </summary>
+    public Dictionary<string, IReadOnlyList<ChildMechanicResult>> Children { get; init; } = [];
 }
 
 /// <param name="Components">Definition id to that component's data as raw JSON.</param>
@@ -100,6 +220,16 @@ public sealed record EntityProjection(
     IReadOnlyList<ContainedProjection>? Contains = null);
 
 public sealed record ContainedProjection(string Id, string Name, string Slot);
+
+/// <summary>Replayable child output supplied to a parent as frozen JSON data.</summary>
+public sealed record ChildMechanicResult(
+    string MechanicId,
+    int Version,
+    long Seed,
+    IReadOnlyDictionary<string, string> RoleEntityIds,
+    MechanicOutput Output,
+    IReadOnlyList<string> Log,
+    int ElapsedMilliseconds);
 
 // ---- what comes back ------------------------------------------------------------------
 

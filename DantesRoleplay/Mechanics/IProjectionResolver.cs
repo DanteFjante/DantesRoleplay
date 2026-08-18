@@ -18,7 +18,7 @@ public interface IProjectionResolver
 {
     /// <param name="requirements">The mechanic's declared projection spec.</param>
     /// <param name="roleAssignments">Role name to entity id, supplied by the caller.</param>
-    /// <param name="input">Free-form JSON for the specifics of this action.</param>
+    /// <param name="input">A valid JSON object for the specifics of this action.</param>
     /// <param name="seed">Recorded with the operation so the run can be replayed exactly.</param>
     Task<ProjectionResult> ResolveAsync(
         MechanicRequirements requirements,
@@ -30,8 +30,9 @@ public interface IProjectionResolver
 
 /// <param name="Projection">Null when <paramref name="Problems"/> is non-empty.</param>
 /// <param name="Problems">
-/// Everything wrong at once — a missing role, an unknown entity, a role the mechanic does not
-/// declare — each phrased as what to do about it. One round trip, not one per mistake.
+/// Everything wrong at once — invalid action input, a missing role, an unknown entity, a role the
+/// mechanic does not declare — each phrased as what to do about it. One round trip, not one per
+/// mistake.
 /// </param>
 public sealed record ProjectionResult(MechanicProjection? Projection, IReadOnlyList<string> Problems)
 {

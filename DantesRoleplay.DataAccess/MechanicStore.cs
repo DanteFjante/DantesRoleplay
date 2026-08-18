@@ -212,6 +212,20 @@ public sealed class MechanicStore(DantesRoleplayDbContext db) : IMechanicStore
                 : $"Requirements are not valid JSON: {requirementsError}. Expected {{\"roles\":{{\"<name>\":{{\"components\":[\"...\"]}}}}}}.",
             Blocking: true));
 
+        if (requirements is not null)
+        {
+            var compositionProblems = requirements.CompositionProblems();
+            checks.Add(new MechanicCheck(
+                "child-declarations",
+                compositionProblems.Count == 0,
+                compositionProblems.Count == 0
+                    ? requirements.Children.Count == 0
+                        ? "No child mechanics declared."
+                        : $"Declares {requirements.Children.Count} host-orchestrated child mechanic(s)."
+                    : string.Join(" ", compositionProblems),
+                Blocking: true));
+        }
+
         // Naming a component that does not exist is a typo that would otherwise surface as an
         // empty object mid-run, which reads to the mechanic like "this thing has no stats".
         if (requirements is not null && requirements.Roles.Count > 0)

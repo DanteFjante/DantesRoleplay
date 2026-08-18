@@ -1,3 +1,4 @@
+using DantesRoleplay.Actions;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.World;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,11 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
         roleAssignments ??= new Dictionary<string, string>();
 
         var problems = new List<string>();
+
+        if (!ActionInput.TryValidateObject(input, out var inputProblem))
+        {
+            problems.Add($"INVALID_INPUT: {inputProblem}");
+        }
 
         // A role the mechanic does not declare is a caller misunderstanding, not a harmless extra.
         // Passing "target" to a rule that never mentions one usually means the wrong mechanic was
@@ -72,7 +78,7 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
         if (needed.Count == 0)
         {
             return new ProjectionResult(
-                new MechanicProjection { Input = Normalise(input), Seed = seed },
+                new MechanicProjection { Input = input, Seed = seed },
                 []);
         }
 
@@ -137,7 +143,7 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
 
         var projection = new MechanicProjection
         {
-            Input = Normalise(input),
+            Input = input,
             Seed = seed
         };
 
@@ -171,27 +177,5 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
         }
 
         return new ProjectionResult(projection, []);
-    }
-
-    /// <summary>
-    /// The sandbox does JSON.parse on this, so an empty or malformed value has to become something
-    /// parseable here rather than throwing inside the harness where the message would be worse.
-    /// </summary>
-    private static string Normalise(string? input)
-    {
-        if (string.IsNullOrWhiteSpace(input))
-        {
-            return "{}";
-        }
-
-        try
-        {
-            using var parsed = System.Text.Json.JsonDocument.Parse(input);
-            return parsed.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object ? input : "{}";
-        }
-        catch (System.Text.Json.JsonException)
-        {
-            return "{}";
-        }
     }
 }

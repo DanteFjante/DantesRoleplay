@@ -29,7 +29,7 @@ public sealed class ActionTools
         [Description("What the actor is trying to do, in the player's words.")] string intent,
         [Description("Explicit mechanic role names to permanent entity ids. Do not infer role names.")]
         Dictionary<string, string>? roleEntityIds = null,
-        [Description("Free-form JSON handed to the mechanic as ctx.input. Defaults to {}.")]
+        [Description("JSON object handed unchanged to the mechanic as ctx.input. Defaults to {}.")]
         string input = "{}",
         [Description("Optional ruleset scope. Shared mechanics remain eligible.")] string? scope = null,
         [Description("Optional replay seed. Omit to generate one and return it.")] long? seed = null,

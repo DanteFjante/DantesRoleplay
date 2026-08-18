@@ -18,7 +18,8 @@ public sealed class ActionRunner(
     IProjectionResolver projections,
     IMechanicEngine engine,
     IEffectApplier applier,
-    DantesRoleplay.Operations.IOperationLog log) : IActionRunner
+    DantesRoleplay.Operations.IOperationLog log,
+    IMechanicComposer? composer = null) : IActionRunner
 {
     // The public verb this is served as, not the historical tool name. Everything else records
     // through ToolRunner, which stamps the protocol identity for it; this runner owns its own
@@ -31,6 +32,7 @@ public sealed class ActionRunner(
     private readonly IMechanicEngine _engine = engine;
     private readonly IEffectApplier _applier = applier;
     private readonly DantesRoleplay.Operations.IOperationLog _log = log;
+    private readonly IMechanicComposer? _composer = composer;
 
     public async Task<ActionRunResult> RunAsync(
         ActionRequest request,
@@ -165,6 +167,49 @@ public sealed class ActionRunner(
             }
 
             projection = resolution.Projection;
+
+            if (requirements.Children.Count > 0)
+            {
+                if (_composer is null)
+                {
+                    return await FailInTransactionAsync(
+                        transaction,
+                        request,
+                        ActionRunResult.Failed(
+                            "COMPOSITION_UNAVAILABLE",
+                            $"Mechanic '{selected.Id}' declares child mechanics, but this host has no composition service.",
+                            "Restart the host with IMechanicComposer registered before running this mechanic.",
+                            $"Composition was unavailable for '{selected.Id}'.",
+                            candidates) with { Mechanic = selected, Projection = projection, Seed = seed },
+                        selected,
+                        projection,
+                        seed);
+                }
+
+                var composition = await _composer.ComposeAsync(
+                    detail.Id,
+                    requirements,
+                    projection,
+                    cancellationToken: cancellationToken);
+
+                if (!composition.Ok || composition.Projection is null)
+                {
+                    return await FailInTransactionAsync(
+                        transaction,
+                        request,
+                        ActionRunResult.Failed(
+                            "COMPOSITION_FAILED",
+                            composition.Error,
+                            $"query(kind: \"mechanics\", id: \"{selected.Id}\") — review its declared children and bindings.",
+                            $"Composition failed for '{selected.Id}'.",
+                            candidates) with { Mechanic = selected, Projection = projection, Seed = seed },
+                        selected,
+                        projection,
+                        seed);
+                }
+
+                projection = composition.Projection;
+            }
 
             var run = await _engine.RunAsync(
                 detail.Source,
@@ -445,15 +490,11 @@ public sealed class ActionRunner(
                 "commit(kind: \"action\", payload: \"{\\\"intent\\\":\\\"describe what the actor is trying to do\\\",\\\"roleEntityIds\\\":{}}\")");
         }
 
-        try
-        {
-            using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(request.Input) ? "{}" : request.Input);
-        }
-        catch (JsonException ex)
+        if (!ActionInput.TryValidateObject(request.Input, out var inputProblem))
         {
             return new ActionRunError(
                 "INVALID_INPUT",
-                $"The action input is not valid JSON: {ex.Message}",
+                inputProblem!,
                 "commit(kind: \"action\", payload: \"{\\\"intent\\\":\\\"same intent\\\",\\\"roleEntityIds\\\":{},\\\"input\\\":\\\"{}\\\"}\")");
         }
 
