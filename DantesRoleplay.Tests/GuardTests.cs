@@ -120,15 +120,15 @@ public sealed class GuardTests
     }
 
     [Fact]
-    public void The_tool_budget_is_not_exceeded()
+    public void Exactly_three_public_verbs_are_exposed()
     {
         var (declared, _) = ToolSurface();
 
-        // §7.1: twelve, permanently. New capability becomes a procedure or an operation behind an
-        // existing tool — never a thirteenth tool. If this fails, that is the conversation to have.
+        // The old handlers remain in source for reuse, but only the three registered dispatchers
+        // are public MCP tools.
         Assert.True(
-            declared.Count <= 12,
-            $"{declared.Count} MCP tools declared; the budget is 12 (ARCHITECTURE.md §7.1).");
+            declared.Count == 3 && declared.Distinct(StringComparer.Ordinal).Count() == 3,
+            $"Expected exactly orient, query, and commit; found {string.Join(", ", declared)}.");
     }
 
     /// <summary>Reads the declared tool names and orient's capability block from source.</summary>
@@ -140,9 +140,18 @@ public sealed class GuardTests
         Assert.True(Directory.Exists(toolsDirectory), $"Expected tools at {toolsDirectory}.");
 
         var declared = new List<string>();
+        var program = File.ReadAllText(Path.Combine(root, "DantesRoleplay.MCPServer", "Program.cs"));
+        var registeredTypes = Regex.Matches(program, @"WithTools<(?<type>[A-Za-z0-9_]+)>")
+            .Select(m => m.Groups["type"].Value)
+            .ToList();
 
-        foreach (var file in EnumerateSource(toolsDirectory))
+        Assert.NotEmpty(registeredTypes);
+
+        foreach (var type in registeredTypes)
         {
+            var file = Path.Combine(toolsDirectory, $"{type}.cs");
+            Assert.True(File.Exists(file), $"Registered MCP tool type has no source file: {type}.");
+
             foreach (Match match in Regex.Matches(
                 File.ReadAllText(file),
                 @"McpServerTool\s*\(\s*Name\s*=\s*""(?<name>[^""]+)"""))

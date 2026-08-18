@@ -1,4 +1,5 @@
 using DantesRoleplay.Operations;
+using System.Text.RegularExpressions;
 
 namespace DantesRoleplay.MCPServer.Tools;
 
@@ -53,6 +54,19 @@ public sealed record ToolError(string Code, string Why, string Fix);
 /// </summary>
 internal static class ToolRunner
 {
+    /// <summary>
+    /// Runs one of the preserved implementation handlers behind the public query/commit adapter.
+    /// The handler still owns its behaviour and transaction boundaries; this scope only gives its
+    /// existing audit wrapper the public protocol identity and translates literal recovery calls.
+    /// </summary>
+    public static IDisposable EnterProtocol(
+        string tool,
+        string kind,
+        bool? consumesReadEvidenceOverride = null) =>
+        new DispatchScope(
+            ToolRunnerDispatch.Value,
+            new ProtocolDispatch(tool, kind, consumesReadEvidenceOverride));
+
     /// <summary>For read-only tools. Records the call but does not consume read evidence.</summary>
     public static Task<ToolEnvelope> RunAsync(
         IOperationLog log,
@@ -76,18 +90,32 @@ internal static class ToolRunner
         try
         {
             var outcome = await body();
+            var dispatch = ToolRunnerDispatch.Value;
+
+            if (dispatch is not null)
+            {
+                outcome = dispatch.Translate(outcome);
+            }
+
+            var effectiveTool = dispatch?.Tool ?? tool;
+            var effectiveSubject = string.IsNullOrEmpty(outcome.Subject) ? subject : outcome.Subject;
+
+            if (dispatch is not null && string.IsNullOrEmpty(effectiveSubject))
+            {
+                effectiveSubject = $"{dispatch.Tool}:{dispatch.Kind}";
+            }
 
             var operation = await log.RecordAsync(
-                tool,
+                effectiveTool,
                 outcome.Summary,
                 outcome.Error is null,
                 intent,
                 // An outcome may name its own subject — get_procedure records which contract it
                 // fetched, which is what makes the observed-procedures derivation possible.
-                string.IsNullOrEmpty(outcome.Subject) ? subject : outcome.Subject,
+                effectiveSubject,
                 proceduresCited,
                 outcome.Error?.Code ?? string.Empty,
-                consumesReadEvidence);
+                dispatch?.ConsumesReadEvidenceOverride ?? consumesReadEvidence);
 
             return outcome.Error is null
                 ? ToolEnvelope.Success(outcome.Data, operation.Id, [.. outcome.NextSteps])
@@ -99,14 +127,19 @@ internal static class ToolRunner
         }
         catch (Exception ex)
         {
+            var dispatch = ToolRunnerDispatch.Value;
+            var effectiveTool = dispatch?.Tool ?? tool;
+
             // An unhandled exception is still an event worth recording, and the model still needs
             // somewhere to go next.
             var operation = await log.RecordAsync(
-                tool,
+                effectiveTool,
                 $"Unhandled failure: {ex.Message}",
                 success: false,
                 intent,
-                subject,
+                dispatch is null || !string.IsNullOrEmpty(subject)
+                    ? subject
+                    : $"{dispatch.Tool}:{dispatch.Kind}",
                 proceduresCited,
                 "UNHANDLED",
                 consumesReadEvidence);
@@ -118,6 +151,81 @@ internal static class ToolRunner
                 operation.Id);
         }
     }
+}
+
+internal sealed record ProtocolDispatch(
+    string Tool,
+    string Kind,
+    bool? ConsumesReadEvidenceOverride)
+{
+    private static readonly IReadOnlyDictionary<string, (string Tool, string Kind)> CallMap =
+        new Dictionary<string, (string Tool, string Kind)>(StringComparer.Ordinal)
+        {
+            ["find_procedures"] = ("query", "procedures"),
+            ["get_procedure"] = ("query", "procedures"),
+            ["describe_world"] = ("query", "world"),
+            ["get_entities"] = ("query", "entities"),
+            ["find_mechanics"] = ("query", "mechanics"),
+            ["history"] = ("query", "history"),
+            ["write_procedure"] = ("commit", "procedure"),
+            ["define_component"] = ("commit", "component"),
+            ["apply_effects"] = ("commit", "effects"),
+            ["write_mechanic"] = ("commit", "mechanic"),
+            ["run_action"] = ("commit", "action")
+        };
+
+    public ToolOutcome Translate(ToolOutcome outcome) =>
+        outcome with
+        {
+            NextSteps = outcome.NextSteps.Select(TranslateText).ToArray(),
+            Error = outcome.Error is null
+                ? null
+                : outcome.Error with { Fix = TranslateText(outcome.Error.Fix) }
+        };
+
+    private static string TranslateText(string text)
+    {
+        foreach (var (oldName, target) in CallMap)
+        {
+            var prefix = $"{target.Tool}(kind: \"{target.Kind}\", ";
+            text = text.Replace($"{oldName}(", prefix, StringComparison.Ordinal);
+            text = text.Replace($"{oldName}()", $"{target.Tool}(kind: \"{target.Kind}\")", StringComparison.Ordinal);
+        }
+
+        return Regex.Replace(text, @",\s*\)", ")");
+    }
+}
+
+internal sealed class DispatchScope : IDisposable
+{
+    private readonly ProtocolDispatch? _previous;
+    private bool _disposed;
+
+    public DispatchScope(ProtocolDispatch? previous, ProtocolDispatch current)
+    {
+        _previous = previous;
+        ToolRunnerDispatch.Set(current);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        ToolRunnerDispatch.Set(_previous);
+    }
+}
+
+internal static class ToolRunnerDispatch
+{
+    private static readonly AsyncLocal<ProtocolDispatch?> Current = new();
+
+    public static void Set(ProtocolDispatch? dispatch) => Current.Value = dispatch;
+
+    public static ProtocolDispatch? Value => Current.Value;
 }
 
 internal sealed record ToolOutcome(

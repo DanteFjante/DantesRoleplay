@@ -167,7 +167,8 @@ public sealed class MechanicStore(DantesRoleplayDbContext db) : IMechanicStore
             idOk,
             idOk
                 ? $"'{request.Id}' is a dotted identifier with no whitespace."
-                : $"'{request.Id}' should be a dotted identifier with no whitespace, e.g. mechanic.check.ability. Ids are permanent."));
+                : $"'{request.Id}' should be a dotted identifier with no whitespace, e.g. mechanic.check.ability. Ids are permanent.",
+            Blocking: true));
 
         var existing = await GetAsync(request.Id, cancellationToken: cancellationToken);
 
@@ -199,7 +200,8 @@ public sealed class MechanicStore(DantesRoleplayDbContext db) : IMechanicStore
                 ? requirements.Roles.Count == 0
                     ? "No roles declared. Valid — a mechanic that needs no world data is fine — but unusual."
                     : $"Declares {requirements.Roles.Count} role(s): {string.Join(", ", requirements.Roles.Keys)}."
-                : $"Requirements are not valid JSON: {requirementsError}. Expected {{\"roles\":{{\"<name>\":{{\"components\":[\"...\"]}}}}}}."));
+                : $"Requirements are not valid JSON: {requirementsError}. Expected {{\"roles\":{{\"<name>\":{{\"components\":[\"...\"]}}}}}}.",
+            Blocking: true));
 
         // Naming a component that does not exist is a typo that would otherwise surface as an
         // empty object mid-run, which reads to the mechanic like "this thing has no stats".
@@ -219,7 +221,8 @@ public sealed class MechanicStore(DantesRoleplayDbContext db) : IMechanicStore
                 missing.Count == 0,
                 missing.Count == 0
                     ? $"All {wanted.Count} component definition(s) named in the requirements exist."
-                    : $"These component definitions do not exist: {string.Join(", ", missing)}. define_component them first, or the mechanic will read empty data and behave as though the entity has none."));
+                    : $"These component definitions do not exist: {string.Join(", ", missing)}. define_component them first, or the mechanic will read empty data and behave as though the entity has none.",
+                Blocking: true));
         }
 
         checks.Add(new MechanicCheck(
@@ -227,14 +230,16 @@ public sealed class MechanicStore(DantesRoleplayDbContext db) : IMechanicStore
             !string.IsNullOrWhiteSpace(request.Source),
             string.IsNullOrWhiteSpace(request.Source)
                 ? "No source given. A mechanic with no source cannot do anything."
-                : $"{request.Source.Split('\n').Length} line(s) of source."));
+                : $"{request.Source.Split('\n').Length} line(s) of source.",
+            Blocking: true));
 
         checks.Add(new MechanicCheck(
             "matches-stated",
             !string.IsNullOrWhiteSpace(request.Matches),
             string.IsNullOrWhiteSpace(request.Matches)
                 ? "No match phrases given. Without them this mechanic is findable by name only, so run_action will rarely surface it."
-                : $"Match phrases: {request.Matches.Replace('\n', '/')}"));
+                : $"Match phrases: {request.Matches.Replace('\n', '/')}",
+            Blocking: true));
 
         var categories = await GetCategoriesAsync(cancellationToken);
         var knownCategory = categories.Any(c => string.Equals(c.Category, request.Category, StringComparison.Ordinal));
@@ -260,7 +265,8 @@ public sealed class MechanicStore(DantesRoleplayDbContext db) : IMechanicStore
             others.Count == 0,
             others.Count == 0
                 ? "No existing mechanic has a similar name or answers to the same phrases."
-                : $"These may already cover this: {string.Join(", ", others)}. Two mechanics matching the same phrase makes the same action resolve differently depending on ranking. Prefer revising one."));
+                : $"These may already cover this: {string.Join(", ", others)}. Two mechanics matching the same phrase makes the same action resolve differently depending on ranking. Prefer revising one.",
+            Blocking: false));
 
         return checks;
     }
@@ -286,7 +292,7 @@ public sealed class MechanicStore(DantesRoleplayDbContext db) : IMechanicStore
                 Id = request.Id,
                 Category = request.Category,
                 Scope = request.Scope,
-                Status = request.Status ?? MechanicStatus.Active,
+                Status = request.Status ?? MechanicStatus.Draft,
                 CurrentVersion = 0,
                 CreatedAt = now,
                 UpdatedAt = now

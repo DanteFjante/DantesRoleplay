@@ -49,6 +49,18 @@ public sealed class WorldStore(DantesRoleplayDbContext db) : IWorldStore
     public async Task<IReadOnlyList<EntitySnapshot>> GetEntitiesAsync(
         IEnumerable<string> ids,
         CancellationToken cancellationToken = default)
+        => await GetEntitiesCoreAsync(ids, componentDefinitionIds: null, cancellationToken);
+
+    public async Task<IReadOnlyList<EntitySnapshot>> GetEntitiesAsync(
+        IEnumerable<string> ids,
+        IReadOnlyCollection<string> componentDefinitionIds,
+        CancellationToken cancellationToken = default)
+        => await GetEntitiesCoreAsync(ids, componentDefinitionIds, cancellationToken);
+
+    private async Task<IReadOnlyList<EntitySnapshot>> GetEntitiesCoreAsync(
+        IEnumerable<string> ids,
+        IReadOnlyCollection<string>? componentDefinitionIds,
+        CancellationToken cancellationToken)
     {
         var wanted = ids.Distinct().ToList();
 
@@ -57,20 +69,46 @@ public sealed class WorldStore(DantesRoleplayDbContext db) : IWorldStore
             return [];
         }
 
-        var entities = await _db.Entities
+        var entitiesQuery = _db.Entities
             .AsNoTracking()
-            .Where(e => wanted.Contains(e.Id) && e.DeletedAt == null)
-            .Include(e => e.Components)
-            .ToListAsync(cancellationToken);
+            .Where(e => wanted.Contains(e.Id) && e.DeletedAt == null);
+
+        entitiesQuery = componentDefinitionIds is null
+            ? entitiesQuery.Include(e => e.Components)
+            : entitiesQuery.Include(e => e.Components.Where(
+                component => componentDefinitionIds.Contains(component.DefinitionId)));
+
+        var entities = await entitiesQuery.ToListAsync(cancellationToken);
 
         var containers = await _db.Containments
             .AsNoTracking()
             .Where(c => wanted.Contains(c.ContainedId))
             .ToDictionaryAsync(c => c.ContainedId, cancellationToken);
 
+        var contents = await _db.Containments
+            .AsNoTracking()
+            .Where(c => wanted.Contains(c.ContainerId))
+            .Join(
+                _db.Entities.Where(e => e.DeletedAt == null),
+                c => c.ContainedId,
+                e => e.Id,
+                (c, e) => new { c.ContainerId, e.Id, e.Name, c.Slot })
+            .OrderBy(x => x.Name)
+            .ToListAsync(cancellationToken);
+
+        var contentsByContainer = contents
+            .GroupBy(x => x.ContainerId, StringComparer.Ordinal)
+            .ToDictionary(
+                group => group.Key,
+                group => (IReadOnlyList<ContainmentView>)group
+                    .Select(x => new ContainmentView(x.Id, x.Name, x.Slot))
+                    .ToList(),
+                StringComparer.Ordinal);
+
         return entities.Select(e =>
         {
             containers.TryGetValue(e.Id, out var containment);
+            contentsByContainer.TryGetValue(e.Id, out var contained);
 
             return new EntitySnapshot(
                 e.Id,
@@ -80,7 +118,8 @@ public sealed class WorldStore(DantesRoleplayDbContext db) : IWorldStore
                     .Select(c => new ComponentView(c.DefinitionId, c.Data, c.Revision))
                     .ToList(),
                 containment?.ContainerId,
-                containment?.Slot ?? string.Empty);
+                containment?.Slot ?? string.Empty,
+                contained ?? []);
         }).ToList();
     }
 

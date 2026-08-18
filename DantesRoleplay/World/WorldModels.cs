@@ -13,7 +13,8 @@ public sealed record EntitySnapshot(
     string Name,
     IReadOnlyList<ComponentView> Components,
     string? ContainerId,
-    string ContainerSlot);
+    string ContainerSlot,
+    IReadOnlyList<ContainmentView>? Contains = null);
 
 /// <summary>Cheap listing shape — no component payloads.</summary>
 public sealed record EntitySummary(string Id, string Name, IReadOnlyList<string> ComponentIds);

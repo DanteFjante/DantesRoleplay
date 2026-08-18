@@ -25,7 +25,11 @@ public interface IOperationLog
         IEnumerable<string>? proceduresCited = null,
         string error = "",
         bool consumesReadEvidence = false,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        string mechanicId = "",
+        int? mechanicVersion = null,
+        long? seed = null,
+        string projectionJson = "");
 
     Task<IReadOnlyList<Operation>> RecentAsync(
         int limit = 20,

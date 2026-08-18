@@ -27,6 +27,15 @@ public sealed class BootstrapContractTests : IDisposable
     }
 
     [Fact]
+    public void Mechanic_discovery_and_authoring_contracts_are_embedded()
+    {
+        var ids = ProcedureSeeder.Load().Select(file => file.Id).ToHashSet(StringComparer.Ordinal);
+
+        Assert.Contains("procedure.mechanic.find", ids);
+        Assert.Contains("procedure.mechanic.create", ids);
+    }
+
+    [Fact]
     public async Task Seeding_writes_once_and_is_then_idempotent()
     {
         await using var db = _fixture.CreateContext();

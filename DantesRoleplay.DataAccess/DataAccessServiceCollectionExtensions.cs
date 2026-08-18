@@ -1,4 +1,4 @@
-using DantesRoleplay.DataAccess.Bootstrap;
+﻿using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.Effects;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
@@ -67,7 +67,9 @@ public static class DataAccessServiceCollectionExtensions
         services.AddScoped<IWorldStore, WorldStore>();
         services.AddScoped<IEffectApplier, EffectApplier>();
         services.AddScoped<IMechanicStore, MechanicStore>();
+        services.AddScoped<IProjectionResolver, ProjectionResolver>();
         services.AddScoped<ProcedureSeeder>();
+        services.AddScoped<MechanicSeeder>();
 
         return services;
     }
@@ -91,6 +93,11 @@ public static class DataAccessServiceCollectionExtensions
 
         var seeder = scope.ServiceProvider.GetRequiredService<ProcedureSeeder>();
         await seeder.SeedAsync(cancellationToken);
+
+        // The bootstrap rules, after the contracts, so that a fresh database has both the manual
+        // and two worked examples of what the manual is describing.
+        var rules = scope.ServiceProvider.GetRequiredService<MechanicSeeder>();
+        await rules.SeedAsync(cancellationToken);
     }
 
     private static string NormaliseSqlite(string connectionStringOrPath)

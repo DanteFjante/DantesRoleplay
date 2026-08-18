@@ -24,6 +24,16 @@ public interface IWorldStore
         IEnumerable<string> ids,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Materialise several entities while restricting component payloads to the requested
+    /// definitions. The projection resolver uses this overload so undeclared data never crosses
+    /// the storage boundary unnecessarily.
+    /// </summary>
+    Task<IReadOnlyList<EntitySnapshot>> GetEntitiesAsync(
+        IEnumerable<string> ids,
+        IReadOnlyCollection<string> componentDefinitionIds,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<EntitySummary>> FindEntitiesAsync(
         string? nameQuery = null,
         string? withDefinitionId = null,

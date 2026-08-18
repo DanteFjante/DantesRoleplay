@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
@@ -35,6 +36,12 @@
       not, and a claim like that is worth nothing unless something tries it every build.
     -->
     <ProjectReference Include="..\DantesRoleplay.RuleAccess\DantesRoleplay.RuleAccess.csproj" />
+
+    <!--
+      The MCP tool tests invoke the thin adapters directly. The server references DataAccess,
+      so this adds no alternate implementation or dependency direction in the production code.
+    -->
+    <ProjectReference Include="..\DantesRoleplay.MCPServer\DantesRoleplay.MCPServer.csproj" />
   </ItemGroup>
 
 </Project>

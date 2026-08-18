@@ -53,10 +53,16 @@ public sealed record MechanicRequirements
 /// without needing two mechanics.
 /// </param>
 /// <param name="Description">What this role means, for whoever calls the mechanic.</param>
+/// <param name="IncludeContents">
+/// Materialise what this entity contains. Declared rather than always-on for the same reason the
+/// components are: a rule that looks in someone's possession should have to say so, and a
+/// container holding forty things should not be fetched for a rule that never looks.
+/// </param>
 public sealed record RoleRequirement(
     IReadOnlyList<string> Components,
     bool Optional = false,
-    string Description = "");
+    string Description = "",
+    bool IncludeContents = false);
 
 // ---- what the mechanic is handed ------------------------------------------------------
 

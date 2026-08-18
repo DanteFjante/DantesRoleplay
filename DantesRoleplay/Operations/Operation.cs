@@ -68,4 +68,16 @@ public sealed class Operation
 
     /// <summary>Error code when <see cref="Success"/> is false. Empty otherwise.</summary>
     public string Error { get; set; } = string.Empty;
+
+    /// <summary>Mechanic identity when this operation executed an action.</summary>
+    public string MechanicId { get; set; } = string.Empty;
+
+    /// <summary>Mechanic revision that produced the action result.</summary>
+    public int? MechanicVersion { get; set; }
+
+    /// <summary>Replay seed supplied to the sandbox.</summary>
+    public long? Seed { get; set; }
+
+    /// <summary>Frozen projection handed to the mechanic, serialized as JSON.</summary>
+    public string ProjectionJson { get; set; } = string.Empty;
 }

@@ -35,7 +35,11 @@ public sealed class OperationLog(DantesRoleplayDbContext db) : IOperationLog
         IEnumerable<string>? proceduresCited = null,
         string error = "",
         bool consumesReadEvidence = false,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string mechanicId = "",
+        int? mechanicVersion = null,
+        long? seed = null,
+        string projectionJson = "")
     {
         // Derived BEFORE writing this row, so a get_procedure call never counts itself as one of
         // its own prerequisites. Only recorded for operations the manual governs: for a read or a
@@ -56,7 +60,11 @@ public sealed class OperationLog(DantesRoleplayDbContext db) : IOperationLog
             ConsumedReadEvidence = consumesReadEvidence,
             Summary = summary,
             Success = success,
-            Error = error
+            Error = error,
+            MechanicId = mechanicId,
+            MechanicVersion = mechanicVersion,
+            Seed = seed,
+            ProjectionJson = projectionJson
         };
 
         _db.Operations.Add(operation);

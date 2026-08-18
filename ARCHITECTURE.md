@@ -134,7 +134,7 @@ which together mean AI-written JavaScript is no longer arbitrary:
 6. **It cannot run unbounded.** Execution limits — wall-clock, memory, statement count, recursion
    depth — are set by the host (§4.3).
 
-Plus the human layer: new mechanics default to `experimental` (§P12), and the control room can
+Plus the human layer: new mechanics default to `draft` as the MVP's experimental state (§P12), and the control room can
 `disable` / `rollback` / `approve` / `deprecate` any of them (§P14).
 
 **The concept is not redesigned. The interfaces around it are hardened.**
@@ -622,11 +622,17 @@ or the premise is false.
 Mechanic   MechanicVersion
 ```
 
-Every edit creates a new version. Lifecycle:
+Every edit creates a new version. MVP lifecycle:
 
 ```
-draft → experimental → active → deprecated → archived
+draft → active → deprecated → archived
 ```
+
+The planned `experimental` approval state is represented by `draft` in the MVP because the
+12-tool surface deliberately does not yet include separate activation or approval tools. New
+mechanics therefore default to `draft`; an author must explicitly request `active` before
+`run_action` can execute one. A later lifecycle slice may add `experimental` without changing
+the append-only storage model.
 
 Contracts:
 

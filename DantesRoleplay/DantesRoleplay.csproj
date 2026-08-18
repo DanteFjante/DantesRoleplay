@@ -20,6 +20,12 @@
     <!-- Bootstrap contracts are authored as markdown and embedded, so the seeded operating
          manual travels with the assembly and cannot go missing at runtime. -->
     <EmbeddedResource Include="Bootstrap\**\*.md" />
+
+    <!-- The bootstrap game rules, same idea. A SEPARATE folder rather than a subfolder of
+         Bootstrap, so the two seeders cannot see each other's files — one folder holding two
+         markdown formats would have each seeder failing to parse the other's, which is a
+         confusing way to discover a layout decision. -->
+    <EmbeddedResource Include="Rules\**\*.md" />
   </ItemGroup>
 
 </Project>

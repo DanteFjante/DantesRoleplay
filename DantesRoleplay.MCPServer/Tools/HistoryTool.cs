@@ -47,7 +47,11 @@ public sealed class HistoryTool
                 o.ConsumedReadEvidence,
                 o.Summary,
                 o.Success,
-                o.Error
+                o.Error,
+                o.MechanicId,
+                o.MechanicVersion,
+                o.Seed,
+                o.ProjectionJson
             }).ToList();
 
             if (view.Count == 0)

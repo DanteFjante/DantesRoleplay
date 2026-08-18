@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.World;
@@ -30,14 +31,17 @@ public sealed class OrientTool
     public async Task<ToolEnvelope> OrientAsync(
         IProcedureStore procedures,
         IWorldStore world,
+        IMechanicStore mechanics,
         IOperationLog log,
         CancellationToken cancellationToken = default) =>
         await ToolRunner.RunAsync(log, "orient", async () =>
         {
             var categories = await procedures.GetCategoriesAsync(cancellationToken);
             var definitions = await world.GetDefinitionsAsync(cancellationToken);
+            var ruleCategories = await mechanics.GetCategoriesAsync(cancellationToken);
 
             var procedureCount = categories.Sum(c => c.Count);
+            var ruleCount = ruleCategories.Sum(c => c.Count);
 
             // Capped rather than counted: this is an orientation number, and the exact total is
             // get_entities' job. A cheap query here keeps orient cheap enough to call freely.
@@ -53,10 +57,11 @@ public sealed class OrientTool
                         "rules, and records what was done. It contains no game itself: playable " +
                         "features are meant to be data and JavaScript added at runtime.",
                     YouAre =
-                        "The agent that operates and extends it. Today you can read everything " +
-                        "listed under capabilities, create and revise procedure contracts, and " +
-                        "change world state through apply_effects. Game rules as JavaScript are " +
-                        "not runnable yet — see notYetBuilt.",
+                        "The agent that operates and extends it. You can read everything listed " +
+                        "under capabilities, write procedure contracts, change world state " +
+                        "through commit(kind: \"effects\"), and WRITE AND RUN GAME RULES as JavaScript. A " +
+                        "rule you write during play is stored, versioned and reusable next " +
+                        "session — that is the point of this system, not a side feature.",
                     TheOneRule =
                         "Before performing an operation, retrieve and follow the relevant " +
                         "procedure contracts. Each contract states what it governs, so match " +
@@ -79,10 +84,26 @@ public sealed class OrientTool
                         "change.",
                     Reachable = true,
                     Note =
-                        "Reads go through describe_world and get_entities. EVERY change goes " +
-                        "through apply_effects, which validates the whole list and then applies " +
+                        "Reads go through query(kind: \"world\") and query(kind: \"entities\"). EVERY " +
+                        "change goes through commit(kind: \"effects\"), which validates the whole list and then applies " +
                         "it in one transaction — there is no partial write. A component cannot " +
                         "be attached until define_component has declared it."
+                },
+                Rules = new
+                {
+                    Total = ruleCount,
+                    ByCategory = ruleCategories.ToDictionary(c => c.Category, c => c.Count),
+                    HowItWorks =
+                        "Game rules are JavaScript stored in this system and written during play. " +
+                        "A rule declares which participants and which components it reads, is " +
+                        "handed exactly that and nothing else, and returns proposed effects plus " +
+                        "narration. It cannot query, cannot reach the host, and is stopped by " +
+                        "execution limits. Chance is seeded, and the seed is recorded.",
+                    Note = ruleCount == 0
+                        ? "NO RULES EXIST YET. Nothing can be resolved until one is written — that " +
+                          "is the intended empty state, not a fault. write_mechanic creates the first."
+                        : "commit(kind: \"action\", payload: \"{\\\"intent\\\":\\\"...\\\"}\") lists candidates without running anything, so " +
+                          "you choose the rule before it executes."
                 },
                 Capabilities = Capabilities(),
                 NotYetBuilt = NotYetBuilt()
@@ -94,22 +115,27 @@ public sealed class OrientTool
             {
                 nextSteps.Add(
                     "No procedures exist, which is unexpected — the system seeds its own. " +
-                    "Call history(failuresOnly: true) to see whether seeding failed.");
+                    "Call query(kind: \"history\", failuresOnly: true) to see whether seeding failed.");
             }
             else
             {
-                nextSteps.Add("find_procedures() — list the operating manual. Read this before doing anything else.");
-                nextSteps.Add("get_procedure(id: \"procedure.system.inspect\") — how to look around before changing anything.");
-                nextSteps.Add("describe_world() — what the world currently holds, and which component definitions exist.");
-                nextSteps.Add("write_procedure(..., dryRun: true) — if your task is to add or revise a procedure.");
-                nextSteps.Add("apply_effects(effects: [...], dryRun: true) — if your task is to change the world.");
+                nextSteps.Add("query(kind: \"procedures\") — list the operating manual. Read this before doing anything else.");
+                nextSteps.Add("query(kind: \"procedures\", id: \"procedure.system.inspect\") — how to look around before changing anything.");
+                nextSteps.Add("query(kind: \"world\") — what the world currently holds, and which component definitions exist.");
+                nextSteps.Add("commit(kind: \"procedure\", payload: \"{\\\"id\\\":\\\"...\\\",\\\"category\\\":\\\"...\\\",\\\"name\\\":\\\"...\\\",\\\"description\\\":\\\"...\\\",\\\"instructions\\\":\\\"...\\\"}\", dryRun: true) — if your task is to add or revise a procedure.");
+                nextSteps.Add("commit(kind: \"effects\", payload: \"{\\\"effects\\\":[...]}\", dryRun: true) — if your task is to change the world.");
+
+                nextSteps.Add(ruleCount == 0
+                    ? "No game rules exist yet, so nothing can be resolved. commit(kind: \"mechanic\", payload: \"{\\\"id\\\":\\\"...\\\",\\\"category\\\":\\\"...\\\",\\\"name\\\":\\\"...\\\",\\\"source\\\":\\\"...\\\"}\", dryRun: true) writes the first one."
+                    : "commit(kind: \"action\", payload: \"{\\\"intent\\\":\\\"what the player is trying to do\\\"}\") — lists candidate rules without running any.");
             }
 
-            nextSteps.Add("history() — see what was done recently, optionally filtered by tool or subject.");
+            nextSteps.Add("query(kind: \"history\") — see what was done recently, optionally filtered by tool or subject.");
 
             return ToolOutcome.Ok(
                 data,
-                $"Oriented: {procedureCount} procedures, {definitions.Count} component definitions, {entityCount} entities.",
+                $"Oriented: {procedureCount} procedures, {definitions.Count} component definitions, " +
+                $"{entityCount} entities, {ruleCount} game rule(s).",
                 [.. nextSteps]);
         });
 
@@ -120,14 +146,8 @@ public sealed class OrientTool
     private static IReadOnlyList<string> Capabilities() =>
     [
         "orient — you are here",
-        "find_procedures — list or search the operating manual",
-        "get_procedure — read one procedure in full, optionally at an older version",
-        "write_procedure — create a procedure, or revise one (revising appends a version)",
-        "describe_world — what the world holds: component definitions, usage, example entities",
-        "get_entities — fetch entities in full by id, or search by name or component",
-        "define_component — declare a kind of data entities can carry",
-        "apply_effects — the only way world state changes; validated and applied as one transaction",
-        "history — recent operations, including failures"
+        "query — read capabilities, procedures, world data, entities, mechanics, or history",
+        "commit — validate or apply a procedure, component, effect list, mechanic, or action"
     ];
 
     /// <summary>
@@ -137,9 +157,12 @@ public sealed class OrientTool
     /// </summary>
     private static IReadOnlyList<string> NotYetBuilt() =>
     [
-        "Storing or running JavaScript game mechanics — not started. There is no way to define " +
-        "what an action DOES; you can only record its consequences yourself via apply_effects.",
-        "Rolling anything, resolving anything, or any rule at all — the system contains no game.",
+        "Any actual game. The machinery to write and run rules exists; the rules do not. Whether " +
+        "this system can resolve a given action depends entirely on whether someone has written " +
+        "that rule yet — check with query(kind: \"mechanics\") rather than assuming either way.",
+        "Reactive rules — nothing happens on its own between actions. There are no events, no " +
+        "subscriptions, and no passage of time.",
+        "Composing one rule from another — a mechanic cannot call another mechanic.",
         "Events and subscriptions — not started.",
         "Inspecting this application's own source or tool registration — not available, so a " +
         "procedure describing how the code works cannot currently be verified against the code."

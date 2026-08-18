@@ -6,11 +6,13 @@ moves an item.
 **Legend:** ✅ done and covered by passing tests · 🟡 partly done, or done but unreachable ·
 ⬜ not started · ⏸ deliberately deferred
 
-**Right now:** solution builds clean, **126/126 tests pass**. **M0 is signed off**, and the biggest
-unknown in the project is retired: **AI-written JavaScript now runs in a sandbox and changes the
-world through the effect applier.** A rule authored at runtime, that no C# understands, was run
-against a projection and its proposed changes landed in one transaction — that is the premise of
-this whole design, demonstrated rather than asserted.
+**Right now:** solution builds clean, **148/148 tests pass**, and **the MCP surface is complete at
+exactly 12 tools**. The MVP sentence is true end to end: in a live session over real JSON-RPC, a
+rule that did not exist was written through `write_mechanic`, found seconds later by what a player
+would say, run in the sandbox, and its effects applied in one transaction.
+
+What is left is not machinery. It is a cold walk to prove a stranger can do the same, and
+optionally a control room to look at what got written.
 
 ---
 
@@ -23,9 +25,9 @@ That is milestone M6 in `ARCHITECTURE.md` §10, and it is the point at which the
 proven rather than asserted. Everything below is scoped to that sentence — anything not needed to
 make it true is listed under *Not in MVP* and should stay there.
 
-**Roughly 75%, and the remaining quarter is the part that resembles work already done here.** The
-runtime exists and is tested; what is left is plumbing it to the MCP surface and writing the first
-few rules in JavaScript. Nothing outstanding is an unknown.
+**The sentence is now demonstrably true**, subject to a cold walk confirming a stranger can do it
+without being told how. Everything in it — write a rule mid-session, have it survive, have it get
+reused — was exercised over real MCP against the running server.
 
 ---
 
@@ -36,7 +38,7 @@ few rules in JavaScript. Nothing outstanding is an unknown.
 - ✅ Architecture decided and recorded, with the reasoning for each overturn (`ARCHITECTURE.md`)
 - ✅ Five-project solution; core has zero package references
 - ✅ SQLite + EF Core, migrations covering procedures, operations and the world
-- ✅ Offline build + test running in the Cowork container (126/126)
+- ✅ Offline build + test running in the Cowork container (148/148)
 
 **Procedure contracts — the operating manual (P1–P2)**
 
@@ -113,14 +115,50 @@ The risk `ARCHITECTURE.md` §2 calls the major one. Three things answer it, all 
 - ✅ A hostile rule, stored through the ordinary authoring path, reaches nothing and leaves the
   world exactly as it was
 
-**MCP surface (P4)
+**Projection resolver (§3.6a)**
 
-- ✅ 9 tools: `orient`, `find_procedures`, `get_procedure`, `write_procedure`, `describe_world`,
-  `get_entities`, `define_component`, `apply_effects`, `history`
+- ✅ Compiles declared requirements plus role→entity ids into one frozen projection
+- ✅ **A mechanic receives only what it declared** — not the entity's other components, not its
+  relationships, not the rest of the world. Requirements that understated what a rule reads would
+  make the supervision view a lie, so they are also what is enforced
+- ✅ Optional roles are simply absent; a missing required one says what it is for and how to pass it
+- ✅ A role the mechanic does not declare is reported, not ignored — it usually means the wrong rule
+- ✅ Contents materialise only when asked for; where an entity *is* comes free
+- ✅ Every fault at once, so one round trip fixes them
+
+**The last three tools**
+
+- ✅ `run_action` — intent alone returns candidates and runs NOTHING, so choosing which code
+  executes is a decision made rather than one the system makes for you
+- ✅ The whole chain in one call: resolve → sandbox → validate → one transaction
+- ✅ Seeded, and the seed is returned; passing it back replays a run exactly
+- ✅ `find_mechanics` doubles as read-in-full via `id`, which is how the surface fits in 12
+- ✅ `write_mechanic` with the same dry-run discipline as `write_procedure`
+- ✅ `history(subject: ...)` answers both "which rules have been run" and "what has happened to
+  Orban" — including checks that changed nothing, because an outcome is an event
+
+**The game that ships (deliberately tiny)**
+
+- ✅ Two rules, both entirely generic: test a number against a threshold, adjust a number. Neither
+  knows what the numbers mean. They exist so the first session has a worked example to copy — an
+  agent with no example writes something plausible and wrong
+- ✅ Seeded from markdown like the contracts, idempotent by fingerprint, and ordinary revisable rows
+  once loaded
+- ✅ Both are tested by **running** them, not just by parsing them
+- ✅ They fail usefully: a missing argument names what to pass, an unknown field lists the ones that
+  exist, and an entity with no numbers says so rather than being treated as zeroes
+
+**MCP surface (P4) — complete**
+
+- ✅ **12 tools, the cap in §7.1 hit exactly**: `orient`, `find_procedures`, `get_procedure`,
+  `write_procedure`, `describe_world`, `get_entities`, `define_component`, `apply_effects`,
+  `find_mechanics`, `write_mechanic`, `run_action`, `history`
 - ✅ Uniform envelope; every error names the exact next call
 - ✅ Dry run on both write paths, and neither dry run spends read evidence
 - ✅ 4 guard tests: no game vocabulary in the kernel; every tool announced by `orient`;
-  **nothing announced that is not a tool**; tool budget
+  **nothing announced that is not a tool**; tool budget — now at its limit, so the next tool fails
+  the build rather than quietly becoming a thirteenth
+- ✅ 10 bootstrap contracts, including `procedure.mechanic.write` and `procedure.action.run`
 - ✅ End-to-end smoke test over real JSON-RPC: orient → describe → define → reject bad effects →
   dry run → commit → read back → history
 
@@ -182,18 +220,24 @@ been invisible — see *what the spike caught* below.
 
 | # | Item | Size | Why it is MVP |
 | --- | --- | --- | --- |
-| 1 | **Projection resolver** (§3.6a) | 1 slice | Turns a mechanic's `requirements` plus role→entity ids into one query and one `MechanicProjection`. The engine already consumes that shape; nothing builds it from the world yet. |
-| 2 | **`run_action`** — match intent → materialise → run → validate → apply, in one transaction | 1 slice | The tool that makes it a game rather than a database. Every piece it needs now exists. |
-| 3 | **`find_mechanics` + `write_mechanic`** | 1 slice | How the LLM discovers and authors rules. Completes the 12-tool budget exactly. |
-| 4 | **Bootstrap JavaScript** — a rolling helper, a check, a couple of conventions | 1 slice | The first actual *game*. Small on purpose: everything else is authored in play. |
-| 5 | **Minimal control room** — operations, mechanics, entities (§4.2 view specs) | 1 slice | The premise is supervising AI-written code. **Cuttable:** the MVP sentence is true without it, and nothing depends on it. |
+| 1 | **Cold walk, run five** | Dante, ~20 min | The MVP acceptance test itself, and the only thing left that is genuinely required. Everything below is optional. |
+| 2 | **Minimal control room** — operations, mechanics, entities (§4.2 view specs) | 1 slice | The premise is supervising AI-written code. **Cuttable:** the MVP sentence is true without it, and nothing depends on it. |
 
-**The MVP sentence is not true until item 4**, because until a mechanic exists there is nothing to
-reuse.
+**Nothing here is machinery.** The chain that makes the MVP sentence true is built and exercised;
+what remains is proving a stranger can drive it, and deciding whether you want somewhere to look.
 
 **Tool budget check:** 9 built + 3 mechanics = **12 exactly**, the cap in §7.1. There is no room
 for a thirteenth, by design — `run_action`, `find_mechanics` and `write_mechanic` are the last
 three tools this system will ever have.
+
+**What the end-to-end run proved.** Over real JSON-RPC, in one session: `run_action` with intent
+alone returned candidates without running anything; a dry run showed the working
+(`rolled 11 + strength 12 = 23 vs 14`); passing the seed back reproduced it exactly; a rule that
+changes something merged one number and left the others; a wrong role name came back with both
+faults and the call that fixes them. Then a rule that **did not exist** was written through
+`write_mechanic`, passed all eight checks, and was found seconds later by "Orban tries to squeeze
+past the rubble" — reading the contents of what he was carrying, because it declared that it
+would. `CitedWithoutReading: 0` throughout.
 
 **What the spike caught.** The projection was reaching JavaScript with .NET's naming, so
 `ctx.roles.subject.Name` was defined and `ctx.roles.subject.name` was not. Every mechanic an LLM

@@ -53,7 +53,7 @@ rule 1.
 
 ---
 
-## The four runs
+## The five runs
 
 Run them in order, each in a **new session**. Between runs, `history()` shows you what actually
 happened.
@@ -106,6 +106,35 @@ name definitions generically (`stats`) or bind them to this one character (`orba
 **The interesting failure:** if it splits the change across several `apply_effects` calls, the
 atomicity guarantee is real but unused, and the tool description failed to convey the point.
 
+### Run 5 — the MVP acceptance test
+
+This one is the milestone, so it is **two sessions**, and the gap between them is the whole point.
+
+**Session A:**
+
+> Prompt: *"Orban is trying to pick a lock. Resolve it. If this system has no rule for that yet,
+> write one, then use it."*
+
+**Session B — a NEW session, in a new empty directory:**
+
+> Prompt: *"Orban is trying to pick another lock. Resolve it."*
+
+**Looking for, in session A:** does it call `run_action(intent: ...)` first and read the candidates
+rather than inventing an outcome? When nothing fits, does it find `procedure.mechanic.write` and
+follow it? Does it write a rule that reads a component, or one with "lock" hard-coded so it can
+never be reused? Does it dry-run the write, and then dry-run the *run*?
+
+**Looking for, in session B:** does the rule written minutes earlier by a different session get
+found and reused — without being told it exists?
+
+**Session B is the milestone.** If it writes a second lock-picking rule instead of finding the
+first, the near-duplicate check is not doing its job and retrieval is not either.
+
+**The failure that matters most:** at any point, does it narrate an outcome the system did not
+produce? An agent that says "Orban picks the lock with a deft twist" without a rule having run has
+made the audit log and the story disagree, and only one of them will still be there next session.
+`history()` afterwards shows you which happened.
+
 ---
 
 ## What to record
@@ -129,7 +158,9 @@ Run 1 ends with the agent describing the system accurately, including its gaps, 
 anything. Run 2 ends with it finding the existing contract and declining to duplicate it. Run 3
 ends with a committed contract that has a sensible id, a filled-in `governs`, and a dry run that
 was read rather than skipped. Run 4 ends with Orban, a lantern inside him, and a component
-definition you would happily reuse for the next character.
+definition you would happily reuse for the next character. Run 5 ends with a rule that one session
+wrote and a different session found and used, which is the entire thesis of this project in two
+prompts.
 
 **What failure looks like is more useful.** If it invents a tool that does not exist, guesses a
 parameter value, writes a near-duplicate over a warning, or produces a confident procedure whose

@@ -86,9 +86,10 @@ public sealed record MechanicDetail(
 
 public sealed record MechanicCategoryCount(string Category, int Count);
 
-/// <param name="Passed">False is not necessarily fatal — a near-duplicate is a warning to act on.</param>
+/// <param name="Passed">Whether this check passed.</param>
 /// <param name="Detail">What was found, and what to do about it.</param>
-public sealed record MechanicCheck(string Name, bool Passed, string Detail);
+/// <param name="Blocking">Whether a failed check prevents a commit. Near-duplicate detection is a warning.</param>
+public sealed record MechanicCheck(string Name, bool Passed, string Detail, bool Blocking = true);
 
 public sealed record WriteMechanicRequest
 {

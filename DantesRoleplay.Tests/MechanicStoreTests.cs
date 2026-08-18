@@ -31,6 +31,30 @@ public sealed class MechanicStoreTests : IDisposable
     // ---- versioning: the same guarantee as procedure contracts --------------------------
 
     [Fact]
+    public async Task New_mechanics_default_to_draft_until_the_author_explicitly_activates_them()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new MechanicStore(db);
+
+        var result = await store.WriteAsync(Request());
+
+        Assert.Equal(MechanicStatus.Draft, result.Mechanic.Status);
+    }
+
+    [Fact]
+    public async Task Revising_a_mechanic_preserves_its_status_when_status_is_omitted()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new MechanicStore(db);
+
+        await store.WriteAsync(Request() with { Status = MechanicStatus.Active });
+        var revised = await store.WriteAsync(Request(source: "return { narration: 'v2', effects: [] };"));
+
+        Assert.Equal(MechanicStatus.Active, revised.Mechanic.Status);
+        Assert.Equal(2, revised.Mechanic.Version);
+    }
+
+    [Fact]
     public async Task Revising_appends_a_version_and_the_old_source_stays_readable()
     {
         await using var db = _fixture.CreateContext();
@@ -82,6 +106,28 @@ public sealed class MechanicStoreTests : IDisposable
         await store.WriteAsync(Request());
 
         Assert.Empty(await store.FindAsync("negotiate a treaty"));
+    }
+
+    [Fact]
+    public async Task Search_matches_id_name_description_and_author_phrases()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new MechanicStore(db);
+
+        await store.WriteAsync(new WriteMechanicRequest
+        {
+            Id = "mechanic.travel.path",
+            Category = "movement",
+            Name = "Path selection",
+            Description = "Chooses a route through the valley.",
+            Matches = "find a route",
+            Source = "return { effects: [] };"
+        });
+
+        Assert.Single(await store.FindAsync("mechanic.travel.path"));
+        Assert.Single(await store.FindAsync("path selection"));
+        Assert.Single(await store.FindAsync("route through valley"));
+        Assert.Single(await store.FindAsync("find a route"));
     }
 
     // ---- scope: the answer to "campaign or shared ruleset?" -----------------------------
@@ -185,6 +231,37 @@ public sealed class MechanicStoreTests : IDisposable
         // same action resolves differently depending on which retrieval ranked first.
         Assert.False(duplicate.Passed);
         Assert.Contains("mechanic.check.ability", duplicate.Detail);
+        Assert.False(duplicate.Blocking);
+    }
+
+    [Fact]
+    public async Task Invalid_authoring_checks_are_blocking()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new MechanicStore(db);
+
+        var checks = await store.CheckAsync(Request(
+            matches: "",
+            source: "",
+            requirements: "{not json"));
+
+        Assert.All(
+            checks.Where(c => c.Name is "requirements-parse" or "source-present" or "matches-stated"),
+            check => Assert.True(check.Blocking));
+    }
+
+    [Fact]
+    public async Task Archived_mechanics_are_hidden_unless_inactive_results_are_requested()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new MechanicStore(db);
+
+        await store.WriteAsync(Request(
+            id: "mechanic.archived.rule",
+            matches: "archived rule") with { Status = MechanicStatus.Archived });
+
+        Assert.Empty(await store.FindAsync("archived rule"));
+        Assert.Single(await store.FindAsync("archived rule", includeInactive: true));
     }
 
     [Fact]

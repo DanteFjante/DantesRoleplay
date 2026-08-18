@@ -4,6 +4,7 @@ category: contracts
 name: Create or revise a procedure contract
 governs: write_procedure
 status: active
+revised-by: Claude Fable 5, 2026-08-17 — removed the reference to a contract "parent", which no tool can express
 ---
 
 ## Description
@@ -12,7 +13,8 @@ How to author the instructions that govern this system — including this one.
 ## Instructions
 1. Search for an overlapping contract first with `find_procedures`. Revise it rather than adding
    a near-duplicate. The write itself warns you when something looks similar; do not ignore it.
-2. Decide its parent, and keep the scope narrow. One contract answers one question.
+2. Decide its category — reuse an existing one where you can — and keep the scope narrow. One
+   contract answers one question.
 3. State what it `governs` — the tools or operations it applies to. Without this, a later agent
    cannot tell whether your contract is the relevant one, and the system's central rule collapses
    into guesswork.

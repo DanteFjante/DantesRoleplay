@@ -159,6 +159,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.Property(e => e.Id).HasMaxLength(40);
             entity.Property(e => e.Tool).HasMaxLength(100).IsRequired();
             entity.Property(e => e.Subject).HasMaxLength(200);
+            entity.Property(e => e.MechanicId).HasMaxLength(200);
             entity.Property(e => e.ConsumedReadEvidence).HasDefaultValue(false);
             entity.HasIndex(e => e.Timestamp);
             // Supports both the history filters and the observed-procedures derivation, which

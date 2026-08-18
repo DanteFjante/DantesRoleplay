@@ -30,9 +30,8 @@ builder.Services
         options.Stateless = true;
     })
     .WithTools<OrientTool>()
-    .WithTools<ProcedureTools>()
-    .WithTools<WorldTools>()
-    .WithTools<HistoryTool>();
+    .WithTools<QueryTool>()
+    .WithTools<CommitTool>();
 
 var app = builder.Build();
 
