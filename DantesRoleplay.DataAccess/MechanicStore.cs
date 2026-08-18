@@ -1,4 +1,5 @@
 using System.Text.Json;
+using DantesRoleplay.Categories;
 using DantesRoleplay.Mechanics;
 using Microsoft.EntityFrameworkCore;
 
@@ -41,7 +42,15 @@ public sealed class MechanicStore(DantesRoleplayDbContext db) : IMechanicStore
 
         if (!string.IsNullOrWhiteSpace(category))
         {
-            rows = rows.Where(r => r.mechanic.Category == category);
+            // A branch filter, exactly as in ProcedureStore. The trailing dot stops
+            // "ruleset.dnd2024.play" from also matching "ruleset.dnd2024.player" — a silent
+            // widening that would be worse here than for contracts, because a wider candidate set
+            // is what makes an action resolve with the wrong rule.
+            var branch = category.Trim();
+            var descendants = branch + ".";
+
+            rows = rows.Where(r =>
+                r.mechanic.Category == branch || r.mechanic.Category.StartsWith(descendants));
         }
 
         if (!string.IsNullOrWhiteSpace(scope))
@@ -241,15 +250,23 @@ public sealed class MechanicStore(DantesRoleplayDbContext db) : IMechanicStore
                 : $"Match phrases: {request.Matches.Replace('\n', '/')}",
             Blocking: true));
 
+        var pathOk = CategoryPath.TryValidate(request.Category, out var pathProblem);
+
+        checks.Add(new MechanicCheck(
+            "category-path",
+            pathOk,
+            pathOk
+                ? $"'{request.Category}' is a valid category path."
+                : pathProblem,
+            Blocking: true));
+
         var categories = await GetCategoriesAsync(cancellationToken);
-        var knownCategory = categories.Any(c => string.Equals(c.Category, request.Category, StringComparison.Ordinal));
 
         checks.Add(new MechanicCheck(
             "category-known",
             true,
-            knownCategory
-                ? $"'{request.Category}' is an existing category."
-                : $"'{request.Category}' is a NEW category. Existing: {(categories.Count == 0 ? "(none)" : string.Join(", ", categories.Select(c => c.Category)))}."));
+            ProcedureStore.DescribeCategory(request.Category, [.. categories.Select(c => c.Category)]),
+            Blocking: false));
 
         // §P12. This matters more for mechanics than for contracts: a duplicated contract is
         // confusing, whereas two mechanics matching the same phrase means the same action resolves

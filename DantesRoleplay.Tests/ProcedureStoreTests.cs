@@ -285,7 +285,80 @@ public sealed class ProcedureStoreTests : IDisposable
 
         // A new category is allowed — the vocabulary is open — but it must not happen silently.
         Assert.True(Passed(checks, "category-known"));
-        Assert.Contains("NEW category", Detail(checks, "category-known"));
+        Assert.Contains("NEW ROOT", Detail(checks, "category-known"));
+    }
+
+    /// <summary>
+    /// A new leaf under a branch that already exists is reported against that branch, with its
+    /// siblings — not against the whole catalog. At eight categories the difference is cosmetic;
+    /// at ninety, a flat dump is unreadable and the anti-sprawl nudge (§P12) stops working.
+    /// </summary>
+    [Fact]
+    public async Task Check_places_a_new_category_against_its_nearest_existing_branch()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new ProcedureStore(db);
+
+        await store.WriteAsync(Request(id: "procedure.a", category: "ruleset.dnd2024.play"));
+        await store.WriteAsync(Request(id: "procedure.b", category: "ruleset.dnd2024.governance"));
+
+        var checks = await store.CheckAsync(
+            Request(id: "procedure.c", category: "ruleset.dnd2024.host"));
+
+        var detail = Detail(checks, "category-known");
+
+        Assert.True(Passed(checks, "category-known"));
+        Assert.Contains("ruleset.dnd2024", detail);
+        Assert.Contains("ruleset.dnd2024.play", detail);
+        Assert.Contains("ruleset.dnd2024.governance", detail);
+    }
+
+    /// <summary>
+    /// A category filter selects a branch, so a parent finds everything beneath it — and a path
+    /// that merely shares a prefix with the branch is NOT beneath it.
+    /// </summary>
+    [Fact]
+    public async Task Find_by_category_returns_the_branch_but_not_a_prefix_sibling()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new ProcedureStore(db);
+
+        await store.WriteAsync(Request(id: "procedure.a", category: "ruleset.dnd2024.play"));
+        await store.WriteAsync(Request(id: "procedure.b", category: "ruleset.dnd2024.play.turn"));
+        await store.WriteAsync(Request(id: "procedure.c", category: "ruleset.dnd2024.player"));
+        await store.WriteAsync(Request(id: "procedure.d", category: "system"));
+
+        var branch = await store.FindAsync(category: "ruleset.dnd2024.play");
+
+        Assert.Equal(["procedure.a", "procedure.b"], branch.Select(p => p.Id).Order());
+
+        var root = await store.FindAsync(category: "ruleset");
+
+        Assert.Equal(
+            ["procedure.a", "procedure.b", "procedure.c"],
+            root.Select(p => p.Id).Order());
+
+        var leaf = await store.FindAsync(category: "system");
+
+        Assert.Equal(["procedure.d"], leaf.Select(p => p.Id));
+    }
+
+    [Fact]
+    public async Task Check_rejects_a_malformed_category_path()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new ProcedureStore(db);
+
+        Assert.False(Passed(
+            await store.CheckAsync(Request(category: "Ruleset.DND2024")), "category-path"));
+
+        Assert.False(Passed(
+            await store.CheckAsync(Request(category: "ruleset..dnd2024")), "category-path"));
+
+        Assert.True(Passed(
+            await store.CheckAsync(Request(category: "ruleset.dnd2024.play")), "category-path"));
+
+        Assert.True(Passed(await store.CheckAsync(Request(category: "system")), "category-path"));
     }
 
     [Fact]

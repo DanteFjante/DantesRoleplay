@@ -1,3 +1,4 @@
+using DantesRoleplay.Categories;
 using DantesRoleplay.Procedures;
 using Microsoft.EntityFrameworkCore;
 
@@ -42,7 +43,17 @@ public sealed class ProcedureStore(DantesRoleplayDbContext db) : IProcedureStore
 
         if (!string.IsNullOrWhiteSpace(category))
         {
-            rows = rows.Where(r => r.contract.Category == category);
+            // A category filter is a BRANCH filter: the node itself plus everything under it.
+            // The trailing dot is load-bearing — without it "ruleset.dnd2024.play" would also
+            // match "ruleset.dnd2024.player", silently widening a rule search.
+            //
+            // Written as equality-or-StartsWith rather than in CategoryPath because this half has
+            // to translate to SQL; StartsWith becomes a LIKE the Category index can serve.
+            var branch = category.Trim();
+            var descendants = branch + ".";
+
+            rows = rows.Where(r =>
+                r.contract.Category == branch || r.contract.Category.StartsWith(descendants));
         }
 
         var candidates = await rows
@@ -172,15 +183,22 @@ public sealed class ProcedureStore(DantesRoleplayDbContext db) : IProcedureStore
                 ? $"Creates a new contract at version 1."
                 : $"Revises an existing contract; this becomes version {existing.LatestVersion + 1}. Nothing is overwritten."));
 
+        var pathOk = CategoryPath.TryValidate(request.Category, out var pathProblem);
+
+        checks.Add(new WriteCheck(
+            "category-path",
+            pathOk,
+            pathOk
+                ? $"'{request.Category}' is a valid category path."
+                : pathProblem));
+
         var categories = await GetCategoriesAsync(cancellationToken);
-        var known = categories.Any(c => string.Equals(c.Category, request.Category, StringComparison.Ordinal));
+        var paths = categories.Select(c => c.Category).ToList();
 
         checks.Add(new WriteCheck(
             "category-known",
             true,
-            known
-                ? $"'{request.Category}' is an existing category."
-                : $"'{request.Category}' is a NEW category. Existing: {(categories.Count == 0 ? "(none)" : string.Join(", ", categories.Select(c => c.Category)))}. Reuse one unless this is genuinely a new area."));
+            DescribeCategory(request.Category, paths)));
 
         checks.Add(new WriteCheck(
             "governs-stated",
@@ -211,6 +229,43 @@ public sealed class ProcedureStore(DantesRoleplayDbContext db) : IProcedureStore
                 : $"These look like they may already cover this: {string.Join(", ", others)}. Prefer revising one over adding a near-duplicate."));
 
         return checks;
+    }
+
+    /// <summary>
+    /// Where a category sits in the tree, said in one line.
+    ///
+    /// This used to list every category that existed, which was fine at eight and useless at
+    /// ninety — and ninety is what a real ruleset looks like. Naming the nearest existing branch
+    /// and its children keeps the anti-sprawl nudge (§P12) actionable at any size: the author is
+    /// shown the siblings they might have meant, not the whole catalog.
+    /// </summary>
+    internal static string DescribeCategory(string category, IReadOnlyList<string> existing)
+    {
+        if (existing.Any(c => string.Equals(c, category, StringComparison.Ordinal)))
+        {
+            return $"'{category}' is an existing category.";
+        }
+
+        if (existing.Count == 0)
+        {
+            return $"'{category}' is the first category here.";
+        }
+
+        var nearest = CategoryPath.NearestKnownNode(category, existing);
+
+        if (nearest is null)
+        {
+            var roots = CategoryPath.ChildNodes(null, existing);
+
+            return $"'{category}' is a NEW ROOT. Existing roots: {string.Join(", ", roots)}. "
+                + "Reuse one unless this is genuinely a separate area.";
+        }
+
+        var siblings = CategoryPath.ChildNodes(nearest, existing);
+
+        return $"'{category}' is NEW. Its nearest existing branch is '{nearest}', "
+            + $"whose children are: {string.Join(", ", siblings)}. "
+            + "Reuse one of those unless this is genuinely a new leaf.";
     }
 
     public async Task<WriteProcedureResult> WriteAsync(

@@ -102,6 +102,11 @@ written down nowhere, and the databases from items 6 and 7 are the evidence the 
 on. One paragraph in `STATUS.md` or a short `procedure.system.snapshot`. Do this *before* the played
 session, not after it.
 
+**1.5 Build the D&D SRD 5.2.1 ruleset as small vertical slices.** The implementation shape, research
+findings, component order, and verification gates are in
+[DND_RULESET_IMPLEMENTATION_PLAN.md](DND_RULESET_IMPLEMENTATION_PLAN.md). It extends the active
+contract-first ruleset track; it does not authorize a bulk content import or a new engine.
+
 **Exit test:** a fresh session can answer *"what rules exist and what story is in progress?"* using
 only `orient` and `query`.
 
@@ -167,7 +172,8 @@ state. Fits this kernel's statelessness. Includes its known `actionStack` trap.
 **3.4 Events and subscriptions.** "When X changes, Y happens" without the GM polling. Keep it in
 orient's `notYetBuilt` until designed. Start from the lesson that made TravelRoleplay's version
 workable: a closed registry of event names, so a bad trigger fails loudly at write time rather than
-never firing.
+never firing. The implementation design, chain limits, transactional behavior, and acceptance
+tests are in [EVENTS_AND_SUBSCRIPTIONS_PLAN.md](EVENTS_AND_SUBSCRIPTIONS_PLAN.md).
 
 **3.5 Campaign lifecycle beyond snapshot** — a scope-aware "new campaign from shared rules" path.
 
@@ -186,6 +192,19 @@ stores remain ruled out by the sync-store decision.
   D2, recorded there.
 - The `GuardTests` dispatch check verifies which kinds a switch handles, not which handler each arm
   calls. The protocol walk covers the routing behaviourally.
+
+**3.8 Hierarchical catalog navigation.** Add hierarchical category paths, multiple-category and
+recursive filtering, and a category-browser query for procedures and mechanics. The design and
+acceptance criteria are in [HIERARCHICAL_CATALOGS_PLAN.md](HIERARCHICAL_CATALOGS_PLAN.md). Do this
+only when real ruleset work shows that flat categories plus intent search are insufficient. D&D
+contracts can adopt the documented dot-path naming convention immediately; recursive behavior
+waits for this feature.
+
+**3.9 Local intent routing and safe action pipelines.** Use deterministic retrieval first, then
+optionally add Ollama re-ranking and local vector retrieval only when the documented scale or
+retrieval-miss triggers fire. The router may prepare typed actions but must not silently execute
+writes; arbitrary multi-commit pipelines remain out of scope. See
+[LOCAL_INTENT_ROUTING_PLAN.md](LOCAL_INTENT_ROUTING_PLAN.md).
 
 **Deliberately not in MVP:** a second model provider, auth or multi-user, a public deployment, a
 SPA, schema enforcement of component data. All premature until someone other than Dante plays it.
