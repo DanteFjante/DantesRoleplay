@@ -7,15 +7,20 @@ using ModelContextProtocol.Server;
 namespace DantesRoleplay.MCPServer.Tools;
 
 /// <summary>
-/// The world surface: two reads and two writes.
+/// The world handlers behind <c>query(kind: "world")</c>, <c>query(kind: "entities")</c>,
+/// <c>commit(kind: "component")</c> and <c>commit(kind: "effects")</c>.
 ///
-/// Four tools for an entire data model is only possible because the model has five structures and
-/// no game concepts in it (§3.11). A surface with add_character, set_stat and move_item would need
-/// a new tool every time the game grew; this one never does, because growth happens in component
-/// definitions and JavaScript rather than in C#.
+/// Two reads and two writes for an entire data model is only possible because the model has five
+/// structures and no game concepts in it (§3.11). A surface with add_character, set_stat and
+/// move_item would need a new operation every time the game grew; this one never does, because
+/// growth happens in component definitions and JavaScript rather than in C#.
 ///
-/// Every structural change goes through <c>apply_effects</c>, so there is exactly one place where
-/// world state changes and exactly one place that has to be atomic (§3.8).
+/// Every structural change goes through <c>commit(kind: "effects")</c>, so there is exactly one
+/// place where world state changes and exactly one place that has to be atomic (§3.8).
+///
+/// Not registered as MCP tools (VERB_MIGRATION.md D5); the dispatchers call these directly. Every
+/// literal call in a NextStep or a fix is written in the public call form, because that string is
+/// the recovery path a low-context session actually follows.
 /// </summary>
 [McpServerToolType]
 public sealed class WorldTools
@@ -52,7 +57,7 @@ public sealed class WorldTools
                 ComponentDefinitions = definitions,
                 ExampleEntities = examples,
                 Note = sample > 0 && examples.Count == sample
-                    ? $"Showing the first {sample} entities; there may be more. get_entities(nameQuery: ...) to look for specific ones."
+                    ? $"Showing the first {sample} entities; there may be more. query(kind: \"entities\", nameQuery: \"...\") to look for specific ones."
                     : string.Empty
             };
 
@@ -62,12 +67,12 @@ public sealed class WorldTools
             {
                 nextSteps.Add(
                     "No component definitions exist yet, so nothing can hold data. " +
-                    "define_component(id: ..., name: ..., description: ...) declares the first one.");
+                    $"{VerbSurface.CommitCall("component")} declares the first one.");
             }
             else
             {
-                nextSteps.Add($"get_entities(withDefinitionId: \"{definitions[0].Id}\") — see what carries that component.");
-                nextSteps.Add("apply_effects(effects: [...], dryRun: true) — validate a change before making it.");
+                nextSteps.Add($"query(kind: \"entities\", withDefinitionId: \"{definitions[0].Id}\") — see what carries that component.");
+                nextSteps.Add($"{VerbSurface.CommitCall("effects", dryRun: true)} — validate a change before making it.");
             }
 
             return ToolOutcome.Ok(
@@ -105,7 +110,7 @@ public sealed class WorldTools
                     return ToolOutcome.Fail(
                         "UNKNOWN_ENTITY",
                         $"None of these entity ids exist or all are deleted: {string.Join(", ", ids)}.",
-                        "get_entities(nameQuery: \"...\") — search by name, or describe_world() to see what exists.",
+                        "query(kind: \"entities\", nameQuery: \"...\") — search by name, or query(kind: \"world\") to see what exists.",
                         $"No entities found for {ids.Length} id(s).");
                 }
 
@@ -130,7 +135,7 @@ public sealed class WorldTools
                     missing.Length == 0
                         ? $"Fetched {found.Count} entity(ies) in full."
                         : $"Fetched {found.Count}; {missing.Length} id(s) not found: {string.Join(", ", missing)}.",
-                    "apply_effects(effects: [...], dryRun: true) — validate a change against what you just read.");
+                    $"{VerbSurface.CommitCall("effects", dryRun: true)} — validate a change against what you just read.");
             }
 
             var results = await world.FindEntitiesAsync(nameQuery, withDefinitionId, limit, cancellationToken);
@@ -144,14 +149,14 @@ public sealed class WorldTools
                     new { Entities = results },
                     $"No entities matched (nameQuery: '{nameQuery}', withDefinitionId: '{withDefinitionId}').",
                     any.Count > 0
-                        ? "get_entities() — clear the filters; entities exist, just not matching this."
-                        : "The world is empty. apply_effects with an entity.create effect makes the first one.");
+                        ? "query(kind: \"entities\") — clear the filters; entities exist, just not matching this."
+                        : $"The world is empty. {VerbSurface.CommitCall("effects", dryRun: true)} — an entity.create effect makes the first one.");
             }
 
             return ToolOutcome.Ok(
                 new { Entities = results },
                 $"Found {results.Count} entity(ies).",
-                $"get_entities(ids: [\"{results[0].Id}\"]) — read one in full before changing it.");
+                $"query(kind: \"entities\", id: \"{results[0].Id}\") — read one in full before changing it.");
         });
 
     [McpServerTool(Name = "define_component")]
@@ -159,7 +164,7 @@ public sealed class WorldTools
         "Declare a kind of data an entity can carry, e.g. \"stats\" or \"description\". Nothing " +
         "can be attached to an entity until its definition exists, which is deliberate: an " +
         "undeclared component is nearly always a typo, and a silently created one is invisible " +
-        "forever after. Call describe_world() first and REUSE an existing definition where one " +
+        "forever after. Read the world first and REUSE an existing definition where one " +
         "fits — two definitions meaning the same thing is the failure mode this system is built " +
         "to avoid. Writing an id that already exists updates it rather than creating a second.")]
     public async Task<ToolEnvelope> DefineComponentAsync(
@@ -184,8 +189,8 @@ public sealed class WorldTools
                 return ToolOutcome.Fail(
                     "MISSING_ARGUMENT",
                     "Both id and name are required.",
-                    "define_component(id: \"...\", name: \"...\", description: \"...\") — retry with all three.",
-                    "Rejected define_component: missing id or name.");
+                    VerbSurface.CommitCall("component"),
+                    "Rejected commit(kind: \"component\"): missing id or name.");
             }
 
             var before = await world.GetDefinitionsAsync(cancellationToken);
@@ -204,9 +209,9 @@ public sealed class WorldTools
                     ? $"Updated existing component definition '{id}'."
                     : $"Created component definition '{id}'. {neighbours.Count} other(s) already existed.",
                 existed
-                    ? "describe_world() — confirm the change reads the way you intended."
+                    ? "query(kind: \"world\") — confirm the change reads the way you intended."
                     : "Check OtherDefinitions above: if one of them already meant this, you have just created a duplicate.",
-                $"apply_effects(effects: [{{type: \"component.set\", entityId: \"...\", definitionId: \"{id}\", data: \"{{}}\"}}])");
+                "commit(kind: \"effects\", payload: \"{\\\"effects\\\":[{\\\"type\\\":\\\"component.set\\\",\\\"entityId\\\":\\\"...\\\",\\\"definitionId\\\":\\\"" + id + "\\\",\\\"data\\\":\\\"{}\\\"}]}\") — attach it to something.");
         });
 
     [McpServerTool(Name = "apply_effects")]
@@ -254,8 +259,8 @@ public sealed class WorldTools
                 return ToolOutcome.Fail(
                     "NO_EFFECTS",
                     "The effects list was empty, so there was nothing to validate or apply.",
-                    "apply_effects(effects: [{type: \"entity.create\", entityId: \"...\", name: \"...\"}], dryRun: true)",
-                    "Rejected apply_effects: empty list.");
+                    VerbSurface.CommitCall("effects", dryRun: true),
+                    "Rejected commit(kind: \"effects\"): empty list.");
             }
 
             var result = await applier.ApplyAsync(effects, dryRun, cancellationToken);
@@ -266,7 +271,8 @@ public sealed class WorldTools
                     "INVALID_EFFECTS",
                     $"{result.Problems.Count} problem(s); nothing was applied. " +
                     string.Join(" ", result.Problems.Select(p => $"[{p.Index}] {p.Effect}: {p.Problem}")),
-                    "Correct the effects listed above — the index is the position in the list you sent — then call again with dryRun: true.",
+                    $"{VerbSurface.CommitCall("effects", dryRun: true)} — correct the effects "
+                    + "listed above first; the index is the position in the list you sent.",
                     $"Rejected {effects.Length} effect(s): {result.Problems.Count} problem(s).");
             }
 
@@ -275,10 +281,10 @@ public sealed class WorldTools
                 return ToolOutcome.Ok(
                     new { Validated = effects.Length, Problems = result.Problems, Applied = false },
                     $"Dry run: all {effects.Length} effect(s) valid, nothing written.",
-                    "apply_effects(effects: [...]) with dryRun omitted to commit exactly this list.");
+                    "Send the identical payload again with dryRun omitted to commit exactly this list.");
             }
 
-            // Recording the entity as the subject is what makes history(subject: "...") answer
+            // Recording the entity as the subject is what makes a history query by subject answer
             // "what has been done to this thing", which is the question a supervisor asks (§3.12).
             var touched = effects
                 .Select(e => e.EntityId)
@@ -293,8 +299,10 @@ public sealed class WorldTools
                 new { result.Applied, result.Count, Entities = touched },
                 $"Applied {result.Count} effect(s) in one transaction" +
                 (touched.Count == 0 ? "." : $": {string.Join(", ", touched.Take(5))}{(touched.Count > 5 ? ", …" : "")}."),
-                "get_entities(ids: [...]) — confirm the result reads the way you intended.",
-                "history() — see the operation this produced.");
+                touched.Count == 0
+                    ? "query(kind: \"world\") — confirm the result reads the way you intended."
+                    : $"query(kind: \"entities\", ids: [\"{string.Join("\", \"", touched.Take(5))}\"]) — confirm the result reads the way you intended.",
+                "query(kind: \"history\") — see the operation this produced.");
         }, consumesReadEvidence: !dryRun);
 
     /// <summary>Cuts on a comma boundary, so a truncated subject list is still a list of whole ids.</summary>

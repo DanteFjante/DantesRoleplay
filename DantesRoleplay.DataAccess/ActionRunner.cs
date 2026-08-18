@@ -20,7 +20,11 @@ public sealed class ActionRunner(
     IEffectApplier applier,
     DantesRoleplay.Operations.IOperationLog log) : IActionRunner
 {
-    private const string Tool = "run_action";
+    // The public verb this is served as, not the historical tool name. Everything else records
+    // through ToolRunner, which stamps the protocol identity for it; this runner owns its own
+    // audit rows because it owns the transaction, so it has to say so itself (VERB_MIGRATION.md
+    // D10). Which rule ran is not lost — it is the subject, and mechanicId besides.
+    private const string Tool = "commit";
     private readonly DantesRoleplayDbContext _db = db;
     private readonly IMechanicStore _mechanics = mechanics;
     private readonly IProjectionResolver _projections = projections;
@@ -123,7 +127,7 @@ public sealed class ActionRunner(
                     ActionRunResult.Failed(
                         "INVALID_REQUIREMENTS",
                         $"Mechanic '{selected.Id}' has invalid requirements JSON: {ex.Message}",
-                        "get_procedure(id: \"procedure.mechanic.projection\")",
+                        $"query(kind: \"mechanics\", id: \"{selected.Id}\")",
                         $"Mechanic '{selected.Id}' could not be projected.",
                         candidates),
                     selected,
@@ -151,7 +155,8 @@ public sealed class ActionRunner(
                     ActionRunResult.Failed(
                         "PROJECTION_FAILED",
                         $"The mechanic projection was rejected. {problems}",
-                        "get_procedure(id: \"procedure.mechanic.projection\")",
+                        $"query(kind: \"mechanics\", id: \"{selected.Id}\") — read the roles it "
+                        + "declares, then send the same action again with roleEntityIds filled in.",
                         $"Projection failed for '{selected.Id}'.",
                         candidates) with { Mechanic = selected, Seed = seed },
                     selected,
@@ -177,7 +182,9 @@ public sealed class ActionRunner(
                         string.IsNullOrWhiteSpace(run.LimitHit)
                             ? run.Error
                             : $"{run.Error} Limit hit: {run.LimitHit}.",
-                        "get_procedure(id: \"procedure.mechanic.run\")",
+                        $"query(kind: \"mechanics\", id: \"{selected.Id}\") — the rule is broken, "
+                        + "not your arguments; read it, then revise it with "
+                        + "commit(kind: \"mechanic\", ..., dryRun: true).",
                         $"Mechanic '{selected.Id}' failed.",
                         candidates) with
                     {
@@ -206,7 +213,7 @@ public sealed class ActionRunner(
                     ActionRunResult.Failed(
                         "INVALID_EFFECTS",
                         FormatProblems(dryRun.Problems),
-                        "get_procedure(id: \"procedure.world.change\")",
+                        "query(kind: \"procedures\", id: \"procedure.world.change\")",
                         $"Mechanic '{selected.Id}' proposed invalid effects.",
                         candidates) with
                     {
@@ -238,7 +245,7 @@ public sealed class ActionRunner(
                     ActionRunResult.Failed(
                         "EFFECT_APPLICATION_FAILED",
                         FormatProblems(applied.Problems),
-                        "get_procedure(id: \"procedure.world.change\")",
+                        "query(kind: \"procedures\", id: \"procedure.world.change\")",
                         $"Mechanic '{selected.Id}' could not apply its effects.",
                         candidates) with
                     {
@@ -310,7 +317,7 @@ public sealed class ActionRunner(
                 ActionRunResult.Failed(
                     "CANCELLED",
                     "The action was cancelled before it completed.",
-                    "history(tool: \"run_action\", failuresOnly: true)",
+                    "query(kind: \"history\", failuresOnly: true)",
                     "Action cancelled.",
                     candidates) with
                 {
@@ -419,7 +426,7 @@ public sealed class ActionRunner(
         ActionRunResult.Failed(
             "CANCELLED",
             "The action was cancelled before it completed.",
-            "history(tool: \"run_action\", failuresOnly: true)",
+            "query(kind: \"history\", failuresOnly: true)",
             "Action cancelled.",
             candidates) with
         {
@@ -435,7 +442,7 @@ public sealed class ActionRunner(
             return new ActionRunError(
                 "INVALID_INTENT",
                 "An action intent is required.",
-                "run_action(intent: \"describe what the actor is trying to do\", roleEntityIds: {})");
+                "commit(kind: \"action\", payload: \"{\\\"intent\\\":\\\"describe what the actor is trying to do\\\",\\\"roleEntityIds\\\":{}}\")");
         }
 
         try
@@ -447,7 +454,7 @@ public sealed class ActionRunner(
             return new ActionRunError(
                 "INVALID_INPUT",
                 $"The action input is not valid JSON: {ex.Message}",
-                "run_action(intent: \"same intent\", roleEntityIds: {}, input: \"{}\")");
+                "commit(kind: \"action\", payload: \"{\\\"intent\\\":\\\"same intent\\\",\\\"roleEntityIds\\\":{},\\\"input\\\":\\\"{}\\\"}\")");
         }
 
         if (request.RoleEntityIds is null)
@@ -455,7 +462,7 @@ public sealed class ActionRunner(
             return new ActionRunError(
                 "INVALID_ROLE_MAP",
                 "The role-to-entity map cannot be null.",
-                "run_action(intent: \"same intent\", roleEntityIds: {})");
+                "commit(kind: \"action\", payload: \"{\\\"intent\\\":\\\"same intent\\\",\\\"roleEntityIds\\\":{}}\")");
         }
 
         if (request.RoleEntityIds.Any(pair =>
@@ -464,7 +471,7 @@ public sealed class ActionRunner(
             return new ActionRunError(
                 "INVALID_ROLE_MAP",
                 "Role names and entity ids must both be non-empty.",
-                "run_action(intent: \"same intent\", roleEntityIds: { subject: \"entity-id\" })");
+                "commit(kind: \"action\", payload: \"{\\\"intent\\\":\\\"same intent\\\",\\\"roleEntityIds\\\":{\\\"subject\\\":\\\"entity-id\\\"}}\")");
         }
 
         return null;
@@ -492,9 +499,20 @@ public sealed class ActionRunner(
 
     private static IReadOnlyList<string> ConfirmationSteps(IReadOnlyList<string> affected) =>
         affected.Count == 0
-            ? ["history(tool: \"run_action\") — review the recorded action result."]
-            : [$"get_entities(ids: [{string.Join(", ", affected.Select(id => $"\"{id}\""))}]) — confirm the applied world state."];
+            ? ["query(kind: \"history\") — review the recorded action result."]
+            : [$"query(kind: \"entities\", ids: [{string.Join(", ", affected.Select(id => $"\"{id}\""))}]) — confirm the applied world state."];
+
+    /// <summary>
+    /// Relaxed escaping, because this string is stored and then read back by a person or a model
+    /// asking what a rule was handed. The default encoder writes every quote as \u0022, which is
+    /// valid JSON and unreadable at a glance — and the point of keeping the projection is that
+    /// someone can look at it.
+    /// </summary>
+    private static readonly JsonSerializerOptions ReadableJson = new()
+    {
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
 
     private static string Serialize(MechanicProjection projection) =>
-        JsonSerializer.Serialize(projection);
+        JsonSerializer.Serialize(projection, ReadableJson);
 }

@@ -1,4 +1,5 @@
-﻿using DantesRoleplay.DataAccess.Bootstrap;
+﻿using DantesRoleplay.Actions;
+using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.Effects;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
@@ -68,6 +69,14 @@ public static class DataAccessServiceCollectionExtensions
         services.AddScoped<IEffectApplier, EffectApplier>();
         services.AddScoped<IMechanicStore, MechanicStore>();
         services.AddScoped<IProjectionResolver, ProjectionResolver>();
+
+        // Missing until the end-to-end walk went looking for it. commit takes IActionRunner as a
+        // parameter for every kind, not only "action", so an unregistered runner made the whole
+        // write verb fail at invocation with "An error occurred invoking 'commit'" — no envelope,
+        // no fix, nothing in history. Every direct-call test passed a null runner in, so nothing
+        // below the protocol could have noticed.
+        services.AddScoped<IActionRunner, ActionRunner>();
+
         services.AddScoped<ProcedureSeeder>();
         services.AddScoped<MechanicSeeder>();
 

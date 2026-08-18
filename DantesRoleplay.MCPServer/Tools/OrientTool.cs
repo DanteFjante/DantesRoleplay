@@ -17,12 +17,20 @@ namespace DantesRoleplay.MCPServer.Tools;
 /// agent "may add component definitions and world data" when no tool did either — a cold-model
 /// test caught it immediately. That is the same failure that crippled TravelRoleplay
 /// (ARCHITECTURE.md §1), just inverted: over-promising is as misleading as going stale, and this
-/// file is the one place where being wrong poisons everything downstream. When adding a
-/// capability, update <see cref="Capabilities"/> in the same change.
+/// file is the one place where being wrong poisons everything downstream. Hence the capability
+/// section is not written here at all — it is <see cref="VerbSurface.Announcement"/>, the same
+/// structure the dispatchers switch on, so it cannot drift from the code that serves it.
 /// </summary>
 [McpServerToolType]
 public sealed class OrientTool
 {
+    /// <summary>
+    /// Orientation counts are capped rather than exact. A number here is meant to tell a session
+    /// whether a thing exists and roughly how much of it, and orient has to stay cheap enough to
+    /// call again whenever someone loses the thread.
+    /// </summary>
+    private const int CountCap = 500;
+
     [McpServerTool(Name = "orient")]
     [Description(
         "START HERE. Explains what this system is, reports what currently exists in it, states " +
@@ -43,10 +51,24 @@ public sealed class OrientTool
             var procedureCount = categories.Sum(c => c.Count);
             var ruleCount = ruleCategories.Sum(c => c.Count);
 
-            // Capped rather than counted: this is an orientation number, and the exact total is
-            // get_entities' job. A cheap query here keeps orient cheap enough to call freely.
-            var sampled = await world.FindEntitiesAsync(limit: 500, cancellationToken: cancellationToken);
-            var entityCount = sampled.Count == 500 ? "500+" : sampled.Count.ToString();
+            // Archived rules included on purpose: this is the "does anything exist" number, and a
+            // session that is told zero will not go looking.
+            var rules = await mechanics.FindAsync(
+                includeInactive: true, limit: CountCap, cancellationToken: cancellationToken);
+
+            var byStatus = rules
+                .GroupBy(r => r.Status)
+                .ToDictionary(g => g.Key.ToString(), g => g.Count());
+
+            var byScope = rules
+                .GroupBy(r => string.IsNullOrWhiteSpace(r.Scope) ? "(shared)" : r.Scope)
+                .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
+
+            var runnableCount = rules.Count(r => r.Status == MechanicStatus.Active);
+
+            var sampled = await world.FindEntitiesAsync(
+                limit: CountCap, cancellationToken: cancellationToken);
+            var entityCount = sampled.Count == CountCap ? $"{CountCap}+" : sampled.Count.ToString();
 
             var data = new
             {
@@ -59,13 +81,17 @@ public sealed class OrientTool
                     YouAre =
                         "The agent that operates and extends it. You can read everything listed " +
                         "under capabilities, write procedure contracts, change world state " +
-                        "through commit(kind: \"effects\"), and WRITE AND RUN GAME RULES as JavaScript. A " +
-                        "rule you write during play is stored, versioned and reusable next " +
-                        "session — that is the point of this system, not a side feature.",
+                        "through commit(kind: \"effects\"), and WRITE AND RUN GAME RULES as " +
+                        "JavaScript. A rule you write during play is stored, versioned and " +
+                        "reusable next session — that is the point of this system, not a side " +
+                        "feature.",
                     TheOneRule =
                         "Before performing an operation, retrieve and follow the relevant " +
                         "procedure contracts. Each contract states what it governs, so match " +
-                        "that against what you are about to do rather than guessing."
+                        "that against what you are about to do rather than guessing.",
+                    HowToOperateIt =
+                        "query(kind: \"procedures\", id: \"procedure.system.use\") — three verbs, " +
+                        "in one contract."
                 },
                 Procedures = new
                 {
@@ -84,29 +110,29 @@ public sealed class OrientTool
                         "change.",
                     Reachable = true,
                     Note =
-                        "Reads go through query(kind: \"world\") and query(kind: \"entities\"). EVERY " +
-                        "change goes through commit(kind: \"effects\"), which validates the whole list and then applies " +
-                        "it in one transaction — there is no partial write. A component cannot " +
-                        "be attached until define_component has declared it."
+                        "Reads go through query(kind: \"world\") and query(kind: \"entities\"). " +
+                        "EVERY change goes through commit(kind: \"effects\"), which validates the " +
+                        "whole list and then applies it in one transaction — there is no partial " +
+                        "write. A component cannot be attached until commit(kind: \"component\") " +
+                        "has declared it."
                 },
                 Rules = new
                 {
                     Total = ruleCount,
+                    Runnable = runnableCount,
+                    ByStatus = byStatus,
                     ByCategory = ruleCategories.ToDictionary(c => c.Category, c => c.Count),
+                    ByScope = byScope,
                     HowItWorks =
                         "Game rules are JavaScript stored in this system and written during play. " +
                         "A rule declares which participants and which components it reads, is " +
                         "handed exactly that and nothing else, and returns proposed effects plus " +
                         "narration. It cannot query, cannot reach the host, and is stopped by " +
                         "execution limits. Chance is seeded, and the seed is recorded.",
-                    Note = ruleCount == 0
-                        ? "NO RULES EXIST YET. Nothing can be resolved until one is written — that " +
-                          "is the intended empty state, not a fault. write_mechanic creates the first."
-                        : "commit(kind: \"action\", payload: \"{\\\"intent\\\":\\\"...\\\"}\") lists candidates without running anything, so " +
-                          "you choose the rule before it executes."
+                    Note = RuleNote(ruleCount, runnableCount)
                 },
-                Capabilities = Capabilities(),
-                NotYetBuilt = NotYetBuilt()
+                Capabilities = VerbSurface.Announcement(),
+                NotYetBuilt = NotYetBuilt(ruleCount)
             };
 
             var nextSteps = new List<string>();
@@ -114,20 +140,21 @@ public sealed class OrientTool
             if (procedureCount == 0)
             {
                 nextSteps.Add(
-                    "No procedures exist, which is unexpected — the system seeds its own. " +
-                    "Call query(kind: \"history\", failuresOnly: true) to see whether seeding failed.");
+                    "query(kind: \"history\", failuresOnly: true) — no procedures exist, which is " +
+                    "unexpected because the system seeds its own; this shows whether seeding failed.");
             }
             else
             {
-                nextSteps.Add("query(kind: \"procedures\") — list the operating manual. Read this before doing anything else.");
-                nextSteps.Add("query(kind: \"procedures\", id: \"procedure.system.inspect\") — how to look around before changing anything.");
+                nextSteps.Add("query(kind: \"procedures\", id: \"procedure.system.use\") — how to operate these three verbs. Read this first.");
+                nextSteps.Add("query(kind: \"procedures\") — list the whole operating manual and match a contract to what you are about to do.");
                 nextSteps.Add("query(kind: \"world\") — what the world currently holds, and which component definitions exist.");
-                nextSteps.Add("commit(kind: \"procedure\", payload: \"{\\\"id\\\":\\\"...\\\",\\\"category\\\":\\\"...\\\",\\\"name\\\":\\\"...\\\",\\\"description\\\":\\\"...\\\",\\\"instructions\\\":\\\"...\\\"}\", dryRun: true) — if your task is to add or revise a procedure.");
-                nextSteps.Add("commit(kind: \"effects\", payload: \"{\\\"effects\\\":[...]}\", dryRun: true) — if your task is to change the world.");
+                nextSteps.Add("query(kind: \"capabilities\") — every kind, parameter and payload shape, exactly.");
+                nextSteps.Add($"{VerbSurface.CommitCall("effects", dryRun: true)} — if your task is to change the world.");
 
                 nextSteps.Add(ruleCount == 0
-                    ? "No game rules exist yet, so nothing can be resolved. commit(kind: \"mechanic\", payload: \"{\\\"id\\\":\\\"...\\\",\\\"category\\\":\\\"...\\\",\\\"name\\\":\\\"...\\\",\\\"source\\\":\\\"...\\\"}\", dryRun: true) writes the first one."
-                    : "commit(kind: \"action\", payload: \"{\\\"intent\\\":\\\"what the player is trying to do\\\"}\") — lists candidate rules without running any.");
+                    ? $"{VerbSurface.CommitCall("mechanic", dryRun: true)} — no game rules exist yet, so nothing can be resolved until one is written. This writes the first."
+                    : "query(kind: \"mechanics\", query: \"what the player is trying to do\") — find the rule and read which roles it needs, before running it.");
+                nextSteps.Add($"{VerbSurface.CommitCall("action")} — resolve an action. The rule is chosen by intent; roleEntityIds must name the roles that rule declares.");
             }
 
             nextSteps.Add("query(kind: \"history\") — see what was done recently, optionally filtered by tool or subject.");
@@ -135,35 +162,52 @@ public sealed class OrientTool
             return ToolOutcome.Ok(
                 data,
                 $"Oriented: {procedureCount} procedures, {definitions.Count} component definitions, " +
-                $"{entityCount} entities, {ruleCount} game rule(s).",
+                $"{entityCount} entities, {ruleCount} game rule(s) of which {runnableCount} runnable.",
                 [.. nextSteps]);
         });
 
     /// <summary>
-    /// What this system can do TODAY. A guard test asserts this matches the declared MCP tools in
-    /// both directions — every tool appears here, and nothing appears here that is not a tool.
+    /// The three states worth telling apart. "Rules exist but none are active" reads as "no rules"
+    /// to anyone who only sees a total, and a session that believes there are no rules will invent
+    /// outcomes instead of resolving them.
     /// </summary>
-    private static IReadOnlyList<string> Capabilities() =>
-    [
-        "orient — you are here",
-        "query — read capabilities, procedures, world data, entities, mechanics, or history",
-        "commit — validate or apply a procedure, component, effect list, mechanic, or action"
-    ];
+    private static string RuleNote(int total, int runnable) =>
+        total == 0
+            ? "NO RULES EXIST YET. Nothing can be resolved until one is written — that is the "
+              + "intended empty state, not a fault. commit(kind: \"mechanic\", dryRun: true) "
+              + "creates the first."
+            : runnable == 0
+                ? $"{total} rule(s) are stored but NONE are active, so nothing can be resolved yet. "
+                  + "Read them with query(kind: \"mechanics\", includeInactive: true) and commit a "
+                  + "revision with status \"active\" once one is right."
+                : "An action selects the best-ranked active rule matching your intent and RUNS "
+                  + "it — there is no way to name a rule and no separate dry run. Read the rule "
+                  + "first with query(kind: \"mechanics\") to see which roles it declares; the "
+                  + "effects it proposes are validated before any of them are applied.";
 
     /// <summary>
     /// Stated explicitly so a cold model does not infer these from the architecture's ambitions
     /// and then invent a way to do them. Knowing what is absent is as useful as knowing what is
     /// present, and much cheaper than discovering it by failing.
+    ///
+    /// The first line is conditional because it stops being true the moment a rule is written, and
+    /// a session that is told "no game exists" while the database holds the rules it needs will
+    /// bypass them and narrate an outcome instead.
     /// </summary>
-    private static IReadOnlyList<string> NotYetBuilt() =>
+    private static IReadOnlyList<string> NotYetBuilt(int ruleCount) =>
     [
-        "Any actual game. The machinery to write and run rules exists; the rules do not. Whether " +
-        "this system can resolve a given action depends entirely on whether someone has written " +
-        "that rule yet — check with query(kind: \"mechanics\") rather than assuming either way.",
+        ruleCount == 0
+            ? "Any actual game. The machinery to write and run rules exists; no rule has been "
+              + "written yet. Whether this system can resolve a given action depends entirely on "
+              + "whether someone has written that rule — right now, nobody has."
+            : "A complete game. Rules exist, but only the ones somebody wrote — check with "
+              + "query(kind: \"mechanics\") before assuming an action can be resolved, and write "
+              + "the rule if it is missing.",
         "Reactive rules — nothing happens on its own between actions. There are no events, no " +
         "subscriptions, and no passage of time.",
         "Composing one rule from another — a mechanic cannot call another mechanic.",
-        "Events and subscriptions — not started.",
+        "Choosing which rule runs. An action selects the best-ranked candidate for the intent; " +
+        "there is no way to name a specific mechanic, and no separate dry run for an action.",
         "Inspecting this application's own source or tool registration — not available, so a " +
         "procedure describing how the code works cannot currently be verified against the code."
     ];

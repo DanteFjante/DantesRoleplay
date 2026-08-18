@@ -361,3 +361,23 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# ---- DantesRoleplay ----------------------------------------------------------
+# The development database. It is created on first run and dirties the working tree
+# on every session otherwise. A campaign snapshot is a copy of this file, kept
+# somewhere else on purpose.
+DantesRoleplay.MCPServer/data/
+*.db-wal
+*.db-shm
+
+# The offline NuGet source used to build without network access, and the source
+# tarball that ships to it. Both are build inputs, not source.
+_packages/
+_src.tgz
+
+# Superseded files parked here because the file bridge cannot delete. Should be
+# empty; if it is not, delete it rather than committing it.
+_to_delete/
+
+# Belongs to a different tool entirely and was committed by accident.
+.webui_secret_key

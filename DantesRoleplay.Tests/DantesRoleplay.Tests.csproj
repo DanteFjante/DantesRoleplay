@@ -9,6 +9,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!--
+      The tests reference DantesRoleplay.MCPServer, which is an ASP.NET Core application. Without
+      this the test project tries to resolve the ASP.NET Core assemblies as NuGet packages instead
+      of using the shared framework, which fails offline and pins patch versions that have nothing
+      to do with this solution. It is also what lets the end-to-end test host the server in-process.
+    -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />

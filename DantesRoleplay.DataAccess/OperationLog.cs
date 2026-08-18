@@ -22,7 +22,14 @@ public sealed class OperationLog(DantesRoleplayDbContext db) : IOperationLog
     /// </summary>
     private static readonly TimeSpan MaxReadAge = TimeSpan.FromMinutes(30);
 
-    private const string ReadTool = "get_procedure";
+    /// <summary>
+    /// The PUBLIC verb a contract read is recorded under. It was `get_procedure` until the
+    /// three-verb migration, and leaving it there silently killed the whole derivation: reads
+    /// still recorded the contract id as their subject, but under the tool name `query`, so
+    /// nothing matched and every honest commit came back flagged for citing what it had never
+    /// opened. Nothing failed — 177 tests passed — because the audit only lies, it does not throw.
+    /// </summary>
+    private const string ReadTool = "query";
 
     private readonly DantesRoleplayDbContext _db = db;
 
@@ -108,9 +115,17 @@ public sealed class OperationLog(DantesRoleplayDbContext db) : IOperationLog
 
         var since = lastOrient ?? floor;
 
+        // One verb now serves every read, so the tool name alone no longer identifies a contract
+        // read — a mechanic read and a world read record subjects too. The subject having to BE a
+        // procedure id is what narrows it, and it narrows it exactly: no other kind can produce a
+        // subject that is in this table.
         var subjects = await _db.Operations
             .AsNoTracking()
-            .Where(o => o.Tool == ReadTool && o.Success && o.Timestamp > since && o.Subject != "")
+            .Where(o => o.Tool == ReadTool
+                && o.Success
+                && o.Timestamp > since
+                && o.Subject != ""
+                && _db.ProcedureContracts.Any(p => p.Id == o.Subject))
             .OrderByDescending(o => o.Timestamp)
             .Select(o => o.Subject)
             .Take(100)

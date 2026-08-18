@@ -177,3 +177,95 @@ list (the ~11 kinds) is always flat; add a layer only when it removes 1,000+ tok
 would otherwise always load; unbounded collections use exactly two layers (summary list → full
 record by id), which the surface already has. Categories are filters on a flat list, never
 levels — a filter costs nothing when unused, a level costs a round trip always.
+
+---
+
+## Status: complete, 2026-08-18
+
+Implemented by Claude Opus 5 over B1–B6. **177/177 tests green.** B7, the cold walk, is Dante's and
+is written up as run 6 in `COLDWALK.md`. `VERB_HISTORY.md` records the surface this replaced.
+
+### Deviations from the pinned decisions, and why
+
+**D5 — "the old tool classes become the implementation, exactly as they are."** Held for the
+classes; not held for their strings, and one class lost a method.
+
+- The literal recovery calls inside the preserved handlers were rewritten by hand to the public
+  call form. The plan was to translate them at dispatch, and that translator was written and
+  shipped — it rewrote by prefix, so `write_procedure(id: "x", ...)` became
+  `commit(kind: "procedure", id: "x", ...)`, which `commit` rejects because it takes `payload`.
+  Named arguments cannot be regexed into a payload object. D7 says every `fix` is a literal call;
+  the only version of that which can be checked is one written out, so the translator was deleted.
+  `VerbSurface.CommitCall(kind, id?, dryRun?)` builds them now, and a test takes each apart the way
+  a client would.
+- `MechanicTools.RunActionAsync` was deleted. It was a second `run_action`, superseded by
+  `ActionTools` over `IActionRunner`, unreachable and untested since — but its next-step strings
+  were the origin of every "choose a mechanic by id" and "dry-run an action" claim in the codebase
+  and in four contracts. D5's purpose is that behaviour per kind stays provably identical; a method
+  no kind dispatches to has no behaviour to preserve.
+
+**D10 — history.** `ActionRunner` recorded `run_action` as its own tool name, bypassing the
+dispatcher that stamps the protocol identity. Changed to `commit`; the mechanic id is still the
+subject and `MechanicId` is still its own column, so nothing is lost.
+
+### Added beyond the plan
+
+- **`VerbSurface.cs`**, the single description of the surface. D9 asks orient and the catalog to be
+  asserted against the dispatchers; making them all read one structure means three of the four
+  copies cannot drift at all, and the guard test only has to check the structure against the two
+  switches.
+- **`ServerConfiguration.AddDantesRoleplayMcpServer`**, so the protocol walk boots the same
+  registration `Program.cs` does rather than a private copy that would silently go stale.
+- **A relaxed JSON encoder** on tool results and on the stored projection. The default escapes
+  every quote as `\u0022`, which made every `fix` unreadable as a call.
+- **Two guard tests the plan did not name**: no source string may contain a retired verb followed
+  by `(`, and no seeded contract or rule may name one either.
+
+### What B3 found that nothing else could
+
+`IActionRunner` was never registered. `commit` takes it as a parameter for every kind, so the
+entire write verb failed at invocation with "An error occurred invoking 'commit'" — no envelope, no
+`fix`, no audit row — while 167 unit tests passed, because each built its dependencies by hand.
+The end-to-end test was the last batch in the plan; on this evidence it should have been the first.
+
+### The review pass, and what it found after "complete"
+
+An independent review of the finished change (a subagent with no memory of writing it, given the
+pinned decisions and told to verify claims against the implementation) found seven more defects.
+Six are fixed; the two below are accepted deviations, recorded here rather than left implicit.
+
+Fixed:
+
+- **Read evidence was dead.** `OperationLog` derived "which contracts were demonstrably read" by
+  looking for the tool name `get_procedure`, which no row carries any more. Every honest commit
+  came back reporting nothing read and was flagged `CitedWithoutReading` — the exact false
+  accusation the read-window model had been rewritten to stop. It keys on the public verb now, and
+  narrows by the subject actually being a contract id, since one verb serves every read. **All 177
+  tests passed with this broken**, because each recorded the old name by hand; there is now a
+  protocol-level test that reads a contract and commits citing it.
+- **`limit` was advertised for `procedures` and `mechanics` and silently ignored** — the handlers
+  had no such parameter. Wired through, and the catalog now states the real per-kind defaults.
+- **Two `fix` strings were advice, not calls** (`INVALID_EFFECTS`, and `INVALID_STATUS` on the
+  procedure path). Both now begin with the call to make; the walk asserts that separately from the
+  looser check it applies to next steps.
+- **The effect vocabulary had fallen off the surface.** All nine types used to reach clients inside
+  the old `apply_effects` description; unregistering that class took five of them
+  (`entity.delete`, `component.remove`, `containment.move`, `relationship.create`,
+  `relationship.remove`) somewhere no session could read, discoverable only by sending a wrong type
+  and reading the rejection. They are in the catalog and in `procedure.world.change` now, and a
+  guard test asserts the documented set equals `EffectType.All`.
+- **Action failures pointed at kernel contracts** whose own first line tells an action caller to go
+  read a different one. They point at the rule the caller needs instead.
+- **A top-level `intent` was silently dropped for `commit(kind: "action")`.** It falls back now, and
+  the parameter says which one is recorded.
+
+Accepted, not fixed:
+
+- **D2's schema enum is prose only.** `kind` is declared `string`, so an invented kind reaches the
+  handler and comes back as `UNKNOWN_KIND` listing the valid ones, rather than failing JSON-schema
+  validation at the protocol layer. The runtime error is a good one and arguably better for a weak
+  model — it names the alternatives — but D2 asked for both, and this is a deviation.
+- **`DispatchedKinds` checks which kinds a switch handles, not which handler each one calls.**
+  Swapping two arms would leave the D9 guards green. The protocol walk exercises the routing
+  behaviourally for five of the six query kinds, which is the coverage that actually matters, but
+  the guard is weaker than it reads.

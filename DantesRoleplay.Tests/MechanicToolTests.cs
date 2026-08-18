@@ -167,7 +167,7 @@ public sealed class MechanicToolTests : IDisposable
 
         Assert.False(result.Ok);
         Assert.Equal("INVALID_STATUS", result.Error?.Code);
-        Assert.Contains("write_mechanic(", result.Error?.Fix);
+        Assert.Contains("commit(kind: \"mechanic\", payload:", result.Error?.Fix);
         Assert.Contains("status", result.Error?.Fix);
         Assert.Single(await db.Operations.Where(o => o.Tool == "write_mechanic").ToListAsync());
     }

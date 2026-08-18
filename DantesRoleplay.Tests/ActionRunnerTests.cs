@@ -61,7 +61,7 @@ public sealed class ActionRunnerTests : IDisposable
         Assert.Equal(42, result.Seed);
         Assert.Equal(1, result.AppliedCount);
         Assert.Contains("orban", result.AffectedEntityIds);
-        Assert.Contains("get_entities", result.NextSteps.Single());
+        Assert.Contains("query(kind: \"entities\"", result.NextSteps.Single());
 
         var after = await world.GetEntityAsync("orban");
         Assert.NotNull(after);
@@ -99,7 +99,7 @@ public sealed class ActionRunnerTests : IDisposable
         Assert.False(result.Ok);
         Assert.Equal("NO_ACTIVE_MECHANIC", result.Error?.Code);
         Assert.Equal("orient()", result.Error?.Fix);
-        Assert.Single(await db.Operations.Where(o => o.Tool == "run_action").ToListAsync());
+        Assert.Single(await db.Operations.Where(o => o.Tool == "commit").ToListAsync());
     }
 
     [Fact]
@@ -127,7 +127,10 @@ public sealed class ActionRunnerTests : IDisposable
 
         Assert.False(result.Ok);
         Assert.Equal("PROJECTION_FAILED", result.Error?.Code);
-        Assert.Equal("get_procedure(id: \"procedure.mechanic.projection\")", result.Error?.Fix);
+        // The recovery has to be the call that gets the caller unstuck, not a kernel contract
+        // whose own first line tells an action caller to read a different one.
+        Assert.StartsWith("query(kind: \"mechanics\", id: ", result.Error?.Fix);
+        Assert.Contains("roleEntityIds", result.Error?.Fix);
         Assert.Contains("MISSING_REQUIRED_ROLE", result.Error?.Why);
         Assert.Empty(await world.FindEntitiesAsync());
     }
@@ -167,7 +170,7 @@ public sealed class ActionRunnerTests : IDisposable
 
         Assert.False(result.Ok);
         Assert.Equal("INVALID_EFFECTS", result.Error?.Code);
-        Assert.Equal("get_procedure(id: \"procedure.world.change\")", result.Error?.Fix);
+        Assert.Equal("query(kind: \"procedures\", id: \"procedure.world.change\")", result.Error?.Fix);
         Assert.Contains("Unknown entity", result.Error?.Why);
 
         var after = await world.GetEntityAsync("orban");
@@ -194,9 +197,11 @@ public sealed class ActionRunnerTests : IDisposable
 
         Assert.False(result.Ok);
         Assert.Equal("INVALID_INPUT", result.Error?.Code);
-        Assert.Equal("run_action(intent: \"same intent\", roleEntityIds: {}, input: \"{}\")", result.Error?.Fix);
+        Assert.Equal(
+            "commit(kind: \"action\", payload: \"{\\\"intent\\\":\\\"same intent\\\",\\\"roleEntityIds\\\":{},\\\"input\\\":\\\"{}\\\"}\")",
+            result.Error?.Fix);
         Assert.Empty(result.Candidates);
-        Assert.Single(await db.Operations.Where(o => o.Tool == "run_action").ToListAsync());
+        Assert.Single(await db.Operations.Where(o => o.Tool == "commit").ToListAsync());
     }
 
     [Fact]
@@ -214,8 +219,8 @@ public sealed class ActionRunnerTests : IDisposable
 
         Assert.False(result.Ok);
         Assert.Equal("CANCELLED", result.Error?.Code);
-        Assert.Equal("history(tool: \"run_action\", failuresOnly: true)", result.Error?.Fix);
-        Assert.Single(await db.Operations.Where(o => o.Tool == "run_action").ToListAsync());
+        Assert.Equal("query(kind: \"history\", failuresOnly: true)", result.Error?.Fix);
+        Assert.Single(await db.Operations.Where(o => o.Tool == "commit").ToListAsync());
     }
 
     private static ActionRunner CreateRunner(

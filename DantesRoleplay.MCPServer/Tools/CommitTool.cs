@@ -13,13 +13,15 @@ namespace DantesRoleplay.MCPServer.Tools;
 /// <summary>
 /// The write side of the three-verb MCP surface. Payloads are deliberately JSON objects so each
 /// commit kind can retain the shape of its existing implementation handler.
+///
+/// The kind list is <see cref="VerbSurface.CommitKinds"/> and nothing else; a guard test asserts
+/// the switch below against it in both directions. Every rejection carries the expected payload
+/// in full rather than a pointer to it, so a session that guessed wrong is corrected in the same
+/// round trip instead of spending another one asking.
 /// </summary>
 [McpServerToolType]
 public sealed class CommitTool
 {
-    private static readonly string[] ValidKinds =
-        ["procedure", "component", "effects", "mechanic", "action"];
-
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
@@ -27,9 +29,11 @@ public sealed class CommitTool
 
     [McpServerTool(Name = "commit")]
     [Description(
-        "Change the system through one of the closed kinds: procedure, component, effects, " +
-        "mechanic, or action. Payload must be a JSON object matching the selected kind. Use " +
-        "dryRun: true first for procedure, mechanic, and effects.")]
+        "Change anything in this system. kind is one of: procedure, component, effects, mechanic, " +
+        "action. payload is a JSON object encoded as a string, shaped per kind — " +
+        "query(kind: \"capabilities\") gives every shape exactly, and a rejection repeats the one " +
+        "you needed. Where dryRun is supported, send dryRun: true first and read every check, then " +
+        "commit the identical payload. This is the only path that changes state.")]
     public async Task<ToolEnvelope> CommitAsync(
         IProcedureStore procedures,
         IWorldStore world,
@@ -41,14 +45,18 @@ public sealed class CommitTool
         string kind,
         [Description("JSON object containing the selected kind's existing tool arguments.")]
         string payload,
-        [Description("What you were trying to achieve, in your own words.")] string intent = "",
+        [Description(
+            "What you were trying to achieve, in your own words. For kind \"action\" the payload's "
+            + "own intent is what gets recorded, because it is also what selects the rule.")]
+        string intent = "",
         [Description("Procedure ids consulted before this commit.")] string[]? proceduresUsed = null,
         [Description("Validate without changing state where supported.")] bool dryRun = false,
         CancellationToken cancellationToken = default)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
+        var spec = VerbSurface.Commit(normalizedKind);
 
-        if (!ValidKinds.Contains(normalizedKind, StringComparer.Ordinal))
+        if (spec is null)
         {
             return await ToolRunner.RunAsync(
                 log,
@@ -58,13 +66,14 @@ public sealed class CommitTool
                 proceduresUsed,
                 () => Task.FromResult(ToolOutcome.Fail(
                     "UNKNOWN_KIND",
-                    $"Unknown commit kind '{kind}'. Valid kinds: {string.Join(", ", ValidKinds)}.",
+                    $"Unknown commit kind '{kind}'. Valid kinds: "
+                    + $"{string.Join(", ", VerbSurface.CommitKindNames)}.",
                     "query(kind: \"capabilities\")",
                     $"Rejected commit kind '{kind}'.")),
                 consumesReadEvidence: !dryRun);
         }
 
-        if (dryRun && (normalizedKind == "component" || normalizedKind == "action"))
+        if (dryRun && !spec.SupportsDryRun)
         {
             return await ToolRunner.RunAsync(
                 log,
@@ -74,26 +83,19 @@ public sealed class CommitTool
                 proceduresUsed,
                 () => Task.FromResult(ToolOutcome.Fail(
                     "NOT_SUPPORTED",
-                    $"Dry run is not supported for commit kind '{normalizedKind}'.",
-                    $"commit(kind: \"{normalizedKind}\", payload: {PayloadArgument(normalizedKind)})",
+                    $"Dry run is not supported for commit kind '{normalizedKind}'. "
+                    + (normalizedKind == "action"
+                        ? "An action dry-runs its own effects internally before applying them."
+                        : "Send the commit itself; it validates before it writes."),
+                    VerbSurface.CommitCall(normalizedKind),
                     $"Rejected unsupported dry run for '{normalizedKind}'.")),
                 consumesReadEvidence: false);
         }
 
         if (!TryReadObject(payload, out var document, out var parseError))
         {
-            return await ToolRunner.RunAsync(
-                log,
-                "commit",
-                intent,
-                $"commit:{normalizedKind}",
-                proceduresUsed,
-                () => Task.FromResult(ToolOutcome.Fail(
-                    "INVALID_PAYLOAD",
-                    parseError!,
-                    $"commit(kind: \"{normalizedKind}\", payload: {PayloadArgument(normalizedKind)})",
-                    $"Rejected invalid payload for '{normalizedKind}'.")),
-                consumesReadEvidence: !dryRun);
+            return await InvalidPayloadEnvelope(
+                log, normalizedKind, parseError!, intent, proceduresUsed, dryRun);
         }
 
         var parsedPayload = document!;
@@ -112,7 +114,7 @@ public sealed class CommitTool
                 "mechanic" => await CommitMechanicAsync(
                     mechanics, log, parsedPayload.RootElement, intent, proceduresUsed, dryRun, cancellationToken),
                 "action" => await CommitActionAsync(
-                    actions, parsedPayload.RootElement, proceduresUsed, cancellationToken),
+                    actions, log, parsedPayload.RootElement, intent, proceduresUsed, cancellationToken),
                 _ => throw new InvalidOperationException($"Unhandled commit kind '{kind}'.")
             };
         }
@@ -273,7 +275,9 @@ public sealed class CommitTool
 
     private static async Task<ToolEnvelope> CommitActionAsync(
         IActionRunner actions,
+        IOperationLog log,
         JsonElement payload,
+        string intent,
         string[]? proceduresUsed,
         CancellationToken cancellationToken)
     {
@@ -281,15 +285,24 @@ public sealed class CommitTool
             value is null ||
             string.IsNullOrWhiteSpace(value.Intent))
         {
-            return ToolEnvelope.Failure(
-                "INVALID_PAYLOAD",
-                error ?? "Action payload requires intent.",
-                "commit(kind: \"action\", payload: \"{\\\"intent\\\":\\\"...\\\"}\")");
+            // Through ToolRunner like every other rejection: a failure nobody recorded is the one
+            // thing history cannot show you afterwards (§P3).
+            return await InvalidPayloadEnvelope(
+                log,
+                "action",
+                error ?? "Action payload requires intent — what the actor is trying to do, in "
+                    + "the player's words.",
+                intent,
+                proceduresUsed,
+                dryRun: false);
         }
 
         return await new ActionTools().RunActionAsync(
             actions,
-            value.Intent,
+            // The payload's intent is the one that both selects the rule and lands in the audit.
+            // Falling back means a caller who filled in only the top-level intent is not silently
+            // ignored — but the two cannot both be recorded without a kernel change.
+            string.IsNullOrWhiteSpace(value.Intent) ? intent : value.Intent,
             value.RoleEntityIds,
             value.Input ?? "{}",
             value.Scope,
@@ -298,6 +311,10 @@ public sealed class CommitTool
             cancellationToken);
     }
 
+    /// <summary>
+    /// D4: the expected shape travels inside the rejection, not as a pointer to where the shape
+    /// lives. A session that guessed wrong then has everything it needs in the same round trip.
+    /// </summary>
     private static Task<ToolEnvelope> InvalidPayloadEnvelope(
         IOperationLog log,
         string kind,
@@ -313,8 +330,9 @@ public sealed class CommitTool
             proceduresUsed,
             () => Task.FromResult(ToolOutcome.Fail(
                 "INVALID_PAYLOAD",
-                why,
-                $"commit(kind: \"{kind}\", payload: {PayloadArgument(kind)})",
+                $"{why} Expected payload for kind '{kind}': "
+                + $"{VerbSurface.Commit(kind)?.Payload ?? "{}"}.",
+                VerbSurface.CommitCall(kind, dryRun),
                 $"Rejected invalid payload for '{kind}'.")),
             consumesReadEvidence: !dryRun);
 
@@ -372,20 +390,6 @@ public sealed class CommitTool
             return false;
         }
     }
-
-    private static string ExpectedPayload(string kind) =>
-        kind switch
-        {
-            "procedure" => "{\"id\":\"...\",\"category\":\"...\",\"name\":\"...\",\"description\":\"...\",\"instructions\":\"...\"}",
-            "component" => "{\"id\":\"...\",\"name\":\"...\",\"description\":\"...\",\"schema\":\"{}\"}",
-            "effects" => "{\"effects\":[{\"type\":\"entity.create\",\"entityId\":\"...\",\"name\":\"...\"}]}",
-            "mechanic" => "{\"id\":\"...\",\"category\":\"...\",\"name\":\"...\",\"source\":\"...\"}",
-            "action" => "{\"intent\":\"...\",\"roleEntityIds\":{},\"input\":\"{}\"}",
-            _ => "{}"
-        };
-
-    private static string PayloadArgument(string kind) =>
-        JsonSerializer.Serialize(ExpectedPayload(kind));
 
     private sealed class ProcedurePayload
     {

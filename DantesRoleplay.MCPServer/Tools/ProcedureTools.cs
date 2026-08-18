@@ -6,11 +6,18 @@ using ModelContextProtocol.Server;
 namespace DantesRoleplay.MCPServer.Tools;
 
 /// <summary>
-/// The procedure-contract surface: three tools covering list/search, read, and write.
+/// The procedure-contract handlers behind <c>query(kind: "procedures")</c> and
+/// <c>commit(kind: "procedure")</c>.
 ///
-/// List and search are deliberately one tool. §7.5 prefers progressive disclosure over
+/// Not registered as MCP tools: the public surface is orient/query/commit, and these classes are
+/// the preserved implementations the dispatchers call (VERB_MIGRATION.md D5). The attributes stay
+/// so the mapping from behaviour to protocol remains readable, but nothing here reaches a client
+/// except through a dispatcher.
+///
+/// List and search are deliberately one kind. §7.5 prefers progressive disclosure over
 /// enumeration, and with a few dozen contracts an omitted query returning everything is the
-/// common, correct case.
+/// common, correct case. Every literal call in a NextStep or a fix below is written in the public
+/// call form, because that string is the recovery path a low-context session actually follows.
 /// </summary>
 [McpServerToolType]
 public sealed class ProcedureTools
@@ -31,11 +38,16 @@ public sealed class ProcedureTools
         string? category = null,
         [Description("Include deprecated and archived contracts. Default false.")]
         bool includeInactive = false,
+        [Description("Maximum results. Omit for the store's default, which returns the whole manual.")]
+        int? limit = null,
         CancellationToken cancellationToken = default) =>
         await ToolRunner.RunAsync(log, "find_procedures", async () =>
         {
-            var results = await procedures.FindAsync(
-                query, category, includeInactive, cancellationToken: cancellationToken);
+            var results = limit is null
+                ? await procedures.FindAsync(
+                    query, category, includeInactive, cancellationToken: cancellationToken)
+                : await procedures.FindAsync(
+                    query, category, includeInactive, limit.Value, cancellationToken);
 
             if (results.Count == 0)
             {
@@ -47,14 +59,14 @@ public sealed class ProcedureTools
                     new { Procedures = results, TotalWithoutFilters = all.Count },
                     $"No procedures matched (query: '{query}', category: '{category}').",
                     all.Count > 0
-                        ? "find_procedures() — clear the filters; there are procedures, just not matching this."
-                        : "history(failuresOnly: true) — no procedures exist at all, which is unexpected; check whether seeding failed.");
+                        ? "query(kind: \"procedures\") — clear the filters; there are procedures, just not matching this."
+                        : "query(kind: \"history\", failuresOnly: true) — no procedures exist at all, which is unexpected; check whether seeding failed.");
             }
 
             return ToolOutcome.Ok(
                 new { Procedures = results },
                 $"Found {results.Count} procedure(s).",
-                $"get_procedure(id: \"{results[0].Id}\") — read one in full before acting on it.");
+                $"query(kind: \"procedures\", id: \"{results[0].Id}\") — read one in full before acting on it.");
         });
 
     [McpServerTool(Name = "get_procedure")]
@@ -82,12 +94,12 @@ public sealed class ProcedureTools
                     ? ToolOutcome.Fail(
                         "UNKNOWN_VERSION",
                         $"Procedure '{id}' exists but has no version {version}.",
-                        $"get_procedure(id: \"{id}\") — omit the version to read the current one.",
+                        $"query(kind: \"procedures\", id: \"{id}\") — omit the version to read the current one.",
                         $"Version {version} of '{id}' not found.")
                     : ToolOutcome.Fail(
                         "UNKNOWN_PROCEDURE",
                         $"There is no procedure with id '{id}'.",
-                        "find_procedures() — list what does exist, then retry with a real id.",
+                        "query(kind: \"procedures\") — list what does exist, then retry with a real id.",
                         $"Procedure '{id}' not found.");
             }
 
@@ -97,12 +109,12 @@ public sealed class ProcedureTools
             {
                 nextSteps.Add(
                     $"You are reading version {procedure.Version} of {procedure.LatestVersion}. " +
-                    $"get_procedure(id: \"{id}\") returns the current one.");
+                    $"query(kind: \"procedures\", id: \"{id}\") returns the current one.");
             }
 
             nextSteps.Add("Follow the instructions, then perform the operation they govern.");
             nextSteps.Add(
-                $"write_procedure(id: \"{id}\", ..., dryRun: true) — only if following it revealed that it is wrong or incomplete.");
+                $"{VerbSurface.CommitCall("procedure", id, dryRun: true)} — only if following it revealed that it is wrong or incomplete.");
 
             // Recording the subject is what lets a later write report what was demonstrably read.
             return ToolOutcome.OkAbout(
@@ -167,7 +179,8 @@ public sealed class ProcedureTools
                     return ToolOutcome.Fail(
                         "INVALID_STATUS",
                         $"'{status}' is not a status.",
-                        "Retry with status omitted, or one of: draft, active, deprecated, archived.",
+                        $"{VerbSurface.CommitCall("procedure", id)} — retry with status omitted, "
+                        + "or one of: draft, active, deprecated, archived.",
                         $"Rejected write to '{id}': bad status.");
                 }
 
@@ -203,8 +216,8 @@ public sealed class ProcedureTools
                     },
                     $"Dry run for '{id}': {checks.Count(c => c.Passed)}/{checks.Count} checks passed, nothing written.",
                     checks.Any(c => !c.Passed)
-                        ? "Address the failing checks above, then call again with dryRun omitted."
-                        : $"write_procedure(id: \"{id}\", ...) with dryRun omitted to commit this.");
+                        ? "Address the failing checks above, then send the identical payload again with dryRun omitted."
+                        : $"{VerbSurface.CommitCall("procedure", id)} — the identical payload with dryRun omitted commits it.");
             }
 
             var result = await procedures.WriteAsync(request, cancellationToken);
@@ -213,7 +226,7 @@ public sealed class ProcedureTools
             return ToolOutcome.Ok(
                 new { result.Procedure, result.Created, Checks = checks, ProceduresYouDemonstrablyRead = read },
                 $"{verb} {id} v{result.Procedure.Version}.",
-                $"get_procedure(id: \"{id}\") — confirm it reads the way you intended.",
-                "find_procedures() — check you have not created a near-duplicate.");
+                $"query(kind: \"procedures\", id: \"{id}\") — confirm it reads the way you intended.",
+                "query(kind: \"procedures\") — check you have not created a near-duplicate.");
         }, consumesReadEvidence: !dryRun);
 }

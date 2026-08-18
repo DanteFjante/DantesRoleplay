@@ -1,5 +1,6 @@
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Operations;
+using DantesRoleplay.Procedures;
 
 namespace DantesRoleplay.Tests;
 
@@ -9,15 +10,38 @@ public sealed class OperationLogTests : IDisposable
 
     public void Dispose() => _fixture.Dispose();
 
+    /// <summary>
+    /// A contract read counts only when its subject is a real contract id — one verb now serves
+    /// every read, so the tool name alone cannot tell a contract read from a mechanic read. These
+    /// tests therefore have to put the contracts they claim to read into the database.
+    /// </summary>
+    private static async Task SeedAsync(DantesRoleplayDbContext db, params string[] ids)
+    {
+        var store = new ProcedureStore(db);
+
+        foreach (var id in ids)
+        {
+            await store.WriteAsync(new WriteProcedureRequest
+            {
+                Id = id,
+                Category = "test",
+                Name = id,
+                Description = "Seeded so that a read of it is observable.",
+                Instructions = "1. Exist.",
+                CreatedBy = "test"
+            });
+        }
+    }
+
     [Fact]
     public async Task Records_an_operation_and_returns_it_newest_first()
     {
         await using var db = _fixture.CreateContext();
         var log = new OperationLog(db);
 
-        await log.RecordAsync("find_procedures", "listed 3", success: true);
+        await log.RecordAsync("query", "listed 3", success: true);
         await log.RecordAsync(
-            "write_procedure",
+            "commit",
             "created procedure.system.modify v1",
             success: true,
             intent: "Add a modify procedure",
@@ -28,7 +52,7 @@ public sealed class OperationLogTests : IDisposable
         var recent = await log.RecentAsync();
 
         Assert.Equal(2, recent.Count);
-        Assert.Equal("write_procedure", recent[0].Tool);
+        Assert.Equal("commit", recent[0].Tool);
         Assert.Equal("procedure.contract.create", recent[0].ProceduresCited);
         Assert.Equal("procedure.system.modify", recent[0].Subject);
     }
@@ -39,8 +63,8 @@ public sealed class OperationLogTests : IDisposable
         await using var db = _fixture.CreateContext();
         var log = new OperationLog(db);
 
-        await log.RecordAsync("get_procedure", "ok", success: true);
-        await log.RecordAsync("get_procedure", "not found", success: false, error: "UNKNOWN_PROCEDURE");
+        await log.RecordAsync("query", "ok", success: true);
+        await log.RecordAsync("query", "not found", success: false, error: "UNKNOWN_PROCEDURE");
 
         var failures = await log.RecentAsync(failuresOnly: true);
 
@@ -54,13 +78,13 @@ public sealed class OperationLogTests : IDisposable
         await using var db = _fixture.CreateContext();
         var log = new OperationLog(db);
 
-        await log.RecordAsync("get_procedure", "read a", success: true, subject: "procedure.a");
-        await log.RecordAsync("get_procedure", "read b", success: true, subject: "procedure.b");
-        await log.RecordAsync("write_procedure", "wrote a", success: true, subject: "procedure.a");
+        await log.RecordAsync("query", "read a", success: true, subject: "procedure.a");
+        await log.RecordAsync("query", "read b", success: true, subject: "procedure.b");
+        await log.RecordAsync("commit", "wrote a", success: true, subject: "procedure.a");
 
-        Assert.Equal(2, (await log.RecentAsync(tool: "get_procedure")).Count);
+        Assert.Equal(2, (await log.RecentAsync(tool: "query")).Count);
         Assert.Equal(2, (await log.RecentAsync(subject: "procedure.a")).Count);
-        Assert.Single(await log.RecentAsync(tool: "write_procedure", subject: "procedure.a"));
+        Assert.Single(await log.RecentAsync(tool: "commit", subject: "procedure.a"));
     }
 
     [Fact]
@@ -68,13 +92,14 @@ public sealed class OperationLogTests : IDisposable
     {
         await using var db = _fixture.CreateContext();
         var log = new OperationLog(db);
+        await SeedAsync(db, "procedure.contract.create");
 
         // The agent really opens one contract...
-        await log.RecordAsync("get_procedure", "read", success: true, subject: "procedure.contract.create");
+        await log.RecordAsync("query", "read", success: true, subject: "procedure.contract.create");
 
         // ...then claims it consulted a different one it never opened.
         var write = await log.RecordAsync(
-            "write_procedure",
+            "commit",
             "wrote",
             success: true,
             subject: "procedure.new",
@@ -91,9 +116,9 @@ public sealed class OperationLogTests : IDisposable
         await using var db = _fixture.CreateContext();
         var log = new OperationLog(db);
 
-        await log.RecordAsync("get_procedure", "not found", success: false, subject: "procedure.ghost");
+        await log.RecordAsync("query", "not found", success: false, subject: "procedure.ghost");
 
-        var write = await log.RecordAsync("write_procedure", "wrote", success: true, subject: "procedure.new");
+        var write = await log.RecordAsync("commit", "wrote", success: true, subject: "procedure.new");
 
         Assert.Equal(string.Empty, write.ProceduresRead);
     }
@@ -104,8 +129,8 @@ public sealed class OperationLogTests : IDisposable
         await using var db = _fixture.CreateContext();
         var log = new OperationLog(db);
 
-        await log.RecordAsync("get_procedure", "read", success: true, subject: "procedure.a");
-        var second = await log.RecordAsync("get_procedure", "read", success: true, subject: "procedure.b");
+        await log.RecordAsync("query", "read", success: true, subject: "procedure.a");
+        var second = await log.RecordAsync("query", "read", success: true, subject: "procedure.b");
 
         Assert.Equal(string.Empty, second.ProceduresRead);
     }
@@ -128,12 +153,13 @@ public sealed class OperationLogTests : IDisposable
     {
         await using var db = _fixture.CreateContext();
         var log = new OperationLog(db);
+        await SeedAsync(db, "procedure.old", "procedure.new");
 
-        await log.RecordAsync("get_procedure", "read", success: true, subject: "procedure.old");
-        await log.RecordAsync("write_procedure", "wrote", success: true, subject: "procedure.a", consumesReadEvidence: true);
+        await log.RecordAsync("query", "read", success: true, subject: "procedure.old");
+        await log.RecordAsync("commit", "wrote", success: true, subject: "procedure.a", consumesReadEvidence: true);
 
-        await log.RecordAsync("get_procedure", "read", success: true, subject: "procedure.new");
-        var second = await log.RecordAsync("write_procedure", "wrote", success: true, subject: "procedure.b", consumesReadEvidence: true);
+        await log.RecordAsync("query", "read", success: true, subject: "procedure.new");
+        var second = await log.RecordAsync("commit", "wrote", success: true, subject: "procedure.b", consumesReadEvidence: true);
 
         Assert.Equal("procedure.new,procedure.old", second.ProceduresRead);
     }
@@ -143,16 +169,17 @@ public sealed class OperationLogTests : IDisposable
     {
         await using var db = _fixture.CreateContext();
         var log = new OperationLog(db);
+        await SeedAsync(db, "procedure.a");
 
-        await log.RecordAsync("get_procedure", "read", success: true, subject: "procedure.a");
+        await log.RecordAsync("query", "read", success: true, subject: "procedure.a");
 
         // Read-only tools in between change nothing about what was read. orient is excluded here
         // on purpose — it is a deliberate session boundary and DOES reset the window; see
         // Orienting_starts_a_fresh_run.
-        await log.RecordAsync("history", "looked", success: true);
-        await log.RecordAsync("find_procedures", "listed", success: true);
+        await log.RecordAsync("query", "looked", success: true);
+        await log.RecordAsync("query", "listed", success: true);
 
-        var write = await log.RecordAsync("write_procedure", "wrote", success: true, subject: "procedure.b", consumesReadEvidence: true);
+        var write = await log.RecordAsync("commit", "wrote", success: true, subject: "procedure.b", consumesReadEvidence: true);
 
         Assert.Equal("procedure.a", write.ProceduresRead);
     }
@@ -162,24 +189,25 @@ public sealed class OperationLogTests : IDisposable
     {
         await using var db = _fixture.CreateContext();
         var log = new OperationLog(db);
+        await SeedAsync(db, "procedure.old", "procedure.contract.create");
 
         // The exact cold-walk sequence: an earlier run, then a fresh one that reads, dry runs and
         // commits. orient() is what separates them — it is the documented first call of a session
         // and the only boundary the log can actually observe.
-        await log.RecordAsync("get_procedure", "read", success: true, subject: "procedure.old");
-        await log.RecordAsync("write_procedure", "earlier commit", success: true,
+        await log.RecordAsync("query", "read", success: true, subject: "procedure.old");
+        await log.RecordAsync("commit", "earlier commit", success: true,
             subject: "procedure.earlier", consumesReadEvidence: true);
 
         await log.RecordAsync("orient", "a new session begins", success: true);
-        await log.RecordAsync("get_procedure", "read", success: true, subject: "procedure.contract.create");
+        await log.RecordAsync("query", "read", success: true, subject: "procedure.contract.create");
 
         // dryRun: true — validates, changes nothing, and must leave the evidence intact.
-        var dry = await log.RecordAsync("write_procedure", "dry run", success: true,
+        var dry = await log.RecordAsync("commit", "dry run", success: true,
             subject: "procedure.new", consumesReadEvidence: false);
         Assert.Equal(string.Empty, dry.ProceduresRead);
 
         // The real commit is the operation that consumes it, so it is the one that reports it.
-        var commit = await log.RecordAsync("write_procedure", "committed", success: true,
+        var commit = await log.RecordAsync("commit", "committed", success: true,
             subject: "procedure.new",
             proceduresCited: ["procedure.contract.create"],
             consumesReadEvidence: true);
@@ -194,15 +222,16 @@ public sealed class OperationLogTests : IDisposable
     {
         await using var db = _fixture.CreateContext();
         var log = new OperationLog(db);
+        await SeedAsync(db, "procedure.stale", "procedure.fresh");
 
         // A previous run that ended on a read, with no write to spend it.
-        await log.RecordAsync("get_procedure", "read", success: true, subject: "procedure.stale");
+        await log.RecordAsync("query", "read", success: true, subject: "procedure.stale");
 
         // A new session begins by orienting.
         await log.RecordAsync("orient", "oriented", success: true);
-        await log.RecordAsync("get_procedure", "read", success: true, subject: "procedure.fresh");
+        await log.RecordAsync("query", "read", success: true, subject: "procedure.fresh");
 
-        var commit = await log.RecordAsync("write_procedure", "committed", success: true,
+        var commit = await log.RecordAsync("commit", "committed", success: true,
             subject: "procedure.new", consumesReadEvidence: true);
 
         Assert.Equal("procedure.fresh", commit.ProceduresRead);
@@ -213,20 +242,21 @@ public sealed class OperationLogTests : IDisposable
     {
         await using var db = _fixture.CreateContext();
         var log = new OperationLog(db);
+        await SeedAsync(db, "procedure.contract.create");
 
-        await log.RecordAsync("get_procedure", "read", success: true, subject: "procedure.contract.create");
+        await log.RecordAsync("query", "read", success: true, subject: "procedure.contract.create");
 
-        var dry = await log.RecordAsync("write_procedure", "dry run", success: true,
+        var dry = await log.RecordAsync("commit", "dry run", success: true,
             subject: "procedure.new",
             proceduresCited: ["procedure.contract.create"],
             consumesReadEvidence: false);
 
-        var commit = await log.RecordAsync("write_procedure", "committed", success: true,
+        var commit = await log.RecordAsync("commit", "committed", success: true,
             subject: "procedure.new",
             proceduresCited: ["procedure.contract.create"],
             consumesReadEvidence: true);
 
-        // The dry run cites but does not consume, so it is not judged. history() counts an
+        // The dry run cites but does not consume, so it is not judged. A history read counts an
         // unbacked citation only where ConsumedReadEvidence is set — otherwise a correct
         // dry-run-then-commit sequence reports itself as a manual violation.
         Assert.False(dry.ConsumedReadEvidence);
@@ -253,17 +283,18 @@ public sealed class OperationLogTests : IDisposable
         // and was flagged for citing what it had never opened.
         await using var db = _fixture.CreateContext();
         var log = new OperationLog(db);
+        await SeedAsync(db, "procedure.world.change", "procedure.world.model");
 
         await log.RecordAsync("orient", "oriented", success: true);
-        await log.RecordAsync("get_procedure", "read", success: true, subject: "procedure.world.change");
-        await log.RecordAsync("get_procedure", "read", success: true, subject: "procedure.world.model");
+        await log.RecordAsync("query", "read", success: true, subject: "procedure.world.change");
+        await log.RecordAsync("query", "read", success: true, subject: "procedure.world.model");
 
-        var definition = await log.RecordAsync("define_component", "defined stats", success: true,
+        var definition = await log.RecordAsync("commit", "defined stats", success: true,
             subject: "stats",
             proceduresCited: ["procedure.world.model"],
             consumesReadEvidence: true);
 
-        var write = await log.RecordAsync("apply_effects", "created an actor", success: true,
+        var write = await log.RecordAsync("commit", "created an actor", success: true,
             subject: "orban,lantern",
             proceduresCited: ["procedure.world.change"],
             consumesReadEvidence: true);
@@ -284,11 +315,12 @@ public sealed class OperationLogTests : IDisposable
         // false consultation into the audit trail as fact.
         await using var db = _fixture.CreateContext();
         var log = new OperationLog(db);
+        await SeedAsync(db, "procedure.world.change");
 
-        await log.RecordAsync("get_procedure", "read", success: true, subject: "procedure.world.change");
+        await log.RecordAsync("query", "read", success: true, subject: "procedure.world.change");
         await log.RecordAsync("orient", "a new session begins", success: true);
 
-        var write = await log.RecordAsync("apply_effects", "changed something", success: true,
+        var write = await log.RecordAsync("commit", "changed something", success: true,
             subject: "orban",
             proceduresCited: ["procedure.world.change"],
             consumesReadEvidence: true);
@@ -315,8 +347,8 @@ public sealed class OperationLogTests : IDisposable
         await using var db = _fixture.CreateContext();
         var log = new OperationLog(db);
 
-        await log.RecordAsync("apply_effects", "moved a thing", success: true, subject: "lantern,orban");
-        await log.RecordAsync("apply_effects", "unrelated", success: true, subject: "tower");
+        await log.RecordAsync("commit", "moved a thing", success: true, subject: "lantern,orban");
+        await log.RecordAsync("commit", "unrelated", success: true, subject: "tower");
 
         var first = await log.RecentAsync(subject: "lantern");
         var middleOfList = await log.RecentAsync(subject: "orban");

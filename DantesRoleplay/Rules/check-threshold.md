@@ -39,7 +39,8 @@ var raw = ctx.roles.subject.components.stats;
 if (!raw) {
   throw new Error(
     ctx.roles.subject.name + ' has no "stats" component, so there is nothing to test. ' +
-    'Attach one with apply_effects, or use a rule that reads whatever component this game uses.');
+    'Attach one with commit(kind: "effects"), or use a rule that reads whatever component ' +
+    'this game uses.');
 }
 
 var stats = JSON.parse(raw);

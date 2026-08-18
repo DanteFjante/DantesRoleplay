@@ -629,9 +629,9 @@ draft → active → deprecated → archived
 ```
 
 The planned `experimental` approval state is represented by `draft` in the MVP because the
-12-tool surface deliberately does not yet include separate activation or approval tools. New
+surface deliberately does not yet include separate activation or approval operations. New
 mechanics therefore default to `draft`; an author must explicitly request `active` before
-`run_action` can execute one. A later lifecycle slice may add `experimental` without changing
+`commit(kind: "action")` can execute one. A later lifecycle slice may add `experimental` without changing
 the append-only storage model.
 
 Contracts:
@@ -934,6 +934,17 @@ is that an LLM with almost no context can use this system correctly on its first
 *semantic operation behind an existing tool*, never a new tool. Tool descriptions are loaded into
 every conversation whether used or not; procedures are loaded on demand. This is the single
 highest-leverage rule here.
+
+> **Superseded 2026-08-18 — the budget is 3.** The twelve were collapsed into `orient`, `query`
+> and `commit`, each taking a closed `kind` enum; `VERB_MIGRATION.md` is the implementation record
+> and `VERB_HISTORY.md` maps the old names. The rule above was right and this is the same rule
+> applied harder: twelve descriptions were still twelve descriptions loaded every time, and the
+> distinctions between them (`find_procedures` vs `get_procedure`, `find_mechanics` vs
+> `run_action`) were navigation decisions a weak model had to get right before it could do
+> anything. What the twelve names carried is now data — a flat, bounded list of kinds a session
+> reads once from `query(kind: "capabilities")` — instead of prompt. The corollary is new: growth
+> happens in kinds, and a kind costs ~10–20 tokens in a catalog rather than a description in every
+> conversation. Sections 7.2–7.10 are unchanged and still hold.
 
 **7.2 — One obvious entry point.** A single `orient()` (or `start_here()`) that is cheap,
 idempotent, and returns: the one-sentence premise, the current campaign digest, and the three to

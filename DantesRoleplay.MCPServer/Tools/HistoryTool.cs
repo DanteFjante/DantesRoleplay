@@ -5,7 +5,8 @@ using ModelContextProtocol.Server;
 namespace DantesRoleplay.MCPServer.Tools;
 
 /// <summary>
-/// The audit trail, readable from inside the system.
+/// The audit trail, readable from inside the system — the handler behind
+/// <c>query(kind: "history")</c>. Not registered as an MCP tool (VERB_MIGRATION.md D5).
 ///
 /// Not only for the human in the control room: an agent picking up work mid-thread can read the
 /// last few operations and reconstruct where things stand, which is usually cheaper and more
@@ -26,7 +27,7 @@ public sealed class HistoryTool
         [Description("How many to return, newest first. Default 20, max 200.")] int limit = 20,
         [Description("Only operations that failed. Useful when something is not working.")]
         bool failuresOnly = false,
-        [Description("Only this tool, e.g. \"write_procedure\".")] string? tool = null,
+        [Description("Only this tool, e.g. \"commit\".")] string? tool = null,
         [Description("Only operations acting on this id, e.g. a contract id.")] string? subject = null,
         CancellationToken cancellationToken = default) =>
         await ToolRunner.RunAsync(log, "history", async () =>
@@ -60,7 +61,7 @@ public sealed class HistoryTool
                     new { Operations = view },
                     "No matching operations.",
                     failuresOnly || tool is not null || subject is not null
-                        ? "history() — drop the filters to see everything."
+                        ? "query(kind: \"history\") — drop the filters to see everything."
                         : "orient() — nothing has happened yet; start there.");
             }
 
@@ -79,7 +80,7 @@ public sealed class HistoryTool
 
             if (failures > 0 && !failuresOnly)
             {
-                notes.Add("history(failuresOnly: true) — look at just the failures.");
+                notes.Add("query(kind: \"history\", failuresOnly: true) — look at just the failures.");
             }
 
             if (unbacked > 0)

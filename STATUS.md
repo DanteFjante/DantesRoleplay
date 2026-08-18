@@ -1,18 +1,24 @@
 # DantesRoleplay — status
 
-Last updated 2026-08-17. Tracks against `ARCHITECTURE.md`. Update this in the same change that
+Last updated 2026-08-18. Tracks against `ARCHITECTURE.md`. Update this in the same change that
 moves an item.
 
 **Legend:** ✅ done and covered by passing tests · 🟡 partly done, or done but unreachable ·
 ⬜ not started · ⏸ deliberately deferred
 
-**Right now:** solution builds clean, **148/148 tests pass**, and **the MCP surface is complete at
-exactly 12 tools**. The MVP sentence is true end to end: in a live session over real JSON-RPC, a
-rule that did not exist was written through `write_mechanic`, found seconds later by what a player
+**Right now:** solution builds clean, **182/182 tests pass**, and **the MCP surface is three verbs
+— `orient`, `query`, `commit`** (the migration in `VERB_MIGRATION.md`, completed 2026-08-18; the
+twelve names it replaced are recorded in `VERB_HISTORY.md`). The MVP sentence is true end to end: a
+rule that did not exist was written through the write path, found seconds later by what a player
 would say, run in the sandbox, and its effects applied in one transaction.
 
-What is left is not machinery. It is a cold walk to prove a stranger can do the same, and
-optionally a control room to look at what got written.
+The migration also added the test that had been missing all along — a protocol walk that speaks
+real JSON-RPC to a running server. It immediately found that `IActionRunner` was never registered,
+so **every `commit` had been failing at invocation** with no envelope and no audit row, while all
+167 unit tests passed. See *The three-verb migration* below.
+
+What is left is not machinery: content to play with, a story frame to hang it on, and a stranger
+driving it without being told how. `NEXT_STEPS.md` is the list.
 
 ---
 
@@ -38,7 +44,7 @@ reused — was exercised over real MCP against the running server.
 - ✅ Architecture decided and recorded, with the reasoning for each overturn (`ARCHITECTURE.md`)
 - ✅ Five-project solution; core has zero package references
 - ✅ SQLite + EF Core, migrations covering procedures, operations and the world
-- ✅ Offline build + test running in the Cowork container (148/148)
+- ✅ Offline build + test running in the Cowork container
 
 **Procedure contracts — the operating manual (P1–P2)**
 
@@ -59,7 +65,8 @@ reused — was exercised over real MCP against the running server.
 
 - ✅ Entity / component / definition / containment / relationship store
 - ✅ Proven: a new stat can be added with no migration and no C# change
-- ✅ **Reachable over MCP** — `describe_world`, `get_entities`, `define_component`, `apply_effects`
+- ✅ **Reachable over MCP** — `query(kind: "world")`, `query(kind: "entities")`,
+  `commit(kind: "component")`, `commit(kind: "effects")`
 
 **Effects (P9)**
 
@@ -126,16 +133,20 @@ The risk `ARCHITECTURE.md` §2 calls the major one. Three things answer it, all 
 - ✅ Contents materialise only when asked for; where an entity *is* comes free
 - ✅ Every fault at once, so one round trip fixes them
 
-**The last three tools**
+**Actions and rules**
 
-- ✅ `run_action` — intent alone returns candidates and runs NOTHING, so choosing which code
-  executes is a decision made rather than one the system makes for you
-- ✅ The whole chain in one call: resolve → sandbox → validate → one transaction
+- ✅ `commit(kind: "action")` — the whole chain in one call: select by intent → resolve the declared
+  projection → sandbox → validate → one transaction
+- 🟡 **Selection is by intent alone.** There is no way to name a rule and no caller-facing dry run.
+  Both existed in an older, unreachable implementation whose next-step strings advertised them long
+  after it stopped being called; that implementation is now deleted and the contracts say what the
+  live path actually does. Whether to add mechanic selection back is a real question once several
+  rules match the same words — see `NEXT_STEPS.md` Phase 3
 - ✅ Seeded, and the seed is returned; passing it back replays a run exactly
-- ✅ `find_mechanics` doubles as read-in-full via `id`, which is how the surface fits in 12
-- ✅ `write_mechanic` with the same dry-run discipline as `write_procedure`
-- ✅ `history(subject: ...)` answers both "which rules have been run" and "what has happened to
-  Orban" — including checks that changed nothing, because an outcome is an event
+- ✅ `query(kind: "mechanics")` is both the search and the read-in-full, by `id`
+- ✅ `commit(kind: "mechanic")` with the same dry-run discipline as `commit(kind: "procedure")`
+- ✅ `query(kind: "history", subject: ...)` answers both "which rules have been run" and "what has
+  happened to Orban" — including checks that changed nothing, because an outcome is an event
 
 **The game that ships (deliberately tiny)**
 
@@ -148,21 +159,37 @@ The risk `ARCHITECTURE.md` §2 calls the major one. Three things answer it, all 
 - ✅ They fail usefully: a missing argument names what to pass, an unknown field lists the ones that
   exist, and an entity with no numbers says so rather than being treated as zeroes
 
-**MCP surface (P4) — complete**
+**MCP surface (P4) — complete, three verbs**
 
-- ✅ **12 tools, the cap in §7.1 hit exactly**: `orient`, `find_procedures`, `get_procedure`,
-  `write_procedure`, `describe_world`, `get_entities`, `define_component`, `apply_effects`,
-  `find_mechanics`, `write_mechanic`, `run_action`, `history`
-- ✅ Uniform envelope; every error names the exact next call
-- ✅ Dry run on both write paths, and neither dry run spends read evidence
-- ✅ 4 guard tests: no game vocabulary in the kernel; every tool announced by `orient`;
-  **nothing announced that is not a tool**; tool budget — now at its limit, so the next tool fails
-  the build rather than quietly becoming a thirteenth
+- ✅ **3 tools**: `orient`, `query`, `commit`. Six query kinds (`capabilities`, `procedures`,
+  `world`, `entities`, `mechanics`, `history`) and five commit kinds (`procedure`, `component`,
+  `effects`, `mechanic`, `action`), both closed enums, both flat
+- ✅ `VerbSurface.cs` is the single description of all of it — kinds, the parameters each reads,
+  every payload shape and a complete copyable example. `orient` and both dispatchers read from it,
+  so the manual cannot describe an operation the code does not have
+- ✅ `query(kind: "capabilities")` returns that catalog, and every `INVALID_PAYLOAD` repeats the
+  shape it needed inside the error rather than pointing at where the shape lives
+- ✅ Uniform envelope; every error names the exact next call, as a call that can actually be made
+- ✅ Dry run on `procedure`, `mechanic` and `effects`, and neither dry run spends read evidence.
+  `component` and `action` return `NOT_SUPPORTED` explaining why rather than pretending
+- ✅ 9 guard tests: no game vocabulary in the kernel; orient announces exactly the registered verbs;
+  **each dispatcher handles exactly the kinds the catalog advertises, asserted both ways**; both
+  tool descriptions name every kind they serve; no recovery call names a retired verb; every
+  example payload parses; every effect type is documented; the three-tool budget
+- ✅ 4 protocol-walk tests over real JSON-RPC — `tools/list`, the full orient → query → commit →
+  confirm sequence including a real sandbox run, that reading a contract and citing it shows up in
+  the audit, and the two ways a session guesses wrong
+- ✅ Seeded contracts are held to the same checks an agent's would be. The seeder writes directly,
+  so nothing validated the shipped manual until a build-time test did
 - ✅ 10 bootstrap contracts, including `procedure.mechanic.write` and `procedure.action.run`
 - ✅ End-to-end smoke test over real JSON-RPC: orient → describe → define → reject bad effects →
   dry run → commit → read back → history
 
 **Cold walks**
+
+**Runs 1–5 predate the three-verb migration** and are recorded in the tool names that existed at
+the time. They remain accurate as history and were re-run against the new surface as run 6; see
+`COLDWALK.md`.
 
 - ✅ **Run one (2026-08-17, Codex).** `orient` accurate including what is not built; found and read
   the existing contract instead of duplicating it; dry run passed all six checks.
@@ -212,23 +239,49 @@ distinguishes them, because the stateless MCP host issues no session id.
 
 ## ⬜ Left to do for MVP
 
-In dependency order. "Slice" ≈ one subsystem, ~5 files, built and tested before the next starts.
+**`NEXT_STEPS.md` is the list.** It is kept there rather than here so there is one of it — this
+file records what is true, that one records what to do next. Eight items, of which three are
+Dante's and unautomatable: a cold walk on the three-verb surface, then a played session, then a
+reuse session on the same database.
 
-The reorder paid: building the sandbox before the resolver meant the resolver's output shape was
-decided by a real consumer rather than a guessed one. It also surfaced a defect that would have
-been invisible — see *what the spike caught* below.
+**Nothing left is machinery.** The chain that makes the MVP sentence true is built and exercised
+end to end. What remains is content to play with, a story frame to hang it on, and a stranger
+driving it without being told how.
 
-| # | Item | Size | Why it is MVP |
-| --- | --- | --- | --- |
-| 1 | **Cold walk, run five** | Dante, ~20 min | The MVP acceptance test itself, and the only thing left that is genuinely required. Everything below is optional. |
-| 2 | **Minimal control room** — operations, mechanics, entities (§4.2 view specs) | 1 slice | The premise is supervising AI-written code. **Cuttable:** the MVP sentence is true without it, and nothing depends on it. |
+**Tool budget check:** 3 — `orient`, `query`, `commit`. There is no room for a fourth, by design.
+Growth happens in kinds, and a kind costs ~10–20 tokens in the catalog rather than a tool
+description loaded into every conversation. `procedure.mcp.add-tool` governs adding one and starts
+by telling you not to.
 
-**Nothing here is machinery.** The chain that makes the MVP sentence true is built and exercised;
-what remains is proving a stranger can drive it, and deciding whether you want somewhere to look.
+---
 
-**Tool budget check:** 9 built + 3 mechanics = **12 exactly**, the cap in §7.1. There is no room
-for a thirteenth, by design — `run_action`, `find_mechanics` and `write_mechanic` are the last
-three tools this system will ever have.
+## The three-verb migration (2026-08-18)
+
+Executed per `VERB_MIGRATION.md`. Decisions D1–D12 held, with two deliberate deviations, both
+recorded in that document's status section. Five defects were found and fixed on the way, none of
+which any existing test could have caught:
+
+1. **`IActionRunner` was never registered.** `commit` takes it as a parameter for every kind, so
+   the entire write verb failed at invocation over MCP — no envelope, no `fix`, no audit row. All
+   167 unit tests passed, because each constructed its dependencies by hand and passed `null` for
+   the runner. This is the whole argument for the protocol walk.
+2. **Every write-side `fix` named a call that could not be made.** A regex adapter rewrote the
+   preserved handlers' recovery calls by prefix, turning `write_procedure(id: "x", ...)` into
+   `commit(kind: "procedure", id: "x", ...)` — `commit` takes `payload`, not `id`. The adapter is
+   gone; the handlers write the public form themselves, built from `VerbSurface`.
+3. **Responses were `\u0022`-escaped.** The SDK's default JSON encoder wrote every quote in the
+   envelope that way, so the `fix` a model reads was `query(kind: \u0022capabilities\u0022)`.
+   Fixed at both the tool-result and stored-projection serialisers.
+4. **A dead second `run_action`** lived in `MechanicTools`, unreachable since `ActionRunner`
+   replaced it and never tested. Its next-step strings were the source of every "choose a mechanic
+   by id" and "dry-run an action" claim in the codebase and the contracts. Deleted.
+5. **The action surface was described wrongly everywhere**, including in `orient`: "called with no
+   roleEntityIds it returns candidate rules without running any" is false. It selects and runs.
+
+Two contract pairs were also found governing the same call with no way to choose between them
+(`mechanic.create`/`mechanic.write`, `action.run`/`mechanic.run`). Each pair is now one
+caller-facing contract and one kernel-facing one with a redirect, matching what
+`mechanic.projection` already did.
 
 **What the end-to-end run proved.** Over real JSON-RPC, in one session: `run_action` with intent
 alone returned candidates without running anything; a dry run showed the working
@@ -265,7 +318,7 @@ makes the MVP reachable.
 | Vector / semantic retrieval (P11, P13) | §8.3 — revisit at ~150 contracts or ~200 mechanics. |
 | Full control room: rollback, approval UI, event chains (P14) | Item 8 covers the minimum. |
 | Source / tool introspection | Real gap found by the cold-model test, but it blocks the agent writing docs *about the system*, not playing. |
-| Schema validation of component data | `define_component` accepts a JSON Schema and stores it as documentation. Enforcing it is a nice-to-have that would slow every write. |
+| Schema validation of component data | `commit(kind: "component")` accepts a JSON Schema and stores it as documentation. Enforcing it is a nice-to-have that would slow every write. |
 | Postgres | §8.3, with named triggers. |
 
 ---

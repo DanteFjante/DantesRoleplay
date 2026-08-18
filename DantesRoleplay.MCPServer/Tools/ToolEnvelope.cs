@@ -1,5 +1,4 @@
 using DantesRoleplay.Operations;
-using System.Text.RegularExpressions;
 
 namespace DantesRoleplay.MCPServer.Tools;
 
@@ -57,7 +56,14 @@ internal static class ToolRunner
     /// <summary>
     /// Runs one of the preserved implementation handlers behind the public query/commit adapter.
     /// The handler still owns its behaviour and transaction boundaries; this scope only gives its
-    /// existing audit wrapper the public protocol identity and translates literal recovery calls.
+    /// existing audit wrapper the public protocol identity — the tool name history records, the
+    /// subject when the outcome does not name one, and whether the call spends read evidence.
+    ///
+    /// It deliberately does NOT rewrite the handlers' literal recovery calls. An earlier version
+    /// did, by prefix substitution, and turned a `write_procedure` next-step carrying `id:` and
+    /// the rest of its named arguments into `commit(kind: "procedure", id: "x", ...)` — a call with
+    /// no `payload` argument, which the protocol rejects. The handlers now write the public call
+    /// form themselves, which is the only version that can be checked by reading it.
     /// </summary>
     public static IDisposable EnterProtocol(
         string tool,
@@ -91,11 +97,6 @@ internal static class ToolRunner
         {
             var outcome = await body();
             var dispatch = ToolRunnerDispatch.Value;
-
-            if (dispatch is not null)
-            {
-                outcome = dispatch.Translate(outcome);
-            }
 
             var effectiveTool = dispatch?.Tool ?? tool;
             var effectiveSubject = string.IsNullOrEmpty(outcome.Subject) ? subject : outcome.Subject;
@@ -153,48 +154,15 @@ internal static class ToolRunner
     }
 }
 
+/// <summary>
+/// Which public verb and kind the current call is being served as. Nothing more: the mapping from
+/// old tool name to new call form lives in `VERB_HISTORY.md` for reading old audit rows, not in
+/// running code.
+/// </summary>
 internal sealed record ProtocolDispatch(
     string Tool,
     string Kind,
-    bool? ConsumesReadEvidenceOverride)
-{
-    private static readonly IReadOnlyDictionary<string, (string Tool, string Kind)> CallMap =
-        new Dictionary<string, (string Tool, string Kind)>(StringComparer.Ordinal)
-        {
-            ["find_procedures"] = ("query", "procedures"),
-            ["get_procedure"] = ("query", "procedures"),
-            ["describe_world"] = ("query", "world"),
-            ["get_entities"] = ("query", "entities"),
-            ["find_mechanics"] = ("query", "mechanics"),
-            ["history"] = ("query", "history"),
-            ["write_procedure"] = ("commit", "procedure"),
-            ["define_component"] = ("commit", "component"),
-            ["apply_effects"] = ("commit", "effects"),
-            ["write_mechanic"] = ("commit", "mechanic"),
-            ["run_action"] = ("commit", "action")
-        };
-
-    public ToolOutcome Translate(ToolOutcome outcome) =>
-        outcome with
-        {
-            NextSteps = outcome.NextSteps.Select(TranslateText).ToArray(),
-            Error = outcome.Error is null
-                ? null
-                : outcome.Error with { Fix = TranslateText(outcome.Error.Fix) }
-        };
-
-    private static string TranslateText(string text)
-    {
-        foreach (var (oldName, target) in CallMap)
-        {
-            var prefix = $"{target.Tool}(kind: \"{target.Kind}\", ";
-            text = text.Replace($"{oldName}(", prefix, StringComparison.Ordinal);
-            text = text.Replace($"{oldName}()", $"{target.Tool}(kind: \"{target.Kind}\")", StringComparison.Ordinal);
-        }
-
-        return Regex.Replace(text, @",\s*\)", ")");
-    }
-}
+    bool? ConsumesReadEvidenceOverride);
 
 internal sealed class DispatchScope : IDisposable
 {

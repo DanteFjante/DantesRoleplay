@@ -3,6 +3,7 @@ id: procedure.system.create-feature
 category: system
 name: Add a feature
 governs: adding a capability that does not exist yet
+revised-by: Claude Opus 5, 2026-08-18 — the unit of surface extension is a kind, not a tool
 status: active
 ---
 
@@ -22,5 +23,7 @@ at all.
 
 ## Constraints
 - A feature and its contract land together, never in separate changes.
-- If the feature is a new MCP tool, follow `procedure.mcp.add-tool` instead — the tool budget
-  applies and it is nearly always the wrong answer.
+- If the feature needs a new query kind or commit kind, follow `procedure.mcp.add-tool` instead.
+  There are three tools and there will not be a fourth, and a new kind is nearly always the wrong
+  answer too — check first whether it fits behind an existing kind, or is a contract rather than a
+  capability.

@@ -1,4 +1,7 @@
+using System.Text.Json;
 using System.Text.RegularExpressions;
+using DantesRoleplay.Effects;
+using DantesRoleplay.MCPServer.Tools;
 
 namespace DantesRoleplay.Tests;
 
@@ -8,9 +11,9 @@ namespace DantesRoleplay.Tests;
 /// Both describe failures that are invisible until they are expensive: game logic leaking into
 /// the kernel (§3.11), and the operating manual drifting away from what the system can actually
 /// do (§7.9). The second one has now failed for real — a cold-model test found orient claiming
-/// capabilities that did not exist — so the drift check runs in BOTH directions.
-///
-/// All of these read source files, so they need no reference to the host project.
+/// capabilities that did not exist — so the drift check runs in BOTH directions, and since the
+/// three-verb migration it runs at the level that can actually drift now: the kinds, not the
+/// three tool names.
 /// </summary>
 public sealed class GuardTests
 {
@@ -78,61 +81,221 @@ public sealed class GuardTests
     }
 
     [Fact]
-    public void Every_mcp_tool_is_announced_by_orient()
+    public void Exactly_three_public_verbs_are_exposed()
     {
-        var (declared, capabilities) = ToolSurface();
+        var declared = DeclaredToolNames();
 
-        var missing = declared
-            .Where(name => !capabilities.Contains($"\"{name} —", StringComparison.Ordinal))
-            .ToList();
-
-        Assert.True(
-            missing.Count == 0,
-            "These tools exist but orient() does not mention them, so a cold model would never "
-            + "learn they are available (ARCHITECTURE.md §7.9):\n  "
-            + string.Join("\n  ", missing));
+        // The old handlers remain in source as the implementation, but only the three registered
+        // dispatchers are public MCP tools.
+        Assert.Equal(
+            new[] { "commit", "orient", "query" },
+            declared.Order(StringComparer.Ordinal).ToArray());
     }
 
     /// <summary>
-    /// The direction that actually failed in practice. orient once advertised writing component
-    /// definitions and world data when no such tool existed; a cold model believed it and planned
-    /// around a capability that was not there. Over-promising is as damaging as going stale.
+    /// The direction that actually failed in practice, at the level it can fail now. orient once
+    /// advertised writing component definitions and world data when no such tool existed; a cold
+    /// model believed it and planned around a capability that was not there.
     /// </summary>
     [Fact]
-    public void Orient_announces_nothing_that_is_not_a_tool()
+    public void Orient_announces_exactly_the_registered_verbs()
     {
-        var (declared, capabilities) = ToolSurface();
+        using var announcement = JsonSerializer.SerializeToDocument(VerbSurface.Announcement());
 
-        var advertised = Regex.Matches(capabilities, @"""(?<name>[a-z_]+) —")
-            .Select(m => m.Groups["name"].Value)
-            .Distinct()
-            .ToList();
+        var announced = announcement.RootElement
+            .EnumerateObject()
+            .Select(p => p.Name.ToLowerInvariant())
+            .Order(StringComparer.Ordinal)
+            .ToArray();
 
-        Assert.NotEmpty(advertised);
-
-        var phantom = advertised.Except(declared, StringComparer.Ordinal).ToList();
-
-        Assert.True(
-            phantom.Count == 0,
-            "orient() advertises capabilities with no corresponding MCP tool. A cold model will "
-            + "plan around these and fail:\n  "
-            + string.Join("\n  ", phantom));
+        Assert.Equal(DeclaredToolNames().Order(StringComparer.Ordinal).ToArray(), announced);
     }
 
+    /// <summary>
+    /// D9, the read side. Every kind the catalog offers is a case the dispatcher actually handles,
+    /// and every case it handles is offered — so a session can neither be told about a kind that
+    /// fails nor be denied one that works.
+    ///
+    /// `capabilities` is answered by the protocol before dispatch (it describes the surface rather
+    /// than reading the database), so it is excluded here and covered by its own behaviour test.
+    /// </summary>
     [Fact]
-    public void Exactly_three_public_verbs_are_exposed()
+    public void Query_dispatch_handles_exactly_the_advertised_kinds()
     {
-        var (declared, _) = ToolSurface();
+        var advertised = VerbSurface.QueryKindNames
+            .Where(k => k != "capabilities")
+            .Order(StringComparer.Ordinal)
+            .ToArray();
 
-        // The old handlers remain in source for reuse, but only the three registered dispatchers
-        // are public MCP tools.
-        Assert.True(
-            declared.Count == 3 && declared.Distinct(StringComparer.Ordinal).Count() == 3,
-            $"Expected exactly orient, query, and commit; found {string.Join(", ", declared)}.");
+        Assert.Equal(advertised, DispatchedKinds("QueryTool.cs"));
     }
 
-    /// <summary>Reads the declared tool names and orient's capability block from source.</summary>
-    private static (List<string> Declared, string Capabilities) ToolSurface()
+    /// <summary>D9, the write side.</summary>
+    [Fact]
+    public void Commit_dispatch_handles_exactly_the_advertised_kinds()
+    {
+        var advertised = VerbSurface.CommitKindNames.Order(StringComparer.Ordinal).ToArray();
+
+        Assert.Equal(advertised, DispatchedKinds("CommitTool.cs"));
+    }
+
+    /// <summary>
+    /// The names the twelve-tool surface used, kept here so nothing can quietly reintroduce one.
+    /// `VERB_HISTORY.md` maps them to the calls that replaced them; old audit rows still carry
+    /// them, and that is correct history, but no running code may suggest making one.
+    /// </summary>
+    internal static readonly string[] RetiredVerbs =
+    [
+        "find_procedures", "get_procedure", "write_procedure", "describe_world", "get_entities",
+        "define_component", "apply_effects", "find_mechanics", "write_mechanic", "run_action",
+        "history"
+    ];
+
+    /// <summary>
+    /// The same list minus <c>history</c>, for scanning prose. "history" is an ordinary English
+    /// word that seeded contracts use correctly ("read the history"), so matching it as a bare
+    /// word there would be a guard that cries wolf. In source it is only ever the retired call.
+    /// </summary>
+    internal static IEnumerable<string> RetiredVerbsInProse =>
+        RetiredVerbs.Where(v => v != "history");
+
+    /// <summary>
+    /// The failure this test exists for actually shipped. A regex adapter rewrote the handlers'
+    /// literal recovery calls by prefix, so `write_procedure(id: "x", ...)` became
+    /// `commit(kind: "procedure", id: "x", ...)` — commit takes `payload`, not `id`, so every
+    /// write-side `fix` named a call the protocol would reject. §7.4 says a failure is an
+    /// instruction; an instruction that cannot be followed is worse than silence, because the
+    /// session spends its recovery attempt on it.
+    ///
+    /// Scans source text rather than only string literals: a comment naming a retired call is
+    /// stale documentation, and this file is one of the few places that can notice.
+    /// </summary>
+    [Fact]
+    public void No_recovery_call_names_a_verb_that_no_longer_exists()
+    {
+        var root = RepositoryRoot();
+
+        var files = EnumerateSource(Path.Combine(root, "DantesRoleplay.MCPServer"))
+            // The action runner owns its own audit rows and its own error text, so it emits
+            // recovery calls without passing through the dispatchers.
+            .Append(Path.Combine(root, "DantesRoleplay.DataAccess", "ActionRunner.cs"))
+            .Where(File.Exists);
+
+        var offences = new List<string>();
+
+        foreach (var file in files)
+        {
+            var source = File.ReadAllText(file);
+
+            foreach (var verb in RetiredVerbs)
+            {
+                foreach (Match match in Regex.Matches(source, $@"\b{verb}\s*\("))
+                {
+                    var line = source.Take(match.Index).Count(c => c == '\n') + 1;
+                    offences.Add($"{Path.GetRelativePath(root, file)}:{line}: '{verb}('");
+                }
+            }
+        }
+
+        Assert.True(
+            offences.Count == 0,
+            "These name a call that no longer exists. A session following one gets a protocol "
+            + "error instead of a recovery (VERB_MIGRATION.md D7):\n  "
+            + string.Join("\n  ", offences));
+    }
+
+    /// <summary>
+    /// The kind lists a client reads FIRST are the tool descriptions, and an attribute cannot be
+    /// built from <see cref="VerbSurface"/> — it has to be a compile-time constant. So they are
+    /// hand-maintained copies, and this is what stops one drifting: every kind the surface serves
+    /// has to be named in the description a session chooses the tool by.
+    /// </summary>
+    [Fact]
+    public void Both_dispatchers_name_every_kind_in_the_description_a_client_reads()
+    {
+        AssertDescribed("QueryTool.cs", VerbSurface.QueryKindNames);
+        AssertDescribed("CommitTool.cs", VerbSurface.CommitKindNames);
+
+        static void AssertDescribed(string fileName, IReadOnlyList<string> kinds)
+        {
+            var source = File.ReadAllText(Path.Combine(
+                RepositoryRoot(), "DantesRoleplay.MCPServer", "Tools", fileName));
+
+            // Only the [Description] attributes — the prose that ships in tools/list.
+            var described = string.Join(
+                " ",
+                Regex.Matches(source, @"\[Description\((?<text>.*?)\)\]", RegexOptions.Singleline)
+                    .Select(m => m.Groups["text"].Value));
+
+            var missing = kinds
+                .Where(kind => !described.Contains($"{kind}", StringComparison.Ordinal))
+                .ToList();
+
+            Assert.True(
+                missing.Count == 0,
+                $"{fileName} serves these kinds but its tool description never names them, so a "
+                + "session reading tools/list does not know they exist:\n  "
+                + string.Join("\n  ", missing));
+        }
+    }
+
+    /// <summary>
+    /// The effect vocabulary is the one part of the surface that lives in the kernel. It reached
+    /// clients through the old `apply_effects` description and briefly reached nobody at all after
+    /// that class stopped being registered — five of the nine verbs were then discoverable only by
+    /// sending a wrong one and reading the rejection.
+    /// </summary>
+    [Fact]
+    public void Every_effect_type_is_documented_in_the_catalog()
+    {
+        Assert.Equal(
+            EffectType.All.Order(StringComparer.Ordinal).ToArray(),
+            VerbSurface.EffectVocabulary.Keys.Order(StringComparer.Ordinal).ToArray());
+    }
+
+    /// <summary>
+    /// Every commit example has to be a payload that would actually parse. An example that only
+    /// looks like JSON is worse than none: it is quoted verbatim into the next call.
+    /// </summary>
+    [Fact]
+    public void Every_commit_example_payload_is_a_valid_json_object()
+    {
+        foreach (var kind in VerbSurface.CommitKinds)
+        {
+            var document = JsonDocument.Parse(kind.Example);
+
+            Assert.True(
+                document.RootElement.ValueKind == JsonValueKind.Object,
+                $"The example payload for commit kind '{kind.Name}' is not a JSON object.");
+        }
+    }
+
+    /// <summary>
+    /// Reads the kind literals from a dispatcher's switch. Source rather than reflection on
+    /// purpose: the question is what that switch handles, and only the switch can answer it.
+    /// </summary>
+    private static string[] DispatchedKinds(string fileName)
+    {
+        var file = Path.Combine(
+            RepositoryRoot(), "DantesRoleplay.MCPServer", "Tools", fileName);
+
+        Assert.True(File.Exists(file), $"Expected a dispatcher at {file}.");
+
+        var source = File.ReadAllText(file);
+        var start = source.IndexOf("return normalizedKind switch", StringComparison.Ordinal);
+        Assert.True(start >= 0, $"Could not find the dispatch switch in {fileName}.");
+
+        var end = source.IndexOf("_ => throw", start, StringComparison.Ordinal);
+        Assert.True(end > start, $"Could not find the end of the dispatch switch in {fileName}.");
+
+        return [.. Regex.Matches(source[start..end], @"""(?<kind>[a-z]+)""\s*(?:when[^=]*?)?=>")
+            .Select(m => m.Groups["kind"].Value)
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)];
+    }
+
+    /// <summary>The tool names actually registered with the MCP server, read from source.</summary>
+    private static List<string> DeclaredToolNames()
     {
         var root = RepositoryRoot();
         var toolsDirectory = Path.Combine(root, "DantesRoleplay.MCPServer", "Tools");
@@ -140,9 +303,14 @@ public sealed class GuardTests
         Assert.True(Directory.Exists(toolsDirectory), $"Expected tools at {toolsDirectory}.");
 
         var declared = new List<string>();
-        var program = File.ReadAllText(Path.Combine(root, "DantesRoleplay.MCPServer", "Program.cs"));
-        var registeredTypes = Regex.Matches(program, @"WithTools<(?<type>[A-Za-z0-9_]+)>")
+
+        // Scans the whole host project rather than one file: registration has already moved once,
+        // from Program.cs into ServerConfiguration, and a guard that stops looking when code moves
+        // is a guard that reports success because it found nothing.
+        var registeredTypes = EnumerateSource(Path.Combine(root, "DantesRoleplay.MCPServer"))
+            .SelectMany(file => Regex.Matches(File.ReadAllText(file), @"WithTools<(?<type>[A-Za-z0-9_]+)>"))
             .Select(m => m.Groups["type"].Value)
+            .Distinct(StringComparer.Ordinal)
             .ToList();
 
         Assert.NotEmpty(registeredTypes);
@@ -162,14 +330,7 @@ public sealed class GuardTests
 
         Assert.NotEmpty(declared);
 
-        var orient = File.ReadAllText(Path.Combine(toolsDirectory, "OrientTool.cs"));
-        var start = orient.IndexOf("Capabilities() =>", StringComparison.Ordinal);
-        Assert.True(start >= 0, "Could not find the Capabilities() block in OrientTool.cs.");
-
-        var end = orient.IndexOf("];", start, StringComparison.Ordinal);
-        Assert.True(end > start, "Could not find the end of the Capabilities() block.");
-
-        return (declared, orient[start..end]);
+        return declared;
     }
 
     private static IEnumerable<string> EnumerateSource(string directory) =>

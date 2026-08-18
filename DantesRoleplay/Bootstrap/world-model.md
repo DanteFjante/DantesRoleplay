@@ -2,7 +2,8 @@
 id: procedure.world.model
 category: world
 name: Model something new in the world
-governs: representing a new game concept as data, define_component
+governs: commit(kind: "component"), representing a new game concept as data
+revised-by: Claude Opus 5, 2026-08-18 — three-verb call forms; noted that committing an existing definition id updates it in place
 status: active
 ---
 
@@ -15,16 +16,21 @@ without changing the database schema.
    an **entity** (a thing that exists), a **component** (data attached to a thing), a
    **containment** (a thing inside another thing), a **relationship** (a named link between two
    things), or a **component definition** (declaring that a kind of component may exist).
-2. Call `describe_world()` and read the existing component definitions before inventing one. Most
-   new ideas are a field on a component that already exists, and two definitions meaning the same
-   thing is the failure this system is built to avoid.
-3. If it really is new, `define_component(...)` first, then attach it with `apply_effects`.
-   Attaching an undeclared component type fails on purpose — it is almost always a typo.
-4. Keep entities thin. An entity has an id and a name; everything else is components.
-5. Use `component.set` to replace a component's data and `component.merge` to change some keys.
+2. Call `query(kind: "world")` and read the existing component definitions before inventing one.
+   Most new ideas are a field on a component that already exists, and two definitions meaning the
+   same thing is the failure this system is built to avoid.
+3. If it really is new, `commit(kind: "component", payload: {...})` first, then attach it with
+   `commit(kind: "effects")`. Attaching an undeclared component type fails on purpose — it is
+   almost always a typo.
+4. Committing a definition id that already exists UPDATES that definition in place. It is the one
+   write in this system that is not append-only: there is no previous version to go back to, and
+   no dry run. Read the definition first, and change the description rather than repurposing the
+   id — everything already carrying that component keeps its data and inherits your new meaning.
+5. Keep entities thin. An entity has an id and a name; everything else is components.
+6. Use `component.set` to replace a component's data and `component.merge` to change some keys.
    Know which you want before you call: merge is shallow, and set discards anything you did not
    send.
-6. Name definitions for what they hold, not for who holds them. `stats` is reusable; `goblin_stats`
+7. Name definitions for what they hold, not for who holds them. `stats` is reusable; `goblin_stats`
    is a second definition you will regret.
 
 ## Constraints

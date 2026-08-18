@@ -57,6 +57,29 @@ public sealed class VerbToolTests : IDisposable
         Assert.Empty(await db.Operations.Where(o => o.Tool == "write_procedure").ToListAsync());
     }
 
+    /// <summary>
+    /// A `fix` is only useful if it can be pasted back. Each commit call this system suggests is
+    /// taken apart the way a client would: the payload argument must be a JSON string, and the
+    /// string it carries must itself be a JSON object.
+    /// </summary>
+    [Fact]
+    public void Every_suggested_commit_call_is_literally_callable()
+    {
+        foreach (var kind in VerbSurface.CommitKindNames)
+        {
+            var call = VerbSurface.CommitCall(kind, dryRun: true);
+            var prefix = $"commit(kind: \"{kind}\", payload: ";
+
+            Assert.StartsWith(prefix, call, StringComparison.Ordinal);
+
+            var argument = call[prefix.Length..].Split(", dryRun: true)")[0].TrimEnd(')');
+            var payload = JsonSerializer.Deserialize<string>(argument);
+
+            Assert.NotNull(payload);
+            Assert.Equal(JsonValueKind.Object, JsonDocument.Parse(payload!).RootElement.ValueKind);
+        }
+    }
+
     [Fact]
     public async Task Unknown_commit_kind_returns_a_recoverable_protocol_error()
     {

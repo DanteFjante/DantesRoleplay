@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using DantesRoleplay.Effects;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
 using ModelContextProtocol.Server;
@@ -7,11 +6,19 @@ using ModelContextProtocol.Server;
 namespace DantesRoleplay.MCPServer.Tools;
 
 /// <summary>
-/// The last three tools this system will ever have (§7.1): find, write, run.
+/// The mechanic handlers behind <c>query(kind: "mechanics")</c> and
+/// <c>commit(kind: "mechanic")</c>. Not registered as MCP tools (VERB_MIGRATION.md D5).
 ///
-/// Note that there is no get_mechanic. Reading one in full is <c>find_mechanics(id: "...")</c> —
-/// the same tool, one argument different — because the twelfth slot was the last one and reading
-/// source is not worth spending a permanent tool on when an argument does it.
+/// There is no separate "get" path. Reading one in full is <c>query(kind: "mechanics", id: ...)</c>
+/// — the same kind, one argument different — because an unbounded collection needs exactly two
+/// layers, summary list and full record, and nothing more.
+///
+/// This class also held a second, older <c>run_action</c> implementation taking a mechanicId, a
+/// roles map and its own dryRun. It was superseded by <see cref="ActionTools"/> over
+/// <c>IActionRunner</c> and had been unreachable and untested ever since — but its next-step
+/// strings still advertised choosing a mechanic by id and dry-running an action, neither of which
+/// the live path supports. It was removed rather than repaired: a dead second implementation that
+/// describes capabilities the real one lacks is worse than no implementation at all.
 /// </summary>
 [McpServerToolType]
 public sealed class MechanicTools
@@ -37,6 +44,8 @@ public sealed class MechanicTools
         string? scope = null,
         [Description("Include deprecated and archived rules. Default false.")]
         bool includeInactive = false,
+        [Description("Maximum results for a search. Omit for the store's default of 50.")]
+        int? limit = null,
         CancellationToken cancellationToken = default) =>
         await ToolRunner.RunAsync(log, "find_mechanics", async () =>
         {
@@ -52,12 +61,12 @@ public sealed class MechanicTools
                         ? ToolOutcome.Fail(
                             "UNKNOWN_VERSION",
                             $"Mechanic '{id}' exists but has no version {version}.",
-                            $"find_mechanics(id: \"{id}\") — omit the version for the live one.",
+                            $"query(kind: \"mechanics\", id: \"{id}\") — omit the version for the live one.",
                             $"Version {version} of '{id}' not found.")
                         : ToolOutcome.Fail(
                             "UNKNOWN_MECHANIC",
                             $"There is no mechanic with id '{id}'.",
-                            "find_mechanics() — list what does exist, then retry with a real id.",
+                            "query(kind: \"mechanics\") — list what does exist, then retry with a real id.",
                             $"Mechanic '{id}' not found.");
                 }
 
@@ -65,17 +74,20 @@ public sealed class MechanicTools
 
                 if (mechanic.Version < mechanic.LatestVersion)
                 {
-                    steps.Add($"This is version {mechanic.Version} of {mechanic.LatestVersion}. find_mechanics(id: \"{id}\") returns the live one.");
+                    steps.Add($"This is version {mechanic.Version} of {mechanic.LatestVersion}. query(kind: \"mechanics\", id: \"{id}\") returns the live one.");
                 }
 
-                steps.Add($"run_action(mechanicId: \"{id}\", roles: {{...}}, dryRun: true) — try it without applying anything.");
-                steps.Add($"write_mechanic(id: \"{id}\", ..., dryRun: true) — only if running it showed it is wrong.");
+                steps.Add($"{VerbSurface.CommitCall("action")} — resolve an action through it. A rule is selected by intent, not by id, so use words this one matches, and fill roleEntityIds with the role names it declares above.");
+                steps.Add($"{VerbSurface.CommitCall("mechanic", id, dryRun: true)} — only if running it showed it is wrong.");
 
                 return ToolOutcome.OkAbout(id, mechanic, $"Read {id} v{mechanic.Version}.", [.. steps]);
             }
 
-            var results = await mechanics.FindAsync(
-                query, category, scope, includeInactive, cancellationToken: cancellationToken);
+            var results = limit is null
+                ? await mechanics.FindAsync(
+                    query, category, scope, includeInactive, cancellationToken: cancellationToken)
+                : await mechanics.FindAsync(
+                    query, category, scope, includeInactive, limit.Value, cancellationToken);
 
             if (results.Count == 0)
             {
@@ -87,14 +99,14 @@ public sealed class MechanicTools
                     new { Mechanics = results, TotalWithoutFilters = all.Count },
                     $"No mechanics matched (query: '{query}').",
                     all.Count > 0
-                        ? "find_mechanics() — clear the filters; rules exist, just not matching this."
-                        : "No rules exist at all. This system ships without a game — write_mechanic(..., dryRun: true) creates the first one.");
+                        ? "query(kind: \"mechanics\") — clear the filters; rules exist, just not matching this."
+                        : $"No rules exist at all. This system ships without a game — {VerbSurface.CommitCall("mechanic", dryRun: true)} creates the first one.");
             }
 
             return ToolOutcome.Ok(
                 new { Mechanics = results },
                 $"Found {results.Count} mechanic(s).",
-                $"find_mechanics(id: \"{results[0].Id}\") — read one in full, source included.");
+                $"query(kind: \"mechanics\", id: \"{results[0].Id}\") — read one in full, source included.");
         });
 
     [McpServerTool(Name = "write_mechanic")]
@@ -114,7 +126,7 @@ public sealed class MechanicTools
           ctx.random()                seeded, 0 to 1
           ctx.log(message)            shows up in the run result and in history
 
-          return { narration: "what happened", effects: [ ...same shape as apply_effects... ] }
+          return { narration: "what happened", effects: [ ...same shape as commit(kind: "effects")... ] }
 
         The rule CANNOT read the database, call out, or reach anything not in ctx — it gets exactly
         what its requirements declared and nothing else. That is what makes it reviewable, so
@@ -134,7 +146,7 @@ public sealed class MechanicTools
         [Description("Short human title.")] string name,
         [Description("One or two sentences describing what this rule resolves.")]
         string description,
-        [Description("What players might say to invoke this, ONE PER LINE. Without these, run_action will rarely find it.")]
+        [Description("What players might say to invoke this, ONE PER LINE. Without these, an action will rarely find it.")]
         string matches,
         [Description("JSON projection spec — the roles and components this rule reads. Declare honestly.")]
         string requirements,
@@ -164,7 +176,7 @@ public sealed class MechanicTools
                     return ToolOutcome.Fail(
                         "INVALID_STATUS",
                         $"'{status}' is not a status.",
-                        $"write_mechanic(id: \"{id}\", ..., status: \"active\") — retry with status omitted, or one of: draft, active, deprecated, archived.",
+                        $"{VerbSurface.CommitCall("mechanic", id)} — retry with status omitted, or one of: draft, active, deprecated, archived.",
                         $"Rejected write to '{id}': bad status.");
                 }
 
@@ -200,8 +212,8 @@ public sealed class MechanicTools
                     },
                     $"Dry run for '{id}': {checks.Count(c => c.Passed)}/{checks.Count} checks passed, nothing written.",
                     checks.Any(c => !c.Passed)
-                        ? "Address the failing checks above, then call again with dryRun omitted."
-                        : $"write_mechanic(id: \"{id}\", ...) with dryRun omitted to commit this.");
+                        ? "Address the failing checks above, then send the identical payload again with dryRun omitted."
+                        : $"{VerbSurface.CommitCall("mechanic", id)} — the identical payload with dryRun omitted commits it.");
             }
 
             var blocking = checks
@@ -214,7 +226,7 @@ public sealed class MechanicTools
                     "INVALID_MECHANIC",
                     $"The mechanic failed {blocking.Count} blocking check(s): " +
                     string.Join(" ", blocking.Select(c => c.Detail)),
-                    $"write_mechanic(id: \"{id}\", ..., dryRun: true) — correct the blocking checks before committing.",
+                    $"{VerbSurface.CommitCall("mechanic", id, dryRun: true)} — correct the blocking checks before committing.",
                     $"Rejected '{id}': blocking mechanic checks failed.");
             }
 
@@ -224,216 +236,7 @@ public sealed class MechanicTools
             return ToolOutcome.Ok(
                 new { result.Mechanic, result.Created, Checks = checks, ProceduresYouDemonstrablyRead = read },
                 $"{verb} {id} v{result.Mechanic.Version}.",
-                $"run_action(mechanicId: \"{id}\", roles: {{...}}, dryRun: true) — a rule that has never been run is a guess.",
-                "find_mechanics() — check you have not created a near-duplicate.");
+                $"{VerbSurface.CommitCall("action")} — run it; a rule that has never been run is a guess. Use words from its match phrases as the intent.",
+                "query(kind: \"mechanics\") — check you have not created a near-duplicate.");
         }, consumesReadEvidence: !dryRun);
-
-    [McpServerTool(Name = "run_action")]
-    [Description(
-        """
-        Resolve something a player is trying to do, by running a game rule.
-
-        Call with `intent` alone first — it returns candidate mechanics without running anything,
-        and you choose. Then call again with `mechanicId`, the `roles` it needs, and any `input`.
-
-        This is the whole chain in one call: fetch exactly the data the rule declared, run it in a
-        sandbox that can reach nothing else, validate what it proposes, and apply all of it in one
-        transaction — or none of it. Use dryRun to see the narration and the proposed effects
-        without changing anything.
-
-        `roles` maps the rule's OWN role names to entity ids, e.g. {"subject": "orban"}. Read the
-        mechanic with find_mechanics(id: ...) to see what it takes. Chance is seeded and the seed
-        is returned: pass the same seed back to replay a run exactly.
-        """)]
-    public async Task<ToolEnvelope> RunActionAsync(
-        IMechanicStore mechanics,
-        IProjectionResolver resolver,
-        IMechanicEngine engine,
-        IEffectApplier applier,
-        IOperationLog log,
-        [Description("What the player is trying to do, in their words. Use alone to get candidates.")]
-        string intent = "",
-        [Description("Which rule to run. Omit to search by intent instead of running anything.")]
-        string? mechanicId = null,
-        [Description("The rule's role names to entity ids, e.g. {\"subject\": \"orban\"}.")]
-        Dictionary<string, string>? roles = null,
-        [Description("Arguments for this action as a JSON object, e.g. {\"cost\": 3}.")]
-        string input = "{}",
-        [Description("Ruleset to prefer when searching. Shared rules are always included.")]
-        string scope = "",
-        [Description("Reuse a seed from an earlier run to reproduce it exactly. Omit for a new one.")]
-        long? seed = null,
-        [Description("Run the rule and show what it would do, without applying anything.")]
-        bool dryRun = false,
-        [Description("Ids of procedures you consulted.")] string[]? proceduresUsed = null,
-        CancellationToken cancellationToken = default) =>
-        await ToolRunner.RunAsync(log, "run_action", intent, mechanicId ?? string.Empty, proceduresUsed, async () =>
-        {
-            // No mechanic named: this is the matching step, and it deliberately runs nothing. The
-            // premise of the system is supervising code an AI wrote, and picking which rule to
-            // execute is the moment where that supervision is cheapest.
-            if (string.IsNullOrWhiteSpace(mechanicId))
-            {
-                if (string.IsNullOrWhiteSpace(intent))
-                {
-                    return ToolOutcome.Fail(
-                        "NO_INTENT",
-                        "Neither intent nor mechanicId was given, so there is nothing to match or run.",
-                        "run_action(intent: \"what the player is trying to do\") — returns candidate rules.",
-                        "Rejected run_action: nothing to do.");
-                }
-
-                var candidates = await mechanics.FindAsync(intent, scope: scope, cancellationToken: cancellationToken);
-
-                if (candidates.Count == 0)
-                {
-                    return ToolOutcome.Ok(
-                        new { Candidates = candidates, Intent = intent },
-                        $"No rule matches '{intent}'.",
-                        "This system ships without a game, so an unmatched action usually means the rule has not been written yet.",
-                        "find_mechanics() — see everything that does exist, in case it is worded differently.",
-                        "write_mechanic(..., dryRun: true) — author the rule, then run it.");
-                }
-
-                return ToolOutcome.Ok(
-                    new { Candidates = candidates, Intent = intent },
-                    $"{candidates.Count} rule(s) could resolve '{intent}'. Nothing was run.",
-                    $"find_mechanics(id: \"{candidates[0].Id}\") — read it, including which roles it needs.",
-                    $"run_action(mechanicId: \"{candidates[0].Id}\", roles: {{...}}, dryRun: true) — once you know the roles.");
-            }
-
-            var mechanic = await mechanics.GetAsync(mechanicId, cancellationToken: cancellationToken);
-
-            if (mechanic is null)
-            {
-                return ToolOutcome.Fail(
-                    "UNKNOWN_MECHANIC",
-                    $"There is no mechanic with id '{mechanicId}'.",
-                    $"run_action(intent: \"{intent}\") — find one by what the player is doing.",
-                    $"Mechanic '{mechanicId}' not found.");
-            }
-
-            MechanicRequirements requirements;
-
-            try
-            {
-                requirements = MechanicRequirements.Parse(mechanic.Requirements);
-            }
-            catch (System.Text.Json.JsonException ex)
-            {
-                return ToolOutcome.Fail(
-                    "BROKEN_REQUIREMENTS",
-                    $"Mechanic '{mechanicId}' has requirements that are not valid JSON: {ex.Message}",
-                    $"write_mechanic(id: \"{mechanicId}\", ..., dryRun: true) — fix its requirements.",
-                    $"Mechanic '{mechanicId}' has unparseable requirements.");
-            }
-
-            // A new seed unless one was handed back for replay. Recorded either way, because a rule
-            // that decides by chance is unreviewable if the chance cannot be reproduced.
-            var actualSeed = seed ?? Random.Shared.NextInt64(1, long.MaxValue);
-
-            var resolved = await resolver.ResolveAsync(
-                requirements,
-                roles ?? [],
-                input,
-                actualSeed,
-                cancellationToken);
-
-            if (!resolved.Ok)
-            {
-                return ToolOutcome.Fail(
-                    "UNRESOLVED_ROLES",
-                    string.Join(" ", resolved.Problems),
-                    $"find_mechanics(id: \"{mechanicId}\") — see exactly which roles it declares, then retry.",
-                    $"Could not materialise roles for '{mechanicId}': {resolved.Problems.Count} problem(s).");
-            }
-
-            var run = await engine.RunAsync(
-                mechanic.Source, resolved.Projection!, ExecutionLimits.Default, cancellationToken);
-
-            if (!run.Ok)
-            {
-                // The rule is broken, which is ordinary — it was written by an LLM mid-session.
-                // The log is returned because it is usually where the reason is.
-                return ToolOutcome.Fail(
-                    string.IsNullOrEmpty(run.LimitHit) ? "MECHANIC_FAILED" : "MECHANIC_STOPPED",
-                    $"{run.Error}{(run.Log.Count > 0 ? " Logged: " + string.Join(" | ", run.Log) : "")}",
-                    $"write_mechanic(id: \"{mechanicId}\", ..., changeNote: \"...\", dryRun: true) — revise it; the old version is kept.",
-                    $"Mechanic '{mechanicId}' v{mechanic.Version} failed: {run.Error}");
-            }
-
-            var validation = await applier.ApplyAsync(run.Output.Effects, dryRun, cancellationToken);
-
-            if (!validation.Valid)
-            {
-                // The rule ran but proposed something incoherent. Nothing was applied, and the rule
-                // is what needs fixing — not the caller's arguments.
-                return ToolOutcome.Fail(
-                    "INVALID_EFFECTS",
-                    $"'{mechanicId}' ran but proposed changes that do not hold together; nothing was applied. " +
-                    string.Join(" ", validation.Problems.Select(p => $"[{p.Index}] {p.Effect}: {p.Problem}")),
-                    $"write_mechanic(id: \"{mechanicId}\", ..., dryRun: true) — the rule needs correcting, not your arguments.",
-                    $"Mechanic '{mechanicId}' proposed {validation.Problems.Count} invalid effect(s).");
-            }
-
-            var touched = run.Output.Effects
-                .Select(e => e.EntityId)
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .Distinct(StringComparer.Ordinal)
-                .ToList();
-
-            var data = new
-            {
-                run.Output.Narration,
-                Mechanic = $"{mechanic.Id} v{mechanic.Version}",
-                Applied = validation.Applied,
-                EffectsProposed = run.Output.Effects.Count,
-                Effects = dryRun ? run.Output.Effects : [],
-                Entities = touched,
-                run.Log,
-                Seed = actualSeed,
-                run.ElapsedMilliseconds,
-                Data = run.Output.Data
-            };
-
-            // Subject is the mechanic AND everyone involved, comma separated, because both
-            // questions get asked: "which rules have been run" and "what has happened to Orban".
-            // history matches on comma boundaries, so one field answers both.
-            //
-            // PARTICIPANTS, not just the entities that changed. A check that Orban made and passed
-            // belongs in Orban's history even though it altered nothing — "what happened to this
-            // character" is a question about events, and an outcome is an event.
-            var involved = (resolved.Projection!.Roles.Values.Select(r => r.Id))
-                .Concat(touched)
-                .Distinct(StringComparer.Ordinal)
-                .ToList();
-
-            var subject = Truncate(string.Join(",", new[] { mechanicId }.Concat(involved)), 200);
-
-            return dryRun
-                ? ToolOutcome.OkAbout(
-                    subject,
-                    data,
-                    $"Dry run of {mechanic.Id} v{mechanic.Version}: {run.Output.Effects.Count} effect(s) valid, nothing applied.",
-                    $"run_action(mechanicId: \"{mechanicId}\", roles: {{...}}, seed: {actualSeed}) — commit exactly this outcome.")
-                : ToolOutcome.OkAbout(
-                    subject,
-                    data,
-                    $"{mechanic.Id} v{mechanic.Version}: {run.Output.Narration} ({validation.Count} effect(s) applied, seed {actualSeed})",
-                    touched.Count > 0
-                        ? $"get_entities(ids: [\"{touched[0]}\"]) — confirm the result reads the way you intended."
-                        : "history() — see the operation this produced.");
-        }, consumesReadEvidence: !dryRun);
-
-    /// <summary>Cuts on a comma boundary, so a truncated subject list is still a list of whole ids.</summary>
-    private static string Truncate(string value, int max)
-    {
-        if (value.Length <= max)
-        {
-            return value;
-        }
-
-        var cut = value.LastIndexOf(',', max - 1);
-        return cut > 0 ? value[..cut] : value[..max];
-    }
 }

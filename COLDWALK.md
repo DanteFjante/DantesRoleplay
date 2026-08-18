@@ -15,7 +15,7 @@ and no explanation from you. If the agent has read `ARCHITECTURE.md`, it already
 system is and the run proves nothing. This is the rule that is easiest to break by accident —
 running it in the Codex window you have been coding in invalidates it completely.
 
-**2. Do not coach.** No hints, no "try find_procedures", no rephrasing when it stalls. When you
+**2. Do not coach.** No hints, no "try query(kind: \"procedures\")", no rephrasing when it stalls. When you
 feel the urge to help, **write down what you wanted to say** — that sentence is the finding. The
 whole point is to discover what the surface fails to tell it.
 
@@ -86,8 +86,8 @@ This is the anti-sprawl guard (§P12) being tested against a real agent instead 
 **Looking for:** does it read `procedure.contract.create` first? Does it use `dryRun`? Does it fill
 in `governs`? Does it pick a sane id, knowing ids are permanent? Does it fill in `intent`?
 
-Afterwards, run `history()` yourself and compare **Cited** against **Read**. A citation with no
-matching read means it claimed a procedure it never opened.
+Afterwards, run `query(kind: "history")` yourself and compare **Cited** against **Read**. A
+citation with no matching read means it claimed a procedure it never opened.
 
 ### Run 4 — change the world
 
@@ -98,13 +98,14 @@ This is the first run against a writable world, and it is deliberately vague. Th
 "character" and no "carrying" in this system — both have to be translated into entities,
 component definitions and containment by reading the manual.
 
-**Looking for:** does it call `describe_world` before inventing a component definition? Does it
-find `procedure.world.change` and `procedure.world.model`? Does it dry-run `apply_effects` before
-committing, and does it send the whole change as **one** list rather than several calls? Does it
-name definitions generically (`stats`) or bind them to this one character (`orban_stats`)?
+**Looking for:** does it call `query(kind: "world")` before inventing a component definition? Does
+it find `procedure.world.change` and `procedure.world.model`? Does it dry-run
+`commit(kind: "effects")` before committing, and does it send the whole change as **one** list
+rather than several calls? Does it name definitions generically (`stats`) or bind them to this one
+character (`orban_stats`)?
 
-**The interesting failure:** if it splits the change across several `apply_effects` calls, the
-atomicity guarantee is real but unused, and the tool description failed to convey the point.
+**The interesting failure:** if it splits the change across several `commit(kind: "effects")`
+calls, the atomicity guarantee is real but unused, and the description failed to convey the point.
 
 ### Run 5 — the MVP acceptance test
 
@@ -119,10 +120,15 @@ This one is the milestone, so it is **two sessions**, and the gap between them i
 
 > Prompt: *"Orban is trying to pick another lock. Resolve it."*
 
-**Looking for, in session A:** does it call `run_action(intent: ...)` first and read the candidates
-rather than inventing an outcome? When nothing fits, does it find `procedure.mechanic.write` and
-follow it? Does it write a rule that reads a component, or one with "lock" hard-coded so it can
-never be reused? Does it dry-run the write, and then dry-run the *run*?
+**Looking for, in session A:** does it search with `query(kind: "mechanics", query: ...)` and read
+what it finds, rather than inventing an outcome? When nothing fits, does it find
+`procedure.mechanic.write` and follow it? Does it write a rule that reads a component, or one with
+"lock" hard-coded so it can never be reused? Does it dry-run the write — and then, knowing there
+is no dry run for an action, does it still run the rule rather than declaring it done?
+
+**New since the three-verb migration:** an action selects the best-ranked matching rule by intent
+and runs it. Watch for an agent that tries to name a mechanic id, or asks for an action dry run —
+that is a sign the surface still reads as though it had either.
 
 **Looking for, in session B:** does the rule written minutes earlier by a different session get
 found and reused — without being told it exists?
@@ -134,6 +140,18 @@ first, the near-duplicate check is not doing its job and retrieval is not either
 produce? An agent that says "Orban picks the lock with a deft twist" without a rule having run has
 made the audit log and the story disagree, and only one of them will still be there next session.
 `history()` afterwards shows you which happened.
+
+---
+
+## Run 6 — the three-verb surface
+
+The migration in `VERB_MIGRATION.md` replaced twelve tools with `orient`, `query` and `commit`, so
+runs 1–5 tested a surface that no longer exists. Re-run all five, unchanged, against the new one.
+
+**This is the migration's acceptance test.** It succeeds if a cold session navigates
+orient → query → commit without inventing a kind or a payload shape, and without needing
+`query(kind: "capabilities")` explained to it. Record where it guessed, and what it guessed —
+a guess that happened to be right is still a finding about the surface.
 
 ---
 

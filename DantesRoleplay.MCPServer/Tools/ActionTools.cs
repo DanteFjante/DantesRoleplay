@@ -5,9 +5,12 @@ using ModelContextProtocol.Server;
 namespace DantesRoleplay.MCPServer.Tools;
 
 /// <summary>
-/// The action surface. All selection, projection, sandbox execution, effect handling and audit
-/// work belongs to <see cref="IActionRunner"/>; this class only translates MCP arguments and the
-/// result into the standard envelope.
+/// The handler behind <c>commit(kind: "action")</c>. Not registered as an MCP tool
+/// (VERB_MIGRATION.md D5).
+///
+/// All selection, projection, sandbox execution, effect handling and audit work belongs to
+/// <see cref="IActionRunner"/>; this class only translates the payload and the result into the
+/// standard envelope.
 /// </summary>
 [McpServerToolType]
 public sealed class ActionTools
@@ -18,8 +21,9 @@ public sealed class ActionTools
         "intent and an explicit roleEntityIds map from the mechanic's role names to entity ids. " +
         "The first ranked active mechanic is selected, its declared projection is materialised, " +
         "the sandbox runs without CLR access, and its effects are dry-run validated and applied " +
-        "atomically. Read procedure.mechanic.run first. On success, call get_entities with the " +
-        "returned affected ids to confirm the resulting world state.")]
+        "atomically. Read procedure.mechanic.run first. On success, call " +
+        "query(kind: \"entities\", ids: [...]) with the returned affected ids to confirm the " +
+        "resulting world state.")]
     public async Task<ToolEnvelope> RunActionAsync(
         IActionRunner runner,
         [Description("What the actor is trying to do, in the player's words.")] string intent,

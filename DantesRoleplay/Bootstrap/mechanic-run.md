@@ -1,34 +1,36 @@
 ---
 id: procedure.mechanic.run
 category: mechanics
-name: Run a mechanic action
-governs: run_action, selecting and executing a stored JavaScript mechanic
+name: Implement the action runner
+governs: IActionRunner.RunAsync, implementing or modifying the action runner inside the kernel
+revised-by: Claude Fable 5, 2026-08-17 — corrected the atomicity constraint, which wrongly implied a zero-effect mechanic cannot succeed; Claude Opus 5, 2026-08-18 — scoped governs to the kernel and added the redirect, matching procedure.mechanic.projection
 status: active
-revised-by: Claude Fable 5, 2026-08-17 — corrected the atomicity constraint, which wrongly implied a zero-effect mechanic cannot succeed
 ---
 
 ## Description
-How to turn a free-form action intent into one stored mechanic execution and one atomic world
-change. This is the automated path for actions; it does not add game vocabulary to the kernel.
+A kernel-development contract: how the runner turns a free-form action intent into one stored
+mechanic execution and one atomic world change, without adding game vocabulary to the kernel. If
+you are calling `commit(kind: "action")` to resolve something in play, this is not your contract —
+read `procedure.action.run` instead; the runner performs all of this for you.
 
 ## Instructions
-1. Supply the player's intent and an explicit role-to-entity id map. Role names belong to the
+1. Take the caller's intent and explicit role-to-entity id map as given. Role names belong to the
    mechanic author; do not infer kernel meanings for names such as `actor` or `target`.
-2. The runner searches mechanics using the intent and optional scope, then chooses the first
-   ranked mechanic whose status is `active`. Draft, deprecated and archived mechanics do not run.
-3. The runner loads the selected append-only version and generates a seed when the caller did not
-   provide one. Supply a seed when replaying an action.
-4. The runner parses the mechanic's requirements and resolves the declared projection before Jint
-   starts. Missing required roles or entities fail the action; optional roles may be absent.
-5. Jint runs with the host's execution limits and without CLR access. A mechanic returns narration,
+2. Search mechanics using the intent and optional scope, then choose the first ranked mechanic
+   whose status is `active`. Draft, deprecated and archived mechanics do not run.
+3. Load the selected append-only version and generate a seed when the caller did not provide one.
+   A supplied seed replays an action exactly.
+4. Parse the mechanic's requirements and resolve the declared projection before Jint starts —
+   see `procedure.mechanic.projection`. Missing required roles or entities fail the action;
+   optional roles may be absent.
+5. Run Jint with the host's execution limits and without CLR access. A mechanic returns narration,
    data and proposed effects; it never writes the world.
-6. The runner dry-runs the exact effect list, applies that same list through `IEffectApplier`,
-   records the mechanic version, seed and projection, and commits the whole action as one
-   transaction.
-7. If any step fails, nothing is committed. The failed operation is recorded after rollback with
-   the stable error code and a concrete next call.
-8. After success, call `get_entities(ids: [...])` using the returned affected ids to confirm the
-   resulting world state, and quote the returned action `operationId` when reporting the outcome.
+6. Dry-run the exact effect list, apply that same list through `IEffectApplier`, record the
+   mechanic version, seed and projection, and commit the whole action as one transaction.
+7. If any step fails, commit nothing. Record the failed operation after rollback with the stable
+   error code and a concrete next call — a literal `query(...)` or `commit(...)`, never advice.
+8. Record the operation against the public verb (`commit`), not the handler's own name. History is
+   read by sessions that only know the three verbs.
 
 ## Constraints
 - Only `MechanicStatus.Active` mechanics are executable.
