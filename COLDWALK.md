@@ -38,18 +38,28 @@ First run creates the SQLite file and seeds the bootstrap contracts. Check the c
 migration or seeding errors before going further — a failed seed means an empty manual, and the
 agent will correctly report the system as broken.
 
-**2. Point Codex at it**
+**2. Point a client at it**
 
-Codex supports streamable HTTP directly, so no stdio bridge is needed. In
-`%USERPROFILE%\.codex\config.toml`:
+`CONNECTING.md` covers every client and the traps in each. The short version:
 
 ```toml
+# Codex — %USERPROFILE%\.codex\config.toml. Streamable HTTP directly, no bridge.
 [mcp_servers.dantesroleplay]
-url = "http://localhost:6217/mcp"
+url = "http://127.0.0.1:6217/mcp"
 ```
 
-Then start Codex **in an empty directory**, not in the repo. That is the cheapest way to guarantee
-rule 1.
+```bash
+# Claude Code CLI — also native.
+claude mcp add --transport http dantesroleplay http://127.0.0.1:6217/mcp
+```
+
+```powershell
+# Claude Desktop — needs the mcp-remote stdio bridge; the script sets it up.
+powershell -ExecutionPolicy Bypass -File .\connect-claude-desktop.ps1
+```
+
+Then start the client **in an empty directory**, not in the repo — for Claude Desktop, a chat with
+no project attached. That is the cheapest way to guarantee rule 1.
 
 ---
 
