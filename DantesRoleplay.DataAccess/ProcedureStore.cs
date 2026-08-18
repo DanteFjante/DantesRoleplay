@@ -399,13 +399,22 @@ public sealed class ProcedureStore(DantesRoleplayDbContext db) : IProcedureStore
             return false;
         }
 
-        static IEnumerable<string> Tokens(string value) => value
+        // Literal call fragments make contracts discoverable, but they are API vocabulary rather
+        // than evidence that two contracts govern the same domain. Parent and child contracts are
+        // expected to repeat them, so exclude them from the anti-sprawl comparison.
+        static IEnumerable<string> Tokens(string value) => System.Text.RegularExpressions.Regex
+            .Replace(
+                value,
+                "commit\\(kind:\\s*\"[^\"]+\"\\)",
+                "",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase)
             .Split([' ', ',', '.', '-', '_', '/'], StringSplitOptions.RemoveEmptyEntries)
             .Select(t => t.ToLowerInvariant())
             .Where(t => t.Length > 3);
 
         var left = Tokens(a).ToHashSet(StringComparer.Ordinal);
-        return left.Count != 0 && Tokens(b).Count(left.Contains) >= 2;
+        return left.Count != 0
+            && Tokens(b).Distinct(StringComparer.Ordinal).Count(left.Contains) >= 2;
     }
 
     private static ProcedureDetail ToDetail(

@@ -389,6 +389,46 @@ public sealed class ProcedureStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task Check_counts_distinct_overlapping_tokens()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new ProcedureStore(db);
+
+        await store.WriteAsync(Request(
+            id: "procedure.contract.write",
+            name: "Write a contract",
+            governs: "commit kind procedure"));
+
+        // "commit" occurs twice, but it is only one shared concept. Repeated call syntax must not
+        // turn one overlapping token into the two-token threshold for a near-duplicate warning.
+        var checks = await store.CheckAsync(Request(
+            id: "procedure.world.setup",
+            name: "Set up world data",
+            governs: "commit component, commit effects"));
+
+        Assert.True(Passed(checks, "no-near-duplicate"));
+    }
+
+    [Fact]
+    public async Task Check_does_not_treat_literal_commit_calls_as_domain_overlap()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new ProcedureStore(db);
+
+        await store.WriteAsync(Request(
+            id: "procedure.ruleset.parent",
+            name: "Build a ruleset incrementally",
+            governs: "commit(kind: \"component\"), commit(kind: \"effects\") for ruleset work"));
+
+        var checks = await store.CheckAsync(Request(
+            id: "procedure.abilities",
+            name: "Store six ability scores",
+            governs: "commit(kind: \"component\") for abilities, commit(kind: \"effects\") writing ability data"));
+
+        Assert.True(Passed(checks, "no-near-duplicate"));
+    }
+
+    [Fact]
     public async Task Check_does_not_flag_a_contract_against_itself()
     {
         await using var db = _fixture.CreateContext();

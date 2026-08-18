@@ -100,8 +100,8 @@ resolved grant.  This makes corrections, auditing, and future migration possible
 An ability score component must not pre-design spell slots.  A weapon component must not pre-design
 every condition.  Contracts define stable extension points and explicit dependencies, while each
 new component adds one responsibility only.  Categories follow the existing dot-path taxonomy,
-such as `ruleset.dnd2024.data.abilities` and
-`ruleset.dnd2024.combat.attack.roll`.
+such as `ruleset.dnd2024.core.data.abilities` and
+`ruleset.dnd2024.core.combat.attack.roll`.
 
 ## Target component model
 
@@ -134,7 +134,7 @@ In addition to the established contract fields, D&D contracts should state:
 - Exact `sourceRef` requirement and a concise SRD explanation where useful.
 - Whether it defines an actor field, content definition, activity, resolution mechanic, or effect.
 - Stable IDs and any allowed version/migration behavior.
-- The category leaf under `ruleset.dnd2024`.
+- The category leaf under `ruleset.dnd2024.core`.
 - Inputs, output envelope, failure behavior, and deterministic fixtures.
 - Forbidden future assumptions, so an early component cannot accidentally authorize a later one.
 
@@ -147,7 +147,9 @@ then stops for review.
 ### Stage 0 — foundation and play boundaries
 
 1. **Source registry** — create its contract, then register SRD v5.2.1 with its CC-BY attribution,
-   canonical download URL, and page/section reference format.
+   canonical download URL, and page/section reference format. This is the first implementation
+   slice in `ruleset/dnd2024/feature-02/FEATURE-2-DEPENDENCY-PLAN.md`. **Completed in the live
+   database on 2026-08-18;** character level is the next review-gated slice.
 2. **Host contract** — create `procedure.mechanic.dnd2024.host`, paired with the existing player
    contract.  The host describes scenes, decides when a rule applies, chooses a cited mechanic,
    asks only supported follow-up questions, commits the result, and narrates without inventing
@@ -195,7 +197,9 @@ state, with no narration-only damage or untracked resource use.
     features, spells, backgrounds, species, and classes.
 15. **Character origins** — background/species records, choice lists, and granted traits.  Build
     each record family as a separate component; do not import all content in one commit.
-16. **Class and level** — class membership, level, hit-die inputs, class features, and prerequisites.
+16. **Class and level** — the source-cited total character-level base and its validated recording
+    mechanic are complete in Feature 2 Slice 2; class membership, per-class levels, hit-die inputs,
+    class features, prerequisites, and advancement remain deferred to this stage.
 17. **Advancement workflow** — structured grants, selections, ability-score improvements, scale
     values, and validation of choices.  Each advancement type receives its own contract.
 18. **Equipment and inventory** — possession, equipped state, capacity only if the SRD rule is

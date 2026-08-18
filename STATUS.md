@@ -6,7 +6,7 @@ moves an item.
 **Legend:** ✅ done and covered by passing tests · 🟡 partly done, or done but unreachable ·
 ⬜ not started · ⏸ deliberately deferred
 
-**Right now:** solution builds clean, **182/182 tests pass**, and **the MCP surface is three verbs
+**Right now:** solution builds clean, **213/213 tests pass**, and **the MCP surface is three verbs
 — `orient`, `query`, `commit`** (the migration in `VERB_MIGRATION.md`, completed 2026-08-18; the
 twelve names it replaced are recorded in `VERB_HISTORY.md`). The MVP sentence is true end to end: a
 rule that did not exist was written through the write path, found seconds later by what a player
@@ -158,6 +158,42 @@ The risk `ARCHITECTURE.md` §2 calls the major one. Three things answer it, all 
 - ✅ Both are tested by **running** them, not just by parsing them
 - ✅ They fail usefully: a missing argument names what to pass, an unknown field lists the ones that
   exist, and an entity with no numbers says so rather than being treated as zeroes
+
+**D&D SRD 5.2.1 ruleset track**
+
+- ✅ Feature 1 is installed through the live MCP write path: `dnd2024.abilities`, its dedicated
+  contract, a fixed-DC ability-check contract, and `mechanic.dnd2024.check.ability` v1.
+- ✅ Intent search ranks the scoped ability check above the shared threshold rule. Seed
+  `8253275941846134235` replayed exactly (`7 +3 = 10`), Charisma 8 produced −1, and checks applied
+  zero effects as contracted.
+- ✅ The procedure anti-sprawl guard now counts distinct tokens and ignores literal
+  `commit(kind: "...")` fragments. Two regression tests cover both false-positive modes; the full
+  suite is 213/213.
+- ✅ Feature 2 has a recursive dependency-first plan at
+  `ruleset/dnd2024/feature-02/FEATURE-2-DEPENDENCY-PLAN.md`. It resolves the source-registry
+  sequencing conflict.
+- ✅ Slice 1 is installed only in the live database: source-registry contract v1,
+  `dnd2024.source`, and `source.dnd2024.srd-5.2.1`. Exact metadata assertions passed, discovery by
+  component returns one entity, and duplicate creation was rejected without changing stored data.
+- ✅ Slice 2 is installed only in the live database: character-level contract v1,
+  `dnd2024.character-level`, and `mechanic.dnd2024.character-level.record` v1. All ten level-band
+  boundaries passed through real actions; eight invalid inputs were rejected without state change;
+  Orban now stores level 5 plus the fixed source reference and no derived bonus.
+- ✅ Slice 3 is installed only in the live database: skill-proficiencies contract v1,
+  `dnd2024.skill-proficiencies`, and `mechanic.dnd2024.skill-proficiencies.record` v1. All 18
+  stable IDs and advisory defaults passed; empty and multi-skill states passed; eight malformed
+  inputs were rejected with byte-stable actor state; `creature.orban` ends with only `perception`
+  and `stealth` plus the fixed source reference in this component. A duplicate-name demo entity
+  was caught during dependency verification and its mistaken test attachment was removed through
+  a dry-run-first audited effect.
+- ⬜ Slice 4, skill-aware fixed-DC ability-check integration, is next and has not started.
+- ✅ `procedure.system.create-feature` v4 establishes this as the repository-wide workflow: plan
+  to verified leaves, implement one lowest unimplemented slice, query it back, then stop for
+  review. Runtime game contracts/mechanics remain database-only; repository documents record only
+  dependency decisions and verification evidence.
+- 🟡 Invalid action input returns the mechanic's correct explanation but still pairs it with the
+  misleading generic fix “the rule is broken, not your arguments.” The runbook records this
+  pre-existing surface defect.
 
 **MCP surface (P4) — complete, three verbs**
 

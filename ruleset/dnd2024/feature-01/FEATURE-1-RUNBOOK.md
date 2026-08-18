@@ -3,12 +3,42 @@
 Authored over real MCP against a server running in the Cowork container, following the eight-step
 loop the contracts dictate. Everything below **ran**; the outputs quoted are what came back.
 
-The container database is not yours, so these payloads are the transferable artifact. Replay them
-against your server in order and you get the same result.
+The container database is not yours, so these payloads are the original transferable artifact.
+Against governance contract v4, apply the taxonomy and anti-overlap adjustments recorded in the
+live-replay section below; the raw JSON files preserve the earlier run verbatim.
 
 Source throughout: *System Reference Document 5.2.1*, Wizards of the Coast, CC-BY-4.0 —
 [dndbeyond.com/srd](https://www.dndbeyond.com/srd). SRD 5.2.1 was published 2025-05-01 and carries
 the 2024 (5.5e) revision of the core rules.
+
+## Live replay in the repository database — 2026-08-18
+
+Replayed through `http://127.0.0.1:6217/mcp` after the main D&D governance contract reached v4.
+That contract introduced the `ruleset.dnd2024.core` taxonomy, so the live payloads use
+`ruleset.dnd2024.core.data.abilities` and
+`ruleset.dnd2024.core.gameplay.ability-checks.fixed-dc`.
+
+The clean anti-sprawl checks also required three wording/routing adjustments: the abilities
+contract governs attaching/changing `dnd2024.abilities` rather than generic “writing data”; the
+check contract is named “Resolve a fixed-DC ability check”; and the mechanic omits the generic
+match phrases `d20 test` and `roll a dexterity check`. Ability-specific phrases remain.
+
+Committed operation IDs:
+
+- abilities contract: `dedcaf2b613f4ec0a9181d0e35dc04f3`
+- component definition: `2772eb4861194c9590d8aca70a431dad`
+- fixed-DC check contract: `b9a5e333c15846269a156f43005e10aa`
+- ability-check mechanic: `3d0df86785b640f598cd0ce0450c3803`
+- test creature: `d541e966c7984a9a8e66c0f0ee77c990`
+- first action: `5c348dcc1cf1429cb3ebe005135c493d`
+- exact replay: `dbf1600ea65b44f8893ab1bc1ec44d72`
+- negative modifier: `6e6726a5b979437eb84f24855a49dda7`
+
+The live roll was `7 +3 = 10` against DC 15 with seed `8253275941846134235`; replay matched
+exactly, and Charisma 8 produced `7 -1 = 6`. History records the frozen projection and cited/read
+contracts. The later [Feature 2 dependency plan](../feature-02/FEATURE-2-DEPENDENCY-PLAN.md)
+resolves this runbook's source-registry sequencing conflict by making the registry its first
+implementation slice. No proficiency slice may begin before that registry is verified.
 
 ---
 
@@ -88,7 +118,7 @@ The mechanic passed all eight blocking dry-run checks before it was committed.
 
 ## Three findings
 
-### 1. `no-near-duplicate` counts repeated tokens, so it fires on everything (defect)
+### 1. `no-near-duplicate` counted repeated tokens (fixed in the live replay)
 
 `ProcedureStore.Overlaps` does `Tokens(b).Count(left.Contains)` — **occurrences, not distinct
 tokens** — and flags a duplicate at 2. Every write-side contract's `governs` starts with
@@ -100,8 +130,10 @@ Contract 1 was flagged as a near-duplicate of `procedure.contract.create`, `proc
 about D&D ability scores. It will fire on all 26 D&D contracts, which makes the anti-sprawl guard
 useless exactly where a growing ruleset needs it.
 
-Fix is one call — `.Distinct(StringComparer.Ordinal)` before `.Count(...)`. The same helper exists
-in `MechanicStore`.
+The live replay added `.Distinct(StringComparer.Ordinal)` before `.Count(...)`. It also exposed a
+second false positive: parent and child contracts necessarily repeat literal
+`commit(kind: "...")` fragments. Those fragments are now excluded from domain-overlap scoring
+while remaining in `governs` for lookup. Regression tests cover both cases.
 
 ### 2. `MECHANIC_FAILED` always tells the caller the rule is broken (surface defect)
 
