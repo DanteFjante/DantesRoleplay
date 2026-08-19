@@ -1,7 +1,8 @@
 {
   "schemaVersion": 1,
-  "exportedAt": "2026-08-19T10:50:28.4964422Z",
+  "exportedAt": "2026-08-19T11:46:35.8572716Z",
   "sourceDatabase": "C:\\Users\\dante\\source\\repos\\DantesRoleplay\\DantesRoleplay.MCPServer\\data\\dantesroleplay.db",
+  "includesWorld": true,
   "records": [
     {
       "kind": "mechanic",
@@ -209,8 +210,8 @@
     {
       "kind": "procedure",
       "id": "procedure.system.create-feature",
-      "version": 4,
-      "contentHash": "25608DA072ABBED69A86CA8B803AB5C2E8DDE13407F98FF7AC762D8F748FF3DF",
+      "version": 5,
+      "contentHash": "90246134B051FD5268EF0291424494379EEB2BEE212C16A7E55AF5807211AF67",
       "path": "procedures/system/procedure.system.create-feature.md"
     },
     {
@@ -310,6 +311,48 @@
       "version": 0,
       "contentHash": "7826AC66E09848BE74AB793896EE2AE2499882E8E4E8C7E0FAD57926BB458D69",
       "path": "components/stats.json"
+    },
+    {
+      "kind": "entity",
+      "id": "creature.orban",
+      "version": 0,
+      "contentHash": "431414526716FAD2F06174E7EEEF96CD2D8AE9B9D5AD89214D57FB0C76DAA416",
+      "path": "world/entities/creature.orban.json"
+    },
+    {
+      "kind": "entity",
+      "id": "f5-natural-probe",
+      "version": 0,
+      "contentHash": "F0C98BD38DEC12AF7AB42A4995AFF266F4F654B9931E036E9265F853F57C5B77",
+      "path": "world/entities/f5-natural-probe.json"
+    },
+    {
+      "kind": "entity",
+      "id": "homer",
+      "version": 0,
+      "contentHash": "DDCF12386ECEAF793115F7322428933965F6CB659C962780C2E845E609243329",
+      "path": "world/entities/homer.json"
+    },
+    {
+      "kind": "entity",
+      "id": "lantern",
+      "version": 0,
+      "contentHash": "FB0B3F47A23E3B17FDD6F7691F12B4F4AE1245CC8778803F3E4F26062B998D7D",
+      "path": "world/entities/lantern.json"
+    },
+    {
+      "kind": "entity",
+      "id": "orban",
+      "version": 0,
+      "contentHash": "A241524404AF3E7147CF2A2B1C4E71A09E012F2F85638BA366DB222344768B1A",
+      "path": "world/entities/orban.json"
+    },
+    {
+      "kind": "entity",
+      "id": "source.dnd2024.srd-5.2.1",
+      "version": 0,
+      "contentHash": "6529080EDC48BA9090DE4C9FD1A9EAAC99D1F5BF60AFD3829AF1F2230CD09747",
+      "path": "world/entities/source.dnd2024.srd-5.2.1.json"
     }
   ]
 }

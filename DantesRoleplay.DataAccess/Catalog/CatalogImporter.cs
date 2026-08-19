@@ -84,16 +84,29 @@ public sealed class CatalogImporter(
                 await StoredEntitiesAsync(cancellationToken),
                 contents.Manifest));
 
-            entries.AddRange(Classify(
-                CatalogRecordKind.Relationships,
-                contents.Relationships is null
-                    ? new Dictionary<string, string>(StringComparer.Ordinal)
-                    : new Dictionary<string, string>(StringComparer.Ordinal)
-                    {
-                        [CatalogLayout.RelationshipsFileName] = contents.Relationships.ContentHash
-                    },
-                await StoredRelationshipsAsync(cancellationToken),
-                contents.Manifest));
+            var storedRelationships = await StoredRelationshipsAsync(cancellationToken);
+            var fileRelationships = new Dictionary<string, string>(StringComparer.Ordinal);
+
+            if (contents.Relationships is not null)
+            {
+                fileRelationships[CatalogLayout.RelationshipsFileName] = contents.Relationships.ContentHash;
+            }
+
+            // Only when at least one side actually has an edge.
+            //
+            // The relationship set is one record, so unlike every other kind it cannot be "absent"
+            // by having no rows — and an empty set that always looked present made importing into a
+            // fresh database read as "the database dropped every edge" rather than "these are new",
+            // which left the edges unwritten. Skipping when both sides are empty also stops a world
+            // with no relationships from reporting a no-op write on every import.
+            if (storedRelationships.Count > 0 || contents.Relationships?.Relationships.Count > 0)
+            {
+                entries.AddRange(Classify(
+                    CatalogRecordKind.Relationships,
+                    fileRelationships,
+                    storedRelationships,
+                    contents.Manifest));
+            }
         }
 
         return new CatalogImportPlan(
@@ -243,7 +256,54 @@ public sealed class CatalogImporter(
         // synchronised catalog is a state neither side's author can reason about.
         await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
 
-        foreach (var entry in applying)
+        // A containment points from an entity to another entity. File names are stable ids, not
+        // a topological sort of that graph ("lantern" may belong to "orban"), so materialise
+        // every entity identity before applying its components and containment. Otherwise a
+        // perfectly valid fresh import depends on a parent happening to sort before its child.
+        foreach (var entry in applying.Where(e => e.Kind == CatalogRecordKind.ComponentDefinition))
+        {
+            var wasCreated = await WriteComponentAsync(
+                contents.Components.Single(f => f.Id == entry.Id), cancellationToken);
+
+            if (wasCreated)
+            {
+                created++;
+            }
+            else
+            {
+                updated++;
+            }
+        }
+
+        var entityFiles = applying
+            .Where(e => e.Kind == CatalogRecordKind.Entity)
+            .Select(e => contents.Entities.Single(f => f.Id == e.Id))
+            .ToList();
+
+        var entitiesCreated = new Dictionary<string, bool>(StringComparer.Ordinal);
+
+        foreach (var file in entityFiles)
+        {
+            entitiesCreated[file.Id] = await CreateOrRestoreEntityAsync(file, cancellationToken);
+        }
+
+        foreach (var file in entityFiles)
+        {
+            await WriteEntityStateAsync(file, cancellationToken);
+
+            if (entitiesCreated[file.Id])
+            {
+                created++;
+            }
+            else
+            {
+                updated++;
+            }
+        }
+
+        foreach (var entry in applying.Where(e =>
+                     e.Kind != CatalogRecordKind.ComponentDefinition &&
+                     e.Kind != CatalogRecordKind.Entity))
         {
             var wasCreated = entry.Kind switch
             {
@@ -251,10 +311,6 @@ public sealed class CatalogImporter(
                     contents.Mechanics.Single(f => f.Id == entry.Id), cancellationToken),
                 CatalogRecordKind.Procedure => await WriteProcedureAsync(
                     contents.Procedures.Single(f => f.Id == entry.Id), cancellationToken),
-                CatalogRecordKind.ComponentDefinition => await WriteComponentAsync(
-                    contents.Components.Single(f => f.Id == entry.Id), cancellationToken),
-                CatalogRecordKind.Entity => await WriteEntityAsync(
-                    contents.Entities.Single(f => f.Id == entry.Id), cancellationToken),
                 CatalogRecordKind.Relationships => await WriteRelationshipsAsync(
                     contents.Relationships!, cancellationToken),
                 _ => throw new InvalidOperationException($"Unhandled record kind '{entry.Kind}'.")
@@ -381,7 +437,9 @@ public sealed class CatalogImporter(
     }
 
     /// <summary>
-    /// Creates or updates one entity: its name, its components, and where it sits.
+    /// Creates or restores one entity before the second import pass writes its components and
+    /// containment. Keeping identities separate makes a catalog's containment graph independent
+    /// of lexicographic file order.
     ///
     /// The name is written straight to the row rather than through <see cref="IWorldStore"/>,
     /// which is the ONE place this importer reaches past that interface. There is no rename in the
@@ -394,7 +452,7 @@ public sealed class CatalogImporter(
     /// deletes; something else may depend on them, and a component vanishing as a side effect of a
     /// sync is exactly the surprise this whole feature is built to avoid.
     /// </summary>
-    private async Task<bool> WriteEntityAsync(EntityFile file, CancellationToken cancellationToken)
+    private async Task<bool> CreateOrRestoreEntityAsync(EntityFile file, CancellationToken cancellationToken)
     {
         var existing = await _db.Entities.FirstOrDefaultAsync(e => e.Id == file.Id, cancellationToken);
         var created = existing is null;
@@ -417,6 +475,12 @@ public sealed class CatalogImporter(
             await _db.SaveChangesAsync(cancellationToken);
         }
 
+        return created;
+    }
+
+    /// <summary>Writes an entity's declared component state and containment after every entity exists.</summary>
+    private async Task WriteEntityStateAsync(EntityFile file, CancellationToken cancellationToken)
+    {
         foreach (var component in file.Ordered())
         {
             await _world.SetComponentAsync(file.Id, component.DefinitionId, component.Data, cancellationToken);
@@ -427,8 +491,6 @@ public sealed class CatalogImporter(
             string.IsNullOrEmpty(file.ContainerId) ? null : file.ContainerId,
             file.ContainerSlot,
             cancellationToken);
-
-        return created;
     }
 
     /// <summary>
@@ -740,6 +802,13 @@ public sealed class CatalogImporter(
             .AsNoTracking()
             .Select(r => new { r.FromEntityId, r.ToEntityId, r.Kind, r.Data })
             .ToListAsync(cancellationToken);
+
+        // No edges means no record, so that a fresh database reads as "absent" rather than as
+        // "present and empty". See the note at the call site.
+        if (edges.Count == 0)
+        {
+            return new Dictionary<string, string>(StringComparer.Ordinal);
+        }
 
         var file = new RelationshipsFile(edges
             .Select(r => new RelationshipEntry(r.FromEntityId, r.ToEntityId, r.Kind, r.Data ?? "{}"))

@@ -59,6 +59,17 @@ public sealed class CatalogCoverageTests : IDisposable
         ["sqlite_sequence"] = "SQLite internal."
     };
 
+    /// <summary>
+    /// Tables that exist in a migrated database but not in one built by EnsureCreated, which is how
+    /// the test fixture builds its own. They stay classified above — a real database has them — but
+    /// their absence here is not evidence that the list has gone stale.
+    /// </summary>
+    private static readonly HashSet<string> OnlyInAMigratedDatabase = new(StringComparer.Ordinal)
+    {
+        "__EFMigrationsHistory",
+        "__EFMigrationsLock"
+    };
+
     [Fact]
     public void Every_table_is_either_carried_by_the_catalog_or_deliberately_skipped()
     {
@@ -75,7 +86,11 @@ public sealed class CatalogCoverageTests : IDisposable
 
         // And the reverse: a list that names a table which no longer exists is a list nobody is
         // maintaining, which is worse than no list.
-        var stale = classified.Except(actual, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal).ToList();
+        var stale = classified
+            .Except(actual, StringComparer.Ordinal)
+            .Except(OnlyInAMigratedDatabase, StringComparer.Ordinal)
+            .OrderBy(t => t, StringComparer.Ordinal)
+            .ToList();
 
         Assert.True(
             stale.Count == 0,

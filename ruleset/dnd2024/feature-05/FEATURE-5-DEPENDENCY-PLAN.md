@@ -1,6 +1,6 @@
 # Feature 5 dependency plan — Initiative rolls and encounter ordering
 
-Status: **Slices 0–1 and composition are verified; Slice 2 artifacts are live but its matrix is BLOCKED on a stale server binary**
+Status: **Feature 5 complete — Slices 0–2 and declarative composition are verified through catalog import**
 Last updated: 2026-08-19
 
 ## Execution rule
@@ -396,9 +396,9 @@ arbitrary-roster order parent.
 
 ### Status and prerequisite
 
-Planned parent. Slice 1 and the separate system-level composition plan are verified. The parent
-starts only with the declarative host orchestration documented in
-`COMPOSITION-DEPENDENCY-PLAN.md`; it must not add a CLR callback or any script-visible store.
+Implemented parent. Slice 1 and the separate system-level composition plan are verified. The
+parent uses only the declarative host orchestration documented in
+`COMPOSITION-DEPENDENCY-PLAN.md`; it adds no CLR callback or script-visible store.
 
 ### Concrete parent contract
 
@@ -502,7 +502,7 @@ projection carries three children with distinct derived seeds and rolls 12/18/18
    The parent still won. v3 removed the token `roll` from the description, which restored routing:
    `9d179f99f050431880f1b6b9c6e5ee85` selects the individual resolver and returns roll 20, count 23.
 
-**BLOCKER — the slice is pending, not complete.** The running host does not expose `ctx.children`
+**Historical blocker (resolved).** The running host did not expose `ctx.children`
 to the sandbox. A diagnostic revision (`4dee39e16bfe4618afd180cc280408ae`) reported
 `typeofChildren=undefined` while the same action's recorded projection contained three child
 results. The cause is a stale binary, not a stale source: in
@@ -511,23 +511,35 @@ results. The cause is a stale binary, not a stale source: in
 is from 14:39 and contains no `children: freezeDeep` harness line. Composition runs; the sandbox
 that should receive its results is the old one.
 
-**To finish this slice:** rebuild the solution, restart the server, then re-run the matrix below.
+**Former next step:** rebuild the solution, restart the server, then re-run the matrix below.
 Recreate the fixtures with the same payload as `845d7b8c8f1e4e6892cbc775cd855fbb`
 (encounter `fixture.f5s2.encounter`; `alpha` dex 16, `bravo` dex 10, `charlie` dex 10, all
 contained in slot `participant`; `fixture.f5s2.empty`; `fixture.f5s2.outsider` dex 12).
 
-Still required before Feature 5 may be marked complete:
+### Slice 2 file-first verification — 2026-08-19
 
-- Seed 108 with `tieDecisions: [["fixture.f5s2.bravo","fixture.f5s2.charlie"]]` — expect the
-  snapshot `bravo 18 > charlie 18 > alpha 15`, exactly one `component.add` on the encounter.
-- Seed 108 with the group reversed — expect `charlie 18 > bravo 18 > alpha 15`.
-- Seed 100 with no tie decisions — expect `alpha 7 > charlie 4 > bravo 1`.
-- Per-participant Disadvantage through `participants.<id>.rollCircumstances`.
-- Re-running a snapshotted encounter — expect rejection and no change.
-- Exact seeded replay: remove the snapshot component through a dry-run-first fixture effect, re-run
-  the same seed, and compare the order byte for byte.
-- Confirm no participant carries an order or count component.
-- Full repository suite and `git diff --check`.
+The stale host condition was resolved by rebuilding the current solution. The durable regression
+gate is `CatalogFeature5Tests.Imported_catalog_*`: it copies the checked-in `catalog/`, imports it
+into a fresh SQLite database, then executes the imported Feature 5 parent through the same
+ActionRunner, composer and Jint sandbox the server uses. It proves all of the former required
+matrix without a hidden live-database write:
+
+- Seed 108 stores exactly one encounter snapshot `bravo 18 > charlie 18 > alpha 15`; the reverse
+  authorized tie decision stores `charlie > bravo > alpha` instead.
+- Seed 100 has no tie decision and stores `alpha 7 > charlie 4 > bravo 1`.
+- A per-participant `surprised` Disadvantage reaches only that child and produces two selected
+  dice; empty rosters, missing child input, missing tie decisions and unknown parent input fail
+  without a snapshot.
+- Re-running a snapshotted encounter fails without replacing it. Removing the disposable
+  snapshot through a dry-run-first `component.remove` effect and replaying identical seed/input
+  recreates byte-identical state.
+- Participants never receive the order component. The catalog imports successfully even when a
+  contained entity sorts before its container; the importer now creates all entity identities
+  before applying components and containment.
+
+`dotnet test DantesRoleplay.Tests --no-restore` passed **293/293** after this gate was added,
+`git diff --check` is clean, and `roleplay verify catalog` reports the checked-in catalog and the
+tracked database agree. Feature 5 is complete.
 
 **Repository-side evidence in the meantime.** The v5 source was executed outside the host against
 the exact child results the live composer recorded, under a harness matching the sandbox contract

@@ -1,0 +1,11 @@
+{
+  "id": "orban",
+  "name": "Orban",
+  "components": {
+    "stats": {
+      "strength": 12,
+      "agility": 10,
+      "role": "character"
+    }
+  }
+}

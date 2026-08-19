@@ -186,11 +186,15 @@ public sealed class CatalogExporter(DantesRoleplayDbContext db)
         List<string> written,
         CancellationToken cancellationToken)
     {
-        var operations = await _db.Operations
-            .AsNoTracking()
+        // Ordered in memory, not in SQL. A custom comparer cannot be translated to a query, and
+        // ordinal ordering is what makes two exports of one database byte-identical — leaving it to
+        // the database's collation would make that depend on the provider.
+        var operations = (await _db.Operations
+                .AsNoTracking()
+                .ToListAsync(cancellationToken))
             .OrderBy(o => o.Timestamp)
             .ThenBy(o => o.Id, StringComparer.Ordinal)
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         var builder = new System.Text.StringBuilder();
 

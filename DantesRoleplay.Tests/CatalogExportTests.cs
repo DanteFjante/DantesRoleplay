@@ -135,7 +135,7 @@ public sealed class CatalogExportTests : IDisposable
 
         // The relationship set is one record with no per-edge identity, so it is listed once and is
         // not part of the per-record count.
-        Assert.Single(manifest.Records.Where(r => r.Kind == CatalogRecordKind.Relationships));
+        Assert.Single(manifest.Records, r => r.Kind == CatalogRecordKind.Relationships);
 
         // Every manifest path resolves, and every mechanic has its JavaScript beside it.
         foreach (var entry in manifest.Records)
