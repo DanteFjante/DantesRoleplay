@@ -1,6 +1,6 @@
 # D&D 2024 ruleset development roadmap
 
-Status: **Features 3 and 4 verified; Feature 5 Slices 0-1 and composition verified; Slice 2 live but blocked on a stale server binary**
+Status: **Features 3–6 verified; Features 7–8 planned; Feature 7 weapon profiles remain next**
 Last updated: 2026-08-19
 
 ## Purpose and authority
@@ -9,11 +9,12 @@ This roadmap orders the remaining work needed for a small but genuine D&D 2024 t
 is not a promise to implement all of D&D and it does not authorize bundling several features into
 one pass.
 
-`procedure.system.create-feature` v4 is the governing workflow. For each feature, create or review
+`procedure.system.create-feature` is the governing workflow. For each feature, create or review
 its recursive dependency plan, implement exactly one lowest unimplemented slice, meet that
-slice's exit gate, record evidence, and stop. Runtime rule contracts, component definitions,
-entities, and mechanics belong only in the live database through MCP. Repository documents hold
-plans and evidence, never duplicate runtime payloads.
+slice's exit gate, record evidence, and stop. Catalog files are the canonical development source
+for rule contracts, component definitions, entities, and mechanics; dry-run, import, and verify
+them into the live database. Repository planning documents hold plans and evidence, not copied
+runtime payloads.
 
 `TERRA-FEATURE-PLANNING-GUIDE.md` is the reusable planning playbook for expanding future roadmap
 rows to this quality bar. It requires a planning-only pass, live ownership/dependency evidence,
@@ -28,7 +29,7 @@ The official rule source is SRD 5.2.1, represented by the existing live source e
 - Feature 2: character level, derived Proficiency Bonus, the 18 skill IDs, character skill
   proficiency state, and proficient named-skill checks.
 - Shared deterministic dice mechanic exists, but it is not a substitute for D20 Test rules.
-- Repository regression baseline: 213/213 tests.
+- Repository regression baseline: 295/295 tests.
 
 Intent searches performed during this planning pass found no live D&D mechanic for
 Advantage/Disadvantage, saving throws, Initiative, attack rolls, or damage. Generic dice and
@@ -46,17 +47,17 @@ small D&D 2024 test session
 │  ├─ shared Advantage/Disadvantage convention             [Feature 3]
 │  ├─ saving-throw proficiency state                       [Feature 4 Slice 1 verified]
 │  └─ saving-throw resolution                              [Feature 4 Slice 2 verified]
-├─ combat entry                                             [Feature 5 ordering blocked]
+├─ combat entry                                             [Feature 5 verified]
 │  ├─ closed action-input transport                        [system Slice 0 verified]
 │  ├─ Dexterity-based Initiative roll                      [Feature 5 Slice 1 verified]
-│  └─ deterministic arbitrary-roster order and tie policy [live; matrix blocked on rebuild]
-├─ combatant durability                                     [planned: Feature 6]
-│  ├─ Armor Class state                                    [Feature 6 leaf]
-│  └─ current/max Hit Points state                         [Feature 6 leaf]
-├─ weapon attacks                                           [planned: Features 7–8]
-│  ├─ weapon profile and proficiency state                 [Feature 7]
-│  ├─ attack roll vs Armor Class                            [Feature 8]
-│  └─ natural 20/1 and Critical Hit classification         [Feature 8]
+│  └─ deterministic arbitrary-roster order and tie policy [Feature 5 Slice 2 verified]
+├─ combatant durability                                     [Feature 6 verified]
+│  ├─ Armor Class state                                    [Feature 6 Slice 1 verified]
+│  └─ current/max Hit Points state                         [Feature 6 Slice 2 verified]
+├─ weapon attacks                                           [Features 7–8 planned]
+│  ├─ weapon profile and proficiency state                 [Feature 7 Slice 1 next; Slice 2 blocked]
+│  ├─ attack roll vs Armor Class                            [Feature 8 Slice 1 blocked on Feature 7]
+│  └─ natural 20/1 and Critical Hit classification         [Feature 8 Slice 1 blocked on Feature 7]
 ├─ damage and consequences                                  [planned: Feature 9]
 │  ├─ seeded damage dice and critical extra dice           [Feature 9 leaf]
 │  └─ validated Hit Point application                      [Feature 9 parent]
@@ -79,15 +80,12 @@ small D&D 2024 test session
 | 9 | Weapon damage and transactional Hit Point loss | Features 6–8 and deterministic dice | Resistance, immunity, vulnerability, healing, unconsciousness, death saves |
 | 10 | One reproducible vertical test session | Features 1–9 | Campaign management, character builder, complete combat engine |
 
-Feature numbers express dependency order, not permission to begin them. Features 1–3 are verified.
-Feature 4 is expanded in feature-04/FEATURE-4-DEPENDENCY-PLAN.md and is verified through its two
-slices. Feature 5 is expanded in feature-05/FEATURE-5-DEPENDENCY-PLAN.md. Its shared closed-input
-transport and individual Initiative resolver are verified, mechanic composition is implemented in
-the kernel, and the encounter-order parent, its contract and its component are live. Its acceptance
-matrix is blocked: the deployed `DantesRoleplay.RuleAccess.dll` predates the composition harness, so
-the running sandbox never receives `ctx.children`. Rebuild and restart, then run the matrix in the
-Feature 5 plan. Later features still require their own recursive plans and live dependency
-validation.
+Feature numbers express dependency order, not permission to begin them. Features 1–5 are verified.
+Feature 5's file-first catalog import gate exercises the composition runtime and encounter-order
+matrix. Feature 6 records final Armor Class and bounded current/maximum Hit Point state through
+the catalog; both slices are verified in feature-06/FEATURE-6-DEPENDENCY-PLAN.md. Feature 7 is
+expanded in feature-07/FEATURE-7-DEPENDENCY-PLAN.md; only its minimal weapon-profile slice is
+authorized next. Later features still require their own recursive plans and dependency validation.
 
 Work past Feature 10 is ordered in `ROADMAP-COMPLETE-PLAY.md`, which covers what a complete SRD
 5.2.1 experience needs beyond the first vertical session.

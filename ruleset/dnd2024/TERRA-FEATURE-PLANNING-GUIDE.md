@@ -11,16 +11,17 @@ it does not replace or weaken that contract.
 
 Authority order is:
 
-1. Live database contracts and live MCP state.
-2. `procedure.system.create-feature` v4.
+1. Catalog files and their verified live database import.
+2. `procedure.system.create-feature`.
 3. The current feature's repository dependency plan.
 4. `ROADMAP.md` for feature order and broad boundaries.
 5. `TERRA-IMPLEMENTATION-HANDOFF.md` for the current assignment.
 6. `STATUS.md` for kernel/repository context only.
 
-Runtime game contracts, component definitions, entities, mechanics, and action history exist only
-in the live database. Repository feature plans contain decisions and evidence, never authoritative
-runtime payloads or JavaScript source.
+Catalog files are the canonical development source for runtime game contracts, component
+definitions, entities, and mechanics; the imported database is the runtime copy. Repository
+feature plans contain decisions and evidence, never duplicate runtime payloads or JavaScript
+source.
 
 ## Planning-pass contract
 
@@ -367,7 +368,7 @@ Status: **Planned; Slice 1 is the next and only authorized implementation pass**
 Last updated: <date>
 
 ## Execution rule
-<live workflow authority, one-slice stop rule, database-only runtime authority>
+<file-first catalog workflow authority, one-slice stop rule, and import/verify runtime agreement>
 
 ## Target capability
 <one caller/player outcome sentence>

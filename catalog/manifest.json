@@ -13,6 +13,13 @@
     },
     {
       "kind": "mechanic",
+      "id": "mechanic.dnd2024.armor-class.write",
+      "version": 1,
+      "contentHash": "664A2E2D1C56DC6EA5746C6601448C90792C36491677A6048975475800B2489A",
+      "path": "mechanics/ruleset/dnd2024/core/data/armor-class/mechanic.dnd2024.armor-class.write.md"
+    },
+    {
+      "kind": "mechanic",
       "id": "mechanic.dnd2024.character-level.record",
       "version": 1,
       "contentHash": "79AF9F2291D5E6969BA91C80C097DD8A60FE62D3E7F4E856999375A0E1873E71",
@@ -38,6 +45,13 @@
       "version": 5,
       "contentHash": "F043A5E63C0E42878F60079B03A4E362C70C37A1AA56B8C7360DAB962C185026",
       "path": "mechanics/ruleset/dnd2024/core/combat/initiative/order/mechanic.dnd2024.encounter-initiative-order.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.hit-points.write",
+      "version": 1,
+      "contentHash": "3E9C6D7F8309681115B128B4DAC9839E4ADF3D59282180D9BB9A4E606A35A596",
+      "path": "mechanics/ruleset/dnd2024/core/data/hit-points/mechanic.dnd2024.hit-points.write.md"
     },
     {
       "kind": "mechanic",
@@ -111,6 +125,13 @@
     },
     {
       "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.armor-class",
+      "version": 1,
+      "contentHash": "BE7BCA7DC193EA8B6A75215FE04F68DA4040B46B673C5B84F9CD11090A743E3E",
+      "path": "procedures/ruleset/dnd2024/core/data/armor-class/procedure.mechanic.dnd2024.armor-class.md"
+    },
+    {
+      "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.character-level",
       "version": 1,
       "contentHash": "4497E249CB1048F9104E75150CB6292D764AF602FE7E19EB28BCEA95B5527F8E",
@@ -136,6 +157,13 @@
       "version": 1,
       "contentHash": "0F0DA85686872CBD3CA0FD35CBB0F6DAC16588CAD09B37EAEF9D0C1130E21B42",
       "path": "procedures/ruleset/dnd2024/core/combat/initiative/order/procedure.mechanic.dnd2024.encounter-initiative-order.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.hit-points",
+      "version": 1,
+      "contentHash": "FBD5C4475137A8DAA356914C96E12CEBFC50E7554F017B8E1A10B024D1DF26D6",
+      "path": "procedures/ruleset/dnd2024/core/data/hit-points/procedure.mechanic.dnd2024.hit-points.md"
     },
     {
       "kind": "procedure",
@@ -272,6 +300,13 @@
     },
     {
       "kind": "componentDefinition",
+      "id": "dnd2024.armor-class",
+      "version": 0,
+      "contentHash": "F2A4F22E5B02FF7F21FA2F5A37958DD4D0DD7592869AE947C81CBF1C61D2BB1C",
+      "path": "components/dnd2024.armor-class.json"
+    },
+    {
+      "kind": "componentDefinition",
       "id": "dnd2024.character-level",
       "version": 0,
       "contentHash": "573583F26474CAE70738F0DE893CD5B14EB3F29B517ECC443A907FC3351B5019",
@@ -283,6 +318,13 @@
       "version": 0,
       "contentHash": "3EBEE437C70B0766C6D6F6C82E21E22B1A6F5C60E56A116C63B03CD892994C21",
       "path": "components/dnd2024.encounter-initiative-order.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.hit-points",
+      "version": 0,
+      "contentHash": "33EFD0DCD13480652AA072712ABC9109E449ACFEF38A7A7C7387F07F909410BB",
+      "path": "components/dnd2024.hit-points.json"
     },
     {
       "kind": "componentDefinition",

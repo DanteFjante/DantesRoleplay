@@ -1,12 +1,12 @@
 # DantesRoleplay — status
 
-Last updated 2026-08-18. Tracks against `ARCHITECTURE.md`. Update this in the same change that
+Last updated 2026-08-19. Tracks against `ARCHITECTURE.md`. Update this in the same change that
 moves an item.
 
 **Legend:** ✅ done and covered by passing tests · 🟡 partly done, or done but unreachable ·
 ⬜ not started · ⏸ deliberately deferred
 
-**Right now:** solution builds clean, **213/213 tests pass**, and **the MCP surface is three verbs
+**Right now:** solution builds clean, **295/295 tests pass**, and **the MCP surface is three verbs
 — `orient`, `query`, `commit`** (the migration in `VERB_MIGRATION.md`, completed 2026-08-18; the
 twelve names it replaced are recorded in `VERB_HISTORY.md`). The MVP sentence is true end to end: a
 rule that did not exist was written through the write path, found seconds later by what a player
@@ -226,19 +226,26 @@ The risk `ARCHITECTURE.md` §2 calls the major one. Three things answer it, all 
 - ✅ Further ruleset development is ordered in `ruleset/dnd2024/ROADMAP.md`, and
   `ruleset/dnd2024/TERRA-IMPLEMENTATION-HANDOFF.md` captures the exact execution and evidence bar
   for lower-cost continuation.
-- ✅ Feature 5 now has a planning-only recursive dependency plan at
-  `ruleset/dnd2024/feature-05/FEATURE-5-DEPENDENCY-PLAN.md`. It authorizes only the
-  zero-effect individual Initiative resolver. Persistent arbitrary-roster ordering is correctly
-  blocked on a separately planned mechanic-composition capability; no caller-supplied Initiative
-  totals or copied participant state are accepted as a shortcut.
-- ✅ Feature 5 Slice 0 is verified. Shared action/projection input now preserves valid JSON-object
-  text and rejects null, array, scalar, whitespace-only, and malformed input before mechanic
-  selection; focused regression passed 32/32 and the full suite passed 227/227. The draft
-  Initiative resolver remains inactive and Feature 5 Slice 1 is now the next isolated leaf.
-- ✅ `procedure.system.create-feature` v4 establishes this as the repository-wide workflow: plan
-  to verified leaves, implement one lowest unimplemented slice, query it back, then stop for
-  review. Runtime game contracts/mechanics remain database-only; repository documents record only
-  dependency decisions and verification evidence.
+- ✅ Feature 5 is complete through catalog import: the encounter-order parent composes individual
+  Initiative rolls, captures authorized ties, writes one encounter snapshot, and is covered by the
+  file-import regression gate.
+- ✅ Feature 6 is complete through catalog import: `dnd2024.armor-class` and
+  `dnd2024.hit-points`, their governing contracts, and their record/correct writers own final AC
+  and bounded current/maximum Hit Point state. The fresh-database import gate covers routing,
+  boundaries, correction, rejection, atomicity, corrupt state, and AC preservation; catalog
+  verification reports 56 matching records.
+- 🟡 Feature 7 has a file-first dependency plan at
+  `ruleset/dnd2024/feature-07/FEATURE-7-DEPENDENCY-PLAN.md`. Its next and only authorized slice is
+  a small canonical weapon-profile catalogue; category proficiency state follows only after that
+  slice is reviewed and verified. Attack rolls, equipment ownership, range, mastery, and damage
+  remain later owners.
+- 🟡 Feature 8 now has a file-first dependency plan at
+  `ruleset/dnd2024/feature-08/FEATURE-8-DEPENDENCY-PLAN.md`. Its effect-free weapon attack roll
+  against final Armor Class is blocked on both Feature 7 slices; it owns hit/miss and natural-20/1
+  classification, while Feature 9 remains the owner of damage and Hit Point consequences.
+- ✅ `procedure.system.create-feature` establishes the file-first repository-wide workflow: plan
+  to verified leaves, implement one lowest unimplemented slice in catalog files, dry-run/import/
+  verify it against the database, then stop for review.
 - 🟡 Invalid action input returns the mechanic's correct explanation but still pairs it with the
   misleading generic fix “the rule is broken, not your arguments.” The runbook records this
   pre-existing surface defect.

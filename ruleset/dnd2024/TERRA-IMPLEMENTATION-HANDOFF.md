@@ -2,7 +2,7 @@
 
 This file is the execution checklist for continuing the D&D ruleset with a lower-cost model while
 preserving the same quality bar. It supplements, and never replaces,
-`procedure.system.create-feature` v4 and the current feature plan.
+`procedure.system.create-feature` and the current feature plan.
 
 For planning a future feature, first follow
 `ruleset/dnd2024/TERRA-FEATURE-PLANNING-GUIDE.md`. That guide governs planning passes; this handoff
@@ -10,16 +10,20 @@ governs implementation passes. Never plan and implement a new feature in the sam
 
 ## Current assignment
 
-Feature 4 is complete. Its live artifacts include the v2 shared proficiency-state contract,
-dnd2024.saving-throw-proficiencies, mechanic.dnd2024.saving-throw-proficiencies.record,
-procedure.mechanic.dnd2024.saving-throw v1, and mechanic.dnd2024.saving-throw v2; read the
-query-backed evidence in the Feature 4 plan before relying on them.
+Feature 5 is complete through its file-first catalog import gate: individual Initiative and the
+encounter-owned order parent are verified with declarative composition. Read the Feature 5 plan
+only as prior evidence; do not revise it while implementing Feature 7.
 
-Feature 5 Slice 0 is verified: the shared action/projection transport now rejects non-object and
-malformed JSON instead of converting it to `{}`. The next work is Feature 5 Slice 1 only: re-read
-the Initiative plan and live contracts, then reactivate and fully verify the draft Initiative
-resolver. Persistent encounter ordering remains separately blocked on
-engine-level mechanic composition.
+Feature 6 is complete: catalog-authoritative Armor Class and current/maximum Hit Point components,
+contracts, and writers have been imported and verified. The next and only authorized implementation
+work is Feature 7 Slice 1: minimal canonical weapon profiles. Read
+`ruleset/dnd2024/feature-07/FEATURE-7-DEPENDENCY-PLAN.md`, the current catalog contracts, and the
+SRD weapon locators before authoring component, procedure, mechanic, and fixture files under
+`catalog/`. Import via the catalog workflow; do not create runtime artifacts directly through MCP.
+
+Feature 8 now has a complete dependency plan at
+`ruleset/dnd2024/feature-08/FEATURE-8-DEPENDENCY-PLAN.md`. It is intentionally blocked until both
+Feature 7 slices are imported, verified, and reviewed; it does not change the current assignment.
 
 ## Read in this order
 
