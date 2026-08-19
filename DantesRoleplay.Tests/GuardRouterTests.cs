@@ -32,7 +32,7 @@ public sealed class GuardRouterTests : IDisposable
         });
 
         var world = new WorldStore(db);
-        var router = new GuardRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine());
+        var router = new GuardRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine(), new WorldStore(db));
         var result = await new EffectApplier(db, world, router).ApplyAsync(
             [new Effect { Type = EffectType.EntityCreate, EntityId = "guarded", Name = "Guarded" }]);
 
@@ -48,7 +48,7 @@ public sealed class GuardRouterTests : IDisposable
         await using var db = _fixture.CreateContext();
         await SeedDenyCreateAsync(db);
         var world = new WorldStore(db);
-        var router = new GuardRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine());
+        var router = new GuardRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine(), new WorldStore(db));
 
         var result = await new EffectApplier(db, world, router).ApplyAsync(
             [new Effect { Type = EffectType.EntityCreate, EntityId = "dry-guarded", Name = "Dry guarded" }], dryRun: true);
@@ -65,7 +65,7 @@ public sealed class GuardRouterTests : IDisposable
         await using var db = _fixture.CreateContext();
         await SeedDenyCreateAsync(db);
         var world = new WorldStore(db);
-        var router = new GuardRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine());
+        var router = new GuardRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine(), new WorldStore(db));
 
         var envelope = await new WorldTools().ApplyEffectsAsync(
             new EffectApplier(db, world, router), new OperationLog(db),

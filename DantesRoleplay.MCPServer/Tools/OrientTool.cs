@@ -203,8 +203,17 @@ public sealed class OrientTool
             : "A complete game. Rules exist, but only the ones somebody wrote — check with "
               + "query(kind: \"mechanics\") before assuming an action can be resolved, and write "
               + "the rule if it is missing.",
-        "Reactive rules — nothing happens on its own between actions. There are no events, no " +
-        "subscriptions, and no passage of time.",
+        // Narrowed twice now, each time a slice landed. It first denied events and subscriptions
+        // outright, then denied reaction execution; both stopped being true. A session is told to
+        // believe this list over anything else it reads, so an over-broad denial here is worse
+        // than silence: it talks sessions out of a capability that works. Narrow it the same day
+        // the capability lands.
+        "Anything happening without a verb being called. Reactive rules DO exist: a registered " +
+        "guard can veto a world change before it commits, an accepted change records structural " +
+        "events you can read with query(kind: \"events\"), and a registered reaction runs on " +
+        "those events with its effects committing in the same transaction. What does not exist " +
+        "yet is a reaction emitting an event of its own, notifications of any kind, and the " +
+        "passage of time — nothing in here moves unless somebody calls a verb.",
         "Composing one rule from another — a mechanic cannot call another mechanic.",
         "Choosing which rule runs. An action selects the best-ranked candidate for the intent; " +
         "there is no way to name a specific mechanic, and no separate dry run for an action.",

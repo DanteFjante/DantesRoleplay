@@ -244,8 +244,18 @@ public sealed record MechanicProjection
     /// <summary>Immutable event proposal supplied only when the mechanic runs as middleware.</summary>
     public string Event { get; init; } = "{}";
 
-    /// <summary>Frozen entity ids affected by that proposal. Event mechanics never receive stores.</summary>
-    public IReadOnlyList<string> EventEntities { get; init; } = [];
+    /// <summary>
+    /// The entities that proposal affects, keyed by id, carrying only the components the mechanic
+    /// declared it needs.
+    ///
+    /// Shaped exactly like <see cref="Roles"/> on purpose: an author who has read one role has
+    /// already learned this. A bare list of ids was the earlier form, and it made every reaction
+    /// that wanted to know anything about the thing that changed unable to ask.
+    ///
+    /// A deleted entity is absent — there is nothing left to project. What it was is in the event
+    /// payload, which was captured before the deletion.
+    /// </summary>
+    public Dictionary<string, EntityProjection> EventEntities { get; init; } = [];
 }
 
 /// <param name="Components">Definition id to that component's data as raw JSON.</param>

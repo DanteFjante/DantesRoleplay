@@ -47,7 +47,8 @@ public sealed class OperationLog(DantesRoleplayDbContext db) : IOperationLog
         int? mechanicVersion = null,
         long? seed = null,
         string projectionJson = "",
-        string guardEvidenceJson = "")
+        string guardEvidenceJson = "",
+        string id = "")
     {
         // Derived BEFORE writing this row, so a get_procedure call never counts itself as one of
         // its own prerequisites. Only recorded for operations the manual governs: for a read or a
@@ -58,7 +59,9 @@ public sealed class OperationLog(DantesRoleplayDbContext db) : IOperationLog
 
         var operation = new Operation
         {
-            Id = Guid.NewGuid().ToString("n"),
+            // A caller that allocated the id up front — a world change, which needs it as the
+            // correlation id of its events before the transaction opens — passes it back here.
+            Id = string.IsNullOrWhiteSpace(id) ? Operation.NewId() : id.Trim(),
             Timestamp = DateTime.UtcNow,
             Tool = tool,
             Subject = subject,

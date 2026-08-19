@@ -46,6 +46,82 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.ToTable("event_entity", (string)null);
                 });
 
+            modelBuilder.Entity("DantesRoleplay.Events.EventExecution", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EffectCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ElapsedMilliseconds")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("EventCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EventId")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LimitHit")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LogJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MechanicId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("MechanicVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Narration")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("OutputJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProjectionJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Seed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SubscriptionId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SubscriptionVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriptionId");
+
+                    b.HasIndex("EventId", "Ordinal")
+                        .IsUnique();
+
+                    b.ToTable("event_execution", (string)null);
+                });
+
             modelBuilder.Entity("DantesRoleplay.Events.EventRecord", b =>
                 {
                     b.Property<string>("Id")
@@ -790,6 +866,17 @@ namespace DantesRoleplay.DataAccess.Migrations
                 {
                     b.HasOne("DantesRoleplay.Events.EventRecord", "Event")
                         .WithMany("Entities")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Events.EventExecution", b =>
+                {
+                    b.HasOne("DantesRoleplay.Events.EventRecord", "Event")
+                        .WithMany()
                         .HasForeignKey("EventId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

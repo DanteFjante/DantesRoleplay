@@ -26,6 +26,13 @@
          markdown formats would have each seeder failing to parse the other's, which is a
          confusing way to discover a layout decision. -->
     <EmbeddedResource Include="Rules\**\*.md" />
+
+    <!-- The nine world.* structural event types. These are kernel contracts, not game content:
+         every commit(kind: "effects") records events against them, so a database without them
+         cannot change the world at all. They shipped as catalog files only, which meant a fresh
+         install was mute until somebody happened to run an import. The catalog copy still exists
+         and still round-trips; this is the copy that guarantees the kernel can run alone. -->
+    <EmbeddedResource Include="EventTypes\**\*.json" />
   </ItemGroup>
 
 </Project>

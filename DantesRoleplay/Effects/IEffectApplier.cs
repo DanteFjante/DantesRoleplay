@@ -25,10 +25,25 @@ public interface IEffectApplier
     /// <see cref="EffectResult.Valid"/> when the list is coherent; <see cref="EffectResult.Problems"/>
     /// lists <em>every</em> fault found, not just the first, so one round trip is enough to fix them.
     /// </returns>
+    /// <param name="rootOperationId">
+    /// The audited operation this change belongs to, allocated by the caller BEFORE anything is
+    /// applied. It becomes the correlation id of every event the change emits, so a ledger row is
+    /// linked to its audit row the moment it is written rather than by a later update that could
+    /// fail on its own. Left empty, one is minted here and the change is still self-consistent.
+    /// </param>
+    /// <param name="depth">
+    /// 0 for a change the caller asked for. A reaction's effects are applied at 1, which records
+    /// their events one deeper and stops them being routed again — the bound on chaining until the
+    /// full queue and its limits land.
+    /// </param>
+    /// <param name="causationEventId">The event whose reaction proposed these, when one did.</param>
     Task<EffectResult> ApplyAsync(
         IReadOnlyList<Effect> effects,
         bool dryRun = false,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        string rootOperationId = "",
+        int depth = 0,
+        string causationEventId = "");
 }
 
 /// <summary>

@@ -96,5 +96,14 @@ public sealed record EffectResult(bool Applied, int Count, IReadOnlyList<EffectP
     public string BlockReason { get; init; } = string.Empty;
     public IReadOnlyList<DantesRoleplay.Events.ProposedEvent> ProposedEvents { get; init; } = [];
     public IReadOnlyList<DantesRoleplay.Events.GuardEvaluation> GuardEvaluations { get; init; } = [];
+
+    /// <summary>
+    /// The events this change recorded, in sequence order.
+    ///
+    /// Distinct from <see cref="ProposedEvents"/>: those are what was put to the guards, these are
+    /// what survived and exist. The chain loop queues these, so a proposal that was refused cannot
+    /// become something a reaction runs against.
+    /// </summary>
+    public IReadOnlyList<DantesRoleplay.Events.EventDetail> AcceptedEvents { get; init; } = [];
     public string CorrelationId { get; init; } = string.Empty;
 }

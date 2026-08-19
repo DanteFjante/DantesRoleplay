@@ -1,8 +1,10 @@
 using DantesRoleplay.Effects;
 using DantesRoleplay.Events;
+using DantesRoleplay.Operations;
 using DantesRoleplay.World;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace DantesRoleplay.DataAccess;
 
@@ -13,17 +15,21 @@ namespace DantesRoleplay.DataAccess;
 /// an earlier one — create an entity, then put a component on it — while a reference to something
 /// that exists nowhere is still caught before a single row is written.
 /// </summary>
-public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world, IGuardRouter? guards = null, IEventLedger? events = null) : IEffectApplier
+public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world, IGuardRouter? guards = null, IEventLedger? events = null, IEventRouter? reactions = null) : IEffectApplier
 {
     private readonly DantesRoleplayDbContext _db = db;
     private readonly IWorldStore _world = world;
     private readonly IGuardRouter? _guards = guards;
     private readonly IEventLedger? _events = events;
+    private readonly IEventRouter? _reactions = reactions;
 
     public async Task<EffectResult> ApplyAsync(
         IReadOnlyList<Effect> effects,
         bool dryRun = false,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string rootOperationId = "",
+        int depth = 0,
+        string causationEventId = "")
     {
         effects ??= [];
 
@@ -67,10 +73,10 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
             // still guarded before that runner commits.
             return _guards is not null && _db.Database.CurrentTransaction is null
                 ? await DryRunWithGuardsAsync(effects, cancellationToken)
-                : new EffectResult(Applied: false, Count: 0, Problems: []) { ProposedEvents = Proposals(effects) };
+                : new EffectResult(Applied: false, Count: 0, Problems: []) { ProposedEvents = Proposals(effects, new string[effects.Count], Operation.NewId(), 0, string.Empty) };
         }
 
-        return await ApplyValidatedAsync(effects, cancellationToken);
+        return await ApplyValidatedAsync(effects, rootOperationId, depth, causationEventId, cancellationToken);
     }
 
     // ---- validation -------------------------------------------------------------------
@@ -282,6 +288,9 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
     /// </summary>
     private async Task<EffectResult> ApplyValidatedAsync(
         IReadOnlyList<Effect> effects,
+        string rootOperationId,
+        int depth,
+        string causationEventId,
         CancellationToken cancellationToken)
     {
         // A caller that already opened one (run_action, later) keeps ownership: it decides whether
@@ -292,23 +301,42 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
             ? await _db.Database.BeginTransactionAsync(cancellationToken)
             : null;
 
+        // Known before anything is proposed, so a guard sees the chain it is being asked about
+        // rather than a payload with no context. Also what the accepted rows are written under.
+        var correlation = string.IsNullOrWhiteSpace(rootOperationId)
+            ? Operation.NewId()
+            : rootOperationId.Trim();
+
         var index = 0;
+
+        // The id an effect actually touched, which is not always the id it named: entity.create
+        // with no id gets one from the store, and an event that reported an empty entity id would
+        // be a record of something happening to nothing.
+        var resolved = new string[effects.Count];
 
         try
         {
             for (; index < effects.Count; index++)
             {
-                await ApplyOneAsync(effects[index], cancellationToken);
+                resolved[index] = await ApplyOneAsync(effects[index], cancellationToken);
             }
 
-            var proposals = Proposals(effects);
+            var proposals = Proposals(effects, resolved, correlation, depth, causationEventId);
+            var evaluations = Array.Empty<GuardEvaluation>() as IReadOnlyList<GuardEvaluation>;
+
             if (_guards is not null && proposals.Count > 0)
             {
                 var guarded = await _guards.EvaluateAsync(proposals, cancellationToken);
+
                 if (!guarded.Allowed)
                 {
-                    if (transaction is not null) await transaction.RollbackAsync(CancellationToken.None);
+                    if (transaction is not null)
+                    {
+                        await transaction.RollbackAsync(CancellationToken.None);
+                    }
+
                     _db.ChangeTracker.Clear();
+
                     return new EffectResult(Applied: false, Count: 0, Problems: [])
                     {
                         Blocked = true,
@@ -318,21 +346,59 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
                         GuardEvaluations = guarded.Evaluations
                     };
                 }
-                if (transaction is not null)
-                {
-                    var correlation = Guid.NewGuid().ToString("n"); if (_events is not null) await _events.WriteAcceptedAsync(proposals, correlation, cancellationToken);
-                    await transaction.CommitAsync(cancellationToken);
-                    return new EffectResult(Applied: true, Count: effects.Count, Problems: []) { ProposedEvents = proposals, GuardEvaluations = guarded.Evaluations, CorrelationId = correlation };
-                }
-                var ambientCorrelation = Guid.NewGuid().ToString("n"); if (_events is not null) await _events.WriteAcceptedAsync(proposals, ambientCorrelation, cancellationToken); return new EffectResult(Applied: true, Count: effects.Count, Problems: []) { ProposedEvents = proposals, GuardEvaluations = guarded.Evaluations, CorrelationId = ambientCorrelation };
+
+                evaluations = guarded.Evaluations;
             }
 
+            // One correlation for the batch, decided above. This used to be three near-identical
+            // blocks with a fresh Guid in each, and the unguarded one committed BEFORE writing its
+            // events — so a failure between the two left a committed world change with no record.
+            var accepted = _events is not null && proposals.Count > 0
+                ? await _events.WriteAcceptedAsync(proposals, correlation, cancellationToken)
+                : [];
+
+            // The chain runs from the root change only. A child batch is applied BY the loop, so
+            // letting it start a loop of its own would give every branch its own budget and defeat
+            // the limits entirely.
+            if (depth == 0 && _reactions is not null && accepted.Count > 0)
+            {
+                var routed = await RunChainAsync(accepted, correlation, cancellationToken);
+
+                if (routed is not null)
+                {
+                    if (transaction is not null)
+                    {
+                        await transaction.RollbackAsync(CancellationToken.None);
+                    }
+
+                    _db.ChangeTracker.Clear();
+
+                    return new EffectResult(Applied: false, Count: 0, Problems: [])
+                    {
+                        Blocked = true,
+                        BlockCode = routed.Code,
+                        BlockReason = routed.Reason,
+                        ProposedEvents = proposals,
+                        GuardEvaluations = evaluations
+                    };
+                }
+            }
+
+            // Committed only after the ledger write and every reaction are enrolled, so a change,
+            // its events and its consequences are one atomic fact. A caller that owns the
+            // transaction commits all of it when it is ready.
             if (transaction is not null)
             {
                 await transaction.CommitAsync(cancellationToken);
             }
 
-            var unguardedCorrelation = Guid.NewGuid().ToString("n"); if (_events is not null) await _events.WriteAcceptedAsync(proposals, unguardedCorrelation, cancellationToken); return new EffectResult(Applied: true, Count: effects.Count, Problems: []) { ProposedEvents = proposals, CorrelationId = unguardedCorrelation };
+            return new EffectResult(Applied: true, Count: effects.Count, Problems: [])
+            {
+                ProposedEvents = proposals,
+                GuardEvaluations = evaluations,
+                CorrelationId = correlation,
+                AcceptedEvents = accepted
+            };
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -362,25 +428,246 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
         }
     }
 
-    private static IReadOnlyList<ProposedEvent> Proposals(IReadOnlyList<Effect> effects) => effects.Select((effect, ordinal) =>
+    /// <summary>
+    /// Turns applied effects into proposed events whose payloads conform to the registered schemas.
+    ///
+    /// The nine `world.*` event types are catalog contracts with `additionalProperties: false` and
+    /// camelCase names, so the payload is built per type rather than by serialising the effect
+    /// object. Serialising the effect was what shipped first, and it produced PascalCase keys plus
+    /// five extra properties on every row — a payload that violated its own registered schema in
+    /// three different ways, on every event ever written. Nothing validated it, so nothing said so.
+    ///
+    /// `data` is embedded as JSON, not as a string containing JSON. A quoted blob would technically
+    /// satisfy an untyped `data` slot while being useless to every consumer.
+    /// </summary>
+    /// <summary>
+    /// Runs the whole reactive chain: every reaction on every accepted event, and every event those
+    /// reactions cause, until nothing is left or a limit stops it.
+    ///
+    /// Returns null on success, or the failure that fails the ENTIRE root change. There is no
+    /// partial chain. A chain cut off half way would leave the world in a state no rule intended
+    /// and no reader could explain — three consequences applied, the fourth not, nothing recording
+    /// why — and that is strictly worse than the change not happening.
+    ///
+    /// A reaction's effects go back through this same applier, so they are validated and guarded
+    /// exactly like any other change. A reaction is not a way around the rules that govern the
+    /// change that triggered it.
+    /// </summary>
+    private async Task<EventRoutingResult?> RunChainAsync(
+        IReadOnlyList<EventDetail> rootEvents,
+        string correlation,
+        CancellationToken cancellationToken)
     {
-        var type = effect.Type switch
+        var budget = new ChainBudget();
+        var seed = EventRouter.RootSeedFrom(correlation);
+
+        var counted = budget.CountEvents(rootEvents.Count);
+
+        if (counted is not null)
         {
-            EffectType.EntityCreate => "world.entity.created",
-            EffectType.EntityDelete => "world.entity.deleted",
-            EffectType.ComponentAdd => "world.component.added",
-            EffectType.ComponentSet => "world.component.replaced",
-            EffectType.ComponentMerge => "world.component.merged",
-            EffectType.ComponentRemove => "world.component.removed",
-            EffectType.ContainmentMove => "world.containment.moved",
-            EffectType.RelationshipCreate => "world.relationship.created",
-            EffectType.RelationshipRemove => "world.relationship.removed",
-            _ => throw new InvalidOperationException($"No structural event type for '{effect.Type}'.")
-        };
-        var ids = new[] { effect.EntityId, effect.ToEntityId }.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal).ToList();
-        var payload = JsonSerializer.Serialize(new { effect.Type, effect.EntityId, effect.DefinitionId, effect.ToEntityId, effect.Kind, effect.Slot, effect.Name, effect.Data });
-        return new ProposedEvent(type, payload, ids, string.Empty, ordinal);
-    }).ToList();
+            return Overspent(counted, "the root change itself");
+        }
+
+        // FIFO, and that is enough to dequeue in sequence order: sequences only ever increase
+        // within a correlation, and children are appended after the events that caused them.
+        var queue = new Queue<EventDetail>(rootEvents.OrderBy(e => e.Sequence));
+        var ordinal = 0;
+
+        while (queue.Count > 0)
+        {
+            var @event = queue.Dequeue();
+
+            var tooDeep = budget.CheckDepth(@event.Depth);
+
+            if (tooDeep is not null)
+            {
+                return Overspent(tooDeep, $"event {@event.Id} ({@event.TypeId})");
+            }
+
+            var routed = await _reactions!.RouteAsync([@event], seed, budget, ordinal, cancellationToken);
+
+            if (!routed.Ok)
+            {
+                return routed;
+            }
+
+            ordinal += routed.Outcomes.Count;
+
+            foreach (var outcome in routed.Outcomes)
+            {
+                if (outcome.Effects.Count > 0)
+                {
+                    var applied = await ApplyAsync(
+                        outcome.Effects,
+                        dryRun: false,
+                        cancellationToken,
+                        rootOperationId: correlation,
+                        depth: @event.Depth + 1,
+                        causationEventId: @event.Id);
+
+                    // A child batch that is rejected or vetoed takes the root down with it. The
+                    // consequence is part of the change, not a follow-up to it.
+                    if (!applied.Applied)
+                    {
+                        return EventRoutingResult.Abort(
+                            applied.Blocked ? applied.BlockCode : "SUBSCRIBER_INVALID_EFFECTS",
+                            applied.Blocked
+                                ? applied.BlockReason
+                                : $"Subscription '{outcome.Execution.SubscriptionId}' proposed effects that "
+                                  + $"were rejected: {string.Join("; ", applied.Problems.Select(p => p.Problem))}");
+                    }
+
+                    var accepted = budget.CountEvents(applied.AcceptedEvents.Count);
+
+                    if (accepted is not null)
+                    {
+                        return Overspent(accepted, $"subscription '{outcome.Execution.SubscriptionId}'");
+                    }
+
+                    foreach (var child in applied.AcceptedEvents)
+                    {
+                        queue.Enqueue(child);
+                    }
+                }
+
+                _db.EventExecutions.Add(outcome.Execution);
+            }
+
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+
+        return null;
+    }
+
+    private static EventRoutingResult Overspent(string code, string where) =>
+        EventRoutingResult.Abort(code, $"{ChainBudget.Explain(code)} Reached by {where}.");
+
+    private static IReadOnlyList<ProposedEvent> Proposals(
+        IReadOnlyList<Effect> effects,
+        IReadOnlyList<string> resolvedEntityIds,
+        string correlationId,
+        int depth,
+        string causationEventId)
+    {
+        var proposals = new List<ProposedEvent>(effects.Count);
+
+        for (var ordinal = 0; ordinal < effects.Count; ordinal++)
+        {
+            var effect = effects[ordinal];
+
+            var entityId = ordinal < resolvedEntityIds.Count && !string.IsNullOrWhiteSpace(resolvedEntityIds[ordinal])
+                ? resolvedEntityIds[ordinal]
+                : effect.EntityId.Trim();
+
+            var toEntityId = effect.ToEntityId.Trim();
+            var definitionId = effect.DefinitionId.Trim();
+            var payload = new JsonObject();
+
+            // Declared order, not sorted. For a relationship the first id is the "from" and the
+            // second the "to", and sorting them would throw away which end is which.
+            var ids = new List<string> { entityId };
+
+            string type;
+
+            switch (Type(effect))
+            {
+                case EffectType.EntityCreate:
+                    type = "world.entity.created";
+                    payload["entityId"] = entityId;
+                    payload["name"] = effect.Name.Trim();
+                    break;
+
+                case EffectType.EntityDelete:
+                    type = "world.entity.deleted";
+                    payload["entityId"] = entityId;
+                    break;
+
+                case EffectType.ComponentAdd:
+                case EffectType.ComponentSet:
+                case EffectType.ComponentMerge:
+                    type = Type(effect) switch
+                    {
+                        EffectType.ComponentAdd => "world.component.added",
+                        EffectType.ComponentSet => "world.component.replaced",
+                        _ => "world.component.merged"
+                    };
+                    payload["entityId"] = entityId;
+                    payload["definitionId"] = definitionId;
+                    payload["data"] = Data(effect);
+                    break;
+
+                case EffectType.ComponentRemove:
+                    type = "world.component.removed";
+                    payload["entityId"] = entityId;
+                    payload["definitionId"] = definitionId;
+                    break;
+
+                case EffectType.ContainmentMove:
+                    type = "world.containment.moved";
+                    payload["entityId"] = entityId;
+
+                    // Explicitly null when the entity was moved to nowhere. The schema allows null
+                    // here precisely so "taken out of its container" is expressible.
+                    payload["toEntityId"] = toEntityId.Length == 0 ? null : toEntityId;
+                    payload["slot"] = effect.Slot.Trim();
+
+                    if (toEntityId.Length > 0)
+                    {
+                        ids.Add(toEntityId);
+                    }
+
+                    break;
+
+                case EffectType.RelationshipCreate:
+                    type = "world.relationship.created";
+                    payload["fromEntityId"] = entityId;
+                    payload["toEntityId"] = toEntityId;
+                    payload["kind"] = effect.Kind.Trim();
+                    payload["data"] = Data(effect);
+                    ids.Add(toEntityId);
+                    break;
+
+                case EffectType.RelationshipRemove:
+                    type = "world.relationship.removed";
+                    payload["fromEntityId"] = entityId;
+                    payload["toEntityId"] = toEntityId;
+                    payload["kind"] = effect.Kind.Trim();
+                    ids.Add(toEntityId);
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"No structural event type for '{effect.Type}'.");
+            }
+
+            proposals.Add(new ProposedEvent(
+                type,
+                payload.ToJsonString(),
+                ids.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.Ordinal).ToList(),
+                string.Empty,
+                ordinal,
+
+                // A root world change is caused by the caller, not by another event. A reaction's
+                // effects arrive here one deeper, naming the event they answer.
+                Depth: depth,
+                CorrelationId: correlationId,
+                CausationId: causationEventId));
+        }
+
+        return proposals;
+    }
+
+    /// <summary>An effect's data as JSON, or an empty object. Never a string containing JSON.</summary>
+    private static JsonNode Data(Effect effect)
+    {
+        if (string.IsNullOrWhiteSpace(effect.Data))
+        {
+            return new JsonObject();
+        }
+
+        // Validation has already rejected a malformed payload, so a failure here would mean the
+        // batch was applied without being checked — worth surfacing rather than swallowing.
+        return JsonNode.Parse(effect.Data) ?? new JsonObject();
+    }
 
     private async Task<EffectResult> DryRunWithGuardsAsync(IReadOnlyList<Effect> effects, CancellationToken cancellationToken)
     {
@@ -388,8 +675,9 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
         var index = 0;
         try
         {
-            for (; index < effects.Count; index++) await ApplyOneAsync(effects[index], cancellationToken);
-            var proposals = Proposals(effects);
+            var resolved = new string[effects.Count];
+            for (; index < effects.Count; index++) resolved[index] = await ApplyOneAsync(effects[index], cancellationToken);
+            var proposals = Proposals(effects, resolved, Operation.NewId(), 0, string.Empty);
             var guarded = await _guards!.EvaluateAsync(proposals, cancellationToken);
             await transaction.RollbackAsync(CancellationToken.None);
             _db.ChangeTracker.Clear();
@@ -411,7 +699,16 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
         }
     }
 
-    private async Task ApplyOneAsync(Effect effect, CancellationToken cancellationToken)
+    /// <summary>
+    /// Applies one effect and returns the entity id it actually touched.
+    ///
+    /// Today that is always the id the effect named, because validation requires an explicit id on
+    /// entity.create — deliberately, so a later effect in the same list can reference it. The store
+    /// can still mint one when called directly, so reporting what it returned costs nothing and
+    /// keeps an event from ever naming a blank entity. It is also the first step of the receipt
+    /// pipeline the events plan describes; nothing yet relies on it doing more than echoing.
+    /// </summary>
+    private async Task<string> ApplyOneAsync(Effect effect, CancellationToken cancellationToken)
     {
         var entityId = effect.EntityId.Trim();
         var toEntityId = effect.ToEntityId.Trim();
@@ -421,7 +718,7 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
         switch (Type(effect))
         {
             case EffectType.EntityCreate:
-                await _world.CreateEntityAsync(effect.Name.Trim(), entityId, cancellationToken);
+                entityId = (await _world.CreateEntityAsync(effect.Name.Trim(), entityId, cancellationToken)).Id;
                 break;
 
             case EffectType.EntityDelete:
@@ -459,6 +756,8 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
                 await _world.UnrelateAsync(entityId, toEntityId, effect.Kind.Trim(), cancellationToken);
                 break;
         }
+
+        return entityId;
     }
 
     // ---- helpers ----------------------------------------------------------------------

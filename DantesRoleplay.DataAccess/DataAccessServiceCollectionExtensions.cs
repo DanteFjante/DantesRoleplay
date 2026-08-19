@@ -73,6 +73,7 @@ public static class DataAccessServiceCollectionExtensions
         services.AddScoped<ISubscriptionStore, SubscriptionStore>();
         services.AddScoped<IGuardRouter, GuardRouter>();
         services.AddScoped<IEventLedger, EventLedger>();
+        services.AddScoped<IEventRouter, EventRouter>();
         services.AddScoped<IProjectionResolver, ProjectionResolver>();
         services.AddScoped<IMechanicComposer, MechanicComposer>();
 
@@ -84,6 +85,7 @@ public static class DataAccessServiceCollectionExtensions
         services.AddScoped<IActionRunner, ActionRunner>();
 
         services.AddScoped<ProcedureSeeder>();
+        services.AddScoped<EventTypeSeeder>();
         services.AddScoped<MechanicSeeder>();
         services.AddScoped<ContentHashBackfill>();
 
@@ -116,6 +118,13 @@ public static class DataAccessServiceCollectionExtensions
 
         var seeder = scope.ServiceProvider.GetRequiredService<ProcedureSeeder>();
         await seeder.SeedAsync(cancellationToken);
+
+        // The nine world.* structural event types, before any rule. Every accepted world change
+        // records an event against one of them, so a database without them cannot change the world
+        // at all — they are kernel contracts, not content, and a fresh install has to have them
+        // without anyone remembering to import a catalog first.
+        var eventTypes = scope.ServiceProvider.GetRequiredService<EventTypeSeeder>();
+        await eventTypes.SeedAsync(cancellationToken);
 
         // The bootstrap rules, after the contracts, so that a fresh database has both the manual
         // and two worked examples of what the manual is describing.

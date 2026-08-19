@@ -60,10 +60,17 @@ public static class VerbSurface
             ["id", "version", "query", "category", "scope", "includeInactive", "limit"],
             ["procedure.event.define"]),
         new(
+            "events",
+            "The structural event ledger, oldest first. With id, one event in full including its "
+            + "payload. Events exist only because a world change committed.",
+            ["id", "correlationId", "causationId", "rootOperationId", "type", "entityId", "afterSequence", "from", "to", "limit"],
+            ["procedure.event.inspect"]),
+        new(
             "subscriptions",
-            "Guard and reaction middleware registrations. With id, one version in full; registrations do not execute yet.",
+            "Guard and reaction middleware registrations. With id, one version in full. An active "
+            + "registration runs: a guard before its event is accepted, a reaction after.",
             ["id", "version", "query", "category", "scope", "includeInactive", "limit"],
-            ["procedure.subscription.create", "procedure.subscription.modify"]),
+            ["procedure.subscription.create", "procedure.subscription.modify", "procedure.event.guard", "procedure.event.react"]),
         new(
             "history",
             "Recent operation audit records, newest first, including failures.",
@@ -109,7 +116,7 @@ public static class VerbSurface
             {"effects":[{"type":"entity.create","entityId":"...","name":"..."},{"type":"component.set","entityId":"...","definitionId":"...","data":"{}"}]}
             """,
             SupportsDryRun: true,
-            ["procedure.world.change"]),
+            ["procedure.world.change", "procedure.event.chain-limits"]),
         new(
             "mechanic",
             "Write or revise a game rule as JavaScript. Never overwrites — a change appends a version.",
@@ -118,7 +125,7 @@ public static class VerbSurface
             {"id":"...","category":"...","name":"...","description":"...","matches":"words a player would say","requirements":"{}","source":"function run(ctx) { return { narration: '...', effects: [] }; }","status":"active","changeNote":"..."}
             """,
             SupportsDryRun: true,
-            ["procedure.mechanic.write"]),
+            ["procedure.mechanic.write", "procedure.event.guard", "procedure.event.react"]),
         new(
             "event-type",
             "Write or revise an event type and its JSON Schema. This registers a type only; it does not emit events.",
@@ -130,13 +137,14 @@ public static class VerbSurface
             ["procedure.event.define"]),
         new(
             "subscription",
-            "Write or revise a guard/reaction middleware registration. It is stored and validated but does not execute yet.",
+            "Write or revise a guard/reaction middleware registration. Once active it routes — a "
+            + "guard can deny the change its event describes, a reaction's effects join it.",
             "{id, category, eventTypeId, eventMechanicId, mode, order?, fixedRoleEntityIdsJson?, trackedEntityIdsJson?, payloadEqualsJson?, maxExecutionsPerChain?, scope?, status?, changeNote?}",
             """
             {"id":"subscription.guard.example","category":"world","eventTypeId":"world.component.replaced","eventMechanicId":"mechanic.example.guard","mode":"guard","order":0,"fixedRoleEntityIdsJson":"{}","trackedEntityIdsJson":"[]","payloadEqualsJson":"{}","maxExecutionsPerChain":1,"status":"draft","changeNote":"Initial registration."}
             """,
             SupportsDryRun: true,
-            ["procedure.subscription.create", "procedure.subscription.modify"]),
+            ["procedure.subscription.create", "procedure.subscription.modify", "procedure.event.chain-limits"]),
         new(
             "action",
             "Resolve what someone is trying to do. The best-ranked active rule matching the "
@@ -149,7 +157,7 @@ public static class VerbSurface
             {"intent":"what the player is trying to do","roleEntityIds":{"<role>":"<entity-id>"},"input":"{}"}
             """,
             SupportsDryRun: false,
-            ["procedure.action.run"])
+            ["procedure.action.run", "procedure.event.chain-limits"])
     ];
 
     /// <summary>

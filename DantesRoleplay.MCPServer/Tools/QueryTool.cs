@@ -32,9 +32,11 @@ public sealed class QueryTool
         IMechanicStore mechanics,
         IEventTypeStore eventTypes,
         ISubscriptionStore subscriptions,
+        IEventLedger events,
         IOperationLog log,
         [Description(
-            "Closed kind: capabilities, procedures, world, entities, mechanics, event-types, subscriptions, or history.")]
+            "Closed kind: capabilities, procedures, world, entities, mechanics, event-types, events, "
+            + "subscriptions, or history.")]
         string kind,
         [Description("Full-record id for procedures, mechanics, or one entity.")] string? id = null,
         [Description("Entity ids for a full batch read.")] string[]? ids = null,
@@ -52,6 +54,20 @@ public sealed class QueryTool
         [Description("Only failed history records.")] bool failuresOnly = false,
         [Description("History tool filter.")] string? tool = null,
         [Description("History subject filter.")] string? subject = null,
+        [Description("Event chain filter: every event from one committed world change.")]
+        string? correlationId = null,
+        [Description("Event filter: events directly caused by one earlier event.")]
+        string? causationId = null,
+        [Description("Event filter: the audited operation an event belongs to.")]
+        string? rootOperationId = null,
+        [Description("Event filter: registered event type id, e.g. world.component.replaced.")]
+        string? type = null,
+        [Description("Event filter: every event concerning one entity.")] string? entityId = null,
+        [Description("Event paging: exclusive lower bound on sequence within a chain.")]
+        int? afterSequence = null,
+        [Description("Event filter: inclusive ISO-8601 UTC lower bound, e.g. 2026-08-19T14:30:00Z.")]
+        string? from = null,
+        [Description("Event filter: exclusive ISO-8601 UTC upper bound.")] string? to = null,
         CancellationToken cancellationToken = default)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
@@ -102,6 +118,9 @@ public sealed class QueryTool
                 await new MechanicTools().FindMechanicsAsync(
                     mechanics, log, id, version, query, category, scope, includeInactive, limit, cancellationToken),
             "event-types" => await new EventTypeTools().FindAsync(eventTypes, log, id, version, query, category, scope, includeInactive, limit, cancellationToken),
+            "events" => await new EventTools().FindAsync(
+                events, log, id, correlationId, causationId, rootOperationId, type, entityId,
+                afterSequence, from, to, limit, cancellationToken),
             "subscriptions" => await new SubscriptionTools().FindAsync(subscriptions, log, id, version, query, category, scope, includeInactive, limit, cancellationToken),
             "history" =>
                 await new HistoryTool().HistoryAsync(

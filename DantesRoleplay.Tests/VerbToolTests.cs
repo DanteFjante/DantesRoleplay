@@ -21,6 +21,7 @@ public sealed class VerbToolTests : IDisposable
             new MechanicStore(db),
             new EventTypeStore(db),
             new SubscriptionStore(db),
+            new EventLedger(db),
             new OperationLog(db),
             "procedures");
 

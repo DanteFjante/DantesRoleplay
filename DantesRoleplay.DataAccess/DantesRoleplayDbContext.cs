@@ -45,6 +45,8 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
     public DbSet<EventRecord> Events => Set<EventRecord>();
     public DbSet<EventEntity> EventEntities => Set<EventEntity>();
 
+    public DbSet<EventExecution> EventExecutions => Set<EventExecution>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -61,6 +63,22 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
     private static void ConfigureEventLedger(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<EventRecord>(entity => { entity.ToTable("event"); entity.HasKey(x => x.Id); entity.Property(x => x.Id).HasMaxLength(40); entity.Property(x => x.TypeId).HasMaxLength(200).IsRequired(); entity.Property(x => x.CorrelationId).HasMaxLength(40).IsRequired(); entity.Property(x => x.CausationId).HasMaxLength(40); entity.Property(x => x.RootOperationId).HasMaxLength(40); entity.Property(x => x.PayloadJson).IsRequired(); entity.HasIndex(x => new { x.CorrelationId, x.Sequence }); entity.HasIndex(x => x.RootOperationId); entity.HasIndex(x => new { x.TypeId, x.Timestamp }); });
+        modelBuilder.Entity<EventExecution>(entity =>
+        {
+            entity.ToTable("event_execution"); entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasMaxLength(40);
+            entity.Property(x => x.EventId).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.SubscriptionId).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.MechanicId).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.ProjectionJson).IsRequired(); entity.Property(x => x.OutputJson).IsRequired();
+            entity.Property(x => x.LogJson).IsRequired(); entity.Property(x => x.LimitHit).HasMaxLength(40);
+            entity.HasOne(x => x.Event).WithMany().HasForeignKey(x => x.EventId).OnDelete(DeleteBehavior.Cascade);
+
+            // Ordinal is unique per event so two executions of one chain can never claim the same
+            // slot, and the pair is how a chain is read back in order.
+            entity.HasIndex(x => new { x.EventId, x.Ordinal }).IsUnique();
+            entity.HasIndex(x => x.SubscriptionId);
+        });
         modelBuilder.Entity<EventEntity>(entity => { entity.ToTable("event_entity"); entity.HasKey(x => x.Id); entity.Property(x => x.EventId).HasMaxLength(40).IsRequired(); entity.Property(x => x.EntityId).HasMaxLength(200).IsRequired(); entity.HasOne(x => x.Event).WithMany(x => x.Entities).HasForeignKey(x => x.EventId).OnDelete(DeleteBehavior.Cascade); entity.HasIndex(x => new { x.EntityId, x.Id }); entity.HasIndex(x => new { x.EventId, x.Ordinal }).IsUnique(); });
     }
 

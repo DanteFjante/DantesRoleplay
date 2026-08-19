@@ -10,6 +10,17 @@ namespace DantesRoleplay.Operations;
 /// </summary>
 public sealed class Operation
 {
+    /// <summary>
+    /// Mints an operation id.
+    ///
+    /// Centralised because the id is allocated BEFORE the transaction opens now — an event's
+    /// correlation id and its root operation id are the same value, so the ledger can link a row
+    /// to the operation that caused it without a second write to patch it in afterwards. Two
+    /// generators would eventually disagree about the format, and the format is what the ledger's
+    /// 40-character column and its indexes are built around.
+    /// </summary>
+    public static string NewId() => Guid.NewGuid().ToString("n");
+
     public required string Id { get; set; }
 
     /// <summary>

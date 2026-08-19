@@ -57,6 +57,17 @@ public sealed class CatalogCoverageTests : IDisposable
             + "If contract relations ever get an API, they must be added to the catalog in the "
             + "same change, and this entry removed.",
 
+        // Runtime evidence, like the operation log — but unlike the log, not even exportable.
+        // An event asserts that a particular world change committed. Writing one from a file would
+        // be asserting that something happened which did not, so there is deliberately no export,
+        // no import, and no commit kind anywhere that can produce one.
+        ["event"] = "Runtime evidence. An event exists only because a world change committed; a "
+            + "catalog that could write one would be able to assert a change that never happened.",
+        ["event_entity"] = "Join rows for the above.",
+        ["event_execution"] = "Runtime evidence: one reaction subscription that ran against one "
+            + "accepted event. Same reasoning as the event itself — it records something that "
+            + "happened, so it cannot be authored.",
+
         ["__EFMigrationsHistory"] = "Schema bookkeeping, not content. A catalog describes what the "
             + "database holds, not which migrations built it.",
         ["__EFMigrationsLock"] = "Schema bookkeeping.",
@@ -210,6 +221,40 @@ public sealed class CatalogCoverageTests : IDisposable
         // --- Tombstones. A catalog states what the world IS; re-importing one would resurrect a
         //     row somebody deleted on purpose, so deleted entities are not exported at all.
         ["entity.DeletedAt"] = "Tombstone. Soft-deleted entities are excluded from the export.",
+
+        // --- The event ledger. Runtime evidence; see the note in SkippedTables.
+        ["event.Id"] = "Runtime evidence, not carried by the catalog.",
+        ["event.TypeId"] = "Runtime evidence, not carried by the catalog.",
+        ["event.TypeVersion"] = "Runtime evidence, not carried by the catalog.",
+        ["event.Scope"] = "Runtime evidence, not carried by the catalog.",
+        ["event.PayloadJson"] = "Runtime evidence, not carried by the catalog.",
+        ["event.Timestamp"] = "Runtime evidence, not carried by the catalog.",
+        ["event.CorrelationId"] = "Runtime evidence, not carried by the catalog.",
+        ["event.CausationId"] = "Runtime evidence, not carried by the catalog.",
+        ["event.Depth"] = "Runtime evidence, not carried by the catalog.",
+        ["event.Sequence"] = "Runtime evidence, not carried by the catalog.",
+        ["event.RootOperationId"] = "Runtime evidence, not carried by the catalog.",
+        ["event_entity.Id"] = "Runtime evidence, not carried by the catalog.",
+        ["event_entity.EventId"] = "Runtime evidence, not carried by the catalog.",
+        ["event_entity.EntityId"] = "Runtime evidence, not carried by the catalog.",
+        ["event_entity.Ordinal"] = "Runtime evidence, not carried by the catalog.",
+        ["event_execution.Id"] = "Runtime evidence, not carried by the catalog.",
+        ["event_execution.EventId"] = "Runtime evidence, not carried by the catalog.",
+        ["event_execution.Ordinal"] = "Runtime evidence, not carried by the catalog.",
+        ["event_execution.SubscriptionId"] = "Runtime evidence, not carried by the catalog.",
+        ["event_execution.SubscriptionVersion"] = "Runtime evidence, not carried by the catalog.",
+        ["event_execution.MechanicId"] = "Runtime evidence, not carried by the catalog.",
+        ["event_execution.MechanicVersion"] = "Runtime evidence, not carried by the catalog.",
+        ["event_execution.Seed"] = "Runtime evidence, not carried by the catalog.",
+        ["event_execution.ProjectionJson"] = "Runtime evidence, not carried by the catalog.",
+        ["event_execution.OutputJson"] = "Runtime evidence, not carried by the catalog.",
+        ["event_execution.EffectCount"] = "Runtime evidence, not carried by the catalog.",
+        ["event_execution.EventCount"] = "Runtime evidence, not carried by the catalog.",
+        ["event_execution.Narration"] = "Runtime evidence, not carried by the catalog.",
+        ["event_execution.LogJson"] = "Runtime evidence, not carried by the catalog.",
+        ["event_execution.ElapsedMilliseconds"] = "Runtime evidence, not carried by the catalog.",
+        ["event_execution.LimitHit"] = "Runtime evidence, not carried by the catalog.",
+        ["event_execution.CreatedAt"] = "Runtime evidence, not carried by the catalog.",
 
         // --- The unused table's own columns.
         ["procedure_relation.FromContractId"] = "Unused table. See SkippedTables.",

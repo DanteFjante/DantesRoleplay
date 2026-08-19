@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.World;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.DataAccess;
@@ -12,16 +13,34 @@ public sealed class GuardRouter(
     DantesRoleplayDbContext db,
     IMechanicStore mechanics,
     IProjectionResolver projections,
-    IMechanicEngine engine) : IGuardRouter
+    IMechanicEngine engine,
+    IWorldStore world) : IGuardRouter
 {
     private readonly DantesRoleplayDbContext _db = db;
     private readonly IMechanicStore _mechanics = mechanics;
     private readonly IProjectionResolver _projections = projections;
     private readonly IMechanicEngine _engine = engine;
+    private readonly IWorldStore _world = world;
+
+    /// <summary>
+    /// Denial codes are a vocabulary, not free text: a session that sees one has to be able to
+    /// match on it. Same shape the plan states for a guard's own returned code.
+    /// </summary>
+    private static readonly System.Text.RegularExpressions.Regex CodeShape =
+        new("^[A-Z][A-Z0-9_]{2,63}$", System.Text.RegularExpressions.RegexOptions.Compiled);
 
     public async Task<GuardResult> EvaluateAsync(IReadOnlyList<ProposedEvent> proposals, CancellationToken cancellationToken = default)
     {
         var evaluations = new List<GuardEvaluation>();
+
+        // The version in force for each type being proposed, read once. It goes into the envelope
+        // a guard sees, so a guard can branch on the schema version it was written against instead
+        // of assuming the current one.
+        var wantedTypes = proposals.Select(x => x.Type).Distinct(StringComparer.Ordinal).ToList();
+        var typeVersions = await _db.EventTypes.AsNoTracking()
+            .Where(t => wantedTypes.Contains(t.Id))
+            .Select(t => new { t.Id, t.CurrentVersion })
+            .ToDictionaryAsync(t => t.Id, t => t.CurrentVersion, StringComparer.Ordinal, cancellationToken);
         foreach (var proposal in proposals.OrderBy(x => x.Ordinal))
         {
             var rows = await _db.Subscriptions.AsNoTracking()
@@ -43,14 +62,29 @@ public sealed class GuardRouter(
                 var seed = Seed(row.s.Id, row.v.Version, proposal);
                 var resolved = await _projections.ResolveAsync(requirements, bindings, "{}", seed, cancellationToken);
                 if (!resolved.Ok) return GuardResult.Deny(evaluations, "GUARD_PROJECTION_FAILED", string.Join(" ", resolved.Problems));
-                var projection = resolved.Projection! with { Event = proposal.PayloadJson, EventEntities = proposal.EntityIds };
+                // The full envelope, not the bare payload. A guard needs to know which chain it is
+                // being asked about and how deep it is, and the contract requires it to branch on
+                // ctx.event.mode rather than guess from which fields happen to be present.
+                var projection = resolved.Projection! with
+                {
+                    Event = EventEnvelope.ForGuard(proposal, typeVersions.GetValueOrDefault(proposal.Type)),
+                    EventEntities = await AffectedEntities.ProjectAsync(
+                        _world, proposal.EntityIds, requirements.Event.Components, cancellationToken)
+                };
                 var run = await _engine.RunAsync(detail.Source, projection, ExecutionLimits.Default, cancellationToken);
                 if (!run.Ok) return GuardResult.Deny(evaluations, run.LimitHit.Length > 0 ? "GUARD_LIMIT" : "GUARD_FAILED", run.Error);
                 var output = run.Output;
-                if (output.Effects.Count != 0 || !string.IsNullOrWhiteSpace(output.Narration) || output.Data != "{}") return GuardResult.Deny(evaluations, "GUARD_FORBIDDEN_OUTPUT", $"Guard '{row.s.Id}' may only return a decision.");
+                // Effects are forbidden outright — a guard that could change the world would be a
+                // rule wearing a veto's clothes. Narration and data are ALLOWED, which the earlier
+                // check got backwards: "allowed because the ward was already spent" is exactly the
+                // kind of thing an audit wants, and refusing it made an explaining guard a failing
+                // guard.
+                if (output.Effects.Count != 0) return GuardResult.Deny(evaluations, "GUARD_FORBIDDEN_OUTPUT", $"Guard '{row.s.Id}' returned effects. A guard decides; it does not change the world.");
                 if (output.Decision is not ("allow" or "deny")) return GuardResult.Deny(evaluations, "GUARD_INVALID_DECISION", $"Guard '{row.s.Id}' must return decision allow or deny.");
                 if (output.Decision == "deny" && (string.IsNullOrWhiteSpace(output.Code) || string.IsNullOrWhiteSpace(output.Reason))) return GuardResult.Deny(evaluations, "GUARD_INVALID_DECISION", $"Guard '{row.s.Id}' must supply code and reason when denying.");
-                if (output.Decision == "allow" && (!string.IsNullOrWhiteSpace(output.Code) || !string.IsNullOrWhiteSpace(output.Reason))) return GuardResult.Deny(evaluations, "GUARD_INVALID_DECISION", $"Guard '{row.s.Id}' cannot supply code or reason when allowing.");
+                if (output.Decision == "deny" && !CodeShape.IsMatch(output.Code.Trim())) return GuardResult.Deny(evaluations, "GUARD_INVALID_DECISION", $"Guard '{row.s.Id}' returned code '{output.Code}'. A denial code is 3-64 characters of A-Z, 0-9 and underscore, starting with a letter.");
+                if (output.Decision == "deny" && output.Reason.Trim().Length > 500) return GuardResult.Deny(evaluations, "GUARD_INVALID_DECISION", $"Guard '{row.s.Id}' returned a reason of {output.Reason.Trim().Length} characters; the limit is 500.");
+                if (output.Decision == "allow" && !string.IsNullOrWhiteSpace(output.Code)) return GuardResult.Deny(evaluations, "GUARD_INVALID_DECISION", $"Guard '{row.s.Id}' supplied a denial code while allowing.");
                 evaluations.Add(new GuardEvaluation(row.s.Id, row.v.Version, detail.Id, detail.Version, row.v.Order, seed, output.Decision, output.Code, output.Reason));
                 if (output.Decision == "deny") return GuardResult.Deny(evaluations, output.Code, output.Reason);
             }

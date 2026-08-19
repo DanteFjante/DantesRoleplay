@@ -263,7 +263,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
               seed: payload.seed,
               children: freezeDeep(payload.children || {}),
               event: freezeDeep(JSON.parse(payload.event || '{}')),
-              eventEntities: freezeDeep(payload.eventEntities || []),
+              eventEntities: freezeDeep(payload.eventEntities || {}),
 
               random: random,
 

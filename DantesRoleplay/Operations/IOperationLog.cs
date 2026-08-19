@@ -15,6 +15,11 @@ public interface IOperationLog
     /// Read-only tools must leave it false. A tool that records evidence also CONSUMES it, so an
     /// incidental `history` call would otherwise spend the reads a pending write was about to
     /// account for.
+    ///
+    /// <paramref name="id"/> lets a caller supply an id it allocated earlier. A world change now
+    /// allocates its operation id before opening the transaction and uses it as the correlation id
+    /// of every event the change emits, so the ledger links to the audit row without a second write
+    /// to patch the link in afterwards. Left empty, one is minted here as before.
     /// </summary>
     Task<Operation> RecordAsync(
         string tool,
@@ -30,7 +35,8 @@ public interface IOperationLog
         int? mechanicVersion = null,
         long? seed = null,
         string projectionJson = "",
-        string guardEvidenceJson = "");
+        string guardEvidenceJson = "",
+        string id = "");
 
     Task<IReadOnlyList<Operation>> RecentAsync(
         int limit = 20,
