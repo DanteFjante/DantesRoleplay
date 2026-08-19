@@ -53,8 +53,25 @@ public static class CatalogReader
             await ReadMechanicsAsync(fullRoot, cancellationToken),
             await ReadProceduresAsync(fullRoot, cancellationToken),
             await ReadComponentsAsync(fullRoot, cancellationToken),
+            await ReadEventTypesAsync(fullRoot, cancellationToken),
+            await ReadSubscriptionsAsync(fullRoot, cancellationToken),
             entities,
             relationships);
+    }
+
+    private static async Task<IReadOnlyList<EventTypeFile>> ReadEventTypesAsync(string root, CancellationToken cancellationToken)
+    {
+        var directory = Path.Combine(root, CatalogLayout.EventTypesRoot); var files = new List<EventTypeFile>(); if (!Directory.Exists(directory)) return files;
+        foreach (var path in Directory.EnumerateFiles(directory, "*.json", SearchOption.AllDirectories).Where(p => !p.EndsWith(".schema.json", StringComparison.OrdinalIgnoreCase)).OrderBy(p => p, StringComparer.Ordinal))
+        { var schemaPath = path[..^CatalogLayout.DefinitionExtension.Length] + ".schema.json"; files.Add(EventTypeFile.Parse(await File.ReadAllTextAsync(path, cancellationToken), Relative(root, path), File.Exists(schemaPath) ? await File.ReadAllTextAsync(schemaPath, cancellationToken) : null)); }
+        return Unique(files, x => x.Id, "event type");
+    }
+
+    private static async Task<IReadOnlyList<SubscriptionFile>> ReadSubscriptionsAsync(string root, CancellationToken cancellationToken)
+    {
+        var directory = Path.Combine(root, CatalogLayout.SubscriptionsRoot); var files = new List<SubscriptionFile>(); if (!Directory.Exists(directory)) return files;
+        foreach (var path in Directory.EnumerateFiles(directory, "*.json", SearchOption.AllDirectories).OrderBy(p => p, StringComparer.Ordinal)) files.Add(SubscriptionFile.Parse(await File.ReadAllTextAsync(path, cancellationToken), Relative(root, path)));
+        return Unique(files, x => x.Id, "subscription");
     }
 
     private static async Task<IReadOnlyList<EntityFile>> ReadEntitiesAsync(
@@ -192,10 +209,12 @@ public sealed record CatalogContents(
     IReadOnlyList<MechanicFile> Mechanics,
     IReadOnlyList<ProcedureFile> Procedures,
     IReadOnlyList<ComponentDefinitionFile> Components,
+    IReadOnlyList<EventTypeFile> EventTypes,
+    IReadOnlyList<SubscriptionFile> Subscriptions,
     IReadOnlyList<EntityFile> Entities,
     RelationshipsFile? Relationships)
 {
-    public int Records => Mechanics.Count + Procedures.Count + Components.Count + Entities.Count;
+    public int Records => Mechanics.Count + Procedures.Count + Components.Count + EventTypes.Count + Subscriptions.Count + Entities.Count;
 
     /// <summary>
     /// Whether world state is in scope for this catalog.

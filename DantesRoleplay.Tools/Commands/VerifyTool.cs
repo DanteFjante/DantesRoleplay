@@ -42,7 +42,9 @@ public sealed class VerifyTool : ITool
                 db,
                 new MechanicStore(db),
                 new ProcedureStore(db),
-                new WorldStore(db))
+                new WorldStore(db),
+                new EventTypeStore(db),
+                new SubscriptionStore(db))
             .PlanAsync(target, cancellationToken);
 
         CatalogReport.Write(context.Out, plan, context.HasFlag("verbose"));

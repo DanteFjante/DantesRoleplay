@@ -3,6 +3,7 @@ using System.Text.Json;
 using DantesRoleplay.Actions;
 using DantesRoleplay.Effects;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.Events;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.World;
@@ -29,7 +30,7 @@ public sealed class CommitTool
 
     [McpServerTool(Name = "commit")]
     [Description(
-        "Change anything in this system. kind is one of: procedure, component, effects, mechanic, " +
+        "Change anything in this system. kind is one of: procedure, component, effects, mechanic, event-type, subscription, " +
         "action. payload is a JSON object encoded as a string, shaped per kind — " +
         "query(kind: \"capabilities\") gives every shape exactly, and a rejection repeats the one " +
         "you needed. Where dryRun is supported, send dryRun: true first and read every check, then " +
@@ -39,9 +40,11 @@ public sealed class CommitTool
         IWorldStore world,
         IEffectApplier effects,
         IMechanicStore mechanics,
+        IEventTypeStore eventTypes,
+        ISubscriptionStore subscriptions,
         IActionRunner actions,
         IOperationLog log,
-        [Description("Closed kind: procedure, component, effects, mechanic, or action.")]
+        [Description("Closed kind: procedure, component, effects, mechanic, event-type, subscription, or action.")]
         string kind,
         [Description("JSON object containing the selected kind's existing tool arguments.")]
         string payload,
@@ -113,6 +116,8 @@ public sealed class CommitTool
                     effects, log, parsedPayload.RootElement, intent, proceduresUsed, dryRun, cancellationToken),
                 "mechanic" => await CommitMechanicAsync(
                     mechanics, log, parsedPayload.RootElement, intent, proceduresUsed, dryRun, cancellationToken),
+                "event-type" => await CommitEventTypeAsync(eventTypes, log, parsedPayload.RootElement, intent, proceduresUsed, dryRun, cancellationToken),
+                "subscription" => await CommitSubscriptionAsync(subscriptions, log, parsedPayload.RootElement, intent, proceduresUsed, dryRun, cancellationToken),
                 "action" => await CommitActionAsync(
                     actions, log, parsedPayload.RootElement, intent, proceduresUsed, cancellationToken),
                 _ => throw new InvalidOperationException($"Unhandled commit kind '{kind}'.")
@@ -311,6 +316,19 @@ public sealed class CommitTool
             cancellationToken);
     }
 
+    private static async Task<ToolEnvelope> CommitEventTypeAsync(IEventTypeStore eventTypes, IOperationLog log, JsonElement payload, string intent, string[]? proceduresUsed, bool dryRun, CancellationToken cancellationToken)
+    {
+        if (!TryDeserialize(payload, out EventTypePayload? value, out var error) || value is null || string.IsNullOrWhiteSpace(value.Id) || string.IsNullOrWhiteSpace(value.Category) || string.IsNullOrWhiteSpace(value.Name) || string.IsNullOrWhiteSpace(value.Schema)) return await InvalidPayloadEnvelope(log, "event-type", error ?? "Event type payload requires id, category, name, and schema.", intent, proceduresUsed, dryRun);
+        return await new EventTypeTools().WriteAsync(eventTypes, log, value.Id, value.Category, value.Name, value.Schema, value.Description ?? string.Empty, value.Scope ?? string.Empty, value.Status, value.ChangeNote ?? string.Empty, intent, proceduresUsed, dryRun, cancellationToken);
+    }
+
+    private static async Task<ToolEnvelope> CommitSubscriptionAsync(ISubscriptionStore subscriptions, IOperationLog log, JsonElement payload, string intent, string[]? proceduresUsed, bool dryRun, CancellationToken cancellationToken)
+    {
+        if (!TryDeserialize(payload, out SubscriptionPayload? value, out var error) || value is null || string.IsNullOrWhiteSpace(value.Id) || string.IsNullOrWhiteSpace(value.Category) || string.IsNullOrWhiteSpace(value.EventTypeId) || string.IsNullOrWhiteSpace(value.EventMechanicId) || string.IsNullOrWhiteSpace(value.Mode) || !Enum.TryParse<SubscriptionMode>(value.Mode, true, out var mode)) return await InvalidPayloadEnvelope(log, "subscription", error ?? "Subscription payload requires id, category, eventTypeId, eventMechanicId, and mode (guard or reaction).", intent, proceduresUsed, dryRun);
+        if (!string.IsNullOrWhiteSpace(value.Status) && !Enum.TryParse<SubscriptionStatus>(value.Status, true, out var _)) return await InvalidPayloadEnvelope(log, "subscription", "status must be draft, active, disabled, or archived.", intent, proceduresUsed, dryRun);
+        return await new SubscriptionTools().WriteAsync(subscriptions, log, new WriteSubscriptionRequest { Id = value.Id, Category = value.Category, EventTypeId = value.EventTypeId, EventMechanicId = value.EventMechanicId, Mode = mode, Order = value.Order, FixedRoleEntityIdsJson = value.FixedRoleEntityIdsJson ?? "{}", TrackedEntityIdsJson = value.TrackedEntityIdsJson ?? "[]", PayloadEqualsJson = value.PayloadEqualsJson ?? "{}", MaxExecutionsPerChain = value.MaxExecutionsPerChain ?? 1, Scope = value.Scope ?? string.Empty, Status = string.IsNullOrWhiteSpace(value.Status) ? null : Enum.Parse<SubscriptionStatus>(value.Status, true), ChangeNote = value.ChangeNote ?? string.Empty }, intent, proceduresUsed, dryRun, cancellationToken);
+    }
+
     /// <summary>
     /// D4: the expected shape travels inside the rejection, not as a pointer to where the shape
     /// lives. A session that guessed wrong then has everything it needs in the same round trip.
@@ -439,4 +457,6 @@ public sealed class CommitTool
         public string? Scope { get; init; }
         public long? Seed { get; init; }
     }
+    private sealed class EventTypePayload { public string? Id { get; init; } public string? Category { get; init; } public string? Name { get; init; } public string? Description { get; init; } public string? Schema { get; init; } public string? Scope { get; init; } public string? Status { get; init; } public string? ChangeNote { get; init; } }
+    private sealed class SubscriptionPayload { public string? Id { get; init; } public string? Category { get; init; } public string? EventTypeId { get; init; } public string? EventMechanicId { get; init; } public string? Mode { get; init; } public int Order { get; init; } public string? FixedRoleEntityIdsJson { get; init; } public string? TrackedEntityIdsJson { get; init; } public string? PayloadEqualsJson { get; init; } public int? MaxExecutionsPerChain { get; init; } public string? Scope { get; init; } public string? Status { get; init; } public string? ChangeNote { get; init; } }
 }

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using DantesRoleplay.Categories;
 using DantesRoleplay.Content;
+using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
 using Microsoft.EntityFrameworkCore;
 
@@ -225,6 +226,46 @@ public sealed class MechanicStore(DantesRoleplayDbContext db) : IMechanicStore
                         : $"Declares {requirements.Children.Count} host-orchestrated child mechanic(s)."
                     : string.Join(" ", compositionProblems),
                 Blocking: true));
+
+            var eventProblems = requirements.EventProblems();
+            checks.Add(new MechanicCheck(
+                "event-declaration",
+                eventProblems.Count == 0,
+                eventProblems.Count == 0
+                    ? requirements.Event is null ? "No event declaration." : $"Declares a {requirements.Event.Mode} event mechanic for {string.Join(", ", requirements.Event.Types)}."
+                    : string.Join(" ", eventProblems),
+                Blocking: true));
+
+            if (requirements.Event is not null && eventProblems.Count == 0)
+            {
+                var declaredTypes = requirements.Event.Types.Distinct(StringComparer.Ordinal).ToList();
+                var activeTypes = await _db.EventTypes
+                    .Where(type => type.Status == EventTypeStatus.Active && declaredTypes.Contains(type.Id))
+                    .Select(type => type.Id)
+                    .ToListAsync(cancellationToken);
+                var missingTypes = declaredTypes.Except(activeTypes, StringComparer.Ordinal).ToList();
+                checks.Add(new MechanicCheck(
+                    "event-types-active",
+                    missingTypes.Count == 0,
+                    missingTypes.Count == 0
+                        ? $"All {declaredTypes.Count} declared event type(s) are active."
+                        : $"These declared event types do not exist or are not active: {string.Join(", ", missingTypes)}.",
+                    Blocking: true));
+
+                var eventComponents = requirements.Event.Components.Distinct(StringComparer.Ordinal).ToList();
+                var knownEventComponents = await _db.ComponentDefinitions
+                    .Where(definition => eventComponents.Contains(definition.Id))
+                    .Select(definition => definition.Id)
+                    .ToListAsync(cancellationToken);
+                var missingEventComponents = eventComponents.Except(knownEventComponents, StringComparer.Ordinal).ToList();
+                checks.Add(new MechanicCheck(
+                    "event-components-exist",
+                    missingEventComponents.Count == 0,
+                    missingEventComponents.Count == 0
+                        ? $"All {eventComponents.Count} declared event component(s) exist."
+                        : $"These declared event components do not exist: {string.Join(", ", missingEventComponents)}.",
+                    Blocking: true));
+            }
         }
 
         // Naming a component that does not exist is a typo that would otherwise surface as an

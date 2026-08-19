@@ -1,6 +1,6 @@
 # D&D 2024 roadmap — from one test session to complete play
 
-Status: **Planning only. No row below is authorized to be implemented.**
+Status: **E1 Slice 1 verified; amended guard-aware plan authorizes only Slice 2 middleware registry next.**
 Last updated: 2026-08-19
 
 ## Purpose and authority
@@ -37,8 +37,8 @@ These are kernel features, not game rules. Each already has a repository plan ex
 
 | # | Capability | Depends on | Why the ruleset is blocked without it | Plan |
 | --- | --- | --- | --- | --- |
-| E1 | Events and subscriptions | composition | A condition that expires, a reaction that triggers, concentration that breaks on damage, a death save at 0 HP. Every one is a reaction to a committed change, and mechanics cannot observe changes. | `EVENTS_AND_SUBSCRIPTIONS_PLAN.md` |
-| E2 | Selection ranking that respects phrases | — | Token-count scoring with an alphabetical id tie-break already stole one rule's intent twice during Feature 5. At 200 rules it stops being an annoyance and becomes unusable. | none yet — **write this first** |
+| E1 | Pre-commit event guards, subscriptions, deterministic event chains, and tracked-item notifications | composition | Immunities/wards must veto proposed changes before commit; conditions, reactions, concentration, and tracked notices depend on accepted changes. | `EVENTS_AND_SUBSCRIPTIONS_PLAN.md` — Slice 1 verified; Slice 2 middleware registry authorized |
+| E2 | Selection ranking that respects phrases | — | Token-count scoring with an alphabetical id tie-break already stole one rule's intent twice during Feature 5. At 200 rules it stops being an annoyance and becomes unusable. | none yet — plan before large rule growth |
 | E3 | Hierarchical catalog navigation | — | Categories are already dotted paths; nothing can browse a branch. A GM cannot find one spell among hundreds by scrolling a flat list. | `HIERARCHICAL_CATALOGS_PLAN.md` |
 | E4 | Local intent routing | E2, E3 | Turns "I swing at the goblin with my axe" into the right rule plus the right roles without the GM model spending its context on lookup. | `LOCAL_INTENT_ROUTING_PLAN.md` |
 | E5 | Numeric fidelity across the sandbox boundary | — | Seeds are 64-bit and JavaScript numbers are not. Feature 5 worked around it by not storing seeds; a rule that ever needs an exact large integer has no honest option today. | none yet |

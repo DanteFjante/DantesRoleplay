@@ -19,6 +19,8 @@ public sealed class VerbToolTests : IDisposable
             new ProcedureStore(db),
             new WorldStore(db),
             new MechanicStore(db),
+            new EventTypeStore(db),
+            new SubscriptionStore(db),
             new OperationLog(db),
             "procedures");
 
@@ -45,6 +47,8 @@ public sealed class VerbToolTests : IDisposable
             new WorldStore(db),
             null!,
             new MechanicStore(db),
+            new EventTypeStore(db),
+            new SubscriptionStore(db),
             null!,
             new OperationLog(db),
             "procedure",
@@ -85,6 +89,8 @@ public sealed class VerbToolTests : IDisposable
     {
         await using var db = _fixture.CreateContext();
         var result = await new CommitTool().CommitAsync(
+            null!,
+            null!,
             null!,
             null!,
             null!,

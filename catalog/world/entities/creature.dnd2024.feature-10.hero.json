@@ -1,0 +1,61 @@
+{
+  "id": "creature.dnd2024.feature-10.hero",
+  "name": "Feature 10 Training Hero",
+  "container": {
+    "id": "encounter.dnd2024.feature-10.training",
+    "slot": "participant"
+  },
+  "components": {
+    "dnd2024.abilities": {
+      "str": 12,
+      "dex": 16,
+      "con": 14,
+      "int": 10,
+      "wis": 13,
+      "cha": 8
+    },
+    "dnd2024.armor-class": {
+      "value": 14,
+      "sourceRef": {
+        "sourceId": "source.dnd2024.srd-5.2.1",
+        "locator": "Playing the Game > D20 Tests > Attack Rolls > Armor Class"
+      }
+    },
+    "dnd2024.character-level": {
+      "level": 5,
+      "sourceRef": {
+        "sourceId": "source.dnd2024.srd-5.2.1",
+        "locator": "Character Creation > Character Advancement"
+      }
+    },
+    "dnd2024.hit-points": {
+      "current": 20,
+      "maximum": 20,
+      "sourceRef": {
+        "sourceId": "source.dnd2024.srd-5.2.1",
+        "locator": "Playing the Game > Damage and Healing > Hit Points"
+      }
+    },
+    "dnd2024.saving-throw-proficiencies": {
+      "abilities": ["con", "wis"],
+      "sourceRef": {
+        "sourceId": "source.dnd2024.srd-5.2.1",
+        "locator": "Playing the Game > Proficiency > Saving Throw Proficiencies"
+      }
+    },
+    "dnd2024.skill-proficiencies": {
+      "skills": ["perception", "stealth"],
+      "sourceRef": {
+        "sourceId": "source.dnd2024.srd-5.2.1",
+        "locator": "Playing the Game > Proficiency > Skill Proficiencies and Skills"
+      }
+    },
+    "dnd2024.weapon-proficiencies": {
+      "categories": ["simple"],
+      "sourceRef": {
+        "sourceId": "source.dnd2024.srd-5.2.1",
+        "locator": "Equipment > Weapons > Weapon Proficiency"
+      }
+    }
+  }
+}

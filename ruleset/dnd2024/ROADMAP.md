@@ -1,6 +1,6 @@
 # D&D 2024 ruleset development roadmap
 
-Status: **Features 3–6 verified; Features 7–8 planned; Feature 7 weapon profiles remain next**
+Status: **Features 3–10 verified; first reproducible vertical session complete**
 Last updated: 2026-08-19
 
 ## Purpose and authority
@@ -29,7 +29,7 @@ The official rule source is SRD 5.2.1, represented by the existing live source e
 - Feature 2: character level, derived Proficiency Bonus, the 18 skill IDs, character skill
   proficiency state, and proficient named-skill checks.
 - Shared deterministic dice mechanic exists, but it is not a substitute for D20 Test rules.
-- Repository regression baseline: 295/295 tests.
+- Repository regression baseline: 304/304 tests.
 
 Intent searches performed during this planning pass found no live D&D mechanic for
 Advantage/Disadvantage, saving throws, Initiative, attack rolls, or damage. Generic dice and
@@ -54,17 +54,17 @@ small D&D 2024 test session
 ├─ combatant durability                                     [Feature 6 verified]
 │  ├─ Armor Class state                                    [Feature 6 Slice 1 verified]
 │  └─ current/max Hit Points state                         [Feature 6 Slice 2 verified]
-├─ weapon attacks                                           [Features 7–8 planned]
-│  ├─ weapon profile and proficiency state                 [Feature 7 Slice 1 next; Slice 2 blocked]
-│  ├─ attack roll vs Armor Class                            [Feature 8 Slice 1 blocked on Feature 7]
-│  └─ natural 20/1 and Critical Hit classification         [Feature 8 Slice 1 blocked on Feature 7]
-├─ damage and consequences                                  [planned: Feature 9]
-│  ├─ seeded damage dice and critical extra dice           [Feature 9 leaf]
-│  └─ validated Hit Point application                      [Feature 9 parent]
-└─ vertical acceptance session                              [planned: Feature 10]
-   ├─ one player character and one simple opponent         [fixtures, not new rules]
+├─ weapon attacks                                           [Features 7–8 verified]
+│  ├─ weapon profile and proficiency state                 [Feature 7 Slices 1–2 verified]
+│  ├─ attack roll vs Armor Class                            [Feature 8 Slice 1 verified]
+│  └─ natural 20/1 and Critical Hit classification         [Feature 8 Slice 1 verified]
+├─ damage and consequences                                  [Feature 9 verified]
+│  ├─ seeded damage dice and critical extra dice           [Feature 9 Slice 1 verified]
+│  └─ validated Hit Point application                      [Feature 9 Slice 2 verified]
+└─ vertical acceptance session                              [Feature 10 verified]
+   ├─ one player character and one simple opponent         [fixtures verified, not new rules]
    ├─ exploration check, Initiative, attack, damage, save  [all parents verified]
-   └─ exact replay and final-state audit                    [Feature 10 exit gate]
+   └─ exact replay and final-state audit                    [Feature 10 verified]
 ```
 
 ## Ordered features and boundaries
@@ -77,15 +77,19 @@ small D&D 2024 test session
 | 6 | Authoritative Armor Class and Hit Point state | Source registry | Armor-building formulas, classes, equipment loadouts, temporary HP, resistance |
 | 7 | Minimal weapon profiles and character weapon proficiency | Source registry and level | Complete equipment catalog, mastery, ammunition, range/cover, class grants |
 | 8 | Weapon attack rolls against Armor Class | Features 3, 6, 7 | Multiattack, opportunity attacks, spell attacks, damage application |
-| 9 | Weapon damage and transactional Hit Point loss | Features 6–8 and deterministic dice | Resistance, immunity, vulnerability, healing, unconsciousness, death saves |
-| 10 | One reproducible vertical test session | Features 1–9 | Campaign management, character builder, complete combat engine |
+| 9 | Weapon damage and transactional Hit Point loss | Features 6–8 and deterministic dice; both slices verified | Resistance, immunity, vulnerability, healing, unconsciousness, death saves |
+| 10 | One reproducible vertical test session | Features 1–9; both slices verified | Campaign management, character builder, complete combat engine |
 
 Feature numbers express dependency order, not permission to begin them. Features 1–5 are verified.
 Feature 5's file-first catalog import gate exercises the composition runtime and encounter-order
 matrix. Feature 6 records final Armor Class and bounded current/maximum Hit Point state through
-the catalog; both slices are verified in feature-06/FEATURE-6-DEPENDENCY-PLAN.md. Feature 7 is
-expanded in feature-07/FEATURE-7-DEPENDENCY-PLAN.md; only its minimal weapon-profile slice is
-authorized next. Later features still require their own recursive plans and dependency validation.
+the catalog; both slices are verified in feature-06/FEATURE-6-DEPENDENCY-PLAN.md. Feature 7 now
+provides canonical Dagger, Shortbow, and Battleaxe profile data plus authoritative Simple/Martial
+weapon-category proficiency state. Feature 8 resolves effect-free attacks against final AC,
+including natural-20/1 classification, without damage or persistence. Feature 9 now provides
+effect-free confirmed-hit damage evidence and a composed, transactional target Hit Point
+application parent. Feature 10's catalog-owned baseline fixtures and two-database deterministic
+vertical-session harness are verified. The first reproducible D&D 2024 session is complete.
 
 Work past Feature 10 is ordered in `ROADMAP-COMPLETE-PLAY.md`, which covers what a complete SRD
 5.2.1 experience needs beyond the first vertical session.

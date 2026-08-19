@@ -91,4 +91,10 @@ public sealed record EffectProblem(int Index, string Effect, string Problem);
 public sealed record EffectResult(bool Applied, int Count, IReadOnlyList<EffectProblem> Problems)
 {
     public bool Valid => Problems.Count == 0;
+    public bool Blocked { get; init; }
+    public string BlockCode { get; init; } = string.Empty;
+    public string BlockReason { get; init; } = string.Empty;
+    public IReadOnlyList<DantesRoleplay.Events.ProposedEvent> ProposedEvents { get; init; } = [];
+    public IReadOnlyList<DantesRoleplay.Events.GuardEvaluation> GuardEvaluations { get; init; } = [];
+    public string CorrelationId { get; init; } = string.Empty;
 }

@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
+    <PackageReference Include="JsonSchema.Net" Version="9.4.0" />
     <!-- Design is referenced here so `dotnet ef` runs against this project on its own, via
          DesignTimeDbContextFactory. PrivateAssets keeps it out of anything referencing us. -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">

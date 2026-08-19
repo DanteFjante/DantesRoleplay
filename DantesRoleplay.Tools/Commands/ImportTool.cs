@@ -76,7 +76,9 @@ public sealed class ImportTool : ITool
             db,
             new MechanicStore(db),
             new ProcedureStore(db),
-            new WorldStore(db));
+            new WorldStore(db),
+            new EventTypeStore(db),
+            new SubscriptionStore(db));
 
         var result = await importer.ApplyAsync(target, options, cancellationToken);
 

@@ -46,7 +46,8 @@ public sealed class OperationLog(DantesRoleplayDbContext db) : IOperationLog
         string mechanicId = "",
         int? mechanicVersion = null,
         long? seed = null,
-        string projectionJson = "")
+        string projectionJson = "",
+        string guardEvidenceJson = "")
     {
         // Derived BEFORE writing this row, so a get_procedure call never counts itself as one of
         // its own prerequisites. Only recorded for operations the manual governs: for a read or a
@@ -71,7 +72,8 @@ public sealed class OperationLog(DantesRoleplayDbContext db) : IOperationLog
             MechanicId = mechanicId,
             MechanicVersion = mechanicVersion,
             Seed = seed,
-            ProjectionJson = projectionJson
+            ProjectionJson = projectionJson,
+            GuardEvidenceJson = guardEvidenceJson
         };
 
         _db.Operations.Add(operation);

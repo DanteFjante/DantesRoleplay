@@ -45,6 +45,8 @@ public sealed class CatalogExporter(DantesRoleplayDbContext db)
         var mechanics = await ExportMechanicsAsync(fullRoot, written, entries, cancellationToken);
         var procedures = await ExportProceduresAsync(fullRoot, written, entries, cancellationToken);
         var components = await ExportComponentsAsync(fullRoot, written, entries, cancellationToken);
+        var eventTypes = await ExportEventTypesAsync(fullRoot, written, entries, cancellationToken);
+        var subscriptions = await ExportSubscriptionsAsync(fullRoot, written, entries, cancellationToken);
 
         var entities = 0;
 
@@ -77,6 +79,8 @@ public sealed class CatalogExporter(DantesRoleplayDbContext db)
             mechanics,
             procedures,
             components,
+            eventTypes,
+            subscriptions,
             entities,
             operations,
             FindOrphans(fullRoot, written));
@@ -345,6 +349,34 @@ public sealed class CatalogExporter(DantesRoleplayDbContext db)
         return definitions.Count;
     }
 
+    private async Task<int> ExportEventTypesAsync(string root, List<string> written, List<CatalogManifestEntry> entries, CancellationToken cancellationToken)
+    {
+        var rows = await _db.EventTypes.AsNoTracking().Join(_db.EventTypeVersions.AsNoTracking(), e => new { EventTypeId = e.Id, Version = e.CurrentVersion }, v => new { v.EventTypeId, v.Version }, (e, v) => new { e, v }).ToListAsync(cancellationToken);
+        foreach (var row in rows)
+        {
+            var file = new EventTypeFile(row.e.Id, row.e.Category, row.v.Name, row.v.Description, row.e.Scope, row.e.Status, row.v.PayloadSchema);
+            GuardFingerprint(row.v.SourceHash, file.ContentHash, "event type", file.Id, row.v.Version);
+            var path = CatalogLayout.EventType(file.Id);
+            await WriteAsync(root, path, file.ToJson(), written, cancellationToken);
+            await WriteAsync(root, CatalogLayout.EventTypeSchema(file.Id), ContentHash.Normalise(file.Schema) + "\n", written, cancellationToken);
+            entries.Add(new CatalogManifestEntry(CatalogRecordKind.EventType, file.Id, row.v.Version, file.ContentHash, path));
+        }
+        return rows.Count;
+    }
+
+    private async Task<int> ExportSubscriptionsAsync(string root, List<string> written, List<CatalogManifestEntry> entries, CancellationToken cancellationToken)
+    {
+        var rows = await _db.Subscriptions.AsNoTracking().Join(_db.SubscriptionVersions.AsNoTracking(), s => new { SubscriptionId = s.Id, Version = s.CurrentVersion }, v => new { v.SubscriptionId, v.Version }, (s, v) => new { s, v }).ToListAsync(cancellationToken);
+        foreach (var row in rows)
+        {
+            var file = new SubscriptionFile(row.s.Id, row.s.Category, row.v.EventTypeId, row.v.EventMechanicId, row.v.Mode, row.v.Order, row.v.FixedRoleEntityIdsJson, row.v.TrackedEntityIdsJson, row.v.PayloadEqualsJson, row.v.MaxExecutionsPerChain, row.s.Scope, row.s.Status);
+            GuardFingerprint(row.v.SourceHash, file.ContentHash, "subscription", file.Id, row.v.Version);
+            var path = CatalogLayout.Subscription(file.Id); await WriteAsync(root, path, file.ToJson(), written, cancellationToken);
+            entries.Add(new CatalogManifestEntry(CatalogRecordKind.Subscription, file.Id, row.v.Version, file.ContentHash, path));
+        }
+        return rows.Count;
+    }
+
     /// <summary>
     /// Refuses to export a row whose stored fingerprint disagrees with its content.
     ///
@@ -437,9 +469,11 @@ public sealed record CatalogExportResult(
     int Mechanics,
     int Procedures,
     int ComponentDefinitions,
+    int EventTypes,
+    int Subscriptions,
     int Entities,
     int Operations,
     IReadOnlyList<string> Orphans)
 {
-    public int Records => Mechanics + Procedures + ComponentDefinitions + Entities;
+    public int Records => Mechanics + Procedures + ComponentDefinitions + EventTypes + Subscriptions + Entities;
 }

@@ -84,7 +84,9 @@ public sealed class JintMechanicEngine : IMechanicEngine
                     roles = projection.Roles,
                     input = projection.Input,
                     seed = projection.Seed,
-                    children = projection.Children
+                    children = projection.Children,
+                    @event = projection.Event,
+                    eventEntities = projection.EventEntities
                 },
                 Json);
 
@@ -188,6 +190,9 @@ public sealed class JintMechanicEngine : IMechanicEngine
                 Effects = effects,
                 Narration = raw.Output.Narration ?? string.Empty,
                 Data = raw.Output.Data ?? "{}"
+                ,Decision = raw.Output.Decision ?? string.Empty
+                ,Code = raw.Output.Code ?? string.Empty
+                ,Reason = raw.Output.Reason ?? string.Empty
             },
             Log = log,
             Seed = seed,
@@ -211,6 +216,9 @@ public sealed class JintMechanicEngine : IMechanicEngine
         public string? Narration { get; set; }
 
         public string? Data { get; set; }
+        public string? Decision { get; set; }
+        public string? Code { get; set; }
+        public string? Reason { get; set; }
     }
 
     /// <summary>
@@ -254,6 +262,8 @@ public sealed class JintMechanicEngine : IMechanicEngine
               input: JSON.parse(payload.input || '{}'),
               seed: payload.seed,
               children: freezeDeep(payload.children || {}),
+              event: freezeDeep(JSON.parse(payload.event || '{}')),
+              eventEntities: freezeDeep(payload.eventEntities || []),
 
               random: random,
 

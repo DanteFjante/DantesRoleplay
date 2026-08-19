@@ -282,6 +282,31 @@ public sealed class ActionRunner(
                 dryRun: false,
                 cancellationToken: cancellationToken);
 
+            if (applied.Blocked)
+            {
+                return await FailInTransactionAsync(
+                    transaction,
+                    request,
+                    ActionRunResult.Failed(
+                        "EVENT_BLOCKED",
+                        $"A guard blocked the proposed world change: {applied.BlockCode}: {applied.BlockReason}",
+                        "query(kind: \"subscriptions\")",
+                        $"Mechanic '{selected.Id}' was blocked by a guard.",
+                        candidates) with
+                    {
+                        Mechanic = selected,
+                        Projection = projection,
+                        Output = run.Output,
+                        Seed = seed,
+                        Log = run.Log,
+                        LimitHit = run.LimitHit,
+                        ElapsedMilliseconds = run.ElapsedMilliseconds
+                    },
+                    selected,
+                    projection,
+                    seed);
+            }
+
             if (!applied.Valid || !applied.Applied)
             {
                 return await FailInTransactionAsync(

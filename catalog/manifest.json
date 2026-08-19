@@ -83,6 +83,41 @@
     },
     {
       "kind": "mechanic",
+      "id": "mechanic.dnd2024.weapon-attack",
+      "version": 1,
+      "contentHash": "EED7D99D306E5A29E02BB4BE2B037ACF4C5A9DE281612E1D64B5164B2C3827FF",
+      "path": "mechanics/ruleset/dnd2024/core/gameplay/weapon-attacks/mechanic.dnd2024.weapon-attack.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.weapon-damage.apply",
+      "version": 1,
+      "contentHash": "49D70C8A8C2491118773B37005B1D99793B146DF7BB3922034729267BB6544EE",
+      "path": "mechanics/ruleset/dnd2024/core/gameplay/weapon-damage/mechanic.dnd2024.weapon-damage.apply.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.weapon-damage.roll",
+      "version": 1,
+      "contentHash": "8CF99368C171BB434B45086E58FC2985808B54C6F6E4B4F131B0E227D69FD9B7",
+      "path": "mechanics/ruleset/dnd2024/core/gameplay/weapon-damage/mechanic.dnd2024.weapon-damage.roll.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.weapon-proficiencies.write",
+      "version": 1,
+      "contentHash": "06FE84EC74F73C53BB6309B8C71A2ED0221102E8D63F36CF82E72918E98B9EC8",
+      "path": "mechanics/ruleset/dnd2024/core/data/weapon-proficiencies/mechanic.dnd2024.weapon-proficiencies.write.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.weapon-profile.write",
+      "version": 1,
+      "contentHash": "9E1F5A7EF22D22BAA9166F716131BFDB4C3F094EC9EEB4DB306A3587B0D6BD27",
+      "path": "mechanics/ruleset/dnd2024/core/data/weapon-profile/mechanic.dnd2024.weapon-profile.write.md"
+    },
+    {
+      "kind": "mechanic",
       "id": "mechanic.value.adjust",
       "version": 1,
       "contentHash": "700B4F9A87315A43F6146275129BD3B7113EFAE12ED9C6FA9AB757D96522770A",
@@ -101,6 +136,20 @@
       "version": 3,
       "contentHash": "C857F9FA0E6D08D890264A2C71D49124DD0C8A5E74A455324D74112CD0EB296E",
       "path": "procedures/contracts/procedure.contract.create.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.event.define",
+      "version": 1,
+      "contentHash": "19BBB41C3A7FB4464617105DE9411F9A285696CA49D4DA4CE664B8CF1F01F3BE",
+      "path": "procedures/event/procedure.event.define.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.event.guard",
+      "version": 1,
+      "contentHash": "3116BD13045BFE3C16C5EEBAB32E1745D336AABDF0BE98CB54715E60D5AA2B45",
+      "path": "procedures/event/procedure.event.guard.md"
     },
     {
       "kind": "procedure",
@@ -209,6 +258,41 @@
     },
     {
       "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.weapon-attack",
+      "version": 1,
+      "contentHash": "1CAE8D3A636A612C51B6875BAC231E74FD6466BFA7B8E690A82AA535F52CBAF9",
+      "path": "procedures/ruleset/dnd2024/core/gameplay/weapon-attacks/procedure.mechanic.dnd2024.weapon-attack.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.weapon-damage.apply",
+      "version": 1,
+      "contentHash": "B9E1F20DDA32372E988143AEE84DBF29A44753567BAAF61209D17EC50F58244A",
+      "path": "procedures/ruleset/dnd2024/core/gameplay/weapon-damage/procedure.mechanic.dnd2024.weapon-damage.apply.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.weapon-damage.roll",
+      "version": 1,
+      "contentHash": "C5D6B7B506A468AF5BBD9E1B65E179645F0FCA0AFAD144F191E84C8051DC4C98",
+      "path": "procedures/ruleset/dnd2024/core/gameplay/weapon-damage/procedure.mechanic.dnd2024.weapon-damage.roll.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.weapon-proficiencies",
+      "version": 1,
+      "contentHash": "0BB2FF126D9274803DEBD54D5B7B0A2EDBC3903A6A3282D15E44F18E759B251C",
+      "path": "procedures/ruleset/dnd2024/core/data/weapon-proficiencies/procedure.mechanic.dnd2024.weapon-proficiencies.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.weapon-profile",
+      "version": 1,
+      "contentHash": "F441B26017542E6FB7829D2DE2B362D918EC3DA8AD2CCD94F7E62D5EF37032E3",
+      "path": "procedures/ruleset/dnd2024/core/data/weapon-profile/procedure.mechanic.dnd2024.weapon-profile.md"
+    },
+    {
+      "kind": "procedure",
       "id": "procedure.mechanic.find",
       "version": 1,
       "contentHash": "442EA5B415084D36BD00E6FB9AD0256052E59AA19807C7B8DA9FFDC3AADFEED0",
@@ -237,6 +321,20 @@
     },
     {
       "kind": "procedure",
+      "id": "procedure.subscription.create",
+      "version": 1,
+      "contentHash": "DBFEB73EB3BB6BAE93AD734CFA875361BFE58B6024CE7AE5CDABA70F71099B12",
+      "path": "procedures/subscription/procedure.subscription.create.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.subscription.modify",
+      "version": 1,
+      "contentHash": "1EB54DEB29E20F253DC596682F62235F4840ED58C528BDF2B041D86DE7CDA948",
+      "path": "procedures/subscription/procedure.subscription.modify.md"
+    },
+    {
+      "kind": "procedure",
       "id": "procedure.system.create-feature",
       "version": 5,
       "contentHash": "90246134B051FD5268EF0291424494379EEB2BEE212C16A7E55AF5807211AF67",
@@ -259,8 +357,8 @@
     {
       "kind": "procedure",
       "id": "procedure.system.use",
-      "version": 1,
-      "contentHash": "D026CEFBBCA686C3B3AE2D92A2625675C62D8FB37A0D32B7AD2FC3244BE47B03",
+      "version": 2,
+      "contentHash": "02EDE44AF42661EFD887ABCEC7A6966FD58DE55AE0C9C6536C9160F60B2CA163",
       "path": "procedures/system/procedure.system.use.md"
     },
     {
@@ -349,10 +447,101 @@
     },
     {
       "kind": "componentDefinition",
+      "id": "dnd2024.weapon-proficiencies",
+      "version": 0,
+      "contentHash": "D7912308B4B446FBFCC1F6FC5F12F3F35EE4B6BE026EA940DEFED51E3F605E5C",
+      "path": "components/dnd2024.weapon-proficiencies.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.weapon-profile",
+      "version": 0,
+      "contentHash": "4A359C6D73FA46BFADAFF9A9AAF77C4BA2CB6BD6AE7ABB137EFE7FDA9FAA1427",
+      "path": "components/dnd2024.weapon-profile.json"
+    },
+    {
+      "kind": "componentDefinition",
       "id": "stats",
       "version": 0,
       "contentHash": "7826AC66E09848BE74AB793896EE2AE2499882E8E4E8C7E0FAD57926BB458D69",
       "path": "components/stats.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "world.component.added",
+      "version": 1,
+      "contentHash": "ED984679B3F6E3F40690E4E7770DDD061C7F16865D9C80408977E908147E0F88",
+      "path": "event-types/world.component.added.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "world.component.merged",
+      "version": 1,
+      "contentHash": "873294ABDE658386CF323085FBA95BBF9DE7E3C532A7807B45B7FAEE2815D655",
+      "path": "event-types/world.component.merged.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "world.component.removed",
+      "version": 1,
+      "contentHash": "346BA7E1606A16127524E4CF06EB1E5CD156577E741B31052AA0F2A672B099CC",
+      "path": "event-types/world.component.removed.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "world.component.replaced",
+      "version": 1,
+      "contentHash": "11A78A29990C07AF7C9DA17D491BCF332EBD97F352570E03793F4A6087270BC5",
+      "path": "event-types/world.component.replaced.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "world.containment.moved",
+      "version": 1,
+      "contentHash": "085BE209BB041BEFCDDD6AE5225C7381EC385A3B8850A24463C7AE2C6192F980",
+      "path": "event-types/world.containment.moved.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "world.entity.created",
+      "version": 1,
+      "contentHash": "3BB3E71C9EFEA2C9F54E16F30753B946A6A0F6AB4BE64D850CDD958E0345954A",
+      "path": "event-types/world.entity.created.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "world.entity.deleted",
+      "version": 1,
+      "contentHash": "3EE602A9D777D21B221BB2384BA3E5CA7DD543C6D42D349C1FFDB897B7025B0D",
+      "path": "event-types/world.entity.deleted.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "world.relationship.created",
+      "version": 1,
+      "contentHash": "C4D86EBE73823C224355C01A088F767A76D04BFB3D88E8614DD400956A205D32",
+      "path": "event-types/world.relationship.created.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "world.relationship.removed",
+      "version": 1,
+      "contentHash": "BE16D006ECA760B5C75AB7EB9583C6F30F644D0A358F5B093CB818E461A10EAC",
+      "path": "event-types/world.relationship.removed.json"
+    },
+    {
+      "kind": "entity",
+      "id": "creature.dnd2024.feature-10.hero",
+      "version": 0,
+      "contentHash": "787D493AB5E29ABCA51EDAB2507D2823BA426A9041822070E3B87E6418BE57B9",
+      "path": "world/entities/creature.dnd2024.feature-10.hero.json"
+    },
+    {
+      "kind": "entity",
+      "id": "creature.dnd2024.feature-10.training-target",
+      "version": 0,
+      "contentHash": "9B0F1584E4E9B9992040945A50B030D4629507BC34F6FE16DE04362285DDCED1",
+      "path": "world/entities/creature.dnd2024.feature-10.training-target.json"
     },
     {
       "kind": "entity",
@@ -360,6 +549,13 @@
       "version": 0,
       "contentHash": "431414526716FAD2F06174E7EEEF96CD2D8AE9B9D5AD89214D57FB0C76DAA416",
       "path": "world/entities/creature.orban.json"
+    },
+    {
+      "kind": "entity",
+      "id": "encounter.dnd2024.feature-10.training",
+      "version": 0,
+      "contentHash": "98BAEA4B5F4666CA5F32430BDA07B79C08E2938D178FAFC869FE6622FAD30AAC",
+      "path": "world/entities/encounter.dnd2024.feature-10.training.json"
     },
     {
       "kind": "entity",
@@ -395,6 +591,27 @@
       "version": 0,
       "contentHash": "6529080EDC48BA9090DE4C9FD1A9EAAC99D1F5BF60AFD3829AF1F2230CD09747",
       "path": "world/entities/source.dnd2024.srd-5.2.1.json"
+    },
+    {
+      "kind": "entity",
+      "id": "weapon.dnd2024.battleaxe",
+      "version": 0,
+      "contentHash": "6D15A98C051647027DAC92F15214481FEC9A4AA43FA3B5566A0E277C269227A6",
+      "path": "world/entities/weapon.dnd2024.battleaxe.json"
+    },
+    {
+      "kind": "entity",
+      "id": "weapon.dnd2024.dagger",
+      "version": 0,
+      "contentHash": "05A8F2E56F3CE68F219A2FF38F6EDA7606DE2CA27FA58BAA82663349E9EE47D4",
+      "path": "world/entities/weapon.dnd2024.dagger.json"
+    },
+    {
+      "kind": "entity",
+      "id": "weapon.dnd2024.shortbow",
+      "version": 0,
+      "contentHash": "AFC013189E73ACD22D447EE827355BBAB539C92CB2FB51179C46B382B8DB41B8",
+      "path": "world/entities/weapon.dnd2024.shortbow.json"
     }
   ]
 }

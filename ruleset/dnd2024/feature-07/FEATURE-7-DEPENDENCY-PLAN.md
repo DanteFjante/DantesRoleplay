@@ -1,14 +1,13 @@
 # Feature 7 dependency plan — Minimal weapon profiles and weapon proficiency
 
-Status: **Planned; Slice 1 is the next and only authorized implementation pass**
+Status: **Complete — Slices 1–2 verified**
 Last updated: 2026-08-19
 
 ## Execution rule
 
-This is a planning-only pass under `procedure.system.create-feature`. Runtime content must be
-authored in `catalog/`, reviewed there, imported with `roleplay import catalog`, and checked with
-`roleplay verify catalog`. This plan creates no runtime artifact. A later implementation pass may
-complete exactly one lowest slice and then stop for review.
+Runtime content is authored in `catalog/`, reviewed there, imported with `roleplay import catalog`,
+and checked with `roleplay verify catalog`. Both Feature 7 slices were implemented through that
+path. Stop here; Feature 8 is a separate planned feature and requires its own implementation pass.
 
 ## Target capability
 
@@ -69,13 +68,13 @@ CC-BY-4.0.
 Feature 7: minimal weapon facts and proficiency state
 ├─ source registry, component/effect model, file-first import       [implemented]
 ├─ final AC and future D20 conventions                               [implemented dependencies]
-├─ minimal canonical weapon profiles                                 [missing leaf: Slice 1]
-│  ├─ dnd2024.weapon-profile definition and safe writer             [Slice 1]
-│  └─ Dagger, Shortbow, Battleaxe profile entities                   [Slice 1]
-├─ actor weapon-category proficiency state                           [missing leaf: Slice 2]
-│  ├─ dnd2024.weapon-proficiencies definition and safe writer       [Slice 2]
-│  └─ canonical Simple/Martial membership                            [Slice 2]
-└─ weapon attack roll against AC                                     [blocked parent: Feature 8]
+├─ minimal canonical weapon profiles                                 [verified: Slice 1]
+│  ├─ dnd2024.weapon-profile definition and safe writer             [verified]
+│  └─ Dagger, Shortbow, Battleaxe profile entities                   [verified]
+├─ actor weapon-category proficiency state                           [verified: Slice 2]
+│  ├─ dnd2024.weapon-proficiencies definition and safe writer       [verified]
+│  └─ canonical Simple/Martial membership                            [verified]
+└─ weapon attack roll against AC                                     [next parent: Feature 8]
    ├─ actor abilities/level, weapon profile, proficiency, target AC [implemented after Slices 1–2]
    └─ attack resolution and D20 policy                               [Feature 8]
 ```
@@ -108,8 +107,8 @@ Feature 7: minimal weapon facts and proficiency state
 
 | Order | Slice | Starts only when | Exit gate |
 | --- | --- | --- | --- |
-| 1 | Minimal weapon profiles | Plan reviewed | File-authored profile definition, contract, writer, and three canonical profile entities are imported/read back and pass closed-input, source, canonicality, routing, replay, and cleanup checks. |
-| 2 | Weapon-category proficiency | Slice 1 reviewed and verified | File-authored proficiency definition, contract, and writer pass empty/membership, correction, state, routing, replay, cleanup, and catalog verification checks. |
+| 1 | Minimal weapon profiles | Plan reviewed | **Verified 2026-08-19** — file-authored profile definition, contract, writer, and three canonical profile entities import/read back through the fresh-database gate and the live catalog. |
+| 2 | Weapon-category proficiency | Slice 1 reviewed and verified | **Verified 2026-08-19** — file-authored proficiency definition, contract, and writer pass empty/membership, correction, state, routing, replay, cleanup, and catalog verification checks. |
 
 ## Slice 1 — Minimal canonical weapon profiles
 
@@ -191,6 +190,20 @@ All profile artifacts and the three canonical entities are imported/read back, e
 assertion passes, no fixture remains, catalog verification is clean, the full suite and diff check
 pass, and the plan records concise evidence. Stop for review.
 
+### Slice 1 implementation evidence — 2026-08-19
+
+- Catalog-authored `dnd2024.weapon-profile`, `procedure.mechanic.dnd2024.weapon-profile`, and
+  `mechanic.dnd2024.weapon-profile.write` were added with canonical Dagger, Shortbow, and Battleaxe
+  entities.
+- Catalog dry run reported exactly six new records and 56 unchanged records. The identical import
+  created six records; `roleplay verify catalog` then reported 62 unchanged records.
+- `CatalogFeature7Tests` imports a copied catalog into a fresh database and verifies canonical
+  profiles, record/correct add/set behavior, routing, replay, malformed input, absent correction,
+  and corrupt-state rejection without mutation.
+- Full repository verification passed: 296/296 tests, with `git diff --check` clean.
+
+Slice 1 is complete. Stop here for review; Slice 2 is the next and only authorized Feature 7 pass.
+
 ## Slice 2 — Weapon-category proficiency state
 
 ### Runtime artifacts
@@ -260,13 +273,28 @@ All artifacts are imported/read back; the profile and proficiency integration ga
 matrix row has objective result/effect/state evidence; catalog verification is clean; full tests
 and diff check pass. Feature 7 is then complete, but Feature 8 remains separately planned.
 
+### Slice 2 implementation evidence — 2026-08-19
+
+- Catalog-authored `dnd2024.weapon-proficiencies`,
+  `procedure.mechanic.dnd2024.weapon-proficiencies`, and
+  `mechanic.dnd2024.weapon-proficiencies.write` were added as the single owner of Simple/Martial
+  category membership.
+- Catalog dry run reported exactly three new records and 62 unchanged records. The identical import
+  created three records; `roleplay verify catalog` then reported 65 unchanged records.
+- `CatalogFeature7Tests` imports a copied catalog into a fresh database and verifies explicit-empty,
+  Simple, Martial, and both-category state; correction; routing; replay; protected AC/HP/level
+  state; malformed input; absent correction; and corrupt-state rejection without mutation.
+- Full repository verification passed: 297/297 tests, with `git diff --check` clean.
+
+Feature 7 is complete. Stop here for review; Feature 8 weapon-attack resolution remains separately
+planned.
+
 ## Plan-quality audit
 
 The target and non-goals are explicit; the official source and PDF locators are concrete; catalog
 search establishes no current owner; state versus derived/transient values are separated; both
-missing leaves have safe writers, closed contracts, source ownership, testable effects, and full
-acceptance matrices. Slice 1 is the sole next assignment. No runtime component, entity, contract,
-mechanic, database action, or import is created by this planning pass.
+leaves have safe writers, closed contracts, source ownership, testable effects, and full
+acceptance matrices. Both slices are verified; Feature 8 remains a separate next assignment.
 
 ## Plan-change rule
 

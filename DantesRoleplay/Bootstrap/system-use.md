@@ -14,7 +14,7 @@ reads anything, `commit` changes anything. Nothing else exists.
 1. Call `orient()` first. It states what this system is, what exists in it right now, what is not
    built, and which call to make next. Call it again whenever you lose track — it is cheap.
 2. Read with `query(kind: ...)`. The kinds are `capabilities`, `procedures`, `world`, `entities`,
-   `mechanics`, `history`. No `id` returns a list or search; `id` returns one record in full;
+   `mechanics`, `event-types`, `subscriptions`, `history`. No `id` returns a list or search; `id` returns one record in full;
    `version` with `id` returns an older revision. Read the full record before revising anything —
    a summary is not the thing itself.
 3. When you do not know a payload shape or which parameters a kind reads, call
@@ -27,7 +27,7 @@ reads anything, `commit` changes anything. Nothing else exists.
    say what you are doing in `intent`, in your own words. The audit records both, and records
    separately which contracts you actually opened.
 5. Change with `commit(kind: ..., payload: ...)`. The kinds are `procedure`, `component`,
-   `effects`, `mechanic`, `action`. `payload` is a JSON object encoded as a string — the whole
+   `effects`, `mechanic`, `event-type`, `subscription`, `action`. `event-type` registers a schema only; a `subscription` stores middleware registration only; neither emits or routes events yet. `payload` is a JSON object encoded as a string — the whole
    object in one argument, not loose named arguments. Where `dryRun` is supported, ALWAYS call
    with `dryRun: true` first and read every named check or problem that comes back; then commit
    the identical payload. A dry run you did not read is worse than none.

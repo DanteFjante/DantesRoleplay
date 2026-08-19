@@ -1,4 +1,5 @@
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.Events;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.World;
@@ -37,6 +38,12 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
     public DbSet<Mechanic> Mechanics => Set<Mechanic>();
 
     public DbSet<MechanicVersion> MechanicVersions => Set<MechanicVersion>();
+    public DbSet<EventType> EventTypes => Set<EventType>();
+    public DbSet<EventTypeVersion> EventTypeVersions => Set<EventTypeVersion>();
+    public DbSet<Subscription> Subscriptions => Set<Subscription>();
+    public DbSet<SubscriptionVersion> SubscriptionVersions => Set<SubscriptionVersion>();
+    public DbSet<EventRecord> Events => Set<EventRecord>();
+    public DbSet<EventEntity> EventEntities => Set<EventEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -46,6 +53,41 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         ConfigureOperations(modelBuilder);
         ConfigureWorld(modelBuilder);
         ConfigureMechanics(modelBuilder);
+        ConfigureEventTypes(modelBuilder);
+        ConfigureSubscriptions(modelBuilder);
+        ConfigureEventLedger(modelBuilder);
+    }
+
+    private static void ConfigureEventLedger(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<EventRecord>(entity => { entity.ToTable("event"); entity.HasKey(x => x.Id); entity.Property(x => x.Id).HasMaxLength(40); entity.Property(x => x.TypeId).HasMaxLength(200).IsRequired(); entity.Property(x => x.CorrelationId).HasMaxLength(40).IsRequired(); entity.Property(x => x.CausationId).HasMaxLength(40); entity.Property(x => x.RootOperationId).HasMaxLength(40); entity.Property(x => x.PayloadJson).IsRequired(); entity.HasIndex(x => new { x.CorrelationId, x.Sequence }); entity.HasIndex(x => x.RootOperationId); entity.HasIndex(x => new { x.TypeId, x.Timestamp }); });
+        modelBuilder.Entity<EventEntity>(entity => { entity.ToTable("event_entity"); entity.HasKey(x => x.Id); entity.Property(x => x.EventId).HasMaxLength(40).IsRequired(); entity.Property(x => x.EntityId).HasMaxLength(200).IsRequired(); entity.HasOne(x => x.Event).WithMany(x => x.Entities).HasForeignKey(x => x.EventId).OnDelete(DeleteBehavior.Cascade); entity.HasIndex(x => new { x.EntityId, x.Id }); entity.HasIndex(x => new { x.EventId, x.Ordinal }).IsUnique(); });
+    }
+
+    private static void ConfigureSubscriptions(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Subscription>(entity =>
+        {
+            entity.ToTable("subscription"); entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasMaxLength(200); entity.Property(x => x.Category).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.Scope).HasMaxLength(200); entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
+            entity.HasIndex(x => x.Category); entity.HasIndex(x => x.Scope); entity.HasIndex(x => x.Status);
+        });
+        modelBuilder.Entity<SubscriptionVersion>(entity =>
+        {
+            entity.ToTable("subscription_version"); entity.HasKey(x => x.Id);
+            entity.Property(x => x.SubscriptionId).HasMaxLength(200).IsRequired(); entity.Property(x => x.EventTypeId).HasMaxLength(200).IsRequired(); entity.Property(x => x.EventMechanicId).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Mode).HasConversion<string>().HasMaxLength(20).IsRequired(); entity.Property(x => x.FixedRoleEntityIdsJson).IsRequired(); entity.Property(x => x.TrackedEntityIdsJson).IsRequired(); entity.Property(x => x.PayloadEqualsJson).IsRequired();
+            entity.Property(x => x.CreatedBy).HasMaxLength(200).IsRequired(); entity.Property(x => x.SourceHash).HasMaxLength(64);
+            entity.HasOne(x => x.Subscription).WithMany(x => x.Versions).HasForeignKey(x => x.SubscriptionId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.SubscriptionId, x.Version }).IsUnique(); entity.HasIndex(x => x.EventTypeId); entity.HasIndex(x => x.EventMechanicId); entity.HasIndex(x => new { x.Mode, x.Order });
+        });
+    }
+
+    private static void ConfigureEventTypes(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<EventType>(entity => { entity.ToTable("event_type"); entity.HasKey(x => x.Id); entity.Property(x => x.Id).HasMaxLength(200); entity.Property(x => x.Category).HasMaxLength(100).IsRequired(); entity.Property(x => x.Scope).HasMaxLength(200); entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired(); entity.HasIndex(x => x.Category); entity.HasIndex(x => x.Scope); entity.HasIndex(x => x.Status); });
+        modelBuilder.Entity<EventTypeVersion>(entity => { entity.ToTable("event_type_version"); entity.HasKey(x => x.Id); entity.Property(x => x.EventTypeId).HasMaxLength(200).IsRequired(); entity.Property(x => x.Name).HasMaxLength(200).IsRequired(); entity.Property(x => x.PayloadSchema).IsRequired(); entity.Property(x => x.CreatedBy).HasMaxLength(200).IsRequired(); entity.Property(x => x.SourceHash).HasMaxLength(64); entity.HasOne(x => x.EventType).WithMany(x => x.Versions).HasForeignKey(x => x.EventTypeId).OnDelete(DeleteBehavior.Cascade); entity.HasIndex(x => new { x.EventTypeId, x.Version }).IsUnique(); });
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using DantesRoleplay.Effects;
 
 namespace DantesRoleplay.Mechanics;
@@ -17,6 +18,12 @@ namespace DantesRoleplay.Mechanics;
 public sealed record MechanicRequirements
 {
     public Dictionary<string, RoleRequirement> Roles { get; init; } = [];
+
+    /// <summary>
+    /// Present only when this mechanic is an event middleware target. The explicit mode prevents a
+    /// guard (which may only decide allow/deny) from being registered as a reaction by accident.
+    /// </summary>
+    public EventMechanicRequirement? Event { get; init; }
 
     /// <summary>
     /// Child mechanics this mechanic may invoke. These declarations are interpreted by the host
@@ -40,7 +47,8 @@ public sealed record MechanicRequirements
     /// </summary>
     public static JsonSerializerOptions JsonOptions { get; } = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
     };
 
     /// <summary>Parse a stored spec. Throws <see cref="JsonException"/> on malformed input.</summary>
@@ -106,6 +114,19 @@ public sealed record MechanicRequirements
         return problems;
     }
 
+    /// <summary>Closed event-target declaration checks shared by authoring and subscription validation.</summary>
+    public IReadOnlyList<string> EventProblems()
+    {
+        if (Event is null) return [];
+        var problems = new List<string>();
+        if (Event.Types.Count == 0 || Event.Types.Any(string.IsNullOrWhiteSpace) || Event.Types.Distinct(StringComparer.Ordinal).Count() != Event.Types.Count)
+            problems.Add("An event requirement needs distinct non-empty types.");
+        if (Event.Components.Any(string.IsNullOrWhiteSpace) || Event.Components.Distinct(StringComparer.Ordinal).Count() != Event.Components.Count)
+            problems.Add("Event component ids must be distinct and non-empty.");
+        if (Children.Count > 0) problems.Add("An event mechanic cannot declare child mechanics.");
+        return problems;
+    }
+
     private static bool IsJsonObject(string json)
     {
         try
@@ -118,6 +139,17 @@ public sealed record MechanicRequirements
             return false;
         }
     }
+}
+
+/// <summary>The one event mode a mechanic declares. It must match its subscription.</summary>
+public enum EventMechanicMode { Guard, Reaction }
+
+public sealed record EventMechanicRequirement
+{
+    public required EventMechanicMode Mode { get; init; }
+    public IReadOnlyList<string> Types { get; init; } = [];
+    public IReadOnlyList<string> Components { get; init; } = [];
+    public bool IncludeContents { get; init; }
 }
 
 /// <param name="Components">
@@ -208,6 +240,12 @@ public sealed record MechanicProjection
     /// never carry a live CLR callback or database capability.
     /// </summary>
     public Dictionary<string, IReadOnlyList<ChildMechanicResult>> Children { get; init; } = [];
+
+    /// <summary>Immutable event proposal supplied only when the mechanic runs as middleware.</summary>
+    public string Event { get; init; } = "{}";
+
+    /// <summary>Frozen entity ids affected by that proposal. Event mechanics never receive stores.</summary>
+    public IReadOnlyList<string> EventEntities { get; init; } = [];
 }
 
 /// <param name="Components">Definition id to that component's data as raw JSON.</param>
@@ -246,6 +284,15 @@ public sealed record MechanicOutput
 
     /// <summary>Anything else the mechanic wants to hand back, as JSON. Not interpreted.</summary>
     public string Data { get; init; } = "{}";
+
+    /// <summary>Guard-only decision: exactly <c>allow</c> or <c>deny</c>.</summary>
+    public string Decision { get; init; } = string.Empty;
+
+    /// <summary>Required stable refusal code when a guard denies.</summary>
+    public string Code { get; init; } = string.Empty;
+
+    /// <summary>Required human-readable refusal reason when a guard denies.</summary>
+    public string Reason { get; init; } = string.Empty;
 }
 
 /// <summary>

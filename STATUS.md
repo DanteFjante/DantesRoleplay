@@ -234,15 +234,40 @@ The risk `ARCHITECTURE.md` §2 calls the major one. Three things answer it, all 
   and bounded current/maximum Hit Point state. The fresh-database import gate covers routing,
   boundaries, correction, rejection, atomicity, corrupt state, and AC preservation; catalog
   verification reports 56 matching records.
-- 🟡 Feature 7 has a file-first dependency plan at
-  `ruleset/dnd2024/feature-07/FEATURE-7-DEPENDENCY-PLAN.md`. Its next and only authorized slice is
-  a small canonical weapon-profile catalogue; category proficiency state follows only after that
-  slice is reviewed and verified. Attack rolls, equipment ownership, range, mastery, and damage
-  remain later owners.
-- 🟡 Feature 8 now has a file-first dependency plan at
-  `ruleset/dnd2024/feature-08/FEATURE-8-DEPENDENCY-PLAN.md`. Its effect-free weapon attack roll
-  against final Armor Class is blocked on both Feature 7 slices; it owns hit/miss and natural-20/1
-  classification, while Feature 9 remains the owner of damage and Hit Point consequences.
+- ✅ Feature 7 is complete through catalog import: canonical Dagger, Shortbow, and Battleaxe
+  profile entities plus `dnd2024.weapon-profile`; and `dnd2024.weapon-proficiencies`, its
+  governing contract and closed record/correct writer. Fresh-database coverage verifies explicit
+  empty, Simple, Martial, and both-category state; correction; protected state; routing; replay;
+  malformed input; absent correction; and corrupt state. Catalog verification reports 65 matching
+  records. Equipment ownership, range, mastery, and damage remain later owners.
+- ✅ Feature 8 is complete through catalog import: `mechanic.dnd2024.weapon-attack` and its
+  governing contract resolve a seeded, effect-free weapon attack against final Armor Class using
+  canonical profile and category-proficiency state. Fresh-database coverage proves PB bands,
+  ability/profile restrictions, AC comparison, D20 modes, replay, natural-20/1 precedence,
+  rejection, and unchanged state. Catalog verification reports 67 matching records; the full
+  suite passes 299/299. Feature 9 remains the separate owner of damage and Hit Point consequences.
+- ✅ Feature 9 is complete through catalog import: the effect-free
+  `mechanic.dnd2024.weapon-damage.roll` resolves canonical normal/critical damage, and its
+  `mechanic.dnd2024.weapon-damage.apply` parent consumes exactly one child result to atomically
+  replace only target current Hit Points. Fresh-import coverage verifies normal/critical/overkill
+  behavior, target-only state change, maximum/source preservation, replay, and rejection.
+  Catalog verification reports 71 matching records and the full suite passes 302/302.
+- ✅ Feature 10 is complete at `ruleset/dnd2024/feature-10/FEATURE-10-DEPENDENCY-PLAN.md`:
+  catalog-owned training encounter, hero, and target fixtures establish the clean baseline, while
+  two independent fresh databases replay the same seeded Perception check, Constitution save,
+  Initiative order, critical Dagger attack, and damage application with identical structured
+  results and final state. Only the encounter order and target current Hit Points change. Catalog
+  verification reports 74 matching records and the full suite passes 304/304.
+- 🟡 E1 events/subscriptions has a revised implementation plan at
+  `EVENTS_AND_SUBSCRIPTIONS_PLAN.md`. It covers registered multi-hop events, tracked-entity and
+  payload filters, pre-commit guard middleware that can veto proposed changes, richer conditions
+  in event mechanics, deterministic random occurrences, transactional in-system notifications,
+  rollback, replay, and loop guards. Real-time scheduling and external delivery remain separate
+  capabilities. Slices 1–3 are implemented and verified: event types, the mode-aware versioned
+  middleware registry, and transactional pre-commit guards are available. A guard denial rolls
+  back the root and records structured evidence. Slice 4's accepted structural-event ledger is the
+  next candidate, pending review and explicit authorization. There is still no accepted-event
+  ledger, reaction routing, or notification runtime.
 - ✅ `procedure.system.create-feature` establishes the file-first repository-wide workflow: plan
   to verified leaves, implement one lowest unimplemented slice in catalog files, dry-run/import/
   verify it against the database, then stop for review.
@@ -402,7 +427,7 @@ makes the MVP reachable.
 
 | Item | Why it waits |
 | --- | --- |
-| Events + subscriptions, loop guards (P10) | Reactive rules are a large subsystem. Deliberately kept out of the effect vocabulary too — there is no `event.emit` verb, so adding it later costs one table and no rewrite. |
+| Events + subscriptions runtime (P10) | Slices 1–2 are verified: event types and the mode-aware subscription registry are file-first and available through MCP. Slice 3 pre-commit guards is the next candidate, pending review and authorization. There is still no guard execution, event ledger, reaction routing, or `event.emit` effect. |
 | Composition — `ctx.mechanics.run` (§9.7) | Only matters once enough mechanics exist to duplicate each other. |
 | Multi-step actions — `ctx.ask` | "Which slot do you want to burn?" is a refinement, not a blocker. |
 | Growth controls ladder (P12) | The duplicate warning already exists; the full Reuse→Create ladder needs a mechanic population first. |

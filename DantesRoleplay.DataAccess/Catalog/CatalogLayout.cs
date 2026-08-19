@@ -30,6 +30,8 @@ public static class CatalogLayout
     public const string MechanicsRoot = "mechanics";
     public const string ProceduresRoot = "procedures";
     public const string ComponentsRoot = "components";
+    public const string EventTypesRoot = "event-types";
+    public const string SubscriptionsRoot = "subscriptions";
     public const string WorldRoot = "world";
     public const string EntitiesRoot = WorldRoot + "/entities";
     public const string HistoryRoot = "history";
@@ -65,6 +67,9 @@ public static class CatalogLayout
     /// </summary>
     public static string ComponentSchema(string id) =>
         Combine(ComponentsRoot, id + ".schema" + DefinitionExtension);
+    public static string EventType(string id) => Combine(EventTypesRoot, SafeFileName(id, "event type") + DefinitionExtension);
+    public static string EventTypeSchema(string id) => Combine(EventTypesRoot, SafeFileName(id, "event type") + ".schema" + DefinitionExtension);
+    public static string Subscription(string id) => Combine(SubscriptionsRoot, SafeFileName(id, "subscription") + DefinitionExtension);
 
     /// <summary>One entity, with its components and its container folded in.</summary>
     public static string Entity(string id) =>

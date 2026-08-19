@@ -128,7 +128,7 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
 
         Assert.True(catalog.Ok, catalog.Raw);
         Assert.Equal(
-            ["capabilities", "entities", "history", "mechanics", "procedures", "world"],
+            ["capabilities", "entities", "event-types", "history", "mechanics", "procedures", "subscriptions", "world"],
             catalog.Data.GetProperty("query").EnumerateObject().Select(p => p.Name).Order(StringComparer.Ordinal));
 
         // 3. The world, before changing it.

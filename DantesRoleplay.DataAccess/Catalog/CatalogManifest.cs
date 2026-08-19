@@ -95,6 +95,8 @@ public enum CatalogRecordKind
     Mechanic,
     Procedure,
     ComponentDefinition,
+    EventType,
+    Subscription,
     Entity,
 
     /// <summary>

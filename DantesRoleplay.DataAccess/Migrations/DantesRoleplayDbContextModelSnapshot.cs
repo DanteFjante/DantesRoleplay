@@ -17,6 +17,304 @@ namespace DantesRoleplay.DataAccess.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
 
+            modelBuilder.Entity("DantesRoleplay.Events.EventEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EventId")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EntityId", "Id");
+
+                    b.HasIndex("EventId", "Ordinal")
+                        .IsUnique();
+
+                    b.ToTable("event_entity", (string)null);
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Events.EventRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CausationId")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Depth")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RootOperationId")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TypeId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TypeVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RootOperationId");
+
+                    b.HasIndex("CorrelationId", "Sequence");
+
+                    b.HasIndex("TypeId", "Timestamp");
+
+                    b.ToTable("event", (string)null);
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Events.EventType", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CurrentVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Category");
+
+                    b.HasIndex("Scope");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("event_type", (string)null);
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Events.EventTypeVersion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ChangeNote")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EventTypeId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PayloadSchema")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventTypeId", "Version")
+                        .IsUnique();
+
+                    b.ToTable("event_type_version", (string)null);
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Events.Subscription", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CurrentVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Category");
+
+                    b.HasIndex("Scope");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("subscription", (string)null);
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Events.SubscriptionVersion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ChangeNote")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EventMechanicId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EventTypeId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FixedRoleEntityIdsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("MaxExecutionsPerChain")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PayloadEqualsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SubscriptionId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TrackedEntityIdsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventMechanicId");
+
+                    b.HasIndex("EventTypeId");
+
+                    b.HasIndex("Mode", "Order");
+
+                    b.HasIndex("SubscriptionId", "Version")
+                        .IsUnique();
+
+                    b.ToTable("subscription_version", (string)null);
+                });
+
             modelBuilder.Entity("DantesRoleplay.Mechanics.Mechanic", b =>
                 {
                     b.Property<string>("Id")
@@ -130,6 +428,10 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .HasDefaultValue(false);
 
                     b.Property<string>("Error")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("GuardEvidenceJson")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -484,6 +786,39 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.ToTable("relationship", (string)null);
                 });
 
+            modelBuilder.Entity("DantesRoleplay.Events.EventEntity", b =>
+                {
+                    b.HasOne("DantesRoleplay.Events.EventRecord", "Event")
+                        .WithMany("Entities")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Events.EventTypeVersion", b =>
+                {
+                    b.HasOne("DantesRoleplay.Events.EventType", "EventType")
+                        .WithMany("Versions")
+                        .HasForeignKey("EventTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("EventType");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Events.SubscriptionVersion", b =>
+                {
+                    b.HasOne("DantesRoleplay.Events.Subscription", "Subscription")
+                        .WithMany("Versions")
+                        .HasForeignKey("SubscriptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Subscription");
+                });
+
             modelBuilder.Entity("DantesRoleplay.Mechanics.MechanicVersion", b =>
                 {
                     b.HasOne("DantesRoleplay.Mechanics.Mechanic", "Mechanic")
@@ -580,6 +915,21 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.Navigation("FromEntity");
 
                     b.Navigation("ToEntity");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Events.EventRecord", b =>
+                {
+                    b.Navigation("Entities");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Events.EventType", b =>
+                {
+                    b.Navigation("Versions");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Events.Subscription", b =>
+                {
+                    b.Navigation("Versions");
                 });
 
             modelBuilder.Entity("DantesRoleplay.Mechanics.Mechanic", b =>

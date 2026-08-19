@@ -116,7 +116,8 @@ internal static class ToolRunner
                 effectiveSubject,
                 proceduresCited,
                 outcome.Error?.Code ?? string.Empty,
-                dispatch?.ConsumesReadEvidenceOverride ?? consumesReadEvidence);
+                dispatch?.ConsumesReadEvidenceOverride ?? consumesReadEvidence,
+                guardEvidenceJson: outcome.GuardEvidenceJson);
 
             return outcome.Error is null
                 ? ToolEnvelope.Success(outcome.Data, operation.Id, [.. outcome.NextSteps])
@@ -201,7 +202,8 @@ internal sealed record ToolOutcome(
     string Summary,
     IReadOnlyList<string> NextSteps,
     ToolError? Error = null,
-    string Subject = "")
+    string Subject = "",
+    string GuardEvidenceJson = "")
 {
     public static ToolOutcome Ok(object? data, string summary, params string[] nextSteps) =>
         new(data, summary, nextSteps);

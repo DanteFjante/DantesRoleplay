@@ -288,7 +288,7 @@ public sealed class GuardTests
         var end = source.IndexOf("_ => throw", start, StringComparison.Ordinal);
         Assert.True(end > start, $"Could not find the end of the dispatch switch in {fileName}.");
 
-        return [.. Regex.Matches(source[start..end], @"""(?<kind>[a-z]+)""\s*(?:when[^=]*?)?=>")
+        return [.. Regex.Matches(source[start..end], @"""(?<kind>[a-z-]+)""\s*(?:when[^=]*?)?=>")
             .Select(m => m.Groups["kind"].Value)
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)];

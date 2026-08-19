@@ -55,6 +55,16 @@ public static class VerbSurface
             ["id", "version", "query", "category", "scope", "includeInactive", "limit"],
             ["procedure.mechanic.find"]),
         new(
+            "event-types",
+            "Event type summaries. With id, one versioned payload schema in full.",
+            ["id", "version", "query", "category", "scope", "includeInactive", "limit"],
+            ["procedure.event.define"]),
+        new(
+            "subscriptions",
+            "Guard and reaction middleware registrations. With id, one version in full; registrations do not execute yet.",
+            ["id", "version", "query", "category", "scope", "includeInactive", "limit"],
+            ["procedure.subscription.create", "procedure.subscription.modify"]),
+        new(
             "history",
             "Recent operation audit records, newest first, including failures.",
             ["limit", "failuresOnly", "tool", "subject"],
@@ -109,6 +119,24 @@ public static class VerbSurface
             """,
             SupportsDryRun: true,
             ["procedure.mechanic.write"]),
+        new(
+            "event-type",
+            "Write or revise an event type and its JSON Schema. This registers a type only; it does not emit events.",
+            "{id, category, name, description?, schema, scope?, status?, changeNote?}",
+            """
+            {"id":"campaign.weather.changed","category":"campaign","name":"Weather changed","description":"A declared weather change.","schema":"{\\\"type\\\":\\\"object\\\",\\\"additionalProperties\\\":false}","status":"draft","changeNote":"Initial declaration."}
+            """,
+            SupportsDryRun: true,
+            ["procedure.event.define"]),
+        new(
+            "subscription",
+            "Write or revise a guard/reaction middleware registration. It is stored and validated but does not execute yet.",
+            "{id, category, eventTypeId, eventMechanicId, mode, order?, fixedRoleEntityIdsJson?, trackedEntityIdsJson?, payloadEqualsJson?, maxExecutionsPerChain?, scope?, status?, changeNote?}",
+            """
+            {"id":"subscription.guard.example","category":"world","eventTypeId":"world.component.replaced","eventMechanicId":"mechanic.example.guard","mode":"guard","order":0,"fixedRoleEntityIdsJson":"{}","trackedEntityIdsJson":"[]","payloadEqualsJson":"{}","maxExecutionsPerChain":1,"status":"draft","changeNote":"Initial registration."}
+            """,
+            SupportsDryRun: true,
+            ["procedure.subscription.create", "procedure.subscription.modify"]),
         new(
             "action",
             "Resolve what someone is trying to do. The best-ranked active rule matching the "

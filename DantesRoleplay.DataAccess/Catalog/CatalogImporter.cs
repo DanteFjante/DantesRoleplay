@@ -1,6 +1,7 @@
 using DantesRoleplay.Content;
 using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.Events;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.World;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +32,9 @@ public sealed class CatalogImporter(
     DantesRoleplayDbContext db,
     IMechanicStore mechanics,
     IProcedureStore procedures,
-    IWorldStore world)
+    IWorldStore world,
+    IEventTypeStore? eventTypes = null,
+    ISubscriptionStore? subscriptions = null)
 {
     private const string ImportAuthor = "import";
 
@@ -39,6 +42,8 @@ public sealed class CatalogImporter(
     private readonly IMechanicStore _mechanics = mechanics;
     private readonly IProcedureStore _procedures = procedures;
     private readonly IWorldStore _world = world;
+    private readonly IEventTypeStore? _eventTypes = eventTypes;
+    private readonly ISubscriptionStore? _subscriptions = subscriptions;
 
     // ---- planning ------------------------------------------------------------------------
 
@@ -72,6 +77,14 @@ public sealed class CatalogImporter(
             Fingerprints(contents.Components, f => f.Id, f => f.ContentHash),
             await StoredComponentsAsync(cancellationToken),
             contents.Manifest));
+        if (_eventTypes is not null)
+        {
+            entries.AddRange(Classify(CatalogRecordKind.EventType, Fingerprints(contents.EventTypes, f => f.Id, f => f.ContentHash), await StoredEventTypesAsync(cancellationToken), contents.Manifest));
+        }
+        if (_subscriptions is not null)
+        {
+            entries.AddRange(Classify(CatalogRecordKind.Subscription, Fingerprints(contents.Subscriptions, f => f.Id, f => f.ContentHash), await StoredSubscriptionsAsync(cancellationToken), contents.Manifest));
+        }
 
         // World state only when the catalog is in scope for it. A --rules-only catalog otherwise
         // reports every entity in the database as "authored live and never exported" on every run
@@ -311,6 +324,8 @@ public sealed class CatalogImporter(
                     contents.Mechanics.Single(f => f.Id == entry.Id), cancellationToken),
                 CatalogRecordKind.Procedure => await WriteProcedureAsync(
                     contents.Procedures.Single(f => f.Id == entry.Id), cancellationToken),
+                CatalogRecordKind.EventType => await WriteEventTypeAsync(contents.EventTypes.Single(f => f.Id == entry.Id), cancellationToken),
+                CatalogRecordKind.Subscription => await WriteSubscriptionAsync(contents.Subscriptions.Single(f => f.Id == entry.Id), cancellationToken),
                 CatalogRecordKind.Relationships => await WriteRelationshipsAsync(
                     contents.Relationships!, cancellationToken),
                 _ => throw new InvalidOperationException($"Unhandled record kind '{entry.Kind}'.")
@@ -352,10 +367,12 @@ public sealed class CatalogImporter(
     {
         CatalogRecordKind.ComponentDefinition => 0,
         CatalogRecordKind.Entity => 1,
-        CatalogRecordKind.Mechanic => 2,
-        CatalogRecordKind.Procedure => 3,
-        CatalogRecordKind.Relationships => 4,
-        _ => 5
+        CatalogRecordKind.EventType => 2,
+        CatalogRecordKind.Mechanic => 3,
+        CatalogRecordKind.Procedure => 4,
+        CatalogRecordKind.Subscription => 5,
+        CatalogRecordKind.Relationships => 5,
+        _ => 6
     };
 
     private static bool ShouldWrite(CatalogChange change, CatalogForce force) => change switch
@@ -412,6 +429,20 @@ public sealed class CatalogImporter(
             },
             cancellationToken);
 
+        return result.Created;
+    }
+
+    private async Task<bool> WriteEventTypeAsync(EventTypeFile file, CancellationToken cancellationToken)
+    {
+        if (_eventTypes is null) throw new InvalidOperationException("Event type import requires an event type store.");
+        var result = await _eventTypes.WriteAsync(new WriteEventTypeRequest { Id = file.Id, Category = file.Category, Name = file.Name, Description = file.Description, PayloadSchema = file.Schema, Scope = file.Scope, Status = file.Status, CreatedBy = ImportAuthor, ChangeNote = "Imported from the catalog." }, cancellationToken);
+        return result.Created;
+    }
+
+    private async Task<bool> WriteSubscriptionAsync(SubscriptionFile file, CancellationToken cancellationToken)
+    {
+        if (_subscriptions is null) throw new InvalidOperationException("Subscription import requires a subscription store.");
+        var result = await _subscriptions.WriteAsync(new WriteSubscriptionRequest { Id = file.Id, Category = file.Category, EventTypeId = file.EventTypeId, EventMechanicId = file.EventMechanicId, Mode = file.Mode, Order = file.Order, FixedRoleEntityIdsJson = file.FixedRoleEntityIdsJson, TrackedEntityIdsJson = file.TrackedEntityIdsJson, PayloadEqualsJson = file.PayloadEqualsJson, MaxExecutionsPerChain = file.MaxExecutionsPerChain, Scope = file.Scope, Status = file.Status, CreatedBy = ImportAuthor, ChangeNote = "Imported from the catalog." }, cancellationToken);
         return result.Created;
     }
 
@@ -644,6 +675,16 @@ public sealed class CatalogImporter(
 
                 break;
 
+            case CatalogRecordKind.EventType:
+                var eventType = contents.EventTypes.FirstOrDefault(f => f.Id == entry.Id);
+                if (eventType is not null) { described = new CatalogManifestEntry(entry.Kind, eventType.Id, version, eventType.ContentHash, CatalogLayout.EventType(eventType.Id)); return true; }
+                break;
+
+            case CatalogRecordKind.Subscription:
+                var subscription = contents.Subscriptions.FirstOrDefault(f => f.Id == entry.Id);
+                if (subscription is not null) { described = new CatalogManifestEntry(entry.Kind, subscription.Id, version, subscription.ContentHash, CatalogLayout.Subscription(subscription.Id)); return true; }
+                break;
+
             case CatalogRecordKind.Entity:
                 var entity = contents.Entities.FirstOrDefault(f => f.Id == entry.Id);
 
@@ -726,6 +767,18 @@ public sealed class CatalogImporter(
             .ToListAsync(cancellationToken);
 
         return rows.ToDictionary(r => r.Id, r => r.SourceHash, StringComparer.Ordinal);
+    }
+
+    private async Task<IReadOnlyDictionary<string, string>> StoredEventTypesAsync(CancellationToken cancellationToken)
+    {
+        var rows = await _db.EventTypes.AsNoTracking().Join(_db.EventTypeVersions.AsNoTracking(), e => new { EventTypeId = e.Id, Version = e.CurrentVersion }, v => new { v.EventTypeId, v.Version }, (e, v) => new { e.Id, v.SourceHash }).ToListAsync(cancellationToken);
+        return rows.ToDictionary(x => x.Id, x => x.SourceHash, StringComparer.Ordinal);
+    }
+
+    private async Task<IReadOnlyDictionary<string, string>> StoredSubscriptionsAsync(CancellationToken cancellationToken)
+    {
+        var rows = await _db.Subscriptions.AsNoTracking().Join(_db.SubscriptionVersions.AsNoTracking(), s => new { SubscriptionId = s.Id, Version = s.CurrentVersion }, v => new { v.SubscriptionId, v.Version }, (s, v) => new { s.Id, v.SourceHash }).ToListAsync(cancellationToken);
+        return rows.ToDictionary(x => x.Id, x => x.SourceHash, StringComparer.Ordinal);
     }
 
     /// <summary>
@@ -841,6 +894,8 @@ public sealed class CatalogImporter(
         {
             versions[(CatalogRecordKind.Procedure, row.Id)] = row.CurrentVersion;
         }
+        foreach (var row in await _db.EventTypes.AsNoTracking().Select(e => new { e.Id, e.CurrentVersion }).ToListAsync(cancellationToken)) versions[(CatalogRecordKind.EventType, row.Id)] = row.CurrentVersion;
+        foreach (var row in await _db.Subscriptions.AsNoTracking().Select(s => new { s.Id, s.CurrentVersion }).ToListAsync(cancellationToken)) versions[(CatalogRecordKind.Subscription, row.Id)] = row.CurrentVersion;
 
         // Component definitions are not versioned; they stay at zero, which is what the exporter
         // writes for them too.

@@ -40,6 +40,10 @@ public sealed class CatalogCoverageTests : IDisposable
         ["mechanic_version"] = "the current version only; the chain stays in the database",
         ["procedure_contract"] = "procedures/<category>/<id>.md",
         ["procedure_contract_version"] = "the current version only",
+        ["event_type"] = "event-types/<id>.json, schema in a sibling .schema.json",
+        ["event_type_version"] = "the current version only; the chain stays in the database",
+        ["subscription"] = "subscriptions/<id>.json",
+        ["subscription_version"] = "the current version only; the chain stays in the database",
         ["operation"] = "history/operations.jsonl, with --with-history. EXPORT ONLY — nothing imports it"
     };
 
@@ -122,6 +126,16 @@ public sealed class CatalogCoverageTests : IDisposable
         "procedure_contract_version.Description", "procedure_contract_version.Instructions",
         "procedure_contract_version.Constraints", "procedure_contract_version.Governs",
 
+        "event_type.Id", "event_type.Category", "event_type.Status", "event_type.Scope",
+        "event_type_version.EventTypeId", "event_type_version.Name", "event_type_version.Description",
+        "event_type_version.PayloadSchema",
+
+        "subscription.Id", "subscription.Category", "subscription.Status", "subscription.Scope",
+        "subscription_version.SubscriptionId", "subscription_version.EventTypeId", "subscription_version.EventMechanicId",
+        "subscription_version.Mode", "subscription_version.Order", "subscription_version.FixedRoleEntityIdsJson",
+        "subscription_version.TrackedEntityIdsJson", "subscription_version.PayloadEqualsJson",
+        "subscription_version.MaxExecutionsPerChain",
+
         // The operation log is serialised whole, field for field. It is export only.
         "operation.Id", "operation.Error", "operation.Intent", "operation.ProceduresCited",
         "operation.ProceduresRead", "operation.Subject", "operation.Success", "operation.Summary",
@@ -141,6 +155,10 @@ public sealed class CatalogCoverageTests : IDisposable
         ["mechanic_version.CreatedBy"] = "GAP: authored provenance, lost on a round trip.",
         ["procedure_contract_version.ChangeNote"] = "GAP: authored text, lost on a round trip.",
         ["procedure_contract_version.CreatedBy"] = "GAP: authored provenance, lost on a round trip.",
+        ["event_type_version.ChangeNote"] = "GAP: authored text, lost on a round trip.",
+        ["event_type_version.CreatedBy"] = "GAP: authored provenance, lost on a round trip.",
+        ["subscription_version.ChangeNote"] = "GAP: authored text, lost on a round trip.",
+        ["subscription_version.CreatedBy"] = "GAP: authored provenance, lost on a round trip.",
 
         // --- Surrogate keys. The catalog addresses records by their real identity.
         ["component.Id"] = "Surrogate key. A component is addressed by (entity, definition).",
@@ -148,6 +166,8 @@ public sealed class CatalogCoverageTests : IDisposable
         ["relationship.Id"] = "Surrogate key. An edge is addressed by (from, to, kind).",
         ["mechanic_version.Id"] = "Surrogate key.",
         ["procedure_contract_version.Id"] = "Surrogate key.",
+        ["event_type_version.Id"] = "Surrogate key.",
+        ["subscription_version.Id"] = "Surrogate key.",
         ["procedure_relation.Id"] = "Surrogate key on an unused table. See SkippedTables.",
 
         // --- Derived. Recomputed on write; carrying them would let a file assert something false.
@@ -156,8 +176,15 @@ public sealed class CatalogCoverageTests : IDisposable
         ["procedure_contract.CurrentVersion"] = "Derived from the version rows.",
         ["mechanic_version.Version"] = "Derived. Recorded in the manifest for reference only.",
         ["procedure_contract_version.Version"] = "Derived. Recorded in the manifest for reference only.",
+        ["event_type.CurrentVersion"] = "Derived from the version rows.",
+        ["subscription.CurrentVersion"] = "Derived from the version rows.",
+        ["event_type_version.Version"] = "Derived. Recorded in the manifest for reference only.",
+        ["subscription_version.Version"] = "Derived. Recorded in the manifest for reference only.",
         ["mechanic_version.SourceHash"] = "Derived from the content; recomputed on every write.",
         ["procedure_contract_version.SourceHash"] = "Derived from the content; recomputed on every write.",
+        ["event_type_version.SourceHash"] = "Derived from the content; recomputed on every write.",
+        ["subscription_version.SourceHash"] = "Derived from the content; recomputed on every write.",
+        ["operation.GuardEvidenceJson"] = "Runtime audit evidence, not authored catalog content.",
 
         // --- Timestamps. Provenance about when a row was touched, not what it says.
         ["entity.CreatedAt"] = "Timestamp.",
@@ -173,6 +200,12 @@ public sealed class CatalogCoverageTests : IDisposable
         ["procedure_contract.CreatedAt"] = "Timestamp.",
         ["procedure_contract.UpdatedAt"] = "Timestamp.",
         ["procedure_contract_version.CreatedAt"] = "Timestamp.",
+        ["event_type.CreatedAt"] = "Timestamp.",
+        ["event_type.UpdatedAt"] = "Timestamp.",
+        ["event_type_version.CreatedAt"] = "Timestamp.",
+        ["subscription.CreatedAt"] = "Timestamp.",
+        ["subscription.UpdatedAt"] = "Timestamp.",
+        ["subscription_version.CreatedAt"] = "Timestamp.",
 
         // --- Tombstones. A catalog states what the world IS; re-importing one would resurrect a
         //     row somebody deleted on purpose, so deleted entities are not exported at all.
@@ -238,10 +271,14 @@ public sealed class CatalogCoverageTests : IDisposable
 
         Assert.Equal(
             [
+                "event_type_version.ChangeNote",
+                "event_type_version.CreatedBy",
                 "mechanic_version.ChangeNote",
                 "mechanic_version.CreatedBy",
                 "procedure_contract_version.ChangeNote",
-                "procedure_contract_version.CreatedBy"
+                "procedure_contract_version.CreatedBy",
+                "subscription_version.ChangeNote",
+                "subscription_version.CreatedBy"
             ],
             gaps);
 

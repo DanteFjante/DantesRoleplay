@@ -1,5 +1,7 @@
 using System.ComponentModel;
+using System.Text.Json;
 using DantesRoleplay.Effects;
+using DantesRoleplay.Events;
 using DantesRoleplay.Operations;
 using DantesRoleplay.World;
 using ModelContextProtocol.Server;
@@ -265,6 +267,15 @@ public sealed class WorldTools
 
             var result = await applier.ApplyAsync(effects, dryRun, cancellationToken);
 
+            if (result.Blocked && !dryRun)
+            {
+                return ToolOutcome.Fail(
+                    "EVENT_BLOCKED",
+                    $"A guard blocked the proposed world change: {result.BlockCode}: {result.BlockReason}",
+                    VerbSurface.CommitCall("effects", dryRun: true),
+                    $"Blocked {effects.Length} effect(s) before commit.") with { GuardEvidenceJson = GuardEvidence(result) };
+            }
+
             if (!result.Valid)
             {
                 return ToolOutcome.Fail(
@@ -279,9 +290,9 @@ public sealed class WorldTools
             if (dryRun)
             {
                 return ToolOutcome.Ok(
-                    new { Validated = effects.Length, Problems = result.Problems, Applied = false },
-                    $"Dry run: all {effects.Length} effect(s) valid, nothing written.",
-                    "Send the identical payload again with dryRun omitted to commit exactly this list.");
+                    new { Validated = effects.Length, Problems = result.Problems, Applied = false, ProposedEvents = result.ProposedEvents.Select(ProposalForTool).ToList(), GuardEvaluations = result.GuardEvaluations, Allowed = !result.Blocked },
+                    $"Dry run: all {effects.Length} effect(s) valid; {result.GuardEvaluations.Count} guard(s) evaluated; nothing written.",
+                    "Send the identical payload again with dryRun omitted to commit exactly this list.") with { GuardEvidenceJson = GuardEvidence(result) };
             }
 
             // Recording the entity as the subject is what makes a history query by subject answer
@@ -302,8 +313,23 @@ public sealed class WorldTools
                 touched.Count == 0
                     ? "query(kind: \"world\") — confirm the result reads the way you intended."
                     : $"query(kind: \"entities\", ids: [\"{string.Join("\", \"", touched.Take(5))}\"]) — confirm the result reads the way you intended.",
-                "query(kind: \"history\") — see the operation this produced.");
+                    "query(kind: \"history\") — see the operation this produced.");
         }, consumesReadEvidence: !dryRun);
+
+    private static object ProposalForTool(ProposedEvent proposal)
+    {
+        using var payload = JsonDocument.Parse(proposal.PayloadJson);
+        return new { proposal.Type, Payload = payload.RootElement.Clone(), proposal.EntityIds, proposal.Scope, proposal.Ordinal };
+    }
+
+    private static string GuardEvidence(EffectResult result) => JsonSerializer.Serialize(new
+    {
+        proposals = result.ProposedEvents.Select(ProposalForTool).ToList(),
+        evaluations = result.GuardEvaluations,
+        allowed = !result.Blocked,
+        code = result.BlockCode,
+        reason = result.BlockReason
+    });
 
     /// <summary>Cuts on a comma boundary, so a truncated subject list is still a list of whole ids.</summary>
     private static string Truncate(string value, int max)

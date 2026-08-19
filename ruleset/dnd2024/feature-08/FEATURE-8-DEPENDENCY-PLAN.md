@@ -1,15 +1,13 @@
 # Feature 8 dependency plan — Weapon attack rolls against Armor Class
 
-Status: **Planned; blocked until Feature 7 Slices 1–2 are verified**
+Status: **Complete — Slice 1 verified through file-first catalog import**
 Last updated: 2026-08-19
 
 ## Execution rule
 
-This is a planning-only pass under `procedure.system.create-feature`. Runtime content must be
-authored in `catalog/`, reviewed there, imported with `roleplay import catalog`, and checked with
-`roleplay verify catalog`. This plan creates no runtime artifact. Feature 7 Slice 1 remains the
-sole authorized implementation assignment; a later pass may begin Feature 8 only after the full
-Feature 7 exit gate is met.
+The completed slice was authored in `catalog/`, reviewed there, imported with `roleplay import
+catalog`, and checked with `roleplay verify catalog`. Its runtime authority is the imported
+contract and mechanic; this plan retains the boundary and reproducible verification evidence.
 
 ## Target capability
 
@@ -68,8 +66,8 @@ CC-BY-4.0.
 | Ability scores and level-derived Proficiency Bonus | Features 1–2 verified. The resolver derives modifier from `dnd2024.abilities` and PB from `dnd2024.character-level`; it accepts neither as input. |
 | D20 circumstance policy | Feature 3 verified in ability checks: seeded validation-first rolls, one die normally/mixed, two dice for Advantage/Disadvantage, and high/low selection. |
 | Final Armor Class | Feature 6 verified: target `dnd2024.armor-class` is the only AC source. No legacy `stats.armorClass` may be read. |
-| Canonical weapon profile | **Missing external leaf: Feature 7 Slice 1.** It will provide `dnd2024.weapon-profile` entities, category/kind, allowed attack abilities, and source facts. |
-| Weapon-category proficiency | **Missing external leaf: Feature 7 Slice 2.** It will provide actor `dnd2024.weapon-proficiencies`; absent/corrupt is invalid, while `[]` means known nonproficient. |
+| Canonical weapon profile | Feature 7 Slice 1 verified: `dnd2024.weapon-profile` entities supply category/kind, allowed attack abilities, and source facts. |
+| Weapon-category proficiency | Feature 7 Slice 2 verified: `dnd2024.weapon-proficiencies` supplies actor categories; absent/corrupt is invalid, while `[]` means known nonproficient. |
 | Damage/consequences | Deliberately absent; Feature 9 owns damage rolls and Hit Point changes. |
 
 ## Recursive dependency analysis
@@ -80,18 +78,17 @@ Feature 8: one weapon attack roll against final Armor Class
 ├─ actor ability scores and character level / proficiency-bonus derivation [implemented]
 ├─ D20 circumstance and seeded-replay convention                           [implemented]
 ├─ target authoritative Armor Class                                         [implemented: Feature 6]
-├─ canonical weapon profile                                                 [blocked: Feature 7 Slice 1]
-├─ actor Simple/Martial proficiency state                                   [blocked: Feature 7 Slice 2]
-└─ attack resolution                                                        [Feature 8 Slice 1; blocked]
+├─ canonical weapon profile                                                 [verified: Feature 7 Slice 1]
+├─ actor Simple/Martial proficiency state                                   [verified: Feature 7 Slice 2]
+└─ attack resolution                                                        [verified: Feature 8 Slice 1]
    ├─ closed role/input and state validation
    ├─ select die, ability modifier, and conditional proficiency bonus
    ├─ natural 20/1 precedence and AC comparison
    └─ explanatory, zero-effect result envelope
 ```
 
-Every internal Feature 8 leaf belongs to one resolver slice. The two missing leaves are owned by
-Feature 7, so the next global implementation work remains Feature 7 Slice 1—not a partial attack
-rule that substitutes caller-supplied weapon facts or proficiency.
+Every internal Feature 8 leaf was delivered by the single resolver slice. It consumes Feature 7's
+verified canonical facts rather than substituting caller-supplied weapon facts or proficiency.
 
 ## Data ownership and boundary decisions
 
@@ -211,13 +208,10 @@ delta, mutation request, or extra critical-damage value.
 
 ### Slice 1 implementation sequence
 
-After Feature 7 passes its full exit gate, search all candidate attack/weapon terms and retrieve
-the listed governing contracts. Author the contract and source in `catalog/`; add a fresh-database
-catalog import test that includes the completed Feature 7 and Feature 6 fixtures. Dry-run the
-catalog import, inspect only intended records, import the identical catalog, verify it, read every
-artifact back, and exercise seeded actions against disposable actors. Restore/remove all fixtures
-through normal effects, run the full suite and `git diff --check`, record reproducible evidence in
-this plan, and stop for review.
+Feature 7 passed its full exit gate before authoring. The contract and source were added in
+`catalog/`, with a fresh-database integration test that imports completed Feature 6–7 state. The
+identical catalog dry-run, import, and verification are recorded below; disposable test fixtures
+exist only in the temporary test database. The full suite and `git diff --check` then passed.
 
 ### Slice 1 acceptance matrix
 
@@ -254,13 +248,28 @@ fixture remains; full repository tests and diff check pass; and the plan records
 equivalent reproducible evidence. Stop after that gate. Feature 9 remains a separately planned
 owner of damage and HP consequences.
 
+## Completion evidence — 2026-08-19
+
+- Added catalog-authored `procedure.mechanic.dnd2024.weapon-attack` and active
+  `mechanic.dnd2024.weapon-attack`; no component, entity, writer, or schema was introduced.
+- `CatalogFeature8Tests` imports a complete catalog copy into a fresh database and proves result
+  shape/routing, zero effects and exact unchanged subject/target/weapon state; derived PB bands
+  +2/+3/+5/+6; proficient versus known-empty delta; Dagger Strength/Dexterity acceptance;
+  Shortbow Strength and Battleaxe Dexterity rejection; final-AC equality/adjacency; normal,
+  Advantage, Disadvantage, cancellation, high/low selection and replay; natural 1/20 precedence;
+  malformed/derived input and corrupt-AC rejection.
+- Catalog dry-run reported exactly **2 new** records (`mechanic.dnd2024.weapon-attack` and
+  `procedure.mechanic.dnd2024.weapon-attack`) and **65 unchanged**. Import created **2** and
+  updated **0**. `roleplay verify catalog` then reported **67 unchanged**.
+- Focused Feature 8 integration tests passed **2/2**. Full repository tests passed **299/299**.
+  `git diff --check` passed with only existing line-ending conversion warnings.
+
 ## Plan-quality audit
 
-The plan names the only missing external dependencies, retains Feature 7 as the next global slice,
-uses concrete official SRD heading/page locators, assigns every input and derived value an owner,
-defines a closed action contract and natural-roll precedence, prohibits persisted attack/damage
-state, and has a fresh-import plus adversarial acceptance matrix. No catalog artifact, database
-change, action, or import is created by this planning pass.
+The completed plan used concrete official SRD heading/page locators, assigns every input and
+derived value an owner, defines a closed action contract and natural-roll precedence, prohibits
+persisted attack/damage state, and has a fresh-import plus adversarial acceptance matrix. The
+catalog artifacts and database import are now independently recorded above.
 
 ## Plan-change rule
 

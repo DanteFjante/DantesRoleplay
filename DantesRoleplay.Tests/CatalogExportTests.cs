@@ -128,6 +128,8 @@ public sealed class CatalogExportTests : IDisposable
 
         Assert.Equal(result.Mechanics, manifest.Records.Count(r => r.Kind == CatalogRecordKind.Mechanic));
         Assert.Equal(result.Procedures, manifest.Records.Count(r => r.Kind == CatalogRecordKind.Procedure));
+        Assert.Equal(result.EventTypes, manifest.Records.Count(r => r.Kind == CatalogRecordKind.EventType));
+        Assert.Equal(result.Subscriptions, manifest.Records.Count(r => r.Kind == CatalogRecordKind.Subscription));
         Assert.Equal(
             result.ComponentDefinitions,
             manifest.Records.Count(r => r.Kind == CatalogRecordKind.ComponentDefinition));

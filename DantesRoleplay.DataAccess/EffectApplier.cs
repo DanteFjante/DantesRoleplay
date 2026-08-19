@@ -1,6 +1,8 @@
 using DantesRoleplay.Effects;
+using DantesRoleplay.Events;
 using DantesRoleplay.World;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace DantesRoleplay.DataAccess;
 
@@ -11,10 +13,12 @@ namespace DantesRoleplay.DataAccess;
 /// an earlier one — create an entity, then put a component on it — while a reference to something
 /// that exists nowhere is still caught before a single row is written.
 /// </summary>
-public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world) : IEffectApplier
+public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world, IGuardRouter? guards = null, IEventLedger? events = null) : IEffectApplier
 {
     private readonly DantesRoleplayDbContext _db = db;
     private readonly IWorldStore _world = world;
+    private readonly IGuardRouter? _guards = guards;
+    private readonly IEventLedger? _events = events;
 
     public async Task<EffectResult> ApplyAsync(
         IReadOnlyList<Effect> effects,
@@ -57,7 +61,13 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world)
 
         if (dryRun)
         {
-            return new EffectResult(Applied: false, Count: 0, Problems: []);
+            // Direct effect dry runs must exercise the same guards against the same final batch
+            // state as a commit. An ambient transaction belongs to ActionRunner's existing
+            // validation pass, which intentionally does not mutate it; its real apply below is
+            // still guarded before that runner commits.
+            return _guards is not null && _db.Database.CurrentTransaction is null
+                ? await DryRunWithGuardsAsync(effects, cancellationToken)
+                : new EffectResult(Applied: false, Count: 0, Problems: []) { ProposedEvents = Proposals(effects) };
         }
 
         return await ApplyValidatedAsync(effects, cancellationToken);
@@ -291,12 +301,38 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world)
                 await ApplyOneAsync(effects[index], cancellationToken);
             }
 
+            var proposals = Proposals(effects);
+            if (_guards is not null && proposals.Count > 0)
+            {
+                var guarded = await _guards.EvaluateAsync(proposals, cancellationToken);
+                if (!guarded.Allowed)
+                {
+                    if (transaction is not null) await transaction.RollbackAsync(CancellationToken.None);
+                    _db.ChangeTracker.Clear();
+                    return new EffectResult(Applied: false, Count: 0, Problems: [])
+                    {
+                        Blocked = true,
+                        BlockCode = guarded.Code,
+                        BlockReason = guarded.Reason,
+                        ProposedEvents = proposals,
+                        GuardEvaluations = guarded.Evaluations
+                    };
+                }
+                if (transaction is not null)
+                {
+                    var correlation = Guid.NewGuid().ToString("n"); if (_events is not null) await _events.WriteAcceptedAsync(proposals, correlation, cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
+                    return new EffectResult(Applied: true, Count: effects.Count, Problems: []) { ProposedEvents = proposals, GuardEvaluations = guarded.Evaluations, CorrelationId = correlation };
+                }
+                var ambientCorrelation = Guid.NewGuid().ToString("n"); if (_events is not null) await _events.WriteAcceptedAsync(proposals, ambientCorrelation, cancellationToken); return new EffectResult(Applied: true, Count: effects.Count, Problems: []) { ProposedEvents = proposals, GuardEvaluations = guarded.Evaluations, CorrelationId = ambientCorrelation };
+            }
+
             if (transaction is not null)
             {
                 await transaction.CommitAsync(cancellationToken);
             }
 
-            return new EffectResult(Applied: true, Count: effects.Count, Problems: []);
+            var unguardedCorrelation = Guid.NewGuid().ToString("n"); if (_events is not null) await _events.WriteAcceptedAsync(proposals, unguardedCorrelation, cancellationToken); return new EffectResult(Applied: true, Count: effects.Count, Problems: []) { ProposedEvents = proposals, CorrelationId = unguardedCorrelation };
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -323,6 +359,55 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world)
             {
                 await transaction.DisposeAsync();
             }
+        }
+    }
+
+    private static IReadOnlyList<ProposedEvent> Proposals(IReadOnlyList<Effect> effects) => effects.Select((effect, ordinal) =>
+    {
+        var type = effect.Type switch
+        {
+            EffectType.EntityCreate => "world.entity.created",
+            EffectType.EntityDelete => "world.entity.deleted",
+            EffectType.ComponentAdd => "world.component.added",
+            EffectType.ComponentSet => "world.component.replaced",
+            EffectType.ComponentMerge => "world.component.merged",
+            EffectType.ComponentRemove => "world.component.removed",
+            EffectType.ContainmentMove => "world.containment.moved",
+            EffectType.RelationshipCreate => "world.relationship.created",
+            EffectType.RelationshipRemove => "world.relationship.removed",
+            _ => throw new InvalidOperationException($"No structural event type for '{effect.Type}'.")
+        };
+        var ids = new[] { effect.EntityId, effect.ToEntityId }.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal).ToList();
+        var payload = JsonSerializer.Serialize(new { effect.Type, effect.EntityId, effect.DefinitionId, effect.ToEntityId, effect.Kind, effect.Slot, effect.Name, effect.Data });
+        return new ProposedEvent(type, payload, ids, string.Empty, ordinal);
+    }).ToList();
+
+    private async Task<EffectResult> DryRunWithGuardsAsync(IReadOnlyList<Effect> effects, CancellationToken cancellationToken)
+    {
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        var index = 0;
+        try
+        {
+            for (; index < effects.Count; index++) await ApplyOneAsync(effects[index], cancellationToken);
+            var proposals = Proposals(effects);
+            var guarded = await _guards!.EvaluateAsync(proposals, cancellationToken);
+            await transaction.RollbackAsync(CancellationToken.None);
+            _db.ChangeTracker.Clear();
+            return new EffectResult(Applied: false, Count: 0, Problems: [])
+            {
+                Blocked = !guarded.Allowed,
+                BlockCode = guarded.Code,
+                BlockReason = guarded.Reason,
+                ProposedEvents = proposals,
+                GuardEvaluations = guarded.Evaluations
+            };
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            _db.ChangeTracker.Clear();
+            var offending = index < effects.Count ? effects[index] : effects[^1];
+            return new EffectResult(false, 0, [new EffectProblem(Math.Min(index, effects.Count - 1), Describe(offending), ex.Message)]);
         }
     }
 

@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.Events;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.World;
@@ -21,7 +22,7 @@ public sealed class QueryTool
     [McpServerTool(Name = "query")]
     [Description(
         "Read anything in this system. kind is one of: capabilities, procedures, world, entities, " +
-        "mechanics, history. Omit id for a list or search; pass id for one record in full. When " +
+        "mechanics, event-types, subscriptions, history. Omit id for a list or search; pass id for one record in full. When " +
         "you are unsure what a kind takes or what a commit payload looks like, call " +
         "query(kind: \"capabilities\") — it is the exact catalog. Irrelevant filters are ignored, " +
         "so exploring costs nothing. Never changes state.")]
@@ -29,9 +30,11 @@ public sealed class QueryTool
         IProcedureStore procedures,
         IWorldStore world,
         IMechanicStore mechanics,
+        IEventTypeStore eventTypes,
+        ISubscriptionStore subscriptions,
         IOperationLog log,
         [Description(
-            "Closed kind: capabilities, procedures, world, entities, mechanics, or history.")]
+            "Closed kind: capabilities, procedures, world, entities, mechanics, event-types, subscriptions, or history.")]
         string kind,
         [Description("Full-record id for procedures, mechanics, or one entity.")] string? id = null,
         [Description("Entity ids for a full batch read.")] string[]? ids = null,
@@ -98,6 +101,8 @@ public sealed class QueryTool
             "mechanics" =>
                 await new MechanicTools().FindMechanicsAsync(
                     mechanics, log, id, version, query, category, scope, includeInactive, limit, cancellationToken),
+            "event-types" => await new EventTypeTools().FindAsync(eventTypes, log, id, version, query, category, scope, includeInactive, limit, cancellationToken),
+            "subscriptions" => await new SubscriptionTools().FindAsync(subscriptions, log, id, version, query, category, scope, includeInactive, limit, cancellationToken),
             "history" =>
                 await new HistoryTool().HistoryAsync(
                     log, limit ?? 20, failuresOnly, tool, subject, cancellationToken),

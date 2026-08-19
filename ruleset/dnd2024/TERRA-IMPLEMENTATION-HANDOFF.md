@@ -10,27 +10,53 @@ governs implementation passes. Never plan and implement a new feature in the sam
 
 ## Current assignment
 
-Feature 5 is complete through its file-first catalog import gate: individual Initiative and the
-encounter-owned order parent are verified with declarative composition. Read the Feature 5 plan
-only as prior evidence; do not revise it while implementing Feature 7.
+Features 5–8 are complete through their file-first catalog import gates. Feature 8 provides the
+effect-free weapon-attack resolver against final Armor Class, including derived category
+proficiency and natural-20/1 classification; it deliberately does not roll damage or change Hit
+Points. Read completed feature plans only as prior evidence.
 
-Feature 6 is complete: catalog-authoritative Armor Class and current/maximum Hit Point components,
-contracts, and writers have been imported and verified. The next and only authorized implementation
-work is Feature 7 Slice 1: minimal canonical weapon profiles. Read
-`ruleset/dnd2024/feature-07/FEATURE-7-DEPENDENCY-PLAN.md`, the current catalog contracts, and the
-SRD weapon locators before authoring component, procedure, mechanic, and fixture files under
-`catalog/`. Import via the catalog workflow; do not create runtime artifacts directly through MCP.
+Feature 9 is complete through catalog import: its effect-free confirmed-hit weapon-damage resolver
+and its declared-child transactional target Hit Point parent are verified. Damage never changes
+target maximum/source, and Feature 9 adds no zero-Hit-Point consequence.
 
-Feature 8 now has a complete dependency plan at
-`ruleset/dnd2024/feature-08/FEATURE-8-DEPENDENCY-PLAN.md`. It is intentionally blocked until both
-Feature 7 slices are imported, verified, and reviewed; it does not change the current assignment.
+Feature 10 is complete at `ruleset/dnd2024/feature-10/FEATURE-10-DEPENDENCY-PLAN.md`: its
+catalog-owned hero, training-target, and encounter fixtures import cleanly, and its two-database
+seeded replay proves the Feature 1–9 vertical session is deterministic.
+
+E1 Slice 1 is complete: the event-type registry, migration, catalog round trip, event-type MCP
+kinds, contract, and nine reserved structural schemas are installed and verified.
+
+E1 Slice 2 is complete: the versioned guard/reaction middleware registry, mechanic event
+declarations, append-only migration, file-first catalog round trip, subscription contracts,
+`query(kind: "subscriptions")`, and `commit(kind: "subscription")` are installed and verified.
+The shared database and catalog agree; the full suite passed 308/308.
+
+E1 Slice 3 is complete: structural effect batches create transaction-local proposals, matching
+guards run deterministically before commit, denials return `EVENT_BLOCKED` and roll the complete
+root back, and dry runs execute the same guard path in a rollback-only transaction. The failed
+root audit retains structured proposal and guard-decision evidence. The shared database and
+catalog agree; the full suite passed 311/311.
+
+No subsequent event implementation is authorized automatically. The sole next candidate is
+`EVENTS_AND_SUBSCRIPTIONS_PLAN.md` Slice 4: transactional structural event ledger. It may be
+started only after review and explicit authorization. Slice 3 adds no accepted-event ledger,
+reaction routing, notifications, retries, wildcard types, or event mutation.
+
+For later slices, the non-negotiable guard model is middleware around proposed events: effects are
+applied only inside the root transaction, immutable proposals are built from receipts, matching
+guards run by order then ID against final uncommitted state, and every guard must explicitly allow.
+The first deny returns `EVENT_BLOCKED`, records exact subscription/mechanic/version/seed/proposal
+evidence in the failed audit, and rolls back the whole root. Guards are read-only and may never
+rewrite proposals or return effects, events, or notifications. Slice 3 implements this pipeline;
+Slice 4 persists accepted events; Slice 5 runs reaction chains; Slice 6 adds notifications.
 
 ## Read in this order
 
 1. Query `procedure.system.create-feature` from the live database.
 2. Read `ruleset/dnd2024/TERRA-FEATURE-PLANNING-GUIDE.md` when creating or revising a plan.
 3. Read `ruleset/dnd2024/ROADMAP.md`.
-4. Read only the current feature's complete dependency plan.
+4. Read only the current feature's complete dependency plan (`EVENTS_AND_SUBSCRIPTIONS_PLAN.md`
+   for the current assignment).
 5. Query every live dependency and governing procedure named by the selected slice.
 6. Read `STATUS.md` only for repository/kernel context; live MCP query results are authoritative
    for runtime game artifacts.

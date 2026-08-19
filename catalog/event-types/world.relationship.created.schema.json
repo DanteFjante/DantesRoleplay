@@ -1,0 +1,1 @@
+{"type":"object","additionalProperties":false,"required":["fromEntityId","toEntityId","kind","data"],"properties":{"fromEntityId":{"type":"string"},"toEntityId":{"type":"string"},"kind":{"type":"string"},"data":{}}}

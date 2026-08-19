@@ -29,7 +29,8 @@ public interface IOperationLog
         string mechanicId = "",
         int? mechanicVersion = null,
         long? seed = null,
-        string projectionJson = "");
+        string projectionJson = "",
+        string guardEvidenceJson = "");
 
     Task<IReadOnlyList<Operation>> RecentAsync(
         int limit = 20,

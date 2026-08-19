@@ -2,6 +2,7 @@
 using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.Effects;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.Events;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.World;
@@ -68,6 +69,10 @@ public static class DataAccessServiceCollectionExtensions
         services.AddScoped<IWorldStore, WorldStore>();
         services.AddScoped<IEffectApplier, EffectApplier>();
         services.AddScoped<IMechanicStore, MechanicStore>();
+        services.AddScoped<IEventTypeStore, EventTypeStore>();
+        services.AddScoped<ISubscriptionStore, SubscriptionStore>();
+        services.AddScoped<IGuardRouter, GuardRouter>();
+        services.AddScoped<IEventLedger, EventLedger>();
         services.AddScoped<IProjectionResolver, ProjectionResolver>();
         services.AddScoped<IMechanicComposer, MechanicComposer>();
 

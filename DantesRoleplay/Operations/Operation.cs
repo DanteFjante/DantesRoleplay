@@ -80,4 +80,7 @@ public sealed class Operation
 
     /// <summary>Frozen projection handed to the mechanic, serialized as JSON.</summary>
     public string ProjectionJson { get; set; } = string.Empty;
+
+    /// <summary>Structured proposed-event and guard-decision evidence for a root world change.</summary>
+    public string GuardEvidenceJson { get; set; } = string.Empty;
 }
