@@ -1,0 +1,315 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-19T10:50:28.4964422Z",
+  "sourceDatabase": "C:\\Users\\dante\\source\\repos\\DantesRoleplay\\DantesRoleplay.MCPServer\\data\\dantesroleplay.db",
+  "records": [
+    {
+      "kind": "mechanic",
+      "id": "mechanic.check.threshold",
+      "version": 1,
+      "contentHash": "10E859BCA76B122A9D00EB54DF9797E25C9EFD3BF6FA3911A7A924C9EDC83311",
+      "path": "mechanics/check/mechanic.check.threshold.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.character-level.record",
+      "version": 1,
+      "contentHash": "79AF9F2291D5E6969BA91C80C097DD8A60FE62D3E7F4E856999375A0E1873E71",
+      "path": "mechanics/ruleset/dnd2024/core/data/character-level/mechanic.dnd2024.character-level.record.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.check.ability",
+      "version": 4,
+      "contentHash": "2FA7CDDEE6CE3228EB31DA27BCF31CDBBD53A8CC1193EFBE2CD132DCB551E903",
+      "path": "mechanics/ruleset/dnd2024/core/gameplay/ability-checks/fixed-dc/mechanic.dnd2024.check.ability.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.dice",
+      "version": 1,
+      "contentHash": "3167F0E27B9174458DDB251A87438E72E7BD5E132D5C600BC50BF68B5596B3A4",
+      "path": "mechanics/ruleset/dnd2024/core/gameplay/dice/mechanic.dnd2024.dice.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.encounter-initiative-order",
+      "version": 5,
+      "contentHash": "F043A5E63C0E42878F60079B03A4E362C70C37A1AA56B8C7360DAB962C185026",
+      "path": "mechanics/ruleset/dnd2024/core/combat/initiative/order/mechanic.dnd2024.encounter-initiative-order.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.initiative.roll",
+      "version": 3,
+      "contentHash": "671C39266B5DF1D0FEC8128FC914154937FE5F4C18463E85488F2CD44ED7CC51",
+      "path": "mechanics/ruleset/dnd2024/core/gameplay/initiative/roll/mechanic.dnd2024.initiative.roll.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.saving-throw",
+      "version": 2,
+      "contentHash": "FD1FD86AA79377637D0783F68F864A0A12463D9069386693EF67090AAB0B0891",
+      "path": "mechanics/ruleset/dnd2024/core/gameplay/saving-throws/fixed-dc/mechanic.dnd2024.saving-throw.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.saving-throw-proficiencies.record",
+      "version": 1,
+      "contentHash": "3F1F81EE4F9B15EC6CD4D54F718BCC9782FBA26CDBE59ACB4CDB1C93F853BFF5",
+      "path": "mechanics/ruleset/dnd2024/core/data/saving-throw-proficiencies/mechanic.dnd2024.saving-throw-proficiencies.record.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.skill-proficiencies.record",
+      "version": 1,
+      "contentHash": "8354805F5EB0BDD531ECBF0D6C3493A2C372D27E054BE5E2F359E8C8180DFB65",
+      "path": "mechanics/ruleset/dnd2024/core/data/skill-proficiencies/mechanic.dnd2024.skill-proficiencies.record.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.value.adjust",
+      "version": 1,
+      "contentHash": "700B4F9A87315A43F6146275129BD3B7113EFAE12ED9C6FA9AB757D96522770A",
+      "path": "mechanics/change/mechanic.value.adjust.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.action.run",
+      "version": 5,
+      "contentHash": "068DF3CED7FB2321B8181CD7B4BC99D040DA3F3E5CDBDA02BADCFBA00DB1545E",
+      "path": "procedures/mechanic/procedure.action.run.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.contract.create",
+      "version": 3,
+      "contentHash": "C857F9FA0E6D08D890264A2C71D49124DD0C8A5E74A455324D74112CD0EB296E",
+      "path": "procedures/contracts/procedure.contract.create.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mcp.add-tool",
+      "version": 2,
+      "contentHash": "4D766B74E447EDE785F96DD50460BFD480273F2FC5D0D238A5395CE89B49872F",
+      "path": "procedures/mcp/procedure.mcp.add-tool.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.create",
+      "version": 1,
+      "contentHash": "10BBAAEB9E92B07B0AE383D3EADF926C5E7F38254D7E1378634AE3A17D779B81",
+      "path": "procedures/mechanics/procedure.mechanic.create.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.abilities",
+      "version": 1,
+      "contentHash": "4A0E00674863FD111399B50BBE4AFCA5C5DE4FBDA8338892B6531903C42BCF11",
+      "path": "procedures/ruleset/dnd2024/core/data/abilities/procedure.mechanic.dnd2024.abilities.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.character-level",
+      "version": 1,
+      "contentHash": "4497E249CB1048F9104E75150CB6292D764AF602FE7E19EB28BCEA95B5527F8E",
+      "path": "procedures/ruleset/dnd2024/core/data/character-level/procedure.mechanic.dnd2024.character-level.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.check.ability",
+      "version": 3,
+      "contentHash": "82DAB042471D38AC80D3B96B3C0F09AAFE84238D55E5B1DE702651E16EAB5CD8",
+      "path": "procedures/ruleset/dnd2024/core/gameplay/ability-checks/fixed-dc/procedure.mechanic.dnd2024.check.ability.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.dice",
+      "version": 1,
+      "contentHash": "38AF1ACF5107E3A07BE4AB7E4885A62ADC7D3F31CE6B44B4A31304C38ACDF45E",
+      "path": "procedures/ruleset/dnd2024/core/gameplay/dice/procedure.mechanic.dnd2024.dice.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.encounter-initiative-order",
+      "version": 1,
+      "contentHash": "0F0DA85686872CBD3CA0FD35CBB0F6DAC16588CAD09B37EAEF9D0C1130E21B42",
+      "path": "procedures/ruleset/dnd2024/core/combat/initiative/order/procedure.mechanic.dnd2024.encounter-initiative-order.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.initiative",
+      "version": 1,
+      "contentHash": "F701C077F2919F7621CBCC78C1B218DE5B60BB843BFC064EFD52E1BDAE1BB4B6",
+      "path": "procedures/ruleset/dnd2024/core/gameplay/initiative/roll/procedure.mechanic.dnd2024.initiative.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.play",
+      "version": 3,
+      "contentHash": "3BF08899F490D64C0F16D6F3F5E0A6DA49D4B6EE50439F9B39D7B9A7C736710C",
+      "path": "procedures/ruleset/dnd2024/core/play/procedure.mechanic.dnd2024.play.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.ruleset",
+      "version": 4,
+      "contentHash": "C5F8BA2335439703C40F881F88FE92285838C0C0DEA65EC15A6BDAAF80860D1D",
+      "path": "procedures/ruleset/dnd2024/core/governance/procedure.mechanic.dnd2024.ruleset.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.saving-throw",
+      "version": 1,
+      "contentHash": "7B64DD66A270C5C93874C91B49DFB53BC5EFB2511B44BD4BEBE983F745F8E273",
+      "path": "procedures/ruleset/dnd2024/core/gameplay/saving-throws/fixed-dc/procedure.mechanic.dnd2024.saving-throw.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.skill-proficiencies",
+      "version": 2,
+      "contentHash": "8D4E2B4C92C5D5B1943CE773B0A5661439EE5644B712F702363B4872F02A1302",
+      "path": "procedures/ruleset/dnd2024/core/data/skill-proficiencies/procedure.mechanic.dnd2024.skill-proficiencies.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.source-registry",
+      "version": 1,
+      "contentHash": "3853E501A127C3219C5C808B2ADFE7B9A867ACA04F8853AF8615ABE0A3D5C664",
+      "path": "procedures/ruleset/dnd2024/core/governance/sources/procedure.mechanic.dnd2024.source-registry.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.find",
+      "version": 1,
+      "contentHash": "442EA5B415084D36BD00E6FB9AD0256052E59AA19807C7B8DA9FFDC3AADFEED0",
+      "path": "procedures/mechanics/procedure.mechanic.find.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.projection",
+      "version": 3,
+      "contentHash": "515BC091AD2DC4781AA7D21FCBBA685662B080BE9A0BBB78BDA0A99730300A78",
+      "path": "procedures/mechanics/procedure.mechanic.projection.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.run",
+      "version": 1,
+      "contentHash": "2E0722FD0AB17860696376C3657EF362171E4A604AF6EA05E77FE2B39FD42E0F",
+      "path": "procedures/mechanics/procedure.mechanic.run.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.write",
+      "version": 1,
+      "contentHash": "FBE1D00615DCA4B82B862855B0EBFFB9911F776FEA451FB0257D2660DE020486",
+      "path": "procedures/mechanic/procedure.mechanic.write.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.system.create-feature",
+      "version": 4,
+      "contentHash": "25608DA072ABBED69A86CA8B803AB5C2E8DDE13407F98FF7AC762D8F748FF3DF",
+      "path": "procedures/system/procedure.system.create-feature.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.system.inspect",
+      "version": 3,
+      "contentHash": "F8409065ED77DA92E9312835977513D692DFD1F5A9E54B10D2D6D00980A37984",
+      "path": "procedures/system/procedure.system.inspect.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.system.modify",
+      "version": 2,
+      "contentHash": "D4944852F0CB5BF406E0FA39C09C2DC6883CABC96B614065076662248099810D",
+      "path": "procedures/system/procedure.system.modify.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.system.use",
+      "version": 1,
+      "contentHash": "D026CEFBBCA686C3B3AE2D92A2625675C62D8FB37A0D32B7AD2FC3244BE47B03",
+      "path": "procedures/system/procedure.system.use.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.system.verify",
+      "version": 2,
+      "contentHash": "EF104EDEAFBEB7EDD655B4D3C7F288C2EAA0ABFA2C0BAABAC0C08C6E87837223",
+      "path": "procedures/system/procedure.system.verify.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.world.change",
+      "version": 2,
+      "contentHash": "70C3FD6AF78B31BF19F5F457658FE14E1BF400B7DB10475306431979A715135A",
+      "path": "procedures/world/procedure.world.change.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.world.model",
+      "version": 4,
+      "contentHash": "C3069579FAB052DC4FB1F64E6CB6F96898430CDBA1C9B45870D9C85801677078",
+      "path": "procedures/world/procedure.world.model.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.world.naming",
+      "version": 1,
+      "contentHash": "FD273D79602B34F357F911B1F7EDF00C470A154C1B133CA1FDB36FE58683DC1C",
+      "path": "procedures/world/procedure.world.naming.md"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.abilities",
+      "version": 0,
+      "contentHash": "681606CD0D857153C44BF47A98F645A792B2C4C29CA809BACEA1F78EC075B678",
+      "path": "components/dnd2024.abilities.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.character-level",
+      "version": 0,
+      "contentHash": "573583F26474CAE70738F0DE893CD5B14EB3F29B517ECC443A907FC3351B5019",
+      "path": "components/dnd2024.character-level.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.encounter-initiative-order",
+      "version": 0,
+      "contentHash": "3EBEE437C70B0766C6D6F6C82E21E22B1A6F5C60E56A116C63B03CD892994C21",
+      "path": "components/dnd2024.encounter-initiative-order.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.saving-throw-proficiencies",
+      "version": 0,
+      "contentHash": "4848ABC1377048138ED4CA34375A7CD95D12C4CB6C0FAC63B852FB0657640350",
+      "path": "components/dnd2024.saving-throw-proficiencies.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.skill-proficiencies",
+      "version": 0,
+      "contentHash": "A1F96E25B3525ECA1073ED9B571F1EEE4EC2BD2F41048E520E8F7DCCD5D34456",
+      "path": "components/dnd2024.skill-proficiencies.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.source",
+      "version": 0,
+      "contentHash": "9D3951B5F54DC0210220A59E056F1661356639CFA47F713753516F25934FD691",
+      "path": "components/dnd2024.source.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "stats",
+      "version": 0,
+      "contentHash": "7826AC66E09848BE74AB793896EE2AE2499882E8E4E8C7E0FAD57926BB458D69",
+      "path": "components/stats.json"
+    }
+  ]
+}

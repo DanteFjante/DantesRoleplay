@@ -1,0 +1,441 @@
+using System.Text.Json;
+using DantesRoleplay.Content;
+using DantesRoleplay.DataAccess.Bootstrap;
+using DantesRoleplay.Mechanics;
+using DantesRoleplay.Procedures;
+using Microsoft.EntityFrameworkCore;
+
+namespace DantesRoleplay.DataAccess.Catalog;
+
+/// <summary>
+/// Writes the live ruleset out as a folder of ordinary files.
+///
+/// The latest version of every mechanic, procedure contract and component definition — not the
+/// version history. A revision chain is what the database is for; the catalog is what a developer
+/// edits, a linter reads and git diffs, and forty superseded copies of a rule in it would help
+/// none of those.
+///
+/// <b>Strictly read-only.</b> No SaveChanges, no operation log entry, no UpdatedAt touch, and
+/// every query is AsNoTracking. That is not fastidiousness: capturing live work is something you
+/// want to be able to do without thinking, and a tool that modifies the thing it captures is one
+/// people hesitate over. Hesitating is how the database and the catalog drift apart.
+/// </summary>
+public sealed class CatalogExporter(DantesRoleplayDbContext db)
+{
+    private readonly DantesRoleplayDbContext _db = db;
+
+    public Task<CatalogExportResult> ExportAsync(
+        string root,
+        CancellationToken cancellationToken = default) =>
+        ExportAsync(root, new CatalogExportOptions(), cancellationToken);
+
+    public async Task<CatalogExportResult> ExportAsync(
+        string root,
+        CatalogExportOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(root);
+
+        var fullRoot = Path.GetFullPath(root);
+        Directory.CreateDirectory(fullRoot);
+
+        var written = new List<string>();
+        var entries = new List<CatalogManifestEntry>();
+
+        var mechanics = await ExportMechanicsAsync(fullRoot, written, entries, cancellationToken);
+        var procedures = await ExportProceduresAsync(fullRoot, written, entries, cancellationToken);
+        var components = await ExportComponentsAsync(fullRoot, written, entries, cancellationToken);
+
+        var entities = 0;
+
+        if (!options.RulesOnly)
+        {
+            entities = await ExportWorldAsync(fullRoot, written, entries, cancellationToken);
+        }
+
+        var operations = options.WithHistory
+            ? await ExportHistoryAsync(fullRoot, written, cancellationToken)
+            : 0;
+
+        var manifest = new CatalogManifest
+        {
+            ExportedAt = DateTime.UtcNow,
+            SourceDatabase = _db.Database.GetDbConnection().DataSource,
+            IncludesWorld = !options.RulesOnly,
+            Records = entries
+                .OrderBy(e => e.Kind)
+                .ThenBy(e => e.Id, StringComparer.Ordinal)
+                .ToList()
+        };
+
+        var manifestPath = Path.Combine(fullRoot, CatalogLayout.ManifestFileName);
+        await File.WriteAllTextAsync(manifestPath, manifest.ToJson(), cancellationToken);
+        written.Add(CatalogLayout.ManifestFileName);
+
+        return new CatalogExportResult(
+            fullRoot,
+            mechanics,
+            procedures,
+            components,
+            entities,
+            operations,
+            FindOrphans(fullRoot, written));
+    }
+
+    /// <summary>
+    /// Entities with their components and their container, plus the relationship set.
+    ///
+    /// Soft-deleted entities are skipped. A catalog is what the world IS, and re-importing a
+    /// tombstone would resurrect a row somebody deleted on purpose.
+    /// </summary>
+    private async Task<int> ExportWorldAsync(
+        string root,
+        List<string> written,
+        List<CatalogManifestEntry> entries,
+        CancellationToken cancellationToken)
+    {
+        var entities = await _db.Entities
+            .AsNoTracking()
+            .Where(e => e.DeletedAt == null)
+            .Select(e => new { e.Id, e.Name })
+            .ToListAsync(cancellationToken);
+
+        var components = (await _db.Components
+                .AsNoTracking()
+                .Select(c => new { c.EntityId, c.DefinitionId, c.Data })
+                .ToListAsync(cancellationToken))
+            .GroupBy(c => c.EntityId, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
+
+        var containers = await _db.Containments
+            .AsNoTracking()
+            .Select(c => new { c.ContainedId, c.ContainerId, c.Slot })
+            .ToListAsync(cancellationToken);
+
+        var containerOf = containers.ToDictionary(c => c.ContainedId, c => c, StringComparer.Ordinal);
+
+        foreach (var entity in entities)
+        {
+            containerOf.TryGetValue(entity.Id, out var container);
+
+            var file = new EntityFile(
+                entity.Id,
+                entity.Name,
+                container?.ContainerId,
+                container?.Slot ?? string.Empty,
+                components.TryGetValue(entity.Id, out var attached)
+                    ? attached
+                        .Select(c => new EntityComponent(
+                            c.DefinitionId,
+                            EntityFile.CanonicalData(c.Data, entity.Id, c.DefinitionId)))
+                        .ToList()
+                    : []);
+
+            var path = CatalogLayout.Entity(file.Id);
+            await WriteAsync(root, path, file.ToJson(), written, cancellationToken);
+
+            entries.Add(new CatalogManifestEntry(
+                CatalogRecordKind.Entity,
+                file.Id,
+                0,
+                file.ContentHash,
+                path));
+        }
+
+        var relationships = new RelationshipsFile(
+            (await _db.Relationships
+                .AsNoTracking()
+                .Select(r => new { r.FromEntityId, r.ToEntityId, r.Kind, r.Data })
+                .ToListAsync(cancellationToken))
+            .Select(r => new RelationshipEntry(r.FromEntityId, r.ToEntityId, r.Kind, r.Data ?? "{}"))
+            .ToList());
+
+        // Written even when empty, so "there are no relationships" is a fact the catalog states
+        // rather than a file somebody forgot to export.
+        await WriteAsync(
+            root,
+            CatalogLayout.RelationshipsFileName,
+            relationships.ToJson(),
+            written,
+            cancellationToken);
+
+        entries.Add(new CatalogManifestEntry(
+            CatalogRecordKind.Relationships,
+            CatalogLayout.RelationshipsFileName,
+            0,
+            relationships.ContentHash,
+            CatalogLayout.RelationshipsFileName));
+
+        return entities.Count;
+    }
+
+    /// <summary>
+    /// The operation log, one JSON object per line.
+    ///
+    /// Export only, and there is no import counterpart anywhere in this feature. An operation id
+    /// and a seed are provenance — the claim that a particular rule ran, at a particular version,
+    /// and produced a particular roll. A log that can be written from a file is not evidence of
+    /// anything, so the ability to write one back is not a feature that was left out; it is one
+    /// that must not exist.
+    ///
+    /// JSONL rather than a JSON array so it streams, and so a diff of two exports shows the
+    /// operations that were added rather than a re-indented array.
+    /// </summary>
+    private async Task<int> ExportHistoryAsync(
+        string root,
+        List<string> written,
+        CancellationToken cancellationToken)
+    {
+        var operations = await _db.Operations
+            .AsNoTracking()
+            .OrderBy(o => o.Timestamp)
+            .ThenBy(o => o.Id, StringComparer.Ordinal)
+            .ToListAsync(cancellationToken);
+
+        var builder = new System.Text.StringBuilder();
+
+        foreach (var operation in operations)
+        {
+            builder.Append(JsonSerializer.Serialize(operation, HistoryJson)).Append('\n');
+        }
+
+        await WriteAsync(root, CatalogLayout.OperationsFileName, builder.ToString(), written, cancellationToken);
+
+        return operations.Count;
+    }
+
+    private static readonly JsonSerializerOptions HistoryJson = new()
+    {
+        WriteIndented = false,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
+
+    private async Task<int> ExportMechanicsAsync(
+        string root,
+        List<string> written,
+        List<CatalogManifestEntry> entries,
+        CancellationToken cancellationToken)
+    {
+        var rows = await _db.Mechanics
+            .AsNoTracking()
+            .Join(
+                _db.MechanicVersions.AsNoTracking(),
+                mechanic => new { MechanicId = mechanic.Id, Version = mechanic.CurrentVersion },
+                version => new { version.MechanicId, version.Version },
+                (mechanic, version) => new { mechanic, version })
+            .ToListAsync(cancellationToken);
+
+        foreach (var row in rows)
+        {
+            var file = new MechanicFile(
+                row.mechanic.Id,
+                row.mechanic.Category,
+                row.version.Name,
+                row.version.Description,
+                row.version.Matches,
+                row.version.Requirements,
+                row.version.Source,
+                row.mechanic.Scope,
+                row.mechanic.Status);
+
+            GuardFingerprint(row.version.SourceHash, file.ContentHash, "mechanic", file.Id, row.version.Version);
+
+            var markdownPath = CatalogLayout.MechanicMarkdown(file.Category, file.Id);
+            var sourcePath = CatalogLayout.MechanicSource(file.Category, file.Id);
+
+            await WriteAsync(root, markdownPath, file.ToMarkdown(), written, cancellationToken);
+            await WriteAsync(root, sourcePath, ContentHash.Normalise(file.Source) + "\n", written, cancellationToken);
+
+            entries.Add(new CatalogManifestEntry(
+                CatalogRecordKind.Mechanic,
+                file.Id,
+                row.version.Version,
+                file.ContentHash,
+                markdownPath));
+        }
+
+        return rows.Count;
+    }
+
+    private async Task<int> ExportProceduresAsync(
+        string root,
+        List<string> written,
+        List<CatalogManifestEntry> entries,
+        CancellationToken cancellationToken)
+    {
+        var rows = await _db.ProcedureContracts
+            .AsNoTracking()
+            .Join(
+                _db.ProcedureContractVersions.AsNoTracking(),
+                contract => new { ContractId = contract.Id, Version = contract.CurrentVersion },
+                version => new { version.ContractId, version.Version },
+                (contract, version) => new { contract, version })
+            .ToListAsync(cancellationToken);
+
+        foreach (var row in rows)
+        {
+            var file = new ProcedureFile(
+                row.contract.Id,
+                row.contract.Category,
+                row.version.Name,
+                row.version.Description,
+                row.version.Governs,
+                row.version.Instructions,
+                row.version.Constraints,
+                row.contract.Status);
+
+            GuardFingerprint(row.version.SourceHash, file.ContentHash, "procedure", file.Id, row.version.Version);
+
+            var markdownPath = CatalogLayout.ProcedureMarkdown(file.Category, file.Id);
+            await WriteAsync(root, markdownPath, file.ToMarkdown(), written, cancellationToken);
+
+            entries.Add(new CatalogManifestEntry(
+                CatalogRecordKind.Procedure,
+                file.Id,
+                row.version.Version,
+                file.ContentHash,
+                markdownPath));
+        }
+
+        return rows.Count;
+    }
+
+    private async Task<int> ExportComponentsAsync(
+        string root,
+        List<string> written,
+        List<CatalogManifestEntry> entries,
+        CancellationToken cancellationToken)
+    {
+        var definitions = await _db.ComponentDefinitions
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        foreach (var definition in definitions)
+        {
+            var file = ComponentDefinitionFile.FromDefinition(definition);
+            var definitionPath = CatalogLayout.Component(file.Id);
+
+            await WriteAsync(root, definitionPath, file.ToJson(), written, cancellationToken);
+
+            // Only when there is one. An empty sidecar and a missing sidecar mean the same thing,
+            // and writing both forms would make two catalogs of the same database differ.
+            if (file.Schema.Length > 0)
+            {
+                await WriteAsync(
+                    root,
+                    CatalogLayout.ComponentSchema(file.Id),
+                    ContentHash.Normalise(file.Schema) + "\n",
+                    written,
+                    cancellationToken);
+            }
+
+            entries.Add(new CatalogManifestEntry(
+                CatalogRecordKind.ComponentDefinition,
+                file.Id,
+                0,
+                file.ContentHash,
+                definitionPath));
+        }
+
+        return definitions.Count;
+    }
+
+    /// <summary>
+    /// Refuses to export a row whose stored fingerprint disagrees with its content.
+    ///
+    /// The manifest is the common ancestor import compares against, so a catalog built on
+    /// fingerprints the database does not itself agree with would have import confidently
+    /// misjudging which side of a divergence is newer. Better to stop with the fix in the message.
+    /// </summary>
+    private static void GuardFingerprint(string stored, string computed, string kind, string id, int version)
+    {
+        if (string.Equals(stored, computed, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            $"The stored fingerprint of {kind} '{id}' v{version} does not match its content"
+            + (stored.Length == 0 ? " (it has none)" : string.Empty)
+            + ". Run `roleplay backfill-hashes`, or start the server, then export again.");
+    }
+
+    private static async Task WriteAsync(
+        string root,
+        string relativePath,
+        string content,
+        List<string> written,
+        CancellationToken cancellationToken)
+    {
+        var path = CatalogLayout.ToFileSystemPath(root, relativePath);
+        var directory = Path.GetDirectoryName(path);
+
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        await File.WriteAllTextAsync(path, content, cancellationToken);
+        written.Add(relativePath);
+    }
+
+    /// <summary>
+    /// Files under the catalog roots that this export did not write — usually a record that has
+    /// since been renamed or removed from the database.
+    ///
+    /// Reported, never deleted. Import does not delete either, and a tool that quietly removed a
+    /// file a developer had just written would be the one behaviour that makes people stop
+    /// trusting it. Knowing is the useful part; acting on it is a decision with a name on it.
+    /// </summary>
+    private static IReadOnlyList<string> FindOrphans(string root, IReadOnlyList<string> written)
+    {
+        var expected = written.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var orphans = new List<string>();
+
+        foreach (var area in new[]
+        {
+            CatalogLayout.MechanicsRoot,
+            CatalogLayout.ProceduresRoot,
+            CatalogLayout.ComponentsRoot,
+            CatalogLayout.WorldRoot
+        })
+        {
+            var directory = Path.Combine(root, area);
+
+            if (!Directory.Exists(directory))
+            {
+                continue;
+            }
+
+            foreach (var path in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
+            {
+                var relative = Path.GetRelativePath(root, path).Replace(Path.DirectorySeparatorChar, '/');
+
+                if (!expected.Contains(relative))
+                {
+                    orphans.Add(relative);
+                }
+            }
+        }
+
+        return orphans.OrderBy(o => o, StringComparer.Ordinal).ToList();
+    }
+}
+
+/// <param name="RulesOnly">Exclude world state — entities, components, containment, relationships.</param>
+/// <param name="WithHistory">Also write the operation log. Export only; nothing imports it.</param>
+public sealed record CatalogExportOptions(bool RulesOnly = false, bool WithHistory = false);
+
+/// <param name="Orphans">Files already under the catalog roots that this export did not write.</param>
+public sealed record CatalogExportResult(
+    string Root,
+    int Mechanics,
+    int Procedures,
+    int ComponentDefinitions,
+    int Entities,
+    int Operations,
+    IReadOnlyList<string> Orphans)
+{
+    public int Records => Mechanics + Procedures + ComponentDefinitions + Entities;
+}

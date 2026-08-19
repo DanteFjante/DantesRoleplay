@@ -103,7 +103,12 @@ public sealed class MechanicVersion
     /// <summary>"llm" or "bootstrap". Who wrote it, for the supervision view.</summary>
     public string CreatedBy { get; set; } = "llm";
 
-    /// <summary>Fingerprint of the bootstrap file this came from; empty when written through MCP.</summary>
+    /// <summary>
+    /// Fingerprint of this revision's authored content. Computed by the store on EVERY write —
+    /// seeded, file-imported or written over MCP alike — because catalog export/import decides
+    /// which side of a divergence is newer by comparing these, and a row with an empty one cannot
+    /// be reasoned about at all. See <see cref="DantesRoleplay.Content.ContentHash"/>.
+    /// </summary>
     public string SourceHash { get; set; } = string.Empty;
 
     public DateTime CreatedAt { get; set; }

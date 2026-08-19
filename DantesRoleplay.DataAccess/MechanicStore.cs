@@ -1,5 +1,6 @@
 using System.Text.Json;
 using DantesRoleplay.Categories;
+using DantesRoleplay.Content;
 using DantesRoleplay.Mechanics;
 using Microsoft.EntityFrameworkCore;
 
@@ -348,6 +349,12 @@ public sealed class MechanicStore(DantesRoleplayDbContext db) : IMechanicStore
             .Where(v => v.MechanicId == request.Id)
             .MaxAsync(v => (int?)v.Version, cancellationToken) ?? 0;
 
+        // Hoisted so the row and its fingerprint cannot be computed from different values. An
+        // empty requirements string is stored as "{}", and hashing the request's version instead
+        // would make a rule written with "" and the identical rule written with "{}" look like two
+        // different rules forever.
+        var requirements = string.IsNullOrWhiteSpace(request.Requirements) ? "{}" : request.Requirements;
+
         var revision = new MechanicVersion
         {
             MechanicId = mechanic.Id,
@@ -355,9 +362,24 @@ public sealed class MechanicStore(DantesRoleplayDbContext db) : IMechanicStore
             Name = request.Name,
             Description = request.Description,
             Matches = request.Matches,
-            Requirements = string.IsNullOrWhiteSpace(request.Requirements) ? "{}" : request.Requirements,
+            Requirements = requirements,
             Source = request.Source,
-            SourceHash = request.SourceHash,
+
+            // Computed here, from the values actually being stored, and never accepted from the
+            // caller. A caller that can supply its own fingerprint can mark drifted content as
+            // clean, which is the one thing the fingerprint exists to prevent. Category, Scope and
+            // Status come off the parent row rather than the request because that is where the
+            // effective values live after the create/revise branch above — a revise that omits
+            // Status keeps the old one, and the hash has to describe what is stored.
+            SourceHash = ContentHash.ForMechanic(
+                mechanic.Category,
+                request.Name,
+                request.Description,
+                request.Matches,
+                requirements,
+                request.Source,
+                mechanic.Scope,
+                mechanic.Status),
             CreatedBy = string.IsNullOrWhiteSpace(request.CreatedBy) ? "llm" : request.CreatedBy,
             ChangeNote = request.ChangeNote,
             CreatedAt = now

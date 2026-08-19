@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text;
 using DantesRoleplay.Procedures;
 
@@ -47,10 +46,41 @@ public sealed record ProcedureFile(
     /// edited at all: changing it in the markdown yields the same hash, the seeder sees no
     /// change, and the edit is silently ignored forever. Governs was missing when it was first
     /// added, and was exactly that bug. A test now asserts this cannot happen again.
+    ///
+    /// The hash itself lives in <see cref="DantesRoleplay.Content.ContentHash"/> rather than here.
+    /// The stores compute the same fingerprint as they write, and a second definition of it would
+    /// disagree the moment either was touched — silently, in both directions. Fully qualified
+    /// because this property shadows the class name.
     /// </summary>
-    public string ContentHash => Convert.ToHexString(
-        SHA256.HashData(Encoding.UTF8.GetBytes(
-            $"{Category}{Name}{Description}{Governs}{Instructions}{Constraints}{Status}")));
+    public string ContentHash => DantesRoleplay.Content.ContentHash.ForProcedure(
+        Category, Name, Description, Governs, Instructions, Constraints, Status);
+
+    /// <summary>
+    /// Renders this contract back to the markdown <see cref="Parse"/> reads.
+    ///
+    /// One file, unlike a mechanic: a contract is entirely prose. Instructions are a numbered list
+    /// and Constraints a bullet list, which is markdown already — encoding them as JSON would
+    /// re-escape every line break and put the manual back behind the same wall the rules were
+    /// stuck behind.
+    /// </summary>
+    public string ToMarkdown()
+    {
+        var builder = new StringBuilder();
+
+        MarkdownDocument.OpenFrontMatter(builder);
+        MarkdownDocument.Field(builder, "id", Id);
+        MarkdownDocument.Field(builder, "category", Category);
+        MarkdownDocument.Field(builder, "name", Name);
+        MarkdownDocument.Field(builder, "governs", Governs);
+        MarkdownDocument.Field(builder, "status", Status.ToString().ToLowerInvariant());
+        MarkdownDocument.CloseFrontMatter(builder);
+
+        MarkdownDocument.Section(builder, "Description", Description);
+        MarkdownDocument.Section(builder, "Instructions", Instructions);
+        MarkdownDocument.Section(builder, "Constraints", Constraints);
+
+        return builder.ToString();
+    }
 
     public static ProcedureFile Parse(string text, string sourceName)
     {

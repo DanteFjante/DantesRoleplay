@@ -52,8 +52,10 @@ public sealed class ProcedureSeeder(IProcedureStore store)
                     CreatedBy = "seed",
                     ChangeNote = existing is null
                         ? "Seeded from bootstrap file."
-                        : "Re-seeded: the bootstrap file changed.",
-                    SourceHash = file.ContentHash
+                        : "Re-seeded: the bootstrap file changed."
+
+                    // No SourceHash: the store computes it from the content it stores. Both sides
+                    // of the comparison above now go through the same function, so it stays exact.
                 },
                 cancellationToken);
 

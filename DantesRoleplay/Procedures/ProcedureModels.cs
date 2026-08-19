@@ -34,8 +34,9 @@ public sealed record ProcedureDetail(
     DateTime CreatedAt)
 {
     /// <summary>
-    /// Fingerprint of the bootstrap file this revision came from; empty when written through MCP.
-    /// Not part of the positional record because it is plumbing for the seeder, not content.
+    /// Fingerprint of this revision's authored content, computed by the store on every write.
+    /// See <see cref="DantesRoleplay.Content.ContentHash"/>. Not part of the positional record
+    /// because it is derived from the content rather than authored alongside it.
     /// </summary>
     public string SourceHash { get; init; } = string.Empty;
 }
@@ -69,9 +70,6 @@ public sealed record WriteProcedureRequest
     public string CreatedBy { get; init; } = "llm";
 
     public string ChangeNote { get; init; } = string.Empty;
-
-    /// <summary>Set by the seeder so it can detect a changed file later. Left empty by MCP writes.</summary>
-    public string SourceHash { get; init; } = string.Empty;
 }
 
 /// <summary>Outcome of a write, so callers can tell a create from a revision without re-reading.</summary>

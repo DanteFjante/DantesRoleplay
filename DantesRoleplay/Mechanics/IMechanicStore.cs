@@ -115,8 +115,6 @@ public sealed record WriteMechanicRequest
     public string CreatedBy { get; init; } = "llm";
 
     public string ChangeNote { get; init; } = string.Empty;
-
-    public string SourceHash { get; init; } = string.Empty;
 }
 
 public sealed record WriteMechanicResult(MechanicDetail Mechanic, bool Created);

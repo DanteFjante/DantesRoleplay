@@ -54,8 +54,12 @@ public sealed class MechanicSeeder(IMechanicStore store)
                     CreatedBy = "seed",
                     ChangeNote = existing is null
                         ? "Seeded from bootstrap rule file."
-                        : "Re-seeded: the bootstrap rule file changed.",
-                    SourceHash = file.ContentHash
+                        : "Re-seeded: the bootstrap rule file changed."
+
+                    // No SourceHash: the store computes it from the content it stores. The seeder
+                    // supplying one was the only way an incorrect fingerprint could ever be
+                    // written, and the comparison above is still exact because both sides now go
+                    // through the same function.
                 },
                 cancellationToken);
 

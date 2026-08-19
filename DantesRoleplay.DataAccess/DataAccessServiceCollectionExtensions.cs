@@ -80,13 +80,14 @@ public static class DataAccessServiceCollectionExtensions
 
         services.AddScoped<ProcedureSeeder>();
         services.AddScoped<MechanicSeeder>();
+        services.AddScoped<ContentHashBackfill>();
 
         return services;
     }
 
     /// <summary>
-    /// Applies pending migrations, then seeds bootstrap contracts from the embedded markdown
-    /// files. Called once by the host at startup.
+    /// Applies pending migrations, brings content fingerprints up to date, then seeds bootstrap
+    /// contracts from the embedded markdown files. Called once by the host at startup.
     ///
     /// Migrate rather than EnsureCreated: the world schema is fixed, but the kernel still gains
     /// tables when a subsystem lands (mechanics, events), and EnsureCreated cannot evolve a
@@ -100,6 +101,13 @@ public static class DataAccessServiceCollectionExtensions
 
         var db = scope.ServiceProvider.GetRequiredService<DantesRoleplayDbContext>();
         await db.Database.MigrateAsync(cancellationToken);
+
+        // BEFORE the seeders, not after. Both of them decide whether to write by comparing the
+        // stored fingerprint against the file's, so running them against stale fingerprints would
+        // append a pointless new version of every bootstrap record on the first start after this
+        // landed — and then the fingerprints would agree, hiding the fact that it happened.
+        var backfill = scope.ServiceProvider.GetRequiredService<ContentHashBackfill>();
+        await backfill.RunAsync(cancellationToken);
 
         var seeder = scope.ServiceProvider.GetRequiredService<ProcedureSeeder>();
         await seeder.SeedAsync(cancellationToken);

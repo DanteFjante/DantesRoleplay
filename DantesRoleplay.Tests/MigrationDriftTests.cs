@@ -127,7 +127,6 @@ public sealed class MigrationDriftTests
                     Description = "Written after an upgrade.",
                     Governs = "nothing",
                     Instructions = "1. Exist.",
-                    SourceHash = "hash",
                     CreatedBy = "test"
                 });
 
@@ -173,12 +172,23 @@ public sealed class MigrationDriftTests
                     Description = "Written against a migrated database.",
                     Governs = "nothing",
                     Instructions = "1. Exist.",
-                    SourceHash = "abc123",
                     CreatedBy = "test"
                 });
 
                 Assert.Equal("nothing", written.Procedure.Governs);
-                Assert.Equal("abc123", written.Procedure.SourceHash);
+
+                // SourceHash is no longer something a caller can supply — the store computes it —
+                // so this asserts the column is present and written rather than round-tripped.
+                Assert.Equal(
+                    DantesRoleplay.Content.ContentHash.ForProcedure(
+                        "test",
+                        "Migrated",
+                        "Written against a migrated database.",
+                        "nothing",
+                        "1. Exist.",
+                        string.Empty,
+                        DantesRoleplay.Procedures.ProcedureStatus.Active),
+                    written.Procedure.SourceHash);
 
                 var log = new OperationLog(db);
                 var op = await log.RecordAsync(

@@ -1,6 +1,6 @@
 # D&D 2024 ruleset development roadmap
 
-Status: **Features 3 and 4 verified; Feature 5 Initiative roll verified**
+Status: **Features 3 and 4 verified; Feature 5 Slices 0-1 and composition verified; Slice 2 live but blocked on a stale server binary**
 Last updated: 2026-08-19
 
 ## Purpose and authority
@@ -49,7 +49,7 @@ small D&D 2024 test session
 ├─ combat entry                                             [Feature 5 ordering blocked]
 │  ├─ closed action-input transport                        [system Slice 0 verified]
 │  ├─ Dexterity-based Initiative roll                      [Feature 5 Slice 1 verified]
-│  └─ deterministic arbitrary-roster order and tie policy [blocked: composition]
+│  └─ deterministic arbitrary-roster order and tie policy [live; matrix blocked on rebuild]
 ├─ combatant durability                                     [planned: Feature 6]
 │  ├─ Armor Class state                                    [Feature 6 leaf]
 │  └─ current/max Hit Points state                         [Feature 6 leaf]
@@ -82,9 +82,23 @@ small D&D 2024 test session
 Feature numbers express dependency order, not permission to begin them. Features 1–3 are verified.
 Feature 4 is expanded in feature-04/FEATURE-4-DEPENDENCY-PLAN.md and is verified through its two
 slices. Feature 5 is expanded in feature-05/FEATURE-5-DEPENDENCY-PLAN.md. Its shared closed-input
-transport and individual Initiative resolver are verified; arbitrary-roster order remains blocked
-on mechanic composition. Later features still require their own recursive plans and live dependency
+transport and individual Initiative resolver are verified, mechanic composition is implemented in
+the kernel, and the encounter-order parent, its contract and its component are live. Its acceptance
+matrix is blocked: the deployed `DantesRoleplay.RuleAccess.dll` predates the composition harness, so
+the running sandbox never receives `ctx.children`. Rebuild and restart, then run the matrix in the
+Feature 5 plan. Later features still require their own recursive plans and live dependency
 validation.
+
+Work past Feature 10 is ordered in `ROADMAP-COMPLETE-PLAY.md`, which covers what a complete SRD
+5.2.1 experience needs beyond the first vertical session.
+
+**Known kernel weakness, discovered during Feature 5 Slice 2.** Action selection scores the number
+of distinct query tokens appearing anywhere in a mechanic's id, name, description and match
+phrases, and breaks ties by ascending id. A phrase match does not outrank an incidental token
+match, so an unrelated rule whose id happens to sort earlier can capture another rule's intent —
+it did, twice, during this slice. Until that is fixed, every new rule must be routing-tested
+against the intents of its neighbours, and authors must watch the words they put in a description.
+This deserves its own kernel dependency plan before the ruleset grows much further.
 
 ## Global quality gates
 

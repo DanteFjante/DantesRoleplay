@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text;
 using DantesRoleplay.Mechanics;
 
@@ -32,12 +31,59 @@ public sealed record MechanicFile(
     /// out cannot be edited at all, because the hash would not move and the seeder would see no
     /// change. That exact bug happened once with a procedure's Governs field; a test now asserts
     /// this cannot happen again.
+    ///
+    /// The hash itself lives in <see cref="DantesRoleplay.Content.ContentHash"/> rather than here.
+    /// The stores compute the same fingerprint as they write, and a second definition of it would
+    /// disagree the moment either was touched — silently, in both directions. Fully qualified
+    /// because this property shadows the class name.
+    ///
+    /// This used to concatenate the fields with no separator at all, so ("ab", "c") and
+    /// ("a", "bc") fingerprinted identically. ProcedureFile had been fixed for that; this had not,
+    /// and nothing tested it.
     /// </summary>
-    public string ContentHash => Convert.ToHexString(
-        SHA256.HashData(Encoding.UTF8.GetBytes(
-            $"{Category}{Name}{Description}{Matches}{Requirements}{Source}{Scope}{Status}")));
+    public string ContentHash => DantesRoleplay.Content.ContentHash.ForMechanic(
+        Category, Name, Description, Matches, Requirements, Source, Scope, Status);
 
-    public static MechanicFile Parse(string text, string sourceName)
+    /// <summary>
+    /// Renders the markdown half of this rule — everything except the JavaScript.
+    ///
+    /// <see cref="Source"/> is written to a sibling .js by the caller. That split is the point of
+    /// the catalog: the source becomes a real JavaScript file that an editor highlights, a linter
+    /// reads and git diffs line by line, instead of an escaped string inside a payload. The rules
+    /// authored through the escaped path measurably decayed — one went from 87 commented lines to
+    /// 24 lines averaging 233 characters, with no comments left.
+    ///
+    /// Deliberately no option to inline the source. The embedded bootstrap rules keep their
+    /// '## Source' section and <see cref="Parse"/> still reads it, but nothing should be able to
+    /// choose the inline form for a file it is writing fresh.
+    /// </summary>
+    public string ToMarkdown()
+    {
+        var builder = new StringBuilder();
+
+        MarkdownDocument.OpenFrontMatter(builder);
+        MarkdownDocument.Field(builder, "id", Id);
+        MarkdownDocument.Field(builder, "category", Category);
+        MarkdownDocument.Field(builder, "name", Name);
+        MarkdownDocument.Field(builder, "scope", Scope);
+        MarkdownDocument.Field(builder, "status", Status.ToString().ToLowerInvariant());
+        MarkdownDocument.CloseFrontMatter(builder);
+
+        MarkdownDocument.Section(builder, "Description", Description);
+        MarkdownDocument.Section(builder, "Matches", Matches);
+
+        // Written verbatim rather than reformatted. Pretty-printing it here would change the
+        // fingerprint of a rule that nobody edited, and every such rule would then read as drifted.
+        MarkdownDocument.Section(builder, "Requirements", Requirements, fenceLanguage: "json");
+
+        return builder.ToString();
+    }
+
+    /// <param name="sidecarSource">
+    /// The contents of the sibling .js, for a catalog file whose source lives outside the markdown.
+    /// Null for the embedded bootstrap rules, which carry a '## Source' section instead.
+    /// </param>
+    public static MechanicFile Parse(string text, string sourceName, string? sidecarSource = null)
     {
         var normalised = text.Replace("\r\n", "\n").Trim();
 
@@ -84,15 +130,43 @@ public sealed record MechanicFile(
             throw new InvalidOperationException($"{sourceName}: '{statusText}' is not a valid status.");
         }
 
-        if (!sections.TryGetValue("Source", out var source) || source.Length == 0)
+        var hasSection = sections.TryGetValue("Source", out var source) && source.Length > 0;
+        var hasSidecar = !string.IsNullOrWhiteSpace(sidecarSource);
+
+        // Both present is an error rather than a precedence rule. Two places holding the source of
+        // one rule is the failure this whole feature exists to prevent, and quietly preferring one
+        // would mean an edit to the other vanished with nothing to see.
+        if (hasSection && hasSidecar)
         {
-            throw new InvalidOperationException($"{sourceName}: a Source section is required.");
+            throw new InvalidOperationException(
+                $"{sourceName}: the source is in both a '## Source' section and a sibling .js file. "
+                + "Keep one — a catalog file uses the .js, an embedded bootstrap rule uses the "
+                + "section.");
         }
+
+        if (!hasSection && !hasSidecar)
+        {
+            throw new InvalidOperationException(
+                $"{sourceName}: a Source section is required, or a sibling .js file alongside it.");
+        }
+
+        source = hasSidecar ? sidecarSource! : source!;
 
         sections.TryGetValue("Description", out var description);
         sections.TryGetValue("Matches", out var matches);
         sections.TryGetValue("Requirements", out var requirements);
         fields.TryGetValue("scope", out var scope);
+
+        // A Requirements section that is present but empty, or an empty fence, has to land on the
+        // same value the store writes for it. The store normalises blank requirements to "{}", so
+        // a file that parsed to "" would fingerprint differently from the row it produced, and the
+        // seeder would rewrite that rule on every single start without ever converging.
+        var declared = Unfence(requirements ?? "{}");
+
+        if (string.IsNullOrWhiteSpace(declared))
+        {
+            declared = "{}";
+        }
 
         return new MechanicFile(
             Required(fields, "id", sourceName),
@@ -100,8 +174,8 @@ public sealed record MechanicFile(
             Required(fields, "name", sourceName),
             description ?? string.Empty,
             matches ?? string.Empty,
-            Unfence(requirements ?? "{}"),
-            Unfence(source),
+            declared,
+            hasSidecar ? source.Trim() : Unfence(source),
             scope ?? string.Empty,
             status);
     }

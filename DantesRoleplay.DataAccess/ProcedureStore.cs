@@ -1,4 +1,5 @@
 using DantesRoleplay.Categories;
+using DantesRoleplay.Content;
 using DantesRoleplay.Procedures;
 using Microsoft.EntityFrameworkCore;
 
@@ -323,7 +324,20 @@ public sealed class ProcedureStore(DantesRoleplayDbContext db) : IProcedureStore
             Governs = request.Governs,
             Instructions = request.Instructions,
             Constraints = request.Constraints,
-            SourceHash = request.SourceHash,
+
+            // Computed here, from the values actually being stored, and never accepted from the
+            // caller. A caller that can supply its own fingerprint can mark drifted content as
+            // clean, which is the one thing the fingerprint exists to prevent. Category and Status
+            // come off the parent row because that is where the effective values live after the
+            // create/revise branch above.
+            SourceHash = ContentHash.ForProcedure(
+                contract.Category,
+                request.Name,
+                request.Description,
+                request.Governs,
+                request.Instructions,
+                request.Constraints,
+                contract.Status),
             CreatedBy = string.IsNullOrWhiteSpace(request.CreatedBy) ? "llm" : request.CreatedBy,
             ChangeNote = request.ChangeNote,
             CreatedAt = now

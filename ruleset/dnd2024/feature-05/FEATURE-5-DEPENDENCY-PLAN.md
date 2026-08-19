@@ -1,6 +1,6 @@
 # Feature 5 dependency plan — Initiative rolls and encounter ordering
 
-Status: **Slices 0–1 and composition are verified; Slice 2 implementation exists and has initial live evidence**
+Status: **Slices 0–1 and composition are verified; Slice 2 artifacts are live but its matrix is BLOCKED on a stale server binary**
 Last updated: 2026-08-19
 
 ## Execution rule
@@ -443,25 +443,99 @@ starts only with the declarative host orchestration documented in
    tests plus `git diff --check`, record live operation evidence, and mark Feature 5 complete only
    after the full matrix passes.
 
-### Slice 2 initial implementation evidence — 2026-08-19
+### Slice 2 evidence — 2026-08-19 (superseded record and current pass)
 
-- The live governing contract was dry-run then committed at v1 (dry run
-  `45719013b6114d8cb06dbe338e66bdab`; commit `5922152d7c0147b6b08b1057058e036a`).
-- The sole encounter snapshot component was created in the live database (`552fd86541d240a7bf0884b76d528842`),
-  followed by the active parent mechanic after all dry-run checks passed
-  (`0822db66d40e445e83a307c28d24bc23`; commit `f27daf2674aa44148451cbb3a466b869`).
-- A disposable two-participant encounter was created through dry-run-first effects
-  (`7004a960c85c4afa9fe7b967c58b6d9d`, `dbd5c87033d241adbe8adfa712e335ba`). A seeded parent action
-  composed the active Initiative v3 resolver twice, produced distinct derived child seeds and
-  counts 12 then 10, and applied exactly one encounter-owned snapshot
-  (`579f3d3c46904067b2d02e84bcfe5a9c`). All three fixtures were deleted through dry-run-first
-  cleanup (`9fdffd30d65942308d34c3d90376219a`, `3d6af4e03c36492fbf83042c0b736d02`).
-- Repository regression passes 232/232 with `-p:SelfContained=false`; `git diff --check` has no
-  whitespace errors (only pre-existing line-ending warnings).
+**The earlier record on this line was not reproducible.** A previous pass recorded a committed
+contract, snapshot component, active parent mechanic and a successful two-participant composition
+run. None of those operation IDs (`5922152d…`, `f27daf26…`, `552fd865…`, `0822db66…`,
+`579f3d3c…`) exist in the live database, and the artifacts were absent from it. The database file
+is tracked in git, so a checkout restored an older copy over that work. Treat any evidence in this
+repository as unverified until the operation ID is found in `query(kind: "history")`.
 
-This is not yet the Slice 2 exit gate. The live tie-decision, per-participant Disadvantage,
-missing/extra input, invalid tie, empty roster, existing-snapshot, and exact replay matrix still
-requires separate disposable-fixture evidence before Feature 5 may be marked complete.
+**This pass re-implemented the slice.** Live artifacts, all queried back:
+
+- `procedure.mechanic.dnd2024.encounter-initiative-order` v1, category
+  `ruleset.dnd2024.core.combat.initiative.order` (dry run `5d21192f646746d0a7222098003fc873`,
+  commit `7338a4fbdbca42e7af2a22d07a23a809`). The near-duplicate warning against
+  `procedure.mechanic.dnd2024.initiative` was reviewed and deliberately not followed: that
+  contract owns the individual resolver, which creates no encounter state, and
+  `procedure.mechanic.dnd2024.ruleset` allows exactly one component per contract.
+- Component `dnd2024.encounter-initiative-order` (`c2e70b772e9d4e11a11adcd336b00708`). Closed
+  schema: `order[{participantId, initiative}]` plus the fixed `sourceRef`.
+- Mechanic `mechanic.dnd2024.encounter-initiative-order`, now v5 (v1 dry run
+  `7453ab336ba6484fb7237261a31f4d9a`, commit `f04c53b7fffc4c52bd3ee5565a46680e`; later revisions
+  `2bddf90d6d0d405b800b7ae4fb3bbfd5`, `720e51cfeafd433c9a9ba0755d89f157`,
+  `c0b0f2b09d334c23b8d19de6ba38b179`, `87def1fabbea4d3ba25e3b7677fadf43`).
+- Disposable fixtures created (`845d7b8c8f1e4e6892cbc775cd855fbb`, dry run
+  `06753155e38642cfa9674b2eaf5edf35`) and deleted in full (`c3798eb86c3b48bb8a6c02173f49d378`,
+  dry run `ecb4af8e8f514050a1f2c2352ba2e033`). `orient` after cleanup reports 27 procedures, 7
+  component definitions, 10 runnable rules and the original 6 entities.
+
+**Design decision — the snapshot does not store the replay seed.** A seed is a 64-bit value; it
+cannot cross the JavaScript number boundary intact, so a copy written from inside a mechanic would
+silently disagree with the seed the action audit already records exactly. The audit row is the
+single replay record; the snapshot holds order, counts and source only.
+
+**Live behaviour verified (all applied zero effects):**
+
+| Case | Operation | Result |
+| --- | --- | --- |
+| Unknown input key `round` | `95ced27104ba4990abdff7c37e4e111b` | rejected, closed input holds |
+| Empty roster | `1f5c0480c10643ebaa6b9e0d2685c293` | rejected before any child ran |
+| Participant map naming a non-participant (4 for 3) | `3adfc32dfdfc442ab509ead6d988ea26` | rejected with counts |
+| Participant map missing a roster member | `2ce558533f354b72841613ae32bbae0b` | `CHILD_INPUT_FAILED`, names the participant |
+| Malformed per-participant circumstance | `c297155ab1c84daf8e1223de02533d44` | `CHILD_FAILED` before the parent ran |
+| Composition fan-out and per-item input | `0262b1b6934e47c1b94456c304e57d85` | three correct child results in the audited projection |
+
+The composition layer itself is confirmed working end to end: at parent seed 108 the recorded
+projection carries three children with distinct derived seeds and rolls 12/18/18, giving counts
+15/18/18 — the tie this slice needs. At parent seed 100 it carries 4/1/4, counts 7/1/4.
+
+**Two defects found and fixed in the rule:**
+
+1. v1 matched the phrase `roll initiative for the encounter`, which took the bare intent
+   `roll initiative` away from `mechanic.dnd2024.initiative.roll` and broke verified Slice 1
+   routing.
+2. Removing the phrase was not enough. Selection scores the count of distinct query tokens found
+   anywhere in id, name, description and matches, then breaks ties by ascending id — and
+   `mechanic.dnd2024.encounter-initiative-order` sorts before `mechanic.dnd2024.initiative.roll`.
+   The parent still won. v3 removed the token `roll` from the description, which restored routing:
+   `9d179f99f050431880f1b6b9c6e5ee85` selects the individual resolver and returns roll 20, count 23.
+
+**BLOCKER — the slice is pending, not complete.** The running host does not expose `ctx.children`
+to the sandbox. A diagnostic revision (`4dee39e16bfe4618afd180cc280408ae`) reported
+`typeofChildren=undefined` while the same action's recorded projection contained three child
+results. The cause is a stale binary, not a stale source: in
+`DantesRoleplay.MCPServer/bin/Debug/net10.0/win-x64/`, `DantesRoleplay.DataAccess.dll` and
+`DantesRoleplay.MCPServer.dll` are from 23:36 on 2026-08-18, but `DantesRoleplay.RuleAccess.dll`
+is from 14:39 and contains no `children: freezeDeep` harness line. Composition runs; the sandbox
+that should receive its results is the old one.
+
+**To finish this slice:** rebuild the solution, restart the server, then re-run the matrix below.
+Recreate the fixtures with the same payload as `845d7b8c8f1e4e6892cbc775cd855fbb`
+(encounter `fixture.f5s2.encounter`; `alpha` dex 16, `bravo` dex 10, `charlie` dex 10, all
+contained in slot `participant`; `fixture.f5s2.empty`; `fixture.f5s2.outsider` dex 12).
+
+Still required before Feature 5 may be marked complete:
+
+- Seed 108 with `tieDecisions: [["fixture.f5s2.bravo","fixture.f5s2.charlie"]]` — expect the
+  snapshot `bravo 18 > charlie 18 > alpha 15`, exactly one `component.add` on the encounter.
+- Seed 108 with the group reversed — expect `charlie 18 > bravo 18 > alpha 15`.
+- Seed 100 with no tie decisions — expect `alpha 7 > charlie 4 > bravo 1`.
+- Per-participant Disadvantage through `participants.<id>.rollCircumstances`.
+- Re-running a snapshotted encounter — expect rejection and no change.
+- Exact seeded replay: remove the snapshot component through a dry-run-first fixture effect, re-run
+  the same seed, and compare the order byte for byte.
+- Confirm no participant carries an order or count component.
+- Full repository suite and `git diff --check`.
+
+**Repository-side evidence in the meantime.** The v5 source was executed outside the host against
+the exact child results the live composer recorded, under a harness matching the sandbox contract
+(`new Function('ctx', source)`, strict mode). All 14 cases pass: both tie orderings, plain
+descending order, tie-without-decision, decision-without-tie, a decision naming an untied
+participant, a repeated member, a wrong-size group, an existing snapshot, an unknown input key, a
+duplicated child result, a child result for a stranger, non-Initiative child data, and the stale
+host itself. This is not a substitute for the live matrix; it is the reason to expect it to pass.
 
 ### Intended ownership after the blocker is resolved
 
