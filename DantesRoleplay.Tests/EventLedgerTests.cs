@@ -110,6 +110,112 @@ public sealed class EventLedgerTests : IDisposable
         Assert.True(await db.Entities.AnyAsync(e => e.Id == "named"));
     }
 
+    // ---- what a change replaced ------------------------------------------------------------
+
+    /// <summary>
+    /// The question an audit ledger exists to answer is "what did this rule actually do?", and a
+    /// row recording only the new value cannot answer it — 4 vigour is a scratch or nearly fatal
+    /// depending entirely on what it replaced. So every payload carries `before` and `after`, and
+    /// null there means there was nothing to record, never that nobody looked.
+    /// </summary>
+    [Fact]
+    public async Task A_change_records_what_it_replaced()
+    {
+        await using var db = await WorldAsync();
+
+        // Orban was seeded at vigour 10.
+        var replaced = await ApplyOneAsync(db, new Effect
+        {
+            Type = EffectType.ComponentSet,
+            EntityId = "orban",
+            DefinitionId = "stats",
+            Data = """{"vigour":4}"""
+        });
+
+        using var replacement = JsonDocument.Parse(replaced.PayloadJson);
+
+        Assert.Equal(0, replacement.RootElement.GetProperty("effectIndex").GetInt32());
+        Assert.Equal(10, replacement.RootElement.GetProperty("before").GetProperty("vigour").GetInt32());
+        Assert.Equal(4, replacement.RootElement.GetProperty("after").GetProperty("vigour").GetInt32());
+
+        // A creation replaced nothing, and says so with an explicit null rather than by omitting
+        // the field — an absent key would read as "not captured".
+        var created = await ApplyOneAsync(db, new Effect { Type = EffectType.EntityCreate, EntityId = "sol", Name = "Sol" });
+
+        using var creation = JsonDocument.Parse(created.PayloadJson);
+
+        Assert.Equal(JsonValueKind.Null, creation.RootElement.GetProperty("before").ValueKind);
+        Assert.Equal("Sol", creation.RootElement.GetProperty("after").GetProperty("name").GetString());
+
+        // Deletion is the one change where the ledger holds the only remaining copy of what was
+        // there, so the whole entity goes in — components and all.
+        var deleted = await ApplyOneAsync(db, new Effect { Type = EffectType.EntityDelete, EntityId = "orban" });
+
+        using var deletion = JsonDocument.Parse(deleted.PayloadJson);
+        var gone = deletion.RootElement.GetProperty("before");
+
+        Assert.Equal("Orban", gone.GetProperty("name").GetString());
+        Assert.Equal(4, gone.GetProperty("components").GetProperty("stats").GetProperty("vigour").GetInt32());
+        Assert.Equal(JsonValueKind.Null, deletion.RootElement.GetProperty("after").ValueKind);
+    }
+
+    /// <summary>
+    /// A merge is the one effect where what was asked for and what happened genuinely differ, so
+    /// the payload states both. Recording only the patch would make a shallow merge look like a
+    /// replacement that lost data; recording only the result would hide what the rule intended.
+    /// </summary>
+    [Fact]
+    public async Task A_merge_records_both_the_patch_and_the_result()
+    {
+        await using var db = await WorldAsync();
+
+        var merged = await ApplyOneAsync(db, new Effect
+        {
+            Type = EffectType.ComponentMerge,
+            EntityId = "orban",
+            DefinitionId = "stats",
+            Data = """{"resolve":2}"""
+        });
+
+        using var payload = JsonDocument.Parse(merged.PayloadJson);
+        var root = payload.RootElement;
+
+        Assert.False(root.GetProperty("patch").TryGetProperty("vigour", out _));
+        Assert.Equal(2, root.GetProperty("patch").GetProperty("resolve").GetInt32());
+        Assert.Equal(10, root.GetProperty("before").GetProperty("vigour").GetInt32());
+        Assert.Equal(10, root.GetProperty("after").GetProperty("vigour").GetInt32());
+        Assert.Equal(2, root.GetProperty("after").GetProperty("resolve").GetInt32());
+    }
+
+    /// <summary>
+    /// A move states where something went, which is half the fact. "Taken out of Orban's hand and
+    /// hung on the wall" needs the end it left, and the effect never said it.
+    /// </summary>
+    [Fact]
+    public async Task A_move_records_both_ends()
+    {
+        await using var db = await WorldAsync();
+
+        await Applier(db).ApplyAsync(
+            [new Effect { Type = EffectType.ContainmentMove, EntityId = "lantern", ToEntityId = "orban", Slot = "left-hand" }]);
+
+        var moved = await ApplyOneAsync(db, new Effect
+        {
+            Type = EffectType.ContainmentMove,
+            EntityId = "lantern",
+            ToEntityId = "room",
+            Slot = "hook"
+        });
+
+        using var payload = JsonDocument.Parse(moved.PayloadJson);
+        var root = payload.RootElement;
+
+        Assert.Equal("orban", root.GetProperty("before").GetProperty("containerId").GetString());
+        Assert.Equal("left-hand", root.GetProperty("before").GetProperty("slot").GetString());
+        Assert.Equal("room", root.GetProperty("after").GetProperty("containerId").GetString());
+        Assert.Equal("hook", root.GetProperty("after").GetProperty("slot").GetString());
+    }
+
     // ---- linkage --------------------------------------------------------------------------
 
     /// <summary>
@@ -444,7 +550,10 @@ public sealed class EventLedgerTests : IDisposable
             {
                 JsonValueKind.String => "string",
                 JsonValueKind.Null => "null",
-                JsonValueKind.Number => "number",
+
+                // JSON has one number type; JSON Schema distinguishes integer from it. A whole
+                // number satisfies both, so report the narrower one and accept the wider below.
+                JsonValueKind.Number => property.Value.TryGetInt64(out _) ? "integer" : "number",
                 JsonValueKind.True or JsonValueKind.False => "boolean",
                 JsonValueKind.Object => "object",
                 JsonValueKind.Array => "array",
@@ -452,7 +561,8 @@ public sealed class EventLedgerTests : IDisposable
             };
 
             Assert.True(
-                allowed.Contains(actual, StringComparer.Ordinal),
+                allowed.Contains(actual, StringComparer.Ordinal)
+                || (actual == "integer" && allowed.Contains("number", StringComparer.Ordinal)),
                 $"{what}: '{property.Name}' is {actual}, but the schema allows {string.Join(" or ", allowed)}.");
         }
     }

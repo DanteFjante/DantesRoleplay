@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Events;
+using DantesRoleplay.Notifications;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.World;
@@ -22,7 +23,8 @@ public sealed class QueryTool
     [McpServerTool(Name = "query")]
     [Description(
         "Read anything in this system. kind is one of: capabilities, procedures, world, entities, " +
-        "mechanics, event-types, subscriptions, history. Omit id for a list or search; pass id for one record in full. When " +
+        "mechanics, event-types, events, subscriptions, notifications, history. Omit id for a list or search; " +
+        "pass id for one record in full. When " +
         "you are unsure what a kind takes or what a commit payload looks like, call " +
         "query(kind: \"capabilities\") — it is the exact catalog. Irrelevant filters are ignored, " +
         "so exploring costs nothing. Never changes state.")]
@@ -34,9 +36,10 @@ public sealed class QueryTool
         ISubscriptionStore subscriptions,
         IEventLedger events,
         IOperationLog log,
+        INotificationStore notifications,
         [Description(
             "Closed kind: capabilities, procedures, world, entities, mechanics, event-types, events, "
-            + "subscriptions, or history.")]
+            + "subscriptions, notifications, or history.")]
         string kind,
         [Description("Full-record id for procedures, mechanics, or one entity.")] string? id = null,
         [Description("Entity ids for a full batch read.")] string[]? ids = null,
@@ -68,6 +71,8 @@ public sealed class QueryTool
         [Description("Event filter: inclusive ISO-8601 UTC lower bound, e.g. 2026-08-19T14:30:00Z.")]
         string? from = null,
         [Description("Event filter: exclusive ISO-8601 UTC upper bound.")] string? to = null,
+        [Description("Notification filter: unread, read, or archived.")] string? state = null,
+        [Description("Notification filter: dotted topic, e.g. combat.wound.")] string? topic = null,
         CancellationToken cancellationToken = default)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
@@ -122,6 +127,8 @@ public sealed class QueryTool
                 events, log, id, correlationId, causationId, rootOperationId, type, entityId,
                 afterSequence, from, to, limit, cancellationToken),
             "subscriptions" => await new SubscriptionTools().FindAsync(subscriptions, log, id, version, query, category, scope, includeInactive, limit, cancellationToken),
+            "notifications" => await new NotificationTools().FindAsync(
+                notifications, log, id, state, topic, entityId, correlationId, from, to, limit, cancellationToken),
             "history" =>
                 await new HistoryTool().HistoryAsync(
                     log, limit ?? 20, failuresOnly, tool, subject, cancellationToken),

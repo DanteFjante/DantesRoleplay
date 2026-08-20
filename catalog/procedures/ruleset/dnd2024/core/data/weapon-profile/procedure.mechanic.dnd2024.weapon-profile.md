@@ -10,7 +10,6 @@ status: active
 Defines the reusable canonical D&D 2024 weapon profile and its closed administrative writer. A profile is source data on a weapon entity, never a copied actor object or an attack result.
 
 ## Instructions
-
 Source and scope
 
 - Rule source: `source.dnd2024.srd-5.2.1`, locator `Equipment > Weapons`, PDF pages 89–91 in System Reference Document 5.2.1.
@@ -41,7 +40,7 @@ Deterministic verification
 - Confirm intent routing selects this writer rather than ability, saving-throw, Initiative, Armor Class, or Hit Point rules. Run catalog dry-run, import, verify, the fresh-database catalog test, the full repository suite, and `git diff --check`.
 
 ## Constraints
-
 - `dnd2024.weapon-profile` owns only static category, kind, allowed attack abilities, base damage, and fixed source attribution.
 - The writer accepts only its closed input and produces exactly one component effect on role `weapon`.
 - No profile is equipped, no attack ability is selected, no die is rolled, and no creature, Armor Class, Hit Point, or proficiency state is changed.
+

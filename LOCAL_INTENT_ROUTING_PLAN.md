@@ -21,6 +21,46 @@ unreviewed write, or bypass the existing procedure, audit, action-selection, and
 - A failure, unavailable local model, or weak retrieval result falls back to deterministic
   category and full-text search. It never fabricates a matching rule.
 
+## Local-model runtime profiles
+
+The host chooses a named profile through configuration. It never chooses the largest installed
+model automatically, downloads a model, or silently changes profiles after an error. A profile is
+part of the route/audit evidence so a result can be reproduced and performance can be compared.
+
+| Profile | Suggested model | Permitted work | When it says “unknown” |
+| --- | --- | --- | --- |
+| off | none | Deterministic category, exact-id, and FTS retrieval only | Always use deterministic result |
+| micro | qwen3:0.6b | Classify a request into a fixed task family; normalize a short search phrase | Fall back to FTS or return the request to the story model |
+| light | qwen3:1.7b | Micro work plus extraction of IDs/roles already present in supplied structured context | Fall back to FTS or return named missing facts |
+| standard | qwen3:8b | Normalize intent, re-rank supplied candidates, and prepare a schema-bound read-only route record | Return the deterministic candidates and ask the story model to choose |
+| strong-local | qwen3:14b | A bounded second opinion on ambiguous route plans after standard fails validation or reports ambiguity | Return no proposed write; leave the decision to the story model |
+
+The suggested models are defaults, not part of the wire contract. The configuration names the
+actual Ollama model and allowed task classes, so a self-hosted deployment can substitute another
+model only after it passes the same evaluation suite.
+
+The Raspberry Pi profile should normally be micro, optionally light on a well-provisioned device.
+It keeps embeddings disabled, uses FTS plus confirmed procedure aliases, sends tiny contexts, makes
+one request at a time, and treats “unknown” as a correct answer. It must remain useful with off,
+because a slow local model is never a required dependency for play.
+
+### Request contract and resource budget
+
+Every local-model request is non-streaming, has thinking disabled, temperature zero or near zero,
+an explicit JSON Schema response format, a small output-token cap, a hard timeout, and a maximum
+prompt size. The host independently parses and validates the returned JSON; a schema-shaped answer
+is still untrusted data.
+
+The adapter records the selected profile, configured model, model reported by Ollama, elapsed/load
+time, input/output token counts when supplied, timeout/validation outcome, and fallback path. Do
+not record a reasoning trace or raw unbounded prompt. The model gets no Ollama tool definitions:
+the host performs all allowed reads itself and offers the model only the resulting bounded data.
+
+Desktop profiles may retain their selected model briefly to avoid repeated load latency. Resource-
+constrained profiles unload it after each request or use a short keep-alive. Embedding workloads
+must be separately configured and run in small low-priority batches; they must not evict the
+interactive routing model during a play session.
+
 ## Phased delivery
 
 ### 1. Observe before automating
@@ -59,17 +99,27 @@ resume tokens or server-held workflow state.
 The router can include read-only steps in its response, but a pipeline must stop before every
 write boundary. This preserves explicit approval, dry-run requirements, and a complete audit.
 
-### 4. Optional Ollama integration
+### 4. Optional Ollama integration and profile evaluation
 
-Only after deterministic routing is measured, add an optional host-level Ollama adapter with:
+Only after deterministic routing is measured, add an optional host-level Ollama adapter and begin
+with the off and light profiles. Add standard only after it shows a measured quality benefit;
+reserve strong-local as an explicit escalation profile, never the routine default.
 
 - explicit local endpoint and model configuration; no automatic download or startup;
-- health check, timeouts, model/version identification, and a deterministic fallback;
-- structured output validated against the route-record schema;
+- health check, model availability check, timeouts, model/version identification, concurrency
+  limit, context/output limits, and a deterministic fallback;
+- thinking disabled and a schema-constrained, non-streaming output validated against the
+  route-record schema;
 - use limited to intent normalization, candidate re-ranking, and explanation—not final rule choice
   or generation of executable writes;
 - audit fields recording that local-model assistance was used, the model identifier, and the
   deterministic candidates it was allowed to rank.
+
+Build a local evaluation runner that executes the same retrieval/routing corpus under off, micro,
+light, standard, and strong-local, measuring schema-valid response rate, correct procedure recall,
+false-positive rate, “unknown” quality, p50/p95 latency, prompt size, and fallback rate. A lower
+profile is accepted only for the task classes where it meets its stated quality gate; it is not
+judged against tasks it is forbidden to perform.
 
 ### 5. Vector retrieval only when its trigger fires
 
@@ -102,13 +152,16 @@ Create and verify these contracts before their corresponding feature work:
 - `procedure.system.typed-workflows` only if Phase 6 is approved
 
 Test routing with known exact matches, ambiguous matches, no match, missing role data, unavailable
-Ollama, malformed model output, and deterministic fallback. Confirm a route itself changes no
-state; confirm an action sent from a route retains the normal mechanic version, RNG seed, effects,
-and audit history. Test vector search against a known retrieval-miss corpus before it can influence
-ranking.
+Ollama, malformed model output, timeout, wrong model, context/output-budget breach, and
+deterministic fallback. Run each test against every enabled profile and assert that micro and light
+cannot return command plans outside their permitted task families. Confirm a route itself changes
+no state; confirm an action sent from a route retains the normal mechanic version, RNG seed,
+effects, and audit history. Test vector search against a known retrieval-miss corpus before it can
+influence ranking.
 
 ## Scope boundaries
 
 This plan does not add another MCP tool, let an LLM execute shell or SQL, make the server stateful,
 or replace the game-master's storytelling judgement. It is a route-and-retrieve aid, not an
-autonomous game director.
+autonomous game director. Running a low-capability local model is an optional acceleration, never
+a correctness requirement.

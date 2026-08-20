@@ -10,7 +10,6 @@ status: active
 Defines the authoritative final Armor Class component and its closed administrative writer. It records one final value for a creature with fixed SRD attribution; it does not construct Armor Class from armor, Dexterity, or any other rule input.
 
 ## Instructions
-
 Source and scope
 
 - Rule source: `source.dnd2024.srd-5.2.1`, locator `Playing the Game > D20 Tests > Attack Rolls > Armor Class` in System Reference Document 5.2.1.
@@ -39,9 +38,9 @@ Deterministic verification
 - Run catalog dry-run, import, catalog verify, the fresh-database catalog test, the full repository suite, and `git diff --check`.
 
 ## Constraints
-
 - `dnd2024.armor-class` contains exactly positive safe-integer `value` and the fixed `sourceRef`.
 - This component owns only final Armor Class. No other Feature 6 artifact may duplicate or derive it.
 - `record` never overwrites; `correct` never creates; a corrupt existing record is not silently repaired.
 - The writer accepts only the closed mode/value input and produces exactly one component effect on `subject`.
 - Hit Point state is a separate, blocked slice. Do not add it, damage, healing, temporary Hit Points, or zero-HP consequences here.
+

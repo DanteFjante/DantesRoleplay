@@ -1,1 +1,8 @@
-{"id":"world.entity.created","category":"world","name":"Entity created","description":"A structural entity creation.","scope":"","status":"active"}
+{
+  "id": "world.entity.created",
+  "category": "world",
+  "name": "Entity created",
+  "description": "A structural entity creation.",
+  "scope": "",
+  "status": "Active"
+}

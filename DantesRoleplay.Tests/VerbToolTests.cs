@@ -15,15 +15,19 @@ public sealed class VerbToolTests : IDisposable
     public async Task Query_dispatches_procedure_listing_and_records_the_public_verb()
     {
         await using var db = _fixture.CreateContext();
+        // Named, not positional. DI supplies these by type at runtime, so the order here is an
+        // accident of the signature — and inserting a store anywhere but the end used to break
+        // this call silently until compile. See KNOWN_ISSUES.
         var result = await new QueryTool().QueryAsync(
-            new ProcedureStore(db),
-            new WorldStore(db),
-            new MechanicStore(db),
-            new EventTypeStore(db),
-            new SubscriptionStore(db),
-            new EventLedger(db),
-            new OperationLog(db),
-            "procedures");
+            procedures: new ProcedureStore(db),
+            world: new WorldStore(db),
+            mechanics: new MechanicStore(db),
+            eventTypes: new EventTypeStore(db),
+            subscriptions: new SubscriptionStore(db),
+            events: new EventLedger(db),
+            log: new OperationLog(db),
+            notifications: new NotificationStore(db),
+            kind: "procedures");
 
         Assert.True(result.Ok, JsonSerializer.Serialize(result));
         Assert.Single(await db.Operations.Where(o => o.Tool == "query").ToListAsync());
@@ -44,16 +48,17 @@ public sealed class VerbToolTests : IDisposable
         });
 
         var result = await new CommitTool().CommitAsync(
-            new ProcedureStore(db),
-            new WorldStore(db),
-            null!,
-            new MechanicStore(db),
-            new EventTypeStore(db),
-            new SubscriptionStore(db),
-            null!,
-            new OperationLog(db),
-            "procedure",
-            payload,
+            procedures: new ProcedureStore(db),
+            world: new WorldStore(db),
+            effects: null!,
+            mechanics: new MechanicStore(db),
+            eventTypes: new EventTypeStore(db),
+            subscriptions: new SubscriptionStore(db),
+            actions: null!,
+            log: new OperationLog(db),
+            notifications: new NotificationStore(db),
+            kind: "procedure",
+            payload: payload,
             dryRun: true);
 
         Assert.True(result.Ok, JsonSerializer.Serialize(result));
@@ -90,16 +95,17 @@ public sealed class VerbToolTests : IDisposable
     {
         await using var db = _fixture.CreateContext();
         var result = await new CommitTool().CommitAsync(
-            null!,
-            null!,
-            null!,
-            null!,
-            null!,
-            null!,
-            null!,
-            new OperationLog(db),
-            "system",
-            "{}");
+            procedures: null!,
+            world: null!,
+            effects: null!,
+            mechanics: null!,
+            eventTypes: null!,
+            subscriptions: null!,
+            actions: null!,
+            log: new OperationLog(db),
+            notifications: null!,
+            kind: "system",
+            payload: "{}");
 
         Assert.False(result.Ok);
         Assert.Equal("UNKNOWN_KIND", result.Error?.Code);

@@ -19,3 +19,4 @@ assign weapon proficiency
 ```json
 {"roles":{"subject":{"components":["dnd2024.weapon-proficiencies"],"description":"The creature whose complete weapon-category proficiency state is being recorded or corrected."}}}
 ```
+

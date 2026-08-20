@@ -19,3 +19,4 @@ define weapon profile
 ```json
 {"roles":{"weapon":{"components":["dnd2024.weapon-profile"],"description":"The canonical weapon entity whose static profile is being recorded or corrected."}}}
 ```
+

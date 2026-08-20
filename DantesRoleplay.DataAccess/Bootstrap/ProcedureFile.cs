@@ -36,7 +36,9 @@ public sealed record ProcedureFile(
     string Governs,
     string Instructions,
     string Constraints,
-    ProcedureStatus Status)
+    ProcedureStatus Status,
+    string CreatedBy = "",
+    string ChangeNote = "")
 {
     /// <summary>
     /// Content fingerprint. The seeder appends a new version only when this changes, so
@@ -73,6 +75,8 @@ public sealed record ProcedureFile(
         MarkdownDocument.Field(builder, "name", Name);
         MarkdownDocument.Field(builder, "governs", Governs);
         MarkdownDocument.Field(builder, "status", Status.ToString().ToLowerInvariant());
+        MarkdownDocument.TextField(builder, "createdBy", CreatedBy);
+        MarkdownDocument.TextField(builder, "changeNote", ChangeNote);
         MarkdownDocument.CloseFrontMatter(builder);
 
         MarkdownDocument.Section(builder, "Description", Description);
@@ -153,7 +157,9 @@ public sealed record ProcedureFile(
             governs ?? string.Empty,
             instructions,
             constraints ?? string.Empty,
-            status);
+            status,
+            MarkdownDocument.ReadTextField(fields, "createdBy"),
+            MarkdownDocument.ReadTextField(fields, "changeNote"));
     }
 
     private static Dictionary<string, string> ParseSections(string body)

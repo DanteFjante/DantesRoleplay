@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "exportedAt": "2026-08-19T11:46:35.8572716Z",
+  "exportedAt": "2026-08-20T10:06:30.7140357Z",
   "sourceDatabase": "C:\\Users\\dante\\source\\repos\\DantesRoleplay\\DantesRoleplay.MCPServer\\data\\dantesroleplay.db",
   "includesWorld": true,
   "records": [
@@ -139,17 +139,38 @@
     },
     {
       "kind": "procedure",
-      "id": "procedure.event.define",
+      "id": "procedure.event.chain-limits",
       "version": 1,
-      "contentHash": "19BBB41C3A7FB4464617105DE9411F9A285696CA49D4DA4CE664B8CF1F01F3BE",
+      "contentHash": "9F418D9D00480FADE35AED4B9D06E7C79C7B09435E40AF0F2AAD43E4721B46B1",
+      "path": "procedures/event/procedure.event.chain-limits.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.event.define",
+      "version": 2,
+      "contentHash": "C4CA64952AF0989BC218F02EE5B020648DBEA7672F3747A3CD3C77AC66F238C7",
       "path": "procedures/event/procedure.event.define.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.event.guard",
-      "version": 1,
-      "contentHash": "3116BD13045BFE3C16C5EEBAB32E1745D336AABDF0BE98CB54715E60D5AA2B45",
+      "version": 3,
+      "contentHash": "5B82D51C132620DD71489EC89E956272341F9CCE3535BC29F5708410A7B3B256",
       "path": "procedures/event/procedure.event.guard.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.event.inspect",
+      "version": 2,
+      "contentHash": "38490BE8D1F2D4E9BC4ACCADAFD85151278442BF617EA2ED7D709D35907D1A01",
+      "path": "procedures/event/procedure.event.inspect.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.event.react",
+      "version": 2,
+      "contentHash": "0A93604C6FFD91068F7F71D96D949B2BFD0F4BC28C539F87AEEF979E271CD516",
+      "path": "procedures/event/procedure.event.react.md"
     },
     {
       "kind": "procedure",
@@ -321,23 +342,30 @@
     },
     {
       "kind": "procedure",
-      "id": "procedure.subscription.create",
+      "id": "procedure.notification.inspect",
       "version": 1,
-      "contentHash": "DBFEB73EB3BB6BAE93AD734CFA875361BFE58B6024CE7AE5CDABA70F71099B12",
+      "contentHash": "B22884707158C752A7858C6C717DF3FEA51DB049F3CC983FC2DF447FDD2A20B9",
+      "path": "procedures/notification/procedure.notification.inspect.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.subscription.create",
+      "version": 2,
+      "contentHash": "82653B279358D1322CEA29664705593C1540A1F3C9C081552DA9071A88F4E62E",
       "path": "procedures/subscription/procedure.subscription.create.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.subscription.modify",
-      "version": 1,
-      "contentHash": "1EB54DEB29E20F253DC596682F62235F4840ED58C528BDF2B041D86DE7CDA948",
+      "version": 2,
+      "contentHash": "EE55B581C4FC7532811D4D6627EBC195264F9FACD42A2FF17AFCAEA977E0F00E",
       "path": "procedures/subscription/procedure.subscription.modify.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.system.create-feature",
-      "version": 5,
-      "contentHash": "90246134B051FD5268EF0291424494379EEB2BEE212C16A7E55AF5807211AF67",
+      "version": 6,
+      "contentHash": "3E683EE4958BC7A146880A491D3F1ED903481749DACABC3C4DB6994A05B907F4",
       "path": "procedures/system/procedure.system.create-feature.md"
     },
     {
@@ -357,8 +385,8 @@
     {
       "kind": "procedure",
       "id": "procedure.system.use",
-      "version": 2,
-      "contentHash": "02EDE44AF42661EFD887ABCEC7A6966FD58DE55AE0C9C6536C9160F60B2CA163",
+      "version": 4,
+      "contentHash": "42ACF28B4C4CA45D29B43C6422EA33620D3096FBB39457FB6455CCB240BE761F",
       "path": "procedures/system/procedure.system.use.md"
     },
     {
@@ -469,64 +497,64 @@
     {
       "kind": "eventType",
       "id": "world.component.added",
-      "version": 1,
-      "contentHash": "ED984679B3F6E3F40690E4E7770DDD061C7F16865D9C80408977E908147E0F88",
+      "version": 2,
+      "contentHash": "2628786F498681322A058C915C72BD4F87D4AFC1D38C8A7BAA2A0B54A7FBF032",
       "path": "event-types/world.component.added.json"
     },
     {
       "kind": "eventType",
       "id": "world.component.merged",
-      "version": 1,
-      "contentHash": "873294ABDE658386CF323085FBA95BBF9DE7E3C532A7807B45B7FAEE2815D655",
+      "version": 2,
+      "contentHash": "92893536736275205DEEDCB83006F5BE43073730D449561016E0967E595DC25F",
       "path": "event-types/world.component.merged.json"
     },
     {
       "kind": "eventType",
       "id": "world.component.removed",
-      "version": 1,
-      "contentHash": "346BA7E1606A16127524E4CF06EB1E5CD156577E741B31052AA0F2A672B099CC",
+      "version": 2,
+      "contentHash": "6994F134C26DBD0F78B432A4D8F5CC46A388BDDA47A35C6A5806D19D392ACD79",
       "path": "event-types/world.component.removed.json"
     },
     {
       "kind": "eventType",
       "id": "world.component.replaced",
-      "version": 1,
-      "contentHash": "11A78A29990C07AF7C9DA17D491BCF332EBD97F352570E03793F4A6087270BC5",
+      "version": 2,
+      "contentHash": "9726DFAF59E90A85719F97BF342F1081BAAC1F6CC6E1E36BF1F575FD8FE01DBE",
       "path": "event-types/world.component.replaced.json"
     },
     {
       "kind": "eventType",
       "id": "world.containment.moved",
-      "version": 1,
-      "contentHash": "085BE209BB041BEFCDDD6AE5225C7381EC385A3B8850A24463C7AE2C6192F980",
+      "version": 2,
+      "contentHash": "ECB6B72820F44E57431B55B9675772C135F44C17B5F713692451014E1DF392E0",
       "path": "event-types/world.containment.moved.json"
     },
     {
       "kind": "eventType",
       "id": "world.entity.created",
-      "version": 1,
-      "contentHash": "3BB3E71C9EFEA2C9F54E16F30753B946A6A0F6AB4BE64D850CDD958E0345954A",
+      "version": 2,
+      "contentHash": "41E512D718D16AE8757B08991DB4F9DECF868E2E3745CDCF5F35195EF317B250",
       "path": "event-types/world.entity.created.json"
     },
     {
       "kind": "eventType",
       "id": "world.entity.deleted",
-      "version": 1,
-      "contentHash": "3EE602A9D777D21B221BB2384BA3E5CA7DD543C6D42D349C1FFDB897B7025B0D",
+      "version": 2,
+      "contentHash": "1BDB012654DCBB4E3E63CFDF7EFA819607EE6037C63E3D2122648C374DE89375",
       "path": "event-types/world.entity.deleted.json"
     },
     {
       "kind": "eventType",
       "id": "world.relationship.created",
-      "version": 1,
-      "contentHash": "C4D86EBE73823C224355C01A088F767A76D04BFB3D88E8614DD400956A205D32",
+      "version": 2,
+      "contentHash": "F20FD219E35FD605A1AC1B6DC1A26C9655424DDA684D4015FE19B80B41C184CA",
       "path": "event-types/world.relationship.created.json"
     },
     {
       "kind": "eventType",
       "id": "world.relationship.removed",
-      "version": 1,
-      "contentHash": "BE16D006ECA760B5C75AB7EB9583C6F30F644D0A358F5B093CB818E461A10EAC",
+      "version": 2,
+      "contentHash": "756D0DF36C520494C69E9FA010F3AE0188C83B733EB41831605BF675E8637770",
       "path": "event-types/world.relationship.removed.json"
     },
     {
@@ -612,6 +640,13 @@
       "version": 0,
       "contentHash": "AFC013189E73ACD22D447EE827355BBAB539C92CB2FB51179C46B382B8DB41B8",
       "path": "world/entities/weapon.dnd2024.shortbow.json"
+    },
+    {
+      "kind": "relationships",
+      "id": "world/relationships.json",
+      "version": 0,
+      "contentHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "path": "world/relationships.json"
     }
   ]
 }

@@ -1,6 +1,6 @@
 # DantesRoleplay — status
 
-Last updated 2026-08-19. Tracks against `ARCHITECTURE.md`. Update this in the same change that
+Last updated 2026-08-20. Tracks against `ARCHITECTURE.md`. Update this in the same change that
 moves an item.
 
 **Legend:** ✅ done and covered by passing tests · 🟡 partly done, or done but unreachable ·
@@ -258,19 +258,35 @@ The risk `ARCHITECTURE.md` §2 calls the major one. Three things answer it, all 
   Initiative order, critical Dagger attack, and damage application with identical structured
   results and final state. Only the encounter order and target current Hit Points change. Catalog
   verification reports 74 matching records and the full suite passes 304/304.
-- 🟡 E1 events/subscriptions has a revised implementation plan at
-  `EVENTS_AND_SUBSCRIPTIONS_PLAN.md`. It covers registered multi-hop events, tracked-entity and
-  payload filters, pre-commit guard middleware that can veto proposed changes, richer conditions
-  in event mechanics, deterministic random occurrences, transactional in-system notifications,
-  rollback, replay, and loop guards. Real-time scheduling and external delivery remain separate
-  capabilities. Slices 1–3 are implemented and verified: event types, the mode-aware versioned
-  middleware registry, and transactional pre-commit guards are available. A guard denial rolls
-  back the root and records structured evidence. Slice 4's accepted structural-event ledger is the
-  next candidate, pending review and explicit authorization. There is still no accepted-event
-  ledger, reaction routing, or notification runtime.
+- ✅ E1 events and subscriptions is complete: all six slices of
+  `EVENTS_AND_SUBSCRIPTIONS_PLAN.md` are implemented and verified at 365/365. Event types and a
+  mode-aware versioned middleware registry; pre-commit guards that veto a proposed change and roll
+  the root back with structured evidence; an append-only structural event ledger whose payloads
+  carry `before` and `after`, so the record says what a change replaced and not only what it set;
+  reaction subscriptions whose effects commit in the same transaction as the change that triggered
+  them; events a rule declares itself, validated at emission and answerable by further rules; and
+  notifications, written once by a committed reaction and never editable afterwards.
+  Bounded by four chain limits with four distinct codes, and reproducible: every reaction's seed is
+  derived from the root, so a chain replays exactly.
+  What is deliberately absent: real-time scheduling, and external delivery of any kind. A
+  notification is a row that waits until somebody asks. Nothing in the system moves unless a verb
+  is called.
 - ✅ `procedure.system.create-feature` establishes the file-first repository-wide workflow: plan
   to verified leaves, implement one lowest unimplemented slice in catalog files, dry-run/import/
   verify it against the database, then stop for review.
+- 🟡 Feature 11 has a complete planning-only dependency plan at
+  `ruleset/dnd2024/feature-11/FEATURE-11-DEPENDENCY-PLAN.md`. It scopes turn/round lifecycle to
+  one encounter-owned state derived from Feature 5's Initiative snapshot; Slice 1 alone creates
+  the closed state and start transition. Advance and explicit end remain separately review-gated.
+  No runtime game artifact was created. Current unrelated catalog/database drift must be resolved
+  before its file-first import pass.
+- 🟡 `STORY_FIRST_ROADMAP.md` now makes persistent world, exploration, lore, quests, and fresh-
+  session continuity the product priority. `world/feature-01/WORLD-FEATURE-01-DEPENDENCY-PLAN.md`
+  is the first new-standard feature plan: it specifies persistent world topology through one
+  implementation slice, recursive dependencies, ownership, closed data, a fixture graph, and a
+  full acceptance matrix. Slice 1 awaits confirmation of permanent IDs/schema meanings. Under the
+  repository-first workflow, catalog/database drift blocks persistent import for integration/release
+  but not planning or disposable `roleplay validate catalog` verification.
 - 🟡 Invalid action input returns the mechanic's correct explanation but still pairs it with the
   misleading generic fix “the rule is broken, not your arguments.” The runbook records this
   pre-existing surface defect.
@@ -427,7 +443,6 @@ makes the MVP reachable.
 
 | Item | Why it waits |
 | --- | --- |
-| Events + subscriptions runtime (P10) | Slices 1–2 are verified: event types and the mode-aware subscription registry are file-first and available through MCP. Slice 3 pre-commit guards is the next candidate, pending review and authorization. There is still no guard execution, event ledger, reaction routing, or `event.emit` effect. |
 | Composition — `ctx.mechanics.run` (§9.7) | Only matters once enough mechanics exist to duplicate each other. |
 | Multi-step actions — `ctx.ask` | "Which slot do you want to burn?" is a refinement, not a blocker. |
 | Growth controls ladder (P12) | The duplicate warning already exists; the full Reuse→Create ladder needs a mechanic population first. |
@@ -455,9 +470,9 @@ removed later if it turns out to be wrong.
 
 ## Housekeeping
 
-- ⬜ Delete `_to_delete/` when satisfied
+- ✅ Removed superseded `_to_delete/` code and stopped tracking local/generated artifacts
 - ⬜ Pin a newer `SQLitePCLRaw.bundle_e_sqlite3` (CVE-2025-6965, warning only)
-- ⬜ Add `_packages/` and `_src.tgz` to `.gitignore`
+- ✅ `_packages/`, `_src.tgz`, output logs, tool secrets, and the development database are ignored
 - ℹ️ **This container has no NuGet access.** Any new package has to be restored on your machine and
   copied into `_packages/`, which is where Jint and Acornima came from. Worth remembering before
   the next dependency, rather than rediscovering it as a confusing restore failure.

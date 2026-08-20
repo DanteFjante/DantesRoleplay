@@ -9,7 +9,7 @@ namespace DantesRoleplay.Events;
 /// that carried only a payload would leave the host inventing that context at the moment of
 /// execution, differently in each place that executes one.
 /// </summary>
-/// <param name="Ordinal">Position in the proposing batch. Becomes the accepted row's sequence.</param>
+/// <param name="Ordinal">Position in the proposing batch. The ledger preserves this ordering when it assigns the next sequence.</param>
 /// <param name="Depth">0 for a root world change. A reaction's children are one deeper.</param>
 /// <param name="CorrelationId">The root operation id; see EventRecord.RootOperationId.</param>
 /// <param name="CausationId">The event being handled, when this was proposed by a reaction to it.</param>
@@ -21,7 +21,14 @@ public sealed record ProposedEvent(
     int Ordinal,
     int Depth = 0,
     string CorrelationId = "",
-    string CausationId = "");
+    string CausationId = "",
+
+    /// <summary>
+    /// Set only when a rule DECLARED this event rather than the kernel deriving it from a change.
+    /// Carried on the proposal rather than passed alongside it, so nothing has to thread an extra
+    /// argument through the guard and ledger signatures that every other caller would ignore.
+    /// </summary>
+    string ProducerExecutionId = "");
 
 /// <summary>Explanation of one deterministic guard evaluation; not a durable execution record.</summary>
 public sealed record GuardEvaluation(

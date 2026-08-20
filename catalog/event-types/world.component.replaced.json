@@ -1,1 +1,8 @@
-{"id":"world.component.replaced","category":"world","name":"Component replaced","description":"A structural component replacement.","scope":"","status":"active"}
+{
+  "id": "world.component.replaced",
+  "category": "world",
+  "name": "Component replaced",
+  "description": "A structural component replacement.",
+  "scope": "",
+  "status": "Active"
+}

@@ -8,6 +8,7 @@ ITool[] tools =
 [
     new ExportTool(),
     new ImportTool(),
+    new ValidateTool(),
     new VerifyTool(),
     new HashesTool(),
     new BackfillHashesTool()
@@ -35,7 +36,9 @@ string databasePath;
 
 try
 {
-    databasePath = DatabaseLocator.Resolve(parsed.Options.GetValueOrDefault("database"));
+    databasePath = tool.RequiresDatabase
+        ? DatabaseLocator.Resolve(parsed.Options.GetValueOrDefault("database"))
+        : string.Empty;
 }
 catch (FileNotFoundException ex)
 {

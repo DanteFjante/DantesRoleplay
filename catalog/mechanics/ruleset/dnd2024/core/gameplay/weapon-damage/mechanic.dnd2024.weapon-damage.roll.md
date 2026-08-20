@@ -19,3 +19,4 @@ resolve confirmed weapon damage
 ```json
 {"roles":{"subject":{"components":["dnd2024.abilities"],"description":"The creature whose selected attack ability contributes to confirmed weapon damage."},"weapon":{"components":["dnd2024.weapon-profile"],"description":"The canonical weapon supplying base damage facts."}}}
 ```
+

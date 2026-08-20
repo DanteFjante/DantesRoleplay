@@ -10,7 +10,6 @@ status: active
 Defines the D&D 2024 parent that composes one confirmed weapon-damage child and atomically applies its verified result to the target's authoritative Hit Point state. It has no second dice owner and infers no zero-Hit-Point consequence.
 
 ## Instructions
-
 Source and ownership
 
 - Rule source: `source.dnd2024.srd-5.2.1`, locators `Playing the Game > Damage and Healing > Hit Points`, `Damage Rolls`, and `Critical Hits` (PDF page 16).
@@ -30,7 +29,7 @@ Result and verification
 - Run catalog dry-run/import/verify, fresh-database coverage, the full suite, and `git diff --check`.
 
 ## Constraints
-
 - This parent never rolls, recalculates, or trusts caller-supplied damage; it consumes only its declared child evidence.
 - It never changes subject/weapon state, target maximum/source reference, Armor Class, or another entity. No Resistance, Vulnerability, Immunity, temporary Hit Points, healing, condition, death, or damage history is created.
 - Feature 10 may compose the verified attack and damage workflow later; do not revise this parent to introduce turns, range, or attack legality.
+

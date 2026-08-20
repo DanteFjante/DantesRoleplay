@@ -79,8 +79,9 @@ then run the rule.
 
 **1.2 Land `procedure.play.storytelling`.** Drafted at the repo root as `storytelling.md`. It
 assumes the three-verb surface (it already reads correctly against it) and the definitions from 1.3.
-Move it into `DantesRoleplay/Bootstrap/` or commit it through `commit(kind: "procedure")` — either
-path works; the file path is the one with a build-time check behind it now.
+Move it into the appropriate branch under `catalog/procedures/` and run `.\roleplay validate
+catalog`. The non-ruleset catalog procedures are embedded for fresh-install seeding, so no
+bootstrap mirror or MCP commit is required during repository development.
 
 If 1.1 reveals the need, add a short `procedure.play.session` covering session start: orient →
 query world → resume the open chapter.
@@ -169,11 +170,12 @@ the ranked candidates. Do not design it before the play-test.
 mechanic returns questions, the caller re-runs with answers attached, no resume token, no server
 state. Fits this kernel's statelessness. Includes its known `actionStack` trap.
 
-**3.4 Events and subscriptions.** "When X changes, Y happens" without the GM polling. Keep it in
-orient's `notYetBuilt` until designed. Start from the lesson that made TravelRoleplay's version
-workable: a closed registry of event names, so a bad trigger fails loudly at write time rather than
-never firing. The implementation design, chain limits, transactional behavior, and acceptance
-tests are in [EVENTS_AND_SUBSCRIPTIONS_PLAN.md](EVENTS_AND_SUBSCRIPTIONS_PLAN.md).
+**3.4 Events and subscriptions — BUILT.** Shipped 2026-08-20 across six slices. "When X changes,
+Y happens" without the GM polling, and the lesson that made TravelRoleplay's version workable held:
+the registry of event types is closed and versioned, so a bad trigger fails at write time rather
+than never firing. See [EVENTS_AND_SUBSCRIPTIONS_RECEIPT.md](EVENTS_AND_SUBSCRIPTIONS_RECEIPT.md)
+for what exists and [EVENTS_AND_SUBSCRIPTIONS_PLAN.md](EVENTS_AND_SUBSCRIPTIONS_PLAN.md) for why
+each piece is shaped the way it is.
 
 **3.5 Campaign lifecycle beyond snapshot** — a scope-aware "new campaign from shared rules" path.
 
@@ -213,30 +215,6 @@ SPA, schema enforcement of component data. All premature until someone other tha
 
 ## Housekeeping
 
-Not on the MVP path, but cheap and worth doing before the repository gets shared or a play-test
-database becomes precious.
-
-**Tracked files that should not be tracked.** `git rm` them and let `.gitignore` keep them out
-(the entries are already added):
-
-```
-git rm -r --cached _to_delete && rm -rf _to_delete
-git rm --cached _src.tgz .webui_secret_key DantesRoleplay.MCPServer/data/dantesroleplay.db
-```
-
-`_to_delete/` is 14 tracked files of superseded code kept because this session's file bridge cannot
-delete. `_src.tgz` is a build artifact. `.webui_secret_key` belongs to another tool entirely. The
-committed development database means every server run dirties the working tree.
-
-**`ProcedureRelation` is a dead table.** The entity, the enum, the `DbSet` and the model
-configuration all exist; nothing reads or writes any of it, and no tool exposes it. It is the
-"contract parent" idea that `procedure.contract.create` was corrected for on 2026-08-17 — a table
-advertising a capability the system does not have. Removing it needs an EF migration, so it is
-Dante's to run:
-
-```
-dotnet ef migrations add DropProcedureRelations --project DantesRoleplay.DataAccess
-```
-
-after deleting `DantesRoleplay/Procedures/ProcedureRelation.cs` and its `DbSet` and
-`modelBuilder.Entity<ProcedureRelation>` block in `DantesRoleplayDbContext.cs`.
+Completed 2026-08-20: removed the superseded `_to_delete/` tree, generated output logs, packaged
+source archive, and stray tool secret from version control. The development database remains on
+disk for local play but is ignored, so running the server no longer dirties the repository.

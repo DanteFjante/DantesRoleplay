@@ -20,3 +20,4 @@ attack target with dagger
 ```json
 {"roles":{"subject":{"components":["dnd2024.abilities","dnd2024.character-level","dnd2024.weapon-proficiencies"],"description":"The creature making the attack."},"target":{"components":["dnd2024.armor-class"],"description":"The creature whose final Armor Class is the target number."},"weapon":{"components":["dnd2024.weapon-profile"],"description":"The canonical weapon profile used for the attack."}}}
 ```
+

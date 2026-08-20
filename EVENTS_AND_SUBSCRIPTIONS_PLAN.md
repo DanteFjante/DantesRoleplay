@@ -1,6 +1,6 @@
 # Events and subscriptions
 
-Status: **Slices 1–4 verified (322/322); Slice 5 in progress — 5a and 5b written, awaiting a build**
+Status: **COMPLETE. All six slices verified at 365/365.**
 Last updated: 2026-08-19
 
 Slice 1 delivered the versioned event-type tables, migration, JSON Schema syntax validation,
@@ -286,17 +286,28 @@ Only after every root proposal is allowed are accepted ledger events inserted an
 eligible to run. A denial rolls the applied batch back, so “applied inside the transaction” never
 means visible or committed.
 
-| Effect | Registered event type | Required payload |
-| --- | --- | --- |
-| `entity.create` | `world.entity.created` | effect index, entity ID, after entity snapshot |
-| `entity.delete` | `world.entity.deleted` | effect index, entity ID, before entity snapshot |
-| `component.add` | `world.component.added` | effect index, entity/definition IDs, `before:null`, canonical after data |
-| `component.set` | `world.component.replaced` | effect index, entity/definition IDs, canonical before and after data |
-| `component.merge` | `world.component.merged` | effect index, entity/definition IDs, canonical before, patch, and after data |
-| `component.remove` | `world.component.removed` | effect index, entity/definition IDs, canonical before, `after:null` |
-| `containment.move` | `world.containment.moved` | effect index, entity ID, before/after container ID and slot |
-| `relationship.create` | `world.relationship.created` | effect index, from/to IDs, kind, canonical after data |
-| `relationship.remove` | `world.relationship.removed` | effect index, from/to IDs, kind, canonical before data |
+Every payload is in two halves, and the split is a rule rather than a habit. The TOP LEVEL
+identifies what changed and holds only filterable scalars — which is exactly what a subscription's
+`payloadEquals` matches on. `before` and `after` carry state, are never filterable, and are `null`
+when there was nothing there rather than absent. Their shape is fixed per event type, so a reader
+never probes.
+
+| Effect | Registered event type | Top level | `before` / `after` |
+| --- | --- | --- | --- |
+| `entity.create` | `world.entity.created` | effect index, entity ID, name | null / entity snapshot |
+| `entity.delete` | `world.entity.deleted` | effect index, entity ID | entity snapshot / null |
+| `component.add` | `world.component.added` | effect index, entity/definition IDs | null / canonical data |
+| `component.set` | `world.component.replaced` | effect index, entity/definition IDs | canonical data both sides |
+| `component.merge` | `world.component.merged` | effect index, entity/definition IDs, patch | canonical data both sides |
+| `component.remove` | `world.component.removed` | effect index, entity/definition IDs | canonical data / null |
+| `containment.move` | `world.containment.moved` | effect index, entity ID, to ID, slot | container ID and slot both sides |
+| `relationship.create` | `world.relationship.created` | effect index, from/to IDs, kind | null / canonical data |
+| `relationship.remove` | `world.relationship.removed` | effect index, from/to IDs, kind | canonical data / null |
+
+An entity snapshot is `{id, name, containerId, slot, components}`, with components keyed by
+definition id in ordinal order so one state always snapshots to the same bytes. The `data` field
+the first version of these schemas carried is gone: it said what `after` says, and one fact in two
+places is one fact that can disagree with itself.
 
 The nine schemas and event-type files land in Slice 1. Catalog import/export, seeding, migrations,
 and administrative store writes do not emit gameplay events. Only successful
@@ -316,8 +327,9 @@ and administrative store writes do not emit gameplay events. Only successful
    event ID, sequence, or timestamp yet.
 3. Freeze the active matching `guard` registrations and their exact versions. For every proposal
    in ordinal order, apply type/scope/entity/payload filters, then execute matching guards by
-   ascending order and ordinal ID. Derive each guard seed from SHA-256 over an unambiguous binary
-   encoding of root seed, proposal ordinal, subscription ID, mode, and execution ordinal.
+   ascending order and ordinal ID. Predict the ledger sequence in that same proposal order, then
+   derive each guard seed with the reaction derivation: root seed, predicted event sequence,
+   subscription ID, mode, and execution ordinal.
 4. If any guard denies, stop evaluating immediately, roll back, clear tracking, and record one
    failure operation outside the transaction with `EVENT_BLOCKED` and the complete denial evidence.
    No event, reaction execution, notification, success audit, or world delta remains. Invalid guard
@@ -555,11 +567,11 @@ to record the change against. Nothing declared the dependency and no test covere
 walk found it only once the ledger started naming the missing type instead of failing obscurely
 after the commit.
 
-They are kernel contracts, not content — `EventTypeTools` already refuses to let an LLM write one —
-so they now ship as embedded resources under `DantesRoleplay/EventTypes/` and seed like the
-bootstrap contracts, **before** the rules. `EventTypeSeeder` reuses the catalog's own `EventTypeFile`
-parser rather than adding a second reader of the format. The catalog copy is untouched and still
-round-trips.
+They are kernel contracts, not mutable game content — `EventTypeTools` already refuses to let an
+LLM write one — so the canonical files under `catalog/event-types/` are embedded at build time and
+seed **before** the rules. `EventTypeSeeder` reuses the catalog's own `EventTypeFile` parser rather
+than adding a second reader of the format. Startup and catalog import therefore share one authored
+copy.
 
 ### Also corrected: two Slice 3 defects that blocked Slice 5
 
@@ -751,37 +763,107 @@ Contracts landed with the code, as `procedure.system.create-feature` step 6 requ
 - `procedure.event.guard` — revised: the keyed projection, the full envelope, narration and data on
   an allow, the denial code shape, and that guards run on every proposal in a chain.
 - `procedure.subscription.create` / `.modify` — the "does not execute yet" constraints are gone.
-- `procedure.event.chain-limits` and `procedure.event.inspect` — authored as bootstrap files; they
+- `procedure.event.chain-limits` and `procedure.event.inspect` — authored as canonical catalog files and embedded for bootstrap seeding; they
   reach `catalog/` through `roleplay export catalog`.
 - `VerbSurface` and `orient()` no longer say registrations do not execute. This is the second time
   that denial has had to be narrowed; a session is told to believe it over anything else it reads.
 
-**5c — derived events.** Not started. `MechanicOutput.Events`, validation against the exact active
+**5c — event receipts.** The nine `world.*` schemas widened to carry `effectIndex`, `before` and
+`after`, and `component.merged` also `patch`. `EffectReceipt` is the new unit the producer consumes:
+prior state cannot be read after the fact, so each receipt is captured one step before the store
+overwrites it, inside the same transaction. Deliberately NOT backwards compatible — the schemas were
+revised in place rather than shipped alongside a v1, so events written earlier keep their narrower
+payload and their older `typeVersion`, and `procedure.event.inspect` says to read that version
+before concluding an old row means nothing was replaced.
+
+**5d — derived events.** A reaction can now declare an event that no world change describes:
+`MechanicOutput.Events`, parsed and capped by the sandbox harness (50 per run, lower than the effect
+ceiling because an announcement is not a change). `DerivedEvents` validates each one at emission
+against the version of its type active right then, inside the transaction — so a type revised later
+cannot make a recorded event retroactively non-conforming.
+
+Every failure fails the whole root change with `SUBSCRIBER_INVALID_EVENT`: an unregistered or
+inactive type, a payload its schema rejects, a non-object payload, an entity that is not there. So
+does declaring a `world.*` type, which a rule may never do — those are the kernel's own record of
+what it did, and a rule able to forge one could claim a change that never happened in the one place
+whose value is that it can be believed.
+
+A declared event is guarded like any other proposal at its own depth, counts against the chain's
+event budget whether or not it is allowed, and is enqueued so further rules answer it. It carries
+`ProducerExecutionId`, naming the execution that asserted it: causation alone cannot say which of
+two rules answering one event made the claim. One column rather than four, because the execution row
+already holds the subscription, its version, the mechanic, its version and the seed.
+
+`DerivedEventTests`: six cases — it works, it can be answered, it cannot forge a structural event,
+it must match its schema, it cannot name an absent entity, and a guard vetoing one rolls the
+complete root back including the parent reaction's own effects.
+
+Needs a migration for the new column: `dotnet ef migrations add DerivedEventProducer --project DantesRoleplay.DataAccess`. `MechanicOutput.Events`, validation against the exact active
 type version at emission, and a child guard veto rolling back the complete root. `EventExecution.EventCount`
 is hard-coded to zero until it lands, and both the reaction contract and `orient()` say so.
 
 ### Evidence
 
-322/322 was the last green run, taken before 5a. Everything since — 5a, 5b and the contract work —
-is **written and unbuilt**: there is no .NET SDK reachable from the authoring environment, so the
-compiler has not seen it. Nothing here is verified until `dotnet build` and `dotnet test` run clean
-and `roleplay verify catalog` agrees. Do not read the paragraphs above as evidence; they are a
-description of what to check.
+- 322/322 before 5a. 344/344 with 5a, 5b and 5c in, including the three receipt tests.
+- 351/351 with 5d in: the six derived-event cases.
+- `ChainDeterminismTests` closes the gate's remaining named gaps — subscriber order and its id
+  tiebreak, replay into a genuinely fresh database (two fixtures, because one connection is one
+  database), a rich condition that evaluates to nothing and still records that it was asked, and a
+  reaction that never finishes taking the change down with it.
 
-Reimplementation-in-Python checks that did run, against a copy of the live database: all nine event
-payloads conform to their registered schemas, and the content-hash backfill appends zero spurious
-versions. Neither of those covers reaction dispatch, which has no equivalent shortcut — it needs the
-suite.
+Two defects the suite caught that no amount of reading would have. `Evaluate` in JsonSchema.Net 9
+takes a `JsonElement`, not a `JsonNode`. And `EvaluationResults.Details` is null on a leaf, so
+extracting the detail of a failed validation threw — turning a clean rejection into an unhandled
+exception, and only on the one path where a payload actually failed. The verdict is now decided
+before the detail is read, and reading the detail cannot change it.
 
-### Still open before 5c
+Still not covered, and recorded rather than claimed: cancellation mid-chain, a root audit failure,
+and the proportional performance threshold for the no-subscription path.
 
-The `before`/`after` payload decision recorded as Slice 4's deliberate gap, and as KNOWN_ISSUES #5,
-is still open. 5c adds a second producer of events, so it is the last comfortable moment to settle
-whether the plan's mapping table or the shipped schemas is the thing that is wrong.
+### Settled
+
+The `before`/`after` question that Slice 4 recorded as a deliberate gap is closed: the schemas were
+widened to match this plan's mapping table, without backwards compatibility. It was settled BEFORE
+derived events rather than after, because 5d adds a second producer and changing two is more than
+twice the work of changing one.
 
 ## Slice 6 — tracked-item notifications and final surface
 
-Status: blocked on Slice 5 review.
+Status: **complete, verified at 365/365.**
+
+`Notification` and `NotificationEntity`, `MechanicOutput.Notifications` (capped at 20 per run —
+lower again than events, because a rule telling somebody twenty separate things in one change has
+not thought about who is reading them), `DeclaredNotifications` validating in the router,
+`query(kind: "notifications")`, `commit(kind: "notification")`, and
+`procedure.notification.inspect`.
+
+The line the whole slice holds is between CONTENT and DELIVERY STATE. Content and links are written
+once, by a reaction that committed with its entire chain, and are never editable — a notice is
+evidence that a rule at a version decided this was worth saying, and text that could be revised
+later would look like evidence without being it. The commit can move a notice between `unread`,
+`read` and `archived` and touch nothing else.
+
+Archiving is one-way. "I have dealt with this" must not be something a later mistake quietly undoes,
+and nothing is lost because `state: "archived"` still reads it. Reading records when it was FIRST
+read; marking unread clears that; archiving keeps it. Every transition is idempotent for the state
+already held, so a client retrying a call it is unsure about does not have to discover which way the
+first attempt went. Neither verb emits an event: telling somebody something is not a change to the
+world, and reading a notice is not a change to anything.
+
+`entityId` filters through the join index, never the body. A text search finds notices that merely
+mention a name and misses every one that does not spell it out.
+
+`NotificationTests`: ten cases, including that a rolled-back change leaves no notice behind — the
+one that would catch a notice escaping the transaction that justified it.
+
+Two long-standing entries closed on the way through. `QueryTool`/`CommitTool` positional fragility
+(KNOWN_ISSUES #7) broke exactly as predicted when a store was added, so those call sites are named
+arguments now. And `SubscriptionTools` still told every caller "the registration is stored but
+middleware does not execute yet".
+
+Needs a migration: `dotnet ef migrations add Notifications --project DantesRoleplay.DataAccess`.
+
+### The original Slice 6 plan, for the record
 
 Runtime artifacts:
 

@@ -410,7 +410,6 @@ Three concepts only:
 ```
 ProcedureContract
 ProcedureContractVersion
-ProcedureRelation
 ```
 
 A contract contains at least: `Id`, `Name`, `Category`, `Description`, `Status`, `Version`,
@@ -1013,7 +1012,7 @@ Procedures/    ProcedureContract, ...Version, ...Relation, models, IProcedureSto
 Operations/    Operation, IOperationLog
 World/         Entity, ComponentDefinition, Component, Containment, Relationship,
                models, IWorldStore                                          P5–P6
-Bootstrap/     *.md — the seeded operating manual, embedded resources
+../catalog/procedures/ non-ruleset *.md — the seeded operating manual, embedded resources
 ```
 
 **[P] The core has zero PackageReferences, and that is a rule rather than a coincidence.** If one
@@ -1044,9 +1043,11 @@ room, one process. **[P] Holds no logic**: parse arguments, call the engine, sha
 
 ### 8.2 Procedure contracts: authored as files, stored in the database
 
-**Decided 2026-08-16.** Contracts are written as markdown with flat front matter under
-`DantesRoleplay/Bootstrap/`, embedded into the core assembly, and seeded into the database at
-startup. Seeding is idempotent by content hash, so restarts write nothing until a file changes.
+**Decided 2026-08-16; consolidated 2026-08-20.** Contracts are written as markdown with flat front
+matter under `catalog/procedures/`. The non-ruleset contracts are embedded into the core assembly
+under the bootstrap resource name and seeded into the database at startup. Seeding is idempotent
+by content hash, so restarts write nothing until a file changes. There is no mirrored authored
+copy under `DantesRoleplay/Bootstrap/`.
 
 Why both rather than one:
 
@@ -1058,7 +1059,8 @@ Why both rather than one:
 
 **[L]** Files alone would also recreate TravelRoleplay's split, where base rules lived on disk and
 learned rules lived in a store — two deployment models for one kind of artifact, invisible from
-inside the game. Here the database is the single runtime source; files are the starting point.
+inside the game. Here the database is the single runtime source during play; repository files are
+the development source and the reviewed input to installation.
 
 ### 8.3 Database: SQLite, and **not** Postgres yet
 
@@ -1201,12 +1203,12 @@ The thinnest slice that is genuinely useful:
 | Piece | Scope |
 | --- | --- |
 | SQLite + migrations | `Engine/Database/` — one file, created on first run |
-| Schema | `ProcedureContract`, `ProcedureContractVersion`, `ProcedureRelation`, `Operation` |
+| Schema | `ProcedureContract`, `ProcedureContractVersion`, `Operation` |
 | Retrieval | `list_procedures()`, `search_procedures(query)` over **FTS5** — no embeddings (§8.3) |
 | Writes | create / update a contract, producing a new version |
 | Audit | every call writes an `Operation` row (§P3) |
 | MCP host | `/mcp` reachable from a local client, five or six tools, uniform envelope (§7.3) |
-| Seed | a handful of bootstrap contracts from `Engine/Bootstrap/` |
+| Seed | the embedded non-ruleset contracts from `catalog/procedures/` |
 
 **No entities, no components, no mechanics, no sandbox, no events, no web app.**
 

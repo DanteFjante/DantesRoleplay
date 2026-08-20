@@ -4,22 +4,22 @@ For whoever picks this up next. The design record is `CATALOG_PORTABILITY_PLAN.m
 gates, evidence); this document is the part that is not in the code or that plan — current state,
 the decisions that are load-bearing, and the traps in this environment that cost real time.
 
-Last worked: 2026-08-19.
+Last worked: 2026-08-20.
 
 ---
 
-## 1. Do this first
+## 1. Acceptance check
 
-**Four bug fixes are written and have never been compiled.** Until this passes, the feature has a
-known defect: relationships silently fail to import into a fresh database.
+Run the normal build, filesystem catalog validation, and test suite:
 
 ```powershell
-dotnet build > out-build.txt 2>&1
-dotnet test  > out-test.txt  2>&1
+dotnet build
+.\roleplay validate catalog
+dotnet test --no-build
 ```
 
-Expect **291 passed, 0 failed**. The previous run was 287/291; the four failures are fixed but
-unverified. Then commit — `CatalogCoverageTests.cs` is untracked and the four fixes are uncommitted.
+The accepted baseline on 2026-08-20 is **372 passed, 0 failed**. Do not commit redirected build or
+test output; failures should remain visible in the terminal and reproducible with the command.
 
 ---
 
@@ -80,8 +80,17 @@ The world is mostly tombstones: **25 entity rows, 6 live**; 31 component rows, 8
 | `DataAccess/Catalog/EntityFile.cs`, `RelationshipsFile.cs`, `ComponentDefinitionFile.cs` | The non-markdown formats. |
 | `DantesRoleplay.Tools/` | Console host, assembly name `roleplay`. Add a tool = one file + one line in `Program.cs`. |
 
-Commands: `export`, `import`, `verify`, `hashes`, `backfill-hashes`. All output goes to **stdout**;
-only `export` and a real `import` touch disk.
+Commands: `export`, `import`, `validate`, `verify`, `hashes`, `backfill-hashes`. All output goes to
+**stdout**. `validate` uses only disposable copies; only `export` and a real `import` touch the
+selected catalog or persistent database.
+
+**Invoke them with `.\roleplay <command> <directory>` from the repository root.** `roleplay` is the
+assembly name, not a global tool — `roleplay.cmd` at the root forwards to
+`DantesRoleplay.Tools\bin\Debug\net10.0\roleplay.exe` and builds it if it is missing. Every document
+here said `roleplay export catalog` for a week before anybody discovered that command did not exist.
+
+A `.cmd` and not a `.ps1`: PowerShell refuses unsigned scripts under the default execution policy,
+so a PowerShell shim would have traded one piece of friction for another.
 
 ### The drift table
 
@@ -138,35 +147,25 @@ the last state at which they agreed.
 
 ---
 
-## 6. Known gaps, deliberately open
+## 6. Coverage
 
-Both are recorded in `CatalogCoverageTests`, marked `GAP:`, and the test fails if anyone closes one
-without removing the entry.
-
-- **`procedure_relation` is not exported.** A real table (`FromContractId`, `ToContractId`, `Kind`)
-  with zero rows, because nothing in the solution reads or writes it — no store method, no MCP verb,
-  no seeder. Dead schema, exactly as `SourceHash` was before Slice 0. If contract relations ever get
-  an API they must join the catalog in the same change.
-- **`ChangeNote` and `CreatedBy` are lost on a round trip.** Authored text, not derived: 10 of 10
-  mechanics and 26 of 27 contracts have a non-empty change note on their *current* version, and
-  import replaces every one with "Imported from the catalog." Closing this means carrying both as
-  front matter, **outside** the fingerprint, since they describe an edit rather than the edited thing.
-
-Coverage is otherwise total: **84 columns, 50 carried, 34 deliberately not, zero unclassified.**
-The guard fails when a new table or column appears until someone classifies it, and classifying it
-means writing the sentence explaining the choice.
+Coverage is total: the guard fails when a new table or column appears until someone classifies it,
+and classifying it means writing the sentence explaining the choice. Current version provenance
+(`CreatedBy` and `ChangeNote`) is catalog data for mechanics, procedures, event types, and
+subscriptions; it is intentionally outside the content fingerprint. Markdown writes those text
+fields as JSON strings in front matter, so a multi-line note remains one front-matter line and
+round-trips exactly.
 
 ---
 
 ## 7. Working in this environment — read this before you lose an hour
 
-- **There is no .NET SDK.** Microsoft's package and download endpoints are blocked in the cloud
-  container, and the desktop bridge VM has no `dotnet`. You cannot build, test or run anything.
-  The user builds in Visual Studio and reports back.
-- **Do not run `git` through the bridge.** `device_bash` cannot delete files, so every `git status`
-  leaves a `.git/index.lock` it cannot remove, and the user's next git command fails with
-  *"Unable to create index.lock: File exists."* This happened twice. Read git state only if you must,
-  and warn the user to delete the lock afterwards.
+- **Startup content has one authored copy.** Non-ruleset procedures, generic mechanics, and kernel
+  event types are authored under `catalog/` and embedded by `DantesRoleplay.csproj` under the
+  resource names expected by the seeders. A fresh install remains self-sufficient without mirrored
+  `DantesRoleplay/Bootstrap/`, `DantesRoleplay/Rules/`, or `DantesRoleplay/EventTypes/` trees. Edit
+  the catalog file and run `.\roleplay validate catalog`; synchronize a persistent database only for
+  integration play or release.
 - **The user's shell is PowerShell 5.1** — `&&` is a parse error. Use separate lines or
   `; if ($LASTEXITCODE -eq 0) { ... }`.
 - **Redirected output is UTF-16.** `dotnet ... > out.txt 2>&1` from PowerShell produces UTF-16LE.
@@ -233,5 +232,5 @@ Two `ActionRunnerTests` composition tests were failing when this work started �
 tracked in that plan's own "Blocker acceptance requirements" section. They passed in the most recent
 run, so something fixed them; verify before relying on it.
 
-`ROADMAP.md` claims "Repository regression baseline: 213/213 tests". That line is **stale** — the
-suite is 291 tests. Do not treat it as green.
+A pinned regression baseline used to live in `ruleset/dnd2024/ROADMAP.md`. It was wrong twice —
+213 and then 304, while the suite was neither — so the number is gone. Read the last run.

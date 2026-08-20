@@ -10,7 +10,6 @@ status: active
 Defines one effect-free D&D 2024 weapon attack resolver. It reads authoritative attacker, target, and canonical weapon state, then reports hit/miss and natural 20/1 classification without dealing damage or changing the world.
 
 ## Instructions
-
 Source and scope
 
 - Rule source: `source.dnd2024.srd-5.2.1`, locators `Playing the Game > D20 Tests > Attack Rolls` (PDF pages 6–7) and `Equipment > Weapons > Weapon Proficiency` (PDF page 89).
@@ -34,7 +33,7 @@ Result and verification
 - Run catalog dry-run/import/verify, fresh-database integration coverage, the full suite, and `git diff --check`.
 
 ## Constraints
-
 - This resolver owns transient weapon-attack evidence only. It never creates components, writes outcomes, rolls damage, or changes Hit Points.
 - It reads final Armor Class only from `dnd2024.armor-class`, and weapon facts only from `dnd2024.weapon-profile`.
 - It never defaults absent/corrupt profile, proficiency, level, ability, or Armor Class state; a later feature must not revise this owner merely to add damage or equipment behavior.
+

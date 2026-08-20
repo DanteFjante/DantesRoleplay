@@ -208,13 +208,22 @@ public sealed class OrientTool
         // believe this list over anything else it reads, so an over-broad denial here is worse
         // than silence: it talks sessions out of a capability that works. Narrow it the same day
         // the capability lands.
-        "Anything happening without a verb being called. Reactive rules DO exist: a registered " +
-        "guard can veto a world change before it commits, an accepted change records structural " +
-        "events you can read with query(kind: \"events\"), and a registered reaction runs on " +
-        "those events with its effects committing in the same transaction. What does not exist " +
-        "yet is a reaction emitting an event of its own, notifications of any kind, and the " +
-        "passage of time — nothing in here moves unless somebody calls a verb.",
-        "Composing one rule from another — a mechanic cannot call another mechanic.",
+        "Anything reaching a person on its own. Reactive rules exist in full — a guard can veto a " +
+        "change before it commits, an accepted change records events you can read with " +
+        "query(kind: \"events\"), a reaction runs on those with its effects in the same " +
+        "transaction, and it can declare an event or raise a notification. But a notification is a " +
+        "row somebody reads when they ask: nothing pushes, mails, polls or schedules, and time " +
+        "does not pass. Nothing in here moves unless somebody calls a verb.",
+        // The last false denial in this list, and it was false for a whole feature. Declarative
+        // composition has worked since Feature 5: a rule declares children in its requirements,
+        // the host runs them first, and their frozen results arrive as ctx.children. What is
+        // genuinely missing is the imperative form, and the difference is worth stating precisely
+        // rather than denying the whole capability.
+        "Calling a rule on demand from inside another. A mechanic CAN compose: declare children in "
+        + "`requirements.children` and their frozen results arrive as ctx.children, resolved before "
+        + "the parent runs, up to eight deep with cycles refused. What does not exist is deciding "
+        + "mid-execution which rule to run — there is no ctx.mechanics.run, and there is no host "
+        + "callback a rule could reach.",
         "Choosing which rule runs. An action selects the best-ranked candidate for the intent; " +
         "there is no way to name a specific mechanic, and no separate dry run for an action.",
         "Inspecting this application's own source or tool registration — not available, so a " +

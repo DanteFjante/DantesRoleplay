@@ -34,12 +34,21 @@ public sealed class GuardRouterTests : IDisposable
         var world = new WorldStore(db);
         var router = new GuardRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine(), new WorldStore(db));
         var result = await new EffectApplier(db, world, router).ApplyAsync(
-            [new Effect { Type = EffectType.EntityCreate, EntityId = "guarded", Name = "Guarded" }]);
+            [new Effect { Type = EffectType.EntityCreate, EntityId = "guarded", Name = "Guarded" }],
+            rootOperationId: "guard-seed-test");
 
         Assert.True(result.Blocked);
         Assert.Equal("TEST_BLOCKED", result.BlockCode);
         Assert.False(await db.Entities.AnyAsync(entity => entity.Id == "guarded"));
-        Assert.Single(result.GuardEvaluations);
+        var evaluation = Assert.Single(result.GuardEvaluations);
+        Assert.Equal(
+            EventRouter.DeriveSeed(
+                EventRouter.RootSeedFrom("guard-seed-test"),
+                sequence: 0,
+                subscriptionId: "subscription.guard.test-create",
+                mode: "guard",
+                ordinal: 0),
+            evaluation.Seed);
     }
 
     [Fact]
@@ -57,6 +66,64 @@ public sealed class GuardRouterTests : IDisposable
         Assert.Single(result.ProposedEvents);
         Assert.Single(result.GuardEvaluations);
         Assert.False(await db.Entities.AnyAsync(entity => entity.Id == "dry-guarded"));
+    }
+
+    [Fact]
+    public async Task A_guard_seed_uses_the_sequence_the_ledger_will_assign()
+    {
+        await using var db = _fixture.CreateContext();
+        await new EventTypeStore(db).WriteAsync(new WriteEventTypeRequest
+        {
+            Id = "world.entity.created",
+            Category = "world",
+            Name = "Entity created",
+            Description = "Test event",
+            PayloadSchema = "{\"type\":\"object\"}",
+            Status = EventTypeStatus.Active
+        });
+        await new MechanicStore(db).WriteAsync(new WriteMechanicRequest
+        {
+            Id = "mechanic.test.allow-create",
+            Category = "test",
+            Name = "Allow create",
+            Description = "Allows test entity creation.",
+            Matches = "allow create",
+            Requirements = "{\"event\":{\"mode\":\"guard\",\"types\":[\"world.entity.created\"]}}",
+            Source = "return { decision: 'allow', narration: 'Allowed for this test.', effects: [] };",
+            Status = MechanicStatus.Active
+        });
+        await new SubscriptionStore(db).WriteAsync(new WriteSubscriptionRequest
+        {
+            Id = "subscription.guard.allow-create",
+            Category = "test",
+            EventTypeId = "world.entity.created",
+            EventMechanicId = "mechanic.test.allow-create",
+            Mode = SubscriptionMode.Guard,
+            Status = SubscriptionStatus.Active
+        });
+
+        const string correlation = "guard-sequence-test";
+        var world = new WorldStore(db);
+        var router = new GuardRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine(), world);
+        var applier = new EffectApplier(db, world, router, new EventLedger(db));
+
+        var first = await applier.ApplyAsync(
+            [new Effect { Type = EffectType.EntityCreate, EntityId = "first", Name = "First" }],
+            rootOperationId: correlation);
+        var second = await applier.ApplyAsync(
+            [new Effect { Type = EffectType.EntityCreate, EntityId = "second", Name = "Second" }],
+            rootOperationId: correlation);
+
+        Assert.True(first.Applied);
+        Assert.True(second.Applied);
+        Assert.Equal(
+            EventRouter.DeriveSeed(
+                EventRouter.RootSeedFrom(correlation),
+                sequence: 1,
+                subscriptionId: "subscription.guard.allow-create",
+                mode: "guard",
+                ordinal: 0),
+            Assert.Single(second.GuardEvaluations).Seed);
     }
 
     [Fact]

@@ -50,7 +50,7 @@ public sealed class CatalogExportTests : IDisposable
     /// row it came from.
     ///
     /// `mechanic.check.threshold` is the fixture because its authored form is already in the
-    /// repository at DantesRoleplay/Rules/check-threshold.md, so this walks the whole loop the
+    /// repository catalog, so this walks the whole loop the
     /// catalog exists to support: file → database → file → database.
     /// </summary>
     [Fact]

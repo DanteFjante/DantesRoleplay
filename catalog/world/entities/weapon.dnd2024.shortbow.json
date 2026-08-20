@@ -5,9 +5,18 @@
     "dnd2024.weapon-profile": {
       "category": "simple",
       "kind": "ranged",
-      "attackAbilities": ["dex"],
-      "damage": { "count": 1, "faces": 6, "type": "piercing" },
-      "sourceRef": { "sourceId": "source.dnd2024.srd-5.2.1", "locator": "Equipment > Weapons" }
+      "attackAbilities": [
+        "dex"
+      ],
+      "damage": {
+        "count": 1,
+        "faces": 6,
+        "type": "piercing"
+      },
+      "sourceRef": {
+        "sourceId": "source.dnd2024.srd-5.2.1",
+        "locator": "Equipment > Weapons"
+      }
     }
   }
 }

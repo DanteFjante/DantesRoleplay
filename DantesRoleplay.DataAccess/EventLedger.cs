@@ -83,7 +83,10 @@ public sealed class EventLedger(DantesRoleplayDbContext db) : IEventLedger
                 // causation; a reaction's children name the event they answer and sit one deeper.
                 CausationId = proposal.CausationId,
                 Depth = proposal.Depth,
-                Sequence = sequence++
+                Sequence = sequence++,
+
+                // Empty for a structural event: nothing declared it, it followed from the change.
+                ProducerExecutionId = proposal.ProducerExecutionId
             };
 
             var ordinal = 0;
@@ -108,7 +111,8 @@ public sealed class EventLedger(DantesRoleplayDbContext db) : IEventLedger
             .Select(row => new EventDetail(
                 row.Id, row.TypeId, row.TypeVersion, row.Scope, row.PayloadJson, row.Timestamp,
                 row.CorrelationId, row.CausationId, row.Depth, row.Sequence, row.RootOperationId,
-                row.Entities.OrderBy(x => x.Ordinal).Select(x => x.EntityId).ToList()))
+                row.Entities.OrderBy(x => x.Ordinal).Select(x => x.EntityId).ToList(),
+                row.ProducerExecutionId))
             .ToList();
     }
 
@@ -135,7 +139,8 @@ public sealed class EventLedger(DantesRoleplayDbContext db) : IEventLedger
                 row.Depth,
                 row.Sequence,
                 row.RootOperationId,
-                row.Entities.OrderBy(x => x.Ordinal).Select(x => x.EntityId).ToList());
+                row.Entities.OrderBy(x => x.Ordinal).Select(x => x.EntityId).ToList(),
+                row.ProducerExecutionId);
     }
 
     public async Task<IReadOnlyList<EventSummary>> FindAsync(

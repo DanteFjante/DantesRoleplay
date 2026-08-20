@@ -10,7 +10,6 @@ status: active
 Defines one effect-free D&D 2024 base weapon-damage resolver. A caller invokes it only after confirming a Feature 8 hit, then it reads canonical weapon facts and a selected ability, reports normal or critical damage, and never changes Hit Points.
 
 ## Instructions
-
 Source and scope
 
 - Rule source: `source.dnd2024.srd-5.2.1`, locators `Playing the Game > Damage and Healing > Damage Rolls` and `Playing the Game > Damage and Healing > Critical Hits` (PDF page 16), plus `Equipment > Weapons` (PDF page 89).
@@ -31,7 +30,7 @@ Result and verification
 - Run catalog dry-run/import/verify, fresh-database integration coverage, full tests, and `git diff --check`.
 
 ## Constraints
-
 - This resolver owns only transient confirmed-hit damage evidence. It never re-rolls an attack, adds Proficiency Bonus, persists an outcome, changes a component, applies damage, or changes Hit Points.
 - Resistance, Vulnerability, Immunity, temporary Hit Points, healing, conditions, unconsciousness, death, massive damage, extra damage sources, and target state are later owners.
 - Feature 9 Slice 2 may consume this exact envelope through declared composition; it must not duplicate this dice or critical owner.
+

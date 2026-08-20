@@ -10,7 +10,6 @@ status: active
 Defines a creature's complete known D&D 2024 Simple/Martial weapon-category proficiency state and its closed administrative writer. It records category membership only; later attack resolution derives Proficiency Bonus and compares this state to a canonical weapon profile.
 
 ## Instructions
-
 Source and scope
 
 - Rule source: `source.dnd2024.srd-5.2.1`, locator `Equipment > Weapons > Weapon Proficiency`, PDF page 89 in System Reference Document 5.2.1.
@@ -40,7 +39,7 @@ Deterministic verification
 - Run catalog dry-run, import, catalog verify, the fresh-database catalog test, the full repository suite, and `git diff --check`.
 
 ## Constraints
-
 - `dnd2024.weapon-proficiencies` contains exactly canonical categories and the fixed sourceRef; missing state is distinct from explicit empty state.
 - The writer accepts only its closed mode/categories input and produces exactly one component effect on subject.
 - It grants nothing and owns no Proficiency Bonus, weapon id, class provenance, attack, damage, or equipment state. Feature 8 must fail closed on absent or corrupt state rather than treating it as empty.
+

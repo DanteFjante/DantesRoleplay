@@ -1,4 +1,5 @@
 using DantesRoleplay.Effects;
+using DantesRoleplay.Notifications;
 
 namespace DantesRoleplay.Events;
 
@@ -12,7 +13,9 @@ namespace DantesRoleplay.Events;
 /// </summary>
 public sealed record ReactionOutcome(
     EventExecution Execution,
-    IReadOnlyList<Effect> Effects);
+    IReadOnlyList<Effect> Effects,
+    IReadOnlyList<DeclaredEvent> Events,
+    IReadOnlyList<DeclaredNotification> Notifications);
 
 /// <param name="Code">A stable failure code when routing aborted. Empty on success.</param>
 public sealed record EventRoutingResult(

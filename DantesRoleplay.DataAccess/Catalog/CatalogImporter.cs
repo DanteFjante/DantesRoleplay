@@ -37,6 +37,7 @@ public sealed class CatalogImporter(
     ISubscriptionStore? subscriptions = null)
 {
     private const string ImportAuthor = "import";
+    private const string ImportChangeNote = "Imported from the catalog.";
 
     private readonly DantesRoleplayDbContext _db = db;
     private readonly IMechanicStore _mechanics = mechanics;
@@ -403,8 +404,8 @@ public sealed class CatalogImporter(
                 Source = file.Source,
                 Scope = file.Scope,
                 Status = file.Status,
-                CreatedBy = ImportAuthor,
-                ChangeNote = "Imported from the catalog."
+                CreatedBy = AuthorFor(file.CreatedBy),
+                ChangeNote = ChangeNoteFor(file.ChangeNote)
             },
             cancellationToken);
 
@@ -424,8 +425,8 @@ public sealed class CatalogImporter(
                 Instructions = file.Instructions,
                 Constraints = file.Constraints,
                 Status = file.Status,
-                CreatedBy = ImportAuthor,
-                ChangeNote = "Imported from the catalog."
+                CreatedBy = AuthorFor(file.CreatedBy),
+                ChangeNote = ChangeNoteFor(file.ChangeNote)
             },
             cancellationToken);
 
@@ -435,16 +436,22 @@ public sealed class CatalogImporter(
     private async Task<bool> WriteEventTypeAsync(EventTypeFile file, CancellationToken cancellationToken)
     {
         if (_eventTypes is null) throw new InvalidOperationException("Event type import requires an event type store.");
-        var result = await _eventTypes.WriteAsync(new WriteEventTypeRequest { Id = file.Id, Category = file.Category, Name = file.Name, Description = file.Description, PayloadSchema = file.Schema, Scope = file.Scope, Status = file.Status, CreatedBy = ImportAuthor, ChangeNote = "Imported from the catalog." }, cancellationToken);
+        var result = await _eventTypes.WriteAsync(new WriteEventTypeRequest { Id = file.Id, Category = file.Category, Name = file.Name, Description = file.Description, PayloadSchema = file.Schema, Scope = file.Scope, Status = file.Status, CreatedBy = AuthorFor(file.CreatedBy), ChangeNote = ChangeNoteFor(file.ChangeNote) }, cancellationToken);
         return result.Created;
     }
 
     private async Task<bool> WriteSubscriptionAsync(SubscriptionFile file, CancellationToken cancellationToken)
     {
         if (_subscriptions is null) throw new InvalidOperationException("Subscription import requires a subscription store.");
-        var result = await _subscriptions.WriteAsync(new WriteSubscriptionRequest { Id = file.Id, Category = file.Category, EventTypeId = file.EventTypeId, EventMechanicId = file.EventMechanicId, Mode = file.Mode, Order = file.Order, FixedRoleEntityIdsJson = file.FixedRoleEntityIdsJson, TrackedEntityIdsJson = file.TrackedEntityIdsJson, PayloadEqualsJson = file.PayloadEqualsJson, MaxExecutionsPerChain = file.MaxExecutionsPerChain, Scope = file.Scope, Status = file.Status, CreatedBy = ImportAuthor, ChangeNote = "Imported from the catalog." }, cancellationToken);
+        var result = await _subscriptions.WriteAsync(new WriteSubscriptionRequest { Id = file.Id, Category = file.Category, EventTypeId = file.EventTypeId, EventMechanicId = file.EventMechanicId, Mode = file.Mode, Order = file.Order, FixedRoleEntityIdsJson = file.FixedRoleEntityIdsJson, TrackedEntityIdsJson = file.TrackedEntityIdsJson, PayloadEqualsJson = file.PayloadEqualsJson, MaxExecutionsPerChain = file.MaxExecutionsPerChain, Scope = file.Scope, Status = file.Status, CreatedBy = AuthorFor(file.CreatedBy), ChangeNote = ChangeNoteFor(file.ChangeNote) }, cancellationToken);
         return result.Created;
     }
+
+    private static string AuthorFor(string createdBy) =>
+        string.IsNullOrWhiteSpace(createdBy) ? ImportAuthor : createdBy;
+
+    private static string ChangeNoteFor(string changeNote) =>
+        string.IsNullOrWhiteSpace(changeNote) ? ImportChangeNote : changeNote;
 
     /// <summary>
     /// Component definitions are the one write in this system that is not append-only: there is no

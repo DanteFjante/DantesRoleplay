@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 
 namespace DantesRoleplay.DataAccess.Bootstrap;
 
@@ -49,6 +50,34 @@ internal static class MarkdownDocument
         }
 
         builder.Append(name).Append(": ").Append(text).Append('\n');
+    }
+
+    /// <summary>
+    /// Writes a text field with JSON string escaping. Provenance can be a real human sentence,
+    /// including line breaks, while front matter deliberately remains one physical line per field.
+    /// </summary>
+    public static void TextField(StringBuilder builder, string name, string? value) =>
+        Field(builder, name, JsonSerializer.Serialize(Content.ContentHash.Normalise(value)));
+
+    /// <summary>
+    /// Reads a text field written by <see cref="TextField"/>. Plain legacy values remain valid so
+    /// older hand-authored catalogs do not become unreadable when provenance is added.
+    /// </summary>
+    public static string ReadTextField(IReadOnlyDictionary<string, string> fields, string name)
+    {
+        if (!fields.TryGetValue(name, out var value))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<string>(value) ?? string.Empty;
+        }
+        catch (JsonException)
+        {
+            return value;
+        }
     }
 
     /// <summary>

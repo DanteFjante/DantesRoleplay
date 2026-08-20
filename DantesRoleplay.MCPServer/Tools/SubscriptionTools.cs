@@ -29,6 +29,6 @@ public sealed class SubscriptionTools
             if (dryRun) return ToolOutcome.Ok(new { Checks = checks, CanWrite = failed is null }, $"Dry run for subscription '{request.Id}'.", VerbSurface.CommitCall("subscription", request.Id));
             if (failed is not null) return ToolOutcome.Fail("INVALID_SUBSCRIPTION", failed.Detail, VerbSurface.CommitCall("subscription", request.Id, true), $"Rejected subscription '{request.Id}'.");
             var result = await store.WriteAsync(request, cancellationToken);
-            return ToolOutcome.OkAbout(request.Id, result.Subscription, result.Created ? $"Created subscription '{request.Id}'." : $"Created version {result.Subscription.Version} of subscription '{request.Id}'.", "The registration is stored but middleware does not execute yet.");
+            return ToolOutcome.OkAbout(request.Id, result.Subscription, result.Created ? $"Created subscription '{request.Id}'." : $"Created version {result.Subscription.Version} of subscription '{request.Id}'.", "An active registration routes from the next matching event onward.");
         }, consumesReadEvidence: !dryRun);
 }

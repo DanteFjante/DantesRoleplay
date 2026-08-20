@@ -16,10 +16,9 @@ namespace DantesRoleplay.DataAccess;
 /// mechanic may do: a guard returns a decision and nothing else, a reaction returns effects and
 /// changes the world.
 ///
-/// The seeds are NOT derived the same way. A guard's seed comes from its registration and the
-/// proposal it is judging; a reaction's comes from the chain's root seed and its position in the
-/// chain, which is what lets a chain replay from the root alone. A guard cannot change the world,
-/// so its draw does not need to survive replay. The divergence is recorded in KNOWN_ISSUES.
+/// Guards and reactions use the same chain-position seed derivation. A guard predicts the sequence
+/// its proposal will receive if accepted; a reaction uses the accepted row's actual sequence. That
+/// makes either ruling reproducible from the root correlation and its audit position alone.
 ///
 /// It does not apply those effects. It returns them, and the effect applier applies them, so world
 /// state still has exactly one doorway. That also avoids the two classes depending on each other,
@@ -250,9 +249,10 @@ public sealed class EventRouter(
             OutputJson = JsonSerializer.Serialize(output),
             EffectCount = output.Effects.Count,
 
-            // Always zero until derived events land. Counted separately from effects because they
-            // are limited separately.
-            EventCount = 0,
+            // Counted separately from effects because they are limited separately, and because
+            // "this rule changed nothing but announced something" is a shape worth seeing at a
+            // glance in the execution log.
+            EventCount = output.Events.Count,
             Narration = output.Narration,
             LogJson = JsonSerializer.Serialize(run.Log),
             ElapsedMilliseconds = run.ElapsedMilliseconds,
@@ -260,7 +260,8 @@ public sealed class EventRouter(
             CreatedAt = DateTime.UtcNow
         };
 
-        return Attempt.Succeeded(new ReactionOutcome(execution, output.Effects));
+        return Attempt.Succeeded(
+            new ReactionOutcome(execution, output.Effects, output.Events, output.Notifications));
     }
 
     // ---- determinism ----------------------------------------------------------------------
@@ -273,8 +274,8 @@ public sealed class EventRouter(
     /// with a separator so two different positions cannot encode to the same bytes: without one,
     /// subscription "a" at ordinal 12 and subscription "a1" at ordinal 2 would share a seed.
     ///
-    /// Little-endian and masked to non-negative. The guard router masks the same way but hashes a
-    /// different tuple with a different separator — see this class's remarks and KNOWN_ISSUES.
+    /// Little-endian and masked to non-negative. Guards call this exact method too; one derivation
+    /// keeps the separator, root-seed, and replay guarantees from drifting apart.
     /// </summary>
     public static long DeriveSeed(long rootSeed, int sequence, string subscriptionId, string mode, int ordinal)
     {

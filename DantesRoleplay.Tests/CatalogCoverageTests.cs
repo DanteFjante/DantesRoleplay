@@ -50,13 +50,6 @@ public sealed class CatalogCoverageTests : IDisposable
     /// <summary>Tables the catalog does not write out, and why not.</summary>
     private static readonly Dictionary<string, string> SkippedTables = new(StringComparer.Ordinal)
     {
-        // KNOWN GAP, deliberately open. Declared in the model with no store method, no MCP verb and
-        // no seeder — nothing in the solution reads or writes it, and it holds zero rows. If that
-        // ever changes, this entry is what should stop the change from silently losing data.
-        ["procedure_relation"] = "GAP: declared but unused. Nothing reads or writes it. "
-            + "If contract relations ever get an API, they must be added to the catalog in the "
-            + "same change, and this entry removed.",
-
         // Runtime evidence, like the operation log — but unlike the log, not even exportable.
         // An event asserts that a particular world change committed. Writing one from a file would
         // be asserting that something happened which did not, so there is deliberately no export,
@@ -67,6 +60,11 @@ public sealed class CatalogCoverageTests : IDisposable
         ["event_execution"] = "Runtime evidence: one reaction subscription that ran against one "
             + "accepted event. Same reasoning as the event itself — it records something that "
             + "happened, so it cannot be authored.",
+
+        ["notification"] = "Runtime evidence. A notice records that a rule, at a version, inside "
+            + "one committed change, decided something was worth telling a person. Authoring one "
+            + "from a file would be putting words in that rule's mouth.",
+        ["notification_entity"] = "Join rows for the above.",
 
         ["__EFMigrationsHistory"] = "Schema bookkeeping, not content. A catalog describes what the "
             + "database holds, not which migrations built it.",
@@ -131,21 +129,23 @@ public sealed class CatalogCoverageTests : IDisposable
         "mechanic.Id", "mechanic.Category", "mechanic.Status", "mechanic.Scope",
         "mechanic_version.MechanicId", "mechanic_version.Name", "mechanic_version.Description",
         "mechanic_version.Matches", "mechanic_version.Requirements", "mechanic_version.Source",
+        "mechanic_version.CreatedBy", "mechanic_version.ChangeNote",
 
         "procedure_contract.Id", "procedure_contract.Category", "procedure_contract.Status",
         "procedure_contract_version.ContractId", "procedure_contract_version.Name",
         "procedure_contract_version.Description", "procedure_contract_version.Instructions",
         "procedure_contract_version.Constraints", "procedure_contract_version.Governs",
+        "procedure_contract_version.CreatedBy", "procedure_contract_version.ChangeNote",
 
         "event_type.Id", "event_type.Category", "event_type.Status", "event_type.Scope",
         "event_type_version.EventTypeId", "event_type_version.Name", "event_type_version.Description",
-        "event_type_version.PayloadSchema",
+        "event_type_version.PayloadSchema", "event_type_version.CreatedBy", "event_type_version.ChangeNote",
 
         "subscription.Id", "subscription.Category", "subscription.Status", "subscription.Scope",
         "subscription_version.SubscriptionId", "subscription_version.EventTypeId", "subscription_version.EventMechanicId",
         "subscription_version.Mode", "subscription_version.Order", "subscription_version.FixedRoleEntityIdsJson",
         "subscription_version.TrackedEntityIdsJson", "subscription_version.PayloadEqualsJson",
-        "subscription_version.MaxExecutionsPerChain",
+        "subscription_version.MaxExecutionsPerChain", "subscription_version.CreatedBy", "subscription_version.ChangeNote",
 
         // The operation log is serialised whole, field for field. It is export only.
         "operation.Id", "operation.Error", "operation.Intent", "operation.ProceduresCited",
@@ -157,20 +157,6 @@ public sealed class CatalogCoverageTests : IDisposable
     /// <summary>Columns the catalog does not carry, and why each one is fine to lose.</summary>
     private static readonly Dictionary<string, string> NotCarried = new(StringComparer.Ordinal)
     {
-        // --- KNOWN GAPS. These are authored text, not derived, and they ARE lost on a round trip.
-        //     Ten of ten mechanics and twenty-six of twenty-seven contracts have a non-empty change
-        //     note on their current version, and an import replaces every one of them with
-        //     "Imported from the catalog." Closing this means carrying both as front matter,
-        //     outside the fingerprint, since they describe an edit rather than the edited thing.
-        ["mechanic_version.ChangeNote"] = "GAP: authored text, lost on a round trip.",
-        ["mechanic_version.CreatedBy"] = "GAP: authored provenance, lost on a round trip.",
-        ["procedure_contract_version.ChangeNote"] = "GAP: authored text, lost on a round trip.",
-        ["procedure_contract_version.CreatedBy"] = "GAP: authored provenance, lost on a round trip.",
-        ["event_type_version.ChangeNote"] = "GAP: authored text, lost on a round trip.",
-        ["event_type_version.CreatedBy"] = "GAP: authored provenance, lost on a round trip.",
-        ["subscription_version.ChangeNote"] = "GAP: authored text, lost on a round trip.",
-        ["subscription_version.CreatedBy"] = "GAP: authored provenance, lost on a round trip.",
-
         // --- Surrogate keys. The catalog addresses records by their real identity.
         ["component.Id"] = "Surrogate key. A component is addressed by (entity, definition).",
         ["containment.Id"] = "Surrogate key. Containment is a property of the contained entity.",
@@ -179,8 +165,6 @@ public sealed class CatalogCoverageTests : IDisposable
         ["procedure_contract_version.Id"] = "Surrogate key.",
         ["event_type_version.Id"] = "Surrogate key.",
         ["subscription_version.Id"] = "Surrogate key.",
-        ["procedure_relation.Id"] = "Surrogate key on an unused table. See SkippedTables.",
-
         // --- Derived. Recomputed on write; carrying them would let a file assert something false.
         ["component.Revision"] = "Derived: a count of writes, incremented by the store.",
         ["mechanic.CurrentVersion"] = "Derived from the version rows.",
@@ -234,6 +218,24 @@ public sealed class CatalogCoverageTests : IDisposable
         ["event.Depth"] = "Runtime evidence, not carried by the catalog.",
         ["event.Sequence"] = "Runtime evidence, not carried by the catalog.",
         ["event.RootOperationId"] = "Runtime evidence, not carried by the catalog.",
+        ["event.ProducerExecutionId"] = "Runtime evidence, not carried by the catalog.",
+        ["notification.Id"] = "Runtime evidence, not carried by the catalog.",
+        ["notification.Topic"] = "Runtime evidence, not carried by the catalog.",
+        ["notification.Subject"] = "Runtime evidence, not carried by the catalog.",
+        ["notification.Body"] = "Runtime evidence, not carried by the catalog.",
+        ["notification.CorrelationId"] = "Runtime evidence, not carried by the catalog.",
+        ["notification.EventId"] = "Runtime evidence, not carried by the catalog.",
+        ["notification.ExecutionId"] = "Runtime evidence, not carried by the catalog.",
+        ["notification.RootOperationId"] = "Runtime evidence, not carried by the catalog.",
+        ["notification.Ordinal"] = "Runtime evidence, not carried by the catalog.",
+        ["notification.CreatedAt"] = "Runtime evidence, not carried by the catalog.",
+        ["notification.State"] = "Delivery state, changed only by commit(kind: \"notification\").",
+        ["notification.ReadAt"] = "Delivery state, changed only by commit(kind: \"notification\").",
+        ["notification.ArchivedAt"] = "Delivery state, changed only by commit(kind: \"notification\").",
+        ["notification_entity.Id"] = "Runtime evidence, not carried by the catalog.",
+        ["notification_entity.NotificationId"] = "Runtime evidence, not carried by the catalog.",
+        ["notification_entity.EntityId"] = "Runtime evidence, not carried by the catalog.",
+        ["notification_entity.Ordinal"] = "Runtime evidence, not carried by the catalog.",
         ["event_entity.Id"] = "Runtime evidence, not carried by the catalog.",
         ["event_entity.EventId"] = "Runtime evidence, not carried by the catalog.",
         ["event_entity.EntityId"] = "Runtime evidence, not carried by the catalog.",
@@ -256,10 +258,6 @@ public sealed class CatalogCoverageTests : IDisposable
         ["event_execution.LimitHit"] = "Runtime evidence, not carried by the catalog.",
         ["event_execution.CreatedAt"] = "Runtime evidence, not carried by the catalog.",
 
-        // --- The unused table's own columns.
-        ["procedure_relation.FromContractId"] = "Unused table. See SkippedTables.",
-        ["procedure_relation.ToContractId"] = "Unused table. See SkippedTables.",
-        ["procedure_relation.Kind"] = "Unused table. See SkippedTables."
     };
 
     [Fact]
@@ -299,14 +297,11 @@ public sealed class CatalogCoverageTests : IDisposable
     }
 
     /// <summary>
-    /// The gaps are gaps on purpose, and saying so out loud is the point of this test.
-    ///
-    /// If somebody closes one, this fails and they delete the entry — which is the moment to also
-    /// update the plan. It is a small nag, and it is the difference between a known limitation and
-    /// a forgotten one.
+    /// There are no intentionally uncarried authored fields. A new one must either become a real
+    /// catalog field or be documented with a reason it is safe to lose.
     /// </summary>
     [Fact]
-    public void The_known_gaps_are_still_the_only_gaps()
+    public void There_are_no_remaining_authored_catalog_gaps()
     {
         var gaps = NotCarried
             .Where(entry => entry.Value.StartsWith("GAP:", StringComparison.Ordinal))
@@ -314,21 +309,8 @@ public sealed class CatalogCoverageTests : IDisposable
             .OrderBy(key => key, StringComparer.Ordinal)
             .ToList();
 
-        Assert.Equal(
-            [
-                "event_type_version.ChangeNote",
-                "event_type_version.CreatedBy",
-                "mechanic_version.ChangeNote",
-                "mechanic_version.CreatedBy",
-                "procedure_contract_version.ChangeNote",
-                "procedure_contract_version.CreatedBy",
-                "subscription_version.ChangeNote",
-                "subscription_version.CreatedBy"
-            ],
-            gaps);
+        Assert.Empty(gaps);
 
-        Assert.Contains("procedure_relation", SkippedTables.Keys);
-        Assert.StartsWith("GAP:", SkippedTables["procedure_relation"], StringComparison.Ordinal);
     }
 
     private List<string> TableNames()

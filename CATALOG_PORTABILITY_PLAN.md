@@ -65,10 +65,10 @@ parallel path.
 | --- | --- | --- |
 | `MechanicFile` | `DataAccess/Bootstrap/MechanicFile.cs` | Parses a rule from markdown: `---` front matter (`id`, `category`, `name`, `scope`, `status`), then `## Description`, `## Matches`, `## Requirements`, `## Source`. Strips code fences. Computes `ContentHash` over every authored field. |
 | `ProcedureFile` | `DataAccess/Bootstrap/ProcedureFile.cs` | Same shape for contracts: `## Description`, `## Instructions`, `## Constraints`, plus a `governs` front-matter field. |
-| `MechanicSeeder` | `DataAccess/Bootstrap/MechanicSeeder.cs` | Loads embedded `Rules/**/*.md`, skips records whose stored `SourceHash` already equals the file's `ContentHash`, writes the rest through `IMechanicStore`. |
-| `ProcedureSeeder` | `DataAccess/Bootstrap/ProcedureSeeder.cs` | Same for embedded `Bootstrap/**/*.md`. |
+| `MechanicSeeder` | `DataAccess/Bootstrap/MechanicSeeder.cs` | Loads generic non-ruleset `catalog/mechanics/**/*.md` plus `.js` sidecars embedded under the rules resource name, skips records whose stored `SourceHash` already equals the file's `ContentHash`, and writes the rest through `IMechanicStore`. |
+| `ProcedureSeeder` | `DataAccess/Bootstrap/ProcedureSeeder.cs` | Loads the non-ruleset `catalog/procedures/**/*.md` files embedded under the bootstrap resource name. |
 | `CategoryPath` | `DantesRoleplay/Categories/CategoryPath.cs` | Owns the dot-delimited category grammar, validation, and the 100-character limit. The one place that knows what a category means. |
-| Working example files | `DantesRoleplay/Rules/check-threshold.md`, `value-adjust.md`, `DantesRoleplay/Bootstrap/*.md` (15 files) | The target format, already readable, already commented, already round-tripping through the seeder at every startup. |
+| Working example files | `catalog/mechanics/check/mechanic.check.threshold.md`, `catalog/mechanics/adjust/mechanic.value.adjust.md`, and `catalog/procedures/**/*.md` | The target formats, readable and diffable; canonical catalog files also seed a fresh runtime without a second authored copy. |
 
 **Evidence the seeder path works:** `mechanic.check.threshold` and `mechanic.value.adjust` are live
 at v1 with `CreatedBy = "seed"`; all 15 bootstrap contracts show `changeNote = "Re-seeded: the
@@ -204,8 +204,8 @@ rule that makes mechanics split into a pair.
 file with the same basename. If both are present, that is an error rather than a precedence
 decision — two sources of truth for one field, caught at parse time.
 
-The existing embedded `Rules/*.md` files keep their inline `## Source` section and keep working
-unchanged. Exported files always use the pair.
+Generic catalog mechanics use the same `.md`/`.js` pair as exported ruleset mechanics. The files are
+embedded at build time, so startup and import read the same authored content.
 
 ### `manifest.json`
 
@@ -387,7 +387,7 @@ These are the Feature 5 mechanic-composition blocker, not a regression from this
   two with `COMPOSITION_FAILED`, and its v4 change note reads *"TEMPORARY DIAGNOSTIC VERSION. The
   parent could not see ctx.children.initiative even though..."*.
 
-**The `ROADMAP.md` line "Repository regression baseline: 213/213 tests" is stale** — it predates the
+**A pinned regression baseline used to live in `ruleset/dnd2024/ROADMAP.md`.** It predated the
 in-flight Feature 5 Slice 2 work. Fixing composition is Feature 5's business, not this feature's.
 
 ### Slice 1 — export, ruleset only *(verified 2026-08-19)*
@@ -399,7 +399,7 @@ Mechanics, procedure contracts, component definitions. Latest version only. Writ
   7 component-definition `.json` files, and a manifest with 44 entries.
 - `catalog/mechanics/check/mechanic.check.threshold.md` + `.js` reparse via `MechanicFile.Parse` to a
   record whose content hash equals the live row's — the seeded rule is the fixture because its
-  authored form is already in the repository at `DantesRoleplay/Rules/check-threshold.md`.
+  canonical authored form is already in that catalog location.
 - Every exported `.js` is valid JavaScript: parse each with Jint's parser in a test. Catches
   fence-stripping and escaping bugs at the point they are introduced.
 - Export is read-only: assert zero rows written and zero operations logged.

@@ -27,6 +27,12 @@ public interface ITool
     string Usage { get; }
 
     /// <summary>
+    /// Whether this tool operates on an existing live database. File-only gates override this so
+    /// they can run in a clean checkout before a runtime database exists.
+    /// </summary>
+    bool RequiresDatabase => true;
+
+    /// <summary>
     /// Process exit code: 0 for success, non-zero for anything a script should stop on. Tools that
     /// report drift use this so CI can assert agreement without parsing the output.
     /// </summary>

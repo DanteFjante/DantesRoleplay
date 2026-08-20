@@ -4,6 +4,7 @@ using DantesRoleplay.Actions;
 using DantesRoleplay.Effects;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Events;
+using DantesRoleplay.Notifications;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.World;
@@ -31,7 +32,7 @@ public sealed class CommitTool
     [McpServerTool(Name = "commit")]
     [Description(
         "Change anything in this system. kind is one of: procedure, component, effects, mechanic, event-type, subscription, " +
-        "action. payload is a JSON object encoded as a string, shaped per kind — " +
+        "action, notification. payload is a JSON object encoded as a string, shaped per kind — " +
         "query(kind: \"capabilities\") gives every shape exactly, and a rejection repeats the one " +
         "you needed. Where dryRun is supported, send dryRun: true first and read every check, then " +
         "commit the identical payload. This is the only path that changes state.")]
@@ -44,7 +45,8 @@ public sealed class CommitTool
         ISubscriptionStore subscriptions,
         IActionRunner actions,
         IOperationLog log,
-        [Description("Closed kind: procedure, component, effects, mechanic, event-type, subscription, or action.")]
+        INotificationStore notifications,
+        [Description("Closed kind: procedure, component, effects, mechanic, event-type, subscription, action, or notification.")]
         string kind,
         [Description("JSON object containing the selected kind's existing tool arguments.")]
         string payload,
@@ -120,6 +122,8 @@ public sealed class CommitTool
                 "subscription" => await CommitSubscriptionAsync(subscriptions, log, parsedPayload.RootElement, intent, proceduresUsed, dryRun, cancellationToken),
                 "action" => await CommitActionAsync(
                     actions, log, parsedPayload.RootElement, intent, proceduresUsed, cancellationToken),
+                "notification" => await CommitNotificationAsync(
+                    notifications, log, parsedPayload.RootElement, intent, proceduresUsed, dryRun, cancellationToken),
                 _ => throw new InvalidOperationException($"Unhandled commit kind '{kind}'.")
             };
         }
@@ -330,6 +334,16 @@ public sealed class CommitTool
     }
 
     /// <summary>
+    /// The one commit that changes no content anywhere. It moves a notice's delivery state and can
+    /// touch nothing else — a call able to edit what a notice says would turn evidence into a draft.
+    /// </summary>
+    private static async Task<ToolEnvelope> CommitNotificationAsync(INotificationStore notifications, IOperationLog log, JsonElement payload, string intent, string[]? proceduresUsed, bool dryRun, CancellationToken cancellationToken)
+    {
+        if (!TryDeserialize(payload, out NotificationPayload? value, out var error) || value is null || string.IsNullOrWhiteSpace(value.Id) || string.IsNullOrWhiteSpace(value.State)) return await InvalidPayloadEnvelope(log, "notification", error ?? "Notification payload requires id and state (unread, read, or archived).", intent, proceduresUsed, dryRun);
+        return await new NotificationTools().SetStateAsync(notifications, log, value.Id, value.State, intent, proceduresUsed, dryRun, cancellationToken);
+    }
+
+    /// <summary>
     /// D4: the expected shape travels inside the rejection, not as a pointer to where the shape
     /// lives. A session that guessed wrong then has everything it needs in the same round trip.
     /// </summary>
@@ -458,5 +472,7 @@ public sealed class CommitTool
         public long? Seed { get; init; }
     }
     private sealed class EventTypePayload { public string? Id { get; init; } public string? Category { get; init; } public string? Name { get; init; } public string? Description { get; init; } public string? Schema { get; init; } public string? Scope { get; init; } public string? Status { get; init; } public string? ChangeNote { get; init; } }
+    private sealed class NotificationPayload { public string? Id { get; init; } public string? State { get; init; } }
+
     private sealed class SubscriptionPayload { public string? Id { get; init; } public string? Category { get; init; } public string? EventTypeId { get; init; } public string? EventMechanicId { get; init; } public string? Mode { get; init; } public int Order { get; init; } public string? FixedRoleEntityIdsJson { get; init; } public string? TrackedEntityIdsJson { get; init; } public string? PayloadEqualsJson { get; init; } public int? MaxExecutionsPerChain { get; init; } public string? Scope { get; init; } public string? Status { get; init; } public string? ChangeNote { get; init; } }
 }

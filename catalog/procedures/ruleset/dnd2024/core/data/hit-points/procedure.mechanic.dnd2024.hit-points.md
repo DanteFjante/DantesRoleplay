@@ -10,7 +10,6 @@ status: active
 Defines one creature's authoritative current and maximum Hit Point state and its closed administrative writer. The pair is always written as one component so no record can contain an unbounded current value or an orphaned maximum.
 
 ## Instructions
-
 Source and scope
 
 - Rule source: `source.dnd2024.srd-5.2.1`, locator `Playing the Game > Damage and Healing > Hit Points` in System Reference Document 5.2.1.
@@ -40,9 +39,9 @@ Deterministic verification
 - Run catalog dry-run, import, catalog verify, the fresh-database catalog test, the full repository suite, and `git diff --check`.
 
 ## Constraints
-
 - `dnd2024.hit-points` contains exactly current, maximum, and the fixed `sourceRef`; maximum is a positive safe integer and current is a safe integer in `0..maximum`.
 - This component owns only state, not why it changed. Feature 9 will own damage-caused Hit Point loss; a future healing feature will own healing-caused increase.
 - `record` never overwrites; `correct` never creates; a corrupt existing record is not silently repaired.
 - The writer accepts only the closed mode/current/maximum input and produces exactly one component effect on `subject`.
 - Armor Class is already complete and must not be changed by this writer.
+

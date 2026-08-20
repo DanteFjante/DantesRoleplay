@@ -17,22 +17,35 @@
   -->
 
   <ItemGroup>
-    <!-- Bootstrap contracts are authored as markdown and embedded, so the seeded operating
-         manual travels with the assembly and cannot go missing at runtime. -->
-    <EmbeddedResource Include="Bootstrap\**\*.md" />
+    <!-- Core procedure contracts have ONE authored copy: the non-ruleset procedures in catalog/.
+         They are embedded under the historical Bootstrap resource name so ProcedureSeeder can
+         install the operating manual into a fresh database without maintaining a second folder.
+         Ruleset procedures are intentionally excluded: the kernel can start without a game. -->
+    <EmbeddedResource Include="..\catalog\procedures\**\*.md"
+                      Exclude="..\catalog\procedures\ruleset\**\*.md">
+      <Link>Bootstrap\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <LogicalName>DantesRoleplay.Bootstrap.%(Filename)%(Extension)</LogicalName>
+      <!-- `.run.md` otherwise looks like the `run` culture and is moved to a satellite
+           assembly, silently dropping action.run and mechanic.run from startup seeding. -->
+      <WithCulture>false</WithCulture>
+    </EmbeddedResource>
 
-    <!-- The bootstrap game rules, same idea. A SEPARATE folder rather than a subfolder of
-         Bootstrap, so the two seeders cannot see each other's files — one folder holding two
-         markdown formats would have each seeder failing to parse the other's, which is a
-         confusing way to discover a layout decision. -->
-    <EmbeddedResource Include="Rules\**\*.md" />
+    <!-- The two generic example mechanics also come directly from their canonical catalog
+         metadata/source pairs. Ruleset mechanics remain installable content, not kernel seed. -->
+    <EmbeddedResource Include="..\catalog\mechanics\**\*.md;..\catalog\mechanics\**\*.js"
+                      Exclude="..\catalog\mechanics\ruleset\**\*">
+      <Link>Rules\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <LogicalName>DantesRoleplay.Rules.%(Filename)%(Extension)</LogicalName>
+      <WithCulture>false</WithCulture>
+    </EmbeddedResource>
 
-    <!-- The nine world.* structural event types. These are kernel contracts, not game content:
-         every commit(kind: "effects") records events against them, so a database without them
-         cannot change the world at all. They shipped as catalog files only, which meant a fresh
-         install was mute until somebody happened to run an import. The catalog copy still exists
-         and still round-trips; this is the copy that guarantees the kernel can run alone. -->
-    <EmbeddedResource Include="EventTypes\**\*.json" />
+    <!-- Structural event types are kernel contracts and must exist in a fresh database. Embed the
+         canonical catalog definitions and schema sidecars rather than maintaining a mirror. -->
+    <EmbeddedResource Include="..\catalog\event-types\**\*.json">
+      <Link>EventTypes\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <LogicalName>DantesRoleplay.EventTypes.%(Filename)%(Extension)</LogicalName>
+      <WithCulture>false</WithCulture>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

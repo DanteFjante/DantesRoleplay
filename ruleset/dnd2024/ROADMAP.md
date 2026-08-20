@@ -1,13 +1,14 @@
 # D&D 2024 ruleset development roadmap
 
-Status: **Features 3–10 verified; first reproducible vertical session complete**
-Last updated: 2026-08-19
+Status: **Features 1–10 verified; Features 11–38 are the tracked complete-play backlog**
+Last updated: 2026-08-20
 
 ## Purpose and authority
 
-This roadmap orders the remaining work needed for a small but genuine D&D 2024 test session. It
-is not a promise to implement all of D&D and it does not authorize bundling several features into
-one pass.
+This roadmap is the numbered index for the D&D 2024 ruleset. Features 1–10 establish one
+reproducible vertical session; Features 11–38 identify the remaining capabilities needed for
+complete SRD play. It is not a promise to implement all of D&D and it does not authorize bundling
+several features into one pass.
 
 `procedure.system.create-feature` is the governing workflow. For each feature, create or review
 its recursive dependency plan, implement exactly one lowest unimplemented slice, meet that
@@ -29,11 +30,12 @@ The official rule source is SRD 5.2.1, represented by the existing live source e
 - Feature 2: character level, derived Proficiency Bonus, the 18 skill IDs, character skill
   proficiency state, and proficient named-skill checks.
 - Shared deterministic dice mechanic exists, but it is not a substitute for D20 Test rules.
-- Repository regression baseline: 304/304 tests.
+- Repository regression: the suite passes. A pinned number here drifts within a week — this line
+  has already said 213 and 304 while the suite was neither. Read the last run, not this file.
 
-Intent searches performed during this planning pass found no live D&D mechanic for
-Advantage/Disadvantage, saving throws, Initiative, attack rolls, or damage. Generic dice and
-threshold mechanics remain examples, not D&D rule implementations.
+Features 3–10 now supply the D&D implementations for Advantage/Disadvantage, saving throws,
+Initiative, weapon attacks, damage, and Hit Point loss. Generic dice and threshold mechanics
+remain examples, not substitutes for those rules.
 
 ## Minimum test-session dependency graph
 
@@ -69,18 +71,48 @@ small D&D 2024 test session
 
 ## Ordered features and boundaries
 
-| Feature | Capability | Depends on | Deliberate non-goals |
-| --- | --- | --- | --- |
-| 3 | Advantage/Disadvantage for ability checks, plus one reusable D20 Test input/result convention | Features 1–2; Slice 1 contract verified | Heroic Inspiration, rerolls, persistent conditions, automatic circumstance discovery |
-| 4 | Six saving-throw proficiencies and fixed-DC saving throws | Feature 3 and character level; two-slice plan ready | Spell effects, death saves, monster CR, legendary resistance |
-| 5 | Initiative rolls and deterministic encounter ordering | Feature 3 and abilities | Full turn economy, surprise state beyond its supplied roll circumstance, ready/delay |
-| 6 | Authoritative Armor Class and Hit Point state | Source registry | Armor-building formulas, classes, equipment loadouts, temporary HP, resistance |
-| 7 | Minimal weapon profiles and character weapon proficiency | Source registry and level | Complete equipment catalog, mastery, ammunition, range/cover, class grants |
-| 8 | Weapon attack rolls against Armor Class | Features 3, 6, 7 | Multiattack, opportunity attacks, spell attacks, damage application |
-| 9 | Weapon damage and transactional Hit Point loss | Features 6–8 and deterministic dice; both slices verified | Resistance, immunity, vulnerability, healing, unconsciousness, death saves |
-| 10 | One reproducible vertical test session | Features 1–9; both slices verified | Campaign management, character builder, complete combat engine |
+| Feature | Capability | Depends on | Status | Deliberate non-goals |
+| --- | --- | --- | --- | --- |
+| 1 | Ability scores and seeded fixed-DC ability checks | Core mechanics | Verified | Saving throws, Initiative, attacks, damage |
+| 2 | Character level, Proficiency Bonus, skill IDs, and proficient named-skill checks | Feature 1 | Verified | Classes, advancement, character creation |
+| 3 | Advantage/Disadvantage for ability checks, plus one reusable D20 Test input/result convention | Features 1–2 | Verified | Heroic Inspiration, rerolls, persistent conditions, automatic circumstance discovery |
+| 4 | Six saving-throw proficiencies and fixed-DC saving throws | Feature 3 and character level | Verified | Spell effects, death saves, monster CR, legendary resistance |
+| 5 | Initiative rolls and deterministic encounter ordering | Feature 3 and abilities | Verified | Full turn economy, surprise state beyond its supplied roll circumstance, ready/delay |
+| 6 | Authoritative Armor Class and Hit Point state | Source registry | Verified | Armor-building formulas, classes, equipment loadouts, temporary HP, resistance |
+| 7 | Minimal weapon profiles and character weapon proficiency | Source registry and level | Verified | Complete equipment catalog, mastery, ammunition, range/cover, class grants |
+| 8 | Weapon attack rolls against Armor Class | Features 3, 6, 7 | Verified | Multiattack, opportunity attacks, spell attacks, damage application |
+| 9 | Weapon damage and transactional Hit Point loss | Features 6–8 and deterministic dice | Verified | Resistance, immunity, vulnerability, healing, unconsciousness, death saves |
+| 10 | One reproducible vertical test session | Features 1–9 | Verified | Campaign management, character builder, complete combat engine |
+| 11 | Turn and round lifecycle: active participant, turn advance, round counter, and encounter end | Feature 5 | Planned — Slice 1 next | Simultaneous turns, Initiative rerolls each round, delay, ready |
+| 12 | Action economy: Action, Bonus Action, Reaction, interaction, and Move are spent and restored | Feature 11 | Planned | Legendary/lair actions and multiattack routines |
+| 13 | SRD conditions: apply, list, clear, and enforce their effects on checks, saves, and attacks | Feature 12; E1 | Planned | Homebrew conditions, species-based immunity, non-SRD stacking rules |
+| 14 | Exhaustion levels and their D20 Test and speed effects | Feature 13 | Planned | Recovery pacing beyond the long-rest rule |
+| 15 | Damage types with resistance, immunity, and vulnerability in SRD order | Feature 9 | Planned | Damage transfer, shared damage, absorption |
+| 16 | Temporary Hit Points and healing, including no-stacking rules | Features 6, 15 | Planned | Timed regeneration and healing over time |
+| 17 | Dying: zero HP, unconsciousness, death saves, stabilization, and massive-damage death | Feature 13; E1 | Planned | Resurrection and lingering injuries |
+| 18 | Concentration: one effect at a time, damage-triggered save, and ending conditions | Features 13; E1 | Planned | Metamagic and feature-specific exceptions |
+| 19 | Reactions in play: opportunity attacks and triggered abilities | Feature 12; E1 | Planned | Counterspell timing puzzles and held actions |
+| 20 | Position and movement: speed, distance, difficult terrain, and reach as attack preconditions | Feature 11 | Planned | Rendered grid, pathfinding, flanking, elevation/3D terrain |
+| 21 | Cover and ranged combat: half/three-quarters cover, long-range Disadvantage, firing into melee | Feature 20 | Planned | Line-of-sight geometry and projectile physics |
+| 22 | Unarmed and improvised combat: unarmed strike, grapple, shove, and two-weapon fighting | Features 8, 12, 20 | Planned | Wrestling subsystems and called shots |
+| 23 | Equipment and inventory: item entities, containment, currency, and supported carrying rules | Feature 7 | Planned | Shopping economy, crafting, item durability |
+| 24 | Armor, shields, and Armor Class derived from worn equipment | Features 6, 23 | Planned | Every natural-armor formula and magical stacking exception |
+| 25 | Weapon properties and mastery: finesse, versatile, thrown, loading, ammunition, and 2024 mastery | Features 8, 23 | Planned | Weapon content beyond the SRD catalog |
+| 26 | SRD species traits and their mechanical grants | Feature 2 | Planned | Non-SRD species and custom lineages |
+| 27 | Classes and levels: features, hit dice, subclasses, proficiency grants, and multiclassing rules | Features 2, 26 | Planned | Non-SRD subclasses and homebrew progression |
+| 28 | Backgrounds, feats, and ability-score improvements | Feature 27 | Planned | Non-SRD feats |
+| 29 | Attunement and magic items: SRD item set, attunement slots, and item-granted effects | Features 23; E1 | Planned | Artifacts, sentient items, and item creation |
+| 30 | Guided character creation producing a legal playable sheet | Features 23–28 | Planned | Visual character-builder UX |
+| 31 | Spellcasting resources: slots, known/prepared spells, spellcasting ability, save DC, and attack bonus | Feature 27 | Planned | Spell-point variants and non-SRD spells |
+| 32 | Spell resolution: spell attacks, saves, targeting, areas, duration, and effects | Features 18, 20, 31 | Planned | Every SRD spell as initial content |
+| 33 | Rests: short/long rest, Hit Dice, resource recovery, and expiry | Features 14, 27 | Planned | Gritty-realism and other optional rest variants |
+| 34 | Vision/light, hiding, passive Perception, and encounter surprise | Features 13, 20 | Planned | Dynamic-lighting geometry |
+| 35 | Monsters and stat blocks: creature data, CR, traits, actions, and encounter building | Features 6–9, 27 | Planned | Full SRD bestiary import as part of the capability |
+| 36 | Advancement: XP or milestone and level-up through existing class features | Feature 27 | Planned | Automatic optimisation and respec tooling |
+| 37 | Travel, exploration, and time: pace, distance, and a clock for rests/durations | Features 33; E1 | Planned | Weather simulation and hex-crawl generation |
+| 38 | Social interaction: attitude, influence checks, and non-trivial persuasion | Feature 3 | Planned | NPC personality simulation |
 
-Feature numbers express dependency order, not permission to begin them. Features 1–5 are verified.
+Feature numbers express dependency order, not permission to begin them. Features 1–10 are verified.
 Feature 5's file-first catalog import gate exercises the composition runtime and encounter-order
 matrix. Feature 6 records final Armor Class and bounded current/maximum Hit Point state through
 the catalog; both slices are verified in feature-06/FEATURE-6-DEPENDENCY-PLAN.md. Feature 7 now
@@ -91,16 +123,26 @@ effect-free confirmed-hit damage evidence and a composed, transactional target H
 application parent. Feature 10's catalog-owned baseline fixtures and two-database deterministic
 vertical-session harness are verified. The first reproducible D&D 2024 session is complete.
 
-Work past Feature 10 is ordered in `ROADMAP-COMPLETE-PLAY.md`, which covers what a complete SRD
-5.2.1 experience needs beyond the first vertical session.
+`ROADMAP-COMPLETE-PLAY.md` remains the supporting rationale for Features 11–38. This table is the
+single numbered feature index used to track progress.
 
-**Known kernel weakness, discovered during Feature 5 Slice 2.** Action selection scores the number
-of distinct query tokens appearing anywhere in a mechanic's id, name, description and match
-phrases, and breaks ties by ascending id. A phrase match does not outrank an incidental token
-match, so an unrelated rule whose id happens to sort earlier can capture another rule's intent —
-it did, twice, during this slice. Until that is fixed, every new rule must be routing-tested
-against the intents of its neighbours, and authors must watch the words they put in a description.
-This deserves its own kernel dependency plan before the ruleset grows much further.
+## Platform prerequisites
+
+These are engine capabilities rather than D&D features. They stay separately numbered because
+they unblock more than one feature.
+
+| Dependency | Capability | Status | Required before |
+| --- | --- | --- | --- |
+| E1 | Event guards, subscriptions, deterministic event chains, and notifications | Verified | Features 13, 17–19, 29, 37 |
+| E2 | Intent selection that ranks explicit phrases above incidental tokens | Verified | Broad mechanic growth; exact phrase collisions still remain an authoring concern |
+| E3 | Hierarchical catalog navigation | Planned | Large content families, especially Features 31–35 |
+| E4 | Local intent routing | Planned | A low-context GM experience; depends on E2 and E3 |
+| E5 | Exact numeric fidelity across the sandbox boundary | Planned | Any feature requiring exact 64-bit values |
+
+**Selection guardrail.** Feature 5 exposed a token-ranking collision, which is now corrected:
+authored match phrases outrank incidental name and description tokens. Exact phrase collisions
+remain an authoring risk, so every new mechanic still requires routing tests against adjacent
+rules and a near-duplicate review before activation.
 
 ## Global quality gates
 

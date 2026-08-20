@@ -5,7 +5,7 @@ using DantesRoleplay.Mechanics;
 namespace DantesRoleplay.DataAccess.Bootstrap;
 
 /// <summary>
-/// Loads the bootstrap game rules embedded in the core assembly into the database at startup.
+/// Loads the canonical generic catalog mechanics embedded in the core assembly at startup.
 ///
 /// There is a tension worth naming here. This system's premise is that the game is authored in
 /// play, and shipping rules works against that — so what ships is deliberately the smallest set
@@ -53,8 +53,8 @@ public sealed class MechanicSeeder(IMechanicStore store)
                     Status = file.Status,
                     CreatedBy = "seed",
                     ChangeNote = existing is null
-                        ? "Seeded from bootstrap rule file."
-                        : "Re-seeded: the bootstrap rule file changed."
+                        ? "Seeded from the embedded catalog mechanic."
+                        : "Re-seeded: the embedded catalog mechanic changed."
 
                     // No SourceHash: the store computes it from the content it stores. The seeder
                     // supplying one was the only way an incorrect fingerprint could ever be
@@ -72,30 +72,40 @@ public sealed class MechanicSeeder(IMechanicStore store)
     public static IReadOnlyList<MechanicFile> Load()
     {
         var assembly = typeof(Mechanic).Assembly;
+        var resources = assembly.GetManifestResourceNames()
+            .Where(name => name.Contains(ResourceMarker, StringComparison.Ordinal))
+            .ToHashSet(StringComparer.Ordinal);
         var files = new List<MechanicFile>();
 
-        foreach (var name in assembly.GetManifestResourceNames())
+        foreach (var name in resources.OrderBy(name => name, StringComparer.Ordinal))
         {
-            if (!name.Contains(ResourceMarker, StringComparison.Ordinal)
-                || !name.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            if (!name.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
 
-            using var stream = assembly.GetManifestResourceStream(name)
-                ?? throw new InvalidOperationException($"Could not read embedded resource '{name}'.");
+            var sourceName = name[..^".md".Length] + ".js";
+            var source = resources.Contains(sourceName) ? Read(assembly, sourceName) : null;
 
-            using var reader = new StreamReader(stream, Encoding.UTF8);
-            files.Add(MechanicFile.Parse(reader.ReadToEnd(), name));
+            files.Add(MechanicFile.Parse(Read(assembly, name), name, source));
         }
 
         var duplicate = files.GroupBy(f => f.Id).FirstOrDefault(g => g.Count() > 1);
 
         if (duplicate is not null)
         {
-            throw new InvalidOperationException($"Two bootstrap rule files declare id '{duplicate.Key}'.");
+            throw new InvalidOperationException($"Two embedded catalog mechanics declare id '{duplicate.Key}'.");
         }
 
         return files.OrderBy(f => f.Id, StringComparer.Ordinal).ToList();
+    }
+
+    private static string Read(Assembly assembly, string name)
+    {
+        using var stream = assembly.GetManifestResourceStream(name)
+            ?? throw new InvalidOperationException($"Could not read embedded resource '{name}'.");
+
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        return reader.ReadToEnd();
     }
 }

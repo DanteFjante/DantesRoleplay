@@ -117,6 +117,17 @@ public sealed class MigrationDriftTests
 
                 Assert.Empty(await db.Database.GetPendingMigrationsAsync());
 
+                var connection = db.Database.GetDbConnection();
+                if (connection.State != System.Data.ConnectionState.Open)
+                {
+                    await connection.OpenAsync();
+                }
+
+                await using var command = connection.CreateCommand();
+                command.CommandText = "select name from sqlite_master where type = 'table' and name = 'procedure_relation'";
+
+                Assert.Null(await command.ExecuteScalarAsync());
+
                 // Prove the added columns are really there and writable.
                 var store = new ProcedureStore(db);
                 var written = await store.WriteAsync(new DantesRoleplay.Procedures.WriteProcedureRequest

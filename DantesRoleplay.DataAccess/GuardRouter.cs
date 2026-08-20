@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
@@ -33,6 +31,24 @@ public sealed class GuardRouter(
     {
         var evaluations = new List<GuardEvaluation>();
 
+        // A proposed event has not reached the ledger yet, but its sequence is already
+        // determined: the next sequence in its correlation, in proposal order. Predicting that
+        // same value lets a guard use the chain seed derivation reactions use after acceptance.
+        var correlations = proposals
+            .Select(proposal => proposal.CorrelationId)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        var previousSequences = await _db.Events.AsNoTracking()
+            .Where(@event => correlations.Contains(@event.CorrelationId))
+            .GroupBy(@event => @event.CorrelationId)
+            .Select(group => new { CorrelationId = group.Key, Sequence = group.Max(@event => @event.Sequence) })
+            .ToDictionaryAsync(row => row.CorrelationId, row => row.Sequence, StringComparer.Ordinal, cancellationToken);
+        var nextSequences = correlations.ToDictionary(
+            correlation => correlation,
+            correlation => previousSequences.GetValueOrDefault(correlation, -1) + 1,
+            StringComparer.Ordinal);
+        var guardOrdinal = 0;
+
         // The version in force for each type being proposed, read once. It goes into the envelope
         // a guard sees, so a guard can branch on the schema version it was written against instead
         // of assuming the current one.
@@ -43,6 +59,7 @@ public sealed class GuardRouter(
             .ToDictionaryAsync(t => t.Id, t => t.CurrentVersion, StringComparer.Ordinal, cancellationToken);
         foreach (var proposal in proposals.OrderBy(x => x.Ordinal))
         {
+            var sequence = nextSequences[proposal.CorrelationId]++;
             var rows = await _db.Subscriptions.AsNoTracking()
                 .Where(s => s.Status == SubscriptionStatus.Active && (s.Scope == proposal.Scope || s.Scope == ""))
                 .Join(_db.SubscriptionVersions.AsNoTracking(), s => new { SubscriptionId = s.Id, Version = s.CurrentVersion }, v => new { v.SubscriptionId, v.Version }, (s, v) => new { s, v })
@@ -52,16 +69,42 @@ public sealed class GuardRouter(
 
             foreach (var row in rows)
             {
-                if (!Matches(row.v, proposal)) continue;
+                if (!Matches(row.v, proposal))
+                {
+                    continue;
+                }
+
                 var detail = await _mechanics.GetAsync(row.v.EventMechanicId, cancellationToken: cancellationToken);
-                if (detail is null || detail.Status != MechanicStatus.Active) return GuardResult.Deny(evaluations, "GUARD_UNAVAILABLE", $"Guard '{row.s.Id}' targets an unavailable mechanic.");
+                if (detail is null || detail.Status != MechanicStatus.Active)
+                {
+                    return GuardResult.Deny(evaluations, "GUARD_UNAVAILABLE", $"Guard '{row.s.Id}' targets an unavailable mechanic.");
+                }
+
                 var requirements = MechanicRequirements.Parse(detail.Requirements);
-                if (requirements.Event is null || requirements.Event.Mode != EventMechanicMode.Guard || !requirements.Event.Types.Contains(proposal.Type, StringComparer.Ordinal)) return GuardResult.Deny(evaluations, "GUARD_UNAVAILABLE", $"Guard '{row.s.Id}' no longer declares '{proposal.Type}'.");
+                if (requirements.Event is null
+                    || requirements.Event.Mode != EventMechanicMode.Guard
+                    || !requirements.Event.Types.Contains(proposal.Type, StringComparer.Ordinal))
+                {
+                    return GuardResult.Deny(evaluations, "GUARD_UNAVAILABLE", $"Guard '{row.s.Id}' no longer declares '{proposal.Type}'.");
+                }
+
                 var bindings = ParseBindings(row.v.FixedRoleEntityIdsJson);
-                if (bindings is null) return GuardResult.Deny(evaluations, "GUARD_INVALID_BINDINGS", $"Guard '{row.s.Id}' has corrupt fixed role bindings.");
-                var seed = Seed(row.s.Id, row.v.Version, proposal);
+                if (bindings is null)
+                {
+                    return GuardResult.Deny(evaluations, "GUARD_INVALID_BINDINGS", $"Guard '{row.s.Id}' has corrupt fixed role bindings.");
+                }
+
+                var seed = EventRouter.DeriveSeed(
+                    EventRouter.RootSeedFrom(proposal.CorrelationId),
+                    sequence,
+                    row.s.Id,
+                    "guard",
+                    guardOrdinal++);
                 var resolved = await _projections.ResolveAsync(requirements, bindings, "{}", seed, cancellationToken);
-                if (!resolved.Ok) return GuardResult.Deny(evaluations, "GUARD_PROJECTION_FAILED", string.Join(" ", resolved.Problems));
+                if (!resolved.Ok)
+                {
+                    return GuardResult.Deny(evaluations, "GUARD_PROJECTION_FAILED", string.Join(" ", resolved.Problems));
+                }
                 // The full envelope, not the bare payload. A guard needs to know which chain it is
                 // being asked about and how deep it is, and the contract requires it to branch on
                 // ctx.event.mode rather than guess from which fields happen to be present.
@@ -72,21 +115,52 @@ public sealed class GuardRouter(
                         _world, proposal.EntityIds, requirements.Event.Components, cancellationToken)
                 };
                 var run = await _engine.RunAsync(detail.Source, projection, ExecutionLimits.Default, cancellationToken);
-                if (!run.Ok) return GuardResult.Deny(evaluations, run.LimitHit.Length > 0 ? "GUARD_LIMIT" : "GUARD_FAILED", run.Error);
+                if (!run.Ok)
+                {
+                    return GuardResult.Deny(evaluations, run.LimitHit.Length > 0 ? "GUARD_LIMIT" : "GUARD_FAILED", run.Error);
+                }
+
                 var output = run.Output;
                 // Effects are forbidden outright — a guard that could change the world would be a
                 // rule wearing a veto's clothes. Narration and data are ALLOWED, which the earlier
                 // check got backwards: "allowed because the ward was already spent" is exactly the
                 // kind of thing an audit wants, and refusing it made an explaining guard a failing
                 // guard.
-                if (output.Effects.Count != 0) return GuardResult.Deny(evaluations, "GUARD_FORBIDDEN_OUTPUT", $"Guard '{row.s.Id}' returned effects. A guard decides; it does not change the world.");
-                if (output.Decision is not ("allow" or "deny")) return GuardResult.Deny(evaluations, "GUARD_INVALID_DECISION", $"Guard '{row.s.Id}' must return decision allow or deny.");
-                if (output.Decision == "deny" && (string.IsNullOrWhiteSpace(output.Code) || string.IsNullOrWhiteSpace(output.Reason))) return GuardResult.Deny(evaluations, "GUARD_INVALID_DECISION", $"Guard '{row.s.Id}' must supply code and reason when denying.");
-                if (output.Decision == "deny" && !CodeShape.IsMatch(output.Code.Trim())) return GuardResult.Deny(evaluations, "GUARD_INVALID_DECISION", $"Guard '{row.s.Id}' returned code '{output.Code}'. A denial code is 3-64 characters of A-Z, 0-9 and underscore, starting with a letter.");
-                if (output.Decision == "deny" && output.Reason.Trim().Length > 500) return GuardResult.Deny(evaluations, "GUARD_INVALID_DECISION", $"Guard '{row.s.Id}' returned a reason of {output.Reason.Trim().Length} characters; the limit is 500.");
-                if (output.Decision == "allow" && !string.IsNullOrWhiteSpace(output.Code)) return GuardResult.Deny(evaluations, "GUARD_INVALID_DECISION", $"Guard '{row.s.Id}' supplied a denial code while allowing.");
+                if (output.Effects.Count != 0)
+                {
+                    return GuardResult.Deny(evaluations, "GUARD_FORBIDDEN_OUTPUT", $"Guard '{row.s.Id}' returned effects. A guard decides; it does not change the world.");
+                }
+
+                if (output.Decision is not ("allow" or "deny"))
+                {
+                    return GuardResult.Deny(evaluations, "GUARD_INVALID_DECISION", $"Guard '{row.s.Id}' must return decision allow or deny.");
+                }
+
+                if (output.Decision == "deny" && (string.IsNullOrWhiteSpace(output.Code) || string.IsNullOrWhiteSpace(output.Reason)))
+                {
+                    return GuardResult.Deny(evaluations, "GUARD_INVALID_DECISION", $"Guard '{row.s.Id}' must supply code and reason when denying.");
+                }
+
+                if (output.Decision == "deny" && !CodeShape.IsMatch(output.Code.Trim()))
+                {
+                    return GuardResult.Deny(evaluations, "GUARD_INVALID_DECISION", $"Guard '{row.s.Id}' returned code '{output.Code}'. A denial code is 3-64 characters of A-Z, 0-9 and underscore, starting with a letter.");
+                }
+
+                if (output.Decision == "deny" && output.Reason.Trim().Length > 500)
+                {
+                    return GuardResult.Deny(evaluations, "GUARD_INVALID_DECISION", $"Guard '{row.s.Id}' returned a reason of {output.Reason.Trim().Length} characters; the limit is 500.");
+                }
+
+                if (output.Decision == "allow" && !string.IsNullOrWhiteSpace(output.Code))
+                {
+                    return GuardResult.Deny(evaluations, "GUARD_INVALID_DECISION", $"Guard '{row.s.Id}' supplied a denial code while allowing.");
+                }
+
                 evaluations.Add(new GuardEvaluation(row.s.Id, row.v.Version, detail.Id, detail.Version, row.v.Order, seed, output.Decision, output.Code, output.Reason));
-                if (output.Decision == "deny") return GuardResult.Deny(evaluations, output.Code, output.Reason);
+                if (output.Decision == "deny")
+                {
+                    return GuardResult.Deny(evaluations, output.Code, output.Reason);
+                }
             }
         }
         return GuardResult.Allow(evaluations);
@@ -112,9 +186,4 @@ public sealed class GuardRouter(
         catch (JsonException) { return null; }
     }
 
-    private static long Seed(string subscriptionId, int version, ProposedEvent proposal)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes($"{subscriptionId}|{version}|{proposal.Type}|{proposal.Ordinal}|{proposal.PayloadJson}"));
-        return BitConverter.ToInt64(bytes, 0) & long.MaxValue;
-    }
 }

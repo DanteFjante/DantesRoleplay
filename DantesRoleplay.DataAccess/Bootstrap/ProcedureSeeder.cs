@@ -66,8 +66,10 @@ public sealed class ProcedureSeeder(IProcedureStore store)
     }
 
     /// <summary>
-    /// Reads every embedded .md under Bootstrap/ in the core assembly. Anchored on the core
-    /// assembly rather than the executing one so the host cannot accidentally shadow it.
+    /// Reads every embedded .md carrying the Bootstrap resource marker in the core assembly.
+    /// Those resources are compiled directly from the canonical non-ruleset catalog procedures;
+    /// Bootstrap is a runtime resource name now, not a second authoring directory. Anchored on the
+    /// core assembly rather than the executing one so the host cannot accidentally shadow it.
     /// </summary>
     public static IReadOnlyList<ProcedureFile> Load()
     {

@@ -7,7 +7,9 @@ status: active
 ---
 
 ## Description
-How to author the instructions that govern this system — including this one.
+How to author the instructions that govern this system—including this one. `commit(kind:
+"procedure")` is the live MCP route; a repository agent edits the canonical markdown under
+`catalog/procedures/` and validates the catalog instead.
 
 ## Instructions
 1. Search for an overlapping contract first with `query(kind: "procedures", query: "...")`. Revise
@@ -24,8 +26,9 @@ How to author the instructions that govern this system — including this one.
    constraints are what must not happen.
 5. Add an example whenever the wording could be read two ways.
 6. Write it for a reader with no prior context. Assume nothing about what came earlier.
-7. Call `commit(kind: "procedure", payload: {...}, dryRun: true)` first and read every named check
-   it reports back. Then send the identical payload without `dryRun`.
+7. In repository mode, edit the canonical file and run `.\roleplay validate catalog`; do not mirror
+   the edit through MCP. In MCP-only mode, call `commit(kind: "procedure", payload: {...}, dryRun:
+   true)` first, read every named check, then send the identical payload without `dryRun`.
 8. Writing an existing id appends a revision — it never overwrites. Say why in `changeNote`.
 
 ## Constraints
@@ -37,4 +40,3 @@ How to author the instructions that govern this system — including this one.
 - Never name a call in `governs` or in the body that `query(kind: "capabilities")` does not list.
   A contract that instructs a session to make a call that does not exist is worse than no
   contract: it is followed.
-

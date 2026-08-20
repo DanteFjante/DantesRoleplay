@@ -370,14 +370,18 @@ DantesRoleplay.MCPServer/data/
 *.db-wal
 *.db-shm
 
-# The offline NuGet source used to build without network access, and the source
-# tarball that ships to it. Both are build inputs, not source.
+# The offline NuGet source used to build without network access, and temporary
+# source archives. Both are local build inputs, not source.
 _packages/
 _src.tgz
 
-# Superseded files parked here because the file bridge cannot delete. Should be
-# empty; if it is not, delete it rather than committing it.
+# Legacy holding area for superseded files. Do not recreate or commit it.
 _to_delete/
 
 # Belongs to a different tool entirely and was committed by accident.
 .webui_secret_key
+
+# Ad-hoc redirected command output. Test and build evidence belongs in CI or the
+# terminal, not in version control.
+out-*.txt
+verify.txt

@@ -245,7 +245,9 @@ public sealed class CatalogExporter(DantesRoleplayDbContext db)
                 row.version.Requirements,
                 row.version.Source,
                 row.mechanic.Scope,
-                row.mechanic.Status);
+                row.mechanic.Status,
+                row.version.CreatedBy,
+                row.version.ChangeNote);
 
             GuardFingerprint(row.version.SourceHash, file.ContentHash, "mechanic", file.Id, row.version.Version);
 
@@ -291,7 +293,9 @@ public sealed class CatalogExporter(DantesRoleplayDbContext db)
                 row.version.Governs,
                 row.version.Instructions,
                 row.version.Constraints,
-                row.contract.Status);
+                row.contract.Status,
+                row.version.CreatedBy,
+                row.version.ChangeNote);
 
             GuardFingerprint(row.version.SourceHash, file.ContentHash, "procedure", file.Id, row.version.Version);
 
@@ -354,7 +358,7 @@ public sealed class CatalogExporter(DantesRoleplayDbContext db)
         var rows = await _db.EventTypes.AsNoTracking().Join(_db.EventTypeVersions.AsNoTracking(), e => new { EventTypeId = e.Id, Version = e.CurrentVersion }, v => new { v.EventTypeId, v.Version }, (e, v) => new { e, v }).ToListAsync(cancellationToken);
         foreach (var row in rows)
         {
-            var file = new EventTypeFile(row.e.Id, row.e.Category, row.v.Name, row.v.Description, row.e.Scope, row.e.Status, row.v.PayloadSchema);
+            var file = new EventTypeFile(row.e.Id, row.e.Category, row.v.Name, row.v.Description, row.e.Scope, row.e.Status, row.v.PayloadSchema, row.v.CreatedBy, row.v.ChangeNote);
             GuardFingerprint(row.v.SourceHash, file.ContentHash, "event type", file.Id, row.v.Version);
             var path = CatalogLayout.EventType(file.Id);
             await WriteAsync(root, path, file.ToJson(), written, cancellationToken);
@@ -369,7 +373,7 @@ public sealed class CatalogExporter(DantesRoleplayDbContext db)
         var rows = await _db.Subscriptions.AsNoTracking().Join(_db.SubscriptionVersions.AsNoTracking(), s => new { SubscriptionId = s.Id, Version = s.CurrentVersion }, v => new { v.SubscriptionId, v.Version }, (s, v) => new { s, v }).ToListAsync(cancellationToken);
         foreach (var row in rows)
         {
-            var file = new SubscriptionFile(row.s.Id, row.s.Category, row.v.EventTypeId, row.v.EventMechanicId, row.v.Mode, row.v.Order, row.v.FixedRoleEntityIdsJson, row.v.TrackedEntityIdsJson, row.v.PayloadEqualsJson, row.v.MaxExecutionsPerChain, row.s.Scope, row.s.Status);
+            var file = new SubscriptionFile(row.s.Id, row.s.Category, row.v.EventTypeId, row.v.EventMechanicId, row.v.Mode, row.v.Order, row.v.FixedRoleEntityIdsJson, row.v.TrackedEntityIdsJson, row.v.PayloadEqualsJson, row.v.MaxExecutionsPerChain, row.s.Scope, row.s.Status, row.v.CreatedBy, row.v.ChangeNote);
             GuardFingerprint(row.v.SourceHash, file.ContentHash, "subscription", file.Id, row.v.Version);
             var path = CatalogLayout.Subscription(file.Id); await WriteAsync(root, path, file.ToJson(), written, cancellationToken);
             entries.Add(new CatalogManifestEntry(CatalogRecordKind.Subscription, file.Id, row.v.Version, file.ContentHash, path));

@@ -58,6 +58,19 @@ public sealed record ExecutionLimits
     /// <summary>How many effects one run may propose. A rule that returns ten thousand is broken.</summary>
     public int MaxEffects { get; init; } = 200;
 
+    /// <summary>
+    /// How many events one run may declare. Lower than the effect ceiling on purpose: an effect is
+    /// one change to one thing, while a declared event is an announcement, and a rule announcing
+    /// fifty separate things has almost certainly confused the two.
+    /// </summary>
+    public int MaxEvents { get; init; } = 50;
+
+    /// <summary>
+    /// How many notices one run may raise. Lower again: a rule telling somebody twenty separate
+    /// things in one change has not thought about who is reading them.
+    /// </summary>
+    public int MaxNotifications { get; init; } = 20;
+
     /// <summary>Log lines kept. Beyond this the run is failing anyway and the tail is not the interesting part.</summary>
     public int MaxLogLines { get; init; } = 100;
 

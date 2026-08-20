@@ -28,13 +28,30 @@ works for Claude, that is worth knowing.
 
 **1. Start the server**
 
+**Use a new, isolated database for every official run.** The development database accumulates
+test fixtures and permanent ids. Deleting a fixture does not restore the baseline because its id
+remains reserved; it also cannot make a previously written procedure become missing again. The
+following creates a timestamped evidence database without touching the development one:
+
+```powershell
+$runId = Get-Date -Format 'yyyyMMdd-HHmmss'
+$env:ConnectionStrings__Kernel = Join-Path $PWD "artifacts\coldwalk\run-$runId.db"
+dotnet run --project DantesRoleplay.MCPServer
+```
+
+Keep that server and its `ConnectionStrings__Kernel` value for all five prompts, including both
+sessions of run 5. The resulting SQLite file is the audit evidence; preserve it with the notes
+rather than reusing it for the next cold walk.
+
+For an ordinary local session where isolation does not matter, the default remains:
+
 ```
 dotnet run --project DantesRoleplay.MCPServer
 ```
 
 Endpoint: **`http://localhost:6217/mcp`**
 
-First run creates the SQLite file and seeds the bootstrap contracts. Check the console for
+The isolated run creates the SQLite file and seeds the bootstrap contracts. Check the console for
 migration or seeding errors before going further — a failed seed means an empty manual, and the
 agent will correctly report the system as broken.
 
@@ -203,3 +220,140 @@ The agent cannot inspect this application's own source or tool registration. If 
 describing *how the code works*, it has no way to check itself and will either invent something or
 stop. `orient` admits this in `notYetBuilt`. If it invents rather than stopping, that raises the
 priority of a source-introspection tool — see `STATUS.md`.
+
+---
+
+## Assisted rehearsal — 2026-08-20 (not an acceptance run)
+
+**Status: useful evidence, but not COLDWALK run 6.** The operator already had repository context
+and used one continuing client session rather than five genuinely fresh ones. The database also
+contained later D&D test content and `procedure.world.naming` before the rehearsal began. Treat
+the observations below as a surface and workflow rehearsal only.
+
+### Run 1 — orientation
+
+**Calls:**
+
+1. `orient()` — `dd1d1afafa85488faa653ac0c131f6e8`
+2. `query(kind: "procedures", id: "procedure.system.use")` —
+   `5f2e1420bbe94eb3abee97e869dca5d6`
+
+**Result:** good. `orient` correctly described the persistent RPG kernel, the three verbs, the
+writable world, 17 runnable rules, and the gaps. It directed the next call to
+`procedure.system.use`; the manual then supplied exact kinds and the no-guessing rule. No invented
+capability or payload shape.
+
+### Run 2 — existing MCP-tool procedure
+
+**Calls:**
+
+1. `query(kind: "procedures", query: "how to add a new MCP tool to this system")` —
+   `3b2a5d361fd44711bd4f2e78e3b39143`
+2. `query(kind: "procedures", id: "procedure.mcp.add-tool")` —
+   `673bfedae2f942b087edf2d1ad57d8b0`
+
+**Result:** good. The search put `procedure.mcp.add-tool` first; it was read and no duplicate was
+written. The contract's description explicitly says that the usual answer is not to add a tool.
+
+### Run 3 — supposedly missing naming convention
+
+**Calls:**
+
+1. `query(kind: "procedures", query: "convention for naming entities and component definitions")`
+   — `ee359536519945de9978b2aae9d8f3ae`
+2. `query(kind: "procedures", id: "procedure.world.naming")` —
+   `47042780dd5d429dbaf31e6e1a1972a3`
+
+**Result:** blocked by the database baseline, not the surface. The already-existing convention was
+found immediately (`procedure.world.naming`, v1: stable dotted lowercase ids, concise display names,
+never reuse an id). Therefore this rehearsal could not test contract creation, `governs`, or the
+procedure dry run. A real run needs a seed before that contract exists, or a different genuinely
+missing convention.
+
+### Run 4 — create Orban with a lantern
+
+**Calls:**
+
+1. `query(kind: "world", sample: 20)`, `query(kind: "capabilities")`, and
+   `query(kind: "procedures", id: "procedure.world.model")` —
+   `611f4c31b38f455d9e866c00e3a7fcc7`, `8429e33de71a4831a170a4539240acb7`,
+   `c092eb2323d94b16aba40bc01579ef83`
+2. `commit(kind: "effects", dryRun: true, ...)` —
+   `8fe33f74eb5141569513dc6a5f5cc5e4`
+3. Identical `commit(kind: "effects", ...)` —
+   `db666390dbe747cbb0061ed74e4e2188`
+4. `query(kind: "entities", ids: ["coldwalk.orban", "coldwalk.lantern"])` —
+   `6143559458b7470d9c0c74209b0e61e9`
+
+**Result:** good content and atomic navigation. It reused the generic `stats` definition and
+committed all four effects in one list: create Orban, attach `{strength:12, agility:10,
+role:"character"}`, create Lantern, and move it to Orban's `carried` slot. The dry run passed and
+the read-back confirmed the containment.
+
+**Finding:** the original fixture ids had been deleted before this rehearsal, but entity ids remain
+reserved after deletion. The test therefore had to use `coldwalk.orban` and `coldwalk.lantern`.
+Deleting fixtures does **not** recreate the original baseline; use a fresh database or snapshot for
+the official test.
+
+### Run 5 — write and reuse a lock-picking rule
+
+**Session A calls:**
+
+1. `query(kind: "mechanics", query: "pick a lock")` —
+   `168224d3fc9e437c9bc9703e99f671e1`; no match.
+2. Read `procedure.mechanic.write`, `procedure.action.run`, `procedure.world.model`, the exact
+   capability catalog, and the existing generic threshold rule —
+   `07679dc7f0c9488da2a1526647c515c5`, `16cb5d5db19346339864645a5af4e963`,
+   `008b958a591949cf942e7e2b3db0b718`, `91da41b10dbc454b9d2993ff137a507a`,
+   `6b270dd1f31345e2a664365c64a8de91`.
+3. Created a reusable `lock` component definition — `7775c9393d0d4c64af727e9a51af022b`.
+4. Dry-ran then committed `coldwalk.practice-lock` with `{difficulty:12}` —
+   `023cd08ab51b4e2f804de54a8238a65b`, `df08729d9865468cb6c99b3167435aa4`.
+5. Dry-ran then committed active `mechanic.lock.pick` —
+   `75e1d0db38cb4fe1b3f3ae82c8ce73bf`, `73282addb2d5492b8aa9fb7ac74605a6`.
+   All 11 checks passed, including `no-near-duplicate`.
+6. Read the stored mechanic, then ran an action with roles `subject: coldwalk.orban` and
+   `lock: coldwalk.practice-lock` — `25de61e322dd4b46bfb694e2952c19b3`,
+   `aab5fd821ec64829a71a8243772108fb`.
+
+**Session A result:** good. The rule is generic: it reads the subject's `stats.agility` and the
+target's `lock.difficulty`, uses seeded randomness, has no hard-coded entity, and returns a
+recorded narration. It ran successfully: **“Orban picks the lock on Practice Lock (30 against
+12).”** No effects were needed; the outcome was narration only.
+
+**Simulated Session B calls:**
+
+1. `orient()` — `46307ae457af45f788e0f0641dc2bd24`
+2. `query(kind: "mechanics", query: "Orban is trying to pick another lock. Resolve it.")` —
+   `44605c60d00c4d27ae726a1775163bb2`
+3. Read `mechanic.lock.pick`; search entities named Orban and lock —
+   `60270fe8166d428b9ea8d6067b5e1374`, `178b15d7eeda442a803ff276294e0b2f`,
+   `3a8fd8e1b16e46c5870446d0bd05171e`.
+4. `commit(kind: "action", ...)` with the retrieved roles —
+   `bcf7877808c845d1add36a70c72e988f`.
+
+**Session B result:** retrieval ranked `mechanic.lock.pick` first and the stored mechanic was
+reused rather than duplicated. It produced: **“Orban picks the lock on Practice Lock (24 against
+12).”**
+
+### Audit and findings
+
+`query(kind: "history", limit: 50)` (`9ca72a011b844e879834c837abb0c296`) found no failed
+rehearsal write or action. It did report **four operations that cited a procedure without a
+matching recent read**. Most importantly, the simulated Session B action cited
+`procedure.action.run` but did not re-read it after its fresh orientation. This is a navigation
+failure in the rehearsal; a real cold subject should be expected to follow `orient` into the
+operating manual and then read the action contract before acting.
+
+Other findings:
+
+- The official script's baseline is stale relative to this database: run 3's missing convention
+  already exists, and later D&D data introduces a second entity named Orban.
+- Mechanic retrieval worked, but the natural Session B query returned 11 results. The right rule
+  ranked first, but the list is noisy.
+- A new action needs explicit role-to-entity mapping. The fresh-session-style pass had to search
+  for both Orban and a lock, then choose the entity whose component requirements matched. That is
+  discoverable, but it is a real friction point.
+- The surface did successfully convey: orient first, inspect before changing, consult the exact
+  capability catalog, use a single dry-run-then-identical-commit for effects and mechanics, and
+  never ask for an action dry run.

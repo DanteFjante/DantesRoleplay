@@ -1,1 +1,8 @@
-{"id":"world.relationship.removed","category":"world","name":"Relationship removed","description":"A structural relationship removal.","scope":"","status":"active"}
+{
+  "id": "world.relationship.removed",
+  "category": "world",
+  "name": "Relationship removed",
+  "description": "A structural relationship removal.",
+  "scope": "",
+  "status": "Active"
+}

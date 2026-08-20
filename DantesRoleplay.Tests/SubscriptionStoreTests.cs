@@ -102,9 +102,18 @@ public sealed class SubscriptionStoreTests : IDisposable
         });
 
         var result = await new CommitTool().CommitAsync(
-            new ProcedureStore(db), new WorldStore(db), null!, new MechanicStore(db),
-            new EventTypeStore(db), new SubscriptionStore(db), null!, new OperationLog(db),
-            "subscription", payload, dryRun: true);
+            procedures: new ProcedureStore(db),
+            world: new WorldStore(db),
+            effects: null!,
+            mechanics: new MechanicStore(db),
+            eventTypes: new EventTypeStore(db),
+            subscriptions: new SubscriptionStore(db),
+            actions: null!,
+            log: new OperationLog(db),
+            notifications: new NotificationStore(db),
+            kind: "subscription",
+            payload: payload,
+            dryRun: true);
 
         Assert.True(result.Ok, JsonSerializer.Serialize(result));
         Assert.False(await new SubscriptionStore(db).ExistsAsync("subscription.guard.test"));

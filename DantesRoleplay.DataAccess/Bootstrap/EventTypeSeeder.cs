@@ -14,8 +14,8 @@ namespace DantesRoleplay.DataAccess.Bootstrap;
 /// install unable to run `commit(kind: "effects")` until somebody happened to import the catalog —
 /// a dependency nothing declared and no test covered.
 ///
-/// The catalog copy is unaffected and still round-trips. This one exists so the kernel is
-/// self-sufficient, exactly as the bootstrap contracts and rules are.
+/// The canonical catalog files are embedded at build time, so the kernel is self-sufficient without
+/// maintaining a second authored copy.
 ///
 /// Parsing reuses <see cref="EventTypeFile"/> — the catalog's own parser — rather than a second
 /// reader of the same format. Same rule as the mechanic and procedure seeders: one parser per

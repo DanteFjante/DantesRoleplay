@@ -1,5 +1,6 @@
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Events;
+using DantesRoleplay.Notifications;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.World;
@@ -20,8 +21,6 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
     public DbSet<ProcedureContract> ProcedureContracts => Set<ProcedureContract>();
 
     public DbSet<ProcedureContractVersion> ProcedureContractVersions => Set<ProcedureContractVersion>();
-
-    public DbSet<ProcedureRelation> ProcedureRelations => Set<ProcedureRelation>();
 
     public DbSet<Operation> Operations => Set<Operation>();
 
@@ -47,6 +46,10 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
 
     public DbSet<EventExecution> EventExecutions => Set<EventExecution>();
 
+    public DbSet<Notification> Notifications => Set<Notification>();
+
+    public DbSet<NotificationEntity> NotificationEntities => Set<NotificationEntity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -58,6 +61,50 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         ConfigureEventTypes(modelBuilder);
         ConfigureSubscriptions(modelBuilder);
         ConfigureEventLedger(modelBuilder);
+        ConfigureNotifications(modelBuilder);
+    }
+
+    private static void ConfigureNotifications(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.ToTable("notification");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasMaxLength(40);
+            entity.Property(x => x.Topic).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Subject).HasMaxLength(400).IsRequired();
+            entity.Property(x => x.Body).IsRequired();
+            entity.Property(x => x.CorrelationId).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.EventId).HasMaxLength(40);
+            entity.Property(x => x.ExecutionId).HasMaxLength(40);
+            entity.Property(x => x.RootOperationId).HasMaxLength(40);
+
+            // Stored as text rather than an integer, so a row read outside this application says
+            // "unread" instead of "0". The ledger's own audience is people reading a database.
+            entity.Property(x => x.State).HasConversion<string>().HasMaxLength(20);
+
+            // The two questions actually asked: "what is waiting for me?" and "what came out of
+            // this change?". Nothing indexes the body, because nothing should search it.
+            entity.HasIndex(x => new { x.State, x.CreatedAt });
+            entity.HasIndex(x => new { x.CorrelationId, x.Ordinal });
+            entity.HasIndex(x => new { x.Topic, x.CreatedAt });
+        });
+
+        modelBuilder.Entity<NotificationEntity>(entity =>
+        {
+            entity.ToTable("notification_entity");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.NotificationId).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.EntityId).HasMaxLength(200).IsRequired();
+
+            entity.HasOne(x => x.Notification)
+                .WithMany(x => x.Entities)
+                .HasForeignKey(x => x.NotificationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(x => new { x.EntityId, x.Id });
+            entity.HasIndex(x => new { x.NotificationId, x.Ordinal }).IsUnique();
+        });
     }
 
     private static void ConfigureEventLedger(ModelBuilder modelBuilder)
@@ -188,26 +235,6 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.HasIndex(e => new { e.ContractId, e.Version }).IsUnique();
         });
 
-        modelBuilder.Entity<ProcedureRelation>(entity =>
-        {
-            entity.ToTable("procedure_relation");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.FromContractId).HasMaxLength(200).IsRequired();
-            entity.Property(e => e.ToContractId).HasMaxLength(200).IsRequired();
-            entity.Property(e => e.Kind).HasConversion<string>().HasMaxLength(20).IsRequired();
-
-            entity.HasOne(e => e.FromContract)
-                  .WithMany()
-                  .HasForeignKey(e => e.FromContractId)
-                  .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.ToContract)
-                  .WithMany()
-                  .HasForeignKey(e => e.ToContractId)
-                  .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasIndex(e => new { e.FromContractId, e.ToContractId, e.Kind }).IsUnique();
-        });
     }
 
     private static void ConfigureOperations(ModelBuilder modelBuilder)

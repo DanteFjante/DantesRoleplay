@@ -19,3 +19,4 @@ assign hit points
 ```json
 {"roles":{"subject":{"components":["dnd2024.hit-points"],"description":"The creature whose current and maximum Hit Points are being recorded or corrected."}}}
 ```
+

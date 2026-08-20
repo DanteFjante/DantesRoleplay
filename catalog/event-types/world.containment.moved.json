@@ -1,1 +1,8 @@
-{"id":"world.containment.moved","category":"world","name":"Containment moved","description":"A structural containment move.","scope":"","status":"active"}
+{
+  "id": "world.containment.moved",
+  "category": "world",
+  "name": "Containment moved",
+  "description": "A structural containment move.",
+  "scope": "",
+  "status": "Active"
+}

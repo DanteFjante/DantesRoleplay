@@ -7,39 +7,39 @@ status: active
 ---
 
 ## Description
-What "done" means for a change to this application, and why compiling is not it.
+What “done” means for a repository change. Verification is risk-based while iterating and complete
+at feature acceptance; repeating the largest gate after every file adds cost without adding new
+evidence.
 
 ## Instructions
-1. Build the whole solution, not just the project you touched. A change to the core project
-   breaks its dependents silently until they are built.
-2. Run the full test suite. Not the tests you wrote — all of them. Most regressions here land in
-   a neighbouring subsystem, not the one being edited.
-3. Run the guard tests specifically if you touched the MCP surface or the kernel. They enforce
-   invariants no reviewer reliably catches by eye: game vocabulary leaking into C#, a kind the
-   catalog advertises that nothing dispatches, a recovery call naming a verb that no longer
-   exists, the three-tool budget.
-4. Run the protocol walk if you touched anything the MCP surface reaches. It is the only test that
-   speaks JSON-RPC to a real server, and it is the only one that can see a dependency that is not
-   registered, a response that is unreadable, or a `fix` that cannot be called.
-5. Add a test that would have failed before your change. If you cannot write one, you probably
-   cannot describe the change precisely enough to be finished.
-6. Hand over one reviewable unit at a time — roughly five files or one subsystem — and stop.
-   A large batch means several defects surface at once with no way to attribute them.
-7. Say plainly what was verified and what was not. "Builds" and "tested" are different claims,
-   and so are "tested" and "run against a live client".
+1. Add or update a focused test that would fail without the changed behavior. Run the smallest
+   relevant build and tests while iterating so failures remain attributable.
+2. After catalog changes, run `.\roleplay validate catalog`. This parses every catalog format,
+   imports a disposable copy into a freshly migrated database, applies production authoring
+   checks and verifies a clean round trip without touching the persistent database.
+3. Run guard tests when changing the kernel or MCP surface. They enforce invariants reviewers do
+   not reliably catch: game vocabulary leaking into C#, an advertised kind with no dispatcher, a
+   recovery call naming a retired verb and the three-tool budget.
+4. Run the protocol walk only when changing the MCP surface, serialization, service registration
+   or a dependency reached through MCP. It proves behavior that unit construction cannot, including
+   dependency registration and callable recovery instructions.
+5. At completion of a coherent feature or before release, build the whole solution and run the
+   full test suite once. A focused pass is iteration evidence; the complete pass is acceptance
+   evidence.
+6. Import into the persistent database only when integration play or release needs the feature.
+   Inspect the import dry run, apply it and verify catalog/database agreement. Do not require this
+   live synchronization for ordinary file edits.
+7. Report what was verified and what was not. Keep durable evidence concise: named commands,
+   counts and failures are enough. Operation ids belong to live writes, not repository changes.
 
 ## Constraints
-- Never report a change as working on the strength of a syntax or type check alone. Those catch
-  structure, never behaviour. A real instance: a change that compiled cleanly shipped seven
-  query-translation failures and a hash function missing a field, and none of them were
-  detectable without executing the tests.
-- Never take a passing unit suite as evidence that the surface works. A second real instance: the
-  action runner was never registered in the container, so every `commit` failed at invocation
-  with no envelope and no audit row — and all 167 tests passed, because each one constructed its
-  dependencies by hand.
-- Never assert a fact about the code that you have not observed. Read the file or run the check.
-- When a patch is applied by search-and-replace, assert on the specific transformation. Asserting
-  that some substring "is present" is not verification when it was already present before.
-- A failing test is evidence, not an obstacle. Never adjust a test so that it passes unless the
-  test itself is demonstrably wrong.
-
+- Never report a behavior as working from syntax, compilation or catalog parsing alone. Execute a
+  focused behavioral test for the changed outcome.
+- Never take unit tests as evidence that a changed MCP path is callable; use the protocol walk when
+  that boundary changed.
+- Never run a smaller gate merely because the larger required acceptance gate currently fails.
+  Record and resolve the failure or report the feature incomplete.
+- Never assert a fact about code or state that was not inspected or exercised.
+- Never change a test merely to make it green unless the previous expectation is demonstrably
+  wrong and the intended behavior is recorded.
+- Validation may replace repeated manual confirmation only when it asserts the same invariant.

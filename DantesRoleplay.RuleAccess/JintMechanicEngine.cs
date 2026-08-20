@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Text.Json;
 using DantesRoleplay.Effects;
+using DantesRoleplay.Events;
+using DantesRoleplay.Notifications;
 using DantesRoleplay.Mechanics;
 using Jint;
 using Jint.Runtime;
@@ -182,12 +184,37 @@ public sealed class JintMechanicEngine : IMechanicEngine
                 log);
         }
 
+        var events = raw.Output.Events ?? [];
+
+        if (events.Count > limits.MaxEvents)
+        {
+            return MechanicRunResult.Failed(
+                $"The mechanic declared {events.Count} events; the limit is {limits.MaxEvents}. " +
+                "An event is an announcement, not a change — a rule making this many has probably " +
+                "confused the two.",
+                "events",
+                log);
+        }
+
+        var notifications = raw.Output.Notifications ?? [];
+
+        if (notifications.Count > limits.MaxNotifications)
+        {
+            return MechanicRunResult.Failed(
+                $"The mechanic raised {notifications.Count} notifications; the limit is "
+                + $"{limits.MaxNotifications}. Somebody has to read these.",
+                "notifications",
+                log);
+        }
+
         return new MechanicRunResult
         {
             Ok = true,
             Output = new MechanicOutput
             {
                 Effects = effects,
+                Events = events,
+                Notifications = notifications,
                 Narration = raw.Output.Narration ?? string.Empty,
                 Data = raw.Output.Data ?? "{}"
                 ,Decision = raw.Output.Decision ?? string.Empty
@@ -212,6 +239,10 @@ public sealed class JintMechanicEngine : IMechanicEngine
     private sealed class HarnessOutput
     {
         public List<Effect>? Effects { get; set; }
+
+        public List<DeclaredEvent>? Events { get; set; }
+
+        public List<DeclaredNotification>? Notifications { get; set; }
 
         public string? Narration { get; set; }
 
@@ -298,6 +329,19 @@ public sealed class JintMechanicEngine : IMechanicEngine
 
             if (output && output.data !== undefined && typeof output.data !== 'string') {
               output.data = JSON.stringify(output.data);
+            }
+
+            // Only strings cross this boundary, so a declared event's payload is stringified here
+            // rather than making every rule author remember to do it. An author who already passed
+            // a string is left alone — double-encoding it would produce a payload that validates
+            // against no schema at all.
+            if (output && output.events && output.events.length) {
+              for (var i = 0; i < output.events.length; i++) {
+                var declared = output.events[i];
+                if (declared && declared.payload !== undefined && typeof declared.payload !== 'string') {
+                  declared.payload = JSON.stringify(declared.payload);
+                }
+              }
             }
 
             return JSON.stringify({ output: output, log: log });

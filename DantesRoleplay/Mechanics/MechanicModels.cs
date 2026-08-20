@@ -1,6 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DantesRoleplay.Effects;
+using DantesRoleplay.Events;
+using DantesRoleplay.Notifications;
 
 namespace DantesRoleplay.Mechanics;
 
@@ -288,6 +290,18 @@ public sealed record MechanicOutput
 {
     /// <summary>Proposed changes, validated and applied by the effect applier, never by the mechanic.</summary>
     public IReadOnlyList<Effect> Effects { get; init; } = [];
+
+    /// <summary>
+    /// Events the rule declares happened, beyond whatever its effects imply. Validated against
+    /// their registered types at emission and, once accepted, visible to the rest of the chain.
+    /// </summary>
+    public IReadOnlyList<DeclaredEvent> Events { get; init; } = [];
+
+    /// <summary>
+    /// Notices a rule wants a person told about. Created only if the whole chain commits, and read
+    /// only when somebody asks — nothing here delivers anything.
+    /// </summary>
+    public IReadOnlyList<DeclaredNotification> Notifications { get; init; } = [];
 
     /// <summary>Text describing what happened, for the LLM to relay to the player.</summary>
     public string Narration { get; init; } = string.Empty;

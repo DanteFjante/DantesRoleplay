@@ -98,14 +98,36 @@ public sealed class MechanicStore(DantesRoleplayDbContext db) : IMechanicStore
             return scoped.Take(limit).ToList();
         }
 
-        return scoped
+        var scored = scoped
             .Select(c => new
             {
                 Mechanic = c,
-                Hits = tokens.Count(t => Haystack(c).Contains(t, StringComparison.OrdinalIgnoreCase))
+                PhraseHits = CountHits(c.Matches, tokens),
+                IdentityHits = CountHits($"{c.Id} {c.Name}", tokens),
+                DescriptionHits = CountHits(c.Description, tokens)
             })
-            .Where(x => x.Hits > 0)
-            .OrderByDescending(x => x.Hits)
+            .Where(x => x.PhraseHits + x.IdentityHits + x.DescriptionHits > 0)
+            .ToList();
+
+        // Match phrases are the promise the mechanic author made about what a player will say.
+        // A generic word in prose such as "resolve", "action", or "result" must not make every
+        // rule look like an answer when a player phrase already identifies one. Keep descriptions
+        // as a fallback, though: they are still useful when someone searches by an explanatory
+        // term rather than a phrase the author anticipated.
+        var phraseMatches = scored
+            .Where(x => x.PhraseHits > 0)
+            .ToList();
+
+        var identityMatches = scored
+            .Where(x => x.IdentityHits > 0)
+            .ToList();
+
+        return (phraseMatches.Count > 0
+                ? phraseMatches
+                : identityMatches.Count > 0 ? identityMatches : scored)
+            .OrderByDescending(x => x.PhraseHits)
+            .ThenByDescending(x => x.IdentityHits)
+            .ThenByDescending(x => x.DescriptionHits)
             .ThenByDescending(x => !string.IsNullOrEmpty(scope) && x.Mechanic.Scope == scope)
             .ThenBy(x => x.Mechanic.Id, StringComparer.Ordinal)
             .Take(limit)
@@ -113,15 +135,11 @@ public sealed class MechanicStore(DantesRoleplayDbContext db) : IMechanicStore
             .ToList();
     }
 
-    /// <summary>
-    /// The author's match phrases are in here, which is what makes free-text intent matching work
-    /// at all: "I try to shove him" finds a mechanic whose phrases include "shove".
-    /// </summary>
-    private static string Haystack(MechanicSummary m) =>
-        $"{m.Id} {m.Name} {m.Description} {m.Matches}";
+    private static int CountHits(string haystack, IReadOnlyCollection<string> tokens) =>
+        tokens.Count(t => haystack.Contains(t, StringComparison.OrdinalIgnoreCase));
 
     private static List<string> Tokenise(string query) => query
-        .Split([' ', ',', ';', ':', '/', '\\', '(', ')', '"', '\'', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries)
+        .Split([' ', ',', ';', ':', '/', '\\', '(', ')', '"', '\'', '.', '!', '?', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries)
         .Select(t => t.Trim())
         .Where(t => t.Length >= 3)
         .Distinct(StringComparer.OrdinalIgnoreCase)

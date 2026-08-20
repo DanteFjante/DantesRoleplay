@@ -130,6 +130,54 @@ public sealed class MechanicStoreTests : IDisposable
         Assert.Single(await store.FindAsync("find a route"));
     }
 
+    [Fact]
+    public async Task Player_match_phrases_exclude_rules_that_only_share_generic_description_words()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new MechanicStore(db);
+
+        await store.WriteAsync(Request(
+            id: "mechanic.lock.pick",
+            name: "Pick a lock",
+            matches: "pick a lock\npick the lock",
+            source: "return { narration: 'picked', effects: [] };"));
+
+        await store.WriteAsync(Request(
+            id: "mechanic.combat.resolve",
+            name: "Resolve an attack",
+            matches: "make an attack",
+            source: "return { narration: 'attacked', effects: [] };"));
+
+        // "resolve" appears in the second mechanic's name and description. It is not a player
+        // phrase for that rule, so it must not make the search response noisy once "pick a lock"
+        // has a direct match.
+        var found = await store.FindAsync("Orban is trying to pick another lock. Resolve it.");
+
+        var match = Assert.Single(found);
+        Assert.Equal("mechanic.lock.pick", match.Id);
+    }
+
+    [Fact]
+    public async Task Description_search_remains_available_when_no_phrase_or_identity_matches()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new MechanicStore(db);
+
+        await store.WriteAsync(new WriteMechanicRequest
+        {
+            Id = "mechanic.diplomacy.petition",
+            Category = "social",
+            Name = "Make a petition",
+            Description = "Negotiates the terms of a treaty with a court.",
+            Matches = "petition the court",
+            Source = "return { narration: 'petitioned', effects: [] };"
+        });
+
+        var found = await store.FindAsync("treaty");
+
+        Assert.Equal("mechanic.diplomacy.petition", Assert.Single(found).Id);
+    }
+
     // ---- scope: the answer to "campaign or shared ruleset?" -----------------------------
 
     [Fact]

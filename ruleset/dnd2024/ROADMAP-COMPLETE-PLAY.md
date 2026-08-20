@@ -1,7 +1,7 @@
 # D&D 2024 roadmap — from one test session to complete play
 
-Status: **E1 Slice 1 verified; amended guard-aware plan authorizes only Slice 2 middleware registry next.**
-Last updated: 2026-08-19
+Status: **E1 verified; this document supplies rationale for the primary Feature 11–38 index.**
+Last updated: 2026-08-20
 
 ## Purpose and authority
 
@@ -21,8 +21,8 @@ this document and is not a gap to be closed.
 ## The honest summary
 
 Features 1–10 give you a fight between two creatures where nobody has equipment, nobody moves,
-nothing recovers, and nothing happens on its own. That is the right first milestone and it is
-nearly reached. It is roughly a tenth of what running a campaign asks for.
+nothing recovers, and nothing happens on its own. That first reproducible-session milestone is
+complete; it is still roughly a tenth of what running a campaign asks for.
 
 The remaining work divides into four tiers. The order matters: **Tier E is a prerequisite, not an
 afterthought.** Reactions, conditions that expire, concentration and death saves are all "something
@@ -37,8 +37,8 @@ These are kernel features, not game rules. Each already has a repository plan ex
 
 | # | Capability | Depends on | Why the ruleset is blocked without it | Plan |
 | --- | --- | --- | --- | --- |
-| E1 | Pre-commit event guards, subscriptions, deterministic event chains, and tracked-item notifications | composition | Immunities/wards must veto proposed changes before commit; conditions, reactions, concentration, and tracked notices depend on accepted changes. | `EVENTS_AND_SUBSCRIPTIONS_PLAN.md` — Slice 1 verified; Slice 2 middleware registry authorized |
-| E2 | Selection ranking that respects phrases | — | Token-count scoring with an alphabetical id tie-break already stole one rule's intent twice during Feature 5. At 200 rules it stops being an annoyance and becomes unusable. | none yet — plan before large rule growth |
+| E1 | Pre-commit event guards, subscriptions, deterministic event chains, and tracked-item notifications | composition | Immunities/wards must veto proposed changes before commit; conditions, reactions, concentration, and tracked notices depend on accepted changes. | Verified — all six slices in `EVENTS_AND_SUBSCRIPTIONS_PLAN.md` |
+| E2 | Selection ranking that respects phrases | — | A direct player match phrase now outranks incidental name and description tokens. Exact phrase collisions still need authoring controls as the catalog grows. | Verified by `MechanicStoreTests` |
 | E3 | Hierarchical catalog navigation | — | Categories are already dotted paths; nothing can browse a branch. A GM cannot find one spell among hundreds by scrolling a flat list. | `HIERARCHICAL_CATALOGS_PLAN.md` |
 | E4 | Local intent routing | E2, E3 | Turns "I swing at the goblin with my axe" into the right rule plus the right roles without the GM model spending its context on lookup. | `LOCAL_INTENT_ROUTING_PLAN.md` |
 | E5 | Numeric fidelity across the sandbox boundary | — | Seeds are 64-bit and JavaScript numbers are not. Feature 5 worked around it by not storing seeds; a rule that ever needs an exact large integer has no honest option today. | none yet |
@@ -132,6 +132,6 @@ Two consequences worth stating plainly:
    hand-author every component is a demo of the kernel, not a game.
 
 A reasonable ordering for the next several sessions, if the goal is playable rather than complete:
-finish Feature 5, then E2, then Features 6–10, then E1, then Tier F 11–17, then Tier J. That gets
-to a real fight with real consequences and a story that survives the session boundary — with
-Tiers G and H filled in as the campaign demands them, which is also how they will be tested.
+implement Features 11–17, then Tier J. That gets to a real fight with real
+consequences and a story that survives the session boundary — with Tiers G and H filled in as the
+campaign demands them, which is also how they will be tested.

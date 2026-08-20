@@ -145,6 +145,10 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ProducerExecutionId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("RootOperationId")
                         .IsRequired()
                         .HasMaxLength(40)
@@ -492,6 +496,103 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.ToTable("mechanic_version", (string)null);
                 });
 
+            modelBuilder.Entity("DantesRoleplay.Notifications.Notification", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EventId")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExecutionId")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RootOperationId")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Topic")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrelationId", "Ordinal");
+
+                    b.HasIndex("State", "CreatedAt");
+
+                    b.HasIndex("Topic", "CreatedAt");
+
+                    b.ToTable("notification", (string)null);
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Notifications.NotificationEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationId")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EntityId", "Id");
+
+                    b.HasIndex("NotificationId", "Ordinal")
+                        .IsUnique();
+
+                    b.ToTable("notification_entity", (string)null);
+                });
+
             modelBuilder.Entity("DantesRoleplay.Operations.Operation", b =>
                 {
                     b.Property<string>("Id")
@@ -662,37 +763,6 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .IsUnique();
 
                     b.ToTable("procedure_contract_version", (string)null);
-                });
-
-            modelBuilder.Entity("DantesRoleplay.Procedures.ProcedureRelation", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("FromContractId")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Kind")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ToContractId")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ToContractId");
-
-                    b.HasIndex("FromContractId", "ToContractId", "Kind")
-                        .IsUnique();
-
-                    b.ToTable("procedure_relation", (string)null);
                 });
 
             modelBuilder.Entity("DantesRoleplay.World.Component", b =>
@@ -917,6 +987,17 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.Navigation("Mechanic");
                 });
 
+            modelBuilder.Entity("DantesRoleplay.Notifications.NotificationEntity", b =>
+                {
+                    b.HasOne("DantesRoleplay.Notifications.Notification", "Notification")
+                        .WithMany("Entities")
+                        .HasForeignKey("NotificationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Notification");
+                });
+
             modelBuilder.Entity("DantesRoleplay.Procedures.ProcedureContractVersion", b =>
                 {
                     b.HasOne("DantesRoleplay.Procedures.ProcedureContract", "Contract")
@@ -926,25 +1007,6 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .IsRequired();
 
                     b.Navigation("Contract");
-                });
-
-            modelBuilder.Entity("DantesRoleplay.Procedures.ProcedureRelation", b =>
-                {
-                    b.HasOne("DantesRoleplay.Procedures.ProcedureContract", "FromContract")
-                        .WithMany()
-                        .HasForeignKey("FromContractId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DantesRoleplay.Procedures.ProcedureContract", "ToContract")
-                        .WithMany()
-                        .HasForeignKey("ToContractId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("FromContract");
-
-                    b.Navigation("ToContract");
                 });
 
             modelBuilder.Entity("DantesRoleplay.World.Component", b =>
@@ -1022,6 +1084,11 @@ namespace DantesRoleplay.DataAccess.Migrations
             modelBuilder.Entity("DantesRoleplay.Mechanics.Mechanic", b =>
                 {
                     b.Navigation("Versions");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Notifications.Notification", b =>
+                {
+                    b.Navigation("Entities");
                 });
 
             modelBuilder.Entity("DantesRoleplay.Procedures.ProcedureContract", b =>

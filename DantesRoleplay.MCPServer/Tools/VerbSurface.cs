@@ -72,6 +72,12 @@ public static class VerbSurface
             ["id", "version", "query", "category", "scope", "includeInactive", "limit"],
             ["procedure.subscription.create", "procedure.subscription.modify", "procedure.event.guard", "procedure.event.react"]),
         new(
+            "notifications",
+            "Notices rules raised for a person to read, newest first. Reading one changes nothing; "
+            + "marking it read is a separate commit.",
+            ["id", "state", "topic", "entityId", "correlationId", "from", "to", "limit"],
+            ["procedure.notification.inspect"]),
+        new(
             "history",
             "Recent operation audit records, newest first, including failures.",
             ["limit", "failuresOnly", "tool", "subject"],
@@ -157,7 +163,17 @@ public static class VerbSurface
             {"intent":"what the player is trying to do","roleEntityIds":{"<role>":"<entity-id>"},"input":"{}"}
             """,
             SupportsDryRun: false,
-            ["procedure.action.run", "procedure.event.chain-limits"])
+            ["procedure.action.run", "procedure.event.chain-limits"]),
+        new(
+            "notification",
+            "Move one notification to unread, read, or archived. It cannot change what a notice "
+            + "says — only a rule that committed can, and only once.",
+            "{id, state} — state is unread, read, or archived, and nothing else is accepted.",
+            """
+            {"id":"...","state":"read"}
+            """,
+            SupportsDryRun: true,
+            ["procedure.notification.inspect"])
     ];
 
     /// <summary>

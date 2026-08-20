@@ -48,6 +48,19 @@ public sealed class EventRecord
     /// </summary>
     public string RootOperationId { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The reaction execution that DECLARED this event, when a rule asserted it rather than the
+    /// kernel deriving it from a world change. Empty for every structural event, because nothing
+    /// declared those — they follow from the change itself.
+    ///
+    /// One column rather than four. The execution row already names the subscription, its version,
+    /// the mechanic, its version and the seed, so copying them here would be five places one fact
+    /// could disagree with itself. Not a declared foreign key, for the same reason
+    /// <see cref="RootOperationId"/> is not: both rows are written in one transaction and the
+    /// execution is inserted last.
+    /// </summary>
+    public string ProducerExecutionId { get; set; } = string.Empty;
+
     public ICollection<EventEntity> Entities { get; set; } = new List<EventEntity>();
 }
 
@@ -97,7 +110,10 @@ public sealed record EventDetail(
     int Depth,
     int Sequence,
     string RootOperationId,
-    IReadOnlyList<string> EntityIds);
+    IReadOnlyList<string> EntityIds,
+
+    /// <summary>Empty unless a rule declared this event; then, the execution that did.</summary>
+    string ProducerExecutionId = "");
 
 /// <summary>
 /// Reads and appends the structural event ledger.

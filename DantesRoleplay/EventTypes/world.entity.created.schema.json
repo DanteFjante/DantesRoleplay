@@ -1,1 +1,0 @@
-{"type":"object","additionalProperties":false,"required":["entityId","name"],"properties":{"entityId":{"type":"string"},"name":{"type":"string"}}}

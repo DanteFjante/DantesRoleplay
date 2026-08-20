@@ -24,7 +24,9 @@ public sealed record MechanicFile(
     string Requirements,
     string Source,
     string Scope,
-    MechanicStatus Status)
+    MechanicStatus Status,
+    string CreatedBy = "",
+    string ChangeNote = "")
 {
     /// <summary>
     /// Content fingerprint. EVERY authored field appears here, in constructor order — a field left
@@ -67,6 +69,8 @@ public sealed record MechanicFile(
         MarkdownDocument.Field(builder, "name", Name);
         MarkdownDocument.Field(builder, "scope", Scope);
         MarkdownDocument.Field(builder, "status", Status.ToString().ToLowerInvariant());
+        MarkdownDocument.TextField(builder, "createdBy", CreatedBy);
+        MarkdownDocument.TextField(builder, "changeNote", ChangeNote);
         MarkdownDocument.CloseFrontMatter(builder);
 
         MarkdownDocument.Section(builder, "Description", Description);
@@ -177,7 +181,9 @@ public sealed record MechanicFile(
             declared,
             hasSidecar ? source.Trim() : Unfence(source),
             scope ?? string.Empty,
-            status);
+            status,
+            MarkdownDocument.ReadTextField(fields, "createdBy"),
+            MarkdownDocument.ReadTextField(fields, "changeNote"));
     }
 
     /// <summary>

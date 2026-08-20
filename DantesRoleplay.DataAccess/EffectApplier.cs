@@ -15,7 +15,12 @@ namespace DantesRoleplay.DataAccess;
 /// an earlier one — create an entity, then put a component on it — while a reference to something
 /// that exists nowhere is still caught before a single row is written.
 /// </summary>
-public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world, IGuardRouter? guards = null, IEventLedger? events = null, IEventRouter? reactions = null) : IEffectApplier
+public sealed class EffectApplier(
+    DantesRoleplayDbContext db,
+    IWorldStore world,
+    IGuardRouter? guards = null,
+    IEventLedger? events = null,
+    IEventRouter? reactions = null) : IEffectApplier
 {
     private readonly DantesRoleplayDbContext _db = db;
     private readonly IWorldStore _world = world;
@@ -71,9 +76,20 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
             // state as a commit. An ambient transaction belongs to ActionRunner's existing
             // validation pass, which intentionally does not mutate it; its real apply below is
             // still guarded before that runner commits.
-            return _guards is not null && _db.Database.CurrentTransaction is null
-                ? await DryRunWithGuardsAsync(effects, cancellationToken)
-                : new EffectResult(Applied: false, Count: 0, Problems: []) { ProposedEvents = Proposals(effects, new string[effects.Count], Operation.NewId(), 0, string.Empty) };
+            if (_guards is not null && _db.Database.CurrentTransaction is null)
+            {
+                return await DryRunWithGuardsAsync(effects, cancellationToken);
+            }
+
+            return new EffectResult(Applied: false, Count: 0, Problems: [])
+            {
+                ProposedEvents = Proposals(
+                    effects,
+                    Unapplied(effects),
+                    Operation.NewId(),
+                    depth: 0,
+                    causationEventId: string.Empty)
+            };
         }
 
         return await ApplyValidatedAsync(effects, rootOperationId, depth, causationEventId, cancellationToken);
@@ -309,19 +325,19 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
 
         var index = 0;
 
-        // The id an effect actually touched, which is not always the id it named: entity.create
-        // with no id gets one from the store, and an event that reported an empty entity id would
-        // be a record of something happening to nothing.
-        var resolved = new string[effects.Count];
+        // One receipt per applied effect: the id it actually touched, and the state it displaced.
+        // Prior state cannot be read after the fact — it is gone — so each receipt is taken one
+        // step before the store overwrites it, inside this transaction.
+        var receipts = new EffectReceipt[effects.Count];
 
         try
         {
             for (; index < effects.Count; index++)
             {
-                resolved[index] = await ApplyOneAsync(effects[index], cancellationToken);
+                receipts[index] = await ApplyOneAsync(index, effects[index], cancellationToken);
             }
 
-            var proposals = Proposals(effects, resolved, correlation, depth, causationEventId);
+            var proposals = Proposals(effects, receipts, correlation, depth, causationEventId);
             var evaluations = Array.Empty<GuardEvaluation>() as IReadOnlyList<GuardEvaluation>;
 
             if (_guards is not null && proposals.Count > 0)
@@ -473,6 +489,10 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
         var queue = new Queue<EventDetail>(rootEvents.OrderBy(e => e.Sequence));
         var ordinal = 0;
 
+        // Runs across the whole chain, not per event, so notices from one committed change read
+        // back in the order the rules made them.
+        var noticeOrdinal = 0;
+
         while (queue.Count > 0)
         {
             var @event = queue.Dequeue();
@@ -530,6 +550,83 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
                     }
                 }
 
+                // Then whatever the rule declared happened beyond what its effects describe. This
+                // runs AFTER the effects on purpose: a guard on a declared event should see the
+                // world the same reaction just changed, not the world half way through its work.
+                if (outcome.Events.Count > 0)
+                {
+                    var derived = await DerivedEvents.ProposeAsync(
+                        _db,
+                        outcome.Events,
+                        outcome.Execution.SubscriptionId,
+                        outcome.Execution.Id,
+                        correlation,
+                        @event.Id,
+                        @event.Depth + 1,
+                        cancellationToken);
+
+                    if (!derived.Ok)
+                    {
+                        return EventRoutingResult.Abort(derived.Code, derived.Reason);
+                    }
+
+                    // Proposed, not accepted: proposing and guarding an event is the work the
+                    // budget exists to bound, so a chain whose events are all vetoed still spends
+                    // it. Counted before the guards run, because a limit enforced afterwards has
+                    // already paid the cost.
+                    var spent = budget.CountEvents(derived.Proposals.Count);
+
+                    if (spent is not null)
+                    {
+                        return Overspent(spent, $"subscription '{outcome.Execution.SubscriptionId}'");
+                    }
+
+                    if (_guards is not null)
+                    {
+                        var guarded = await _guards.EvaluateAsync(derived.Proposals, cancellationToken);
+
+                        // The same veto as any other, taking down the same root. A declared event
+                        // is not a back door around the rules that govern the change it followed.
+                        if (!guarded.Allowed)
+                        {
+                            return EventRoutingResult.Abort(guarded.Code, guarded.Reason);
+                        }
+                    }
+
+                    IReadOnlyList<EventDetail> announced = _events is not null
+                        ? await _events.WriteAcceptedAsync(derived.Proposals, correlation, cancellationToken)
+                        : [];
+
+                    foreach (var child in announced)
+                    {
+                        queue.Enqueue(child);
+                    }
+                }
+
+                // And whatever it wants a person told. Last, because a notice describes work
+                // that is finished: raising it before the effects and events it talks about would
+                // be a statement about something that had not happened yet.
+                if (outcome.Notifications.Count > 0)
+                {
+                    var notices = await DeclaredNotifications.BuildAsync(
+                        _db,
+                        outcome.Notifications,
+                        outcome.Execution.SubscriptionId,
+                        outcome.Execution.Id,
+                        correlation,
+                        @event.Id,
+                        noticeOrdinal,
+                        cancellationToken);
+
+                    if (!notices.Ok)
+                    {
+                        return EventRoutingResult.Abort(notices.Code, notices.Reason);
+                    }
+
+                    _db.Notifications.AddRange(notices.Rows);
+                    noticeOrdinal += notices.Rows.Count;
+                }
+
                 _db.EventExecutions.Add(outcome.Execution);
             }
 
@@ -542,9 +639,18 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
     private static EventRoutingResult Overspent(string code, string where) =>
         EventRoutingResult.Abort(code, $"{ChainBudget.Explain(code)} Reached by {where}.");
 
+    /// <summary>
+    /// Turns receipts into proposed events.
+    ///
+    /// The split between the top level of a payload and its <c>before</c>/<c>after</c> is a rule,
+    /// not a habit: the top level IDENTIFIES what changed and holds only filterable scalars, which
+    /// is what a subscription's <c>payloadEquals</c> can match on. State lives in the two
+    /// snapshots and is never filterable. Without that line, every new field would be an argument
+    /// about which half it belongs in.
+    /// </summary>
     private static IReadOnlyList<ProposedEvent> Proposals(
         IReadOnlyList<Effect> effects,
-        IReadOnlyList<string> resolvedEntityIds,
+        IReadOnlyList<EffectReceipt> receipts,
         string correlationId,
         int depth,
         string causationEventId)
@@ -554,10 +660,14 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
         for (var ordinal = 0; ordinal < effects.Count; ordinal++)
         {
             var effect = effects[ordinal];
+            var receipt = receipts[ordinal];
 
-            var entityId = ordinal < resolvedEntityIds.Count && !string.IsNullOrWhiteSpace(resolvedEntityIds[ordinal])
-                ? resolvedEntityIds[ordinal]
+            var entityId = !string.IsNullOrWhiteSpace(receipt.EntityId)
+                ? receipt.EntityId
                 : effect.EntityId.Trim();
+
+            var before = Snapshot(receipt.BeforeJson);
+            var after = Snapshot(receipt.AfterJson);
 
             var toEntityId = effect.ToEntityId.Trim();
             var definitionId = effect.DefinitionId.Trim();
@@ -573,13 +683,22 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
             {
                 case EffectType.EntityCreate:
                     type = "world.entity.created";
+                    payload["effectIndex"] = receipt.Index;
                     payload["entityId"] = entityId;
                     payload["name"] = effect.Name.Trim();
+                    payload["before"] = before;
+                    payload["after"] = after;
                     break;
 
                 case EffectType.EntityDelete:
                     type = "world.entity.deleted";
+                    payload["effectIndex"] = receipt.Index;
                     payload["entityId"] = entityId;
+
+                    // The whole entity, components and all. Deletion is the one change where the
+                    // ledger is the only remaining copy of what was there.
+                    payload["before"] = before;
+                    payload["after"] = after;
                     break;
 
                 case EffectType.ComponentAdd:
@@ -591,25 +710,45 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
                         EffectType.ComponentSet => "world.component.replaced",
                         _ => "world.component.merged"
                     };
+                    payload["effectIndex"] = receipt.Index;
                     payload["entityId"] = entityId;
                     payload["definitionId"] = definitionId;
-                    payload["data"] = Data(effect);
+
+                    // A merge states its patch as well as its result, because the two are
+                    // different facts: the patch is what the rule asked for, the after is what the
+                    // world made of it, and a shallow merge is exactly where those diverge.
+                    if (Type(effect) == EffectType.ComponentMerge)
+                    {
+                        payload["patch"] = Data(effect);
+                    }
+
+                    payload["before"] = before;
+                    payload["after"] = after;
                     break;
 
                 case EffectType.ComponentRemove:
                     type = "world.component.removed";
+                    payload["effectIndex"] = receipt.Index;
                     payload["entityId"] = entityId;
                     payload["definitionId"] = definitionId;
+                    payload["before"] = before;
+                    payload["after"] = after;
                     break;
 
                 case EffectType.ContainmentMove:
                     type = "world.containment.moved";
+                    payload["effectIndex"] = receipt.Index;
                     payload["entityId"] = entityId;
 
                     // Explicitly null when the entity was moved to nowhere. The schema allows null
                     // here precisely so "taken out of its container" is expressible.
                     payload["toEntityId"] = toEntityId.Length == 0 ? null : toEntityId;
                     payload["slot"] = effect.Slot.Trim();
+
+                    // Container and slot as they stood, and as they stand. "Moved out of the
+                    // saddlebag into the pack" needs both ends; the effect only ever said one.
+                    payload["before"] = before;
+                    payload["after"] = after;
 
                     if (toEntityId.Length > 0)
                     {
@@ -620,18 +759,23 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
 
                 case EffectType.RelationshipCreate:
                     type = "world.relationship.created";
+                    payload["effectIndex"] = receipt.Index;
                     payload["fromEntityId"] = entityId;
                     payload["toEntityId"] = toEntityId;
                     payload["kind"] = effect.Kind.Trim();
-                    payload["data"] = Data(effect);
+                    payload["before"] = before;
+                    payload["after"] = after;
                     ids.Add(toEntityId);
                     break;
 
                 case EffectType.RelationshipRemove:
                     type = "world.relationship.removed";
+                    payload["effectIndex"] = receipt.Index;
                     payload["fromEntityId"] = entityId;
                     payload["toEntityId"] = toEntityId;
                     payload["kind"] = effect.Kind.Trim();
+                    payload["before"] = before;
+                    payload["after"] = after;
                     ids.Add(toEntityId);
                     break;
 
@@ -669,15 +813,119 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
         return JsonNode.Parse(effect.Data) ?? new JsonObject();
     }
 
+    /// <summary>A captured snapshot as JSON, or JSON null when there was nothing there.</summary>
+    private static JsonNode? Snapshot(string? json) =>
+        string.IsNullOrWhiteSpace(json) ? null : JsonNode.Parse(json);
+
+    /// <summary>
+    /// Canonical JSON, so two snapshots of one state are byte-identical and a reader diffing two
+    /// events sees only the difference that is really there. Null stays null.
+    /// </summary>
+    private static string? Canonical(string? json) =>
+        string.IsNullOrWhiteSpace(json) ? null : JsonNode.Parse(json)?.ToJsonString();
+
+    /// <summary>Receipts for effects that were never applied — the dry-run path with no guards.</summary>
+    private static IReadOnlyList<EffectReceipt> Unapplied(IReadOnlyList<Effect> effects)
+    {
+        var receipts = new EffectReceipt[effects.Count];
+
+        for (var index = 0; index < effects.Count; index++)
+        {
+            receipts[index] = EffectReceipt.Unapplied(index, effects[index].EntityId.Trim());
+        }
+
+        return receipts;
+    }
+
+    /// <summary>
+    /// A whole entity as a canonical snapshot, or null when it does not exist — which is also what
+    /// a soft-deleted entity returns, correctly: it is gone as far as anything but the ledger is
+    /// concerned.
+    /// </summary>
+    private async Task<string?> EntityJsonAsync(string entityId, CancellationToken cancellationToken)
+    {
+        var entity = await _world.GetEntityAsync(entityId, cancellationToken);
+
+        if (entity is null)
+        {
+            return null;
+        }
+
+        var components = new JsonObject();
+
+        // Ordinal, so the same state snapshots to the same bytes whatever order the store returned.
+        foreach (var component in entity.Components.OrderBy(c => c.DefinitionId, StringComparer.Ordinal))
+        {
+            components[component.DefinitionId] = Snapshot(component.Data) ?? new JsonObject();
+        }
+
+        return new JsonObject
+        {
+            ["id"] = entity.Id,
+            ["name"] = entity.Name,
+            ["containerId"] = entity.ContainerId,
+            ["slot"] = entity.ContainerSlot,
+            ["components"] = components
+        }.ToJsonString();
+    }
+
+    /// <summary>One component's data, or null when the entity or the component is not there.</summary>
+    private async Task<string?> ComponentJsonAsync(string entityId, string definitionId, CancellationToken cancellationToken)
+    {
+        var entity = await _world.GetEntityAsync(entityId, cancellationToken);
+
+        var component = entity?.Components
+            .FirstOrDefault(c => string.Equals(c.DefinitionId, definitionId, StringComparison.Ordinal));
+
+        // An existing component with empty data is still an existing component, so it snapshots as
+        // an empty object rather than as absent. The difference is the whole point of the field.
+        return component is null ? null : Canonical(component.Data) ?? "{}";
+    }
+
+    /// <summary>Where an entity sits: its container and slot, or null when it does not exist.</summary>
+    private async Task<string?> ContainmentJsonAsync(string entityId, CancellationToken cancellationToken)
+    {
+        var entity = await _world.GetEntityAsync(entityId, cancellationToken);
+
+        return entity is null
+            ? null
+            : new JsonObject
+            {
+                ["containerId"] = entity.ContainerId,
+                ["slot"] = entity.ContainerSlot
+            }.ToJsonString();
+    }
+
+    /// <summary>One relationship's data, or null when that edge does not exist.</summary>
+    private async Task<string?> RelationshipJsonAsync(
+        string fromEntityId,
+        string toEntityId,
+        string kind,
+        CancellationToken cancellationToken)
+    {
+        // Outgoing only: the edge being created or removed is this entity's, and including
+        // incoming ones would make a symmetric kind between the same pair ambiguous.
+        var edges = await _world.GetRelationshipsAsync(fromEntityId, includeIncoming: false, cancellationToken);
+
+        var match = edges.FirstOrDefault(edge =>
+            string.Equals(edge.ToEntityId, toEntityId, StringComparison.Ordinal)
+            && string.Equals(edge.Kind, kind, StringComparison.Ordinal));
+
+        return match is null ? null : Canonical(match.Data) ?? "{}";
+    }
+
     private async Task<EffectResult> DryRunWithGuardsAsync(IReadOnlyList<Effect> effects, CancellationToken cancellationToken)
     {
         await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         var index = 0;
         try
         {
-            var resolved = new string[effects.Count];
-            for (; index < effects.Count; index++) resolved[index] = await ApplyOneAsync(effects[index], cancellationToken);
-            var proposals = Proposals(effects, resolved, Operation.NewId(), 0, string.Empty);
+            var receipts = new EffectReceipt[effects.Count];
+            for (; index < effects.Count; index++)
+            {
+                receipts[index] = await ApplyOneAsync(index, effects[index], cancellationToken);
+            }
+            var proposals = Proposals(effects, receipts, Operation.NewId(), 0, string.Empty);
             var guarded = await _guards!.EvaluateAsync(proposals, cancellationToken);
             await transaction.RollbackAsync(CancellationToken.None);
             _db.ChangeTracker.Clear();
@@ -700,64 +948,106 @@ public sealed class EffectApplier(DantesRoleplayDbContext db, IWorldStore world,
     }
 
     /// <summary>
-    /// Applies one effect and returns the entity id it actually touched.
+    /// Applies one effect and returns a receipt: the id it actually touched, and the state it
+    /// displaced.
     ///
-    /// Today that is always the id the effect named, because validation requires an explicit id on
-    /// entity.create — deliberately, so a later effect in the same list can reference it. The store
-    /// can still mint one when called directly, so reporting what it returned costs nothing and
-    /// keeps an event from ever naming a blank entity. It is also the first step of the receipt
-    /// pipeline the events plan describes; nothing yet relies on it doing more than echoing.
+    /// The id is not always the one the effect named — validation requires an explicit id on
+    /// entity.create so a later effect in the same list can reference it, but the store can still
+    /// mint one when called directly, and an event naming a blank entity would be a record of
+    /// something happening to nothing.
+    ///
+    /// The before snapshot is read HERE rather than by the producer, because here is the only
+    /// place it still exists. One read before the write and, where the store does not hand it back,
+    /// one after. Two reads per effect is the price of an audit trail that can say what a change
+    /// replaced; a ledger that only records the new value cannot answer the question anybody
+    /// actually asks of it.
     /// </summary>
-    private async Task<string> ApplyOneAsync(Effect effect, CancellationToken cancellationToken)
+    private async Task<EffectReceipt> ApplyOneAsync(int index, Effect effect, CancellationToken cancellationToken)
     {
         var entityId = effect.EntityId.Trim();
         var toEntityId = effect.ToEntityId.Trim();
         var definitionId = effect.DefinitionId.Trim();
+        var kind = effect.Kind.Trim();
         var data = string.IsNullOrWhiteSpace(effect.Data) ? "{}" : effect.Data;
 
         switch (Type(effect))
         {
             case EffectType.EntityCreate:
+            {
                 entityId = (await _world.CreateEntityAsync(effect.Name.Trim(), entityId, cancellationToken)).Id;
-                break;
+
+                return new EffectReceipt(index, entityId, null, await EntityJsonAsync(entityId, cancellationToken));
+            }
 
             case EffectType.EntityDelete:
+            {
+                var before = await EntityJsonAsync(entityId, cancellationToken);
                 await _world.DeleteEntityAsync(entityId, cancellationToken);
-                break;
+
+                return new EffectReceipt(index, entityId, before, null);
+            }
 
             // add and set differ only in whether an existing component is an error, and validation
             // has already answered that — so by the time we get here they do the same thing.
             case EffectType.ComponentAdd:
             case EffectType.ComponentSet:
-                await _world.SetComponentAsync(entityId, definitionId, data, cancellationToken);
-                break;
+            {
+                var before = await ComponentJsonAsync(entityId, definitionId, cancellationToken);
+                var written = await _world.SetComponentAsync(entityId, definitionId, data, cancellationToken);
+
+                return new EffectReceipt(index, entityId, before, Canonical(written.Data));
+            }
 
             case EffectType.ComponentMerge:
-                await _world.MergeComponentAsync(entityId, definitionId, data, cancellationToken);
-                break;
+            {
+                var before = await ComponentJsonAsync(entityId, definitionId, cancellationToken);
+                var written = await _world.MergeComponentAsync(entityId, definitionId, data, cancellationToken);
+
+                return new EffectReceipt(index, entityId, before, Canonical(written.Data));
+            }
 
             case EffectType.ComponentRemove:
+            {
+                var before = await ComponentJsonAsync(entityId, definitionId, cancellationToken);
                 await _world.RemoveComponentAsync(entityId, definitionId, cancellationToken);
-                break;
+
+                return new EffectReceipt(index, entityId, before, null);
+            }
 
             case EffectType.ContainmentMove:
+            {
+                var before = await ContainmentJsonAsync(entityId, cancellationToken);
+
                 await _world.MoveAsync(
                     entityId,
                     toEntityId.Length == 0 ? null : toEntityId,
                     effect.Slot.Trim(),
                     cancellationToken);
-                break;
+
+                return new EffectReceipt(index, entityId, before, await ContainmentJsonAsync(entityId, cancellationToken));
+            }
 
             case EffectType.RelationshipCreate:
-                await _world.RelateAsync(entityId, toEntityId, effect.Kind.Trim(), data, cancellationToken);
-                break;
+            {
+                var before = await RelationshipJsonAsync(entityId, toEntityId, kind, cancellationToken);
+                var written = await _world.RelateAsync(entityId, toEntityId, kind, data, cancellationToken);
+
+                return new EffectReceipt(index, entityId, before, Canonical(written.Data));
+            }
 
             case EffectType.RelationshipRemove:
-                await _world.UnrelateAsync(entityId, toEntityId, effect.Kind.Trim(), cancellationToken);
-                break;
-        }
+            {
+                var before = await RelationshipJsonAsync(entityId, toEntityId, kind, cancellationToken);
+                await _world.UnrelateAsync(entityId, toEntityId, kind, cancellationToken);
 
-        return entityId;
+                return new EffectReceipt(index, entityId, before, null);
+            }
+
+            default:
+                // Unreachable: validation rejects an unknown effect type long before this, and the
+                // producer throws on one rather than inventing an event for it.
+                return EffectReceipt.Unapplied(index, entityId);
+        }
     }
 
     // ---- helpers ----------------------------------------------------------------------
