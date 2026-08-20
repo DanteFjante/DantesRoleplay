@@ -76,6 +76,11 @@ become a correctness dependency.
 
 ## Concept and ownership map
 
+Shared authored game state uses the `game.core.<domain>` namespace. D&D SRD data and mechanics
+remain under `dnd2024.*` / `ruleset.dnd2024.core.*`; generic engine procedures remain under their
+existing generic identifiers. This keeps a campaign location or quest distinct from both a generic
+storage primitive and a D&D-specific rule.
+
 | Concept | Runtime representation | Owner | Must not become |
 | --- | --- | --- | --- |
 | World | Root entity plus location, lore, faction, time, and relationship components | World/lore plan | One giant JSON document |

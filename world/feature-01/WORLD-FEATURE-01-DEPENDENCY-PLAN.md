@@ -45,7 +45,23 @@ stable setting topology to reference.
 - A second parent, `worldId`, `locationId`, connection array, or copied adjacency state.
 
 Movement is World Feature 2. Lore, factions, and motives are later World Features. The campaign
-plan consumes this topology; it does not create another world-root representation.
+  plan consumes this topology; it does not create another world-root representation.
+
+## Namespace policy
+
+New authored gameplay state that is shared across rulesets uses the `game.core` namespace.
+`dnd2024.*` remains reserved for SRD 5.2.1 rules data and rule mechanics; generic engine contracts
+remain under their existing `procedure.world.*`, `procedure.system.*`, and similar identifiers.
+
+| Layer | ID/category convention | Examples |
+| --- | --- | --- |
+| Generic engine | Existing generic identifiers | `procedure.world.change`, `procedure.world.model` |
+| Shared game state | `game.core.<domain>...` | `game.core.world.root`, `game.core.world.location` |
+| Shared game procedures/mechanics | `procedure.game.core...`, `mechanic.game.core...`; category `game.core...` | `procedure.game.core.world.location`, future `mechanic.game.core.world.location.move` |
+| D&D ruleset | Existing `dnd2024.*`, `mechanic.dnd2024.*`, and `ruleset.dnd2024.core...` | `dnd2024.abilities`, `mechanic.dnd2024.weapon-attack` |
+
+The namespace names what owns the meaning. It is not a second persistence layer, a C# module, or a
+requirement that all future games use D&D.
 
 ## Source and contract basis
 
@@ -69,7 +85,7 @@ adjacency; visibility is descriptive until an audience policy exists.
 
 | Inquiry | Repository evidence | Conclusion |
 | --- | --- | --- |
-| Existing world-topology owner | Catalog searches for `world.root`, `world.location`, `location.connected`, `travel`, `region`, and `campaign` returned no existing world component, procedure, mechanic, or fixture owner. | `world.root`, `world.location`, `procedure.world.location`, and `world.location.connected-to` are new responsibilities, subject to permanent-ID confirmation. |
+| Existing world-topology owner | Catalog searches for `game.core.world.root`, `game.core.world.location`, `world.root`, `world.location`, `location.connected`, `travel`, `region`, and `campaign` returned no existing world component, procedure, mechanic, or fixture owner. | `game.core.world.root`, `game.core.world.location`, `procedure.game.core.world.location`, and `game.core.world.location.connected-to` are new responsibilities, subject to permanent-ID confirmation. |
 | Generic hierarchy owner | `procedure.world.model` and `WorldStoreTests.Containment_cycles_are_refused`. | Containment already owns one-parent hierarchy and rejects direct/indirect cycles. Do not store parent or world IDs in component data. |
 | Generic link owner | `procedure.world.change` and `WorldStoreTests.Relationships_are_many_and_directed`. | Relationships are directed generic edges; an undirected travel edge needs a feature-level canonical ordering convention. |
 | Duplicate behavior | `WorldStoreTests.Relating_the_same_pair_and_kind_updates_rather_than_duplicating`. | Identical directed triples update; reverse edges remain distinct, so World Feature 1 must prescribe one lexical orientation and test its fixture. |
@@ -118,12 +134,12 @@ remain blocked.
 
 ## Dependency and ownership decisions
 
-1. **World identity is an entity plus `world.root`.** The entity's ID and name are its permanent
-   identity/display name. `world.root` holds only authoritative world-level state; it does not
+1. **World identity is an entity plus `game.core.world.root`.** The entity's ID and name are its permanent
+   identity/display name. `game.core.world.root` holds only authoritative world-level state; it does not
    contain child IDs, locations, factions, campaign IDs, clues, or an actor position.
-2. **Place identity is an entity plus `world.location`.** Region and playable places use the same
+2. **Place identity is an entity plus `game.core.world.location`.** Region and playable places use the same
    component with a closed `kind`. Parentage is derived exclusively from containment.
-3. **Adjacency is one `world.location.connected-to` relationship.** It has empty object data and
+3. **Adjacency is one `game.core.world.location.connected-to` relationship.** It has empty object data and
    is treated as an undirected edge by future readers. Exactly one directed record is stored with
    its `from` entity ID lexically smaller than its `to` entity ID. A self edge and a reverse or
    duplicate fixture edge violate this feature contract. No component carries a connection list.
@@ -133,7 +149,7 @@ remain blocked.
    the full initial vocabulary. `archived` remains readable but is excluded from normal discovery
    by a later projection feature; Slice 1 creates no archive transition mechanic.
 6. **The normal creation path is catalog fixtures in development and one transactional
-   `commit(kind: "effects")` list in live authored play.** `procedure.world.location` makes the
+   `commit(kind: "effects")` list in live authored play.** `procedure.game.core.world.location` makes the
    component/containment/relationship ordering and conventions discoverable. It does not create a
    world-specific MCP command or bypass generic correction safeguards.
 7. **Component JSON Schema is documentation and fixture-test input, not an implied generic runtime
@@ -164,10 +180,10 @@ creation.
 
 | Artifact | Proposed ID/path | Change |
 | --- | --- | --- |
-| Root component definition | `world.root`; `catalog/components/world.root.json` and `.schema.json` | New. |
-| Location component definition | `world.location`; `catalog/components/world.location.json` and `.schema.json` | New. |
-| Governing contract | `procedure.world.location`; `catalog/procedures/world/procedure.world.location.md` | New, governing topology recording, correction boundary, inspection, and recovery. |
-| Topology relationship kind | `world.location.connected-to` | New feature convention stored in generic relationship rows; no kernel registry or schema. |
+| Root component definition | `game.core.world.root`; `catalog/components/game.core.world.root.json` and `.schema.json` | New. |
+| Location component definition | `game.core.world.location`; `catalog/components/game.core.world.location.json` and `.schema.json` | New. |
+| Governing contract | `procedure.game.core.world.location`; `catalog/procedures/game/core/world/procedure.game.core.world.location.md` | New, category `game.core.world.topology`, governing topology recording, correction boundary, inspection, and recovery. |
+| Topology relationship kind | `game.core.world.location.connected-to` | New feature convention stored in generic relationship rows; no kernel registry or schema. |
 | Fixture root | `world.feature-01.fixture`; `catalog/world/entities/world.feature-01.fixture.json` | New catalog-owned test world. |
 | Fixture region | `region.feature-01.fixture`; `catalog/world/entities/region.feature-01.fixture.json` | New child location. |
 | Fixture locations | `location.feature-01.gate`, `.market`, `.observatory`; files under `catalog/world/entities/` | New child locations. |
@@ -187,7 +203,7 @@ setting structure, not a D&D rule.
 
 ### Data/input contract and required state
 
-`world.root` data is a complete object with exactly:
+`game.core.world.root` data is a complete object with exactly:
 
 | Field | Type and closed values | Semantics |
 | --- | --- | --- |
@@ -195,7 +211,7 @@ setting structure, not a D&D rule.
 | `summary` | trimmed nonempty string, 1–1,000 Unicode scalar values | Required concise setting premise. Entity name is not repeated here. |
 | `visibility` | string: `public`, `party`, `gm` | Required descriptive audience classification. |
 
-`world.location` data is a complete object with exactly:
+`game.core.world.location` data is a complete object with exactly:
 
 | Field | Type and closed values | Semantics |
 | --- | --- | --- |
@@ -214,21 +230,21 @@ Fixture required state and canonical graph:
 
 | Entity | Components | Container / slot |
 | --- | --- | --- |
-| `world.feature-01.fixture` | `world.root` | none |
-| `region.feature-01.fixture` | `world.location` with `kind: region` | world / `region` |
-| `location.feature-01.gate` | `world.location` with `kind: settlement` | region / `location` |
-| `location.feature-01.market` | `world.location` with `kind: site` | region / `location` |
-| `location.feature-01.observatory` | `world.location` with `kind: interior` | region / `location` |
+| `world.feature-01.fixture` | `game.core.world.root` | none |
+| `region.feature-01.fixture` | `game.core.world.location` with `kind: region` | world / `region` |
+| `location.feature-01.gate` | `game.core.world.location` with `kind: settlement` | region / `location` |
+| `location.feature-01.market` | `game.core.world.location` with `kind: site` | region / `location` |
+| `location.feature-01.observatory` | `game.core.world.location` with `kind: interior` | region / `location` |
 
 The two fixture relationships are, in lexical endpoint order:
 
 1. `location.feature-01.gate` -> `location.feature-01.market`, kind
-   `world.location.connected-to`, data `{}`.
+   `game.core.world.location.connected-to`, data `{}`.
 2. `location.feature-01.market` -> `location.feature-01.observatory`, kind
-   `world.location.connected-to`, data `{}`.
+   `game.core.world.location.connected-to`, data `{}`.
 
-No root has a parent. Only `world.location` entities may be endpoints of this kind. The component
-does not prove endpoint roles at the generic effect layer; `procedure.world.location` and the
+No root has a parent. Only `game.core.world.location` entities may be endpoints of this kind. The component
+does not prove endpoint roles at the generic effect layer; `procedure.game.core.world.location` and the
 focused fixture test own the convention until a future guarded topology authoring feature is
 separately planned.
 
@@ -238,7 +254,7 @@ For catalog authoring, add definitions before entities, use entity-file containe
 four containment edges, and add exactly the two relationship records above. The catalog importer
 performs the structural writes in dependency order.
 
-For a later live authoring session, `procedure.world.location` requires one read of intended
+For a later live authoring session, `procedure.game.core.world.location` requires one read of intended
 entities/definitions, then one `commit(kind: "effects")` list ordered as: entity creation, component
 adds, containment moves, relationship creates. A normal creation creates all required records in
 one transaction. Corrections are explicit full component replacement or a deliberate structural

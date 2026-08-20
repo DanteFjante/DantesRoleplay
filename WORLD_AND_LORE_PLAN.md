@@ -40,7 +40,7 @@ a full map or simulation.
 
 ### World root
 
-Proposed component: world.root.
+Proposed component: game.core.world.root.
 
 It owns world name, short premise, lifecycle status, calendar/time convention, creation source,
 default visibility policy, and optional campaign-root relationships. It does not contain lists of
@@ -48,7 +48,7 @@ every location, faction, character, or fact. Those are entities linked to it.
 
 ### Locations
 
-Proposed component: world.location.
+Proposed component: game.core.world.location.
 
 It owns display summary, location kind, status, visibility, and optional map/display metadata.
 Physical membership uses containment: a room belongs to a building, a building to a settlement,
@@ -60,7 +60,7 @@ risk remain absent until the travel feature owns them.
 
 ### Factions
 
-Proposed component: world.faction.
+Proposed component: game.core.world.faction.
 
 It owns faction goals, methods, current agenda, known assets, status, and visibility. Membership,
 alliance, rivalry, control, and interest use relationships. A faction does not directly embed full
@@ -78,10 +78,10 @@ second motive representation.
 
 Proposed component family:
 
-- world.fact for an asserted persistent fact;
-- world.rumour for a claim whose truth is uncertain to the audience;
-- world.secret for GM-only authoritative truth;
-- world.clue for discoverable evidence pointing to a fact/secret/entity.
+- game.core.world.fact for an asserted persistent fact;
+- game.core.world.rumour for a claim whose truth is uncertain to the audience;
+- game.core.world.secret for GM-only authoritative truth;
+- game.core.world.clue for discoverable evidence pointing to a fact/secret/entity.
 
 Every knowledge record identifies source/provenance, visibility, certainty semantics, summary, and
 relevant entity relationships. A rumour becoming confirmed is an explicit state transition, not
@@ -92,7 +92,7 @@ audience policy enforces it.
 
 ### Time
 
-Proposed component: world.clock.
+Proposed component: game.core.world.clock.
 
 It owns one explicit current campaign time value, calendar identity, revision, and last-advance
 operation. Time advances only through a named mechanic/effect-producing action. There is no
@@ -100,13 +100,13 @@ background scheduler and no dependence on wall-clock time.
 
 ## Proposed relationships
 
-- world.contains-region or generic containment for world/region/location hierarchy;
-- location.connected-to for travel adjacency;
-- faction.member for faction-to-character membership;
-- faction.controls for faction-to-location/item relationship;
-- faction.allied-with and faction.opposed-to;
-- knowledge.about for fact/rumour/secret/clue targets;
-- clue.supports for clue-to-fact/secret relationships;
+- generic containment only for world/region/location hierarchy;
+- game.core.world.location.connected-to for travel adjacency;
+- game.core.world.faction.member for faction-to-character membership;
+- game.core.world.faction.controls for faction-to-location/item relationship;
+- game.core.world.faction.allied-with and game.core.world.faction.opposed-to;
+- game.core.world.knowledge.about for fact/rumour/secret/clue targets;
+- game.core.world.clue.supports for clue-to-fact/secret relationships;
 - character.located-at through containment, not a duplicated location-id component.
 
 Exact relation IDs and directionality must be ratified before Slice 1. Symmetric relationships need
@@ -116,24 +116,24 @@ one canonical storage/order rule so duplicates cannot be created in reverse orde
 
 Proposed versioned mechanics:
 
-- mechanic.world.location.move validates allowed containment/travel transition and proposes
+- mechanic.game.core.world.location.move validates allowed containment/travel transition and proposes
   containment.move;
-- mechanic.world.fact.record creates or corrects one knowledge record under a governed authoring
+- mechanic.game.core.world.fact.record creates or corrects one knowledge record under a governed authoring
   context;
-- mechanic.world.fact.reveal changes audience-visible knowledge without changing the hidden truth;
-- mechanic.world.faction.agenda advances one explicit agenda state;
-- mechanic.world.clock.advance advances time deterministically from validated input;
-- mechanic.world.opportunity.evaluate is deferred to campaign/quest opportunity planning.
+- mechanic.game.core.world.fact.reveal changes audience-visible knowledge without changing the hidden truth;
+- mechanic.game.core.world.faction.agenda advances one explicit agenda state;
+- mechanic.game.core.world.clock.advance advances time deterministically from validated input;
+- mechanic.game.core.world.opportunity.evaluate is deferred to campaign/quest opportunity planning.
 
 Required procedures:
 
-- procedure.world.create
-- procedure.world.location
-- procedure.world.travel
-- procedure.world.knowledge
-- procedure.world.faction
-- procedure.world.time
-- procedure.world.inspect
+- procedure.game.core.world.create
+- procedure.game.core.world.location
+- procedure.game.core.world.travel
+- procedure.game.core.world.knowledge
+- procedure.game.core.world.faction
+- procedure.game.core.world.time
+- procedure.game.core.world.inspect
 
 Each contract states component owner, closed state vocabulary, visibility assumption, source,
 normal/correction path, event behavior, tests, and recovery calls.
@@ -156,7 +156,7 @@ The full dependency, ownership, fixture, validation, and implementation contract
 [World Feature 1](world/feature-01/WORLD-FEATURE-01-DEPENDENCY-PLAN.md). That plan's permanent
 vocabulary must be confirmed before this slice is assigned.
 
-Add world.root and world.location contracts/definitions plus their safe recording path. Create the
+Add game.core.world.root and game.core.world.location contracts/definitions plus their safe recording path. Create the
 fixture world root, region, and three locations through catalog-owned records or governed effects.
 Add containment hierarchy and location adjacency.
 
@@ -174,7 +174,7 @@ missing location state, guard denial, and replay boundaries are verified.
 
 ### Slice 3 — factions and motives
 
-Add world.faction plus faction relationship conventions and one agenda-advance mechanic. Add the
+Add game.core.world.faction plus faction relationship conventions and one agenda-advance mechanic. Add the
 ratified world-owned recurring-NPC motive contract rather than storing motives inside faction JSON
 or relying on a campaign-only model.
 
@@ -192,7 +192,7 @@ revealing a clue does not rewrite the hidden truth; invalid provenance/target fa
 
 ### Slice 5 — explicit world time
 
-Add world.clock and its advance mechanic. Define time input units, monotonicity, calendar ownership,
+Add game.core.world.clock and its advance mechanic. Define time input units, monotonicity, calendar ownership,
 maximum advance, and event payload. Do not add scheduling, durations, or travel-time formulas yet.
 
 **Acceptance:** time advances deterministically, emits one registered event, replays from recorded
