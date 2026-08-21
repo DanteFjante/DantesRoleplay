@@ -2,7 +2,7 @@
 
 **Status:** Feature 8 verified  
 **Date:** 2026-08-20  
-**Plan:** [World Feature 8 dependency plan](WORLD-FEATURE-08-DEPENDENCY-PLAN.md)
+**Roadmap:** [World and lore](../../WORLD_AND_LORE_PLAN.md)
 
 ## Delivered
 

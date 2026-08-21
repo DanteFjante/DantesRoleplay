@@ -1,6 +1,6 @@
 # Feature 20 dependency plan — tactical position and movement
 
-Status: **Slices 1–4 verified. Slice 4 is governed by FEATURE-20-SLICE-4-MOVEMENT-PLAN.md and recorded in FEATURE-20-SLICE-4-MOVEMENT-RECEIPT.md.**
+Status: **Slices 1–5 verified. Slice 5 is recorded in FEATURE-20-SLICE-5-MOVEMENT-RECEIPT.md.**
 Last updated: 2026-08-21
 
 ## Execution rule
@@ -62,8 +62,8 @@ Feature 20: tactical position and movement
 ├─ base Speed + Feature-12 scaffold retirement                  [implemented: Slice 1]
 ├─ encounter grid, terrain, sized placement, reach reader       [implemented: Slice 2]
 ├─ legal tactical melee parent                                  [implemented: Slice 3]
-├─ voluntary path move + exact budget cost                      [implemented: Slice 4]
-│  ├─ validated path cost                                      [implemented: Slice 4]
+├─ voluntary path move + exact budget cost                      [implemented: Slice 5]
+│  ├─ validated terrain/occupied-space path cost               [implemented: Slice 5]
 │  └─ parent-derived cost -> budget spender                     [implemented: E6]
 └─ opportunity candidates                                       [blocked: Feature 19 + Features 21/34]
 ~~~
@@ -72,7 +72,9 @@ Slice 1 is accepted: `dnd2024.speed` is the base-Speed authority and Feature 12'
 maximum is retired. Slice 2 is accepted: the bounded map, Size-derived collision-safe placement,
 and effect-free base-reach evidence are recorded in `FEATURE-20-SLICE-2-RECEIPT.md`. Slice 4 is
 accepted: closed voluntary paths derive the only budget input and aggregate the existing budget
-spender with the position update atomically; see `FEATURE-20-SLICE-4-MOVEMENT-RECEIPT.md`.
+spender with the position update atomically. Slice 5 is accepted: difficult terrain and the SRD
+creature-space exceptions derive each step cost without weakening final-footprint safety; see
+`FEATURE-20-SLICE-5-MOVEMENT-RECEIPT.md`.
 
 ## Dependency and ownership decisions
 
@@ -102,7 +104,7 @@ spender with the position update atomically; see `FEATURE-20-SLICE-4-MOVEMENT-RE
 | 2 | Map, terrain, sized placement, reach reader | Slice 1 and ids confirmed. | Safe placements and exact effect-free grid distance/base-reach evidence. |
 | 3 | Tactical melee precondition parent | Slice 2 and Feature 8 re-read. | Legal base-reach melee attacks compose Feature 8; out-of-reach attempts fail before rolling. |
 | 4 | Voluntary path movement | Slice 2 and derived-input composition verified. | **Verified** — one active creature moves and pays an exact derived cost atomically; see `FEATURE-20-SLICE-4-MOVEMENT-RECEIPT.md`. |
-| 5 | Difficult terrain and occupied-space movement | Slice 4 and Feature 13 condition input where needed. | Cost/pass-through/end-space rules are exact with no special movement implied. |
+| 5 | Difficult terrain and occupied-space movement | Slice 4 and Feature 13 condition input where needed. | **Verified** — exact cost/pass-through/end-space rules with no special movement implied; see `FEATURE-20-SLICE-5-MOVEMENT-RECEIPT.md`. |
 | 6 | Feature 19 handoff | Slice 4, Feature 19 schema, Feature 21 geometry, Feature 34 sight, and event composition verified. | Ordered candidates occur before position finalises; Feature 20 spends no Reaction or attack. |
 
 ## Slice 1 — base Speed and budget migration
@@ -155,6 +157,8 @@ Prove zero/one/many step paths, exact/one-short remaining movement, split moveme
 
 Extend only movement cost and pass-through. Difficult Terrain doubles each affected five-foot step once. Passing through is limited to the SRD ally, Incapacitated, Tiny, or two-size-difference cases; a voluntary move cannot finish in another creature's space. The condition input comes from Feature 13's effective state rather than copied lists. Test differential terrain cost, permitted/refused pass-through, mult-square footprints, and no partial move. Stop before special movement modes.
 
+**Verified.** `dnd2024.encounter-sides` provides encounter-scoped side and hostility evidence; the movement path reader combines it with each participant's Size, placement, and Feature-13-derived effective Incapacitated state. Each entered footprint costs five or ten feet exactly once, the existing budget spender remains the single accounting owner, and the final footprint is always unoccupied. See `FEATURE-20-SLICE-5-MOVEMENT-RECEIPT.md`.
+
 ## Slice 6 — Feature 19 handoff
 
 After Feature 19's trigger schema, Feature 21 geometry, Feature 34 sight, and event-composition contracts are verified, emit ordered per-reactor candidates while the mover is still at its origin. Feature 20 owns spatial eligibility/timing only: no Reaction spend, attack, Disengage, teleport, or forced-movement rules appear here. Verify ordering, visibility input, atomic rollback, and that no candidate becomes automatic attack behavior.
@@ -165,7 +169,7 @@ After Feature 19's trigger schema, Feature 21 geometry, Feature 34 sight, and ev
 - Concrete official source locators: yes.
 - Size, budget, roster, attack, map, and composition ownership searched: yes.
 - Missing leaves expanded: yes.
-- One next slice: yes — Slice 5, after its permanent terrain and pass-through boundary is confirmed.
+- One next slice: no — Slice 6 remains blocked on Feature 19, Feature 21 geometry, and Feature 34 sight.
 - Closed state/input, effects, atomicity, replay, routing, and cleanup are specified.
 - No runtime artifact is created by this planning pass.
 

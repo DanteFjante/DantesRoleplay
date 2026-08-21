@@ -1,7 +1,7 @@
 # Feature 7 dependency plan — Minimal weapon profiles and weapon proficiency
 
 Status: **Complete — Slices 1–2 verified**
-Last updated: 2026-08-19
+Last updated: 2026-08-21
 
 ## Execution rule
 
@@ -18,7 +18,8 @@ without inventing weapon facts or proficiency on each roll.
 ### Included
 
 - A reusable weapon-profile component on canonical ruleset weapon-profile entities.
-- A deliberately small SRD profile set: Dagger, Shortbow, and Battleaxe.
+- A deliberately small SRD profile seed set: Dagger, Shortbow, and Battleaxe, extended with the
+  source-cited Greatsword, Flail, and Javelin profiles needed by the accepted first-build fixture.
 - Closed, source-cited record/correction paths for weapon profiles and weapon-category proficiency.
 - Category membership (`simple`, `martial`), profile category/kind, permitted attack abilities,
   and one weapon damage expression/type as stored facts for later consumers.
@@ -48,7 +49,8 @@ CC-BY-4.0.
   Dexterity for both attack and damage. Feature 7 stores the permitted ability set as a profile
   fact; Feature 8 will select and apply one to an attack roll.
 - *Equipment > Weapons table*, PDF page 91: Dagger, Shortbow, and Battleaxe provide the small
-  profile seed set and cover Simple/Martial plus Melee/Ranged cases.
+  profile seed set and cover Simple/Martial plus Melee/Ranged cases. The same table supplies the
+  static Greatsword, Flail, and Javelin extension used by the first-build fixture.
 
 ## Verified existing dependencies
 
@@ -70,7 +72,8 @@ Feature 7: minimal weapon facts and proficiency state
 ├─ final AC and future D20 conventions                               [implemented dependencies]
 ├─ minimal canonical weapon profiles                                 [verified: Slice 1]
 │  ├─ dnd2024.weapon-profile definition and safe writer             [verified]
-│  └─ Dagger, Shortbow, Battleaxe profile entities                   [verified]
+│  └─ Dagger, Shortbow, Battleaxe seed plus Greatsword, Flail,
+│     and Javelin extension entities                                 [verified]
 ├─ actor weapon-category proficiency state                           [verified: Slice 2]
 │  ├─ dnd2024.weapon-proficiencies definition and safe writer       [verified]
 │  └─ canonical Simple/Martial membership                            [verified]
@@ -102,6 +105,15 @@ Feature 7: minimal weapon facts and proficiency state
    mechanics.
 7. Physical possession/equipping requires a future ownership model (containment or relationship)
    and is not mocked with a caller-provided profile or a copied actor profile.
+
+### Starting-equipment extension
+
+On 2026-08-21, the confirmed Human Soldier Fighter fixture added the source-cited static profiles
+`weapon.dnd2024.greatsword`, `weapon.dnd2024.flail`, and `weapon.dnd2024.javelin`. They use the
+existing closed profile component: Greatsword is Martial/Melee, 2d6 Slashing, Heavy/Two-Handed,
+and Graze; Flail is Martial/Melee, 1d8 Bludgeoning, and Sap; Javelin is Simple/Melee, 1d6 Piercing,
+Thrown 30/120, and Slow. This is a catalog-data extension only. It grants no weapon to an actor
+and enables no mastery, range, property, or attack behavior beyond existing owners.
 
 ## Slice order and stop gates
 

@@ -71,6 +71,19 @@ public sealed class ChainBudget
             : null;
     }
 
+    /// <summary>
+    /// Checks a bounded batch without consuming it. Fan-out uses this before its first receiver so
+    /// a later candidate cannot leave an already-run earlier candidate as partial chain evidence.
+    /// </summary>
+    public string? CheckExecutions(string subscriptionId, int count, int maxPerChain)
+    {
+        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (Executions + count > MaxExecutions) return "EXECUTION_COUNT_LIMIT";
+        return maxPerChain > 0 && ExecutionsOf(subscriptionId) + count > maxPerChain
+            ? "SUBSCRIPTION_EXECUTION_LIMIT"
+            : null;
+    }
+
     /// <summary>How many times one subscription has run in this chain. For evidence, not control.</summary>
     public int ExecutionsOf(string subscriptionId) => _perSubscription.GetValueOrDefault(subscriptionId);
 

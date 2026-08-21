@@ -489,6 +489,13 @@
     },
     {
       "kind": "procedure",
+      "id": "procedure.campaign.quest-context",
+      "version": 1,
+      "contentHash": "93DC9178C3C515FBC10088DE7E5AF4897CD082D183ADE99B8E4F1DDC2150D40B",
+      "path": "procedures/campaign/procedure.campaign.quest-context.md"
+    },
+    {
+      "kind": "procedure",
       "id": "procedure.campaign.session",
       "version": 1,
       "contentHash": "EE6838894DD526990F0DF323C883FCE313D46DFF90F9968236779B939A988828",
@@ -930,6 +937,13 @@
     },
     {
       "kind": "procedure",
+      "id": "procedure.play.story-plan",
+      "version": 1,
+      "contentHash": "E9F234EC0977BFF27BB40EF225C8C81724160DD3EFA0644DDA8477F62F96C0C9",
+      "path": "procedures/play/procedure.play.story-plan.md"
+    },
+    {
+      "kind": "procedure",
       "id": "procedure.play.storytelling",
       "version": 1,
       "contentHash": "C07ADD045F8F1E22C667CC27F34CC2792BAC0A61D4BCE26B5B7E664EE1DF2C48",
@@ -1002,7 +1016,7 @@
       "kind": "procedure",
       "id": "procedure.system.use",
       "version": 1,
-      "contentHash": "088534CFDA3824ED559C234F912E747F7B5A816D26382861BB4825CAEC7836CB",
+      "contentHash": "A6FD1D6199C69EA0778A43AA0755B8DF64699212DD13F60224BACFF4B6223651",
       "path": "procedures/system/procedure.system.use.md"
     },
     {

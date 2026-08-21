@@ -14,13 +14,6 @@
       "wis": 13,
       "cha": 8
     },
-    "dnd2024.armor-class": {
-      "value": 14,
-      "sourceRef": {
-        "sourceId": "source.dnd2024.srd-5.2.1",
-        "locator": "Playing the Game > D20 Tests > Attack Rolls > Armor Class"
-      }
-    },
     "dnd2024.character-level": {
       "level": 5,
       "sourceRef": {

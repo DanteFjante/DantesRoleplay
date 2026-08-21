@@ -17,7 +17,6 @@ public sealed class CatalogFeature22Tests : IDisposable
 {
     private const string SourceId = "source.dnd2024.srd-5.2.1";
     private const string LevelLocator = "Character Creation > Character Advancement";
-    private const string ArmorClassLocator = "Playing the Game > D20 Tests > Attack Rolls > Armor Class";
     private const string ConditionsLocator = "Rules Glossary";
     private readonly SqliteFixture _fixture = new();
     private readonly string _catalogCopy = Path.Combine(Path.GetTempPath(), $"feature-22-catalog-{Guid.NewGuid():n}");
@@ -168,11 +167,9 @@ public sealed class CatalogFeature22Tests : IDisposable
     private static async Task CreateTargetAsync(WorldStore world, string id, int armorClass)
     {
         await world.CreateEntityAsync("Unarmed strike target", id);
-        await world.SetComponentAsync(id, "dnd2024.armor-class", JsonSerializer.Serialize(new
-        {
-            value = armorClass,
-            sourceRef = new { sourceId = SourceId, locator = ArmorClassLocator }
-        }));
+        var supportedArmorClass = Math.Clamp(armorClass, 5, 20);
+        var dexterity = Math.Max(1, 10 + ((supportedArmorClass - 10) * 2));
+        await world.SetComponentAsync(id, "dnd2024.abilities", $$"""{"str":10,"dex":{{dexterity}},"con":10,"int":10,"wis":10,"cha":10}""");
     }
 
     private static string Conditions(string condition) => JsonSerializer.Serialize(new

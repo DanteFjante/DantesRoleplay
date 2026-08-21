@@ -1,6 +1,6 @@
 # Feature 33 dependency plan — rests, Hit Dice, recovery, and expiry
 
-Status: **Planned; Slice 1 is an immutable, source-cited standard-rest policy catalog and is the next and only authorised implementation pass.**
+Status: **Slices 1–2 accepted; interruption and recovery remain blocked by their named owners.**
 Last updated: 2026-08-21
 
 ## Execution rule
@@ -71,7 +71,7 @@ The policy stores these source facts, not copied rule prose or a creature's outc
 | Inquiry | Evidence and decision |
 | --- | --- |
 | World time | `procedure.game.core.world.time` owns one root `game.core.world.clock`; its governed actions advance a monotonic minute/revision. Feature 33 consumes it and never stores a clock copy or advances it by a caller-selected amount. |
-| Clock event evidence | A root-clock replacement emits `world.component.replaced`; its `before` and `after` are evidence, not a general rest scheduler. Existing subscriptions bind only fixed roles and tracked entities. |
+| Clock event evidence | Accepted `game.core.world.clock.advanced` names and scopes one world with closed monotonic before/after evidence. Feature 33 consumes it through the bounded E8 selector; it is not a scheduler. |
 | Healing and temporary HP | Feature 16 owns `mechanic.dnd2024.healing.apply` and `temporary-hit-points.write`/`expire`. Healing currently takes a positive caller amount, so it cannot safely express "restore all lost HP" without an owner-approved full-recovery child transition. |
 | Exhaustion | Feature 14 owns its condition state and recovery. Feature 33 invokes `recover` with the fixed one-level result; it never edits the condition entry. |
 | Hit Dice and class resources | Feature 27 owns immutable class Hit-Die facts and class entitlement, but CH4 class membership and an actor Hit-Die/resource model are not implemented. Feature 33 owns spend/recovery timing, not class identity or feature semantics. |
@@ -85,11 +85,11 @@ The policy stores these source facts, not copied rule prose or a creature's outc
 
 ```text
 Feature 33: source-backed rests and recovery                              [blocked parent]
-├─ immutable standard-rest policy                                         [missing Slice 1 leaf]
+├─ immutable standard-rest policy                                         [accepted Slice 1]
 ├─ core world root clock                                                  [implemented]
-├─ rest episode / clock evidence model                                    [blocked: dynamic rest-to-event binding]
-│  ├─ generic clock-replacement fan-out or indexed active-rest reader     [missing platform/core decision]
-│  ├─ start / elapsed / completion / resume state                          [blocked after binding decision]
+├─ rest episode / clock evidence model                                    [accepted Slice 2]
+│  ├─ scoped clock-advance fan-out                                        [accepted: core-time + Platform E8 Slice 2]
+│  ├─ start / elapsed / ready state                                       [accepted]
 │  └─ interruption evidence from Initiative, casting, damage, exertion    [blocked: source event contracts]
 ├─ Short-Rest benefits                                                     [blocked parent]
 │  ├─ actor class membership and Hit-Die pool                              [blocked: CH4 + Feature 27]
@@ -106,8 +106,8 @@ Feature 33: source-backed rests and recovery                              [block
 └─ travel/duration consumers                                               [successors: Features 37 and 32]
 ```
 
-The only lowest independent leaf is the immutable standard-rest policy. It gives all later owners
-one source-cited vocabulary without pretending a creature has rested or recovered.
+The next rest slice is authenticated interruption and resumption. It cannot start until Initiative,
+casting, damage, and exertion owners expose the named event contracts.
 
 ## Dependency and ownership decisions
 
@@ -145,8 +145,8 @@ one source-cited vocabulary without pretending a creature has rested or recovere
 | Decision | Required confirmation before its implementation |
 | --- | --- |
 | Static policy | Exact component/procedure/entity IDs, policy key/version convention, source locator format, and canonical interruption/benefit vocabulary. |
-| Active-rest fan-out | The owner and transaction semantics for locating every rest affected by an accepted root-clock replacement, including bounded ordering and rollback. Existing fixed-role subscriptions are insufficient. |
-| Rest episode | Component shape, creature/world scope relationship, start/resume/cancel/complete vocabulary, unique-active-rest rule, and no-clock-copy invariants. |
+| Active-rest fan-out | **Accepted Slice 2:** scoped clock-event E8 fan-out selects only episode holders in the matching world, with bounded ordering and rollback. |
+| Rest episode | **Accepted Slice 2:** component shape, world membership, active/ready vocabulary, unique-active-rest rule, and no-clock-copy invariants. Interruption/resume/completion remain later. |
 | Interruption protocol | Exact authoritative event IDs/payloads for Initiative, spell kind, damage target, and one-hour exertion; actor identity matching and event ordering. |
 | Hit Dice | CH4 membership, Feature 27 class facts, actor pool shape, Constitution projection, deterministic roll/audit owner, and sequential choice persistence. |
 | Long-Rest recovery | Feature 16 full-HP transition; named owners for reduced maximum/ability restoration; Feature 14/resource/slot child contracts and atomic order. |
@@ -156,8 +156,8 @@ one source-cited vocabulary without pretending a creature has rested or recovere
 
 | Order | Slice | Starts only when | Exit gate |
 | ---: | --- | --- | --- |
-| 1 | Immutable standard-rest policy | Permanent vocabulary and source locators confirmed. | A source-cited standard Short/Long policy reads deterministically with zero actor, clock, recovery, or event effects. |
-| 2 | Active-rest platform and episode contract | Slice 1 and ratified dynamic clock/reaction binding. | One creature can have at most one validated, clock-scoped active episode; accepted root-clock evidence reaches the right episode without a duplicate clock or scheduler. |
+| 1 | Immutable standard-rest policy | Permanent vocabulary and source locators confirmed. | **Accepted 2026-08-21:** a source-cited standard Short/Long policy reads deterministically with zero actor, clock, recovery, or event effects. |
+| 2 | Active-rest platform and episode contract | Slice 1 and accepted scoped clock-event bridge. | **Accepted 2026-08-21:** [Slice 2 receipt](FEATURE-33-SLICE-2-RECEIPT.md) records one bounded active/ready episode with no recovery. |
 | 3 | Authenticated interruption and resumption | Slice 2 and named Initiative/casting/damage/exertion contracts. | Each source interruption stops/rejects/resumes exactly as policy declares; no caller can forge it and no unrelated creature is affected. |
 | 4 | Short-Rest Hit Dice and selected resource recharge | Slice 3, CH4/Feature 27 pool, Feature 16 healing, and first resource owner. | One die at a time is spent/rolled/healed through its owners; exact eligible resource recharges once on completion. |
 | 5 | Long-Rest recovery composition | Slice 4, Feature 16 full recovery/expiry, Feature 14, named maximum/ability owner, and first slot/resource owner. | Every supported benefit delegates once in one atomic completion; unsupported benefit families make the policy capability explicitly bounded. |
@@ -232,7 +232,8 @@ slot/resource, or change preparation.
 
 Slice 1 is verified only after the immutable standard policy has closed source-cited data,
 rejection/immutability/isolation evidence, catalog validation, repository checks, and a receipt.
-Stop before adding a rest state, a clock reaction, a rest action, or any recovery consequence.
+**Implemented and accepted; see `FEATURE-33-SLICE-1-RECEIPT.md`.** Stop before adding a rest
+state, a clock reaction, a rest action, or any recovery consequence.
 
 ## Later recovery and consumer map
 
@@ -273,4 +274,3 @@ generic active-state fan-out contract, Initiative/casting/damage event shapes ch
 an ability/maximum modification owner is introduced. Do not work around any such change with a
 second clock, polling loop, caller-supplied time/interruption/recovery/roll, direct state write,
 global resource reset, copied class rule, or generic scheduler.
-

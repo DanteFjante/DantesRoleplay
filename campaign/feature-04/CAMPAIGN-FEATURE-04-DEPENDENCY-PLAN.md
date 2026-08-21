@@ -1,7 +1,7 @@
 # Campaign Feature 4 dependency plan — link an existing quest to campaign continuity
 
-Status: **Planned; blocked by verified C3 and Quest Slices 0–3, plus shared scope/link/query confirmation.**
-Last updated: 2026-08-20
+Status: **Implemented and C4-focused verified. See [Slice 1 receipt](CAMPAIGN-FEATURE-04-SLICE-1-RECEIPT.md).**
+Last updated: 2026-08-21
 
 ## Execution rule and target
 
@@ -35,7 +35,7 @@ transaction.
 | World/core | procedure.world.change/model/naming and current event/audit path | Directed links, permanent IDs, atomic effects, structural evidence; no raw caller effects. |
 | Public surface | procedure.mcp.add-tool | A campaign link operation and resume-result extension need capability/dispatch/query contract confirmation together. |
 
-Confirm these new permanent/public meanings together before implementation:
+The approved implementation uses these permanent/public meanings:
 
 | Artifact | Proposed meaning |
 | --- | --- |
@@ -52,7 +52,7 @@ this plan before implementation.
 
 ## Closed attach operation
 
-The proposed request is:
+The implemented request is:
 
 ~~~text
 commit kind campaign
@@ -95,7 +95,8 @@ audit may exist only as unsuccessful.
 ## Resume composition
 
 C4 extends C3's fixed campaign query rather than creating another reader. For the selected campaign,
-the trusted-host result adds at most three active quests in canonical order: priority then quest ID.
+the trusted-host result adds at most three active quests in canonical quest-ID order. Q3 exposes no
+priority field, so C4 does not invent or copy one; adding priority remains a quest-owner change.
 Each entry is supplied by Q3's already approved summary and contains quest ID, title, status,
 authored summary, descriptive visibility, and at most three Q3 actionable-objective summaries in
 their quest-defined display order. It also contains sorted linked chapter IDs and its one arc ID.

@@ -133,7 +133,7 @@ public sealed class EventTypeStore(DantesRoleplayDbContext db) : IEventTypeStore
 
             if (schemaOk)
             {
-                _ = JsonSchema.FromText(payloadSchema);
+                _ = JsonSchema.FromText(EventPayloadRoleMetadata.WithoutExtension(payloadSchema));
                 schemaDetail = "Payload schema is a JSON Schema Draft 2020-12 object.";
             }
             else
@@ -147,6 +147,12 @@ public sealed class EventTypeStore(DantesRoleplayDbContext db) : IEventTypeStore
         }
 
         checks.Add(new EventTypeCheck("payload-schema", schemaOk, schemaDetail));
+
+        var metadataOk = EventPayloadRoleMetadata.TryRead(payloadSchema, out _, out var metadataProblem);
+        checks.Add(new EventTypeCheck(
+            "entity-payload-fields",
+            metadataOk,
+            metadataOk ? "Entity payload field metadata is absent or valid." : metadataProblem));
 
         var old = await GetAsync(id, cancellationToken: cancellationToken);
         checks.Add(new EventTypeCheck(

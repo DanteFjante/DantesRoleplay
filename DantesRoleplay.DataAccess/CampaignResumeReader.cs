@@ -1,14 +1,15 @@
 using System.Text.Json;
 using DantesRoleplay.Campaign;
 using DantesRoleplay.Events;
+using DantesRoleplay.Quest;
 using DantesRoleplay.World;
 
 namespace DantesRoleplay.DataAccess;
 
 /// <summary>Fixed C3 trusted-host read model. It is deliberately not a general campaign graph API.</summary>
-public sealed class CampaignResumeReader(IWorldStore world, IEventLedger events) : ICampaignResumeReader
+public sealed class CampaignResumeReader(IWorldStore world, IEventLedger events, IQuestSummaryReader? quests = null) : ICampaignResumeReader
 {
-    private readonly IWorldStore _world = world; private readonly IEventLedger _events = events;
+    private readonly IWorldStore _world = world; private readonly IEventLedger _events = events; private readonly IQuestSummaryReader? _quests = quests;
 
     public async Task<CampaignResume?> GetAsync(string campaignId, CancellationToken cancellationToken = default)
     {
@@ -19,9 +20,52 @@ public sealed class CampaignResumeReader(IWorldStore world, IEventLedger events)
         var chapters = await ReadChapters(links, cancellationToken); var arcs = await ReadArcs(links, cancellationToken);
         var references = await ReadReferences(links, cancellationToken);
         var milestones = await ReadMilestones(chapters.Where(x => x.Status == "closed"), cancellationToken);
-        return new(campaignId, String(root, "title") ?? string.Empty, String(root, "premise") ?? string.Empty, Strings(root, "partyGoals"), Strings(root, "toneAndBoundaries"), worldLink.ToEntityId,
+        var quests = await ReadQuests(campaignId, arcs, chapters, cancellationToken); if (quests is null) return null;
+        return new CampaignResume(campaignId, String(root, "title") ?? string.Empty, String(root, "premise") ?? string.Empty, Strings(root, "partyGoals"), Strings(root, "toneAndBoundaries"), worldLink.ToEntityId,
             chapters.SingleOrDefault(x => x.Status == "active"), arcs.SingleOrDefault(x => x.Status == "active"), references, milestones,
-            "Trusted-host view only. Descriptive visibility is editorial metadata, not authorization.");
+            "Trusted-host view only. Descriptive visibility is editorial metadata, not authorization.") { Quests = quests };
+    }
+
+    private async Task<IReadOnlyList<CampaignResumeQuest>?> ReadQuests(string campaignId, IReadOnlyList<CampaignResumeArc> arcs, IReadOnlyList<CampaignResumeChapter> chapters, CancellationToken ct)
+    {
+        if (_quests is null) return [];
+        var chapterArc = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var chapter in chapters)
+        {
+            var links = (await _world.GetRelationshipsAsync(chapter.Id, false, ct)).Where(link => link.Kind == "game.core.campaign.chapter.in-arc").ToArray();
+            if (links.Length != 1 || !chapterArc.TryAdd(chapter.Id, links[0].ToEntityId)) return null;
+        }
+        var arcByQuest = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var arc in arcs)
+            foreach (var link in (await _world.GetRelationshipsAsync(arc.Id, false, ct)).Where(link => link.Kind == "game.core.campaign.arc.features-quest"))
+            {
+                if (link.Data != "{}" || !arcByQuest.TryAdd(link.ToEntityId, arc.Id)) return null;
+            }
+        var chapterByQuest = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        foreach (var chapter in chapters)
+            foreach (var link in (await _world.GetRelationshipsAsync(chapter.Id, false, ct)).Where(link => link.Kind == "game.core.campaign.chapter.features-quest"))
+            {
+                if (link.Data != "{}" || !arcByQuest.TryGetValue(link.ToEntityId, out var questArc) || chapterArc[chapter.Id] != questArc) return null;
+                if (!chapterByQuest.TryGetValue(link.ToEntityId, out var linked)) chapterByQuest.Add(link.ToEntityId, linked = []);
+                if (linked.Contains(chapter.Id, StringComparer.Ordinal)) return null;
+                linked.Add(chapter.Id);
+            }
+        var result = new List<CampaignResumeQuest>();
+        foreach (var pair in arcByQuest.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+        {
+            var summary = await _quests.GetAsync(pair.Key, ct);
+            if (summary is null) continue;
+            if (!chapterByQuest.TryGetValue(pair.Key, out var linked) || linked.Count == 0) return null;
+            var ownerLinks = await _world.GetRelationshipsAsync(pair.Key, false, ct);
+            if (ownerLinks.Count(link => link.Kind == "game.core.quest.in-campaign" && link.ToEntityId == campaignId) != 1 ||
+                ownerLinks.Count(link => link.Kind == "game.core.quest.in-arc" && link.ToEntityId == pair.Value) != 1 ||
+                linked.Any(chapterId => ownerLinks.Count(link => link.Kind == "game.core.quest.in-chapter" && link.ToEntityId == chapterId) != 1))
+                return null;
+            result.Add(new(summary.QuestId, summary.Title, summary.Status, summary.Summary, summary.Visibility, pair.Value,
+                linked.Order(StringComparer.Ordinal).ToList(), summary.Objectives.OrderBy(objective => objective.DisplayOrder).ThenBy(objective => objective.Id, StringComparer.Ordinal).Take(3).ToList()));
+            if (result.Count == 3) break;
+        }
+        return result;
     }
 
     private async Task<IReadOnlyList<CampaignResumeChapter>> ReadChapters(IReadOnlyList<RelationshipView> links, CancellationToken ct)

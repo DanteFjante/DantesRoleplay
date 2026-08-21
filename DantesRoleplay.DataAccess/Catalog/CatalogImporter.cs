@@ -443,7 +443,7 @@ public sealed class CatalogImporter(
     private async Task<bool> WriteSubscriptionAsync(SubscriptionFile file, CancellationToken cancellationToken)
     {
         if (_subscriptions is null) throw new InvalidOperationException("Subscription import requires a subscription store.");
-        var result = await _subscriptions.WriteAsync(new WriteSubscriptionRequest { Id = file.Id, Category = file.Category, EventTypeId = file.EventTypeId, EventMechanicId = file.EventMechanicId, Mode = file.Mode, Order = file.Order, FixedRoleEntityIdsJson = file.FixedRoleEntityIdsJson, TrackedEntityIdsJson = file.TrackedEntityIdsJson, PayloadEqualsJson = file.PayloadEqualsJson, MaxExecutionsPerChain = file.MaxExecutionsPerChain, Scope = file.Scope, Status = file.Status, CreatedBy = AuthorFor(file.CreatedBy), ChangeNote = ChangeNoteFor(file.ChangeNote) }, cancellationToken);
+        var result = await _subscriptions.WriteAsync(new WriteSubscriptionRequest { Id = file.Id, Category = file.Category, EventTypeId = file.EventTypeId, EventMechanicId = file.EventMechanicId, Mode = file.Mode, Order = file.Order, FixedRoleEntityIdsJson = file.FixedRoleEntityIdsJson, RoleFromEventPayloadJson = file.RoleFromEventPayloadJson, FanoutSelectorJson = file.FanoutSelectorJson, TrackedEntityIdsJson = file.TrackedEntityIdsJson, PayloadEqualsJson = file.PayloadEqualsJson, MaxExecutionsPerChain = file.MaxExecutionsPerChain, Scope = file.Scope, Status = file.Status, CreatedBy = AuthorFor(file.CreatedBy), ChangeNote = ChangeNoteFor(file.ChangeNote) }, cancellationToken);
         return result.Created;
     }
 

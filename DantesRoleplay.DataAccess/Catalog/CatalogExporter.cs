@@ -373,7 +373,7 @@ public sealed class CatalogExporter(DantesRoleplayDbContext db)
         var rows = await _db.Subscriptions.AsNoTracking().Join(_db.SubscriptionVersions.AsNoTracking(), s => new { SubscriptionId = s.Id, Version = s.CurrentVersion }, v => new { v.SubscriptionId, v.Version }, (s, v) => new { s, v }).ToListAsync(cancellationToken);
         foreach (var row in rows)
         {
-            var file = new SubscriptionFile(row.s.Id, row.s.Category, row.v.EventTypeId, row.v.EventMechanicId, row.v.Mode, row.v.Order, row.v.FixedRoleEntityIdsJson, row.v.TrackedEntityIdsJson, row.v.PayloadEqualsJson, row.v.MaxExecutionsPerChain, row.s.Scope, row.s.Status, row.v.CreatedBy, row.v.ChangeNote);
+            var file = new SubscriptionFile(row.s.Id, row.s.Category, row.v.EventTypeId, row.v.EventMechanicId, row.v.Mode, row.v.Order, row.v.FixedRoleEntityIdsJson, row.v.TrackedEntityIdsJson, row.v.PayloadEqualsJson, row.v.MaxExecutionsPerChain, row.s.Scope, row.s.Status, row.v.RoleFromEventPayloadJson, row.v.FanoutSelectorJson, row.v.CreatedBy, row.v.ChangeNote);
             GuardFingerprint(row.v.SourceHash, file.ContentHash, "subscription", file.Id, row.v.Version);
             var path = CatalogLayout.Subscription(file.Id); await WriteAsync(root, path, file.ToJson(), written, cancellationToken);
             entries.Add(new CatalogManifestEntry(CatalogRecordKind.Subscription, file.Id, row.v.Version, file.ContentHash, path));

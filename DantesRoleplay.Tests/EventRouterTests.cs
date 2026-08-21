@@ -42,6 +42,161 @@ public sealed class EventRouterTests : IDisposable
         Assert.Contains("marked", marked.Components.Single(c => c.DefinitionId == "stats").Data, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task A_reaction_can_resolve_an_ordinary_role_from_a_declared_event_payload_field()
+    {
+        await using var db = await WorldAsync();
+        await DeclareEntityPayloadFieldAsync(db);
+        var world = new WorldStore(db);
+        await world.CreateEntityAsync("Watched", "watched");
+        await world.SetComponentAsync("watched", "stats", """{"vigour":1}""");
+
+        await new MechanicStore(db).WriteAsync(new WriteMechanicRequest
+        {
+            Id = "mechanic.test.payload-role",
+            Category = "test",
+            Name = "Payload role",
+            Description = "Reads one ordinary role from the accepted event payload.",
+            Matches = "payload role",
+            Requirements = """{"roles":{"subject":{"components":["stats"]}},"event":{"mode":"reaction","types":["world.component.replaced"]}}""",
+            Source = "return { narration: ctx.roles.subject.id };",
+            Status = MechanicStatus.Active
+        });
+        await new SubscriptionStore(db).WriteAsync(new WriteSubscriptionRequest
+        {
+            Id = "subscription.reaction.payload-role",
+            Category = "test",
+            EventTypeId = "world.component.replaced",
+            EventMechanicId = "mechanic.test.payload-role",
+            Mode = SubscriptionMode.Reaction,
+            FixedRoleEntityIdsJson = "{}",
+            RoleFromEventPayloadJson = "{\"subject\":\"entityId\"}",
+            TrackedEntityIdsJson = "[]",
+            PayloadEqualsJson = "{}",
+            Status = SubscriptionStatus.Active
+        });
+
+        var result = await Applier(db).ApplyAsync(
+            [new Effect { Type = EffectType.ComponentSet, EntityId = "watched", DefinitionId = "stats", Data = """{"vigour":2}""" }]);
+
+        Assert.True(result.Applied);
+        var execution = Assert.Single(await db.EventExecutions.AsNoTracking().ToListAsync());
+        Assert.Equal("watched", execution.Narration);
+    }
+
+    [Fact]
+    public async Task A_fanout_selector_runs_receivers_in_ordinal_endpoint_order()
+    {
+        await using var db = await WorldAsync();
+        var world = new WorldStore(db);
+        await world.DefineComponentAsync("active.marker", "Active", "Presence selects a receiver.");
+        await world.CreateEntityAsync("Scope", "scope.one");
+        await world.CreateEntityAsync("Zed", "zed");
+        await world.CreateEntityAsync("Aye", "aye");
+        await world.SetComponentAsync("zed", "active.marker", "{}");
+        await world.SetComponentAsync("aye", "active.marker", "{}");
+        await world.RelateAsync("scope.one", "zed", "scope.member");
+        await world.RelateAsync("scope.one", "aye", "scope.member");
+
+        await new EventTypeStore(db).WriteAsync(new WriteEventTypeRequest
+        {
+            Id = "test.fanout.changed", Category = "test", Name = "Fanout changed",
+            Description = "A test scoped event.", PayloadSchema = "{\"type\":\"object\"}", Status = EventTypeStatus.Active
+        });
+        await new MechanicStore(db).WriteAsync(new WriteMechanicRequest
+        {
+            Id = "mechanic.test.fanout", Category = "test", Name = "Fanout", Description = "Reads a selected role.", Matches = "fanout",
+            Requirements = """{"roles":{"receiver":{"components":[]}},"event":{"mode":"reaction","types":["test.fanout.changed"]}}""",
+            Source = "return { narration: ctx.roles.receiver.id };", Status = MechanicStatus.Active
+        });
+        await new SubscriptionStore(db).WriteAsync(new WriteSubscriptionRequest
+        {
+            Id = "subscription.reaction.fanout", Category = "test", EventTypeId = "test.fanout.changed",
+            EventMechanicId = "mechanic.test.fanout", Mode = SubscriptionMode.Reaction, Scope = "scope.one",
+            FanoutSelectorJson = """{"role":"receiver","relationshipKind":"scope.member","direction":"scope-to-candidate","componentId":"active.marker"}""",
+            MaxExecutionsPerChain = 8,
+            Status = SubscriptionStatus.Active
+        });
+        var accepted = await new EventLedger(db).WriteAcceptedAsync(
+            [new ProposedEvent("test.fanout.changed", "{}", [], "scope.one", 0)], "fanout-root");
+
+        var result = await new EventRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine(), world)
+            .RouteAsync(accepted, 123, new ChainBudget());
+
+        Assert.True(result.Ok, result.Reason);
+        Assert.Equal(["aye", "zed"], result.Outcomes.Select(x => x.Execution.Narration));
+    }
+
+    [Fact]
+    public async Task A_fanout_selector_rejects_more_than_eight_before_any_receiver_runs()
+    {
+        await using var db = await WorldAsync();
+        var world = new WorldStore(db);
+        await world.DefineComponentAsync("active.marker", "Active", "Presence selects a receiver.");
+        await world.CreateEntityAsync("Scope", "scope.limit");
+        for (var index = 0; index < 9; index++)
+        {
+            var id = $"candidate-{index}";
+            await world.CreateEntityAsync(id, id);
+            await world.SetComponentAsync(id, "active.marker", "{}");
+            await world.RelateAsync("scope.limit", id, "scope.member");
+        }
+        await new EventTypeStore(db).WriteAsync(new WriteEventTypeRequest { Id = "test.fanout.limit", Category = "test", Name = "Fanout limit", Description = "A test scoped event.", PayloadSchema = "{\"type\":\"object\"}", Status = EventTypeStatus.Active });
+        await new MechanicStore(db).WriteAsync(new WriteMechanicRequest { Id = "mechanic.test.fanout.limit", Category = "test", Name = "Fanout limit", Description = "Runs no receiver on limit failure.", Matches = "fanout", Requirements = """{"roles":{"receiver":{"components":[]}},"event":{"mode":"reaction","types":["test.fanout.limit"]}}""", Source = "return { narration: ctx.roles.receiver.id };", Status = MechanicStatus.Active });
+        await new SubscriptionStore(db).WriteAsync(new WriteSubscriptionRequest { Id = "subscription.reaction.fanout.limit", Category = "test", EventTypeId = "test.fanout.limit", EventMechanicId = "mechanic.test.fanout.limit", Mode = SubscriptionMode.Reaction, Scope = "scope.limit", FanoutSelectorJson = """{"role":"receiver","relationshipKind":"scope.member","direction":"scope-to-candidate","componentId":"active.marker"}""", Status = SubscriptionStatus.Active });
+        var accepted = await new EventLedger(db).WriteAcceptedAsync([new ProposedEvent("test.fanout.limit", "{}", [], "scope.limit", 0)], "fanout-limit-root");
+
+        var result = await new EventRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine(), world)
+            .RouteAsync(accepted, 123, new ChainBudget());
+
+        Assert.False(result.Ok);
+        Assert.Equal("SUBSCRIBER_FANOUT_LIMIT", result.Code);
+    }
+
+    [Fact]
+    public async Task A_corrupt_payload_role_mapping_rolls_the_root_change_back()
+    {
+        await using var db = await WorldAsync();
+        await DeclareEntityPayloadFieldAsync(db);
+        var world = new WorldStore(db);
+        await world.CreateEntityAsync("Watched", "watched");
+        await world.SetComponentAsync("watched", "stats", """{"vigour":1}""");
+
+        await new MechanicStore(db).WriteAsync(new WriteMechanicRequest
+        {
+            Id = "mechanic.test.payload-role",
+            Category = "test",
+            Name = "Payload role",
+            Description = "Reads one ordinary role from the accepted event payload.",
+            Matches = "payload role",
+            Requirements = """{"roles":{"subject":{"components":["stats"]}},"event":{"mode":"reaction","types":["world.component.replaced"]}}""",
+            Source = "return { narration: ctx.roles.subject.id };",
+            Status = MechanicStatus.Active
+        });
+        await new SubscriptionStore(db).WriteAsync(new WriteSubscriptionRequest
+        {
+            Id = "subscription.reaction.payload-role",
+            Category = "test",
+            EventTypeId = "world.component.replaced",
+            EventMechanicId = "mechanic.test.payload-role",
+            Mode = SubscriptionMode.Reaction,
+            RoleFromEventPayloadJson = "{\"subject\":\"entityId\"}",
+            Status = SubscriptionStatus.Active
+        });
+        var registration = Assert.Single(await db.SubscriptionVersions.ToListAsync());
+        registration.RoleFromEventPayloadJson = "{\"subject\":\"definitionId\"}";
+        await db.SaveChangesAsync();
+        var eventCount = await db.Events.CountAsync();
+
+        var result = await Applier(db).ApplyAsync(
+            [new Effect { Type = EffectType.ComponentSet, EntityId = "watched", DefinitionId = "stats", Data = """{"vigour":2}""" }]);
+
+        Assert.True(result.Blocked);
+        Assert.Equal("SUBSCRIBER_INVALID_ROLE_BINDING", result.BlockCode);
+        Assert.Equal(eventCount, await db.Events.CountAsync());
+        Assert.Contains("1", (await world.GetEntityAsync("watched"))!.Components.Single(component => component.DefinitionId == "stats").Data, StringComparison.Ordinal);
+    }
+
     /// <summary>
     /// The execution record is the answer to "why did the world change like that?", so it has to
     /// carry the whole derivation rather than the fact that something ran.
@@ -405,6 +560,23 @@ public sealed class EventRouterTests : IDisposable
         }
 
         return db;
+    }
+
+    private static async Task DeclareEntityPayloadFieldAsync(DantesRoleplayDbContext db)
+    {
+        var store = new EventTypeStore(db);
+        var existing = (await store.GetAsync("world.component.replaced"))!;
+        await store.WriteAsync(new WriteEventTypeRequest
+        {
+            Id = existing.Id,
+            Category = existing.Category,
+            Name = existing.Name,
+            Description = existing.Description,
+            PayloadSchema = """{"type":"object","additionalProperties":false,"required":["effectIndex","entityId","definitionId","before","after"],"properties":{"effectIndex":{"type":"integer","minimum":0},"entityId":{"type":"string"},"definitionId":{"type":"string"},"before":{},"after":{}},"x-dantes-entity-payload-fields":["entityId"]}""",
+            Scope = existing.Scope,
+            Status = existing.Status,
+            ChangeNote = "Declare the structural event entity id for generic role binding tests."
+        });
     }
 
     private static async Task SeedReactionAsync(

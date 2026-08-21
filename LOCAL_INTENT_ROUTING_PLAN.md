@@ -12,6 +12,10 @@ retrieve the likely rules and required context, and return an execution-ready pl
 The helper is an adviser, not an authority: it must never silently choose an outcome, generate an
 unreviewed write, or bypass the existing procedure, audit, action-selection, and transaction rules.
 
+The detailed consumer plan for a remote story model submitting semantic intents which the backend
+processes serially is [Story plan orchestration](storytelling/story-plan-orchestration/STORY_PLAN_ORCHESTRATION_PLAN.md). It consumes this
+router without turning routing into a generic workflow engine.
+
 ## Non-negotiable safety boundary
 
 - Game-changing work remains an existing `commit(kind: "action")` or typed `commit(kind:

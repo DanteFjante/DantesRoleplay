@@ -3,7 +3,7 @@
 Status: **Planned; blocked by verified C4 and a real authenticated audience-policy capability.**
 Last updated: 2026-08-20
 
-Shared policy seam and current repository audit: [Knowledge Slice 6 readiness](../../KNOWLEDGE_AND_FACTS-SLICE-6-READINESS.md).
+Shared policy seam and current repository audit: [Knowledge Slice 6 readiness](../../knowledge/KNOWLEDGE_AND_FACTS-SLICE-6-READINESS.md).
 
 ## Execution rule and target
 

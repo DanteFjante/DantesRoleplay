@@ -7,6 +7,7 @@ using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.Quest;
 using DantesRoleplay.World;
+using DantesRoleplay.Story;
 using DantesRoleplay.SystemFeedback;
 using ModelContextProtocol.Server;
 
@@ -25,7 +26,7 @@ public sealed class QueryTool
 {
     [McpServerTool(Name = "query")]
     [Description(
-        "Read anything in this system. kind is one of: capabilities, procedures, categories, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, session-recap, quest-summary, knowledge-answer, " +
+        "Read anything in this system. kind is one of: capabilities, procedures, categories, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, session-recap, quest-summary, knowledge-answer, story-plan, " +
         "mechanics, event-types, events, subscriptions, notifications, feedback, history. Omit id for a list or search; " +
         "pass id for one record in full. When you are unsure what a kind takes or what a commit payload looks like, call " +
         "query(kind: \"capabilities\") — it is the exact catalog. Irrelevant filters are ignored unless a fixed query kind explicitly rejects them. Never changes state.")]
@@ -45,7 +46,7 @@ public sealed class QueryTool
         INotificationStore notifications,
         [Description(
             "Closed kind: capabilities, procedures, categories, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, session-recap, quest-summary, knowledge-answer, mechanics, event-types, events, "
-            + "subscriptions, notifications, feedback, or history.")]
+            + "subscriptions, notifications, feedback, story-plan, or history.")]
         string kind,
         [Description("Full-record id for procedures, mechanics, or one entity.")] string? id = null,
         [Description("Entity ids for a full batch read.")] string[]? ids = null,
@@ -104,12 +105,15 @@ public sealed class QueryTool
         [Description("Knowledge answer: optional fact, rumour, secret, or clue filters.")] string[]? knowledgeKinds = null,
         [Description("Knowledge answer: optional canonical subject-id filters.")] string[]? knowledgeSubjectIds = null,
         [Description("Knowledge answer: optional world minute for canonical validity.")] long? asOfMinute = null,
+        [Description("Story-plan only: wait when this exact revision is still current.")] int? afterRevision = null,
+        [Description("Story-plan only: bounded long-poll seconds, 0–20.")] int? waitSeconds = null,
         CancellationToken cancellationToken = default,
         [Description("Campaign resume only: require and compose the one current active session with the bounded C3 campaign view.")] bool includeSession = false,
         ICampaignSessionResumeReader? campaignSessionResumes = null,
         ICampaignSessionRecapReader? campaignSessionRecaps = null,
         ISystemFeedbackService? feedback = null,
-        IAuthorizedKnowledgeAnswerCoordinator? knowledgeAnswers = null)
+        IAuthorizedKnowledgeAnswerCoordinator? knowledgeAnswers = null,
+        IStoryPlanCoordinator? storyPlans = null)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
 
@@ -164,6 +168,19 @@ public sealed class QueryTool
                     "Rejected session recap query.")));
         }
 
+        if (normalizedKind == "story-plan" && !IsStoryPlanRequest(
+                id, ids, version, query, nameQuery, withDefinitionId, category, scope, includeInactive, limit, sample,
+                componentIds, containmentDepth, relationshipKinds, relationshipDepth, maxNodes, maxEdges,
+                worldId, travellerId, destinationId, destinationLocationId, groundConveyanceId, aerialConveyanceId,
+                failuresOnly, tool, subject, correlationId, causationId, rootOperationId, type, entityId, afterSequence,
+                from, to, state, topic, includeSession, afterRevision, waitSeconds))
+        {
+            return await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail(
+                "INVALID_STORY_PLAN", "story-plan requires one story-plan id and accepts only afterRevision and waitSeconds.",
+                "query(kind: \"story-plan\", id: \"story-plan....\", afterRevision: 1, waitSeconds: 20)",
+                "Rejected story-plan query.")));
+        }
+
         using var dispatch = ToolRunner.EnterProtocol("query", normalizedKind);
 
         return normalizedKind switch
@@ -206,6 +223,8 @@ public sealed class QueryTool
                 new AuthorizedKnowledgeAnswerRequest(campaignId ?? string.Empty, question ?? string.Empty, knowledgeKinds, knowledgeSubjectIds, asOfMinute),
                 cancellationToken),
             "knowledge-answer" => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("KNOWLEDGE_AUDIENCE_UNAVAILABLE", "Knowledge answers require an explicitly enabled local development audience or a future authentication provider.", "Enable the documented local development audience, then retry.", "Knowledge audience was unavailable."))),
+            "story-plan" when storyPlans is not null => await new StoryPlanTools().GetAsync(storyPlans, log, new StoryPlanQueryRequest(id!, afterRevision, waitSeconds ?? 0), cancellationToken),
+            "story-plan" => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("STORY_AUDIENCE_DENIED", "Story plans require an explicitly enabled development GM audience.", "Enable the development GM audience for the intended campaign.", "Story-plan query was unavailable."))),
             "mechanics" =>
                 await new MechanicTools().FindMechanicsAsync(
                     mechanics, log, id, version, query, category, scope, includeInactive, limit, cancellationToken),
@@ -243,6 +262,25 @@ public sealed class QueryTool
         destinationLocationId is null && groundConveyanceId is null && aerialConveyanceId is null && !failuresOnly &&
         tool is null && subject is null && correlationId is null && causationId is null && rootOperationId is null &&
         type is null && entityId is null && afterSequence is null && from is null && to is null && state is null && topic is null;
+
+    private static bool IsStoryPlanRequest(
+        string? id, string[]? ids, int? version, string? query, string? nameQuery, string? withDefinitionId,
+        string? category, string? scope, bool includeInactive, int? limit, int? sample, string[]? componentIds,
+        int? containmentDepth, string[]? relationshipKinds, int? relationshipDepth, int? maxNodes, int? maxEdges,
+        string? worldId, string? travellerId, string? destinationId, string? destinationLocationId,
+        string? groundConveyanceId, string? aerialConveyanceId, bool failuresOnly, string? tool, string? subject,
+        string? correlationId, string? causationId, string? rootOperationId, string? type, string? entityId,
+        int? afterSequence, string? from, string? to, string? state, string? topic, bool includeSession,
+        int? afterRevision, int? waitSeconds) =>
+        id is { Length: 43 } && id.StartsWith("story-plan.", StringComparison.Ordinal) &&
+        ids is null && version is null && query is null && nameQuery is null && withDefinitionId is null &&
+        category is null && scope is null && !includeInactive && limit is null && sample is null && componentIds is null &&
+        containmentDepth is null && relationshipKinds is null && relationshipDepth is null && maxNodes is null &&
+        maxEdges is null && worldId is null && travellerId is null && destinationId is null &&
+        destinationLocationId is null && groundConveyanceId is null && aerialConveyanceId is null && !failuresOnly &&
+        tool is null && subject is null && correlationId is null && causationId is null && rootOperationId is null &&
+        type is null && entityId is null && afterSequence is null && from is null && to is null && state is null &&
+        topic is null && !includeSession && (afterRevision is null or >= 0) && (waitSeconds is null or >= 0 and <= 20);
 
     private static bool IsSessionRecapRequest(
         string? id, string[]? ids, int? version, string? query, string? nameQuery, string? withDefinitionId,

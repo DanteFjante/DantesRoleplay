@@ -2,7 +2,7 @@
 
 **Status:** Feature 14 verified  
 **Date:** 2026-08-20  
-**Plan:** [multi-leg on-foot journey planning](WORLD-FEATURE-14-DEPENDENCY-PLAN.md)
+**Roadmap:** [World and lore](../../WORLD_AND_LORE_PLAN.md)
 
 ## Delivered
 

@@ -5,7 +5,7 @@ Last updated: 2026-08-20
 
 ## Execution rule
 
-Use [GAME_SYSTEM_MASTER_PLAN.md](GAME_SYSTEM_MASTER_PLAN.md) for system sequencing, [CAMPAIGN_CREATION_PLAN.md](CAMPAIGN_CREATION_PLAN.md) for campaign ownership, [STORY_FIRST_ROADMAP.md](STORY_FIRST_ROADMAP.md) for the first-play continuity target, [Campaign Feature C8](campaign/feature-08/CAMPAIGN-FEATURE-08-DEPENDENCY-PLAN.md) for the first concrete session slice, and a populated [SUBSYSTEM_IMPLEMENTATION_HANDOFF.md](SUBSYSTEM_IMPLEMENTATION_HANDOFF.md) before implementation.
+Use [ARCHITECTURE.md](ARCHITECTURE.md) for ownership, [CAMPAIGN_CREATION_PLAN.md](CAMPAIGN_CREATION_PLAN.md) for campaign boundaries, [STORY_FIRST_ROADMAP.md](STORY_FIRST_ROADMAP.md) for first-play sequencing, [Campaign Feature C8](campaign/feature-08/CAMPAIGN-FEATURE-08-DEPENDENCY-PLAN.md) for the first concrete session slice, and a populated [SUBSYSTEM_IMPLEMENTATION_HANDOFF.md](SUBSYSTEM_IMPLEMENTATION_HANDOFF.md) before implementation.
 
 This roadmap is the single planning authority for session scope, ownership, ordering, and Session Features S0–S9. It authorizes no runtime artifact by itself. A linked dependency plan must define each feature's permanent IDs, schemas, inputs, event/audit behavior, implementation slices, and tests after its owners are verified.
 

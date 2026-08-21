@@ -11,14 +11,13 @@ namespace DantesRoleplay.Tests;
 
 /// <summary>
 /// Feature 8 is an import-backed, effect-free attack resolver. It consumes the canonical facts
-/// written by Features 6 and 7 and must leave every entity exactly as it found it.
+/// written by Features 7 and 24 and must leave every entity exactly as it found it.
 /// </summary>
 public sealed class CatalogFeature8Tests : IDisposable
 {
     private const string SourceId = "source.dnd2024.srd-5.2.1";
     private const string LevelLocator = "Character Creation > Character Advancement";
     private const string ProficiencyLocator = "Equipment > Weapons > Weapon Proficiency";
-    private const string ArmorClassLocator = "Playing the Game > D20 Tests > Attack Rolls > Armor Class";
     private readonly SqliteFixture _fixture = new();
     private readonly string _catalogCopy = Path.Combine(Path.GetTempPath(), $"feature-8-catalog-{Guid.NewGuid():n}");
 
@@ -243,11 +242,9 @@ public sealed class CatalogFeature8Tests : IDisposable
     private static async Task CreateTargetAsync(WorldStore world, string id, int armorClass)
     {
         await world.CreateEntityAsync("Weapon attack target", id);
-        await world.SetComponentAsync(id, "dnd2024.armor-class", JsonSerializer.Serialize(new
-        {
-            value = armorClass,
-            sourceRef = new { sourceId = SourceId, locator = ArmorClassLocator }
-        }));
+        var supportedArmorClass = Math.Clamp(armorClass, 5, 20);
+        var dexterity = Math.Max(1, 10 + ((supportedArmorClass - 10) * 2));
+        await world.SetComponentAsync(id, "dnd2024.abilities", $$"""{"str":10,"dex":{{dexterity}},"con":10,"int":10,"wis":10,"cha":10}""");
     }
 
     private static ActionRequest Request(string intent, string subject, string target, string weapon, string input, long seed) => new()

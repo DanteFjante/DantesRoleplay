@@ -1,22 +1,20 @@
 ---
 id: mechanic.dnd2024.armor-class.write
 category: ruleset.dnd2024.core.data.armor-class
-name: Record authoritative Armor Class
+name: Legacy manual Armor Class writer
 scope: dnd2024-srd-5.2.1
-status: active
+status: deprecated
 ---
 
 ## Description
-Records or corrects one creature's final D&D 2024 Armor Class with fixed SRD 5.2.1 attribution. Administrative state only; it does not calculate Armor Class or resolve attacks.
+Legacy historical writer retained only so older catalog records remain intelligible. It is not
+routable and no normal combat mechanic consumes its component. Use
+`mechanic.dnd2024.armor-class.read` for derived Armor Class.
 
 ## Matches
-record armor class
-set armor class
-correct armor class
-assign armor class
+legacy record armor class
 
 ## Requirements
 ```json
 {"roles":{"subject":{"components":["dnd2024.armor-class"],"description":"The creature whose final Armor Class is being recorded or corrected."}}}
 ```
-

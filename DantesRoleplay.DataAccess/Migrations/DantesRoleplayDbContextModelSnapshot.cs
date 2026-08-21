@@ -349,6 +349,18 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("FanoutSelectorJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("{}");
+
+                    b.Property<string>("RoleFromEventPayloadJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("{}");
+
                     b.Property<int>("MaxExecutionsPerChain")
                         .HasColumnType("INTEGER");
 
@@ -850,6 +862,196 @@ namespace DantesRoleplay.DataAccess.Migrations
                             t.HasCheckConstraint("CK_snapshot_package_root_operation", "length(\"RootOperationId\") = 32 AND \"RootOperationId\" NOT GLOB '*[^0-9a-f]*'");
 
                             t.HasCheckConstraint("CK_snapshot_package_scope_version", "\"ScopeContractVersion\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Story.StoryPlanRun", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(43)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CampaignId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("CancelRequested")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CompletedStepCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("HandoffJson")
+                        .HasMaxLength(32000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LeaseOwner")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LeaseUntilUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("NextStepIndex")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Objective")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PlanJson")
+                        .IsRequired()
+                        .HasMaxLength(16000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PolicyRevision")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PrincipalId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RequestToken")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StopCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StopMessage")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RequestToken")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "LeaseUntilUtc", "UpdatedAtUtc");
+
+                    b.ToTable("story_plan_run", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_story_plan_run_id", "length(\"Id\") = 43 AND substr(\"Id\", 1, 11) = 'story-plan.' AND substr(\"Id\", 12) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_story_plan_run_revision", "\"Revision\" > 0");
+
+                            t.HasCheckConstraint("CK_story_plan_run_status", "\"Status\" IN ('pending', 'running', 'completed', 'blocked', 'failed', 'cancelled')");
+
+                            t.HasCheckConstraint("CK_story_plan_run_step_counts", "\"NextStepIndex\" >= 0 AND \"CompletedStepCount\" >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Story.StoryPlanStepRun", b =>
+                {
+                    b.Property<string>("StoryPlanId")
+                        .HasMaxLength(43)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("StepIndex")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ActionOperationId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ErrorCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ErrorMessage")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InputJson")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Intent")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MechanicId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("MechanicVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ProcedureEvidenceJson")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ResultJson")
+                        .IsRequired()
+                        .HasMaxLength(32000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RoleEntityIdsJson")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("StartedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StepId")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("StoryPlanId", "StepIndex");
+
+                    b.ToTable("story_plan_step_run", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_story_plan_step_run_index", "\"StepIndex\" BETWEEN 0 AND 5");
+
+                            t.HasCheckConstraint("CK_story_plan_step_run_kind", "\"Kind\" IN ('campaign-context', 'knowledge', 'action')");
+
+                            t.HasCheckConstraint("CK_story_plan_step_run_status", "\"Status\" IN ('pending', 'running', 'completed', 'blocked', 'failed', 'skipped')");
                         });
                 });
 
@@ -1364,6 +1566,10 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.HasIndex("FromEntityId", "ToEntityId", "Kind")
                         .IsUnique();
 
+                    b.HasIndex("FromEntityId", "Kind", "ToEntityId");
+
+                    b.HasIndex("ToEntityId", "Kind", "FromEntityId");
+
                     b.ToTable("relationship", (string)null);
                 });
 
@@ -1442,6 +1648,17 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .IsRequired();
 
                     b.Navigation("Contract");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Story.StoryPlanStepRun", b =>
+                {
+                    b.HasOne("DantesRoleplay.Story.StoryPlanRun", "StoryPlan")
+                        .WithMany("Steps")
+                        .HasForeignKey("StoryPlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("StoryPlan");
                 });
 
             modelBuilder.Entity("DantesRoleplay.SystemFeedback.SystemFeedbackDisposition", b =>
@@ -1584,6 +1801,11 @@ namespace DantesRoleplay.DataAccess.Migrations
             modelBuilder.Entity("DantesRoleplay.Procedures.ProcedureContract", b =>
                 {
                     b.Navigation("Versions");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Story.StoryPlanRun", b =>
+                {
+                    b.Navigation("Steps");
                 });
 
             modelBuilder.Entity("DantesRoleplay.SystemFeedback.SystemFeedbackReport", b =>

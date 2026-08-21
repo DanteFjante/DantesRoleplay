@@ -6,8 +6,8 @@ Last updated: 2026-08-21
 ## Execution rule
 
 This is a repository planning artifact under `AGENTS.md`, `procedure.system.create-feature`, the
-Terra planning guide, [CAMPAIGN_CREATION_PLAN.md](../../CAMPAIGN_CREATION_PLAN.md), and
-[CHARACTER_CREATION_PLAN.md](../../CHARACTER_CREATION_PLAN.md). It creates no runtime game artifact
+Terra planning guide, [CAMPAIGN_CREATION_PLAN.md](../../../CAMPAIGN_CREATION_PLAN.md), and
+[CHARACTER_CREATION_PLAN.md](../../../CHARACTER_CREATION_PLAN.md). It creates no runtime game artifact
 or persistent database state. A later pass implements one verified slice, runs disposable catalog
 validation and focused tests, records a receipt, and stops; persistent import needs separate
 integration-play/release authority.
@@ -56,7 +56,7 @@ The threshold table is fixed by source for this ruleset: 0 at level 1, 300 at 2,
 | Total level / Proficiency Bonus | `dnd2024.character-level` is total level 1–20; PB is derived. Its recorder is administrative only and expressly excludes XP/level-up. |
 | Character level-up root | Character CH9 is a detailed planned `1→2` transaction. It requires campaign authorization, Feature 27 class/HP owners, immutable declarations, and receipts; it excludes XP/milestone policy. |
 | Campaign continuity | C2/C3 own campaign roots, transactions, chapters/arcs, and audit patterns. They do not own characters or advancement policy. |
-| Campaign authorization | C14 is newly planned in [its companion plan](../../campaign/feature-14/CAMPAIGN-FEATURE-14-ADVANCEMENT-AUTHORIZATION-PLAN.md). C15 Slice 1/2 now supplies its campaign-bound active-character scope; C14 still owns policy and one-time authorization, never XP math or class effects. |
+| Campaign authorization | C14 is newly planned in [its companion plan](../../../campaign/feature-14/CAMPAIGN-FEATURE-14-ADVANCEMENT-AUTHORIZATION-PLAN.md). C15 Slice 1/2 now supplies its campaign-bound active-character scope; C14 still owns policy and one-time authorization, never XP math or class effects. |
 | Class/level semantics | Roadmap Feature 27 is planned and has no verified class-level/HP/feature resolver contract yet. This is a hard blocker. |
 | Character content/lifecycle | CH4 gives level-one membership; CH5/CH6/CH7/CH13 provide planned actor attachment/lifecycle/evidence prerequisites. Their actual current scope must be re-read before writing. |
 | Source registry | `procedure.mechanic.dnd2024.source-registry` already owns the SRD 5.2.1 identity and locator format. No new source entity is needed for this CC-BY source. |

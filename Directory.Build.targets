@@ -1,0 +1,9 @@
+<Project>
+  <!-- Verification output must never become source input. The SDK already excludes bin/ and obj/;
+       keep the repository-local Codex verification directories equally inert. -->
+  <ItemGroup>
+    <Compile Remove="obj\**\*.cs;.codex-build\**\*.cs;.codex-obj\**\*.cs" />
+    <EmbeddedResource Remove=".codex-build\**\*;.codex-obj\**\*" />
+    <None Remove=".codex-build\**\*;.codex-obj\**\*" />
+  </ItemGroup>
+</Project>

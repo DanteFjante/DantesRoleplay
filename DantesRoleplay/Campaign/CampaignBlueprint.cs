@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using DantesRoleplay.Quest;
 using DantesRoleplay.World;
 
 namespace DantesRoleplay.Campaign;
@@ -33,11 +34,24 @@ public interface ICampaignContinuityRunner
     Task<CampaignContinuityResult> CloseAsync(string campaignId, string chapterId, string expectedStatus, string closingSummary, string intent = "", IReadOnlyList<string>? proceduresUsed = null, CancellationToken cancellationToken = default);
     Task<CampaignContinuityResult> ConcludeArcAsync(string campaignId, string arcId, string expectedStatus, string outcome, string closingSummary, string intent = "", IReadOnlyList<string>? proceduresUsed = null, CancellationToken cancellationToken = default);
 }
+/// <summary>Closed C4 request: attach an already-active quest as context, without changing quest state.</summary>
+public sealed record CampaignQuestContextRequest(string CampaignId, string ArcId, string ChapterId, string QuestId, string ExpectedQuestStatus);
+public sealed record CampaignQuestContextProblem(string Code, string Path, string Reason, string Recovery);
+public sealed record CampaignQuestContextResult(string Status, string CampaignId, string ArcId, string ChapterId, string QuestId, string OperationId, int? StructuralEventCount, IReadOnlyList<CampaignQuestContextProblem> Problems, string Next)
+{ public bool Attached => Status == "attached"; }
+public interface ICampaignQuestContextRunner
+{
+    Task<CampaignQuestContextResult> AttachAsync(CampaignQuestContextRequest request, string intent = "", IReadOnlyList<string>? proceduresUsed = null, CancellationToken cancellationToken = default);
+}
 public sealed record CampaignResumeReference(string EntityId, string Role, string Audience, string Name, string Summary, string? Visibility);
 public sealed record CampaignResumeChapter(string Id, string Status, string Title, string PartyQuestion, string? GmContext);
 public sealed record CampaignResumeArc(string Id, string Status, string Title, string PartyStake, string? GmContext);
 public sealed record CampaignClosedChapterMilestone(string ChapterId, string Title, string ClosingSummary, DateTime Timestamp, int Sequence, string EventId);
-public sealed record CampaignResume(string CampaignId, string Title, string Premise, IReadOnlyList<string> PartyGoals, IReadOnlyList<string> ToneAndBoundaries, string WorldId, CampaignResumeChapter? CurrentChapter, CampaignResumeArc? CurrentArc, IReadOnlyList<CampaignResumeReference> References, IReadOnlyList<CampaignClosedChapterMilestone> RecentMilestones, string TrustBoundary);
+public sealed record CampaignResumeQuest(string QuestId, string Title, string Status, string Summary, string Visibility, string ArcId, IReadOnlyList<string> ChapterIds, IReadOnlyList<QuestObjectiveSummary> Objectives);
+public sealed record CampaignResume(string CampaignId, string Title, string Premise, IReadOnlyList<string> PartyGoals, IReadOnlyList<string> ToneAndBoundaries, string WorldId, CampaignResumeChapter? CurrentChapter, CampaignResumeArc? CurrentArc, IReadOnlyList<CampaignResumeReference> References, IReadOnlyList<CampaignClosedChapterMilestone> RecentMilestones, string TrustBoundary)
+{
+    public IReadOnlyList<CampaignResumeQuest> Quests { get; init; } = [];
+}
 public interface ICampaignResumeReader { Task<CampaignResume?> GetAsync(string campaignId, CancellationToken cancellationToken = default); }
 
 public sealed record CampaignSessionValidationRequest(string Operation, string CampaignId, string SessionId);

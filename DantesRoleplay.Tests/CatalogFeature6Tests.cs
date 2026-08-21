@@ -10,9 +10,8 @@ using DantesRoleplay.RuleAccess;
 namespace DantesRoleplay.Tests;
 
 /// <summary>
-/// Feature 6 Slice 1 is a catalog-authored final Armor Class record. This gate imports a copy of
-/// those files into a fresh database, then exercises creation, correction, rejection and routing
-/// through the normal action path.
+/// Feature 6's historical Armor Class record remains readable for existing worlds, while Feature
+/// 24 owns the active derived Armor Class rule.
 /// </summary>
 public sealed class CatalogFeature6Tests : IDisposable
 {
@@ -32,7 +31,7 @@ public sealed class CatalogFeature6Tests : IDisposable
     }
 
     [Fact]
-    public async Task Imported_catalog_records_corrects_and_guards_authoritative_armor_class()
+    public async Task Imported_catalog_preserves_but_does_not_route_the_legacy_armor_class_writer()
     {
         CopyDirectory(RepositoryCatalog(), _catalogCopy);
 
@@ -44,99 +43,20 @@ public sealed class CatalogFeature6Tests : IDisposable
 
         Assert.False(imported.Aborted);
         Assert.True(imported.ManifestUpdated);
-        Assert.NotNull(await mechanics.GetAsync("mechanic.dnd2024.armor-class.write"));
+        var legacyWriter = await mechanics.GetAsync("mechanic.dnd2024.armor-class.write");
+        Assert.NotNull(legacyWriter);
+        Assert.Equal(MechanicStatus.Deprecated, legacyWriter!.Status);
         Assert.NotNull(await new ProcedureStore(db).GetAsync("procedure.mechanic.dnd2024.armor-class"));
 
         await world.CreateEntityAsync("Armor Class fixture", "fixture.catalog.f6.subject");
         var runner = CreateRunner(db, world, mechanics);
 
-        var recorded = await runner.RunAsync(Request("record armor class", """{"mode":"record","value":14}"""));
-        Assert.True(recorded.Ok, recorded.Error?.Why);
-        Assert.Equal("mechanic.dnd2024.armor-class.write", recorded.Mechanic?.Id);
-        Assert.Equal(1, recorded.AppliedCount);
-        Assert.Single(recorded.Output!.Effects);
-        Assert.Equal(EffectType.ComponentAdd, recorded.Output.Effects[0].Type);
-        using (var recordData = JsonDocument.Parse(recorded.Output.Data))
-        {
-            Assert.Equal(14, recordData.RootElement.GetProperty("value").GetInt32());
-            Assert.Equal("record", recordData.RootElement.GetProperty("mode").GetString());
-            Assert.Equal(JsonValueKind.Null, recordData.RootElement.GetProperty("previousValue").ValueKind);
-        }
-        await AssertArmorClassAsync(world, 14);
-
-        var duplicate = await runner.RunAsync(Request("record armor class", """{"mode":"record","value":15}"""));
-        Assert.False(duplicate.Ok);
-        Assert.Equal("MECHANIC_FAILED", duplicate.Error?.Code);
-        await AssertArmorClassAsync(world, 14);
-
-        var corrected = await runner.RunAsync(Request("correct armor class", """{"mode":"correct","value":17}"""));
-        Assert.True(corrected.Ok, corrected.Error?.Why);
-        Assert.Single(corrected.Output!.Effects);
-        Assert.Equal(EffectType.ComponentSet, corrected.Output.Effects[0].Type);
-        using (var correctionData = JsonDocument.Parse(corrected.Output.Data))
-        {
-            Assert.Equal(14, correctionData.RootElement.GetProperty("previousValue").GetInt32());
-        }
-        await AssertArmorClassAsync(world, 17);
-
-        // The stored value deliberately admits the full positive safe-integer range; the same
-        // writer must handle its useful low, ordinary, and highest boundary values without a
-        // special path or a formula.
-        foreach (var (id, value) in new[]
-                 {
-                     ("fixture.catalog.f6.low", 1L),
-                     ("fixture.catalog.f6.ordinary", 10L),
-                     ("fixture.catalog.f6.maximum", 9007199254740991L)
-                 })
-        {
-            await world.CreateEntityAsync("Armor Class boundary fixture", id);
-            var boundary = await runner.RunAsync(Request(
-                "record armor class",
-                $$"""{"mode":"record","value":{{value}}}""",
-                id));
-            Assert.True(boundary.Ok, boundary.Error?.Why);
-            await AssertArmorClassAsync(world, value, id);
-        }
-
-        foreach (var invalid in new[]
-                 {
-                     "{}",
-                     "{\"mode\":\"record\",\"value\":0}",
-                     "{\"mode\":\"record\",\"value\":1.5}",
-                     "{\"mode\":\"other\",\"value\":14}",
-                     "{\"mode\":\"correct\",\"value\":14,\"sourceRef\":{}}",
-                     "{\"mode\":\"correct\",\"value\":9007199254740992}"
-                 })
-        {
-            var rejected = await runner.RunAsync(Request("set armor class", invalid));
-            Assert.False(rejected.Ok, invalid);
-            Assert.Equal("MECHANIC_FAILED", rejected.Error?.Code);
-            await AssertArmorClassAsync(world, 17);
-        }
-
-        await world.CreateEntityAsync("Absent Armor Class fixture", "fixture.catalog.f6.absent");
-        var absentCorrection = await runner.RunAsync(Request(
-            "correct armor class",
-            """{"mode":"correct","value":12}""",
-            "fixture.catalog.f6.absent"));
-        Assert.False(absentCorrection.Ok);
+        var rejected = await runner.RunAsync(Request("record armor class", """{"mode":"record","value":14}"""));
+        Assert.False(rejected.Ok);
+        Assert.NotEqual("mechanic.dnd2024.armor-class.write", rejected.Mechanic?.Id);
         Assert.DoesNotContain(
-            (await world.GetEntityAsync("fixture.catalog.f6.absent"))!.Components,
+            (await world.GetEntityAsync("fixture.catalog.f6.subject"))!.Components,
             component => component.DefinitionId == ArmorClass);
-
-        // A valid writer must not turn a malformed pre-existing record into a plausible-looking
-        // value. Its repair needs an explicitly governed migration, not a normal correction.
-        const string corruptId = "fixture.catalog.f6.corrupt";
-        const string corruptData = "{\"value\":0,\"sourceRef\":{\"sourceId\":\"source.dnd2024.srd-5.2.1\",\"locator\":\"wrong\"}}";
-        await world.CreateEntityAsync("Corrupt Armor Class fixture", corruptId);
-        await world.SetComponentAsync(corruptId, ArmorClass, corruptData);
-        var corruptCorrection = await runner.RunAsync(Request(
-            "correct armor class",
-            """{"mode":"correct","value":12}""",
-            corruptId));
-        Assert.False(corruptCorrection.Ok);
-        var corrupt = await world.GetEntityAsync(corruptId);
-        Assert.Equal(corruptData, Assert.Single(corrupt!.Components, component => component.DefinitionId == ArmorClass).Data);
     }
 
     [Fact]

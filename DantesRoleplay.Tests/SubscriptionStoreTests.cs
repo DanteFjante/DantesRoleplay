@@ -84,6 +84,87 @@ public sealed class SubscriptionStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task A_reaction_can_bind_one_declared_payload_field_to_one_ordinary_role()
+    {
+        await using var db = _fixture.CreateContext();
+        await SeedEventMechanicAsync(
+            db,
+            EventMechanicMode.Reaction,
+            """{"type":"object","properties":{"subjectId":{"type":"string"}},"x-dantes-entity-payload-fields":["subjectId"]}""",
+            """{"subject":{"components":[]}}""");
+        var store = new SubscriptionStore(db);
+
+        var created = await store.WriteAsync(Request() with
+        {
+            Mode = SubscriptionMode.Reaction,
+            FixedRoleEntityIdsJson = "{}",
+            RoleFromEventPayloadJson = "{\"subject\":\"subjectId\"}"
+        });
+
+        Assert.Equal("{\"subject\":\"subjectId\"}", created.Subscription.RoleFromEventPayloadJson);
+        Assert.True((await store.GetAsync("subscription.guard.test"))!.SourceHash.Length == 64);
+    }
+
+    [Fact]
+    public async Task A_payload_role_binding_is_rejected_when_the_event_type_did_not_declare_its_field()
+    {
+        await using var db = _fixture.CreateContext();
+        await SeedEventMechanicAsync(db, EventMechanicMode.Reaction, rolesJson: """{"subject":{"components":[]}}""");
+        var checks = await new SubscriptionStore(db).CheckAsync(Request() with
+        {
+            Mode = SubscriptionMode.Reaction,
+            RoleFromEventPayloadJson = "{\"subject\":\"subjectId\"}"
+        });
+
+        Assert.False(Assert.Single(checks, check => check.Name == "role-from-event-payload").Passed);
+    }
+
+    [Fact]
+    public async Task A_scoped_reaction_can_select_one_required_role_from_a_closed_fanout_selector()
+    {
+        await using var db = _fixture.CreateContext();
+        await new WorldStore(db).DefineComponentAsync("active.marker", "Active", "Presence selects a receiver.");
+        await SeedEventMechanicAsync(db, EventMechanicMode.Reaction, rolesJson: """{"receiver":{"components":[]}}""");
+
+        var created = await new SubscriptionStore(db).WriteAsync(Request() with
+        {
+            Mode = SubscriptionMode.Reaction,
+            FixedRoleEntityIdsJson = "{}",
+            Scope = "scope.test",
+            FanoutSelectorJson = """{"componentId":"active.marker","direction":"scope-to-candidate","relationshipKind":"scope.member","role":"receiver"}"""
+        });
+
+        Assert.Equal("{\"componentId\":\"active.marker\",\"direction\":\"scope-to-candidate\",\"relationshipKind\":\"scope.member\",\"role\":\"receiver\"}", created.Subscription.FanoutSelectorJson);
+        Assert.True(created.Subscription.SourceHash.Length == 64);
+    }
+
+    [Fact]
+    public async Task A_fanout_selector_rejects_payload_binding_and_an_extra_property()
+    {
+        await using var db = _fixture.CreateContext();
+        await new WorldStore(db).DefineComponentAsync("active.marker", "Active", "Presence selects a receiver.");
+        await SeedEventMechanicAsync(db, EventMechanicMode.Reaction, rolesJson: """{"receiver":{"components":[]}}""");
+        var store = new SubscriptionStore(db);
+
+        var mixed = await store.CheckAsync(Request() with
+        {
+            Mode = SubscriptionMode.Reaction,
+            Scope = "scope.test",
+            RoleFromEventPayloadJson = "{\"receiver\":\"subjectId\"}",
+            FanoutSelectorJson = """{"componentId":"active.marker","direction":"scope-to-candidate","relationshipKind":"scope.member","role":"receiver"}"""
+        });
+        var malformed = await store.CheckAsync(Request() with
+        {
+            Mode = SubscriptionMode.Reaction,
+            Scope = "scope.test",
+            FanoutSelectorJson = """{"componentId":"active.marker","direction":"scope-to-candidate","extra":true,"relationshipKind":"scope.member","role":"receiver"}"""
+        });
+
+        Assert.False(Assert.Single(mixed, check => check.Name == "fanout-selector").Passed);
+        Assert.False(Assert.Single(malformed, check => check.Name == "fanoutSelector").Passed);
+    }
+
+    [Fact]
     public async Task The_public_commit_verb_dry_runs_a_subscription_without_registering_it()
     {
         await using var db = _fixture.CreateContext();
@@ -142,7 +223,7 @@ public sealed class SubscriptionStoreTests : IDisposable
         Status = SubscriptionStatus.Draft
     };
 
-    private static async Task SeedEventMechanicAsync(DantesRoleplayDbContext db, EventMechanicMode mode)
+    private static async Task SeedEventMechanicAsync(DantesRoleplayDbContext db, EventMechanicMode mode, string? payloadSchema = null, string rolesJson = "{}")
     {
         await new EventTypeStore(db).WriteAsync(new WriteEventTypeRequest
         {
@@ -150,7 +231,7 @@ public sealed class SubscriptionStoreTests : IDisposable
             Category = "test",
             Name = "Test changed",
             Description = "A test-only declared event.",
-            PayloadSchema = "{\"type\":\"object\"}",
+            PayloadSchema = payloadSchema ?? "{\"type\":\"object\"}",
             Status = EventTypeStatus.Active
         });
         await new MechanicStore(db).WriteAsync(new WriteMechanicRequest
@@ -160,7 +241,7 @@ public sealed class SubscriptionStoreTests : IDisposable
             Name = "Test event mechanic",
             Description = "A test middleware target.",
             Matches = "test event",
-            Requirements = $"{{\"event\":{{\"mode\":\"{mode.ToString().ToLowerInvariant()}\",\"types\":[\"test.changed\"]}}}}",
+            Requirements = $"{{\"roles\":{rolesJson},\"event\":{{\"mode\":\"{mode.ToString().ToLowerInvariant()}\",\"types\":[\"test.changed\"]}}}}",
             Source = "return { narration: 'test', effects: [] };",
             Status = MechanicStatus.Active
         });

@@ -1,6 +1,6 @@
 # Feature 21 dependency plan — cover and ranged attacks
 
-Status: **Slice 1 verified; cover, sight, combat-side, and tactical ranged resolution remain blocked on their named later slices.**
+Status: **Slices 1–2 verified; cover, sight, and tactical ranged resolution remain blocked on their named later slices.**
 Last updated: 2026-08-21
 
 ## Execution rule
@@ -45,7 +45,7 @@ The registered source is `source.dnd2024.srd-5.2.1`: *System Reference Document 
 | Weapon profile owner | Feature 7 owns `dnd2024.weapon-profile`, currently limited to category, `kind`, abilities, damage, and source. No normal/long range exists. Range must revise this existing static owner, not create a parallel range component. |
 | Attack resolver | Feature 8's `mechanic.dnd2024.weapon-attack` consumes final Armor Class and produces effect-free D20 evidence. It has no range, cover, map, or visibility input. |
 | Permanent AC | Feature 6's `dnd2024.armor-class` is final persistent AC. Cover is directional and transient; it must not set or cache a target's AC. |
-| Position/terrain | Feature 20 is planned. It owns grid position/placement and its sparse blocked/difficult map, but no cover-profile geometry has been confirmed. |
+| Position/terrain | Feature 20 Slices 1–5 are verified. It owns grid position/placement, sparse blocked/difficult map, voluntary movement, and encounter-side evidence, but no cover-profile geometry. |
 | Conditions | Feature 13 owns stored/effective creature conditions. Its plan explicitly defers positional condition rules; a close-combat enemy must be effectively not Incapacitated through that owner, not a copied condition list. |
 | Sight | Feature 34 owns vision/light/hiding/senses. Grid positions and physical line-of-effect are insufficient to conclude that a creature can see another. |
 | Combat enemy relation | Features 5 and 11 explicitly exclude encounter sides. No D&D combat-side/hostility owner exists; world factions are campaign narrative state, not an encounter enemy predicate. |
@@ -59,20 +59,20 @@ Feature 21: cover and ranged attacks
 ├─ static weapon-profile owner                                   [implemented: Feature 7]
 ├─ seeded effect-free attack arithmetic                          [implemented: Feature 8]
 ├─ persistent final AC                                            [implemented: Feature 6]
-├─ range data on existing ranged weapon profiles                 [missing leaf: Slice 1]
-├─ tactical map/positions/distance                               [blocked: Feature 20 Slice 2]
+├─ range data on existing ranged weapon profiles                 [implemented: Slice 1]
+├─ tactical map/positions/distance                               [implemented: Feature 20 Slice 2]
 ├─ bounded cover geometry / GM adjudication policy               [missing design leaf]
-├─ encounter enemy relation                                      [missing state leaf]
+├─ encounter enemy relation                                      [implemented: Feature 20 Slice 5]
 ├─ effective Incapacitated input                                 [blocked: Feature 13 consumer state]
 ├─ can-see input                                                  [blocked: Feature 34]
 ├─ trusted derived attack context -> Feature 8                   [missing platform leaf]
 └─ tactical ranged-attack parent                                 [blocked parent]
-   ├─ range outcome + long-range Disadvantage                    [blocked: range data + map + composition]
+   ├─ range outcome + long-range Disadvantage                    [blocked: range reader + composition]
    ├─ cover outcome                                               [blocked: geometry + composition]
    └─ close-combat outcome                                        [blocked: sides + sight + conditions + composition]
 ~~~
 
-The lowest next slice is the Feature-7-owned static range-data migration. It supplies the authoritative fact later slices need without pretending that a range-capable tactical attack already exists.
+The lowest next slice is the cover-geometry reader after its bounded geometry policy is ratified.
 
 ## Dependency and ownership decisions
 
@@ -101,7 +101,7 @@ The lowest next slice is the Feature-7-owned static range-data migration. It sup
 | Order | Slice | Starts only when | Exit gate |
 | --- | --- | --- | --- |
 | 1 | Ranged weapon range data | **Verified.** | Shortbow carries validated 80/320-foot source data; the profile schema, writer, attack reader, and damage reader accept the revised closed profile without changing attack results. |
-| 2 | Combat-side foundation | Slice 1 and ids confirmed. | Encounter participants have an explicit, validated side/hostility fact with no faction inference. |
+| 2 | Combat-side foundation | Slice 1 and ids confirmed. | **Verified by Feature 20 Slice 5** — encounter participants have an explicit, validated side/hostility fact with no faction inference; see `../feature-20/FEATURE-20-SLICE-5-MOVEMENT-RECEIPT.md`. |
 | 3 | Cover geometry reader | Feature 20 placement/map plus cover policy confirmed. | Effect-free reader returns deterministic cover/line-of-effect evidence, with Total Cover refusing direct targetability. |
 | 4 | Range reader | Feature 20 distance and Slice 1. | Effect-free reader returns in-normal/in-long/out-of-range from positions and weapon data. |
 | 5 | Close-combat reader | Slices 2–4, Feature 13, and Feature 34. | It identifies only the SRD attacker-side Disadvantage trigger from enemy, distance, sight, and effective Incapacitated inputs. |
@@ -137,6 +137,8 @@ Create one encounter-scoped participant side/hostility record with a normal reco
 
 Test distinct/same/neutral sides, missing/corrupt/stale encounter state, duplicate membership, roster changes, query/readback, replay, routing, and fixture cleanup. Stop before sight, cover, or attacks.
 
+**Implemented by Feature 20 Slice 5.** `dnd2024.encounter-sides`, its record/correct writer, and its effect-free relation reader are now the shared encounter-side foundation. Missing side state reports `unknown`; malformed or roster-stale state rejects. The model never derives a relation from faction, initiative, names, or containment order.
+
 ## Slice 3 — cover geometry reader
 
 After Feature 20's map/positions exist and cover policy is ratified, add an effect-free reader for attacker, target, and encounter. It consumes only map geometry plus both exact footprints and returns one closed cover degree, AC bonus (0/2/5), direct-targetable Boolean, and geometry provenance. Multiple sources select the highest degree; Total Cover sets direct-targetable false. It never alters AC or applies an attack condition.
@@ -165,9 +167,9 @@ Prove context combinations/cancellation, natural 20/1 precedence, no D20 on inva
 - Official source/version/locators: yes; SRD 5.2.1 pp. 14, 178, and 90.
 - Existing owners and overlaps searched: yes; profile, attack, AC, positions, conditions, sight, sides, and composition are classified.
 - Every missing dependency expanded: yes; range data, cover policy, enemy relation, Feature 34 sight, and trusted context are separate leaves.
-- Lowest completed slice: yes — static range data under the existing Feature-7 owner; Slice 2 is now the next blocked child.
+- Lowest completed slice: yes — the shared combat-side foundation is verified; Slice 3 is next but awaits its geometry-policy confirmation.
 - Closed state/input, formula boundaries, deterministic evidence, routing, and cleanup: specified.
-- Slice 1 runtime artifacts and verification are recorded in [the receipt](FEATURE-21-SLICE-1-RECEIPT.md); no persistent catalog import occurred.
+- Slice 1 and the shared Slice 2 foundation are recorded in [the range receipt](FEATURE-21-SLICE-1-RECEIPT.md) and [Feature 20 Slice 5 receipt](../feature-20/FEATURE-20-SLICE-5-MOVEMENT-RECEIPT.md); no persistent catalog import occurred.
 
 ## Plan-change rule
 

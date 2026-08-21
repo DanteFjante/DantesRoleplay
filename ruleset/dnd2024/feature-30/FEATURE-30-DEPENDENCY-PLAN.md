@@ -1,6 +1,6 @@
 # Feature 30 dependency plan — guided character creation and playable-sheet acceptance
 
-Status: **CH5 Slice 0's generic staged-composition proof is implemented and awaiting acceptance. Feature 30 creates no parallel creation contract or actor state.**
+Status: **CH5 Slice 0's generic staged-composition proof is accepted. Feature 30 creates no parallel creation contract or actor state.**
 Last updated: 2026-08-21
 
 ## Execution rule

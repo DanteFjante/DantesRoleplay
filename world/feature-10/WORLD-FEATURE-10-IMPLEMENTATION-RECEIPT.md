@@ -2,7 +2,7 @@
 
 **Status:** Feature 10 verified  
 **Date:** 2026-08-20  
-**Plan:** [World Feature 10 dependency plan](WORLD-FEATURE-10-DEPENDENCY-PLAN.md)
+**Roadmap:** [World and lore](../../WORLD_AND_LORE_PLAN.md)
 
 ## Delivered
 

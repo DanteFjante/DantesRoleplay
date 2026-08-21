@@ -1,236 +1,114 @@
-# Catalog export/import — handover
+# Catalog portability handover
 
-For whoever picks this up next. The design record is `CATALOG_PORTABILITY_PLAN.md` (slices, exit
-gates, evidence); this document is the part that is not in the code or that plan — current state,
-the decisions that are load-bearing, and the traps in this environment that cost real time.
+Status: **Implemented development workflow; durable handover and acceptance summary**
+Last reviewed: 2026-08-21
 
-Last worked: 2026-08-20.
+## Purpose
 
----
+Repository developers author the catalog as readable files; MCP-only runtime agents author the
+running SQLite database. Export/import is the explicit bridge. Neither side silently overwrites the
+other, and the persistent database is never imported during ordinary feature validation.
 
-## 1. Acceptance check
+This is a developer CLI capability, not a fourth MCP tool.
 
-Run the normal build, filesystem catalog validation, and test suite:
+## Accepted behavior
+
+- Catalog records have stable content fingerprints.
+- Export writes deterministic category paths, JSON records, Markdown contracts, JavaScript mechanic
+  source, schemas, and `catalog/manifest.json`.
+- Import validates the catalog in dependency order and detects file/database drift.
+- `roleplay validate catalog` migrates a fresh disposable database, imports the catalog, and runs
+  write-side checks without touching the persistent database.
+- World records and relationships round-trip into an empty database.
+- History can be exported for review without making it authored catalog state.
+
+The catalog's current record count and suite count are intentionally not pinned here. Read the last
+validation run; both grow as features land.
+
+## Authority and synchronization
+
+| Situation | Authority | Required action |
+| --- | --- | --- |
+| Normal repository development | `catalog/` | Edit files, validate in a disposable database. |
+| Running game | SQLite | Do not overwrite it from a development checkout. |
+| MCP-only authored record that must enter source | SQLite until export | Export first, review the files, then continue file-first. |
+| File and database both changed | Neither automatically | Stop, inspect drift, choose the intended side explicitly. |
+| Integration play or release | Reviewed repository plus chosen persistent database | Snapshot/backup, import, verify, then start play. |
+
+Do not author the same catalog record in files and the live database concurrently.
+
+## File model
+
+- `catalog/manifest.json` inventories exported records and hashes.
+- Procedures and mechanic declarations use Markdown with front matter.
+- Executable mechanic source is a neighboring `.js` file, not embedded in planning prose.
+- Component definitions and authored entities/relationships use JSON; schemas remain separate when
+  they are independently validated or reused.
+- `catalog/` is the only authored copy. Embedded bootstrap contracts are built from it.
+
+The mechanic declaration and source are one versioned record. A source-only change therefore
+changes the record fingerprint and must append/import as a new version under the normal policy.
+
+## Commands
 
 ```powershell
-dotnet build
 .\roleplay validate catalog
-dotnet test --no-build
+.\roleplay export catalog
+.\roleplay import catalog
+.\roleplay verify catalog
 ```
 
-The accepted baseline on 2026-08-20 is **372 passed, 0 failed**. Do not commit redirected build or
-test output; failures should remain visible in the terminal and reproducible with the command.
+Use `validate` while developing. Use `import` against the persistent database only at an explicit
+integration/release boundary, after a backup and drift review.
 
----
+## Load-bearing decisions
 
-## 2. What this feature is
+1. **Three-way drift is an error, not a winner-selection algorithm.** File-only, database-only, and
+   both-changed states must be visible.
+2. **Stable IDs and append-only versions survive transport.** Import does not rename records or
+   rewrite history to make a diff disappear.
+3. **Hashes use canonical record content.** Formatting noise must not create semantic versions, but
+   executable/source changes must.
+4. **Validation uses an empty database.** Round-tripping against the source database cannot reveal
+   missing dependency ordering or relationship import defects.
+5. **Export is deterministic.** Repeating it without state changes should not rewrite files.
+6. **No persistent import in feature tests.** Feature acceptance proves the repository catalog in a
+   disposable database first.
 
-Two populations author this system and neither can use the other's tools:
+## Practical traps
 
-- a **developer with the solution source** edits files, with an editor, a linter and git diffs;
-- an **agent connected only over MCP** has no filesystem and writes into the database.
+- Build/test output redirected into the repository can be indexed by tooling and should not be
+  committed.
+- A running MCP server may hold build outputs. Stop/restart it when the build cannot replace a DLL;
+  do not use stronger deletion commands.
+- A stale `.git/index.lock` must be investigated before removal; confirm no Git process owns it.
+- JSON/schema APIs may accept different node/element types than expected. Keep import tests at the
+  actual serializer boundary.
+- Test world relationships in a genuinely empty database. A simulation against the exporting
+  database can hide missing edges.
+- Never trust raw database row counts as live catalog coverage when tombstones/version history are
+  present.
 
-Both are legitimate. Export/import is the bridge, not a migration to one side. It exists because the
-MCP-only channel forces JavaScript through JSON string escaping, and that measurably degraded the
-rules: `mechanic.dnd2024.check.ability` went from 87 commented lines at v1 to 24 lines averaging 233
-characters with no comments at v4. Nobody decided that; the authoring channel did.
+## Verification
 
-The surface is a CLI, never MCP. The system has three MCP tools and there will not be a fourth —
-import and export are things a human does with a shell open, not moves an agent makes mid-session.
+For a catalog change:
 
----
+1. Run focused tests for the changed reader/writer or feature.
+2. Run `.\roleplay validate catalog`.
+3. At feature acceptance run the full suite.
+4. If preparing integration play, back up the persistent database, run import, then verify.
 
-## 3. State
+Acceptance should cover deterministic re-export, fresh-database import, dependency ordering,
+relationship round-trip, append-only version behavior, drift rejection, malformed input, and no
+partial writes.
 
-| Slice | What | State |
-| --- | --- | --- |
-| 0 | One content fingerprint, populated everywhere | Verified live |
-| 1 | Export the ruleset | Verified live |
-| 2 | Import with three-way drift detection | Verified live |
-| 3 | World state | Ran live; its tests had failures, now fixed and **unbuilt** |
-| 4 | History export | Ran live; same |
-| — | Coverage guard test | Written, **unbuilt**, **uncommitted** |
+## Deliberate exclusions
 
-Live evidence, from the real database:
+- Automatic conflict merging.
+- Persistent database import during normal tests.
+- MCP access to import/export.
+- Treating operation history as authored catalog content.
+- A Node-only mechanic runtime or test harness as part of portability itself.
 
-- Fingerprints went 2/20 → 20/20 and 34/55 → 55/55 with **zero versions appended**.
-- Export writes **10 mechanics / 27 contracts / 7 component definitions / 6 entities = 50 records**,
-  68 files including 6 schema sidecars and the manifest.
-- `verify` reports the catalog and the database agree.
-- Every exported record reparses to a fingerprint identical to the row it came from.
-
-The world is mostly tombstones: **25 entity rows, 6 live**; 31 component rows, 8 on live entities.
-1,325 operations. Zero relationships. Do not trust the raw row counts as coverage figures.
-
----
-
-## 4. The pieces
-
-| File | Responsibility |
-| --- | --- |
-| `DantesRoleplay/Content/ContentHash.cs` | **The** fingerprint. Normalise each field (CRLF/CR → LF, trim), join with U+001F, SHA-256, uppercase hex. |
-| `DataAccess/ContentHashBackfill.cs` | Recomputes stale/missing fingerprints. Runs at startup **before** the seeders. |
-| `DataAccess/Bootstrap/MechanicFile.cs`, `ProcedureFile.cs` | Parse **and** render the markdown. Both halves live together on purpose. |
-| `DataAccess/Bootstrap/MarkdownDocument.cs` | The writer's primitives, and the guards that refuse content which would not parse back. |
-| `DataAccess/Catalog/CatalogLayout.cs` | The only place that decides where a record lives. |
-| `DataAccess/Catalog/CatalogManifest.cs` | The common ancestor three-way drift needs. |
-| `DataAccess/Catalog/CatalogExporter.cs` | Read-only walk of the database → files. |
-| `DataAccess/Catalog/CatalogReader.cs` | Files → records, reusing the parsers. |
-| `DataAccess/Catalog/CatalogImporter.cs` | The drift table and the apply pass. |
-| `DataAccess/Catalog/EntityFile.cs`, `RelationshipsFile.cs`, `ComponentDefinitionFile.cs` | The non-markdown formats. |
-| `DantesRoleplay.Tools/` | Console host, assembly name `roleplay`. Add a tool = one file + one line in `Program.cs`. |
-
-Commands: `export`, `import`, `validate`, `verify`, `hashes`, `backfill-hashes`. All output goes to
-**stdout**. `validate` uses only disposable copies; only `export` and a real `import` touch the
-selected catalog or persistent database.
-
-**Invoke them with `.\roleplay <command> <directory>` from the repository root.** `roleplay` is the
-assembly name, not a global tool — `roleplay.cmd` at the root forwards to
-`DantesRoleplay.Tools\bin\Debug\net10.0\roleplay.exe` and builds it if it is missing. Every document
-here said `roleplay export catalog` for a week before anybody discovered that command did not exist.
-
-A `.cmd` and not a `.ps1`: PowerShell refuses unsigned scripts under the default execution policy,
-so a PowerShell shim would have traded one piece of friction for another.
-
-### The drift table
-
-Per record, compare three fingerprints: the file's, the database row's, and the manifest's record of
-the last state at which they agreed.
-
-| File vs manifest | DB vs manifest | Meaning | Action |
-| --- | --- | --- | --- |
-| same | same | nothing changed | skip |
-| changed | same | developer edited the file | write a new version |
-| same | changed | agent authored live | **leave the database alone**, warn |
-| changed | changed | both | **conflict, refuse, write nothing** |
-| identical content on both sides | | agreement, not conflict | skip |
-| no manifest entry | | unattributable | conflict |
-
----
-
-## 5. Invariants — do not break these without reading why
-
-1. **One fingerprint definition.** Two would disagree the moment either was touched, silently, in
-   both directions. This is why `ContentHash` is in the core project and why `SourceHash` was removed
-   from both `Write*Request` records: a caller that can supply its own fingerprint can mark drifted
-   content as clean.
-2. **A format is two halves.** `ToMarkdown()` lives in the same file as `Parse`. Separating them is
-   how a reader and a writer drift until a file that was just written no longer parses.
-3. **Byte-preserved vs canonicalised is a deliberate split.** Rule source, JSON Schemas and
-   requirements keep their exact bytes — a person wrote them and a person reads the diff.
-   Component data is canonicalised, because it is `JSON.stringify` output from a mechanic. Both sides
-   must canonicalise identically; `WorldStore` already stores `ParseObject(json).ToJsonString()`, so
-   the database's own form is the canonical one.
-4. **LF on every platform**, so two exports of one database are byte-identical wherever they ran.
-5. **The database wins when only it moved.** An agent cannot re-create lost work from a checkout; a
-   developer can.
-6. **A conflict aborts the whole import**, including uncontested edits in the same run. A partly
-   synchronised catalog is harder to reason about than an unapplied one.
-7. **A skipped record keeps its OLD manifest entry.** Writing the database's new fingerprint would
-   make the next import read the untouched file as a catalog edit and overwrite the very work this
-   import just protected. Stale means it keeps reporting until somebody exports — which is what
-   actually resolves it.
-8. **Import never deletes**, with one consequence-of-granularity exception: the relationship set is
-   one record stating the whole set, so an edge removed from the file is cut. Nothing else.
-9. **Apply order: component definitions → entities → mechanics → contracts → relationships.**
-   Attaching a component whose definition is missing fails on purpose.
-10. **History is export-only.** No code path writes an operation from a file. An operation id and a
-    seed are the claim that a rule ran at a version and produced a roll; a log writable from a file is
-    not evidence. This is asserted by a test, not by refusing to read a catalog.
-11. **The importer reaches past `IWorldStore` in exactly one place**: setting an entity's name. That
-    interface is the effect vocabulary a *mechanic* gets, and a rule renaming a creature mid-play
-    should not be possible. A developer editing a file is a different actor. It is commented as the
-    single exception; do not add a second without the same argument.
-12. **Entity ids get a filename guard.** An entity id is the one identifier the kernel never
-    validates — whatever was passed to `CreateEntityAsync`, trimmed — so it is the only input that
-    could contain `..` and turn a row into a write outside the export root.
-
----
-
-## 6. Coverage
-
-Coverage is total: the guard fails when a new table or column appears until someone classifies it,
-and classifying it means writing the sentence explaining the choice. Current version provenance
-(`CreatedBy` and `ChangeNote`) is catalog data for mechanics, procedures, event types, and
-subscriptions; it is intentionally outside the content fingerprint. Markdown writes those text
-fields as JSON strings in front matter, so a multi-line note remains one front-matter line and
-round-trips exactly.
-
----
-
-## 7. Working in this environment — read this before you lose an hour
-
-- **Startup content has one authored copy.** Non-ruleset procedures, generic mechanics, and kernel
-  event types are authored under `catalog/` and embedded by `DantesRoleplay.csproj` under the
-  resource names expected by the seeders. A fresh install remains self-sufficient without mirrored
-  `DantesRoleplay/Bootstrap/`, `DantesRoleplay/Rules/`, or `DantesRoleplay/EventTypes/` trees. Edit
-  the catalog file and run `.\roleplay validate catalog`; synchronize a persistent database only for
-  integration play or release.
-- **The user's shell is PowerShell 5.1** — `&&` is a parse error. Use separate lines or
-  `; if ($LASTEXITCODE -eq 0) { ... }`.
-- **Redirected output is UTF-16.** `dotnet ... > out.txt 2>&1` from PowerShell produces UTF-16LE.
-  Decode it (`raw.decode('utf-16')`) or it reads as spaced-out garbage.
-- **`cat` hides control characters.** `ProcedureFile`'s field separator is a literal U+001F and was
-  invisible; four attempts to reproduce its hash failed before `cat -v` showed `^_`. Use `cat -v` on
-  anything whose bytes matter, and write control characters as escapes (`''`) in source.
-- Editing is done with a Python patcher at `/tmp/patch.py` that preserves each file's existing line
-  endings and BOM — the repository is mixed CRLF/LF and clobbering that produces enormous diffs.
-
-### Two C# traps that bit
-
-- `var x = cond ? list : [];` does not compile. A collection expression is target-typed only, and a
-  conditional with an untyped branch has no natural type. Give it an explicit type.
-- EF Core cannot translate `ThenBy(x => x.Id, StringComparer.Ordinal)`. Materialise first, then sort
-  — which is also what makes the ordering deterministic across providers.
-
----
-
-## 8. How to verify without a compiler
-
-Reimplement the logic in Python and run it against a **copy** of the real database
-(`DantesRoleplay.MCPServer/data/dantesroleplay.db`) and the real `catalog/`. This is not a
-formality — it found:
-
-- `MechanicFile.ContentHash` had no field separator, so `("ab","c")` and `("a","bc")` fingerprinted
-  identically. `ProcedureFile` had the guard and a test; the mechanic side had neither.
-- Both parsers rebuilt sections with `StringBuilder.AppendLine` → `Environment.NewLine`, so the same
-  file fingerprinted differently on Windows and Linux.
-- That the backfill would append **zero** spurious versions — the property the whole
-  backfill-before-seeders ordering exists to protect.
-
-**And what it could not find.** The relationship set is one record, so it never looked "absent" on
-the database side; importing into a fresh database read as *"the database dropped every edge"*
-instead of *"these are new"*, and skipped it. Relationships silently did not import. No simulation
-against the live database could catch that, because the live database is the same database that was
-exported. Only `A_world_round_trips_through_an_empty_database` found it.
-
-Simulate to check what you can. Write the empty-database round-trip test anyway.
-
----
-
-## 9. Follow-on work, in the order I would do it
-
-1. **Re-author the ten live mechanics as readable files.** This is the payoff and it is now possible
-   — `catalog/` exists and round-trips. The minified v4 sources become editable JavaScript again.
-2. **A shared JavaScript prelude** for mechanics. There is no import mechanism, so the six-ability
-   table is duplicated in 5 mechanics, `Math.floor((score - 10) / 2)` in 3, and 96 `throw new Error`
-   sites average 23% of every mechanic's source. A prelude would cut each D&D mechanic 40–60%.
-3. **A node-based mechanic test harness**, so rules can be tested without booting the server. The
-   operation log shows 665 mechanic executions with 165 failures — trial and error that belongs in a
-   test file, not in MCP round trips.
-4. Close the two gaps in §6 if they start to matter.
-
-Each is a separate `procedure.system.create-feature` pass.
-
----
-
-## 10. One thing that is not this feature's problem
-
-Two `ActionRunnerTests` composition tests were failing when this work started —
-`Declared_children_run_before_the_parent_...` and
-`Declared_children_can_compose_recursively_...`. They are the Feature 5 mechanic-composition blocker,
-tracked in that plan's own "Blocker acceptance requirements" section. They passed in the most recent
-run, so something fixed them; verify before relying on it.
-
-A pinned regression baseline used to live in `ruleset/dnd2024/ROADMAP.md`. It was wrong twice —
-213 and then 304, while the suite was neither — so the number is gone. Read the last run.
+Readable mechanic refactoring and a reusable JavaScript prelude are separate features. They must not
+move rule behavior into C#.

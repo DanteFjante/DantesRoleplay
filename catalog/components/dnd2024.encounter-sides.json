@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.encounter-sides",
+  "name": "Encounter Sides (D&D 2024)",
+  "description": "Closed encounter-scoped participant-side and hostility state. It declares allies, enemies, neutral sides, and unknown absence without inferring a relation from world factions, names, Initiative order, containment order, or position. Governed by procedure.mechanic.dnd2024.encounter-sides."
+}

@@ -37,8 +37,9 @@ a date system, a schedule, travel cost, or campaign duplicate.
   safe integers. There is no date, duration, scheduler, route, operation ID, or mutable history.
 - The advance action preserves calendar identity, adds minutes monotonically, increments revision
   once, and rejects overflow or corrupt root/clock state without changing anything. Its action
-  audit and existing `world.component.replaced` event are the evidence; no semantic time event is
-  added.
+  audit, existing structural events, and the scoped `game.core.world.clock.advanced` event are
+  evidence. The semantic event follows structural effects in the same root transaction, names the
+  root as both `scope` and `worldId`, and records closed before/after minute and revision values.
 - A route journey preserves calendar identity, adds its declared duration monotonically, and
   increments revision once in the same transaction as traveller relocation. A ground-conveyance
   journey does the same using its derived duration while relocating its conveyance and driver. An
@@ -47,5 +48,5 @@ a date system, a schedule, travel cost, or campaign duplicate.
 - An accepted complete root-clock correction remains administrative evidence. A scoped world
   condition may reconcile its own derived status and route availability from the resulting minute,
   but cannot change clock ownership, correction policy, calendar identity, or clock bounds.
-- This contract adds no event type, subscription, notification, campaign, quest, schedule,
-  real-time synchronization, or MCP surface.
+- Other than the accepted scoped clock-advance event, this contract adds no subscription,
+  notification, campaign, quest, schedule, real-time synchronization, or MCP surface.

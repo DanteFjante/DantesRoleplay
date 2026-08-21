@@ -20,7 +20,8 @@ public sealed class OllamaCompletionOptions
         "knowledge.read-plan",
         "knowledge.read-answer",
         "knowledge.authorized-answer",
-        "routing.propose"
+        "routing.propose",
+        "story-plan.verify-procedures"
     };
 
     internal string? Validate()

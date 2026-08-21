@@ -1,7 +1,11 @@
 # Campaign Feature 10 dependency plan — compose a new world
 
-Status: **Planned; blocked by a played existing-world campaign, Campaign Slice 2, and a ratified cross-root creation boundary**  
+Status: **Planned; C2, P1, the R3 boundary, W17 composer, and C2 composition seam are verified.
+Blocked by the C10 preview and atomic create slices.**
 Last updated: 2026-08-20
+
+Execution order for the missing leaves and Terra reading sets:
+[C10 prerequisite execution plan](CAMPAIGN-FEATURE-10-DEPENDENCY-EXECUTION-PLAN.md).
 
 ## Target capability
 
@@ -73,8 +77,8 @@ dependencies, not permission to add a second owner.
 ~~~text
 Campaign Feature 10: create one reviewed new world plus campaign
 ├─ W1 topology and W3/W4 lore contracts                               [implemented and verified]
-├─ C2 validated existing-world campaign bootstrap                      [blocked; must be verified]
-├─ P1 played existing-world campaign/session evidence                  [blocked; must be verified]
+├─ C2 validated existing-world campaign bootstrap                      [implemented and verified]
+├─ P1 played existing-world campaign/session evidence                  [verified; P1 receipt]
 ├─ world-only small-world blueprint composer                           [missing world-owned leaf]
 │  └─ separate world-feature plan: validation and typed effects, no independent commit
 ├─ cross-root transaction authority and review fingerprint             [missing semantic leaf]
@@ -110,7 +114,7 @@ contract answers any item differently, this plan must be revised before assignin
 
 | Order | Slice | Starts only when | Exit gate |
 | --- | --- | --- | --- |
-| 0 | Cross-root creation ratification | C2 and the world-owned composer design are available for comparison; existing-world campaign evidence is planned. | One outer coordinator and complete review/failure contract are approved; no runtime artifact is written. |
+| 0 | Cross-root creation ratification | C2 and the world-owned composer design are available for comparison; existing-world campaign evidence is verified. | One outer coordinator and complete review/failure contract are approved; no runtime artifact is written. |
 | 1 | Read-only new-world campaign preview | C2, P1, the world-owned composer, and Slice 0 are verified. | The fixed blueprint returns stable resolved local keys, proposed IDs, counts, warnings, fingerprint, and all errors with zero writes. |
 | 2 | Atomic new-world campaign create | Slice 1 is verified. | The exact fingerprinted preview creates the whole new world/campaign graph in one transaction; every injected failure rolls back both graphs and success evidence. |
 

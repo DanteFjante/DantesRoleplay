@@ -190,6 +190,8 @@ public static class CatalogValidator
                     Mode = file.Mode,
                     Order = file.Order,
                     FixedRoleEntityIdsJson = file.FixedRoleEntityIdsJson,
+                    RoleFromEventPayloadJson = file.RoleFromEventPayloadJson,
+                    FanoutSelectorJson = file.FanoutSelectorJson,
                     TrackedEntityIdsJson = file.TrackedEntityIdsJson,
                     PayloadEqualsJson = file.PayloadEqualsJson,
                     MaxExecutionsPerChain = file.MaxExecutionsPerChain,

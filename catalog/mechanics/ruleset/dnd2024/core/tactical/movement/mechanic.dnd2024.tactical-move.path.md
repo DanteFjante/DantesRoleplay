@@ -8,8 +8,9 @@ status: active
 
 ## Description
 
-Effect-free internal path validation. It derives every entered footprint and its exact normal
-movement cost without spending a resource or changing position.
+Effect-free internal path validation. It derives every entered footprint, exact difficult-terrain
+and occupied-space cost, and lawful passage evidence without spending a resource or changing
+position.
 
 ## Matches
 
@@ -18,5 +19,5 @@ validate tactical movement path
 ## Requirements
 
 ```json
-{"roles":{"subject":{"components":["dnd2024.creature-size","dnd2024.encounter-position"]},"encounter":{"components":["dnd2024.encounter-space"],"includeContents":true}},"children":{"participants":{"mechanicId":"mechanic.dnd2024.encounter-participant-tactical-state.read","roleBindings":{"participant":"$item"},"forEachContentsOf":"encounter","inheritInput":false,"input":"{}"}}}
+{"roles":{"subject":{"components":["dnd2024.creature-size","dnd2024.encounter-position","dnd2024.conditions"]},"encounter":{"components":["dnd2024.encounter-space","dnd2024.encounter-sides"],"includeContents":true}},"children":{"participants":{"mechanicId":"mechanic.dnd2024.encounter-participant-movement-state.read","roleBindings":{"participant":"$item"},"forEachContentsOf":"encounter","inheritInput":false,"input":"{}"},"relations":{"mechanicId":"mechanic.dnd2024.encounter-sides.relation","roleBindings":{"encounter":"encounter","first":"subject","second":"$item"},"forEachContentsOf":"encounter","inheritInput":false,"input":"{}"}}}
 ```

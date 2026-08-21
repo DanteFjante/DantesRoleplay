@@ -5,7 +5,7 @@ Last updated: 2026-08-20
 
 ## Execution rule
 
-Use [GAME_SYSTEM_MASTER_PLAN.md](GAME_SYSTEM_MASTER_PLAN.md) for cross-subsystem ownership,
+Use [ARCHITECTURE.md](ARCHITECTURE.md) for cross-subsystem ownership,
 [TERRA-FEATURE-PLANNING-GUIDE.md](ruleset/dnd2024/TERRA-FEATURE-PLANNING-GUIDE.md) for plan quality,
 and a populated [SUBSYSTEM_IMPLEMENTATION_HANDOFF.md](SUBSYSTEM_IMPLEMENTATION_HANDOFF.md) for the active assignment. Implement one reviewed delivery
 slice, meet its exit gate, record evidence, and stop.
@@ -289,7 +289,7 @@ content.
 | C1 | [Validate existing-world blueprint](campaign/feature-01/CAMPAIGN-FEATURE-01-DEPENDENCY-PLAN.md) | Read-only validation/fingerprint after C0. |
 | C2 | [Atomic existing-world bootstrap](campaign/feature-02/CAMPAIGN-FEATURE-02-DEPENDENCY-PLAN.md) | One campaign root references an existing world atomically. |
 | C3 | [Chapters, arcs, and quest-free resume](campaign/feature-03/CAMPAIGN-FEATURE-03-DEPENDENCY-PLAN.md) | Campaign continuity without a quest dependency. |
-| C4 | [Manual quest integration](campaign/feature-04/CAMPAIGN-FEATURE-04-DEPENDENCY-PLAN.md) | Campaign consumes quest context without owning quest lifecycle. |
+| C4 | [Manual quest integration](campaign/feature-04/CAMPAIGN-FEATURE-04-DEPENDENCY-PLAN.md) and [acceptance receipt](campaign/feature-04/CAMPAIGN-FEATURE-04-SLICE-1-RECEIPT.md) | Implemented: campaign consumes bounded quest context without owning quest lifecycle. |
 | C5 | [Knowledge, factions, and audience projections](campaign/feature-05/CAMPAIGN-FEATURE-05-DEPENDENCY-PLAN.md) | Blocked until real audience authorization exists. |
 | C6 | [Future quest opportunities](campaign/feature-06/CAMPAIGN-FEATURE-06-DEPENDENCY-PLAN.md) | One event-triggered activation; no random/clock opportunity yet. |
 | C7 | [AI-assisted proposal with review](campaign/feature-07/CAMPAIGN-FEATURE-07-DEPENDENCY-PLAN.md) | Proposal remains untrusted until host approval and C1 validation. |

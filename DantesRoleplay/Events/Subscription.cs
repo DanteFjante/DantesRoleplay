@@ -26,6 +26,8 @@ public sealed class SubscriptionVersion
     public SubscriptionMode Mode { get; set; }
     public int Order { get; set; }
     public string FixedRoleEntityIdsJson { get; set; } = "{}";
+    public string RoleFromEventPayloadJson { get; set; } = "{}";
+    public string FanoutSelectorJson { get; set; } = "{}";
     public string TrackedEntityIdsJson { get; set; } = "[]";
     public string PayloadEqualsJson { get; set; } = "{}";
     public int MaxExecutionsPerChain { get; set; } = 1;

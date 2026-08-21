@@ -1,7 +1,7 @@
 # Campaign Feature 15 dependency plan — campaign-owned character participation
 
-Status: **Slices 1–2 are implemented, including CH5's effect-free attachment planner. Slice 3 remains blocked on Character CH13's
-lifecycle contract and root-composition decision.**
+Status: **Slices 1–3 are implemented. C15 now exposes CH13's effect-free withdrawal fragment;
+the CH13 lifecycle root remains its planned consumer.**
 Last updated: 2026-08-21
 
 ## Target capability
@@ -123,7 +123,7 @@ C15 campaign-owned character participation                              [planned
 ├─ confirmed attach root operation and derived-ID convention             [semantic leaf]
 │  └─ Slice 2: one trusted-host attachment transaction
 └─ CH13 lifecycle contract                                               [planned consumer]
-   └─ Slice 3: typed withdrawal planner and atomic handoff proof
+   └─ Slice 3: typed withdrawal planner                                  [implemented]
 
 CH1 Slice 2 profile recording and CH5 atomic creation consume Slice 2.
 CH13 consumes Slice 3. C14 and Session S5 consume the verified active-scope projection only.
@@ -135,7 +135,7 @@ CH13 consumes Slice 3. C14 and Session S5 consume the verified active-scope proj
 | ---: | --- | --- | --- |
 | 1 | Participation definition and active-scope verifier | All proposed vocabulary, cardinality, irreversible-withdrawal rule, and no-new-kind/public dispatch boundary are confirmed. | Catalog/procedure validation proves the closed state/link shape; a zero-effect verifier accepts exactly one structurally active campaign-actor attachment and rejects every malformed/ambiguous scope. |
 | 2 | Trusted-host attach transaction and CH5 planner | Slice 1 verified; derived-ID policy, attach operation, runner, audit/event behavior, and test fixture are confirmed. | One active campaign attaches one existing actor atomically; the effect-free planner validates the same closed attachment against a staged actor; duplicate, cross-campaign, inactive, stale, and injected-failure paths leave no participation evidence. CH1 and CH5 can consume the verifier/planner boundary. |
-| 3 | Withdrawal composition seam | Slice 2 verified; CH13 lifecycle contract and atomic root-composition behavior are confirmed. | A CH13 dry run receives one typed withdrawal fragment; a forced root failure leaves both participation and character lifecycle unchanged. No standalone retirement semantics are invented. |
+| 3 | Withdrawal composition seam | Slice 2 verified; C15's active-scope and no-standalone-command boundaries remain confirmed. | An internal planner returns one typed withdrawal fragment without writing. Its containing root can roll back the fragment; CH13 remains responsible for proving its own combined lifecycle atomicity. |
 
 ### Slice 1 receipt
 
@@ -145,6 +145,14 @@ resolve only one structurally valid active campaign scope for an existing actor.
 public command and write no state. `CampaignFeature15Tests` covers valid, withdrawn, malformed,
 duplicate, and inactive-campaign graphs; `roleplay validate catalog` passed with 253 records and
 zero warnings. See [Slice 1 receipt](CAMPAIGN-FEATURE-15-SLICE-1-RECEIPT.md).
+
+### Slice 3 receipt
+
+**Implemented 2026-08-21.** `CampaignCharacterParticipationWithdrawalPlanner` accepts only an
+actor id, reuses C15's canonical active-scope verifier, and returns exactly one complete
+`component.set` replacement to `{"status":"withdrawn"}`. It neither writes, opens a transaction,
+records an operation, nor creates a public campaign command. The consuming CH13 lifecycle root
+will append this fragment to its own atomic bundle. See [Slice 3 receipt](CAMPAIGN-FEATURE-15-SLICE-3-RECEIPT.md).
 
 ## Acceptance matrix
 

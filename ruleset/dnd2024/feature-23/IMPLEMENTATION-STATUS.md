@@ -93,7 +93,7 @@ transfer remains deliberately deferred to a later quantity extension.
 
 ## Key artifacts
 
-- `FEATURE-23-DEPENDENCY-PLAN.md`
+- the Feature 23 slice receipts in this directory
 - `FEATURE-23-SLICE-1-RECEIPT.md` through `FEATURE-23-SLICE-11-RECEIPT.md`
 - `catalog/mechanics/ruleset/dnd2024/core/data/item-transfer/`
 - `catalog/mechanics/ruleset/dnd2024/core/data/equipment-state/`

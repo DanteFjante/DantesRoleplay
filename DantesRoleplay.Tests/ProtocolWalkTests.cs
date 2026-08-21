@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.MCPServer;
+using DantesRoleplay.Security;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Data.Sqlite;
 using Microsoft.AspNetCore.Hosting;
@@ -33,7 +34,14 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
 
         var builder = WebApplication.CreateSlimBuilder();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
-        builder.Services.AddDantesRoleplayMcpServer(_databasePath, DatabaseProvider.Sqlite);
+        builder.Services.AddDantesRoleplayMcpServer(_databasePath, DatabaseProvider.Sqlite,
+            developmentKnowledgeAudience: new DevelopmentKnowledgeAudienceOptions
+            {
+                Enabled = true,
+                PrincipalId = "development.local",
+                CampaignId = "campaign.test.story",
+                Role = CampaignAudienceRoles.GameMaster
+            });
 
         _app = builder.Build();
         await _app.Services.InitialiseDantesRoleplayAsync();
@@ -128,7 +136,7 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
 
         Assert.True(catalog.Ok, catalog.Raw);
         Assert.Equal(
-            ["campaign-resume", "capabilities", "categories", "entities", "event-types", "events", "feedback", "graph", "history", "itinerary-plan", "journey-plan", "knowledge-answer", "mechanics", "notifications", "procedures", "quest-summary", "session-recap", "subscriptions", "world"],
+            ["campaign-resume", "capabilities", "categories", "entities", "event-types", "events", "feedback", "graph", "history", "itinerary-plan", "journey-plan", "knowledge-answer", "mechanics", "notifications", "procedures", "quest-summary", "session-recap", "story-plan", "subscriptions", "world"],
             catalog.Data.GetProperty("query").EnumerateObject().Select(p => p.Name).Order(StringComparer.Ordinal));
 
         // 3. The world, before changing it.
@@ -230,6 +238,22 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
         //     intent — there is no way to name the rule — so the roles have to be filled from what
         //     the rule declares. Getting that wrong is recoverable, and this is where a session
         //     most often does.
+        foreach (var (payload, expectedWhy) in new[]
+                 {
+                     ("{", "Payload is not valid JSON"),
+                     ("[]", "Payload must be a JSON object"),
+                     ("{}", "Action payload requires intent"),
+                     ("""{"intent":"can they manage it","unknown":true}""", "Action payload requires intent")
+                 })
+        {
+            var malformedAction = await ToolAsync("commit", new { kind = "action", payload });
+            Assert.False(malformedAction.Ok);
+            Assert.Equal("INVALID_PAYLOAD", malformedAction.Error.GetProperty("code").GetString());
+            Assert.Contains(expectedWhy, malformedAction.Error.GetProperty("why").GetString());
+            Assert.DoesNotContain("the rule is broken, not your arguments", malformedAction.Error.GetProperty("fix").GetString(), StringComparison.OrdinalIgnoreCase);
+            AssertIsCall(malformedAction.Error.GetProperty("fix").GetString()!);
+        }
+
         var missingRole = await ToolAsync("commit", new
         {
             kind = "action",
@@ -239,6 +263,7 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
         Assert.False(missingRole.Ok);
         Assert.Equal("PROJECTION_FAILED", missingRole.Error.GetProperty("code").GetString());
         Assert.Contains("subject", missingRole.Error.GetProperty("why").GetString());
+        Assert.DoesNotContain("the rule is broken, not your arguments", missingRole.Error.GetProperty("fix").GetString(), StringComparison.OrdinalIgnoreCase);
         AssertIsCall(missingRole.Error.GetProperty("fix").GetString()!);
 
         // 11. The same action with the role supplied. This runs AI-written JavaScript in the
@@ -291,6 +316,38 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
         var read = await ToolAsync("query", new { kind = "feedback", id });
         Assert.True(read.Ok, read.Raw);
         Assert.Single(read.Data.GetProperty("reports").EnumerateArray());
+    }
+
+    [Fact]
+    public async Task A_development_gm_can_start_and_query_a_durable_story_plan_over_the_public_protocol()
+    {
+        var started = await ToolAsync("commit", new
+        {
+            kind = "story-plan",
+            payload = """
+                {"operation":"start","requestToken":"story-plan.protocol-01","campaignId":"campaign.test.story","objective":"Find out what is known.","steps":[{"id":"knowledge","kind":"knowledge","intent":"What is known?"}]}
+                """,
+            intent = "ask the backend for one bounded fact",
+            proceduresUsed = new[] { "procedure.play.story-plan" }
+        });
+
+        Assert.True(started.Ok, started.Raw);
+        var id = started.Data.GetProperty("storyPlanId").GetString();
+        var revision = started.Data.GetProperty("revision").GetInt32();
+        Assert.NotNull(id);
+        Assert.StartsWith("story-plan.", id, StringComparison.Ordinal);
+        Assert.Contains($"query(kind: \"story-plan\", id: \"{id}\", afterRevision: {revision}, waitSeconds: 20)", started.NextSteps);
+
+        var queried = await ToolAsync("query", new { kind = "story-plan", id, afterRevision = revision, waitSeconds = 0 });
+
+        Assert.True(queried.Ok, queried.Raw);
+        Assert.Equal(id, queried.Data.GetProperty("storyPlanId").GetString());
+        Assert.NotEmpty(queried.NextSteps);
+
+        var audit = await ToolAsync("query", new { kind = "history", subject = id, limit = 20 });
+        Assert.True(audit.Ok, audit.Raw);
+        Assert.Contains(audit.Data.GetProperty("operations").EnumerateArray(), operation =>
+            operation.GetProperty("tool").GetString() == "commit" && operation.GetProperty("subject").GetString() == id);
     }
 
     [Fact]

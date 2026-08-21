@@ -1,0 +1,1 @@
+{"id":"item.dnd2024.javelin.v1","name":"Javelin (D&D 2024, definition v1)","components":{"dnd2024.item-definition":{"definitionVersion":1,"kind":"weapon","stackPolicy":"separate","massPounds":{"numerator":2,"denominator":1},"weaponProfileId":"weapon.dnd2024.javelin","equipmentModes":["held"],"sourceRef":{"sourceId":"source.dnd2024.srd-5.2.1","locator":"Equipment > Weapons"}}}}

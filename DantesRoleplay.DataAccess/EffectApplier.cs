@@ -358,7 +358,14 @@ public sealed class EffectApplier(
                         ProposedEvents = proposals
                     };
                 }
-                proposals.AddRange(declared.Proposals);
+                // Declared semantic events describe the already-proposed structural batch. Their
+                // ordinal therefore starts after every structural proposal; sharing zero-based
+                // ordinals would interleave them under the ledger's canonical ordering.
+                var declaredStart = proposals.Count;
+                proposals.AddRange(declared.Proposals.Select((proposal, declaredOrdinal) => proposal with
+                {
+                    Ordinal = declaredStart + declaredOrdinal
+                }));
             }
             var evaluations = Array.Empty<GuardEvaluation>() as IReadOnlyList<GuardEvaluation>;
 

@@ -21,8 +21,8 @@ Source and scope
 
 Required state and input
 
-1. Require subject `dnd2024.abilities`, `dnd2024.character-level`, and `dnd2024.weapon-proficiencies`; target `dnd2024.armor-class` and `dnd2024.conditions`; and weapon `dnd2024.weapon-profile`.
-2. Validate every required state field and fixed source reference before consuming randomness. Missing proficiency is invalid; explicit empty categories means known nonproficient.
+1. Require subject `dnd2024.abilities`, `dnd2024.character-level`, and `dnd2024.weapon-proficiencies`; target `dnd2024.conditions`; and weapon `dnd2024.weapon-profile`. Compose exactly one `mechanic.dnd2024.armor-class.read` child for the target.
+2. Validate every required state field, the derived Armor Class child result, and fixed source reference before consuming randomness. Missing proficiency is invalid; explicit empty categories means known nonproficient.
 3. Input is exactly `{"ability":"str"|"dex","rollCircumstances":[{"kind":"advantage"|"disadvantage","source":"reason"}]}` with optional rollCircumstances. The selected ability must occur in the profile's canonical list. `condition:` is reserved for state-derived evidence and rejected from caller input.
 4. Derive modifier and level-band Proficiency Bonus from stored subject state; accept neither from input. Add PB once only when profile category occurs in the stored category list.
 5. Compose mechanic.dnd2024.d20-test.state-effects once for subject and once for target, both with static `{}` input. Merge caller circumstances, attacker `attackRoll` circumstances, and target `attackAgainst` circumstances under the established closed, non-stacking, cancellation convention. Return every die and selected die.
@@ -39,5 +39,5 @@ Result and verification
 
 ## Constraints
 - This resolver owns transient weapon-attack evidence only. It never creates components, writes outcomes, rolls damage, or changes Hit Points.
-- It reads final Armor Class only from `dnd2024.armor-class`, and weapon facts only from `dnd2024.weapon-profile`.
+- It reads final Armor Class only from one `mechanic.dnd2024.armor-class.read` child result, and weapon facts only from `dnd2024.weapon-profile`.
 - It never defaults absent/corrupt profile, proficiency, level, ability, or Armor Class state; a later feature must not revise this owner merely to add damage or equipment behavior.

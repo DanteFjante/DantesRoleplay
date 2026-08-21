@@ -73,8 +73,16 @@ public sealed class CampaignTools
         return result.Succeeded ? ToolEnvelope.Success(result, result.OperationId, result.Next) : ToolEnvelope.Failure(result.Problems[0].Code, result.Problems[0].Reason, result.Next, result.OperationId);
     }
 
+    public async Task<ToolEnvelope> AttachQuestContextAsync(ICampaignQuestContextRunner runner, CampaignQuestContextRequest request, string intent, IReadOnlyList<string>? proceduresUsed, CancellationToken cancellationToken = default)
+    {
+        var result = await runner.AttachAsync(request, intent, proceduresUsed, cancellationToken);
+        return result.Attached
+            ? ToolEnvelope.Success(result, result.OperationId, result.Next)
+            : ToolEnvelope.Failure(result.Problems[0].Code, result.Problems[0].Reason, result.Next, result.OperationId);
+    }
+
     public Task<ToolEnvelope> ResumeAsync(ICampaignResumeReader reader, IOperationLog log, string campaignId, CancellationToken cancellationToken = default) =>
-        ToolRunner.RunAsync(log, "query", "", campaignId, ["procedure.campaign.chapter"], async () =>
+        ToolRunner.RunAsync(log, "query", "", campaignId, ["procedure.campaign.chapter", "procedure.campaign.quest-context"], async () =>
         {
             var result = await reader.GetAsync(campaignId, cancellationToken);
             return result is null ? ToolOutcome.Fail("CAMPAIGN_NOT_FOUND", "campaignId does not name a readable active campaign.", "query(kind: \"entities\", id: \"...\")", "Campaign resume was unavailable.") : ToolOutcome.OkAbout(campaignId, result, "Returned trusted-host campaign resume.", "query(kind: \"campaign-resume\", id: \"" + campaignId + "\")");

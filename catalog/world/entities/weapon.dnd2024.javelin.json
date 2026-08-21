@@ -1,0 +1,16 @@
+{
+  "id": "weapon.dnd2024.javelin",
+  "name": "Javelin (D&D 2024)",
+  "components": {
+    "dnd2024.weapon-profile": {
+      "category": "simple",
+      "kind": "melee",
+      "attackAbilities": ["str"],
+      "damage": { "count": 1, "faces": 6, "type": "piercing" },
+      "propertyTags": ["thrown"],
+      "thrownRangeFeet": { "normal": 30, "long": 120 },
+      "mastery": "slow",
+      "sourceRef": { "sourceId": "source.dnd2024.srd-5.2.1", "locator": "Equipment > Weapons" }
+    }
+  }
+}

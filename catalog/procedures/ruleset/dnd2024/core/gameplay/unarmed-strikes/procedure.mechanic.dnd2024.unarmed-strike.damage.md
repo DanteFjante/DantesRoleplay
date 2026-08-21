@@ -27,10 +27,10 @@ Source and scope
 
 Required state and input
 
-1. Require subject `dnd2024.abilities` and `dnd2024.character-level`; target
-   `dnd2024.armor-class`; both roles provide optional known condition state only through exactly
-   one `mechanic.dnd2024.d20-test.state-effects` child each.
-2. Validate complete ability, total-level, Armor Class, and child-result state before randomness.
+1. Require subject `dnd2024.abilities` and `dnd2024.character-level`; target condition state and
+   exactly one target `mechanic.dnd2024.armor-class.read` child. Both roles provide optional known
+   condition state only through exactly one `mechanic.dnd2024.d20-test.state-effects` child each.
+2. Validate complete ability, total-level, derived Armor Class, and child-result state before randomness.
    Proficiency Bonus derives as `2 + floor((level - 1) / 4)`; callers cannot supply it.
 3. Input is exactly `{}` or `{"rollCircumstances":[...]}`. Each caller circumstance has only
    `kind: "advantage"|"disadvantage"` and a nonempty trimmed `source`; the `condition:` prefix

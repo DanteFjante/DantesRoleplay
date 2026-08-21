@@ -1,15 +1,16 @@
 # Feature 24 dependency plan — armor, shields, and derived Armor Class
 
-Status: **Slice 1 verified; derived AC, training penalties, Speed, and timed don/doff remain blocked by their named seams.**
+Status: **Slices 1–4 accepted; training penalties, Speed, and timed don/doff remain blocked by their named seams.**
 Last updated: 2026-08-21
 
 ## Execution rule
 
-This plan records a completed repository implementation slice. Slice 1 revises the existing
-Feature-23 static item-definition contract and catalog definitions only; it adds no actor state,
-instance, action, event, subscription, migration, or game state. A later implementation pass must
-re-read current contracts, select exactly one verified next slice, validate a disposable import,
-record evidence, and stop.
+This plan records completed repository implementation slices. Slice 1 revises the existing
+Feature-23 static item-definition contract and catalog definitions only. Slice 2 owns only the
+closed armor-training record and effect-free diagnostic reader. Slice 3 derives direct worn armor
+and held Shield selections without a rule consequence. A later implementation pass must re-read
+current contracts, select exactly one verified next slice, validate a disposable import, record
+evidence, and stop.
 
 ## Target capability
 
@@ -67,13 +68,13 @@ The registered source is source.dnd2024.srd-5.2.1: System Reference Document 5.2
 Feature 24: armor, shields, and derived Armor Class
 ├─ source rules                                                [implemented source basis]
 ├─ abilities / modifiers                                       [implemented: Feature 3]
-├─ manual final AC and attack consumer                         [implemented, incompatible: Features 6/8]
+├─ legacy final-AC record                                      [deprecated historical record: Feature 6]
 ├─ item definitions, custody, and equipment state              [implemented: Feature 23]
 ├─ Action allowance                                            [implemented: Feature 12]
-├─ armor/shield static profile and definitions                 [missing leaf: Slice 1]
-├─ armor-training state and reader                             [missing leaf: Slice 2]
-├─ equipped-item aggregation/exclusivity reader                [missing leaf: Slice 3]
-├─ derived AC reader and Feature-6/8 migration                 [blocked]
+├─ armor/shield static profile and definitions                 [implemented: Slice 1]
+├─ armor-training state and reader                             [implemented: Slice 2]
+├─ equipped-item aggregation/exclusivity reader                [implemented: Slice 3]
+├─ derived AC reader and Feature-6/8/22 migration              [accepted: Slice 4]
 ├─ derived D20 equipment effects                               [blocked]
 ├─ effective-Speed integration                                 [blocked: Feature 20]
 ├─ timed don/doff lifecycle                                    [blocked: clock owner]
@@ -126,9 +127,9 @@ a creature's AC, training, equipment state, movement, or action has changed.
 | Order | Slice | Starts only when | Exit gate |
 | --- | --- | --- | --- |
 | 1 | Static armor/Shield profile and definitions | **Verified.** | All twelve suits and Shield have validated static data; no instance, state, AC, or action changes. |
-| 2 | Armor-training state/reader | Slice 1 and training semantics confirmed. | Closed state reports category eligibility without inferred grants or AC effect. |
-| 3 | Equipped armor aggregation reader | Slices 1–2 and Feature-23 projection seam. | Effect-free reader identifies at most one direct worn suit and held Shield, rejecting invalid/exclusive state. |
-| 4 | Derived AC calculator/migration | Slice 3 and Feature-6/8 migration confirmed. | Attacks consume calculated AC; legacy manual AC is retired or explicitly migrated without a second truth. |
+| 2 | Armor-training state/reader | **Verified.** | Closed state reports category eligibility without inferred grants or AC effect. |
+| 3 | Equipped armor aggregation reader | **Verified.** | Effect-free reader identifies at most one direct worn suit and held Shield, rejecting invalid/exclusive state. |
+| 4 | Derived AC calculator/migration | **Accepted.** | Weapon and Unarmed Strike consume calculated AC; the legacy manual writer is retired without a second truth. |
 | 5 | Armor-effects reader/D20 consumption | Slices 2–3 and D20 contracts re-read. | Untrained armor and Stealth penalties derive once, merge correctly, and cannot be caller-forged. |
 | 6 | Effective-Speed integration | Slice 3 and Feature-20 speed contract. | Unmet Strength reduces usable walk movement exactly 10 feet without changing base Speed/budget ownership. |
 | 7 | Don/doff lifecycle | Slices 1–3, Feature 12, clock/action owner. | Shield uses verified Utilize timing; suits complete only after exact elapsed duration. |
@@ -170,6 +171,37 @@ absent because Feature 23 excludes economy.
 the focused suite and disposable catalog validation recorded in [the Slice 1 receipt](FEATURE-24-SLICE-1-RECEIPT.md).
 Do not calculate AC, create armor training, apply penalties, write worn state, or begin timing.
 
+## Slice 2 — armor-training state and diagnostics
+
+**Verified.** `dnd2024.armor-training` records a complete canonical subset of Light, Medium, Heavy,
+and Shield training with fixed SRD attribution. Its writer is closed to record/correct input and its
+reader reports present/valid diagnostics without emitting effects. Missing state remains unknown;
+an explicit empty set is known-no-training. The focused fresh-import test, disposable validation,
+and full suite are recorded in [the Slice 2 receipt](FEATURE-24-SLICE-2-RECEIPT.md).
+
+Do not add a class/species/monster grant, inspect equipped armor, calculate AC, apply an untrained
+drawback, modify Speed, prevent spellcasting, or introduce an action/timing transition here.
+
+## Slice 3 — direct equipped armor aggregation
+
+**Verified.** `mechanic.dnd2024.armor-equipment.read` derives one direct worn suit and one direct
+held Shield from Feature 23 custody/equipment state and immutable definitions. Explicitly
+unequipped items produce no selection; nested items never qualify; duplicate or invalid direct
+relevant state fails closed. The reader is effect-free and does not apply training, AC, D20, Speed,
+spellcasting, action, timing, burden, or capacity rules. Evidence is in [the Slice 3 receipt](FEATURE-24-SLICE-3-RECEIPT.md).
+
+## Slice 4 — derived Armor Class calculator and combat migration
+
+**Accepted.** `mechanic.dnd2024.armor-class.read` derives default/Light/Medium/Heavy Armor Class
+and a trained direct-held Shield bonus from authoritative Dexterity, direct equipment, and explicit
+training state. Weapon Attack and Unarmed Strike each compose exactly one result. The legacy manual
+writer is deprecated and legacy `dnd2024.armor-class` state is deliberately not a fallback. Fixed
+Feature 10 fixtures now preserve their AC through actual worn armor. Evidence is in
+[the Slice 4 receipt](FEATURE-24-SLICE-4-RECEIPT.md).
+
+Do not add alternative/natural/magical bases, armor drawbacks, Speed, spellcasting, equipment
+mutation, or don/doff timing to this accepted boundary.
+
 ## Later-slice invariants
 
 - At most one direct worn suit and one direct held Shield count. Invalid/missing/corrupt/duplicate
@@ -186,9 +218,9 @@ Do not calculate AC, create armor training, apply penalties, write worn state, o
 ## Plan-quality audit
 
 - Capability, source basis, owner search, graph, closed ownership, confirmation gates, routing,
-  replay/effect boundaries, and one completed lowest slice: specified.
-- Slice 1 runtime artifacts and verification are recorded in [the receipt](FEATURE-24-SLICE-1-RECEIPT.md);
-  no persistent catalog import occurred.
+  replay/effect boundaries, and three completed lowest slices: specified.
+- Slice runtime artifacts and verification are recorded in the linked receipts; no persistent
+  catalog import occurred.
 
 ## Plan-change rule
 

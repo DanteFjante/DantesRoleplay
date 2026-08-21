@@ -80,3 +80,21 @@ public interface ICampaignCharacterParticipationPlanner
         IWorldStore world,
         CancellationToken cancellationToken = default);
 }
+
+/// <summary>
+/// Closed internal request for C15's irreversible participation withdrawal fragment. The actor
+/// identifies its canonical scope; a lifecycle root must not accept a campaign assertion here.
+/// </summary>
+public sealed record CampaignCharacterParticipationWithdrawalPlanRequest(string ActorId);
+
+/// <summary>
+/// Resolves an existing active participation and returns its one state-replacement effect. This
+/// planner never opens a transaction, applies an effect, records an operation, or infers a
+/// character lifecycle transition; its root caller owns all of those responsibilities.
+/// </summary>
+public interface ICampaignCharacterParticipationWithdrawalPlanner
+{
+    Task<CampaignCharacterParticipationPlan> PlanWithdrawalAsync(
+        CampaignCharacterParticipationWithdrawalPlanRequest request,
+        CancellationToken cancellationToken = default);
+}

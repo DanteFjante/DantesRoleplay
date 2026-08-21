@@ -7,6 +7,7 @@ using DantesRoleplay.Mechanics;
 using DantesRoleplay.RuleAccess;
 using DantesRoleplay.Security;
 using DantesRoleplay.World;
+using DantesRoleplay.Story;
 using ModelContextProtocol;
 
 namespace DantesRoleplay.MCPServer;
@@ -64,6 +65,11 @@ public static class ServerConfiguration
             // There is intentionally no registration when disabled. Resolving a player-safe
             // knowledge coordinator then fails rather than silently becoming trusted-GM access.
             services.AddScoped<IAuthenticatedCampaignAudiencePolicy, DevelopmentCampaignAudiencePolicy>();
+            if (provider == DatabaseProvider.Sqlite)
+            {
+                services.AddScoped<IStoryPlanCoordinator, StoryPlanCoordinator>();
+                services.AddHostedService<StoryPlanWorker>();
+            }
         }
         else
         {

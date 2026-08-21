@@ -1,6 +1,6 @@
 # Feature 28 dependency plan — character-origin language and tool foundations
 
-Status: **Slices 1–3 are implemented and accepted. Slice 4 plans static Origin-feat identities and awaits permanent-contract confirmation; active feat behavior remains blocked.**
+Status: **Slices 1–4 are implemented and accepted. Static Origin-feat identities are available; active feat behavior remains blocked.**
 Last updated: 2026-08-21
 
 ## Execution rule
@@ -73,7 +73,7 @@ Character-origin language and tool foundation
 ├─ closed language state plus normal recorder                [accepted: Slice 1]
 ├─ closed tool state plus normal recorder                    [accepted: Slice 1]
 ├─ universal Common-plus-two origin-language resolution      [accepted: Slice 3]
-├─ immutable Origin-feat identity/catalog                     [planned: Slice 4]
+├─ immutable Origin-feat identity/catalog                     [accepted: Slice 4]
 ├─ Alert and Savage Attacker active behavior                  [blocked: initiative/damage composition]
 ├─ source/grant resolution                                   [blocked parent: CH1/CH3/CH4]
 ├─ physical tool/item ownership                              [blocked parent: Items / Feature 23]
@@ -373,7 +373,8 @@ attack/damage/turn-boundary dependencies separately.
 
 Slice 4 exits only when the two source-cited definitions have one immutable catalog owner and no
 actor-side feat state, initiative bonus/swap, damage reroll, feature effect, or character-creation
-grant can be produced from them.
+grant can be produced from them. **Implemented and accepted; see
+`FEATURE-28-SLICE-4-RECEIPT.md`.**
 
 ## Plan-quality audit
 

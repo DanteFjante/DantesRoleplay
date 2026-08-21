@@ -1,6 +1,6 @@
-# Quest Feature 3 — Slice 1 validation: bounded trusted-host summary
+# Quest Feature 3 — Slice 1 validation history: bounded trusted-host summary
 
-Status: **Implemented; global acceptance pending unrelated repository failure**  
+Status: **Superseded by the accepted Slice 1 receipt.**
 Completed implementation: 2026-08-21
 
 ## Delivered boundary
@@ -32,7 +32,7 @@ The persistent failure is outside Q3.1's quest read/query/procedure boundary. Do
 turn-budget system as part of this slice. Re-run the full suite once that owning worktree change is
 resolved; only then replace this validation note with an accepted Q3.1 receipt.
 
-## Next gate
+## Historical next gate
 
-Q3.2 remains blocked by the missing S1 storytelling procedure. It must not add another query,
+Q3.2 remains deferred pending its separate storytelling prerequisite. It must not add another query,
 state record, audience policy, recap generation, or lifecycle mutation.

@@ -37,7 +37,7 @@ These are kernel features, not game rules. Each already has a repository plan ex
 
 | # | Capability | Depends on | Why the ruleset is blocked without it | Plan |
 | --- | --- | --- | --- | --- |
-| E1 | Pre-commit event guards, subscriptions, deterministic event chains, and tracked-item notifications | composition | Immunities/wards must veto proposed changes before commit; conditions, reactions, concentration, and tracked notices depend on accepted changes. | Verified — all six slices in `EVENTS_AND_SUBSCRIPTIONS_PLAN.md` |
+| E1 | Pre-commit event guards, subscriptions, deterministic event chains, and tracked-item notifications | composition | Immunities/wards must veto proposed changes before commit; conditions, reactions, concentration, and tracked notices depend on accepted changes. | Verified — see [receipt](../../platform/e1/EVENTS_AND_SUBSCRIPTIONS_RECEIPT.md) |
 | E2 | Selection ranking that respects phrases | — | A direct player match phrase now outranks incidental name and description tokens. Exact phrase collisions still need authoring controls as the catalog grows. | Verified by `MechanicStoreTests` |
 | E3 | Hierarchical catalog navigation | — | Categories are already dotted paths; nothing can browse a branch. A GM cannot find one spell among hundreds by scrolling a flat list. | `HIERARCHICAL_CATALOGS_PLAN.md` |
 | E4 | Local intent routing | E2, E3 | Turns "I swing at the goblin with my axe" into the right rule plus the right roles without the GM model spending its context on lookup. | `LOCAL_INTENT_ROUTING_PLAN.md` |
@@ -103,7 +103,7 @@ warns against.
 
 ## Tier J — the campaign, not the rules
 
-These are not D&D features; they are what makes a session resumable. `NEXT_STEPS.md` already
+These are not D&D features; they are what makes a session resumable. `STORY_FIRST_ROADMAP.md`
 treats them as MVP-blocking, and they do not depend on any tier above.
 
 | # | Capability | Depends on | Deliberate non-goals |

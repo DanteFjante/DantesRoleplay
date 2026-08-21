@@ -83,6 +83,12 @@ public sealed class CatalogCoverageTests : IDisposable
         ["snapshot_package"] = "Immutable runtime snapshot evidence. A catalog must not author or "
             + "restore opaque captured bytes and their operation provenance.",
 
+        // Story-plan runs are resumable runtime orchestration state.  They contain a principal's
+        // request, local-model preparation, leases, and action receipts; importing them would
+        // recreate work that was never actually scheduled or committed in this database.
+        ["story_plan_run"] = "Resumable runtime orchestration state, not authored catalog content.",
+        ["story_plan_step_run"] = "Per-step runtime execution evidence for a story-plan run.",
+
         ["__EFMigrationsHistory"] = "Schema bookkeeping, not content. A catalog describes what the "
             + "database holds, not which migrations built it.",
         ["__EFMigrationsLock"] = "Schema bookkeeping.",
@@ -160,7 +166,7 @@ public sealed class CatalogCoverageTests : IDisposable
 
         "subscription.Id", "subscription.Category", "subscription.Status", "subscription.Scope",
         "subscription_version.SubscriptionId", "subscription_version.EventTypeId", "subscription_version.EventMechanicId",
-        "subscription_version.Mode", "subscription_version.Order", "subscription_version.FixedRoleEntityIdsJson",
+        "subscription_version.Mode", "subscription_version.Order", "subscription_version.FixedRoleEntityIdsJson", "subscription_version.RoleFromEventPayloadJson", "subscription_version.FanoutSelectorJson",
         "subscription_version.TrackedEntityIdsJson", "subscription_version.PayloadEqualsJson",
         "subscription_version.MaxExecutionsPerChain", "subscription_version.CreatedBy", "subscription_version.ChangeNote",
 
@@ -197,6 +203,46 @@ public sealed class CatalogCoverageTests : IDisposable
         ["event_type_version.SourceHash"] = "Derived from the content; recomputed on every write.",
         ["subscription_version.SourceHash"] = "Derived from the content; recomputed on every write.",
         ["operation.GuardEvidenceJson"] = "Runtime audit evidence, not authored catalog content.",
+
+        // --- Story-plan orchestration. The run and its steps are durable only so a live
+        //     development game can resume, cancel, and audit bounded local work. They are not
+        //     world content and must never be recreated by a catalog import.
+        ["story_plan_run.Id"] = "Runtime story-plan identity, not carried by the catalog.",
+        ["story_plan_run.RequestToken"] = "Runtime idempotency evidence for a story-plan request.",
+        ["story_plan_run.CampaignId"] = "Runtime story-plan scope, not authored catalog content.",
+        ["story_plan_run.PrincipalId"] = "Runtime developer principal evidence, not catalog content.",
+        ["story_plan_run.Objective"] = "Runtime local-model request text, not authored catalog content.",
+        ["story_plan_run.PlanJson"] = "Runtime canonical plan request, not authored catalog content.",
+        ["story_plan_run.Status"] = "Runtime worker state, not authored catalog content.",
+        ["story_plan_run.NextStepIndex"] = "Runtime worker progress, not authored catalog content.",
+        ["story_plan_run.CompletedStepCount"] = "Runtime worker progress, not authored catalog content.",
+        ["story_plan_run.CancelRequested"] = "Runtime cancellation signal, not authored catalog content.",
+        ["story_plan_run.LeaseOwner"] = "Runtime worker lease, not authored catalog content.",
+        ["story_plan_run.LeaseUntilUtc"] = "Runtime worker lease, not authored catalog content.",
+        ["story_plan_run.PolicyRevision"] = "Runtime policy evidence, not authored catalog content.",
+        ["story_plan_run.HandoffJson"] = "Runtime story handoff, not authored catalog content.",
+        ["story_plan_run.StopCode"] = "Runtime terminal outcome, not authored catalog content.",
+        ["story_plan_run.StopMessage"] = "Runtime terminal outcome, not authored catalog content.",
+        ["story_plan_run.Revision"] = "Runtime optimistic-concurrency evidence, not catalog content.",
+        ["story_plan_run.CreatedAtUtc"] = "Runtime timestamp, not authored catalog content.",
+        ["story_plan_run.UpdatedAtUtc"] = "Runtime timestamp, not authored catalog content.",
+        ["story_plan_step_run.StoryPlanId"] = "Runtime story-plan step identity, not catalog content.",
+        ["story_plan_step_run.StepIndex"] = "Runtime plan ordering, not authored catalog content.",
+        ["story_plan_step_run.StepId"] = "Runtime plan step identity, not authored catalog content.",
+        ["story_plan_step_run.Kind"] = "Runtime plan step definition, not authored catalog content.",
+        ["story_plan_step_run.Intent"] = "Runtime plan step definition, not authored catalog content.",
+        ["story_plan_step_run.InputJson"] = "Runtime plan step input, not authored catalog content.",
+        ["story_plan_step_run.RoleEntityIdsJson"] = "Runtime plan step roles, not authored catalog content.",
+        ["story_plan_step_run.Status"] = "Runtime worker state, not authored catalog content.",
+        ["story_plan_step_run.MechanicId"] = "Runtime action-routing evidence, not catalog content.",
+        ["story_plan_step_run.MechanicVersion"] = "Runtime action-routing evidence, not catalog content.",
+        ["story_plan_step_run.ProcedureEvidenceJson"] = "Runtime procedure-read evidence, not catalog content.",
+        ["story_plan_step_run.ResultJson"] = "Runtime step result, not authored catalog content.",
+        ["story_plan_step_run.ErrorCode"] = "Runtime failed-step evidence, not catalog content.",
+        ["story_plan_step_run.ErrorMessage"] = "Runtime failed-step evidence, not catalog content.",
+        ["story_plan_step_run.ActionOperationId"] = "Runtime action receipt reference, not catalog content.",
+        ["story_plan_step_run.StartedAtUtc"] = "Runtime timestamp, not authored catalog content.",
+        ["story_plan_step_run.CompletedAtUtc"] = "Runtime timestamp, not authored catalog content.",
 
         // --- Timestamps. Provenance about when a row was touched, not what it says.
         ["entity.CreatedAt"] = "Timestamp.",

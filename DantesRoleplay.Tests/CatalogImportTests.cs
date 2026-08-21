@@ -189,6 +189,17 @@ public sealed class CatalogImportTests : IDisposable
         Assert.Equal(subscription.ContentHash, (subscription with { CreatedBy = "someone", ChangeNote = "A note." }).ContentHash);
     }
 
+    [Fact]
+    public void A_subscription_payload_role_mapping_round_trips_and_changes_its_fingerprint()
+    {
+        var subscription = new SubscriptionFile("subscription.hash.test", "test", "test.hash.changed", "mechanic.hash.test", SubscriptionMode.Reaction, 0, "{}", "[]", "{}", 1, "", SubscriptionStatus.Active, "{\"subject\":\"subjectId\"}");
+
+        var parsed = SubscriptionFile.Parse(subscription.ToJson(), "subscription.json");
+
+        Assert.Equal("{\"subject\":\"subjectId\"}", parsed.RoleFromEventPayloadJson);
+        Assert.NotEqual(subscription.ContentHash, (subscription with { RoleFromEventPayloadJson = "{}" }).ContentHash);
+    }
+
     // ---- the drift table, one row at a time -----------------------------------------------
 
     [Fact]

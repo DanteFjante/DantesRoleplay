@@ -51,7 +51,17 @@ public sealed class CatalogWorldFeature5Tests : IDisposable
         var runner=new ActionRunner(db,mechanics,new ProjectionResolver(db),new JintMechanicEngine(),new EffectApplier(db,world,null,new EventLedger(db)),new OperationLog(db),new MechanicComposer(mechanics,new ProjectionResolver(db),new JintMechanicEngine()));
         var result=await Run(runner,"{\"minutes\":60}"); Assert.True(result.Ok,result.Error?.Why); Assert.Equal(1,result.AppliedCount);
         AssertClockEquals((await world.GetEntityAsync("world.feature-01.fixture"))!,60,1);
-        Assert.Equal("world.component.replaced",Assert.Single(await new EventLedger(db).FindAsync(rootOperationId:result.OperationId)).TypeId);
+        var ledger = new EventLedger(db); var events = await ledger.FindAsync(rootOperationId: result.OperationId);
+        Assert.Equal(new[] { "world.component.replaced", "game.core.world.clock.advanced" }, events.Select(e => e.TypeId));
+        var advanced = (await ledger.GetAsync(events[1].Id))!;
+        Assert.Equal("world.feature-01.fixture", advanced.Scope); Assert.Equal(new[] { "world.feature-01.fixture" }, advanced.EntityIds);
+        using (var payload = JsonDocument.Parse(advanced.PayloadJson))
+        {
+            var root = payload.RootElement;
+            Assert.Equal("world.feature-01.fixture", root.GetProperty("worldId").GetString()); Assert.Equal("lantern-compact-epoch", root.GetProperty("calendarId").GetString());
+            Assert.Equal(0, root.GetProperty("beforeMinute").GetInt64()); Assert.Equal(60, root.GetProperty("afterMinute").GetInt64());
+            Assert.Equal(0, root.GetProperty("beforeRevision").GetInt64()); Assert.Equal(1, root.GetProperty("afterRevision").GetInt64());
+        }
         foreach(var bad in new[]{"{}","{\"minutes\":0}","{\"minutes\":1441}","{\"minutes\":60,\"reason\":\"x\"}"}){var fail=await Run(runner,bad);Assert.False(fail.Ok);AssertClockEquals((await world.GetEntityAsync("world.feature-01.fixture"))!,60,1);}
         await world.SetComponentAsync("world.feature-01.fixture","game.core.world.clock","""{"calendarId":"lantern-compact-epoch","currentMinute":1000000000,"revision":1}""");
         Assert.False((await Run(runner,"{\"minutes\":1}")).Ok); AssertClockEquals((await world.GetEntityAsync("world.feature-01.fixture"))!,1000000000,1);

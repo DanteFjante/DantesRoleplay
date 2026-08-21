@@ -53,7 +53,7 @@ Platform enabling capabilities
 | ---: | --- | --- | --- |
 | E6 | Typed dependent mechanic composition | **Slices 1–2 accepted** — [receipts](e6/); one named consumer adoption is next | F20, F32, F34, F38 |
 | E7 | Atomic staged composition | Internal virtual-effect/projection overlay proof | CH5, F35 |
-| E8 | Dynamic event role binding and bounded fan-out | Exact event-payload role binding, one receiver, one reaction | F17, F18, F33, F32 |
+| E8 | Dynamic event role binding and bounded fan-out | **Slice 1 accepted** — exact event-payload role binding; Slice 2 bounded selector awaits confirmation | F17, F18, F33, F32 |
 | E9 | Trusted principal context and authorization hook | Intentionally deferred for the prototype; resume after identity-provider and policy-boundary confirmation | F38, campaigns, CH14 |
 | E10 | [Durable system feedback](e10/E10-DEPENDENCY-PLAN.md) | **Slices 1–3A accepted**; remote slices remain gated by E9 | Integration testing and developer review |
 

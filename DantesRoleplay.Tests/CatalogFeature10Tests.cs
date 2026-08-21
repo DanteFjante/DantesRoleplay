@@ -61,9 +61,9 @@ public sealed class CatalogFeature10Tests : IDisposable
         AssertComponent(hero, "dnd2024.saving-throw-proficiencies", """{"abilities":["con","wis"],"sourceRef":{"sourceId":"source.dnd2024.srd-5.2.1","locator":"Playing the Game > Proficiency > Saving Throw Proficiencies"}}""");
         AssertComponent(hero, "dnd2024.skill-proficiencies", """{"skills":["perception","stealth"],"sourceRef":{"sourceId":"source.dnd2024.srd-5.2.1","locator":"Playing the Game > Proficiency > Skill Proficiencies and Skills"}}""");
         AssertComponent(hero, "dnd2024.weapon-proficiencies", """{"categories":["simple"],"sourceRef":{"sourceId":"source.dnd2024.srd-5.2.1","locator":"Equipment > Weapons > Weapon Proficiency"}}""");
-        AssertVitalState(hero, armorClass: 14, currentHitPoints: 20, maximumHitPoints: 20);
+        AssertVitalState(hero, currentHitPoints: 20, maximumHitPoints: 20);
         AssertComponent(target, "dnd2024.abilities", """{"str":10,"dex":10,"con":12,"int":8,"wis":10,"cha":8}""");
-        AssertVitalState(target, armorClass: 12, currentHitPoints: 12, maximumHitPoints: 12);
+        AssertVitalState(target, currentHitPoints: 12, maximumHitPoints: 12);
     }
 
     [Fact]
@@ -192,13 +192,13 @@ public sealed class CatalogFeature10Tests : IDisposable
 
     private static void AssertExpectedDeltas(SessionTranscript session)
     {
-        Assert.Empty(session.Before.Encounter);
-        Assert.Equal(new[] { "dnd2024.encounter-initiative-order" }, session.After.Encounter.Keys.OrderBy(id => id, StringComparer.Ordinal));
+        Assert.Equal(new[] { "dnd2024.encounter-sides" }, session.Before.Encounter.Keys.OrderBy(id => id, StringComparer.Ordinal));
+        Assert.Equal(new[] { "dnd2024.encounter-initiative-order", "dnd2024.encounter-sides" }, session.After.Encounter.Keys.OrderBy(id => id, StringComparer.Ordinal));
+        AssertJsonEqual(session.Before.Encounter["dnd2024.encounter-sides"], session.After.Encounter["dnd2024.encounter-sides"]);
         AssertComponentMapsEqual(session.Before.Hero, session.After.Hero);
         AssertComponentMapsEqual(session.Before.Dagger, session.After.Dagger);
         Assert.Equal(session.Before.Target.Keys.OrderBy(id => id, StringComparer.Ordinal), session.After.Target.Keys.OrderBy(id => id, StringComparer.Ordinal));
         AssertJsonEqual(session.Before.Target["dnd2024.abilities"], session.After.Target["dnd2024.abilities"]);
-        AssertJsonEqual(session.Before.Target["dnd2024.armor-class"], session.After.Target["dnd2024.armor-class"]);
 
         using var before = JsonDocument.Parse(session.Before.Target["dnd2024.hit-points"]);
         using var after = JsonDocument.Parse(session.After.Target["dnd2024.hit-points"]);
@@ -246,13 +246,8 @@ public sealed class CatalogFeature10Tests : IDisposable
         Assert.Equal("participant", containment.Slot);
     }
 
-    private static void AssertVitalState(EntitySnapshot entity, int armorClass, int currentHitPoints, int maximumHitPoints)
+    private static void AssertVitalState(EntitySnapshot entity, int currentHitPoints, int maximumHitPoints)
     {
-        AssertComponent(entity, "dnd2024.armor-class", JsonSerializer.Serialize(new
-        {
-            value = armorClass,
-            sourceRef = new { sourceId = SourceId, locator = "Playing the Game > D20 Tests > Attack Rolls > Armor Class" }
-        }));
         AssertComponent(entity, "dnd2024.hit-points", JsonSerializer.Serialize(new
         {
             current = currentHitPoints,

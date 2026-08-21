@@ -5,6 +5,7 @@ using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.Snapshots;
 using DantesRoleplay.SystemFeedback;
+using DantesRoleplay.Story;
 using DantesRoleplay.World;
 using Microsoft.EntityFrameworkCore;
 
@@ -60,6 +61,8 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
     public DbSet<SystemFeedbackProcedureReference> SystemFeedbackProcedureReferences => Set<SystemFeedbackProcedureReference>();
     public DbSet<SystemFeedbackDisposition> SystemFeedbackDispositions => Set<SystemFeedbackDisposition>();
     public DbSet<SystemFeedbackRetentionAction> SystemFeedbackRetentionActions => Set<SystemFeedbackRetentionAction>();
+    public DbSet<StoryPlanRun> StoryPlanRuns => Set<StoryPlanRun>();
+    public DbSet<StoryPlanStepRun> StoryPlanStepRuns => Set<StoryPlanStepRun>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -75,6 +78,61 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         ConfigureNotifications(modelBuilder);
         ConfigureSnapshots(modelBuilder);
         ConfigureSystemFeedback(modelBuilder);
+        ConfigureStoryPlans(modelBuilder);
+    }
+
+    private static void ConfigureStoryPlans(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<StoryPlanRun>(entity =>
+        {
+            entity.ToTable("story_plan_run", table =>
+            {
+                table.HasCheckConstraint("CK_story_plan_run_id", "length(\"Id\") = 43 AND substr(\"Id\", 1, 11) = 'story-plan.' AND substr(\"Id\", 12) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_story_plan_run_status", "\"Status\" IN ('pending', 'running', 'completed', 'blocked', 'failed', 'cancelled')");
+                table.HasCheckConstraint("CK_story_plan_run_revision", "\"Revision\" > 0");
+                table.HasCheckConstraint("CK_story_plan_run_step_counts", "\"NextStepIndex\" >= 0 AND \"CompletedStepCount\" >= 0");
+            });
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasMaxLength(43);
+            entity.Property(x => x.RequestToken).HasMaxLength(100).IsRequired();
+            entity.HasIndex(x => x.RequestToken).IsUnique();
+            entity.Property(x => x.CampaignId).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Objective).HasMaxLength(1000).IsRequired();
+            entity.Property(x => x.PlanJson).HasMaxLength(16000).IsRequired();
+            entity.Property(x => x.PrincipalId).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.PolicyRevision).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Status).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.Revision).IsConcurrencyToken().IsRequired();
+            entity.Property(x => x.StopCode).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.StopMessage).HasMaxLength(1000).IsRequired();
+            entity.Property(x => x.HandoffJson).HasMaxLength(32000);
+            entity.Property(x => x.LeaseOwner).HasMaxLength(100);
+            entity.HasIndex(x => new { x.Status, x.LeaseUntilUtc, x.UpdatedAtUtc });
+        });
+        modelBuilder.Entity<StoryPlanStepRun>(entity =>
+        {
+            entity.ToTable("story_plan_step_run", table =>
+            {
+                table.HasCheckConstraint("CK_story_plan_step_run_index", "\"StepIndex\" BETWEEN 0 AND 5");
+                table.HasCheckConstraint("CK_story_plan_step_run_kind", "\"Kind\" IN ('campaign-context', 'knowledge', 'action')");
+                table.HasCheckConstraint("CK_story_plan_step_run_status", "\"Status\" IN ('pending', 'running', 'completed', 'blocked', 'failed', 'skipped')");
+            });
+            entity.HasKey(x => new { x.StoryPlanId, x.StepIndex });
+            entity.Property(x => x.StoryPlanId).HasMaxLength(43);
+            entity.Property(x => x.StepId).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.Kind).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.Intent).HasMaxLength(500).IsRequired();
+            entity.Property(x => x.RoleEntityIdsJson).HasMaxLength(4000).IsRequired();
+            entity.Property(x => x.InputJson).HasMaxLength(4000).IsRequired();
+            entity.Property(x => x.Status).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.ProcedureEvidenceJson).HasMaxLength(4000).IsRequired();
+            entity.Property(x => x.MechanicId).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.ActionOperationId).HasMaxLength(32).IsRequired();
+            entity.Property(x => x.ResultJson).HasMaxLength(32000).IsRequired();
+            entity.Property(x => x.ErrorCode).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.ErrorMessage).HasMaxLength(1000).IsRequired();
+            entity.HasOne(x => x.StoryPlan).WithMany(x => x.Steps).HasForeignKey(x => x.StoryPlanId).OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     private static void ConfigureSystemFeedback(ModelBuilder modelBuilder)
@@ -296,7 +354,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         {
             entity.ToTable("subscription_version"); entity.HasKey(x => x.Id);
             entity.Property(x => x.SubscriptionId).HasMaxLength(200).IsRequired(); entity.Property(x => x.EventTypeId).HasMaxLength(200).IsRequired(); entity.Property(x => x.EventMechanicId).HasMaxLength(200).IsRequired();
-            entity.Property(x => x.Mode).HasConversion<string>().HasMaxLength(20).IsRequired(); entity.Property(x => x.FixedRoleEntityIdsJson).IsRequired(); entity.Property(x => x.TrackedEntityIdsJson).IsRequired(); entity.Property(x => x.PayloadEqualsJson).IsRequired();
+            entity.Property(x => x.Mode).HasConversion<string>().HasMaxLength(20).IsRequired(); entity.Property(x => x.FixedRoleEntityIdsJson).IsRequired(); entity.Property(x => x.RoleFromEventPayloadJson).HasDefaultValue("{}").IsRequired(); entity.Property(x => x.FanoutSelectorJson).HasDefaultValue("{}").IsRequired(); entity.Property(x => x.TrackedEntityIdsJson).IsRequired(); entity.Property(x => x.PayloadEqualsJson).IsRequired();
             entity.Property(x => x.CreatedBy).HasMaxLength(200).IsRequired(); entity.Property(x => x.SourceHash).HasMaxLength(64);
             entity.HasOne(x => x.Subscription).WithMany(x => x.Versions).HasForeignKey(x => x.SubscriptionId).OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(x => new { x.SubscriptionId, x.Version }).IsUnique(); entity.HasIndex(x => x.EventTypeId); entity.HasIndex(x => x.EventMechanicId); entity.HasIndex(x => new { x.Mode, x.Order });
@@ -500,6 +558,8 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
 
             entity.HasIndex(e => new { e.FromEntityId, e.ToEntityId, e.Kind }).IsUnique();
             entity.HasIndex(e => e.ToEntityId);
+            entity.HasIndex(e => new { e.FromEntityId, e.Kind, e.ToEntityId });
+            entity.HasIndex(e => new { e.ToEntityId, e.Kind, e.FromEntityId });
         });
     }
 }

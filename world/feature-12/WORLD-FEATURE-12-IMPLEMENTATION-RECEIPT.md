@@ -2,7 +2,7 @@
 
 **Status:** Feature 12 verified  
 **Date:** 2026-08-20  
-**Plan:** [generic ground-conveyance revision](WORLD-FEATURE-12-GROUND-CONVEYANCE-PLAN.md)
+**Roadmap:** [World and lore](../../WORLD_AND_LORE_PLAN.md)
 
 ## Delivered
 

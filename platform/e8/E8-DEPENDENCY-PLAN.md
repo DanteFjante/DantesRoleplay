@@ -1,6 +1,6 @@
 # E8 dependency plan — dynamic event role binding and bounded fan-out
 
-Status: **Planned; Slice 1 is the next and only authorised implementation pass.**
+Status: **Slices 1–2 accepted; consumer adoption remains separately owned.**
 Last updated: 2026-08-21
 
 ## Execution rule
@@ -49,11 +49,11 @@ arbitrary component JSON.
 E8 dynamic event roles and fan-out                                  [blocked parent]
 ├─ E1 event ledger, guards, subscriptions, chain limits             [implemented]
 ├─ declared event schemas and payload validation                     [implemented]
-├─ payload entity-role binding                                       [missing Slice 1 leaf]
-├─ deterministic one-receiver reaction fixture                       [blocked: Slice 1]
-├─ bounded indexed scope selector                                    [missing Slice 2 leaf]
-├─ deterministic fan-out / chain-limit aggregation                   [blocked: Slice 2]
-└─ F17/F18/F32/F33 consumers                                          [blocked: accepted E8 slices]
+├─ payload entity-role binding                                       [accepted Slice 1]
+├─ deterministic one-receiver reaction fixture                       [accepted Slice 1]
+├─ bounded indexed scope selector                                    [implemented Slice 2]
+├─ deterministic fan-out / chain-limit aggregation                   [implemented Slice 2]
+└─ F17/F18/F32/F33 consumers                                          [awaiting each consumer owner slice]
 ~~~
 
 ## Ownership decisions
@@ -77,7 +77,7 @@ E8 dynamic event roles and fan-out                                  [blocked par
 | Slice | Starts only when | Exit gate |
 | --- | --- | --- |
 | 1. Exact payload role binding | E1 contracts and event schemas re-read | One reaction receives one event-named entity through a declared role; mismatches roll back the root. |
-| 2. Indexed bounded fan-out | Slice 1 and index/scope declaration confirmation | One scoped event selects a canonically ordered bounded active set and every reaction joins/rolls back atomically. |
+| 2. Indexed bounded fan-out | Slice 1 and [selector confirmation](E8-SLICE-2-SELECTOR-RECONCILIATION.md) | One scoped event selects a canonically ordered bounded active set and every reaction joins/rolls back atomically. |
 | 3. Consumer adoption | Prior slices plus each event owner | One named F17/F18/F32/F33 consumer adopts no private subscription workaround. |
 
 ## Slice 1 specification

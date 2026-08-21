@@ -1,6 +1,7 @@
 # Quest Feature 3 dependency plan — bounded trusted-host summary and lifecycle timeline
 
-Status: **Planned; Q3.0 confirmation and S1 are blocking gates.**
+Status: **Q3.0–Q3.1 are implemented and accepted. Q3.2 remains deferred until its separate
+storytelling-handoff prerequisite is accepted.**
 Last updated: 2026-08-20
 
 ## Execution rule
@@ -38,7 +39,7 @@ Q3 is campaign workflow/read-model design, not an SRD rule; no D&D source locato
 | Event ledger | Implemented: `IEventLedger.FindAsync` filters accepted rows by affected entity; `GetAsync` returns immutable versioned payloads. |
 | Operation audit | Implemented, but unsuitable as Q3 source: Q2 reason is human text in `Operation.Summary`; Q3 must not parse it. |
 | Trusted-host read pattern | Implemented: `CampaignResumeReader` and graph recipes use fixed bounded shapes rather than arbitrary graph/history APIs. |
-| Current quest read | Missing: `query` has no quest-specific fixed result. Raw `entities`, `events`, and `history` are broader trusted administrative reads, not Q3 handoff. |
+| Current quest read | Implemented: `query(kind: "quest-summary", id: "quest.*")` delegates to the fixed Q3.1 reader. Raw `entities`, `events`, and `history` remain broader trusted administrative reads, not the Q3 handoff. |
 | C4 consumer | Planned: [Campaign Feature 4](../../campaign/feature-04/CAMPAIGN-FEATURE-04-DEPENDENCY-PLAN.md) requires a quest-owned bounded summary and must not copy quest data. |
 | S1 storytelling procedure | Implemented at `storytelling/feature-01/`; global acceptance remains blocked by an unrelated repository test failure, so Q3 cannot claim a storytelling handoff yet. |
 
@@ -99,10 +100,10 @@ context quest state.
 ## Recursive dependency analysis
 
 ```text
-Q3 trusted-host quest summary [blocked parent]
+Q3 trusted-host quest summary [Q3.1 implemented and accepted]
 ├─ Q2 authoritative graph/lifecycle/events                    [implemented]
-├─ fixed result/procedure/query semantics                      [missing: Q3.0 confirmation]
-│  └─ QuestSummaryReader + quest-summary query                 [Q3.1 leaf after confirmation]
+├─ fixed result/procedure/query semantics                      [implemented: Q3.0]
+│  └─ QuestSummaryReader + quest-summary query                 [implemented: Q3.1]
 ├─ S1 storytelling publication/procedure                       [implemented; acceptance pending]
 │  └─ trusted-host handoff wording                             [Q3.2 blocked until acceptance]
 ├─ C4 campaign quest context/digest                            [blocked consumer]
@@ -110,14 +111,16 @@ Q3 trusted-host quest summary [blocked parent]
 ```
 
 Q3.1 has no migration, component, event type, subscription, mechanic, fixture quest, write
-operation, or commit kind. Q3.2 adds no query or state mutation.
+operation, or commit kind. It is accepted; see
+[`QUEST-FEATURE-03-SLICE-1-RECEIPT.md`](QUEST-FEATURE-03-SLICE-1-RECEIPT.md). Q3.2 adds no query
+or state mutation.
 
 ## Slice order and stop gates
 
 | Slice | Prerequisite | Exit gate |
 | --- | --- | --- |
-| Q3.0 — semantic/public confirmation | This plan | Approve procedure ID, query kind, fixed result, active-only scope, twelve-transition cap, and descriptive-only visibility; no runtime change. |
-| Q3.1 — bounded owner summary | Q3.0 and verified Q2 | Fresh imported Q2 fixture returns only fixed current/evidence/timeline data; malformed/rejected reads write no game state; stop. |
+| Q3.0 — semantic/public confirmation | Accepted | `procedure.quest.inspect`, `quest-summary`, its active-only scope, fixed result, twelve-transition cap, and descriptive-only visibility are implemented. |
+| Q3.1 — bounded owner summary | Implemented and accepted | Fresh imported Q2 fixture returns only fixed current/evidence/timeline data; malformed/rejected reads write no game state. |
 | Q3.2 — storytelling handoff | Q3.1 and verified S1 | Storytelling procedure directs trusted hosts to the exact Q3 read without claiming party authorization or recap prose; stop. |
 
 ## Q3.1 — bounded owner summary

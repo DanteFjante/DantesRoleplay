@@ -13,6 +13,7 @@ using DantesRoleplay.Procedures;
 using DantesRoleplay.Retrieval;
 using DantesRoleplay.Snapshots;
 using DantesRoleplay.SystemFeedback;
+using DantesRoleplay.Story;
 using DantesRoleplay.World;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -78,6 +79,10 @@ public static class DataAccessServiceCollectionExtensions
         });
 
         services.AddScoped<IProcedureStore, ProcedureStore>();
+        services.AddScoped<IStoryPlanStore, StoryPlanStore>();
+        services.AddSingleton<StoryPlanWakeQueue>();
+        services.AddScoped<StoryPlanActionExecutor>();
+        services.AddScoped<IStoryPlanStepProcessor, StoryPlanStepProcessor>();
         services.AddScoped<IOperationLog, OperationLog>();
         services.AddScoped<IWorldStore, WorldStore>();
         services.AddScoped<IGraphProjectionReader, GraphProjectionReader>();
@@ -112,6 +117,8 @@ public static class DataAccessServiceCollectionExtensions
             services.AddScoped<IAuthorizedKnowledgeCandidateResolver, AuthorizedKnowledgeCandidateResolver>();
             services.AddScoped<IAuthorizedKnowledgeAnswerCoordinator, AuthorizedKnowledgeAnswerCoordinator>();
             services.AddScoped<ILocalRouteProposalCoordinator, LocalRouteProposalCoordinator>();
+            services.AddScoped<IProcedureBoundActionVerifier, ProcedureBoundActionVerifier>();
+            services.AddScoped<StoryActionStepPreparer>();
             services.AddScoped<KnowledgeBackgroundJobProcessor>();
         }
         services.AddScoped<IJourneyPlanReader, JourneyPlanReader>();
@@ -119,6 +126,7 @@ public static class DataAccessServiceCollectionExtensions
         services.AddScoped<ICampaignBlueprintValidator, CampaignBlueprintValidator>();
         services.AddScoped<ICampaignBootstrapper, CampaignBootstrapper>();
         services.AddScoped<ICampaignContinuityRunner, CampaignContinuityRunner>();
+        services.AddScoped<ICampaignQuestContextRunner, CampaignQuestContextRunner>();
         services.AddScoped<ICampaignResumeReader, CampaignResumeReader>();
         services.AddScoped<ICampaignSessionValidator, CampaignSessionValidator>();
         services.AddScoped<ICampaignSessionStarter, CampaignSessionStarter>();
@@ -132,6 +140,7 @@ public static class DataAccessServiceCollectionExtensions
         services.AddScoped<ICampaignCharacterParticipationVerifier, CampaignCharacterParticipationVerifier>();
         services.AddScoped<ICampaignCharacterParticipationAttacher, CampaignCharacterParticipationAttacher>();
         services.AddScoped<ICampaignCharacterParticipationPlanner, CampaignCharacterParticipationPlanner>();
+        services.AddScoped<ICampaignCharacterParticipationWithdrawalPlanner, CampaignCharacterParticipationWithdrawalPlanner>();
         services.AddScoped<ICharacterAbilityAssignmentValidator, CharacterAbilityAssignmentValidator>();
         services.AddScoped<ICharacterAbilityScoreRecorder, CharacterAbilityScoreRecorder>();
         services.AddScoped<IBackgroundAbilityScoreIncreaseResolver, BackgroundAbilityScoreIncreaseResolver>();
@@ -162,7 +171,9 @@ public static class DataAccessServiceCollectionExtensions
         // write verb fail at invocation with "An error occurred invoking 'commit'" — no envelope,
         // no fix, nothing in history. Every direct-call test passed a null runner in, so nothing
         // below the protocol could have noticed.
-        services.AddScoped<IActionRunner, ActionRunner>();
+        services.AddScoped<ActionRunner>();
+        services.AddScoped<IActionRunner>(provider => provider.GetRequiredService<ActionRunner>());
+        services.AddScoped<IStoryPlanActionRunner>(provider => provider.GetRequiredService<ActionRunner>());
 
         services.AddScoped<ProcedureSeeder>();
         services.AddScoped<EventTypeSeeder>();

@@ -65,6 +65,24 @@ public sealed class EventRouter(
                     continue;
                 }
 
+                if (!SubscriptionFanoutSelectorMetadata.TryRead(
+                        registration.Version.FanoutSelectorJson,
+                        out var selector,
+                        out var selectorProblem))
+                {
+                    return EventRoutingResult.Abort("SUBSCRIBER_INVALID_FANOUT_SELECTOR",
+                        $"Subscription '{registration.Id}' has invalid fanoutSelector metadata: {selectorProblem}");
+                }
+
+                if (selector is not null)
+                {
+                    var fanout = await RunFanoutAsync(@event, registration, selector, rootSeed, ordinal, budget, cancellationToken);
+                    if (fanout.Failure is not null) return fanout.Failure;
+                    outcomes.AddRange(fanout.Outcomes);
+                    ordinal += fanout.Outcomes.Count;
+                    continue;
+                }
+
                 var overspent = budget.CountExecution(registration.Id, registration.Version.MaxExecutionsPerChain);
 
                 if (overspent is not null)
@@ -114,7 +132,7 @@ public sealed class EventRouter(
             .OrderBy(x => x.v.Order).ThenBy(x => x.s.Id)
             .ToListAsync(cancellationToken);
 
-        return rows.Select(x => new Registration(x.s.Id, x.v)).ToList();
+        return rows.Select(x => new Registration(x.s.Id, x.s.Scope, x.v)).ToList();
     }
 
     /// <summary>
@@ -201,6 +219,62 @@ public sealed class EventRouter(
                 $"Subscription '{registration.Id}' has corrupt fixed role bindings.");
         }
 
+        if (!SubscriptionRoleFromEventPayload.TryRead(
+                subscription.RoleFromEventPayloadJson,
+                out var payloadRole,
+                out var payloadRoleProblem))
+        {
+            return Attempt.Failed("SUBSCRIBER_INVALID_ROLE_BINDING",
+                $"Subscription '{registration.Id}' has invalid roleFromEventPayload metadata: {payloadRoleProblem}");
+        }
+
+        if (payloadRole is { } mapping)
+        {
+            if (requirements.Children.Any()
+                || !requirements.Roles.ContainsKey(mapping.Key)
+                || bindings.ContainsKey(mapping.Key))
+            {
+                return Attempt.Failed("SUBSCRIBER_INVALID_ROLE_BINDING",
+                    $"Subscription '{registration.Id}' has a roleFromEventPayload binding that no longer matches its reaction mechanic.");
+            }
+
+            var typeVersion = await _db.EventTypeVersions.AsNoTracking().FirstOrDefaultAsync(
+                version => version.EventTypeId == @event.TypeId && version.Version == @event.TypeVersion,
+                cancellationToken);
+            if (typeVersion is null
+                || !EventPayloadRoleMetadata.TryRead(typeVersion.PayloadSchema, out var fields, out _)
+                || !fields.Contains(mapping.Value, StringComparer.Ordinal))
+            {
+                return Attempt.Failed("SUBSCRIBER_INVALID_ROLE_BINDING",
+                    $"Subscription '{registration.Id}' maps a role from a payload field not declared by event type '{@event.TypeId}' version {@event.TypeVersion}.");
+            }
+
+            string? entityId;
+            try
+            {
+                using var payload = JsonDocument.Parse(@event.PayloadJson);
+                entityId = payload.RootElement.ValueKind == JsonValueKind.Object
+                    && payload.RootElement.TryGetProperty(mapping.Value, out var value)
+                    && value.ValueKind == JsonValueKind.String
+                    ? value.GetString()
+                    : null;
+            }
+            catch (JsonException)
+            {
+                entityId = null;
+            }
+
+            if (string.IsNullOrWhiteSpace(entityId)
+                || entityId != entityId.Trim()
+                || @event.EntityIds.Count(id => string.Equals(id, entityId, StringComparison.Ordinal)) != 1)
+            {
+                return Attempt.Failed("SUBSCRIBER_INVALID_EVENT_PAYLOAD_ROLE",
+                    $"Subscription '{registration.Id}' requires payload field '{mapping.Value}' to name exactly one accepted event entity.");
+            }
+
+            bindings[mapping.Key] = entityId;
+        }
+
         var seed = DeriveSeed(rootSeed, @event.Sequence, registration.Id, "reaction", ordinal);
         var resolved = await _projections.ResolveAsync(requirements, bindings, "{}", seed, cancellationToken);
 
@@ -264,6 +338,162 @@ public sealed class EventRouter(
             new ReactionOutcome(execution, output.Effects, output.Events, output.Notifications));
     }
 
+    /// <summary>
+    /// Resolves an entire selector batch before executing its first mechanic. The only data read
+    /// during selection are directed relationship endpoints and component presence; component and
+    /// relationship JSON remain ordinary opaque world data.
+    /// </summary>
+    private async Task<FanoutAttempt> RunFanoutAsync(
+        EventDetail @event,
+        Registration registration,
+        SubscriptionFanoutSelector selector,
+        long rootSeed,
+        int ordinal,
+        ChainBudget budget,
+        CancellationToken cancellationToken)
+    {
+        var subscription = registration.Version;
+        if (string.IsNullOrWhiteSpace(registration.Scope) || !string.Equals(registration.Scope, @event.Scope, StringComparison.Ordinal))
+        {
+            return FanoutAttempt.Failed("SUBSCRIBER_INVALID_FANOUT_SELECTOR",
+                $"Subscription '{registration.Id}' requires its nonempty scope to exactly match accepted event '{@event.Id}'.");
+        }
+        if (!SubscriptionRoleFromEventPayload.TryRead(subscription.RoleFromEventPayloadJson, out var payloadRole, out _)
+            || payloadRole is not null)
+        {
+            return FanoutAttempt.Failed("SUBSCRIBER_INVALID_FANOUT_SELECTOR",
+                $"Subscription '{registration.Id}' cannot combine fanoutSelector with roleFromEventPayload.");
+        }
+
+        var detail = await _mechanics.GetAsync(subscription.EventMechanicId, cancellationToken: cancellationToken);
+        if (detail is null || detail.Status != MechanicStatus.Active)
+        {
+            return FanoutAttempt.Failed("SUBSCRIBER_UNAVAILABLE",
+                $"Subscription '{registration.Id}' targets mechanic '{subscription.EventMechanicId}', which is missing or not active.");
+        }
+        var requirements = MechanicRequirements.Parse(detail.Requirements);
+        if (requirements.Event is null || requirements.Event.Mode != EventMechanicMode.Reaction
+            || !requirements.Event.Types.Contains(@event.TypeId, StringComparer.Ordinal)
+            || requirements.Children.Any()
+            || !requirements.Roles.TryGetValue(selector.Role, out var role)
+            || role.Optional)
+        {
+            return FanoutAttempt.Failed("SUBSCRIBER_INVALID_FANOUT_SELECTOR",
+                $"Subscription '{registration.Id}' fanout role no longer names one required ordinary reaction role.");
+        }
+        var bindings = ParseBindings(subscription.FixedRoleEntityIdsJson);
+        if (bindings is null || bindings.ContainsKey(selector.Role))
+        {
+            return FanoutAttempt.Failed("SUBSCRIBER_INVALID_FANOUT_SELECTOR",
+                $"Subscription '{registration.Id}' has corrupt fixed bindings or fixes its selected role.");
+        }
+        var requiredFixed = requirements.Roles.Where(x => !x.Value.Optional && x.Key != selector.Role).Select(x => x.Key).ToHashSet(StringComparer.Ordinal);
+        if (!requiredFixed.SetEquals(bindings.Keys))
+        {
+            return FanoutAttempt.Failed("SUBSCRIBER_INVALID_FANOUT_SELECTOR",
+                $"Subscription '{registration.Id}' must fix every required role other than '{selector.Role}'.");
+        }
+        if (!await _db.ComponentDefinitions.AsNoTracking().AnyAsync(x => x.Id == selector.ComponentId, cancellationToken))
+        {
+            return FanoutAttempt.Failed("SUBSCRIBER_INVALID_FANOUT_SELECTOR",
+                $"Subscription '{registration.Id}' names missing component definition '{selector.ComponentId}'.");
+        }
+
+        IQueryable<string> endpointIds = selector.ScopeToCandidate
+            ? _db.Relationships.AsNoTracking().Where(x => x.FromEntityId == registration.Scope && x.Kind == selector.RelationshipKind).Select(x => x.ToEntityId)
+            : _db.Relationships.AsNoTracking().Where(x => x.ToEntityId == registration.Scope && x.Kind == selector.RelationshipKind).Select(x => x.FromEntityId);
+        var relationCandidates = await endpointIds.Distinct().OrderBy(x => x).ToListAsync(cancellationToken);
+        if (relationCandidates.Any(string.IsNullOrWhiteSpace))
+        {
+            return FanoutAttempt.Failed("SUBSCRIBER_FANOUT_LOOKUP_FAILED",
+                $"Subscription '{registration.Id}' found an invalid relationship endpoint.");
+        }
+        var activeCandidates = await _db.Components.AsNoTracking()
+            .Where(x => x.DefinitionId == selector.ComponentId && relationCandidates.Contains(x.EntityId))
+            .Select(x => x.EntityId)
+            .Distinct()
+            .OrderBy(x => x)
+            .ToListAsync(cancellationToken);
+        var liveCandidates = await _db.Entities.AsNoTracking()
+            .Where(x => x.DeletedAt == null && activeCandidates.Contains(x.Id))
+            .Select(x => x.Id)
+            .ToListAsync(cancellationToken);
+        if (liveCandidates.Count != activeCandidates.Count)
+        {
+            return FanoutAttempt.Failed("SUBSCRIBER_FANOUT_LOOKUP_FAILED",
+                $"Subscription '{registration.Id}' selected a deleted or missing receiver.");
+        }
+        if (activeCandidates.Count > 8)
+        {
+            return FanoutAttempt.Failed("SUBSCRIBER_FANOUT_LIMIT",
+                $"Subscription '{registration.Id}' selected {activeCandidates.Count} receivers; the limit is 8.");
+        }
+        var overspent = budget.CheckExecutions(registration.Id, activeCandidates.Count, subscription.MaxExecutionsPerChain);
+        if (overspent is not null)
+        {
+            return FanoutAttempt.Failed(overspent,
+                $"{ChainBudget.Explain(overspent)} Reached by fan-out subscription '{registration.Id}' handling event '{@event.Id}'.");
+        }
+
+        var prepared = new List<PreparedReaction>();
+        for (var index = 0; index < activeCandidates.Count; index++)
+        {
+            var candidateBindings = new Dictionary<string, string>(bindings, StringComparer.Ordinal) { [selector.Role] = activeCandidates[index] };
+            var seed = DeriveSeed(rootSeed, @event.Sequence, registration.Id, "reaction", ordinal + index);
+            var resolved = await _projections.ResolveAsync(requirements, candidateBindings, "{}", seed, cancellationToken);
+            if (!resolved.Ok)
+            {
+                return FanoutAttempt.Failed("SUBSCRIBER_PROJECTION_FAILED", string.Join(" ", resolved.Problems));
+            }
+            var projection = resolved.Projection! with
+            {
+                Event = EventEnvelope.ForReaction(@event),
+                EventEntities = await AffectedEntities.ProjectAsync(_world, @event.EntityIds, requirements.Event.Components, cancellationToken)
+            };
+            prepared.Add(new(detail, projection, seed));
+        }
+
+        var outcomes = new List<ReactionOutcome>();
+        for (var index = 0; index < prepared.Count; index++)
+        {
+            var countFailure = budget.CountExecution(registration.Id, subscription.MaxExecutionsPerChain);
+            if (countFailure is not null)
+            {
+                return FanoutAttempt.Failed(countFailure, ChainBudget.Explain(countFailure));
+            }
+            var run = await ExecutePreparedAsync(@event, registration, prepared[index], ordinal + index, cancellationToken);
+            if (run.Failure is not null) return FanoutAttempt.FromFailure(run.Failure);
+            outcomes.Add(run.Success!);
+        }
+        return FanoutAttempt.Succeeded(outcomes);
+    }
+
+    private async Task<Attempt> ExecutePreparedAsync(EventDetail @event, Registration registration, PreparedReaction prepared, int ordinal, CancellationToken cancellationToken)
+    {
+        var run = await _engine.RunAsync(prepared.Detail.Source, prepared.Projection, ExecutionLimits.Default, cancellationToken);
+        if (!run.Ok)
+        {
+            return Attempt.Failed(run.LimitHit.Length > 0 ? "SUBSCRIBER_LIMIT" : "SUBSCRIBER_FAILED",
+                $"Subscription '{registration.Id}' running '{prepared.Detail.Id}': {run.Error}");
+        }
+        var output = run.Output;
+        if (!string.IsNullOrWhiteSpace(output.Decision))
+        {
+            return Attempt.Failed("SUBSCRIBER_FORBIDDEN_OUTPUT", $"Subscription '{registration.Id}' returned a guard decision from a reaction.");
+        }
+        var execution = new EventExecution
+        {
+            Id = Guid.NewGuid().ToString("n"), EventId = @event.Id, Ordinal = ordinal,
+            SubscriptionId = registration.Id, SubscriptionVersion = registration.Version.Version,
+            MechanicId = prepared.Detail.Id, MechanicVersion = prepared.Detail.Version, Seed = prepared.Seed,
+            ProjectionJson = JsonSerializer.Serialize(prepared.Projection), OutputJson = JsonSerializer.Serialize(output),
+            EffectCount = output.Effects.Count, EventCount = output.Events.Count, Narration = output.Narration,
+            LogJson = JsonSerializer.Serialize(run.Log), ElapsedMilliseconds = run.ElapsedMilliseconds,
+            LimitHit = run.LimitHit, CreatedAt = DateTime.UtcNow
+        };
+        return Attempt.Succeeded(new ReactionOutcome(execution, output.Effects, output.Events, output.Notifications));
+    }
+
     // ---- determinism ----------------------------------------------------------------------
 
     /// <summary>
@@ -300,9 +530,17 @@ public sealed class EventRouter(
         try
         {
             using var document = JsonDocument.Parse(json);
-
-            return document.RootElement.EnumerateObject()
-                .ToDictionary(x => x.Name, x => x.Value.GetString() ?? string.Empty, StringComparer.Ordinal);
+            if (document.RootElement.ValueKind != JsonValueKind.Object) return null;
+            var bindings = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var binding in document.RootElement.EnumerateObject())
+            {
+                var entityId = binding.Value.ValueKind == JsonValueKind.String ? binding.Value.GetString() : null;
+                if (string.IsNullOrWhiteSpace(binding.Name)
+                    || string.IsNullOrWhiteSpace(entityId)
+                    || entityId != entityId.Trim()
+                    || !bindings.TryAdd(binding.Name, entityId)) return null;
+            }
+            return bindings;
         }
         catch (JsonException)
         {
@@ -310,7 +548,16 @@ public sealed class EventRouter(
         }
     }
 
-    private sealed record Registration(string Id, SubscriptionVersion Version);
+    private sealed record Registration(string Id, string Scope, SubscriptionVersion Version);
+
+    private sealed record PreparedReaction(MechanicDetail Detail, MechanicProjection Projection, long Seed);
+
+    private sealed record FanoutAttempt(IReadOnlyList<ReactionOutcome> Outcomes, EventRoutingResult? Failure)
+    {
+        public static FanoutAttempt Succeeded(IReadOnlyList<ReactionOutcome> outcomes) => new(outcomes, null);
+        public static FanoutAttempt Failed(string code, string reason) => new([], EventRoutingResult.Abort(code, reason));
+        public static FanoutAttempt FromFailure(EventRoutingResult failure) => new([], failure);
+    }
 
     private sealed record Attempt(ReactionOutcome? Success, EventRoutingResult? Failure)
     {

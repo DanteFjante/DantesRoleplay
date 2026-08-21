@@ -24,10 +24,12 @@ durable identity; later physical instances reference that exact id and do not co
 4. Keep weapon combat statistics in Feature 7's canonical weapon-profile entity. A weapon item
    definition may name that profile through `weaponProfileId`, but may not duplicate its category,
    abilities, or damage.
-5. Seed only the representative ordinary definitions in this slice: backpack, pouch, quiver,
-   hempen rope (50 feet), dagger, and the five coin denominations. Feature 24 may extend this
-   same definition owner with source-cited Armor and Shield table profiles; no second item schema
-   or armor-instance facts are permitted.
+5. The initial representative definitions are backpack, pouch, quiver, hempen rope (50 feet),
+   dagger, and the five coin denominations. Feature 24 extends this same definition owner with
+   source-cited Armor and Shield table profiles, and reviewed starting-equipment slices may add
+   source-cited definitions required by a confirmed package. Weapon definitions reference their
+   Feature 7 profiles; ordinary adventuring gear retains only static definition facts. No second
+   item schema or armor-instance facts are permitted.
 
 ## Constraints
 

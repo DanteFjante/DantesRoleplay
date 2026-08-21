@@ -210,10 +210,17 @@ Once map and travel rules have their own approved plans, add one read/write work
 
 Do not add branching, conditions, loops, retries, arbitrary result transforms, nested workflows, parallel steps, caller-defined pipelines, remote workflows, or cross-database transactions in the first release. Each would change determinism, auditability, or transaction semantics enough to deserve a separate design.
 
+Remote-model-authored linear semantic intents are separately planned in
+[Story plan orchestration](storytelling/story-plan-orchestration/STORY_PLAN_ORCHESTRATION_PLAN.md). Story plans resolve backend-owned
+context/knowledge/action services step by step and preserve completed action history; they are not
+stored workflow definitions and do not share this feature's one-root rollback semantics.
+
 Revisit branching only after several registered workflows demonstrate the same bounded conditional need. Revisit composition of mechanics separately: workflow composition coordinates semantic commands, whereas mechanic composition reuses pure rule logic.
 
 ## Dependencies and ordering
 
 The event/subscription work currently in progress is a prerequisite for the full integration slice, because workflows must share its root transaction, chain limits, and durable event evidence. The feature may begin design and transaction-boundary refactoring earlier, but should not expose an executable workflow publicly until events/subscriptions are verified.
 
-This plan intentionally changes the wording in NEXT_STEPS.md that rules out arbitrary multi-commit pipelines: registered, typed, bounded, transaction-owned workflows are the safe alternative. Update that roadmap entry only when Slice 0 is ratified.
+Registered, typed, bounded, transaction-owned workflows are the reviewed exception to arbitrary
+multi-commit pipelines. Update `STORY_FIRST_ROADMAP.md` only when this capability changes a playable
+integration gate.

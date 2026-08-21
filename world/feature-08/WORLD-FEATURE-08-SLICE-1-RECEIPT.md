@@ -2,7 +2,7 @@
 
 **Status:** Slice 1 verified  
 **Date:** 2026-08-20  
-**Owning plan:** [World Feature 8 dependency plan](WORLD-FEATURE-08-DEPENDENCY-PLAN.md)
+**Roadmap:** [World and lore](../../WORLD_AND_LORE_PLAN.md)
 
 ## Delivered
 

@@ -65,7 +65,7 @@ public sealed class CatalogWorldFeature12Tests : IDisposable
         Assert.True(result.Ok, result.Error?.Why); Assert.Equal(travel, result.Mechanic!.Id); Assert.Equal(3, result.AppliedCount); Assert.Equal(3, result.Output.Effects.Count);
         Assert.Equal(Market, (await world.GetEntityAsync(Conveyance))!.ContainerId); Assert.Equal("presence", (await world.GetEntityAsync(Conveyance))!.ContainerSlot);
         Assert.Equal(Market, (await world.GetEntityAsync("traveller.feature-02.fixture"))!.ContainerId); AssertClock((await world.GetEntityAsync(Root))!, 20, 1);
-        Assert.Equal(new[] { "world.containment.moved", "world.containment.moved", "world.component.replaced" }, (await new EventLedger(db).FindAsync(rootOperationId: result.OperationId)).Select(e => e.TypeId));
+        Assert.Equal(new[] { "world.containment.moved", "world.containment.moved", "world.component.replaced", "game.core.world.clock.advanced" }, (await new EventLedger(db).FindAsync(rootOperationId: result.OperationId)).Select(e => e.TypeId));
     }
 
     [Fact]

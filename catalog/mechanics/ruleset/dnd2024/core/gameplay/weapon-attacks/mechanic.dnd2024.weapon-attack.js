@@ -11,7 +11,6 @@ var attackLocator = 'Playing the Game > D20 Tests > Attack Rolls';
 var levelLocator = 'Character Creation > Character Advancement';
 var proficiencyLocator = 'Equipment > Weapons > Weapon Proficiency';
 var profileLocator = 'Equipment > Weapons';
-var armorClassLocator = 'Playing the Game > D20 Tests > Attack Rolls > Armor Class';
 
 function closed(value, keys) {
   if (value === null || Array.isArray(value) || typeof value !== 'object') { return false; }
@@ -30,6 +29,18 @@ function sourceRef(value, locator) {
 function parse(raw, name) {
   try { return JSON.parse(raw); }
   catch (error) { throw new Error(name + ' is corrupt. Use its governed recording path or migration.'); }
+}
+
+function readArmorClass(child) {
+  var value = parse(child && child.output && child.output.data ? child.output.data : null, 'Derived target Armor Class result');
+  if (!closed(value, ['armorClass', 'base', 'shield', 'sourceRef', 'subjectId', 'test']) ||
+      value.test !== 'armor-class-read' || value.subjectId !== target.id ||
+      typeof value.armorClass !== 'number' || !isFinite(value.armorClass) ||
+      Math.floor(value.armorClass) !== value.armorClass || value.armorClass < 1 ||
+      value.armorClass > 9007199254740991) {
+    throw new Error('Derived target Armor Class result is invalid.');
+  }
+  return value.armorClass;
 }
 
 function validScores(value) {
@@ -128,9 +139,8 @@ if (!subject || !target || !weapon || !subject.components || !target.components 
   throw new Error('Attack requires subject, target, and weapon roles with component state.');
 }
 if (!subject.components['dnd2024.abilities'] || !subject.components['dnd2024.character-level'] ||
-    !subject.components['dnd2024.weapon-proficiencies'] || !target.components['dnd2024.armor-class'] ||
-    !weapon.components['dnd2024.weapon-profile']) {
-  throw new Error('Attack requires subject abilities, level, and weapon proficiencies; target Armor Class; and a weapon profile.');
+    !subject.components['dnd2024.weapon-proficiencies'] || !weapon.components['dnd2024.weapon-profile']) {
+  throw new Error('Attack requires subject abilities, level, and weapon proficiencies plus a weapon profile.');
 }
 
 var abilities = parse(subject.components['dnd2024.abilities'], 'Subject ability state');
@@ -146,13 +156,9 @@ if (!closed(proficiencyState, ['categories', 'sourceRef']) || !validCategories(p
     !sourceRef(proficiencyState.sourceRef, proficiencyLocator)) {
   throw new Error('Subject weapon-proficiencies state is invalid.');
 }
-var armorClassState = parse(target.components['dnd2024.armor-class'], 'Target Armor Class state');
-if (!closed(armorClassState, ['sourceRef', 'value']) || typeof armorClassState.value !== 'number' ||
-    !isFinite(armorClassState.value) || Math.floor(armorClassState.value) !== armorClassState.value ||
-    armorClassState.value < 1 || armorClassState.value > 9007199254740991 ||
-    !sourceRef(armorClassState.sourceRef, armorClassLocator)) {
-  throw new Error('Target Armor Class state is invalid.');
-}
+var targetArmorChildren = ctx.children && ctx.children.targetArmorClass;
+if (!Array.isArray(targetArmorChildren) || targetArmorChildren.length !== 1) throw new Error('Exactly one derived target Armor Class result is required.');
+var armorClass = readArmorClass(targetArmorChildren[0]);
 var profile = parse(weapon.components['dnd2024.weapon-profile'], 'Weapon profile state');
 if (!validProfile(profile)) { throw new Error('Weapon profile state is invalid.'); }
 if (profile.attackAbilities.indexOf(input.ability) === -1) {
@@ -231,7 +237,7 @@ var total = roll;
 for (var totalIndex = 0; totalIndex < modifiers.length; totalIndex++) {
   total += modifiers[totalIndex].value;
 }
-var hit = total >= armorClassState.value;
+var hit = total >= armorClass;
 var critical = false;
 var hitReason = 'armor-class';
 if (roll === 20) {
@@ -242,7 +248,7 @@ if (roll === 20) {
   hit = false;
   hitReason = 'natural-1';
 }
-ctx.log('Weapon attack (' + rollMode + '): d20 ' + roll + ', total ' + total + ' vs AC ' + armorClassState.value + ', ' + hitReason + '.');
+ctx.log('Weapon attack (' + rollMode + '): d20 ' + roll + ', total ' + total + ' vs AC ' + armorClass + ', ' + hitReason + '.');
 return {
   narration: subject.name + ' attacks ' + target.name + ' with ' + weapon.name + ': ' +
              (hit ? 'hit' : 'miss') + ' (' + hitReason + ').',
@@ -254,7 +260,7 @@ return {
     weaponId: weapon.id,
     weaponCategory: profile.category,
     ability: input.ability,
-    targetArmorClass: armorClassState.value,
+    targetArmorClass: armorClass,
     proficient: proficient,
     proficiencyBonusDerived: proficiencyBonusDerived,
     proficiencyBonusApplied: proficiencyBonusApplied,

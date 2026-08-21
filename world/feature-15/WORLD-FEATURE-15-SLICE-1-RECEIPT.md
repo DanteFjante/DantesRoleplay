@@ -2,7 +2,7 @@
 
 **Status:** Slice 1 verified; Feature 15 awaits Slice 2 and feature acceptance  
 **Date:** 2026-08-20  
-**Plan:** [fixed teleport portals](WORLD-FEATURE-15-DEPENDENCY-PLAN.md)
+**Roadmap:** [World and lore](../../WORLD_AND_LORE_PLAN.md)
 
 ## Delivered
 

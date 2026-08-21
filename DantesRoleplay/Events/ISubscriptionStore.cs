@@ -10,7 +10,7 @@ public interface ISubscriptionStore
 }
 
 public sealed record SubscriptionSummary(string Id, string Category, string EventTypeId, string EventMechanicId, SubscriptionMode Mode, int Order, string Scope, SubscriptionStatus Status, int Version, bool DependenciesHealthy);
-public sealed record SubscriptionDetail(string Id, string Category, string EventTypeId, string EventMechanicId, SubscriptionMode Mode, int Order, string FixedRoleEntityIdsJson, string TrackedEntityIdsJson, string PayloadEqualsJson, int MaxExecutionsPerChain, string Scope, SubscriptionStatus Status, int Version, int LatestVersion, string CreatedBy, string ChangeNote, DateTime CreatedAt, bool DependenciesHealthy) { public string SourceHash { get; init; } = string.Empty; }
+public sealed record SubscriptionDetail(string Id, string Category, string EventTypeId, string EventMechanicId, SubscriptionMode Mode, int Order, string FixedRoleEntityIdsJson, string RoleFromEventPayloadJson, string FanoutSelectorJson, string TrackedEntityIdsJson, string PayloadEqualsJson, int MaxExecutionsPerChain, string Scope, SubscriptionStatus Status, int Version, int LatestVersion, string CreatedBy, string ChangeNote, DateTime CreatedAt, bool DependenciesHealthy) { public string SourceHash { get; init; } = string.Empty; }
 public sealed record SubscriptionCheck(string Name, bool Passed, string Detail, bool Blocking = true);
 public sealed record WriteSubscriptionRequest
 {
@@ -21,6 +21,8 @@ public sealed record WriteSubscriptionRequest
     public required SubscriptionMode Mode { get; init; }
     public int Order { get; init; }
     public string FixedRoleEntityIdsJson { get; init; } = "{}";
+    public string RoleFromEventPayloadJson { get; init; } = "{}";
+    public string FanoutSelectorJson { get; init; } = "{}";
     public string TrackedEntityIdsJson { get; init; } = "[]";
     public string PayloadEqualsJson { get; init; } = "{}";
     public int MaxExecutionsPerChain { get; init; } = 1;

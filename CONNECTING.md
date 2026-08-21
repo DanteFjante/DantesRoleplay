@@ -149,7 +149,7 @@ finding. This is the same discipline as `COLDWALK.md`, and it applies to ordinar
 
 For play specifically, the guidance lives inside the system rather than in your prompt: the GM
 reads `procedure.play.storytelling` through `query`. (That contract is drafted at `storytelling.md`
-and lands in Phase 1 — see `NEXT_STEPS.md`.)
+and lands in the internal proof ledger in `STORY_FIRST_ROADMAP.md`.)
 
 **For a cold walk, the client session must have no access to this repository.** A Claude Desktop
 chat with no project attached qualifies; a Claude Code session started inside the repo does not,

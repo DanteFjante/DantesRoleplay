@@ -12,15 +12,18 @@ Defines ordinary five-foot voluntary movement on the bounded Feature 20 grid.
 
 1. Accept only a closed ordered list of cardinal or diagonal unit directions. Do not accept feet,
    a destination, terrain result, occupancy result, or any budget/outcome field from a caller.
-2. Derive every entered Size footprint from committed map, placement, Size, and direct encounter
-   roster snapshots. Reject bounds, blocked, occupied, malformed, and diagonal corner-cutting
-   paths before budget spending.
+2. Derive every entered Size footprint from committed map, placement, Size, effective
+   Incapacitated state, encounter-side relation evidence, and direct encounter roster snapshots.
+   Difficult terrain and non-ally/non-Tiny creature spaces cost one extra foot per foot once per
+   entered step. Allow pass-through only for an ally, an effectively Incapacitated creature, a Tiny
+   creature, or a creature at least two Size ranks different; never allow an occupied final
+   footprint. Reject bounds, blocked, malformed, inadmissible, and diagonal corner-cutting paths
+   before budget spending.
 3. Produce the exact closed movement budget input through a declared dependent child only. The
    Feature 12 spender remains the sole movement-allowance and active-turn authority.
 4. Aggregate the spender's sole budget effect with one root position effect in the same transaction.
    A failure may not partially move a creature or spend movement.
-5. Do not charge difficult terrain, allow pass-through exceptions, spend an Action, emit an
-   opportunity candidate, or handle forced/special movement.
+5. Do not spend an Action, emit an opportunity candidate, or handle forced/special movement.
 
 ## Constraints
 

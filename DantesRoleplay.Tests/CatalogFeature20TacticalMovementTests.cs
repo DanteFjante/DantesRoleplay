@@ -143,6 +143,87 @@ public sealed class CatalogFeature20TacticalMovementTests : IDisposable
         Assert.Equal(budget, Component(await world.GetEntityAsync(Hero), Budget));
     }
 
+    [Fact]
+    public async Task Tactical_movement_charges_difficult_terrain_and_admits_only_documented_passage()
+    {
+        var (world, mechanics, db) = await ImportAsync();
+        await using var _ = db;
+        var runner = Runner(db, world, mechanics);
+        async Task<ActionRunResult> Run(string intent, Dictionary<string, string> roles, string input) =>
+            await runner.RunAsync(new ActionRequest { Intent = intent, RoleEntityIds = roles, Input = input, Seed = 42 });
+
+        Assert.True((await Run("record creature size", new() { ["creature"] = Hero }, """{"size":"medium"}""")).Ok);
+        Assert.True((await Run("record creature size", new() { ["creature"] = Target }, """{"size":"medium"}""")).Ok);
+        Assert.True((await Run("record encounter space", new() { ["encounter"] = Encounter }, """{"mode":"record","widthSquares":10,"heightSquares":4,"blockedCells":[],"difficultCells":[{"x":1,"y":0}]}""")).Ok);
+        Assert.True((await Run("place encounter participant", new() { ["subject"] = Hero, ["encounter"] = Encounter }, """{"mode":"record","anchorX":0,"anchorY":0}""")).Ok);
+        Assert.True((await Run("place encounter participant", new() { ["subject"] = Target, ["encounter"] = Encounter }, """{"mode":"record","anchorX":16,"anchorY":0}""")).Ok);
+        Assert.True((await Run("set the encounter initiative order", new() { ["encounter"] = Encounter }, JsonSerializer.Serialize(new { participants = new Dictionary<string, object> { [Hero] = new { }, [Target] = new { } } }))).Ok);
+        var started = await Run("start encounter turns", new() { ["encounter"] = Encounter }, "{}");
+        using (var data = JsonDocument.Parse(started.Output!.Data))
+        {
+            if (data.RootElement.GetProperty("activeParticipantId").GetString() != Hero)
+                Assert.True((await Run("advance encounter turn", new() { ["encounter"] = Encounter }, "{}")).Ok);
+        }
+
+        var difficult = await Run("move tactically", new() { ["subject"] = Hero, ["encounter"] = Encounter }, """{"path":[{"dx":1,"dy":0}]}""");
+        Assert.True(difficult.Ok, difficult.Error?.Why);
+        using (var data = JsonDocument.Parse(difficult.Output!.Data))
+        {
+            Assert.Equal(10, data.RootElement.GetProperty("feet").GetInt32());
+            Assert.Equal(10, Assert.Single(data.RootElement.GetProperty("stepCostsFeet").EnumerateArray()).GetInt32());
+        }
+        Assert.Equal(20, Remaining(await world.GetEntityAsync(Hero)));
+
+        const string startPosition = """{"encounterId":"encounter.dnd2024.feature-10.training","anchorX":0,"anchorY":0,"sourceRef":{"sourceId":"source.dnd2024.srd-5.2.1","locator":"Playing the Game > Playing on a Grid > Creature Size"}}""";
+        const string startBudget = """{"action":true,"bonusAction":true,"reaction":true,"freeInteraction":true,"movementRemainingFeet":30,"sourceRef":{"sourceId":"source.dnd2024.srd-5.2.1","locator":"Playing the Game > Actions; Bonus Actions; Reactions; Interacting with Objects; Combat > Your Turn"}}""";
+        const string targetAtFirstStep = """{"encounterId":"encounter.dnd2024.feature-10.training","anchorX":2,"anchorY":0,"sourceRef":{"sourceId":"source.dnd2024.srd-5.2.1","locator":"Playing the Game > Playing on a Grid > Creature Size"}}""";
+        await world.SetComponentAsync(Hero, Position, startPosition);
+        await world.SetComponentAsync(Hero, Budget, startBudget);
+        await world.SetComponentAsync(Target, Position, targetAtFirstStep);
+        Assert.True((await Run("correct encounter space", new() { ["encounter"] = Encounter }, """{"mode":"correct","widthSquares":10,"heightSquares":4,"blockedCells":[],"difficultCells":[]}""")).Ok);
+        Assert.True((await Run("correct encounter sides", new() { ["encounter"] = Encounter }, """{"mode":"correct","assignments":[{"participantId":"creature.dnd2024.feature-10.hero","sideId":"side.party"},{"participantId":"creature.dnd2024.feature-10.training-target","sideId":"side.party"}],"hostilePairs":[]}""")).Ok);
+        var ally = await Run("move tactically", new() { ["subject"] = Hero, ["encounter"] = Encounter }, """{"path":[{"dx":1,"dy":0},{"dx":1,"dy":0}]}""");
+        Assert.True(ally.Ok, ally.Error?.Why);
+        Assert.Equal(20, Remaining(await world.GetEntityAsync(Hero)));
+        using (var data = JsonDocument.Parse(ally.Output!.Data))
+            Assert.All(data.RootElement.GetProperty("stepCostsFeet").EnumerateArray(), cost => Assert.Equal(5, cost.GetInt32()));
+
+        await world.SetComponentAsync(Hero, Position, startPosition);
+        await world.SetComponentAsync(Hero, Budget, startBudget);
+        Assert.True((await Run("correct encounter sides", new() { ["encounter"] = Encounter }, """{"mode":"correct","assignments":[{"participantId":"creature.dnd2024.feature-10.hero","sideId":"side.party"},{"participantId":"creature.dnd2024.feature-10.training-target","sideId":"side.training-opposition"}],"hostilePairs":[{"firstSideId":"side.party","secondSideId":"side.training-opposition"}]}""")).Ok);
+        var enemy = await Run("move tactically", new() { ["subject"] = Hero, ["encounter"] = Encounter }, """{"path":[{"dx":1,"dy":0},{"dx":1,"dy":0}]}""");
+        Assert.False(enemy.Ok);
+        Assert.Equal(0, Anchor(await world.GetEntityAsync(Hero), "anchorX"));
+        Assert.Equal(30, Remaining(await world.GetEntityAsync(Hero)));
+
+        await world.SetComponentAsync(Target, "dnd2024.creature-size", """{"size":"tiny"}""");
+        var tiny = await Run("move tactically", new() { ["subject"] = Hero, ["encounter"] = Encounter }, """{"path":[{"dx":1,"dy":0},{"dx":1,"dy":0}]}""");
+        Assert.True(tiny.Ok, tiny.Error?.Why);
+        using (var data = JsonDocument.Parse(tiny.Output!.Data))
+            Assert.Equal(new[] { 5, 5 }, data.RootElement.GetProperty("stepCostsFeet").EnumerateArray().Select(item => item.GetInt32()));
+
+        await world.SetComponentAsync(Hero, Position, startPosition);
+        await world.SetComponentAsync(Hero, Budget, startBudget);
+        await world.SetComponentAsync(Hero, "dnd2024.creature-size", """{"size":"tiny"}""");
+        await world.SetComponentAsync(Target, "dnd2024.creature-size", """{"size":"large"}""");
+        var sizeDifference = await Run("move tactically", new() { ["subject"] = Hero, ["encounter"] = Encounter }, """{"path":[{"dx":1,"dy":0},{"dx":1,"dy":0},{"dx":1,"dy":0}]}""");
+        Assert.True(sizeDifference.Ok, sizeDifference.Error?.Why);
+        using (var data = JsonDocument.Parse(sizeDifference.Output!.Data))
+            Assert.Equal(new[] { 10, 10, 5 }, data.RootElement.GetProperty("stepCostsFeet").EnumerateArray().Select(item => item.GetInt32()));
+
+        await world.SetComponentAsync(Hero, Position, startPosition);
+        await world.SetComponentAsync(Hero, Budget, startBudget);
+        await world.SetComponentAsync(Hero, "dnd2024.creature-size", """{"size":"medium"}""");
+        await world.SetComponentAsync(Target, "dnd2024.creature-size", """{"size":"medium"}""");
+        Assert.True((await Run("record creature conditions", new() { ["subject"] = Target }, """{"mode":"record"}""")).Ok);
+        Assert.True((await Run("apply the incapacitated condition", new() { ["subject"] = Target }, """{"mode":"apply","conditions":["incapacitated"]}""")).Ok);
+        var incapacitated = await Run("move tactically", new() { ["subject"] = Hero, ["encounter"] = Encounter }, """{"path":[{"dx":1,"dy":0},{"dx":1,"dy":0}]}""");
+        Assert.True(incapacitated.Ok, incapacitated.Error?.Why);
+        Assert.Equal(15, Remaining(await world.GetEntityAsync(Hero)));
+        using (var data = JsonDocument.Parse(incapacitated.Output!.Data))
+            Assert.Equal(new[] { 10, 5 }, data.RootElement.GetProperty("stepCostsFeet").EnumerateArray().Select(item => item.GetInt32()));
+    }
+
     private async Task<(WorldStore World, MechanicStore Mechanics, DantesRoleplayDbContext Db)> ImportAsync()
     {
         CopyDirectory(RepositoryCatalog(), _catalogCopy);

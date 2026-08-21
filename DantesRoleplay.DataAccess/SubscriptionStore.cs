@@ -63,6 +63,11 @@ public sealed class SubscriptionStore(DantesRoleplayDbContext db) : ISubscriptio
 
         var eventType = await _db.EventTypes.AsNoTracking().FirstOrDefaultAsync(x => x.Id == request.EventTypeId, cancellationToken);
         checks.Add(new("event-type-active", eventType?.Status == EventTypeStatus.Active, eventType is null ? $"Event type '{request.EventTypeId}' does not exist." : eventType.Status == EventTypeStatus.Active ? "Event type is active." : $"Event type '{request.EventTypeId}' is {eventType.Status}.", true));
+        var eventTypeVersion = eventType is null
+            ? null
+            : await _db.EventTypeVersions.AsNoTracking().FirstOrDefaultAsync(
+                x => x.EventTypeId == eventType.Id && x.Version == eventType.CurrentVersion,
+                cancellationToken);
         var mechanic = await _db.Mechanics.AsNoTracking().FirstOrDefaultAsync(x => x.Id == request.EventMechanicId, cancellationToken);
         var mechanicVersion = mechanic is null ? null : await _db.MechanicVersions.AsNoTracking().FirstOrDefaultAsync(x => x.MechanicId == mechanic.Id && x.Version == mechanic.CurrentVersion, cancellationToken);
         var requirement = TryEventRequirement(mechanicVersion?.Requirements, out var problem);
@@ -87,14 +92,53 @@ public sealed class SubscriptionStore(DantesRoleplayDbContext db) : ISubscriptio
         checks.Add(new("event-mechanic", requirementOk, mechanicDetail, true));
 
         var fixedRoles = ParseFixedRoleEntityIds(request.FixedRoleEntityIdsJson, checks);
+        var payloadRole = ParseRoleFromEventPayload(request.RoleFromEventPayloadJson, checks);
+        var fanout = ParseFanoutSelector(request.FanoutSelectorJson, checks);
         var tracked = ParseIds(request.TrackedEntityIdsJson, "trackedEntityIds", checks);
         _ = ParseObject(request.PayloadEqualsJson, "payloadEquals", checks, scalarOnly: true, maxProperties: 32);
         if (requirement is not null && mechanicVersion is not null && fixedRoles is not null)
         {
             var all = MechanicRequirements.Parse(mechanicVersion.Requirements).Roles;
-            var required = all.Where(x => !x.Value.Optional).Select(x => x.Key).ToHashSet(StringComparer.Ordinal);
+            var payloadRoleOk = payloadRole is null
+                || (request.Mode == SubscriptionMode.Reaction
+                    && all.ContainsKey(payloadRole.Value.Key)
+                    && !fixedRoles.ContainsKey(payloadRole.Value.Key)
+                    && eventTypeVersion is not null
+                    && EventPayloadRoleMetadata.TryRead(eventTypeVersion.PayloadSchema, out var fields, out _)
+                    && fields.Contains(payloadRole.Value.Value, StringComparer.Ordinal));
+            var payloadRoleDetail = payloadRole is null
+                ? "No role is bound from the event payload."
+                : payloadRoleOk
+                    ? $"Role '{payloadRole.Value.Key}' is bound from declared payload field '{payloadRole.Value.Value}'."
+                    : "roleFromEventPayload must bind one non-fixed reaction role to a field declared by the current event type schema.";
+            checks.Add(new("role-from-event-payload", payloadRoleOk, payloadRoleDetail));
+            var fanoutOk = fanout is null
+                || (payloadRole is null
+                    && request.Mode == SubscriptionMode.Reaction
+                    && !string.IsNullOrWhiteSpace(request.Scope)
+                    && !MechanicRequirements.Parse(mechanicVersion.Requirements).Children.Any()
+                    && all.TryGetValue(fanout.Role, out var role)
+                    && !role.Optional
+                    && !fixedRoles.ContainsKey(fanout.Role)
+                    && await _db.ComponentDefinitions.AsNoTracking().AnyAsync(x => x.Id == fanout.ComponentId, cancellationToken));
+            var fanoutDetail = fanout is null
+                ? "No fan-out selector is declared."
+                : fanoutOk
+                    ? $"Role '{fanout.Role}' is selected through indexed relationship '{fanout.RelationshipKind}' and component '{fanout.ComponentId}'."
+                    : "fanoutSelector requires a nonempty scoped reaction, an ordinary non-fixed role, no payload role binding or children, and an existing component definition.";
+            checks.Add(new("fanout-selector", fanoutOk, fanoutDetail));
+            var dynamicRole = payloadRole?.Key ?? fanout?.Role;
+            var required = all.Where(x => !x.Value.Optional && x.Key != dynamicRole).Select(x => x.Key).ToHashSet(StringComparer.Ordinal);
             var supplied = fixedRoles.Keys.ToHashSet(StringComparer.Ordinal);
             checks.Add(new("fixed-roles", required.SetEquals(supplied) || (required.IsSubsetOf(supplied) && supplied.All(all.ContainsKey)), required.SetEquals(supplied) || (required.IsSubsetOf(supplied) && supplied.All(all.ContainsKey)) ? "Fixed role bindings satisfy ordinary mechanic roles." : "Fixed roles must include every required ordinary role and no unknown role."));
+        }
+        else if (payloadRole is not null)
+        {
+            checks.Add(new("role-from-event-payload", false, "roleFromEventPayload requires a valid event reaction mechanic."));
+        }
+        else if (fanout is not null)
+        {
+            checks.Add(new("fanout-selector", false, "fanoutSelector requires a valid event reaction mechanic."));
         }
         var roleEntityIds = fixedRoles is null
             ? Enumerable.Empty<string>()
@@ -108,12 +152,12 @@ public sealed class SubscriptionStore(DantesRoleplayDbContext db) : ISubscriptio
     public async Task<WriteSubscriptionResult> WriteAsync(WriteSubscriptionRequest request, CancellationToken cancellationToken = default)
     {
         var checks = await CheckAsync(request, cancellationToken); var failed = checks.FirstOrDefault(x => x.Blocking && !x.Passed); if (failed is not null) throw new ArgumentException(failed.Detail);
-        var fixedRoles = CanonicalObject(request.FixedRoleEntityIdsJson); var tracked = CanonicalIds(request.TrackedEntityIdsJson); var payload = CanonicalObject(request.PayloadEqualsJson); var now = DateTime.UtcNow;
+        var fixedRoles = CanonicalObject(request.FixedRoleEntityIdsJson); var payloadRole = CanonicalObject(request.RoleFromEventPayloadJson); var fanout = CanonicalObject(request.FanoutSelectorJson); var tracked = CanonicalIds(request.TrackedEntityIdsJson); var payload = CanonicalObject(request.PayloadEqualsJson); var now = DateTime.UtcNow;
         var subscription = await _db.Subscriptions.FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken); var created = subscription is null;
         if (subscription is null) { subscription = new Subscription { Id = request.Id, Category = request.Category, Scope = request.Scope, Status = request.Status ?? SubscriptionStatus.Draft, CreatedAt = now, UpdatedAt = now }; _db.Subscriptions.Add(subscription); }
         else { subscription.Category = request.Category; subscription.Scope = request.Scope; subscription.UpdatedAt = now; if (request.Status is { } status) subscription.Status = status; }
         var version = (await _db.SubscriptionVersions.Where(x => x.SubscriptionId == request.Id).MaxAsync(x => (int?)x.Version, cancellationToken) ?? 0) + 1;
-        var row = new SubscriptionVersion { SubscriptionId = subscription.Id, Version = version, EventTypeId = request.EventTypeId, EventMechanicId = request.EventMechanicId, Mode = request.Mode, Order = request.Order, FixedRoleEntityIdsJson = fixedRoles, TrackedEntityIdsJson = tracked, PayloadEqualsJson = payload, MaxExecutionsPerChain = request.MaxExecutionsPerChain, ChangeNote = request.ChangeNote, CreatedBy = string.IsNullOrWhiteSpace(request.CreatedBy) ? "llm" : request.CreatedBy, SourceHash = ContentHash.Of(subscription.Category, request.EventTypeId, request.EventMechanicId, request.Mode.ToString(), request.Order.ToString(), fixedRoles, tracked, payload, request.MaxExecutionsPerChain.ToString(), subscription.Scope, (request.Status ?? subscription.Status).ToString()), CreatedAt = now };
+        var row = new SubscriptionVersion { SubscriptionId = subscription.Id, Version = version, EventTypeId = request.EventTypeId, EventMechanicId = request.EventMechanicId, Mode = request.Mode, Order = request.Order, FixedRoleEntityIdsJson = fixedRoles, RoleFromEventPayloadJson = payloadRole, FanoutSelectorJson = fanout, TrackedEntityIdsJson = tracked, PayloadEqualsJson = payload, MaxExecutionsPerChain = request.MaxExecutionsPerChain, ChangeNote = request.ChangeNote, CreatedBy = string.IsNullOrWhiteSpace(request.CreatedBy) ? "llm" : request.CreatedBy, SourceHash = ContentHash.Of(subscription.Category, request.EventTypeId, request.EventMechanicId, request.Mode.ToString(), request.Order.ToString(), fixedRoles, payloadRole, fanout, tracked, payload, request.MaxExecutionsPerChain.ToString(), subscription.Scope, (request.Status ?? subscription.Status).ToString()), CreatedAt = now };
         _db.SubscriptionVersions.Add(row); subscription.CurrentVersion = version; await _db.SaveChangesAsync(cancellationToken); return new(ToDetail(subscription, row, version, await HealthyAsync(row, cancellationToken)), created);
     }
 
@@ -155,9 +199,23 @@ public sealed class SubscriptionStore(DantesRoleplayDbContext db) : ISubscriptio
         }
     }
 
+    private static KeyValuePair<string, string>? ParseRoleFromEventPayload(string json, List<SubscriptionCheck> checks)
+    {
+        var valid = SubscriptionRoleFromEventPayload.TryRead(json, out var mapping, out var problem);
+        checks.Add(new("roleFromEventPayload", valid, valid ? "roleFromEventPayload is an empty or one-role closed object." : problem));
+        return valid ? mapping : null;
+    }
+
+    private static SubscriptionFanoutSelector? ParseFanoutSelector(string json, List<SubscriptionCheck> checks)
+    {
+        var valid = SubscriptionFanoutSelectorMetadata.TryRead(json, out var selector, out var problem);
+        checks.Add(new("fanoutSelector", valid, valid ? "fanoutSelector is an empty or closed four-property selector object." : problem));
+        return valid ? selector : null;
+    }
+
     private static Dictionary<string, string>? ParseObject(string json, string name, List<SubscriptionCheck> checks, bool scalarOnly, int maxProperties = int.MaxValue) { try { using var d = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json); if (d.RootElement.ValueKind != JsonValueKind.Object || d.RootElement.EnumerateObject().Count() > maxProperties) throw new JsonException(); var result = new Dictionary<string, string>(StringComparer.Ordinal); foreach (var p in d.RootElement.EnumerateObject()) { if (string.IsNullOrWhiteSpace(p.Name) || (scalarOnly && p.Value.ValueKind is JsonValueKind.Array or JsonValueKind.Object)) throw new JsonException(); result[p.Name] = p.Value.GetRawText(); } checks.Add(new(name, true, $"{name} is a closed object.")); return result; } catch (JsonException) { checks.Add(new(name, false, $"{name} must be a JSON object with at most {maxProperties} scalar values.")); return null; } }
     private static IReadOnlyList<string>? ParseIds(string json, string name, List<SubscriptionCheck> checks) { try { using var d = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "[]" : json); if (d.RootElement.ValueKind != JsonValueKind.Array) throw new JsonException(); var ids = d.RootElement.EnumerateArray().Select(x => x.ValueKind == JsonValueKind.String ? x.GetString()?.Trim() ?? "" : "").ToList(); if (ids.Count > 100 || ids.Any(string.IsNullOrWhiteSpace) || ids.Distinct(StringComparer.Ordinal).Count() != ids.Count) throw new JsonException(); checks.Add(new(name, true, $"{name} contains {ids.Count} id(s).")); return ids; } catch (JsonException) { checks.Add(new(name, false, $"{name} must be a distinct string array of at most 100 ids.")); return null; } }
     private static string CanonicalObject(string json) { using var d = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json); return "{" + string.Join(",", d.RootElement.EnumerateObject().OrderBy(x => x.Name, StringComparer.Ordinal).Select(x => JsonSerializer.Serialize(x.Name, Compact) + ":" + x.Value.GetRawText())) + "}"; }
     private static string CanonicalIds(string json) { using var d = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "[]" : json); return JsonSerializer.Serialize(d.RootElement.EnumerateArray().Select(x => x.GetString()!.Trim()).Distinct(StringComparer.Ordinal).OrderBy(x => x, StringComparer.Ordinal), Compact); }
-    private static SubscriptionDetail ToDetail(Subscription s, SubscriptionVersion v, int latest, bool healthy) => new(s.Id, s.Category, v.EventTypeId, v.EventMechanicId, v.Mode, v.Order, v.FixedRoleEntityIdsJson, v.TrackedEntityIdsJson, v.PayloadEqualsJson, v.MaxExecutionsPerChain, s.Scope, s.Status, v.Version, latest, v.CreatedBy, v.ChangeNote, v.CreatedAt, healthy) { SourceHash = v.SourceHash };
+    private static SubscriptionDetail ToDetail(Subscription s, SubscriptionVersion v, int latest, bool healthy) => new(s.Id, s.Category, v.EventTypeId, v.EventMechanicId, v.Mode, v.Order, v.FixedRoleEntityIdsJson, v.RoleFromEventPayloadJson, v.FanoutSelectorJson, v.TrackedEntityIdsJson, v.PayloadEqualsJson, v.MaxExecutionsPerChain, s.Scope, s.Status, v.Version, latest, v.CreatedBy, v.ChangeNote, v.CreatedAt, healthy) { SourceHash = v.SourceHash };
 }

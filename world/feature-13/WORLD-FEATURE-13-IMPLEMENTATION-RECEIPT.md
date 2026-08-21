@@ -2,7 +2,7 @@
 
 **Status:** Feature 13 verified  
 **Date:** 2026-08-20  
-**Plan:** [generic aerial-conveyance journey](WORLD-FEATURE-13-DEPENDENCY-PLAN.md)
+**Roadmap:** [World and lore](../../WORLD_AND_LORE_PLAN.md)
 
 ## Delivered
 

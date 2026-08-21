@@ -80,7 +80,7 @@ public sealed class CatalogWorldFeature8Tests : IDisposable
         Assert.Equal(Market, (await world.GetEntityAsync("traveller.feature-02.fixture"))!.ContainerId);
         AssertClock((await world.GetEntityAsync(Root))!, 30, 1);
         var events = await new EventLedger(db).FindAsync(rootOperationId: result.OperationId);
-        Assert.Equal(new[] { "world.containment.moved", "world.component.replaced" }, events.Select(e => e.TypeId));
+        Assert.Equal(new[] { "world.containment.moved", "world.component.replaced", "game.core.world.clock.advanced" }, events.Select(e => e.TypeId));
         Assert.Equal(2, result.Output.Effects.Count);
     }
 

@@ -43,8 +43,8 @@ recheck point; it does not invent those future blockers.
 | Authority | Decision supplied |
 | --- | --- |
 | Feature 8 | On-foot route legality and one-leg movement owner. |
-| [Feature 12 revision](../feature-12/WORLD-FEATURE-12-GROUND-CONVEYANCE-PLAN.md) | Generic ground-conveyance route and co-travel action owner. |
-| [Feature 13](../feature-13/WORLD-FEATURE-13-DEPENDENCY-PLAN.md) | Generic aerial-conveyance route and co-travel action owner. |
+| [Feature 12 receipt](../feature-12/WORLD-FEATURE-12-IMPLEMENTATION-RECEIPT.md) | Generic ground-conveyance route and co-travel action owner. |
+| [Feature 13 receipt](../feature-13/WORLD-FEATURE-13-IMPLEMENTATION-RECEIPT.md) | Generic aerial-conveyance route and co-travel action owner. |
 | Feature 14 | Its on-foot-only itinerary result and per-leg execution pattern; W16 generalizes the selection boundary rather than overwriting W14. |
 | Feature 15 | Fixed, explicit portal edge and portal action owner; a portal is never inferred from shared location or text. |
 | World time/change/action contracts | Atomic leg mutations, root-clock behavior, replay protection, and read-before-write discipline. |

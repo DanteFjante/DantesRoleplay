@@ -91,7 +91,7 @@ public sealed class CatalogWorldFeature10Tests : IDisposable
         var start = await ClockAsync(runner, 60);
         Assert.True(start.Ok, start.Error?.Why); AssertCondition(Component((await world.GetEntityAsync(Condition))!, ConditionComponent), "active", 60, 180); AssertAvailability(Component((await world.GetEntityAsync(Route))!, AvailabilityComponent), "closed");
         var startEvents = await new EventLedger(db).FindAsync(rootOperationId: start.OperationId);
-        Assert.Equal(new[] { 0, 1, 1 }, startEvents.Select(e => e.Depth)); Assert.Equal(2, Assert.Single(await db.EventExecutions.AsNoTracking().ToListAsync()).EffectCount);
+        Assert.Equal(new[] { 0, 0, 1, 1 }, startEvents.Select(e => e.Depth)); Assert.Equal(2, Assert.Single(await db.EventExecutions.AsNoTracking().ToListAsync()).EffectCount);
 
         var blockedBefore = await StateAsync(world); var blocked = await JourneyAsync(runner); var blockedAfter = await StateAsync(world);
         Assert.False(blocked.Ok); Assert.Equal(blockedBefore.TravellerContainer, blockedAfter.TravellerContainer); Assert.Equal(blockedBefore.TravellerSlot, blockedAfter.TravellerSlot); Assert.Equal(blockedBefore.Clock, blockedAfter.Clock); Assert.Equal(blockedBefore.Route, blockedAfter.Route); Assert.Equal(blockedBefore.Availability, blockedAfter.Availability); Assert.Equal(blockedBefore.Condition, blockedAfter.Condition); Assert.Equal(blockedBefore.GateAnchor, blockedAfter.GateAnchor); Assert.Equal(blockedBefore.GateEdges, blockedAfter.GateEdges);

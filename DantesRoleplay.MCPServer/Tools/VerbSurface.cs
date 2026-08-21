@@ -90,6 +90,11 @@ public static class VerbSurface
             ["campaignId", "question", "knowledgeKinds", "knowledgeSubjectIds", "asOfMinute"],
             ["procedure.game.core.world.knowledge"]),
         new(
+            "story-plan",
+            "One durable development-GM story plan. It returns a bounded handoff after serial backend-owned context, knowledge, and action steps.",
+            ["id", "afterRevision", "waitSeconds"],
+            ["procedure.play.story-plan"]),
+        new(
             "mechanics",
             "Mechanic summaries. With id, one game rule in full including its JavaScript source.",
             ["id", "version", "query", "category", "scope", "includeInactive", "limit"],
@@ -190,9 +195,9 @@ public static class VerbSurface
             "subscription",
             "Write or revise a guard/reaction middleware registration. Once active it routes — a "
             + "guard can deny the change its event describes, a reaction's effects join it.",
-            "{id, category, eventTypeId, eventMechanicId, mode, order?, fixedRoleEntityIdsJson?, trackedEntityIdsJson?, payloadEqualsJson?, maxExecutionsPerChain?, scope?, status?, changeNote?}",
+            "{id, category, eventTypeId, eventMechanicId, mode, order?, fixedRoleEntityIdsJson?, roleFromEventPayloadJson?, fanoutSelectorJson?, trackedEntityIdsJson?, payloadEqualsJson?, maxExecutionsPerChain?, scope?, status?, changeNote?}",
             """
-            {"id":"subscription.guard.example","category":"world","eventTypeId":"world.component.replaced","eventMechanicId":"mechanic.example.guard","mode":"guard","order":0,"fixedRoleEntityIdsJson":"{}","trackedEntityIdsJson":"[]","payloadEqualsJson":"{}","maxExecutionsPerChain":1,"status":"draft","changeNote":"Initial registration."}
+            {"id":"subscription.guard.example","category":"world","eventTypeId":"world.component.replaced","eventMechanicId":"mechanic.example.guard","mode":"guard","order":0,"fixedRoleEntityIdsJson":"{}","roleFromEventPayloadJson":"{}","fanoutSelectorJson":"{}","trackedEntityIdsJson":"[]","payloadEqualsJson":"{}","maxExecutionsPerChain":1,"status":"draft","changeNote":"Initial registration."}
             """,
             SupportsDryRun: true,
             ["procedure.subscription.create", "procedure.subscription.modify", "procedure.event.chain-limits"]),
@@ -220,13 +225,13 @@ public static class VerbSurface
             ["procedure.game.core.world.itinerary", "procedure.action.run", "procedure.event.chain-limits"]),
         new(
             "campaign",
-              "Validate/create an existing-world campaign, maintain its one-arc continuity, validate/start/end one campaign session, or attach one existing actor through campaign-owned participation. Every structural write is derived internally.",
-              "validate/create CampaignBlueprint | initialize-continuity CampaignContinuitySeed | advance-chapter | close-chapter | conclude-arc | validate-session {operation, campaignId, sessionId} | validate-session-end/end-session/validate-session-checkpoint/checkpoint-session {operation, sessionId, expectedStatus} | attach-character-participation {operation, campaignId, actorId} (call query(kind: \"capabilities\") for exact fields)",
+              "Validate/create an existing-world campaign, maintain continuity, attach active quest context, validate/start/end one campaign session, or attach one existing actor. Every structural write is derived internally.",
+              "validate/create CampaignBlueprint | initialize-continuity CampaignContinuitySeed | advance-chapter | close-chapter | conclude-arc | attach-quest-context {operation, campaignId, arcId, chapterId, questId, expectedQuestStatus} | validate-session {operation, campaignId, sessionId} | validate-session-end/end-session/validate-session-checkpoint/checkpoint-session {operation, sessionId, expectedStatus} | attach-character-participation {operation, campaignId, actorId}",
             """
             {"operation":"initialize-continuity","seed":{"campaignId":"campaign.test.sealed-observatory","chapter":{"localKey":"chapter.opening","title":"...","partyQuestion":"..."},"arc":{"localKey":"arc.observatory","title":"...","partyStake":"..."}}}
             """,
             SupportsDryRun: false,
-              ["procedure.campaign.create", "procedure.campaign.session", "procedure.campaign.character-participation"]),
+              ["procedure.campaign.create", "procedure.campaign.chapter", "procedure.campaign.quest-context", "procedure.campaign.session", "procedure.campaign.character-participation"]),
         new(
             "quest",
             "Atomically create one closed campaign-scoped draft quest or run its governed lifecycle. Caller effects, child ids, and link data are forbidden.",
@@ -254,7 +259,16 @@ public static class VerbSurface
             {"operation":"submit","requestToken":"feedback-request.0123456789abcdef0123456789abcdef","category":"defect","impact":"degraded","summary":"...","observed":"...","expected":"...","reproductionSteps":["..."],"relatedOperationIds":[],"relatedProcedureIds":["procedure.system.feedback"]}
             """,
             SupportsDryRun: false,
-            ["procedure.system.feedback"])
+            ["procedure.system.feedback"]),
+        new(
+            "story-plan",
+            "Start a bounded durable semantic story plan, or cancel one plan between steps. The backend selects procedures, knowledge, and mechanics; the caller cannot provide effects or tool calls.",
+            "start {operation, requestToken, campaignId, objective, steps[1..6]} | cancel {operation, storyPlanId, expectedRevision}; step is {id, kind: campaign-context|knowledge|action, intent, roleEntityIds?, input?}",
+            """
+            {"operation":"start","requestToken":"story-plan.example-01","campaignId":"campaign.test.sealed-observatory","objective":"Investigate the observatory signal.","steps":[{"id":"campaign-context","kind":"campaign-context","intent":"Recall the current campaign context."},{"id":"known-signal","kind":"knowledge","intent":"What is known about the observatory signal?"}]}
+            """,
+            SupportsDryRun: false,
+            ["procedure.play.story-plan"])
     ];
 
     /// <summary>
@@ -293,6 +307,8 @@ public static class VerbSurface
             ["tool"] = "Only operations recorded against this tool name.",
             ["subject"] = "Only operations that touched this subject — usually an id."
             , ["impact"] = "Feedback only: blocked, degraded, minor, or none."
+            , ["afterRevision"] = "Story-plan only: wait only when this exact revision remains current."
+            , ["waitSeconds"] = "Story-plan only: bounded long-poll seconds from 0 through 20."
         };
 
     /// <summary>

@@ -5,7 +5,7 @@ Last updated: 2026-08-20
 
 ## Execution rule
 
-Use [GAME_SYSTEM_MASTER_PLAN.md](GAME_SYSTEM_MASTER_PLAN.md) for cross-subsystem ownership,
+Use [ARCHITECTURE.md](ARCHITECTURE.md) for cross-subsystem ownership,
 [TERRA-FEATURE-PLANNING-GUIDE.md](ruleset/dnd2024/TERRA-FEATURE-PLANNING-GUIDE.md) for plan quality,
 and a populated [SUBSYSTEM_IMPLEMENTATION_HANDOFF.md](SUBSYSTEM_IMPLEMENTATION_HANDOFF.md) for the active assignment. Implement one reviewed delivery
 slice, meet its exit gate, record evidence, and stop.
@@ -357,7 +357,7 @@ Events and subscriptions may enrich creation with notifications, but are not req
 creation transaction. The completed event runtime must still participate atomically when creation
 effects emit structural events.
 
-This plan builds on DND_RULESET_IMPLEMENTATION_PLAN.md Stages 1–3 and the existing level,
+This plan builds on the verified foundations in `ruleset/dnd2024/ROADMAP.md` and the existing level,
 proficiency, vital-statistics, weapon, and attack work. The later executable-workflow plan can
 orchestrate character creation but is not a prerequisite for the first semantic character command.
 
