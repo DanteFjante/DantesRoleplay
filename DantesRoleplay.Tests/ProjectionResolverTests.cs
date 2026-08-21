@@ -210,6 +210,114 @@ public sealed class ProjectionResolverTests : IDisposable
         Assert.NotNull(with.Projection!.Roles["subject"].Contains);
         Assert.Single(with.Projection.Roles["subject"].Contains!);
         Assert.Equal("carried", with.Projection.Roles["subject"].Contains![0].Slot);
+
+        // Existing direct-content mechanics receive the exact old node shape. In particular,
+        // they cannot mistake an omitted descendant component request for an empty component.
+        var sandbox = await new RuleAccess.JintMechanicEngine().RunAsync("""
+            return {
+              data: JSON.stringify({
+                hasComponents: typeof ctx.roles.subject.contains[0].components !== 'undefined',
+                hasNestedContents: typeof ctx.roles.subject.contains[0].contains !== 'undefined'
+              })
+            };
+            """, with.Projection, ExecutionLimits.Default);
+
+        Assert.True(sandbox.Ok, sandbox.Error);
+        using var data = System.Text.Json.JsonDocument.Parse(sandbox.Output.Data);
+        Assert.False(data.RootElement.GetProperty("hasComponents").GetBoolean());
+        Assert.False(data.RootElement.GetProperty("hasNestedContents").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Direct_contents_keep_the_existing_identity_only_javascript_shape()
+    {
+        await using var db = _fixture.CreateContext();
+        var world = await WorldAsync(db);
+        await world.CreateEntityAsync("Lantern", "lantern");
+        await world.SetComponentAsync("lantern", "secrets", """{"trueName":"Dawn"}""");
+        await world.MoveAsync("lantern", "orban", "carried");
+        var resolver = new ProjectionResolver(db);
+
+        var resolved = await resolver.ResolveAsync(
+            Requires("""{"roles":{"subject":{"components":[],"includeContents":true}}}"""),
+            new Dictionary<string, string> { ["subject"] = "orban" });
+
+        Assert.True(resolved.Ok, string.Join("; ", resolved.Problems));
+        var run = await new RuleAccess.JintMechanicEngine().RunAsync("""
+            return {
+              narration: 'direct contents',
+              data: JSON.stringify({
+                components: typeof ctx.roles.subject.contains[0].components,
+                contains: typeof ctx.roles.subject.contains[0].contains
+              })
+            };
+            """, resolved.Projection!, ExecutionLimits.Default);
+
+        Assert.True(run.Ok, run.Error);
+        using var data = System.Text.Json.JsonDocument.Parse(run.Output.Data);
+        Assert.Equal("undefined", data.RootElement.GetProperty("components").GetString());
+        Assert.Equal("undefined", data.RootElement.GetProperty("contains").GetString());
+    }
+
+    [Fact]
+    public async Task Contents_can_opt_in_to_a_bounded_nested_component_projection()
+    {
+        await using var db = _fixture.CreateContext();
+        var world = await WorldAsync(db);
+        await world.CreateEntityAsync("Backpack", "pack");
+        await world.CreateEntityAsync("Pouch", "pouch");
+        await world.CreateEntityAsync("Gem", "gem");
+        await world.CreateEntityAsync("String", "string");
+        await world.SetComponentAsync("pack", "marks", """{"container":true}""");
+        await world.SetComponentAsync("pouch", "marks", """{"container":true}""");
+        await world.SetComponentAsync("pouch", "secrets", """{"hidden":true}""");
+        await world.SetComponentAsync("gem", "marks", """{"weight":1}""");
+        await world.SetComponentAsync("gem", "secrets", """{"owner":"GM"}""");
+        await world.MoveAsync("pack", "orban", "carried");
+        await world.MoveAsync("pouch", "pack", "inside");
+        await world.MoveAsync("gem", "pouch", "inside");
+        await world.MoveAsync("string", "pack", "inside");
+        var resolver = new ProjectionResolver(db);
+
+        var result = await resolver.ResolveAsync(
+            Requires("""{"roles":{"subject":{"components":[],"includeContents":true,"contentsDepth":3,"contentComponentIds":["marks"]}}}"""),
+            new Dictionary<string, string> { ["subject"] = "orban" });
+
+        Assert.True(result.Ok, string.Join("; ", result.Problems));
+        var pack = Assert.Single(result.Projection!.Roles["subject"].Contains!);
+        Assert.Equal("pack", pack.Id);
+        Assert.Equal("true", System.Text.Json.JsonDocument.Parse(pack.Components!["marks"]).RootElement.GetProperty("container").GetRawText());
+        var pouch = pack.Contains!.Single(item => item.Id == "pouch");
+        Assert.Equal("pouch", pouch.Id);
+        Assert.False(pouch.Components!.ContainsKey("secrets"));
+        var gem = Assert.Single(pouch.Contains!);
+        Assert.Equal("gem", gem.Id);
+        Assert.False(gem.Components!.ContainsKey("secrets"));
+        var stringItem = pack.Contains!.Single(item => item.Id == "string");
+        Assert.NotNull(stringItem.Components);
+        Assert.Empty(stringItem.Components!);
+    }
+
+    [Fact]
+    public async Task Nested_content_projection_fails_closed_at_its_node_limit()
+    {
+        await using var db = _fixture.CreateContext();
+        var world = await WorldAsync(db);
+        for (var index = 0; index <= ProjectionLimits.MaxContainedNodes; index++)
+        {
+            var id = $"item-{index}";
+            await world.CreateEntityAsync($"Item {index:D3}", id);
+            await world.MoveAsync(id, "orban");
+        }
+
+        var resolver = new ProjectionResolver(db);
+        var result = await resolver.ResolveAsync(
+            Requires("""{"roles":{"subject":{"components":[],"includeContents":true,"contentsDepth":1}}}"""),
+            new Dictionary<string, string> { ["subject"] = "orban" });
+
+        Assert.False(result.Ok);
+        Assert.Null(result.Projection);
+        Assert.Contains(result.Problems, problem => problem.StartsWith("CONTAINMENT_PROJECTION_LIMIT:"));
     }
 
     [Fact]
@@ -228,6 +336,115 @@ public sealed class ProjectionResolverTests : IDisposable
 
         Assert.True(result.Ok);
         Assert.Equal("cellar", result.Projection!.Roles["subject"].ContainerId);
+    }
+
+    // ---- relationships -----------------------------------------------------------------
+
+    [Fact]
+    public async Task Relationships_are_materialised_only_for_roles_that_explicitly_request_them()
+    {
+        await using var db = _fixture.CreateContext();
+        var world = await WorldAsync(db);
+        await world.CreateEntityAsync("Bridge", "bridge");
+        await world.CreateEntityAsync("Road", "road");
+        await world.RelateAsync("orban", "bridge", "z-link", """{"order":2}""");
+        await world.RelateAsync("road", "orban", "a-link", """{"order":1}""");
+        var resolver = new ProjectionResolver(db);
+
+        var result = await resolver.ResolveAsync(
+            Requires("""
+                {"roles":{
+                  "withRelationships":{"components":["stats"],"includeRelationships":true},
+                  "withoutRelationships":{"components":["stats"]}
+                }}
+                """),
+            new Dictionary<string, string>
+            {
+                ["withRelationships"] = "orban",
+                ["withoutRelationships"] = "orban"
+            });
+
+        Assert.True(result.Ok, string.Join("; ", result.Problems));
+        var withRelationships = result.Projection!.Roles["withRelationships"];
+        var withoutRelationships = result.Projection.Roles["withoutRelationships"];
+        Assert.Null(withoutRelationships.Relationships);
+        Assert.Collection(withRelationships.Relationships!,
+            first =>
+            {
+                Assert.Equal("a-link", first.Kind);
+                Assert.Equal("road", first.FromEntityId);
+                Assert.Equal("orban", first.ToEntityId);
+                Assert.Equal("""{"order":1}""", first.Data);
+            },
+            second =>
+            {
+                Assert.Equal("z-link", second.Kind);
+                Assert.Equal("orban", second.FromEntityId);
+                Assert.Equal("bridge", second.ToEntityId);
+                Assert.Equal("""{"order":2}""", second.Data);
+            });
+
+        var sandbox = await new RuleAccess.JintMechanicEngine().RunAsync("""
+            return {
+              narration: 'relationship projection',
+              data: JSON.stringify({
+                optedInKinds: ctx.roles.withRelationships.relationships.map(edge => edge.kind),
+                optOutIsUndefined: typeof ctx.roles.withoutRelationships.relationships === 'undefined'
+              })
+            };
+            """, result.Projection, ExecutionLimits.Default);
+
+        Assert.True(sandbox.Ok, sandbox.Error);
+        using var data = System.Text.Json.JsonDocument.Parse(sandbox.Output.Data);
+        Assert.Equal(["a-link", "z-link"], data.RootElement.GetProperty("optedInKinds").EnumerateArray().Select(item => item.GetString()));
+        Assert.True(data.RootElement.GetProperty("optOutIsUndefined").GetBoolean());
+    }
+
+    [Fact]
+    public async Task An_opted_in_role_with_no_relationships_receives_an_explicit_empty_list()
+    {
+        await using var db = _fixture.CreateContext();
+        await WorldAsync(db);
+        var resolver = new ProjectionResolver(db);
+
+        var result = await resolver.ResolveAsync(
+            Requires("""{"roles":{"subject":{"components":["stats"],"includeRelationships":true}}}"""),
+            new Dictionary<string, string> { ["subject"] = "orban" });
+
+        Assert.True(result.Ok, string.Join("; ", result.Problems));
+        Assert.NotNull(result.Projection!.Roles["subject"].Relationships);
+        Assert.Empty(result.Projection.Roles["subject"].Relationships!);
+    }
+
+    [Theory]
+    [InlineData("null")]
+    [InlineData("\"true\"")]
+    [InlineData("1")]
+    [InlineData("[]")]
+    [InlineData("{}")]
+    public void Include_relationships_requires_a_boolean(string invalidValue)
+    {
+        var requirements = "{\"roles\":{\"subject\":{\"components\":[],\"includeRelationships\":" + invalidValue + "}}}";
+
+        Assert.Throws<System.Text.Json.JsonException>(() => Requires(requirements));
+    }
+
+    [Fact]
+    public async Task Relationships_with_a_deleted_opposite_endpoint_are_not_projected()
+    {
+        await using var db = _fixture.CreateContext();
+        var world = await WorldAsync(db);
+        await world.CreateEntityAsync("Bridge", "bridge");
+        await world.RelateAsync("orban", "bridge", "crosses");
+        await world.DeleteEntityAsync("bridge");
+        var resolver = new ProjectionResolver(db);
+
+        var result = await resolver.ResolveAsync(
+            Requires("""{"roles":{"subject":{"components":[],"includeRelationships":true}}}"""),
+            new Dictionary<string, string> { ["subject"] = "orban" });
+
+        Assert.True(result.Ok, string.Join("; ", result.Problems));
+        Assert.Empty(result.Projection!.Roles["subject"].Relationships!);
     }
 
     // ---- the caller's own arguments --------------------------------------------------

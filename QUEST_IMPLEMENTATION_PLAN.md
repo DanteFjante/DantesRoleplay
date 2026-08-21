@@ -1,268 +1,202 @@
 # Quest implementation plan
 
-Status: **Draft — design plan only; no quest content is authorised by this document**  
+Status: **Base quest roadmap — Q0, Q1, and Q2 verified; Q3 is the next gated feature**
 Last updated: 2026-08-20
 
-## Execution rule
-
-Use [GAME_SYSTEM_MASTER_PLAN.md](GAME_SYSTEM_MASTER_PLAN.md) for cross-subsystem ownership,
-[TERRA-FEATURE-PLANNING-GUIDE.md](ruleset/dnd2024/TERRA-FEATURE-PLANNING-GUIDE.md) for plan quality,
-and a populated [SUBSYSTEM_IMPLEMENTATION_HANDOFF.md](SUBSYSTEM_IMPLEMENTATION_HANDOFF.md) for the active assignment. Implement one reviewed delivery
-slice, meet its exit gate, record evidence, and stop.
-
-## Goal
-
-Support persistent, inspectable quests that can be created, progressed, completed, failed, and
-resumed across sessions. A quest records what the campaign knows, what is currently actionable,
-what evidence supports it, and why its state changed.
-
-Quests are campaign/ruleset content built from the existing entity-component model, mechanics,
-relationships, effects, event ledger, and subscriptions. The C# kernel gains no quest-specific
-vocabulary, table, effect type, or hidden quest state.
-
-## First playable scope
-
-The first release supports one campaign-owned quest with:
-
-- title, synopsis, visibility, and lifecycle state;
-- multiple ordered objectives, including optional objectives and dependencies;
-- links to NPCs, locations, clues, items, and other world entities;
-- manual advancement through governed quest mechanics;
-- one automatic objective update from a verified event/subscription;
-- reconciliation of the parent quest when all required objectives complete;
-- durable history and player-facing summary.
-
-Quest templates, branching dialogue, timers, procedural generation, rewards, faction reputation,
-parallel-party sharing, and a visual quest-board UI are later features.
-
-## Design principles
-
-1. **A quest is world data.** It must survive a fresh model/session without relying on chat memory.
-2. **Objectives are entities, not JSON arrays.** They can link to clues, locations, NPCs, events,
-   and dependencies without becoming one opaque ever-growing record.
-3. **The model narrates; rules change state.** A narration does not silently complete an objective.
-   A quest mechanic or approved manual command produces the structural effects.
-4. **Use generic structural events first.** A component/relationship/containment change already has
-   a ledger event. Register a semantic quest event only when it expresses information that the
-   structural event cannot.
-5. **No executable criteria in data.** Quest definitions may declare closed state/dependency/event
-   metadata. They may not contain SQL, JavaScript, JSONPath, or a general condition language.
-6. **Every automatic transition is auditable.** The history identifies the triggering event,
-   subscription, mechanic/version, exact objective state before/after, and root operation.
-7. **Visibility is separate from truth.** Initial MCP/GM use is trusted. A future player website
-   needs a real audience/authorisation policy before hidden quest fields are exposed.
-
-## Proposed campaign data model
-
-### Quest entity
-
-A quest is an entity with a quest component:
-
-    {
-      "title": "Find the source of the poisoned wells",
-      "status": "active",
-      "summary": "The town believes the old well was sabotaged.",
-      "visibility": "party",
-      "priority": "main",
-      "openedAt": "2026-08-20T...",
-      "completedAt": null,
-      "resolution": null
-    }
-
-Initial status values are draft, active, completed, failed, abandoned, and archived. Transitions are
-closed and validated by quest mechanics; direct component edits are reserved for correction
-procedures.
-
-### Objective entity
-
-Each objective is an entity with a quest.objective component:
-
-    {
-      "title": "Examine the well",
-      "status": "active",
-      "required": true,
-      "displayOrder": 10,
-      "visibility": "party",
-      "summary": "Look for signs of tampering.",
-      "completionMode": "manual"
-    }
-
-An objective's completion mode begins as manual, event, or derived. The mode selects a registered
-mechanic/subscription arrangement; it is not an executable expression embedded in the component.
-
-### Relationships and evidence
-
-Use named relationships rather than fields containing arbitrary entity-id arrays:
-
-- quest.has-objective: quest to objective;
-- objective.depends-on: objective to prerequisite objective;
-- quest.related-to: quest to NPC, location, faction, or item;
-- objective.supported-by: objective to clue or evidence;
-- objective.targets: objective to the world entity it concerns.
-
-The renderer follows a bounded number of links. A nested quest/objective graph must not turn into a
-recursive wall of cards.
-
-### Quest history
-
-The event ledger is canonical for automatic changes. A compact quest-history projection may
-summarise player-readable milestones, but it must link back to root operation/event IDs rather than
-duplicate mutable state. A quest completion summary is authored once by the GM and becomes part of
-the persistent quest state.
-
-## Ruleset mechanics and procedures
-
-Implement quest behaviour as stored, versioned mechanics and procedure contracts:
-
-- mechanic.quest.create creates a quest and its initial objective entities/relationships.
-- mechanic.quest.activate moves a draft quest to active after validation.
-- mechanic.quest.objective.advance completes, fails, reopens, or marks an objective blocked under
-  a closed state-transition table.
-- mechanic.quest.reconcile evaluates an affected quest after an objective change and resolves
-  active/completed/failed state from required objectives and dependencies.
-- mechanic.quest.event.evaluate is an event reaction that determines whether an approved event
-  satisfies an event-driven objective, then proposes normal quest-objective effects.
-- mechanic.quest.archive retains historical quest data without leaving it in active discovery.
-
-The relevant procedures are procedure.quest.create, procedure.quest.modify,
-procedure.quest.advance, procedure.quest.inspect, and procedure.quest.event-react. They define
-scope, inputs, valid transitions, event behavior, recovery calls, test fixtures, and narrative
-constraints.
-
-No generic quest service is added to the kernel. A later registered workflow can coordinate a
-larger quest operation, but each individual quest rule remains ordinary versioned content.
-
-## Objective progression semantics
-
-### Manual progression
-
-The GM or approved host resolves a quest action using a quest mechanic. It validates the quest,
-objective, actor authority, state, dependencies, and required context, then returns structural
-effects. A completed objective cannot be completed twice; a blocked objective cannot progress
-until its named prerequisites are satisfied.
-
-### Event-driven progression
-
-An event-driven objective has an explicit subscription to an already-registered event type. The
-subscription uses only the existing bounded filters, tracked entity IDs, and a reusable event
-mechanic. The mechanic reads the frozen event plus its declared objective/quest projection, then
-returns no effects unless the event is actually relevant.
-
-For example:
-
-    world.component.replaced for a clue entity
-      -> tracked objective subscription
-      -> quest event evaluator sees clue.found changed to true
-      -> objective component changes active to completed
-      -> accepted structural event routes quest reconciliation
-      -> all required objectives complete, so quest changes active to completed
-
-All of this remains in one root transaction. A guard denial, invalid effect, reaction failure, or
-chain-limit breach leaves both objective and quest unchanged.
-
-### Derived progression
-
-A derived objective is recomputed by an explicit reconciliation mechanic after a relevant
-structural event. Version 1 supports only known aggregate rules, such as “all required child
-objectives are complete.” Do not add arbitrary predicates or a quest query language.
-
-## Delivery slices
-
-### Slice 0 — ratify the first quest and boundaries
-
-Write one small quest with three objectives, one clue, one NPC, one location, one optional
-objective, and exactly one event-driven completion. Define who may see each item and which
-objective state transitions are supported.
-
-**Acceptance:** every state change has an identified mechanic/event/manual action; no vague
-criterion such as “when the story feels finished” is needed for automatic progression.
-
-### Slice 1 — quest and objective components
-
-Create the component definitions, state vocabulary, relationship conventions, catalog records,
-and the quest procedure contracts. Add source/schema documentation as documentation first; do not
-claim generic component-schema enforcement.
-
-**Acceptance:** a quest and independently inspectable objectives can be created through normal
-world effects, queried back, and linked without a quest-specific database migration.
-
-### Slice 2 — manual lifecycle mechanics
-
-Author and validate create, activate, objective advance, reconcile, and archive mechanics. Make
-the transition table explicit, including forbidden transitions, dependency checks, duplicate
-completion behavior, and correction/rollback procedure.
-
-**Acceptance:** a valid manual advance changes objective and quest state atomically; every invalid
-transition is rejected with the same state bytes as before the attempt.
-
-### Slice 3 — evidence, history, and narrative handoff
-
-Link objectives to clues/NPCs/locations, add bounded inspection views, and define the player-facing
-quest summary versus GM-only hidden truth. Update the storytelling procedure to query active quests
-and unresolved clues at session start/end.
-
-**Acceptance:** a fresh host can answer what is active, what is known, and what remains actionable
-using stored state alone, without exposing hidden information in the party summary.
-
-### Slice 4 — event-driven objective
-
-Register the first required event type only if the existing structural event payload cannot
-express it; otherwise subscribe to the structural event. Add the subscription, event mechanic,
-reconciliation route, event-chain limits, and failure evidence.
-
-**Acceptance:** a qualifying committed event completes exactly one intended objective and may
-complete its parent quest; an unrelated event, rejected root change, or repeated event changes
-nothing.
-
-### Slice 5 — notifications and reactive consequences
-
-Use the event/notification system for durable quest updates such as an objective appearing,
-completing, failing, or being blocked. Keep notifications informational; marking one read must not
-alter quest state or emit another quest event.
-
-**Acceptance:** a player/GM can inspect what changed and trace it to the source event without
-creating notification loops.
-
-### Slice 6 — human-facing read-only quest journal
-
-Add an active/completed quest list and objective detail to the planned campaign/world website.
-Server-render useful initial HTML, then use normal resource refresh/SSE invalidation for current
-state. Keep it read-only and ensure visibility policy is enforced before any player login exists.
-
-**Acceptance:** a page refreshes after a committed quest change and never reveals data outside the
-viewer’s permitted quest/objective visibility.
-
-### Slice 7 — controlled expansion
-
-After a played quest proves the model, add one feature at a time: quest templates, reward grants,
-time/deadline objectives, multi-quest dependency, or a registered workflow for larger quest
-operations. Each needs its own state ownership and failure design.
-
-**Acceptance:** every expansion preserves a clear answer to “what changed, why, and which rule
-did it?”
-
-## Test matrix
-
-- status values and every allowed/forbidden quest/objective transition;
-- relationship integrity, duplicate links, dependency cycle detection, and bounded graph rendering;
-- manual advancement validation and full rollback;
-- automatic completion from matching, non-matching, repeated, and rolled-back events;
-- guard/reaction failure, event-chain limits, causation/correlation, and notification-loop safety;
-- hidden versus party-visible summary projection once audience policy exists;
-- fresh-session reconstruction of active quests, objectives, clues, and recent milestones;
-- catalog import/export, mechanic/version preservation, correction, and replay evidence;
-- no raw SQL, browser mutation, or untrusted mechanic can bypass the transition mechanics.
-
-## Non-goals
-
-This plan does not build a hard-coded quest engine, a general-purpose quest condition language,
-procedural quest generation, faction/reputation systems, dialogue trees, rewards/XP, timers,
-multiplayer visibility, or an interactive quest-map UI. Those are separate content/experience
-features once the first persistent quest is played.
-
-## Dependencies
-
-The entity-component, relationship, effect, mechanic, and operation/audit foundations already
-exist. Event-driven objectives depend on the completed events/subscriptions runtime. The quest
-journal depends on the read-only website plan. Registered workflows and local-model routing may
-reduce orchestration effort later, but neither is required for the first manually advanced quest.
+## Purpose and authority
+
+This is the base roadmap, design boundary, verified-history record, and feature index for quests
+and objectives. The active feature dependency plan owns precise implementation requirements. Q0/Q1
+feature-plan files and the Q1 receipt are compatibility pointers only; Q2's
+[Feature 2 dependency plan](quest/feature-02/QUEST-FEATURE-02-DEPENDENCY-PLAN.md) is authoritative
+for Q2 implementation.
+
+Repository development follows [AGENTS.md](AGENTS.md),
+[procedure.system.create-feature](catalog/procedures/system/procedure.system.create-feature.md),
+[procedure.system.modify](catalog/procedures/system/procedure.system.modify.md), and the
+[Terra planning guide](ruleset/dnd2024/TERRA-FEATURE-PLANNING-GUIDE.md). Runtime contracts remain
+authoritative in catalog/source, particularly
+[procedure.quest.create](catalog/procedures/quest/procedure.quest.create.md), the quest component
+definitions, and implementation/tests. This roadmap does not duplicate runtime source.
+
+One reviewed feature slice is implemented at a time. A feature becomes verified only after focused
+acceptance, applicable catalog validation, full suite, receipt, and status updates pass. No slice
+authorizes its successor automatically.
+
+## Product goal and boundaries
+
+Quests are campaign-scoped, persistent, inspectable game state. A quest records lifecycle,
+independent objectives, relevant context, and world evidence without copying mutable campaign/world
+truth. The generic kernel gains no quest table, effect type, or hidden state.
+
+The first playable route is deliberately narrow:
+
+- one campaign-owned quest with exactly three initial objectives, including one optional objective;
+- multiple viable routes, so no NPC, clue, roll, combat, or location is a single point of failure;
+- manual lifecycle and reconciliation before event automation;
+- durable audit/event evidence and later bounded trusted-host summaries;
+- no reward, item, deadline, template, generated content, party authorization, or player UI claim.
+
+## Ownership model
+
+| Owner | Responsibility | Must not own |
+| --- | --- | --- |
+| Campaign/C3 | Campaign, chapter, and arc lifecycle; the campaign’s world/reference graph. | Quest lifecycle or copied quest state. |
+| Quest | Quest state, objective graph, scoped references, and later manual reconciliation. | World truth, rewards, inventory, or campaign transitions. |
+| World | Actors, locations, factions, facts, rumours, secrets, clues, visibility, and their lifecycle. | Quest progress. |
+| Item/character/time owners | Possession, delivery, grants, crafting, character state, and the world clock. | Quest counters or copied state. |
+| Event runtime | Accepted events, routing, causation, replay limits, and transaction rollback. | Plot criteria or independent progress state. |
+| Q3/Q13 readers | Trusted-host projection, then real audience authorization. | A second mutable quest/history store. |
+
+Relationships carry scope, membership, dependencies, and evidence. Components do not contain
+duplicated entity IDs, evidence arrays, mutable world snapshots, conditions, rewards, or history.
+
+## Verified Q0 — first quest editorial review
+
+Q0 is a documentation-only, ratified review. It created no catalog/runtime state.
+
+### Fixture
+
+| Field | Ratified value |
+| --- | --- |
+| Campaign | `campaign.test.sealed-observatory` |
+| Arc | `campaign.test.sealed-observatory.arc.observatory` |
+| Initial chapter | `campaign.test.sealed-observatory.chapter.opening` |
+| Quest | **The Missing Margin** — the old toll ledger points to a missing margin in the market archive; the group decides which evidence deserves trust. |
+| GM boundary | The ledger seal and lantern traces may complicate the investigation but do not prescribe an outcome. |
+
+The supported approaches are comparing records/rumours, speaking with Mara or Oren, exploring the
+market/observatory route, and inspecting physical traces. Relevant records are Mara and Oren,
+market and observatory locations, the toll-ledger fact, observatory-signal rumour, ledger-seal clue,
+and the Lantern Compact faction.
+
+| Objective | Required | Audience | Dependency | Meaning |
+| --- | --- | --- | --- | --- |
+| Trace the Missing Margin | Yes | party | none | Establish the ledger/archive/signal connection. |
+| Test the Witnesses | Yes | party | Trace the Missing Margin | Test accounts against independent evidence; neither witness is mandatory. |
+| Read the Seal | No | gm | Trace the Missing Margin | Decide whether the physical seal is worth pursuing. |
+
+All three begin dormant. Q0 ratified future manual operations only: offer, accept, set an active
+objective to completed/blocked/failed, unblock, reopen, reconcile required objectives, fail,
+reopen a terminal quest, and archive an unaccepted offer. Each requires a named host action,
+factual reason/evidence, expected-state/replay protection, and one quest owner. No Q0 transition
+changes chapter/arc/world state, grants rewards, or scripts player choice. The only candidate
+automation is a later Q4 reaction to revealing the Ledger Seal; it is disabled until Q4.
+
+Q0 review rules remain binding for future fixtures: three objectives, two required/one optional,
+backward acyclic dependencies, explicit descriptive visibility, at least three viable approaches,
+and no single-point completion route.
+
+## Verified Q1 — closed draft creation
+
+Q1 is verified. It creates exactly one campaign-scoped draft quest with exactly three dormant
+objectives through the closed `commit(kind: "quest")` capability. Q1 performs no lifecycle
+transition, prerequisite evaluation, reward, notification, campaign change, or world change.
+
+### Canonical vocabulary
+
+| Record | Meaning |
+| --- | --- |
+| `game.core.quest.root` | `status`, `premise`, `summary`, and descriptive `visibility`. Entity Name is the sole title owner. |
+| `game.core.quest.objective` | `status`, `actionableSummary`, `required`, `visibility`, and `displayOrder`. Entity Name is the sole title owner. |
+| `game.core.quest.in-campaign` | Quest → one active campaign. |
+| `game.core.quest.in-arc` | Quest → the campaign’s active arc. |
+| `game.core.quest.in-chapter` | Quest → one or two active-or-closed chapters in that arc. |
+| `game.core.quest.has-objective` | Quest → objective membership. |
+| `game.core.quest.objective.depends-on` | Objective → earlier same-quest prerequisite. |
+| `game.core.quest.objective.references` | Objective → existing record with closed `{ role, audience }` data. |
+
+### Closed request and validation
+
+`QuestCreateRequest` supplies a lowercase `quest.*` ID, title/premise/summary, party or GM
+visibility, campaign/arc IDs, one or two ordered chapter IDs, and exactly three ordered objectives.
+An objective supplies a unique `objective.*` local key, title, actionable summary, required flag,
+visibility, display order 1–3, earlier prerequisite keys, and zero to five references. Child IDs
+are derived as `<questId>.<objectiveLocalKey>`; callers cannot supply effects, child IDs, link
+data, lifecycle operations, or audit data.
+
+Validation rejects duplicate IDs, malformed/extra surface fields, duplicate chapters/references/
+dependencies, non-C3 context, inactive/cross-scope endpoints, forward/self dependencies, and
+party exposure of secrets, unrevealed clues, or GM-only material. It proves:
+
+1. one active campaign root and exactly one linked active world;
+2. one active selected arc linked from that campaign;
+3. one or two selected active-or-closed chapters linked from that campaign, each with exactly one
+   chapter-in-arc edge to the selected arc;
+4. active motive-bearing actors referenced by the campaign; active contained locations; active
+   world-linked factions; and active world-linked facts, rumours, secrets, or clues;
+5. party references only to public/party material, never secrets or unrevealed clues.
+
+The generated effect order is quest entity, root component, campaign/arc/chapter links, then each
+objective in display order with its component, membership, prerequisites, and references. The
+ratified fixture produces 19 structural effects/events; the two-chapter boundary produces 20.
+Failures use stable codes and leave no partial quest graph, structural event, or successful audit.
+Every MCP rejection returns a callable quest-create recovery call.
+
+### Q1 evidence
+
+- Q1 focused tests: 5 passed, covering readback, replay, visibility, bad context, two chapters,
+  and create-only surface rejection.
+- Capability/guard/protocol coverage: 17 passed.
+- Catalog validation: 197 records valid; four non-blocking overlap warnings; no live data touched.
+- Serialized full suite: 472 passed.
+- No persistent database import occurred.
+
+## Q2 — manual lifecycle and reconciliation
+
+Status: **Verified — Q2 manual lifecycle and reconciliation is complete.**
+
+The detailed dependency analysis, closed input/result/error contract, implementation sequence,
+acceptance matrix, and Q2.1–Q2.3 stop gates are in the
+[Quest Feature 2 dependency plan](quest/feature-02/QUEST-FEATURE-02-DEPENDENCY-PLAN.md).
+The Q2.1–Q2.3 receipts record the accepted lifecycle boundary. Q3 remains a separately planned
+history/projection feature and may not create a second mutable quest state store.
+
+## Future roadmap
+
+| Feature | Capability | Gate |
+| --- | --- | --- |
+| Q3 | Bounded trusted-host quest/evidence/history projection and storytelling handoff. See the [Q3 dependency plan](quest/feature-03/QUEST-FEATURE-03-DEPENDENCY-PLAN.md). | Q3.0 must confirm the procedure/query/result boundary; Q3.1 then needs verified Q2, while Q3.2 waits for S1. C4 is a later consumer. |
+| Q4 | One event-driven objective transition. | Played manual Q2 behavior; use the normal Q2 owner. |
+| Q5 | Selected informational quest notifications. | Verified Q4 and notification evidence. |
+| Q6 | Trusted-GM quest journal/UI. | Verified Q3 and stable read/UI contracts. |
+| Q7 | Correction, replay, versioning, and second-fixture gate. | Played Q3/Q4 quest and catalog/snapshot evidence. |
+| Q8 | One current-possession item objective. | Verified item ownership and played manual quest. |
+| Q9 | One atomic item/character reward grant. | Q2/Q7 plus grant owner. |
+| Q10 | One world-clock deadline. | Q4 and a played non-timed quest. |
+| Q11 | Explicit inter-quest dependency chain. | Q7 and multi-quest play evidence. |
+| Q12 | One branching resolution creating a campaign opportunity. | Q7/C4 ownership confirmation. |
+| Q13 | Party/player authorization and sharing. | Q3/Q6 plus authentication/audience policy. |
+| Q14 | Schema-bound generated quest proposal for host review. | Q7/Q15 and review authority. |
+| Q15 | Reusable quest-definition/template content. | Q7 and two played objective families. |
+
+Candidate mechanics are intentionally distinct by source of truth: current possession, historical
+acquisition, delivery, reach/location, discovery, social evidence, checks/challenges, encounter
+results, escort, crafting, composite all/any/n-of groups, hidden objectives, contribution,
+abandon/expiry/retry, repeatable bounties, reward selection, offer boards, tracking/map hints, GM
+authoring, and content packs/migrations. A subscriber may trigger re-evaluation, but never owns a
+blind counter or bypasses the source subsystem’s transaction.
+
+## Cross-subsystem rules
+
+- Item delivery and possession read item-owner state; historical acquisition retains immutable,
+  deduplicated event receipts rather than an incrementing integer.
+- Deadlines read the world root clock only.
+- Rewards route through item/character grants only.
+- Descriptive `party`/`gm` visibility is not authorization; Q13 owns caller access control.
+- Event reactions consume frozen accepted events and invoke Q2; they never mutate quest state
+  independently.
+- Campaign closure and quest completion never imply each other. C4 consumes Q3 summaries only.
+
+## Planning and acceptance standard
+
+Every future quest feature must have one dependency-plan document with one owner, one lowest
+executable slice, closed input/state semantics, canonical ordering/IDs, derived effects/events,
+stable errors/recovery, cleanup, and focused/full verification. It must cover happy, boundary,
+malformed, missing/corrupt, scope/visibility, replay, transaction failure, routing,
+readback/isolation, and appropriate repository checks.
+
+Revise the feature plan before implementation if it needs a new permanent ID/schema, public
+command, migration, event type, owner, transaction boundary, or semantic decision. Do not use raw
+effects, copied world/campaign state, placeholder conditions, or a second quest owner to bridge an
+unplanned gap.

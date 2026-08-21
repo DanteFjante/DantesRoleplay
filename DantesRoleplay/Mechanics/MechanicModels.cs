@@ -40,7 +40,10 @@ public sealed record MechanicRequirements
     /// by the supervision view to answer "what can this rule see?" without reading its source.
     /// </summary>
     public IReadOnlyList<string> AllComponentIds() =>
-        Roles.Values.SelectMany(r => r.Components).Distinct(StringComparer.Ordinal).ToList();
+        Roles.Values
+            .SelectMany(r => r.Components.Concat(r.ContentComponentIds ?? []))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
 
     /// <summary>
     /// How requirements are read, everywhere. The store validates them at write time and the
@@ -116,6 +119,53 @@ public sealed record MechanicRequirements
         return problems;
     }
 
+    /// <summary>Checks the declared, generic containment projection boundary.</summary>
+    public IReadOnlyList<string> ProjectionProblems()
+    {
+        var problems = new List<string>();
+        foreach (var (role, requirement) in Roles)
+        {
+            var descendantComponents = requirement.ContentComponentIds ?? [];
+            var references = requirement.ComponentReferences ?? [];
+            if (references.Count > ProjectionLimits.MaxContentComponentIds)
+                problems.Add($"Role '{role}' may declare at most {ProjectionLimits.MaxContentComponentIds} componentReferences.");
+            foreach (var reference in references)
+            {
+                if (reference is null || string.IsNullOrWhiteSpace(reference.SourceComponentId) ||
+                    string.IsNullOrWhiteSpace(reference.Field) || reference.Field.Trim() != reference.Field ||
+                    reference.TargetComponentIds.Count == 0 ||
+                    reference.TargetComponentIds.Count > ProjectionLimits.MaxContentComponentIds ||
+                    reference.TargetComponentIds.Any(string.IsNullOrWhiteSpace) ||
+                    reference.TargetComponentIds.Distinct(StringComparer.Ordinal).Count() != reference.TargetComponentIds.Count)
+                {
+                    problems.Add($"Role '{role}' has an invalid component reference declaration.");
+                    continue;
+                }
+
+                if (!requirement.Components.Contains(reference.SourceComponentId, StringComparer.Ordinal) &&
+                    !descendantComponents.Contains(reference.SourceComponentId, StringComparer.Ordinal))
+                    problems.Add($"Role '{role}' component reference source '{reference.SourceComponentId}' is not declared on the role or its contents.");
+            }
+            if (!requirement.IncludeContents)
+            {
+                if (requirement.ContentsDepth is not null)
+                    problems.Add($"Role '{role}' sets contentsDepth without includeContents.");
+                if (requirement.ContentComponentIds is not null)
+                    problems.Add($"Role '{role}' sets contentComponentIds without includeContents.");
+                continue;
+            }
+
+            var depth = requirement.ContentsDepth ?? 1;
+            if (depth is < 1 or > ProjectionLimits.MaxContentsDepth)
+                problems.Add($"Role '{role}' contentsDepth must be between 1 and {ProjectionLimits.MaxContentsDepth}.");
+            if (descendantComponents.Count > ProjectionLimits.MaxContentComponentIds)
+                problems.Add($"Role '{role}' may declare at most {ProjectionLimits.MaxContentComponentIds} contentComponentIds.");
+            if (descendantComponents.Any(string.IsNullOrWhiteSpace) || descendantComponents.Distinct(StringComparer.Ordinal).Count() != descendantComponents.Count)
+                problems.Add($"Role '{role}' contentComponentIds must be distinct and non-empty.");
+        }
+        return problems;
+    }
+
     /// <summary>Closed event-target declaration checks shared by authoring and subscription validation.</summary>
     public IReadOnlyList<string> EventProblems()
     {
@@ -170,11 +220,42 @@ public sealed record EventMechanicRequirement
 /// components are: a rule that looks in someone's possession should have to say so, and a
 /// container holding forty things should not be fetched for a rule that never looks.
 /// </param>
+/// <param name="IncludeRelationships">
+/// Materialise the stable relationship records touching this entity. As with contents, this is
+/// opt-in so a mechanic declaration remains an honest account of the world data it can inspect.
+/// The resolver supplies relationship records only, never the other endpoint's projection.
+/// </param>
+/// <param name="ContentsDepth">
+/// When contents are requested, the number of containment levels to materialise. Omitted is the
+/// compatible direct-child view; the generic projection boundary permits one through four.
+/// </param>
+/// <param name="ContentComponentIds">
+/// The separately declared component allow-list for contained nodes. It never changes what the
+/// root role can see, and an omitted list leaves contained nodes as identity/name/slot only.
+/// </param>
 public sealed record RoleRequirement(
     IReadOnlyList<string> Components,
     bool Optional = false,
     string Description = "",
-    bool IncludeContents = false);
+    bool IncludeContents = false,
+    bool IncludeRelationships = false,
+    int? ContentsDepth = null,
+    IReadOnlyList<string>? ContentComponentIds = null,
+    IReadOnlyList<ComponentReferenceRequirement>? ComponentReferences = null);
+
+/// <summary>A declared entity-id field inside a declared component, and the target components it may reveal.</summary>
+public sealed record ComponentReferenceRequirement(
+    string SourceComponentId,
+    string Field,
+    IReadOnlyList<string> TargetComponentIds);
+
+/// <summary>Generic containment-projection limits; they carry no game meaning.</summary>
+public static class ProjectionLimits
+{
+    public const int MaxContentsDepth = 4;
+    public const int MaxContainedNodes = 100;
+    public const int MaxContentComponentIds = 12;
+}
 
 /// <summary>
 /// A host-side child invocation declaration. The dictionary key in
@@ -226,6 +307,9 @@ public sealed record MechanicProjection
     /// <summary>Role name to the entity filling it. A missing optional role is simply absent.</summary>
     public Dictionary<string, EntityProjection> Roles { get; init; } = [];
 
+    /// <summary>Declared component-reference targets, keyed by their stable entity ids.</summary>
+    public Dictionary<string, ReferencedEntityProjection> References { get; init; } = [];
+
     /// <summary>JSON-object text from the caller — the specifics of this particular action.</summary>
     public string Input { get; init; } = "{}";
 
@@ -267,9 +351,31 @@ public sealed record EntityProjection(
     IReadOnlyDictionary<string, string> Components,
     string? ContainerId = null,
     string ContainerSlot = "",
+    IReadOnlyList<ContainedProjection>? Contains = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    IReadOnlyList<RelationshipProjection>? Relationships = null);
+
+public sealed record ContainedProjection(
+    string Id,
+    string Name,
+    string Slot,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    IReadOnlyDictionary<string, string>? Components = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     IReadOnlyList<ContainedProjection>? Contains = null);
 
-public sealed record ContainedProjection(string Id, string Name, string Slot);
+public sealed record ReferencedEntityProjection(string Id, IReadOnlyDictionary<string, string> Components);
+
+/// <summary>
+/// One relationship touching an explicitly opted-in role. The raw object JSON is preserved so the
+/// mechanic sees the same authored data the relationship store holds, without gaining access to
+/// either endpoint's components or other world state.
+/// </summary>
+public sealed record RelationshipProjection(
+    string FromEntityId,
+    string ToEntityId,
+    string Kind,
+    string Data);
 
 /// <summary>Replayable child output supplied to a parent as frozen JSON data.</summary>
 public sealed record ChildMechanicResult(

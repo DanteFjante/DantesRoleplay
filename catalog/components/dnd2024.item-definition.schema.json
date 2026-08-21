@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "D&D 2024 immutable item definition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["definitionVersion", "kind", "stackPolicy", "massPounds", "sourceRef"],
+  "properties": {
+    "definitionVersion": { "const": 1 },
+    "kind": { "enum": ["adventuring-gear", "ammunition", "weapon", "currency"] },
+    "stackPolicy": { "enum": ["separate", "fungible"] },
+    "massPounds": { "$ref": "#/$defs/rational" },
+    "lengthFeet": { "$ref": "#/$defs/rational" },
+    "capacity": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "weightPounds": { "$ref": "#/$defs/rational" },
+        "volumeCubicFeet": { "$ref": "#/$defs/rational" },
+        "itemCount": { "type": "integer", "minimum": 1 },
+        "permittedItemKinds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["ammunition"] }
+        }
+      }
+    },
+    "currency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["denomination", "copperValue", "coinsPerPound"],
+      "properties": {
+        "denomination": { "enum": ["cp", "sp", "ep", "gp", "pp"] },
+        "copperValue": { "type": "integer", "minimum": 1 },
+        "coinsPerPound": { "const": 50 }
+      }
+    },
+    "weaponProfileId": { "type": "string", "pattern": "^weapon\\.dnd2024\\.[a-z0-9-]+$" },
+    "equipmentModes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": { "enum": ["held", "worn"] },
+      "description": "The closed equipment states this immutable definition may enter. This is eligibility only; it creates no slot, custody, combat, armor, or timing rule."
+    },
+    "sourceRef": { "$ref": "#/$defs/sourceRef" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "const": "weapon" } }, "required": ["kind"] },
+      "then": { "required": ["weaponProfileId"] },
+      "else": { "not": { "required": ["weaponProfileId"] } }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "currency" } }, "required": ["kind"] },
+      "then": { "required": ["currency"], "properties": { "stackPolicy": { "const": "fungible" } } },
+      "else": { "not": { "required": ["currency"] } }
+    }
+  ],
+  "$defs": {
+    "rational": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["numerator", "denominator"],
+      "properties": {
+        "numerator": { "type": "integer", "minimum": 0 },
+        "denominator": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceId", "locator"],
+      "properties": {
+        "sourceId": { "const": "source.dnd2024.srd-5.2.1" },
+        "locator": { "type": "string", "pattern": "^Equipment > ", "minLength": 12, "maxLength": 160 }
+      }
+    }
+  },
+  "$comment": "The containing entity id is the durable, versioned definition identity. Item instances retain that exact id; static facts are not copied to campaign entities."
+}

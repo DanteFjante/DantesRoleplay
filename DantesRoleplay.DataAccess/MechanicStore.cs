@@ -245,6 +245,15 @@ public sealed class MechanicStore(DantesRoleplayDbContext db) : IMechanicStore
                     : string.Join(" ", compositionProblems),
                 Blocking: true));
 
+            var projectionProblems = requirements.ProjectionProblems();
+            checks.Add(new MechanicCheck(
+                "projection-declaration",
+                projectionProblems.Count == 0,
+                projectionProblems.Count == 0
+                    ? "Containment projection declarations are valid."
+                    : string.Join(" ", projectionProblems),
+                Blocking: true));
+
             var eventProblems = requirements.EventProblems();
             checks.Add(new MechanicCheck(
                 "event-declaration",

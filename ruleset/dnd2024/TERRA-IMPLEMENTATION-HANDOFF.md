@@ -15,15 +15,69 @@ check, save, Initiative, attack, and damage vertical session is deterministic. E
 subscriptions is also complete through its six verified slices; it is a dependency for later
 conditions and reactions, not work that remains in this assignment.
 
-**The next and only authorized implementation candidate is Feature 11 Slice 1** in
-`ruleset/dnd2024/feature-11/FEATURE-11-DEPENDENCY-PLAN.md`: introduce the closed
-encounter-owned turn-state component and its safe start transition from Feature 5's existing
-Initiative-order snapshot. Do not begin turn advancement, encounter ending, action economy,
-movement, conditions, or any later feature in that pass.
+**Feature 28 Slice 1 is verified.** Its evidence is in
+`ruleset/dnd2024/feature-28/FEATURE-28-SLICE-1-RECEIPT.md`. Do not begin origin grants,
+backgrounds, feats, class features, item state, or character creation until that boundary is
+the next lowest prerequisite is selected.
+
+**Feature 23 is accepted.** Its evidence is in
+`ruleset/dnd2024/feature-23/FEATURE-23-SLICE-11-RECEIPT.md`. It provides physical items,
+containment, quantity, carrying, equipment state, currency, fixed item activities, and a bounded
+inventory read model.
+
+**Feature 37 is planned but blocked.** Its plan is
+`ruleset/dnd2024/feature-37/FEATURE-37-DEPENDENCY-PLAN.md`. Do not implement D&D travel pace
+until the official source is registered, a generic on-foot route-distance owner, Feature 33 rests,
+and Feature 32 duration lifecycle are each confirmed. Feature 20 Slice 1 supplies base Speed.
+Core world travel/time is already
+the owner of routes, itineraries, movement, and the root clock.
+
+**Feature 36 Slice 1 experience state and eligibility is implemented.**
+Its plan is `ruleset/dnd2024/feature-36/FEATURE-36-DEPENDENCY-PLAN.md`, with campaign authority
+in `campaign/feature-14/CAMPAIGN-FEATURE-14-ADVANCEMENT-AUTHORIZATION-PLAN.md`. Do not store an
+eligibility flag, copied XP total, or campaign policy on a character; C14 owns authorization and
+CH9 owns the level-up transaction. Slice 1 records only a closed XP total and reads a derived,
+effect-free exact-next-level result. C15 now provides campaign-bound active-character scope; do
+not begin the campaign award bridge until C14 semantic confirmation and the CH9 consume seam are
+accepted.
 
 Before implementation, resolve the catalog/database drift currently reported by
 `roleplay verify catalog`. It is unrelated live/catalog work; export or reconcile it deliberately,
 then establish a clean verification baseline. Never use `--force-files` to overwrite it.
+
+**Feature 18 concentration is planned, not assigned for implementation.** Its complete dependency
+plan is `ruleset/dnd2024/feature-18/FEATURE-18-DEPENDENCY-PLAN.md`. It found two upstream
+ownership gaps: a Feature 32 persistent-effect identity/ending protocol, and a confirmed platform
+path for an event reaction to reuse an effect-free child with closed event-payload input. Do not
+implement concentration by duplicating the Constitution-save algorithm or by accepting an
+unvalidated caller-supplied effect id or DC.
+
+**Feature 19 reactions in play is planned, not assigned for implementation.** Its complete
+dependency plan is `ruleset/dnd2024/feature-19/FEATURE-19-DEPENDENCY-PLAN.md`. Opportunity
+attacks need Feature 20 to own spatial position, reach, movement classification, and an atomic
+pre-departure per-reactor trigger, Feature 21 obstacle geometry, and Feature 34 for its “can see”
+condition. They also need a confirmed platform route for reactions to bind the event's dynamic
+reactor/mover into the existing turn-budget and weapon-attack owners. Do not fake those facts with
+caller-supplied coordinates, targets, or an inline attack roll.
+
+**Feature 21 cover and ranged combat is planned.** Its complete dependency plan is
+`ruleset/dnd2024/feature-21/FEATURE-21-DEPENDENCY-PLAN.md`. Its next and only authorised
+implementation candidate is the Feature-7-owned static range-data migration for ranged weapon
+profiles. Do not add cover to permanent Armor Class, invent a target-side “firing into melee”
+penalty, or accept a caller-supplied cover/range/sight result.
+
+**Feature 20 Slice 1 is verified.** Its evidence is in
+`ruleset/dnd2024/feature-20/FEATURE-20-SLICE-1-RECEIPT.md`. The next candidate is Slice 2 only
+after its map/position/reach IDs are confirmed. Do not implement a path move by directly mutating
+the budget: a confirmed derived-cost-to-budget-spender composition contract is required.
+
+**Feature 22 unarmed, improvised, and two-weapon combat is planned.** Its complete dependency
+plan is `ruleset/dnd2024/feature-22/FEATURE-22-DEPENDENCY-PLAN.md`. Its next and only authorised
+implementation candidate is the effect-free Unarmed Strike Damage resolver. Do not make a fictional
+unarmed weapon profile or use a caller-supplied position, hand count, Grapple source, Shove
+destination, improvised damage profile, or Attack-action history. Full Grapple, Shove push,
+improvised weapon, and Light two-weapon behavior remains blocked on the named Feature 20, 15, 25,
+capacity, and ledger seams.
 
 ## Read in this order
 

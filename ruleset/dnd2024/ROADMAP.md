@@ -1,6 +1,6 @@
 # D&D 2024 ruleset development roadmap
 
-Status: **Features 1–10 verified; Features 11–38 are the tracked complete-play backlog**
+Status: **Features 1–13 verified; Feature 23 accepted; Feature 28 Slice 1 verified; Features 14–17 have full dependency plans; the remaining rows are planned backlog**
 Last updated: 2026-08-20
 
 ## Purpose and authority
@@ -83,24 +83,24 @@ small D&D 2024 test session
 | 8 | Weapon attack rolls against Armor Class | Features 3, 6, 7 | Verified | Multiattack, opportunity attacks, spell attacks, damage application |
 | 9 | Weapon damage and transactional Hit Point loss | Features 6–8 and deterministic dice | Verified | Resistance, immunity, vulnerability, healing, unconsciousness, death saves |
 | 10 | One reproducible vertical test session | Features 1–9 | Verified | Campaign management, character builder, complete combat engine |
-| 11 | Turn and round lifecycle: active participant, turn advance, round counter, and encounter end | Feature 5 | Planned — Slice 1 next | Simultaneous turns, Initiative rerolls each round, delay, ready |
-| 12 | Action economy: Action, Bonus Action, Reaction, interaction, and Move are spent and restored | Feature 11 | Planned | Legendary/lair actions and multiattack routines |
-| 13 | SRD conditions: apply, list, clear, and enforce their effects on checks, saves, and attacks | Feature 12; E1 | Planned | Homebrew conditions, species-based immunity, non-SRD stacking rules |
-| 14 | Exhaustion levels and their D20 Test and speed effects | Feature 13 | Planned | Recovery pacing beyond the long-rest rule |
-| 15 | Damage types with resistance, immunity, and vulnerability in SRD order | Feature 9 | Planned | Damage transfer, shared damage, absorption |
-| 16 | Temporary Hit Points and healing, including no-stacking rules | Features 6, 15 | Planned | Timed regeneration and healing over time |
-| 17 | Dying: zero HP, unconsciousness, death saves, stabilization, and massive-damage death | Feature 13; E1 | Planned | Resurrection and lingering injuries |
-| 18 | Concentration: one effect at a time, damage-triggered save, and ending conditions | Features 13; E1 | Planned | Metamagic and feature-specific exceptions |
-| 19 | Reactions in play: opportunity attacks and triggered abilities | Feature 12; E1 | Planned | Counterspell timing puzzles and held actions |
-| 20 | Position and movement: speed, distance, difficult terrain, and reach as attack preconditions | Feature 11 | Planned | Rendered grid, pathfinding, flanking, elevation/3D terrain |
-| 21 | Cover and ranged combat: half/three-quarters cover, long-range Disadvantage, firing into melee | Feature 20 | Planned | Line-of-sight geometry and projectile physics |
-| 22 | Unarmed and improvised combat: unarmed strike, grapple, shove, and two-weapon fighting | Features 8, 12, 20 | Planned | Wrestling subsystems and called shots |
-| 23 | Equipment and inventory: item entities, containment, currency, and supported carrying rules | Feature 7 | Planned | Shopping economy, crafting, item durability |
+| 11 | Turn and round lifecycle: active participant, turn advance, round counter, and encounter end | Feature 5 | **Verified** — [plan](feature-11/FEATURE-11-DEPENDENCY-PLAN.md) | Simultaneous turns, Initiative rerolls each round, delay, ready |
+| 12 | Action economy: Action, Bonus Action, Reaction, interaction, and Move are spent and restored | Feature 11 | **Verified** — [plan](feature-12/FEATURE-12-DEPENDENCY-PLAN.md), [receipt](feature-12/FEATURE-12-IMPLEMENTATION-RECEIPT.md) | Legendary/lair actions, multiattack routines, and which rule costs which resource |
+| 13 | SRD conditions: apply, list, clear, and enforce their effects on checks, saves, and attacks | Feature 12 | **Verified** — [plan](feature-13/FEATURE-13-DEPENDENCY-PLAN.md), [receipts](feature-13/) | Homebrew conditions, species-based immunity, non-SRD stacking, Exhaustion (Feature 14), and every positional condition effect |
+| 14 | Exhaustion levels and their D20 Test and speed effects | Feature 13; E1 | **Revised plan** — Slice 0 first repairs ordinary-action event propagation, then 3 rules slices | Recovery pacing (Feature 33) and death at level 6 (Feature 17) |
+| 15 | Damage types with resistance, immunity, and vulnerability in SRD order | Features 9, 13; E1 | **Planned in full** (4 slices) | Damage transfer, shared damage, absorption, half-damage-on-a-save |
+| 16 | Temporary Hit Points and healing, including no-stacking rules | Features 6, 15; E1 | **Planned in full** (3 slices) | Timed regeneration, healing over time, and every source of healing |
+| 17 | Dying: zero HP, unconsciousness, death saves, stabilization, and massive-damage death | Features 13–16; E1 | **Planned in full** (7 slices) | Resurrection, lingering injuries, and the 1d4-hour stable recovery (needs a clock) |
+| 18 | Concentration: one effect at a time, damage-triggered save, and ending conditions | Features 4, 13, 15–17, 32; E1 and confirmed reaction composition | **Planned in full** — [plan](feature-18/FEATURE-18-DEPENDENCY-PLAN.md); runtime slices are blocked by the effect-source and composition boundaries | Metamagic and feature-specific exceptions |
+| 19 | Reactions in play: opportunity attacks and triggered abilities | Features 8, 12, 20–21, 34; E1 and confirmed reaction composition/choice protocol | **Planned in full** — [plan](feature-19/FEATURE-19-DEPENDENCY-PLAN.md); runtime slices are blocked by Feature 20 spatial timing, Feature 21 geometry, Feature 34 sight, and dynamic reaction composition | Counterspell timing puzzles and held actions |
+| 20 | Position and movement: speed, distance, difficult terrain, and reach as attack preconditions | Features 11–12, 23; E1 and confirmed derived-input composition | **Slice 1 verified** — [plan](feature-20/FEATURE-20-DEPENDENCY-PLAN.md), [receipt](feature-20/FEATURE-20-SLICE-1-RECEIPT.md); Slice 2 map/placement/reach ids need confirmation | Rendered grid, pathfinding, flanking, elevation/3D terrain |
+| 21 | Cover and ranged combat: half/three-quarters cover, long-range Disadvantage, and ranged attacks in close combat | Features 6–8, 13, 20, 34; confirmed trusted attack-context composition | **Planned in full** — [plan](feature-21/FEATURE-21-DEPENDENCY-PLAN.md); Slice 1 (ranged profile range data) is next | Arbitrary/dynamic geometry and projectile physics |
+| 22 | Unarmed and improvised combat: unarmed strike, grapple, shove, improvised weapons, and two-weapon fighting | Features 4, 8, 12–13, 15, 20, 23, 25; confirmed condition/spend composition | **Planned in full** — [plan](feature-22/FEATURE-22-DEPENDENCY-PLAN.md); Slice 1 (effect-free Unarmed Strike Damage resolver) is next | Wrestling subsystems and called shots |
+| 23 | Equipment and inventory: item entities, containment, currency, and supported carrying rules | Feature 7 | **Accepted** — bounded physical inventory, carrying, equipment, currency, and fixed item activities are implemented; [plan](feature-23/FEATURE-23-DEPENDENCY-PLAN.md), [receipts](feature-23/) | Shopping economy, crafting, item durability |
 | 24 | Armor, shields, and Armor Class derived from worn equipment | Features 6, 23 | Planned | Every natural-armor formula and magical stacking exception |
 | 25 | Weapon properties and mastery: finesse, versatile, thrown, loading, ammunition, and 2024 mastery | Features 8, 23 | Planned | Weapon content beyond the SRD catalog |
 | 26 | SRD species traits and their mechanical grants | Feature 2 | Planned | Non-SRD species and custom lineages |
 | 27 | Classes and levels: features, hit dice, subclasses, proficiency grants, and multiclassing rules | Features 2, 26 | Planned | Non-SRD subclasses and homebrew progression |
-| 28 | Backgrounds, feats, and ability-score improvements | Feature 27 | Planned | Non-SRD feats |
+| 28 | Character-origin foundation: language/tool proficiency state, then backgrounds, feats, and ability-score improvements | Feature 2 for Slice 1; Feature 27 for later grant resolution | Slice 1 verified — [plan](feature-28/FEATURE-28-DEPENDENCY-PLAN.md), [receipt](feature-28/FEATURE-28-SLICE-1-RECEIPT.md) | Non-SRD feats; language/tool checks, crafting, and feature effects |
 | 29 | Attunement and magic items: SRD item set, attunement slots, and item-granted effects | Features 23; E1 | Planned | Artifacts, sentient items, and item creation |
 | 30 | Guided character creation producing a legal playable sheet | Features 23–28 | Planned | Visual character-builder UX |
 | 31 | Spellcasting resources: slots, known/prepared spells, spellcasting ability, save DC, and attack bonus | Feature 27 | Planned | Spell-point variants and non-SRD spells |
@@ -108,8 +108,8 @@ small D&D 2024 test session
 | 33 | Rests: short/long rest, Hit Dice, resource recovery, and expiry | Features 14, 27 | Planned | Gritty-realism and other optional rest variants |
 | 34 | Vision/light, hiding, passive Perception, and encounter surprise | Features 13, 20 | Planned | Dynamic-lighting geometry |
 | 35 | Monsters and stat blocks: creature data, CR, traits, actions, and encounter building | Features 6–9, 27 | Planned | Full SRD bestiary import as part of the capability |
-| 36 | Advancement: XP or milestone and level-up through existing class features | Feature 27 | Planned | Automatic optimisation and respec tooling |
-| 37 | Travel, exploration, and time: pace, distance, and a clock for rests/durations | Features 33; E1 | Planned | Weather simulation and hex-crawl generation |
+| 36 | Advancement: XP or milestone and level-up through existing class features | Feature 27; Campaign C14; Character CH9 | **Slice 1 implemented:** explicit XP state and effect-free next-level eligibility; campaign awards and level-up remain blocked on C14, Feature 27, and CH9 — [plan](feature-36/FEATURE-36-DEPENDENCY-PLAN.md) | Automatic optimisation and respec tooling |
+| 37 | D&D travel pace and time integration: apply an authorized pace policy and elapsed-time consequences to the existing world routes, itinerary, and clock | Features 20, 32, 33; core world travel/time; E1 | **Planned; blocked on source registration, generic route-distance ownership, and Features 32–33** — [plan](feature-37/FEATURE-37-DEPENDENCY-PLAN.md) | Rebuilding routes, maps, clocks, conveyances, weather simulation, or hex-crawl generation |
 | 38 | Social interaction: attitude, influence checks, and non-trivial persuasion | Feature 3 | Planned | NPC personality simulation |
 
 Feature numbers express dependency order, not permission to begin them. Features 1–10 are verified.
@@ -122,6 +122,24 @@ including natural-20/1 classification, without damage or persistence. Feature 9 
 effect-free confirmed-hit damage evidence and a composed, transactional target Hit Point
 application parent. Feature 10's catalog-owned baseline fixtures and two-database deterministic
 vertical-session harness are verified. The first reproducible D&D 2024 session is complete.
+
+Features 12–17 have full recursive dependency plans, and Feature 23's plan is accepted, under `ruleset/dnd2024/feature-NN/`,
+written to the `TERRA-FEATURE-PLANNING-GUIDE.md` bar and stopping before implementation. The
+following findings change this table rather than only those files:
+
+- **Feature 15 depends on Feature 13**, not on Feature 9 alone. Petrified grants Resistance to all
+  damage, so a mitigation resolver blind to conditions would be wrong on the day it shipped.
+- **Two hidden dependencies exist that no row here names**, both discovered by expanding Feature 17:
+  a minimal `dnd2024.creature-kind` marker (nothing distinguishes a player character from a monster,
+  and the dying rules branch on exactly that), and a condition-integrity guard (a subscribed
+  mechanic may not declare children, so a reaction cannot reuse Feature 13's condition writer).
+- **Features 14, 15 and 16 each register an event a later feature subscribes to.** A feature that
+  produces a fact a later feature must react to declares an event for it in the pass that produces
+  the fact; retrofitting one means revising a verified mechanic and re-running its exit gate.
+- **Feature 22 has four additional explicit seams:** Feature 20 owns tactical reach and the future
+  forced-push transition; a narrow manipulation-capacity/encounter-grapple reader is needed for
+  free hands; Feature 25 owns Light and weapon-hand facts; and a distinct per-turn Attack-action
+  ledger is required because Feature 12 intentionally records only whether an Action was spent.
 
 `ROADMAP-COMPLETE-PLAY.md` remains the supporting rationale for Features 11–38. This table is the
 single numbered feature index used to track progress.

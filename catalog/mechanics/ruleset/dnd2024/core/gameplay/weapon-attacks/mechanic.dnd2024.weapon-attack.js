@@ -106,6 +106,9 @@ if (inputKeys.indexOf('rollCircumstances') !== -1) {
     if (duplicateCircumstances[circumstanceKey]) {
       throw new Error('rollCircumstances must not repeat an exact kind and source pair.');
     }
+    if (circumstance.source.indexOf('condition:') === 0) {
+      throw new Error('rollCircumstances source prefix condition: is reserved for derived condition state.');
+    }
     duplicateCircumstances[circumstanceKey] = true;
     circumstances.push({ kind: circumstance.kind, source: circumstance.source });
     if (circumstance.kind === 'advantage') { hasAdvantage = true; }
@@ -146,6 +149,42 @@ var profile = parse(weapon.components['dnd2024.weapon-profile'], 'Weapon profile
 if (!validProfile(profile)) { throw new Error('Weapon profile state is invalid.'); }
 if (profile.attackAbilities.indexOf(input.ability) === -1) {
   throw new Error('The selected ability is not permitted by this canonical weapon profile.');
+}
+
+var attackerChildren = ctx.children && ctx.children.attackerEffects;
+var targetChildren = ctx.children && ctx.children.targetEffects;
+if (!Array.isArray(attackerChildren) || attackerChildren.length !== 1 || !Array.isArray(targetChildren) || targetChildren.length !== 1) {
+  throw new Error('Exactly one condition state-effects result is required for each attack participant.');
+}
+function readEffects(child, expectedId, branch) {
+  var report;
+  try { report = JSON.parse(child.output && child.output.data ? child.output.data : '{}'); }
+  catch (error) { throw new Error('Condition state-effects result is unreadable.'); }
+  if (!report || typeof report !== 'object' || Array.isArray(report) || report.test !== 'd20-test-state-effects' ||
+      report.subjectId !== expectedId || typeof report.conditionsKnown !== 'boolean' || !report.byTest ||
+      typeof report.byTest !== 'object' || Array.isArray(report.byTest) || !Array.isArray(report.byTest[branch])) {
+    throw new Error('Condition state-effects result has an invalid shape.');
+  }
+  var derived = report.byTest[branch];
+  for (var index = 0; index < derived.length; index++) {
+    var item = derived[index];
+    if (!closed(item, ['kind', 'source']) || (item.kind !== 'advantage' && item.kind !== 'disadvantage') ||
+        typeof item.source !== 'string' || item.source.indexOf('condition:') !== 0) {
+      throw new Error('Condition-derived attack circumstance is invalid.');
+    }
+  }
+  return { conditionsKnown: report.conditionsKnown, circumstances: derived };
+}
+var attackerEffects = readEffects(attackerChildren[0], subject.id, 'attackRoll');
+var targetEffects = readEffects(targetChildren[0], target.id, 'attackAgainst');
+var mergedCircumstances = circumstances.concat(attackerEffects.circumstances, targetEffects.circumstances);
+for (var derivedIndex = 0; derivedIndex < attackerEffects.circumstances.length; derivedIndex++) {
+  if (attackerEffects.circumstances[derivedIndex].kind === 'advantage') { hasAdvantage = true; }
+  else { hasDisadvantage = true; }
+}
+for (var targetIndex = 0; targetIndex < targetEffects.circumstances.length; targetIndex++) {
+  if (targetEffects.circumstances[targetIndex].kind === 'advantage') { hasAdvantage = true; }
+  else { hasDisadvantage = true; }
 }
 
 var rollMode = 'normal';
@@ -202,6 +241,11 @@ return {
     rolls: rolls,
     roll: roll,
     rollCircumstances: circumstances,
+    attackerDerivedCircumstances: attackerEffects.circumstances,
+    targetDerivedCircumstances: targetEffects.circumstances,
+    mergedCircumstances: mergedCircumstances,
+    attackerConditionsKnown: attackerEffects.conditionsKnown,
+    targetConditionsKnown: targetEffects.conditionsKnown,
     total: total,
     hit: hit,
     critical: critical,

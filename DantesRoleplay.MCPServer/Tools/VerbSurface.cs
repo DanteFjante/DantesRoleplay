@@ -50,6 +50,31 @@ public static class VerbSurface
             ["id", "ids", "nameQuery", "withDefinitionId", "limit"],
             ["procedure.system.inspect"]),
         new(
+            "graph",
+            "A generic bounded entity graph from one root, selected component definitions, containment, and named relationships. Trusted administrative read only.",
+            ["id", "componentIds", "containmentDepth", "relationshipKinds", "relationshipDepth", "maxNodes", "maxEdges"],
+            ["procedure.system.inspect"]),
+        new(
+            "journey-plan",
+            "A trusted-GM, read-only, bounded on-foot itinerary from a traveller's actual containment to one destination.",
+            ["worldId", "travellerId", "destinationId"],
+            ["procedure.game.core.world.travel"]),
+        new(
+            "itinerary-plan",
+            "A trusted-GM, read-only mode-aware itinerary using only explicitly selected co-located conveyances and fixed portals.",
+            ["worldId", "travellerId", "destinationLocationId", "groundConveyanceId", "aerialConveyanceId"],
+            ["procedure.game.core.world.itinerary"]),
+        new(
+            "campaign-resume",
+            "A fixed bounded trusted-host campaign continuity view. With includeSession true it additionally composes one validated active-session header; it never accepts graph, history, or audience filters.",
+            ["id", "includeSession"],
+            ["procedure.campaign.chapter", "procedure.campaign.session"]),
+        new(
+            "quest-summary",
+            "A fixed bounded trusted-host active-quest view with objective evidence links and verified recent transitions. It reads one quest id and never accepts graph, history, or audience filters.",
+            ["id"],
+            ["procedure.quest.inspect"]),
+        new(
             "mechanics",
             "Mechanic summaries. With id, one game rule in full including its JavaScript source.",
             ["id", "version", "query", "category", "scope", "includeInactive", "limit"],
@@ -165,6 +190,33 @@ public static class VerbSurface
             SupportsDryRun: false,
             ["procedure.action.run", "procedure.event.chain-limits"]),
         new(
+            "itinerary-advance",
+            "Validate one current mode-aware itinerary leg, execute it through its existing movement owner, then return a fresh itinerary. Never batches later legs.",
+            "{worldId, travellerId, destinationLocationId, itineraryFingerprint, nextLegIndex, groundConveyanceId?, aerialConveyanceId?}",
+            """
+            {"worldId":"...","travellerId":"...","destinationLocationId":"...","itineraryFingerprint":"...","nextLegIndex":0}
+            """,
+            SupportsDryRun: false,
+            ["procedure.game.core.world.itinerary", "procedure.action.run", "procedure.event.chain-limits"]),
+        new(
+            "campaign",
+              "Validate/create an existing-world campaign, maintain its one-arc continuity, validate/start one campaign session, or attach one existing actor through campaign-owned participation. Every structural write is derived internally.",
+              "validate/create CampaignBlueprint | initialize-continuity CampaignContinuitySeed | advance-chapter | close-chapter | conclude-arc | validate-session {operation, campaignId, sessionId} | attach-character-participation {operation, campaignId, actorId} (call query(kind: \"capabilities\") for exact fields)",
+            """
+            {"operation":"initialize-continuity","seed":{"campaignId":"campaign.test.sealed-observatory","chapter":{"localKey":"chapter.opening","title":"...","partyQuestion":"..."},"arc":{"localKey":"arc.observatory","title":"...","partyStake":"..."}}}
+            """,
+            SupportsDryRun: false,
+              ["procedure.campaign.create", "procedure.campaign.session", "procedure.campaign.character-participation"]),
+        new(
+            "quest",
+            "Atomically create one closed campaign-scoped draft quest or run its governed lifecycle. Caller effects, child ids, and link data are forbidden.",
+            "create: {questId, title, premise, summary, visibility, campaignId, arcId, chapterIds[1..2], objectives[3]}; root lifecycle: {operation: offer|accept|reconcile|fail|reopen-quest|archive, questId, expectedQuestStatus, reason}; set-objective: {operation, questId, expectedQuestStatus, objectiveId, expectedObjectiveStatus, targetStatus: completed|blocked|failed, reason}; unblock-objective/reopen-objective omit targetStatus. Each create objective is {localKey, title, actionableSummary, required, visibility, displayOrder, prerequisiteLocalKeys, references}; reference is {entityId, role, audience}.",
+            """
+            {"operation":"reconcile","questId":"quest.test.missing-margin","expectedQuestStatus":"active","reason":"The required objectives now determine the quest outcome."}
+            """,
+            SupportsDryRun: false,
+            ["procedure.quest.create", "procedure.quest.modify"]),
+        new(
             "notification",
             "Move one notification to unread, read, or archived. It cannot change what a notice "
             + "says — only a rule that committed can, and only once.",
@@ -184,6 +236,7 @@ public static class VerbSurface
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["id"] = "One full record instead of a list.",
+            ["includeSession"] = "Campaign resume only: require one active scoped session and compose its header with current C3 context.",
             ["ids"] = "Several entities in full, in one call.",
             ["version"] = "An older revision. Only meaningful together with id.",
             ["query"] = "Search words, matched against ids, names, descriptions and match phrases.",
@@ -195,6 +248,18 @@ public static class VerbSurface
             ["limit"] = "Maximum records returned. Defaults: 200 procedures, 50 mechanics and "
                 + "entities, 20 history.",
             ["sample"] = "How many example entities the world summary carries. Default 10.",
+            ["componentIds"] = "Graph only: required distinct component-definition ids to include; all other component data stays out.",
+            ["containmentDepth"] = "Graph only: required descendant-containment depth, from 0 through 2.",
+            ["relationshipKinds"] = "Graph only: required distinct relationship kinds; [] means no relationship traversal.",
+            ["relationshipDepth"] = "Graph only: required relationship traversal depth, from 0 through 2.",
+            ["maxNodes"] = "Graph only: optional node cap, 1–100; default 50.",
+            ["maxEdges"] = "Graph only: optional edge cap, 0–200; default 100.",
+            ["worldId"] = "Journey plan only: required active world-root id.",
+            ["travellerId"] = "Journey plan only: required active traveller id; origin is derived from containment.",
+            ["destinationId"] = "Journey plan only: required active destination location id.",
+            ["destinationLocationId"] = "Mode-aware itinerary only: required active destination location id.",
+            ["groundConveyanceId"] = "Mode-aware itinerary only: optional selected active ground conveyance id.",
+            ["aerialConveyanceId"] = "Mode-aware itinerary only: optional selected active aerial conveyance id.",
             ["failuresOnly"] = "Only operations that failed.",
             ["tool"] = "Only operations recorded against this tool name.",
             ["subject"] = "Only operations that touched this subject — usually an id."

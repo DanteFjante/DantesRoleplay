@@ -7,7 +7,9 @@ status: active
 ---
 
 ## Description
-Resolves the definitive D&D 2024 raw or named-skill fixed-DC ability check with validated Advantage/Disadvantage circumstances, seeded one- or two-d20 selection, ability modifier, and derived proficiency bonus when applicable.
+Resolves the definitive D&D 2024 raw or named-skill fixed-DC ability check with caller and
+condition-derived Advantage/Disadvantage circumstances, seeded one- or two-d20 selection, ability
+modifier, and derived proficiency bonus when applicable.
 
 ## Matches
 ability check
@@ -40,6 +42,5 @@ survival check
 
 ## Requirements
 ```json
-{"roles":{"subject":{"components":["dnd2024.abilities","dnd2024.character-level","dnd2024.skill-proficiencies"],"description":"The creature making a D&D 2024 raw or named-skill ability check."}}}
+{"roles":{"subject":{"components":["dnd2024.abilities","dnd2024.character-level","dnd2024.skill-proficiencies"],"description":"The creature making a D&D 2024 raw or named-skill ability check."}},"children":{"stateEffects":{"mechanicId":"mechanic.dnd2024.d20-test.state-effects","roleBindings":{"subject":"subject"},"inheritInput":false,"input":"{}"}}}
 ```
-

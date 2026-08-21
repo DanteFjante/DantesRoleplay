@@ -1,0 +1,10 @@
+var item=ctx.roles.item,holder=ctx.roles.holder;
+if(ctx.input===null||Array.isArray(ctx.input)||typeof ctx.input!=='object'||Object.keys(ctx.input).length!==1||['held','worn'].indexOf(ctx.input.state)<0)throw new Error('Input must contain exactly state: held or worn.');
+function p(raw,message){try{var value=JSON.parse(raw);}catch(e){throw new Error(message);}if(value===null||Array.isArray(value)||typeof value!=='object')throw new Error(message);return value;}
+if(item.containerId!==holder.id)throw new Error('The item must be directly contained by the named holder before it can be equipped.');
+var instance=p(item.components['dnd2024.item-instance'],'Item instance is invalid.');if(typeof instance.definitionId!=='string'||instance.definitionId.length===0)throw new Error('Item instance is invalid.');
+if(item.components['dnd2024.item-quantity'])throw new Error('A fungible item stack cannot be equipped.');
+var existing=item.components['dnd2024.equipment-state'];if(existing){var state=p(existing,'Equipment state is invalid.');if(state.state!=='unequipped')throw new Error('The item is already equipped.');}
+var reference=ctx.references[instance.definitionId];if(!reference||!reference.components['dnd2024.item-definition'])throw new Error('Item definition is unavailable.');var definition=p(reference.components['dnd2024.item-definition'],'Item definition is invalid.');
+if(!Array.isArray(definition.equipmentModes)||definition.equipmentModes.length===0||definition.equipmentModes.some(function(mode){return ['held','worn'].indexOf(mode)<0;})||definition.equipmentModes.indexOf(ctx.input.state)<0)throw new Error('The item definition does not permit this equipment state.');
+return {narration:item.name+' is '+ctx.input.state+' by '+holder.name+'.',effects:[{type:existing?'component.set':'component.add',entityId:item.id,definitionId:'dnd2024.equipment-state',data:JSON.stringify({state:ctx.input.state})}],data:{itemId:item.id,holderId:holder.id,definitionId:instance.definitionId,state:ctx.input.state}};

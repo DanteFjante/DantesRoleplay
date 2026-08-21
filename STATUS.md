@@ -1,6 +1,6 @@
 # DantesRoleplay — status
 
-Last updated 2026-08-20. Tracks against `ARCHITECTURE.md`. Update this in the same change that
+Last updated 2026-08-21. Tracks against `ARCHITECTURE.md`. Update this in the same change that
 moves an item.
 
 **Legend:** ✅ done and covered by passing tests · 🟡 partly done, or done but unreachable ·
@@ -19,6 +19,20 @@ so **every `commit` had been failing at invocation** with no envelope and no aud
 
 What is left is not machinery: content to play with, a story frame to hang it on, and a stranger
 driving it without being told how. `NEXT_STEPS.md` is the list.
+
+**Implementation:** Feature 36 Slice 1 adds closed, source-backed character XP state plus an
+effect-free exact-next-level eligibility reader. Campaign C14 still owns policy/authorization and
+Character CH9 remains the only level-up transaction; no campaign award or character level change
+is enabled by this slice.
+
+**Implementation:** Campaign C15 now supplies a campaign-owned active-character participation
+scope and a trusted-host atomic attach operation. It preserves actors and uses no new tool/kind;
+withdrawal remains blocked on Character CH13.
+
+**Campaign C15 Slice 1:** the campaign-owned character-participation component, procedure, and
+read-only active-scope verifier are verified in a disposable catalog import. The verifier writes
+nothing and accepts only one valid active campaign→participation→actor graph; C15 attachment,
+CH5 composition, withdrawal, and CH13 handoff remain separately confirmation-gated.
 
 ---
 
@@ -280,13 +294,113 @@ The risk `ARCHITECTURE.md` §2 calls the major one. Three things answer it, all 
   the closed state and start transition. Advance and explicit end remain separately review-gated.
   No runtime game artifact was created. Current unrelated catalog/database drift must be resolved
   before its file-first import pass.
-- 🟡 `STORY_FIRST_ROADMAP.md` now makes persistent world, exploration, lore, quests, and fresh-
-  session continuity the product priority. `world/feature-01/WORLD-FEATURE-01-DEPENDENCY-PLAN.md`
-  is the first new-standard feature plan: it specifies persistent world topology through one
-  implementation slice, recursive dependencies, ownership, closed data, a fixture graph, and a
-  full acceptance matrix. Slice 1 awaits confirmation of permanent IDs/schema meanings. Under the
-  repository-first workflow, catalog/database drift blocks persistent import for integration/release
-  but not planning or disposable `roleplay validate catalog` verification.
+- 🟡 `CHARACTER_CREATION_PLAN.md` is the authoritative CH0–CH14 character-feature base roadmap.
+  CH0's Human Soldier Fighter first path is ratified as one complete SRD 5.2.1 level-one
+  non-spellcasting fixture. CH1 Slice 1 now verifies immutable Human, Soldier, and Fighter
+  content provenance; profile writing and later content remain gated on their named owners;
+  campaign attachment, missing grant/derivation owners, CH5 staged composition, and a campaign-owned
+  advancement authorization remain blockers. CH6 presumes no new surface; CH7 limits
+  correction/expansion; CH8 is stateless guidance with a separately gated, loopback website consumer;
+  CH9 is one atomic non-spellcasting level 1→2 fixture, not XP/milestone policy or general leveling;
+  CH10 consumes a future ruleset spellcasting-resource owner and does not duplicate spells/slots or
+  spell resolution; CH11 consumes a future ruleset feat/ASI owner and a level-appropriate CH9 slice,
+  not the creation-time ability writer; CH12 owns an atomic migration from singular to plural class
+  membership before one non-spellcasting second-class fixture; CH13 adds only voluntary
+  active→retired→archived lifecycle with campaign participation coordination; CH14 consumes future
+  identity/policy enforcement for one principal-to-active-character control grant. No character runtime artifact was created.
+- 🟡 `SESSION_OPERATIONS_PLAN.md` is the authoritative S0–S9 session-product roadmap. It maps
+  Campaign Feature C8 to the initial lifecycle, factual recap, and checkpoint boundary without
+  duplicating C8's session-record owner; later participant control, gameplay handoff, narrative
+  artifacts, player-safe controls, and remote collaboration remain separate named successors.
+  [S0](session/feature-00/SESSION-FEATURE-00-RATIFICATION.md) is ratified for C8's C3-only,
+  trusted-host first fixture: quest/audience projections are omitted and checkpoint evidence waits
+  for S4. [S1](session/feature-01/SESSION-FEATURE-01-DEPENDENCY-PLAN.md)
+  then plans one campaign-scoped active-session record/start transaction without recap, checkpoint,
+  participant, or gameplay state. [S2](session/feature-02/SESSION-FEATURE-02-DEPENDENCY-PLAN.md)
+  then plans a zero-effect fresh-host resume projection from current approved owner state, not a
+  transcript or session-local cache. [S3](session/feature-03/SESSION-FEATURE-03-DEPENDENCY-PLAN.md)
+  then plans one atomic active→ended transition with an immutable source-bound factual recap, not
+  free-form GM/AI prose. [S4](session/feature-04/SESSION-FEATURE-04-DEPENDENCY-PLAN.md) separates
+  named checkpoint evidence and host-interruption read recovery from a separately gated, full-scope
+  atomic restore. [S5](session/feature-05/SESSION-FEATURE-05-DEPENDENCY-PLAN.md) then plans an
+  immutable same-campaign session-to-character roster reference without copying player, character,
+  or gameplay state. [S6](session/feature-06/SESSION-FEATURE-06-DEPENDENCY-PLAN.md) plans
+  pre-selection eligibility and atomic audit correlation for one opt-in existing action, without a
+  second action root or session activity log. [S7](session/feature-07/SESSION-FEATURE-07-DEPENDENCY-PLAN.md)
+  then plans one immutable, attributed, source-bound noncanonical trusted-host recap, not a
+  transcript or a second factual record. [S8](session/feature-08/SESSION-FEATURE-08-DEPENDENCY-PLAN.md)
+  then separates a fixed policy-gated participant view from one later delegated player-safe action;
+  it creates no browser-owned session or game authority. [S9](session/feature-09/SESSION-FEATURE-09-DEPENDENCY-PLAN.md)
+  finally plans authenticated remote participant freshness and one action-owner concurrency fixture,
+  without a host lease, presence log, global lock, or second transaction system. No session runtime
+  artifact was created.
+- ✅ Quest Q1 is verified: the closed creation-only quest surface creates a draft quest with three
+  dormant objectives, canonical entity-name titles, exact C3 scope, and scoped/visibility-checked
+  references. The focused Q1 suite passes 5/5, capability/guard/protocol coverage passes 17/17,
+  disposable catalog validation passes 197 records (four non-blocking overlap warnings), and the
+  serialized full suite passes 472/472. See
+  `QUEST_IMPLEMENTATION_PLAN.md`. Q2.1 now replaces the former provisional lifecycle sketch; Q3
+  remains blocked on the complete Q2 feature.
+- ✅ Quest Q2.1 is verified in `quest/feature-02/QUEST-FEATURE-02-SLICE-1-RECEIPT.md`: the closed
+  `procedure.quest.modify` offer/accept union keeps creation on the existing quest commit, records
+  the factual reason in its audit, applies one atomic derived batch, and activates only initially
+  eligible objectives. Focused/surface/catalog checks pass and the serialized full suite passes
+  491/491.
+- ✅ Quest Q2.2 is verified in `quest/feature-02/QUEST-FEATURE-02-SLICE-2-RECEIPT.md`: closed
+  objective completion activates newly eligible dependants in canonical order, while block and
+  unblock change only the owned objective. Foreign, stale, malformed, and invalid-target requests
+  write no structural event. Focused/surface/catalog checks pass and the serialized full suite
+  passes 498/498. Q2.3 reconciliation and terminal correction is recorded below.
+- ✅ Quest Q2 is complete in `quest/feature-02/QUEST-FEATURE-02-SLICE-3-RECEIPT.md`: explicit
+  reconciliation applies required-failure precedence and required-completion outcome only when
+  called; fail/reopen/archive and guarded objective reopening are one-effect corrections. Focused,
+  surface, catalog, and serialized full-suite evidence passes 8/8, 30/30, valid 231-record catalog,
+  and 503/503 respectively. Q3 remains the separately planned read/history boundary.
+- 🟡 Quest Q3 is planned in `quest/feature-03/QUEST-FEATURE-03-DEPENDENCY-PLAN.md`: one proposed
+  bounded trusted-host summary derives current Q2 state, reference metadata, and status-only
+  ledger history without parsing audit prose or creating another mutable store. Q3.0 requires
+  confirmation of its new procedure/query/result boundary; real player/party authorization remains C5.
+- ✅ World Feature 1 Slice 1 is verified: `game.core.world.root`,
+  `game.core.world.location`, their governing topology procedure, and a five-entity world fixture
+  establish one world root, region, three locations, four containment edges, and two canonical
+  adjacency edges. Fresh-import regression coverage, `roleplay validate catalog` (99 records; two
+  pre-existing near-duplicate warnings), and the full suite (374/374) pass without a persistent
+  database import. See `world/feature-01/WORLD-FEATURE-01-RECEIPT.md`. World Feature 2 movement
+  remains a separate planning gate.
+- ✅ World Feature 2 Slice 1 is verified: mechanics can now declare
+  `includeRelationships` on a role and receive only a frozen, ordered list of relationship records
+  touching that role. Unrequested relationships remain absent from the JavaScript projection and
+  deleted endpoints are excluded. The focused projection suite passes 27/27 and the full suite
+  passes 382/382; no persistent database import occurred. See
+  `world/feature-02/WORLD-FEATURE-02-SLICE-1-RECEIPT.md`.
+- ✅ World Feature 2 is complete: the active traveller fixture and governed adjacent-movement
+  mechanic move only across one stored Feature 1 connection, preserve all non-containment state,
+  and record the existing correlated structural event. Fresh-import movement coverage passes 4/4,
+  catalog validation reports 103 records (five non-blocking warnings), and the full suite passes
+  386/386. No persistent database import occurred. See
+  `world/feature-02/WORLD-FEATURE-02-SLICE-2-RECEIPT.md`.
+- ✅ World Feature 3 Slice 1 is verified: confirmed `game.core.world.faction` and
+  `game.core.world.motive` contracts, The Lantern Compact, and two recurring actors establish
+  faction membership, a market-control claim, and durable motives without changing Feature 1
+  topology. Focused coverage passes 2/2, catalog validation reports 109 records (six
+  non-blocking warnings), and the full suite passes 388/388. No persistent database import
+  occurred. See `world/feature-03/WORLD-FEATURE-03-SLICE-1-RECEIPT.md`.
+- ✅ World Feature 3 is complete: its active fixture faction advances the closed agenda exactly
+  once from ready to advanced through one `component.set`; all unrelated motive, link, and topology
+  state remains unchanged, and the existing structural event is correlated to the action. Focused
+  coverage passes 4/4, catalog validation reports 110 records (six non-blocking warnings), and the
+  full suite passes 390/390. No persistent database import occurred. See
+  `world/feature-03/WORLD-FEATURE-03-SLICE-2-RECEIPT.md`.
+- ✅ World Feature 4 Slice 1 is verified: closed fact, rumour, secret, and clue contracts plus
+  six root-scoped fixture records establish durable trusted-GM knowledge without copying hidden
+  truth or changing prior world state. Focused coverage passes 2/2, catalog validation reports
+  121 records (seven non-blocking warnings), and the full suite passes 392/392. No persistent
+  database import occurred. See `world/feature-04/WORLD-FEATURE-04-SLICE-1-RECEIPT.md`.
+- ✅ World Feature 4 is complete: one scoped clue reveals and one scoped rumour confirms only
+  through deterministic actions that preserve secrets and unrelated world state. Focused coverage
+  passes 3/3, catalog validation reports 123 records (nine non-blocking warnings), and the full
+  suite passes 393/393. No persistent database import occurred. See
+  `world/feature-04/WORLD-FEATURE-04-SLICE-2-RECEIPT.md`.
 - 🟡 Invalid action input returns the mechanic's correct explanation but still pairs it with the
   misleading generic fix “the rule is broken, not your arguments.” The runbook records this
   pre-existing surface defect.
@@ -366,6 +480,115 @@ the finding: the audit was teaching the agent to game it.
 The known weakness is now asserted in a test rather than left to be discovered: two runs not
 separated by `orient` and falling inside 30 minutes share their reading. Nothing observable
 distinguishes them, because the stateless MCP host issues no session id.
+
+---
+
+## Ruleset planning — Features 12–17 (2026-08-20)
+
+- ✅ Ruleset Feature 28 Slice 1 verifies the character-origin language/tool foundation: two
+  separate source-cited proficiency membership records, each with a closed SRD 5.2.1 vocabulary
+  and normal recorder. Focused catalog coverage, catalog validation, and the 455-test full suite
+  pass; it created no character or persistent-game state.
+
+Planning-only pass. **No runtime game artifact was created**: no procedure, component, entity,
+mechanic, event type, subscription, or fixture. Six recursive dependency plans now exist under
+`ruleset/dnd2024/feature-NN/` for Features 12–17, written to `TERRA-FEATURE-PLANNING-GUIDE.md` and
+each stopping before implementation. `TERRA-IMPLEMENTATION-HANDOFF.md` is unchanged: the next and
+only authorized implementation candidate remains **Feature 11 Slice 1**.
+
+## Ruleset planning — Feature 18 (2026-08-20)
+
+- ✅ Feature 18 concentration now has a complete planning-only dependency plan at
+  `ruleset/dnd2024/feature-18/FEATURE-18-DEPENDENCY-PLAN.md`. It establishes the source-cited
+  one-effect, voluntary/replacement, damage-save, Incapacitated, and death boundaries; finds the
+  missing Feature 32 persistent-effect protocol and event-reaction child/input-composition
+  decision; and authorizes no runtime concentration artifact until those owners are confirmed.
+
+## Ruleset planning — Feature 19 (2026-08-20)
+
+- ✅ Feature 19 reactions in play now has a complete planning-only dependency plan at
+  `ruleset/dnd2024/feature-19/FEATURE-19-DEPENDENCY-PLAN.md`. It establishes the source-cited
+  opportunity-attack timing/exclusions and finds the required Feature 20 pre-departure spatial
+  trigger, dynamic reaction-composition, and bounded choice/decline dependencies. No runtime
+  reaction artifact is authorised until those owners are confirmed.
+
+## Ruleset planning — Feature 20 (2026-08-20)
+
+- ✅ Feature 20 tactical position and movement now has a complete planning-only dependency plan at
+  `ruleset/dnd2024/feature-20/FEATURE-20-DEPENDENCY-PLAN.md`. It provides a 2.5-foot anchor model
+  for all six Size categories, separates base Speed from per-turn movement remaining, and identifies
+  the platform contract needed to pass a derived path cost into the existing budget spender. Slice 1
+  (base Speed and budget migration) is the only authorised future implementation slice.
+
+## Ruleset planning — Feature 21 (2026-08-21)
+
+- ✅ Feature 21 cover and ranged combat now has a complete planning-only dependency plan at
+  `ruleset/dnd2024/feature-21/FEATURE-21-DEPENDENCY-PLAN.md`. It separates static weapon range,
+  transient cover, obstacle geometry, combat sides, and Feature 34 sight; corrects the backlog's
+  “firing into melee” wording to the SRD's attacker-side close-combat rule; and authorises only the
+  static ranged-profile migration as a future first slice.
+
+## Ruleset planning — Feature 23 (2026-08-20)
+
+Feature 23 Slice 1 is complete: [receipt](ruleset/dnd2024/feature-23/FEATURE-23-SLICE-1-RECEIPT.md).
+It adds the generic, bounded nested-containment action projection needed before inventory rules can
+derive burden or admit nested transfers. It created no D&D runtime artifact. Focused projection and
+mechanic-store tests (52), the 460-test full suite, and `roleplay validate catalog` pass; the latter
+reports only existing near-duplicate warnings. Slice 2 remains unstarted pending its permanent-id
+and durable-definition reference confirmation boundary.
+
+Feature 23 Slice 2 is complete: [receipt](ruleset/dnd2024/feature-23/FEATURE-23-SLICE-2-RECEIPT.md).
+It adds the immutable, source-cited `dnd2024.item-definition` catalog vocabulary and ten v1
+definitions (ordinary containers/gear, a Dagger bridged to Feature 7, and all coin denominations).
+Definitions use exact rational measures; campaign instances, inventory mutation, and currency
+transactions remain unimplemented. Focused import/schema tests and disposable catalog validation
+pass. The broader catalog snapshot test is excluded from the receipt because unrelated shared
+catalog drift changed its before/after snapshot during the run.
+
+Feature 23 Slice 3 is complete: [receipt](ruleset/dnd2024/feature-23/FEATURE-23-SLICE-3-RECEIPT.md).
+It adds `dnd2024.item-instance` plus record, atomic create-and-place, move, and read mechanics.
+An instance stores only its immutable definition id; containment is its only custody/location.
+Focused action-runner tests and disposable catalog validation pass. Quantities, stacking, capacity,
+equipment, currency transactions, and ownership remain unimplemented.
+
+Feature 23 Slice 4 is complete: [receipt](ruleset/dnd2024/feature-23/FEATURE-23-SLICE-4-RECEIPT.md).
+It adds `dnd2024.item-quantity` and controlled fungible-stack create/record, split, merge, and
+consume mechanics. Counts are positive safe integers; the current derived stack key is the exact
+versioned definition id; merging uses an explicit retained target in the same direct container;
+and final consumption deletes the stack rather than storing zero. Focused action-runner/schema
+tests and disposable catalog validation pass. Capacity, recursive burden, and inter-container
+transfer admission remain unimplemented.
+
+Feature 23 Slice 5 is complete: [receipt](ruleset/dnd2024/feature-23/FEATURE-23-SLICE-5-RECEIPT.md).
+It adds declared component-reference projection and a read-only exact recursive physical-burden
+mechanic. Static mass remains on definitions and quantities on stacks; an unmeasured/malformed
+contained entity fails instead of silently counting as zero. Focused Feature 23 tests pass.
+Creature Size/carry derivation and transfer admission remain unimplemented.
+
+Four things the pass established that are worth having outside those files:
+
+- **Legacy contents carry no components.** `includeContents` without the Slice 1 opt-ins still
+  materialises `ContainedProjection(Id, Name, Slot)` only. A rule may now make a bounded,
+  allow-listed nested request with `contentsDepth` and `contentComponentIds`; a child
+  `forEachContentsOf`/`$item` binding remains the existing per-child execution shape.
+- **A child's input has exactly three sources** (`MechanicComposer.ResolveInput`): inherited, a
+  static literal, or an object-valued top-level key of the parent input. It can never be templated
+  from a sibling child's result or a projected component value, because all children resolve before
+  the parent source runs. Three drafted designs died on this and were rewritten.
+- **`component.set` is an upsert.** `EffectApplier` faults `ComponentAdd` on a present pair and
+  `ComponentRemove` on an absent one; `ComponentSet` does neither. Choosing between add and set has
+  a silent failure mode.
+- **There is no "optional component".** `RoleRequirement.Optional` is a role-level flag; a declared
+  component the entity lacks is simply absent from the projection and never fails it.
+
+Two hidden dependencies surfaced that no roadmap row names: a minimal creature-kind marker (nothing
+distinguishes a player character from a monster, and the dying rules branch on it) and a
+condition-integrity guard (a subscribed mechanic may not declare children, so a reaction cannot
+reuse the condition writer). Both are Feature 17 slices.
+
+Caveat on the planning evidence: no MCP server was reachable, so plan inventories are evidenced
+from `catalog/` rather than operation ids. Slice 1 itself was repository-verified: focused and
+full tests passed, as did catalog validation, without touching the live database.
 
 ---
 

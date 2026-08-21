@@ -14,7 +14,7 @@ reads anything, `commit` changes anything. Nothing else exists.
 1. Call `orient()` first. It states what this system is, what exists in it right now, what is not
    built, and which call to make next. Call it again whenever you lose track — it is cheap.
 2. Read with `query(kind: ...)`. The kinds are `capabilities`, `procedures`, `world`, `entities`,
-   `mechanics`, `event-types`, `events`, `subscriptions`, `notifications`, `history`. No `id` returns a list or search; `id` returns one record in full;
+   `graph`, `journey-plan`, `itinerary-plan`, `campaign-resume`, `quest-summary`, `mechanics`, `event-types`, `events`, `subscriptions`, `notifications`, `history`. No `id` returns a list or search; `id` returns one record in full; fixed planning/summary kinds state their required ID and reject unrelated filters in their own contract.
    `version` with `id` returns an older revision. Read the full record before revising anything —
    a summary is not the thing itself.
 3. When you do not know a payload shape or which parameters a kind reads, call
@@ -27,7 +27,7 @@ reads anything, `commit` changes anything. Nothing else exists.
    say what you are doing in `intent`, in your own words. The audit records both, and records
    separately which contracts you actually opened.
 5. Change with `commit(kind: ..., payload: ...)`. The kinds are `procedure`, `component`,
-   `effects`, `mechanic`, `event-type`, `subscription`, `action`, `notification`. `event-type` registers a schema only; a `subscription` registers middleware. Registered guards run before a world change commits and can veto it, an accepted change records structural events readable with `query(kind: "events")`, and registered reactions run on those events with their effects committing in the same transaction, and may declare an event or raise a notification. `notification` moves one notice between `unread`, `read` and `archived` and cannot change what it says. `payload` is a JSON object encoded as a string — the whole
+   `effects`, `mechanic`, `event-type`, `subscription`, `action`, `itinerary-advance`, `campaign`, `quest`, `notification`. `campaign` validates or creates a closed existing-world campaign blueprint; `quest` creates one closed campaign-scoped draft quest. Neither accepts caller-supplied effects. `event-type` registers a schema only; a `subscription` registers middleware. Registered guards run before a world change commits and can veto it, an accepted change records structural events readable with `query(kind: "events")`, and registered reactions run on those events with their effects committing in the same transaction, and may declare an event or raise a notification. `notification` moves one notice between `unread`, `read` and `archived` and cannot change what it says. `payload` is a JSON object encoded as a string — the whole
    object in one argument, not loose named arguments. Where `dryRun` is supported, ALWAYS call
    with `dryRun: true` first and read every named check or problem that comes back; then commit
    the identical payload. A dry run you did not read is worse than none.
@@ -46,4 +46,3 @@ reads anything, `commit` changes anything. Nothing else exists.
 - Never report an outcome you did not confirm with a query.
 - If `orient()` says a capability is not built, believe it over anything a contract or your prior
   experience suggests.
-

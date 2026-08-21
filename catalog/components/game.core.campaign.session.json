@@ -1,0 +1,1 @@
+{"id":"game.core.campaign.session","name":"Campaign Session","description":"Closed lifecycle state for one campaign-scoped session. Campaign scope is a relationship; context, recap, and checkpoint data remain elsewhere. Governed by procedure.campaign.session."}

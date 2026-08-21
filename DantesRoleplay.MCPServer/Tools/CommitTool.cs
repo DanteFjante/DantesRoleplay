@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.Text.Json;
 using DantesRoleplay.Actions;
+using DantesRoleplay.Campaign;
+using DantesRoleplay.Quest;
 using DantesRoleplay.Effects;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Events;
@@ -32,7 +34,7 @@ public sealed class CommitTool
     [McpServerTool(Name = "commit")]
     [Description(
         "Change anything in this system. kind is one of: procedure, component, effects, mechanic, event-type, subscription, " +
-        "action, notification. payload is a JSON object encoded as a string, shaped per kind — " +
+        "action, itinerary-advance, campaign, quest, notification. payload is a JSON object encoded as a string, shaped per kind — " +
         "query(kind: \"capabilities\") gives every shape exactly, and a rejection repeats the one " +
         "you needed. Where dryRun is supported, send dryRun: true first and read every check, then " +
         "commit the identical payload. This is the only path that changes state.")]
@@ -44,9 +46,17 @@ public sealed class CommitTool
         IEventTypeStore eventTypes,
         ISubscriptionStore subscriptions,
         IActionRunner actions,
+        IModeAwareItineraryReader itineraries,
+        ICampaignBlueprintValidator campaigns,
+        ICampaignBootstrapper campaignBootstrapper,
+        ICampaignContinuityRunner campaignContinuity,
+        ICampaignSessionValidator campaignSessions,
+        ICampaignSessionStarter campaignSessionStarter,
+        IQuestCreator quests,
+        IQuestLifecycleRunner questLifecycle,
         IOperationLog log,
         INotificationStore notifications,
-        [Description("Closed kind: procedure, component, effects, mechanic, event-type, subscription, action, or notification.")]
+        [Description("Closed kind: procedure, component, effects, mechanic, event-type, subscription, action, itinerary-advance, campaign, quest, or notification.")]
         string kind,
         [Description("JSON object containing the selected kind's existing tool arguments.")]
         string payload,
@@ -56,7 +66,8 @@ public sealed class CommitTool
         string intent = "",
         [Description("Procedure ids consulted before this commit.")] string[]? proceduresUsed = null,
         [Description("Validate without changing state where supported.")] bool dryRun = false,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        ICampaignCharacterParticipationAttacher? campaignParticipation = null)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
         var spec = VerbSurface.Commit(normalizedKind);
@@ -122,6 +133,10 @@ public sealed class CommitTool
                 "subscription" => await CommitSubscriptionAsync(subscriptions, log, parsedPayload.RootElement, intent, proceduresUsed, dryRun, cancellationToken),
                 "action" => await CommitActionAsync(
                     actions, log, parsedPayload.RootElement, intent, proceduresUsed, cancellationToken),
+                "itinerary-advance" => await CommitItineraryAdvanceAsync(
+                    itineraries, actions, log, parsedPayload.RootElement, proceduresUsed, cancellationToken),
+                "campaign" => await CommitCampaignAsync(campaigns, campaignBootstrapper, campaignContinuity, campaignSessions, campaignSessionStarter, campaignParticipation, log, parsedPayload.RootElement, intent, proceduresUsed, cancellationToken),
+                "quest" => await CommitQuestAsync(quests, questLifecycle, log, parsedPayload.RootElement, intent, proceduresUsed, cancellationToken),
                 "notification" => await CommitNotificationAsync(
                     notifications, log, parsedPayload.RootElement, intent, proceduresUsed, dryRun, cancellationToken),
                 _ => throw new InvalidOperationException($"Unhandled commit kind '{kind}'.")
@@ -320,6 +335,170 @@ public sealed class CommitTool
             cancellationToken);
     }
 
+    private static async Task<ToolEnvelope> CommitItineraryAdvanceAsync(IModeAwareItineraryReader itineraries, IActionRunner actions, IOperationLog log, JsonElement payload, string[]? proceduresUsed, CancellationToken cancellationToken)
+    {
+        if (!TryDeserialize(payload, out ItineraryAdvancePayload? value, out var error) || value is null || string.IsNullOrWhiteSpace(value.WorldId) || string.IsNullOrWhiteSpace(value.TravellerId) || string.IsNullOrWhiteSpace(value.DestinationLocationId) || string.IsNullOrWhiteSpace(value.ItineraryFingerprint) || value.NextLegIndex is null)
+            return await InvalidPayloadEnvelope(log, "itinerary-advance", error ?? "Itinerary advance requires worldId, travellerId, destinationLocationId, itineraryFingerprint, and nextLegIndex.", "Advance one itinerary leg.", proceduresUsed, false);
+        return await new ItineraryAdvanceTools().AdvanceAsync(itineraries, actions, log, new ModeAwareItineraryAdvanceRequest(value.WorldId, value.TravellerId, value.DestinationLocationId, value.ItineraryFingerprint, value.NextLegIndex.Value, value.GroundConveyanceId, value.AerialConveyanceId), proceduresUsed ?? [], cancellationToken);
+    }
+
+    private static async Task<ToolEnvelope> CommitCampaignAsync(ICampaignBlueprintValidator campaigns, ICampaignBootstrapper bootstrapper, ICampaignContinuityRunner continuity, ICampaignSessionValidator sessions, ICampaignSessionStarter sessionStarter, ICampaignCharacterParticipationAttacher? participation, IOperationLog log, JsonElement payload, string intent, string[]? proceduresUsed, CancellationToken cancellationToken)
+    {
+        if (!payload.TryGetProperty("operation", out var operation) || operation.ValueKind != JsonValueKind.String)
+            return await InvalidPayloadEnvelope(log, "campaign", "Campaign payload requires a closed operation.", "Run a supported campaign operation.", ["procedure.campaign.create", "procedure.campaign.chapter"], false);
+        var name = operation.GetString();
+        if (name is "initialize-continuity" or "advance-chapter" or "close-chapter" or "conclude-arc") return await CommitContinuityAsync(continuity, log, payload, name, intent, proceduresUsed, cancellationToken);
+        if (name == "validate-session") return await CommitSessionValidationAsync(sessions, log, payload, cancellationToken);
+        if (name == "start-session") return await CommitSessionStartAsync(sessionStarter, log, payload, intent, proceduresUsed, cancellationToken);
+        if (name == "attach-character-participation") return participation is null
+            ? await InvalidPayloadEnvelope(log, "campaign", "Campaign participation attachment is unavailable because its owner is not registered.", "Attach a character to an active campaign.", ["procedure.campaign.character-participation"], false)
+            : await CommitParticipationAttachAsync(participation, log, payload, intent, proceduresUsed, cancellationToken);
+        if (!payload.TryGetProperty("blueprint", out var blueprint) || blueprint.ValueKind != JsonValueKind.Object || !ClosedBlueprint(blueprint))
+            return await InvalidPayloadEnvelope(log, "campaign", "Campaign validate/create requires a closed blueprint object.", "Validate or create campaign blueprint.", ["procedure.campaign.create"], false);
+        var create = name == "create";
+        if ((create && !ClosedObject(payload, ["operation", "blueprint", "reviewFingerprint"])) || (!create && (name != "validate" || !ClosedObject(payload, ["operation", "blueprint"]))))
+            return await InvalidPayloadEnvelope(log, "campaign", "Campaign operation must be validate/create with its exact closed payload.", "Validate or create campaign blueprint.", ["procedure.campaign.create"], false);
+        try
+        {
+            var value = blueprint.Deserialize<CampaignBlueprint>(JsonOptions);
+            if (value is null) return await InvalidPayloadEnvelope(log, "campaign", "Campaign blueprint could not be read.", "Validate or create campaign blueprint.", ["procedure.campaign.create"], false);
+            if (!create) return await new CampaignTools().ValidateAsync(campaigns, log, value, cancellationToken);
+            var fingerprint = payload.GetProperty("reviewFingerprint");
+            if (fingerprint.ValueKind != JsonValueKind.String) return await InvalidPayloadEnvelope(log, "campaign", "Campaign create requires reviewFingerprint as a string.", "Create campaign blueprint.", ["procedure.campaign.create"], false);
+            return await new CampaignTools().CreateAsync(bootstrapper, value, fingerprint.GetString() ?? string.Empty, intent, proceduresUsed, cancellationToken);
+        }
+        catch (JsonException ex) { return await InvalidPayloadEnvelope(log, "campaign", ex.Message, "Validate or create campaign blueprint.", ["procedure.campaign.create"], false); }
+    }
+
+    private static async Task<ToolEnvelope> CommitParticipationAttachAsync(ICampaignCharacterParticipationAttacher attacher, IOperationLog log, JsonElement payload, string intent, string[]? proceduresUsed, CancellationToken cancellationToken)
+    {
+        if (!ClosedObject(payload, ["operation", "campaignId", "actorId"]))
+            return await InvalidPayloadEnvelope(log, "campaign", "Campaign character attachment requires exactly operation, campaignId, and actorId.", "Attach a character to an active campaign.", ["procedure.campaign.character-participation"], false);
+        try
+        {
+            var request = payload.Deserialize<CampaignCharacterParticipationAttachRequest>(JsonOptions);
+            return request is null
+                ? await InvalidPayloadEnvelope(log, "campaign", "Campaign character attachment request could not be read.", "Attach a character to an active campaign.", ["procedure.campaign.character-participation"], false)
+                : await new CampaignTools().AttachCharacterParticipationAsync(attacher, request, intent, proceduresUsed, cancellationToken);
+        }
+        catch (JsonException ex) { return await InvalidPayloadEnvelope(log, "campaign", ex.Message, "Attach a character to an active campaign.", ["procedure.campaign.character-participation"], false); }
+    }
+
+    private static async Task<ToolEnvelope> CommitSessionValidationAsync(ICampaignSessionValidator sessions, IOperationLog log, JsonElement payload, CancellationToken cancellationToken)
+    {
+        if (!ClosedObject(payload, ["operation", "campaignId", "sessionId"]))
+            return await InvalidPayloadEnvelope(log, "campaign", "Session validation requires exactly operation, campaignId, and sessionId.", "Validate campaign session readiness.", ["procedure.campaign.session"], false);
+        try
+        {
+            var request = payload.Deserialize<CampaignSessionValidationRequest>(JsonOptions);
+            return request is null
+                ? await InvalidPayloadEnvelope(log, "campaign", "Session validation request could not be read.", "Validate campaign session readiness.", ["procedure.campaign.session"], false)
+                : await new CampaignTools().ValidateSessionAsync(sessions, log, request, cancellationToken);
+        }
+        catch (JsonException ex) { return await InvalidPayloadEnvelope(log, "campaign", ex.Message, "Validate campaign session readiness.", ["procedure.campaign.session"], false); }
+    }
+
+    private static async Task<ToolEnvelope> CommitSessionStartAsync(ICampaignSessionStarter starter, IOperationLog log, JsonElement payload, string intent, string[]? proceduresUsed, CancellationToken cancellationToken)
+    {
+        if (!ClosedObject(payload, ["operation", "campaignId", "sessionId"]))
+            return await InvalidPayloadEnvelope(log, "campaign", "Session start requires exactly operation, campaignId, and sessionId.", "Validate campaign session readiness.", ["procedure.campaign.session"], false);
+        try
+        {
+            var request = payload.Deserialize<CampaignSessionValidationRequest>(JsonOptions);
+            return request is null
+                ? await InvalidPayloadEnvelope(log, "campaign", "Session start request could not be read.", "Validate campaign session readiness.", ["procedure.campaign.session"], false)
+                : await new CampaignTools().StartSessionAsync(starter, request, intent, proceduresUsed, cancellationToken);
+        }
+        catch (JsonException ex) { return await InvalidPayloadEnvelope(log, "campaign", ex.Message, "Validate campaign session readiness.", ["procedure.campaign.session"], false); }
+    }
+
+    private static async Task<ToolEnvelope> CommitContinuityAsync(ICampaignContinuityRunner runner, IOperationLog log, JsonElement payload, string operation, string intent, string[]? proceduresUsed, CancellationToken ct)
+    {
+        try
+        {
+            var tools = new CampaignTools();
+            return operation switch
+            {
+                "initialize-continuity" when ClosedObject(payload, ["operation", "seed"]) && ClosedSeed(payload.GetProperty("seed")) => await tools.ContinuityAsync(() => runner.InitializeAsync(payload.GetProperty("seed").Deserialize<CampaignContinuitySeed>(JsonOptions)!, intent, proceduresUsed, ct)),
+                "advance-chapter" when ClosedObject(payload, ["operation", "campaignId", "chapterId", "expectedStatus", "closingSummary", "nextChapter"]) && ClosedNextChapter(payload.GetProperty("nextChapter")) => await tools.ContinuityAsync(() => runner.AdvanceAsync(payload.GetProperty("campaignId").GetString() ?? "", payload.GetProperty("chapterId").GetString() ?? "", payload.GetProperty("expectedStatus").GetString() ?? "", payload.GetProperty("closingSummary").GetString() ?? "", payload.GetProperty("nextChapter").Deserialize<CampaignNextChapter>(JsonOptions)!, intent, proceduresUsed, ct)),
+                "close-chapter" when ClosedObject(payload, ["operation", "campaignId", "chapterId", "expectedStatus", "closingSummary"]) => await tools.ContinuityAsync(() => runner.CloseAsync(payload.GetProperty("campaignId").GetString() ?? "", payload.GetProperty("chapterId").GetString() ?? "", payload.GetProperty("expectedStatus").GetString() ?? "", payload.GetProperty("closingSummary").GetString() ?? "", intent, proceduresUsed, ct)),
+                "conclude-arc" when ClosedObject(payload, ["operation", "campaignId", "arcId", "expectedStatus", "outcome", "closingSummary"]) => await tools.ContinuityAsync(() => runner.ConcludeArcAsync(payload.GetProperty("campaignId").GetString() ?? "", payload.GetProperty("arcId").GetString() ?? "", payload.GetProperty("expectedStatus").GetString() ?? "", payload.GetProperty("outcome").GetString() ?? "", payload.GetProperty("closingSummary").GetString() ?? "", intent, proceduresUsed, ct)),
+                _ => await InvalidPayloadEnvelope(log, "campaign", "Continuity operation payload is missing, extra, or malformed fields.", "Run a supported campaign continuity operation.", ["procedure.campaign.chapter"], false)
+            };
+        }
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException) { return await InvalidPayloadEnvelope(log, "campaign", ex.Message, "Run a supported campaign continuity operation.", ["procedure.campaign.chapter"], false); }
+    }
+
+    private static bool ClosedSeed(JsonElement seed) => seed.ValueKind == JsonValueKind.Object && seed.TryGetProperty("chapter", out var chapter) && seed.TryGetProperty("arc", out var arc) && ClosedObject(seed, ["campaignId", "chapter", "arc"]) && ClosedObject(chapter, ["localKey", "title", "partyQuestion"], ["gmContext"]) && ClosedObject(arc, ["localKey", "title", "partyStake"], ["gmContext"]);
+    private static bool ClosedNextChapter(JsonElement chapter) => ClosedObject(chapter, ["localKey", "title", "partyQuestion"], ["gmContext"]);
+
+    private static bool ClosedBlueprint(JsonElement blueprint) =>
+        ClosedObject(blueprint, ["campaignId", "title", "premise", "partyGoals", "toneAndBoundaries", "rulesetScope", "existingWorldId", "startingLocationId", "references", "initialChapter", "initialArc"], ["futureQuestShapedProblem"]);
+
+    private static async Task<ToolEnvelope> CommitQuestAsync(IQuestCreator quests, IQuestLifecycleRunner lifecycle, IOperationLog log, JsonElement payload, string intent, string[]? proceduresUsed, CancellationToken ct)
+    {
+        if (payload.TryGetProperty("operation", out var operation) && operation.ValueKind == JsonValueKind.String)
+        {
+            var operationName = operation.GetString();
+            try
+            {
+                if (operationName is "offer" or "accept" or "reconcile" or "fail" or "reopen-quest" or "archive")
+                {
+                    if (!ClosedObject(payload, ["operation", "questId", "expectedQuestStatus", "reason"]))
+                        return await InvalidPayloadEnvelope(log, "quest", "Quest root lifecycle operation requires its exact closed request.", "Run a supported quest lifecycle operation.", ["procedure.quest.modify"], false);
+                    var request = payload.Deserialize<QuestLifecycleRequest>(JsonOptions);
+                    return request is null
+                        ? await InvalidPayloadEnvelope(log, "quest", "Quest lifecycle request could not be read.", "Run a supported quest lifecycle operation.", ["procedure.quest.modify"], false)
+                        : await new QuestTools().TransitionAsync(lifecycle, request, intent, proceduresUsed, ct);
+                }
+                if (operationName == "set-objective")
+                {
+                    if (!ClosedObject(payload, ["operation", "questId", "expectedQuestStatus", "objectiveId", "expectedObjectiveStatus", "targetStatus", "reason"]))
+                        return await InvalidPayloadEnvelope(log, "quest", "Quest objective setting requires its exact closed request.", "Run a supported quest lifecycle operation.", ["procedure.quest.modify"], false);
+                    var request = payload.Deserialize<QuestObjectiveTransitionRequest>(JsonOptions);
+                    return request is null
+                        ? await InvalidPayloadEnvelope(log, "quest", "Quest objective request could not be read.", "Run a supported quest lifecycle operation.", ["procedure.quest.modify"], false)
+                        : await new QuestTools().TransitionObjectiveAsync(lifecycle, request, intent, proceduresUsed, ct);
+                }
+                if (operationName is "unblock-objective" or "reopen-objective")
+                {
+                    if (!ClosedObject(payload, ["operation", "questId", "expectedQuestStatus", "objectiveId", "expectedObjectiveStatus", "reason"]))
+                        return await InvalidPayloadEnvelope(log, "quest", "Quest objective unblocking or reopening requires its exact closed request.", "Run a supported quest lifecycle operation.", ["procedure.quest.modify"], false);
+                    var request = payload.Deserialize<QuestObjectiveTransitionRequest>(JsonOptions);
+                    return request is null
+                        ? await InvalidPayloadEnvelope(log, "quest", "Quest objective request could not be read.", "Run a supported quest lifecycle operation.", ["procedure.quest.modify"], false)
+                        : await new QuestTools().TransitionObjectiveAsync(lifecycle, request, intent, proceduresUsed, ct);
+                }
+                return await InvalidPayloadEnvelope(log, "quest", "Quest lifecycle supports only offer, accept, set-objective, unblock-objective, reconcile, fail, reopen-objective, reopen-quest, or archive.", "Run a supported quest lifecycle operation.", ["procedure.quest.modify"], false);
+            }
+            catch (JsonException)
+            {
+                return await InvalidPayloadEnvelope(log, "quest", "Quest lifecycle request could not be read.", "Run a supported quest lifecycle operation.", ["procedure.quest.modify"], false);
+            }
+        }
+        if (!ClosedObject(payload,["questId","title","premise","summary","visibility","campaignId","arcId","chapterIds","objectives"]))
+            return await InvalidPayloadEnvelope(log,"quest","Quest creation requires its exact closed request object.",intent,proceduresUsed,false);
+        try
+        {
+            var request = payload.Deserialize<QuestCreateRequest>(JsonOptions);
+            return request is null
+                ? await InvalidPayloadEnvelope(log,"quest","Quest request could not be read.",intent,proceduresUsed,false)
+                : await new QuestTools().CreateAsync(quests,request,intent,proceduresUsed,ct);
+        }
+        catch (JsonException)
+        {
+            return await InvalidPayloadEnvelope(log,"quest","Quest request could not be read.",intent,proceduresUsed,false);
+        }
+    }
+
+    private static bool ClosedObject(JsonElement value, IReadOnlyCollection<string> required, IReadOnlyCollection<string>? optional = null)
+    {
+        if (value.ValueKind != JsonValueKind.Object) return false;
+        var allowed = required.Concat(optional ?? []).ToHashSet(StringComparer.Ordinal);
+        var found = value.EnumerateObject().Select(property => property.Name).ToHashSet(StringComparer.Ordinal);
+        return required.All(found.Contains) && found.All(allowed.Contains);
+    }
+
     private static async Task<ToolEnvelope> CommitEventTypeAsync(IEventTypeStore eventTypes, IOperationLog log, JsonElement payload, string intent, string[]? proceduresUsed, bool dryRun, CancellationToken cancellationToken)
     {
         if (!TryDeserialize(payload, out EventTypePayload? value, out var error) || value is null || string.IsNullOrWhiteSpace(value.Id) || string.IsNullOrWhiteSpace(value.Category) || string.IsNullOrWhiteSpace(value.Name) || string.IsNullOrWhiteSpace(value.Schema)) return await InvalidPayloadEnvelope(log, "event-type", error ?? "Event type payload requires id, category, name, and schema.", intent, proceduresUsed, dryRun);
@@ -471,6 +650,7 @@ public sealed class CommitTool
         public string? Scope { get; init; }
         public long? Seed { get; init; }
     }
+    private sealed class ItineraryAdvancePayload { public string? WorldId { get; init; } public string? TravellerId { get; init; } public string? DestinationLocationId { get; init; } public string? ItineraryFingerprint { get; init; } public int? NextLegIndex { get; init; } public string? GroundConveyanceId { get; init; } public string? AerialConveyanceId { get; init; } }
     private sealed class EventTypePayload { public string? Id { get; init; } public string? Category { get; init; } public string? Name { get; init; } public string? Description { get; init; } public string? Schema { get; init; } public string? Scope { get; init; } public string? Status { get; init; } public string? ChangeNote { get; init; } }
     private sealed class NotificationPayload { public string? Id { get; init; } public string? State { get; init; } }
 

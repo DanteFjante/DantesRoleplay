@@ -1,6 +1,6 @@
 # World Feature 1 dependency plan — persistent world topology
 
-Status: **Planned; awaiting confirmation of the permanent vocabulary before Slice 1 is authorised**
+Status: **Slice 1 verified; World Feature 2 requires a separate plan**
 Last updated: 2026-08-20
 
 ## Execution rule
@@ -18,7 +18,8 @@ Current catalog/database drift is an integration-play or release gate only; it m
 before a persistent import, never force-overwritten.
 
 One reviewed slice lands with its procedure contract, component definitions, catalog fixture, and
-focused test. No code, catalog artifact, or live state is created by this planning pass.
+focused test. The planning pass created no runtime state; Slice 1 execution evidence is recorded in
+[the receipt](WORLD-FEATURE-01-RECEIPT.md).
 
 ## Target capability
 
@@ -161,7 +162,7 @@ remain blocked.
 
 | Order | Slice | Starts only when | Exit gate |
 | --- | --- | --- |
-| 1 | World root, locations, canonical topology fixture | The permanent vocabulary in this plan is confirmed; generic world/catalog baseline remains green. | A fresh disposable catalog import reconstructs one root, one region, three locations, four containment edges, and two canonical adjacency edges; focused negative graph assertions and repository gates pass. |
+| 1 | World root, locations, canonical topology fixture | Permanent vocabulary confirmed by continuation into implementation; generic world/catalog baseline remains green. | **Verified:** a fresh disposable catalog import reconstructs one root, one region, three locations, four containment edges, and two canonical adjacency edges; focused negative graph assertions and repository gates pass. See the receipt. |
 
 World Feature 2 is deliberately not a slice of this plan. It begins with a separate dependency
 plan after Slice 1 evidence exists.
@@ -170,11 +171,11 @@ plan after Slice 1 evidence exists.
 
 ### Status and prerequisite
 
-Pending approval of the permanent IDs and schema meanings below. Before writing, re-read the five
-contracts in the source-and-contract table, search each proposed ID plus `place`, `region`,
-`location`, `travel link`, `adjacency`, and `world root` across `catalog/`, and confirm the current
-catalog validation baseline. Do not broaden the slice to movement, lore, factions, or campaign
-creation.
+Implemented and verified. The permanent IDs and schema meanings below were confirmed by the
+continuation request. Before any amendment, re-read the five contracts in the source-and-contract
+table and search each proposed ID plus `place`, `region`, `location`, `travel link`, `adjacency`,
+and `world root` across `catalog/`. Do not broaden the slice to movement, lore, factions, or
+campaign creation.
 
 ### Runtime artifacts
 
@@ -189,7 +190,7 @@ creation.
 | Fixture locations | `location.feature-01.gate`, `.market`, `.observatory`; files under `catalog/world/entities/` | New child locations. |
 | Fixture links | `catalog/world/relationships.json` | Revise only to add two canonical topology edges. |
 | Focused regression | `DantesRoleplay.Tests/CatalogWorldFeature1Tests.cs` | New fresh-import/readback and negative-convention coverage. |
-| Catalog manifest | `catalog/manifest.json` | Update through the established catalog hash/manifest workflow. |
+| Catalog manifest | `catalog/manifest.json` | No repository-mode edit. The explicit later persistent import updates this common-ancestor record after its dry run. |
 
 No mechanic source, event type, subscription, migration, C# world-rule helper, public command kind,
 or production campaign fixture is created.
@@ -293,7 +294,8 @@ no partial fixture state.
 2. Re-read the governing contracts and inspect component/fixture/manifest conventions in the
    current catalog.
 3. Add the two component definitions and schemas, the procedure contract, five fixture entities,
-   and two relationship records in canonical catalog locations.
+   and two relationship records in canonical catalog locations. Do not hand-edit the manifest;
+   repository validation uses a disposable copy and persistent import owns synchronization metadata.
 4. Add the focused fresh-import test. It must assert component JSON, containment hierarchy,
    adjacency orientation/data, entity/component/edge counts, and that no unrelated existing fixture
    changed.
@@ -327,11 +329,10 @@ no partial fixture state.
 
 ### Slice 1 exit gate
 
-Slice 1 is verified only when the component/procedure vocabulary is confirmed, every acceptance
-row passes against a fresh disposable catalog import, exact graph readback is recorded, all
-temporary test material is removed, `roleplay validate catalog`, the full suite, and
-`git diff --check` pass, and a receipt names the result. Otherwise it remains planned. World
-Feature 2 movement and every campaign/lore consumer remain blocked.
+Slice 1 is verified: the component/procedure vocabulary was confirmed, all automated acceptance
+coverage passed against a fresh disposable catalog import, exact graph readback is asserted, and
+the receipt records catalog validation, focused/full test, and whitespace-check evidence. World
+Feature 2 movement and every campaign/lore consumer remain blocked pending their own plan.
 
 ## Plan-quality audit
 

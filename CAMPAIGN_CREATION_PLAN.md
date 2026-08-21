@@ -260,6 +260,10 @@ Add start/resume/end-session mechanics, summary updates, snapshot guidance, and 
 campaign/world website pages. Use SSE only to refresh committed projections. The UI never creates
 or advances campaign state in this release.
 
+This initial slice is S0–S4 of the [Session Operations Plan](SESSION_OPERATIONS_PLAN.md); C8 owns
+the concrete session-record contract. Later participant control, gameplay handoff, narrative
+artifacts, player controls, and collaboration stay with their named session successors.
+
 **Acceptance:** a fresh model and a human reader can see the current chapter, active quests,
 relevant world facts, and recent milestones without reading previous chat history.
 
@@ -271,6 +275,32 @@ interactive map integration.
 
 **Acceptance:** every addition retains explicit ownership, visible validation, deterministic
 event/randomness evidence, and full rollback semantics.
+
+## Campaign feature dependency-plan index
+
+The slices above remain the authoritative campaign delivery sequence. The companion plans below
+make each stop point, ownership boundary, dependency, test matrix, and exit gate explicit for a
+future implementation pass. They are planning artifacts only and do not author campaign runtime
+content.
+
+| Slice/feature | Dependency plan | Current boundary |
+| --- | --- | --- |
+| C0 | [Ratify first existing-world blueprint](campaign/feature-00/CAMPAIGN-FEATURE-00-DEPENDENCY-PLAN.md) | Host-confirmed brief only; no runtime IDs or records. |
+| C1 | [Validate existing-world blueprint](campaign/feature-01/CAMPAIGN-FEATURE-01-DEPENDENCY-PLAN.md) | Read-only validation/fingerprint after C0. |
+| C2 | [Atomic existing-world bootstrap](campaign/feature-02/CAMPAIGN-FEATURE-02-DEPENDENCY-PLAN.md) | One campaign root references an existing world atomically. |
+| C3 | [Chapters, arcs, and quest-free resume](campaign/feature-03/CAMPAIGN-FEATURE-03-DEPENDENCY-PLAN.md) | Campaign continuity without a quest dependency. |
+| C4 | [Manual quest integration](campaign/feature-04/CAMPAIGN-FEATURE-04-DEPENDENCY-PLAN.md) | Campaign consumes quest context without owning quest lifecycle. |
+| C5 | [Knowledge, factions, and audience projections](campaign/feature-05/CAMPAIGN-FEATURE-05-DEPENDENCY-PLAN.md) | Blocked until real audience authorization exists. |
+| C6 | [Future quest opportunities](campaign/feature-06/CAMPAIGN-FEATURE-06-DEPENDENCY-PLAN.md) | One event-triggered activation; no random/clock opportunity yet. |
+| C7 | [AI-assisted proposal with review](campaign/feature-07/CAMPAIGN-FEATURE-07-DEPENDENCY-PLAN.md) | Proposal remains untrusted until host approval and C1 validation. |
+| C8 | [Session operations and read-only view](campaign/feature-08/CAMPAIGN-FEATURE-08-DEPENDENCY-PLAN.md) | S0–S4 of the [Session Operations Plan](SESSION_OPERATIONS_PLAN.md): stored continuity, factual recap, checkpoint boundary, and read-only consumer. |
+| C9 | [Controlled expansion selection](campaign/feature-09/CAMPAIGN-FEATURE-09-DEPENDENCY-PLAN.md) | Select one post-play expansion and plan it separately. |
+| C10 | [Compose a new world](campaign/feature-10/CAMPAIGN-FEATURE-10-DEPENDENCY-PLAN.md) | Blocked by a world-owned composer and cross-root transaction decision. |
+| C11 | [Campaign fork preview](campaign/feature-11/CAMPAIGN-FEATURE-11-DEPENDENCY-PLAN.md) | Read-only fork feasibility after checkpoint/snapshot evidence. |
+| C12 | [Parallel and branching arc continuity](campaign/feature-12/CAMPAIGN-FEATURE-12-PARALLEL-ARC-CONTINUITY-PLAN.md) | Explicit successor to C3's one-arc proof; blocked by C3 evidence and cardinality/migration confirmation. |
+| C13 | [Deterministic opportunity pool and campaign-time selection](campaign/feature-13/CAMPAIGN-FEATURE-13-DETERMINISTIC-OPPORTUNITY-POOL-PLAN.md) | Explicit successor to C6's one fixed event opportunity; blocked by C6/Q2/clock/random evidence and state-migration confirmation. |
+| C14 | [Advancement policy and authorization](campaign/feature-14/CAMPAIGN-FEATURE-14-ADVANCEMENT-AUTHORIZATION-PLAN.md) | Campaign-owned XP/milestone policy and one-time authorization for Character CH9; blocked on active character attachment and Feature 36 XP eligibility. |
+| C15 | [Campaign-owned character participation](campaign/feature-15/CAMPAIGN-FEATURE-15-CHARACTER-PARTICIPATION-PLAN.md) | Slice 1 verifies the canonical active-scope reader; attachment and withdrawal remain confirmation-gated. |
 
 ## Test matrix
 
@@ -305,3 +335,34 @@ dedicated semantic campaign-create runner may establish the first vertical slice
 preserves the same transaction and audit guarantees. The website, local-model, and semantic
 retrieval plans are optional consumers of the campaign model, not prerequisites for manual
 creation.
+
+## Post-foundation feature roadmap
+
+These features refine how campaigns are assembled and sustained after the manual existing-world
+path has completed a played campaign. They do not turn campaign creation into a second owner of
+world, character, quest, item, or ruleset state. Each one needs a separate dependency plan and a
+confirmed creation/transaction boundary before implementation.
+
+| Feature | Product result | Prerequisites | First bounded delivery | Exit gate |
+| --- | --- | --- | --- | --- |
+| C10 — compose a new world | A campaign brief can create and attach one new small world through the world owner's governed operation. | Campaign Slice 2; World Slices 1 and 4; played existing-world evidence; ratified cross-root transaction design; [Campaign Feature 10 dependency plan](campaign/feature-10/CAMPAIGN-FEATURE-10-DEPENDENCY-PLAN.md) confirmation gate | Support a fixed small-world blueprint with no generated content and an explicit review preview. | Success creates the approved world and campaign as the ratified unit of atomicity; any failure leaves neither partially created. |
+| C11 — campaign-fork design | A host can preview a campaign fork from a named audited checkpoint with explicit inclusion and provenance rules. | Slice 8 and snapshot/restore evidence; [Campaign Feature 11 dependency plan](campaign/feature-11/CAMPAIGN-FEATURE-11-DEPENDENCY-PLAN.md) confirmation gate | Add one read-only checkpoint/fork preview. | The preview classifies each state domain as reference, copy, or unsupported; it writes no campaign state. |
+| C12 — parallel and branching arc continuity | A campaign can sustain several active arcs and explicitly branch a chapter while retaining C3 lifecycle ownership. | Verified and played C3; C4 compatibility inspection; [Campaign Feature 12 dependency plan](campaign/feature-12/CAMPAIGN-FEATURE-12-PARALLEL-ARC-CONTINUITY-PLAN.md) confirmation gate | Add bounded multi-arc lifecycle and explicit predecessor links. | Cardinality, graph validity, migration, and fresh resume evidence remain deterministic and atomic. |
+| C13 — deterministic opportunity pool | A campaign-time trigger chooses at most one eligible future quest from a bounded weighted pool through the recorded seeded random source. | Verified C6, Quest Q2, root-clock, and random-source evidence; [Campaign Feature 13 dependency plan](campaign/feature-13/CAMPAIGN-FEATURE-13-DETERMINISTIC-OPPORTUNITY-POOL-PLAN.md) confirmation gate | Migrate the C6 state shape and add read-only eligibility before one atomic seeded selection. | Candidate set, seed/roll, selected opportunity, quest activation, and rollback evidence are complete and auditable. |
+| C14 — advancement authorization | A campaign selects XP or milestone policy and provides the exact one-time authorization consumed by a character level-up. | Campaign-bound playable-character evidence, Feature 36 XP eligibility, CH9 consume seam, and [Campaign Feature 14 plan](campaign/feature-14/CAMPAIGN-FEATURE-14-ADVANCEMENT-AUTHORIZATION-PLAN.md) confirmation gate | Milestone policy plus one exact `N→N+1` authorization with no character mutation. | Policy, authorization lifecycle, scope, replay, revocation, and CH9 rollback handoff are auditable. |
+| C15 — character participation | A campaign owns one durable actor participation and its availability for character consumers. | C2 campaign root/transactions and [Campaign Feature 15 plan](campaign/feature-15/CAMPAIGN-FEATURE-15-CHARACTER-PARTICIPATION-PLAN.md) confirmation gate | One active campaign attaches one existing actor, with no character data copied into campaign state. | CH1/CH5 receive a canonical active-scope verifier; CH13 can atomically withdraw participation while preserving history. |
+
+### Recommended order
+
+C10 is only worthwhile after an existing-world campaign has proved the model; until then it adds
+cross-owner transactional risk without more story value. C11 resolves long-running-play fork
+semantics only after the existing session lifecycle and snapshot work have real evidence. Existing Slice 7 owns AI-assisted
+campaign proposals, Slice 8 owns session operations/read-only views, and Slice 9 owns templates,
+cloning, and player-facing expansion choices.
+
+### Cross-plan creation boundaries
+
+| Boundary | Root owner to ratify before work | Called capability / invariant |
+| --- | --- | --- |
+| New world plus campaign (C10) | One campaign-or-world orchestration root | The called plan validates its own blueprint and returns typed effects/results; neither layer performs an independent nested commit. |
+| Campaign fork (C11) | Campaign lifecycle root | World, character, item, quest, and session state must be explicitly classified before an implementation slice is authorised; no implicit deep copy follows relationships. |

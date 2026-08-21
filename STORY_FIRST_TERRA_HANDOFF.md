@@ -45,15 +45,14 @@ the documented drift remains unresolved.
 
 - The generic entity/component/containment/relationship, mechanic/effect, transaction/audit, and
   event/subscription foundations exist.
-- `storytelling.md` is authored prose at the repository root and is not yet a catalog procedure.
-- It refers to descriptive legacy names `chapter`, `motive`, and `clue`; these are not approval for
-  permanent runtime IDs.
+- `procedure.play.storytelling` is now catalog-authored; `storytelling.md` is a pointer to that
+  canonical contract. The publication is implemented but awaits global-suite acceptance.
 - World/lore proposes ownership of world roots, locations, factions, facts, rumours, secrets, and
   clues.
 - Campaign owns campaign roots, chapters, arcs, and session digests and must reference an existing
   world on the story-first path.
 - Quest owns quest/objective state even though each quest is campaign-scoped.
-- Item Slice 6 and Character Slice 5 currently overlap on the atomic starting-equipment creation
+- Item Slice 6 and Character CH5 currently overlap on the atomic starting-equipment creation
   transaction. Record a recommended root owner, but do not implement either in this pass.
 - The previously observed catalog comparison reported catalog-only `lantern` and `orban`, plus
   database-only `mechanic.lock.pick`, `lock`, `coldwalk.lantern`, `coldwalk.orban`, and
@@ -121,10 +120,10 @@ The amended plans must express all of these boundaries:
 2. Campaign chapter/arc state and a resume digest work before quest integration.
 3. Quest Slices 0–3 establish manual quest state before campaign quest-link integration.
 4. `procedure.play.storytelling` is published only after its referenced canonical state contracts
-   exist; its prose rules remain useful source material before then.
+   exist; its implementation awaits global-suite acceptance before dependent work may rely on it.
 5. An existing verified actor is allowed only for the internal story proof. Player-ready play
    requires the Items and Character plans.
-6. Item Slice 6 and Character Slice 5 receive one agreed root-transaction owner and separate future
+6. Item Slice 6 and Character CH5 receive one agreed root-transaction owner and separate future
    handoffs.
 
 ## Required fixture blueprint
@@ -169,8 +168,8 @@ blocked and must say exactly why.
 - Every story-state concept has one owner and no duplicate representation.
 - The campaign/quest ordering cycle is removed from both owning plans.
 - The item/character transaction overlap has a recorded decision or explicit confirmation blocker.
-- `storytelling.md` no longer presents descriptive shorthand as guaranteed runtime IDs, or its
-  publication is explicitly gated on the ratified replacements.
+- `procedure.play.storytelling` uses only the ratified replacements; `storytelling.md` points to
+  that canonical catalog contract.
 - The first fixture graph is complete enough to derive every entity, component, relationship,
   visibility boundary, and later test reference.
 - A populated World Slice 1 implementation handoff passes the template's exit gate.

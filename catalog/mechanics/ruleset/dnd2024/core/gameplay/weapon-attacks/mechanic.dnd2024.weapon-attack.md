@@ -7,7 +7,9 @@ status: active
 ---
 
 ## Description
-Resolves one seeded D&D 2024 weapon attack against a target's final Armor Class. It reads canonical weapon facts and category proficiency, explains hit/miss and natural 20/1 precedence, and applies no effects or damage.
+Resolves one seeded D&D 2024 weapon attack against a target's final Armor Class. It reads canonical
+weapon facts, category proficiency, and derived attacker/defender condition circumstances; it
+explains hit/miss and natural 20/1 precedence and applies no effects or damage.
 
 ## Matches
 attack with weapon
@@ -18,6 +20,5 @@ attack target with dagger
 
 ## Requirements
 ```json
-{"roles":{"subject":{"components":["dnd2024.abilities","dnd2024.character-level","dnd2024.weapon-proficiencies"],"description":"The creature making the attack."},"target":{"components":["dnd2024.armor-class"],"description":"The creature whose final Armor Class is the target number."},"weapon":{"components":["dnd2024.weapon-profile"],"description":"The canonical weapon profile used for the attack."}}}
+{"roles":{"subject":{"components":["dnd2024.abilities","dnd2024.character-level","dnd2024.weapon-proficiencies"],"description":"The creature making the attack."},"target":{"components":["dnd2024.armor-class","dnd2024.conditions"],"description":"The creature whose final Armor Class and condition state inform the attack."},"weapon":{"components":["dnd2024.weapon-profile"],"description":"The canonical weapon profile used for the attack."}},"children":{"attackerEffects":{"mechanicId":"mechanic.dnd2024.d20-test.state-effects","roleBindings":{"subject":"subject"},"inheritInput":false,"input":"{}"},"targetEffects":{"mechanicId":"mechanic.dnd2024.d20-test.state-effects","roleBindings":{"subject":"target"},"inheritInput":false,"input":"{}"}}}
 ```
-

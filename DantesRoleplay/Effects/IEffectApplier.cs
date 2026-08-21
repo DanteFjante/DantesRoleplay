@@ -1,3 +1,5 @@
+using DantesRoleplay.Events;
+
 namespace DantesRoleplay.Effects;
 
 /// <summary>
@@ -43,7 +45,8 @@ public interface IEffectApplier
         CancellationToken cancellationToken = default,
         string rootOperationId = "",
         int depth = 0,
-        string causationEventId = "");
+        string causationEventId = "",
+        IReadOnlyList<DeclaredEvent>? declaredEvents = null);
 }
 
 /// <summary>

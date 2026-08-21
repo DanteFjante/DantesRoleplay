@@ -7,7 +7,9 @@ status: active
 ---
 
 ## Description
-Defines one effect-free D&D 2024 weapon attack resolver. It reads authoritative attacker, target, and canonical weapon state, then reports hit/miss and natural 20/1 classification without dealing damage or changing the world.
+Defines one effect-free D&D 2024 weapon attack resolver. It reads authoritative attacker, target,
+canonical weapon, and condition state, then reports hit/miss and natural 20/1 classification without
+dealing damage or changing the world.
 
 ## Instructions
 Source and scope
@@ -19,15 +21,15 @@ Source and scope
 
 Required state and input
 
-1. Require subject `dnd2024.abilities`, `dnd2024.character-level`, and `dnd2024.weapon-proficiencies`; target `dnd2024.armor-class`; and weapon `dnd2024.weapon-profile`.
+1. Require subject `dnd2024.abilities`, `dnd2024.character-level`, and `dnd2024.weapon-proficiencies`; target `dnd2024.armor-class` and `dnd2024.conditions`; and weapon `dnd2024.weapon-profile`.
 2. Validate every required state field and fixed source reference before consuming randomness. Missing proficiency is invalid; explicit empty categories means known nonproficient.
-3. Input is exactly `{"ability":"str"|"dex","rollCircumstances":[{"kind":"advantage"|"disadvantage","source":"reason"}]}` with optional rollCircumstances. The selected ability must occur in the profile's canonical list.
+3. Input is exactly `{"ability":"str"|"dex","rollCircumstances":[{"kind":"advantage"|"disadvantage","source":"reason"}]}` with optional rollCircumstances. The selected ability must occur in the profile's canonical list. `condition:` is reserved for state-derived evidence and rejected from caller input.
 4. Derive modifier and level-band Proficiency Bonus from stored subject state; accept neither from input. Add PB once only when profile category occurs in the stored category list.
-5. Resolve Advantage/Disadvantage using the established closed, non-stacking, cancellation convention. Return every die and selected die.
+5. Compose mechanic.dnd2024.d20-test.state-effects once for subject and once for target, both with static `{}` input. Merge caller circumstances, attacker `attackRoll` circumstances, and target `attackAgainst` circumstances under the established closed, non-stacking, cancellation convention. Return every die and selected die.
 
 Result and verification
 
-- Return subject/target/weapon ids, category, chosen ability, target Armor Class, proficiency facts, modifiers, rolls, total, hit, critical, and explicit hit reason. Return `effects: []`.
+- Return subject/target/weapon ids, category, chosen ability, target Armor Class, proficiency facts, modifiers, caller/attacker/target/merged circumstances, both condition-known flags, rolls, total, hit, critical, and explicit hit reason. Return `effects: []`.
 - Reject malformed roots/circumstances, derived-value or outcome input, wrong roles, missing/corrupt state, invalid profile/category/proficiency state, and a profile-disallowed ability before rolling or mutation.
 - Prove PB boundaries +2/+3/+5/+6, proficient/nonproficient delta, permitted and forbidden weapon/ability pairs, AC equality and adjacency, D20 modes/ties/cancellation/replay, natural 20/1 precedence, routing, zero effects, and exact unchanged entity state.
 - Run catalog dry-run/import/verify, fresh-database integration coverage, the full suite, and `git diff --check`.
@@ -36,4 +38,3 @@ Result and verification
 - This resolver owns transient weapon-attack evidence only. It never creates components, writes outcomes, rolls damage, or changes Hit Points.
 - It reads final Armor Class only from `dnd2024.armor-class`, and weapon facts only from `dnd2024.weapon-profile`.
 - It never defaults absent/corrupt profile, proficiency, level, ability, or Armor Class state; a later feature must not revise this owner merely to add damage or equipment behavior.
-

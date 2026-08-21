@@ -275,12 +275,19 @@ public sealed class ActionRunner(
                     seed);
             }
 
+            // Allocate the audit id before effects commit: structural events need the same id as
+            // their correlation/root operation, and the operation row is written later in this
+            // transaction after the action outcome is known.
+            var operationId = DantesRoleplay.Operations.Operation.NewId();
+
             // Apply the exact list that just passed the dry run. EffectApplier detects the ambient
             // transaction and leaves commit/rollback ownership with this runner.
             var applied = await _applier.ApplyAsync(
                 run.Output.Effects,
                 dryRun: false,
-                cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken,
+                rootOperationId: operationId,
+                declaredEvents: run.Output.Events);
 
             if (applied.Blocked)
             {
@@ -346,7 +353,8 @@ public sealed class ActionRunner(
                 mechanicId: selected.Id,
                 mechanicVersion: selected.Version,
                 seed: seed,
-                projectionJson: Serialize(projection));
+                projectionJson: Serialize(projection),
+                id: operationId);
 
             await transaction.CommitAsync(cancellationToken);
 

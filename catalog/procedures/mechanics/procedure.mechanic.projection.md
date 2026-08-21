@@ -23,7 +23,8 @@ engine. If you are calling `commit(kind: "action")` over MCP, this is not your c
 4. Treat every reported problem as a failed action. A projection with missing required data must
    never be handed to the mechanic as though the data were empty.
 5. Hand the resulting `MechanicProjection` to Jint. The mechanic receives only the components it
-   declared, plus identity and containment context; it does not query the store.
+   declared, identity and containment context, plus contents or relationships a role explicitly
+   requests with `includeContents` or `includeRelationships`; it does not query the store.
 6. When `requirements.children` declares child mechanics, use `IMechanicComposer` before running
    the parent source. Bind child roles only from declared parent roles (or `$item` while iterating
    an `includeContents` role). A child may inherit the parent input, use a static object, or select
@@ -39,8 +40,17 @@ engine. If you are calling `commit(kind: "action")` over MCP, this is not your c
 - Extra role assignments are ignored because the requirements, not the caller, control visibility.
 - Do not add predicates, SQL, game-specific role names, or lazy store access to the projection layer.
 - A projection is read-only input. World changes still go through the effect applier.
+- `includeRelationships` defaults to false. An opted-in role receives a frozen, canonically ordered
+  list of incoming and outgoing relationship records touching that role, with only from id, to id,
+  kind, and raw object data. It never grants the other endpoint's components or world traversal.
+- `includeContents` defaults to false. Its default opted-in view is the existing direct children
+  with id, name, and slot only. `contentsDepth` may request one through four containment levels;
+  `contentComponentIds` is the separate, bounded allow-list of components visible on those nodes.
+  New bounded-content declarations fail before the mechanic runs if a role would exceed 100 contained
+  nodes or reaches corrupt cyclic containment. The legacy direct identity-only request remains
+  compatible. The resolver never truncates a declared view or grants ancestry, relationships,
+  root components, or undeclared child components.
 - A child run proposes effects but never applies them. Only the top-level parent action can return
   effects for the effect applier.
 - Composition is bounded: no more than eight nested levels and 100 contained children per declared
   fan-out. A child failure fails the whole parent action before parent source or effects run.
-

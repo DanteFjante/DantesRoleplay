@@ -34,11 +34,13 @@ public sealed class EffectApplier(
         CancellationToken cancellationToken = default,
         string rootOperationId = "",
         int depth = 0,
-        string causationEventId = "")
+        string causationEventId = "",
+        IReadOnlyList<DeclaredEvent>? declaredEvents = null)
     {
         effects ??= [];
+        declaredEvents ??= [];
 
-        if (effects.Count == 0)
+        if (effects.Count == 0 && declaredEvents.Count == 0)
         {
             return new EffectResult(Applied: !dryRun, Count: 0, Problems: []);
         }
@@ -92,7 +94,7 @@ public sealed class EffectApplier(
             };
         }
 
-        return await ApplyValidatedAsync(effects, rootOperationId, depth, causationEventId, cancellationToken);
+        return await ApplyValidatedAsync(effects, declaredEvents, rootOperationId, depth, causationEventId, cancellationToken);
     }
 
     // ---- validation -------------------------------------------------------------------
@@ -304,6 +306,7 @@ public sealed class EffectApplier(
     /// </summary>
     private async Task<EffectResult> ApplyValidatedAsync(
         IReadOnlyList<Effect> effects,
+        IReadOnlyList<DeclaredEvent> declaredEvents,
         string rootOperationId,
         int depth,
         string causationEventId,
@@ -337,7 +340,26 @@ public sealed class EffectApplier(
                 receipts[index] = await ApplyOneAsync(index, effects[index], cancellationToken);
             }
 
-            var proposals = Proposals(effects, receipts, correlation, depth, causationEventId);
+            var proposals = Proposals(effects, receipts, correlation, depth, causationEventId).ToList();
+            if (declaredEvents.Count > 0)
+            {
+                var declared = await DerivedEvents.ProposeAsync(
+                    _db, declaredEvents, "root action", "action:" + correlation, correlation,
+                    causationEventId, depth, cancellationToken);
+                if (!declared.Ok)
+                {
+                    if (transaction is not null) await transaction.RollbackAsync(CancellationToken.None);
+                    _db.ChangeTracker.Clear();
+                    return new EffectResult(Applied: false, Count: 0, Problems: [])
+                    {
+                        Blocked = true,
+                        BlockCode = declared.Code,
+                        BlockReason = declared.Reason,
+                        ProposedEvents = proposals
+                    };
+                }
+                proposals.AddRange(declared.Proposals);
+            }
             var evaluations = Array.Empty<GuardEvaluation>() as IReadOnlyList<GuardEvaluation>;
 
             if (_guards is not null && proposals.Count > 0)

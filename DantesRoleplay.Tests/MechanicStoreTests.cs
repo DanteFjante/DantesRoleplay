@@ -377,11 +377,54 @@ public sealed class MechanicStoreTests : IDisposable
     {
         // The supervision question — "what can this rule see?" — answered without reading source.
         var requirements = MechanicRequirements.Parse(
-            """{"roles":{"subject":{"components":["stats","marks"]},"other":{"components":["stats"]}}}""");
+            """{"roles":{"subject":{"components":["stats","marks"],"includeContents":true,"contentComponentIds":["secrets"]},"other":{"components":["stats"]}}}""");
 
         Assert.Equal(2, requirements.Roles.Count);
-        Assert.Equal(["stats", "marks"], requirements.AllComponentIds());
+        Assert.Equal(["stats", "marks", "secrets"], requirements.AllComponentIds());
 
         await Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task Invalid_nested_content_projection_is_rejected_before_a_mechanic_is_written()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new MechanicStore(db);
+
+        var checks = await store.CheckAsync(Request(requirements: """
+            {"roles":{
+              "container":{"components":[],"contentsDepth":2},
+              "empty":{"components":[],"contentComponentIds":[]},
+              "deep":{"components":[],"includeContents":true,"contentsDepth":5},
+              "nested":{"components":[],"includeContents":true,"contentComponentIds":["stats","stats"]}
+            }}
+            """));
+
+        var declaration = checks.Single(check => check.Name == "projection-declaration");
+        Assert.False(declaration.Passed);
+        Assert.Contains("includeContents", declaration.Detail);
+        Assert.Contains("between 1 and 4", declaration.Detail);
+        Assert.Contains("distinct", declaration.Detail);
+    }
+
+    [Fact]
+    public async Task An_unknown_descendant_component_is_rejected_before_a_mechanic_is_written()
+    {
+        await using var db = _fixture.CreateContext();
+        var world = new WorldStore(db);
+        await world.DefineComponentAsync("stats", "Stats", "Numeric attributes.");
+        var store = new MechanicStore(db);
+
+        var checks = await store.CheckAsync(Request(requirements: """
+            {"roles":{"container":{
+              "components":[],
+              "includeContents":true,
+              "contentComponentIds":["missing.descendant.component"]
+            }}}
+            """));
+
+        var components = checks.Single(check => check.Name == "components-exist");
+        Assert.False(components.Passed);
+        Assert.Contains("missing.descendant.component", components.Detail);
     }
 }

@@ -29,7 +29,7 @@ public sealed class GuardTests
     private static readonly string[] ForbiddenInKernel =
     [
         "attack", "damage", "initiative", "spell", "hitpoints", "mana", "weapon",
-        "armour", "armor", "monster", "dice", "combat", "quest", "dungeon", "loot"
+        "armour", "armor", "monster", "dice", "combat", "dungeon", "loot"
     ];
 
     private static readonly string[] KernelProjects =

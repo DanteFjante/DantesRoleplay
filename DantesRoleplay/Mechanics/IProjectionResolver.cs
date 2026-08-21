@@ -10,9 +10,11 @@ namespace DantesRoleplay.Mechanics;
 /// LLM wrote at midnight can be reviewed in the morning.
 ///
 /// It also enforces the other direction, which is easy to miss: a mechanic gets ONLY what it
-/// declared. Not the entity's other components, not its relationships, not the rest of the world.
-/// A rule that reads something it never declared would be a rule whose stated requirements are a
-/// lie, and the requirements are what the supervision view shows instead of the source.
+/// declared. Not the entity's other components, unrequested relationships, or the rest of the
+/// world. A role may explicitly request relationship records with includeRelationships, but it
+/// still does not receive either endpoint's other data. A rule that reads something it never
+/// declared would be a rule whose stated requirements are a lie, and the requirements are what the
+/// supervision view shows instead of the source.
 /// </summary>
 public interface IProjectionResolver
 {

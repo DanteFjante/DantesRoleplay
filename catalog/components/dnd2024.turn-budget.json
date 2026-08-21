@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.turn-budget",
+  "name": "Turn action economy budget (D&D 2024)",
+  "description": "The per-participant D&D 2024 turn-resource state: availability of Action, Bonus Action, Reaction, one free object interaction, and remaining movement feet. Attach it only to a combat participant. Base Speed belongs to dnd2024.speed and is read when a turn starts; this component stores no movement maximum, encounter, round, turn index, active participant, action cost, position, trigger, or resource history. Feature 12 owns admission and spending; Feature 11 owns turn identity and timing. Governed by procedure.mechanic.dnd2024.turn-budget. Source: System Reference Document 5.2.1, 'Playing the Game > Actions; Bonus Actions; Reactions; Interacting with Objects; Combat > Your Turn', Wizards of the Coast, CC-BY-4.0, https://www.dndbeyond.com/srd"
+}

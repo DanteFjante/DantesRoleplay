@@ -95,8 +95,8 @@ warns against.
 | 33 | Rests: short rest, long rest, hit dice spending, and what each resource recovers | 27, 14 | Gritty realism and other optional rest variants |
 | 34 | Vision and light, hiding, passive Perception, and surprise at the start of an encounter | 20, 13 | Dynamic lighting as geometry |
 | 35 | Monsters and stat blocks: creatures as data, CR, traits, actions, and encounter building | Feature 6–9, 27 | The full SRD bestiary as content; the capability comes first |
-| 36 | Advancement: XP or milestone, levelling a character up through the class features it already has | 27 | Automatic optimisation, respec tooling |
-| 37 | Travel, exploration and time: pace, distance over days, and a clock that rests and durations can read | 33, E1 | Weather simulation, hex crawl generation |
+| 36 | Advancement: XP or milestone, levelling a character up through the class features it already has | 27; Campaign C14; Character CH9 | [Slice 1 implemented: character XP state and eligibility](feature-36/FEATURE-36-DEPENDENCY-PLAN.md); campaign awards, automatic optimisation, respec tooling |
+| 37 | D&D travel pace and elapsed-time integration over the existing world routes, itinerary, and clock | 33, core world travel/time, E1 | Rebuilding routes, maps, clocks, conveyances, weather simulation, hex crawl generation |
 | 38 | Social interaction: attitude, influence checks, and the rules that make persuasion more than a raw check | Feature 3 | Personality simulation for NPCs |
 
 ---

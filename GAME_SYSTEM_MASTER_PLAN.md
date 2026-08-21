@@ -1,6 +1,6 @@
 # Game system master implementation plan
 
-Status: **Draft integration map — planning only; no subsystem slice is authorised by this document**  
+Status: **Draft integration map — synchronized 2026-08-20; no subsystem slice is authorised by this document**
 Last updated: 2026-08-20
 
 ## Purpose
@@ -34,6 +34,24 @@ When two documents disagree, use this order:
 
 Repository plans describe decisions and tests. They do not become runtime game content merely by
 existing as Markdown.
+
+## Consolidated subsystem status
+
+This is a navigation summary, not a second source of acceptance evidence. “Verified” means the
+owning roadmap/receipt records the slice as verified.  “Current worktree” means implementation and
+tests exist here but the feature still needs its owning roadmap's integration/release gate; it must
+not be represented as a released player capability merely because the solution builds.
+
+| Subsystem | Consolidated status | Next dependency that matters for playable use |
+| --- | --- | --- |
+| Kernel and event runtime | **Verified.** Three-verb MCP, transactional mechanics/effects, audit, event ledger, guards, reactions, and notifications are implemented. | Cold/played/reuse-session evidence and the content/story frame described in `NEXT_STEPS.md`. |
+| World and lore | **Verified through W15** for the first fixture world: topology, movement, factions/motives, knowledge/clues, clock, reactions, trusted-host reads, routes, map projection, conditions/fronts, ground/air travel, itineraries, and fixed portals. W16 is the next planned mixed-mode itinerary. | A governed new-world composer remains future work; current campaign creation attaches to an existing authored world. |
+| Campaign | **C1–C3 are test-covered in the current worktree:** existing-world blueprint validation, atomic bootstrap, one-arc chapter continuity, and bounded resume. C4–C13 remain owned successors. | Confirm/release the existing-world campaign path, then Q2/Q3 before campaign-level quest context is added to resume. |
+| Quest | **Q0 and Q1 verified:** editorial fixture plus atomic creation of one three-objective draft quest. | Q2.1 manual offer/accept, followed by the remaining manual lifecycle and Q3 summary boundary. |
+| Character creation | **Planning only.** Existing D&D mechanics are foundations, not a supported player creation flow. | CH0 ratifies one complete level-one non-spellcasting path; CH1–CH5 then compose and atomically create it. |
+| Items and inventory | **Partial foundation.** Existing containment and D&D weapon data work; Feature 23 has verified lower slices, while the general player inventory/equipment path is still gated. | Ratify the definition/instance/equipped-state composition needed by CH5 starting equipment. |
+| Sessions and player experience | **Planning only.** C8/S0–S4 define the first start/resume/end/checkpoint contract. | Finish campaign/quest projection boundaries, then ratify S0 before creating session runtime state. |
+| D&D rules | **Combat vertical through Feature 11 verified;** later conditions, damage modifiers, death, equipment depth, classes, spells, and character creation remain separate slices. | Select one dependency-complete feature; do not treat the ruleset foundation as full D&D play. |
 
 ## Product outcome
 
@@ -164,15 +182,14 @@ to the campaign digest. The website and local AI are consumers; neither blocks c
 | Story-first delivery priority | [STORY_FIRST_ROADMAP.md](STORY_FIRST_ROADMAP.md) | Product sequence for persistent world, exploration, lore, quests, and continuity |
 | Core architecture | [ARCHITECTURE.md](ARCHITECTURE.md) | Invariants and rationale |
 | Verified kernel/runtime status | [STATUS.md](STATUS.md) and [NEXT_STEPS.md](NEXT_STEPS.md) | Current evidence and immediate MVP work |
-| World, locations, factions, knowledge, time | [WORLD_AND_LORE_PLAN.md](WORLD_AND_LORE_PLAN.md) | Focused plan added beside this master |
-| World Feature 1 — persistent topology | [World Feature 1 dependency plan](world/feature-01/WORLD-FEATURE-01-DEPENDENCY-PLAN.md) | New-standard Slice 1 plan; awaiting permanent-vocabulary confirmation |
-| Campaign bootstrap, goals, chapters, arcs, opportunities | [CAMPAIGN_CREATION_PLAN.md](CAMPAIGN_CREATION_PLAN.md) | Draft implementation slices |
-| Character creation and sourced grants | [CHARACTER_CREATION_PLAN.md](CHARACTER_CREATION_PLAN.md) | Draft implementation slices |
-| Items, inventory, equipment, consumption | [ITEMS_AND_INVENTORY_PLAN.md](ITEMS_AND_INVENTORY_PLAN.md) | Focused plan added beside this master |
-| Quests and objectives | [QUEST_IMPLEMENTATION_PLAN.md](QUEST_IMPLEMENTATION_PLAN.md) | Draft implementation slices |
+| World, locations, factions, knowledge, time | [WORLD_AND_LORE_PLAN.md](WORLD_AND_LORE_PLAN.md) | W1–W15 verified for the fixture world; W16 mixed-mode itinerary is the next planned feature |
+| Campaign bootstrap, goals, chapters, arcs, opportunities | [CAMPAIGN_CREATION_PLAN.md](CAMPAIGN_CREATION_PLAN.md) | C1–C3 are test-covered in the current worktree; C4 quest integration is gated by Q2/Q3 |
+| Character creation and sourced grants | [CHARACTER_CREATION_PLAN.md](CHARACTER_CREATION_PLAN.md) | Planning only; CH0 ratification is the first runtime prerequisite |
+| Items, inventory, equipment, consumption | [ITEMS_AND_INVENTORY_PLAN.md](ITEMS_AND_INVENTORY_PLAN.md) | Feature 23 foundation exists; definition/instance/equipment composition remains gated for player creation |
+| Quests and objectives | [QUEST_IMPLEMENTATION_PLAN.md](QUEST_IMPLEMENTATION_PLAN.md) | Authoritative base roadmap; Q0 and Q1 are verified, and Q2.1 is planned pending its semantic confirmation |
 | Events, guards, reactions, notifications | [EVENTS_AND_SUBSCRIPTIONS_PLAN.md](EVENTS_AND_SUBSCRIPTIONS_PLAN.md) and [receipt](EVENTS_AND_SUBSCRIPTIONS_RECEIPT.md) | Implemented foundation and rationale |
-| D&D 2024 rules | [DND_RULESET_IMPLEMENTATION_PLAN.md](DND_RULESET_IMPLEMENTATION_PLAN.md) | High-level rules track |
-| Complete D&D play | [ROADMAP-COMPLETE-PLAY.md](ruleset/dnd2024/ROADMAP-COMPLETE-PLAY.md) | Ordered capability inventory |
+| D&D 2024 rules | [DND_RULESET_IMPLEMENTATION_PLAN.md](DND_RULESET_IMPLEMENTATION_PLAN.md) | Ruleset foundation and combat vertical are verified through Feature 11; later features remain independently planned |
+| Complete D&D play | [ROADMAP-COMPLETE-PLAY.md](ruleset/dnd2024/ROADMAP-COMPLETE-PLAY.md) | Ordered capability inventory; not a release claim for complete D&D play |
 | Per-feature planning method | [TERRA-FEATURE-PLANNING-GUIDE.md](ruleset/dnd2024/TERRA-FEATURE-PLANNING-GUIDE.md) | Mandatory quality standard |
 | Executable workflows | [EXECUTABLE_WORKFLOW_PLAN.md](EXECUTABLE_WORKFLOW_PLAN.md) | Planned orchestration feature |
 | Procedure semantic retrieval | [PROCEDURE_SEMANTIC_RETRIEVAL_PLAN.md](PROCEDURE_SEMANTIC_RETRIEVAL_PLAN.md) | Planned hybrid FTS/vector memory |
@@ -184,75 +201,77 @@ to the campaign digest. The website and local AI are consumers; neither blocks c
 
 ## Recommended implementation order
 
-### Phase 0 — prove and preserve the existing foundation
+### Phase 0 — prove and preserve the available vertical slice
 
-Finish the current cold-walk/played-session evidence, keep the event receipt current, snapshot the
-campaign database before play tests, and repair only failures found by those tests.
+Finish the three-verb cold walk, author the remaining first-session mechanics through the MCP
+write path, publish `procedure.play.storytelling`, record a campaign database snapshot procedure,
+and conduct the played and reuse sessions required by `NEXT_STEPS.md`. Repair only findings from
+those sessions.
 
-Exit gate: a fresh host can orient, query, run an action, observe effects/events, and resume state
-from the same database.
+Exit gate: a fresh host can orient, inspect the stored world/campaign state, run an action, observe
+effects/events, and resume the same scenario from the same database without transcript memory.
 
-### Phase 1 — minimum persistent world
+### Phase 1 — integrate the existing campaign/world spine
 
-Implement the first slices of WORLD_AND_LORE_PLAN.md: world root, location hierarchy/adjacency,
-basic world facts, one faction, recurring NPC motives, and bounded inspection. Record the query
-contract that the later storytelling/session procedure will consume.
+Treat the fixture world (W1–W15) and existing-world campaign path (C1–C3) as the integration
+candidate, not as future design work. Confirm the C0 brief/release boundary, import and validate
+the relevant catalog, and publish the storytelling contract only against the state that is actually
+available. Do not claim a world generator, player-safe visibility, or an AI campaign generator.
 
-Exit gate: a fresh model can answer where the party is, what places/NPCs/factions are known, and
-which facts are public or hidden.
+Exit gate: a fresh trusted host retrieves the story contract and reconstructs the premise, current
+chapter, arc stakes, authorised world references, and recent milestones from stored state.
 
-### Phase 2 — campaign spine and storytelling contract
+### Phase 2 — complete one manually playable quest
 
-Attach one manual campaign to the existing world, then add one chapter, one arc, and a bounded
-resume digest. Align and publish the storytelling procedure only after its world/chapter state IDs
-are ratified. Do not require a quest, generated proposal, item, or newly created character yet.
-
-Exit gate: a fresh host retrieves the story contract and reconstructs the premise, active chapter,
-arc stakes, relevant lore/faction state, and recent milestones from stored state.
-
-### Phase 3 — one manually playable quest
-
-Implement one campaign-owned quest with three objectives, evidence links, manual progress,
-reconciliation, and narrative handoff. Add campaign chapter/arc links only after the quest's manual
-lifecycle exists.
+Keep Q2 narrow: implement and prove manual offer/accept first, then the closed advance,
+reconciliation, resolution, and reopen rules that its owner accepts. Add Q3's bounded trusted-host
+quest summary, then C4's campaign digest integration. Event-driven progression remains a successor
+to played manual behaviour, not a substitute for it.
 
 Exit gate: the quest can be accepted, investigated through more than one route, progressed or
-resolved atomically, and resumed in a fresh session without transcript memory.
+resolved atomically, and resumed in a fresh host context without transcript memory.
 
-### Phase 4 — continuity proof and one reactive consequence
+### Phase 3 — continuity proof and the first session boundary
 
-Play the first story through session close/restart before automating it. Then add exactly one
-event-driven objective or world reaction proven by the manual session.
+Play the integrated story through a close/restart before automating further consequences. Ratify
+Session S0, then implement C8/S1–S4 one slice at a time: one active session, factual resume, end
+receipt, and an explicit checkpoint/recovery boundary. Add at most one event-driven quest or world
+reaction that the manual session has demonstrated is valuable.
 
-Exit gate: a fresh host gives a faithful recap from stored facts, and one qualifying committed
-event changes exactly the intended state once while negative/rollback cases change nothing.
+Exit gate: a fresh host receives a faithful factual recap from owner projections, and a qualifying
+committed event changes exactly the intended state once while negative/rollback cases change
+nothing.
 
-### Phase 5 — player-ready items and character creation
+### Phase 4 — player-ready items and character creation
 
 In a parallel lane, implement immutable item definitions, instances, containment/equip, and one
-level-1 non-spellcasting SRD character path. Ratify the Item Slice 6 / Character Slice 5 atomic
+level-1 non-spellcasting SRD character path. Ratify the Item Slice 6 / CH5 atomic
 starting-equipment boundary before assigning either integration slice.
 
 Exit gate: a fresh MCP session discovers, validates, creates, queries, and plays one action with a
 legal player-created protagonist and starting items, without raw component editing.
 
-### Phase 6 — session lifecycle and richer play
+### Phase 5 — richer play after the session foundation
 
-Add start/resume/end-session handling, then follow the complete-play roadmap by dependency:
-turns/action economy, conditions, damage types, healing/death, movement, equipment depth, classes,
-spells, rests, advancement, travel, and social interaction.
+After the C8 start/resume/end-session foundation has passed its own gates, follow the complete-play
+roadmap by dependency: turns/action economy, conditions, damage types, healing/death, movement,
+equipment depth, classes, spells, rests, advancement, travel, and social interaction.
+
+The [Session Operations Plan](SESSION_OPERATIONS_PLAN.md) is the session-product roadmap. Campaign
+Feature C8 owns the first concrete lifecycle/recap/checkpoint slice; later participant, gameplay,
+narrative, player-control, and collaboration work remains separately bounded.
 
 Exit gate: each selected feature satisfies its own Terra dependency plan. There is no “implement
 Tier F” or “finish combat” batch.
 
-### Phase 7 — read-only human experience
+### Phase 6 — read-only human experience
 
 Implement the server-rendered world/campaign/quest/character/item views, stable read API, and SSE
 invalidation. Add the read-only map only after locations and spatial contracts are stable.
 
 Exit gate: the human UI accurately reflects committed state and remains usable without JavaScript.
 
-### Phase 8 — orchestration and retrieval optimisation
+### Phase 7 — orchestration and retrieval optimisation
 
 Implement registered workflows after recurring multi-call sequences are evidenced. Strengthen FTS
 and confirmed aliases before vectors. Add Qwen3 embedding and Ollama routing profiles only after
@@ -261,7 +280,7 @@ their evaluation gates pass.
 Exit gate: disabling workflows, vectors, and Ollama reduces convenience/performance but does not
 change game correctness.
 
-### Phase 9 — controlled generated content and interactive UI
+### Phase 8 — controlled generated content and interactive UI
 
 Add reviewed AI campaign proposals, future quest generation, website creation forms, travel/battle
 map commands, and content packs one vertical slice at a time.
@@ -407,10 +426,17 @@ When a subsystem decision changes:
 
 ## Immediate planning decision
 
-The story-first roadmap is the current product priority. The first new feature plan is
-`world/feature-01/WORLD-FEATURE-01-DEPENDENCY-PLAN.md`, which follows the Terra planning standard
-for a persistent world topology. Its Slice 1 is the next implementation candidate after reviewer
-confirmation of the permanent vocabulary. Repository planning and disposable catalog validation may
+The story-first roadmap remains the product priority, but the next candidate is no longer a world
+foundation slice: W1–W15 now provide the authored-world capability used by the first story fixture.
+The lowest missing playable-story leaf is **Quest Q2.1 manual offer/accept**, after its stated
+semantic confirmation. It must be followed by the remaining Q2 lifecycle and Q3 summary boundary
+before C4 campaign/quest digest integration. In parallel, the MVP cold walk, authored first-session
+mechanics, storytelling procedure, snapshot guidance, and played/reuse-session evidence in
+`NEXT_STEPS.md` remain required proof—not features the roadmap may silently mark complete.
+
+Character creation is not the immediate workaround for this gap: CH0 is a separate host-ratified
+planning boundary, and the player-facing creation flow remains downstream of items, campaign
+attachment, and CH5's atomic composition. Repository planning and disposable catalog validation may
 continue despite catalog/database drift; resolving drift is required only before persistent import
 for integration play or release.
 

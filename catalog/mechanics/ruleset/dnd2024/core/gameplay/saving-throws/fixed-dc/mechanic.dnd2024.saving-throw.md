@@ -7,7 +7,8 @@ status: active
 ---
 
 ## Description
-Resolves one D&D 2024 character fixed-DC saving throw from validated abilities, level, and saving-throw-proficiency state; it uses seeded D20 circumstances and applies no effects.
+Resolves one D&D 2024 character fixed-DC saving throw from validated abilities, level, and
+saving-throw-proficiency state; it merges condition-derived D20 effects and applies no effects.
 
 ## Matches
 make a saving throw
@@ -21,6 +22,5 @@ charisma saving throw
 
 ## Requirements
 ```json
-{"roles":{"subject":{"components":["dnd2024.abilities","dnd2024.character-level","dnd2024.saving-throw-proficiencies"],"description":"The character making a fixed-DC D&D 2024 saving throw."}}}
+{"roles":{"subject":{"components":["dnd2024.abilities","dnd2024.character-level","dnd2024.saving-throw-proficiencies"],"description":"The character making a fixed-DC D&D 2024 saving throw."}},"children":{"stateEffects":{"mechanicId":"mechanic.dnd2024.d20-test.state-effects","roleBindings":{"subject":"subject"},"inheritInput":false,"input":"{}"}}}
 ```
-

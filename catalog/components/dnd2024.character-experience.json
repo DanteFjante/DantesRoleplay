@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.character-experience",
+  "name": "Character experience total (D&D 2024)",
+  "description": "One character's explicit nonnegative D&D 2024 experience-point total and fixed SRD 5.2.1 provenance. It is persistent character state used by the Feature 36 eligibility reader. It stores no campaign policy, award history, threshold, eligibility, authorization, class level, or level-up result. Governed by procedure.mechanic.dnd2024.character-experience."
+}

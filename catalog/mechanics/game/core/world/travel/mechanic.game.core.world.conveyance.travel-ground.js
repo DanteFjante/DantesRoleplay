@@ -1,0 +1,66 @@
+// Deterministic one-route ground-conveyance journey. Governed by procedure.game.core.world.travel and time.
+var driver = ctx.roles.driver, conveyance = ctx.roles.conveyance, origin = ctx.roles.origin, destination = ctx.roles.destination;
+var route = ctx.roles.conveyanceRoute, world = ctx.roles.world;
+var travellerId = 'game.core.world.traveller', conveyanceId = 'game.core.world.conveyance', locationId = 'game.core.world.location';
+var routeId = 'game.core.world.conveyance-route', rootId = 'game.core.world.root', clockId = 'game.core.world.clock';
+var adjacencyKind = 'game.core.world.location.connected-to';
+var scopeKind = 'game.core.world.conveyance-route.in-world', fromKind = 'game.core.world.conveyance-route.from', toKind = 'game.core.world.conveyance-route.to';
+
+function closed(value, keys) { if (value === null || Array.isArray(value) || typeof value !== 'object') return false; var actual = Object.keys(value).sort(); if (actual.length !== keys.length) return false; for (var i = 0; i < keys.length; i++) if (actual[i] !== keys[i]) return false; return true; }
+function parse(raw, name) { if (typeof raw !== 'string') throw new Error(name + ' is corrupt.'); try { return JSON.parse(raw); } catch (error) { throw new Error(name + ' is corrupt.'); } }
+function text(value, maximum) { return typeof value === 'string' && value.length >= 1 && value.trim() === value && Array.from(value).length <= maximum; }
+function integer(value, minimum, maximum) { return typeof value === 'number' && Number.isSafeInteger(value) && value >= minimum && value <= maximum; }
+function validLocation(value) { return closed(value, ['kind', 'status', 'summary', 'visibility']) && (value.kind === 'region' || value.kind === 'settlement' || value.kind === 'site' || value.kind === 'interior') && value.status === 'active' && text(value.summary, 1000) && (value.visibility === 'public' || value.visibility === 'party' || value.visibility === 'gm'); }
+function validConveyance(value) { return closed(value, ['speedUnitsPerMinute', 'status', 'summary', 'travelMode', 'visibility']) && value.status === 'active' && text(value.summary, 1000) && (value.visibility === 'public' || value.visibility === 'party' || value.visibility === 'gm') && value.travelMode === 'ground' && integer(value.speedUnitsPerMinute, 1, 10000); }
+function validRoute(value) { return closed(value, ['distanceUnits', 'status', 'summary', 'travelMode', 'visibility']) && value.status === 'active' && text(value.summary, 1000) && (value.visibility === 'public' || value.visibility === 'party' || value.visibility === 'gm') && value.travelMode === 'ground' && integer(value.distanceUnits, 1, 1000000); }
+function routeLink(edge, kind, target) { return edge.kind === kind && edge.fromEntityId === route.id && edge.toEntityId === target && closed(parse(edge.data, 'Ground route relationship data'), []); }
+
+if (!closed(ctx.input, [])) throw new Error('Ground conveyance journey input must be exactly {}. Do not supply a vehicle kind, route, duration, origin, destination, clock, effects, or result.');
+if (!driver || !conveyance || !origin || !destination || !route || !world || !driver.components || !conveyance.components || !origin.components || !destination.components || !route.components || !world.components) throw new Error('Ground conveyance journey requires driver, conveyance, origin, destination, conveyanceRoute, and world roles.');
+var ids = [driver.id, conveyance.id, origin.id, destination.id, route.id, world.id];
+if (ids.some(function (id) { return typeof id !== 'string' || id.length === 0; }) || new Set(ids).size !== 6) throw new Error('Ground conveyance journey roles must name six distinct entities.');
+if (!driver.components[travellerId] || !conveyance.components[conveyanceId] || !origin.components[locationId] || !destination.components[locationId] || !route.components[routeId] || !world.components[rootId] || !world.components[clockId]) throw new Error('Ground conveyance journey roles are missing required traveller, conveyance, location, route, root, or clock components.');
+var driverState = parse(driver.components[travellerId], 'Driver state');
+var conveyanceState = parse(conveyance.components[conveyanceId], 'Conveyance state');
+var originState = parse(origin.components[locationId], 'Origin location state');
+var destinationState = parse(destination.components[locationId], 'Destination location state');
+var routeState = parse(route.components[routeId], 'Ground route state');
+var rootState = parse(world.components[rootId], 'World root state');
+var clockState = parse(world.components[clockId], 'World clock state');
+if (!closed(driverState, ['status']) || driverState.status !== 'active') throw new Error('Driver state is invalid or inactive.');
+if (!validConveyance(conveyanceState)) throw new Error('Conveyance state is invalid or inactive.');
+if (!validLocation(originState) || !validLocation(destinationState)) throw new Error('Origin or destination location state is invalid or inactive.');
+if (!validRoute(routeState)) throw new Error('Ground route state is invalid or inactive.');
+if (!closed(rootState, ['status', 'summary', 'visibility']) || rootState.status !== 'active' || !text(rootState.summary, 1000) || (rootState.visibility !== 'public' && rootState.visibility !== 'party' && rootState.visibility !== 'gm')) throw new Error('World root is invalid or inactive.');
+if (!closed(clockState, ['calendarId', 'currentMinute', 'revision']) || !text(clockState.calendarId, 100) || !integer(clockState.currentMinute, 0, 1000000000) || !integer(clockState.revision, 0, 2147483647)) throw new Error('World clock is corrupt.');
+if (driver.containerId !== origin.id || driver.containerSlot !== 'presence' || conveyance.containerId !== origin.id || conveyance.containerSlot !== 'presence') throw new Error('Driver and conveyance must both be currently present at the claimed origin.');
+if (!origin.containerId || origin.containerId !== destination.containerId || origin.containerSlot !== 'location' || destination.containerSlot !== 'location') throw new Error('Origin and destination must be active sibling locations.');
+if (!Array.isArray(origin.relationships) || !Array.isArray(route.relationships)) throw new Error('Ground conveyance relationship projection is missing. Re-read the mechanic requirements.');
+
+var adjacency = 0;
+for (var i = 0; i < origin.relationships.length; i++) {
+  var edge = origin.relationships[i];
+  if (!closed(edge, ['data', 'fromEntityId', 'kind', 'toEntityId']) || typeof edge.fromEntityId !== 'string' || typeof edge.toEntityId !== 'string' || typeof edge.kind !== 'string' || typeof edge.data !== 'string') throw new Error('Origin relationship projection is corrupt.');
+  if (edge.kind !== adjacencyKind) continue;
+  if (edge.fromEntityId === edge.toEntityId || (edge.fromEntityId !== origin.id && edge.toEntityId !== origin.id) || edge.fromEntityId >= edge.toEntityId || !closed(parse(edge.data, 'Adjacency data'), [])) throw new Error('Origin has corrupt noncanonical adjacency state.');
+  if ((edge.fromEntityId === origin.id && edge.toEntityId === destination.id) || (edge.fromEntityId === destination.id && edge.toEntityId === origin.id)) adjacency++;
+}
+if (adjacency !== 1) throw new Error('Origin and destination must have exactly one stored canonical adjacency connection.');
+
+var scope = 0, from = 0, to = 0;
+for (var j = 0; j < route.relationships.length; j++) {
+  var link = route.relationships[j];
+  if (!closed(link, ['data', 'fromEntityId', 'kind', 'toEntityId']) || typeof link.fromEntityId !== 'string' || typeof link.toEntityId !== 'string' || typeof link.kind !== 'string' || typeof link.data !== 'string') throw new Error('Ground route relationship projection is corrupt.');
+  if (link.fromEntityId !== route.id) continue;
+  if ((link.kind !== scopeKind && link.kind !== fromKind && link.kind !== toKind) || !closed(parse(link.data, 'Ground route relationship data'), [])) throw new Error('Ground route has corrupt scope or endpoint links.');
+  if (routeLink(link, scopeKind, world.id)) scope++;
+  else if (routeLink(link, fromKind, origin.id)) from++;
+  else if (routeLink(link, toKind, destination.id)) to++;
+  else throw new Error('Ground route does not bind the claimed world, origin, and destination.');
+}
+if (scope !== 1 || from !== 1 || to !== 1 || scope + from + to !== 3) throw new Error('Ground route must have exactly one scope, origin, and destination link.');
+var minutes = Math.floor((routeState.distanceUnits + conveyanceState.speedUnitsPerMinute - 1) / conveyanceState.speedUnitsPerMinute);
+if (!integer(minutes, 1, 1440)) throw new Error('Ground route and conveyance derive an unsupported journey duration.');
+if (clockState.currentMinute > 1000000000 - minutes || clockState.revision === 2147483647) throw new Error('Ground conveyance journey cannot advance the world clock beyond its confirmed bounds.');
+var nextClock = { calendarId: clockState.calendarId, currentMinute: clockState.currentMinute + minutes, revision: clockState.revision + 1 };
+return { narration: driver.name + ' drives ' + conveyance.name + ' from ' + origin.name + ' to ' + destination.name + ' along ' + route.name + '.', effects: [{ type: 'containment.move', entityId: conveyance.id, toEntityId: destination.id, slot: 'presence' }, { type: 'containment.move', entityId: driver.id, toEntityId: destination.id, slot: 'presence' }, { type: 'component.set', entityId: world.id, definitionId: clockId, data: JSON.stringify(nextClock) }], data: { test: 'ground-conveyance-travel', driverId: driver.id, conveyanceId: conveyance.id, conveyanceRouteId: route.id, worldId: world.id, originId: origin.id, destinationId: destination.id, mode: routeState.travelMode, distanceUnits: routeState.distanceUnits, speedUnitsPerMinute: conveyanceState.speedUnitsPerMinute, minutes: minutes, previousMinute: clockState.currentMinute, currentMinute: nextClock.currentMinute, previousRevision: clockState.revision, currentRevision: nextClock.revision } };

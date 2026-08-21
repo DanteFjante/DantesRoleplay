@@ -129,7 +129,7 @@ Introduce the closed display vocabulary, page/view-spec storage, renderer, valid
 
 ### Slice 7 — maps and future interaction
 
-First introduce a read-only map view once location, containment, and spatial-display contracts exist. The map is a component over server-provided world data, so it can update through SSE without a full-page reload.
+First introduce a read-only map view once the location/containment contracts and the [World Feature 9 map-layout contract](world/feature-09/WORLD-FEATURE-09-DEPENDENCY-PLAN.md) are verified. The map is a component over server-provided world data, so it can update through SSE without a full-page reload.
 
 Only after the read-only map is useful, plan interactive travel and battle maps as separate features. Each needs a clear intent model, valid-target discovery, an authoritative command, transaction/audit behaviour, conflict/revision handling, and accessible non-map controls.
 

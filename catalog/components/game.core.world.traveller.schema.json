@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"Shared Game World Traveller","type":"object","additionalProperties":false,"required":["status"],"properties":{"status":{"const":"active"}},"$comment":"Governed by procedure.game.core.world.travel. This is an eligibility marker only; containment is the authoritative current location."}

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "D&D 2024 character experience total",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["total", "sourceRef"],
+  "properties": {
+    "total": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991,
+      "description": "The character's accumulated experience points. It is never spent or reduced by level gain."
+    },
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceId", "locator"],
+      "properties": {
+        "sourceId": { "type": "string", "const": "source.dnd2024.srd-5.2.1" },
+        "locator": { "type": "string", "const": "Character Creation > Level Advancement" }
+      }
+    }
+  },
+  "$comment": "Governed by procedure.mechanic.dnd2024.character-experience. Eligibility and the next threshold are derived, never stored."
+}

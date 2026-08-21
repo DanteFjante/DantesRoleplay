@@ -7,7 +7,9 @@ status: active
 ---
 
 ## Description
-Defines the distinct D&D 2024 character saving-throw resolver, not an ability check: it reads saving-throw-proficiency state rather than skill state, applies the established D20 circumstance convention, and returns an effect-free seeded fixed-DC save result.
+Defines the distinct D&D 2024 character saving-throw resolver, not an ability check: it reads
+saving-throw-proficiency state, composes the condition state-effects resolver, and returns an
+effect-free seeded fixed-DC save result.
 
 ## Instructions
 Source and scope
@@ -17,14 +19,14 @@ Source and scope
 Required state and closed input
 1. Read dnd2024.abilities, dnd2024.character-level, and dnd2024.saving-throw-proficiencies on subject. Validate every closed object, the six exact ability ids, score bounds, level 1 through 20, canonical save-list order, and fixed source references before randomness.
 2. Accept exactly ability and dc, with optional rollCircumstances and voluntaryFailure. ability is one lowercase stable id; dc is a finite nonnegative integer. Reject caller-provided modifiers, proficiency flags, totals, outcomes, dice, source data, effects, consequences, and every other key.
-3. Validate rollCircumstances exactly as mechanic.dnd2024.check.ability v4: an array of unique {kind, source} objects; kind is advantage or disadvantage; source is a nonempty trimmed string. Same-kind entries do not stack; any mixture cancels.
+3. Validate caller rollCircumstances as an array of unique {kind, source} objects; kind is advantage or disadvantage and source is nonempty trimmed text. `condition:` is reserved for the composed condition resolver. Same-kind entries do not stack; any mixture cancels.
 
 Resolution
 4. Derive ability modifier as floor((score - 10) / 2). Derive Proficiency Bonus as 2 + floor((level - 1) / 4), and add it exactly once only when the selected ability is in the verified save list.
-5. A normal, cancelled, or absent circumstance list rolls one d20. Advantage-only or Disadvantage-only rolls two and selects maximum or minimum respectively. All rolling uses ctx.randomInt(1, 20).
+5. Compose mechanic.dnd2024.d20-test.state-effects with static `{}` input and select its validated branch for the chosen ability. Merge its derived circumstances after caller circumstances. A normal, cancelled, or absent merged list rolls one d20. Advantage-only or Disadvantage-only rolls two and selects maximum or minimum respectively. All rolling uses ctx.randomInt(1, 20).
 6. Natural 1 and 20 have no automatic saving-throw outcome: success is total >= dc.
-7. voluntaryFailure: true is valid only with absent or empty circumstances. After input/state validation it rolls no dice, returns failure even at DC 0, and has null rollMode/roll/total plus empty rolls and circumstances.
-8. Return test, resolution, ability, proficient, dc, die, rollMode, rolls, roll, rollCircumstances, auditable modifiers, total, succeeded, and source locator. Always return effects: [].
+7. Paralyzed, Petrified, Stunned, and Unconscious automatically fail Strength and Dexterity saves. Automatic failure rolls no dice, returns failure even at DC 0, and has null rollMode/roll/total plus empty rolls. It reports the canonical `condition:<id>` reason. voluntaryFailure remains valid only with absent or empty caller circumstances; it can coexist with automatic failure and both reasons are reported.
+8. Return test, resolution, ability, proficient, dc, die, rollMode, rolls, roll, caller/derived/merged circumstances, conditionsKnown, automaticFailure, voluntaryFailure, auditable modifiers, total, succeeded, and source locator. Always return effects: [].
 
 Verification and evolution
 - Test every ability, proficient/nonproficient delta, level PB boundaries, circumstance modes including ties/cancellation, natural roll comparisons, voluntary failure, rejection paths, state failures, replay, routing, and zero effects.
@@ -38,4 +40,3 @@ Verification and evolution
 - Save resolution applies zero effects and must not alter any entity or component.
 - Voluntary failure does not consume seeded randomness and cannot silently discard nonempty circumstances.
 - This contract must not revise the independent saving-throw proficiency-state owner or recorder unless their persisted invariants are genuinely defective.
-

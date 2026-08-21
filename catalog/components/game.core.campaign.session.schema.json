@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"Campaign Session","type":"object","additionalProperties":false,"required":["status","ordinal"],"properties":{"status":{"enum":["active","ended"]},"ordinal":{"type":"integer","minimum":1}}}

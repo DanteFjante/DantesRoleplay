@@ -1,6 +1,7 @@
 using System.Text.Json;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.World;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.Tests;
@@ -21,6 +22,11 @@ public sealed class VerbToolTests : IDisposable
         var result = await new QueryTool().QueryAsync(
             procedures: new ProcedureStore(db),
             world: new WorldStore(db),
+            graphs: new GraphProjectionReader(new WorldStore(db)),
+            journeys: new JourneyPlanReader(new WorldStore(db)),
+            itineraries: new ModeAwareItineraryReader(new WorldStore(db)),
+            campaignResumes: null!,
+            questSummaries: null!,
             mechanics: new MechanicStore(db),
             eventTypes: new EventTypeStore(db),
             subscriptions: new SubscriptionStore(db),
@@ -55,6 +61,14 @@ public sealed class VerbToolTests : IDisposable
             eventTypes: new EventTypeStore(db),
             subscriptions: new SubscriptionStore(db),
             actions: null!,
+            itineraries: null!,
+            campaigns: null!,
+            campaignBootstrapper: null!,
+            campaignContinuity: null!,
+            campaignSessions: null!,
+            campaignSessionStarter: null!,
+            quests: null!,
+            questLifecycle: null!,
             log: new OperationLog(db),
             notifications: new NotificationStore(db),
             kind: "procedure",
@@ -102,6 +116,14 @@ public sealed class VerbToolTests : IDisposable
             eventTypes: null!,
             subscriptions: null!,
             actions: null!,
+            itineraries: null!,
+            campaigns: null!,
+            campaignBootstrapper: null!,
+            campaignContinuity: null!,
+            campaignSessions: null!,
+            campaignSessionStarter: null!,
+            quests: null!,
+            questLifecycle: null!,
             log: new OperationLog(db),
             notifications: null!,
             kind: "system",

@@ -86,7 +86,7 @@ public sealed class SubscriptionStore(DantesRoleplayDbContext db) : ISubscriptio
                                 : "Mechanic declares the exact event type and mode.";
         checks.Add(new("event-mechanic", requirementOk, mechanicDetail, true));
 
-        var fixedRoles = ParseObject(request.FixedRoleEntityIdsJson, "fixedRoleEntityIds", checks, scalarOnly: true);
+        var fixedRoles = ParseFixedRoleEntityIds(request.FixedRoleEntityIdsJson, checks);
         var tracked = ParseIds(request.TrackedEntityIdsJson, "trackedEntityIds", checks);
         _ = ParseObject(request.PayloadEqualsJson, "payloadEquals", checks, scalarOnly: true, maxProperties: 32);
         if (requirement is not null && mechanicVersion is not null && fixedRoles is not null)
@@ -121,6 +121,40 @@ public sealed class SubscriptionStore(DantesRoleplayDbContext db) : ISubscriptio
         await _db.EventTypes.AnyAsync(x => x.Id == row.EventTypeId && x.Status == EventTypeStatus.Active, cancellationToken) &&
         await _db.Mechanics.AnyAsync(x => x.Id == row.EventMechanicId && x.Status == MechanicStatus.Active, cancellationToken);
     private static EventMechanicRequirement? TryEventRequirement(string? json, out string problem) { problem = "Mechanic does not declare an event requirement."; try { var r = MechanicRequirements.Parse(json ?? "{}"); if (r.Event is null) return null; if (r.Event.Types.Count == 0) { problem = "Event requirement needs at least one type."; return null; } return r.Event; } catch (JsonException ex) { problem = $"Mechanic requirements are invalid: {ex.Message}"; return null; } }
+    private static Dictionary<string, string>? ParseFixedRoleEntityIds(string json, List<SubscriptionCheck> checks)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json);
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                throw new JsonException();
+            }
+
+            var result = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var property in document.RootElement.EnumerateObject())
+            {
+                var entityId = property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() : null;
+                if (string.IsNullOrWhiteSpace(property.Name)
+                    || string.IsNullOrWhiteSpace(entityId)
+                    || entityId != entityId.Trim())
+                {
+                    throw new JsonException();
+                }
+
+                result[property.Name] = entityId;
+            }
+
+            checks.Add(new("fixedRoleEntityIds", true, "fixedRoleEntityIds is a closed object of entity ids."));
+            return result;
+        }
+        catch (JsonException)
+        {
+            checks.Add(new("fixedRoleEntityIds", false, "fixedRoleEntityIds must be a JSON object with nonempty string entity ids."));
+            return null;
+        }
+    }
+
     private static Dictionary<string, string>? ParseObject(string json, string name, List<SubscriptionCheck> checks, bool scalarOnly, int maxProperties = int.MaxValue) { try { using var d = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json); if (d.RootElement.ValueKind != JsonValueKind.Object || d.RootElement.EnumerateObject().Count() > maxProperties) throw new JsonException(); var result = new Dictionary<string, string>(StringComparer.Ordinal); foreach (var p in d.RootElement.EnumerateObject()) { if (string.IsNullOrWhiteSpace(p.Name) || (scalarOnly && p.Value.ValueKind is JsonValueKind.Array or JsonValueKind.Object)) throw new JsonException(); result[p.Name] = p.Value.GetRawText(); } checks.Add(new(name, true, $"{name} is a closed object.")); return result; } catch (JsonException) { checks.Add(new(name, false, $"{name} must be a JSON object with at most {maxProperties} scalar values.")); return null; } }
     private static IReadOnlyList<string>? ParseIds(string json, string name, List<SubscriptionCheck> checks) { try { using var d = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "[]" : json); if (d.RootElement.ValueKind != JsonValueKind.Array) throw new JsonException(); var ids = d.RootElement.EnumerateArray().Select(x => x.ValueKind == JsonValueKind.String ? x.GetString()?.Trim() ?? "" : "").ToList(); if (ids.Count > 100 || ids.Any(string.IsNullOrWhiteSpace) || ids.Distinct(StringComparer.Ordinal).Count() != ids.Count) throw new JsonException(); checks.Add(new(name, true, $"{name} contains {ids.Count} id(s).")); return ids; } catch (JsonException) { checks.Add(new(name, false, $"{name} must be a distinct string array of at most 100 ids.")); return null; } }
     private static string CanonicalObject(string json) { using var d = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json); return "{" + string.Join(",", d.RootElement.EnumerateObject().OrderBy(x => x.Name, StringComparer.Ordinal).Select(x => JsonSerializer.Serialize(x.Name, Compact) + ":" + x.Value.GetRawText())) + "}"; }

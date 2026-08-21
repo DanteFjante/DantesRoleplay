@@ -2,6 +2,7 @@ using DantesRoleplay.Actions;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.World;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace DantesRoleplay.DataAccess;
 
@@ -16,6 +17,8 @@ namespace DantesRoleplay.DataAccess;
 public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjectionResolver
 {
     private readonly DantesRoleplayDbContext _db = db;
+
+    private sealed record ContainmentNode(string ContainerId, string Id, string Name, string Slot);
 
     public async Task<ProjectionResult> ResolveAsync(
         MechanicRequirements requirements,
@@ -33,6 +36,9 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
         {
             problems.Add($"INVALID_INPUT: {inputProblem}");
         }
+
+        foreach (var problem in requirements.ProjectionProblems())
+            problems.Add($"INVALID_PROJECTION_REQUIREMENTS: {problem}");
 
         // A role the mechanic does not declare is a caller misunderstanding, not a harmless extra.
         // Passing "target" to a rule that never mentions one usually means the wrong mechanic was
@@ -123,28 +129,178 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
 
         var containerOf = containers.ToDictionary(c => c.ContainedId, StringComparer.Ordinal);
 
-        var contentsWanted = needed
+        var requestedContentsDepth = needed
             .Where(pair => requirements.Roles[pair.Key].IncludeContents)
+            .Select(pair => new { EntityId = pair.Value, Depth = requirements.Roles[pair.Key].ContentsDepth ?? 1 })
+            .GroupBy(request => request.EntityId, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.Max(request => request.Depth), StringComparer.Ordinal);
+
+        var contentsByContainer = new Dictionary<string, List<ContainmentNode>>(StringComparer.Ordinal);
+        var descendantIds = new HashSet<string>(StringComparer.Ordinal);
+        var frontier = requestedContentsDepth;
+
+        // Each level is a shared set query. The fixed, generic traversal bound keeps mechanics
+        // from receiving an unbounded or lazy view of the world.
+        for (var depth = 1; depth <= ProjectionLimits.MaxContentsDepth && frontier.Count > 0; depth++)
+        {
+            var containerIds = frontier.Keys.ToList();
+            var rows = await _db.Containments
+                .AsNoTracking()
+                .Where(containment => containerIds.Contains(containment.ContainerId))
+                .Join(
+                    _db.Entities.Where(entity => entity.DeletedAt == null),
+                    containment => containment.ContainedId,
+                    entity => entity.Id,
+                    (containment, entity) => new ContainmentNode(containment.ContainerId, entity.Id, entity.Name, containment.Slot))
+                .ToListAsync(cancellationToken);
+
+            var next = new Dictionary<string, int>(StringComparer.Ordinal);
+            foreach (var row in rows)
+            {
+                if (!contentsByContainer.TryGetValue(row.ContainerId, out var children))
+                {
+                    children = [];
+                    contentsByContainer[row.ContainerId] = children;
+                }
+                children.Add(row);
+                descendantIds.Add(row.Id);
+
+                if (frontier[row.ContainerId] > 1)
+                {
+                    var remaining = frontier[row.ContainerId] - 1;
+                    if (!next.TryGetValue(row.Id, out var known) || remaining > known)
+                        next[row.Id] = remaining;
+                }
+            }
+            frontier = next;
+        }
+
+        var contentComponentIds = requirements.Roles.Values
+            .SelectMany(requirement => requirement.ContentComponentIds ?? [])
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        var contentComponents = descendantIds.Count == 0 || contentComponentIds.Count == 0
+            ? []
+            : await _db.Components
+                .AsNoTracking()
+                .Where(component => descendantIds.Contains(component.EntityId) && contentComponentIds.Contains(component.DefinitionId))
+                .Select(component => new { component.EntityId, component.DefinitionId, component.Data })
+                .ToListAsync(cancellationToken);
+
+        var contentComponentsByEntity = contentComponents
+            .GroupBy(component => component.EntityId, StringComparer.Ordinal)
+            .ToDictionary(
+                group => group.Key,
+                group => group.ToDictionary(component => component.DefinitionId, component => component.Data, StringComparer.Ordinal),
+                StringComparer.Ordinal);
+
+        // Component references are declared data access, not an implicit graph walk. A role names
+        // the component field that holds an entity id and the precise components visible on that
+        // target. This lets rules follow durable definition references without copying static
+        // facts onto campaign entities or granting general store access to JavaScript.
+        var referenceTargets = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        void CollectReference(IReadOnlyDictionary<string, string> components, ComponentReferenceRequirement reference, string role, string entityId)
+        {
+            if (!components.TryGetValue(reference.SourceComponentId, out var raw)) return;
+            try
+            {
+                using var document = JsonDocument.Parse(raw);
+                if (document.RootElement.ValueKind != JsonValueKind.Object ||
+                    !document.RootElement.TryGetProperty(reference.Field, out var value) ||
+                    value.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(value.GetString()))
+                {
+                    problems.Add($"COMPONENT_REFERENCE_INVALID: Role '{role}' entity '{entityId}' component '{reference.SourceComponentId}' lacks non-empty string field '{reference.Field}'.");
+                    return;
+                }
+
+                var targetId = value.GetString()!.Trim();
+                if (!referenceTargets.TryGetValue(targetId, out var targetComponents))
+                {
+                    targetComponents = new HashSet<string>(StringComparer.Ordinal);
+                    referenceTargets[targetId] = targetComponents;
+                }
+                targetComponents.UnionWith(reference.TargetComponentIds);
+            }
+            catch (JsonException)
+            {
+                problems.Add($"COMPONENT_REFERENCE_INVALID: Role '{role}' entity '{entityId}' component '{reference.SourceComponentId}' is not JSON object data.");
+            }
+        }
+
+        foreach (var (role, entityId) in needed)
+        {
+            var requirement = requirements.Roles[role];
+            foreach (var reference in requirement.ComponentReferences ?? [])
+            {
+                var rootComponents = byId[entityId].Components
+                    .Where(component => component.DefinitionId == reference.SourceComponentId)
+                    .ToDictionary(component => component.DefinitionId, component => component.Data, StringComparer.Ordinal);
+                CollectReference(rootComponents, reference, role, entityId);
+
+                foreach (var (containedId, components) in contentComponentsByEntity)
+                    CollectReference(components, reference, role, containedId);
+            }
+        }
+
+        var referenceComponentRows = referenceTargets.Count == 0
+            ? []
+            : await _db.Components
+                .AsNoTracking()
+                .Where(component => referenceTargets.Keys.Contains(component.EntityId) &&
+                    component.Entity != null && component.Entity.DeletedAt == null)
+                .Select(component => new { component.EntityId, component.DefinitionId, component.Data })
+                .ToListAsync(cancellationToken);
+
+        referenceComponentRows = referenceComponentRows
+            .Where(component => referenceTargets[component.EntityId].Contains(component.DefinitionId))
+            .ToList();
+
+        var referenced = referenceComponentRows
+            .GroupBy(component => component.EntityId, StringComparer.Ordinal)
+            .ToDictionary(
+                group => group.Key,
+                group => new ReferencedEntityProjection(group.Key,
+                    group.ToDictionary(component => component.DefinitionId, component => component.Data, StringComparer.Ordinal)),
+                StringComparer.Ordinal);
+
+        foreach (var (targetId, expectedComponents) in referenceTargets)
+        {
+            if (!referenced.TryGetValue(targetId, out var target) || expectedComponents.Any(component => !target.Components.ContainsKey(component)))
+                problems.Add($"COMPONENT_REFERENCE_TARGET_MISSING: Declared reference target '{targetId}' is missing or lacks its required components.");
+        }
+
+        var relationshipsWanted = needed
+            .Where(pair => requirements.Roles[pair.Key].IncludeRelationships)
             .Select(pair => pair.Value)
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
-        var contents = contentsWanted.Count == 0
+        // Relationship projection is deliberately opt-in just like contained entities. The joins
+        // exclude soft-deleted endpoints, so a rule never receives a dangling edge to something
+        // it could not itself name as a role.
+        var relationships = relationshipsWanted.Count == 0
             ? []
-            : await _db.Containments
+            : await _db.Relationships
                 .AsNoTracking()
-                .Where(c => contentsWanted.Contains(c.ContainerId))
+                .Where(r => relationshipsWanted.Contains(r.FromEntityId) || relationshipsWanted.Contains(r.ToEntityId))
                 .Join(
                     _db.Entities.Where(e => e.DeletedAt == null),
-                    c => c.ContainedId,
-                    e => e.Id,
-                    (c, e) => new { c.ContainerId, e.Id, e.Name, c.Slot })
+                    relationship => relationship.FromEntityId,
+                    entity => entity.Id,
+                    (relationship, _) => relationship)
+                .Join(
+                    _db.Entities.Where(e => e.DeletedAt == null),
+                    relationship => relationship.ToEntityId,
+                    entity => entity.Id,
+                    (relationship, _) => new { relationship.FromEntityId, relationship.ToEntityId, relationship.Kind, relationship.Data })
                 .ToListAsync(cancellationToken);
 
         var projection = new MechanicProjection
         {
             Input = input,
-            Seed = seed
+            Seed = seed,
+            References = referenced
         };
 
         foreach (var (role, entityId) in needed)
@@ -168,14 +324,79 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
                 containment?.ContainerId,
                 containment?.Slot ?? string.Empty,
                 requirement.IncludeContents
-                    ? contents
-                        .Where(c => c.ContainerId == entityId)
-                        .OrderBy(c => c.Name, StringComparer.Ordinal)
-                        .Select(c => new ContainedProjection(c.Id, c.Name, c.Slot))
+                    ? BuildContainedProjection(entityId, requirement.ContentsDepth ?? 1,
+                        requirement.ContentComponentIds ?? [], requirement.ContentsDepth is not null || (requirement.ContentComponentIds?.Count ?? 0) > 0,
+                        contentsByContainer, contentComponentsByEntity, role, problems)
+                    : null,
+                requirement.IncludeRelationships
+                    ? relationships
+                        .Where(r => r.FromEntityId == entityId || r.ToEntityId == entityId)
+                        .OrderBy(r => r.Kind, StringComparer.Ordinal)
+                        .ThenBy(r => r.FromEntityId, StringComparer.Ordinal)
+                        .ThenBy(r => r.ToEntityId, StringComparer.Ordinal)
+                        .Select(r => new RelationshipProjection(r.FromEntityId, r.ToEntityId, r.Kind, r.Data))
                         .ToList()
                     : null);
         }
 
-        return new ProjectionResult(projection, []);
+        return problems.Count == 0
+            ? new ProjectionResult(projection, [])
+            : new ProjectionResult(null, problems);
+    }
+
+    private static IReadOnlyList<ContainedProjection> BuildContainedProjection(
+        string rootId,
+        int depth,
+        IReadOnlyList<string> allowedComponentIds,
+        bool enforceNodeLimit,
+        IReadOnlyDictionary<string, List<ContainmentNode>> contentsByContainer,
+        IReadOnlyDictionary<string, Dictionary<string, string>> componentsByEntity,
+        string role,
+        List<string> problems)
+    {
+        var visited = new HashSet<string>(StringComparer.Ordinal) { rootId };
+        var count = 0;
+
+        IReadOnlyList<ContainedProjection> Build(string containerId, int remainingDepth)
+        {
+            if (!contentsByContainer.TryGetValue(containerId, out var children)) return [];
+            var projection = new List<ContainedProjection>(children.Count);
+            foreach (var child in children
+                         .OrderBy(node => node.Name, StringComparer.Ordinal)
+                         .ThenBy(node => node.Slot, StringComparer.Ordinal)
+                         .ThenBy(node => node.Id, StringComparer.Ordinal))
+            {
+                if (!visited.Add(child.Id))
+                {
+                    problems.Add($"CONTAINMENT_PROJECTION_CYCLE: Role '{role}' reaches containment cycle at '{child.Id}'.");
+                    return [];
+                }
+
+                count++;
+                if (enforceNodeLimit && count > ProjectionLimits.MaxContainedNodes)
+                {
+                    problems.Add($"CONTAINMENT_PROJECTION_LIMIT: Role '{role}' projects more than {ProjectionLimits.MaxContainedNodes} contained entities.");
+                    return [];
+                }
+
+                IReadOnlyDictionary<string, string>? declaredComponents = null;
+                if (allowedComponentIds.Count > 0)
+                {
+                    declaredComponents = componentsByEntity.TryGetValue(child.Id, out var componentData)
+                        ? componentData
+                            .Where(component => allowedComponentIds.Contains(component.Key, StringComparer.Ordinal))
+                            .ToDictionary(component => component.Key, component => component.Value, StringComparer.Ordinal)
+                        : new Dictionary<string, string>(StringComparer.Ordinal);
+                }
+
+                var nested = remainingDepth > 1 ? Build(child.Id, remainingDepth - 1) : null;
+                visited.Remove(child.Id);
+                if (problems.Count > 0) return [];
+                projection.Add(new ContainedProjection(child.Id, child.Name, child.Slot, declaredComponents, nested));
+            }
+            return projection;
+        }
+
+        return Build(rootId, depth);
     }
 }

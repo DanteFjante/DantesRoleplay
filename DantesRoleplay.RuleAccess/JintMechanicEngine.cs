@@ -84,6 +84,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
                 new
                 {
                     roles = projection.Roles,
+                    references = projection.References,
                     input = projection.Input,
                     seed = projection.Seed,
                     children = projection.Children,
@@ -290,6 +291,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
 
             var ctx = {
               roles: payload.roles,
+              references: freezeDeep(payload.references || {}),
               input: JSON.parse(payload.input || '{}'),
               seed: payload.seed,
               children: freezeDeep(payload.children || {}),

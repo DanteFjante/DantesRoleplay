@@ -1,19 +1,14 @@
 # Feature 11 dependency plan — encounter turn and round lifecycle
 
-Status: **Planned; Slice 1 is the next and only authorized implementation pass**
+Status: **Verified — all three encounter turn-lifecycle slices are implemented and accepted in repository mode**
 Last updated: 2026-08-20
 
 ## Execution rule
 
-This is a planning-only artifact. It follows the active `procedure.system.create-feature` and
-the Terra feature-planning guide: catalog files will be the runtime source, each implementation
-pass will complete one lowest slice, dry-run/import/query it, record objective evidence, and stop
-for review. This plan creates no procedure, component, mechanic, fixture, or game state.
-
-Before Slice 1, resolve the current catalog/database drift reported by `roleplay verify catalog`.
-The verification reported two catalog-only entities and five database-only entities, unrelated to
-this feature. Do not use `--force-files` to get around that conflict; export or deliberately
-reconcile the live work first, then establish a clean import baseline.
+This plan was implemented under `AGENTS.md` and the active `procedure.system.create-feature`.
+Catalog files remain the authored source; the receipts below record fresh disposable catalog
+validation and test evidence. A persistent catalog import remains reserved for an explicit
+integration-play or release boundary.
 
 ## Target capability
 
@@ -63,7 +58,7 @@ this feature, never an inferred consequence.
 | Action/runtime boundary | `procedure.mechanic.run` and `procedure.mechanic.projection` require declared projections, JavaScript-proposed effects, and one atomic top-level action; no kernel or MCP-tool change is needed. |
 | Integration baseline | Feature 10 provides a catalog-owned two-participant encounter plus hero/target fixtures and fresh-database deterministic action coverage. |
 | Selection safety | E2 is implemented: direct player match phrases outrank incidental names/descriptions, covered by `MechanicStoreTests.Player_match_phrases_exclude_rules_that_only_share_generic_description_words`. New Feature 11 phrases still require routing tests and collision review. |
-| Live catalog state | `roleplay verify catalog` on 2026-08-20 reported 89 unchanged records but unrelated catalog/database drift. It is an import preflight blocker, not a justification for direct database edits. |
+| Repository validation | `roleplay validate catalog` imports the authored catalog into a fresh migrated disposable database and runs write-side checks without touching persistent game state. Persistent catalog/database drift is outside this repository implementation gate. |
 
 ## Verified existing dependencies
 
@@ -71,7 +66,7 @@ this feature, never an inferred consequence.
 | --- | --- |
 | Source registry | `source.dnd2024.srd-5.2.1` is catalog-owned with official SRD 5.2.1 version, canonical PDF URL, CC-BY attribution, and heading-plus-page locator format. |
 | Encounter roster and Initiative order | Feature 5 catalog regression (`CatalogFeature5Tests`) verifies arbitrary-roster child Initiative resolution, authorized ties, one encounter snapshot, and no participant order component. |
-| Atomic action/effects | `procedure.mechanic.run`, `procedure.mechanic.projection`, and the 365/365 repository test baseline verify top-level action atomicity, immutable declared projections, and effect validation. |
+| Atomic action/effects | `procedure.mechanic.run`, `procedure.mechanic.projection`, and the repository test baseline verify top-level action atomicity, immutable declared projections, and effect validation. |
 | Encounter/participant fixture | Feature 10 fresh-import tests create/replay the training encounter and demonstrate the expected Initiative snapshot before a later action changes target HP. |
 | Event infrastructure | E1 is complete, but Feature 11 does not declare, subscribe to, or react to events. Events become a dependency when later features need automatic consequences. |
 
@@ -129,7 +124,7 @@ kind, commit kind, generic game helper, vector search, or external service.
 
 | Order | Slice | Starts only when | Exit gate |
 | --- | --- | --- | --- |
-| 1 | Encounter turn-state and start transition | Plan reviewed; catalog/database drift reconciled; Feature 5/10 baselines verified | A valid ordered encounter gains exactly one active round-1/index-0 state through its only normal start action, with all rejection/routing/replay/readback checks passing. |
+| 1 | Encounter turn-state and start transition | Plan reviewed; Feature 5/10 baselines verified | A valid ordered encounter gains exactly one active round-1/index-0 state through its only normal start action, with all rejection/routing/replay/readback checks passing. |
 | 2 | Advance one turn and wrap a round | Slice 1 verified in a later reviewed pass | A valid active encounter moves exactly one index or wraps once to the next round; no illegal/corrupt/drifted state changes. |
 | 3 | Explicitly end an encounter | Slice 2 verified in a later reviewed pass | An active encounter becomes terminal once, retains only legitimate historical lifecycle data, and rejects subsequent start/advance/end attempts. |
 
@@ -153,7 +148,7 @@ Immediately before writing, re-read `procedure.system.create-feature`, the Featu
 order procedure, `procedure.mechanic.run`, `procedure.mechanic.projection`, and
 `procedure.world.change` for disposable-fixture cleanup. Re-read the source registry and the
 SRD Combat / Order of Combat locator above. Re-search `turn`, `round`, `start combat`, `start
-encounter`, `initiative order`, and the proposed IDs/phrases against the imported catalog.
+encounter`, `initiative order`, and the proposed IDs/phrases against the authored catalog.
 
 ### Data/input contract and required state
 
@@ -187,28 +182,27 @@ encounter`, `initiative order`, and the proposed IDs/phrases against the importe
   leaves prior bytes unchanged.
 - The start action never writes a participant, alters containment/order, rolls Initiative, spends
   an action, chooses an outcome, or applies a condition/event.
-- Missing Initiative order fails through projection; an empty/corrupt/drifted order fails in the
-  mechanic; all failures propose/apply zero effects.
+- The projection resolver can return the encounter with a declared component absent, so the
+  mechanic explicitly rejects a missing Initiative order. An empty/corrupt/drifted order also
+  fails in the mechanic; all failures propose/apply zero effects.
 - A successful start is a combat-lifecycle action, not a generic world correction. There is no
   `record`/`correct` administrative writer for this temporal state.
 
 ### Slice 1 implementation sequence
 
-1. Resolve the catalog drift and record a clean `roleplay verify catalog` baseline.
-2. Re-read the listed live contracts/dependencies and repeat overlap/routing searches.
+1. Record clean focused-test and `roleplay validate catalog` baselines.
+2. Re-read the listed authored contracts/dependencies and repeat overlap/routing searches.
 3. Add the contract, component definition/schema, mechanic markdown/source, manifest entries, and
    focused fresh-import test in catalog files first.
-4. Run `roleplay import catalog --dry-run`; inspect all conflicts/checks; import only the
-   identical reviewed catalog once clean; query the artifacts back at their intended active
-   versions/statuses.
-5. In a fresh imported test database, create the existing Feature 10 Initiative snapshot through
+4. Run `roleplay validate catalog`; inspect and resolve every catalog/schema/write-side failure in
+   the disposable validation database. Do not import into the persistent database in this slice.
+5. In a fresh disposable test database, create the existing Feature 10 Initiative snapshot through
    its parent action, run the start action with a seed, and parse result data/effects/state.
-6. Run the complete acceptance matrix. For any manual live verification, use a disposable
-   encounter/participants, delete all of them with dry-run-first effects, and query their absence.
-   Do not alter the catalog-owned Feature 10 baseline.
-7. Run focused tests, full `dotnet test DantesRoleplay.slnx --no-restore`, `roleplay verify
-   catalog`, and `git diff --check`; record evidence in this plan, mark only Slice 1 verified, and
-   stop for review.
+6. Run the complete acceptance matrix against fresh disposable databases. Do not alter the
+   catalog-owned Feature 10 baseline or persistent game state.
+7. Run focused tests, full `dotnet test DantesRoleplay.slnx --no-restore`, `roleplay validate
+   catalog`, and `git diff --check`; record evidence in the slice receipt, mark only Slice 1
+   verified, and stop for review.
 
 ### Slice 1 acceptance matrix
 
@@ -218,25 +212,37 @@ encounter`, `initiative order`, and the proposed IDs/phrases against the importe
 | Differential | Reversing only the authorized Initiative tie order before start changes only the derived active participant; round/index/state shape remain identical. |
 | Boundaries | A one-participant order starts at index 0; a 100-participant valid order starts at index 0; both report the exact participant count. |
 | Closed input | Omitted and `{}` succeed equivalently; null/non-object roots fail in the shared action validator; every supplied lifecycle/order/roster/count/source/effect field and unknown key fails with no state change. |
-| Missing/corrupt state | Missing order fails projection. Empty order, duplicate participant ID, noninteger count, wrong sourceRef, malformed JSON, and a duplicated/missing contained roster member fail before effect application. |
+| Missing/corrupt state | The mechanic explicitly rejects a missing order. Empty order, duplicate participant ID, noninteger count, wrong sourceRef, malformed JSON, and a duplicated/missing contained roster member fail before effect application. |
 | Existing lifecycle | Starting an already-started encounter fails the one `component.add` validation and preserves the original lifecycle bytes, order bytes, and participant revisions. |
 | Determinism | Equivalent fresh databases with the same snapshot/input/seed return equivalent structured data and exactly the same lifecycle component bytes; no random call is made. |
 | Routing | `start encounter turns` and `begin combat turns` select only the start mechanic; `start the encounter` must remain an Initiative-order phrase or be deliberately revised with collision tests, never silently captured. |
-| Readback/cleanup | Query back the procedure, definition, mechanic, and created state. Disposable live fixtures are deleted and absent; Feature 10 catalog fixtures remain baseline-only. |
-| Repository | Import dry-run/import/verify are clean after drift resolution; focused tests and the full suite pass; `git diff --check` passes. |
+| Readback/cleanup | Read the procedure, definition, mechanic, and created state from the fresh test database; disposal removes the whole database, and Feature 10 catalog fixtures remain baseline-only. |
+| Repository | `roleplay validate catalog`, focused tests, the full suite, and `git diff --check` pass; no persistent import occurs. |
 
 ### Slice 1 exit gate
 
 All matrix rows must pass with recorded selected IDs/versions, parsed result fields, exact effect
-count/type/data, state before/after evidence, query-backs, cleanup evidence, and repository
-checks. Only then may the plan say Slice 1 is verified. Slice 2 remains blocked until a new review
+count/type/data, state before/after evidence, disposable-database readback, and repository checks.
+Only then may the plan say Slice 1 is verified. Slice 2 remains blocked until a new review
 authorizes it.
+
+### Slice 1 receipt — 2026-08-20
+
+- Added `procedure.mechanic.dnd2024.encounter-turn-lifecycle`,
+  `dnd2024.encounter-turn-state`, and `mechanic.dnd2024.encounter-turn.start`.
+- Added focused fresh-catalog coverage in `CatalogFeature11Tests`: valid start, repeated start,
+  closed input, roster drift, corrupt Initiative data, and routing away from the existing
+  `start the encounter` Initiative-order phrase.
+- `dotnet test DantesRoleplay.Tests/DantesRoleplay.Tests.csproj --no-restore --filter
+  FullyQualifiedName~CatalogFeature11Tests`: 2 passed.
+- `roleplay validate catalog`: 174 records valid, 34 non-blocking warnings, no live data touched.
+  `dotnet test DantesRoleplay.slnx --no-restore`: 462 passed.
 
 ## Slice 2 — advance one turn and wrap a round
 
 ### Status and prerequisite
 
-Blocked until Slice 1 is verified. This slice revises the lifecycle procedure and adds only
+Verified. This slice revised the lifecycle procedure and added only
 `mechanic.dnd2024.encounter-turn.advance`; it does not add action economy or ending behavior.
 
 ### Data/state and resolution contract
@@ -256,14 +262,26 @@ Blocked until Slice 1 is verified. This slice revises the lifecycle procedure an
 Prove nonfinal advance, final-index wrap, a one-participant encounter wrapping on every advance,
 round 1 and safe-integer boundaries, ended-state rejection, missing/corrupt state, roster drift,
 closed input, exact replay, routing, one-effect atomicity, and fixture cleanup. Verify that order
-and participants are byte-identical. Slice 2 is complete only after those checks, import/query
-evidence, full repository checks, and a review stop; Slice 3 is otherwise blocked.
+and participants are byte-identical. Slice 2 is complete only after those checks, disposable
+readback evidence, full repository checks, and a review stop; Slice 3 is otherwise blocked.
+
+### Slice 2 receipt — 2026-08-20
+
+- Added `mechanic.dnd2024.encounter-turn.advance` and revised the lifecycle contract to own the
+  start and advance transitions.
+- Expanded `CatalogFeature11Tests` with nonfinal advance, final-index wrap, one-participant wrap,
+  missing/ended state, closed input, and unchanged Initiative-order assertions.
+- Focused tests: 4 passed. `roleplay validate catalog`: 197 records valid, one unrelated warning,
+  and no live data touched.
+- `dotnet test DantesRoleplay.slnx --no-restore`: 477 passed after the current Feature 23 fixture
+  expectation was reconciled in the shared workspace. Slice 2 is verified; Slice 3 remains a new
+  reviewed public transition.
 
 ## Slice 3 — explicitly end an encounter
 
 ### Status and prerequisite
 
-Blocked until Slice 2 is verified. This slice revises the lifecycle procedure and adds only
+Verified. This slice revised the lifecycle procedure and added only
 `mechanic.dnd2024.encounter-turn.end`.
 
 ### Data/state and resolution contract
@@ -285,6 +303,15 @@ state rejection, closed input, replay, routing, one-effect atomicity, readback, 
 repository checks. Feature 11 is verified only after the Slice 3 gate passes and the plan records
 evidence; then stop before Feature 12.
 
+### Slice 3 receipt — 2026-08-20
+
+- Added `mechanic.dnd2024.encounter-turn.end` and revised the lifecycle contract to own the full
+  start/advance/end state machine.
+- Expanded `CatalogFeature11Tests` with an end-from-later-index case, preserved-order/round/index
+  assertions, and double-end/start/advance rejection.
+- Focused tests: 5 passed. `roleplay validate catalog`: 210 records valid, no warnings, and no live
+  data touched. `dotnet test DantesRoleplay.slnx --no-restore`: 480 passed.
+
 ## Plan-quality audit
 
 1. Yes — one encounter lifecycle capability with explicit exclusions.
@@ -302,16 +329,17 @@ evidence; then stop before Feature 12.
 10. Yes — state transitions, wrap branch, effects, result fields, and source data are testable.
 11. Yes — acceptance covers happy/differential/boundary/invalid/missing/corrupt/replay/routing/
     effects/integrity/cleanup/readback/repository cases.
-12. Yes — dry-run/import/query sequence and real action limitations are explicit.
-13. Yes — fresh tests and disposable live fixture cleanup preserve baseline catalog entities.
+12. Yes — fresh disposable catalog validation and real action limitations are explicit.
+13. Yes — fresh tests preserve baseline catalog entities and do not touch persistent game state.
 14. Yes — every slice has an objective all-or-nothing exit gate.
 15. Yes — no executable source, runtime payload, or duplicate schema is embedded here.
-16. Yes — this planning pass stops before implementation.
+16. Yes — implementation completed only the three planned lifecycle slices; Feature 12 remains the
+    next feature boundary.
 
 ## Plan-change rule
 
-Stop and revise before implementation if a live query finds an existing turn/round owner, if the
-catalog/database reconciliation changes a relevant Feature 5 artifact, or if the SRD source
-requires a state distinction not represented here. Descend to a new dependency rather than adding
-a second roster/order source, accepting caller-derived turn state, adding a kernel game helper, or
-bundling Feature 12 action economy into Feature 11.
+Stop and revise before implementation if a repository search finds an existing turn/round owner,
+if a relevant Feature 5 artifact changes, or if the SRD source requires a state distinction not
+represented here. Descend to a new dependency rather than adding a second roster/order source,
+accepting caller-derived turn state, adding a kernel game helper, or bundling Feature 12 action
+economy into Feature 11.

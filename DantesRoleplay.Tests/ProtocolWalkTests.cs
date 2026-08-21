@@ -128,7 +128,7 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
 
         Assert.True(catalog.Ok, catalog.Raw);
         Assert.Equal(
-            ["capabilities", "entities", "event-types", "events", "history", "mechanics", "notifications", "procedures", "subscriptions", "world"],
+            ["campaign-resume", "capabilities", "entities", "event-types", "events", "graph", "history", "itinerary-plan", "journey-plan", "mechanics", "notifications", "procedures", "quest-summary", "subscriptions", "world"],
             catalog.Data.GetProperty("query").EnumerateObject().Select(p => p.Name).Order(StringComparer.Ordinal));
 
         // 3. The world, before changing it.
@@ -203,6 +203,20 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
 
         Assert.True(entities.Ok, entities.Raw);
         Assert.Contains("carries a lantern", entities.Raw);
+
+        var graph = await ToolAsync("query", new
+        {
+            kind = "graph",
+            id = "walk.orban",
+            componentIds = new[] { "walk.note" },
+            containmentDepth = 0,
+            relationshipKinds = Array.Empty<string>(),
+            relationshipDepth = 0
+        });
+
+        Assert.True(graph.Ok, graph.Raw);
+        Assert.Equal("walk.orban", graph.Data.GetProperty("rootId").GetString());
+        Assert.Single(graph.Data.GetProperty("nodes").EnumerateArray());
 
         // 9. A rule, read before it is used, exactly as procedure.mechanic.run asks.
         var rules = await ToolAsync("query", new { kind = "mechanics", query = "can they manage it" });
