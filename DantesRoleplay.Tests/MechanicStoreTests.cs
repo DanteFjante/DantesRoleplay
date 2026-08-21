@@ -178,6 +178,38 @@ public sealed class MechanicStoreTests : IDisposable
         Assert.Equal("mechanic.diplomacy.petition", Assert.Single(found).Id);
     }
 
+    [Fact]
+    public async Task Categories_hide_archived_mechanics_by_default_but_keep_them_for_authoring_guidance()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new MechanicStore(db);
+
+        await store.WriteAsync(Request(id: "mechanic.system.inspect") with
+        {
+            Category = "system",
+            Status = MechanicStatus.Active
+        });
+        await store.WriteAsync(Request(id: "mechanic.ruleset.play") with
+        {
+            Category = "ruleset.dnd2024.play",
+            Status = MechanicStatus.Archived
+        });
+
+        var visible = await store.GetCategoriesAsync();
+        var all = await store.GetCategoriesAsync(includeInactive: true);
+
+        Assert.Equal(["system"], visible.Select(c => c.Category));
+        Assert.Equal(["ruleset.dnd2024.play", "system"], all.Select(c => c.Category));
+
+        var checks = await store.CheckAsync(Request(id: "mechanic.ruleset.host") with
+        {
+            Category = "ruleset.dnd2024.host"
+        });
+
+        var category = Assert.Single(checks, c => c.Name == "category-known");
+        Assert.Contains("nearest existing branch is 'ruleset.dnd2024'", category.Detail);
+    }
+
     // ---- scope: the answer to "campaign or shared ruleset?" -----------------------------
 
     [Fact]

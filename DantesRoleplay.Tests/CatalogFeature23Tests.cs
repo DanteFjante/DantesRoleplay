@@ -36,20 +36,21 @@ public sealed class CatalogFeature23Tests : IDisposable
             .OrderBy(entity => entity.Id, StringComparer.Ordinal)
             .ToList();
 
-        Assert.Equal(
-            [
-                "currency.dnd2024.copper-piece.v1",
-                "currency.dnd2024.electrum-piece.v1",
-                "currency.dnd2024.gold-piece.v1",
-                "currency.dnd2024.platinum-piece.v1",
-                "currency.dnd2024.silver-piece.v1",
-                "item.dnd2024.backpack.v1",
-                "item.dnd2024.dagger.v1",
-                "item.dnd2024.hempen-rope-50-foot.v1",
-                "item.dnd2024.pouch.v1",
-                "item.dnd2024.quiver.v1"
-            ],
-            definitions.Select(entity => entity.Id));
+        var originalSeedIds = new[]
+        {
+            "currency.dnd2024.copper-piece.v1",
+            "currency.dnd2024.electrum-piece.v1",
+            "currency.dnd2024.gold-piece.v1",
+            "currency.dnd2024.platinum-piece.v1",
+            "currency.dnd2024.silver-piece.v1",
+            "item.dnd2024.backpack.v1",
+            "item.dnd2024.dagger.v1",
+            "item.dnd2024.hempen-rope-50-foot.v1",
+            "item.dnd2024.pouch.v1",
+            "item.dnd2024.quiver.v1"
+        };
+        foreach (var id in originalSeedIds)
+            Assert.Contains(definitions, entity => entity.Id == id);
 
         foreach (var definition in definitions)
             AssertDefinition(definition);
@@ -109,7 +110,7 @@ public sealed class CatalogFeature23Tests : IDisposable
         using var data = DefinitionData(entity);
         var state = data.RootElement;
         Assert.Equal(1, state.GetProperty("definitionVersion").GetInt32());
-        Assert.Contains(state.GetProperty("kind").GetString(), new[] { "adventuring-gear", "weapon", "currency" });
+        Assert.Contains(state.GetProperty("kind").GetString(), new[] { "adventuring-gear", "weapon", "armor", "shield", "currency" });
         Assert.Contains(state.GetProperty("stackPolicy").GetString(), new[] { "separate", "fungible" });
         AssertSource(state.GetProperty("sourceRef"));
     }

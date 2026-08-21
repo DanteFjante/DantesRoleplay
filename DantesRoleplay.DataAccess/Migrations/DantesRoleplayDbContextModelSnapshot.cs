@@ -15,7 +15,7 @@ namespace DantesRoleplay.DataAccess.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
 
             modelBuilder.Entity("DantesRoleplay.Events.EventEntity", b =>
                 {
@@ -765,6 +765,441 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.ToTable("procedure_contract_version", (string)null);
                 });
 
+            modelBuilder.Entity("DantesRoleplay.Snapshots.SnapshotPackage", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Availability")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BoundaryFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("ByteCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CapturedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("ContentDigest")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContentEncoding")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DigestAlgorithm")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProducerId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProducerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RootOperationId")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ScopeContractId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ScopeContractVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("snapshot_package", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_snapshot_package_availability", "\"Availability\" = 'available'");
+
+                            t.HasCheckConstraint("CK_snapshot_package_boundary_fingerprint", "length(\"BoundaryFingerprint\") = 64 AND \"BoundaryFingerprint\" NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_snapshot_package_byte_count", "\"ByteCount\" BETWEEN 1 AND 1048576 AND \"ByteCount\" = length(\"Content\")");
+
+                            t.HasCheckConstraint("CK_snapshot_package_content_digest", "length(\"ContentDigest\") = 64 AND \"ContentDigest\" NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_snapshot_package_digest_algorithm", "\"DigestAlgorithm\" = 'sha256'");
+
+                            t.HasCheckConstraint("CK_snapshot_package_encoding", "\"ContentEncoding\" = 'dantes-canonical-json-v1'");
+
+                            t.HasCheckConstraint("CK_snapshot_package_id", "length(\"Id\") = 41 AND substr(\"Id\", 1, 9) = 'snapshot.' AND substr(\"Id\", 10) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_snapshot_package_producer_version", "\"ProducerVersion\" > 0");
+
+                            t.HasCheckConstraint("CK_snapshot_package_root_operation", "length(\"RootOperationId\") = 32 AND \"RootOperationId\" NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_snapshot_package_scope_version", "\"ScopeContractVersion\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemFeedback.SystemFeedbackDisposition", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(53)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FromState")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReportId")
+                        .IsRequired()
+                        .HasMaxLength(41)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ToState")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReportId", "Revision")
+                        .IsUnique();
+
+                    b.HasIndex("ToState", "CreatedAt", "Id");
+
+                    b.ToTable("system_feedback_disposition", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_feedback_disposition_changed", "\"FromState\" <> \"ToState\"");
+
+                            t.HasCheckConstraint("CK_system_feedback_disposition_from", "\"FromState\" IN ('Open', 'Acknowledged', 'Resolved', 'Dismissed')");
+
+                            t.HasCheckConstraint("CK_system_feedback_disposition_id", "length(\"Id\") = 53 AND substr(\"Id\", 1, 21) = 'feedback-disposition.' AND substr(\"Id\", 22) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_system_feedback_disposition_revision", "\"Revision\" > 0");
+
+                            t.HasCheckConstraint("CK_system_feedback_disposition_to", "\"ToState\" IN ('Open', 'Acknowledged', 'Resolved', 'Dismissed')");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemFeedback.SystemFeedbackOperationReference", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("OperationId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ReportId")
+                        .IsRequired()
+                        .HasMaxLength(41)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OperationId");
+
+                    b.HasIndex("ReportId", "OperationId")
+                        .IsUnique();
+
+                    b.HasIndex("ReportId", "Ordinal")
+                        .IsUnique();
+
+                    b.ToTable("system_feedback_operation", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_feedback_operation_ordinal", "\"Ordinal\" BETWEEN 0 AND 7");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemFeedback.SystemFeedbackProcedureReference", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ProcedureId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProcedureVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ReportId")
+                        .IsRequired()
+                        .HasMaxLength(41)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProcedureId", "ProcedureVersion");
+
+                    b.HasIndex("ReportId", "Ordinal")
+                        .IsUnique();
+
+                    b.HasIndex("ReportId", "ProcedureId")
+                        .IsUnique();
+
+                    b.ToTable("system_feedback_procedure", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_feedback_procedure_ordinal", "\"Ordinal\" BETWEEN 0 AND 7");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemFeedback.SystemFeedbackReport", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(41)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Expected")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("HoldState")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("None");
+
+                    b.Property<string>("Impact")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Observed")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PayloadFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RequestToken")
+                        .IsRequired()
+                        .HasMaxLength(49)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RetentionRevision")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SubmissionOperationId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TriageRevision")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RequestToken")
+                        .IsUnique();
+
+                    b.HasIndex("Category", "CreatedAt", "Id");
+
+                    b.HasIndex("Impact", "CreatedAt", "Id");
+
+                    b.HasIndex("State", "CreatedAt", "Id");
+
+                    b.HasIndex("HoldState", "State", "CreatedAt", "Id");
+
+                    b.HasIndex("ArchivedAt", "State", "Category", "CreatedAt", "Id");
+
+                    b.ToTable("system_feedback_report", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_feedback_report_category", "\"Category\" IN ('Defect', 'Friction', 'Documentation', 'Suggestion', 'Positive')");
+
+                            t.HasCheckConstraint("CK_system_feedback_report_fingerprint", "length(\"PayloadFingerprint\") = 64 AND \"PayloadFingerprint\" NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_system_feedback_report_hold_state", "\"HoldState\" IN ('None', 'Held')");
+
+                            t.HasCheckConstraint("CK_system_feedback_report_id", "length(\"Id\") = 41 AND substr(\"Id\", 1, 9) = 'feedback.' AND substr(\"Id\", 10) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_system_feedback_report_impact", "\"Impact\" IN ('Blocked', 'Degraded', 'Minor', 'None')");
+
+                            t.HasCheckConstraint("CK_system_feedback_report_operation", "length(\"SubmissionOperationId\") = 32 AND \"SubmissionOperationId\" NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_system_feedback_report_retention_revision", "\"RetentionRevision\" >= 0");
+
+                            t.HasCheckConstraint("CK_system_feedback_report_state", "\"State\" IN ('Open', 'Acknowledged', 'Resolved', 'Dismissed')");
+
+                            t.HasCheckConstraint("CK_system_feedback_report_token", "length(\"RequestToken\") = 49 AND substr(\"RequestToken\", 1, 17) = 'feedback-request.' AND substr(\"RequestToken\", 18) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_system_feedback_report_triage_revision", "\"TriageRevision\" >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemFeedback.SystemFeedbackRetentionAction", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(51)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("EffectiveAsOf")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("FromArchived")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("FromHoldState")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReportId")
+                        .IsRequired()
+                        .HasMaxLength(41)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("ToArchived")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ToHoldState")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReportId", "Revision")
+                        .IsUnique();
+
+                    b.HasIndex("Action", "CreatedAt", "Id");
+
+                    b.ToTable("system_feedback_retention_action", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_feedback_retention_action_action", "\"Action\" IN ('Archive', 'Restore', 'PlaceHold', 'ReleaseHold')");
+
+                            t.HasCheckConstraint("CK_system_feedback_retention_action_changed", "(\"FromArchived\" <> \"ToArchived\") <> (\"FromHoldState\" <> \"ToHoldState\")");
+
+                            t.HasCheckConstraint("CK_system_feedback_retention_action_effective_as_of", "(\"Action\" = 'Archive' AND \"EffectiveAsOf\" IS NOT NULL) OR (\"Action\" <> 'Archive' AND \"EffectiveAsOf\" IS NULL)");
+
+                            t.HasCheckConstraint("CK_system_feedback_retention_action_from_hold", "\"FromHoldState\" IN ('None', 'Held')");
+
+                            t.HasCheckConstraint("CK_system_feedback_retention_action_id", "length(\"Id\") = 51 AND substr(\"Id\", 1, 19) = 'feedback-retention.' AND substr(\"Id\", 20) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_system_feedback_retention_action_reference", "(\"Action\" IN ('PlaceHold', 'ReleaseHold') AND \"Reference\" IS NOT NULL AND length(\"Reference\") BETWEEN 1 AND 100) OR (\"Action\" IN ('Archive', 'Restore') AND \"Reference\" IS NULL)");
+
+                            t.HasCheckConstraint("CK_system_feedback_retention_action_revision", "\"Revision\" > 0");
+
+                            t.HasCheckConstraint("CK_system_feedback_retention_action_to_hold", "\"ToHoldState\" IN ('None', 'Held')");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemFeedback.SystemFeedbackStep", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ReportId")
+                        .IsRequired()
+                        .HasMaxLength(41)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReportId", "Ordinal")
+                        .IsUnique();
+
+                    b.ToTable("system_feedback_step", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_feedback_step_ordinal", "\"Ordinal\" BETWEEN 0 AND 7");
+                        });
+                });
+
             modelBuilder.Entity("DantesRoleplay.World.Component", b =>
                 {
                     b.Property<long>("Id")
@@ -1009,6 +1444,61 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.Navigation("Contract");
                 });
 
+            modelBuilder.Entity("DantesRoleplay.SystemFeedback.SystemFeedbackDisposition", b =>
+                {
+                    b.HasOne("DantesRoleplay.SystemFeedback.SystemFeedbackReport", "Report")
+                        .WithMany("Dispositions")
+                        .HasForeignKey("ReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Report");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemFeedback.SystemFeedbackOperationReference", b =>
+                {
+                    b.HasOne("DantesRoleplay.SystemFeedback.SystemFeedbackReport", "Report")
+                        .WithMany("OperationReferences")
+                        .HasForeignKey("ReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Report");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemFeedback.SystemFeedbackProcedureReference", b =>
+                {
+                    b.HasOne("DantesRoleplay.SystemFeedback.SystemFeedbackReport", "Report")
+                        .WithMany("ProcedureReferences")
+                        .HasForeignKey("ReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Report");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemFeedback.SystemFeedbackRetentionAction", b =>
+                {
+                    b.HasOne("DantesRoleplay.SystemFeedback.SystemFeedbackReport", "Report")
+                        .WithMany("RetentionActions")
+                        .HasForeignKey("ReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Report");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemFeedback.SystemFeedbackStep", b =>
+                {
+                    b.HasOne("DantesRoleplay.SystemFeedback.SystemFeedbackReport", "Report")
+                        .WithMany("Steps")
+                        .HasForeignKey("ReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Report");
+                });
+
             modelBuilder.Entity("DantesRoleplay.World.Component", b =>
                 {
                     b.HasOne("DantesRoleplay.World.ComponentDefinition", "Definition")
@@ -1094,6 +1584,19 @@ namespace DantesRoleplay.DataAccess.Migrations
             modelBuilder.Entity("DantesRoleplay.Procedures.ProcedureContract", b =>
                 {
                     b.Navigation("Versions");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemFeedback.SystemFeedbackReport", b =>
+                {
+                    b.Navigation("Dispositions");
+
+                    b.Navigation("OperationReferences");
+
+                    b.Navigation("ProcedureReferences");
+
+                    b.Navigation("RetentionActions");
+
+                    b.Navigation("Steps");
                 });
 
             modelBuilder.Entity("DantesRoleplay.World.Entity", b =>

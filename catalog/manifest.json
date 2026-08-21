@@ -55,6 +55,13 @@
     },
     {
       "kind": "mechanic",
+      "id": "mechanic.dnd2024.character-profile.record",
+      "version": 1,
+      "contentHash": "DD2A392DD35389EEB2C3EFEF060B946812BFEC0AAA7E0F02A5A7A61A0B99FB78",
+      "path": "mechanics/ruleset/dnd2024/character/profile/mechanic.dnd2024.character-profile.record.md"
+    },
+    {
+      "kind": "mechanic",
       "id": "mechanic.dnd2024.check.ability",
       "version": 1,
       "contentHash": "C48460C3A783B47EC585B8C50A77B40171D2CB6B51E6FF67DBDFD5DD725D98E3",
@@ -62,9 +69,16 @@
     },
     {
       "kind": "mechanic",
+      "id": "mechanic.dnd2024.class-progression.read",
+      "version": 1,
+      "contentHash": "A96AEE8A6DA2AEA32AC68B2C7589A788E1FEC4BAE79AFD7937046854DBFA5549",
+      "path": "mechanics/ruleset/dnd2024/core/advancement/class-progression/mechanic.dnd2024.class-progression.read.md"
+    },
+    {
+      "kind": "mechanic",
       "id": "mechanic.dnd2024.conditions.write",
       "version": 1,
-      "contentHash": "A2755940E21ED53632BED1BFBE10F8072CE00D3B80A8A9CAB5A8346D978BDBB5",
+      "contentHash": "0AA38823BDD0CA7DEFDED44A60C769A9436D565B152A19FFAA38D6D2B1BCF780",
       "path": "mechanics/ruleset/dnd2024/core/state/conditions/mechanic.dnd2024.conditions.write.md"
     },
     {
@@ -85,7 +99,7 @@
       "kind": "mechanic",
       "id": "mechanic.dnd2024.d20-test.state-effects",
       "version": 1,
-      "contentHash": "701C6DAD704247C53A091E875474E4B6F0449CE160138540AF4E2445F56DB6AE",
+      "contentHash": "32137D7451CB55682215923B892ED760FD2307C2826EAC0122B864B3FA971472",
       "path": "mechanics/ruleset/dnd2024/core/gameplay/d20-tests/mechanic.dnd2024.d20-test.state-effects.md"
     },
     {
@@ -463,7 +477,7 @@
       "kind": "procedure",
       "id": "procedure.campaign.character-participation",
       "version": 1,
-      "contentHash": "88A4F610A46B1A867B1C57C12B49577C69D399B38A45FE3CA051C2AF7A895A30",
+      "contentHash": "0ED63439F8894CA1AD20DD13858639452FF178C978CD5AD8B16CD44D0F4C05BD",
       "path": "procedures/campaign/procedure.campaign.character-participation.md"
     },
     {
@@ -477,7 +491,7 @@
       "kind": "procedure",
       "id": "procedure.campaign.session",
       "version": 1,
-      "contentHash": "43AE95BD09A636DFAC7ACE70B39671BE8E108CE418EE00F7986E2D7CC18B7AA1",
+      "contentHash": "EE6838894DD526990F0DF323C883FCE313D46DFF90F9968236779B939A988828",
       "path": "procedures/campaign/procedure.campaign.session.md"
     },
     {
@@ -547,7 +561,7 @@
       "kind": "procedure",
       "id": "procedure.game.core.world.knowledge",
       "version": 1,
-      "contentHash": "8C8398E15F9B7183B0E4644919CAE64A792663F0FE2D4226C89A153D36DB13CE",
+      "contentHash": "67030BBF95DB5CA6E5A09796AA3606A65D3AE762FFF4D3A73245AF26FC437F7B",
       "path": "procedures/game/core/world/knowledge/procedure.game.core.world.knowledge.md"
     },
     {
@@ -650,6 +664,13 @@
     },
     {
       "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.character-profile",
+      "version": 1,
+      "contentHash": "FC84ACFF7C0B46DDD52A6EEC1269FB3A7BA43C89F93FBA360ABCB0B7657F2877",
+      "path": "procedures/ruleset/dnd2024/character/profile/procedure.mechanic.dnd2024.character-profile.md"
+    },
+    {
+      "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.check.ability",
       "version": 1,
       "contentHash": "7FCBA925901A15B8323C50759C8364349D5BC3D6B883DED03C34D8DDC498B223",
@@ -657,9 +678,16 @@
     },
     {
       "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.class-progression",
+      "version": 1,
+      "contentHash": "F198B28B3A42E5F4F01A19B044DEEADA036C30C0BDFD0DFD1B4006E9075A54B7",
+      "path": "procedures/ruleset/dnd2024/core/advancement/class-progression/procedure.mechanic.dnd2024.class-progression.md"
+    },
+    {
+      "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.conditions",
       "version": 1,
-      "contentHash": "246AFD81A373B538D6479A160589BCAFF32ADEB6A867878A2D3B183535916E53",
+      "contentHash": "37981FAFCE128CB42003E1C811E9E39575499DBF7F6E087C8A437C11DA084DEE",
       "path": "procedures/ruleset/dnd2024/core/state/conditions/procedure.mechanic.dnd2024.conditions.md"
     },
     {
@@ -680,7 +708,7 @@
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.d20-test.state-effects",
       "version": 1,
-      "contentHash": "8B32601D06D57856F91D66FBB35D50435FFD57BC309868274CAF2D91E1E3304A",
+      "contentHash": "65AA32CA97F9A8C34D2EDA3221D4FE33555053A0628E72297E137926DA4CADE2",
       "path": "procedures/ruleset/dnd2024/core/gameplay/d20-tests/procedure.mechanic.dnd2024.d20-test.state-effects.md"
     },
     {
@@ -951,6 +979,13 @@
     },
     {
       "kind": "procedure",
+      "id": "procedure.system.feedback",
+      "version": 1,
+      "contentHash": "9E10BABA29518824E615ACBFD44EE5848BEA258F8C21872B3B4BF495068042AB",
+      "path": "procedures/system/procedure.system.feedback.md"
+    },
+    {
+      "kind": "procedure",
       "id": "procedure.system.inspect",
       "version": 1,
       "contentHash": "F8409065ED77DA92E9312835977513D692DFD1F5A9E54B10D2D6D00980A37984",
@@ -967,7 +1002,7 @@
       "kind": "procedure",
       "id": "procedure.system.use",
       "version": 1,
-      "contentHash": "50EA813DFBA338AB74CFF204047645C043D803BC3A7CF29E823849480A36B114",
+      "contentHash": "088534CFDA3824ED559C234F912E747F7B5A816D26382861BB4825CAEC7836CB",
       "path": "procedures/system/procedure.system.use.md"
     },
     {
@@ -1035,9 +1070,23 @@
     },
     {
       "kind": "componentDefinition",
+      "id": "dnd2024.character.profile",
+      "version": 0,
+      "contentHash": "D0DC6EF3D3B41CDEE0909EBA69D0FDDE29821A5D5A79C73461EEC28547442CC8",
+      "path": "components/dnd2024.character.profile.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.class-progression",
+      "version": 0,
+      "contentHash": "2AA353FCB61C296E5F7DD520C92F4A7C865D12C1FD387985E14800954DEFDFB5",
+      "path": "components/dnd2024.class-progression.json"
+    },
+    {
+      "kind": "componentDefinition",
       "id": "dnd2024.conditions",
       "version": 0,
-      "contentHash": "F62456E2DC5F1D4496958960328796C0729C2B288F6F5B81ECF21E10106075D1",
+      "contentHash": "0FD16A5B1E552DCEFBD29CC163A1C2437AEA1A1F354132CD268568C811A5749D",
       "path": "components/dnd2024.conditions.json"
     },
     {
@@ -1203,6 +1252,13 @@
     },
     {
       "kind": "componentDefinition",
+      "id": "game.core.campaign.session-recap",
+      "version": 0,
+      "contentHash": "F4E4B7AC8DA5088B12DC62268F5BA0191D34E3ECFBD533EB2BEB968126DEDCE7",
+      "path": "components/game.core.campaign.session-recap.json"
+    },
+    {
+      "kind": "componentDefinition",
       "id": "game.core.quest.objective",
       "version": 0,
       "contentHash": "E8F223B970892D18AF329F781BAD191940983D176F8C10BE3CD7AE68A7A8ADD1",
@@ -1270,6 +1326,34 @@
       "version": 0,
       "contentHash": "E38EE449DBDB00E65A19E7CAFE57C6F537992BE9E9897DCDEFC8F4F0AE63B68F",
       "path": "components/game.core.world.fact.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "game.core.world.interaction",
+      "version": 0,
+      "contentHash": "346CCF5CFFF4261B7A76198AF2FD1B62399EDCEF02FDE26B2221C9BC8EEACBE6",
+      "path": "components/game.core.world.interaction.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "game.core.world.knowledge.acquisition",
+      "version": 0,
+      "contentHash": "683F758D59F6EC0656B00EC5D2F951D3CAE06EE6F1770E8483C7FBEE76B195B1",
+      "path": "components/game.core.world.knowledge.acquisition.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "game.core.world.knowledge.validity",
+      "version": 0,
+      "contentHash": "B9EAB51CFE448E49848243281B2775222C23FB4AC88FD024D1374ED2A2381F44",
+      "path": "components/game.core.world.knowledge.validity.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "game.core.world.knowledge.classification",
+      "version": 0,
+      "contentHash": "BEEA4535CC449AE800A0F4BBA7E5A6B22FD15448E69EBCF8752781991AE5331D",
+      "path": "components/game.core.world.knowledge.classification.json"
     },
     {
       "kind": "componentDefinition",
@@ -1385,23 +1469,51 @@
     },
     {
       "kind": "entity",
+      "id": "acquisition.knowledge-slice2.oren-correspondence",
+      "version": 0,
+      "contentHash": "38448CBF3F03EA3608288175ABC849C5966D14756FCDA66BECF8A63A8A1F7A76",
+      "path": "world/entities/acquisition.knowledge-slice2.oren-correspondence.json"
+    },
+    {
+      "kind": "entity",
+      "id": "actor.knowledge-slice1.outsider",
+      "version": 0,
+      "contentHash": "990DE614BB9F13CF0858C9631B6B0A6946A6FC3C3C2AC57C92338533798CB5DE",
+      "path": "world/entities/actor.knowledge-slice1.outsider.json"
+    },
+    {
+      "kind": "entity",
+      "id": "actor.knowledge-slice1.resident",
+      "version": 0,
+      "contentHash": "89D568983927D6DA6EBEDF52908A36A1CB2D9B158116E3A76EC096D9D5CE3A79",
+      "path": "world/entities/actor.knowledge-slice1.resident.json"
+    },
+    {
+      "kind": "entity",
+      "id": "actor.knowledge-slice2.learner",
+      "version": 0,
+      "contentHash": "D32038513BF7BFFF9759676F14B1E8F4F01EA770B7BF06E7B1EAC837DD2FD27B",
+      "path": "world/entities/actor.knowledge-slice2.learner.json"
+    },
+    {
+      "kind": "entity",
       "id": "clue.feature-04.ledger-seal",
       "version": 0,
-      "contentHash": "37FA127D8BA7DE97950185D72AB9C661C39575B1311BABA82C2809834E2F1130",
+      "contentHash": "320B1CB629A34B4967653EF56CCE2CFCB59039F54AA851CE387C811158CE3BF9",
       "path": "world/entities/clue.feature-04.ledger-seal.json"
     },
     {
       "kind": "entity",
       "id": "clue.feature-04.observatory-lantern",
       "version": 0,
-      "contentHash": "68E4BB90105F624AC209613B376A800E94F71163DCDFC629A034A6DA01E4FA61",
+      "contentHash": "329462314F619277698AB17D65E479F89ADF8F48B442C82DBD154035084838F7",
       "path": "world/entities/clue.feature-04.observatory-lantern.json"
     },
     {
       "kind": "entity",
       "id": "clue.feature-04.oren-letter",
       "version": 0,
-      "contentHash": "23AC23DF6F6BFE50A730F715A71B5693488A710434676A512C1443AD4D361595",
+      "contentHash": "24D0C6AFBE7765487B76ACC2161F906F91C67F6321BC6B1069379ACF6765511B",
       "path": "world/entities/clue.feature-04.oren-letter.json"
     },
     {
@@ -1422,8 +1534,43 @@
       "kind": "entity",
       "id": "content.dnd2024.class.fighter.v1",
       "version": 0,
-      "contentHash": "A6CE71865719B1E58EE366132ECAB154937094CF47208C1A91874D8E47B797DD",
+      "contentHash": "5162ADDA737BB1211037BB4C106AC1B8AFD01EBBC7CCFC0ECB91B42C07165B7D",
       "path": "world/entities/content.dnd2024.class.fighter.v1.json"
+    },
+    {
+      "kind": "entity",
+      "id": "content.dnd2024.feature.fighter.action-surge.v1",
+      "version": 0,
+      "contentHash": "192D7DAE5F7115792CD755364CE2324BA775FE2466CC54E8F53AD1F0E1A10D8C",
+      "path": "world/entities/content.dnd2024.feature.fighter.action-surge.v1.json"
+    },
+    {
+      "kind": "entity",
+      "id": "content.dnd2024.feature.fighter.fighting-style.v1",
+      "version": 0,
+      "contentHash": "176CB69F74512439403E15692CADFDED3C88654AE72168E55AB6407A2C5C9F0E",
+      "path": "world/entities/content.dnd2024.feature.fighter.fighting-style.v1.json"
+    },
+    {
+      "kind": "entity",
+      "id": "content.dnd2024.feature.fighter.second-wind.v1",
+      "version": 0,
+      "contentHash": "9919246097FCE63ED3F3082343265FA3F6B2E3CB5506131F9AFF88A5FFA10BE0",
+      "path": "world/entities/content.dnd2024.feature.fighter.second-wind.v1.json"
+    },
+    {
+      "kind": "entity",
+      "id": "content.dnd2024.feature.fighter.tactical-mind.v1",
+      "version": 0,
+      "contentHash": "64A94341A131C59D985617D7C626AA5EEB39EBFA065276B589AF0F9E8DA222C2",
+      "path": "world/entities/content.dnd2024.feature.fighter.tactical-mind.v1.json"
+    },
+    {
+      "kind": "entity",
+      "id": "content.dnd2024.feature.fighter.weapon-mastery.v1",
+      "version": 0,
+      "contentHash": "863502B882486ECF91158DC8CFE6365C509036B6AC474F628F41B821FBB0904B",
+      "path": "world/entities/content.dnd2024.feature.fighter.weapon-mastery.v1.json"
     },
     {
       "kind": "entity",
@@ -1518,9 +1665,23 @@
     },
     {
       "kind": "entity",
+      "id": "fact.knowledge-slice3.market-toll-new",
+      "version": 0,
+      "contentHash": "34BC89B24FE15EE52E69010B78DEDA47486DF7D2F58C466E77DDCA91B1ED308E",
+      "path": "world/entities/fact.knowledge-slice3.market-toll-new.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.knowledge-slice3.market-toll-old",
+      "version": 0,
+      "contentHash": "1AE525A85DF9D8B10718E315DC66B080550EE76A04C719DC71B95600A44E1666",
+      "path": "world/entities/fact.knowledge-slice3.market-toll-old.json"
+    },
+    {
+      "kind": "entity",
       "id": "fact.feature-04.toll-ledger",
       "version": 0,
-      "contentHash": "0163FA2E334E6513DE4B60A9139251FB89D71D756CD355F1742C0AF81524F73C",
+      "contentHash": "B12CD5F305F9A99BC4203A8F57EA1FF7BBF4707FAF25A609553B19945061C979",
       "path": "world/entities/fact.feature-04.toll-ledger.json"
     },
     {
@@ -1543,6 +1704,13 @@
       "version": 0,
       "contentHash": "DDCF12386ECEAF793115F7322428933965F6CB659C962780C2E845E609243329",
       "path": "world/entities/homer.json"
+    },
+    {
+      "kind": "entity",
+      "id": "interaction.knowledge-slice2.oren-conversation",
+      "version": 0,
+      "contentHash": "D09DCE16B3DDA1850DE333F45AE7396153E070EB581FA04B053FCA40ADF59FC7",
+      "path": "world/entities/interaction.knowledge-slice2.oren-conversation.json"
     },
     {
       "kind": "entity",
@@ -1637,16 +1805,30 @@
     },
     {
       "kind": "entity",
+      "id": "rumour.knowledge-slice3.observatory-a",
+      "version": 0,
+      "contentHash": "406356BCCA78495EAD7D9BEBA67A0C94873DECC237256ED5E4605DF5884FD5EC",
+      "path": "world/entities/rumour.knowledge-slice3.observatory-a.json"
+    },
+    {
+      "kind": "entity",
+      "id": "rumour.knowledge-slice3.observatory-b",
+      "version": 0,
+      "contentHash": "ABE6233465B821C451AE0AEDBA12735A69CBB2E9EBCBD64736F4B70345AC6A71",
+      "path": "world/entities/rumour.knowledge-slice3.observatory-b.json"
+    },
+    {
+      "kind": "entity",
       "id": "rumour.feature-04.observatory-signal",
       "version": 0,
-      "contentHash": "1048DBE36329DBB9D4F20FC158730DE51521370FD762ED7D68F3C9C760FCEC04",
+      "contentHash": "2D471DB02B2FA49DA21C5249651CBEAA5CE7A5B55F4BC5015BEB721950B346CD",
       "path": "world/entities/rumour.feature-04.observatory-signal.json"
     },
     {
       "kind": "entity",
       "id": "secret.feature-04.oren-correspondence",
       "version": 0,
-      "contentHash": "6B11FF5DEDFEFCC30FED498388B43934D05419D473B7BA2CB4A98F9A57730505",
+      "contentHash": "8F2A046E67A08B674390FC817181A9AC163EB824306496DED4996307ABFB34A0",
       "path": "world/entities/secret.feature-04.oren-correspondence.json"
     },
     {
@@ -1702,7 +1884,7 @@
       "kind": "relationships",
       "id": "world/relationships.json",
       "version": 0,
-      "contentHash": "2A03F9A19F3C1D492FEB25EACCD9C26B70E1A3D55F3456995DCFF7889AC14E28",
+      "contentHash": "8B75129D99F914D4EDC1E24F6232E0178C41B3E853DD068AF46527560D614F1A",
       "path": "world/relationships.json"
     }
   ]

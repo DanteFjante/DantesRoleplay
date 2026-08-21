@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.zero-hit-points-policy",
+  "name": "Zero-Hit-Point Policy (D&D 2024)",
+  "description": "One creature's explicit SRD 5.2.1 outcome policy when reduced to 0 Hit Points: make death saves or die at zero. It is not creature type, species, stat block, or death state."
+}

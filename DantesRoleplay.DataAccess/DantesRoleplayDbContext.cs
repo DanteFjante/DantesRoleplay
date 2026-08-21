@@ -3,6 +3,8 @@ using DantesRoleplay.Events;
 using DantesRoleplay.Notifications;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
+using DantesRoleplay.Snapshots;
+using DantesRoleplay.SystemFeedback;
 using DantesRoleplay.World;
 using Microsoft.EntityFrameworkCore;
 
@@ -50,6 +52,15 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
 
     public DbSet<NotificationEntity> NotificationEntities => Set<NotificationEntity>();
 
+    public DbSet<SnapshotPackage> SnapshotPackages => Set<SnapshotPackage>();
+
+    public DbSet<SystemFeedbackReport> SystemFeedbackReports => Set<SystemFeedbackReport>();
+    public DbSet<SystemFeedbackStep> SystemFeedbackSteps => Set<SystemFeedbackStep>();
+    public DbSet<SystemFeedbackOperationReference> SystemFeedbackOperationReferences => Set<SystemFeedbackOperationReference>();
+    public DbSet<SystemFeedbackProcedureReference> SystemFeedbackProcedureReferences => Set<SystemFeedbackProcedureReference>();
+    public DbSet<SystemFeedbackDisposition> SystemFeedbackDispositions => Set<SystemFeedbackDisposition>();
+    public DbSet<SystemFeedbackRetentionAction> SystemFeedbackRetentionActions => Set<SystemFeedbackRetentionAction>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -62,6 +73,149 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         ConfigureSubscriptions(modelBuilder);
         ConfigureEventLedger(modelBuilder);
         ConfigureNotifications(modelBuilder);
+        ConfigureSnapshots(modelBuilder);
+        ConfigureSystemFeedback(modelBuilder);
+    }
+
+    private static void ConfigureSystemFeedback(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<SystemFeedbackReport>(entity =>
+        {
+            entity.ToTable("system_feedback_report", table =>
+            {
+                table.HasCheckConstraint("CK_system_feedback_report_id", "length(\"Id\") = 41 AND substr(\"Id\", 1, 9) = 'feedback.' AND substr(\"Id\", 10) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_system_feedback_report_token", "length(\"RequestToken\") = 49 AND substr(\"RequestToken\", 1, 17) = 'feedback-request.' AND substr(\"RequestToken\", 18) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_system_feedback_report_fingerprint", "length(\"PayloadFingerprint\") = 64 AND \"PayloadFingerprint\" NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_system_feedback_report_category", "\"Category\" IN ('Defect', 'Friction', 'Documentation', 'Suggestion', 'Positive')");
+                table.HasCheckConstraint("CK_system_feedback_report_impact", "\"Impact\" IN ('Blocked', 'Degraded', 'Minor', 'None')");
+                table.HasCheckConstraint("CK_system_feedback_report_state", "\"State\" IN ('Open', 'Acknowledged', 'Resolved', 'Dismissed')");
+                table.HasCheckConstraint("CK_system_feedback_report_triage_revision", "\"TriageRevision\" >= 0");
+                table.HasCheckConstraint("CK_system_feedback_report_retention_revision", "\"RetentionRevision\" >= 0");
+                table.HasCheckConstraint("CK_system_feedback_report_hold_state", "\"HoldState\" IN ('None', 'Held')");
+                table.HasCheckConstraint("CK_system_feedback_report_operation", "length(\"SubmissionOperationId\") = 32 AND \"SubmissionOperationId\" NOT GLOB '*[^0-9a-f]*'");
+            });
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasMaxLength(41);
+            entity.Property(x => x.RequestToken).HasMaxLength(49).IsRequired();
+            entity.HasIndex(x => x.RequestToken).IsUnique();
+            entity.Property(x => x.PayloadFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.Category).HasConversion<string>().HasMaxLength(20).IsRequired();
+            entity.Property(x => x.Impact).HasConversion<string>().HasMaxLength(20).IsRequired();
+            entity.Property(x => x.State).HasConversion<string>().HasMaxLength(20).IsRequired();
+            entity.Property(x => x.TriageRevision).IsConcurrencyToken().HasDefaultValue(0).IsRequired();
+            entity.Property(x => x.RetentionRevision).IsConcurrencyToken().HasDefaultValue(0).IsRequired();
+            entity.Property(x => x.HoldState).HasConversion<string>().HasMaxLength(20).HasDefaultValue(SystemFeedbackHoldState.None).IsRequired();
+            entity.Property(x => x.Summary).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Observed).HasMaxLength(2000).IsRequired();
+            entity.Property(x => x.Expected).HasMaxLength(1000);
+            entity.Property(x => x.SubmissionOperationId).HasMaxLength(32).IsRequired();
+            entity.HasIndex(x => new { x.State, x.CreatedAt, x.Id });
+            entity.HasIndex(x => new { x.Category, x.CreatedAt, x.Id });
+            entity.HasIndex(x => new { x.Impact, x.CreatedAt, x.Id });
+            entity.HasIndex(x => new { x.ArchivedAt, x.State, x.Category, x.CreatedAt, x.Id });
+            entity.HasIndex(x => new { x.HoldState, x.State, x.CreatedAt, x.Id });
+        });
+        modelBuilder.Entity<SystemFeedbackStep>(entity =>
+        {
+            entity.ToTable("system_feedback_step", table => table.HasCheckConstraint("CK_system_feedback_step_ordinal", "\"Ordinal\" BETWEEN 0 AND 7"));
+            entity.HasKey(x => x.Id); entity.Property(x => x.ReportId).HasMaxLength(41).IsRequired(); entity.Property(x => x.Text).HasMaxLength(400).IsRequired();
+            entity.HasOne(x => x.Report).WithMany(x => x.Steps).HasForeignKey(x => x.ReportId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.ReportId, x.Ordinal }).IsUnique();
+        });
+        modelBuilder.Entity<SystemFeedbackOperationReference>(entity =>
+        {
+            entity.ToTable("system_feedback_operation", table => table.HasCheckConstraint("CK_system_feedback_operation_ordinal", "\"Ordinal\" BETWEEN 0 AND 7"));
+            entity.HasKey(x => x.Id); entity.Property(x => x.ReportId).HasMaxLength(41).IsRequired(); entity.Property(x => x.OperationId).HasMaxLength(32).IsRequired();
+            entity.HasOne(x => x.Report).WithMany(x => x.OperationReferences).HasForeignKey(x => x.ReportId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.ReportId, x.Ordinal }).IsUnique(); entity.HasIndex(x => new { x.ReportId, x.OperationId }).IsUnique(); entity.HasIndex(x => x.OperationId);
+        });
+        modelBuilder.Entity<SystemFeedbackProcedureReference>(entity =>
+        {
+            entity.ToTable("system_feedback_procedure", table => table.HasCheckConstraint("CK_system_feedback_procedure_ordinal", "\"Ordinal\" BETWEEN 0 AND 7"));
+            entity.HasKey(x => x.Id); entity.Property(x => x.ReportId).HasMaxLength(41).IsRequired(); entity.Property(x => x.ProcedureId).HasMaxLength(200).IsRequired();
+            entity.HasOne(x => x.Report).WithMany(x => x.ProcedureReferences).HasForeignKey(x => x.ReportId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.ReportId, x.Ordinal }).IsUnique(); entity.HasIndex(x => new { x.ReportId, x.ProcedureId }).IsUnique(); entity.HasIndex(x => new { x.ProcedureId, x.ProcedureVersion });
+        });
+        modelBuilder.Entity<SystemFeedbackDisposition>(entity =>
+        {
+            entity.ToTable("system_feedback_disposition", table =>
+            {
+                table.HasCheckConstraint("CK_system_feedback_disposition_id", "length(\"Id\") = 53 AND substr(\"Id\", 1, 21) = 'feedback-disposition.' AND substr(\"Id\", 22) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_system_feedback_disposition_revision", "\"Revision\" > 0");
+                table.HasCheckConstraint("CK_system_feedback_disposition_from", "\"FromState\" IN ('Open', 'Acknowledged', 'Resolved', 'Dismissed')");
+                table.HasCheckConstraint("CK_system_feedback_disposition_to", "\"ToState\" IN ('Open', 'Acknowledged', 'Resolved', 'Dismissed')");
+                table.HasCheckConstraint("CK_system_feedback_disposition_changed", "\"FromState\" <> \"ToState\"");
+            });
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasMaxLength(53);
+            entity.Property(x => x.ReportId).HasMaxLength(41).IsRequired();
+            entity.Property(x => x.Note).HasMaxLength(500).IsRequired();
+            entity.Property(x => x.FromState).HasConversion<string>().HasMaxLength(20).IsRequired();
+            entity.Property(x => x.ToState).HasConversion<string>().HasMaxLength(20).IsRequired();
+            entity.HasOne(x => x.Report).WithMany(x => x.Dispositions).HasForeignKey(x => x.ReportId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.ReportId, x.Revision }).IsUnique();
+            entity.HasIndex(x => new { x.ToState, x.CreatedAt, x.Id });
+        });
+        modelBuilder.Entity<SystemFeedbackRetentionAction>(entity =>
+        {
+            entity.ToTable("system_feedback_retention_action", table =>
+            {
+                table.HasCheckConstraint("CK_system_feedback_retention_action_id", "length(\"Id\") = 51 AND substr(\"Id\", 1, 19) = 'feedback-retention.' AND substr(\"Id\", 20) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_system_feedback_retention_action_revision", "\"Revision\" > 0");
+                table.HasCheckConstraint("CK_system_feedback_retention_action_action", "\"Action\" IN ('Archive', 'Restore', 'PlaceHold', 'ReleaseHold')");
+                table.HasCheckConstraint("CK_system_feedback_retention_action_from_hold", "\"FromHoldState\" IN ('None', 'Held')");
+                table.HasCheckConstraint("CK_system_feedback_retention_action_to_hold", "\"ToHoldState\" IN ('None', 'Held')");
+                table.HasCheckConstraint("CK_system_feedback_retention_action_changed", "(\"FromArchived\" <> \"ToArchived\") <> (\"FromHoldState\" <> \"ToHoldState\")");
+                table.HasCheckConstraint("CK_system_feedback_retention_action_reference", "(\"Action\" IN ('PlaceHold', 'ReleaseHold') AND \"Reference\" IS NOT NULL AND length(\"Reference\") BETWEEN 1 AND 100) OR (\"Action\" IN ('Archive', 'Restore') AND \"Reference\" IS NULL)");
+                table.HasCheckConstraint("CK_system_feedback_retention_action_effective_as_of", "(\"Action\" = 'Archive' AND \"EffectiveAsOf\" IS NOT NULL) OR (\"Action\" <> 'Archive' AND \"EffectiveAsOf\" IS NULL)");
+            });
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasMaxLength(51);
+            entity.Property(x => x.ReportId).HasMaxLength(41).IsRequired();
+            entity.Property(x => x.Action).HasConversion<string>().HasMaxLength(20).IsRequired();
+            entity.Property(x => x.FromHoldState).HasConversion<string>().HasMaxLength(20).IsRequired();
+            entity.Property(x => x.ToHoldState).HasConversion<string>().HasMaxLength(20).IsRequired();
+            entity.Property(x => x.Reference).HasMaxLength(100);
+            entity.Property(x => x.Note).HasMaxLength(500).IsRequired();
+            entity.HasOne(x => x.Report).WithMany(x => x.RetentionActions).HasForeignKey(x => x.ReportId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.ReportId, x.Revision }).IsUnique();
+            entity.HasIndex(x => new { x.Action, x.CreatedAt, x.Id });
+        });
+    }
+
+    private static void ConfigureSnapshots(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<SnapshotPackage>(entity =>
+        {
+            entity.ToTable("snapshot_package", table =>
+            {
+                table.HasCheckConstraint("CK_snapshot_package_id", "length(\"Id\") = 41 AND substr(\"Id\", 1, 9) = 'snapshot.' AND substr(\"Id\", 10) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_snapshot_package_scope_version", "\"ScopeContractVersion\" > 0");
+                table.HasCheckConstraint("CK_snapshot_package_producer_version", "\"ProducerVersion\" > 0");
+                table.HasCheckConstraint("CK_snapshot_package_encoding", "\"ContentEncoding\" = 'dantes-canonical-json-v1'");
+                table.HasCheckConstraint("CK_snapshot_package_boundary_fingerprint", "length(\"BoundaryFingerprint\") = 64 AND \"BoundaryFingerprint\" NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_snapshot_package_digest_algorithm", "\"DigestAlgorithm\" = 'sha256'");
+                table.HasCheckConstraint("CK_snapshot_package_content_digest", "length(\"ContentDigest\") = 64 AND \"ContentDigest\" NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_snapshot_package_byte_count", "\"ByteCount\" BETWEEN 1 AND 1048576 AND \"ByteCount\" = length(\"Content\")");
+                table.HasCheckConstraint("CK_snapshot_package_root_operation", "length(\"RootOperationId\") = 32 AND \"RootOperationId\" NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_snapshot_package_availability", "\"Availability\" = 'available'");
+            });
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasMaxLength(200);
+            entity.Property(x => x.ScopeContractId).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.ScopeContractVersion).IsRequired();
+            entity.Property(x => x.ProducerId).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.ProducerVersion).IsRequired();
+            entity.Property(x => x.ContentEncoding).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.BoundaryFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.DigestAlgorithm).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.ContentDigest).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.ByteCount).IsRequired();
+            entity.Property(x => x.CapturedAt).IsRequired();
+            entity.Property(x => x.RootOperationId).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.Availability).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.Content).IsRequired();
+        });
     }
 
     private static void ConfigureNotifications(ModelBuilder modelBuilder)

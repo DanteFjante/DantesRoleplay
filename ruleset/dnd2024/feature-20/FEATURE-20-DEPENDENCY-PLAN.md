@@ -1,6 +1,6 @@
 # Feature 20 dependency plan — tactical position and movement
 
-Status: **Slice 1 verified. Slice 2 is next after its permanent map/position/reach ids are confirmed. Voluntary path movement is blocked on derived-input composition; opportunity triggers also need Feature 21 geometry and Feature 34 sight.**
+Status: **Slices 1–4 verified. Slice 4 is governed by FEATURE-20-SLICE-4-MOVEMENT-PLAN.md and recorded in FEATURE-20-SLICE-4-MOVEMENT-RECEIPT.md.**
 Last updated: 2026-08-21
 
 ## Execution rule
@@ -60,18 +60,19 @@ Feature 20: tactical position and movement
 ├─ turn lifecycle and movement allowance                        [implemented: Features 11–12]
 ├─ atomic actions/events/audit                                  [implemented: kernel/E1]
 ├─ base Speed + Feature-12 scaffold retirement                  [implemented: Slice 1]
-├─ encounter grid, terrain, sized placement, reach reader       [next leaf: Slice 2]
-├─ legal tactical melee parent                                  [blocked: placement/reach reader]
-├─ voluntary path move + exact budget cost                      [blocked: composition]
-│  ├─ validated path/terrain cost                               [blocked: grid + placement]
-│  └─ parent-derived cost -> budget spender                     [missing platform leaf]
+├─ encounter grid, terrain, sized placement, reach reader       [implemented: Slice 2]
+├─ legal tactical melee parent                                  [implemented: Slice 3]
+├─ voluntary path move + exact budget cost                      [implemented: Slice 4]
+│  ├─ validated path cost                                      [implemented: Slice 4]
+│  └─ parent-derived cost -> budget spender                     [implemented: E6]
 └─ opportunity candidates                                       [blocked: Feature 19 + Features 21/34]
 ~~~
 
 Slice 1 is accepted: `dnd2024.speed` is the base-Speed authority and Feature 12's duplicated
-maximum is retired. The next leaf is Slice 2's map, placement, and reach reader; its permanent ids
-and semantics require confirmation before implementation. Path movement remains blocked because
-directly setting a budget in Feature 20 would create a second spender.
+maximum is retired. Slice 2 is accepted: the bounded map, Size-derived collision-safe placement,
+and effect-free base-reach evidence are recorded in `FEATURE-20-SLICE-2-RECEIPT.md`. Slice 4 is
+accepted: closed voluntary paths derive the only budget input and aggregate the existing budget
+spender with the position update atomically; see `FEATURE-20-SLICE-4-MOVEMENT-RECEIPT.md`.
 
 ## Dependency and ownership decisions
 
@@ -100,7 +101,7 @@ directly setting a budget in Feature 20 would create a second spender.
 | 1 | Base Speed and budget migration | Existing Feature 11/12 contracts re-read. | A turn refreshes remaining movement from valid base walk Speed; no duplicated maximum remains. |
 | 2 | Map, terrain, sized placement, reach reader | Slice 1 and ids confirmed. | Safe placements and exact effect-free grid distance/base-reach evidence. |
 | 3 | Tactical melee precondition parent | Slice 2 and Feature 8 re-read. | Legal base-reach melee attacks compose Feature 8; out-of-reach attempts fail before rolling. |
-| 4 | Voluntary path movement | Slice 2 and derived-input composition verified. | One active creature moves and pays an exact derived cost atomically. |
+| 4 | Voluntary path movement | Slice 2 and derived-input composition verified. | **Verified** — one active creature moves and pays an exact derived cost atomically; see `FEATURE-20-SLICE-4-MOVEMENT-RECEIPT.md`. |
 | 5 | Difficult terrain and occupied-space movement | Slice 4 and Feature 13 condition input where needed. | Cost/pass-through/end-space rules are exact with no special movement implied. |
 | 6 | Feature 19 handoff | Slice 4, Feature 19 schema, Feature 21 geometry, Feature 34 sight, and event composition verified. | Ordered candidates occur before position finalises; Feature 20 spends no Reaction or attack. |
 
@@ -164,7 +165,7 @@ After Feature 19's trigger schema, Feature 21 geometry, Feature 34 sight, and ev
 - Concrete official source locators: yes.
 - Size, budget, roster, attack, map, and composition ownership searched: yes.
 - Missing leaves expanded: yes.
-- One next slice: yes — Slice 2, after its permanent ids are confirmed.
+- One next slice: yes — Slice 5, after its permanent terrain and pass-through boundary is confirmed.
 - Closed state/input, effects, atomicity, replay, routing, and cleanup are specified.
 - No runtime artifact is created by this planning pass.
 

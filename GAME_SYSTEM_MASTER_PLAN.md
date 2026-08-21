@@ -277,6 +277,11 @@ Implement registered workflows after recurring multi-call sequences are evidence
 and confirmed aliases before vectors. Add Qwen3 embedding and Ollama routing profiles only after
 their evaluation gates pass.
 
+World knowledge is the approved exception to the procedure/mechanic count trigger: its intended
+large corpus may establish the disabled-by-default `qwen3-embedding:4b` provider and local
+SQLite-vector foundation earlier under `KNOWLEDGE_AND_FACTS_PLAN.md`. This does not enable semantic
+mechanic selection or local-model writes.
+
 Exit gate: disabling workflows, vectors, and Ollama reduces convenience/performance but does not
 change game correctness.
 

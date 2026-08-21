@@ -50,7 +50,7 @@ public sealed class CatalogFeature7Tests : IDisposable
         Assert.NotNull(await new ProcedureStore(db).GetAsync("procedure.mechanic.dnd2024.weapon-profile"));
 
         await AssertProfileAsync(world, "weapon.dnd2024.dagger", "simple", "melee", ["str", "dex"], 1, 4, "piercing");
-        await AssertProfileAsync(world, "weapon.dnd2024.shortbow", "simple", "ranged", ["dex"], 1, 6, "piercing");
+        await AssertProfileAsync(world, "weapon.dnd2024.shortbow", "simple", "ranged", ["dex"], 1, 6, "piercing", 80, 320);
         await AssertProfileAsync(world, "weapon.dnd2024.battleaxe", "martial", "melee", ["str"], 1, 8, "slashing");
 
         const string subject = "fixture.catalog.f7.weapon";
@@ -59,7 +59,7 @@ public sealed class CatalogFeature7Tests : IDisposable
 
         var recorded = await runner.RunAsync(Request(
             "record weapon profile",
-            """{"mode":"record","category":"simple","kind":"melee","attackAbilities":["str","dex"],"damage":{"count":1,"faces":4,"type":"piercing"}}"""));
+            """{"mode":"record","category":"simple","kind":"melee","attackAbilities":["str","dex"],"damage":{"count":1,"faces":4,"type":"piercing"},"propertyTags":["finesse","light","thrown"],"thrownRangeFeet":{"normal":20,"long":60},"mastery":"nick"}"""));
         Assert.True(recorded.Ok, recorded.Error?.Why);
         Assert.Equal("mechanic.dnd2024.weapon-profile.write", recorded.Mechanic?.Id);
         Assert.Equal(1, recorded.AppliedCount);
@@ -69,13 +69,13 @@ public sealed class CatalogFeature7Tests : IDisposable
 
         var duplicate = await runner.RunAsync(Request(
             "record weapon profile",
-            """{"mode":"record","category":"simple","kind":"melee","attackAbilities":["str","dex"],"damage":{"count":1,"faces":4,"type":"piercing"}}"""));
+            """{"mode":"record","category":"simple","kind":"melee","attackAbilities":["str","dex"],"damage":{"count":1,"faces":4,"type":"piercing"},"propertyTags":["finesse","light","thrown"],"thrownRangeFeet":{"normal":20,"long":60},"mastery":"nick"}"""));
         Assert.False(duplicate.Ok);
         await AssertProfileAsync(world, subject, "simple", "melee", ["str", "dex"], 1, 4, "piercing");
 
         var corrected = await runner.RunAsync(Request(
             "correct weapon profile",
-            """{"mode":"correct","category":"martial","kind":"melee","attackAbilities":["str"],"damage":{"count":1,"faces":8,"type":"slashing"}}"""));
+            """{"mode":"correct","category":"martial","kind":"melee","attackAbilities":["str"],"damage":{"count":1,"faces":8,"type":"slashing"},"propertyTags":["versatile"],"versatileDamage":{"count":1,"faces":10,"type":"slashing"},"mastery":"topple"}"""));
         Assert.True(corrected.Ok, corrected.Error?.Why);
         Assert.Single(corrected.Output!.Effects);
         Assert.Equal(EffectType.ComponentSet, corrected.Output.Effects[0].Type);
@@ -85,6 +85,32 @@ public sealed class CatalogFeature7Tests : IDisposable
             Assert.Equal("piercing", result.RootElement.GetProperty("previous").GetProperty("damage").GetProperty("type").GetString());
         }
         await AssertProfileAsync(world, subject, "martial", "melee", ["str"], 1, 8, "slashing");
+
+        const string rangedId = "fixture.catalog.f7.ranged";
+        await world.CreateEntityAsync("Ranged weapon profile", rangedId);
+        var ranged = await runner.RunAsync(Request(
+            "record ranged weapon profile",
+            """{"mode":"record","category":"simple","kind":"ranged","attackAbilities":["dex"],"damage":{"count":1,"faces":6,"type":"piercing"},"rangeFeet":{"normal":80,"long":320},"propertyTags":["ammunition","two-handed"],"ammunitionType":"arrow","mastery":"vex"}""",
+            rangedId));
+        Assert.True(ranged.Ok, ranged.Error?.Why);
+        await AssertProfileAsync(world, rangedId, "simple", "ranged", ["dex"], 1, 6, "piercing", 80, 320);
+
+        var rangedBefore = Assert.Single((await world.GetEntityAsync(rangedId))!.Components,
+            component => component.DefinitionId == Profile).Data;
+        foreach (var invalidRange in new[]
+                 {
+                     """{"mode":"correct","category":"simple","kind":"ranged","attackAbilities":["dex"],"damage":{"count":1,"faces":6,"type":"piercing"}}""",
+                     """{"mode":"correct","category":"simple","kind":"ranged","attackAbilities":["dex"],"damage":{"count":1,"faces":6,"type":"piercing"},"rangeFeet":{"normal":0,"long":320}}""",
+                     """{"mode":"correct","category":"simple","kind":"ranged","attackAbilities":["dex"],"damage":{"count":1,"faces":6,"type":"piercing"},"rangeFeet":{"normal":82,"long":320}}""",
+                     """{"mode":"correct","category":"simple","kind":"ranged","attackAbilities":["dex"],"damage":{"count":1,"faces":6,"type":"piercing"},"rangeFeet":{"normal":325,"long":320}}""",
+                     """{"mode":"correct","category":"simple","kind":"ranged","attackAbilities":["dex"],"damage":{"count":1,"faces":6,"type":"piercing"},"rangeFeet":{"normal":80,"long":320,"extra":1}}"""
+                 })
+        {
+            var rejected = await runner.RunAsync(Request("correct ranged weapon profile", invalidRange, rangedId));
+            Assert.False(rejected.Ok, invalidRange);
+            Assert.Equal(rangedBefore, Assert.Single((await world.GetEntityAsync(rangedId))!.Components,
+                component => component.DefinitionId == Profile).Data);
+        }
 
         foreach (var invalid in new[]
                  {
@@ -98,6 +124,7 @@ public sealed class CatalogFeature7Tests : IDisposable
                      "{\"mode\":\"record\",\"category\":\"martial\",\"kind\":\"melee\",\"attackAbilities\":[\"str\"],\"damage\":{\"count\":0,\"faces\":8,\"type\":\"slashing\"}}",
                      "{\"mode\":\"record\",\"category\":\"martial\",\"kind\":\"melee\",\"attackAbilities\":[\"str\"],\"damage\":{\"count\":1,\"faces\":20,\"type\":\"slashing\"}}",
                      "{\"mode\":\"record\",\"category\":\"martial\",\"kind\":\"melee\",\"attackAbilities\":[\"str\"],\"damage\":{\"count\":1,\"faces\":8,\"type\":\"fire\"}}",
+                     "{\"mode\":\"record\",\"category\":\"simple\",\"kind\":\"melee\",\"attackAbilities\":[\"str\",\"dex\"],\"damage\":{\"count\":1,\"faces\":4,\"type\":\"piercing\"},\"propertyTags\":[\"light\",\"finesse\",\"thrown\"],\"thrownRangeFeet\":{\"normal\":20,\"long\":60},\"mastery\":\"nick\"}",
                      "{\"mode\":\"correct\",\"category\":\"martial\",\"kind\":\"melee\",\"attackAbilities\":[\"str\"],\"damage\":{\"count\":1,\"faces\":8,\"type\":\"slashing\"},\"range\":5}"
                  })
         {
@@ -133,7 +160,7 @@ public sealed class CatalogFeature7Tests : IDisposable
         await world.CreateEntityAsync("Replay weapon profile", replayId);
         var replay = await runner.RunAsync(Request(
             "record weapon profile",
-            """{"mode":"record","category":"martial","kind":"melee","attackAbilities":["str"],"damage":{"count":1,"faces":8,"type":"slashing"}}""",
+            """{"mode":"record","category":"martial","kind":"melee","attackAbilities":["str"],"damage":{"count":1,"faces":8,"type":"slashing"},"propertyTags":["versatile"],"versatileDamage":{"count":1,"faces":10,"type":"slashing"},"mastery":"topple"}""",
             replayId));
         Assert.True(replay.Ok, replay.Error?.Why);
         var original = Assert.Single((await world.GetEntityAsync(subject))!.Components, component => component.DefinitionId == Profile).Data;
@@ -306,7 +333,9 @@ public sealed class CatalogFeature7Tests : IDisposable
         string[] abilities,
         long count,
         int faces,
-        string damageType)
+        string damageType,
+        int? normalRange = null,
+        int? longRange = null)
     {
         var entity = await world.GetEntityAsync(entityId);
         var component = Assert.Single(entity!.Components, component => component.DefinitionId == Profile);
@@ -321,7 +350,17 @@ public sealed class CatalogFeature7Tests : IDisposable
         Assert.Equal(damageType, root.GetProperty("damage").GetProperty("type").GetString());
         Assert.Equal(SourceId, root.GetProperty("sourceRef").GetProperty("sourceId").GetString());
         Assert.Equal(SourceLocator, root.GetProperty("sourceRef").GetProperty("locator").GetString());
-        Assert.Equal(5, root.EnumerateObject().Count());
+        if (normalRange is null || longRange is null)
+        {
+            Assert.False(root.TryGetProperty("rangeFeet", out _));
+        }
+        else
+        {
+            Assert.Equal(normalRange.Value, root.GetProperty("rangeFeet").GetProperty("normal").GetInt32());
+            Assert.Equal(longRange.Value, root.GetProperty("rangeFeet").GetProperty("long").GetInt32());
+        }
+        Assert.True(root.TryGetProperty("propertyTags", out _));
+        Assert.True(root.TryGetProperty("mastery", out _));
     }
 
     private static async Task AssertProficienciesAsync(WorldStore world, string entityId, string[] expected)

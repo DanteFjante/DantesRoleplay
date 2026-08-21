@@ -32,9 +32,11 @@ How to extend this system's MCP surface, and why the answer is almost always "do
    actually be made. Kernel code cannot: `DantesRoleplay.DataAccess` does not reference the MCP
    project, and must not start to. Write those by hand and rely on the guard tests, which read
    the kernel's strings too.
-8. Keep the list FLAT. A bounded list of kinds costs a few tokens each; a sub-level costs a round
-   trip and a navigation decision every single time. Categories are filters on a flat list, never
-   levels.
+8. Keep the list of kinds FLAT. A bounded list of kinds costs a few tokens each; do not create
+   sub-kinds. Records may use hierarchical category paths, however: browse procedures with
+   `query(kind: "categories", catalog: "procedures")` or mechanics with
+   `query(kind: "categories", catalog: "mechanics")`, and use the returned branch as the
+   category filter on the corresponding record list.
 
 ## Constraints
 - Never add a fourth tool. If one seems necessary, the surface needs redesigning, not extending —
@@ -45,4 +47,3 @@ How to extend this system's MCP surface, and why the answer is almost always "do
 - Never describe a capability the code does not have. This is the failure that crippled the
   previous system: the manual advertised operations that had never been built, and every session
   planned around them.
-

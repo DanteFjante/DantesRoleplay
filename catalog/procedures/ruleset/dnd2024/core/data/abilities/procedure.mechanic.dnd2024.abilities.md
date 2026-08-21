@@ -34,6 +34,9 @@ the parameters and this citation.
    would silently discard the other five scores.
 8. Declare this component in a mechanic's `requirements` under whatever role name fits, and
    `JSON.parse` the component before reading it — components arrive as JSON strings.
+9. CH2's reserved `mechanic.dnd2024.abilities.record` is an internal, add-only composition
+   fragment. It accepts only the already-validated six-score object from its trusted root, proves
+   C15 campaign scope, and returns one `component.add`; it is not a public action route.
 
 ## Constraints
 - The data holds the six ability scores and nothing else. A seventh key is a different concept and
@@ -45,4 +48,5 @@ the parameters and this citation.
   entities carrying it.
 - Do not assume this component implies proficiency, class, level, or any ability to act. It is six
   numbers and their source; anything further needs its own contract.
-
+- Do not use the CH2 composition fragment to choose an assignment policy, apply an origin increase,
+  record a level, or correct an existing score. Those concerns remain with their named owners.

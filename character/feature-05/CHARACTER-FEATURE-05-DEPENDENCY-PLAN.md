@@ -1,7 +1,7 @@
 # Character Feature 5 dependency plan — atomic character creation coordinator
 
-Status: **Planned; blocked on CH0–CH4, Items Slice 6, a campaign character-attachment contract, and a confirmed staged-composition design.**  
-Last updated: 2026-08-20
+Status: **Slice 0 implemented and accepted. The closed CH5 root remains blocked on CH3–CH4, Items Slice 6, and the remaining fixture owners.**
+Last updated: 2026-08-21
 
 ## Execution rule
 
@@ -36,10 +36,16 @@ The completed actor has a CH5 creation receipt containing creation-protocol vers
 | `ActionRunner` | Selects an active mechanic, resolves its projection, runs it, dry-runs output effects, allocates one root operation ID, applies the exact effects in one database transaction, then writes the successful audit. Failure rolls the transaction back and writes a failure audit separately. |
 | `procedure.world.change` / `IEffectApplier` | Validates ordered structural effects as all-or-nothing, including guards/reactions and event correlation. CH5 submits one resolved bundle, never a sequence of independent commits. |
 | Existing recorder mechanics | They validate their own component state but many require an existing `subject` actor. A new character does not exist while ActionRunner materialises child projections. |
-| `IMechanicComposer` | Can expose child results to a parent before its run, but current composition occurs before the parent creates effects. It does not yet prove that a child can validate a planned, not-yet-persisted actor. |
+| `IMechanicComposer` | Exposes declared JavaScript child results before a parent runs, but role projection still requires existing entities. CH5 Slice 0 therefore uses a separate, generic typed staged-world composer rather than extending the MCP/mechanic child protocol. |
 | Item Slice 6 | Defines the intended character-root starting-equipment integration, but it is still planning-only. |
 
-The last two rows are the critical gap. CH5 must not “solve” it by duplicating each child validator in the parent or by first creating a partial actor. Before content implementation, confirm one generic staged-composition protocol that lets child creation planners validate a reserved target and return effect fragments for the parent bundle. The recommended form extends generic composition/projection behaviour, not the MCP layer: a parent supplies an immutable planned-target context (validated character ID, name, campaign attachment intent, and prior virtual effects), child planners declare that context explicitly, and their output remains ordinary effects validated by ActionRunner. If that extension cannot retain deterministic projection, one transaction, and no direct DB writes, stop for a new architecture decision rather than implementing CH5.
+The last two rows were the critical gap. Slice 0 now supplies a generic staged-world composer: a
+root declares a reserved target and the complete set of entity IDs its children may touch. It
+starts with the target's `entity.create` effect, dry-run validates the accumulated ordered bundle
+on every append, and exposes a read-only overlay of that bundle over persistent state. Existing
+typed planners can validate that overlay without a partial write; mutation methods fail, and the
+root remains the only caller that can apply the final effects. C15 now exposes the corresponding
+effect-free attachment planner. The root/receipt public contract remains intentionally absent.
 
 ## Proposed permanent vocabulary — confirmation required
 
@@ -79,7 +85,7 @@ CH0 complete, ratified path and all owner map                            [missin
 └─ CH1–CH4 accepted content/state/grant/class contracts                  [blocked parents]
    ├─ campaign character-attachment verifier                             [missing campaign leaf]
    ├─ Items 1–6, class/HP, AC/equipment, language/tool/feature owners    [external leaves]
-   ├─ generic staged composition for a not-yet-persisted actor           [missing architectural leaf]
+   ├─ generic staged composition for a not-yet-persisted actor           [implemented Slice 0]
    └─ confirmed CH5 vocabulary and request schema
       ├─ Slice 0: staged-composition proof and transaction decision
       ├─ Slice 1: root contract, receipt, validate/create planner
@@ -89,14 +95,14 @@ CH0 complete, ratified path and all owner map                            [missin
 
 ### Slice 0 — staged-composition proof
 
-**Prerequisites:** owner search of ActionRunner, composer, projection, effects, and child recorders; semantic confirmation for any generic core interface or schema change.
+**Prerequisites:** owner search of ActionRunner, composer, projection, effects, and child recorders; semantic confirmation for the generic core interface. **Confirmed 2026-08-21.**
 
 1. Implement or select one generic way to project a reserved new entity through declared child planners without persisting it.
 2. Prove children cannot read undeclared state, invent IDs, write directly, observe a different virtual order, or emit effects outside the parent bundle.
 3. Prove ActionRunner still dry-runs then applies exactly one bundle inside one transaction and records failure only after rollback.
 4. Add focused composition/rollback tests and stop for the semantic acceptance gate.
 
-**Exit:** a parent can deterministically assemble a new-entity effect bundle from child contracts without duplicating their validation or writing a partial entity.
+**Exit:** a parent can deterministically assemble a new-entity effect bundle from child contracts without duplicating their validation or writing a partial entity. **Implemented; see `CHARACTER-FEATURE-05-SLICE-0-RECEIPT.md`.**
 
 ### Slice 1 — closed creation planner and receipt
 

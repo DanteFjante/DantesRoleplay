@@ -25,6 +25,9 @@ Input and readable state
 Resolution
 - Validate all inputs and state before ctx.randomInt(1, 20). Derive ability modifier as floor((score - 10) / 2).
 - Compose mechanic.dnd2024.d20-test.state-effects with static `{}` bound to subject. Merge its validated ability-check branch after validated caller rollCircumstances, and derive roll mode from the merged list: Advantage(s) and no Disadvantage means advantage, roll two seeded d20s and select maximum. Disadvantage(s) and no Advantage means disadvantage, roll two seeded d20s and select minimum. Neither kind or any mixture of both means normal, roll one seeded d20. Same-kind sources never stack into a third die.
+- Append every validated `derivedModifiers` entry from that resolver to the auditable modifier list
+  before calculating the total. Exhaustion therefore reduces the total but never changes roll
+  circumstances, roll mode, dice count, or selected die.
 - For a named skill, derive Proficiency Bonus as 2 + floor((level - 1) / 4). Add one modifier with source "proficiency (level <level>; <skill>)" only when the exact skill id is in the explicit list. Do not store or accept a bonus.
 - Natural 20 and natural 1 never override an ability-check total. Checks return no effects.
 - A consuming revision returns one seeded envelope: test "ability-check", ability, skill/null, defaultAbility/null, usedDefaultAbility/null, proficient/null, dc, die "1d20", rollMode, rolls in generation order, roll as selected die, caller rollCircumstances, derivedCircumstances, mergedCircumstances, conditionsKnown, modifiers, total, succeeded, and source. Default ability is reported only; it never remaps the chosen ability.

@@ -343,7 +343,12 @@ public sealed class MechanicStore(DantesRoleplayDbContext db) : IMechanicStore
                 : pathProblem,
             Blocking: true));
 
-        var categories = await GetCategoriesAsync(cancellationToken);
+        // Archived paths still belong to the authored taxonomy. Hiding them here would make a
+        // new sibling look like a new root and weaken the anti-sprawl guidance precisely when
+        // historical content is most useful.
+        var categories = await GetCategoriesAsync(
+            includeInactive: true,
+            cancellationToken: cancellationToken);
 
         checks.Add(new MechanicCheck(
             "category-known",
@@ -462,11 +467,18 @@ public sealed class MechanicStore(DantesRoleplayDbContext db) : IMechanicStore
     }
 
     public async Task<IReadOnlyList<MechanicCategoryCount>> GetCategoriesAsync(
+        bool includeInactive = false,
         CancellationToken cancellationToken = default)
     {
         // Anonymous projection then map: EF cannot group into a constructed record.
-        var rows = await _db.Mechanics
-            .AsNoTracking()
+        var mechanics = _db.Mechanics.AsNoTracking();
+
+        if (!includeInactive)
+        {
+            mechanics = mechanics.Where(m => m.Status != MechanicStatus.Archived);
+        }
+
+        var rows = await mechanics
             .GroupBy(m => m.Category)
             .Select(g => new { Category = g.Key, Count = g.Count() })
             .ToListAsync(cancellationToken);

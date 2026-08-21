@@ -7,7 +7,7 @@ status: active
 ---
 
 ## Description
-Composes the canonical confirmed weapon-damage resolver once, then atomically replaces only the target's current D&D 2024 Hit Points. It preserves maximum and source attribution, clamps at zero, and does not infer any condition or death consequence.
+Composes the canonical confirmed weapon-damage and mitigation-profile resolvers, spends any Temporary Hit Point buffer before real Hit Points, then atomically records the damage instance and post-buffer overkill without inferring a condition or death consequence.
 
 ## Matches
 apply confirmed weapon damage
@@ -17,6 +17,5 @@ apply critical weapon damage
 
 ## Requirements
 ```json
-{"roles":{"subject":{"components":["dnd2024.abilities"],"description":"The creature whose confirmed weapon hit supplies the selected ability."},"target":{"components":["dnd2024.hit-points"],"description":"The creature whose authoritative current Hit Points receive the damage."},"weapon":{"components":["dnd2024.weapon-profile"],"description":"The canonical weapon supplying the child damage expression."}},"children":{"damage":{"mechanicId":"mechanic.dnd2024.weapon-damage.roll","roleBindings":{"subject":"subject","weapon":"weapon"},"inheritInput":true}}}
+{"roles":{"subject":{"components":["dnd2024.abilities"],"description":"The creature whose confirmed weapon hit supplies the selected ability."},"target":{"components":["dnd2024.hit-points","dnd2024.temporary-hit-points","dnd2024.damage-mitigation","dnd2024.conditions"],"description":"The creature whose buffer absorbs mitigated damage before its authoritative Hit Points; temporary, mitigation, and condition components may be absent."},"weapon":{"components":["dnd2024.weapon-profile"],"description":"The canonical weapon supplying the child damage expression."}},"children":{"damage":{"mechanicId":"mechanic.dnd2024.weapon-damage.roll","roleBindings":{"subject":"subject","weapon":"weapon"},"inheritInput":true},"mitigation":{"mechanicId":"mechanic.dnd2024.damage.resolve","roleBindings":{"defender":"target"},"inheritInput":false,"input":"{}"}}}
 ```
-

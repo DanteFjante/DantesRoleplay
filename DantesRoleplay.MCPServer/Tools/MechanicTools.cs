@@ -39,7 +39,7 @@ public sealed class MechanicTools
         int? version = null,
         [Description("What a player might say, or words from the rule's name. Omit to list everything.")]
         string? query = null,
-        [Description("Restrict to one category.")] string? category = null,
+        [Description("Restrict to one category branch and its descendants. Browse paths with query(kind: \"categories\", catalog: \"mechanics\").")] string? category = null,
         [Description("Ruleset. Rules in this scope rank first; shared rules are always included.")]
         string? scope = null,
         [Description("Include deprecated and archived rules. Default false.")]

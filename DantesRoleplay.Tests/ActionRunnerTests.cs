@@ -1,5 +1,7 @@
 using DantesRoleplay.Actions;
 using DantesRoleplay.DataAccess;
+using DantesRoleplay.DataAccess.Bootstrap;
+using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
 using DantesRoleplay.RuleAccess;
@@ -449,19 +451,151 @@ public sealed class ActionRunnerTests : IDisposable
         Assert.Empty(await world.FindEntitiesAsync());
     }
 
+    [Fact]
+    public async Task A_root_action_commits_its_declared_event_with_its_effects()
+    {
+        await using var db = _fixture.CreateContext();
+        var world = new WorldStore(db);
+        var store = new MechanicStore(db);
+        await world.DefineComponentAsync("stats", "Stats", "Numeric attributes.");
+        await world.CreateEntityAsync("Orban", "orban");
+        await world.SetComponentAsync("orban", "stats", "{\"vigour\":10}");
+
+        await new EventTypeSeeder(new EventTypeStore(db)).SeedAsync();
+        await new EventTypeStore(db).WriteAsync(new WriteEventTypeRequest
+        {
+            Id = "test.action.completed",
+            Category = "test",
+            Name = "Action completed",
+            PayloadSchema = "{\"type\":\"object\",\"additionalProperties\":false,"
+                            + "\"required\":[\"subjectId\"],\"properties\":{\"subjectId\":{\"type\":\"string\"}}}",
+            Status = EventTypeStatus.Active
+        });
+
+        await store.WriteAsync(new WriteMechanicRequest
+        {
+            Id = "mechanic.test.root-event",
+            Category = "test",
+            Name = "Root declared event",
+            Matches = "complete root action",
+            Requirements = "{\"roles\":{\"subject\":{\"components\":[\"stats\"]}}}",
+            Status = MechanicStatus.Active,
+            Source = """
+                var stats = JSON.parse(ctx.roles.subject.components.stats);
+                return {
+                  effects: [{ type: 'component.merge', entityId: ctx.roles.subject.id,
+                              definitionId: 'stats', data: JSON.stringify({ vigour: stats.vigour - 1 }) }],
+                  events: [{ type: 'test.action.completed', payload: { subjectId: ctx.roles.subject.id },
+                             entityIds: [ctx.roles.subject.id] }]
+                };
+                """
+        });
+
+        await store.WriteAsync(new WriteMechanicRequest
+        {
+            Id = "mechanic.test.root-event-reaction",
+            Category = "test",
+            Name = "Root event reaction",
+            Matches = "never selected directly",
+            Requirements = "{\"event\":{\"mode\":\"reaction\",\"types\":[\"test.action.completed\"]}}",
+            Status = MechanicStatus.Active,
+            Source = """
+                return { effects: [{ type: 'entity.create', entityId: 'event-witness', name: 'Event witness' }] };
+                """
+        });
+        await new SubscriptionStore(db).WriteAsync(new WriteSubscriptionRequest
+        {
+            Id = "subscription.test.root-event-reaction",
+            Category = "test",
+            EventTypeId = "test.action.completed",
+            EventMechanicId = "mechanic.test.root-event-reaction",
+            Mode = SubscriptionMode.Reaction,
+            FixedRoleEntityIdsJson = "{}",
+            TrackedEntityIdsJson = "[]",
+            PayloadEqualsJson = "{}",
+            Status = SubscriptionStatus.Active
+        });
+
+        var result = await CreateRunner(db, world, store, withEventPipeline: true).RunAsync(new ActionRequest
+        {
+            Intent = "complete root action",
+            RoleEntityIds = new Dictionary<string, string> { ["subject"] = "orban" },
+            Seed = 12
+        });
+
+        Assert.True(result.Ok, result.Error?.Why);
+        Assert.Contains("\"vigour\":9", (await world.GetEntityAsync("orban"))!.Components.Single().Data);
+        Assert.NotNull(await world.GetEntityAsync("event-witness"));
+
+        var declared = Assert.Single(await db.Events
+            .Where(e => e.TypeId == "test.action.completed")
+            .Include(e => e.Entities)
+            .ToListAsync());
+        Assert.Equal(result.OperationId, declared.CorrelationId);
+        Assert.Equal(result.OperationId, declared.RootOperationId);
+        Assert.Equal(new[] { "orban" }, declared.Entities.OrderBy(e => e.Ordinal).Select(e => e.EntityId));
+        Assert.Contains("\"subjectId\":\"orban\"", declared.PayloadJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_invalid_root_declared_event_rolls_back_the_action_effects()
+    {
+        await using var db = _fixture.CreateContext();
+        var world = new WorldStore(db);
+        var store = new MechanicStore(db);
+        await world.DefineComponentAsync("stats", "Stats", "Numeric attributes.");
+        await world.CreateEntityAsync("Orban", "orban");
+        await world.SetComponentAsync("orban", "stats", "{\"vigour\":10}");
+        await new EventTypeSeeder(new EventTypeStore(db)).SeedAsync();
+
+        await store.WriteAsync(new WriteMechanicRequest
+        {
+            Id = "mechanic.test.invalid-root-event",
+            Category = "test",
+            Name = "Invalid root declared event",
+            Matches = "reject root action",
+            Requirements = "{\"roles\":{\"subject\":{\"components\":[\"stats\"]}}}",
+            Status = MechanicStatus.Active,
+            Source = """
+                return {
+                  effects: [{ type: 'component.merge', entityId: ctx.roles.subject.id,
+                              definitionId: 'stats', data: JSON.stringify({ vigour: 1 }) }],
+                  events: [{ type: 'test.not-registered', payload: {}, entityIds: [ctx.roles.subject.id] }]
+                };
+                """
+        });
+
+        var result = await CreateRunner(db, world, store, withLedger: true).RunAsync(new ActionRequest
+        {
+            Intent = "reject root action",
+            RoleEntityIds = new Dictionary<string, string> { ["subject"] = "orban" },
+            Seed = 12
+        });
+
+        Assert.False(result.Ok);
+        Assert.Equal("INVALID_DECLARED_EVENT", result.Error?.Code);
+        Assert.Contains("not registered", result.Error?.Why, StringComparison.Ordinal);
+        Assert.Contains("\"vigour\":10", (await world.GetEntityAsync("orban"))!.Components.Single().Data);
+        Assert.Empty(await db.Events.ToListAsync());
+    }
+
     private static ActionRunner CreateRunner(
         DantesRoleplayDbContext db,
         WorldStore world,
-        MechanicStore store)
+        MechanicStore store,
+        bool withLedger = false,
+        bool withEventPipeline = false)
     {
         var projections = new ProjectionResolver(db);
         var engine = new JintMechanicEngine();
+        var events = withLedger || withEventPipeline ? new EventLedger(db) : null;
+        var reactions = withEventPipeline ? new EventRouter(db, store, projections, engine, world) : null;
         return new ActionRunner(
             db,
             store,
             projections,
             engine,
-            new EffectApplier(db, world),
+            new EffectApplier(db, world, events: events, reactions: reactions),
             new OperationLog(db),
             new MechanicComposer(store, projections, engine));
     }

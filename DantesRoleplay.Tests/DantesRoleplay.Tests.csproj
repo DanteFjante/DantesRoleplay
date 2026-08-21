@@ -52,6 +52,7 @@
       so this adds no alternate implementation or dependency direction in the production code.
     -->
     <ProjectReference Include="..\DantesRoleplay.MCPServer\DantesRoleplay.MCPServer.csproj" />
+    <ProjectReference Include="..\DantesRoleplay.Tools\DantesRoleplay.Tools.csproj" />
   </ItemGroup>
 
 </Project>

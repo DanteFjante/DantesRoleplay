@@ -42,12 +42,15 @@ the roster, Initiative rolls, participant action economy, conditions, damage, or
 10. Ending is explicit rather than inferred from Hit Points, sides, or an outcome. An ended encounter
     has no active participant; a second end, later start, or later advance fails without changing it.
     Restart/reset and victory/defeat detection remain outside this contract.
-11. Feature 12/20 extend only start and advance: each fans out the effect-free
+11. Features 12, 14, and 20 extend only start and advance: each fans out the effect-free
     `mechanic.dnd2024.turn-budget.read` and `mechanic.dnd2024.speed.read` over the encounter roster.
     Start requires every participant to report a valid budget; start/advance require valid Speed for
-    the newly active participant. Each successful transition retains its lifecycle effect and then
+    the newly active participant. The budget diagnostic also reports a missing-or-valid condition
+    component as Exhaustion level zero, while a malformed or invalid component blocks only when its
+    participant becomes active. Each successful transition retains its lifecycle effect and then
     applies one full `component.set` restoring that participant's four availability fields and
-    setting remaining movement from its walk Speed. End never restores a budget.
+    setting remaining movement to `max(0, walk Speed - 5 * Exhaustion level)`. End never restores a
+    budget.
 
 ## Constraints
 

@@ -46,7 +46,7 @@ internal static class DerivedEvents
     public static async Task<DerivedEventResult> ProposeAsync(
         DantesRoleplayDbContext db,
         IReadOnlyList<DeclaredEvent> declared,
-        string subscriptionId,
+        string producer,
         string executionId,
         string correlationId,
         string causationEventId,
@@ -64,7 +64,7 @@ internal static class DerivedEvents
         {
             var candidate = declared[ordinal];
             var type = (candidate.Type ?? string.Empty).Trim();
-            var where = $"Subscription '{subscriptionId}' declared event {ordinal}";
+            var where = $"{producer} declared event {ordinal}";
 
             if (type.Length == 0)
             {

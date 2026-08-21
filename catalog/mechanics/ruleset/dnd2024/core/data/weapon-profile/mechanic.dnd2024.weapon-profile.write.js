@@ -52,18 +52,57 @@ function validDamage(value) {
          (value.type === 'bludgeoning' || value.type === 'piercing' || value.type === 'slashing');
 }
 
+function validRange(value) {
+  return hasOnly(value, ['long', 'normal']) &&
+         isSafePositiveInteger(value.normal) && isSafePositiveInteger(value.long) &&
+         value.normal % 5 === 0 && value.long % 5 === 0 && value.normal <= value.long;
+}
+
+var propertyOrder = ['ammunition', 'finesse', 'heavy', 'light', 'loading', 'reach', 'thrown', 'two-handed', 'versatile'];
+var masteries = ['cleave', 'graze', 'nick', 'push', 'sap', 'slow', 'topple', 'vex'];
+
+function hasTag(tags, tag) {
+  return tags.indexOf(tag) !== -1;
+}
+
+function validTags(value) {
+  if (!Array.isArray(value) || value.length > propertyOrder.length) return false;
+  var previous = -1;
+  for (var i = 0; i < value.length; i++) {
+    var index = propertyOrder.indexOf(value[i]);
+    if (index <= previous) return false;
+    previous = index;
+  }
+  return true;
+}
+
 function validProfile(value) {
-  return hasOnly(value, ['attackAbilities', 'category', 'damage', 'kind', 'sourceRef']) &&
+  if (!value || !validTags(value.propertyTags)) return false;
+  var keys = ['attackAbilities', 'category', 'damage', 'kind', 'mastery', 'propertyTags', 'sourceRef'];
+  if (value.kind === 'ranged') keys.push('rangeFeet');
+  if (hasTag(value.propertyTags, 'ammunition')) keys.push('ammunitionType');
+  if (hasTag(value.propertyTags, 'thrown')) keys.push('thrownRangeFeet');
+  if (hasTag(value.propertyTags, 'versatile')) keys.push('versatileDamage');
+  keys.sort();
+  return hasOnly(value, keys) &&
          (value.category === 'simple' || value.category === 'martial') &&
          (value.kind === 'melee' || value.kind === 'ranged') &&
          validAbilities(value.attackAbilities) && validDamage(value.damage) &&
+         (value.kind !== 'ranged' || validRange(value.rangeFeet)) &&
+         (!hasTag(value.propertyTags, 'ammunition') ||
+           (value.kind === 'ranged' && ['arrow', 'bolt', 'bullet', 'needle'].indexOf(value.ammunitionType) !== -1)) &&
+         (!hasTag(value.propertyTags, 'thrown') || validRange(value.thrownRangeFeet)) &&
+         (!hasTag(value.propertyTags, 'versatile') ||
+           (validDamage(value.versatileDamage) && value.versatileDamage.type === value.damage.type &&
+             value.versatileDamage.count === value.damage.count && value.versatileDamage.faces > value.damage.faces)) &&
+         masteries.indexOf(value.mastery) !== -1 &&
          hasOnly(value.sourceRef, ['locator', 'sourceId']) &&
          value.sourceRef.sourceId === sourceRef.sourceId &&
          value.sourceRef.locator === sourceRef.locator;
 }
 
-if (!hasOnly(ctx.input, ['attackAbilities', 'category', 'damage', 'kind', 'mode'])) {
-  throw new Error('Input must contain exactly mode, category, kind, attackAbilities, and damage. Do not supply sourceRef, properties, range, attack results, or effects.');
+if (!ctx.input || typeof ctx.input !== 'object' || Array.isArray(ctx.input)) {
+  throw new Error('Input must be one closed canonical weapon-profile object.');
 }
 
 var mode = ctx.input.mode;
@@ -71,16 +110,32 @@ if (mode !== 'record' && mode !== 'correct') {
   throw new Error('input.mode must be exactly "record" or "correct".');
 }
 
+var expectedInputKeys = ['attackAbilities', 'category', 'damage', 'kind', 'mastery', 'mode', 'propertyTags'];
+if (ctx.input.kind === 'ranged') expectedInputKeys.push('rangeFeet');
+if (hasTag(ctx.input.propertyTags || [], 'ammunition')) expectedInputKeys.push('ammunitionType');
+if (hasTag(ctx.input.propertyTags || [], 'thrown')) expectedInputKeys.push('thrownRangeFeet');
+if (hasTag(ctx.input.propertyTags || [], 'versatile')) expectedInputKeys.push('versatileDamage');
+expectedInputKeys.sort();
+if (!hasOnly(ctx.input, expectedInputKeys)) {
+  throw new Error('Input must contain canonical profile facts, ordered propertyTags, one mastery, and only the structured fields required by its tags. Do not supply sourceRef, equipment, attack results, or effects.');
+}
+
 var candidate = {
   category: ctx.input.category,
   kind: ctx.input.kind,
   attackAbilities: ctx.input.attackAbilities,
   damage: ctx.input.damage,
+  propertyTags: ctx.input.propertyTags,
+  mastery: ctx.input.mastery,
   sourceRef: sourceRef
 };
+if (ctx.input.kind === 'ranged') candidate.rangeFeet = ctx.input.rangeFeet;
+if (hasTag(ctx.input.propertyTags || [], 'ammunition')) candidate.ammunitionType = ctx.input.ammunitionType;
+if (hasTag(ctx.input.propertyTags || [], 'thrown')) candidate.thrownRangeFeet = ctx.input.thrownRangeFeet;
+if (hasTag(ctx.input.propertyTags || [], 'versatile')) candidate.versatileDamage = ctx.input.versatileDamage;
 
 if (!validProfile(candidate)) {
-  throw new Error('A weapon profile needs simple|martial category, melee|ranged kind, canonical nonempty str/dex attackAbilities, and damage {count,faces,type}.');
+  throw new Error('A weapon profile needs canonical category, kind, abilities, damage, ordered property tags, one mastery, and exactly the range/ammunition/versatile fields its kind and tags require.');
 }
 
 var raw = weapon.components['dnd2024.weapon-profile'];
@@ -121,6 +176,12 @@ return {
     kind: candidate.kind,
     attackAbilities: candidate.attackAbilities,
     damage: candidate.damage,
+    rangeFeet: candidate.kind === 'ranged' ? candidate.rangeFeet : null,
+    propertyTags: candidate.propertyTags,
+    ammunitionType: candidate.ammunitionType || null,
+    thrownRangeFeet: candidate.thrownRangeFeet || null,
+    versatileDamage: candidate.versatileDamage || null,
+    mastery: candidate.mastery,
     previous: previous,
     sourceRef: sourceRef
   }

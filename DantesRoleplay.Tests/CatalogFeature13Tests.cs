@@ -32,7 +32,7 @@ public sealed class CatalogFeature13Tests : IDisposable
         await using var db = _fixture.CreateContext();
         var world = new WorldStore(db);
         var mechanics = new MechanicStore(db);
-        var imported = await new CatalogImporter(db, mechanics, new ProcedureStore(db), world)
+        var imported = await new CatalogImporter(db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db), new SubscriptionStore(db))
             .ApplyAsync(_catalogCopy, new CatalogImportOptions());
         Assert.False(imported.Aborted);
         Assert.NotNull(await new ProcedureStore(db).GetAsync("procedure.mechanic.dnd2024.conditions"));
@@ -83,7 +83,7 @@ public sealed class CatalogFeature13Tests : IDisposable
         await using var db = _fixture.CreateContext();
         var world = new WorldStore(db);
         var mechanics = new MechanicStore(db);
-        Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world)
+        Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db), new SubscriptionStore(db))
             .ApplyAsync(_catalogCopy, new CatalogImportOptions())).Aborted);
         const string subject = "fixture.catalog.f13.reject";
         const string sibling = "fixture.catalog.f13.sibling";
@@ -129,7 +129,7 @@ public sealed class CatalogFeature13Tests : IDisposable
         await using var db = _fixture.CreateContext();
         var world = new WorldStore(db);
         var mechanics = new MechanicStore(db);
-        Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world)
+        Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db), new SubscriptionStore(db))
             .ApplyAsync(_catalogCopy, new CatalogImportOptions())).Aborted);
         Assert.NotNull(await mechanics.GetAsync("mechanic.dnd2024.d20-test.state-effects"));
         var runner = CreateRunner(db, world, mechanics);
@@ -206,7 +206,7 @@ public sealed class CatalogFeature13Tests : IDisposable
         await using var db = _fixture.CreateContext();
         var world = new WorldStore(db);
         var mechanics = new MechanicStore(db);
-        Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world)
+        Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db), new SubscriptionStore(db))
             .ApplyAsync(_catalogCopy, new CatalogImportOptions())).Aborted);
         var runner = CreateRunner(db, world, mechanics);
 
@@ -271,7 +271,7 @@ public sealed class CatalogFeature13Tests : IDisposable
         await using var db = _fixture.CreateContext();
         var world = new WorldStore(db);
         var mechanics = new MechanicStore(db);
-        Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world)
+        Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db), new SubscriptionStore(db))
             .ApplyAsync(_catalogCopy, new CatalogImportOptions())).Aborted);
         var runner = CreateRunner(db, world, mechanics);
 
@@ -342,7 +342,7 @@ public sealed class CatalogFeature13Tests : IDisposable
         await using var db = _fixture.CreateContext();
         var world = new WorldStore(db);
         var mechanics = new MechanicStore(db);
-        Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world)
+        Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db), new SubscriptionStore(db))
             .ApplyAsync(_catalogCopy, new CatalogImportOptions())).Aborted);
         var runner = CreateRunner(db, world, mechanics);
 
@@ -400,7 +400,7 @@ public sealed class CatalogFeature13Tests : IDisposable
         await using var db = _fixture.CreateContext();
         var world = new WorldStore(db);
         var mechanics = new MechanicStore(db);
-        Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world)
+        Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db), new SubscriptionStore(db))
             .ApplyAsync(_catalogCopy, new CatalogImportOptions())).Aborted);
         var runner = CreateRunner(db, world, mechanics);
         var initiative = await runner.RunAsync(new ActionRequest
@@ -548,7 +548,8 @@ public sealed class CatalogFeature13Tests : IDisposable
     }
 
     private static ActionRunner CreateRunner(DantesRoleplayDbContext db, WorldStore world, MechanicStore mechanics) =>
-        new(db, mechanics, new ProjectionResolver(db), new JintMechanicEngine(), new EffectApplier(db, world),
+        new(db, mechanics, new ProjectionResolver(db), new JintMechanicEngine(), new EffectApplier(db, world,
+                new GuardRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine(), new WorldStore(db)), new EventLedger(db)),
             new OperationLog(db), new MechanicComposer(mechanics, new ProjectionResolver(db), new JintMechanicEngine()));
 
     private static string RepositoryCatalog()

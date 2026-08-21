@@ -1,5 +1,8 @@
 # Local intent routing and safe action pipelines
 
+Status: **The internal standard-profile read chain and action-proposal foundation are implemented;
+public query integration, workflow routing, and player authorization remain pending.**
+
 ## Goal
 
 Reduce the mechanical lookup work a game-master LLM performs so it can spend more context on the
@@ -120,6 +123,13 @@ light, standard, and strong-local, measuring schema-valid response rate, correct
 false-positive rate, “unknown” quality, p50/p95 latency, prompt size, and fallback rate. A lower
 profile is accepted only for the task classes where it meets its stated quality gate; it is not
 judged against tasks it is forbidden to perform.
+
+**Internal foundation implemented 2026-08-21:** the `standard` `qwen3:8b` profile now has closed
+structured task classes for bounded knowledge read planning/answering and existing-action route
+selection. The host executes the read allowlist, validates citations and model identity, constructs
+route payloads from caller values, rechecks content hashes, and stops before every write. This does
+not yet add `query(kind: "route")`, install the planned procedure IDs, or expose the feature through
+MCP; those changes belong to the later public integration boundary.
 
 ### 5. Vector retrieval only when its trigger fires
 

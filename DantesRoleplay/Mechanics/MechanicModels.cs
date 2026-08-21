@@ -114,9 +114,68 @@ public sealed record MechanicRequirements
 
             if (child.InputForEachItem && string.IsNullOrWhiteSpace(child.ForEachContentsOf))
                 problems.Add($"Child '{key}' uses inputForEachItem but does not declare forEachContentsOf.");
+
+            if (child.InputFromChildData is not null)
+            {
+                var sourceKey = child.InputFromChildData.ResultKey;
+                if (string.IsNullOrWhiteSpace(sourceKey) || sourceKey.Trim() != sourceKey || sourceKey.Any(char.IsWhiteSpace))
+                    problems.Add($"Child '{key}' has an invalid inputFromChildData resultKey.");
+
+                if (child.InheritInput || !string.Equals(child.Input, "{}", StringComparison.Ordinal) ||
+                    !string.IsNullOrWhiteSpace(child.InputFromParentProperty) || child.InputForEachItem ||
+                    !string.IsNullOrWhiteSpace(child.ForEachContentsOf))
+                {
+                    problems.Add($"Child '{key}' cannot combine inputFromChildData with another input source or foreach declaration.");
+                }
+            }
         }
 
+        foreach (var (key, child) in Children)
+        {
+            var sourceKey = child?.InputFromChildData?.ResultKey;
+            if (string.IsNullOrWhiteSpace(sourceKey))
+                continue;
+
+            if (string.Equals(key, sourceKey, StringComparison.Ordinal))
+            {
+                problems.Add($"Child '{key}' cannot read its own data result.");
+                continue;
+            }
+
+            if (!Children.TryGetValue(sourceKey, out var producer) || producer is null)
+            {
+                problems.Add($"Child '{key}' reads data from unknown child '{sourceKey}'.");
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(producer.ForEachContentsOf))
+                problems.Add($"Child '{key}' cannot read data from foreach child '{sourceKey}'.");
+        }
+
+        if (HasChildDataCycle())
+            problems.Add("inputFromChildData declarations must form an acyclic sibling graph.");
+
         return problems;
+    }
+
+    private bool HasChildDataCycle()
+    {
+        var visited = new HashSet<string>(StringComparer.Ordinal);
+        var active = new HashSet<string>(StringComparer.Ordinal);
+
+        bool Visit(string key)
+        {
+            if (!visited.Add(key))
+                return active.Contains(key);
+
+            active.Add(key);
+            var sourceKey = Children[key]?.InputFromChildData?.ResultKey;
+            var hasCycle = !string.IsNullOrWhiteSpace(sourceKey) && Children.ContainsKey(sourceKey) && Visit(sourceKey);
+            active.Remove(key);
+            return hasCycle;
+        }
+
+        return Children.Keys.Any(Visit);
     }
 
     /// <summary>Checks the declared, generic containment projection boundary.</summary>
@@ -291,6 +350,18 @@ public sealed record ChildMechanicRequirement
     /// This is valid only with <see cref="ForEachContentsOf"/>.
     /// </summary>
     public bool InputForEachItem { get; init; }
+
+    /// <summary>
+    /// The one closed dependent-input form. The consumer receives a deep JSON copy of the named
+    /// sibling child's single object-valued output data after that sibling has completed.
+    /// </summary>
+    public ChildDataInputRequirement? InputFromChildData { get; init; }
+}
+
+/// <summary>Names the sole sibling result whose complete object data becomes a child input.</summary>
+public sealed record ChildDataInputRequirement
+{
+    public string ResultKey { get; init; } = string.Empty;
 }
 
 // ---- what the mechanic is handed ------------------------------------------------------
@@ -414,6 +485,13 @@ public sealed record MechanicOutput
 
     /// <summary>Anything else the mechanic wants to hand back, as JSON. Not interpreted.</summary>
     public string Data { get; init; } = "{}";
+
+    /// <summary>
+    /// Whether the mechanic explicitly returned <see cref="Data"/>. The text defaults to an
+    /// object for compatibility, but dependent composition must distinguish an omitted result from
+    /// an explicitly produced object.
+    /// </summary>
+    public bool HasData { get; init; }
 
     /// <summary>Guard-only decision: exactly <c>allow</c> or <c>deny</c>.</summary>
     public string Decision { get; init; } = string.Empty;

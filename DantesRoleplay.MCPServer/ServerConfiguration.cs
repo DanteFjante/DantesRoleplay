@@ -1,9 +1,12 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using DantesRoleplay.DataAccess;
+using DantesRoleplay.DataAccess.Retrieval;
 using DantesRoleplay.MCPServer.Tools;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.RuleAccess;
+using DantesRoleplay.Security;
+using DantesRoleplay.World;
 using ModelContextProtocol;
 
 namespace DantesRoleplay.MCPServer;
@@ -42,14 +45,34 @@ public static class ServerConfiguration
     public static IServiceCollection AddDantesRoleplayMcpServer(
         this IServiceCollection services,
         string connectionString,
-        DatabaseProvider provider = DatabaseProvider.Sqlite)
+        DatabaseProvider provider = DatabaseProvider.Sqlite,
+        KnowledgeRetrievalOptions? knowledgeRetrieval = null,
+        DevelopmentKnowledgeAudienceOptions? developmentKnowledgeAudience = null)
     {
         // The kernel. One call registers the DbContext and every store.
         //
         // SQLite by default: one file you can copy to snapshot a campaign and delete to reset.
         // ARCHITECTURE.md §8.3 explains why there is no Postgres and no vector store yet, and
         // names the conditions that would change that.
-        services.AddDantesRoleplayDataAccess(connectionString, provider);
+        services.AddDantesRoleplayDataAccess(connectionString, provider, knowledgeRetrieval);
+        developmentKnowledgeAudience ??= new DevelopmentKnowledgeAudienceOptions();
+        var developmentError = developmentKnowledgeAudience.Validate();
+        if (developmentError is not null) throw new ArgumentException(developmentError, nameof(developmentKnowledgeAudience));
+        if (developmentKnowledgeAudience.Enabled)
+        {
+            services.AddSingleton(developmentKnowledgeAudience);
+            // There is intentionally no registration when disabled. Resolving a player-safe
+            // knowledge coordinator then fails rather than silently becoming trusted-GM access.
+            services.AddScoped<IAuthenticatedCampaignAudiencePolicy, DevelopmentCampaignAudiencePolicy>();
+        }
+        else
+        {
+            // Override the data-access answer registration with a safe placeholder. This avoids
+            // MCP attempting to construct a coordinator whose required audience policy is absent.
+            services.AddScoped<IAuthorizedKnowledgeAnswerCoordinator, UnavailableKnowledgeAnswerCoordinator>();
+        }
+        if (provider == DatabaseProvider.Sqlite)
+            services.AddHostedService<KnowledgeBackgroundWorker>();
 
         // The sandbox that runs game rules. A singleton because it holds no state between runs:
         // every call builds a fresh Jint engine, which is what stops one mechanic seeing what

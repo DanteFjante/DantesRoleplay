@@ -1,6 +1,6 @@
 # Character Feature 2 dependency plan — ability assignment and existing-state composition
 
-Status: **Planned; implementation awaits CH0's ratified assignment method and accepted CH1 actor-scope/provenance slices.**  
+Status: **Implemented and accepted; full-suite verification passed.**
 Last updated: 2026-08-20
 
 ## Execution rule
@@ -37,15 +37,20 @@ The future character-creation coordinator can validate six submitted raw ability
 | Weapon-proficiency, HP, and final-AC writers | CH4 later supplies validated class/equipment results to their owners. CH2 must not infer or record arbitrary final values just because the components exist. |
 | `mechanic.dnd2024.check.ability` and `mechanic.dnd2024.saving-throw` | Consumer proofs only. Both require abilities and total level; saving throws also require saving-throw proficiency state. They own d20 resolution and derived totals. |
 
-## Proposed CH2 vocabulary — confirmation required
+## Confirmed CH2 vocabulary
 
 | Role | Proposed ID and boundary |
 | --- | --- |
 | Immutable assignment-policy component | `dnd2024.character.ability-assignment-policy`, attached only to a versioned policy entity, never an actor. |
 | Governing policy procedure and validator | `procedure.mechanic.dnd2024.character-ability-assignment-policy`; `mechanic.dnd2024.character-ability-assignment-policy.validate`. The validator produces normalized scores and no effects. |
 | Existing-ability normal recorder | `mechanic.dnd2024.abilities.record`, governed by existing `procedure.mechanic.dnd2024.abilities`; it writes only one absent `dnd2024.abilities` component. |
+| Initial CH0 policy entity | `content.dnd2024.ability-assignment.standard-array.v1`, the source-cited Standard Array fixture. |
 
-These are proposed permanent IDs, not authorised records. Confirm parent-procedure scope, schemas, and owner-search results under `procedure.system.modify` before authoring. The policy entity ID carries stable key/version; no actor stores a duplicate policy ID. CH5's later creation receipt records that policy version with its other creation sources. If CH1's content-definition design is formally expanded to own policies, stop and reconcile that single ownership decision first.
+The policy family and initial entity ID are confirmed for Slice 1. The ability recorder remains a
+separate Slice 2 confirmation boundary. The policy entity ID carries stable key/version; no actor
+stores a duplicate policy ID. CH5's later creation receipt records that policy version with its
+other creation sources. If CH1's content-definition design is formally expanded to own policies,
+stop and reconcile that single ownership decision first.
 
 ## Policy data and validation boundary
 
@@ -63,11 +68,11 @@ The validator receives its bound policy by role, not a caller-selected entity ID
 ## Dependency graph and slices
 
 ~~~text
-CH0 ratified method, locator, bounds, and complete score assignment       [missing]
-└─ CH1 accepted provenance + campaign actor-scope contracts                [blocked parent]
-   ├─ confirmed CH2 vocabulary                                              [semantic gate]
-   │  └─ Slice 1: policy declaration + zero-effect validator
-   └─ existing ability/level recorders re-read and compatible
+CH0 ratified Standard Array method, locator, bounds, and assignment        [verified]
+└─ CH1 accepted provenance + campaign actor-scope contracts                [verified parent]
+   ├─ confirmed CH2 Slice 1 vocabulary                                      [accepted semantic gate]
+│  └─ Slice 1: policy declaration + zero-effect validator
+   └─ existing ability/level recorders re-read and compatible               [verified]
       └─ Slice 2: add-only ability recorder + integration harness
          └─ CH3 origins → CH4 class grants → CH5 atomic creation
 ~~~
@@ -83,6 +88,8 @@ CH0 ratified method, locator, bounds, and complete score assignment       [missi
 
 **Exit:** a reviewer can trace the policy to CH0/SRD 5.2.1, recompute its allowed scores, and prove validation neither writes state nor accepts arbitrary or derived values.
 
+**Status: Accepted.** Receipt: [CH2 Slice 1 receipt](CHARACTER-FEATURE-02-SLICE-1-RECEIPT.md).
+
 ### Slice 2 — existing-state recording and consumer proof
 
 **Prerequisites:** Slice 1 accepted; current ability/level contracts remain compatible; CH1 actor scope/profile contract is accepted for any character-level fixture; new recorder ID confirmed.
@@ -93,6 +100,8 @@ CH0 ratified method, locator, bounds, and complete score assignment       [missi
 4. Prove consumer mechanics derive modifier/proficiency bonus from existing state; no CH2 state contains their outputs. Run focused tests and `roleplay validate catalog`.
 
 **Exit:** valid inputs yield one canonical ability component and level-one record through their owners; duplicate/failed paths leave no state; consumers resolve from existing state only.
+
+**Status: Accepted.** Receipt: [CH2 Slice 2 receipt](CHARACTER-FEATURE-02-SLICE-2-RECEIPT.md).
 
 ## Acceptance matrix
 

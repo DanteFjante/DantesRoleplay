@@ -60,7 +60,7 @@ public sealed class CatalogWorldFeature7Tests : IDisposable
 
         var location = Projection(await GraphAsync(db, procedures, world, mechanics, Market,
             ["game.core.world.location"], 1, ["game.core.world.location.connected-to"], 1, 50, 50));
-        Assert.Equal(["location.feature-01.gate", Market, "location.feature-01.observatory"], location.Nodes.Select(n => n.Id));
+        Assert.Equal(["actor.knowledge-slice1.resident", "location.feature-01.gate", Market, "location.feature-01.observatory"], location.Nodes.Select(n => n.Id));
         Assert.Equal("region.feature-01.fixture", location.Nodes.Single(n => n.Id == Market).ContainerId);
         Assert.Equal(2, location.Edges.Count);
 
@@ -78,7 +78,7 @@ public sealed class CatalogWorldFeature7Tests : IDisposable
         Assert.Contains(knowledge.Nodes, n => n.Id == "rumour.feature-04.observatory-signal");
         Assert.Contains(knowledge.Nodes, n => n.Id == "secret.feature-04.oren-correspondence");
         Assert.Equal(3, knowledge.Nodes.Count(n => n.Id.StartsWith("clue.feature-04.", StringComparison.Ordinal)));
-        Assert.Equal(15, knowledge.Edges.Count);
+        Assert.Equal(23, knowledge.Edges.Count);
         Assert.All(knowledge.Edges, edge => Assert.Contains(edge.Kind, new[] { "game.core.world.knowledge.in-world", "game.core.world.knowledge.about", "game.core.world.clue.supports" }));
         Assert.Null(knowledge.Truncated);
 

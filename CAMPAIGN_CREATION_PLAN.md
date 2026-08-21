@@ -300,7 +300,7 @@ content.
 | C12 | [Parallel and branching arc continuity](campaign/feature-12/CAMPAIGN-FEATURE-12-PARALLEL-ARC-CONTINUITY-PLAN.md) | Explicit successor to C3's one-arc proof; blocked by C3 evidence and cardinality/migration confirmation. |
 | C13 | [Deterministic opportunity pool and campaign-time selection](campaign/feature-13/CAMPAIGN-FEATURE-13-DETERMINISTIC-OPPORTUNITY-POOL-PLAN.md) | Explicit successor to C6's one fixed event opportunity; blocked by C6/Q2/clock/random evidence and state-migration confirmation. |
 | C14 | [Advancement policy and authorization](campaign/feature-14/CAMPAIGN-FEATURE-14-ADVANCEMENT-AUTHORIZATION-PLAN.md) | Campaign-owned XP/milestone policy and one-time authorization for Character CH9; blocked on active character attachment and Feature 36 XP eligibility. |
-| C15 | [Campaign-owned character participation](campaign/feature-15/CAMPAIGN-FEATURE-15-CHARACTER-PARTICIPATION-PLAN.md) | Slice 1 verifies the canonical active-scope reader; attachment and withdrawal remain confirmation-gated. |
+| C15 | [Campaign-owned character participation](campaign/feature-15/CAMPAIGN-FEATURE-15-CHARACTER-PARTICIPATION-PLAN.md) | Slices 1–2 verify active scope and atomic attachment; withdrawal remains gated on CH13 composition. |
 
 ## Test matrix
 

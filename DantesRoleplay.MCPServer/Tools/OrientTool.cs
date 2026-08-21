@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using DantesRoleplay.Categories;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
@@ -44,12 +45,22 @@ public sealed class OrientTool
         CancellationToken cancellationToken = default) =>
         await ToolRunner.RunAsync(log, "orient", async () =>
         {
-            var categories = await procedures.GetCategoriesAsync(cancellationToken);
+            var categories = await procedures.GetCategoriesAsync(
+                includeInactive: true,
+                cancellationToken: cancellationToken);
             var definitions = await world.GetDefinitionsAsync(cancellationToken);
-            var ruleCategories = await mechanics.GetCategoriesAsync(cancellationToken);
+            var ruleCategories = await mechanics.GetCategoriesAsync(
+                includeInactive: true,
+                cancellationToken: cancellationToken);
 
             var procedureCount = categories.Sum(c => c.Count);
             var ruleCount = ruleCategories.Sum(c => c.Count);
+            var procedureRoots = CategoryPath.Browse(
+                branch: null,
+                categories.Select(c => new CategoryCount(c.Category, c.Count))).Children;
+            var ruleRoots = CategoryPath.Browse(
+                branch: null,
+                ruleCategories.Select(c => new CategoryCount(c.Category, c.Count))).Children;
 
             // Archived rules included on purpose: this is the "does anything exist" number, and a
             // session that is told zero will not go looking.
@@ -97,7 +108,9 @@ public sealed class OrientTool
                 {
                     Total = procedureCount,
                     ByCategory = categories.ToDictionary(c => c.Category, c => c.Count),
-                    KnownCategories = categories.Select(c => c.Category).ToArray()
+                    KnownCategories = categories.Select(c => c.Category).ToArray(),
+                    CategoryRoots = procedureRoots,
+                    HowToBrowse = "query(kind: \"categories\", catalog: \"procedures\")"
                 },
                 World = new
                 {
@@ -123,6 +136,8 @@ public sealed class OrientTool
                     ByStatus = byStatus,
                     ByCategory = ruleCategories.ToDictionary(c => c.Category, c => c.Count),
                     ByScope = byScope,
+                    CategoryRoots = ruleRoots,
+                    HowToBrowse = "query(kind: \"categories\", catalog: \"mechanics\")",
                     HowItWorks =
                         "Game rules are JavaScript stored in this system and written during play. " +
                         "A rule declares which participants and which components it reads, is " +
@@ -147,6 +162,11 @@ public sealed class OrientTool
             {
                 nextSteps.Add("query(kind: \"procedures\", id: \"procedure.system.use\") — how to operate these three verbs. Read this first.");
                 nextSteps.Add("query(kind: \"procedures\") — list the whole operating manual and match a contract to what you are about to do.");
+                if (procedureRoots.Count != 0)
+                {
+                    nextSteps.Add("query(kind: \"categories\", catalog: \"procedures\") — browse the procedure manual by category.");
+                }
+
                 nextSteps.Add("query(kind: \"world\") — what the world currently holds, and which component definitions exist.");
                 nextSteps.Add("query(kind: \"capabilities\") — every kind, parameter and payload shape, exactly.");
                 nextSteps.Add($"{VerbSurface.CommitCall("effects", dryRun: true)} — if your task is to change the world.");
@@ -154,10 +174,16 @@ public sealed class OrientTool
                 nextSteps.Add(ruleCount == 0
                     ? $"{VerbSurface.CommitCall("mechanic", dryRun: true)} — no game rules exist yet, so nothing can be resolved until one is written. This writes the first."
                     : "query(kind: \"mechanics\", query: \"what the player is trying to do\") — find the rule and read which roles it needs, before running it.");
+                if (ruleRoots.Count != 0)
+                {
+                    nextSteps.Add("query(kind: \"categories\", catalog: \"mechanics\") — browse game rules by category.");
+                }
+
                 nextSteps.Add($"{VerbSurface.CommitCall("action")} — resolve an action. The rule is chosen by intent; roleEntityIds must name the roles that rule declares.");
             }
 
             nextSteps.Add("query(kind: \"history\") — see what was done recently, optionally filtered by tool or subject.");
+            nextSteps.Add($"{VerbSurface.CommitCall("feedback")} — record a concrete problem, friction point, or improvement idea about this system while testing it.");
 
             return ToolOutcome.Ok(
                 data,

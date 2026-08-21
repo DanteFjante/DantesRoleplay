@@ -14,8 +14,19 @@ public sealed class CatalogFeature23Slice3Tests : IDisposable
     private const string Instance = "dnd2024.item-instance";
     private const string Backpack = "item.dnd2024.backpack.v1";
     private readonly SqliteFixture _fixture = new();
+    private readonly string _catalogCopy = Path.Combine(
+        Path.GetTempPath(),
+        $"dantesroleplay-catalog-feature-23-slice-3-{Guid.NewGuid():n}");
 
-    public void Dispose() => _fixture.Dispose();
+    public void Dispose()
+    {
+        _fixture.Dispose();
+
+        if (Directory.Exists(_catalogCopy))
+        {
+            Directory.Delete(_catalogCopy, recursive: true);
+        }
+    }
 
     [Fact]
     public async Task Physical_items_are_created_recorded_read_and_moved_through_containment()
@@ -23,8 +34,7 @@ public sealed class CatalogFeature23Slice3Tests : IDisposable
         await using var db = _fixture.CreateContext();
         var world = new WorldStore(db);
         var mechanics = new MechanicStore(db);
-        var imported = await new CatalogImporter(db, mechanics, new ProcedureStore(db), world)
-            .ApplyAsync(RepositoryCatalog(), new CatalogImportOptions());
+        var imported = await ImportAsync(db, mechanics, world);
         Assert.False(imported.Aborted);
         Assert.NotNull(await mechanics.GetAsync("mechanic.dnd2024.item-instance.create-and-place"));
         Assert.NotNull(await new ProcedureStore(db).GetAsync("procedure.mechanic.dnd2024.item-instance"));
@@ -77,8 +87,7 @@ public sealed class CatalogFeature23Slice3Tests : IDisposable
         await using var db = _fixture.CreateContext();
         var world = new WorldStore(db);
         var mechanics = new MechanicStore(db);
-        Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world)
-            .ApplyAsync(RepositoryCatalog(), new CatalogImportOptions())).Aborted);
+        Assert.False((await ImportAsync(db, mechanics, world)).Aborted);
         await world.CreateEntityAsync("Carrier", "fixture.catalog.f23.carrier");
         await world.CreateEntityAsync("Loose item", "fixture.catalog.f23.loose");
         var runner = CreateRunner(db, world, mechanics);
@@ -139,6 +148,31 @@ public sealed class CatalogFeature23Slice3Tests : IDisposable
     private static ActionRunner CreateRunner(DantesRoleplayDbContext db, WorldStore world, MechanicStore mechanics) =>
         new(db, mechanics, new ProjectionResolver(db), new JintMechanicEngine(), new EffectApplier(db, world),
             new OperationLog(db), new MechanicComposer(mechanics, new ProjectionResolver(db), new JintMechanicEngine()));
+
+    private async Task<CatalogImportResult> ImportAsync(
+        DantesRoleplayDbContext db,
+        MechanicStore mechanics,
+        WorldStore world)
+    {
+        CopyDirectory(RepositoryCatalog(), _catalogCopy);
+        return await new CatalogImporter(db, mechanics, new ProcedureStore(db), world)
+            .ApplyAsync(_catalogCopy, new CatalogImportOptions());
+    }
+
+    private static void CopyDirectory(string source, string destination)
+    {
+        Directory.CreateDirectory(destination);
+
+        foreach (var directory in Directory.EnumerateDirectories(source, "*", SearchOption.AllDirectories))
+        {
+            Directory.CreateDirectory(Path.Combine(destination, Path.GetRelativePath(source, directory)));
+        }
+
+        foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
+        {
+            File.Copy(file, Path.Combine(destination, Path.GetRelativePath(source, file)));
+        }
+    }
 
     private static string RepositoryCatalog()
     {

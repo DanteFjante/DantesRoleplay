@@ -24,6 +24,8 @@ Required state and closed input
 Resolution
 4. Derive ability modifier as floor((score - 10) / 2). Derive Proficiency Bonus as 2 + floor((level - 1) / 4), and add it exactly once only when the selected ability is in the verified save list.
 5. Compose mechanic.dnd2024.d20-test.state-effects with static `{}` input and select its validated branch for the chosen ability. Merge its derived circumstances after caller circumstances. A normal, cancelled, or absent merged list rolls one d20. Advantage-only or Disadvantage-only rolls two and selects maximum or minimum respectively. All rolling uses ctx.randomInt(1, 20).
+   Append the resolver's validated derived modifiers only on the rolled path before calculating the
+   total. An automatic or voluntary failure has no total and therefore does not report a modifier.
 6. Natural 1 and 20 have no automatic saving-throw outcome: success is total >= dc.
 7. Paralyzed, Petrified, Stunned, and Unconscious automatically fail Strength and Dexterity saves. Automatic failure rolls no dice, returns failure even at DC 0, and has null rollMode/roll/total plus empty rolls. It reports the canonical `condition:<id>` reason. voluntaryFailure remains valid only with absent or empty caller circumstances; it can coexist with automatic failure and both reasons are reported.
 8. Return test, resolution, ability, proficient, dc, die, rollMode, rolls, roll, caller/derived/merged circumstances, conditionsKnown, automaticFailure, voluntaryFailure, auditable modifiers, total, succeeded, and source locator. Always return effects: [].

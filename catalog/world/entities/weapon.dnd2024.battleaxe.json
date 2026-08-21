@@ -13,6 +13,15 @@
         "faces": 8,
         "type": "slashing"
       },
+      "propertyTags": [
+        "versatile"
+      ],
+      "versatileDamage": {
+        "count": 1,
+        "faces": 10,
+        "type": "slashing"
+      },
+      "mastery": "topple",
       "sourceRef": {
         "sourceId": "source.dnd2024.srd-5.2.1",
         "locator": "Equipment > Weapons"

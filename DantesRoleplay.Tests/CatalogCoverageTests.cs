@@ -66,6 +66,23 @@ public sealed class CatalogCoverageTests : IDisposable
             + "from a file would be putting words in that rule's mouth.",
         ["notification_entity"] = "Join rows for the above.",
 
+        // Feedback is operational test evidence. It is intentionally durable and queryable in a
+        // running system, but catalog import/export must not manufacture reports or their audit
+        // references.
+        ["system_feedback_report"] = "Runtime system-feedback evidence; catalog files must not author reports.",
+        ["system_feedback_step"] = "Ordered reproduction steps for runtime system feedback.",
+        ["system_feedback_operation"] = "Runtime audit references attached to system feedback.",
+        ["system_feedback_procedure"] = "Frozen procedure revisions attached to system feedback.",
+        ["system_feedback_disposition"] = "Immutable local developer-triage history for runtime system feedback.",
+        ["system_feedback_retention_action"] = "Immutable local developer-retention history for runtime system feedback.",
+
+        // Snapshot packages are immutable runtime evidence produced from one committed session.
+        // Their opaque bytes and provenance cannot be file-authored without allowing a catalog to
+        // claim that a capture happened, so the snapshot feature intentionally has no catalog
+        // export/import route.
+        ["snapshot_package"] = "Immutable runtime snapshot evidence. A catalog must not author or "
+            + "restore opaque captured bytes and their operation provenance.",
+
         ["__EFMigrationsHistory"] = "Schema bookkeeping, not content. A catalog describes what the "
             + "database holds, not which migrations built it.",
         ["__EFMigrationsLock"] = "Schema bookkeeping.",
@@ -236,6 +253,53 @@ public sealed class CatalogCoverageTests : IDisposable
         ["notification_entity.NotificationId"] = "Runtime evidence, not carried by the catalog.",
         ["notification_entity.EntityId"] = "Runtime evidence, not carried by the catalog.",
         ["notification_entity.Ordinal"] = "Runtime evidence, not carried by the catalog.",
+        ["system_feedback_report.Id"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_report.RequestToken"] = "Idempotency evidence for a runtime feedback submission.",
+        ["system_feedback_report.PayloadFingerprint"] = "Idempotency evidence for a runtime feedback submission.",
+        ["system_feedback_report.Category"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_report.Impact"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_report.State"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_report.TriageRevision"] = "Runtime optimistic-concurrency evidence for local feedback triage.",
+        ["system_feedback_report.RetentionRevision"] = "Runtime optimistic-concurrency evidence for local feedback retention.",
+        ["system_feedback_report.ArchivedAt"] = "Reversible local feedback-retention projection, not catalog content.",
+        ["system_feedback_report.HoldState"] = "Runtime local feedback-retention projection, not catalog content.",
+        ["system_feedback_report.Summary"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_report.Observed"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_report.Expected"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_report.CreatedAt"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_report.SubmissionOperationId"] = "Runtime audit evidence, not carried by the catalog.",
+        ["system_feedback_step.Id"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_step.ReportId"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_step.Ordinal"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_step.Text"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_operation.Id"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_operation.ReportId"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_operation.OperationId"] = "Runtime audit evidence, not carried by the catalog.",
+        ["system_feedback_operation.Ordinal"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_procedure.Id"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_procedure.ReportId"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_procedure.ProcedureId"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_procedure.ProcedureVersion"] = "Frozen runtime procedure revision, not carried by the catalog.",
+        ["system_feedback_procedure.Ordinal"] = "Runtime system-feedback evidence, not carried by the catalog.",
+        ["system_feedback_disposition.Id"] = "Runtime local feedback-triage evidence, not carried by the catalog.",
+        ["system_feedback_disposition.ReportId"] = "Runtime local feedback-triage evidence, not carried by the catalog.",
+        ["system_feedback_disposition.Revision"] = "Runtime local feedback-triage evidence, not carried by the catalog.",
+        ["system_feedback_disposition.FromState"] = "Runtime local feedback-triage evidence, not carried by the catalog.",
+        ["system_feedback_disposition.ToState"] = "Runtime local feedback-triage evidence, not carried by the catalog.",
+        ["system_feedback_disposition.Note"] = "Runtime local feedback-triage evidence, not carried by the catalog.",
+        ["system_feedback_disposition.CreatedAt"] = "Runtime local feedback-triage evidence, not carried by the catalog.",
+        ["system_feedback_retention_action.Id"] = "Runtime local feedback-retention evidence, not carried by the catalog.",
+        ["system_feedback_retention_action.ReportId"] = "Runtime local feedback-retention evidence, not carried by the catalog.",
+        ["system_feedback_retention_action.Revision"] = "Runtime local feedback-retention evidence, not carried by the catalog.",
+        ["system_feedback_retention_action.Action"] = "Runtime local feedback-retention evidence, not carried by the catalog.",
+        ["system_feedback_retention_action.FromArchived"] = "Runtime local feedback-retention evidence, not carried by the catalog.",
+        ["system_feedback_retention_action.ToArchived"] = "Runtime local feedback-retention evidence, not carried by the catalog.",
+        ["system_feedback_retention_action.FromHoldState"] = "Runtime local feedback-retention evidence, not carried by the catalog.",
+        ["system_feedback_retention_action.ToHoldState"] = "Runtime local feedback-retention evidence, not carried by the catalog.",
+        ["system_feedback_retention_action.Reference"] = "Runtime local feedback-retention evidence, not carried by the catalog.",
+        ["system_feedback_retention_action.Note"] = "Runtime local feedback-retention evidence, not carried by the catalog.",
+        ["system_feedback_retention_action.EffectiveAsOf"] = "Runtime local feedback-retention evidence, not carried by the catalog.",
+        ["system_feedback_retention_action.CreatedAt"] = "Runtime local feedback-retention evidence, not carried by the catalog.",
         ["event_entity.Id"] = "Runtime evidence, not carried by the catalog.",
         ["event_entity.EventId"] = "Runtime evidence, not carried by the catalog.",
         ["event_entity.EntityId"] = "Runtime evidence, not carried by the catalog.",
@@ -257,6 +321,23 @@ public sealed class CatalogCoverageTests : IDisposable
         ["event_execution.ElapsedMilliseconds"] = "Runtime evidence, not carried by the catalog.",
         ["event_execution.LimitHit"] = "Runtime evidence, not carried by the catalog.",
         ["event_execution.CreatedAt"] = "Runtime evidence, not carried by the catalog.",
+
+        // --- Snapshot package. The entire immutable evidence package is intentionally absent
+        //     from catalog export/import; see the corresponding skipped-table decision above.
+        ["snapshot_package.Id"] = "Runtime evidence, not carried by the catalog.",
+        ["snapshot_package.ScopeContractId"] = "Runtime evidence, not carried by the catalog.",
+        ["snapshot_package.ScopeContractVersion"] = "Runtime evidence, not carried by the catalog.",
+        ["snapshot_package.ProducerId"] = "Runtime evidence, not carried by the catalog.",
+        ["snapshot_package.ProducerVersion"] = "Runtime evidence, not carried by the catalog.",
+        ["snapshot_package.ContentEncoding"] = "Runtime evidence, not carried by the catalog.",
+        ["snapshot_package.BoundaryFingerprint"] = "Runtime evidence, not carried by the catalog.",
+        ["snapshot_package.DigestAlgorithm"] = "Runtime evidence, not carried by the catalog.",
+        ["snapshot_package.ContentDigest"] = "Runtime evidence, not carried by the catalog.",
+        ["snapshot_package.ByteCount"] = "Runtime evidence, not carried by the catalog.",
+        ["snapshot_package.CapturedAt"] = "Runtime evidence, not carried by the catalog.",
+        ["snapshot_package.RootOperationId"] = "Runtime evidence, not carried by the catalog.",
+        ["snapshot_package.Availability"] = "Runtime evidence, not carried by the catalog.",
+        ["snapshot_package.Content"] = "Runtime evidence, not carried by the catalog.",
 
     };
 

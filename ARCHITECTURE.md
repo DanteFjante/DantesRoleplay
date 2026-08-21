@@ -1,6 +1,6 @@
 # DantesRoleplay — Architecture Decisions & Requirements
 
-**Status:** design record, pre-implementation. Written 2026-08-16, revised 2026-08-16.
+**Status:** design record. Written 2026-08-16, revised 2026-08-21.
 **Supersedes:** the `TravelRoleplay` prototype (kept for reference, not for reuse).
 
 **Revision note.** Two decisions were taken after the original review and overturn parts of it:
@@ -13,8 +13,9 @@
 - **§0.2 / §3.11 — the kernel is minimal and contains no game.** Everything playable is
   JavaScript written at runtime. This shrinks the effect vocabulary (§P9) and sets a size budget
   on the engine.
-- **§8.3 — database.** SQLite with FTS5. No Postgres, no pgvector, no embeddings, with named
-  triggers for revisiting.
+- **§8.3 — database.** SQLite with FTS5. No Postgres or pgvector. Procedure/mechanic embeddings
+  retain named evidence triggers; a disabled-by-default local knowledge-vector projection was
+  approved separately on 2026-08-21 for the intended large fact corpus.
 - **§3.6 — a mechanic declares a PROJECTION, not a fetch list.** Names roles, component types and
   fields; the engine compiles it to one query. Anything needing a predicate goes through a named
   engine query. Considered and rejected: per-mechanic SQL views (§3.6a).
@@ -1090,6 +1091,22 @@ this looks like the kind of choice that is cheaper to make early:
 - Mechanics pass roughly 200 (the number the review itself named for revisiting semantic search).
 - The project stops being single-user or single-machine.
 
+**Scoped amendment, 2026-08-21 — world knowledge.** The intended fact corpus is explicitly large,
+and the operator already supplies local Ollama models `qwen3-embedding:4b` and `qwen3:8b`. That is
+a separate retrieval domain from the small procedure/mechanic catalogs considered above. A
+disabled-by-default derived knowledge index may therefore combine FTS5 with local vectors before
+the procedure/mechanic count triggers fire, subject to `KNOWLEDGE_AND_FACTS_PLAN.md`:
+
+- canonical truth, knowledge state, visibility, and audit remain ordinary SQLite world/event rows;
+- embeddings come only from the configured loopback Ollama provider and are rebuildable derived data;
+- FTS remains the complete fallback when Ollama or the vector extension is absent;
+- vector identity includes model name, manifest digest, dimensions, and document hash;
+- the initial `sqlite-vec` native path must be pinned and proven per supported runtime before it is
+  packaged; no vector SQL or SQLite type crosses the DataAccess boundary;
+- similarity returns candidates only and never authorizes, reveals, confirms, or writes a fact.
+
+This amendment does not enable procedure/mechanic vectors, a hosted vector service, or Postgres.
+
 **The migration path is short, and only because the architecture already forces it.** §3.4 says
 mechanics never execute SQL, so every query in the system is inside `Engine/Database/`. Changing
 engines is a change to one folder. Two options at that point: `sqlite-vec`, which keeps the
@@ -1291,8 +1308,9 @@ Then: *"Tie another goblin's hands."* It must **find and reuse** the mechanic it
 5. **Does the player-facing play UI exist in the prototype at all**, or is MCP the only client
    until the control room is done? §P14 says the control room comes first; worth stating that the
    play surface is explicitly out of scope for M1–M4.
-6. ~~Vector store choice~~ — **resolved 2026-08-16**, see §8.3. SQLite + FTS5, no vector store, no
-   Postgres. Named revisit triggers rather than a date.
+6. ~~Vector store choice~~ — **revised 2026-08-21**, see §8.3. SQLite + FTS5 remains canonical;
+   no Postgres or hosted vector store. Procedure/mechanic vectors retain named revisit triggers,
+   while world knowledge may use the approved optional local derived vector projection.
 7. ~~Which OpenAPI-to-TypeScript generator~~ — **moot as of 2026-08-17**. There is no generated
    client, because there is no separate frontend (§4.2).
 8. **What is the closed display vocabulary for view specs?** TravelRoleplay settled on 13 display

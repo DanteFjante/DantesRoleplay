@@ -29,10 +29,56 @@ is enabled by this slice.
 scope and a trusted-host atomic attach operation. It preserves actors and uses no new tool/kind;
 withdrawal remains blocked on Character CH13.
 
-**Campaign C15 Slice 1:** the campaign-owned character-participation component, procedure, and
-read-only active-scope verifier are verified in a disposable catalog import. The verifier writes
-nothing and accepts only one valid active campaign→participation→actor graph; C15 attachment,
+**Implementation:** Feature 27 Slice 1 adds immutable source-backed Fighter levels 1–2 progression
+data and an effect-free entitlement reader. Class membership, HP application, feature behavior,
+campaign authorization, and CH9 advancement stay with their named owners.
+
+**Implementation:** Feature 21 Slice 1 extends the existing static weapon profile with required
+normal/long range for Ranged weapons. Shortbow now declares its SRD 80/320-foot range; no cover,
+position, sight, combat-side, Disadvantage, or tactical attack behavior is enabled.
+
+**Implementation:** Feature 22 Slice 1 resolves effect-free D&D 2024 Unarmed Strike Damage
+evidence from Strength, total level, Armor Class, and condition-derived D20 circumstances. It does
+not check reach, spend an Action, apply damage, or enable Grapple, Shove, improvised weapons, or
+two-weapon fighting.
+
+**Implementation:** Feature 24 Slice 1 adds source-backed static definitions for all twelve SRD
+mundane armor suits and Shield. It does not create item instances, equip an item, calculate Armor
+Class, infer training, apply disadvantages or Speed changes, or start don/doff timing.
+
+**Campaign C15 Slices 1–2:** the campaign-owned character-participation component, procedure,
+read-only active-scope verifier, and atomic attach operation are verified in a disposable catalog
+import. The attach operation supports multiple actors in one campaign without copying actor state;
 CH5 composition, withdrawal, and CH13 handoff remain separately confirmation-gated.
+
+**Character CH1:** immutable content provenance and the C15-gated character profile are
+implemented and accepted. The profile stores only optional campaign-visible descriptive text and
+returns one effect fragment to future CH5 creation; it has no public action, campaign ID, D&D
+mechanics, or authority data.
+
+**Character CH2:** the source-cited Standard Array policy, zero-effect validator, and C15-gated
+add-only ability fragment are implemented and accepted. It validates and records only raw
+allocation; Soldier increases and the public creation root remain with their named later owners,
+while the existing total-level recorder remains authoritative for level one.
+
+**Character CH5 Slice 0:** a generic read-only staged-world composer now validates an ordered
+new-actor bundle without persistence. C15 contributes its effect-free participation fragment, and
+the existing CH1/CH2 planners validate the same virtual actor/scope. The public creation root,
+receipt, and fixture still await their named owners.
+
+**Feature 28 Slice 2:** the Soldier background now carries immutable source-cited ability-increase
+options. Its internal resolver validates a CH2/C15-scoped `+2/+1` or `+1/+1/+1` choice and returns
+only one raw-ability merge fragment; selection/provenance, feats, and the creation root remain
+separate owners.
+
+## Known current issue
+
+- ⛔ The current shared worktree fails
+  `CatalogFeature7Tests.Imported_catalog_records_corrects_and_guards_canonical_weapon_profiles`:
+  the canonical weapon-profile assertion expects `5` damage faces and receives `6`. This is a
+  Feature 7/catalog regression outside World Feature 16's boundary. W16 focused, surface, and
+  catalog checks pass, but its required full-suite acceptance remains blocked until the Feature 7
+  owner reconciles the fixture and assertion and the full suite is green again.
 
 ---
 
@@ -520,13 +566,13 @@ only authorized implementation candidate remains **Feature 11 Slice 1**.
   the platform contract needed to pass a derived path cost into the existing budget spender. Slice 1
   (base Speed and budget migration) is the only authorised future implementation slice.
 
-## Ruleset planning — Feature 21 (2026-08-21)
+## Ruleset implementation — Feature 21 Slice 1 (2026-08-21)
 
-- ✅ Feature 21 cover and ranged combat now has a complete planning-only dependency plan at
-  `ruleset/dnd2024/feature-21/FEATURE-21-DEPENDENCY-PLAN.md`. It separates static weapon range,
-  transient cover, obstacle geometry, combat sides, and Feature 34 sight; corrects the backlog's
-  “firing into melee” wording to the SRD's attacker-side close-combat rule; and authorises only the
-  static ranged-profile migration as a future first slice.
+- ✅ Feature 21's static ranged-profile migration is verified. The Feature-7 weapon-profile
+  schema and writer now require normal/long range only for Ranged weapons; Shortbow is 80/320;
+  weapon-attack and weapon-damage readers preserve their existing results against the revised
+  closed profile. [Receipt](ruleset/dnd2024/feature-21/FEATURE-21-SLICE-1-RECEIPT.md). Cover,
+  geometry, sides, sight, and tactical range enforcement remain blocked with their named owners.
 
 ## Ruleset planning — Feature 23 (2026-08-20)
 
@@ -708,3 +754,135 @@ The complete 21-item list lives in `ARCHITECTURE.md` §6; the milestone definiti
 file scopes them to MVP. Items 16, 19, 20 and 21 there are post-MVP by design — the backlog
 deliberately puts "actual RPG rules and content" last, because the point is that the game gets
 authored in play rather than built in advance.
+## 2026-08-21 — Feature 26 species profiles, Slice 1
+
+- Added the closed `dnd2024.species-profile` catalog contract and source-cited immutable profiles
+  for all nine SRD 5.2.1 player species. These declare identity, Humanoid, allowed Size, base
+  Speed, traits, and source-required choice families only.
+- The static catalog boundary is verified by focused tests and disposable catalog validation. No
+  character can select a species or receive any trait consequence yet; Slice 2 remains behind the
+  confirmed Feature 30 origin-assembly seam and the existing state owners.
+
+## 2026-08-21 — Feature 25 weapon properties and mastery, Slice 1
+
+- Extended the sole weapon-profile owner with source-backed static properties, normal/Thrown
+  ranges, structured ammunition/Versatile values, and mastery identity for the Dagger, Shortbow,
+  and Battleaxe.
+- Focused catalog, profile-writer, attack, and damage coverage passes. The new facts grant no
+  mastery or combat behavior; all property consequences remain behind their existing owners.
+
+## 2026-08-21 — Feature 29 magic-item planning
+
+- Added the closed `dnd2024.magic-item-profile` catalog component and static, source-cited profiles
+  for Potion of Healing, Boots of Elvenkind, and Amulet of Health. The profiles expose only their
+  declared downstream interfaces: category, rarity, attunement requirement, physical-use mode,
+  activation family, consumable/no-charge facts, and effect-family keys.
+- Verified the focused Feature 29 catalog tests (2/2) and disposable catalog validation. No live
+  data was touched. Physical instances, attunement, rests, charges, activation, and effects remain
+  explicitly deferred behind their owning contracts.
+
+## 2026-08-21 — Feature 30 creation integration planning
+
+- Added the guided-character-creation acceptance plan. It delegates the one creation transaction
+  to CH5 and names its generic staged-composition proof as the next actual implementation gate;
+  Feature 30 introduces no duplicate state, command, or builder workflow.
+
+## 2026-08-21 — Feature 31 spellcasting identities, Slice 1
+
+- Added closed `dnd2024.spell-identity` catalog data for Fire Bolt (Cantrip) and Cure Wounds
+  (level 1), then minimally expanded it with Dancing Lights (Cantrip) so Feature 32 can represent
+  a concentration-duration source declaration. The identities contain no spell list, resource,
+  cast permission, casting statistic, or effect data.
+- Verified focused Feature 31 catalog tests (2/2) and disposable catalog validation. No live data
+  was touched. Casting profiles, actor slots/preparation, derived casting statistics, casting, and
+  rest recovery retain their separate future owners.
+
+## 2026-08-21 — Feature 32 spell-resolution planning
+
+- Added closed `dnd2024.spell-resolution-profile` catalog data co-located with Fire Bolt, Cure
+  Wounds, and Dancing Lights. The profiles declare only static action/range-target/duration/
+  concentration/resolution/consequence interfaces, and do not cast, target, roll, spend, start an
+  effect, or change state.
+- Focused catalog verification and disposable catalog validation are recorded in the slice receipt.
+  Active effects, casting, duration clocks, concentration state, and consequences remain
+  separately gated.
+
+## 2026-08-21 — Feature 20 Slice 2 placement admission amendment
+
+- Recorded the discovered containment-projection gap: direct encounter projections do not provide
+  trustworthy other-participant Size/position state for collision admission.
+- The next repair slice uses existing effect-free child fan-out to read one closed tactical snapshot
+  per roster participant, then makes the placement writer prove bounds, terrain, and collision
+  before its sole add/set effect. No E6 platform extension is required.
+
+## 2026-08-21 — Feature 20 Slice 2 verified
+
+- ✅ Feature 20 Slice 2 is now verified. It installs a bounded encounter-space record and
+  diagnostic reader, Size-derived roster placement admission using closed child snapshots, and
+  effect-free base-reach evidence. Collision, terrain, all Size footprints, exact boundaries,
+  replay, and unchanged rejection state passed in the focused suite; the disposable catalog
+  validation also passed. See
+  `ruleset/dnd2024/feature-20/FEATURE-20-SLICE-2-RECEIPT.md`.
+- ⏸️ Tactical attacks and path movement are still separate later slices. Path movement remains
+  blocked on the confirmed derived-cost-to-budget-spender composition seam.
+
+## 2026-08-21 — Feature 20 Slice 3 verified
+
+- ✅ Tactical melee admission now proves a valid bounded map, direct roster membership,
+  Size-derived same-encounter positions, base reach, and a canonical melee weapon before it
+  composes the existing Feature 8 weapon-attack resolver. E6 carries only the admission-produced
+  closed attack input into Feature 8, so a failed precondition prevents a d20 roll.
+- The action is evidence only: it spends no Action, deals no damage, changes no placement, and
+  persists no attack result. Focused Feature 8/20 coverage passed 8/8 and disposable catalog
+  validation passed. See
+  ruleset/dnd2024/feature-20/FEATURE-20-SLICE-3-TACTICAL-MELEE-RECEIPT.md.
+
+## 2026-08-21 — Feature 20 Slice 4 verified
+
+- ✅ Tactical movement now accepts only an ordered closed path of five-foot cardinal or diagonal
+  steps. It derives cost internally, rejects malformed, out-of-bounds, blocked, occupied,
+  corner-cutting, insufficient-budget, and off-turn movement without changing state, and commits
+  its position update together with Feature 12's sole budget spend.
+- E6 transports only closed path evidence into a narrow budget-input adapter; callers cannot
+  choose the distance, destination, terrain result, or budget effect. Focused compatibility
+  coverage passed 15/15 and the disposable catalog validation passed with 380 records and no
+  errors. See `ruleset/dnd2024/feature-20/FEATURE-20-SLICE-4-MOVEMENT-RECEIPT.md`.
+
+## 2026-08-21 — Feature 33 rest and recovery planning
+
+- Added the full Short/Long Rest dependency plan. Its first safe slice is immutable,
+  source-cited standard-rest policy data; active rest episodes, authenticated interruptions,
+  Hit-Dice spending, and recovery remain behind the world-clock, event fan-out, healing,
+  class/resource, and modification-owner seams.
+
+## 2026-08-21 — Feature 34 observation planning
+
+- Added the full vision, light, hiding, passive-Perception, and surprise dependency plan. The
+  first safe slice is immutable, source-cited observation-policy data; tactical geometry,
+  illumination, senses, hidden-state lifecycle, and surprise-to-Initiative composition remain
+  behind their established map, condition, D20, action, and Initiative owners.
+
+## 2026-08-21 — Feature 35 monster and stat-block planning
+
+- Added the full monster/stat-block dependency plan. The first safe slice is immutable,
+  source-cited monster identity data; complete profiles, monster actors, printed statistics,
+  traits/actions, natural armor, senses, and encounter diagnostics remain behind their established
+  state, tactical, action, effect, and campaign owners.
+
+## 2026-08-21 — Feature 38 social-interaction planning
+
+- Added the full social-attitude and Influence dependency plan. The first safe slice is immutable,
+  source-cited social-interaction policy data; directional attitude, trusted GM adjudication,
+  target-derived checks, Action timing, cooldowns, and campaign outcomes remain behind their
+  established state, D20, clock, and authority owners.
+
+## 2026-08-21 — platform enabling-feature planning
+
+- Converted the four newly identified cross-cutting blockers into tracked platform features E6–E9:
+  typed dependent composition, atomic staged/virtual composition, dynamic event role binding with
+  bounded fan-out, and trusted principal/authorization context. Each now has a dependency plan
+  and explicit consumer boundary. E6 Slices 1–2 are accepted: one child can consume a declared
+  earlier sibling's object-valued data, and all child effects/events/notifications aggregate in
+  deterministic depth-first order into the one root transaction. Focused tests, catalog
+  validation, and the 652-test suite pass; no consumer mechanic was migrated. E9 remains blocked
+  until identity and authorization are deliberately selected.

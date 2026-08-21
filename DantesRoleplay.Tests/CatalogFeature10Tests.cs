@@ -3,6 +3,7 @@ using DantesRoleplay.Actions;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.Effects;
+using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
 using DantesRoleplay.RuleAccess;
@@ -36,7 +37,7 @@ public sealed class CatalogFeature10Tests : IDisposable
 
         await using var db = _fixture.CreateContext();
         var world = new WorldStore(db);
-        var imported = await new CatalogImporter(db, new MechanicStore(db), new ProcedureStore(db), world)
+        var imported = await new CatalogImporter(db, new MechanicStore(db), new ProcedureStore(db), world, new EventTypeStore(db))
             .ApplyAsync(_catalogCopy, new CatalogImportOptions());
 
         Assert.False(imported.Aborted);
@@ -83,7 +84,7 @@ public sealed class CatalogFeature10Tests : IDisposable
         await using var db = fixture.CreateContext();
         var world = new WorldStore(db);
         var mechanics = new MechanicStore(db);
-        var imported = await new CatalogImporter(db, mechanics, new ProcedureStore(db), world)
+        var imported = await new CatalogImporter(db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db))
             .ApplyAsync(catalog, new CatalogImportOptions());
         Assert.False(imported.Aborted);
 
@@ -221,7 +222,7 @@ public sealed class CatalogFeature10Tests : IDisposable
     }
 
     private static ActionRunner CreateRunner(DantesRoleplayDbContext db, WorldStore world, MechanicStore mechanics) =>
-        new(db, mechanics, new ProjectionResolver(db), new JintMechanicEngine(), new EffectApplier(db, world),
+        new(db, mechanics, new ProjectionResolver(db), new JintMechanicEngine(), new EffectApplier(db, world, events: new EventLedger(db)),
             new OperationLog(db), new MechanicComposer(mechanics, new ProjectionResolver(db), new JintMechanicEngine()));
 
     private sealed record ActionTranscript(string MechanicId, string Data, string Effects, int AppliedCount);

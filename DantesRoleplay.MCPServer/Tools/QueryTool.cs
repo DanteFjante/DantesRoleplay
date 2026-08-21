@@ -7,6 +7,7 @@ using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.Quest;
 using DantesRoleplay.World;
+using DantesRoleplay.SystemFeedback;
 using ModelContextProtocol.Server;
 
 namespace DantesRoleplay.MCPServer.Tools;
@@ -24,8 +25,8 @@ public sealed class QueryTool
 {
     [McpServerTool(Name = "query")]
     [Description(
-        "Read anything in this system. kind is one of: capabilities, procedures, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, quest-summary, " +
-        "mechanics, event-types, events, subscriptions, notifications, history. Omit id for a list or search; " +
+        "Read anything in this system. kind is one of: capabilities, procedures, categories, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, session-recap, quest-summary, knowledge-answer, " +
+        "mechanics, event-types, events, subscriptions, notifications, feedback, history. Omit id for a list or search; " +
         "pass id for one record in full. When you are unsure what a kind takes or what a commit payload looks like, call " +
         "query(kind: \"capabilities\") — it is the exact catalog. Irrelevant filters are ignored unless a fixed query kind explicitly rejects them. Never changes state.")]
     public async Task<ToolEnvelope> QueryAsync(
@@ -43,8 +44,8 @@ public sealed class QueryTool
         IOperationLog log,
         INotificationStore notifications,
         [Description(
-            "Closed kind: capabilities, procedures, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, quest-summary, mechanics, event-types, events, "
-            + "subscriptions, notifications, or history.")]
+            "Closed kind: capabilities, procedures, categories, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, session-recap, quest-summary, knowledge-answer, mechanics, event-types, events, "
+            + "subscriptions, notifications, feedback, or history.")]
         string kind,
         [Description("Full-record id for procedures, mechanics, or one entity.")] string? id = null,
         [Description("Entity ids for a full batch read.")] string[]? ids = null,
@@ -53,7 +54,8 @@ public sealed class QueryTool
         [Description("Search text for procedures or mechanics.")] string? query = null,
         [Description("Entity name substring.")] string? nameQuery = null,
         [Description("Entity component definition filter.")] string? withDefinitionId = null,
-        [Description("Category filter for procedures or mechanics.")] string? category = null,
+        [Description("Category branch for procedures, mechanics, or categories. A record query includes this node and its descendants.")] string? category = null,
+        [Description("Catalog to browse with kind categories: procedures or mechanics.")] string? catalog = null,
         [Description("Ruleset preference for mechanics.")] string? scope = null,
         [Description("Include deprecated and archived records.")] bool includeInactive = false,
         [Description("Maximum results for procedures, entities, mechanics or history.")]
@@ -96,9 +98,18 @@ public sealed class QueryTool
         [Description("Event filter: exclusive ISO-8601 UTC upper bound.")] string? to = null,
         [Description("Notification filter: unread, read, or archived.")] string? state = null,
         [Description("Notification filter: dotted topic, e.g. combat.wound.")] string? topic = null,
+        [Description("Feedback filter: blocked, degraded, minor, or none.")] string? impact = null,
+        [Description("Knowledge answer: configured campaign id. The configured local audience must match it.")] string? campaignId = null,
+        [Description("Knowledge answer: bounded natural-language question.")] string? question = null,
+        [Description("Knowledge answer: optional fact, rumour, secret, or clue filters.")] string[]? knowledgeKinds = null,
+        [Description("Knowledge answer: optional canonical subject-id filters.")] string[]? knowledgeSubjectIds = null,
+        [Description("Knowledge answer: optional world minute for canonical validity.")] long? asOfMinute = null,
         CancellationToken cancellationToken = default,
         [Description("Campaign resume only: require and compose the one current active session with the bounded C3 campaign view.")] bool includeSession = false,
-        ICampaignSessionResumeReader? campaignSessionResumes = null)
+        ICampaignSessionResumeReader? campaignSessionResumes = null,
+        ICampaignSessionRecapReader? campaignSessionRecaps = null,
+        ISystemFeedbackService? feedback = null,
+        IAuthorizedKnowledgeAnswerCoordinator? knowledgeAnswers = null)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
 
@@ -138,6 +149,21 @@ public sealed class QueryTool
                     "Rejected quest summary query.")));
         }
 
+        if (normalizedKind == "session-recap" && !IsSessionRecapRequest(
+                id, ids, version, query, nameQuery, withDefinitionId, category, scope, includeInactive, limit, sample,
+                componentIds, containmentDepth, relationshipKinds, relationshipDepth, maxNodes, maxEdges,
+                worldId, travellerId, destinationId, destinationLocationId, groundConveyanceId, aerialConveyanceId,
+                failuresOnly, tool, subject, correlationId, causationId, rootOperationId, type, entityId, afterSequence,
+                from, to, state, topic, includeSession))
+        {
+            return await ToolRunner.RunAsync(log, "query", () =>
+                Task.FromResult(ToolOutcome.Fail(
+                    "INVALID_SESSION_RECAP_QUERY",
+                    "session-recap accepts exactly one lowercase session.* id and no other query filters.",
+                    "query(kind: \"session-recap\", id: \"session....\")",
+                    "Rejected session recap query.")));
+        }
+
         using var dispatch = ToolRunner.EnterProtocol("query", normalizedKind);
 
         return normalizedKind switch
@@ -148,6 +174,9 @@ public sealed class QueryTool
             "procedures" =>
                 await new ProcedureTools().GetProcedureAsync(
                     procedures, log, id!, version, cancellationToken),
+            "categories" =>
+                await new CategoryTools().BrowseAsync(
+                    procedures, mechanics, log, catalog, category, includeInactive, cancellationToken),
             "world" =>
                 await new WorldTools().DescribeWorldAsync(
                     world, log, sample ?? 10, cancellationToken),
@@ -169,7 +198,14 @@ public sealed class QueryTool
             "campaign-resume" when includeSession && campaignSessionResumes is not null => await new CampaignTools().ResumeSessionAsync(campaignSessionResumes, log, id ?? string.Empty, cancellationToken),
             "campaign-resume" when includeSession => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("SESSION_RESUME_UNAVAILABLE", "The session resume reader is not configured.", "query(kind: \"campaign-resume\", id: \"...\")", "Campaign session resume was unavailable."))),
             "campaign-resume" => await new CampaignTools().ResumeAsync(campaignResumes, log, id ?? string.Empty, cancellationToken),
+            "session-recap" when campaignSessionRecaps is not null => await new CampaignTools().SessionRecapAsync(campaignSessionRecaps, log, id ?? string.Empty, cancellationToken),
+            "session-recap" => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("SESSION_RECAP_UNAVAILABLE", "The session recap reader is not configured.", "query(kind: \"session-recap\", id: \"session....\")", "Session factual recap was unavailable."))),
             "quest-summary" => await new QuestTools().SummaryAsync(questSummaries, log, id ?? string.Empty, cancellationToken),
+            "knowledge-answer" when knowledgeAnswers is not null => await new KnowledgeTools().AnswerAsync(
+                knowledgeAnswers, log,
+                new AuthorizedKnowledgeAnswerRequest(campaignId ?? string.Empty, question ?? string.Empty, knowledgeKinds, knowledgeSubjectIds, asOfMinute),
+                cancellationToken),
+            "knowledge-answer" => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("KNOWLEDGE_AUDIENCE_UNAVAILABLE", "Knowledge answers require an explicitly enabled local development audience or a future authentication provider.", "Enable the documented local development audience, then retry.", "Knowledge audience was unavailable."))),
             "mechanics" =>
                 await new MechanicTools().FindMechanicsAsync(
                     mechanics, log, id, version, query, category, scope, includeInactive, limit, cancellationToken),
@@ -180,6 +216,9 @@ public sealed class QueryTool
             "subscriptions" => await new SubscriptionTools().FindAsync(subscriptions, log, id, version, query, category, scope, includeInactive, limit, cancellationToken),
             "notifications" => await new NotificationTools().FindAsync(
                 notifications, log, id, state, topic, entityId, correlationId, from, to, limit, cancellationToken),
+            "feedback" when feedback is not null => await new SystemFeedbackTools().FindAsync(
+                feedback, log, id, category, impact, state, from, to, limit, cancellationToken),
+            "feedback" => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("FEEDBACK_UNAVAILABLE", "Feedback reporting is not configured.", "orient()", "Feedback query was unavailable."))),
             "history" =>
                 await new HistoryTool().HistoryAsync(
                     log, limit ?? 20, failuresOnly, tool, subject, cancellationToken),
@@ -204,4 +243,22 @@ public sealed class QueryTool
         destinationLocationId is null && groundConveyanceId is null && aerialConveyanceId is null && !failuresOnly &&
         tool is null && subject is null && correlationId is null && causationId is null && rootOperationId is null &&
         type is null && entityId is null && afterSequence is null && from is null && to is null && state is null && topic is null;
+
+    private static bool IsSessionRecapRequest(
+        string? id, string[]? ids, int? version, string? query, string? nameQuery, string? withDefinitionId,
+        string? category, string? scope, bool includeInactive, int? limit, int? sample, string[]? componentIds,
+        int? containmentDepth, string[]? relationshipKinds, int? relationshipDepth, int? maxNodes, int? maxEdges,
+        string? worldId, string? travellerId, string? destinationId, string? destinationLocationId,
+        string? groundConveyanceId, string? aerialConveyanceId, bool failuresOnly, string? tool, string? subject,
+        string? correlationId, string? causationId, string? rootOperationId, string? type, string? entityId,
+        int? afterSequence, string? from, string? to, string? state, string? topic, bool includeSession) =>
+        id is { Length: > 8 } && id == id.Trim() && id.StartsWith("session.", StringComparison.Ordinal) &&
+        id.All(character => char.IsLower(character) || char.IsDigit(character) || character is '.' or '-') &&
+        ids is null && version is null && query is null && nameQuery is null && withDefinitionId is null &&
+        category is null && scope is null && !includeInactive && limit is null && sample is null && componentIds is null &&
+        containmentDepth is null && relationshipKinds is null && relationshipDepth is null && maxNodes is null &&
+        maxEdges is null && worldId is null && travellerId is null && destinationId is null &&
+        destinationLocationId is null && groundConveyanceId is null && aerialConveyanceId is null && !failuresOnly &&
+        tool is null && subject is null && correlationId is null && causationId is null && rootOperationId is null &&
+        type is null && entityId is null && afterSequence is null && from is null && to is null && state is null && topic is null && !includeSession;
 }

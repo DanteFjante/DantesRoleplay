@@ -26,6 +26,9 @@ Required state and input
 3. Input is exactly `{"ability":"str"|"dex","rollCircumstances":[{"kind":"advantage"|"disadvantage","source":"reason"}]}` with optional rollCircumstances. The selected ability must occur in the profile's canonical list. `condition:` is reserved for state-derived evidence and rejected from caller input.
 4. Derive modifier and level-band Proficiency Bonus from stored subject state; accept neither from input. Add PB once only when profile category occurs in the stored category list.
 5. Compose mechanic.dnd2024.d20-test.state-effects once for subject and once for target, both with static `{}` input. Merge caller circumstances, attacker `attackRoll` circumstances, and target `attackAgainst` circumstances under the established closed, non-stacking, cancellation convention. Return every die and selected die.
+   Append only the subject resolver's derived modifiers to the attack's modifier list and total; a
+   defender's Exhaustion never changes the attacker's total. Natural-20 and natural-1 precedence
+   remains after the total is calculated.
 
 Result and verification
 

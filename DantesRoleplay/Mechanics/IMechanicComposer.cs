@@ -34,6 +34,12 @@ public sealed record ChildMechanicRun(
     string Error = "")
 {
     public bool Ok => string.IsNullOrEmpty(Error) && Mechanic is not null && Projection is not null && Run?.Ok == true;
+
+    /// <summary>
+    /// Proposals made by this child's nested children. They are carried upward only; no child
+    /// applies them and they are never made available as another child's input.
+    /// </summary>
+    public CompositionProposal Proposal { get; init; } = CompositionProposal.Empty;
 }
 
 /// <summary>Either the parent projection enriched with child results, or an actionable failure.</summary>
@@ -41,5 +47,30 @@ public sealed record CompositionResult(MechanicProjection? Projection, string Er
 {
     public bool Ok => Projection is not null && string.IsNullOrEmpty(Error);
 
+    /// <summary>Ordered child proposals that the top-level action must validate and apply atomically.</summary>
+    public CompositionProposal Proposal { get; init; } = CompositionProposal.Empty;
+
     public static CompositionResult Failed(string error) => new(null, error);
+}
+
+/// <summary>
+/// The ordered effect-bearing portion of a composed child tree. It deliberately excludes output
+/// data, narration, logs, and role bindings: those remain frozen child-result metadata.
+/// </summary>
+public sealed record CompositionProposal(
+    IReadOnlyList<Effects.Effect> Effects,
+    IReadOnlyList<Events.DeclaredEvent> Events,
+    IReadOnlyList<Notifications.DeclaredNotification> Notifications)
+{
+    public static CompositionProposal Empty { get; } = new([], [], []);
+
+    public CompositionProposal Append(CompositionProposal other) => new(
+        [.. Effects, .. other.Effects],
+        [.. Events, .. other.Events],
+        [.. Notifications, .. other.Notifications]);
+
+    public CompositionProposal Append(MechanicOutput output) => new(
+        [.. Effects, .. output.Effects],
+        [.. Events, .. output.Events],
+        [.. Notifications, .. output.Notifications]);
 }

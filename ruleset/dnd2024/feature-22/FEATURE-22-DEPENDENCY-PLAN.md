@@ -1,15 +1,15 @@
 # Feature 22 dependency plan — unarmed, improvised, and two-weapon combat
 
-Status: **Planned; Slice 1 (effect-free Unarmed Strike Damage resolver) is the next and only authorised implementation pass. Grapple, Shove, improvised weapons, and two-weapon fighting remain blocked by their named tactical and equipment seams.**
+Status: **Slice 1 verified; Grapple, Shove, improvised weapons, and two-weapon fighting remain blocked by their named tactical and equipment seams.**
 Last updated: 2026-08-21
 
 ## Execution rule
 
-This is a planning-only artifact under `AGENTS.md` and the Terra planning guide. It creates no
-runtime procedure, component, mechanic, event, subscription, fixture, migration, or game state.
-The live `procedure.system.create-feature` read and runtime inventory were unavailable, so the plan
-records repository/catalog evidence only. An implementation pass must re-read live contracts,
-reconcile catalog/database drift, validate a disposable import, record evidence, and stop.
+This plan records a completed repository implementation slice under `AGENTS.md` and the Terra
+planning guide. Slice 1 adds one diagnostic mechanic and its governing contract, but no component,
+entity, actor state, event, subscription, or game state. A later implementation pass must re-read
+current contracts, select exactly one verified next slice, validate a disposable import, record
+evidence, and stop.
 
 ## Target capability
 
@@ -144,7 +144,7 @@ result, not a player-facing Action, position check, or Hit Point change.
 
 | Order | Slice | Starts only when | Exit gate |
 | --- | --- | --- | --- |
-| 1 | Effect-free Unarmed Strike Damage resolver | Feature 8/13 D20 contracts re-read; IDs confirmed. | Strength/PB D20 result exposes hit/critical/fixed damage evidence and zero effects. |
+| 1 | Effect-free Unarmed Strike Damage resolver | **Verified.** | Strength/PB D20 result exposes hit/critical/fixed damage evidence and zero effects. |
 | 2 | Tactical unarmed Damage action | Slice 1, Feature 20 Slice 2, Feature 15 application seam, and spend composition. | Within-reach Attack action spends one Action and applies verified final Bludgeoning damage atomically. |
 | 3 | Manipulation capacity and Grapple reader | Feature 20 Slice 2, Feature 23, anatomy semantics. | Reader reports free capacity and all outgoing grapples from encounter state. |
 | 4 | Grapple, release, escape | Slice 3, Feature 4, Feature 13 writer, composition. | Legal Grapple applies source-aware state; every immediate ending clears only that instance. |
@@ -158,7 +158,7 @@ result, not a player-facing Action, position check, or Hit Point change.
 
 ### Runtime artifacts
 
-- New governing contract and `mechanic.dnd2024.unarmed-strike.damage` in
+- **Implemented:** new governing contract and `mechanic.dnd2024.unarmed-strike.damage` in
   `ruleset.dnd2024.core.gameplay.unarmed-strikes`.
 - Focused fresh-import catalog tests.
 - No component, entity, item, position, condition, Action budget, Hit Point effect, or migration.
@@ -189,8 +189,9 @@ exist.
 | Non-effects | Valid, replayed, and rejected runs leave every role byte-identical and return no effects. |
 | Routing | “unarmed strike damage” selects this diagnostic rule, not weapon attack/damage, saves, or condition writing. |
 
-Stop only after catalog validation, focused/full repository checks, `git diff --check`, and a receipt
-pass. Do not add a tactical action, HP change, Grapple, Shove, item profile, or turn ledger.
+**Verified.** Focused adjacent-contract tests and a disposable catalog validation pass are recorded
+in [the Slice 1 receipt](FEATURE-22-SLICE-1-RECEIPT.md). Do not add a tactical action, HP change,
+Grapple, Shove, item profile, or turn ledger.
 
 ## Later-slice invariants
 
@@ -209,8 +210,9 @@ pass. Do not add a tactical action, HP change, Grapple, Shove, item profile, or 
 ## Plan-quality audit
 
 - One capability, source locators, owner searches, closed input, recursive graph, atomic/effect
-  boundaries, routing, replay, cleanup, and one next slice: yes.
-- No runtime artifact is created by this planning pass.
+  boundaries, routing, replay, cleanup, and one completed lowest slice: yes.
+- Slice 1 runtime artifacts and verification are recorded in [the receipt](FEATURE-22-SLICE-1-RECEIPT.md);
+  no persistent catalog import occurred.
 
 ## Plan-change rule
 

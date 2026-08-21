@@ -38,6 +38,10 @@ condition tables or accept condition-derived circumstances from callers.
    relevant branch with caller circumstances under the existing Advantage/Disadvantage rule, and
    reports caller, derived, and merged inputs separately. Callers may not use the reserved
    `condition:` source prefix.
+7. A valid source-free Exhaustion entry is reported in `effectiveConditions` with empty source
+   identities, its level in `exhaustionLevel`, and exactly one derived modifier when present:
+   `{source:"condition:exhaustion (level <n>)",value:-2*n}`. It creates no circumstance, changes
+   no roll mode, and applies to every D20 Test consumer that composes this resolver.
 
 ## Constraints
 

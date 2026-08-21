@@ -3,6 +3,7 @@ using DantesRoleplay.Actions;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.Effects;
+using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
 using DantesRoleplay.RuleAccess;
@@ -32,7 +33,7 @@ public sealed class CatalogFeature9Tests : IDisposable
         await using var db = _fixture.CreateContext();
         var world = new WorldStore(db);
         var mechanics = new MechanicStore(db);
-        var imported = await new CatalogImporter(db, mechanics, new ProcedureStore(db), world)
+        var imported = await new CatalogImporter(db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db))
             .ApplyAsync(_catalogCopy, new CatalogImportOptions());
 
         Assert.False(imported.Aborted);
@@ -89,7 +90,7 @@ public sealed class CatalogFeature9Tests : IDisposable
         await using var db = _fixture.CreateContext();
         var world = new WorldStore(db);
         var mechanics = new MechanicStore(db);
-        Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world)
+        Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db))
             .ApplyAsync(_catalogCopy, new CatalogImportOptions())).Aborted);
         var runner = CreateRunner(db, world, mechanics);
 
@@ -155,7 +156,7 @@ public sealed class CatalogFeature9Tests : IDisposable
         await using var db = _fixture.CreateContext();
         var world = new WorldStore(db);
         var mechanics = new MechanicStore(db);
-        var imported = await new CatalogImporter(db, mechanics, new ProcedureStore(db), world)
+        var imported = await new CatalogImporter(db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db))
             .ApplyAsync(_catalogCopy, new CatalogImportOptions());
 
         Assert.False(imported.Aborted);
@@ -296,7 +297,7 @@ public sealed class CatalogFeature9Tests : IDisposable
         .ToDictionary(item => item.Id, item => string.Join("\n", item.Entity!.Components.OrderBy(component => component.DefinitionId).Select(component => component.DefinitionId + "=" + component.Data)), StringComparer.Ordinal);
 
     private static ActionRunner CreateRunner(DantesRoleplayDbContext db, WorldStore world, MechanicStore mechanics) =>
-        new(db, mechanics, new ProjectionResolver(db), new JintMechanicEngine(), new EffectApplier(db, world),
+        new(db, mechanics, new ProjectionResolver(db), new JintMechanicEngine(), new EffectApplier(db, world, events: new EventLedger(db)),
             new OperationLog(db), new MechanicComposer(mechanics, new ProjectionResolver(db), new JintMechanicEngine()));
 
     private static string RepositoryCatalog()

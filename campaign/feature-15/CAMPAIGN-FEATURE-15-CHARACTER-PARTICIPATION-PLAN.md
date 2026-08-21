@@ -1,7 +1,7 @@
 # Campaign Feature 15 dependency plan — campaign-owned character participation
 
-Status: **Slice 1 verified; Slice 2 implemented. Slice 3 remains blocked on Character CH13's
-lifecycle contract and root-composition decision.**  
+Status: **Slices 1–2 are implemented, including CH5's effect-free attachment planner. Slice 3 remains blocked on Character CH13's
+lifecycle contract and root-composition decision.**
 Last updated: 2026-08-21
 
 ## Target capability
@@ -55,7 +55,7 @@ added.
 
 | Role | Proposed vocabulary and closed meaning |
 | --- | --- |
-| Participation entity | Server-derived opaque `campaignId + ".participation." + first 16 lowercase SHA-256(actorId UTF-8) characters`. It has no actor/campaign ID in its name-independent data. Callers never select it. |
+| Participation entity | Server-derived exact `<campaignId>.participation.<actorId>`. It has no actor/campaign ID in its name-independent data. Callers never select it. A request whose derived id exceeds the canonical ID boundary is rejected before effects. |
 | State component | `game.core.campaign.character-participation`, exactly `{ "status": "active" | "withdrawn" }`. It contains no actor/campaign IDs, character/profile marker, dates, reason, user, party role, inventory, class, rules, or operation ID. |
 | Campaign link | `game.core.campaign.has-character-participation`, directed empty-data link from campaign root to participation. |
 | Actor link | `game.core.campaign.character-participation.for-actor`, directed empty-data link from participation to the existing actor. |
@@ -134,7 +134,7 @@ CH13 consumes Slice 3. C14 and Session S5 consume the verified active-scope proj
 | Order | Slice | Starts only when | Exit gate |
 | ---: | --- | --- | --- |
 | 1 | Participation definition and active-scope verifier | All proposed vocabulary, cardinality, irreversible-withdrawal rule, and no-new-kind/public dispatch boundary are confirmed. | Catalog/procedure validation proves the closed state/link shape; a zero-effect verifier accepts exactly one structurally active campaign-actor attachment and rejects every malformed/ambiguous scope. |
-| 2 | Trusted-host attach transaction and CH5 planner | Slice 1 verified; derived-ID policy, attach operation, runner, audit/event behavior, and test fixture are confirmed. | One active campaign attaches one existing actor atomically; duplicate, cross-campaign, inactive, stale, and injected-failure paths leave no participation evidence. CH1 can consume the verifier. |
+| 2 | Trusted-host attach transaction and CH5 planner | Slice 1 verified; derived-ID policy, attach operation, runner, audit/event behavior, and test fixture are confirmed. | One active campaign attaches one existing actor atomically; the effect-free planner validates the same closed attachment against a staged actor; duplicate, cross-campaign, inactive, stale, and injected-failure paths leave no participation evidence. CH1 and CH5 can consume the verifier/planner boundary. |
 | 3 | Withdrawal composition seam | Slice 2 verified; CH13 lifecycle contract and atomic root-composition behavior are confirmed. | A CH13 dry run receives one typed withdrawal fragment; a forced root failure leaves both participation and character lifecycle unchanged. No standalone retirement semantics are invented. |
 
 ### Slice 1 receipt

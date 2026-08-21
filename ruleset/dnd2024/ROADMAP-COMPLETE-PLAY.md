@@ -62,8 +62,8 @@ rule that runs without an action having been committed.
 | 18 | Concentration: one at a time, the save on taking damage, and what ends it | E1, 13 | Metamagic or feature-based exceptions |
 | 19 | Reactions in play: opportunity attacks and triggered abilities | 12, E1 | Counterspell timing puzzles, held actions |
 | 20 | Position and movement: speed, distance between participants, difficult terrain, and reach as a precondition for attacking | 11 | A rendered grid, pathfinding, flanking, elevation as a full 3D model |
-| 21 | Cover and ranged combat: half and three-quarters cover, long range Disadvantage, firing into melee | 20 | Line of sight as geometry, projectile physics |
-| 22 | Unarmed and improvised combat: unarmed strike, grapple, shove, two-weapon fighting | Feature 8, 20 | Wrestling subsystems, called shots |
+| 21 | Cover and ranged combat: half and three-quarters cover, long range Disadvantage, firing into melee | 20 | [Slice 1 verified: static Shortbow 80/320 range data](feature-21/FEATURE-21-DEPENDENCY-PLAN.md); line of sight as geometry, projectile physics |
+| 22 | Unarmed and improvised combat: unarmed strike, grapple, shove, two-weapon fighting | Feature 8, 20 | [Slice 1 verified: effect-free Unarmed Strike Damage evidence](feature-22/FEATURE-22-DEPENDENCY-PLAN.md); wrestling subsystems, called shots |
 
 ---
 
@@ -76,12 +76,12 @@ warns against.
 | # | Capability | Depends on | Deliberate non-goals |
 | --- | --- | --- | --- |
 | 23 | Equipment and inventory: items as entities, carried through containment, currency, weight and the encumbrance option | Feature 7 | A shopping economy, crafting, item durability |
-| 24 | Armor, shields, and Armor Class derived from what is actually worn | 23, Feature 6 | Natural armor formulas for every monster, magical AC stacking beyond the SRD |
-| 25 | Weapon properties and mastery: finesse, versatile, thrown, loading, ammunition, and the 2024 mastery properties | 23, Feature 8 | A complete weapon catalog; the SRD list is the boundary |
-| 26 | Species traits: the SRD species and their mechanical grants | Feature 2 | Non-SRD species, custom lineages |
-| 27 | Classes and levels: class features by level, hit dice, subclass choice, proficiency grants, multiclassing rules | Feature 2, 26 | Non-SRD subclasses, homebrew progression |
+| 24 | Armor, shields, and Armor Class derived from what is actually worn | 23, Feature 6 | [Slice 1 verified: static mundane armor and Shield data](feature-24/FEATURE-24-DEPENDENCY-PLAN.md); natural armor formulas for every monster, magical AC stacking beyond the SRD |
+| 25 | Weapon properties and mastery: finesse, versatile, thrown, loading, ammunition, and the 2024 mastery properties | 23, Feature 8 | [Slice 1 verified: static Dagger, Shortbow, and Battleaxe data](feature-25/FEATURE-25-DEPENDENCY-PLAN.md); a complete weapon catalog, with the SRD list as boundary |
+| 26 | Species traits: the SRD species and their mechanical grants | Feature 2 | [Slice 1 verified: immutable SRD species profiles](feature-26/FEATURE-26-DEPENDENCY-PLAN.md); non-SRD species, custom lineages |
+| 27 | Classes and levels: class features by level, hit dice, subclass choice, proficiency grants, multiclassing rules | Feature 2; CH4; C14; CH9; Feature 33 | [Slice 1 verified: immutable Fighter progression and reader](feature-27/FEATURE-27-DEPENDENCY-PLAN.md); non-SRD subclasses, homebrew progression |
 | 28 | Backgrounds, feats, and ability score improvements | 27 | Non-SRD feats |
-| 29 | Attunement and magic items: the SRD item set, attunement slots, and item-granted effects | 23, E1 | Artifacts, sentient items, item creation |
+| 29 | Attunement and magic items: the SRD item set, attunement slots, and item-granted effects | 23, E1 | [Slice 1 verified: immutable representative magic-item profiles](feature-29/FEATURE-29-DEPENDENCY-PLAN.md); artifacts, sentient items, item creation |
 | 30 | Character creation as one guided procedure that produces a legal, playable sheet | 23–28 | A visual character builder |
 
 ---
@@ -90,8 +90,8 @@ warns against.
 
 | # | Capability | Depends on | Deliberate non-goals |
 | --- | --- | --- | --- |
-| 31 | Spellcasting resources: spell slots, known and prepared spells, spellcasting ability, spell save DC and attack bonus | 27 | Spell point variants, non-SRD spells |
-| 32 | Spell resolution: spell attack rolls, spell saves, areas of effect, targeting and duration | 31, 18, 20 | Every SRD spell authored — that is content, tracked separately |
+| 31 | Spellcasting resources: spell slots, known and prepared spells, spellcasting ability, spell save DC and attack bonus | 27 | [Slice 1 verified: immutable spell identities](feature-31/FEATURE-31-DEPENDENCY-PLAN.md); spell point variants, non-SRD spells |
+| 32 | Spell resolution: spell attack rolls, spell saves, areas of effect, targeting and duration | 31, 18, 20 | [Slice 1 verified: immutable resolution profiles](feature-32/FEATURE-32-DEPENDENCY-PLAN.md); every SRD spell authored — that is content, tracked separately |
 | 33 | Rests: short rest, long rest, hit dice spending, and what each resource recovers | 27, 14 | Gritty realism and other optional rest variants |
 | 34 | Vision and light, hiding, passive Perception, and surprise at the start of an encounter | 20, 13 | Dynamic lighting as geometry |
 | 35 | Monsters and stat blocks: creatures as data, CR, traits, actions, and encounter building | Feature 6–9, 27 | The full SRD bestiary as content; the capability comes first |

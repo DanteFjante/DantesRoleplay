@@ -14,6 +14,16 @@
         "faces": 4,
         "type": "piercing"
       },
+      "propertyTags": [
+        "finesse",
+        "light",
+        "thrown"
+      ],
+      "thrownRangeFeet": {
+        "normal": 20,
+        "long": 60
+      },
+      "mastery": "nick",
       "sourceRef": {
         "sourceId": "source.dnd2024.srd-5.2.1",
         "locator": "Equipment > Weapons"

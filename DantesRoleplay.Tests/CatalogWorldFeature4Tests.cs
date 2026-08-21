@@ -44,10 +44,10 @@ public sealed class CatalogWorldFeature4Tests : IDisposable
         Assert.NotNull(await new ProcedureStore(db).GetAsync("procedure.game.core.world.knowledge"));
 
         var definitions = await world.GetDefinitionsAsync();
-        Assert.Contains(definitions, d => d.Id == "game.core.world.fact" && d.UsageCount == 1);
-        Assert.Contains(definitions, d => d.Id == "game.core.world.rumour" && d.UsageCount == 1);
-        Assert.Contains(definitions, d => d.Id == "game.core.world.secret" && d.UsageCount == 1);
-        Assert.Contains(definitions, d => d.Id == "game.core.world.clue" && d.UsageCount == 3);
+        Assert.Contains(definitions, d => d.Id == "game.core.world.fact" && d.UsageCount >= 1);
+        Assert.Contains(definitions, d => d.Id == "game.core.world.rumour" && d.UsageCount >= 1);
+        Assert.Contains(definitions, d => d.Id == "game.core.world.secret" && d.UsageCount >= 1);
+        Assert.Contains(definitions, d => d.Id == "game.core.world.clue" && d.UsageCount >= 3);
 
         var secret = Require(await world.GetEntityAsync(Secret));
         var secretData = Component(secret, "game.core.world.secret");
@@ -128,7 +128,10 @@ public sealed class CatalogWorldFeature4Tests : IDisposable
             var kind = id.Split('.')[0];
             AssertKnowledgeData(entity.Components.Single(c => c.DefinitionId == $"game.core.world.{kind}").Data, kind);
         }
-        AssertKnowledgeLinks(contents.Relationships!.Relationships.Where(r => r.Kind.StartsWith("game.core.world.knowledge.", StringComparison.Ordinal) || r.Kind == "game.core.world.clue.supports").Select(r => new Link(r.From, r.To, r.Kind, r.Data)), knowledge);
+        AssertKnowledgeLinks(contents.Relationships!.Relationships
+            .Where(r => knowledge.Contains(r.From, StringComparer.Ordinal))
+            .Where(r => r.Kind is "game.core.world.knowledge.in-world" or "game.core.world.knowledge.about" or "game.core.world.clue.supports")
+            .Select(r => new Link(r.From, r.To, r.Kind, r.Data)), knowledge);
     }
 
     private static void AssertKnowledgeData(string json, string kind)

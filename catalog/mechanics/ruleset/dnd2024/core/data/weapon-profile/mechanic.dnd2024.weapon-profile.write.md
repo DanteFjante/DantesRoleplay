@@ -7,7 +7,7 @@ status: active
 ---
 
 ## Description
-Records or corrects a canonical D&D 2024 weapon's static SRD profile. It establishes facts for later attack and damage rules; it does not equip a creature, choose an attack ability, roll, or apply damage.
+Records or corrects a canonical D&D 2024 weapon's static SRD profile, including normal/long Ranged and Thrown modes, ordered property tags, structured property facts, and one mastery identity. It establishes facts for later attack and damage rules; it does not equip a creature, grant mastery permission, determine tactical range, choose an attack ability, roll, or apply damage.
 
 ## Matches
 record weapon profile
@@ -19,4 +19,3 @@ define weapon profile
 ```json
 {"roles":{"weapon":{"components":["dnd2024.weapon-profile"],"description":"The canonical weapon entity whose static profile is being recorded or corrected."}}}
 ```
-

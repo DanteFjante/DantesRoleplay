@@ -193,7 +193,12 @@ public sealed class ProcedureStore(DantesRoleplayDbContext db) : IProcedureStore
                 ? $"'{request.Category}' is a valid category path."
                 : pathProblem));
 
-        var categories = await GetCategoriesAsync(cancellationToken);
+        // Archived paths still belong to the authored taxonomy. Hiding them here would make a
+        // new sibling look like a new root and weaken the anti-sprawl guidance precisely when
+        // historical content is most useful.
+        var categories = await GetCategoriesAsync(
+            includeInactive: true,
+            cancellationToken: cancellationToken);
         var paths = categories.Select(c => c.Category).ToList();
 
         checks.Add(new WriteCheck(
@@ -383,14 +388,20 @@ public sealed class ProcedureStore(DantesRoleplayDbContext db) : IProcedureStore
         _db.ProcedureContracts.AnyAsync(c => c.Id == id, cancellationToken);
 
     public async Task<IReadOnlyList<ProcedureCategoryCount>> GetCategoriesAsync(
+        bool includeInactive = false,
         CancellationToken cancellationToken = default)
     {
         // Project the grouping into an ANONYMOUS type, not straight into the record. EF can
         // translate a grouped Count into an anonymous projection; constructing a user type in the
         // group selector makes the whole expression untranslatable.
-        var rows = await _db.ProcedureContracts
-            .AsNoTracking()
-            .Where(c => c.Status != ProcedureStatus.Archived)
+        var categories = _db.ProcedureContracts.AsNoTracking();
+
+        if (!includeInactive)
+        {
+            categories = categories.Where(c => c.Status != ProcedureStatus.Archived);
+        }
+
+        var rows = await categories
             .GroupBy(c => c.Category)
             .Select(g => new { Category = g.Key, Count = g.Count() })
             .ToListAsync(cancellationToken);

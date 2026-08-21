@@ -8,7 +8,8 @@ status: active
 
 ## Description
 
-Records an empty known condition state, applies explicit SRD condition instances, or clears them.
+Records an empty known condition state, applies or clears explicit non-Exhaustion SRD condition
+instances, or gains and recovers the one leveled Exhaustion condition.
 An optional source role supplies entity identity rather than allowing caller-supplied source text.
 It stores state only and does not infer why a condition applies or any mechanical consequence.
 
@@ -17,9 +18,11 @@ It stores state only and does not infer why a condition applies or any mechanica
 record creature conditions
 apply the poisoned condition
 clear the prone condition
+exhaust the character
+recover a level of exhaustion
 
 ## Requirements
 
 ```json
-{"roles":{"subject":{"components":["dnd2024.conditions"],"description":"The creature whose condition state is recorded, applied, or cleared."},"source":{"components":[],"optional":true,"description":"An optional existing entity whose identity scopes applied or cleared instances."}}}
+{"roles":{"subject":{"components":["dnd2024.conditions"],"description":"The creature whose condition state is recorded, applied, cleared, exhausted, or recovered."},"source":{"components":[],"optional":true,"description":"An optional existing entity whose identity scopes only applied or cleared non-Exhaustion instances."}}}
 ```

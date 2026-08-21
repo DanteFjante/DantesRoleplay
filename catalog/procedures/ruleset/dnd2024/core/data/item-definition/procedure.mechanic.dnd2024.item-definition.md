@@ -25,17 +25,20 @@ durable identity; later physical instances reference that exact id and do not co
    definition may name that profile through `weaponProfileId`, but may not duplicate its category,
    abilities, or damage.
 5. Seed only the representative ordinary definitions in this slice: backpack, pouch, quiver,
-   hempen rope (50 feet), dagger, and the five coin denominations.
+   hempen rope (50 feet), dagger, and the five coin denominations. Feature 24 may extend this
+   same definition owner with source-cited Armor and Shield table profiles; no second item schema
+   or armor-instance facts are permitted.
 
 ## Constraints
 
 - `definitionVersion`, kind, future stack policy, exact mass, optional ordinary capacity, optional
-  currency metadata, optional weapon-profile reference, and source attribution are static data.
+  currency metadata, optional weapon-profile reference, optional armor/shield table profile, and
+  source attribution are static data.
 - Do not attach this component to a creature, a campaign item instance, an encounter, or a
   container in play. Slice 3 owns instances and custody; Slice 4 owns quantity operations; Slice 5
   owns burden calculation; Slice 7 owns transfer admission; Feature 9 owns currency transactions.
-- Do not add price, owner, equipped state, quantity, derived totals, magical exceptions, attunement,
-  actions, or arbitrary item scripting.
+- Do not add price, owner, equipped state, quantity, derived Armor Class/training/speed, magical
+  exceptions, attunement, actions, or arbitrary item scripting.
 - This slice has no action mechanic: definitions are reviewed catalog data. Runtime mutation of a
   published definition requires a separately governed migration, not `record` or `correct` mode.
 

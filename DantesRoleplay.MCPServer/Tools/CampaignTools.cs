@@ -29,6 +29,28 @@ public sealed class CampaignTools
             : ToolEnvelope.Failure(result.Problems[0].Code, result.Problems[0].Reason, result.Next, result.OperationId);
     }
 
+    public Task<ToolEnvelope> ValidateSessionEndAsync(ICampaignSessionEndValidator validator, IOperationLog log, CampaignSessionEndRequest request, CancellationToken cancellationToken = default) =>
+        ToolRunner.RunAsync(log, "commit", "Validate campaign session closure.", request.SessionId, ["procedure.campaign.session"], async () =>
+        {
+            var result = await validator.ValidateAsync(request, cancellationToken);
+            return result.Valid
+                ? ToolOutcome.OkAbout(result.SessionId, new { result.SessionId, result.CampaignId, PreviewAvailable = true, RecapSectionKeys = new[] { "arc", "chapter", "milestones" }, NextAction = result.Next }, "Campaign session closure is valid; no session state changed.", result.Next)
+                : ToolOutcome.Fail(result.Problems[0].Code, result.Problems[0].Reason, result.Next, "Campaign session closure validation was rejected.");
+        }, consumesReadEvidence: false);
+
+    public async Task<ToolEnvelope> EndSessionAsync(ICampaignSessionEnder ender, CampaignSessionEndRequest request, string intent, IReadOnlyList<string>? proceduresUsed, CancellationToken cancellationToken = default)
+    {
+        var result = await ender.EndAsync(request, intent, proceduresUsed, cancellationToken);
+        return result.Ended
+            ? ToolEnvelope.Success(new { result.SessionId, result.CampaignId, result.PreviousStatus, result.CurrentStatus, result.RecapPresent, result.RecapSectionKeys, NextAction = result.Next }, result.OperationId, result.Next)
+            : ToolEnvelope.Failure(result.Problems[0].Code, result.Problems[0].Reason, result.Next, result.OperationId);
+    }
+
+    public Task<ToolEnvelope> ValidateSessionCheckpointAsync(ICampaignSessionCheckpointValidator validator, IOperationLog log, CampaignSessionCheckpointRequest request, CancellationToken cancellationToken = default) => ToolRunner.RunAsync(log, "commit", "Validate campaign session checkpoint readiness.", request.SessionId, ["procedure.campaign.session"], async () => { var result = await validator.ValidateAsync(request, cancellationToken); return result.Valid ? ToolOutcome.OkAbout(result.SessionId, new { result.SessionId, result.CampaignId, CheckpointAvailable = true, NextAction = result.Next }, "Campaign session checkpoint is valid; no state changed.", result.Next) : ToolOutcome.Fail(result.Problems[0].Code, result.Problems[0].Reason, result.Next, "Campaign session checkpoint validation was rejected."); }, consumesReadEvidence: false);
+
+    public async Task<ToolEnvelope> CheckpointSessionAsync(ICampaignSessionCheckpointCreator creator, CampaignSessionCheckpointRequest request, string intent, IReadOnlyList<string>? proceduresUsed, CancellationToken cancellationToken = default)
+    { var result = await creator.CreateAsync(request, intent, proceduresUsed, cancellationToken); return result.Created ? ToolEnvelope.Success(new { result.CheckpointId, result.SessionId, result.CampaignId, result.WorldId, result.ScopeContractVersion, result.Availability, NextAction = result.Next }, result.OperationId, result.Next) : ToolEnvelope.Failure(result.Problems[0].Code, result.Problems[0].Reason, result.Next, result.OperationId); }
+
     public async Task<ToolEnvelope> CreateAsync(ICampaignBootstrapper bootstrapper, CampaignBlueprint blueprint, string reviewFingerprint, string intent, IReadOnlyList<string>? proceduresUsed, CancellationToken cancellationToken = default)
     {
         var result = await bootstrapper.CreateAsync(blueprint, reviewFingerprint, intent, proceduresUsed, cancellationToken);
@@ -65,5 +87,14 @@ public sealed class CampaignTools
             return result.Resumed
                 ? ToolOutcome.OkAbout(campaignId, new { result.Session, result.Campaign, NextAction = result.Next }, "Returned the current active-session header and trusted-host C3 context.", result.Next)
                 : ToolOutcome.Fail(result.Problems[0].Code, result.Problems[0].Reason, result.Next, "Campaign session resume was unavailable.");
+        }, consumesReadEvidence: false);
+
+    public Task<ToolEnvelope> SessionRecapAsync(ICampaignSessionRecapReader reader, IOperationLog log, string sessionId, CancellationToken cancellationToken = default) =>
+        ToolRunner.RunAsync(log, "query", "", sessionId, ["procedure.campaign.session"], async () =>
+        {
+            var result = await reader.GetAsync(sessionId, cancellationToken);
+            return result.Found
+                ? ToolOutcome.OkAbout(result.SessionId, new { result.SessionId, result.CampaignId, result.Recap, NextAction = result.Next }, "Returned the immutable trusted-host factual session recap.", result.Next)
+                : ToolOutcome.Fail(result.Problems[0].Code, result.Problems[0].Reason, result.Next, "Session factual recap was unavailable.");
         }, consumesReadEvidence: false);
 }

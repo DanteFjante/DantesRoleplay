@@ -1,5 +1,5 @@
 {
   "id": "dnd2024.conditions",
   "name": "SRD creature conditions (D&D 2024)",
-  "description": "The closed, creature-owned D&D 2024 SRD condition instances in canonical order. Each instance records one non-Exhaustion condition and optional source entity identity. It stores no duration, severity, position, condition cause, derived D20 effect, Speed, Hit Points, turn state, or history. Governed by procedure.mechanic.dnd2024.conditions. Source: System Reference Document 5.2.1, 'Rules Glossary > Condition', Wizards of the Coast, CC-BY-4.0, https://www.dndbeyond.com/srd"
+  "description": "The closed, creature-owned D&D 2024 SRD condition instances in canonical order. Fourteen non-Exhaustion conditions retain optional source entity identity; the single source-free Exhaustion entry carries a level from 1 through 6. It stores no duration, severity, position, condition cause, derived D20 effect, Speed, Hit Points, turn state, death state, or history. Governed by procedure.mechanic.dnd2024.conditions. Source: System Reference Document 5.2.1, 'Rules Glossary > Condition' and 'Rules Glossary > Exhaustion', Wizards of the Coast, CC-BY-4.0, https://www.dndbeyond.com/srd"
 }

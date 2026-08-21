@@ -34,7 +34,7 @@ public sealed class ProcedureTools
         IOperationLog log,
         [Description("Substring matched against id, name, description and governs. Omit to list everything.")]
         string? query = null,
-        [Description("Restrict to one category. Call orient() for the categories that exist.")]
+        [Description("Restrict to one category branch and its descendants. Browse paths with query(kind: \"categories\", catalog: \"procedures\").")]
         string? category = null,
         [Description("Include deprecated and archived contracts. Default false.")]
         bool includeInactive = false,

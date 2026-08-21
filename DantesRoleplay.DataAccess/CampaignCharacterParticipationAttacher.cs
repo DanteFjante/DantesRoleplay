@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using DantesRoleplay.Campaign;
 using DantesRoleplay.Effects;
 using DantesRoleplay.Operations;
@@ -57,6 +55,11 @@ public sealed class CampaignCharacterParticipationAttacher(
             }
 
             var participationId = ParticipationId(campaignId, actorId);
+            if (!Id(participationId, "campaign."))
+            {
+                await transaction.RollbackAsync(CancellationToken.None); _db.ChangeTracker.Clear();
+                return await RejectAsync(campaignId, actorId, "INVALID_PARTICIPATION_ID", "actorId", "The confirmed derived participation id exceeds the canonical id boundary.", auditIntent, cited, CancellationToken.None);
+            }
             if (await _world.GetEntityAsync(participationId, cancellationToken) is not null)
             {
                 await transaction.RollbackAsync(CancellationToken.None); _db.ChangeTracker.Clear();
@@ -105,7 +108,7 @@ public sealed class CampaignCharacterParticipationAttacher(
         return new("rejected", campaignId, actorId, null, operation.Id, [new(code, path, reason, "Correct the request and retry campaign participation attachment.")], "commit(kind: \"campaign\", payload: \"{\\\"operation\\\":\\\"attach-character-participation\\\",...}\")");
     }
 
-    private static string ParticipationId(string campaignId, string actorId) => $"{campaignId}.participation.{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(actorId))).ToLowerInvariant()[..16]}";
+    private static string ParticipationId(string campaignId, string actorId) => $"{campaignId}.participation.{actorId}";
     private static bool Id(string? value, string prefix) => !string.IsNullOrWhiteSpace(value) && value.Length <= 200 && value == value.Trim() && value.StartsWith(prefix, StringComparison.Ordinal) && value.All(character => char.IsLower(character) || char.IsDigit(character) || character is '.' or '-');
     private static string? Component(EntitySnapshot entity, string definitionId) => entity.Components.SingleOrDefault(x => x.DefinitionId == definitionId)?.Data;
     private static bool Active(string? json) { try { using var document = System.Text.Json.JsonDocument.Parse(json ?? string.Empty); return document.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object && document.RootElement.TryGetProperty("status", out var status) && status.ValueKind == System.Text.Json.JsonValueKind.String && status.GetString() == "active"; } catch { return false; } }

@@ -1,7 +1,6 @@
 # Character Feature 1 dependency plan — actor profile and immutable content provenance
 
-Status: **Slice 1 verified. Slice 2 remains blocked on Campaign C15's accepted and verified
-character-participation contract and its separate profile-vocabulary confirmation.**  
+Status: **Implemented and accepted; full-suite verification passed.**
 Last updated: 2026-08-21
 
 ## Execution rule
@@ -66,16 +65,16 @@ fixture's name, grants, or rule prose into their schema or procedures.
 
 ## Proposed permanent vocabulary — confirmation required
 
-The Slice 1 permanent IDs below are confirmed and implemented. The profile family remains proposed
-until Slice 2 has its campaign-owned attachment verifier. Do not author the profile family before
-that separate confirmation under `procedure.system.modify` and the D&D ruleset governance contract:
+Both permanent-ID families below are confirmed and implemented. The profile family is governed by
+the campaign-owned attachment verifier under `procedure.system.modify` and the D&D ruleset
+governance contract:
 
 | Role | Proposed permanent ID |
 | --- | --- |
 | Immutable content-definition component | `dnd2024.character.content-definition` — **verified** |
 | Its governing procedure and normal recorder | `procedure.mechanic.dnd2024.character-content-definition`; `mechanic.dnd2024.character-content-definition.record` — **verified** |
-| Character-profile component | `dnd2024.character.profile` |
-| Its governing procedure and guarded normal recorder | `procedure.mechanic.dnd2024.character-profile`; `mechanic.dnd2024.character-profile.record` |
+| Character-profile component | `dnd2024.character.profile` — **accepted** |
+| Its governing procedure and guarded normal recorder | `procedure.mechanic.dnd2024.character-profile`; `mechanic.dnd2024.character-profile.record` — **accepted** |
 
 The profile recorder is a governed internal dependency of CH5, not a public action. If owner search
 finds an existing compatible character-profile or provenance component, stop for a semantic
@@ -143,7 +142,7 @@ CH0 ratifies exact first SRD 5.2.1 build and locators                 [missing s
 ├─ permanent CH1 vocabulary and schema meaning confirmed             [required semantic confirmation]
 │  └─ Slice 1: immutable content-definition component + recorder
 │     └─ first content-definition fixtures from CH0                  [then permitted]
-└─ C15 campaign-owned actor participation + active-scope check       [planned external contract]
+└─ C15 campaign-owned actor participation + active-scope check       [verified external contract]
    └─ Slice 2: character profile component + guarded recorder
       └─ CH2–CH4 composition, then CH5 atomic creation receipt
 ~~~
@@ -173,7 +172,7 @@ the immutable-version semantics are confirmed; current catalog owner search is r
 registered SRD locator, prove it has no rules copy or mutable version fields, and observe invalid
 or duplicate authoring leave state unchanged.
 
-**Status: Verified.** Receipt: [CH1 Slice 1 receipt](CHARACTER-FEATURE-01-SLICE-1-RECEIPT.md).
+**Status: Accepted.** Receipt: [CH1 Slice 1 receipt](CHARACTER-FEATURE-01-SLICE-1-RECEIPT.md).
 
 ### Slice 2 — record campaign-scoped character profile
 
@@ -195,6 +194,8 @@ campaign-visible only; permanent IDs are reconfirmed.
 **Exit:** a profile can be recorded only for an existing actor proven attached to the stated active
 campaign; the entity name is the sole display name; failed scope or validation checks write no
 state; and the result contains no rules, items, campaign ID, or authority assertion.
+
+**Status: Accepted.** Receipt: [CH1 Slice 2 receipt](CHARACTER-FEATURE-01-SLICE-2-RECEIPT.md).
 
 ## Acceptance matrix
 

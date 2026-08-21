@@ -9,6 +9,7 @@ using DantesRoleplay.Events;
 using DantesRoleplay.Notifications;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
+using DantesRoleplay.SystemFeedback;
 using DantesRoleplay.World;
 using ModelContextProtocol.Server;
 
@@ -34,7 +35,7 @@ public sealed class CommitTool
     [McpServerTool(Name = "commit")]
     [Description(
         "Change anything in this system. kind is one of: procedure, component, effects, mechanic, event-type, subscription, " +
-        "action, itinerary-advance, campaign, quest, notification. payload is a JSON object encoded as a string, shaped per kind — " +
+        "action, itinerary-advance, campaign, quest, notification, feedback. payload is a JSON object encoded as a string, shaped per kind — " +
         "query(kind: \"capabilities\") gives every shape exactly, and a rejection repeats the one " +
         "you needed. Where dryRun is supported, send dryRun: true first and read every check, then " +
         "commit the identical payload. This is the only path that changes state.")]
@@ -56,7 +57,7 @@ public sealed class CommitTool
         IQuestLifecycleRunner questLifecycle,
         IOperationLog log,
         INotificationStore notifications,
-        [Description("Closed kind: procedure, component, effects, mechanic, event-type, subscription, action, itinerary-advance, campaign, quest, or notification.")]
+        [Description("Closed kind: procedure, component, effects, mechanic, event-type, subscription, action, itinerary-advance, campaign, quest, notification, or feedback.")]
         string kind,
         [Description("JSON object containing the selected kind's existing tool arguments.")]
         string payload,
@@ -67,7 +68,12 @@ public sealed class CommitTool
         [Description("Procedure ids consulted before this commit.")] string[]? proceduresUsed = null,
         [Description("Validate without changing state where supported.")] bool dryRun = false,
         CancellationToken cancellationToken = default,
-        ICampaignCharacterParticipationAttacher? campaignParticipation = null)
+        ICampaignCharacterParticipationAttacher? campaignParticipation = null,
+        ICampaignSessionEndValidator? campaignSessionEndValidator = null,
+        ICampaignSessionEnder? campaignSessionEnder = null,
+        ICampaignSessionCheckpointValidator? campaignSessionCheckpointValidator = null,
+        ICampaignSessionCheckpointCreator? campaignSessionCheckpointCreator = null,
+        ISystemFeedbackService? feedback = null)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
         var spec = VerbSurface.Commit(normalizedKind);
@@ -135,10 +141,11 @@ public sealed class CommitTool
                     actions, log, parsedPayload.RootElement, intent, proceduresUsed, cancellationToken),
                 "itinerary-advance" => await CommitItineraryAdvanceAsync(
                     itineraries, actions, log, parsedPayload.RootElement, proceduresUsed, cancellationToken),
-                "campaign" => await CommitCampaignAsync(campaigns, campaignBootstrapper, campaignContinuity, campaignSessions, campaignSessionStarter, campaignParticipation, log, parsedPayload.RootElement, intent, proceduresUsed, cancellationToken),
+                "campaign" => await CommitCampaignAsync(campaigns, campaignBootstrapper, campaignContinuity, campaignSessions, campaignSessionStarter, campaignParticipation, campaignSessionEndValidator, campaignSessionEnder, campaignSessionCheckpointValidator, campaignSessionCheckpointCreator, log, parsedPayload.RootElement, intent, proceduresUsed, cancellationToken),
                 "quest" => await CommitQuestAsync(quests, questLifecycle, log, parsedPayload.RootElement, intent, proceduresUsed, cancellationToken),
                 "notification" => await CommitNotificationAsync(
                     notifications, log, parsedPayload.RootElement, intent, proceduresUsed, dryRun, cancellationToken),
+                "feedback" => await CommitFeedbackAsync(feedback, log, parsedPayload.RootElement, intent, proceduresUsed, cancellationToken),
                 _ => throw new InvalidOperationException($"Unhandled commit kind '{kind}'.")
             };
         }
@@ -335,6 +342,22 @@ public sealed class CommitTool
             cancellationToken);
     }
 
+    private static async Task<ToolEnvelope> CommitFeedbackAsync(ISystemFeedbackService? feedback, IOperationLog log, JsonElement payload, string intent, string[]? proceduresUsed, CancellationToken cancellationToken)
+    {
+        if (feedback is null) return await InvalidPayloadEnvelope(log, "feedback", "Feedback reporting is unavailable because its store is not registered.", intent, proceduresUsed, false);
+        if (!ClosedObject(payload, ["operation", "requestToken", "category", "impact", "summary", "observed"], ["expected", "reproductionSteps", "relatedOperationIds", "relatedProcedureIds"])
+            || !payload.TryGetProperty("operation", out var operation) || operation.ValueKind != JsonValueKind.String || operation.GetString() != "submit")
+            return await InvalidPayloadEnvelope(log, "feedback", "Feedback payload requires operation submit and its exact closed shape.", intent, proceduresUsed, false);
+        try
+        {
+            var request = payload.Deserialize<SystemFeedbackSubmitRequest>(JsonOptions);
+            return request is null
+                ? await InvalidPayloadEnvelope(log, "feedback", "Feedback payload could not be read.", intent, proceduresUsed, false)
+                : await new SystemFeedbackTools().SubmitAsync(feedback, request, intent, proceduresUsed, cancellationToken);
+        }
+        catch (JsonException ex) { return await InvalidPayloadEnvelope(log, "feedback", ex.Message, intent, proceduresUsed, false); }
+    }
+
     private static async Task<ToolEnvelope> CommitItineraryAdvanceAsync(IModeAwareItineraryReader itineraries, IActionRunner actions, IOperationLog log, JsonElement payload, string[]? proceduresUsed, CancellationToken cancellationToken)
     {
         if (!TryDeserialize(payload, out ItineraryAdvancePayload? value, out var error) || value is null || string.IsNullOrWhiteSpace(value.WorldId) || string.IsNullOrWhiteSpace(value.TravellerId) || string.IsNullOrWhiteSpace(value.DestinationLocationId) || string.IsNullOrWhiteSpace(value.ItineraryFingerprint) || value.NextLegIndex is null)
@@ -342,7 +365,7 @@ public sealed class CommitTool
         return await new ItineraryAdvanceTools().AdvanceAsync(itineraries, actions, log, new ModeAwareItineraryAdvanceRequest(value.WorldId, value.TravellerId, value.DestinationLocationId, value.ItineraryFingerprint, value.NextLegIndex.Value, value.GroundConveyanceId, value.AerialConveyanceId), proceduresUsed ?? [], cancellationToken);
     }
 
-    private static async Task<ToolEnvelope> CommitCampaignAsync(ICampaignBlueprintValidator campaigns, ICampaignBootstrapper bootstrapper, ICampaignContinuityRunner continuity, ICampaignSessionValidator sessions, ICampaignSessionStarter sessionStarter, ICampaignCharacterParticipationAttacher? participation, IOperationLog log, JsonElement payload, string intent, string[]? proceduresUsed, CancellationToken cancellationToken)
+    private static async Task<ToolEnvelope> CommitCampaignAsync(ICampaignBlueprintValidator campaigns, ICampaignBootstrapper bootstrapper, ICampaignContinuityRunner continuity, ICampaignSessionValidator sessions, ICampaignSessionStarter sessionStarter, ICampaignCharacterParticipationAttacher? participation, ICampaignSessionEndValidator? sessionEndValidator, ICampaignSessionEnder? sessionEnder, ICampaignSessionCheckpointValidator? checkpointValidator, ICampaignSessionCheckpointCreator? checkpointCreator, IOperationLog log, JsonElement payload, string intent, string[]? proceduresUsed, CancellationToken cancellationToken)
     {
         if (!payload.TryGetProperty("operation", out var operation) || operation.ValueKind != JsonValueKind.String)
             return await InvalidPayloadEnvelope(log, "campaign", "Campaign payload requires a closed operation.", "Run a supported campaign operation.", ["procedure.campaign.create", "procedure.campaign.chapter"], false);
@@ -350,6 +373,18 @@ public sealed class CommitTool
         if (name is "initialize-continuity" or "advance-chapter" or "close-chapter" or "conclude-arc") return await CommitContinuityAsync(continuity, log, payload, name, intent, proceduresUsed, cancellationToken);
         if (name == "validate-session") return await CommitSessionValidationAsync(sessions, log, payload, cancellationToken);
         if (name == "start-session") return await CommitSessionStartAsync(sessionStarter, log, payload, intent, proceduresUsed, cancellationToken);
+        if (name == "validate-session-end") return sessionEndValidator is null
+            ? await InvalidPayloadEnvelope(log, "campaign", "Campaign session-end validation is unavailable because its owner is not registered.", "Validate a campaign session closure.", ["procedure.campaign.session"], false)
+            : await CommitSessionEndValidationAsync(sessionEndValidator, log, payload, cancellationToken);
+        if (name == "end-session") return sessionEnder is null
+            ? await InvalidPayloadEnvelope(log, "campaign", "Campaign session end is unavailable because its owner is not registered.", "End a campaign session.", ["procedure.campaign.session"], false)
+            : await CommitSessionEndAsync(sessionEnder, log, payload, intent, proceduresUsed, cancellationToken);
+        if (name == "validate-session-checkpoint") return checkpointValidator is null
+            ? await InvalidPayloadEnvelope(log, "campaign", "Campaign session checkpoint validation is unavailable because its owner is not registered.", "Validate an ended campaign session checkpoint.", ["procedure.campaign.session"], false)
+            : await CommitSessionCheckpointValidationAsync(checkpointValidator, log, payload, cancellationToken);
+        if (name == "checkpoint-session") return checkpointCreator is null
+            ? await InvalidPayloadEnvelope(log, "campaign", "Campaign session checkpoint capture is unavailable because its owner is not registered.", "Capture an ended campaign session checkpoint.", ["procedure.campaign.session"], false)
+            : await CommitSessionCheckpointAsync(checkpointCreator, log, payload, intent, proceduresUsed, cancellationToken);
         if (name == "attach-character-participation") return participation is null
             ? await InvalidPayloadEnvelope(log, "campaign", "Campaign participation attachment is unavailable because its owner is not registered.", "Attach a character to an active campaign.", ["procedure.campaign.character-participation"], false)
             : await CommitParticipationAttachAsync(participation, log, payload, intent, proceduresUsed, cancellationToken);
@@ -410,6 +445,58 @@ public sealed class CommitTool
                 : await new CampaignTools().StartSessionAsync(starter, request, intent, proceduresUsed, cancellationToken);
         }
         catch (JsonException ex) { return await InvalidPayloadEnvelope(log, "campaign", ex.Message, "Validate campaign session readiness.", ["procedure.campaign.session"], false); }
+    }
+
+    private static async Task<ToolEnvelope> CommitSessionEndValidationAsync(ICampaignSessionEndValidator validator, IOperationLog log, JsonElement payload, CancellationToken cancellationToken)
+    {
+        if (!ClosedObject(payload, ["operation", "sessionId", "expectedStatus"]))
+            return await InvalidPayloadEnvelope(log, "campaign", "Session-end validation requires exactly operation, sessionId, and expectedStatus.", "Validate a campaign session closure.", ["procedure.campaign.session"], false);
+        try
+        {
+            var request = payload.Deserialize<CampaignSessionEndRequest>(JsonOptions);
+            return request is null
+                ? await InvalidPayloadEnvelope(log, "campaign", "Session-end validation request could not be read.", "Validate a campaign session closure.", ["procedure.campaign.session"], false)
+                : await new CampaignTools().ValidateSessionEndAsync(validator, log, request, cancellationToken);
+        }
+        catch (JsonException ex) { return await InvalidPayloadEnvelope(log, "campaign", ex.Message, "Validate a campaign session closure.", ["procedure.campaign.session"], false); }
+    }
+
+    private static async Task<ToolEnvelope> CommitSessionEndAsync(ICampaignSessionEnder ender, IOperationLog log, JsonElement payload, string intent, string[]? proceduresUsed, CancellationToken cancellationToken)
+    {
+        if (!ClosedObject(payload, ["operation", "sessionId", "expectedStatus"]))
+            return await InvalidPayloadEnvelope(log, "campaign", "Session end requires exactly operation, sessionId, and expectedStatus.", "End a campaign session.", ["procedure.campaign.session"], false);
+        try
+        {
+            var request = payload.Deserialize<CampaignSessionEndRequest>(JsonOptions);
+            return request is null
+                ? await InvalidPayloadEnvelope(log, "campaign", "Session-end request could not be read.", "End a campaign session.", ["procedure.campaign.session"], false)
+                : await new CampaignTools().EndSessionAsync(ender, request, intent, proceduresUsed, cancellationToken);
+        }
+        catch (JsonException ex) { return await InvalidPayloadEnvelope(log, "campaign", ex.Message, "End a campaign session.", ["procedure.campaign.session"], false); }
+    }
+
+    private static async Task<ToolEnvelope> CommitSessionCheckpointValidationAsync(ICampaignSessionCheckpointValidator validator, IOperationLog log, JsonElement payload, CancellationToken cancellationToken)
+    {
+        if (!ClosedObject(payload, ["operation", "sessionId", "expectedStatus"]))
+            return await InvalidPayloadEnvelope(log, "campaign", "Session checkpoint validation requires its exact closed request.", "Validate an ended campaign session checkpoint.", ["procedure.campaign.session"], false);
+        try
+        {
+            var request = payload.Deserialize<CampaignSessionCheckpointRequest>(JsonOptions);
+            return request is null ? await InvalidPayloadEnvelope(log, "campaign", "Session checkpoint request could not be read.", "Validate an ended campaign session checkpoint.", ["procedure.campaign.session"], false) : await new CampaignTools().ValidateSessionCheckpointAsync(validator, log, request, cancellationToken);
+        }
+        catch (JsonException ex) { return await InvalidPayloadEnvelope(log, "campaign", ex.Message, "Validate an ended campaign session checkpoint.", ["procedure.campaign.session"], false); }
+    }
+
+    private static async Task<ToolEnvelope> CommitSessionCheckpointAsync(ICampaignSessionCheckpointCreator creator, IOperationLog log, JsonElement payload, string intent, string[]? proceduresUsed, CancellationToken cancellationToken)
+    {
+        if (!ClosedObject(payload, ["operation", "sessionId", "expectedStatus"]))
+            return await InvalidPayloadEnvelope(log, "campaign", "Session checkpoint capture requires its exact closed request.", "Capture an ended campaign session checkpoint.", ["procedure.campaign.session"], false);
+        try
+        {
+            var request = payload.Deserialize<CampaignSessionCheckpointRequest>(JsonOptions);
+            return request is null ? await InvalidPayloadEnvelope(log, "campaign", "Session checkpoint request could not be read.", "Capture an ended campaign session checkpoint.", ["procedure.campaign.session"], false) : await new CampaignTools().CheckpointSessionAsync(creator, request, intent, proceduresUsed, cancellationToken);
+        }
+        catch (JsonException ex) { return await InvalidPayloadEnvelope(log, "campaign", ex.Message, "Capture an ended campaign session checkpoint.", ["procedure.campaign.session"], false); }
     }
 
     private static async Task<ToolEnvelope> CommitContinuityAsync(ICampaignContinuityRunner runner, IOperationLog log, JsonElement payload, string operation, string intent, string[]? proceduresUsed, CancellationToken ct)

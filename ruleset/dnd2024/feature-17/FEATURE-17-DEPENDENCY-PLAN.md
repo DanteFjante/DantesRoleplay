@@ -1,8 +1,9 @@
 # Feature 17 dependency plan — dying, death saves, stabilization and death
 
-Status: **Planned; the zero-Hit-Point policy and death-state slices are independent leaves. Event
-reactions remain blocked on their producing features and the confirmed condition schema**
-Last updated: 2026-08-20
+Status: **Slices 1–3 verified in scope. Slice 4 (dropping-to-zero reaction) is the next proposed
+implementation pass once its damage-event dependency is confirmed; broader repository acceptance
+is currently blocked by unrelated concurrent test failures.**
+Last updated: 2026-08-21
 
 ## Execution rule
 
@@ -83,7 +84,7 @@ separate no-ability/no-proficiency rule.
 | --- | --- |
 | Existing dying owner | Nothing in `catalog/` implements death, dying, unconsciousness, or death saves. Four contracts disclaim it in writing: `procedure.mechanic.dnd2024.hit-points` ("unconsciousness, death, massive damage, death saves … out of scope"), `procedure.mechanic.dnd2024.weapon-damage.roll` ("unconsciousness, death, massive damage … are later owners"), `procedure.mechanic.dnd2024.weapon-damage.apply` ("Zero Hit Points has no condition, death, or other consequence in this slice"), and `procedure.mechanic.dnd2024.saving-throw` ("Death saves … need separate contracts"). |
 | Death save is not a saving throw | `procedure.mechanic.dnd2024.saving-throw` requires `dnd2024.abilities`, `dnd2024.character-level`, and `dnd2024.saving-throw-proficiencies`, derives an ability modifier and a Proficiency Bonus, and takes an `ability` input. A death save uses **none** of those. It is a d20 against a fixed 10 with no modifiers. Reusing that resolver would mean adding a "no modifiers" branch to a verified mechanic that has no ability to name — a separate owner is correct, and its own contract already says so. |
-| Zero-Hit-Point policy | **Nothing in the catalog records whether a creature makes death saves or dies at 0.** `catalog/world/entities/` holds `creature.dnd2024.feature-10.hero.json` and `creature.dnd2024.feature-10.training-target.json`, distinguished only by id and name. Slice 1 records that rule outcome directly; it does not infer it from a player/monster label. |
+| Zero-Hit-Point policy | **Verified in Slice 1.** `dnd2024.zero-hit-points-policy` records `death-saves` or `die-at-zero` without inferring a player/monster identity. The Feature 10 hero and training target carry the respective fixture policies. |
 | Damage event | Feature 15 Slice 4 (blocked, planned) registers `dnd2024.damage.dealt` with `targetId`, `sourceId`, `rawAmount`, `type`, `finalAmount`, mitigation flags, `beforeCurrent`, `afterCurrent`, `maximum`, `overkill`, `critical`, and — after Feature 16 Slice 3 — `temporaryBefore`, `temporaryAfter`, `temporaryAbsorbed`. `overkill` is computed after temporary absorption. |
 | Healing event | Feature 16 Slice 2 (blocked, planned) registers `dnd2024.healing.received` with `requestedAmount`, `appliedAmount`, `lostToMaximum`, `beforeCurrent`, `afterCurrent`, and `maximum`. |
 | Exhaustion event | Feature 14 Slice 1 (blocked, planned) registers `dnd2024.exhaustion.reached-lethal` with `creatureId`, `level` (const 6), and `sourceRef`. |
@@ -110,15 +111,15 @@ Feature 17: dying, death saves, stabilization and death
 ├─ event guards, subscriptions, deterministic chains              [implemented: E1]
 ├─ seeded d20 rolling and replay                                  [implemented: Features 3-4]
 ├─ bounded Hit Point state and transactional change               [implemented: Features 6, 9]
-├─ conditions, incl. Unconscious and its implications             [BLOCKED: Feature 13]
-├─ mitigated damage + dnd2024.damage.dealt with overkill          [BLOCKED: Feature 15, Slice 4]
-├─ healing + dnd2024.healing.received                             [BLOCKED: Feature 16, Slice 2]
-├─ temporary Hit Points absorbing before overkill                 [BLOCKED: Feature 16, Slice 3]
-├─ dnd2024.exhaustion.reached-lethal                              [BLOCKED: Feature 14, Slice 1]
+├─ conditions, incl. Unconscious and its implications             [implemented: Feature 13]
+├─ mitigated damage + dnd2024.damage.dealt with overkill          [implemented: Feature 15]
+├─ healing + dnd2024.healing.received                             [implemented: Feature 16]
+├─ temporary Hit Points absorbing before overkill                 [implemented: Feature 16]
+├─ dnd2024.exhaustion.reached-lethal                              [implemented: Feature 14]
 └─ dying as enforced, automatic state                             [blocked parent]
-   ├─ zero-Hit-Point policy + writer                               [missing leaf: Slice 1]
-   ├─ death-state component + administrative writer                [blocked: Slice 2]
-   ├─ condition-integrity guard                                    [blocked: Slice 3]
+   ├─ zero-Hit-Point policy + writer                               [implemented: Slice 1]
+   ├─ death-state component + administrative writer                [implemented: Slice 2]
+   ├─ condition-integrity guard                                    [implemented: Slice 3]
    ├─ dropping to 0 as a damage reaction                           [blocked: Slice 4]
    ├─ the death saving throw                                       [blocked: Slice 5]
    ├─ leaving the dying state                                      [blocked: Slice 6]
@@ -208,9 +209,9 @@ red-flag list forbids.
 
 | Order | Slice | Starts only when | Exit gate |
 | --- | --- | --- | --- |
-| 1 | Zero-Hit-Point policy and its writer | Feature 6 verified; plan reviewed; clean `roleplay validate catalog` | Every combat fixture carries a valid zero-Hit-Point policy; the writer records and corrects it; absence, unknown values, and corrupt state are rejected without state change. |
-| 2 | Death-state component and its administrative writer | Slice 1 verified | Death-save state can be created, corrected, and removed through one closed writer, with tally bounds, terminal death, and corrupt cases rejected. |
-| 3 | Condition-integrity guard | Slice 2 plus Features 13 and 14 verified | Every proposed change to `dnd2024.conditions` is validated by one guard regardless of its writer; a hand-authored invalid list is denied and rolls back the whole root change; every Feature 13 and 14 acceptance row still passes. |
+| 1 | Zero-Hit-Point policy and its writer | Feature 6 verified; plan reviewed; clean `roleplay validate catalog` | **Verified** — fixtures carry explicit policies; the writer records and corrects only valid values and rejects absence/corruption without state change. See `FEATURE-17-SLICE-1-RECEIPT.md`. |
+| 2 | Death-state component and its administrative writer | Slice 1 verified | **Verified** — one closed writer creates, corrects, and removes legal state; tally bounds, terminal death, and corrupt cases are rejected. See `FEATURE-17-SLICE-2-RECEIPT.md`. |
+| 3 | Condition-integrity guard | Slice 2 plus Features 13 and 14 verified | **Verified in scope** — additions and replacements are guarded; invalid hand-authored lists deny and roll back their full batch; Feature 13 and 14 regressions pass with the guard active. See `FEATURE-17-SLICE-3-RECEIPT.md`. |
 | 4 | Dropping to 0 as a reaction to damage | Slice 3 and Feature 15 Slice 4 verified | Damage that reduces a death-saves-policy creature to 0 makes it Unconscious and dying in the same transaction; massive damage kills it; a die-at-zero-policy creature dies; damage while dying adds the right number of failures. |
 | 5 | Automatic death saving throw at turn start | Slice 4, Feature 11, and the confirmed turn-start/healing-request bridges verified | A dying creature's turn starts exactly one death save; it tallies correctly, kills on the third failure, stabilizes on the third success, requests one Hit Point on a natural 20, and takes two failures on a natural 1. |
 | 6 | Leaving the dying state | Slice 5 and Feature 16's confirmed healing-request bridge verified | Regaining any Hit Points ends Unconscious and clears the death state in the same transaction; explicit stabilization sets Stable and stops death saves; a Stable creature that takes damage resumes them. |
@@ -312,15 +313,16 @@ does not have a "creature kind" section.
 ### Slice 1 exit gate
 
 Every row passes with recorded operation ids, mechanic id and version, parsed result fields, exact
-effect counts, fixture readback, before/after bytes, cleanup evidence, and repository checks. Slice
-2 stays blocked until a new review authorizes it.
+effect counts, fixture readback, before/after bytes, cleanup evidence, and repository checks. See
+`FEATURE-17-SLICE-1-RECEIPT.md`. Slice 2 is verified; Slice 3 is the next proposed implementation pass.
 
 ## Slice 2 — death-state component and its administrative writer
 
 ### Status and prerequisite
 
-Blocked until Slice 1 is verified. Adds `procedure.mechanic.dnd2024.death-state`, the
-`dnd2024.death-state` component and schema, and `mechanic.dnd2024.death-state.write`.
+**Verified.** Adds `procedure.mechanic.dnd2024.death-state`, the `dnd2024.death-state`
+component and schema, and `mechanic.dnd2024.death-state.write`. See
+`FEATURE-17-SLICE-2-RECEIPT.md`.
 
 ### Data/state and resolution contract
 
@@ -358,8 +360,9 @@ effect; determinism, effect-exactness, state integrity, routing (against "make a
 
 ### Status and prerequisite
 
-Blocked until Slice 2 and Features 13–14 are verified. Adds `procedure.mechanic.dnd2024.conditions.guard`,
-`mechanic.dnd2024.conditions.guard` in guard mode, and one subscription. Revises
+**Verified in scope.** Adds `procedure.mechanic.dnd2024.conditions.guard`,
+`mechanic.dnd2024.conditions.guard` in guard mode, and two subscriptions (one per structural event
+type). Revises
 `procedure.mechanic.dnd2024.conditions` to record that the invariant is now guard-enforced for every
 writer. Adds no component.
 
@@ -372,24 +375,30 @@ writer. Adds no component.
 - The guard allows immediately unless the event concerns `dnd2024.conditions`. When it does, it
   validates the proposed list: closed source-instance entry shape; the Feature 13 vocabulary plus
   `exhaustion`; non-Exhaustion uniqueness by `(condition, sourceEntityId)` and canonical ordering;
-  valid referenced source entities; Petrified/Poisoned incompatibility; and exactly zero or one
+  source-identity shape; Petrified/Poisoned incompatibility; and exactly zero or one
   source-absent Exhaustion entry with integer `level` 1–6. Every non-Exhaustion entry forbids
   `level`, and the fixed `sourceRef` is required.
 - It returns `{decision: "allow"}` or `{decision: "deny", code, reason}` with a code of 3–64
   characters matching the contract's format and a reason at most 500 characters. It returns no
   effects, no events, and no notifications — `procedure.event.guard` forbids all three, and
   `procedure.subscription.create` records that notifications do not exist.
-- The subscription binds no fixed roles, filters no tracked entities, uses `maxExecutionsPerChain: 1`,
-  and takes an order value reserved in the contract so later guards can be placed relative to it.
+- Each subscription binds no fixed roles or tracked entities, filters `definitionId` to
+  `dnd2024.conditions`, uses `maxExecutionsPerChain: 1`, and takes an order value reserved in the
+  contract so later guards can be placed relative to it. The subscription surface is one event type
+  per registration, hence one registration each for additions and replacements.
 - The guard fails closed by construction: any invalid, unavailable, or throwing guard rolls back the
   root transaction, which is the desired behavior for a validator of this component.
+- A source entity is deliberately **not** required to still exist. Feature 13 defines source identity
+  as historical provenance, so a vanished source must not prevent a surviving instance from being
+  cleared. The normal writer verifies the source role when it creates an instance; the guard can
+  validate only the durable component shape that reaches it.
 
 ### Acceptance and exit gate
 
 Prove: every Feature 13 Slice 1 and Feature 14 Slice 1 acceptance row still passes unchanged with
 the guard active — the guard must be invisible to a correct writer, and this is the primary
 assertion; a hand-authored `commit(kind: "effects")` proposing an out-of-order list, a duplicate, an
-  unknown id, duplicate source instance, forged/missing source entity, incompatible Petrified and
+  unknown id, duplicate source instance, malformed source identity, incompatible Petrified and
 Poisoned, a `level` on a non-Exhaustion entry, a missing `level` on Exhaustion, a `level` of 0 or
 7, or a wrong `sourceRef` is each denied with its specific code and rolls back the whole root
 change including any unrelated effect in the same batch; a valid hand-authored list is allowed; the
@@ -401,7 +410,8 @@ what ran; replay is exact; the full suite and `roleplay validate catalog` pass. 
 
 ### Status and prerequisite
 
-Blocked until Slice 3 and Feature 15 Slice 4 are verified. Adds `procedure.mechanic.dnd2024.dying`,
+Ready after Slice 3 verification; confirm Feature 15's damage-event producer and its acceptance
+evidence before implementation. Adds `procedure.mechanic.dnd2024.dying`,
 `mechanic.dnd2024.dying.on-damage` in reaction mode, and one subscription to
 `dnd2024.damage.dealt`. Revises no existing mechanic.
 

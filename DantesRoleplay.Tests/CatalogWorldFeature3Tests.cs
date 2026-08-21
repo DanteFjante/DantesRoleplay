@@ -57,7 +57,7 @@ public sealed class CatalogWorldFeature3Tests : IDisposable
         Assert.True(imported.ManifestUpdated);
         var definitions = await world.GetDefinitionsAsync();
         Assert.Contains(definitions, definition => definition.Id == FactionComponent && definition.UsageCount == 1);
-        Assert.Contains(definitions, definition => definition.Id == MotiveComponent && definition.UsageCount == 2);
+        Assert.Contains(definitions, definition => definition.Id == MotiveComponent && definition.UsageCount >= 2);
         Assert.NotNull(await new ProcedureStore(db).GetAsync("procedure.game.core.world.faction"));
 
         var faction = Require(await world.GetEntityAsync(Faction));

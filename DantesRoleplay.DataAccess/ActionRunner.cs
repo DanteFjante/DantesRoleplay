@@ -167,6 +167,7 @@ public sealed class ActionRunner(
             }
 
             projection = resolution.Projection;
+            var childProposal = CompositionProposal.Empty;
 
             if (requirements.Children.Count > 0)
             {
@@ -209,6 +210,7 @@ public sealed class ActionRunner(
                 }
 
                 projection = composition.Projection;
+                childProposal = composition.Proposal;
             }
 
             var run = await _engine.RunAsync(
@@ -245,8 +247,10 @@ public sealed class ActionRunner(
                     seed);
             }
 
+            var output = MergeChildProposals(childProposal, run.Output);
+
             var dryRun = await _applier.ApplyAsync(
-                run.Output.Effects,
+                output.Effects,
                 dryRun: true,
                 cancellationToken: cancellationToken);
 
@@ -264,7 +268,7 @@ public sealed class ActionRunner(
                     {
                         Mechanic = selected,
                         Projection = projection,
-                        Output = run.Output,
+                        Output = output,
                         Seed = seed,
                         Log = run.Log,
                         LimitHit = run.LimitHit,
@@ -283,27 +287,38 @@ public sealed class ActionRunner(
             // Apply the exact list that just passed the dry run. EffectApplier detects the ambient
             // transaction and leaves commit/rollback ownership with this runner.
             var applied = await _applier.ApplyAsync(
-                run.Output.Effects,
+                output.Effects,
                 dryRun: false,
                 cancellationToken: cancellationToken,
                 rootOperationId: operationId,
-                declaredEvents: run.Output.Events);
+                declaredEvents: output.Events);
 
             if (applied.Blocked)
             {
+                var invalidDeclaredEvent = string.Equals(
+                    applied.BlockCode,
+                    "SUBSCRIBER_INVALID_EVENT",
+                    StringComparison.Ordinal);
+
                 return await FailInTransactionAsync(
                     transaction,
                     request,
                     ActionRunResult.Failed(
-                        "EVENT_BLOCKED",
-                        $"A guard blocked the proposed world change: {applied.BlockCode}: {applied.BlockReason}",
-                        "query(kind: \"subscriptions\")",
-                        $"Mechanic '{selected.Id}' was blocked by a guard.",
+                        invalidDeclaredEvent ? "INVALID_DECLARED_EVENT" : "EVENT_BLOCKED",
+                        invalidDeclaredEvent
+                            ? $"The mechanic declared an invalid event: {applied.BlockReason}"
+                            : $"A guard blocked the proposed world change: {applied.BlockCode}: {applied.BlockReason}",
+                        invalidDeclaredEvent
+                            ? "query(kind: \"event-types\")"
+                            : "query(kind: \"subscriptions\")",
+                        invalidDeclaredEvent
+                            ? $"Mechanic '{selected.Id}' declared an invalid event."
+                            : $"Mechanic '{selected.Id}' was blocked by a guard.",
                         candidates) with
                     {
                         Mechanic = selected,
                         Projection = projection,
-                        Output = run.Output,
+                        Output = output,
                         Seed = seed,
                         Log = run.Log,
                         LimitHit = run.LimitHit,
@@ -328,7 +343,7 @@ public sealed class ActionRunner(
                     {
                         Mechanic = selected,
                         Projection = projection,
-                        Output = run.Output,
+                        Output = output,
                         Seed = seed,
                         Log = run.Log,
                         LimitHit = run.LimitHit,
@@ -339,7 +354,7 @@ public sealed class ActionRunner(
                     seed);
             }
 
-            var affected = AffectedEntities(run.Output.Effects);
+            var affected = AffectedEntities(output.Effects);
             var subject = Subject(affected, selected.Id);
             var operation = await _log.RecordAsync(
                 Tool,
@@ -366,7 +381,7 @@ public sealed class ActionRunner(
                 Candidates = candidates,
                 Mechanic = selected,
                 Projection = projection,
-                Output = run.Output,
+                Output = output,
                 Seed = seed,
                 AppliedCount = applied.Count,
                 AffectedEntityIds = affected,
@@ -550,6 +565,16 @@ public sealed class ActionRunner(
 
         return null;
     }
+
+    private static MechanicOutput MergeChildProposals(
+        CompositionProposal childProposal,
+        MechanicOutput parentOutput) =>
+        parentOutput with
+        {
+            Effects = [.. childProposal.Effects, .. parentOutput.Effects],
+            Events = [.. childProposal.Events, .. parentOutput.Events],
+            Notifications = [.. childProposal.Notifications, .. parentOutput.Notifications]
+        };
 
     private static string FormatProblems(IReadOnlyList<EffectProblem> problems) =>
         problems.Count == 0

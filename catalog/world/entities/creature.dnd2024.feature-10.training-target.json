@@ -29,6 +29,13 @@
         "locator": "Playing the Game > Damage and Healing > Hit Points"
       }
     },
+    "dnd2024.zero-hit-points-policy": {
+      "policy": "die-at-zero",
+      "sourceRef": {
+        "sourceId": "source.dnd2024.srd-5.2.1",
+        "locator": "Playing the Game > Damage and Healing > Dropping to 0 Hit Points"
+      }
+    },
     "dnd2024.speed": {
       "walkFeet": 30,
       "burrowFeet": 0,

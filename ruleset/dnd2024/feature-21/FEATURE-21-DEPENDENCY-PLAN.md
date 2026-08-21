@@ -1,13 +1,13 @@
 # Feature 21 dependency plan — cover and ranged attacks
 
-Status: **Planned; Slice 1 (authoritative ranged-weapon range data) is the next and only authorised implementation pass. Cover, sight, and tactical ranged resolution remain blocked.**
+Status: **Slice 1 verified; cover, sight, combat-side, and tactical ranged resolution remain blocked on their named later slices.**
 Last updated: 2026-08-21
 
 ## Execution rule
 
-This is a planning-only artifact under `AGENTS.md` and the Terra planning guide. It creates no runtime procedure, component, mechanic, event, subscription, fixture, migration, or game state.
+This plan records a completed repository implementation slice under `AGENTS.md` and the Terra planning guide. Slice 1 revised the existing Feature-7 static profile contract only; it created no Feature-21 action, actor state, encounter state, event, subscription, or game state.
 
-The live `procedure.system.create-feature` read and runtime inventory were unavailable, so this plan records repository/catalog evidence only. An implementation pass must re-read current live contracts, resolve catalog/database drift, perform one reviewed lowest slice, validate a disposable import, record evidence, and stop.
+A later implementation pass must re-read current contracts, select exactly one verified next slice, validate a disposable import, record evidence, and stop.
 
 ## Target capability
 
@@ -100,7 +100,7 @@ The lowest next slice is the Feature-7-owned static range-data migration. It sup
 
 | Order | Slice | Starts only when | Exit gate |
 | --- | --- | --- | --- |
-| 1 | Ranged weapon range data | Feature 7 owner and source rows re-read. | Every ranged profile has validated normal/long range; existing fixtures/schema/contracts migrate without changing attack results. |
+| 1 | Ranged weapon range data | **Verified.** | Shortbow carries validated 80/320-foot source data; the profile schema, writer, attack reader, and damage reader accept the revised closed profile without changing attack results. |
 | 2 | Combat-side foundation | Slice 1 and ids confirmed. | Encounter participants have an explicit, validated side/hostility fact with no faction inference. |
 | 3 | Cover geometry reader | Feature 20 placement/map plus cover policy confirmed. | Effect-free reader returns deterministic cover/line-of-effect evidence, with Total Cover refusing direct targetability. |
 | 4 | Range reader | Feature 20 distance and Slice 1. | Effect-free reader returns in-normal/in-long/out-of-range from positions and weapon data. |
@@ -111,7 +111,7 @@ The lowest next slice is the Feature-7-owned static range-data migration. It sup
 
 ### Runtime artifacts
 
-Revise the existing Feature-7 `dnd2024.weapon-profile` schema, writer, governing procedure, and ranged weapon fixtures; add focused migration/import tests. No new Feature-21 component or action is needed.
+**Implemented.** Revised the existing Feature-7 `dnd2024.weapon-profile` schema, writer, governing procedure, Shortbow fixture, attack reader, damage reader, and focused migration/import tests. No new Feature-21 component or action was added.
 
 ### Data/input and behavior
 
@@ -129,7 +129,7 @@ This slice changes no action selection, D20 resolver, current AC, equipment stat
 | Migration | All current catalog profiles and fixture imports validate; Feature-8 direct result for the same seed/input remains byte-identical. |
 | Routing/state | Profile administrative phrases remain with Feature 7; no new ranged attack intent is activated. Rejections produce zero effects. |
 
-Stop when the existing static owner carries exact range data and repository/catalog checks pass. Do not add a tactical attack parent in this slice.
+**Verified.** The existing static owner carries exact range data; focused profile/attack/damage tests and a disposable catalog validation pass are recorded in [the Slice 1 receipt](FEATURE-21-SLICE-1-RECEIPT.md). Do not add a tactical attack parent in this slice.
 
 ## Slice 2 — combat-side foundation
 
@@ -165,9 +165,9 @@ Prove context combinations/cancellation, natural 20/1 precedence, no D20 on inva
 - Official source/version/locators: yes; SRD 5.2.1 pp. 14, 178, and 90.
 - Existing owners and overlaps searched: yes; profile, attack, AC, positions, conditions, sight, sides, and composition are classified.
 - Every missing dependency expanded: yes; range data, cover policy, enemy relation, Feature 34 sight, and trusted context are separate leaves.
-- One next slice: yes — static range data under the existing Feature-7 owner.
+- Lowest completed slice: yes — static range data under the existing Feature-7 owner; Slice 2 is now the next blocked child.
 - Closed state/input, formula boundaries, deterministic evidence, routing, and cleanup: specified.
-- No runtime artifact is created by this planning pass.
+- Slice 1 runtime artifacts and verification are recorded in [the receipt](FEATURE-21-SLICE-1-RECEIPT.md); no persistent catalog import occurred.
 
 ## Plan-change rule
 

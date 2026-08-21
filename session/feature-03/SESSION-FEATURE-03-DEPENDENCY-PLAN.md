@@ -1,11 +1,11 @@
 # Session Feature S3 dependency plan — end with a factual continuity recap
 
-Status: **Planned; implementation awaits accepted S0–S2, confirmed C8 recap schema, and every selected owner projection/readiness contract.**  
-Last updated: 2026-08-20
+Status: **Accepted.**
+Last updated: 2026-08-21
 
 ## Execution rule
 
-This is a planning-only repository artifact. It follows AGENTS.md, `procedure.system.modify`, `procedure.mcp.add-tool`, the [Session Operations Plan](../../SESSION_OPERATIONS_PLAN.md), [S0](../feature-00/SESSION-FEATURE-00-DEPENDENCY-PLAN.md), [S1](../feature-01/SESSION-FEATURE-01-DEPENDENCY-PLAN.md), [S2](../feature-02/SESSION-FEATURE-02-DEPENDENCY-PLAN.md), and [Campaign Feature C8](../../campaign/feature-08/CAMPAIGN-FEATURE-08-DEPENDENCY-PLAN.md). C8 owns the concrete lifecycle/summary implementation; S3 writes no runtime artifact.
+This plan follows AGENTS.md, `procedure.system.modify`, `procedure.mcp.add-tool`, the [Session Operations Plan](../../SESSION_OPERATIONS_PLAN.md), [S0](../feature-00/SESSION-FEATURE-00-DEPENDENCY-PLAN.md), [S1](../feature-01/SESSION-FEATURE-01-DEPENDENCY-PLAN.md), [S2](../feature-02/SESSION-FEATURE-02-DEPENDENCY-PLAN.md), and [Campaign Feature C8](../../campaign/feature-08/CAMPAIGN-FEATURE-08-DEPENDENCY-PLAN.md). C8's concrete implementation is the compiled campaign-session root; S3 Slice 1 may add only the immutable recap vocabulary and zero-effect resolver.
 
 ## Target capability
 
@@ -41,16 +41,29 @@ The first fixture is one S1 active session with at least one separately governed
 
 The recap is a bounded historical statement about the close boundary. It may preserve approved concise factual values or references from owner projections, but those values never become editable authority. If later owner state differs, its current projection remains authoritative; S3’s recap remains an immutable record of what the confirmed closure composer observed. It must never pretend to explain every action or event during the session.
 
-## Proposed permanent vocabulary — confirmation required
+## Permanent vocabulary
 
 | Role | Proposed ID and boundary |
 | --- | --- |
-| Recap component | `game.core.campaign.session-recap`, attached once to an ended session entity. It is append-only and absent while active. |
-| Recap data | Exact schema is S0-confirmed. It must contain `protocolVersion`, canonically ordered bounded factual sections, and source/projection reference/version evidence; it may not contain a campaign/world/character ID field, raw component/relationship, transcript, prose, audit/event ID, checkpoint bytes, player identity, or raw effect. |
-| Governing procedure | `procedure.campaign.session`, extended with closed `end`/historical-recap behavior. |
-| End mechanic | `mechanic.game.core.campaign.session.end`, a root C8 planner that creates the recap and replaces the complete lifecycle state in one transaction. |
+| Recap component | **Accepted for Slice 1:** `game.core.campaign.session-recap`, attached once to an ended session entity. It is append-only and absent while active. Its first-fixture schema is exactly S0's `protocolVersion`, `chapter`, `arc`, and `milestones`; milestones retain C3 order and omit C3's event id. |
+| Recap data | Exact schema is S0-confirmed. It contains `protocolVersion` and canonically ordered bounded factual sections. It may not contain a campaign/world/character ID field, raw component/relationship, transcript, host/AI prose beyond the bounded C3 milestone closing summary, audit/event ID, checkpoint bytes, player identity, or raw effect. |
+| Governing procedure | **Accepted for Slice 1:** `procedure.campaign.session` governs `validate-session-end`; Slice 2 extends it for `end-session` and historical recap behavior. |
+| End mechanic | **Slice 2 proposal:** `mechanic.game.core.campaign.session.end`, a root C8 planner that creates the recap and replaces the complete lifecycle state in one transaction. |
 
-Confirm IDs, complete recap fields/limits, source-reference format, source-read ordering, safe omission versus blocking policy, historical read route, lifecycle replacement details, and C8 audit/event behavior before writing. If an existing generic immutable receipt component meets the exact boundary, C8 may reuse it only after proving it preserves session-specific ownership and no duplicated data.
+Slice 1 accepted the recap id/schema, C3-only source order, and block-on-unavailable policy. Slice
+2 uses the existing C8 compiled campaign-session root: it begins the shared database transaction
+before resolving C3, reruns the entire resolver inside that transaction, and never accepts a Slice
+1 preview/fingerprint as input. It applies `component.add` for the recap followed by a complete
+`component.set` replacement of the session lifecycle. The existing effect/event/audit path yields
+exactly those two structural component events and one successful root audit; no special session
+event or notification is introduced.
+
+The confirmed historical route is the new trusted-host fixed query
+`query(kind: "session-recap", id: "session.*")`. It accepts only a canonical session id, returns
+only derived `sessionId`, `campaignId`, and the immutable bounded recap projection, and rejects
+active, missing, malformed, duplicate, or cross-scope records. It is not `entities`, `graph`,
+`history`, or `campaign-resume`; C5/CH14 must replace this trusted-host policy before any
+player-facing audience is added.
 
 ## Factual recap input/result boundary
 
@@ -58,7 +71,7 @@ The end request is intentionally closed and carries no recap content. Proposed s
 
 ~~~text
 {
-  operation: "validate" | "end",
+  operation: "validate-session-end" | "end-session",
   sessionId: canonical existing active session entity ID,
   expectedStatus: "active"
 }
@@ -66,18 +79,26 @@ The end request is intentionally closed and carries no recap content. Proposed s
 
 The campaign scope is derived from the session’s one scope relationship; callers cannot choose a campaign, source, summary fields, audience, checkpoint, participant, final state, or raw data. Missing/null/extra/non-object/unknown operation, malformed ID, non-active/ended/replayed session, absent/multiple/corrupt campaign scope, stale expected status, invalid C8 lifecycle, unapproved/malformed owner projection, or disallowed unavailable/denied field fails before effects.
 
-`validate` resolves the exact closing recap and returns zero effects. `end` repeats all resolution in the root transaction and cannot reuse a cached preview. A valid success returns only `sessionId`, `campaignId`, `previousStatus: "active"`, `currentStatus: "ended"`, `recapPresent: true`, sorted recap section keys, and literal `nextAction`. It returns no recap source text, raw field payloads, chat, event/audit IDs, changed-owner claim, or permission assertion.
+`validate-session-end` resolves the exact closing recap and returns zero effects. `end-session` repeats all resolution in the root transaction and cannot reuse a cached preview. The Slice 1 validation surface returns only `sessionId`, derived `campaignId`, `previewAvailable: true`, sorted recap section keys, and literal `nextAction`; it returns no recap source text or raw field payload. Slice 2's end success returns only `sessionId`, `campaignId`, `previousStatus: "active"`, `currentStatus: "ended"`, `recapPresent: true`, sorted recap section keys, and literal `nextAction`. Neither returns chat, event/audit IDs, changed-owner claim, or permission assertion.
 
-The historical recap read is separate from S2 current active-session resume. It accepts only a confirmed session identity/history route, applies C5/CH14 audience rules when they exist, and returns the immutable bounded recap projection. It does not transform an ended session into a new active resume context.
+The historical recap read is separate from S2 current active-session resume. It is the fixed
+trusted-host `session-recap` route above, accepts only one session id, and returns the immutable
+bounded recap projection. It does not transform an ended session into a new active resume context.
 
 ## Resolution and transaction rules
 
 1. Resolve exactly one session entity, its complete `active` lifecycle component, one valid campaign scope link, and its S0-approved source inventory. Reject ended, missing, duplicate, dangling, cross-campaign, malformed, or ambiguous session state.
 2. Resolve each approved owner projection at the close boundary in the confirmed canonical order. Validate projection versions, scopes, bounds, and audience. Apply S0’s explicit rule for unavailable values: block, or emit the one safe omission/reason form. Do not infer facts from operation history or an earlier S2 response.
 3. Build the complete canonical recap object deterministically from these bounded projections/references. A host/AI supplies no prose, fact, delta, entity list, event, or post-processing instruction. If a required fact cannot be represented through the confirmed schema, it is a plan amendment, not an extra JSON key.
-4. For `validate`, return the normalized recap preview with zero effects. For `end`, repeat source resolution inside one C8 root transaction.
-5. Apply exactly the immutable recap component add and complete session lifecycle replacement `active→ended` in the confirmed order. The campaign scope link stays intact. No external owner effects are present; a referenced checkpoint is not created or restored.
-6. Emit/record only the confirmed root structural event/audit after commit. Failure at source read, recap validation, component/lifecycle effect, guard/reaction/event/notification/audit, cancellation, or timeout rolls back both recap and end state. A later end/replay cannot create a second recap.
+4. For `validate-session-end`, return the normalized recap preview with zero effects. For
+   `end-session`, begin the shared database transaction first, then repeat all source resolution.
+5. Apply exactly immutable recap `component.add`, then complete session lifecycle `component.set`
+   `active→ended`. The campaign scope link stays intact. No external owner effects are present; a
+   referenced checkpoint is not created or restored.
+6. Emit/record only the two derived structural component events and the ordinary root audit after
+   commit. Failure at source read, recap validation, component/lifecycle effect, guard/reaction,
+   event/notification/audit, cancellation, or timeout rolls back both recap and end state. A later
+   end/replay cannot create a second recap.
 
 If owner projections may change concurrently while close resolves, the root must either read a version/fingerprint guard approved by those owners or fail stale and require a fresh validation. It may not write a recap assembled from incompatible point-in-time projections.
 
@@ -96,6 +117,8 @@ S0 factual field/omission/audience policy + S1 active session + S2 source compos
 
 ### Slice 1 — factual recap validation
 
+**Status: Accepted — see [validation receipt](SESSION-FEATURE-03-SLICE-1-VALIDATION.md).**
+
 **Prerequisites:** S0–S2 accepted; all ratified source projections/versions and fail/omit behavior are verified; recap schema and close consistency strategy are confirmed.
 
 1. Add the confirmed recap vocabulary and zero-effect closing resolver; no active session becomes ended yet.
@@ -103,9 +126,14 @@ S0 factual field/omission/audience policy + S1 active session + S2 source compos
 3. Test a valid fixture with one independently committed play change, no-change session, required/optional unavailable source, denial/redaction, wrong/ended/corrupt session, source version race, output bounds/order, and zero effects/events/audits.
 4. Run focused tests and `roleplay validate catalog` after catalog work.
 
-**Exit:** one active session has a deterministic, source-bound factual recap preview with no session or external state mutation.
+**Exit met:** one active session has a deterministic, C3-source-bound factual recap preview with no
+session or external state mutation. The resolver repeats every source read on every invocation;
+Slice 2 must repeat that complete resolution inside its root transaction and cannot consume a
+Slice 1 preview or cache.
 
 ### Slice 2 — atomic end and historical recap
+
+**Status: Implemented — see [validation receipt](SESSION-FEATURE-03-SLICE-2-VALIDATION.md).**
 
 **Prerequisites:** Slice 1 accepted; lifecycle/recap effects, event/audit, and concurrency guards are confirmed under the C8 root.
 
@@ -114,7 +142,9 @@ S0 factual field/omission/audience policy + S1 active session + S2 source compos
 3. Inject failure at source/version check, recap add, lifecycle set, guard/reaction/event/notification/audit, cancellation, and timeout boundaries. Test stale/duplicate/replayed end, corrupt recap/lifecycle/scope, changed source, rollback, restore/readback, and no external owner mutation.
 4. Run focused tests, `roleplay validate catalog`, full suite at acceptance, and protocol walk only if session read/action registration changes.
 
-**Exit:** one active session closes exactly once with one immutable bounded factual recap; every failed/replayed/concurrent attempt leaves session and external owner state unchanged.
+**Exit implemented:** one active session closes exactly once with one immutable bounded factual
+recap; failed, cancelled, malformed, and replayed attempts leave recap/lifecycle state unchanged.
+Feature acceptance confirmed 2026-08-21. S4 or any successor may now begin under its own gates.
 
 ## Acceptance matrix
 

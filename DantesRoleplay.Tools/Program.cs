@@ -11,7 +11,8 @@ ITool[] tools =
     new ValidateTool(),
     new VerifyTool(),
     new HashesTool(),
-    new BackfillHashesTool()
+    new BackfillHashesTool(),
+    new FeedbackTool()
 ];
 
 var parsed = CommandLine.Parse(args);

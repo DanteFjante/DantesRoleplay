@@ -488,20 +488,22 @@ public sealed class EventLedgerTests : IDisposable
         var directory = Path.Combine(RepositoryRoot(), "catalog", "event-types");
         var schemas = new Dictionary<string, string>(StringComparer.Ordinal);
 
+        var structuralIds = EventTypeSeeder.Load().Select(file => file.Id).ToHashSet(StringComparer.Ordinal);
         foreach (var path in Directory.EnumerateFiles(directory, "*.schema.json"))
         {
             var name = Path.GetFileName(path);
-            schemas[name[..^".schema.json".Length]] = File.ReadAllText(path);
+            var id = name[..^".schema.json".Length];
+            if (structuralIds.Contains(id)) schemas[id] = File.ReadAllText(path);
         }
 
-        Assert.Equal(9, schemas.Count);
+        Assert.Equal(structuralIds.Count, schemas.Count);
         return schemas;
     }
 
     /// <summary>
-    /// Enough of JSON Schema to check what these nine schemas actually say: required properties,
+    /// Enough of JSON Schema to check what these ten schemas actually say: required properties,
     /// `additionalProperties: false`, and declared scalar types. Deliberately not a general
-    /// validator — a dependency for nine object schemas would be a poor trade, and the failure
+    /// validator — a dependency for ten object schemas would be a poor trade, and the failure
     /// messages a hand-rolled check can give are better than a generic one's.
     /// </summary>
     private static void AssertConforms(string payloadJson, string schemaJson, string what)

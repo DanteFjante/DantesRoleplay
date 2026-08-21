@@ -13,6 +13,16 @@
         "faces": 6,
         "type": "piercing"
       },
+      "rangeFeet": {
+        "normal": 80,
+        "long": 320
+      },
+      "propertyTags": [
+        "ammunition",
+        "two-handed"
+      ],
+      "ammunitionType": "arrow",
+      "mastery": "vex",
       "sourceRef": {
         "sourceId": "source.dnd2024.srd-5.2.1",
         "locator": "Equipment > Weapons"

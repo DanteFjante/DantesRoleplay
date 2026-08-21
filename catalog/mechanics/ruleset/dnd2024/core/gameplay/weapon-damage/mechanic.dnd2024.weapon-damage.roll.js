@@ -41,25 +41,33 @@ function validScores(value) {
   return true;
 }
 
+var propertyOrder = ['ammunition', 'finesse', 'heavy', 'light', 'loading', 'reach', 'thrown', 'two-handed', 'versatile'];
+var masteries = ['cleave', 'graze', 'nick', 'push', 'sap', 'slow', 'topple', 'vex'];
+function validRange(value) { return closed(value, ['long', 'normal']) && safePositive(value.normal) && safePositive(value.long) && value.normal % 5 === 0 && value.long % 5 === 0 && value.normal <= value.long; }
+function safePositive(value) { return typeof value === 'number' && isFinite(value) && Math.floor(value) === value && value >= 1 && value <= 9007199254740991; }
+function hasTag(tags, tag) { return tags.indexOf(tag) !== -1; }
+function validTags(value) { var previous = -1; if (!Array.isArray(value) || value.length > propertyOrder.length) return false; for (var i = 0; i < value.length; i++) { var index = propertyOrder.indexOf(value[i]); if (index <= previous) return false; previous = index; } return true; }
+function validDamage(value) { return closed(value, ['count', 'faces', 'type']) && safePositive(value.count) && value.count <= maxDiceRolled / 2 && (value.faces === 4 || value.faces === 6 || value.faces === 8 || value.faces === 10 || value.faces === 12) && (value.type === 'bludgeoning' || value.type === 'piercing' || value.type === 'slashing'); }
 function validProfile(value) {
-  if (!closed(value, ['attackAbilities', 'category', 'damage', 'kind', 'sourceRef']) ||
-      (value.category !== 'simple' && value.category !== 'martial') ||
-      (value.kind !== 'melee' && value.kind !== 'ranged') ||
-      !sourceRef(value.sourceRef, profileLocator) || !Array.isArray(value.attackAbilities) ||
-      value.attackAbilities.length < 1 || value.attackAbilities.length > 2) {
-    return false;
-  }
+  if (!value || !validTags(value.propertyTags)) return false;
+  var keys = ['attackAbilities', 'category', 'damage', 'kind', 'mastery', 'propertyTags', 'sourceRef'];
+  if (value.kind === 'ranged') keys.push('rangeFeet');
+  if (hasTag(value.propertyTags, 'ammunition')) keys.push('ammunitionType');
+  if (hasTag(value.propertyTags, 'thrown')) keys.push('thrownRangeFeet');
+  if (hasTag(value.propertyTags, 'versatile')) keys.push('versatileDamage');
+  keys.sort();
+  if (!closed(value, keys) || (value.category !== 'simple' && value.category !== 'martial') || (value.kind !== 'melee' && value.kind !== 'ranged') || !sourceRef(value.sourceRef, profileLocator) || !Array.isArray(value.attackAbilities) || value.attackAbilities.length < 1 || value.attackAbilities.length > 2) return false;
   var previous = -1;
   for (var i = 0; i < value.attackAbilities.length; i++) {
     var index = value.attackAbilities[i] === 'str' ? 0 : value.attackAbilities[i] === 'dex' ? 1 : -1;
     if (index <= previous) { return false; }
     previous = index;
   }
-  var damage = value.damage;
-  return closed(damage, ['count', 'faces', 'type']) &&
-         typeof damage.count === 'number' && isFinite(damage.count) && Math.floor(damage.count) === damage.count && damage.count >= 1 && damage.count <= maxDiceRolled / 2 &&
-         (damage.faces === 4 || damage.faces === 6 || damage.faces === 8 || damage.faces === 10 || damage.faces === 12) &&
-         (damage.type === 'bludgeoning' || damage.type === 'piercing' || damage.type === 'slashing');
+  return validDamage(value.damage) && (value.kind !== 'ranged' || validRange(value.rangeFeet)) &&
+         (!hasTag(value.propertyTags, 'ammunition') || (value.kind === 'ranged' && ['arrow', 'bolt', 'bullet', 'needle'].indexOf(value.ammunitionType) !== -1)) &&
+         (!hasTag(value.propertyTags, 'thrown') || validRange(value.thrownRangeFeet)) &&
+         (!hasTag(value.propertyTags, 'versatile') || (validDamage(value.versatileDamage) && value.versatileDamage.type === value.damage.type && value.versatileDamage.count === value.damage.count && value.versatileDamage.faces > value.damage.faces)) &&
+         masteries.indexOf(value.mastery) !== -1;
 }
 
 if (!closed(input, ['ability', 'critical'])) {

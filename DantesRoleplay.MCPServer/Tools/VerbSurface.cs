@@ -40,6 +40,11 @@ public static class VerbSurface
             ["id", "version", "query", "category", "includeInactive", "limit"],
             ["procedure.system.inspect"]),
         new(
+            "categories",
+            "One category-tree branch for procedures or mechanics, with direct and subtree record counts.",
+            ["catalog", "category", "includeInactive"],
+            ["procedure.system.hierarchical-catalogs"]),
+        new(
             "world",
             "Which component definitions exist, with a sample of entities.",
             ["sample"],
@@ -70,10 +75,20 @@ public static class VerbSurface
             ["id", "includeSession"],
             ["procedure.campaign.chapter", "procedure.campaign.session"]),
         new(
+            "session-recap",
+            "A fixed bounded trusted-host historical factual recap for one ended session. It accepts one session id and never accepts graph, history, audience, or campaign filters.",
+            ["id"],
+            ["procedure.campaign.session"]),
+        new(
             "quest-summary",
             "A fixed bounded trusted-host active-quest view with objective evidence links and verified recent transitions. It reads one quest id and never accepts graph, history, or audience filters.",
             ["id"],
             ["procedure.quest.inspect"]),
+        new(
+            "knowledge-answer",
+            "A bounded perspective-safe knowledge answer for the configured local audience. It never accepts an actor, role, world, visibility, or include-hidden override.",
+            ["campaignId", "question", "knowledgeKinds", "knowledgeSubjectIds", "asOfMinute"],
+            ["procedure.game.core.world.knowledge"]),
         new(
             "mechanics",
             "Mechanic summaries. With id, one game rule in full including its JavaScript source.",
@@ -102,6 +117,11 @@ public static class VerbSurface
             + "marking it read is a separate commit.",
             ["id", "state", "topic", "entityId", "correlationId", "from", "to", "limit"],
             ["procedure.notification.inspect"]),
+        new(
+            "feedback",
+            "Append-only system feedback reports, newest first. Use filters to narrow reported experience; feedback never changes game state.",
+            ["id", "category", "impact", "state", "from", "to", "limit"],
+            ["procedure.system.feedback"]),
         new(
             "history",
             "Recent operation audit records, newest first, including failures.",
@@ -200,8 +220,8 @@ public static class VerbSurface
             ["procedure.game.core.world.itinerary", "procedure.action.run", "procedure.event.chain-limits"]),
         new(
             "campaign",
-              "Validate/create an existing-world campaign, maintain its one-arc continuity, validate/start one campaign session, or attach one existing actor through campaign-owned participation. Every structural write is derived internally.",
-              "validate/create CampaignBlueprint | initialize-continuity CampaignContinuitySeed | advance-chapter | close-chapter | conclude-arc | validate-session {operation, campaignId, sessionId} | attach-character-participation {operation, campaignId, actorId} (call query(kind: \"capabilities\") for exact fields)",
+              "Validate/create an existing-world campaign, maintain its one-arc continuity, validate/start/end one campaign session, or attach one existing actor through campaign-owned participation. Every structural write is derived internally.",
+              "validate/create CampaignBlueprint | initialize-continuity CampaignContinuitySeed | advance-chapter | close-chapter | conclude-arc | validate-session {operation, campaignId, sessionId} | validate-session-end/end-session/validate-session-checkpoint/checkpoint-session {operation, sessionId, expectedStatus} | attach-character-participation {operation, campaignId, actorId} (call query(kind: \"capabilities\") for exact fields)",
             """
             {"operation":"initialize-continuity","seed":{"campaignId":"campaign.test.sealed-observatory","chapter":{"localKey":"chapter.opening","title":"...","partyQuestion":"..."},"arc":{"localKey":"arc.observatory","title":"...","partyStake":"..."}}}
             """,
@@ -225,7 +245,16 @@ public static class VerbSurface
             {"id":"...","state":"read"}
             """,
             SupportsDryRun: true,
-            ["procedure.notification.inspect"])
+            ["procedure.notification.inspect"]),
+        new(
+            "feedback",
+            "Record one append-only report about the system during testing. It does not change game state or create a notification.",
+            "{operation: \"submit\", requestToken, category, impact, summary, observed, expected?, reproductionSteps?, relatedOperationIds?, relatedProcedureIds?}",
+            """
+            {"operation":"submit","requestToken":"feedback-request.0123456789abcdef0123456789abcdef","category":"defect","impact":"degraded","summary":"...","observed":"...","expected":"...","reproductionSteps":["..."],"relatedOperationIds":[],"relatedProcedureIds":["procedure.system.feedback"]}
+            """,
+            SupportsDryRun: false,
+            ["procedure.system.feedback"])
     ];
 
     /// <summary>
@@ -246,7 +275,7 @@ public static class VerbSurface
             ["scope"] = "Ruleset to prefer. Shared mechanics stay eligible either way.",
             ["includeInactive"] = "Include deprecated and archived records. Default false.",
             ["limit"] = "Maximum records returned. Defaults: 200 procedures, 50 mechanics and "
-                + "entities, 20 history.",
+                + "entities and feedback, 20 history.",
             ["sample"] = "How many example entities the world summary carries. Default 10.",
             ["componentIds"] = "Graph only: required distinct component-definition ids to include; all other component data stays out.",
             ["containmentDepth"] = "Graph only: required descendant-containment depth, from 0 through 2.",
@@ -263,6 +292,7 @@ public static class VerbSurface
             ["failuresOnly"] = "Only operations that failed.",
             ["tool"] = "Only operations recorded against this tool name.",
             ["subject"] = "Only operations that touched this subject — usually an id."
+            , ["impact"] = "Feedback only: blocked, degraded, minor, or none."
         };
 
     /// <summary>

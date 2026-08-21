@@ -26,7 +26,8 @@ spending. It does not decide what an action costs.
    uses `component.set`. It fixes the source reference and rejects caller-supplied provenance.
 4. Remaining movement is an integer from 0 through 1000. Feature 20 owns authoritative base
    Speed; Feature 11 reads valid walk Speed at turn start/advance to refresh only this remaining
-   allowance.
+   allowance. Feature 14 subtracts five feet per validated Exhaustion level from that restored
+   allowance, clamped at zero; it does not store or alter a duplicate movement maximum.
 5. Admission/correction changes no encounter state, participant placement, initiative order,
    Action cost, Speed, position, condition, event, or resource history. An absent budget means the
    participant has not been admitted; it never means every resource is available.

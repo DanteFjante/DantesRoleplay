@@ -54,25 +54,33 @@ function validCategories(value) {
   return true;
 }
 
+var propertyOrder = ['ammunition', 'finesse', 'heavy', 'light', 'loading', 'reach', 'thrown', 'two-handed', 'versatile'];
+var masteries = ['cleave', 'graze', 'nick', 'push', 'sap', 'slow', 'topple', 'vex'];
+function safePositive(value) { return typeof value === 'number' && isFinite(value) && Math.floor(value) === value && value >= 1 && value <= 9007199254740991; }
+function validRange(value) { return closed(value, ['long', 'normal']) && safePositive(value.normal) && safePositive(value.long) && value.normal % 5 === 0 && value.long % 5 === 0 && value.normal <= value.long; }
+function hasTag(tags, tag) { return tags.indexOf(tag) !== -1; }
+function validTags(value) { var previous = -1; if (!Array.isArray(value) || value.length > propertyOrder.length) return false; for (var i = 0; i < value.length; i++) { var index = propertyOrder.indexOf(value[i]); if (index <= previous) return false; previous = index; } return true; }
+function validDamage(value) { return closed(value, ['count', 'faces', 'type']) && safePositive(value.count) && (value.faces === 4 || value.faces === 6 || value.faces === 8 || value.faces === 10 || value.faces === 12) && (value.type === 'bludgeoning' || value.type === 'piercing' || value.type === 'slashing'); }
 function validProfile(value) {
-  if (!closed(value, ['attackAbilities', 'category', 'damage', 'kind', 'sourceRef']) ||
-      (value.category !== 'simple' && value.category !== 'martial') ||
-      (value.kind !== 'melee' && value.kind !== 'ranged') ||
-      !sourceRef(value.sourceRef, profileLocator) || !Array.isArray(value.attackAbilities) ||
-      value.attackAbilities.length < 1 || value.attackAbilities.length > 2) {
-    return false;
-  }
+  if (!value || !validTags(value.propertyTags)) return false;
+  var keys = ['attackAbilities', 'category', 'damage', 'kind', 'mastery', 'propertyTags', 'sourceRef'];
+  if (value.kind === 'ranged') keys.push('rangeFeet');
+  if (hasTag(value.propertyTags, 'ammunition')) keys.push('ammunitionType');
+  if (hasTag(value.propertyTags, 'thrown')) keys.push('thrownRangeFeet');
+  if (hasTag(value.propertyTags, 'versatile')) keys.push('versatileDamage');
+  keys.sort();
+  if (!closed(value, keys) || (value.category !== 'simple' && value.category !== 'martial') || (value.kind !== 'melee' && value.kind !== 'ranged') || !sourceRef(value.sourceRef, profileLocator) || !Array.isArray(value.attackAbilities) || value.attackAbilities.length < 1 || value.attackAbilities.length > 2) return false;
   var previous = -1;
   for (var i = 0; i < value.attackAbilities.length; i++) {
     var index = value.attackAbilities[i] === 'str' ? 0 : value.attackAbilities[i] === 'dex' ? 1 : -1;
     if (index <= previous) { return false; }
     previous = index;
   }
-  var damage = value.damage;
-  return closed(damage, ['count', 'faces', 'type']) &&
-         typeof damage.count === 'number' && isFinite(damage.count) && Math.floor(damage.count) === damage.count && damage.count >= 1 && damage.count <= 9007199254740991 &&
-         (damage.faces === 4 || damage.faces === 6 || damage.faces === 8 || damage.faces === 10 || damage.faces === 12) &&
-         (damage.type === 'bludgeoning' || damage.type === 'piercing' || damage.type === 'slashing');
+  return validDamage(value.damage) && (value.kind !== 'ranged' || validRange(value.rangeFeet)) &&
+         (!hasTag(value.propertyTags, 'ammunition') || (value.kind === 'ranged' && ['arrow', 'bolt', 'bullet', 'needle'].indexOf(value.ammunitionType) !== -1)) &&
+         (!hasTag(value.propertyTags, 'thrown') || validRange(value.thrownRangeFeet)) &&
+         (!hasTag(value.propertyTags, 'versatile') || (validDamage(value.versatileDamage) && value.versatileDamage.type === value.damage.type && value.versatileDamage.count === value.damage.count && value.versatileDamage.faces > value.damage.faces)) &&
+         masteries.indexOf(value.mastery) !== -1;
 }
 
 if (!input || typeof input !== 'object' || Array.isArray(input)) {
@@ -162,7 +170,8 @@ function readEffects(child, expectedId, branch) {
   catch (error) { throw new Error('Condition state-effects result is unreadable.'); }
   if (!report || typeof report !== 'object' || Array.isArray(report) || report.test !== 'd20-test-state-effects' ||
       report.subjectId !== expectedId || typeof report.conditionsKnown !== 'boolean' || !report.byTest ||
-      typeof report.byTest !== 'object' || Array.isArray(report.byTest) || !Array.isArray(report.byTest[branch])) {
+      typeof report.byTest !== 'object' || Array.isArray(report.byTest) || !Array.isArray(report.byTest[branch]) ||
+      !Array.isArray(report.derivedModifiers)) {
     throw new Error('Condition state-effects result has an invalid shape.');
   }
   var derived = report.byTest[branch];
@@ -173,7 +182,17 @@ function readEffects(child, expectedId, branch) {
       throw new Error('Condition-derived attack circumstance is invalid.');
     }
   }
-  return { conditionsKnown: report.conditionsKnown, circumstances: derived };
+  var modifiers = report.derivedModifiers;
+  for (var modifierIndex = 0; modifierIndex < modifiers.length; modifierIndex++) {
+    var modifier = modifiers[modifierIndex];
+    var level = modifier && typeof modifier.value === 'number' ? -modifier.value / 2 : 0;
+    if (!closed(modifier, ['source', 'value']) || !isFinite(modifier.value) || Math.floor(modifier.value) !== modifier.value ||
+        level < 1 || level > 6 || Math.floor(level) !== level ||
+        modifier.source !== 'condition:exhaustion (level ' + level + ')') {
+      throw new Error('Condition-derived attack modifier is invalid.');
+    }
+  }
+  return { conditionsKnown: report.conditionsKnown, circumstances: derived, modifiers: modifiers };
 }
 var attackerEffects = readEffects(attackerChildren[0], subject.id, 'attackRoll');
 var targetEffects = readEffects(targetChildren[0], target.id, 'attackAgainst');
@@ -201,7 +220,17 @@ var abilityModifier = Math.floor((abilities[input.ability] - 10) / 2);
 var proficiencyBonusDerived = 2 + Math.floor((levelState.level - 1) / 4);
 var proficient = proficiencyState.categories.indexOf(profile.category) !== -1;
 var proficiencyBonusApplied = proficient ? proficiencyBonusDerived : 0;
-var total = roll + abilityModifier + proficiencyBonusApplied;
+var modifiers = [{ source: input.ability + ' ' + abilities[input.ability], value: abilityModifier }];
+if (proficient) {
+  modifiers.push({ source: 'weapon proficiency (level ' + levelState.level + '; ' + profile.category + ')', value: proficiencyBonusApplied });
+}
+for (var modifierIndex = 0; modifierIndex < attackerEffects.modifiers.length; modifierIndex++) {
+  modifiers.push(attackerEffects.modifiers[modifierIndex]);
+}
+var total = roll;
+for (var totalIndex = 0; totalIndex < modifiers.length; totalIndex++) {
+  total += modifiers[totalIndex].value;
+}
 var hit = total >= armorClassState.value;
 var critical = false;
 var hitReason = 'armor-class';
@@ -213,11 +242,6 @@ if (roll === 20) {
   hit = false;
   hitReason = 'natural-1';
 }
-var modifiers = [{ source: input.ability + ' ' + abilities[input.ability], value: abilityModifier }];
-if (proficient) {
-  modifiers.push({ source: 'weapon proficiency (level ' + levelState.level + '; ' + profile.category + ')', value: proficiencyBonusApplied });
-}
-
 ctx.log('Weapon attack (' + rollMode + '): d20 ' + roll + ', total ' + total + ' vs AC ' + armorClassState.value + ', ' + hitReason + '.');
 return {
   narration: subject.name + ' attacks ' + target.name + ' with ' + weapon.name + ': ' +

@@ -22,10 +22,9 @@ in one campaign transaction and never changes the actor.
 3. `commit(kind: "campaign")` accepts exactly `{ "operation": "attach-character-participation",
    "campaignId": "campaign.*", "actorId": "actor.*" }` for a trusted-host C15 attachment. The
    existing campaign kind is the public route; no new tool or kind exists.
-4. The server derives the participation id as `campaignId + ".participation." + first 16 lowercase
-   hexadecimal characters of SHA-256(actorId UTF-8)`. Callers cannot provide it. A derived id
-   collision, any prior participation history for the actor, inactive campaign, or absent actor
-   rejects with no structural effects.
+4. The server derives the participation id as `campaignId + ".participation." + actorId`.
+   Callers cannot provide it. An invalid/overlong derived id, collision, any prior participation
+   history for the actor, inactive campaign, or absent actor rejects with no structural effects.
 
 ## Constraints
 

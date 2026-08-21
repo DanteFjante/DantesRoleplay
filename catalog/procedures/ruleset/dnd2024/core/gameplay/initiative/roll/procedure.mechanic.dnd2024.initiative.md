@@ -24,7 +24,9 @@ Input and required state
 Resolution
 4. Compose mechanic.dnd2024.d20-test.state-effects with subject bound to subject, `inheritInput: false`, and static `{}` input. Merge its `byTest.initiative` branch with caller circumstances under the established normal/Advantage/Disadvantage convention.
 5. Derive Dexterity modifier as floor((dex - 10) / 2). Roll one or two d20s with ctx.randomInt(1, 20) using the established normal/Advantage/Disadvantage convention, and select the proper die.
-6. Initiative count is selected die plus the Dexterity modifier. Natural 1 and 20 have no special Initiative outcome.
+6. Append the resolver's validated derived modifiers to the Dexterity modifier, then calculate
+   Initiative count from the selected die and that auditable list. Natural 1 and 20 have no special
+   Initiative outcome; Exhaustion never changes which die was selected.
 7. Return test, ability, die, rollMode, rolls, roll, caller/derived/merged circumstances, condition-known status, auditable modifiers, initiative, and source locator. Always return effects: [].
 
 Verification and evolution

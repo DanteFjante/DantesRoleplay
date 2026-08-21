@@ -1,8 +1,7 @@
 # Feature 16 dependency plan — Temporary Hit Points and healing
 
-Status: **Planned; Slices 1 and 2 are independent passes on verified Feature 6 and E1. Slice 3 is
-blocked until both pass and Feature 15 Slice 4 is verified**
-Last updated: 2026-08-20
+Status: **Verified — Slices 1–3 complete.**
+Last updated: 2026-08-21
 
 ## Execution rule
 
@@ -180,9 +179,9 @@ component whose absence Slice 3 must tolerate exists first.
 
 | Order | Slice | Starts only when | Exit gate |
 | --- | --- | --- | --- |
-| 1 | Temporary Hit Point state, grant and expiry | Feature 6 verified; plan reviewed; clean `roleplay validate catalog` | A creature gains a buffer, a second grant resolves the no-stacking rule with both values audited, expiry removes the component, and every boundary, missing, and corrupt case is rejected without state change. |
-| 2 | Healing | Feature 6 and E1 verified; plan reviewed | Healing raises current Hit Points, clamps at maximum with the excess reported, never touches maximum or the buffer, and declares exactly one healing event. |
-| 3 | The buffer absorbs damage first | Slices 1–2 and Feature 15 Slice 4 verified | A damaged creature with a buffer spends the buffer before its Hit Points, the buffer's removal at exhaustion is exact, overkill accounts for the absorption, and every Feature 9 and Feature 15 acceptance row still passes. |
+| 1 | Temporary Hit Point state, grant and expiry | Feature 6 verified; plan reviewed; clean `roleplay validate catalog` | **Verified** — a creature gains, keeps or replaces a buffer, and expires it without healing. See `FEATURE-16-SLICE-1-RECEIPT.md`. |
+| 2 | Healing | Feature 6 and E1 verified; plan reviewed | **Verified** — healing clamps safely, preserves the buffer, and declares one schema-valid event. See `FEATURE-16-SLICE-2-RECEIPT.md`. |
+| 3 | The buffer absorbs damage first | Slices 1–2 and Feature 15 Slice 4 verified | **Verified** — the buffer spends after mitigation and before Hit Points, exhausts by removal, records post-buffer overkill, and preserves Feature 9/15 behavior. See `FEATURE-16-SLICE-3-RECEIPT.md`. |
 
 ## Slice 1 — Temporary Hit Point state, grant and expiry
 
@@ -333,13 +332,13 @@ declares no event; replay is exact; no `ctx.randomInt` call;
 routing selects this mechanic for "heal the character" and "restore hit points" and not for "record
 hit points", "grant temporary hit points", or "apply confirmed weapon damage"; readback and cleanup
 hold. Run the full suite, `roleplay validate catalog`, and `git diff --check`; no persistent import
-occurs. Slice 3 stays blocked.
+occurs. Slice 3 was retained as the final acceptance gate.
 
 ## Slice 3 — the buffer absorbs damage first
 
 ### Status and prerequisite
 
-Blocked until Slices 1–2 and Feature 15 Slice 4 are verified. Revises `procedure.mechanic.dnd2024.weapon-damage.apply` and
+**Verified.** Slices 1–2 and Feature 15 Slice 4 are verified. This slice revised `procedure.mechanic.dnd2024.weapon-damage.apply` and
 `mechanic.dnd2024.weapon-damage.apply`, the `dnd2024.damage.dealt` event type and schema, and
 `procedure.mechanic.dnd2024.temporary-hit-points` (to record that the damage path is now a second,
 legitimate consumer of the buffer). Adds no new mechanic and no new component.
@@ -389,7 +388,7 @@ acceptance row still passes; two frozen child results are separately reported; r
 routing unchanged; disposable readback and cleanup hold. Run the full suite,
 `roleplay validate catalog`, and `git diff --check`; no persistent import occurs.
 
-Feature 16 is verified only after the Slice 3 gate passes and this plan records evidence; then stop
+Feature 16 is verified. Slice 3's evidence is recorded in `FEATURE-16-SLICE-3-RECEIPT.md`; stop
 before Feature 17.
 
 ## Forward dependencies this plan deliberately leaves open

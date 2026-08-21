@@ -1,0 +1,14 @@
+var SID='source.dnd2024.srd-5.2.1',LOC='Rules Glossary',DEF='dnd2024.conditions',ORDER=['blinded','charmed','deafened','frightened','grappled','incapacitated','invisible','paralyzed','petrified','poisoned','prone','restrained','stunned','unconscious','exhaustion'],e=ctx.event;
+var rank={};for(var r=0;r<ORDER.length;r++)rank[ORDER[r]]=r;
+function deny(code,reason){return {decision:'deny',code:code,reason:reason};}
+function closed(v,k){if(!v||typeof v!=='object'||Array.isArray(v))return false;var a=Object.keys(v);if(a.length!==k.length)return false;for(var n=0;n<k.length;n++)if(!Object.prototype.hasOwnProperty.call(v,k[n]))return false;return true;}
+function id(v){return typeof v==='string'&&v.length>0&&v.length<=200&&v===v.trim();}
+function level(v){return typeof v==='number'&&isFinite(v)&&Math.floor(v)===v&&v>=1&&v<=6;}
+function sourceRef(v){return closed(v,['sourceId','locator'])&&v.sourceId===SID&&v.locator===LOC;}
+function entry(v){if(!v||typeof v!=='object'||Array.isArray(v)||typeof v.condition!=='string')return false;if(v.condition==='exhaustion')return closed(v,['condition','level'])&&level(v.level);return (closed(v,['condition'])||closed(v,['condition','sourceEntityId']))&&Object.prototype.hasOwnProperty.call(rank,v.condition)&&v.condition!=='exhaustion'&&(!Object.prototype.hasOwnProperty.call(v,'sourceEntityId')||id(v.sourceEntityId));}
+function compare(a,b){var x=rank[a.condition]-rank[b.condition];if(x!==0)return x;var as=Object.prototype.hasOwnProperty.call(a,'sourceEntityId')?a.sourceEntityId:null,bs=Object.prototype.hasOwnProperty.call(b,'sourceEntityId')?b.sourceEntityId:null;if(as===null)return bs===null?0:-1;if(bs===null)return 1;return as<bs?-1:as>bs?1:0;}
+function key(v){return v.condition+'\u0000'+(Object.prototype.hasOwnProperty.call(v,'sourceEntityId')?v.sourceEntityId:'');}
+function valid(v){if(!closed(v,['entries','sourceRef'])||!Array.isArray(v.entries)||v.entries.length>100||!sourceRef(v.sourceRef))return 'CONDITIONS_SHAPE';var seen={},petrified=false,poisoned=false;for(var n=0;n<v.entries.length;n++){var x=v.entries[n];if(!entry(x))return x&&x.condition==='exhaustion'?'CONDITIONS_EXHAUSTION':'CONDITIONS_ENTRY';if(seen[key(x)])return 'CONDITIONS_DUPLICATE';seen[key(x)]=true;if(n&&compare(v.entries[n-1],x)>=0)return 'CONDITIONS_ORDER';petrified=petrified||x.condition==='petrified';poisoned=poisoned||x.condition==='poisoned';}return petrified&&poisoned?'CONDITIONS_INCOMPATIBLE':'';}
+if(!e||e.mode!=='guard'||(e.type!=='world.component.added'&&e.type!=='world.component.replaced')||!e.payload||e.payload.definitionId!==DEF)return deny('CONDITIONS_EVENT','Condition guard received an invalid structural proposal.');
+var code=valid(e.payload.after);if(code)return deny(code,'The proposed creature-condition state is not canonical.');
+return {decision:'allow',data:{definitionId:DEF,entryCount:e.payload.after.entries.length}};

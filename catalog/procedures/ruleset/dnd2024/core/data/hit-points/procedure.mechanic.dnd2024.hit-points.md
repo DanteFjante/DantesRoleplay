@@ -40,8 +40,7 @@ Deterministic verification
 
 ## Constraints
 - `dnd2024.hit-points` contains exactly current, maximum, and the fixed `sourceRef`; maximum is a positive safe integer and current is a safe integer in `0..maximum`.
-- This component owns only state, not why it changed. Feature 9 will own damage-caused Hit Point loss; a future healing feature will own healing-caused increase.
+- This component owns only state, not why it changed. Feature 9 owns damage-caused Hit Point loss; `mechanic.dnd2024.healing.apply` owns healing-caused increase.
 - `record` never overwrites; `correct` never creates; a corrupt existing record is not silently repaired.
 - The writer accepts only the closed mode/current/maximum input and produces exactly one component effect on `subject`.
 - Armor Class is already complete and must not be changed by this writer.
-

@@ -62,6 +62,29 @@ public interface ICampaignSessionResumeReader
 {
     Task<CampaignSessionResumeResult> GetAsync(string campaignId, CancellationToken cancellationToken = default);
 }
+public sealed record CampaignSessionEndRequest(string Operation, string SessionId, string ExpectedStatus);
+public sealed record CampaignSessionRecapChapter(string Id, string Status, string Title, string PartyQuestion);
+public sealed record CampaignSessionRecapArc(string Id, string Status, string Title, string PartyStake);
+public sealed record CampaignSessionRecapMilestone(string ChapterId, string Title, string ClosingSummary, DateTime Timestamp, int Sequence);
+public sealed record CampaignSessionRecap(string ProtocolVersion, CampaignSessionRecapChapter Chapter, CampaignSessionRecapArc Arc, IReadOnlyList<CampaignSessionRecapMilestone> Milestones);
+public sealed record CampaignSessionEndValidationResult(string Status, string SessionId, string? CampaignId, int? Ordinal, CampaignSessionRecap? Recap, IReadOnlyList<CampaignSessionProblem> Problems, string Next)
+{ public bool Valid => Status == "valid"; }
+public interface ICampaignSessionEndValidator
+{
+    Task<CampaignSessionEndValidationResult> ValidateAsync(CampaignSessionEndRequest request, CancellationToken cancellationToken = default);
+}
+public sealed record CampaignSessionEndResult(string Status, string SessionId, string? CampaignId, string? PreviousStatus, string? CurrentStatus, bool RecapPresent, IReadOnlyList<string> RecapSectionKeys, string OperationId, IReadOnlyList<CampaignSessionProblem> Problems, string Next)
+{ public bool Ended => Status == "ended"; }
+public interface ICampaignSessionEnder
+{
+    Task<CampaignSessionEndResult> EndAsync(CampaignSessionEndRequest request, string intent = "", IReadOnlyList<string>? proceduresUsed = null, CancellationToken cancellationToken = default);
+}
+public sealed record CampaignSessionRecapReadResult(string Status, string SessionId, string? CampaignId, CampaignSessionRecap? Recap, IReadOnlyList<CampaignSessionProblem> Problems, string Next)
+{ public bool Found => Status == "found"; }
+public interface ICampaignSessionRecapReader
+{
+    Task<CampaignSessionRecapReadResult> GetAsync(string sessionId, CancellationToken cancellationToken = default);
+}
 
 /// <summary>Read-only C1 validator. World records remain authoritative; it never creates campaign state.</summary>
 public sealed class CampaignBlueprintValidator(IWorldStore world) : ICampaignBlueprintValidator

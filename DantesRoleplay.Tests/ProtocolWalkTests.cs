@@ -128,7 +128,7 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
 
         Assert.True(catalog.Ok, catalog.Raw);
         Assert.Equal(
-            ["campaign-resume", "capabilities", "entities", "event-types", "events", "graph", "history", "itinerary-plan", "journey-plan", "mechanics", "notifications", "procedures", "quest-summary", "subscriptions", "world"],
+            ["campaign-resume", "capabilities", "categories", "entities", "event-types", "events", "feedback", "graph", "history", "itinerary-plan", "journey-plan", "knowledge-answer", "mechanics", "notifications", "procedures", "quest-summary", "session-recap", "subscriptions", "world"],
             catalog.Data.GetProperty("query").EnumerateObject().Select(p => p.Name).Order(StringComparer.Ordinal));
 
         // 3. The world, before changing it.
@@ -273,6 +273,165 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
         Assert.All(tools, tool => Assert.Contains(tool, new[] { "orient", "query", "commit" }));
     }
 
+    [Fact]
+    public async Task A_session_can_submit_and_read_system_feedback()
+    {
+        var token = "feedback-request." + Guid.NewGuid().ToString("n");
+        var submitted = await ToolAsync("commit", new
+        {
+            kind = "feedback",
+            payload = $$"""{"operation":"submit","requestToken":"{{token}}","category":"defect","impact":"minor","summary":"Feedback walk","observed":"The feedback path was exercised."}""",
+            intent = "exercise the system feedback path"
+        });
+
+        Assert.True(submitted.Ok, submitted.Raw);
+        Assert.True(submitted.Data.GetProperty("duplicate").GetBoolean() is false);
+        var id = submitted.Data.GetProperty("report").GetProperty("id").GetString();
+
+        var read = await ToolAsync("query", new { kind = "feedback", id });
+        Assert.True(read.Ok, read.Raw);
+        Assert.Single(read.Data.GetProperty("reports").EnumerateArray());
+    }
+
+    [Fact]
+    public async Task A_session_can_navigate_catalog_branches_over_the_public_protocol()
+    {
+        var orient = await ToolAsync("orient", new { });
+
+        Assert.True(orient.Ok, orient.Raw);
+        Assert.Contains(
+            orient.NextSteps,
+            step => step.StartsWith("query(kind: \"categories\", catalog: \"procedures\")", StringComparison.Ordinal));
+
+        // Follow orient's category-navigation recommendation before making any catalog assumption.
+        var initialRoots = await ToolAsync("query", new { kind = "categories", catalog = "procedures" });
+        Assert.True(initialRoots.Ok, initialRoots.Raw);
+
+        var capabilities = await ToolAsync("query", new { kind = "capabilities" });
+        var categorySpec = capabilities.Data.GetProperty("query").GetProperty("categories");
+
+        Assert.True(capabilities.Ok, capabilities.Raw);
+        Assert.Equal(
+            ["catalog", "category", "includeInactive"],
+            categorySpec.GetProperty("reads").EnumerateArray().Select(value => value.GetString()));
+
+        // Purpose-built paths avoid coupling the walk to whichever authored catalog happens to
+        // be loaded. `protocol.walker` deliberately shares a raw prefix with `protocol.walk`.
+        foreach (var procedure in new[]
+                 {
+                     ("procedure.protocol.walk", "protocol.walk"),
+                     ("procedure.protocol.walker", "protocol.walker")
+                 })
+        {
+            var written = await ToolAsync("commit", new
+            {
+                kind = "procedure",
+                payload = $$"""{"id":"{{procedure.Item1}}","category":"{{procedure.Item2}}","name":"Protocol fixture","description":"A deterministic category-navigation fixture.","instructions":"1. Browse it.","governs":"query"}"""
+            });
+
+            Assert.True(written.Ok, written.Raw);
+        }
+
+        foreach (var mechanic in new[]
+                 {
+                     ("mechanic.protocol.walk", "protocol.walk"),
+                     ("mechanic.protocol.walker", "protocol.walker")
+                 })
+        {
+            var written = await ToolAsync("commit", new
+            {
+                kind = "mechanic",
+                payload = $$"""{"id":"{{mechanic.Item1}}","category":"{{mechanic.Item2}}","name":"Protocol fixture","description":"A deterministic category-navigation fixture.","matches":"protocol category","requirements":"{}","source":"return { narration: 'ok', effects: [] };","scope":"protocol-walk","status":"active"}"""
+            });
+
+            Assert.True(written.Ok, written.Raw);
+        }
+
+        var procedureRoots = await ToolAsync("query", new { kind = "categories", catalog = "procedures" });
+        var procedureRoot = procedureRoots.Data.GetProperty("branch").GetProperty("children")
+            .EnumerateArray()
+            .Single(child => child.GetProperty("path").GetString() == "protocol");
+        var procedureBranch = await ToolAsync("query", new
+        {
+            kind = "categories",
+            catalog = "procedures",
+            category = procedureRoot.GetProperty("path").GetString()
+        });
+        var procedures = await ToolAsync("query", new
+        {
+            kind = "procedures",
+            category = "protocol.walk"
+        });
+
+        Assert.True(procedureBranch.Ok, procedureBranch.Raw);
+        Assert.Contains(
+            procedureBranch.Data.GetProperty("branch").GetProperty("children").EnumerateArray(),
+            child => child.GetProperty("path").GetString() == "protocol.walk");
+        Assert.True(procedures.Ok, procedures.Raw);
+        Assert.All(
+            procedures.Data.GetProperty("procedures").EnumerateArray(),
+            procedure => Assert.True(
+                IsWithin(procedure.GetProperty("category").GetString()!, "protocol.walk")));
+        Assert.DoesNotContain(
+            procedures.Data.GetProperty("procedures").EnumerateArray(),
+            procedure => procedure.GetProperty("category").GetString() == "protocol.walker");
+
+        var mechanicRoots = await ToolAsync("query", new { kind = "categories", catalog = "mechanics" });
+        var mechanicRoot = mechanicRoots.Data.GetProperty("branch").GetProperty("children")
+            .EnumerateArray()
+            .Single(child => child.GetProperty("path").GetString() == "protocol");
+        var mechanicBranch = await ToolAsync("query", new
+        {
+            kind = "categories",
+            catalog = "mechanics",
+            category = mechanicRoot.GetProperty("path").GetString()
+        });
+        var mechanics = await ToolAsync("query", new
+        {
+            kind = "mechanics",
+            category = "protocol.walk",
+            query = "protocol category",
+            scope = "protocol-walk"
+        });
+
+        Assert.True(mechanicBranch.Ok, mechanicBranch.Raw);
+        Assert.Contains(
+            mechanicBranch.Data.GetProperty("branch").GetProperty("children").EnumerateArray(),
+            child => child.GetProperty("path").GetString() == "protocol.walk");
+        Assert.True(mechanics.Ok, mechanics.Raw);
+        Assert.Equal(
+            ["mechanic.protocol.walk"],
+            mechanics.Data.GetProperty("mechanics").EnumerateArray()
+                .Select(mechanic => mechanic.GetProperty("id").GetString()));
+
+        var malformed = await ToolAsync("query", new
+        {
+            kind = "categories",
+            catalog = "procedures",
+            category = "Protocol.walk"
+        });
+
+        Assert.False(malformed.Ok);
+        Assert.Equal("INVALID_CATEGORY", malformed.Error.GetProperty("code").GetString());
+        AssertIsCall(malformed.Error.GetProperty("fix").GetString()!);
+
+        var recovery = await ToolAsync("query", new { kind = "categories", catalog = "procedures" });
+        Assert.True(recovery.Ok, recovery.Raw);
+
+        var categoryAudit = await ToolAsync("query", new
+        {
+            kind = "history",
+            subject = "query:categories",
+            limit = 50
+        });
+
+        Assert.True(categoryAudit.Ok, categoryAudit.Raw);
+        Assert.NotEmpty(categoryAudit.Data.GetProperty("operations").EnumerateArray());
+        Assert.All(
+            categoryAudit.Data.GetProperty("operations").EnumerateArray(),
+            operation => Assert.Equal("query", operation.GetProperty("tool").GetString()));
+    }
+
     /// <summary>
     /// Reading a contract and then citing it has to be visible in the audit, over the protocol.
     ///
@@ -412,6 +571,10 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
             || call.StartsWith("query(kind:", StringComparison.Ordinal)
             || call.StartsWith("commit(kind:", StringComparison.Ordinal);
     }
+
+    private static bool IsWithin(string category, string branch) =>
+        string.Equals(category, branch, StringComparison.Ordinal)
+        || category.StartsWith(branch + ".", StringComparison.Ordinal);
 
     private static void AssertEveryStepIsCallable(ToolResult result)
     {

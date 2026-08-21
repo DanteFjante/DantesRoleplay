@@ -46,7 +46,13 @@ public interface IMechanicStore
         WriteMechanicRequest request,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Exact category-path counts for navigation. Archived mechanics are omitted by default,
+    /// matching <see cref="FindAsync"/>; callers that need to describe all authored content,
+    /// such as orientation and write guidance, opt in explicitly.
+    /// </summary>
     Task<IReadOnlyList<MechanicCategoryCount>> GetCategoriesAsync(
+        bool includeInactive = false,
         CancellationToken cancellationToken = default);
 }
 

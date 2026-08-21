@@ -217,7 +217,8 @@ public sealed class JintMechanicEngine : IMechanicEngine
                 Events = events,
                 Notifications = notifications,
                 Narration = raw.Output.Narration ?? string.Empty,
-                Data = raw.Output.Data ?? "{}"
+                Data = raw.Output.Data ?? "{}",
+                HasData = raw.Output.Data is not null
                 ,Decision = raw.Output.Decision ?? string.Empty
                 ,Code = raw.Output.Code ?? string.Empty
                 ,Reason = raw.Output.Reason ?? string.Empty

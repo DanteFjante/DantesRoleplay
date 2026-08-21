@@ -1,11 +1,11 @@
 # Session Feature S4 dependency plan — checkpoint evidence, interruption recovery, and scoped restore
 
-Status: **Planned; implementation awaits the S0 checkpoint policy, accepted S1–S3 session lifecycle, a snapshot owner, and C11-compatible domain classification.**  
+Status: **Planned; S1–S3 and Snapshot SP0/SP1 are accepted. Evidence-only checkpoint implementation is ready for its semantic confirmation gate; C11 is a downstream read-only consumer, not an implementation prerequisite.**
 Last updated: 2026-08-20
 
 ## Execution rule
 
-This is a planning-only repository artifact. It follows AGENTS.md, `procedure.system.create-feature`, `procedure.system.modify`, `procedure.mcp.add-tool`, the [Session Operations Plan](../../SESSION_OPERATIONS_PLAN.md), [S0](../feature-00/SESSION-FEATURE-00-DEPENDENCY-PLAN.md), [S1](../feature-01/SESSION-FEATURE-01-DEPENDENCY-PLAN.md), [S2](../feature-02/SESSION-FEATURE-02-DEPENDENCY-PLAN.md), [S3](../feature-03/SESSION-FEATURE-03-DEPENDENCY-PLAN.md), [Campaign Feature C8](../../campaign/feature-08/CAMPAIGN-FEATURE-08-DEPENDENCY-PLAN.md), and [Campaign Feature C11](../../campaign/feature-11/CAMPAIGN-FEATURE-11-DEPENDENCY-PLAN.md). It writes no runtime artifact.
+This is a planning-only repository artifact. It follows AGENTS.md, `procedure.system.create-feature`, `procedure.system.modify`, `procedure.mcp.add-tool`, the [Session Operations Plan](../../SESSION_OPERATIONS_PLAN.md), [Snapshot operations](../../SNAPSHOT_OPERATIONS_PLAN.md), accepted [Snapshot SP0](../../snapshot/feature-00/SNAPSHOT-FEATURE-00-DEPENDENCY-PLAN.md) and [Snapshot SP1](../../snapshot/feature-01/SNAPSHOT-FEATURE-01-IMPLEMENTATION-PLAN.md), [S0](../feature-00/SESSION-FEATURE-00-DEPENDENCY-PLAN.md), [S1](../feature-01/SESSION-FEATURE-01-DEPENDENCY-PLAN.md), [S2](../feature-02/SESSION-FEATURE-02-DEPENDENCY-PLAN.md), [S3](../feature-03/SESSION-FEATURE-03-DEPENDENCY-PLAN.md), [Campaign Feature C8](../../campaign/feature-08/CAMPAIGN-FEATURE-08-DEPENDENCY-PLAN.md), and [Campaign Feature C11](../../campaign/feature-11/CAMPAIGN-FEATURE-11-DEPENDENCY-PLAN.md). The detailed execution artifact is the [S4 implementation plan](SESSION-FEATURE-04-IMPLEMENTATION-PLAN.md). It writes no runtime artifact.
 
 S4 owns session-facing checkpoint evidence and the session recovery boundary. It does not assume that an audit row, recap, database copy, or event history is itself a restorable snapshot. Any restore is a named, scoped, owner-approved transaction—not a file overwrite or generic rollback.
 
@@ -35,7 +35,7 @@ The first fixture is one S0-ratified campaign/session checkpoint after an S1/S3 
 | --- | --- |
 | Session lifecycle/recap | S1/S3/C8. S4 validates the selected session boundary but does not reopen/end/alter recap state except through an explicitly approved restore root. |
 | Checkpoint identity and reference | S4/C8, or a confirmed generic snapshot owner. It records a named pointer plus declared scope/evidence, never an unclassified deep copy embedded in a session. |
-| Snapshot bytes/transaction log/storage medium | Dedicated snapshot/save owner, currently missing. S4 must not choose database-copy, SQLite file, event replay, or cloud storage semantics by itself. |
+| Snapshot bytes/transaction log/storage medium | Accepted Snapshot SP1 owns the SQLite package, digest, byte-free verification, and caller-owned transaction participation. S4 composes its typed producer/store; it must not choose database-copy, SQLite file, event replay, or cloud storage semantics. |
 | Campaign/world/quest/character/item/action domains | Their own plans. Restore classifies and invokes each owner only after it accepts the exact restore semantics; S4 cannot raw-write components/relationships. |
 | Domain classification/fork preview | C11. S4 supplies stable checkpoint identity/scope/provenance; C11 classifies reference/copy/unsupported for read-only fork preview and never creates a fork. |
 | Identity/authorization | CH14/identity policy when restore is enabled. Initial trusted-host checkpoint evidence grants no player restore capability. |
@@ -54,19 +54,19 @@ Collapsing these concepts would make a recap look restorable or let a storage im
 
 | Role | Proposed ID and boundary |
 | --- | --- |
-| Checkpoint record | `game.core.campaign.session-checkpoint`, attached to a distinct checkpoint entity or supplied by a generic snapshot owner. It contains only stable checkpoint identity, `scopeContractVersion`, `captureBoundary`, storage/provenance reference, and lifecycle/availability metadata; exact schema waits for snapshot-owner confirmation. |
-| Session checkpoint scope | `game.core.campaign.session.has-checkpoint`, a directed relationship from session to checkpoint with empty data, only if the generic snapshot owner lacks an equivalent scope link. |
+| Checkpoint record | `game.core.campaign.session-checkpoint`, attached to a distinct checkpoint entity. It contains only stable checkpoint identity, capture boundary, and the accepted SP1 byte-free provenance reference; exact S4 schema remains subject to its own confirmation gate. |
+| Session checkpoint scope | `game.core.campaign.session.has-checkpoint`, a directed relationship from session to checkpoint with empty data. SP1 owns package storage, not this game-graph reachability link. |
 | Governing contract | `procedure.campaign.session`, extended with checkpoint/read/recovery semantics; any restore operation also requires the snapshot owner's procedure. |
 | Checkpoint mechanism | `mechanic.game.core.campaign.session.checkpoint`, a C8 coordinator that obtains a typed snapshot-owner result and never writes snapshot bytes/effects directly. |
 | Restore mechanism | **Intentionally unnamed until scope ownership is confirmed.** It is not authorized by an evidence-only checkpoint and cannot be a generic `restore` endpoint. |
 
-Confirm whether a generic snapshot/checkpoint record already exists, identity allocation, capture boundary, storage/retention/availability lifecycle, precise scope contract, session link direction, audit evidence, C11 selector compatibility, and restore authority before authoring. If a generic owner exists, S4 uses it rather than adding session-specific duplicate state.
+SP1 now supplies the accepted generic package/reference owner. Before authoring, S4 still must confirm its checkpoint identity allocation, capture boundary, precise graph link, public read/campaign-operation shape, audit evidence, C11 metadata handoff, and its evidence-only lifecycle. S4 must not duplicate SP1's package table or payload.
 
 ## Checkpoint and restore boundaries
 
 ### Evidence-only default
 
-Under S0’s recommended policy, the checkpoint operation may validate/create one named reference after the snapshot owner confirms a captured boundary. It returns `checkpointId`, `sessionId`, `campaignId`, `scopeContractVersion`, availability, and literal next action. It accepts no domain list, storage location, bytes, file path, SQL, raw effects, audit/event ID, transcript, or caller-made snapshot. A checkpoint read returns only its bounded metadata and declared classification, not protected snapshot contents.
+Under S0’s recommended policy, the checkpoint operation may validate/create one named reference by composing SP1's accepted ended-session producer/store inside an S4-owned root. It returns `checkpointId`, `sessionId`, `campaignId`, `scopeContractVersion`, availability, and literal next action. It accepts no domain list, storage location, bytes, file path, SQL, raw effects, audit/event ID, transcript, or caller-made snapshot. A checkpoint read returns only its bounded metadata and declared classification, not protected snapshot contents.
 
 Interruption does not alter durable session lifecycle automatically. If a host stops after a successful S1 start, S2 resumes the still-active session; if it stops during an atomic root, the root commits fully or rolls back. If it stops after S3 end, the historical S3 read applies. A missing/corrupt checkpoint is named evidence failure, not permission to reconstruct state from chat or current data.
 
@@ -98,9 +98,9 @@ If no single root can atomically compose all restored domains, restore is unavai
 
 ~~~text
 S0 checkpoint policy + S1/S3 session boundaries
-├─ generic snapshot/checkpoint storage and provenance owner                 [missing primary leaf]
-├─ C11 checkpoint selector/domain-classification compatibility              [consumer gate]
-├─ confirmed C8 reference/identity/retention contract                       [semantic gate]
+├─ accepted SP1 immutable package producer/store                            [implemented leaf]
+├─ confirmed C8 checkpoint identity/reference/read contract                 [semantic gate]
+├─ C11 stable-reference handoff                                             [downstream consumer]
 ├─ S2/S3 interruption and historical-read evidence                          [continuity prerequisite]
 └─ restore only: identity authorization + every domain owner + outer root   [separate restore gates]
    ├─ Slice 1: evidence-only named checkpoint and readback
@@ -111,7 +111,7 @@ S0 checkpoint policy + S1/S3 session boundaries
 
 ### Slice 1 — named checkpoint evidence
 
-**Prerequisites:** S0 selects evidence-only or authorizes its prerequisite capture owner; S1/S3 lifecycle boundary and generic snapshot/reference owner are accepted; C11 identity/provenance expectations are confirmed.
+**Prerequisites:** S0 selects evidence-only; S1/S3 lifecycle boundary and Snapshot SP1 are accepted; S4's checkpoint identity/reference/read contract is confirmed. C11 consumes the resulting stable handoff after S4, rather than supplying a blocking classification decision.
 
 1. Add the confirmed checkpoint vocabulary/reference relationship only if no generic owner supplies them; implement zero-effect validate and typed capture/reference composition.
 2. Test valid checkpoint after each allowed boundary, no/corrupt/dangling/cross-scope session, unavailable snapshot owner, ID/replay/collision, scope version mismatch, metadata bounds, audit provenance, and no raw bytes/domain copy.

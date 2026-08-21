@@ -184,6 +184,31 @@ public sealed class ProcedureStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task Categories_hide_archived_contracts_by_default_but_keep_them_for_authoring_guidance()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new ProcedureStore(db);
+
+        await store.WriteAsync(Request(id: "procedure.system.inspect"));
+        await store.WriteAsync(Request(
+            id: "procedure.ruleset.play",
+            category: "ruleset.dnd2024.play") with { Status = ProcedureStatus.Archived });
+
+        var visible = await store.GetCategoriesAsync();
+        var all = await store.GetCategoriesAsync(includeInactive: true);
+
+        Assert.Equal(["system"], visible.Select(c => c.Category));
+        Assert.Equal(["ruleset.dnd2024.play", "system"], all.Select(c => c.Category));
+
+        var checks = await store.CheckAsync(Request(
+            id: "procedure.ruleset.host",
+            category: "ruleset.dnd2024.host"));
+
+        var category = Assert.Single(checks, c => c.Name == "category-known");
+        Assert.Contains("nearest existing branch is 'ruleset.dnd2024'", category.Detail);
+    }
+
+    [Fact]
     public async Task Find_matches_a_multi_word_query()
     {
         await using var db = _fixture.CreateContext();

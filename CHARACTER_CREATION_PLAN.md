@@ -99,7 +99,8 @@ responsibilities, not permission to add them in one large change.
 - class membership: exact versioned class definition and level in that class. The hit-die input is
   read from the definition by its ruleset owner; grant receipts carry feature references rather
   than copying the definition's rules.
-- origins: separate background and species references plus their selected grants.
+- origins: a CH3 background reference/grant receipt plus the Feature-26-owned selected-species
+  reference and their selected grants.
 - proficiencies: existing skill, save, and weapon-proficiency components as their own owners.
 - vital statistics: existing hit-point and final armor-class components remain owned by their
   validated writers; class/origin grant receipts identify why creation-time values are legal.
@@ -206,8 +207,11 @@ resolve correctly; malformed or derived inputs make no state change.
 
 ### CH3 — origins and closed choices
 
-Implement separate background and species definition records, their one-purpose grant declarations,
-and the closed skill/tool/language/equipment selection forms required by the first supported path.
+Implement background grant declarations, choice declarations, a background selection, and the
+shared origin-grant receipt/resolution convention. Feature 26 remains the static-profile and
+selected-state owner for species; CH3 consumes its validated species definition rather than
+creating a parallel species record. The closed skill/tool/language/equipment selection forms
+required by the first supported path start only once their source-specific grant owner is ready.
 
 **Acceptance:** an origin grants only its declared choices; an unavailable, duplicate, or
 out-of-scope selection is rejected atomically with a named correction.
@@ -272,11 +276,11 @@ first implementation slice.
 | Feature | Authoritative capability section | Direct prerequisites | Dependency plan / current gate |
 | --- | --- | --- | --- |
 | CH0 | [Ratify first path](#ch0--ratify-the-supported-first-character) | Source registry and existing D&D state owners. | **Ratified** — [CH0 plan](character/feature-00/CHARACTER-FEATURE-00-DEPENDENCY-PLAN.md); Human Soldier Fighter is the only first-path fixture. |
-| CH1 | [Actor shell and provenance](#ch1--actor-shell-and-provenance) | Ratified CH0; C15 campaign participation and profile-visibility decisions. | Slice 1 verified — [CH1 plan](character/feature-01/CHARACTER-FEATURE-01-DEPENDENCY-PLAN.md); actor-profile writing remains blocked on C15's accepted campaign participation contract. |
-| CH2 | [Abilities and existing state](#ch2--abilities-and-existing-state-integration) | Verified CH1; ratified CH0 assignment method; existing D&D recorders. | [CH2 plan](character/feature-02/CHARACTER-FEATURE-02-DEPENDENCY-PLAN.md); bounded policy/recorder work awaits CH0 and accepted CH1 scope. |
-| CH3 | [Origins and closed choices](#ch3--origins-and-closed-choices) | Verified CH1–CH2; approved CH0 origin path; each selected grant target has an owner. | [CH3 plan](character/feature-03/CHARACTER-FEATURE-03-DEPENDENCY-PLAN.md); source content awaits CH0 and unowned language/tool/trait/item grants block their fixture. |
+| CH1 | [Actor shell and provenance](#ch1--actor-shell-and-provenance) | Ratified CH0; verified C15 campaign participation and profile-visibility decision. | **Implemented and accepted** — [CH1 plan](character/feature-01/CHARACTER-FEATURE-01-DEPENDENCY-PLAN.md); its profile fragment remains an internal CH5 composition dependency. |
+| CH2 | [Abilities and existing state](#ch2--abilities-and-existing-state-integration) | Verified CH1; ratified CH0 assignment method; existing D&D recorders. | **Implemented and accepted** — [CH2 plan](character/feature-02/CHARACTER-FEATURE-02-DEPENDENCY-PLAN.md); its fragments remain internal CH5 composition dependencies. |
+| CH3 | [Origins and closed choices](#ch3--origins-and-closed-choices) | Accepted CH1–CH2 and Feature-26 selected-species seam; approved CH0 origin path; each selected grant target has an owner. | [CH3 plan](character/feature-03/CHARACTER-FEATURE-03-DEPENDENCY-PLAN.md); Feature 28's ASI/language/feat composition, Feature 23 item assembly, and Feature 26's selected-species seam still block a source-complete fixture. |
 | CH4 | [Class and level-one grants](#ch4--class-and-level-one-grants) | Verified CH1–CH3; ratified non-spellcasting CH0 class; class/HP, AC/equipment, feature, and item owners. | [CH4 plan](character/feature-04/CHARACTER-FEATURE-04-DEPENDENCY-PLAN.md); declaration work awaits CH0–CH3 and playable composition awaits its real ruleset/item owners. |
-| CH5 | [Atomic creation](#ch5--atomic-character-creation-runner) | Verified CH1–CH4; campaign attachment; Items 1–6; all selected derivation/feature owners; confirmed staged composition. | [CH5 plan](character/feature-05/CHARACTER-FEATURE-05-DEPENDENCY-PLAN.md); one root ActionRunner coordinator awaits a generic not-yet-persisted actor composition decision. |
+| CH5 | [Atomic creation](#ch5--atomic-character-creation-runner) | Accepted CH1–CH2; campaign attachment; Items 1–6; all selected derivation/feature owners; confirmed staged composition. | [CH5 plan](character/feature-05/CHARACTER-FEATURE-05-DEPENDENCY-PLAN.md); Slice 0 implements the generic read-only staged-world proof, while the root remains gated on CH3–CH4 and the remaining fixture owners. |
 | CH6 | [MCP and play handoff](#ch6--mcp-contract-and-play-handoff) | Verified CH5; current public-surface contracts; active first playable mechanic. | [CH6 plan](character/feature-06/CHARACTER-FEATURE-06-DEPENDENCY-PLAN.md); discovery uses existing kinds unless a protocol walk proves a separately confirmed surface gap. |
 | CH7 | [Correction and expansion gate](#ch7--regression-correction-and-expansion-gate) | Verified and played CH6 fixture; CH5 rollback/audit evidence; campaign attachment for profile correction. | [CH7 plan](character/feature-07/CHARACTER-FEATURE-07-DEPENDENCY-PLAN.md); profile-only correction and one source addition remain gated by played evidence and real owners. |
 | CH8 | [Guided creation and builder parity](#ch8--guided-creation-and-builder-parity) | Stable CH6 command; CH7 evidence; CH5 pure validation boundary; Website/API semantic-write/exposure decisions for browser work. | [CH8 plan](character/feature-08/CHARACTER-FEATURE-08-DEPENDENCY-PLAN.md); MCP guidance is stateless and browser work remains a separately gated consumer. |
@@ -293,7 +297,7 @@ first implementation slice.
 CH0 ratified first path
 └─ CH1 actor shell + immutable content provenance
    └─ CH2 abilities/existing-state composition
-      └─ CH3 species/background choices
+      └─ CH3 background choices + Feature-26 species selection
          └─ CH4 class + level-one grants
             └─ Items 1–4 and Items 6/CH5 transaction decision
                └─ CH5 atomic creation

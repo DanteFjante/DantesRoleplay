@@ -1,8 +1,7 @@
 # Feature 15 dependency plan — damage types, Resistance, Immunity and Vulnerability
 
-Status: **Planned; Slice 1 may start after review because it depends only on verified Feature 9.
-Slice 3 remains blocked until Feature 13 Slice 1 is verified**
-Last updated: 2026-08-20
+Status: **Verified — all four slices are implemented and accepted. Stop before Feature 16.**
+Last updated: 2026-08-21
 
 ## Execution rule
 
@@ -211,10 +210,10 @@ it is a vocabulary the next component copies.
 
 | Order | Slice | Starts only when | Exit gate |
 | --- | --- | --- | --- |
-| 1 | Canonical damage-type vocabulary | Feature 9 verified; plan reviewed; clean `roleplay validate catalog` | The contract lists exactly thirteen types, the weapon-profile physical subset is unchanged and documented, and every Feature 7–9 acceptance row still passes. |
-| 2 | Mitigation state and its administrative writer | Slice 1 verified | A creature's Resistances, Immunities, and Vulnerabilities can be recorded and corrected through one closed writer, with unknown types, duplicates, ordering, missing, and corrupt cases rejected without state change. |
-| 3 | Effect-free mitigation-profile resolver, and the contract's arithmetic | Slice 2 and Feature 13 Slice 1 verified | The resolver reports a defender's exact mitigation profile with zero effects, and the contract-specified arithmetic produces the SRD-correct final amount for every combination of the three lists and Petrified, proven against a focused test harness. |
-| 4 | The damage path composes and announces | Slice 3 verified | A confirmed weapon hit against a resistant target reduces Hit Points by the halved amount in one transaction and records exactly one `dnd2024.damage.dealt` event carrying the correct overkill. |
+| 1 | Canonical damage-type vocabulary | Feature 9 verified; plan reviewed; clean `roleplay validate catalog` | **Verified** — the contract lists exactly thirteen types, the weapon-profile physical subset is unchanged and documented, and every Feature 7–9 acceptance row still passes. See `FEATURE-15-SLICE-1-RECEIPT.md`. |
+| 2 | Mitigation state and its administrative writer | Slice 1 verified | **Verified** — a creature's Resistances, Immunities, and Vulnerabilities can be recorded and corrected through one closed writer, with unknown types, duplicates, ordering, missing, and corrupt cases rejected without state change. See `FEATURE-15-SLICE-2-RECEIPT.md`. |
+| 3 | Effect-free mitigation-profile resolver, and the contract's arithmetic | Slice 2 and Feature 13 Slice 1 verified | **Verified** — the resolver reports a defender's exact mitigation profile with zero effects, and the contract-specified arithmetic produces the SRD-correct final amount for every combination of the three lists and Petrified. See `FEATURE-15-SLICE-3-RECEIPT.md`. |
+| 4 | The damage path composes and announces | Slice 3 verified | **Verified** — one composed parent applies the SRD mitigation sequence, preserves overkill, and records one schema-valid `dnd2024.damage.dealt` event. See `FEATURE-15-SLICE-4-RECEIPT.md`. |
 
 ## Slice 1 — canonical damage-type vocabulary
 
@@ -284,8 +283,8 @@ database readback, and repository checks. Slice 2 stays blocked until a new revi
 
 ### Status and prerequisite
 
-Blocked until Slice 1 is verified. Adds `procedure.mechanic.dnd2024.damage-mitigation`, the
-`dnd2024.damage-mitigation` component and schema, and
+Authorized by the Slice 1 dependency gate, but awaits confirmation of its new permanent ids. Adds
+`procedure.mechanic.dnd2024.damage-mitigation`, the `dnd2024.damage-mitigation` component and schema, and
 `mechanic.dnd2024.damage-mitigation.write`.
 
 ### Data/state and resolution contract
@@ -326,8 +325,9 @@ and repository checks all hold. Slice 3 stays blocked.
 
 ### Status and prerequisite
 
-Blocked until Slice 2 and Feature 13 Slice 1 are verified. Adds `procedure.mechanic.dnd2024.damage.resolve` and
-`mechanic.dnd2024.damage.resolve`. Revises no existing mechanic.
+Authorized by the Slice 2 dependency gate, but awaits confirmation of its new permanent ids. Adds
+`procedure.mechanic.dnd2024.damage.resolve` and `mechanic.dnd2024.damage.resolve`. Revises no
+existing mechanic.
 
 ### Data/state and resolution contract
 
@@ -388,9 +388,9 @@ persistent import occurs. Slice 4 stays blocked.
 
 ### Status and prerequisite
 
-Blocked until Slice 3 is verified. Revises `procedure.mechanic.dnd2024.weapon-damage.apply` and
-`mechanic.dnd2024.weapon-damage.apply`. Adds the event type `dnd2024.damage.dealt` and its schema.
-Adds no new mechanic.
+Authorized and completed after the Slice 3 dependency gate. It revises `procedure.mechanic.dnd2024.weapon-damage.apply` and
+`mechanic.dnd2024.weapon-damage.apply`, and adds the event type `dnd2024.damage.dealt` and its
+schema. It adds no new mechanic.
 
 ### Data/state and resolution contract
 
@@ -437,8 +437,7 @@ with their own mechanic ids, versions, and seeds; replay from the same seed is e
 fresh validation database while prior versions remain readable. Run the full suite, `roleplay
 validate catalog`, and `git diff --check`; no persistent import occurs.
 
-Feature 15 is verified only after the Slice 4 gate passes and this plan records evidence; then stop
-before Feature 16.
+Feature 15 is verified. Stop before Feature 16.
 
 ## Forward dependencies this plan deliberately leaves open
 

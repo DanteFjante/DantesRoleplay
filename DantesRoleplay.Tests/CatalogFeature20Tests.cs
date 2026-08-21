@@ -135,6 +135,124 @@ public sealed class CatalogFeature20Tests : IDisposable
         Assert.Equal(heroBudget, Component(await world.GetEntityAsync(active), Budget));
     }
 
+    [Fact]
+    public async Task Encounter_space_places_sized_roster_members_and_reads_base_reach_without_movement()
+    {
+        var (world, mechanics, db) = await ImportAsync();
+        await using var _ = db;
+        var runner = Runner(db, world, mechanics);
+        async Task<bool> Run(string intent, Dictionary<string, string> roles, string input) =>
+            (await runner.RunAsync(new ActionRequest { Intent = intent, RoleEntityIds = roles, Input = input, Seed = 20 })).Ok;
+
+        Assert.True(await Run("record creature size", new() { ["creature"] = Hero }, "{\"size\":\"medium\"}"));
+        Assert.True(await Run("record creature size", new() { ["creature"] = Target }, "{\"size\":\"medium\"}"));
+        Assert.True(await Run("record encounter space", new() { ["encounter"] = Encounter }, "{\"mode\":\"record\",\"widthSquares\":6,\"heightSquares\":4,\"blockedCells\":[],\"difficultCells\":[]}"));
+        var map = await runner.RunAsync(new ActionRequest { Intent = "read encounter space diagnostics", RoleEntityIds = new Dictionary<string, string> { ["encounter"] = Encounter }, Input = "{}", Seed = 20 });
+        Assert.True(map.Ok, map.Error?.Why);
+        Assert.Empty(map.Output!.Effects);
+        using (var mapData = JsonDocument.Parse(map.Output.Data))
+        {
+            Assert.True(mapData.RootElement.GetProperty("valid").GetBoolean());
+            Assert.Equal(6, mapData.RootElement.GetProperty("space").GetProperty("widthSquares").GetInt32());
+        }
+        Assert.True(await Run("record base melee reach", new() { ["subject"] = Hero }, "{\"mode\":\"record\",\"feet\":5}"));
+        var heroPlacement = await runner.RunAsync(new ActionRequest { Intent = "place encounter participant", RoleEntityIds = new Dictionary<string, string> { ["subject"] = Hero, ["encounter"] = Encounter }, Input = "{\"mode\":\"record\",\"anchorX\":0,\"anchorY\":0}", Seed = 20 });
+        Assert.True(heroPlacement.Ok, heroPlacement.Error?.Why);
+        var targetPlacement = await runner.RunAsync(new ActionRequest
+        {
+            Intent = "place encounter participant",
+            RoleEntityIds = new Dictionary<string, string> { ["subject"] = Target, ["encounter"] = Encounter },
+            Input = "{\"mode\":\"record\",\"anchorX\":4,\"anchorY\":0}",
+            Seed = 20
+        });
+        Assert.True(targetPlacement.Ok, targetPlacement.Error?.Why);
+        var beforeRejectedPlacement = Component(await world.GetEntityAsync(Target), "dnd2024.encounter-position");
+        var collision = await runner.RunAsync(new ActionRequest { Intent = "correct encounter participant position", RoleEntityIds = new Dictionary<string, string> { ["subject"] = Target, ["encounter"] = Encounter }, Input = "{\"mode\":\"correct\",\"anchorX\":0,\"anchorY\":0}", Seed = 20 });
+        Assert.False(collision.Ok);
+        Assert.Equal(beforeRejectedPlacement, Component(await world.GetEntityAsync(Target), "dnd2024.encounter-position"));
+        var outOfBounds = await runner.RunAsync(new ActionRequest { Intent = "correct encounter participant position", RoleEntityIds = new Dictionary<string, string> { ["subject"] = Target, ["encounter"] = Encounter }, Input = "{\"mode\":\"correct\",\"anchorX\":11,\"anchorY\":0}", Seed = 20 });
+        Assert.False(outOfBounds.Ok);
+        Assert.Equal(beforeRejectedPlacement, Component(await world.GetEntityAsync(Target), "dnd2024.encounter-position"));
+        var reach = await runner.RunAsync(new ActionRequest { Intent = "check base melee reach", RoleEntityIds = new Dictionary<string, string> { ["attacker"] = Hero, ["target"] = Target, ["encounter"] = Encounter }, Input = "{}", Seed = 20 });
+        Assert.True(reach.Ok, reach.Error?.Why);
+        using var data = JsonDocument.Parse(reach.Output!.Data);
+        Assert.Equal(5, data.RootElement.GetProperty("distanceFeet").GetInt32());
+        Assert.True(data.RootElement.GetProperty("inReach").GetBoolean());
+        Assert.Empty(reach.Output.Effects);
+        var replay = await runner.RunAsync(new ActionRequest { Intent = "check base melee reach", RoleEntityIds = new Dictionary<string, string> { ["attacker"] = Hero, ["target"] = Target, ["encounter"] = Encounter }, Input = "{}", Seed = 20 });
+        Assert.True(replay.Ok, replay.Error?.Why);
+        Assert.Equal(reach.Output.Data, replay.Output!.Data);
+        Assert.Empty(replay.Output.Effects);
+        Assert.True((await runner.RunAsync(new ActionRequest { Intent = "correct encounter participant position", RoleEntityIds = new Dictionary<string, string> { ["subject"] = Target, ["encounter"] = Encounter }, Input = "{\"mode\":\"correct\",\"anchorX\":6,\"anchorY\":0}", Seed = 20 })).Ok);
+        var outOfReach = await runner.RunAsync(new ActionRequest { Intent = "check base melee reach", RoleEntityIds = new Dictionary<string, string> { ["attacker"] = Hero, ["target"] = Target, ["encounter"] = Encounter }, Input = "{}", Seed = 20 });
+        Assert.True(outOfReach.Ok, outOfReach.Error?.Why);
+        using var outOfReachData = JsonDocument.Parse(outOfReach.Output!.Data);
+        Assert.Equal(10, outOfReachData.RootElement.GetProperty("distanceFeet").GetInt32());
+        Assert.False(outOfReachData.RootElement.GetProperty("inReach").GetBoolean());
+        Assert.Empty(outOfReach.Output.Effects);
+    }
+
+    [Fact]
+    public async Task Placement_uses_every_Size_footprint_and_rejects_terrain_or_invalid_roster_state_unchanged()
+    {
+        var (world, mechanics, db) = await ImportAsync();
+        await using var _ = db;
+        var runner = Runner(db, world, mechanics);
+        var applier = new EffectApplier(db, world);
+        async Task<ActionRunResult> Place(string mode, int x, int y) =>
+            await runner.RunAsync(new ActionRequest
+            {
+                Intent = mode == "record" ? "place encounter participant" : "correct encounter participant position",
+                RoleEntityIds = new Dictionary<string, string> { ["subject"] = Hero, ["encounter"] = Encounter },
+                Input = JsonSerializer.Serialize(new { mode, anchorX = x, anchorY = y }),
+                Seed = 20
+            });
+
+        await world.SetComponentAsync(Target, "dnd2024.creature-size", "{\"size\":\"medium\"}");
+        Assert.True((await runner.RunAsync(new ActionRequest
+        {
+            Intent = "record encounter space",
+            RoleEntityIds = new Dictionary<string, string> { ["encounter"] = Encounter },
+            Input = "{\"mode\":\"record\",\"widthSquares\":4,\"heightSquares\":4,\"blockedCells\":[],\"difficultCells\":[]}",
+            Seed = 20
+        })).Ok);
+
+        foreach (var (size, units) in new[]
+                 {
+                     ("tiny", 1), ("small", 2), ("medium", 2), ("large", 4), ("huge", 6), ("gargantuan", 8)
+                 })
+        {
+            await world.SetComponentAsync(Hero, "dnd2024.creature-size", "{\"size\":\"" + size + "\"}");
+            var edgeAnchor = 8 - units;
+            var placed = await Place("record", edgeAnchor, 0);
+            Assert.True(placed.Ok, size + ": " + placed.Error?.Why);
+            var before = Component(await world.GetEntityAsync(Hero), "dnd2024.encounter-position");
+            var beyond = await Place("correct", edgeAnchor + 1, 0);
+            Assert.False(beyond.Ok, size);
+            Assert.Equal(before, Component(await world.GetEntityAsync(Hero), "dnd2024.encounter-position"));
+            Assert.True((await applier.ApplyAsync([new Effect { Type = EffectType.ComponentRemove, EntityId = Hero, DefinitionId = "dnd2024.encounter-position" }])).Applied);
+        }
+
+        await world.SetComponentAsync(Hero, "dnd2024.creature-size", "{\"size\":\"medium\"}");
+        var terrain = await runner.RunAsync(new ActionRequest
+        {
+            Intent = "correct encounter space",
+            RoleEntityIds = new Dictionary<string, string> { ["encounter"] = Encounter },
+            Input = "{\"mode\":\"correct\",\"widthSquares\":4,\"heightSquares\":4,\"blockedCells\":[{\"x\":0,\"y\":0}],\"difficultCells\":[{\"x\":1,\"y\":0}]}",
+            Seed = 20
+        });
+        Assert.True(terrain.Ok, terrain.Error?.Why);
+        var blocked = await Place("record", 0, 0);
+        Assert.False(blocked.Ok);
+        var difficult = await Place("record", 2, 0);
+        Assert.True(difficult.Ok, difficult.Error?.Why);
+        var beforeInvalidRoster = Component(await world.GetEntityAsync(Hero), "dnd2024.encounter-position");
+        await world.SetComponentAsync(Target, "dnd2024.creature-size", "{\"size\":\"invalid\"}");
+        var invalidRoster = await Place("correct", 2, 2);
+        Assert.False(invalidRoster.Ok);
+        Assert.Equal(beforeInvalidRoster, Component(await world.GetEntityAsync(Hero), "dnd2024.encounter-position"));
+    }
+
     private async Task<(WorldStore World, MechanicStore Mechanics, DantesRoleplayDbContext Db)> ImportAsync()
     {
         CopyDirectory(RepositoryCatalog(), _catalogCopy);
