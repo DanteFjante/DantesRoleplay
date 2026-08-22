@@ -1,5 +1,7 @@
 # Feature 19 dependency plan — reactions in play
 
+> **D&D implementation reference:** When this work includes D&D 2024 mechanics, inspect [Foundry VTT dnd5e](https://github.com/foundryvtt/dnd5e) before designing or coding. Use it as a licensed engineering reference—not a direct dependency or rules authority—while retaining the exact `source.dnd2024.srd-5.2.1` locator and all applicable MIT, CC-BY, and asset-license notices for any reused material.
+
 Status: **Planned; no Feature 19 runtime slice is authorised. Feature 20's spatial-movement contract and a reaction-composition decision are the next missing dependencies.**
 Last updated: 2026-08-20
 

@@ -1,5 +1,7 @@
 # Adaptive semantic retrieval for procedure contracts
 
+> **D&D implementation reference:** When this work includes D&D 2024 mechanics, inspect [Foundry VTT dnd5e](https://github.com/foundryvtt/dnd5e) before designing or coding. Use it as a licensed engineering reference—not a direct dependency or rules authority—while retaining the exact `source.dnd2024.srd-5.2.1` locator and all applicable MIT, CC-BY, and asset-license notices for any reused material.
+
 Status: **Draft — design plan only; implementation waits for the retrieval trigger and approval**  
 Last updated: 2026-08-20
 
@@ -283,4 +285,3 @@ This is the detailed implementation of dynamic procedure retrieval in ARCHITECTU
 vector-retrieval stage of LOCAL_INTENT_ROUTING_PLAN.md. It adds adaptive, confirmed intent aliases
 as the proposed learning mechanism. Update those higher-level documents only after this design is
 ratified, so one committed decision remains the source of truth.
-

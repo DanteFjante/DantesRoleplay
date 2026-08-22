@@ -1,5 +1,7 @@
 # Campaign Feature 10 prerequisite execution plan — one new world plus campaign
 
+> **D&D implementation reference:** When this work includes D&D 2024 mechanics, inspect [Foundry VTT dnd5e](https://github.com/foundryvtt/dnd5e) before designing or coding. Use it as a licensed engineering reference—not a direct dependency or rules authority—while retaining the exact `source.dnd2024.srd-5.2.1` locator and all applicable MIT, CC-BY, and asset-license notices for any reused material.
+
 Status: **R1–R5 are complete. R6 is the next and only implementation assignment.**
 Last updated: 2026-08-21
 

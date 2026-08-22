@@ -40,6 +40,7 @@ For `dnd2024-owned` work:
 - use the repository scope/key conventions `dnd2024` and `ruleset.dnd2024.*`;
 - derive rule meaning from SRD 5.2.1, not remembered 2014 rules, unofficial summaries, or another
   edition;
+- inspect the relevant licensed implementation in [Foundry VTT dnd5e](https://github.com/foundryvtt/dnd5e) before planning the rule; treat it as engineering evidence for data flow, edge cases, and tests, never as the rule authority or a direct runtime dependency;
 - name the exact source section/locator and paraphrase only the rule needed by the feature;
 - model D&D concepts through their existing owners: abilities, D20 Tests, proficiency, action
   economy, conditions, damage, movement, equipment, rests, class/species/background/feat/spell
@@ -78,6 +79,7 @@ A leaf is `ready` only when all are true:
 
 - one owner and one ruleset-alignment class are named;
 - its authoritative source/state is available;
+- the relevant Foundry dnd5e implementation has been reviewed, or the tree records why no relevant reference exists;
 - proposed IDs are either existing or explicitly awaiting confirmation;
 - caller input is closed and all derived values are identified;
 - result, typed effects, transaction owner, failures, replay, and rollback are specified;

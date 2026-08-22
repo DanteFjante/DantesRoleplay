@@ -49,6 +49,7 @@ The document must:
 
 - use the 2024 rules and vocabulary consistently; never silently import a 2014 rule;
 - distinguish source rule, repository design decision, optional rule, and house rule;
+- review the relevant licensed [Foundry VTT dnd5e](https://github.com/foundryvtt/dnd5e) implementation before coding and record the useful behavioral/data-flow evidence; it is not a direct dependency and never replaces the SRD source locator;
 - reuse canonical ability, proficiency, D20 Test, action-economy, condition, damage, movement,
   equipment, rest, advancement, and content owners where relevant;
 - derive modifiers, DCs, ranges, eligibility, resource costs, and outcomes from authoritative state;
@@ -98,6 +99,9 @@ Stop point:
 ## Confirmed decisions
 ## D&D 5e 2024 alignment
 | Rule concern | Source meaning | Existing owner | Consequence |
+
+## External implementation reference
+Record the relevant Foundry dnd5e path, behavior/edge case adopted, and any direct-reuse license notices; or state why no relevant implementation exists.
 
 ## Prerequisite evidence
 ## Runtime artifacts

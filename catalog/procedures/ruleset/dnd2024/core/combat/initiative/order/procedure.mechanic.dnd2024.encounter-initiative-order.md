@@ -18,7 +18,13 @@ Owns the single persistent D&D 2024 encounter Initiative-order snapshot and the 
 6. Supply input.tieDecisions only when the derived counts actually tie. It is an array of ordered id groups, highest first, one group per tied count, in the same descending order as the tied counts themselves. Each group must list exactly the participants tied at that count, with no repeats.
 7. Order the snapshot by descending Initiative count, applying each authorized tie decision within its tied group.
 8. Write the snapshot with a component.add effect on the encounter. Re-running against an encounter that already carries the snapshot fails and changes nothing; correction and encounter lifecycle belong to a later contract that does not exist yet.
-9. Verify a run by querying the encounter back and reading its order, and by confirming that no participant gained a component.
+9. After every child result and tie decision has validated, declare one `dnd2024.initiative.rolled`
+   event per final order row, in that same order. Each event carries only the derived subject and
+   encounter IDs plus the fixed Initiative source reference, and names `[subjectId, encounterId]`
+   as its entity IDs. The event is authoritative evidence for later rules; this procedure does not
+   subscribe to it or alter a participant.
+10. Verify a run by querying the encounter back and reading its order, confirming the same ordered
+    Initiative evidence in the root ledger, and confirming that no participant gained a component.
 
 ## Constraints
 - The rule must declare exactly one role, the encounter, with includeContents true, and exactly one child declaration bound to mechanic.dnd2024.initiative.roll with subject bound to $item.
@@ -29,4 +35,4 @@ Owns the single persistent D&D 2024 encounter Initiative-order snapshot and the 
 - The snapshot carries the ordered participant identities, their derived counts, and the SRD source reference. It must not carry ability scores, modifiers, raw dice, rounds, turns, conditions or a duplicate roster.
 - The snapshot must not store the replay seed. The seed is a 64-bit value that cannot survive the JavaScript number boundary intact, and the action audit already records it exactly; a lossy copy here would be a second, disagreeing source of truth.
 - The rule applies exactly one effect, component.add on the encounter, and never writes to a participant.
-
+  Every failure emits no Initiative evidence; event-routing failure rolls back the same root action.

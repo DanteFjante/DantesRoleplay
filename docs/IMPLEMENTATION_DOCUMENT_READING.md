@@ -45,8 +45,9 @@ content. Synchronization follows `CATALOG_HANDOVER.md`.
 5. Read its dependency-tree path from root to selected leaf; do not read unrelated branches.
 6. Read every governing catalog procedure and existing owner explicitly named by the slice.
 7. Read the exact SRD 5.2.1 source record/locator for `dnd2024-owned` work.
-8. Read prerequisite receipts only to verify claims used by the slice.
-9. Inspect allowed code/catalog files and focused tests, then restate the boundary, ruleset class,
+8. Inspect the relevant licensed [Foundry VTT dnd5e](https://github.com/foundryvtt/dnd5e) implementation for `dnd2024-owned` mechanics; use it only as an engineering reference and record any behavior or edge case adopted.
+9. Read prerequisite receipts only to verify claims used by the slice.
+10. Inspect allowed code/catalog files and focused tests, then restate the boundary, ruleset class,
    owner, source, allowed changes, tests, and stop point before editing.
 
 Do not read all feature directories, all receipts, the whole architecture history, or every
@@ -73,6 +74,7 @@ overrides current code/catalog truth when they have since changed.
 Before implementing `dnd2024-owned` work, confirm:
 
 - the source is `source.dnd2024.srd-5.2.1` with an exact locator;
+- the relevant Foundry dnd5e implementation has been checked for design/edge-case evidence, without treating it as the rules authority or a direct dependency;
 - the document does not rely on remembered 2014 terminology or behavior;
 - any compatibility/optional/house rule is labeled and confirmed separately;
 - existing D&D owners are referenced rather than copied;

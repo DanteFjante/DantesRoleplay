@@ -235,6 +235,38 @@ public sealed class CatalogFeature16Tests : IDisposable
         Assert.Equal(damageEventCount, await db.Events.CountAsync(item => item.TypeId == "dnd2024.damage.dealt"));
     }
 
+    [Fact]
+    public async Task Damage_event_exposes_only_its_owner_recorded_target_as_a_reaction_role()
+    {
+        CopyDirectory(RepositoryCatalog(), _catalogCopy);
+        await using var db = _fixture.CreateContext();
+        var world = new WorldStore(db);
+        var mechanics = new MechanicStore(db);
+        Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db))
+            .ApplyAsync(_catalogCopy, new CatalogImportOptions())).Aborted);
+
+        var eventType = await new EventTypeStore(db).GetAsync("dnd2024.damage.dealt");
+        Assert.NotNull(eventType);
+        using (var schema = JsonDocument.Parse(eventType!.PayloadSchema))
+        {
+            Assert.Equal(new[] { "targetId" }, schema.RootElement.GetProperty("x-dantes-entity-payload-fields").EnumerateArray().Select(value => value.GetString()).ToArray());
+        }
+
+        const string subject = "fixture.catalog.f16.binding.subject", target = "fixture.catalog.f16.binding.target";
+        await world.CreateEntityAsync("Damage source", subject);
+        await world.SetComponentAsync(subject, "dnd2024.abilities", """{"str":16,"dex":10,"con":10,"int":10,"wis":10,"cha":10}""");
+        await CreateDamageTargetAsync(world, target, 20, 20);
+        var result = await ApplyWeaponDamageAsync(CreateRunner(db, world, mechanics), subject, target);
+
+        Assert.True(result.Ok, result.Error?.Why);
+        var damageEvent = Assert.Single(await new EventLedger(db).FindAsync(rootOperationId: result.OperationId, type: "dnd2024.damage.dealt"));
+        Assert.Equal(new[] { target }, damageEvent.EntityIds);
+        var detail = await new EventLedger(db).GetAsync(damageEvent.Id);
+        Assert.NotNull(detail);
+        using var payload = JsonDocument.Parse(detail!.PayloadJson);
+        Assert.Equal(target, payload.RootElement.GetProperty("targetId").GetString());
+    }
+
     private static Task<ActionRunResult> RunAsync(ActionRunner runner, string intent, string subject, string input) =>
         runner.RunAsync(new ActionRequest
         {

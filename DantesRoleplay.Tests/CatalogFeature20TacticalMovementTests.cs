@@ -2,6 +2,7 @@ using System.Text.Json;
 using DantesRoleplay.Actions;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Catalog;
+using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
 using DantesRoleplay.RuleAccess;
@@ -230,7 +231,7 @@ public sealed class CatalogFeature20TacticalMovementTests : IDisposable
         var db = _fixture.CreateContext();
         var world = new WorldStore(db);
         var mechanics = new MechanicStore(db);
-        var imported = await new CatalogImporter(db, mechanics, new ProcedureStore(db), world).ApplyAsync(_catalogCopy, new CatalogImportOptions());
+        var imported = await new CatalogImporter(db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db)).ApplyAsync(_catalogCopy, new CatalogImportOptions());
         Assert.False(imported.Aborted);
         return (world, mechanics, db);
     }

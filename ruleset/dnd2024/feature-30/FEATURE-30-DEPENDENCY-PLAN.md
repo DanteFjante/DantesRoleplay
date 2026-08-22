@@ -1,5 +1,7 @@
 # Feature 30 dependency plan — guided character creation and playable-sheet acceptance
 
+> **D&D implementation reference:** When this work includes D&D 2024 mechanics, inspect [Foundry VTT dnd5e](https://github.com/foundryvtt/dnd5e) before designing or coding. Use it as a licensed engineering reference—not a direct dependency or rules authority—while retaining the exact `source.dnd2024.srd-5.2.1` locator and all applicable MIT, CC-BY, and asset-license notices for any reused material.
+
 Status: **CH5 Slice 0's generic staged-composition proof is accepted. Feature 30 creates no parallel creation contract or actor state.**
 Last updated: 2026-08-21
 

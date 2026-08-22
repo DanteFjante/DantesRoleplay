@@ -1,5 +1,7 @@
 # Feature 31 dependency plan — spellcasting resources and casting statistics
 
+> **D&D implementation reference:** When this work includes D&D 2024 mechanics, inspect [Foundry VTT dnd5e](https://github.com/foundryvtt/dnd5e) before designing or coding. Use it as a licensed engineering reference—not a direct dependency or rules authority—while retaining the exact `source.dnd2024.srd-5.2.1` locator and all applicable MIT, CC-BY, and asset-license notices for any reused material.
+
 Status: **Slice 1 verified; immutable spell identities are implemented. Slice 2 remains blocked on a ratified caster source/class seam.**
 Last updated: 2026-08-21
 

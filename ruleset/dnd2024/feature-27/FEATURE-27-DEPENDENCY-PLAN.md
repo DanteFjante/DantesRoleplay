@@ -1,5 +1,7 @@
 # Feature 27 dependency plan — class progression, hit dice, and class-feature entitlement
 
+> **D&D implementation reference:** When this work includes D&D 2024 mechanics, inspect [Foundry VTT dnd5e](https://github.com/foundryvtt/dnd5e) before designing or coding. Use it as a licensed engineering reference—not a direct dependency or rules authority—while retaining the exact `source.dnd2024.srd-5.2.1` locator and all applicable MIT, CC-BY, and asset-license notices for any reused material.
+
 Status: **Slice 1 verified; Slices 2–5 remain blocked on CH4 class membership, the HP-policy leaf, named feature owners, C14, and CH9.**
 Last updated: 2026-08-21
 

@@ -1,5 +1,7 @@
 # Hierarchical catalog navigation — Terra implementation plan
 
+> **D&D implementation reference:** When this work includes D&D 2024 mechanics, inspect [Foundry VTT dnd5e](https://github.com/foundryvtt/dnd5e) before designing or coding. Use it as a licensed engineering reference—not a direct dependency or rules authority—while retaining the exact `source.dnd2024.srd-5.2.1` locator and all applicable MIT, CC-BY, and asset-license notices for any reused material.
+
 Status: **Ready for implementation after the Slice 0 public-contract confirmation.**
 
 This plan is written for a Terra High implementation pass. It replaces the older proposal in

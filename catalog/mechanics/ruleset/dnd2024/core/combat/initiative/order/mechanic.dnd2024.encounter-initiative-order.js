@@ -46,7 +46,8 @@ used[pid]=true;ordered.push(member[pid]);}
 g.length=0;
 for(m=0;m<ordered.length;m++){g.push(ordered[m]);}
 }
-var order=[],lines=[],q;
-for(n=0;n<groups.length;n++){for(q=0;q<groups[n].length;q++){order.push({participantId:groups[n][q].participantId,initiative:groups[n][q].initiative});lines.push(groups[n][q].participantId+' '+groups[n][q].initiative);}}
+var order=[],lines=[],events=[],q;
+var eventSource={sourceId:SID,locator:LOC};
+for(n=0;n<groups.length;n++){for(q=0;q<groups[n].length;q++){order.push({participantId:groups[n][q].participantId,initiative:groups[n][q].initiative});lines.push(groups[n][q].participantId+' '+groups[n][q].initiative);events.push({type:'dnd2024.initiative.rolled',payload:{subjectId:groups[n][q].participantId,encounterId:e.id,sourceRef:eventSource},entityIds:[groups[n][q].participantId,e.id]});}}
 ctx.log('Encounter Initiative order recorded for '+order.length+' participant(s); '+tied.length+' tied count(s) resolved by decision.');
-return {narration:'Initiative order for '+e.name+': '+lines.join(', ')+'.',data:{test:'encounter-initiative-order',participants:order.length,tiedCounts:tied.length,order:order,source:'SRD 5.2.1 - Playing the Game: Combat > The Order of Combat > Initiative'},effects:[{type:'component.add',entityId:e.id,definitionId:DEF,data:JSON.stringify({order:order,sourceRef:{sourceId:SID,locator:LOC}})}]};
+return {narration:'Initiative order for '+e.name+': '+lines.join(', ')+'.',data:{test:'encounter-initiative-order',participants:order.length,tiedCounts:tied.length,order:order,source:'SRD 5.2.1 - Playing the Game: Combat > The Order of Combat > Initiative'},effects:[{type:'component.add',entityId:e.id,definitionId:DEF,data:JSON.stringify({order:order,sourceRef:eventSource})}],events:events};

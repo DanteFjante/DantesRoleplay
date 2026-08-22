@@ -1,5 +1,7 @@
 # Campaign Feature 12 dependency plan — parallel and branching arc continuity
 
+> **D&D implementation reference:** When this work includes D&D 2024 mechanics, inspect [Foundry VTT dnd5e](https://github.com/foundryvtt/dnd5e) before designing or coding. Use it as a licensed engineering reference—not a direct dependency or rules authority—while retaining the exact `source.dnd2024.srd-5.2.1` locator and all applicable MIT, CC-BY, and asset-license notices for any reused material.
+
 Status: **Planned; blocked by verified C3 continuity, a played C3 campaign, and semantic confirmation**  
 Last updated: 2026-08-20
 
@@ -109,4 +111,3 @@ C12 parallel and branching arc continuity
 C12 is complete when the verified C3 owner can preserve and resume several independent campaign
 threads and an explicit chapter branch without ambiguity or partial writes. Stop before cross-arc
 quest changes, player views, automatic story advancement, or campaign forks.
-

@@ -3,6 +3,7 @@ using DantesRoleplay.Actions;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.Effects;
+using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
 using DantesRoleplay.RuleAccess;
@@ -43,7 +44,8 @@ public sealed class CatalogFeature5Tests : IDisposable
             db,
             mechanics,
             new ProcedureStore(db),
-            world).ApplyAsync(_catalogCopy, new CatalogImportOptions());
+            world,
+            new EventTypeStore(db)).ApplyAsync(_catalogCopy, new CatalogImportOptions());
 
         Assert.False(imported.Aborted);
         Assert.NotNull(await mechanics.GetAsync("mechanic.dnd2024.initiative.roll"));
@@ -129,7 +131,7 @@ public sealed class CatalogFeature5Tests : IDisposable
         await using var db = _fixture.CreateContext();
         var world = new WorldStore(db);
         var mechanics = new MechanicStore(db);
-        var importer = new CatalogImporter(db, mechanics, new ProcedureStore(db), world);
+        var importer = new CatalogImporter(db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db));
         var imported = await importer.ApplyAsync(_catalogCopy, new CatalogImportOptions());
         Assert.False(imported.Aborted);
 

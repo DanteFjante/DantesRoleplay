@@ -1,5 +1,7 @@
 # Feature 17 dependency plan — dying, death saves, stabilization and death
 
+> **D&D implementation reference:** When this work includes D&D 2024 mechanics, inspect [Foundry VTT dnd5e](https://github.com/foundryvtt/dnd5e) before designing or coding. Use it as a licensed engineering reference—not a direct dependency or rules authority—while retaining the exact `source.dnd2024.srd-5.2.1` locator and all applicable MIT, CC-BY, and asset-license notices for any reused material.
+
 Status: **Slices 1–3 verified in scope. Slice 4 (dropping-to-zero reaction) is the next proposed
 implementation pass once its damage-event dependency is confirmed; broader repository acceptance
 is currently blocked by unrelated concurrent test failures.**
