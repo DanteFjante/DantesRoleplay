@@ -1,0 +1,1 @@
+{"name":"mcp-protocol","classification":"system","status":"scaffolded","owns":["orient query commit transport","closed kind dispatch","tool envelopes"],"mayDependOn":["building-blocks","procedures","mechanics","actions","state","operations-and-audit","snapshots","feedback","information"]}

@@ -2,7 +2,9 @@ using DantesRoleplay.DataAccess;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.Security;
 using DantesRoleplay.World;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace DantesRoleplay.Tests;
 
@@ -31,10 +33,8 @@ public sealed class DevelopmentKnowledgeAudienceTests
     [Fact]
     public void Disabled_host_uses_the_safe_unavailable_placeholder()
     {
-        var services = new ServiceCollection()
-            .AddDantesRoleplayMcpServer("Data Source=:memory:", DatabaseProvider.Sqlite);
-        using var provider = services.BuildServiceProvider();
-        using var scope = provider.CreateScope();
+        using var app = Host("Data Source=:memory:");
+        using var scope = app.Services.CreateScope();
 
         Assert.IsType<UnavailableKnowledgeAnswerCoordinator>(
             scope.ServiceProvider.GetRequiredService<IAuthorizedKnowledgeAnswerCoordinator>());
@@ -44,20 +44,30 @@ public sealed class DevelopmentKnowledgeAudienceTests
     [Fact]
     public void Enabled_host_registers_the_fixed_policy_and_real_answer_coordinator()
     {
-        var services = new ServiceCollection()
-            .AddDantesRoleplayMcpServer("Data Source=:memory:", DatabaseProvider.Sqlite,
-                developmentKnowledgeAudience: new DevelopmentKnowledgeAudienceOptions
-                {
-                    Enabled = true,
-                    CampaignId = "campaign.local",
-                    Role = "gm"
-                });
-        using var provider = services.BuildServiceProvider();
-        using var scope = provider.CreateScope();
+        using var app = Host("Data Source=:memory:", new DevelopmentKnowledgeAudienceOptions
+        {
+            Enabled = true,
+            CampaignId = "campaign.local",
+            Role = "gm"
+        });
+        using var scope = app.Services.CreateScope();
 
         Assert.IsType<DevelopmentCampaignAudiencePolicy>(
             scope.ServiceProvider.GetRequiredService<IAuthenticatedCampaignAudiencePolicy>());
         Assert.IsNotType<UnavailableKnowledgeAnswerCoordinator>(
             scope.ServiceProvider.GetRequiredService<IAuthorizedKnowledgeAnswerCoordinator>());
+    }
+
+    private static WebApplication Host(string connectionString, DevelopmentKnowledgeAudienceOptions? audience = null)
+    {
+        var builder = WebApplication.CreateSlimBuilder();
+        builder.Host.UseDefaultServiceProvider(options =>
+        {
+            options.ValidateOnBuild = true;
+            options.ValidateScopes = true;
+        });
+        builder.Services.AddDantesRoleplayMcpServer(connectionString, DatabaseProvider.Sqlite,
+            developmentKnowledgeAudience: audience);
+        return builder.Build();
     }
 }

@@ -7,16 +7,32 @@
       "launchBrowser": false,
       "applicationUrl": "http://localhost:6217",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DANTESROLEPLAY_DEVELOPMENT_KNOWLEDGE_AUDIENCE": "true",
+        "DANTESROLEPLAY_DEVELOPMENT_CAMPAIGN": "campaign.thalorien",
+        "DANTESROLEPLAY_DEVELOPMENT_ROLE": "gm",
+        "DANTESROLEPLAY_OLLAMA_COMPLETION": "true",
+        "Knowledge__DevelopmentAudience__Enabled": "true",
+        "Knowledge__DevelopmentAudience__CampaignId": "campaign.thalorien",
+        "Knowledge__DevelopmentAudience__Role": "gm",
+        "Knowledge__Completion__Enabled": "true"
       }
     },
     "https": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:5144;http://localhost:6217",
+      "applicationUrl": "https://localhost:5144",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DANTESROLEPLAY_DEVELOPMENT_KNOWLEDGE_AUDIENCE": "true",
+        "DANTESROLEPLAY_DEVELOPMENT_CAMPAIGN": "campaign.thalorien",
+        "DANTESROLEPLAY_DEVELOPMENT_ROLE": "gm",
+        "DANTESROLEPLAY_OLLAMA_COMPLETION": "true",
+        "Knowledge__DevelopmentAudience__Enabled": "true",
+        "Knowledge__DevelopmentAudience__CampaignId": "campaign.thalorien",
+        "Knowledge__DevelopmentAudience__Role": "gm",
+        "Knowledge__Completion__Enabled": "true"
       }
     }
   }

@@ -89,6 +89,13 @@ public sealed class CatalogCoverageTests : IDisposable
         ["story_plan_run"] = "Resumable runtime orchestration state, not authored catalog content.",
         ["story_plan_step_run"] = "Per-step runtime execution evidence for a story-plan run.",
 
+        // Generic information is MCP-authored live database content. It is deliberately not part
+        // of the bootstrap catalog: importing a catalog must not overwrite a user's independent
+        // information namespace, its rules, or the action contracts it has enabled.
+        ["information_source"] = "Live MCP-authored generic information, not bootstrap catalog content.",
+        ["information_record"] = "Live MCP-authored generic information, not bootstrap catalog content.",
+        ["information_action_contract"] = "Live MCP-authored action-contract configuration, not bootstrap catalog content.",
+
         ["__EFMigrationsHistory"] = "Schema bookkeeping, not content. A catalog describes what the "
             + "database holds, not which migrations built it.",
         ["__EFMigrationsLock"] = "Schema bookkeeping.",
@@ -180,6 +187,35 @@ public sealed class CatalogCoverageTests : IDisposable
     /// <summary>Columns the catalog does not carry, and why each one is fine to lose.</summary>
     private static readonly Dictionary<string, string> NotCarried = new(StringComparer.Ordinal)
     {
+        ["information_source.Id"] = "Live MCP-authored generic information, not carried by the bootstrap catalog.",
+        ["information_source.ScopeId"] = "Live MCP-authored generic information, not carried by the bootstrap catalog.",
+        ["information_source.Name"] = "Live MCP-authored generic information, not carried by the bootstrap catalog.",
+        ["information_source.Description"] = "Live MCP-authored generic information, not carried by the bootstrap catalog.",
+        ["information_source.MetadataSchemaJson"] = "Live MCP-authored generic information, not carried by the bootstrap catalog.",
+        ["information_source.ContentHash"] = "Live MCP-authored generic information revision evidence, not catalog content.",
+        ["information_source.Revision"] = "Live MCP-authored generic information revision evidence, not catalog content.",
+        ["information_source.CreatedAtUtc"] = "Live MCP-authored generic information timestamp, not catalog content.",
+        ["information_source.UpdatedAtUtc"] = "Live MCP-authored generic information timestamp, not catalog content.",
+        ["information_record.Id"] = "Live MCP-authored generic information, not carried by the bootstrap catalog.",
+        ["information_record.SourceId"] = "Live MCP-authored generic information, not carried by the bootstrap catalog.",
+        ["information_record.Title"] = "Live MCP-authored generic information, not carried by the bootstrap catalog.",
+        ["information_record.Content"] = "Live MCP-authored generic information, not carried by the bootstrap catalog.",
+        ["information_record.MetadataJson"] = "Live MCP-authored generic information, not carried by the bootstrap catalog.",
+        ["information_record.ContentHash"] = "Live MCP-authored generic information revision evidence, not catalog content.",
+        ["information_record.Revision"] = "Live MCP-authored generic information revision evidence, not catalog content.",
+        ["information_record.CreatedAtUtc"] = "Live MCP-authored generic information timestamp, not catalog content.",
+        ["information_record.UpdatedAtUtc"] = "Live MCP-authored generic information timestamp, not catalog content.",
+        ["information_action_contract.Id"] = "Live MCP-authored action contract, not carried by the bootstrap catalog.",
+        ["information_action_contract.ScopeId"] = "Live MCP-authored action contract, not carried by the bootstrap catalog.",
+        ["information_action_contract.Name"] = "Live MCP-authored action contract, not carried by the bootstrap catalog.",
+        ["information_action_contract.Description"] = "Live MCP-authored action contract, not carried by the bootstrap catalog.",
+        ["information_action_contract.ExecutorId"] = "Live MCP-authored action contract, not carried by the bootstrap catalog.",
+        ["information_action_contract.InputSchemaJson"] = "Live MCP-authored action contract, not carried by the bootstrap catalog.",
+        ["information_action_contract.RuleRecordIdsJson"] = "Live MCP-authored action contract, not carried by the bootstrap catalog.",
+        ["information_action_contract.ContentHash"] = "Live MCP-authored action contract revision evidence, not catalog content.",
+        ["information_action_contract.Revision"] = "Live MCP-authored action contract revision evidence, not catalog content.",
+        ["information_action_contract.CreatedAtUtc"] = "Live MCP-authored action contract timestamp, not catalog content.",
+        ["information_action_contract.UpdatedAtUtc"] = "Live MCP-authored action contract timestamp, not catalog content.",
         // --- Surrogate keys. The catalog addresses records by their real identity.
         ["component.Id"] = "Surrogate key. A component is addressed by (entity, definition).",
         ["containment.Id"] = "Surrogate key. Containment is a property of the contained entity.",

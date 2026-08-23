@@ -53,6 +53,17 @@
     -->
     <ProjectReference Include="..\DantesRoleplay.MCPServer\DantesRoleplay.MCPServer.csproj" />
     <ProjectReference Include="..\DantesRoleplay.Tools\DantesRoleplay.Tools.csproj" />
+    <ProjectReference Include="..\src\system\web-interface\DantesRoleplay.Web\DantesRoleplay.Web.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Focused tests move beside each capability while retaining the shared test assembly. -->
+    <Compile Include="..\src\system\**\tests\*.cs">
+      <Link>Components\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\game-adapters\**\tests\*.cs">
+      <Link>GameAdapters\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
   </ItemGroup>
 
 </Project>

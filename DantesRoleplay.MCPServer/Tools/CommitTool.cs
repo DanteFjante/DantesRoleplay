@@ -12,6 +12,7 @@ using DantesRoleplay.Procedures;
 using DantesRoleplay.SystemFeedback;
 using DantesRoleplay.World;
 using DantesRoleplay.Story;
+using DantesRoleplay.Information;
 using ModelContextProtocol.Server;
 
 namespace DantesRoleplay.MCPServer.Tools;
@@ -36,7 +37,7 @@ public sealed class CommitTool
     [McpServerTool(Name = "commit")]
     [Description(
         "Change anything in this system. kind is one of: procedure, component, effects, mechanic, event-type, subscription, " +
-        "action, itinerary-advance, campaign, quest, notification, feedback, story-plan. payload is a JSON object encoded as a string, shaped per kind — " +
+        "action, itinerary-advance, campaign, quest, notification, feedback, information-source, information-record, information-action-contract, information-action, story-plan. payload is a JSON object encoded as a string, shaped per kind — " +
         "query(kind: \"capabilities\") gives every shape exactly, and a rejection repeats the one " +
         "you needed. Where dryRun is supported, send dryRun: true first and read every check, then " +
         "commit the identical payload. This is the only path that changes state.")]
@@ -58,7 +59,7 @@ public sealed class CommitTool
         IQuestLifecycleRunner questLifecycle,
         IOperationLog log,
         INotificationStore notifications,
-        [Description("Closed kind: procedure, component, effects, mechanic, event-type, subscription, action, itinerary-advance, campaign, quest, notification, feedback, or story-plan.")]
+        [Description("Closed kind: procedure, component, effects, mechanic, event-type, subscription, action, itinerary-advance, campaign, quest, notification, feedback, information-source, information-record, information-action-contract, information-action, or story-plan.")]
         string kind,
         [Description("JSON object containing the selected kind's existing tool arguments.")]
         string payload,
@@ -76,7 +77,9 @@ public sealed class CommitTool
         ICampaignSessionCheckpointCreator? campaignSessionCheckpointCreator = null,
         ISystemFeedbackService? feedback = null,
         IStoryPlanCoordinator? storyPlans = null,
-        ICampaignQuestContextRunner? campaignQuestContexts = null)
+        ICampaignQuestContextRunner? campaignQuestContexts = null,
+        IInformationStore? information = null,
+        IInformationActionCoordinator? informationActions = null)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
         var spec = VerbSurface.Commit(normalizedKind);
@@ -149,6 +152,12 @@ public sealed class CommitTool
                 "notification" => await CommitNotificationAsync(
                     notifications, log, parsedPayload.RootElement, intent, proceduresUsed, dryRun, cancellationToken),
                 "feedback" => await CommitFeedbackAsync(feedback, log, parsedPayload.RootElement, intent, proceduresUsed, cancellationToken),
+                "information-source" when information is not null => await CommitInformationSourceAsync(information, log, parsedPayload.RootElement, intent, proceduresUsed, cancellationToken),
+                "information-record" when information is not null => await CommitInformationRecordAsync(information, log, parsedPayload.RootElement, intent, proceduresUsed, cancellationToken),
+                "information-action-contract" when information is not null => await CommitInformationActionContractAsync(information, log, parsedPayload.RootElement, intent, proceduresUsed, cancellationToken),
+                "information-action" when informationActions is not null => await CommitInformationActionAsync(informationActions, log, parsedPayload.RootElement, intent, proceduresUsed, cancellationToken),
+                "information-source" or "information-record" or "information-action-contract" => await ToolRunner.RunAsync(log, "commit", () => Task.FromResult(ToolOutcome.Fail("INFORMATION_UNAVAILABLE", "Generic information storage is not configured.", "orient()", "Information write was unavailable."))),
+                "information-action" => await ToolRunner.RunAsync(log, "commit", () => Task.FromResult(ToolOutcome.Fail("INFORMATION_UNAVAILABLE", "Generic information action execution is not configured.", "orient()", "Information action was unavailable."))),
                 "story-plan" => await CommitStoryPlanAsync(storyPlans, log, parsedPayload.RootElement, intent, proceduresUsed, cancellationToken),
                 _ => throw new InvalidOperationException($"Unhandled commit kind '{kind}'.")
             };
@@ -786,9 +795,40 @@ public sealed class CommitTool
         public string? Scope { get; init; }
         public long? Seed { get; init; }
     }
+
+    private static async Task<ToolEnvelope> CommitInformationSourceAsync(IInformationStore store, IOperationLog log, JsonElement payload, string intent, string[]? proceduresUsed, CancellationToken cancellationToken)
+    {
+        if (!TryDeserialize(payload, out InformationSourcePayload? value, out var error) || value is null || string.IsNullOrWhiteSpace(value.Id) || string.IsNullOrWhiteSpace(value.ScopeId) || string.IsNullOrWhiteSpace(value.Name))
+            return await InvalidPayloadEnvelope(log, "information-source", error ?? "Information source requires id, scopeId, and name.", intent, proceduresUsed, false);
+        return await new InformationTools().WriteSourceAsync(store, log, new(value.Id, value.ScopeId, value.Name, value.Description ?? string.Empty, value.MetadataSchema ?? "{}"), intent, proceduresUsed, cancellationToken);
+    }
+
+    private static async Task<ToolEnvelope> CommitInformationRecordAsync(IInformationStore store, IOperationLog log, JsonElement payload, string intent, string[]? proceduresUsed, CancellationToken cancellationToken)
+    {
+        if (!TryDeserialize(payload, out InformationRecordPayload? value, out var error) || value is null || string.IsNullOrWhiteSpace(value.Id) || string.IsNullOrWhiteSpace(value.SourceId) || string.IsNullOrWhiteSpace(value.Title) || string.IsNullOrWhiteSpace(value.Content))
+            return await InvalidPayloadEnvelope(log, "information-record", error ?? "Information record requires id, sourceId, title, and content.", intent, proceduresUsed, false);
+        return await new InformationTools().WriteRecordAsync(store, log, new(value.Id, value.SourceId, value.Title, value.Content, value.Metadata ?? "{}"), intent, proceduresUsed, cancellationToken);
+    }
+    private static async Task<ToolEnvelope> CommitInformationActionContractAsync(IInformationStore store, IOperationLog log, JsonElement payload, string intent, string[]? proceduresUsed, CancellationToken cancellationToken)
+    {
+        if (!TryDeserialize(payload, out InformationActionContractPayload? value, out var error) || value is null || string.IsNullOrWhiteSpace(value.Id) || string.IsNullOrWhiteSpace(value.ScopeId) || string.IsNullOrWhiteSpace(value.Name) || string.IsNullOrWhiteSpace(value.ExecutorId) || string.IsNullOrWhiteSpace(value.InputSchema))
+            return await InvalidPayloadEnvelope(log, "information-action-contract", error ?? "Information action contract requires id, scopeId, name, executorId, and inputSchema.", intent, proceduresUsed, false);
+        return await new InformationTools().WriteActionContractAsync(store, log, new(value.Id, value.ScopeId, value.Name, value.Description ?? string.Empty, value.ExecutorId, value.InputSchema, JsonSerializer.Serialize(value.RuleRecordIds ?? [], JsonOptions)), intent, proceduresUsed, cancellationToken);
+    }
+
+    private static async Task<ToolEnvelope> CommitInformationActionAsync(IInformationActionCoordinator coordinator, IOperationLog log, JsonElement payload, string intent, string[]? proceduresUsed, CancellationToken cancellationToken)
+    {
+        if (!TryDeserialize(payload, out InformationActionPayload? value, out var error) || value is null || string.IsNullOrWhiteSpace(value.ScopeId) || string.IsNullOrWhiteSpace(value.ContractId) || string.IsNullOrWhiteSpace(value.Input))
+            return await InvalidPayloadEnvelope(log, "information-action", error ?? "Information action requires scopeId, contractId, and JSON-object input.", intent, proceduresUsed, false);
+        return await new InformationTools().ExecuteActionAsync(coordinator, log, new(value.ScopeId, value.ContractId, value.Input), intent, proceduresUsed, cancellationToken);
+    }
     private sealed class ItineraryAdvancePayload { public string? WorldId { get; init; } public string? TravellerId { get; init; } public string? DestinationLocationId { get; init; } public string? ItineraryFingerprint { get; init; } public int? NextLegIndex { get; init; } public string? GroundConveyanceId { get; init; } public string? AerialConveyanceId { get; init; } }
     private sealed class EventTypePayload { public string? Id { get; init; } public string? Category { get; init; } public string? Name { get; init; } public string? Description { get; init; } public string? Schema { get; init; } public string? Scope { get; init; } public string? Status { get; init; } public string? ChangeNote { get; init; } }
     private sealed class NotificationPayload { public string? Id { get; init; } public string? State { get; init; } }
+    private sealed class InformationSourcePayload { public string? Id { get; init; } public string? ScopeId { get; init; } public string? Name { get; init; } public string? Description { get; init; } public string? MetadataSchema { get; init; } }
+    private sealed class InformationRecordPayload { public string? Id { get; init; } public string? SourceId { get; init; } public string? Title { get; init; } public string? Content { get; init; } public string? Metadata { get; init; } }
+    private sealed class InformationActionContractPayload { public string? Id { get; init; } public string? ScopeId { get; init; } public string? Name { get; init; } public string? Description { get; init; } public string? ExecutorId { get; init; } public string? InputSchema { get; init; } public string[]? RuleRecordIds { get; init; } }
+    private sealed class InformationActionPayload { public string? ScopeId { get; init; } public string? ContractId { get; init; } public string? Input { get; init; } }
 
     private sealed class SubscriptionPayload { public string? Id { get; init; } public string? Category { get; init; } public string? EventTypeId { get; init; } public string? EventMechanicId { get; init; } public string? Mode { get; init; } public int Order { get; init; } public string? FixedRoleEntityIdsJson { get; init; } public string? RoleFromEventPayloadJson { get; init; } public string? FanoutSelectorJson { get; init; } public string? TrackedEntityIdsJson { get; init; } public string? PayloadEqualsJson { get; init; } public int? MaxExecutionsPerChain { get; init; } public string? Scope { get; init; } public string? Status { get; init; } public string? ChangeNote { get; init; } }
 }

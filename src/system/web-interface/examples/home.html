@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Dantes is a real-time dynamic system for information, coordination, and interfaces.">
+  <title>Dantes · Dynamic Intelligence System</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f4ead7;
+      --muted: #b8aa96;
+      --surface: rgba(28, 24, 24, .82);
+      --line: rgba(229, 186, 102, .22);
+      --gold: #e5ba66;
+      --ember: #cf6847;
+      --moss: #7f9b78;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 78% 14%, rgba(207, 104, 71, .18), transparent 30rem),
+        radial-gradient(circle at 12% 70%, rgba(127, 155, 120, .13), transparent 28rem),
+        #100f12;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body::before {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      content: "";
+      opacity: .22;
+      background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: linear-gradient(to bottom, black, transparent 88%);
+    }
+
+    main {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 28px 0 64px;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 10px 0 42px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--ink);
+      font-weight: 750;
+      letter-spacing: .02em;
+    }
+
+    .mark {
+      display: grid;
+      width: 38px;
+      aspect-ratio: 1;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--gold);
+      background: linear-gradient(145deg, rgba(229,186,102,.14), rgba(207,104,71,.08));
+      box-shadow: inset 0 0 24px rgba(229,186,102,.06);
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--muted);
+      font-size: .86rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--moss);
+      box-shadow: 0 0 15px rgba(127,155,120,.8);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(260px, .55fr);
+      gap: clamp(36px, 7vw, 100px);
+      align-items: end;
+      padding: 42px 0 70px;
+    }
+
+    .eyebrow {
+      margin: 0 0 18px;
+      color: var(--gold);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .19em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 780px;
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(3.35rem, 8vw, 7rem);
+      font-weight: 500;
+      letter-spacing: -.055em;
+      line-height: .88;
+    }
+
+    h1 em {
+      color: var(--gold);
+      font-weight: inherit;
+    }
+
+    .lead {
+      max-width: 610px;
+      margin: 28px 0 0;
+      color: var(--muted);
+      font-size: clamp(1.05rem, 1.8vw, 1.27rem);
+      line-height: 1.65;
+    }
+
+    .manifesto {
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--surface);
+      box-shadow: 0 24px 80px rgba(0,0,0,.24);
+      backdrop-filter: blur(12px);
+    }
+
+    .manifesto strong {
+      display: block;
+      margin-bottom: 12px;
+      color: var(--gold);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.35rem;
+      font-weight: 500;
+    }
+
+    .manifesto p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    article {
+      min-height: 230px;
+      padding: 32px 30px 34px;
+    }
+
+    article + article { border-left: 1px solid var(--line); }
+
+    .number {
+      display: block;
+      margin-bottom: 34px;
+      color: var(--ember);
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: .77rem;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.55rem;
+      font-weight: 500;
+    }
+
+    article p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      gap: 18px;
+      align-items: center;
+      padding: 64px 0 28px;
+    }
+
+    .flow-step {
+      min-height: 145px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      background: rgba(20, 18, 20, .65);
+    }
+
+    .flow-step small {
+      color: var(--gold);
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .flow-step b {
+      display: block;
+      margin: 13px 0 8px;
+      font-size: 1rem;
+    }
+
+    .flow-step span {
+      color: var(--muted);
+      font-size: .9rem;
+      line-height: 1.45;
+    }
+
+    .arrow { color: var(--ember); }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: center;
+      padding-top: 34px;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .links { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    a {
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .button {
+      display: inline-flex;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(229,186,102,.06);
+    }
+
+    .button:hover, .button:focus-visible {
+      border-color: rgba(229,186,102,.58);
+      outline: none;
+    }
+
+    @media (max-width: 800px) {
+      .hero { grid-template-columns: 1fr; padding-top: 20px; }
+      .grid { grid-template-columns: 1fr; }
+      article + article { border-left: 0; border-top: 1px solid var(--line); }
+      .flow { grid-template-columns: 1fr; }
+      .arrow { transform: rotate(90deg); justify-self: center; }
+      footer { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav aria-label="Primary">
+      <div class="brand"><span class="mark" aria-hidden="true">D</span> Dantes</div>
+      <div class="status"><span class="status-dot" aria-hidden="true"></span><span id="status">Dynamic system online</span></div>
+    </nav>
+
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Information that can act</p>
+        <h1>A system that becomes <em>whatever you need.</em></h1>
+        <p class="lead">Dantes is a local, real-time system for people and LLMs. It can remember any kind of information, coordinate ongoing work, keep instructions and contracts, and create the interface that makes an idea useful.</p>
+      </div>
+      <aside class="manifesto">
+        <strong>The simple idea</strong>
+        <p>Give information durable structure, give intelligence the context to use it well, and let the web present the result in whatever form the moment requires.</p>
+      </aside>
+    </section>
+
+    <section class="grid" aria-label="System foundations">
+      <article>
+        <span class="number">01 / INFORMATION</span>
+        <h2>Any structure, remembered</h2>
+        <p>Projects, people, research, plans, inventories, decisions, histories, or entirely new ideas can live as dynamic data without demanding a new application schema.</p>
+      </article>
+      <article>
+        <span class="number">02 / INTELLIGENCE</span>
+        <h2>Context that improves the work</h2>
+        <p>LLMs can retrieve operating contracts, remember commitments, set reminders, follow procedures, and carry useful context forward instead of starting every request from zero.</p>
+      </article>
+      <article>
+        <span class="number">03 / INTERFACE</span>
+        <h2>Ideas become interfaces</h2>
+        <p>An LLM can turn any web-compatible idea or data structure into live HTML, CSS, and JavaScript—from a focused card to a dashboard, map, document, or interactive tool.</p>
+      </article>
+    </section>
+
+    <section class="flow" aria-label="Request flow">
+      <div class="flow-step">
+        <small>Capture</small>
+        <b>Information arrives</b>
+        <span>A person, model, file, or process contributes facts, intent, or a new structure.</span>
+      </div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="flow-step">
+        <small>Coordinate</small>
+        <b>The system keeps track</b>
+        <span>Contracts, procedures, events, reminders, and durable state preserve what matters.</span>
+      </div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="flow-step">
+        <small>Present</small>
+        <b>The right interface appears</b>
+        <span>Dynamic web pages request current JSON and present it in the form best suited to the task.</span>
+      </div>
+    </section>
+
+    <footer>
+      <span>Local-first · Real-time by design · Structure without limits</span>
+      <div class="links">
+        <span class="button">Remember</span>
+        <span class="button">Coordinate</span>
+        <span class="button">Present</span>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    fetch("/ui/home", { cache: "no-store" })
+      .then(response => {
+        document.querySelector("#status").textContent = response.ok
+          ? "Live page from SQLite"
+          : "Dynamic system online";
+      })
+      .catch(() => {
+        document.querySelector("#status").textContent = "Interface loaded";
+      });
+  </script>
+</body>
+</html>

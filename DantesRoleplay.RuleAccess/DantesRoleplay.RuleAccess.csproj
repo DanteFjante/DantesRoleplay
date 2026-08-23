@@ -14,4 +14,10 @@
     <ProjectReference Include="..\DantesRoleplay\DantesRoleplay.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\src\system\**\runtime\*.cs">
+      <Link>Components\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
+  </ItemGroup>
+
 </Project>

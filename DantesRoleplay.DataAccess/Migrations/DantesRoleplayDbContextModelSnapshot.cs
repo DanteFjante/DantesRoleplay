@@ -345,21 +345,15 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("FixedRoleEntityIdsJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("FanoutSelectorJson")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT")
                         .HasDefaultValue("{}");
 
-                    b.Property<string>("RoleFromEventPayloadJson")
+                    b.Property<string>("FixedRoleEntityIdsJson")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValue("{}");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("MaxExecutionsPerChain")
                         .HasColumnType("INTEGER");
@@ -375,6 +369,12 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.Property<string>("PayloadEqualsJson")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<string>("RoleFromEventPayloadJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("{}");
 
                     b.Property<string>("SourceHash")
                         .IsRequired()
@@ -405,6 +405,177 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .IsUnique();
 
                     b.ToTable("subscription_version", (string)null);
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Information.InformationActionContract", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExecutorId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InputSchemaJson")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RuleRecordIdsJson")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ScopeId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ScopeId", "Id");
+
+                    b.ToTable("information_action_contract", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_information_action_contract_input_schema", "json_valid(\"InputSchemaJson\")");
+
+                            t.HasCheckConstraint("CK_information_action_contract_revision", "\"Revision\" > 0");
+
+                            t.HasCheckConstraint("CK_information_action_contract_rule_records", "json_valid(\"RuleRecordIdsJson\")");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Information.InformationRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(16000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MetadataJson")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SourceId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceId", "Id");
+
+                    b.ToTable("information_record", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_information_record_metadata", "json_valid(\"MetadataJson\")");
+
+                            t.HasCheckConstraint("CK_information_record_revision", "\"Revision\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Information.InformationSource", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MetadataSchemaJson")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ScopeId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ScopeId", "Id");
+
+                    b.ToTable("information_source", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_information_source_metadata_schema", "json_valid(\"MetadataSchemaJson\")");
+
+                            t.HasCheckConstraint("CK_information_source_revision", "\"Revision\" > 0");
+                        });
                 });
 
             modelBuilder.Entity("DantesRoleplay.Mechanics.Mechanic", b =>
@@ -1563,10 +1734,10 @@ namespace DantesRoleplay.DataAccess.Migrations
 
                     b.HasIndex("ToEntityId");
 
+                    b.HasIndex("FromEntityId", "Kind", "ToEntityId");
+
                     b.HasIndex("FromEntityId", "ToEntityId", "Kind")
                         .IsUnique();
-
-                    b.HasIndex("FromEntityId", "Kind", "ToEntityId");
 
                     b.HasIndex("ToEntityId", "Kind", "FromEntityId");
 
@@ -1615,6 +1786,17 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .IsRequired();
 
                     b.Navigation("Subscription");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Information.InformationRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Information.InformationSource", "Source")
+                        .WithMany("Records")
+                        .HasForeignKey("SourceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Source");
                 });
 
             modelBuilder.Entity("DantesRoleplay.Mechanics.MechanicVersion", b =>
@@ -1786,6 +1968,11 @@ namespace DantesRoleplay.DataAccess.Migrations
             modelBuilder.Entity("DantesRoleplay.Events.Subscription", b =>
                 {
                     b.Navigation("Versions");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Information.InformationSource", b =>
+                {
+                    b.Navigation("Records");
                 });
 
             modelBuilder.Entity("DantesRoleplay.Mechanics.Mechanic", b =>

@@ -1,6 +1,7 @@
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Retrieval;
 using DantesRoleplay.MCPServer;
+using DantesRoleplay.Web.Hosting;
 using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,7 +33,18 @@ var knowledgeRetrieval = new KnowledgeRetrievalOptions
         Profile = builder.Configuration["Knowledge:Completion:Profile"] ?? "standard",
         MaxPromptCharacters = Number(builder.Configuration["Knowledge:Completion:MaxPromptCharacters"], 30_000),
         MaxOutputTokens = Number(builder.Configuration["Knowledge:Completion:MaxOutputTokens"], 1_024),
-        MaxConcurrentRequests = Number(builder.Configuration["Knowledge:Completion:MaxConcurrentRequests"], 1)
+        MaxConcurrentRequests = Number(builder.Configuration["Knowledge:Completion:MaxConcurrentRequests"], 1),
+        AllowedTaskClasses = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "information.answer",
+            "knowledge.answer",
+            "knowledge.proposals",
+            "knowledge.read-plan",
+            "knowledge.read-answer",
+            "knowledge.authorized-answer",
+            "routing.propose",
+            "story-plan.verify-procedures"
+        }
     },
     Background = new KnowledgeBackgroundOptions
     {
@@ -60,16 +72,22 @@ var developmentKnowledgeAudience = new DevelopmentKnowledgeAudienceOptions
     ActorId = builder.Configuration["Knowledge:DevelopmentAudience:ActorId"]
         ?? Environment.GetEnvironmentVariable("DANTESROLEPLAY_DEVELOPMENT_ACTOR")
 };
+var developmentInformationScope = builder.Configuration["Information:DevelopmentScope"]
+    ?? Environment.GetEnvironmentVariable("DANTESROLEPLAY_DEVELOPMENT_INFORMATION_SCOPE")
+    ?? "local.*";
 if (developmentKnowledgeAudience.Enabled) EnsureLoopbackOnly(builder.Configuration);
+var databasePath = builder.Configuration.GetConnectionString("Kernel")
+    ?? Path.Combine(builder.Environment.ContentRootPath, "data", "dantesroleplay.db");
 
 // Everything this application registers lives in one method, which the end-to-end test also
 // calls — so the surface the test walks is the surface this host serves, by construction.
 builder.Services.AddDantesRoleplayMcpServer(
-    builder.Configuration.GetConnectionString("Kernel")
-        ?? Path.Combine(builder.Environment.ContentRootPath, "data", "dantesroleplay.db"),
+    databasePath,
     DatabaseProvider.Sqlite,
     knowledgeRetrieval,
-    developmentKnowledgeAudience);
+    developmentKnowledgeAudience,
+    developmentInformationScope);
+builder.Services.AddDantesRoleplayWeb(databasePath);
 
 var app = builder.Build();
 
@@ -91,8 +109,10 @@ if (developmentKnowledgeAudience.Enabled)
 // Migrate, then seed the bootstrap contracts from the embedded markdown files. Seeding is
 // idempotent by content hash, so a restart with no edits writes nothing.
 await app.Services.InitialiseDantesRoleplayAsync();
+await app.Services.InitialiseDantesRoleplayWebAsync();
 
 app.MapMcp(ServerConfiguration.McpEndpoint);
+app.MapDantesRoleplayWeb();
 
 // Deliberately no HTTPS redirection. The MCP endpoint is reached over loopback by a local
 // client, and a redirect there is a confusing failure rather than a security gain.

@@ -17,6 +17,31 @@ These are generic platform capabilities. They contain no D&D rule, game componen
 content, player/NPC state, source rule, or feature-specific action. Each consumer retains its own
 mechanics, state, effects, source attribution, and player-facing intent.
 
+## Active architecture refactor delivery
+
+The cross-component delivery to separate system capabilities physically, extract local AI behind a
+ruleset-neutral file/glob ingestion boundary, and evict compiled game rules is tracked by the
+[system modularization dependency plan](modularization/SYSTEM-MODULARIZATION-DEPENDENCY-PLAN.md).
+Architecture/composition ratchets, twelve generic capability moves, seven game-consumer quarantine
+areas, and the standalone local-AI scanner/providers are verified through Slice 23. Compiled-rule
+eviction, the three remaining scaffolded platform areas, generic derived indexing, and final
+independence proof remain active work.
+
+The semantic redesign that turns those physical components into an application-neutral kernel is
+owned by the [generic application kernel dependency plan](application-kernel/APPLICATION-KERNEL-DEPENDENCY-PLAN.md).
+It defines `system.*` administration, registered applications and path/glob sources, deterministic
+directory overlays, versioned application-owned component schemas, state-space isolation, and an
+ECS capable of storing any bounded schema-valid JSON value. It is planning-only; its datatype,
+migration, authorization, and public kinds require confirmation.
+
+The server-controlled workflow for `system.*`/application-scoped intent planning, database-registered
+directory overlays, typed receipts, trusted hybrid feature discovery, explicit execution, and
+versioned recipe learning is specified by the
+[Interaction orchestration dependency plan](interaction-orchestration/INTERACTION-ORCHESTRATION-DEPENDENCY-PLAN.md).
+It consumes the generic application kernel's effective manifests and is planning-only; it does not
+authorize its proposed component, migrations, public kinds, or recipe-promotion policy until the
+named gates are confirmed.
+
 ## Dependency graph
 
 ~~~text

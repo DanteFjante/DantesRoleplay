@@ -1,6 +1,7 @@
 ﻿using DantesRoleplay.Actions;
 using DantesRoleplay.Characters;
 using DantesRoleplay.DataAccess.Bootstrap;
+using DantesRoleplay.DataAccess.Composition;
 using DantesRoleplay.DataAccess.Retrieval;
 using DantesRoleplay.Campaign;
 using DantesRoleplay.Quest;
@@ -15,6 +16,7 @@ using DantesRoleplay.Snapshots;
 using DantesRoleplay.SystemFeedback;
 using DantesRoleplay.Story;
 using DantesRoleplay.World;
+using DantesRoleplay.Information;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -78,109 +80,34 @@ public static class DataAccessServiceCollectionExtensions
             }
         });
 
-        services.AddScoped<IProcedureStore, ProcedureStore>();
-        services.AddScoped<IStoryPlanStore, StoryPlanStore>();
-        services.AddSingleton<StoryPlanWakeQueue>();
-        services.AddScoped<StoryPlanActionExecutor>();
-        services.AddScoped<IStoryPlanStepProcessor, StoryPlanStepProcessor>();
-        services.AddScoped<IOperationLog, OperationLog>();
-        services.AddScoped<IWorldStore, WorldStore>();
-        services.AddScoped<IGraphProjectionReader, GraphProjectionReader>();
-        services.AddScoped<IKnowledgeStateCoordinator, KnowledgeStateCoordinator>();
-        services.AddScoped<IKnowledgeAcquisitionCoordinator, KnowledgeAcquisitionCoordinator>();
-        services.AddScoped<IKnowledgeTimelineCoordinator, KnowledgeTimelineCoordinator>();
-        if (provider == DatabaseProvider.Sqlite)
-        {
-            var sqlite = NormaliseSqlite(connectionString);
-            services.AddSingleton(knowledgeRetrieval);
-            services.AddSingleton(knowledgeRetrieval.Embedding);
-            services.AddSingleton(knowledgeRetrieval.Vector);
-            services.AddSingleton(knowledgeRetrieval.Completion);
-            services.AddSingleton(knowledgeRetrieval.Background);
-            services.AddSingleton<IKnowledgeLexicalIndex>(_ => new SqliteKnowledgeLexicalIndex(NormaliseSqlite(connectionString)));
-            services.AddSingleton<ITextEmbeddingProvider>(_ =>
-                new OllamaEmbeddingProvider(new HttpClient(), knowledgeRetrieval.Embedding));
-            services.AddSingleton<IKnowledgeVectorIndex>(_ =>
-                new SqliteVecKnowledgeVectorIndex(sqlite, knowledgeRetrieval.Vector));
-            services.AddSingleton<ILocalStructuredCompletionProvider>(_ =>
-                new OllamaStructuredCompletionProvider(new HttpClient(), knowledgeRetrieval.Completion));
-            services.AddSingleton<KnowledgeBackgroundQueue>();
-            services.AddSingleton<IKnowledgeBackgroundQueue>(provider =>
-                provider.GetRequiredService<KnowledgeBackgroundQueue>());
-            services.AddScoped<IKnowledgeSearchDocumentSource, KnowledgeSearchDocumentSource>();
-            services.AddScoped<IKnowledgeLexicalSearchCoordinator, KnowledgeLexicalSearchCoordinator>();
-            services.AddScoped<IKnowledgeHybridSearchCoordinator, KnowledgeHybridSearchCoordinator>();
-            services.AddScoped<IKnowledgeFactAnswerCoordinator, KnowledgeFactAnswerCoordinator>();
-            services.AddScoped<IKnowledgeReadAgentCoordinator, KnowledgeReadAgentCoordinator>();
-            // IAuthenticatedCampaignAudiencePolicy is deliberately host-supplied. Without one,
-            // this host-only player-safe path cannot resolve and therefore cannot be exposed.
-            services.AddScoped<IAuthorizedKnowledgeCandidateResolver, AuthorizedKnowledgeCandidateResolver>();
-            services.AddScoped<IAuthorizedKnowledgeAnswerCoordinator, AuthorizedKnowledgeAnswerCoordinator>();
-            services.AddScoped<ILocalRouteProposalCoordinator, LocalRouteProposalCoordinator>();
-            services.AddScoped<IProcedureBoundActionVerifier, ProcedureBoundActionVerifier>();
-            services.AddScoped<StoryActionStepPreparer>();
-            services.AddScoped<KnowledgeBackgroundJobProcessor>();
-        }
-        services.AddScoped<IJourneyPlanReader, JourneyPlanReader>();
-        services.AddScoped<IModeAwareItineraryReader, ModeAwareItineraryReader>();
-        services.AddScoped<ICampaignBlueprintValidator, CampaignBlueprintValidator>();
-        services.AddScoped<ICampaignBootstrapper, CampaignBootstrapper>();
-        services.AddScoped<ICampaignContinuityRunner, CampaignContinuityRunner>();
-        services.AddScoped<ICampaignQuestContextRunner, CampaignQuestContextRunner>();
-        services.AddScoped<ICampaignResumeReader, CampaignResumeReader>();
-        services.AddScoped<ICampaignSessionValidator, CampaignSessionValidator>();
-        services.AddScoped<ICampaignSessionStarter, CampaignSessionStarter>();
-        services.AddScoped<ICampaignSessionResumeReader, CampaignSessionResumeReader>();
-        services.AddScoped<ICampaignSessionEndValidator, CampaignSessionEndValidator>();
-        services.AddScoped<ICampaignSessionEnder, CampaignSessionEnder>();
-        services.AddScoped<ICampaignSessionRecapReader, CampaignSessionRecapReader>();
-        services.AddScoped<ICampaignSessionCheckpointValidator, CampaignSessionCheckpointValidator>();
-        services.AddScoped<ICampaignSessionCheckpointCreator, CampaignSessionCheckpointCreator>();
-        services.AddScoped<ICampaignSessionEvidenceProducer, CampaignSessionEvidenceProducer>();
-        services.AddScoped<ICampaignCharacterParticipationVerifier, CampaignCharacterParticipationVerifier>();
-        services.AddScoped<ICampaignCharacterParticipationAttacher, CampaignCharacterParticipationAttacher>();
-        services.AddScoped<ICampaignCharacterParticipationPlanner, CampaignCharacterParticipationPlanner>();
-        services.AddScoped<ICampaignCharacterParticipationWithdrawalPlanner, CampaignCharacterParticipationWithdrawalPlanner>();
-        services.AddScoped<ICharacterAbilityAssignmentValidator, CharacterAbilityAssignmentValidator>();
-        services.AddScoped<ICharacterAbilityScoreRecorder, CharacterAbilityScoreRecorder>();
-        services.AddScoped<IBackgroundAbilityScoreIncreaseResolver, BackgroundAbilityScoreIncreaseResolver>();
-        services.AddScoped<ICharacterOriginLanguageResolver, CharacterOriginLanguageResolver>();
-        services.AddScoped<ICharacterSpeciesSelectionResolver, CharacterSpeciesSelectionResolver>();
-        services.AddScoped<ICharacterProfileRecorder, CharacterProfileRecorder>();
-        services.AddScoped<IQuestCreator, QuestCreator>();
-        services.AddScoped<IQuestLifecycleRunner, QuestLifecycleRunner>();
-        services.AddScoped<IQuestSummaryReader, QuestSummaryReader>();
-        services.AddScoped<IEffectApplier, EffectApplier>();
-        services.AddScoped<IMechanicStore, MechanicStore>();
-        services.AddScoped<IEventTypeStore, EventTypeStore>();
-        services.AddScoped<ISubscriptionStore, SubscriptionStore>();
-        services.AddScoped<IGuardRouter, GuardRouter>();
-        services.AddScoped<IEventLedger, EventLedger>();
-        services.AddScoped<IEventRouter, EventRouter>();
-        services.AddScoped<INotificationStore, NotificationStore>();
-        services.AddScoped<IProjectionResolver, ProjectionResolver>();
-        services.AddScoped<IMechanicComposer, MechanicComposer>();
-        services.AddScoped<ISnapshotPackageStore, SnapshotPackageStore>();
-        services.AddScoped<ISystemFeedbackService, SystemFeedbackService>();
-        services.AddScoped<ISystemFeedbackAdministrationService, SystemFeedbackAdministrationService>();
-        services.AddScoped<ISystemFeedbackRetentionService, SystemFeedbackRetentionService>();
-        services.AddScoped<IStagedWorldComposer, StagedWorldComposer>();
-
-        // Missing until the end-to-end walk went looking for it. commit takes IActionRunner as a
-        // parameter for every kind, not only "action", so an unregistered runner made the whole
-        // write verb fail at invocation with "An error occurred invoking 'commit'" — no envelope,
-        // no fix, nothing in history. Every direct-call test passed a null runner in, so nothing
-        // below the protocol could have noticed.
-        services.AddScoped<ActionRunner>();
-        services.AddScoped<IActionRunner>(provider => provider.GetRequiredService<ActionRunner>());
-        services.AddScoped<IStoryPlanActionRunner>(provider => provider.GetRequiredService<ActionRunner>());
-
-        services.AddScoped<ProcedureSeeder>();
-        services.AddScoped<EventTypeSeeder>();
-        services.AddScoped<MechanicSeeder>();
-        services.AddScoped<ContentHashBackfill>();
+        services
+            .AddOperationsAndAuditComponent()
+            .AddStateComponent()
+            .AddProceduresComponent()
+            .AddMechanicsComponent()
+            .AddEventsAndNotificationsComponent()
+            .AddEffectsAndTransactionsComponent()
+            .AddActionsComponent()
+            .AddSnapshotsComponent()
+            .AddFeedbackComponent()
+            .AddInformationComponent()
+            .AddCatalogComponent()
+            .AddDantesRoleplayGameAdapters(
+                provider,
+                NormaliseSqlite(connectionString),
+                knowledgeRetrieval);
 
         return services;
+    }
+
+    /// <summary>
+    /// Registers the services that require a host-authenticated campaign audience.
+    /// Call this only after the host has registered an
+    /// <see cref="DantesRoleplay.Security.IAuthenticatedCampaignAudiencePolicy"/>.
+    /// </summary>
+    public static IServiceCollection AddDantesRoleplayAuthenticatedCampaignServices(this IServiceCollection services)
+    {
+        return services.AddDantesRoleplayAuthenticatedGameAdapters();
     }
 
     /// <summary>

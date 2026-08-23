@@ -9,6 +9,7 @@ using DantesRoleplay.Quest;
 using DantesRoleplay.World;
 using DantesRoleplay.Story;
 using DantesRoleplay.SystemFeedback;
+using DantesRoleplay.Information;
 using ModelContextProtocol.Server;
 
 namespace DantesRoleplay.MCPServer.Tools;
@@ -26,7 +27,7 @@ public sealed class QueryTool
 {
     [McpServerTool(Name = "query")]
     [Description(
-        "Read anything in this system. kind is one of: capabilities, procedures, categories, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, session-recap, quest-summary, knowledge-answer, story-plan, " +
+        "Read anything in this system. kind is one of: capabilities, procedures, categories, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, session-recap, quest-summary, knowledge-answer, information-answer, information-actions, story-plan, " +
         "mechanics, event-types, events, subscriptions, notifications, feedback, history. Omit id for a list or search; " +
         "pass id for one record in full. When you are unsure what a kind takes or what a commit payload looks like, call " +
         "query(kind: \"capabilities\") — it is the exact catalog. Irrelevant filters are ignored unless a fixed query kind explicitly rejects them. Never changes state.")]
@@ -46,7 +47,7 @@ public sealed class QueryTool
         INotificationStore notifications,
         [Description(
             "Closed kind: capabilities, procedures, categories, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, session-recap, quest-summary, knowledge-answer, mechanics, event-types, events, "
-            + "subscriptions, notifications, feedback, story-plan, or history.")]
+            + "subscriptions, notifications, feedback, information-answer, information-actions, story-plan, or history.")]
         string kind,
         [Description("Full-record id for procedures, mechanics, or one entity.")] string? id = null,
         [Description("Entity ids for a full batch read.")] string[]? ids = null,
@@ -105,6 +106,8 @@ public sealed class QueryTool
         [Description("Knowledge answer: optional fact, rumour, secret, or clue filters.")] string[]? knowledgeKinds = null,
         [Description("Knowledge answer: optional canonical subject-id filters.")] string[]? knowledgeSubjectIds = null,
         [Description("Knowledge answer: optional world minute for canonical validity.")] long? asOfMinute = null,
+        [Description("Generic information answer: required authorized information scope.")] string? scopeId = null,
+        [Description("Generic information answer: optional source ids within the scope.")] string[]? sourceIds = null,
         [Description("Story-plan only: wait when this exact revision is still current.")] int? afterRevision = null,
         [Description("Story-plan only: bounded long-poll seconds, 0–20.")] int? waitSeconds = null,
         CancellationToken cancellationToken = default,
@@ -113,7 +116,9 @@ public sealed class QueryTool
         ICampaignSessionRecapReader? campaignSessionRecaps = null,
         ISystemFeedbackService? feedback = null,
         IAuthorizedKnowledgeAnswerCoordinator? knowledgeAnswers = null,
-        IStoryPlanCoordinator? storyPlans = null)
+        IStoryPlanCoordinator? storyPlans = null,
+        IInformationAnswerCoordinator? informationAnswers = null,
+        IInformationActionCoordinator? informationActions = null)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
 
@@ -223,6 +228,11 @@ public sealed class QueryTool
                 new AuthorizedKnowledgeAnswerRequest(campaignId ?? string.Empty, question ?? string.Empty, knowledgeKinds, knowledgeSubjectIds, asOfMinute),
                 cancellationToken),
             "knowledge-answer" => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("KNOWLEDGE_AUDIENCE_UNAVAILABLE", "Knowledge answers require an explicitly enabled local development audience or a future authentication provider.", "Enable the documented local development audience, then retry.", "Knowledge audience was unavailable."))),
+            "information-answer" when informationAnswers is not null => await new InformationTools().AnswerAsync(
+                informationAnswers, log, new InformationAnswerRequest(scopeId ?? string.Empty, question ?? string.Empty, sourceIds, limit ?? 12), cancellationToken),
+            "information-answer" => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("INFORMATION_UNAVAILABLE", "Generic information answering is not configured.", "orient()", "Information answering was unavailable."))),
+            "information-actions" when informationActions is not null => await new InformationTools().ListActionsAsync(informationActions, log, scopeId ?? string.Empty, cancellationToken),
+            "information-actions" => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("INFORMATION_UNAVAILABLE", "Generic information actions are not configured.", "orient()", "Information action contracts were unavailable."))),
             "story-plan" when storyPlans is not null => await new StoryPlanTools().GetAsync(storyPlans, log, new StoryPlanQueryRequest(id!, afterRevision, waitSeconds ?? 0), cancellationToken),
             "story-plan" => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("STORY_AUDIENCE_DENIED", "Story plans require an explicitly enabled development GM audience.", "Enable the development GM audience for the intended campaign.", "Story-plan query was unavailable."))),
             "mechanics" =>

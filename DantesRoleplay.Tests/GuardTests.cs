@@ -81,6 +81,227 @@ public sealed class GuardTests
     }
 
     [Fact]
+    public void Every_production_source_file_has_a_modularization_category()
+    {
+        var root = RepositoryRoot();
+        using var inventory = ReadArchitectureInventory(root);
+        var document = inventory.RootElement;
+        var defaults = document.GetProperty("productionRoots").EnumerateObject()
+            .ToDictionary(property => property.Name, property => property.Value.GetString()!, StringComparer.Ordinal);
+        var overrides = document.GetProperty("pathOverrides").EnumerateObject()
+            .ToDictionary(property => property.Name, property => property.Value.GetString()!, StringComparer.Ordinal);
+        var allowed = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "system-capability", "host-composition", "game-adapter",
+            "ruleset-specific-violation", "migration", "compatibility-shim"
+        };
+        var problems = new List<string>();
+        var usedOverrides = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var (productionRoot, defaultCategory) in defaults)
+        {
+            var directory = Path.Combine(root, productionRoot);
+            if (!Directory.Exists(directory))
+            {
+                problems.Add($"Missing production root: {productionRoot}");
+                continue;
+            }
+            if (!allowed.Contains(defaultCategory))
+                problems.Add($"Unknown default category '{defaultCategory}' for {productionRoot}.");
+
+            foreach (var file in EnumerateAllSource(directory))
+            {
+                var relative = NormalizedRelativePath(root, file);
+                var matched = overrides.Keys
+                    .Where(relative.StartsWith)
+                    .OrderByDescending(value => value.Length)
+                    .ThenBy(value => value, StringComparer.Ordinal)
+                    .FirstOrDefault();
+                var category = matched is null ? defaultCategory : overrides[matched];
+                if (matched is not null) usedOverrides.Add(matched);
+                if (!allowed.Contains(category))
+                    problems.Add($"Unknown category '{category}' for {relative}.");
+            }
+        }
+
+        foreach (var stale in overrides.Keys.Except(usedOverrides, StringComparer.Ordinal))
+            problems.Add($"Path override matches no production source: {stale}");
+
+        Assert.True(
+            problems.Count == 0,
+            "The modularization source inventory is incomplete or malformed:\n  "
+            + string.Join("\n  ", problems));
+    }
+
+    [Fact]
+    public void Compiled_ruleset_literals_match_the_non_increasing_legacy_baseline()
+    {
+        var root = RepositoryRoot();
+        using var inventory = ReadArchitectureInventory(root);
+        var expected = inventory.RootElement.GetProperty("legacyRulesetLiterals").EnumerateObject()
+            .ToDictionary(property => property.Name, property => property.Value.GetInt32(), StringComparer.Ordinal);
+        var actual = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        foreach (var productionRoot in inventory.RootElement.GetProperty("productionRoots").EnumerateObject())
+        {
+            var directory = Path.Combine(root, productionRoot.Name);
+            foreach (var file in EnumerateSource(directory).Where(file =>
+                         !NormalizedRelativePath(root, file).Contains("/tests/", StringComparison.Ordinal)))
+            {
+                var source = StripComments(File.ReadAllText(file));
+                var count = Regex.Matches(source, "dnd2024", RegexOptions.IgnoreCase).Count;
+                if (count > 0) actual[NormalizedRelativePath(root, file)] = count;
+            }
+        }
+
+        var expectedLines = expected.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => $"{pair.Key}: {pair.Value}").ToArray();
+        var actualLines = actual.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => $"{pair.Key}: {pair.Value}").ToArray();
+
+        Assert.Equal(expectedLines, actualLines);
+    }
+
+    [Fact]
+    public void Component_manifests_are_closed_ruleset_neutral_and_acyclic()
+    {
+        var root = RepositoryRoot();
+        var capabilityRoots = new[]
+        {
+            Path.Combine(root, "src", "system"),
+            Path.Combine(root, "src", "applications"),
+            Path.Combine(root, "src", "game-adapters")
+        };
+        var expectedFields = new[] { "classification", "mayDependOn", "name", "owns", "status" };
+        var allowedClassifications = new[] { "application", "game-adapter", "system" };
+        var allowedStatuses = new[] { "migrated", "operational", "planned", "quarantine", "scaffolded" };
+        var problems = new List<string>();
+        var manifests = new Dictionary<string, ComponentManifest>(StringComparer.Ordinal);
+
+        foreach (var capabilityRoot in capabilityRoots)
+        {
+            if (!Directory.Exists(capabilityRoot))
+            {
+                problems.Add($"Missing capability root: {NormalizedRelativePath(root, capabilityRoot)}");
+                continue;
+            }
+
+            foreach (var directory in Directory.EnumerateDirectories(capabilityRoot).Order(StringComparer.Ordinal))
+            {
+                var path = Path.Combine(directory, "component.json");
+                if (!File.Exists(path))
+                {
+                    problems.Add($"Capability directory has no component.json: {NormalizedRelativePath(root, directory)}");
+                    continue;
+                }
+
+                try
+                {
+                    using var document = JsonDocument.Parse(File.ReadAllText(path));
+                    var actualFields = document.RootElement.EnumerateObject()
+                        .Select(property => property.Name).Order(StringComparer.Ordinal).ToArray();
+                    if (!expectedFields.SequenceEqual(actualFields, StringComparer.Ordinal))
+                        problems.Add($"Manifest fields are not closed: {NormalizedRelativePath(root, path)}");
+
+                    var manifest = JsonSerializer.Deserialize<ComponentManifest>(document.RootElement.GetRawText(),
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (manifest is null || string.IsNullOrWhiteSpace(manifest.Name) ||
+                        manifest.Owns is null or { Count: 0 } || manifest.MayDependOn is null)
+                    {
+                        problems.Add($"Manifest is incomplete: {NormalizedRelativePath(root, path)}");
+                        continue;
+                    }
+                    if (!allowedClassifications.Contains(manifest.Classification, StringComparer.Ordinal))
+                        problems.Add($"Unknown classification '{manifest.Classification}' in {manifest.Name}.");
+                    if (!allowedStatuses.Contains(manifest.Status, StringComparer.Ordinal))
+                        problems.Add($"Unknown status '{manifest.Status}' in {manifest.Name}.");
+                    if (manifest.Owns.Count != manifest.Owns.Distinct(StringComparer.Ordinal).Count() ||
+                        manifest.MayDependOn.Count != manifest.MayDependOn.Distinct(StringComparer.Ordinal).Count())
+                        problems.Add($"Duplicate ownership or dependency entry in {manifest.Name}.");
+                    if (!manifests.TryAdd(manifest.Name, manifest))
+                        problems.Add($"Duplicate component name: {manifest.Name}");
+                }
+                catch (JsonException exception)
+                {
+                    problems.Add($"Invalid manifest {NormalizedRelativePath(root, path)}: {exception.Message}");
+                }
+            }
+        }
+
+        foreach (var manifest in manifests.Values)
+        {
+            foreach (var dependency in manifest.MayDependOn)
+            {
+                if (!manifests.TryGetValue(dependency, out var owner))
+                {
+                    problems.Add($"{manifest.Name} depends on unknown component {dependency}.");
+                    continue;
+                }
+                if (manifest.Classification == "system" && owner.Classification != "system")
+                    problems.Add($"System component {manifest.Name} depends on {owner.Classification} {dependency}.");
+            }
+        }
+
+        if (manifests.TryGetValue("local-ai", out var localAi) && localAi.MayDependOn.Count != 0)
+            problems.Add("local-ai must not depend on another repository component.");
+
+        var visiting = new HashSet<string>(StringComparer.Ordinal);
+        var visited = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var component in manifests.Keys.Order(StringComparer.Ordinal)) Visit(component, []);
+
+        Assert.True(
+            problems.Count == 0,
+            "Component ownership manifests violate the modular dependency contract:\n  "
+            + string.Join("\n  ", problems));
+
+        void Visit(string component, IReadOnlyList<string> path)
+        {
+            if (visited.Contains(component)) return;
+            if (!visiting.Add(component))
+            {
+                problems.Add("Component dependency cycle: " + string.Join(" -> ", path.Append(component)));
+                return;
+            }
+            if (manifests.TryGetValue(component, out var manifest))
+                foreach (var dependency in manifest.MayDependOn) Visit(dependency, path.Append(component).ToArray());
+            visiting.Remove(component);
+            visited.Add(component);
+        }
+    }
+
+    [Fact]
+    public void Local_ai_has_no_game_system_dependency_or_vocabulary()
+    {
+        var root = RepositoryRoot();
+        var projectDirectory = Path.Combine(
+            root, "src", "system", "local-ai", "DantesRoleplay.LocalAI");
+        var project = Path.Combine(projectDirectory, "DantesRoleplay.LocalAI.csproj");
+        Assert.True(File.Exists(project), $"Expected the local-AI project at {project}.");
+
+        var projectText = File.ReadAllText(project);
+        Assert.DoesNotContain("ProjectReference", projectText, StringComparison.Ordinal);
+
+        var forbidden = new[]
+        {
+            "campaign", "world", "character", "quest", "story", "dnd2024", "mechanic",
+            "procedure", "knowledge"
+        };
+        var offences = new List<string>();
+        foreach (var file in EnumerateSource(projectDirectory))
+        {
+            var source = File.ReadAllText(file);
+            foreach (var word in forbidden)
+                if (Regex.IsMatch(source, $@"\b{word}\b", RegexOptions.IgnoreCase))
+                    offences.Add($"{NormalizedRelativePath(root, file)}: '{word}'");
+        }
+
+        Assert.True(
+            offences.Count == 0,
+            "Local AI contains game-system vocabulary or consumer identifiers:\n  "
+            + string.Join("\n  ", offences));
+    }
+
+    [Fact]
     public void Exactly_three_public_verbs_are_exposed()
     {
         var declared = DeclaredToolNames();
@@ -178,7 +399,7 @@ public sealed class GuardTests
         var files = EnumerateSource(Path.Combine(root, "DantesRoleplay.MCPServer"))
             // The action runner owns its own audit rows and its own error text, so it emits
             // recovery calls without passing through the dispatchers.
-            .Append(Path.Combine(root, "DantesRoleplay.DataAccess", "ActionRunner.cs"))
+            .Append(Path.Combine(root, "src", "system", "actions", "persistence", "ActionRunner.cs"))
             .Where(File.Exists);
 
         var offences = new List<string>();
@@ -334,12 +555,28 @@ public sealed class GuardTests
     }
 
     private static IEnumerable<string> EnumerateSource(string directory) =>
-        Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories)
+        EnumerateAllSource(directory)
             .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
                      && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}")
                      && !f.EndsWith(".Designer.cs", StringComparison.OrdinalIgnoreCase))
             // Migrations are generated, and their content mirrors the schema rather than adding to it.
             .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}"));
+
+    private static IEnumerable<string> EnumerateAllSource(string directory) =>
+        Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                     && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"));
+
+    private static JsonDocument ReadArchitectureInventory(string root)
+    {
+        var path = Path.Combine(
+            root, "platform", "modularization", "architecture-source-inventory.json");
+        Assert.True(File.Exists(path), $"Expected the architecture inventory at {path}.");
+        return JsonDocument.Parse(File.ReadAllText(path));
+    }
+
+    private static string NormalizedRelativePath(string root, string path) =>
+        Path.GetRelativePath(root, path).Replace(Path.DirectorySeparatorChar, '/');
 
     /// <summary>
     /// Walks up from the test binary until it finds the solution file. Keeps the guards working
@@ -374,4 +611,17 @@ public sealed class GuardTests
         var withoutRawStrings = Regex.Replace(withoutLineComments, "\"\"\".*?\"\"\"", "\"\"", RegexOptions.Singleline);
         return Regex.Replace(withoutRawStrings, @"""(\\.|[^""\\])*""", "\"\"");
     }
+
+    private static string StripComments(string source)
+    {
+        var withoutBlockComments = Regex.Replace(source, @"/\*.*?\*/", " ", RegexOptions.Singleline);
+        return Regex.Replace(withoutBlockComments, @"//[^\n]*", " ");
+    }
+
+    private sealed record ComponentManifest(
+        string Name,
+        string Classification,
+        string Status,
+        IReadOnlyList<string> Owns,
+        IReadOnlyList<string> MayDependOn);
 }

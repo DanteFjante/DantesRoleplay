@@ -48,4 +48,20 @@
     </EmbeddedResource>
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Capability-owned domain source moves here incrementally while retaining this assembly. -->
+    <Compile Include="..\src\system\**\domain\*.cs">
+      <Link>Components\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\game-adapters\**\domain\*.cs">
+      <Link>GameAdapters\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Transitional consumers compiled in this assembly use provider-neutral model contracts.
+         The local-AI assembly has no reverse reference to this project. -->
+    <ProjectReference Include="..\src\system\local-ai\DantesRoleplay.LocalAI\DantesRoleplay.LocalAI.csproj" />
+  </ItemGroup>
+
 </Project>

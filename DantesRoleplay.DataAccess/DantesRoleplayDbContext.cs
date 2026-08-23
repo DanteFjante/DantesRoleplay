@@ -6,6 +6,7 @@ using DantesRoleplay.Procedures;
 using DantesRoleplay.Snapshots;
 using DantesRoleplay.SystemFeedback;
 using DantesRoleplay.Story;
+using DantesRoleplay.Information;
 using DantesRoleplay.World;
 using Microsoft.EntityFrameworkCore;
 
@@ -63,6 +64,9 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
     public DbSet<SystemFeedbackRetentionAction> SystemFeedbackRetentionActions => Set<SystemFeedbackRetentionAction>();
     public DbSet<StoryPlanRun> StoryPlanRuns => Set<StoryPlanRun>();
     public DbSet<StoryPlanStepRun> StoryPlanStepRuns => Set<StoryPlanStepRun>();
+    public DbSet<InformationSource> InformationSources => Set<InformationSource>();
+    public DbSet<InformationRecord> InformationRecords => Set<InformationRecord>();
+    public DbSet<InformationActionContract> InformationActionContracts => Set<InformationActionContract>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -79,6 +83,66 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         ConfigureSnapshots(modelBuilder);
         ConfigureSystemFeedback(modelBuilder);
         ConfigureStoryPlans(modelBuilder);
+        ConfigureInformation(modelBuilder);
+    }
+
+    private static void ConfigureInformation(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<InformationSource>(entity =>
+        {
+            entity.ToTable("information_source", table =>
+            {
+                table.HasCheckConstraint("CK_information_source_revision", "\"Revision\" > 0");
+                table.HasCheckConstraint("CK_information_source_metadata_schema", "json_valid(\"MetadataSchemaJson\")");
+            });
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasMaxLength(200);
+            entity.Property(x => x.ScopeId).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Description).HasMaxLength(1000).IsRequired();
+            entity.Property(x => x.MetadataSchemaJson).HasMaxLength(8000).IsRequired();
+            entity.Property(x => x.ContentHash).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.Revision).IsConcurrencyToken().IsRequired();
+            entity.HasIndex(x => new { x.ScopeId, x.Id });
+        });
+        modelBuilder.Entity<InformationRecord>(entity =>
+        {
+            entity.ToTable("information_record", table =>
+            {
+                table.HasCheckConstraint("CK_information_record_revision", "\"Revision\" > 0");
+                table.HasCheckConstraint("CK_information_record_metadata", "json_valid(\"MetadataJson\")");
+            });
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasMaxLength(200);
+            entity.Property(x => x.SourceId).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Title).HasMaxLength(500).IsRequired();
+            entity.Property(x => x.Content).HasMaxLength(16000).IsRequired();
+            entity.Property(x => x.MetadataJson).HasMaxLength(8000).IsRequired();
+            entity.Property(x => x.ContentHash).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.Revision).IsConcurrencyToken().IsRequired();
+            entity.HasOne(x => x.Source).WithMany(x => x.Records).HasForeignKey(x => x.SourceId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(x => new { x.SourceId, x.Id });
+        });
+        modelBuilder.Entity<InformationActionContract>(entity =>
+        {
+            entity.ToTable("information_action_contract", table =>
+            {
+                table.HasCheckConstraint("CK_information_action_contract_revision", "\"Revision\" > 0");
+                table.HasCheckConstraint("CK_information_action_contract_input_schema", "json_valid(\"InputSchemaJson\")");
+                table.HasCheckConstraint("CK_information_action_contract_rule_records", "json_valid(\"RuleRecordIdsJson\")");
+            });
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasMaxLength(200);
+            entity.Property(x => x.ScopeId).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Description).HasMaxLength(1000).IsRequired();
+            entity.Property(x => x.ExecutorId).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.InputSchemaJson).HasMaxLength(8000).IsRequired();
+            entity.Property(x => x.RuleRecordIdsJson).HasMaxLength(8000).IsRequired();
+            entity.Property(x => x.ContentHash).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.Revision).IsConcurrencyToken().IsRequired();
+            entity.HasIndex(x => new { x.ScopeId, x.Id });
+        });
     }
 
     private static void ConfigureStoryPlans(ModelBuilder modelBuilder)

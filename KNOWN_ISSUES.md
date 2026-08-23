@@ -1,6 +1,6 @@
 # Known issues
 
-Last reviewed: 2026-08-21
+Last reviewed: 2026-08-23
 
 Only current reproducible problems belong here. A fixing receipt or version control preserves
 resolved history.
@@ -10,14 +10,16 @@ resolved history.
 Several recent character-creation implementations put D&D IDs, closed choice rules, score limits,
 and resolution behavior in production C# instead of catalog mechanics. Confirmed examples include:
 
-- `DantesRoleplay.DataAccess/BackgroundAbilityScoreIncreaseResolver.cs`;
+- `src/game-adapters/dantes-roleplay/character/persistence/BackgroundAbilityScoreIncreaseResolver.cs`;
 - `CharacterAbilityAssignmentValidator.cs`;
 - `CharacterOriginLanguageResolver.cs`;
 - `CharacterSpeciesSelectionResolver.cs`;
 - `CharacterAbilityScoreRecorder.cs`; and
 - `CharacterProfileRecorder.cs`.
 
-Campaign bootstrap/composition code also hard-codes `dnd2024` and catalog component/relationship IDs.
+The remaining Character files named above are now isolated under the same game-adapter quarantine.
+Campaign bootstrap/composition code there also hard-codes `dnd2024` and catalog
+component/relationship IDs.
 Some generic C# orchestration may remain, but ruleset-specific validation, formulas, choice patterns,
 IDs, and effect derivation violate [the architecture boundary](ARCHITECTURE.md).
 
@@ -31,28 +33,30 @@ Close this with a separately approved remediation feature:
    reviewed allow-list; and
 6. preserve focused, rollback, replay, catalog, and full-suite evidence in receipts.
 
-This documentation cleanup does not authorize that runtime refactor.
+The modularization work has established the inventory guard and quarantine placement. Closing this
+still requires separately confirmed catalog/schema semantics and parity-tested runtime slices; a
+directory move alone is not closure.
 
-## Feature 10 transcript does not admit encounter-side fixture state
+## Feature 20 movement/Speed acceptance failures
 
-Against the 2026-08-21 worktree, the solution builds with zero warnings/errors and disposable
-catalog validation accepts 399 records with warnings only. The full suite reports 788 passed and one
-failed:
+Against the 2026-08-23 modularization/local-AI worktree, the solution builds with zero
+warnings/errors and disposable catalog validation accepts 426 records with warnings only. The
+full solution test reports local AI 19 passed, plus 805 passed and two failed in the shared suite:
 
-`CatalogFeature10Tests.Imported_catalog_replays_the_feature_10_vertical_session_in_two_fresh_databases`
+- `CatalogFeature20Tests.Turn_lifecycle_refreshes_remaining_movement_from_each_active_creature_walk_Speed`
+- `CatalogFeature20Tests.Missing_or_corrupt_Speed_rejects_refresh_and_normal_movement_without_mutation`
 
-`AssertExpectedDeltas` expects no extra participant component, while the imported fixture now
-contains `dnd2024.encounter-sides`. This is a fixture/expectation ownership mismatch in concurrent
-tactical-side work, not a documentation failure.
+Both assertions expect a successful action result but receive a rejection. They reproduce when run
+alone and directly construct the Action runner; they do not exercise local-AI projects, provider
+registration, file scanning, or the moved component registration seams.
 
-The tactical/Feature 10 owner must decide whether encounter sides are part of the accepted transcript
-baseline, then update the fixture or expectation through that owner and rerun:
+The Feature 20 owner must reconcile the current turn-lifecycle/Speed catalog composition and test
+fixture, then rerun:
 
 ```powershell
-dotnet build
+dotnet build DantesRoleplay.slnx --no-restore
 .\roleplay validate catalog
-dotnet test --no-build
+dotnet test DantesRoleplay.slnx --no-restore
 ```
 
-Close this entry only when all three commands pass against the same worktree. Do not pin the count in
-roadmap or architecture files.
+Close this entry only when all three commands pass against the same worktree.

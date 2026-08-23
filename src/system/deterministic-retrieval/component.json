@@ -1,0 +1,1 @@
+{"name":"deterministic-retrieval","classification":"system","status":"scaffolded","owns":["lexical indexing","bounded candidate retrieval"],"mayDependOn":["building-blocks"]}

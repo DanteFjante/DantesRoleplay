@@ -8,6 +8,7 @@ using DantesRoleplay.RuleAccess;
 using DantesRoleplay.Security;
 using DantesRoleplay.World;
 using DantesRoleplay.Story;
+using DantesRoleplay.Information;
 using ModelContextProtocol;
 
 namespace DantesRoleplay.MCPServer;
@@ -48,7 +49,8 @@ public static class ServerConfiguration
         string connectionString,
         DatabaseProvider provider = DatabaseProvider.Sqlite,
         KnowledgeRetrievalOptions? knowledgeRetrieval = null,
-        DevelopmentKnowledgeAudienceOptions? developmentKnowledgeAudience = null)
+        DevelopmentKnowledgeAudienceOptions? developmentKnowledgeAudience = null,
+        string? developmentInformationScope = null)
     {
         // The kernel. One call registers the DbContext and every store.
         //
@@ -56,6 +58,11 @@ public static class ServerConfiguration
         // ARCHITECTURE.md §8.3 explains why there is no Postgres and no vector store yet, and
         // names the conditions that would change that.
         services.AddDantesRoleplayDataAccess(connectionString, provider, knowledgeRetrieval);
+        services.AddSingleton<IInformationScopePolicy>(new DevelopmentInformationScopePolicy(
+            developmentInformationScope ?? "local.*"));
+        services.AddScoped<IInformationAnswerCoordinator, InformationAnswerCoordinator>();
+        services.AddScoped<IInformationActionCoordinator, InformationActionCoordinator>();
+        services.AddScoped<IInformationActionExecutor, MechanicActionInformationExecutor>();
         developmentKnowledgeAudience ??= new DevelopmentKnowledgeAudienceOptions();
         var developmentError = developmentKnowledgeAudience.Validate();
         if (developmentError is not null) throw new ArgumentException(developmentError, nameof(developmentKnowledgeAudience));
@@ -65,6 +72,7 @@ public static class ServerConfiguration
             // There is intentionally no registration when disabled. Resolving a player-safe
             // knowledge coordinator then fails rather than silently becoming trusted-GM access.
             services.AddScoped<IAuthenticatedCampaignAudiencePolicy, DevelopmentCampaignAudiencePolicy>();
+            services.AddDantesRoleplayAuthenticatedCampaignServices();
             if (provider == DatabaseProvider.Sqlite)
             {
                 services.AddScoped<IStoryPlanCoordinator, StoryPlanCoordinator>();

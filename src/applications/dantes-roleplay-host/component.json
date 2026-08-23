@@ -1,0 +1,1 @@
+{"name":"dantes-roleplay-host","classification":"application","status":"scaffolded","owns":["application composition","configuration","process lifetime"],"mayDependOn":["sqlite-hosting","mcp-protocol","catalog","dantes-roleplay-game-adapters"]}

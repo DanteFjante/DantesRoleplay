@@ -2,8 +2,12 @@
 
 > **D&D implementation reference:** When this work includes D&D 2024 mechanics, inspect [Foundry VTT dnd5e](https://github.com/foundryvtt/dnd5e) before designing or coding. Use it as a licensed engineering reference—not a direct dependency or rules authority—while retaining the exact `source.dnd2024.srd-5.2.1` locator and all applicable MIT, CC-BY, and asset-license notices for any reused material.
 
-Status: **Draft — for design discussion; no implementation is authorised by this plan**  
-Last updated: 2026-08-20
+Status: **Superseded by [the web-interface roadmap](web/WEB-INTERFACE-ROADMAP.md)**
+Last updated: 2026-08-23
+
+The earlier declarative page-specification and project-authored renderer direction was replaced by
+the confirmed 2026-08-23 requirement: trusted users upload ordinary HTML documents containing CSS
+and JavaScript, and the host serves those documents directly from versioned SQLite records.
 
 ## Goal
 

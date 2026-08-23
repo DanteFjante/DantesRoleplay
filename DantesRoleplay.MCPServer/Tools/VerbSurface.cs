@@ -90,6 +90,16 @@ public static class VerbSurface
             ["campaignId", "question", "knowledgeKinds", "knowledgeSubjectIds", "asOfMinute"],
             ["procedure.game.core.world.knowledge"]),
         new(
+            "information-answer",
+            "A bounded grounded answer over generic user-defined information in one authorized scope.",
+            ["scopeId", "question", "sourceIds", "limit"],
+            ["procedure.information.answer"]),
+        new(
+            "information-actions",
+            "Explicit action contracts available in one authorized information namespace.",
+            ["scopeId"],
+            ["procedure.information.action"]),
+        new(
             "story-plan",
             "One durable development-GM story plan. It returns a bounded handoff after serial backend-owned context, knowledge, and action steps.",
             ["id", "afterRevision", "waitSeconds"],
@@ -261,6 +271,34 @@ public static class VerbSurface
             SupportsDryRun: false,
             ["procedure.system.feedback"]),
         new(
+            "information-source",
+            "Create or revise a generic information source. It has no game semantics.",
+            "{id, scopeId, name, description?, metadataSchema?}",
+            """{"id":"source.example","scopeId":"local.default","name":"Example notes","description":"...","metadataSchema":"{}"}""",
+            SupportsDryRun: false,
+            ["procedure.information.manage"]),
+        new(
+            "information-record",
+            "Create or revise one text record in a generic information source.",
+            "{id, sourceId, title, content, metadata?}",
+            """{"id":"record.example","sourceId":"source.example","title":"Example","content":"...","metadata":"{}"}""",
+            SupportsDryRun: false,
+            ["procedure.information.manage"]),
+        new(
+            "information-action-contract",
+            "Create or revise a scoped contract for an explicitly enabled action executor.",
+            "{id, scopeId, name, description?, executorId, inputSchema, ruleRecordIds?}",
+            """{"id":"action.example","scopeId":"local.notes","name":"Apply note rule","executorId":"kernel.mechanic-action","inputSchema":"{\"type\":\"object\"}","ruleRecordIds":["record.rule"]}""",
+            SupportsDryRun: false,
+            ["procedure.information.action"]),
+        new(
+            "information-action",
+            "Execute one declared action contract after namespace authorization and input-schema validation.",
+            "{scopeId, contractId, input}",
+            """{"scopeId":"local.*","contractId":"action.example","input":"{\"intent\":\"...\"}"}""",
+            SupportsDryRun: false,
+            ["procedure.information.action"]),
+        new(
             "story-plan",
             "Start a bounded durable semantic story plan, or cancel one plan between steps. The backend selects procedures, knowledge, and mechanics; the caller cannot provide effects or tool calls.",
             "start {operation, requestToken, campaignId, objective, steps[1..6]} | cancel {operation, storyPlanId, expectedRevision}; step is {id, kind: campaign-context|knowledge|action, intent, roleEntityIds?, input?}",
@@ -306,6 +344,8 @@ public static class VerbSurface
             ["failuresOnly"] = "Only operations that failed.",
             ["tool"] = "Only operations recorded against this tool name.",
             ["subject"] = "Only operations that touched this subject — usually an id."
+            , ["scopeId"] = "Generic information-answer only: the host-authorized information scope to read."
+            , ["sourceIds"] = "Generic information-answer only: optional source ids within the authorized scope."
             , ["impact"] = "Feedback only: blocked, degraded, minor, or none."
             , ["afterRevision"] = "Story-plan only: wait only when this exact revision remains current."
             , ["waitSeconds"] = "Story-plan only: bounded long-poll seconds from 0 through 20."

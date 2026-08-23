@@ -136,7 +136,7 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
 
         Assert.True(catalog.Ok, catalog.Raw);
         Assert.Equal(
-            ["campaign-resume", "capabilities", "categories", "entities", "event-types", "events", "feedback", "graph", "history", "itinerary-plan", "journey-plan", "knowledge-answer", "mechanics", "notifications", "procedures", "quest-summary", "session-recap", "story-plan", "subscriptions", "world"],
+            ["campaign-resume", "capabilities", "categories", "entities", "event-types", "events", "feedback", "graph", "history", "information-actions", "information-answer", "itinerary-plan", "journey-plan", "knowledge-answer", "mechanics", "notifications", "procedures", "quest-summary", "session-recap", "story-plan", "subscriptions", "world"],
             catalog.Data.GetProperty("query").EnumerateObject().Select(p => p.Name).Order(StringComparer.Ordinal));
 
         // 3. The world, before changing it.

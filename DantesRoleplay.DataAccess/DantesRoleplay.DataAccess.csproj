@@ -25,6 +25,24 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DantesRoleplay\DantesRoleplay.csproj" />
+    <ProjectReference Include="..\src\system\local-ai\DantesRoleplay.LocalAI\DantesRoleplay.LocalAI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Transitional compile links: capability-owned hosting code now lives with its component.
+         Implementations move in later slices; the assembly/public surface remains unchanged. -->
+    <Compile Include="..\src\system\**\hosting\*.cs">
+      <Link>Components\System\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\game-adapters\**\hosting\*.cs">
+      <Link>Components\GameAdapters\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\system\**\persistence\*.cs">
+      <Link>Components\System\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\game-adapters\**\persistence\*.cs">
+      <Link>Components\GameAdapters\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
   </ItemGroup>
 
 </Project>

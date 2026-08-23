@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DantesRoleplay.DataAccess\DantesRoleplay.DataAccess.csproj" />
+    <ProjectReference Include="..\src\system\web-interface\DantesRoleplay.Web\DantesRoleplay.Web.csproj" />
 
     <!-- The JavaScript sandbox. The only dependency in the solution that executes code it did
          not write, which is why it is referenced explicitly by the host rather than arriving
