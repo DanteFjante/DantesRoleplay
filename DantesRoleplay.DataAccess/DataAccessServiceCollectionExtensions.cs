@@ -1,10 +1,6 @@
 ﻿using DantesRoleplay.Actions;
-using DantesRoleplay.Characters;
 using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.DataAccess.Composition;
-using DantesRoleplay.DataAccess.Retrieval;
-using DantesRoleplay.Campaign;
-using DantesRoleplay.Quest;
 using DantesRoleplay.Effects;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Events;
@@ -14,9 +10,18 @@ using DantesRoleplay.Procedures;
 using DantesRoleplay.Retrieval;
 using DantesRoleplay.Snapshots;
 using DantesRoleplay.SystemFeedback;
-using DantesRoleplay.Story;
 using DantesRoleplay.World;
 using DantesRoleplay.Information;
+using DantesRoleplay.Ecs;
+using DantesRoleplay.SchemaValidation;
+using DantesRoleplay.Projections;
+using DantesRoleplay.EcsEffects;
+using DantesRoleplay.ApplicationActivation;
+using DantesRoleplay.StateSpaceAdministration;
+using DantesRoleplay.ComponentTypeAdministration;
+using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.LegacyStateAdoption;
+using DantesRoleplay.ApplicationExecution;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -50,14 +55,9 @@ public static class DataAccessServiceCollectionExtensions
     public static IServiceCollection AddDantesRoleplayDataAccess(
         this IServiceCollection services,
         string connectionString,
-        DatabaseProvider provider = DatabaseProvider.Sqlite,
-        KnowledgeRetrievalOptions? knowledgeRetrieval = null)
+        DatabaseProvider provider = DatabaseProvider.Sqlite)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
-        knowledgeRetrieval ??= new KnowledgeRetrievalOptions();
-        var invalidRetrieval = knowledgeRetrieval.Validate();
-        if (invalidRetrieval is not null)
-            throw new ArgumentException(invalidRetrieval, nameof(knowledgeRetrieval));
 
         services.AddDbContext<DantesRoleplayDbContext>(options =>
         {
@@ -82,6 +82,8 @@ public static class DataAccessServiceCollectionExtensions
 
         services
             .AddOperationsAndAuditComponent()
+            .AddHostSettingsComponent()
+            .AddAssistantConversationsComponent()
             .AddStateComponent()
             .AddProceduresComponent()
             .AddMechanicsComponent()
@@ -92,22 +94,24 @@ public static class DataAccessServiceCollectionExtensions
             .AddFeedbackComponent()
             .AddInformationComponent()
             .AddCatalogComponent()
-            .AddDantesRoleplayGameAdapters(
-                provider,
-                NormaliseSqlite(connectionString),
-                knowledgeRetrieval);
+            .AddApplicationRegistryComponent()
+            .AddSourceRegistryComponent()
+            .AddRegistryAdministrationComponent()
+            .AddApplicationPreviewComponent()
+            .AddSchemaValidationComponent()
+            .AddEcsComponent()
+            .AddStateSpaceEdgesComponent()
+            .AddComponentTypeAdministrationComponent()
+            .AddEcsEffectsComponent()
+            .AddProjectionMaterializationComponent()
+            .AddApplicationActivationComponent()
+            .AddCatalogNavigationComponent()
+            .AddInteractionOrchestrationComponent()
+            .AddStateSpaceAdministrationComponent()
+            .AddLegacyStateAdoptionComponent()
+            .AddApplicationExecutionComponent();
 
         return services;
-    }
-
-    /// <summary>
-    /// Registers the services that require a host-authenticated campaign audience.
-    /// Call this only after the host has registered an
-    /// <see cref="DantesRoleplay.Security.IAuthenticatedCampaignAudiencePolicy"/>.
-    /// </summary>
-    public static IServiceCollection AddDantesRoleplayAuthenticatedCampaignServices(this IServiceCollection services)
-    {
-        return services.AddDantesRoleplayAuthenticatedGameAdapters();
     }
 
     /// <summary>

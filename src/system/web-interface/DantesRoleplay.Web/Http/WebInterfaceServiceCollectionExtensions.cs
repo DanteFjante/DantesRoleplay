@@ -1,7 +1,21 @@
 using DantesRoleplay.Web.Data;
+using DantesRoleplay.Web.Live;
+using DantesRoleplay.Web.Pages;
 using DantesRoleplay.Web.Persistence;
+using DantesRoleplay.Web.Security;
+using DantesRoleplay.Web.Settings;
+using DantesRoleplay.Authorization;
+using DantesRoleplay.Assistants;
+using DantesRoleplay.CodexBridge;
+using DantesRoleplay.Web.Interactions;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Configuration;
+using System.Threading.RateLimiting;
 
 namespace DantesRoleplay.Web.Hosting;
 
@@ -11,9 +25,11 @@ public static class WebInterfaceServiceCollectionExtensions
 
     public static IServiceCollection AddDantesRoleplayWeb(
         this IServiceCollection services,
-        string connectionStringOrPath)
+        string connectionStringOrPath,
+        IConfiguration configuration)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionStringOrPath);
+        ArgumentNullException.ThrowIfNull(configuration);
         var connectionString = NormaliseSqlite(connectionStringOrPath);
 
         services.AddDbContext<WebContentDbContext>(options =>
@@ -21,7 +37,72 @@ public static class WebInterfaceServiceCollectionExtensions
                 connectionString,
                 sqlite => sqlite.MigrationsHistoryTable(MigrationHistoryTable)));
         services.AddScoped<IWebPageStore, WebPageStore>();
+        services.AddSingleton<WebPageBundleReader>();
+        services.AddSingleton<WebHtmlReader>();
         services.AddScoped<DynamicDataReader>();
+        services.AddScoped<SqliteWebChangeFeed>();
+        services.AddScoped<CommittedEffectHistory>();
+        services.AddScoped<ControlStructureExplorer>();
+        services.AddScoped<ControlPageEditor>();
+        services.TryAddSingleton<IHostSettingDefinitionProvider>(
+            _ => UnavailableHostSettingDefinitionProvider.Instance);
+        services.AddScoped<ControlSettingsExplorer>();
+        services.TryAddScoped<IAssistantConversationService, UnavailableAssistantConversationService>();
+        services.TryAddScoped<ICodexConversationService, UnavailableCodexConversationService>();
+        services.AddScoped<ControlAssistantExplorer>();
+        services.AddSingleton<ApplicationConversationStore>();
+        services.AddScoped<ApplicationConversationService>();
+        services.Configure<WebRemoteAccessOptions>(
+            configuration.GetSection(WebRemoteAccessOptions.SectionName));
+        services.AddSingleton<WebAccessPolicy>();
+        services.TryAddSingleton<IPrivateOperatorAuthorizationPolicy, PrivateOperatorAuthorizationPolicy>();
+        services.AddSingleton<WebPrivateOperatorGuard>();
+        services.AddSingleton<WebInterfaceSecurityFilter>();
+        services.AddSingleton<WebControlRequestGuard>();
+        services.AddSingleton<WebControlRequestFilter>();
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.OnRejected = async (context, cancellationToken) =>
+            {
+                WebInterfaceSecurity.ApplyHeaders(context.HttpContext.Response);
+                await context.HttpContext.Response.WriteAsJsonAsync(
+                    new
+                    {
+                        error = "WEB_RATE_LIMITED",
+                        message = "The local web request limit was reached. Try again shortly."
+                    },
+                    cancellationToken);
+            };
+            options.AddFixedWindowLimiter(
+                WebInterfaceSecurity.ReadRateLimitPolicy,
+                limiter =>
+                {
+                    limiter.PermitLimit = 240;
+                    limiter.Window = TimeSpan.FromMinutes(1);
+                    limiter.QueueLimit = 0;
+                    limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                    limiter.AutoReplenishment = true;
+                });
+            options.AddFixedWindowLimiter(
+                WebInterfaceSecurity.UploadRateLimitPolicy,
+                limiter =>
+                {
+                    limiter.PermitLimit = 10;
+                    limiter.Window = TimeSpan.FromMinutes(1);
+                    limiter.QueueLimit = 0;
+                    limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                    limiter.AutoReplenishment = true;
+                });
+            options.AddConcurrencyLimiter(
+                WebInterfaceSecurity.StreamRateLimitPolicy,
+                limiter =>
+                {
+                    limiter.PermitLimit = 4;
+                    limiter.QueueLimit = 0;
+                    limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                });
+        });
 
         return services;
     }

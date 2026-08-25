@@ -1,116 +1,106 @@
 using DantesRoleplay.DataAccess;
-using DantesRoleplay.DataAccess.Retrieval;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.Web.Hosting;
-using System.Net;
+using DantesRoleplay.Web.Security;
+using DantesRoleplay.Web.Settings;
+using DantesRoleplay.HostSettings;
+using System.Text.Json;
+using DantesRoleplay.Retrieval;
+using DantesRoleplay.DataAccess.Retrieval;
+using DantesRoleplay.Assistants;
+using DantesRoleplay.CodexBridge;
+using DantesRoleplay.DataAccess.Composition;
+using DantesRoleplay.Interactions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var vectorPath = builder.Configuration["Knowledge:Vector:ExtensionPath"]
-    ?? Environment.GetEnvironmentVariable("DANTESROLEPLAY_SQLITE_VEC_EXTENSION");
-var knowledgeRetrieval = new KnowledgeRetrievalOptions
-{
-    Embedding = new OllamaEmbeddingOptions
-    {
-        Enabled = Enabled(builder.Configuration["Knowledge:Embedding:Enabled"]) ||
-                  Enabled(Environment.GetEnvironmentVariable("DANTESROLEPLAY_OLLAMA_INTEGRATION")),
-        Endpoint = new Uri(builder.Configuration["Knowledge:Embedding:Endpoint"] ?? "http://localhost:11434"),
-        Model = builder.Configuration["Knowledge:Embedding:Model"] ?? "qwen3-embedding:4b",
-        ExpectedDimensions = Number(builder.Configuration["Knowledge:Embedding:Dimensions"], 2560)
-    },
-    Vector = new SqliteVecOptions
-    {
-        Enabled = Enabled(builder.Configuration["Knowledge:Vector:Enabled"]) ||
-                  !string.IsNullOrWhiteSpace(vectorPath),
-        ExtensionPath = vectorPath
-    },
-    Completion = new OllamaCompletionOptions
-    {
-        Enabled = Enabled(builder.Configuration["Knowledge:Completion:Enabled"]) ||
-                  Enabled(Environment.GetEnvironmentVariable("DANTESROLEPLAY_OLLAMA_COMPLETION")),
-        Endpoint = new Uri(builder.Configuration["Knowledge:Completion:Endpoint"] ?? "http://localhost:11434"),
-        Model = builder.Configuration["Knowledge:Completion:Model"] ?? "qwen3:8b",
-        Profile = builder.Configuration["Knowledge:Completion:Profile"] ?? "standard",
-        MaxPromptCharacters = Number(builder.Configuration["Knowledge:Completion:MaxPromptCharacters"], 30_000),
-        MaxOutputTokens = Number(builder.Configuration["Knowledge:Completion:MaxOutputTokens"], 1_024),
-        MaxConcurrentRequests = Number(builder.Configuration["Knowledge:Completion:MaxConcurrentRequests"], 1),
-        AllowedTaskClasses = new HashSet<string>(StringComparer.Ordinal)
-        {
-            "information.answer",
-            "knowledge.answer",
-            "knowledge.proposals",
-            "knowledge.read-plan",
-            "knowledge.read-answer",
-            "knowledge.authorized-answer",
-            "routing.propose",
-            "story-plan.verify-procedures"
-        }
-    },
-    Background = new KnowledgeBackgroundOptions
-    {
-        EmbeddingQueueCapacity = Number(builder.Configuration["Knowledge:Background:EmbeddingQueueCapacity"], 16),
-        ProposalQueueCapacity = Number(builder.Configuration["Knowledge:Background:ProposalQueueCapacity"], 32),
-        MaxRetainedJobs = Number(builder.Configuration["Knowledge:Background:MaxRetainedJobs"], 256),
-        MaxAttempts = Number(builder.Configuration["Knowledge:Background:MaxAttempts"], 2)
-    },
-    BackfillBatchSize = Number(builder.Configuration["Knowledge:BackfillBatchSize"], 16),
-    CandidateLimit = Number(builder.Configuration["Knowledge:CandidateLimit"], 60)
-};
-var developmentKnowledgeAudience = new DevelopmentKnowledgeAudienceOptions
-{
-    Enabled = Enabled(builder.Configuration["Knowledge:DevelopmentAudience:Enabled"]) ||
-              Enabled(Environment.GetEnvironmentVariable("DANTESROLEPLAY_DEVELOPMENT_KNOWLEDGE_AUDIENCE")),
-    PrincipalId = builder.Configuration["Knowledge:DevelopmentAudience:PrincipalId"]
-        ?? Environment.GetEnvironmentVariable("DANTESROLEPLAY_DEVELOPMENT_PRINCIPAL")
-        ?? "development.local",
-    CampaignId = builder.Configuration["Knowledge:DevelopmentAudience:CampaignId"]
-        ?? Environment.GetEnvironmentVariable("DANTESROLEPLAY_DEVELOPMENT_CAMPAIGN")
-        ?? "",
-    Role = builder.Configuration["Knowledge:DevelopmentAudience:Role"]
-        ?? Environment.GetEnvironmentVariable("DANTESROLEPLAY_DEVELOPMENT_ROLE")
-        ?? "gm",
-    ActorId = builder.Configuration["Knowledge:DevelopmentAudience:ActorId"]
-        ?? Environment.GetEnvironmentVariable("DANTESROLEPLAY_DEVELOPMENT_ACTOR")
-};
 var developmentInformationScope = builder.Configuration["Information:DevelopmentScope"]
     ?? Environment.GetEnvironmentVariable("DANTESROLEPLAY_DEVELOPMENT_INFORMATION_SCOPE")
     ?? "local.*";
-if (developmentKnowledgeAudience.Enabled) EnsureLoopbackOnly(builder.Configuration);
 var databasePath = builder.Configuration.GetConnectionString("Kernel")
     ?? Path.Combine(builder.Environment.ContentRootPath, "data", "dantesroleplay.db");
+var allowedSourceRoots = builder.Configuration.GetSection("Sources:AllowedRoots")
+    .GetChildren()
+    .ToDictionary(child => child.Key, child => child.Value ?? string.Empty, StringComparer.Ordinal);
+var publishedApplicationCatalogs = builder.Configuration.GetSection("Catalogs:PublishedApplications")
+    .GetChildren().Select(child => child.Value ?? string.Empty).ToArray();
+
+var hostSettings = new ConfiguredHostSettingDefinitionProvider(builder.Configuration);
+builder.Services.AddSingleton<IHostSettingDefinitionProvider>(hostSettings);
+builder.Services.AddHttpClient("local-assistant", client => client.Timeout = Timeout.InfiniteTimeSpan);
+builder.Services.AddSingleton<ILocalStructuredCompletionProvider>(services =>
+    new OllamaStructuredCompletionProvider(
+        services.GetRequiredService<IHttpClientFactory>().CreateClient("local-assistant"),
+        hostSettings.CreateCompletionOptions()));
+var remotePlannerOptions = new OpenAiInteractionPlanningOptions
+{
+    Enabled = builder.Configuration.GetValue<bool>("InteractionPlanning:Remote:Enabled"),
+    ApiKey = builder.Configuration["InteractionPlanning:Remote:ApiKey"]
+        ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY")
+        ?? string.Empty
+};
+builder.Services.AddSingleton(remotePlannerOptions);
+builder.Services.AddHttpClient<OpenAiResponsesInteractionPlanningProvider>(client =>
+    client.Timeout = Timeout.InfiniteTimeSpan)
+    .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
+builder.Services.AddHttpClient<OpenAiResponsesOuterInteractionProvider>(client =>
+    client.Timeout = Timeout.InfiniteTimeSpan)
+    .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
+builder.Services.AddSingleton<IInteractionOuterTurnProvider>(services =>
+    services.GetRequiredService<OpenAiResponsesOuterInteractionProvider>());
+builder.Services.AddSingleton<IInteractionNarrationProvider>(services =>
+    services.GetRequiredService<OpenAiResponsesOuterInteractionProvider>());
 
 // Everything this application registers lives in one method, which the end-to-end test also
 // calls — so the surface the test walks is the surface this host serves, by construction.
 builder.Services.AddDantesRoleplayMcpServer(
     databasePath,
     DatabaseProvider.Sqlite,
-    knowledgeRetrieval,
-    developmentKnowledgeAudience,
-    developmentInformationScope);
-builder.Services.AddDantesRoleplayWeb(databasePath);
+    developmentInformationScope,
+    allowedSourceRoots,
+    publishedApplicationCatalogs);
+builder.Services.AddCodexBridgeComponent(new CodexBridgeOptions(
+    builder.Configuration["Codex:ExecutablePath"] ?? "codex",
+    ResolveRepositoryRoot(
+        builder.Configuration["Codex:RepositoryRoot"],
+        builder.Environment.ContentRootPath),
+    builder.Configuration["Codex:PinnedVersion"] ?? CodexBridgeVersions.CurrentPinnedVersion,
+    Model: builder.Configuration["Codex:Model"] ?? CodexBridgeModels.Luna));
+builder.Services.AddDantesRoleplayWeb(databasePath, builder.Configuration);
 
 var app = builder.Build();
-
-if (developmentKnowledgeAudience.Enabled)
-{
-    // The development seat is deliberately a local convenience, never a LAN shortcut.
-    app.Use(async (context, next) =>
-    {
-        if (context.Request.Path.StartsWithSegments(ServerConfiguration.McpEndpoint) &&
-            (context.Connection.RemoteIpAddress is null || !IPAddress.IsLoopback(context.Connection.RemoteIpAddress)))
-        {
-            context.Response.StatusCode = StatusCodes.Status403Forbidden;
-            return;
-        }
-        await next();
-    });
-}
 
 // Migrate, then seed the bootstrap contracts from the embedded markdown files. Seeding is
 // idempotent by content hash, so a restart with no edits writes nothing.
 await app.Services.InitialiseDantesRoleplayAsync();
+await using (var settingsScope = app.Services.CreateAsyncScope())
+{
+    var overrides = settingsScope.ServiceProvider.GetRequiredService<IHostSettingOverrideStore>();
+    var heads = await overrides.GetHeadsAsync();
+    var values = new Dictionary<string, JsonElement?>(StringComparer.Ordinal);
+    foreach (var head in heads.Values)
+    {
+        if (head.ValueJson is null)
+        {
+            values.Add(head.Key, null);
+            continue;
+        }
+        using var document = JsonDocument.Parse(head.ValueJson);
+        values.Add(head.Key, document.RootElement.Clone());
+    }
+    hostSettings.ApplyStartupOverrides(values);
+    await overrides.MarkPendingAppliedAsync();
+}
+hostSettings.MarkProviderRegistered();
 await app.Services.InitialiseDantesRoleplayWebAsync();
+await using (var assistantScope = app.Services.CreateAsyncScope())
+{
+    await assistantScope.ServiceProvider.GetRequiredService<IAssistantConversationService>()
+        .RecoverInterruptedAsync();
+}
 
+app.UseDantesRoleplayRemoteWebBoundary();
+app.UseRateLimiter();
 app.MapMcp(ServerConfiguration.McpEndpoint);
 app.MapDantesRoleplayWeb();
 
@@ -118,22 +108,15 @@ app.MapDantesRoleplayWeb();
 // client, and a redirect there is a confusing failure rather than a security gain.
 app.Run();
 
-static bool Enabled(string? value) =>
-    string.Equals(value, "1", StringComparison.Ordinal) ||
-    bool.TryParse(value, out var enabled) && enabled;
-
-static int Number(string? value, int fallback) =>
-    int.TryParse(value, out var number) ? number : fallback;
-
-static void EnsureLoopbackOnly(IConfiguration configuration)
+static string ResolveRepositoryRoot(string? configured, string contentRoot)
 {
-    var raw = configuration["urls"] ?? Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
-    if (string.IsNullOrWhiteSpace(raw)) return; // ASP.NET's default is localhost.
-    foreach (var value in raw.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+    if (!string.IsNullOrWhiteSpace(configured)) return Path.GetFullPath(configured.Trim());
+    foreach (var start in new[] { contentRoot, Environment.CurrentDirectory }.Distinct(StringComparer.OrdinalIgnoreCase))
     {
-        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) ||
-            (!string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase) &&
-             (!IPAddress.TryParse(uri.Host, out var address) || !IPAddress.IsLoopback(address))))
-            throw new InvalidOperationException("Development knowledge audience may bind only to localhost or a loopback IP address.");
+        for (var directory = new DirectoryInfo(Path.GetFullPath(start)); directory is not null; directory = directory.Parent)
+            if (File.Exists(Path.Combine(directory.FullName, "AGENTS.md")) &&
+                Directory.Exists(Path.Combine(directory.FullName, ".git")))
+                return directory.FullName;
     }
+    return Path.GetFullPath(contentRoot);
 }

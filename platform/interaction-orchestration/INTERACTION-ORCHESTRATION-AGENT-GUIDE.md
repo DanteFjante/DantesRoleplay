@@ -42,6 +42,19 @@ For every implementation turn:
   plan/non-resolution. It has no tools.
 - Do not add game/ruleset IDs, vocabulary, prompts, or task defaults to local AI. Application IDs
   and source keys cross the local-AI boundary only as opaque generic scope metadata.
+- Keep runtime product profiles distinct from implementation-agent routing: inner Codex is
+  `gpt-5.6-luna` with `low` reasoning; outer Codex is `gpt-5.6-luna` with `high` reasoning.
+- Bind inner/outer role, model, effort, application, and parent interaction on the server. Do not
+  accept arbitrary model, effort, developer-instruction, sandbox, tool, or approval-policy fields
+  from the browser.
+- Only the server may create an inner conversation. An outer application conversation may delegate
+  one bounded child batch or submit its own closed proposal, but both paths use the same verifier,
+  executor, receipt, and recipe-candidate lifecycle.
+- Do not rely on prompt instructions to isolate the inner AI. Its active slice must prove at the
+  app-server/policy boundary that it has no filesystem, shell, network, arbitrary MCP, approval, or
+  direct mechanic-execution authority.
+- Keep D&D game-master wording/persona in the application adapter or catalog procedure. Generic
+  orchestration, Codex bridge, assistant conversation, and web code remain ruleset-neutral.
 
 ### Namespace boundary
 
@@ -60,7 +73,8 @@ For every implementation turn:
 ### Execution boundary
 
 - Only the server coordinator may call existing query/action ports.
-- Only `IActionRunner`/existing composition owners may execute game-changing mechanics/effects.
+- Exact application-state proposals execute only through `IApplicationActionRunner`; the legacy
+  `IActionRunner` remains limited to its existing direct-action compatibility path.
 - Rehydrate and compare every procedure/mechanic/schema version/hash immediately before execution.
 - Never accept effects, derived outcomes, authorization, current revision, or validation truth from
   either planner.
@@ -93,6 +107,8 @@ For every implementation turn:
 - Keep trusted feature and untrusted information collections physically/logically distinct.
 - Search through public ports, never by reaching into another component's SQLite implementation.
 - Exact/lexical retrieval remains complete when embeddings/vector support are disabled.
+- Described catalog browse, stable cursor pagination, deterministic lexical branch search, and exact
+  inspection remain complete when embeddings, vector support, and local completion are disabled.
 - Vector results are candidates, not authority. Hydrate from authoritative stores before use.
 - Keep ordering/fusion deterministic and generation-scoped; return citations, versions, and hashes.
 
@@ -123,6 +139,8 @@ For every implementation turn:
 4. Implement contracts and pure validation first.
 5. Implement storage/index adapters second, behind ports owned by the component.
 6. Implement orchestration last. Keep model prompts and game consumers outside generic contracts.
+   Implement the role-bound Codex adapter only in Slice 12E and the reusable outer application
+   surface only in Slice 12F; neither belongs in earlier core slices.
 7. Run focused tests while iterating.
 8. Run `roleplay validate catalog` after any catalog change; it must use a fresh disposable database.
 9. Run the solution build and full suite at feature acceptance. Run the protocol walk whenever public
@@ -143,6 +161,9 @@ Every applicable slice must prove:
   fingerprints;
 - vector disabled, missing extension, wrong embedding dimension/generation, stale index document,
   and lexical parity;
+- missing directory description metadata, unauthorized/shadowed catalog result, cursor tampering or
+  stale manifest, page gaps/duplicates, deterministic lexical ties, and full remote discovery with
+  vectors/local completion disabled;
 - untrusted document injection and cross-corpus query rejection;
 - reserved `system` misuse, missing/unknown application, unrelated cross-application result,
   unknown/cyclic application base, and incompatible legacy alias;
@@ -155,7 +176,15 @@ Every applicable slice must prove:
   action composition;
 - candidate recipe use, stale recipe use, prior entity-ID leakage, untrusted instruction leakage,
   and failed-receipt learning rejection;
-- receipt authorization/redaction and absence of private prompts/chain-of-thought.
+- receipt authorization/redaction and absence of private prompts/chain-of-thought;
+- forged or changed inner/outer role, browser-selected model/effort/prompt/tool policy, inner
+  conversation creation by an application caller, cross-application delegation, mismatched parent
+  interaction, oversized delegation batch, and profile change on resume;
+- inner app-server tool isolation, outer direct-proposal parity, safe delegation summaries, and
+  absence of inner prompt/trace from the player transcript; and
+- reusable outer component use outside the control center, preserving the containing application
+  shell/context while denying operator settings, filesystem, raw Codex, direct-inner, and MCP
+  capabilities.
 
 All rejection cases must assert no unauthorized state mutation and the correct receipt/audit
 evidence.

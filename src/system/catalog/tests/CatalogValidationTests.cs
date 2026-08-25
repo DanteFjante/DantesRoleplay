@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
+using System.Text.Json;
 using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.DataAccess.Catalog;
+using DantesRoleplay.Mechanics;
 
 namespace DantesRoleplay.Tests;
 
@@ -73,6 +75,118 @@ public sealed class CatalogValidationTests
         }
     }
 
+    [Fact]
+    public void Ratified_dnd2024_action_records_have_authored_navigation_metadata_and_lossless_paths()
+    {
+        var catalog = RepositoryCatalog();
+        var procedureRoots = new[]
+        {
+            "procedures/game/core",
+            "procedures/campaign",
+            "procedures/quest",
+            "procedures/play"
+        };
+        var mechanicRoots = new[]
+        {
+            "mechanics/game/core",
+            "mechanics/check",
+            "mechanics/change"
+        };
+
+        var procedures = procedureRoots
+            .SelectMany(root => Directory.EnumerateFiles(
+                Path.Combine(catalog, root.Replace('/', Path.DirectorySeparatorChar)),
+                "*.md",
+                SearchOption.AllDirectories))
+            .Order(StringComparer.Ordinal)
+            .Select(path => ProcedureFile.Parse(File.ReadAllText(path), Relative(catalog, path)))
+            .ToArray();
+        var mechanics = mechanicRoots
+            .SelectMany(root => Directory.EnumerateFiles(
+                Path.Combine(catalog, root.Replace('/', Path.DirectorySeparatorChar)),
+                "*.md",
+                SearchOption.AllDirectories))
+            .Order(StringComparer.Ordinal)
+            .Select(path => MechanicFile.Parse(
+                File.ReadAllText(path),
+                Relative(catalog, path),
+                File.ReadAllText(Path.ChangeExtension(path, ".js"))))
+            .ToArray();
+
+        Assert.Equal(20, procedures.Length);
+        Assert.Equal(14, mechanics.Length);
+        var records = procedures.Select(value => (value.Id, value.Category, value.Name, value.Description))
+            .Concat(mechanics.Select(value => (value.Id, value.Category, value.Name, value.Description)))
+            .ToArray();
+        Assert.Equal(records.Length, records.Select(record => record.Id).Distinct(StringComparer.Ordinal).Count());
+        Assert.All(records, record =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(record.Name), record.Id);
+            Assert.False(string.IsNullOrWhiteSpace(record.Description), record.Id);
+            var logicalPath = CatalogLayout.CategoryDirectory(record.Category);
+            Assert.Equal(record.Category, logicalPath.Replace('/', '.'));
+            Assert.DoesNotContain('\\', logicalPath);
+        });
+    }
+
+    [Fact]
+    public void Ratified_dnd2024_mechanics_need_no_structural_compatibility_projections()
+    {
+        var catalog = RepositoryCatalog();
+        var mechanicRoots = new[]
+        {
+            "mechanics/game/core",
+            "mechanics/check",
+            "mechanics/change"
+        };
+        var mechanics = mechanicRoots
+            .SelectMany(root => Directory.EnumerateFiles(
+                Path.Combine(catalog, root.Replace('/', Path.DirectorySeparatorChar)),
+                "*.md",
+                SearchOption.AllDirectories))
+            .Order(StringComparer.Ordinal)
+            .Select(path => MechanicFile.Parse(
+                File.ReadAllText(path),
+                Relative(catalog, path),
+                File.ReadAllText(Path.ChangeExtension(path, ".js"))))
+            .ToArray();
+
+        Assert.Equal(14, mechanics.Length);
+        var requirements = mechanics
+            .Select(mechanic => (mechanic.Id, Parsed: MechanicRequirements.Parse(mechanic.Requirements)))
+            .ToArray();
+        var supportedRequirementProperties = new HashSet<string>(["roles", "event", "children"], StringComparer.Ordinal);
+        foreach (var mechanic in mechanics)
+        {
+            using var document = JsonDocument.Parse(mechanic.Requirements);
+            Assert.All(document.RootElement.EnumerateObject(), property =>
+                Assert.Contains(property.Name, supportedRequirementProperties));
+        }
+
+        var componentDirectory = Path.Combine(catalog, "components");
+        var adoptedComponentIds = Directory.EnumerateFiles(componentDirectory, "*.schema.json")
+            .Select(Path.GetFileName)
+            .Where(name => name is not null &&
+                (name.StartsWith("game.core.", StringComparison.Ordinal) ||
+                 string.Equals(name, "stats.schema.json", StringComparison.Ordinal)))
+            .Select(name => name![..^".schema.json".Length])
+            .ToHashSet(StringComparer.Ordinal);
+        Assert.Equal(33, adoptedComponentIds.Count);
+
+        var requiredComponentIds = requirements
+            .SelectMany(requirement => requirement.Parsed.AllComponentIds())
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        Assert.NotEmpty(requiredComponentIds);
+        Assert.All(requiredComponentIds, componentId =>
+            Assert.Contains(componentId, adoptedComponentIds));
+
+        var projectionDirectory = Path.Combine(catalog, "projections");
+        Assert.False(Directory.Exists(projectionDirectory) &&
+            Directory.EnumerateFiles(projectionDirectory, "*", SearchOption.AllDirectories).Any());
+    }
+
     private static IReadOnlyDictionary<string, string> Snapshot(string root) =>
         Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
             .OrderBy(path => path, StringComparer.Ordinal)
@@ -82,6 +196,9 @@ public sealed class CatalogValidationTests
                 StringComparer.Ordinal);
 
     private static string RepositoryCatalog() => Path.Combine(RepositoryRoot(), "catalog");
+
+    private static string Relative(string root, string path) =>
+        Path.GetRelativePath(root, path).Replace(Path.DirectorySeparatorChar, '/');
 
     private static string RepositoryRoot()
     {

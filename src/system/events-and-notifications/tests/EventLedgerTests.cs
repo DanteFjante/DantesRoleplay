@@ -373,6 +373,45 @@ public sealed class EventLedgerTests : IDisposable
         Assert.Single(await ledger.FindAsync(limit: 100_000));
     }
 
+    [Fact]
+    public async Task Recent_history_has_a_total_newest_first_order_and_a_non_repeating_cursor()
+    {
+        await using var db = await WorldAsync();
+        var timestamp = DateTime.UtcNow;
+        db.Events.AddRange(
+            Event("a", timestamp, 0, "one"),
+            Event("b", timestamp, 1, "two"),
+            Event("c", timestamp.AddSeconds(1), 0, "three"));
+        await db.SaveChangesAsync();
+        var ledger = new EventLedger(db);
+
+        var first = await ledger.ListRecentAsync(new EventHistoryQuery(Limit: 2));
+        var second = await ledger.ListRecentAsync(new EventHistoryQuery(Before: first.NextCursor, Limit: 2));
+
+        Assert.Equal(["c", "b"], first.Events.Select(@event => @event.Id));
+        Assert.NotNull(first.NextCursor);
+        Assert.Equal(["a"], second.Events.Select(@event => @event.Id));
+        Assert.Null(second.NextCursor);
+    }
+
+    [Fact]
+    public async Task Recent_history_filters_on_indexed_effect_facts()
+    {
+        await using var db = await WorldAsync();
+        var timestamp = DateTime.UtcNow;
+        db.Events.AddRange(
+            Event("create-one", timestamp, 0, "one", "world.entity.created", "operation-one"),
+            Event("create-two", timestamp.AddSeconds(1), 0, "two", "world.entity.created", "operation-two"),
+            Event("delete-two", timestamp.AddSeconds(2), 0, "two", "world.entity.deleted", "operation-two"));
+        await db.SaveChangesAsync();
+        var ledger = new EventLedger(db);
+
+        Assert.Single((await ledger.ListRecentAsync(new EventHistoryQuery(EntityId: "one"))).Events);
+        Assert.Equal(["delete-two", "create-two"], (await ledger.ListRecentAsync(
+            new EventHistoryQuery(RootOperationId: "operation-two"))).Events.Select(@event => @event.Id));
+        Assert.Single((await ledger.ListRecentAsync(new EventHistoryQuery(TypeId: "world.entity.deleted"))).Events);
+    }
+
     /// <summary>
     /// The nine structural types ship with the kernel, not only with the catalog.
     ///
@@ -453,6 +492,26 @@ public sealed class EventLedgerTests : IDisposable
         Assert.NotNull(detail);
         return detail;
     }
+
+    private static EventRecord Event(
+        string id,
+        DateTime timestamp,
+        int sequence,
+        string entityId,
+        string type = "world.entity.created",
+        string rootOperationId = "operation") => new()
+    {
+        Id = id,
+        TypeId = type,
+        TypeVersion = 1,
+        Scope = "test",
+        PayloadJson = "{}",
+        Timestamp = timestamp,
+        CorrelationId = rootOperationId,
+        RootOperationId = rootOperationId,
+        Sequence = sequence,
+        Entities = [new EventEntity { EventId = id, EntityId = entityId, Ordinal = 0 }]
+    };
 
     private static async Task SeedDenyingGuardAsync(DantesRoleplayDbContext db)
     {

@@ -37,6 +37,42 @@ namespace DantesRoleplay.Web.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("DantesRoleplay.Web.Pages.WebPageAsset", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(127)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("PageRevisionId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(240)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PageRevisionId", "Path")
+                        .IsUnique();
+
+                    b.ToTable("web_page_asset", (string)null);
+                });
+
             modelBuilder.Entity("DantesRoleplay.Web.Pages.WebPageRevision", b =>
                 {
                     b.Property<long>("Id")
@@ -69,6 +105,17 @@ namespace DantesRoleplay.Web.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("DantesRoleplay.Web.Pages.WebPageAsset", b =>
+                {
+                    b.HasOne("DantesRoleplay.Web.Pages.WebPageRevision", "PageRevision")
+                        .WithMany("Assets")
+                        .HasForeignKey("PageRevisionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PageRevision");
+                });
+
             modelBuilder.Entity("DantesRoleplay.Web.Pages.WebPageRevision", b =>
                 {
                     b.HasOne("DantesRoleplay.Web.Pages.WebPage", "Page")
@@ -83,6 +130,11 @@ namespace DantesRoleplay.Web.Persistence.Migrations
             modelBuilder.Entity("DantesRoleplay.Web.Pages.WebPage", b =>
                 {
                     b.Navigation("Revisions");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Web.Pages.WebPageRevision", b =>
+                {
+                    b.Navigation("Assets");
                 });
 #pragma warning restore 612, 618
         }

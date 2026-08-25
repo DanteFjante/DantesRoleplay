@@ -103,6 +103,11 @@ public sealed class OllamaStructuredCompletionProvider(HttpClient http, OllamaCo
                 "LOCAL_MODEL_TIMEOUT", "Ollama did not answer before the configured timeout.", stopwatch.ElapsedMilliseconds);
         }
         catch (OperationCanceledException) { throw; }
+        catch (LocalModelSaturatedException)
+        {
+            return StructuredCompletionResult.Failure(
+                "LOCAL_MODEL_SATURATED", "The local model request queue is full.", stopwatch.ElapsedMilliseconds);
+        }
         catch (HttpRequestException exception)
         {
             return StructuredCompletionResult.Failure(
@@ -232,6 +237,7 @@ public sealed class OllamaStructuredCompletionProvider(HttpClient http, OllamaCo
 
     private sealed class PriorityLimiter(int maximum)
     {
+        private const int MaximumQueuedRequests = 32;
         private readonly object _sync = new();
         private readonly Queue<TaskCompletionSource<Lease>> _interactive = new();
         private readonly Queue<TaskCompletionSource<Lease>> _background = new();
@@ -246,6 +252,8 @@ public sealed class OllamaStructuredCompletionProvider(HttpClient http, OllamaCo
                     _active++;
                     return ValueTask.FromResult(new Lease(this));
                 }
+                if (_interactive.Count + _background.Count >= MaximumQueuedRequests)
+                    throw new LocalModelSaturatedException();
                 var completion = new TaskCompletionSource<Lease>(TaskCreationOptions.RunContinuationsAsynchronously);
                 (priority == LocalModelPriority.Interactive ? _interactive : _background).Enqueue(completion);
                 if (cancellationToken.CanBeCanceled)
@@ -280,4 +288,6 @@ public sealed class OllamaStructuredCompletionProvider(HttpClient http, OllamaCo
             }
         }
     }
+
+    private sealed class LocalModelSaturatedException : Exception { }
 }

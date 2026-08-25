@@ -44,6 +44,23 @@ For every slice:
   mutation. Never accept a caller/model claim that validation succeeded.
 - Treat binary/large content as an external resource reference, not an ECS serialization escape.
 
+### Dependency-aware projection boundary
+
+- Application-owned immutable projection definitions declare exact component type versions and
+  RFC 6901 JSON Pointer fields, exact output schema/version, and any projection dependencies.
+- Validate the complete graph at application preview: sources/paths exist, target fields are
+  unique, cross-application edges are explicit, bounds hold, and cycles are rejected.
+- A structural mapper may select/copy/rename declared values only. Arithmetic, coercion, defaults,
+  conditions, aggregation, and game meaning belong to sandboxed application mechanics.
+- Materialize one stable topological plan, deduplicate source rows, perform bounded batched reads,
+  validate/freeze every output, and give consumers no query/store capability.
+- Canonical component instances remain state authority. Derived results are virtual by default;
+  optional caches are disposable and keyed by every source/application/projection/auth revision.
+- Maintain forward and reverse dependency edges. Schema/mapping changes produce an impact report;
+  runtime source changes invalidate intersecting dependents conservatively and deterministically.
+- Do not parse JavaScript to infer dependencies. Legacy whole-component declarations remain
+  conservative whole-component reads until explicitly migrated.
+
 ### Version and migration boundary
 
 - A changed application/component schema appends an immutable version and content hash.
@@ -68,6 +85,21 @@ For every slice:
   `system.*`.
 - A rescan/reorder/removal produces a candidate application revision; it never silently mutates the
   active application.
+
+### Catalog navigation boundary
+
+- Deterministic browse/search/inspect is mandatory and must not depend on vectors or a local model.
+- Catalog directory nodes have application-authored titles/descriptions and immutable logical
+  paths. Never fabricate descriptions from filenames, model output, or directory names.
+- Resolve overlays before constructing the effective tree. Shadowed/untrusted/unauthorized records
+  never enter ordinary pages or counts.
+- Browse returns breadcrumbs, direct/subtree counts, and only direct children/records for the node.
+- Use bounded opaque cursor pagination tied to application manifest, collection, branch, filters,
+  sort, page size, and last stable key. Never use mutable offsets for the public contract.
+- A stale/tampered cursor fails with a restart call; it never mixes pages from two application
+  revisions. Ordering and lexical ranking are deterministic and tested.
+- Exact inspection rehydrates the authoritative record/version/hash; a search summary is never
+  execution authority.
 
 ### Transaction, protocol, and AI boundary
 
@@ -117,6 +149,12 @@ Every applicable slice proves:
   registry change, state-space upgrade incompatibility, and migration rollback/no-change;
 - shadowed document exclusion from import/search/vector/AI, removal revealing the lower definition
   only after explicit activation, and recipe/proposal invalidation after winner changes;
+- unknown projection/source/path/version, duplicate target mapping, dependency cycle, excessive
+  depth/fan-out, hidden cross-application edge, non-structural mapper operation, stale source
+  revision, intermediate schema failure, cache poisoning/staleness, and deterministic impact report;
+- missing/malformed/overridden catalog-node metadata, inconsistent direct/subtree counts,
+  unauthorized/shadowed result leakage, page-size bounds, cursor tampering/staleness, page
+  gaps/duplicates, deterministic lexical ties, and vector/local-AI-disabled browse/search parity;
 - unauthorized administrative query/commit and absence of raw host paths/hidden application data in
   remote receipts;
 - system-only host resolution, non-game fixture application registration, and no application
@@ -128,8 +166,8 @@ evidence.
 ## Model selection and switch protocol
 
 - Use **Terra High** for a confirmed, bounded slice: contracts, validators, repositories, reviewed
-  migrations, deterministic overlays, schema evaluator integration, ECS ports, parity tests, and
-  mechanical protocol wiring.
+  migrations, deterministic overlays, schema evaluator integration, ECS/projection ports,
+  catalog navigation/cursors, parity tests, and mechanical protocol wiring.
 - Use **Sol High/Extra High** for Slice 0 semantics, ambiguous legacy ownership, migration/schema
   security review, administrative authorization/public kinds, and final independence acceptance.
 
@@ -143,7 +181,9 @@ Switch from Terra to Sol before continuing if:
 6. application activation and state-space upgrade cannot remain separate;
 7. a public kind/migration/authorization meaning exceeds the active slice;
 8. transaction/replay parity conflicts with the proposed ECS seam; or
-9. any semantic choice would have to be invented rather than read from confirmation/tests.
+9. a projection mapping requires rule meaning or a cache could become state authority;
+10. catalog traversal cannot remain complete/deterministic with vectors and local AI disabled; or
+11. any semantic choice would have to be invented rather than read from confirmation/tests.
 
 The handoff includes only the active slice/stop point, confirmed/open decisions, changed/unrelated
 files, focused evidence, owner/version assumptions, and the smallest question for Sol.
@@ -169,6 +209,15 @@ upgrades explicit. Register existing allowed path/glob sources—do not expose a
 creation. Resolve one trust-aware overlay winner before import/search/AI; ties fail and shadowed
 records never execute.
 
+Treat automapped components as immutable declared projections over exact schema paths. Structural
+selection/renaming is generic; formulas and decisions remain application mechanics. Build one
+bounded acyclic dependency plan, batch canonical reads, validate/freeze outputs, keep caches
+disposable, and emit deterministic reverse-impact evidence.
+
+Make every effective catalog traversable without AI or vectors. Use authored directory
+descriptions, breadcrumbs/counts, deterministic lexical search, exact inspection, and bounded
+manifest-bound cursors. Stale cursors fail instead of mixing revisions.
+
 Write focused failure/no-change tests first, use apply_patch, run the active acceptance commands,
 write one receipt/update, and stop. Do not implement sibling slices or invent a missing ID,
 migration, public kind, ownership, or authorization rule.
@@ -179,8 +228,10 @@ migration, public kind, ownership, or authorization rule.
 ```text
 Review the active application-kernel slice at its named Sol gate. Verify system/application/state-
 space ownership, any-JSON safety, immutable schema/version semantics, legacy mapping, source trust
-and deterministic overlay authority, activation versus state migration, transaction/replay parity,
-administrative authorization/redaction, public compatibility, zero-app independence, and the local-
-AI boundary against the master plan and current code/tests. Return concrete blocking findings and
-the smallest required decision or patch. Accept only with all named evidence and the slice stop gate.
+and deterministic overlay authority, derived-projection DAG/impact/cache boundaries, deterministic
+catalog traversal without vectors/local AI, activation versus state migration, transaction/replay
+parity, administrative authorization/redaction, public compatibility, zero-app independence, and
+the local-AI boundary against the master plan and current code/tests. Return concrete blocking
+findings and the smallest required decision or patch. Accept only with all named evidence and the
+slice stop gate.
 ```

@@ -2,16 +2,16 @@
 
 > **D&D implementation reference:** When this work includes D&D 2024 mechanics, inspect [Foundry VTT dnd5e](https://github.com/foundryvtt/dnd5e) before designing or coding. Use it as a licensed engineering reference—not a direct dependency or rules authority—while retaining the exact `source.dnd2024.srd-5.2.1` locator and all applicable MIT, CC-BY, and asset-license notices for any reused material.
 
-Status: **Planned and intentionally deferred for the playable-prototype phase. No implementation
-slice is authorised until the identity-provider and shared authorization-boundary decisions are
-confirmed.**
-Last updated: 2026-08-21
+Status: **Private-host E9-0/Slice 1 plus loopback MCP registry read/write parity are accepted; other MCP writes,
+multi-user identity, persistent authorization, and game consumers remain planned.**
+Last updated: 2026-08-24
 
 ## Execution rule
 
-This is planning only. E9 is not needed for local gameplay or the local E10 feedback loop, and is
-deferred while playable game development is the priority. Security semantics need a human-selected
-identity-provider and authorization boundary before implementation. A later pass must re-read `procedure.system.modify`, relevant
+General multi-user E9 remains planning-only. The accepted
+[private-operator decision](E9-0-PRIVATE-OPERATOR-DECISION.md) and
+[Slice 1 receipt](E9-SLICE-1-RECEIPT.md) cover only the selected local/Tailscale web profile.
+A later transport or consumer pass must re-read `procedure.system.modify`, relevant
 transport/command/query contracts, audit/privacy requirements, Campaign authority plans, and CH14;
 then implement one reviewed slice with deny-by-default and transport-parity tests. It must stop on
 any ambiguous principal, trust source, or recovery authority.
@@ -48,11 +48,15 @@ security/product boundary, so a catalog-only placeholder would create false auth
 ## Dependency graph
 
 ~~~text
-E9 trusted principal and authorization hook                          [blocked parent]
-├─ identity-provider selection and trusted request context           [external missing decision]
-├─ shared policy/interceptor boundary                                 [missing after provider decision]
-├─ principal propagation through MCP/HTTP/shared runners             [blocked]
-├─ denial/audit/recovery semantics                                    [blocked]
+E9 trusted principal and authorization hook                          [partially accepted; private web]
+├─ private local/Tailscale provider decision                          [accepted; E9-0]
+├─ shared private-operator policy/interceptor boundary                [accepted; Slice 1]
+├─ principal propagation through private web                          [accepted; Slice 1]
+├─ loopback MCP administrative read propagation                       [accepted; application Slice 10B]
+├─ loopback MCP registry-write propagation                            [accepted; application Slice 10C]
+├─ other MCP write/CLI/background transport parity                    [planned]
+├─ denial/recovery and bounded evidence contract                      [accepted; Slice 1]
+├─ persistent decision audit                                          [planned if required by a consumer]
 ├─ campaign GM policy consumer                                       [blocked]
 ├─ F38 social adjudication consumer                                  [blocked]
 └─ CH14 player-control consumer                                      [blocked]
@@ -164,8 +168,8 @@ GM role, add a control relationship, expose user/account operations, or migrate 
 
 | Slice | Starts only when | Exit gate |
 | --- | --- | --- |
-| 1. Trusted context and deny-by-default hook | Required decision and `procedure.system.modify` confirmation | One adapter passes canonical authenticated/unauthenticated context to shared policy; missing/invalid context denies before application. |
-| 2. Transport/audit parity | Slice 1 plus every production adapter enumerated in the decision record | Every production transport makes the same allow/deny decision and exposes identical safe recovery/audit evidence. |
+| 1. Trusted context and deny-by-default hook | **Accepted for private web 2026-08-24** — [decision](E9-0-PRIVATE-OPERATOR-DECISION.md), [receipt](E9-SLICE-1-RECEIPT.md) | Local/Tailscale web adapters pass pseudonymous authenticated/unauthenticated context to one policy; missing/invalid context denies before endpoint logic. |
+| 2. Transport/audit parity | **Loopback MCP registry read/write subset accepted in application Slices 10B–10C**; other writes and any later CLI/background consumer remain planned | Every selected production adapter makes the same allow/deny decision and exposes identical safe recovery/audit evidence. |
 | 3. Consumer policies | Slice 2 plus each consumer plan | One campaign GM capability, F38 disposition route, or CH14 grant path enforces its declared scope through the one hook. |
 
 ## Slice 2 — all-transport parity and recovery proof

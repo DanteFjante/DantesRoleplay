@@ -20,7 +20,25 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Retained compatibility sources for the former game host. They are deliberately not
+         compiled by the generic server until an application adapter owns their dependencies. -->
+    <Compile Remove="DevelopmentKnowledgeAudience.cs" />
+    <Compile Remove="KnowledgeBackgroundWorker.cs" />
+    <Compile Remove="StoryPlanWorker.cs" />
+    <Compile Remove="Tools\CampaignTools.cs" />
+    <Compile Remove="Tools\CommitTool.cs" />
+    <Compile Remove="Tools\ItineraryAdvanceTools.cs" />
+    <Compile Remove="Tools\JourneyPlanTools.cs" />
+    <Compile Remove="Tools\KnowledgeTools.cs" />
+    <Compile Remove="Tools\ModeAwareItineraryTools.cs" />
+    <Compile Remove="Tools\QuestTools.cs" />
+    <Compile Remove="Tools\StoryPlanTools.cs" />
+    <Compile Remove="Tools\VerbSurface.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\DantesRoleplay.DataAccess\DantesRoleplay.DataAccess.csproj" />
+    <ProjectReference Include="..\src\system\local-ai\DantesRoleplay.LocalAI\DantesRoleplay.LocalAI.csproj" />
     <ProjectReference Include="..\src\system\web-interface\DantesRoleplay.Web\DantesRoleplay.Web.csproj" />
 
     <!-- The JavaScript sandbox. The only dependency in the solution that executes code it did

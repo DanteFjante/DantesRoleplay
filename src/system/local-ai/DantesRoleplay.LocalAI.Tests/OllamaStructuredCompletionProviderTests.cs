@@ -101,6 +101,42 @@ public sealed class OllamaStructuredCompletionProviderTests
     }
 
     [Fact]
+    public async Task Full_request_queue_fails_closed_as_saturated()
+    {
+        var firstStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseFirst = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handler = ValidHandler(async request =>
+        {
+            using var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync());
+            var value = body.RootElement.GetProperty("messages")[1].GetProperty("content").GetString();
+            if (value == "first")
+            {
+                firstStarted.SetResult();
+                await releaseFirst.Task;
+            }
+            return Chat("{\"value\":\"answer\"}");
+        });
+        var provider = Provider(handler);
+        Assert.True((await provider.CheckAsync()).Ready);
+        using var cancellation = new CancellationTokenSource();
+
+        var first = provider.CompleteAsync(Request("first"));
+        await firstStarted.Task;
+        var queued = Enumerable.Range(0, 32)
+            .Select(index => provider.CompleteAsync(Request($"queued-{index}"), cancellation.Token))
+            .ToArray();
+
+        var saturated = await provider.CompleteAsync(Request("overflow"));
+
+        Assert.False(saturated.Ok);
+        Assert.Equal("LOCAL_MODEL_SATURATED", saturated.ErrorCode);
+        cancellation.Cancel();
+        releaseFirst.SetResult();
+        Assert.True((await first).Ok);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await Task.WhenAll(queued));
+    }
+
+    [Fact]
     public async Task Live_qwen3_8b_returns_schema_valid_no_tools_output_when_enabled()
     {
         if (!string.Equals(

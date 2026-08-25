@@ -6,6 +6,11 @@ governs: commit(kind: "quest") with closed quest lifecycle payloads
 status: active
 ---
 
+## Description
+
+Apply one validated quest or objective lifecycle transition atomically and return the updated
+quest state.
+
 ## Instructions
 
 1. Read the quest entity and use its actual root status as `expectedQuestStatus`.

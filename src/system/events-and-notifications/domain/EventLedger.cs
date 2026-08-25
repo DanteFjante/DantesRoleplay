@@ -115,6 +115,22 @@ public sealed record EventDetail(
     /// <summary>Empty unless a rule declared this event; then, the execution that did.</summary>
     string ProducerExecutionId = "");
 
+/// <summary>The complete key of one newest-first event-history page boundary.</summary>
+public sealed record EventHistoryCursor(DateTime Timestamp, int Sequence, string Id);
+
+/// <summary>Closed, indexed inputs for a newest-first event-history page.</summary>
+public sealed record EventHistoryQuery(
+    string? TypeId = null,
+    string? EntityId = null,
+    string? RootOperationId = null,
+    EventHistoryCursor? Before = null,
+    int Limit = 25);
+
+/// <summary>A newest-first page with the exact key needed to continue toward older events.</summary>
+public sealed record EventHistoryPage(
+    IReadOnlyList<EventSummary> Events,
+    EventHistoryCursor? NextCursor);
+
 /// <summary>
 /// Reads and appends the structural event ledger.
 ///
@@ -124,6 +140,14 @@ public sealed record EventDetail(
 /// </summary>
 public interface IEventLedger
 {
+    /// <summary>
+    /// Lists committed events newest-first. The cursor is a complete ordering key, so a continuation
+    /// cannot repeat or skip rows merely because two accepted events share a timestamp.
+    /// </summary>
+    Task<EventHistoryPage> ListRecentAsync(
+        EventHistoryQuery query,
+        CancellationToken cancellationToken = default);
+
     /// <param name="afterSequence">Exclusive lower bound on sequence, for paging through a chain.</param>
     /// <param name="from">Inclusive UTC lower bound on timestamp.</param>
     /// <param name="to">Exclusive UTC upper bound on timestamp.</param>

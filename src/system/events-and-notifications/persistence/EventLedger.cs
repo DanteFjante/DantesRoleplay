@@ -143,6 +143,68 @@ public sealed class EventLedger(DantesRoleplayDbContext db) : IEventLedger
                 row.ProducerExecutionId);
     }
 
+    public async Task<EventHistoryPage> ListRecentAsync(
+        EventHistoryQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        var limit = Math.Clamp(query.Limit, 1, MaxLimit);
+        var rows = _db.Events.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(query.TypeId))
+        {
+            rows = rows.Where(e => e.TypeId == query.TypeId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.EntityId))
+        {
+            rows = rows.Where(e => e.Entities.Any(x => x.EntityId == query.EntityId));
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.RootOperationId))
+        {
+            rows = rows.Where(e => e.RootOperationId == query.RootOperationId);
+        }
+
+        if (query.Before is { } before)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(before.Id);
+            rows = rows.Where(e =>
+                e.Timestamp < before.Timestamp ||
+                (e.Timestamp == before.Timestamp && e.Sequence < before.Sequence) ||
+                (e.Timestamp == before.Timestamp && e.Sequence == before.Sequence &&
+                    string.Compare(e.Id, before.Id) < 0));
+        }
+
+        var page = await rows
+            .OrderByDescending(e => e.Timestamp)
+            .ThenByDescending(e => e.Sequence)
+            .ThenByDescending(e => e.Id)
+            .Take(limit + 1)
+            .Select(e => new EventSummary(
+                e.Id,
+                e.TypeId,
+                e.TypeVersion,
+                e.Scope,
+                e.Timestamp,
+                e.CorrelationId,
+                e.CausationId,
+                e.Depth,
+                e.Sequence,
+                e.RootOperationId,
+                e.Entities.OrderBy(x => x.Ordinal).Select(x => x.EntityId).ToList()))
+            .ToListAsync(cancellationToken);
+
+        var hasMore = page.Count > limit;
+        var events = hasMore ? page.Take(limit).ToList() : page;
+        var last = events.LastOrDefault();
+        return new EventHistoryPage(
+            events,
+            hasMore && last is not null
+                ? new EventHistoryCursor(last.Timestamp, last.Sequence, last.Id)
+                : null);
+    }
+
     public async Task<IReadOnlyList<EventSummary>> FindAsync(
         string? correlationId = null,
         string? causationId = null,

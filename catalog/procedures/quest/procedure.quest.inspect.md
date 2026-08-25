@@ -6,6 +6,11 @@ governs: query(kind: "quest-summary")
 status: active
 ---
 
+## Description
+
+Return a bounded trusted-host summary of one active campaign-scoped quest, including its
+objectives, evidence links, and recent status transitions.
+
 ## Instructions
 
 1. Supply one active quest id. The reader verifies the complete Q1–Q2 campaign, arc, chapter,

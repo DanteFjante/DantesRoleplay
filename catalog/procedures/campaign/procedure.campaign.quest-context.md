@@ -6,6 +6,11 @@ governs: commit(kind: "campaign") operation attach-quest-context
 status: active
 ---
 
+## Description
+
+Attach an active quest to an existing campaign arc and chapter as continuity context without
+changing quest or campaign lifecycle state.
+
 ## Instructions
 
 1. Read the active quest with `query(kind: "quest-summary", id: "quest.*")` and the campaign with

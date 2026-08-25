@@ -1,37 +1,853 @@
 using System.Text;
+using System.Text.Json;
+using DantesRoleplay.Authorization;
 using DantesRoleplay.Web.Data;
+using DantesRoleplay.Web.Live;
 using DantesRoleplay.Web.Pages;
 using DantesRoleplay.Web.Persistence;
+using DantesRoleplay.Web.Security;
+using DantesRoleplay.Assistants;
+using DantesRoleplay.CodexBridge;
+using DantesRoleplay.Applications;
+using DantesRoleplay.Interactions;
+using DantesRoleplay.Web.Interactions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace DantesRoleplay.Web.Hosting;
 
 public static class WebInterfaceEndpoints
 {
+    private const string HomePageId = "home";
+
     public static IEndpointRouteBuilder MapDantesRoleplayWeb(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapPut("/api/pages/{id}", UploadPageAsync);
-        endpoints.MapGet("/ui/{id}", GetPageAsync);
-        endpoints.MapGet("/api/data/entity/{id}", GetEntityDataAsync);
-        endpoints.MapGet("/api/data/{componentType}/{entityId}", GetComponentDataAsync);
+        Secure(endpoints.MapPut("/api/pages/{id}", UploadPageAsync), WebInterfaceSecurity.UploadRateLimitPolicy);
+        Secure(endpoints.MapPut("/api/pages/{id}/bundle", UploadBundleAsync), WebInterfaceSecurity.UploadRateLimitPolicy);
+        Secure(endpoints.MapGet("/", GetHomePageAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/ui/{id}", GetPageAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/ui/{id}/index.html", GetPageAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/ui/{id}/assets/{**path}", GetAssetAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/api/data/entity/{id}", GetEntityDataAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/api/data/{componentType}/{entityId}", GetComponentDataAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/api/changes", StreamChangesAsync), WebInterfaceSecurity.StreamRateLimitPolicy);
+        Secure(endpoints.MapGet("/api/session", GetSession), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/components/application-conversation.js", GetApplicationConversationElement), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/api/applications/{applicationId}/conversations/{conversationId}", GetApplicationConversation), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapPost("/api/applications/{applicationId}/conversations", CreateApplicationConversationAsync), WebInterfaceSecurity.UploadRateLimitPolicy);
+        Secure(endpoints.MapPost("/api/applications/{applicationId}/conversations/{conversationId}/turns", SendApplicationConversationTurnAsync), WebInterfaceSecurity.UploadRateLimitPolicy);
+        Secure(endpoints.MapPost("/api/applications/{applicationId}/conversations/{conversationId}/execute", ExecuteApplicationConversationAsync), WebInterfaceSecurity.UploadRateLimitPolicy);
+        endpoints.MapDantesRoleplayControlGet("/status", GetControlCenterStatus);
+        endpoints.MapDantesRoleplayControlGet("/settings", GetControlSettings);
+        endpoints.MapDantesRoleplayControlGet("/settings/{key}", GetControlSetting);
+        endpoints.MapDantesRoleplayControlGet("/settings/{key}/versions", GetControlSettingVersionsAsync);
+        endpoints.MapDantesRoleplayControlPut(
+            "/settings/{key}", PrivateOperatorCapability.ControlSettingsWrite, UpdateControlSettingAsync);
+        endpoints.MapDantesRoleplayControlPost(
+            "/settings/{key}/reset", PrivateOperatorCapability.ControlSettingsWrite, ResetControlSettingAsync);
+        endpoints.MapDantesRoleplayControlPost(
+            "/settings/{key}/rollback", PrivateOperatorCapability.ControlSettingsWrite, RollbackControlSettingAsync);
+        endpoints.MapDantesRoleplayControlGet("/assistants/local/status", GetLocalAssistantStatusAsync);
+        endpoints.MapDantesRoleplayControlGet("/assistants/codex/status", GetCodexAssistantStatusAsync);
+        endpoints.MapDantesRoleplayControlGet("/conversations", GetAssistantConversationsAsync);
+        endpoints.MapDantesRoleplayControlGet("/conversations/{conversationId}", GetAssistantConversationAsync);
+        endpoints.MapDantesRoleplayControlPost(
+            "/conversations", PrivateOperatorCapability.ControlAiMessage, CreateAssistantConversationAsync);
+        endpoints.MapDantesRoleplayControlPost(
+            "/conversations/{conversationId}/turns", PrivateOperatorCapability.ControlAiMessage, SendAssistantTurnAsync);
+        endpoints.MapDantesRoleplayControlPost(
+            "/conversations/{conversationId}/turns/{turnId}/cancel",
+            PrivateOperatorCapability.ControlAiMessage, CancelCodexTurnAsync);
+        endpoints.MapDantesRoleplayControlPost(
+            "/conversations/{conversationId}/turns/{turnId}/approvals/{approvalId}",
+            PrivateOperatorCapability.ControlCodexApprove, DecideCodexApprovalAsync);
+        endpoints.MapDantesRoleplayControlGet("/effects", GetCommittedEffectsAsync);
+        endpoints.MapDantesRoleplayControlGet("/effects/{eventId}", GetCommittedEffectAsync);
+        endpoints.MapDantesRoleplayControlGet("/structure/applications", GetApplications);
+        endpoints.MapDantesRoleplayControlGet("/structure/applications/{applicationId}", GetApplication);
+        endpoints.MapDantesRoleplayControlGet("/structure/applications/{applicationId}/state-spaces", GetStateSpaces);
+        endpoints.MapDantesRoleplayControlGet("/structure/applications/{applicationId}/component-types", GetComponentTypes);
+        endpoints.MapDantesRoleplayControlGet("/structure/component-types/{qualifiedId}/versions/{version:int}", GetComponentType);
+        endpoints.MapDantesRoleplayControlGet("/structure/state-spaces/{stateSpaceId}/entities", GetEntitiesAsync);
+        endpoints.MapDantesRoleplayControlGet("/structure/state-spaces/{stateSpaceId}/entities/{entityId}", GetEntityAsync);
+        endpoints.MapDantesRoleplayControlGet("/structure/state-spaces/{stateSpaceId}/entities/{entityId}/components", GetComponentsAsync);
+        endpoints.MapDantesRoleplayControlGet("/structure/state-spaces/{stateSpaceId}/entities/{entityId}/components/{qualifiedTypeId}", GetComponentAsync);
+        endpoints.MapDantesRoleplayControlGet("/structure/applications/{applicationId}/catalog", GetCatalog);
+        endpoints.MapDantesRoleplayControlGet("/structure/applications/{applicationId}/catalog/browse", BrowseCatalog);
+        endpoints.MapDantesRoleplayControlGet("/structure/applications/{applicationId}/catalog/search", SearchCatalog);
+        endpoints.MapDantesRoleplayControlGet("/structure/applications/{applicationId}/catalog/records/{qualifiedId}", InspectCatalog);
+        endpoints.MapDantesRoleplayControlGet("/pages", GetControlPagesAsync);
+        endpoints.MapDantesRoleplayControlGet("/pages/{pageId}", GetControlPageAsync);
+        endpoints.MapDantesRoleplayControlGet("/pages/{pageId}/revisions", GetControlPageRevisionsAsync);
+        endpoints.MapDantesRoleplayControlGet("/pages/{pageId}/revisions/{revision:int}", GetControlPageRevisionAsync);
+        endpoints.MapDantesRoleplayControlGet("/pages/{pageId}/revisions/{revision:int}/bundle", ExportControlPageRevisionAsync);
+        endpoints.MapDantesRoleplayControlGet("/pages/{pageId}/revisions/{revision:int}/preview/index.html", PreviewControlPageRevisionAsync);
+        endpoints.MapDantesRoleplayControlGet("/pages/{pageId}/revisions/{revision:int}/preview/assets/{**path}", PreviewControlPageAssetAsync);
+        endpoints.MapDantesRoleplayControlPost(
+            "/pages/{pageId}/drafts", PrivateOperatorCapability.ControlPagesWrite, AppendControlPageDraftAsync);
+        endpoints.MapDantesRoleplayControlPut(
+            "/pages/{pageId}/active", PrivateOperatorCapability.ControlPagesWrite, ActivateControlPageRevisionAsync);
         return endpoints;
+    }
+
+    private static RouteHandlerBuilder Secure(RouteHandlerBuilder route, string rateLimitPolicy) =>
+        route
+            .AddEndpointFilter<WebInterfaceSecurityFilter>()
+            .RequireRateLimiting(rateLimitPolicy);
+
+    private static IResult GetSession(HttpContext context)
+    {
+        var tailscale = string.Equals(
+            context.User.Identity?.AuthenticationType,
+            WebAccessPolicy.TailscaleAuthenticationType,
+            StringComparison.Ordinal);
+        return Results.Json(new
+        {
+            accessMode = tailscale ? "tailscale" : "local",
+            login = tailscale ? context.User.Identity?.Name : null
+        });
+    }
+
+    private static IResult GetApplicationConversationElement() => Results.Text(
+        ApplicationConversationElement.Script, "text/javascript; charset=utf-8", Encoding.UTF8);
+
+    private static IResult GetApplicationConversation(
+        string applicationId, string conversationId, HttpContext context,
+        ApplicationConversationService conversations) =>
+        InteractionWeb(() => conversations.Get(InteractionPrincipal(context),
+            ApplicationIdentifier.Parse(applicationId), conversationId));
+
+    private static async Task<IResult> CreateApplicationConversationAsync(
+        string applicationId, HttpContext context, ApplicationConversationService conversations,
+        CancellationToken cancellationToken) =>
+        await InteractionWebAsync(async () => conversations.Create(InteractionPrincipal(context),
+            ApplicationIdentifier.Parse(applicationId),
+            await ReadInteractionBodyAsync<ApplicationConversationCreateRequest>(context, cancellationToken)));
+
+    private static async Task<IResult> SendApplicationConversationTurnAsync(
+        string applicationId, string conversationId, HttpContext context,
+        ApplicationConversationService conversations, CancellationToken cancellationToken) =>
+        await InteractionWebAsync(async () => await conversations.TurnAsync(InteractionPrincipal(context),
+            ApplicationIdentifier.Parse(applicationId), conversationId,
+            await ReadInteractionBodyAsync<ApplicationConversationTurnRequest>(context, cancellationToken),
+            cancellationToken));
+
+    private static async Task<IResult> ExecuteApplicationConversationAsync(
+        string applicationId, string conversationId, HttpContext context,
+        ApplicationConversationService conversations, CancellationToken cancellationToken) =>
+        await InteractionWebAsync(async () => await conversations.ExecuteAsync(InteractionPrincipal(context),
+            ApplicationIdentifier.Parse(applicationId), conversationId,
+            await ReadInteractionBodyAsync<ApplicationConversationExecuteRequest>(context, cancellationToken),
+            cancellationToken));
+
+    private static DantesRoleplay.Authorization.TrustedPrincipalContext InteractionPrincipal(HttpContext context)
+    {
+        var tailscale = string.Equals(context.User.Identity?.AuthenticationType,
+            WebAccessPolicy.TailscaleAuthenticationType, StringComparison.Ordinal);
+        return PrivateOperatorPrincipal.Create(tailscale ? "tailscale-serve" : "local-loopback",
+            tailscale ? context.User.Identity?.Name ?? "tailscale-operator" : "local-operator");
+    }
+
+    private static IResult InteractionWeb<T>(Func<T?> read)
+    {
+        try
+        {
+            var value = read();
+            return value is null ? Results.NotFound() : Results.Json(value);
+        }
+        catch (Exception exception) when (exception is InteractionContractException or ArgumentException)
+        {
+            var code = exception is InteractionContractException contract ? contract.Code : "INTERACTION_REQUEST_INVALID";
+            return Results.Json(new { error = code, message = exception.Message }, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    private static async Task<IResult> InteractionWebAsync<T>(Func<Task<T?>> read)
+    {
+        try
+        {
+            var value = await read();
+            return value is null ? Results.NotFound() : Results.Json(value);
+        }
+        catch (Exception exception) when (exception is InteractionContractException or ArgumentException or JsonException)
+        {
+            var code = exception is InteractionContractException contract ? contract.Code : "INTERACTION_REQUEST_INVALID";
+            return Results.Json(new { error = code, message = exception.Message }, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    private static async Task<T> ReadInteractionBodyAsync<T>(HttpContext context, CancellationToken cancellationToken)
+    {
+        const int maximumBytes = 64 * 1024;
+        if (context.Request.ContentLength > maximumBytes)
+            throw new InteractionContractException("INTERACTION_REQUEST_TOO_LARGE", "The interaction request is too large.");
+        return await context.Request.ReadFromJsonAsync<T>(cancellationToken: cancellationToken)
+            ?? throw new InteractionContractException("INTERACTION_REQUEST_INVALID", "The interaction request body is required.");
+    }
+
+    private static IResult GetControlCenterStatus(HttpContext context)
+    {
+        ControlCenterStatus.ApplyCacheHeaders(context.Response);
+        return Results.Json(ControlCenterStatus.Create(context.User));
+    }
+
+    private static Task<IResult> GetControlSettings(
+        HttpContext context, ControlSettingsExplorer explorer, CancellationToken cancellationToken) =>
+        SettingsAsync(context, async () => (ControlSettingPage?)await explorer.ListAsync(cancellationToken));
+
+    private static Task<IResult> GetControlSetting(
+        string key, HttpContext context, ControlSettingsExplorer explorer, CancellationToken cancellationToken) =>
+        SettingsAsync(context, () => explorer.GetAsync(key, cancellationToken));
+
+    private static Task<IResult> GetControlSettingVersionsAsync(
+        string key, HttpContext context, ControlSettingsExplorer explorer, CancellationToken cancellationToken) =>
+        SettingsAsync(context, async () => (ControlSettingVersionPage?)await explorer.ListVersionsAsync(
+            key, context.Request.Query["beforeVersion"].FirstOrDefault(),
+            context.Request.Query["limit"].FirstOrDefault(), cancellationToken));
+
+    private static Task<IResult> UpdateControlSettingAsync(
+        string key, HttpContext context, ControlSettingsExplorer explorer, CancellationToken cancellationToken) =>
+        SettingsAsync(context, async () => await explorer.UpdateAsync(
+            key, await ControlSettingsExplorer.ReadBodyAsync<ControlSettingUpdateRequest>(context.Request, cancellationToken),
+            SettingActor(context), cancellationToken));
+
+    private static Task<IResult> ResetControlSettingAsync(
+        string key, HttpContext context, ControlSettingsExplorer explorer, CancellationToken cancellationToken) =>
+        SettingsAsync(context, async () => await explorer.ResetAsync(
+            key, await ControlSettingsExplorer.ReadBodyAsync<ControlSettingResetRequest>(context.Request, cancellationToken),
+            SettingActor(context), cancellationToken));
+
+    private static Task<IResult> RollbackControlSettingAsync(
+        string key, HttpContext context, ControlSettingsExplorer explorer, CancellationToken cancellationToken) =>
+        SettingsAsync(context, async () => await explorer.RollbackAsync(
+            key, await ControlSettingsExplorer.ReadBodyAsync<ControlSettingRollbackRequest>(context.Request, cancellationToken),
+            SettingActor(context), cancellationToken));
+
+    private static string SettingActor(HttpContext context) => string.Equals(
+        context.User.Identity?.AuthenticationType, WebAccessPolicy.TailscaleAuthenticationType, StringComparison.Ordinal)
+        ? context.User.Identity?.Name ?? "tailscale-operator"
+        : "local-operator";
+
+    private static async Task<IResult> SettingsAsync<T>(HttpContext context, Func<Task<T?>> read)
+    {
+        ControlCenterStatus.ApplyCacheHeaders(context.Response);
+        try
+        {
+            var value = await read();
+            return value is null ? Results.NotFound() : Results.Json(value);
+        }
+        catch (ControlSettingsException exception)
+        {
+            return Results.Json(
+                new { error = exception.Code, message = exception.Message },
+                statusCode: exception.StatusCode);
+        }
+    }
+
+    private static Task<IResult> GetLocalAssistantStatusAsync(
+        HttpContext context, ControlAssistantExplorer explorer, CancellationToken cancellationToken) =>
+        AssistantAsync(context, async () => (object?)await explorer.StatusAsync(cancellationToken));
+
+    private static Task<IResult> GetCodexAssistantStatusAsync(
+        HttpContext context, ICodexConversationService codex, CancellationToken cancellationToken) =>
+        AssistantAsync(context, async () => (object?)await codex.GetStatusAsync(cancellationToken));
+
+    private static Task<IResult> GetAssistantConversationsAsync(
+        HttpContext context, ControlAssistantExplorer explorer, CancellationToken cancellationToken) =>
+        AssistantAsync(context, async () => (object?)await explorer.ListAsync(
+            AssistantOperatorId(context), context.Request.Query["provider"].FirstOrDefault(),
+            context.Request.Query["cursor"].FirstOrDefault(), context.Request.Query["limit"].FirstOrDefault(),
+            cancellationToken));
+
+    private static Task<IResult> GetAssistantConversationAsync(
+        string conversationId, HttpContext context, ControlAssistantExplorer explorer,
+        CancellationToken cancellationToken) =>
+        AssistantAsync(context, async () => (object?)await explorer.GetAsync(
+            AssistantOperatorId(context), conversationId, cancellationToken));
+
+    private static async Task<IResult> CreateAssistantConversationAsync(
+        HttpContext context, ControlAssistantExplorer explorer, ICodexConversationService codex,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var request = await ControlAssistantExplorer.ReadBodyAsync<AssistantConversationCreate>(
+                context.Request, cancellationToken);
+            if (request.Provider == "codex") return await StreamCodexAsync(
+                context, codex.CreateAsync(AssistantOperatorId(context), request, cancellationToken), cancellationToken);
+            return await AssistantAsync(context, async () => (object?)await explorer.CreateAsync(
+                AssistantOperatorId(context), request, cancellationToken));
+        }
+        catch (Exception exception) when (exception is ControlAssistantException or CodexBridgeException)
+        { return AssistantError(exception); }
+    }
+
+    private static async Task<IResult> SendAssistantTurnAsync(
+        string conversationId, HttpContext context, ControlAssistantExplorer explorer,
+        ICodexConversationService codex, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var request = await ControlAssistantExplorer.ReadBodyAsync<AssistantConversationTurnCreate>(
+                context.Request, cancellationToken);
+            var current = await explorer.GetAsync(AssistantOperatorId(context), conversationId, cancellationToken);
+            if (current is null) return Results.NotFound();
+            if (current.Summary.Provider == "codex") return await StreamCodexAsync(
+                context, codex.SendAsync(AssistantOperatorId(context), conversationId, request, cancellationToken),
+                cancellationToken);
+            return await AssistantAsync(context, async () => (object?)await explorer.SendAsync(
+                AssistantOperatorId(context), conversationId, request, cancellationToken));
+        }
+        catch (Exception exception) when (exception is ControlAssistantException or CodexBridgeException)
+        { return AssistantError(exception); }
+    }
+
+    private static Task<IResult> CancelCodexTurnAsync(
+        string conversationId, string turnId, HttpContext context, ICodexConversationService codex,
+        CancellationToken cancellationToken) =>
+        AssistantAsync(context, async () => (object?)await codex.CancelAsync(
+            AssistantOperatorId(context), conversationId, turnId, cancellationToken));
+
+    private static Task<IResult> DecideCodexApprovalAsync(
+        string conversationId, string turnId, string approvalId,
+        HttpContext context, ICodexConversationService codex, CancellationToken cancellationToken) =>
+        AssistantAsync(context, async () => (object?)await codex.ApproveAsync(
+            AssistantOperatorId(context), conversationId, turnId, approvalId,
+            await ControlAssistantExplorer.ReadBodyAsync<CodexApprovalDecisionInput>(
+                context.Request, cancellationToken), cancellationToken));
+
+    private static async Task<IResult> StreamCodexAsync(
+        HttpContext context, IAsyncEnumerable<CodexConversationEvent> events,
+        CancellationToken cancellationToken)
+    {
+        await using var enumerator = events.GetAsyncEnumerator(cancellationToken);
+        CodexConversationEvent first;
+        try
+        {
+            if (!await enumerator.MoveNextAsync())
+                return Results.Json(new { error = "CODEX_STREAM_EMPTY", message = "Codex produced no stream result." },
+                    statusCode: StatusCodes.Status502BadGateway);
+            first = enumerator.Current;
+        }
+        catch (Exception exception) when (exception is ControlAssistantException or CodexBridgeException or AssistantConversationException)
+        { return AssistantError(exception); }
+
+        ControlCenterStatus.ApplyCacheHeaders(context.Response);
+        context.Features.Get<IHttpResponseBodyFeature>()?.DisableBuffering();
+        context.Response.StatusCode = StatusCodes.Status200OK;
+        context.Response.ContentType = "application/x-ndjson; charset=utf-8";
+        context.Response.Headers.Append("X-Accel-Buffering", "no");
+        try
+        {
+            await WriteCodexEventAsync(context, first, cancellationToken);
+            while (await enumerator.MoveNextAsync())
+                await WriteCodexEventAsync(context, enumerator.Current, cancellationToken);
+        }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested) { }
+        return Results.Empty;
+    }
+
+    private static async Task WriteCodexEventAsync(
+        HttpContext context, CodexConversationEvent item, CancellationToken cancellationToken)
+    {
+        var line = JsonSerializer.Serialize(item, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        if (Encoding.UTF8.GetByteCount(line) > 256 * 1024)
+            throw new InvalidOperationException("The normalized Codex stream event exceeded 256 KiB.");
+        await context.Response.WriteAsync(line + "\n", cancellationToken);
+        await context.Response.Body.FlushAsync(cancellationToken);
+    }
+
+    private static string AssistantOperatorId(HttpContext context)
+    {
+        var tailscale = string.Equals(context.User.Identity?.AuthenticationType,
+            WebAccessPolicy.TailscaleAuthenticationType, StringComparison.Ordinal);
+        return PrivateOperatorPrincipal.Create(
+            tailscale ? "tailscale-serve" : "local-loopback",
+            tailscale ? context.User.Identity?.Name ?? "invalid" : "local-operator").PrincipalId;
+    }
+
+    private static async Task<IResult> AssistantAsync(HttpContext context, Func<Task<object?>> action)
+    {
+        ControlCenterStatus.ApplyCacheHeaders(context.Response);
+        try
+        {
+            var value = await action();
+            return value is null ? Results.NotFound() : Results.Json(value);
+        }
+        catch (ControlAssistantException exception)
+        {
+            return Results.Json(new { error = exception.Code, message = exception.Message }, statusCode: exception.StatusCode);
+        }
+        catch (Exception exception) when (exception is CodexBridgeException or AssistantConversationException)
+        {
+            return AssistantError(exception);
+        }
+    }
+
+    private static IResult AssistantError(Exception exception)
+    {
+        var (code, message) = exception switch
+        {
+            ControlAssistantException value => (value.Code, value.Message),
+            CodexBridgeException value => (value.Code, value.Message),
+            AssistantConversationException value => (value.Code, value.Message),
+            _ => ("ASSISTANT_FAILURE", "The assistant request failed.")
+        };
+        var status = code switch
+        {
+            "ASSISTANT_CONVERSATION_UNKNOWN" or "ASSISTANT_TURN_UNKNOWN" or
+            "CODEX_APPROVAL_UNKNOWN" => StatusCodes.Status404NotFound,
+            "ASSISTANT_IDEMPOTENCY_CONFLICT" or "ASSISTANT_REVISION_STALE" or
+            "ASSISTANT_TURN_ACTIVE" or "ASSISTANT_TURN_NOT_ACTIVE" or
+            "CODEX_THREAD_MISMATCH" or "CODEX_TURN_MISMATCH" or
+            "CODEX_APPROVAL_NOT_PENDING" or "CODEX_APPROVAL_REVISION_STALE" or
+            "CODEX_APPROVAL_EXPIRED" or "CODEX_APPROVAL_NOT_ACCEPTABLE" or
+            "CODEX_APPROVAL_TURN_INACTIVE" or "CODEX_APPROVAL_SESSION_UNKNOWN" or
+            "CODEX_APPROVAL_ALREADY_DISPATCHED" => StatusCodes.Status409Conflict,
+            "CODEX_SERVICE_UNAVAILABLE" or "CODEX_PROCESS_UNAVAILABLE" or
+            "CODEX_VERSION_UNSUPPORTED" or "ASSISTANT_SERVICE_UNAVAILABLE" => StatusCodes.Status503ServiceUnavailable,
+            _ => StatusCodes.Status400BadRequest
+        };
+        return Results.Json(new { error = code, message }, statusCode: status);
+    }
+
+    private static async Task<IResult> GetCommittedEffectsAsync(
+        HttpContext context,
+        CommittedEffectHistory history,
+        CancellationToken cancellationToken)
+    {
+        ControlCenterStatus.ApplyCacheHeaders(context.Response);
+        try
+        {
+            var query = context.Request.Query;
+            var page = await history.ListAsync(
+                query["type"].FirstOrDefault(),
+                query["entityId"].FirstOrDefault(),
+                query["rootOperationId"].FirstOrDefault(),
+                query["cursor"].FirstOrDefault(),
+                query["limit"].FirstOrDefault(),
+                cancellationToken);
+            return Results.Json(page);
+        }
+        catch (CommittedEffectHistoryException exception)
+        {
+            return ControlHistoryError(exception);
+        }
+    }
+
+    private static async Task<IResult> GetCommittedEffectAsync(
+        string eventId,
+        HttpContext context,
+        CommittedEffectHistory history,
+        CancellationToken cancellationToken)
+    {
+        ControlCenterStatus.ApplyCacheHeaders(context.Response);
+        try
+        {
+            var detail = await history.GetAsync(eventId, cancellationToken);
+            if (detail is null) return Results.NotFound();
+            return Results.Json(detail);
+        }
+        catch (CommittedEffectHistoryException exception)
+        {
+            return ControlHistoryError(exception);
+        }
+    }
+
+    private static IResult ControlHistoryError(CommittedEffectHistoryException exception) =>
+        Results.Json(
+            new { error = exception.Code, message = exception.Message },
+            statusCode: exception.StatusCode);
+
+    private static IResult GetApplications(HttpContext context, ControlStructureExplorer explorer) =>
+        Structure(context, () => explorer.ListApplications(
+            context.Request.Query["cursor"].FirstOrDefault(),
+            context.Request.Query["limit"].FirstOrDefault()));
+
+    private static IResult GetApplication(
+        string applicationId, HttpContext context, ControlStructureExplorer explorer) =>
+        Structure(context, () => explorer.GetApplication(applicationId));
+
+    private static IResult GetStateSpaces(
+        string applicationId, HttpContext context, ControlStructureExplorer explorer) =>
+        Structure(context, () => explorer.ListStateSpaces(
+            applicationId,
+            context.Request.Query["cursor"].FirstOrDefault(),
+            context.Request.Query["limit"].FirstOrDefault()));
+
+    private static IResult GetComponentTypes(
+        string applicationId, HttpContext context, ControlStructureExplorer explorer) =>
+        Structure(context, () => explorer.ListComponentTypes(
+            applicationId,
+            context.Request.Query["cursor"].FirstOrDefault(),
+            context.Request.Query["limit"].FirstOrDefault()));
+
+    private static IResult GetComponentType(
+        string qualifiedId, int version, HttpContext context, ControlStructureExplorer explorer) =>
+        Structure(context, () => explorer.GetComponentType(qualifiedId, version));
+
+    private static Task<IResult> GetEntitiesAsync(
+        string stateSpaceId, HttpContext context, ControlStructureExplorer explorer,
+        CancellationToken cancellationToken) =>
+        StructureAsync(context, () => explorer.ListEntitiesAsync(
+            stateSpaceId,
+            context.Request.Query["cursor"].FirstOrDefault(),
+            context.Request.Query["limit"].FirstOrDefault(),
+            cancellationToken));
+
+    private static Task<IResult> GetEntityAsync(
+        string stateSpaceId, string entityId, HttpContext context,
+        ControlStructureExplorer explorer, CancellationToken cancellationToken) =>
+        StructureAsync(context, () => explorer.GetEntityAsync(
+            stateSpaceId, entityId, cancellationToken));
+
+    private static Task<IResult> GetComponentsAsync(
+        string stateSpaceId, string entityId, HttpContext context,
+        ControlStructureExplorer explorer, CancellationToken cancellationToken) =>
+        StructureAsync(context, () => explorer.ListComponentsAsync(
+            stateSpaceId,
+            entityId,
+            context.Request.Query["cursor"].FirstOrDefault(),
+            context.Request.Query["limit"].FirstOrDefault(),
+            cancellationToken));
+
+    private static Task<IResult> GetComponentAsync(
+        string stateSpaceId, string entityId, string qualifiedTypeId, HttpContext context,
+        ControlStructureExplorer explorer, CancellationToken cancellationToken) =>
+        StructureAsync(context, () => explorer.GetComponentAsync(
+            stateSpaceId, entityId, qualifiedTypeId, cancellationToken));
+
+    private static IResult GetCatalog(
+        string applicationId, HttpContext context, ControlStructureExplorer explorer) =>
+        Structure(context, () => explorer.GetCatalog(applicationId));
+
+    private static IResult BrowseCatalog(
+        string applicationId, HttpContext context, ControlStructureExplorer explorer) =>
+        Structure(context, () => explorer.BrowseCatalog(
+            applicationId,
+            context.Request.Query["collection"].FirstOrDefault(),
+            context.Request.Query["branch"].FirstOrDefault(),
+            context.Request.Query["cursor"].FirstOrDefault(),
+            context.Request.Query["limit"].FirstOrDefault()));
+
+    private static IResult SearchCatalog(
+        string applicationId, HttpContext context, ControlStructureExplorer explorer) =>
+        Structure(context, () => explorer.SearchCatalog(
+            applicationId,
+            context.Request.Query["q"].FirstOrDefault(),
+            context.Request.Query["collection"].FirstOrDefault(),
+            context.Request.Query["branch"].FirstOrDefault(),
+            QueryValues(context, "kind"),
+            QueryValues(context, "status"),
+            context.Request.Query["cursor"].FirstOrDefault(),
+            context.Request.Query["limit"].FirstOrDefault()));
+
+    private static IResult InspectCatalog(
+        string applicationId, string qualifiedId, HttpContext context,
+        ControlStructureExplorer explorer) =>
+        Structure(context, () => explorer.InspectCatalog(
+            applicationId,
+            context.Request.Query["collection"].FirstOrDefault(),
+            qualifiedId));
+
+    private static IReadOnlyList<string> QueryValues(HttpContext context, string key) =>
+        context.Request.Query[key]
+            .SelectMany(value => (value ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            .ToArray();
+
+    private static IResult Structure<T>(HttpContext context, Func<T?> read)
+    {
+        ControlCenterStatus.ApplyCacheHeaders(context.Response);
+        try
+        {
+            var value = read();
+            return value is null ? Results.NotFound() : Results.Json(value);
+        }
+        catch (Exception exception) when (IsStructureClientError(exception))
+        {
+            return StructureError(exception);
+        }
+    }
+
+    private static async Task<IResult> StructureAsync<T>(HttpContext context, Func<Task<T>> read)
+    {
+        ControlCenterStatus.ApplyCacheHeaders(context.Response);
+        try
+        {
+            var value = await read();
+            return value is null ? Results.NotFound() : Results.Json(value);
+        }
+        catch (Exception exception) when (IsStructureClientError(exception))
+        {
+            return StructureError(exception);
+        }
+    }
+
+    private static bool IsStructureClientError(Exception exception) =>
+        exception is ControlStructureException or ArgumentException or KeyNotFoundException ||
+        exception is InvalidOperationException { Message: "CURSOR_STALE" };
+
+    private static IResult StructureError(Exception exception)
+    {
+        var (code, status) = exception switch
+        {
+            ControlStructureException control => (control.Code, control.StatusCode),
+            InvalidOperationException => ("CURSOR_STALE", StatusCodes.Status409Conflict),
+            KeyNotFoundException => ("STRUCTURE_RECORD_UNKNOWN", StatusCodes.Status404NotFound),
+            ArgumentException argument when argument.Message.Contains("CATALOG_COLLECTION_UNKNOWN", StringComparison.Ordinal) =>
+                ("CATALOG_COLLECTION_UNKNOWN", StatusCodes.Status404NotFound),
+            ArgumentException argument when argument.Message.Contains("CURSOR_INVALID", StringComparison.Ordinal) =>
+                ("CURSOR_INVALID", StatusCodes.Status400BadRequest),
+            _ => ("INVALID_REQUEST", StatusCodes.Status400BadRequest)
+        };
+        return Results.Json(new { error = code, message = exception.Message }, statusCode: status);
+    }
+
+    private static Task<IResult> GetControlPagesAsync(
+        HttpContext context,
+        ControlPageEditor editor,
+        CancellationToken cancellationToken) =>
+        PageEditorAsync(context, async () => (object?)await editor.ListPagesAsync(
+            context.Request.Query["cursor"].FirstOrDefault(),
+            context.Request.Query["limit"].FirstOrDefault(),
+            cancellationToken));
+
+    private static Task<IResult> GetControlPageAsync(
+        string pageId,
+        HttpContext context,
+        ControlPageEditor editor,
+        CancellationToken cancellationToken) =>
+        PageEditorAsync(context, async () => (object?)await editor.GetPageAsync(pageId, cancellationToken));
+
+    private static Task<IResult> GetControlPageRevisionsAsync(
+        string pageId,
+        HttpContext context,
+        ControlPageEditor editor,
+        CancellationToken cancellationToken) =>
+        PageEditorAsync(context, async () => (object?)await editor.ListRevisionsAsync(
+            pageId,
+            context.Request.Query["cursor"].FirstOrDefault(),
+            context.Request.Query["limit"].FirstOrDefault(),
+            cancellationToken));
+
+    private static Task<IResult> GetControlPageRevisionAsync(
+        string pageId,
+        int revision,
+        HttpContext context,
+        ControlPageEditor editor,
+        CancellationToken cancellationToken) =>
+        PageEditorAsync(context, async () => (object?)await editor.GetRevisionAsync(
+            pageId, revision, cancellationToken));
+
+    private static Task<IResult> ExportControlPageRevisionAsync(
+        string pageId,
+        int revision,
+        HttpContext context,
+        ControlPageEditor editor,
+        CancellationToken cancellationToken) =>
+        PageEditorAsync(context, async () =>
+        {
+            var bundle = await editor.ExportAsync(pageId, revision, cancellationToken);
+            return bundle is null
+                ? null
+                : Results.File(bundle.Content, "application/zip", bundle.FileName);
+        }, resultIsResult: true);
+
+    private static Task<IResult> PreviewControlPageRevisionAsync(
+        string pageId,
+        int revision,
+        HttpContext context,
+        ControlPageEditor editor,
+        CancellationToken cancellationToken) =>
+        PageEditorAsync(context, async () =>
+        {
+            var html = await editor.PreviewHtmlAsync(pageId, revision, cancellationToken);
+            if (html is null) return null;
+            ControlPageEditor.ApplyPreviewHeaders(context.Response, asset: false);
+            return Results.Text(html, "text/html", Encoding.UTF8);
+        }, resultIsResult: true);
+
+    private static Task<IResult> PreviewControlPageAssetAsync(
+        string pageId,
+        int revision,
+        string? path,
+        HttpContext context,
+        ControlPageEditor editor,
+        CancellationToken cancellationToken) =>
+        PageEditorAsync(context, async () =>
+        {
+            var asset = await editor.PreviewAssetAsync(pageId, revision, path, cancellationToken);
+            if (asset is null) return null;
+            ControlPageEditor.ApplyPreviewHeaders(context.Response, asset: true);
+            return Results.File(asset.Content, asset.ContentType);
+        }, resultIsResult: true);
+
+    private static Task<IResult> AppendControlPageDraftAsync(
+        string pageId,
+        HttpContext context,
+        ControlPageEditor editor,
+        CancellationToken cancellationToken) =>
+        PageEditorAsync(context, async () =>
+        {
+            var request = await ControlPageEditor.ReadBodyAsync<ControlPageDraftRequest>(
+                context.Request, cancellationToken);
+            return (object?)await editor.AppendDraftAsync(pageId, request, cancellationToken);
+        });
+
+    private static Task<IResult> ActivateControlPageRevisionAsync(
+        string pageId,
+        HttpContext context,
+        ControlPageEditor editor,
+        CancellationToken cancellationToken) =>
+        PageEditorAsync(context, async () =>
+        {
+            var request = await ControlPageEditor.ReadBodyAsync<ControlPageActivationRequest>(
+                context.Request, cancellationToken);
+            return (object?)await editor.ActivateAsync(pageId, request, cancellationToken);
+        });
+
+    private static async Task<IResult> PageEditorAsync(
+        HttpContext context,
+        Func<Task<object?>> action,
+        bool resultIsResult = false)
+    {
+        ControlCenterStatus.ApplyCacheHeaders(context.Response);
+        try
+        {
+            var value = await action();
+            if (value is null) return Results.NotFound();
+            return resultIsResult ? (IResult)value : Results.Json(value);
+        }
+        catch (ControlPageEditorException exception)
+        {
+            return PageEditorError(exception.Code, exception.Message, exception.StatusCode);
+        }
+        catch (WebPageStoreException exception)
+        {
+            var status = exception.Code switch
+            {
+                "PAGE_UNKNOWN" or "REVISION_UNKNOWN" => StatusCodes.Status404NotFound,
+                "PAGE_LATEST_STALE" or "PAGE_ACTIVE_STALE" or "PAGE_ALREADY_ACTIVE" or "CURSOR_STALE" => StatusCodes.Status409Conflict,
+                _ => StatusCodes.Status400BadRequest
+            };
+            return PageEditorError(exception.Code, exception.Message, status);
+        }
+        catch (ArgumentException exception)
+        {
+            return PageEditorError("INVALID_REQUEST", exception.Message, StatusCodes.Status400BadRequest);
+        }
+    }
+
+    private static IResult PageEditorError(string code, string message, int status) =>
+        Results.Json(new { error = code, message }, statusCode: status);
+
+    private static async Task StreamChangesAsync(
+        HttpContext context,
+        SqliteWebChangeFeed changes)
+    {
+        var pageId = context.Request.Query["page"].FirstOrDefault();
+        if (pageId is not null && !WebPageId.IsValid(pageId))
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await context.Response.WriteAsJsonAsync(
+                new
+                {
+                    error = "INVALID_PAGE_ID",
+                    message = "Page IDs may contain letters, numbers, dots, underscores, and hyphens."
+                },
+                context.RequestAborted);
+            return;
+        }
+
+        context.Features.Get<IHttpResponseBodyFeature>()?.DisableBuffering();
+        context.Response.StatusCode = StatusCodes.Status200OK;
+        context.Response.ContentType = "text/event-stream; charset=utf-8";
+        context.Response.Headers.CacheControl = "no-cache, no-store";
+        context.Response.Headers.Append("X-Accel-Buffering", "no");
+
+        try
+        {
+            await context.Response.WriteAsync("retry: 2000\n\n", context.RequestAborted);
+            await context.Response.Body.FlushAsync(context.RequestAborted);
+
+            await foreach (var change in changes.WatchAsync(
+                pageId,
+                cancellationToken: context.RequestAborted))
+            {
+                await context.Response.WriteAsync(
+                    WebChangeSseFormatter.Format(change),
+                    context.RequestAborted);
+                await context.Response.Body.FlushAsync(context.RequestAborted);
+            }
+        }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            // A disconnected EventSource is the normal end of this request.
+        }
+    }
+
+    private static async Task<IResult> UploadBundleAsync(
+        string id,
+        HttpRequest request,
+        IWebPageStore pages,
+        WebPageBundleReader bundles,
+        CancellationToken cancellationToken)
+    {
+        if (!WebPageId.IsValid(id))
+        {
+            return InvalidPageId();
+        }
+
+        var mediaType = request.ContentType?.Split(';', 2)[0].Trim();
+        if (!string.Equals(mediaType, "application/zip", StringComparison.OrdinalIgnoreCase))
+        {
+            return Results.Json(
+                new
+                {
+                    error = "ZIP_REQUIRED",
+                    message = "Upload a ZIP bundle using the application/zip content type."
+                },
+                statusCode: StatusCodes.Status415UnsupportedMediaType);
+        }
+
+        WebPageBundle bundle;
+        try
+        {
+            bundle = await bundles.ReadAsync(
+                request.Body,
+                request.ContentLength,
+                cancellationToken);
+        }
+        catch (WebPageBundleException exception)
+        {
+            return Results.Json(
+                new { error = exception.Code, message = exception.Message },
+                statusCode: exception.StatusCode);
+        }
+
+        var saved = await pages.SaveBundleAndActivateAsync(id, bundle, cancellationToken);
+        return Results.Json(new
+        {
+            saved.Id,
+            saved.Revision,
+            AssetCount = bundle.Assets.Count,
+            Url = $"/ui/{saved.Id}/index.html"
+        });
     }
 
     private static async Task<IResult> UploadPageAsync(
         string id,
         HttpRequest request,
         IWebPageStore pages,
+        WebHtmlReader htmlReader,
         CancellationToken cancellationToken)
     {
         if (!WebPageId.IsValid(id))
         {
-            return Results.BadRequest(new
-            {
-                error = "INVALID_PAGE_ID",
-                message = "Page IDs may contain letters, numbers, dots, underscores, and hyphens."
-            });
+            return InvalidPageId();
         }
 
         if (request.ContentType is null ||
@@ -46,15 +862,16 @@ public static class WebInterfaceEndpoints
                 statusCode: StatusCodes.Status415UnsupportedMediaType);
         }
 
-        using var reader = new StreamReader(request.Body, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-        var html = await reader.ReadToEndAsync(cancellationToken);
-        if (string.IsNullOrWhiteSpace(html))
+        string html;
+        try
         {
-            return Results.BadRequest(new
-            {
-                error = "EMPTY_HTML",
-                message = "The HTML document cannot be empty."
-            });
+            html = await htmlReader.ReadAsync(request.Body, request.ContentLength, cancellationToken);
+        }
+        catch (WebHtmlUploadException exception)
+        {
+            return Results.Json(
+                new { error = exception.Code, message = exception.Message },
+                statusCode: exception.StatusCode);
         }
 
         var saved = await pages.SaveAndActivateAsync(id, html, cancellationToken);
@@ -75,6 +892,28 @@ public static class WebInterfaceEndpoints
         return page is null
             ? Results.NotFound()
             : Results.Text(page.Html, "text/html", Encoding.UTF8);
+    }
+
+    private static Task<IResult> GetHomePageAsync(
+        IWebPageStore pages,
+        CancellationToken cancellationToken) =>
+        GetPageAsync(HomePageId, pages, cancellationToken);
+
+    private static async Task<IResult> GetAssetAsync(
+        string id,
+        string? path,
+        IWebPageStore pages,
+        CancellationToken cancellationToken)
+    {
+        if (path is null)
+        {
+            return Results.NotFound();
+        }
+
+        var asset = await pages.GetActiveAssetAsync(id, $"assets/{path}", cancellationToken);
+        return asset is null
+            ? Results.NotFound()
+            : Results.File(asset.Content, asset.ContentType);
     }
 
     private static Task<IResult> GetEntityDataAsync(
@@ -101,4 +940,11 @@ public static class WebInterfaceEndpoints
             ? Results.NotFound()
             : Results.Text(document.Json.ToJsonString(), "application/json", Encoding.UTF8);
     }
+
+    private static IResult InvalidPageId() =>
+        Results.BadRequest(new
+        {
+            error = "INVALID_PAGE_ID",
+            message = "Page IDs may contain letters, numbers, dots, underscores, and hyphens."
+        });
 }

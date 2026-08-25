@@ -1,15 +1,21 @@
 using System.ComponentModel;
-using DantesRoleplay.Campaign;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Events;
 using DantesRoleplay.Notifications;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
-using DantesRoleplay.Quest;
 using DantesRoleplay.World;
-using DantesRoleplay.Story;
 using DantesRoleplay.SystemFeedback;
 using DantesRoleplay.Information;
+using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.Applications;
+using DantesRoleplay.Authorization;
+using DantesRoleplay.Sources;
+using DantesRoleplay.ApplicationPreview;
+using DantesRoleplay.Projections;
+using DantesRoleplay.ApplicationActivation;
+using DantesRoleplay.StateSpaceAdministration;
+using DantesRoleplay.Interactions;
 using ModelContextProtocol.Server;
 
 namespace DantesRoleplay.MCPServer.Tools;
@@ -28,17 +34,13 @@ public sealed class QueryTool
     [McpServerTool(Name = "query")]
     [Description(
         "Read anything in this system. kind is one of: capabilities, procedures, categories, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, session-recap, quest-summary, knowledge-answer, information-answer, information-actions, story-plan, " +
-        "mechanics, event-types, events, subscriptions, notifications, feedback, history. Omit id for a list or search; " +
+        "mechanics, event-types, events, subscriptions, notifications, feedback, system.applications, system.sources, system.application-preview, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, history. Omit id for a list or search; " +
         "pass id for one record in full. When you are unsure what a kind takes or what a commit payload looks like, call " +
         "query(kind: \"capabilities\") — it is the exact catalog. Irrelevant filters are ignored unless a fixed query kind explicitly rejects them. Never changes state.")]
     public async Task<ToolEnvelope> QueryAsync(
         IProcedureStore procedures,
         IWorldStore world,
         IGraphProjectionReader graphs,
-        IJourneyPlanReader journeys,
-        IModeAwareItineraryReader itineraries,
-        ICampaignResumeReader campaignResumes,
-        IQuestSummaryReader questSummaries,
         IMechanicStore mechanics,
         IEventTypeStore eventTypes,
         ISubscriptionStore subscriptions,
@@ -47,7 +49,7 @@ public sealed class QueryTool
         INotificationStore notifications,
         [Description(
             "Closed kind: capabilities, procedures, categories, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, session-recap, quest-summary, knowledge-answer, mechanics, event-types, events, "
-            + "subscriptions, notifications, feedback, information-answer, information-actions, story-plan, or history.")]
+            + "subscriptions, notifications, feedback, information-answer, information-actions, story-plan, system.applications, system.sources, system.application-preview, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, or history.")]
         string kind,
         [Description("Full-record id for procedures, mechanics, or one entity.")] string? id = null,
         [Description("Entity ids for a full batch read.")] string[]? ids = null,
@@ -75,12 +77,6 @@ public sealed class QueryTool
         int? maxNodes = null,
         [Description("Graph query: optional edge cap, 0–200; default 100.")]
         int? maxEdges = null,
-        [Description("Journey plan: required active world-root id.")] string? worldId = null,
-        [Description("Journey plan: required active traveller id; its contained origin is derived.")] string? travellerId = null,
-        [Description("Journey plan: required active destination location id.")] string? destinationId = null,
-        [Description("Mode-aware itinerary: required active destination location id.")] string? destinationLocationId = null,
-        [Description("Mode-aware itinerary: optional selected active ground conveyance id, initially co-located with the traveller.")] string? groundConveyanceId = null,
-        [Description("Mode-aware itinerary: optional selected active aerial conveyance id, initially co-located with the traveller.")] string? aerialConveyanceId = null,
         [Description("Only failed history records.")] bool failuresOnly = false,
         [Description("History tool filter.")] string? tool = null,
         [Description("History subject filter.")] string? subject = null,
@@ -101,24 +97,35 @@ public sealed class QueryTool
         [Description("Notification filter: unread, read, or archived.")] string? state = null,
         [Description("Notification filter: dotted topic, e.g. combat.wound.")] string? topic = null,
         [Description("Feedback filter: blocked, degraded, minor, or none.")] string? impact = null,
-        [Description("Knowledge answer: configured campaign id. The configured local audience must match it.")] string? campaignId = null,
         [Description("Knowledge answer: bounded natural-language question.")] string? question = null,
-        [Description("Knowledge answer: optional fact, rumour, secret, or clue filters.")] string[]? knowledgeKinds = null,
-        [Description("Knowledge answer: optional canonical subject-id filters.")] string[]? knowledgeSubjectIds = null,
-        [Description("Knowledge answer: optional world minute for canonical validity.")] long? asOfMinute = null,
         [Description("Generic information answer: required authorized information scope.")] string? scopeId = null,
         [Description("Generic information answer: optional source ids within the scope.")] string[]? sourceIds = null,
-        [Description("Story-plan only: wait when this exact revision is still current.")] int? afterRevision = null,
-        [Description("Story-plan only: bounded long-poll seconds, 0–20.")] int? waitSeconds = null,
+        [Description("System catalog queries: required non-system application ID.")] string? applicationId = null,
+        [Description("System catalog queries: application-declared collection ID.")] string? collection = null,
+        [Description("System catalog browse/search: slash-separated logical branch; empty means root.")] string? branch = null,
+        [Description("System catalog browse/search: authenticated continuation cursor.")] string? cursor = null,
+        [Description("System catalog search: optional record-kind filters.")] string[]? kinds = null,
+        [Description("System catalog search: optional record-status filters.")] string[]? statuses = null,
+        [Description("System catalog browse/search page size, 1–100; default 25.")] int? pageSize = null,
+        [Description("System dependency impact: include indirect declared dependents; default true.")] bool? transitive = null,
+        [Description("Interaction queries: application-bound state-space ID.")] string? stateSpaceId = null,
+        [Description("Interaction plan: closed request JSON containing operation (resolve or submit), stateSpaceId, sessionContextId, intent, and proposal only for submit.")] string? request = null,
+        [Description("Interaction recipes: optional closed status candidate, verified, stale, or retired.")] string? status = null,
         CancellationToken cancellationToken = default,
-        [Description("Campaign resume only: require and compose the one current active session with the bounded C3 campaign view.")] bool includeSession = false,
-        ICampaignSessionResumeReader? campaignSessionResumes = null,
-        ICampaignSessionRecapReader? campaignSessionRecaps = null,
         ISystemFeedbackService? feedback = null,
-        IAuthorizedKnowledgeAnswerCoordinator? knowledgeAnswers = null,
-        IStoryPlanCoordinator? storyPlans = null,
         IInformationAnswerCoordinator? informationAnswers = null,
-        IInformationActionCoordinator? informationActions = null)
+        IInformationActionCoordinator? informationActions = null,
+        IPublicApplicationCatalogProvider? publicCatalogs = null,
+        IApplicationRegistry? applications = null,
+        ISourceRegistry? sources = null,
+        ISourceScanReceiptStore? sourceScans = null,
+        IPrivateOperatorRequestAuthorizer? privateOperator = null,
+        IApplicationPreviewService? applicationPreviews = null,
+        IProjectionImpactService? projectionImpacts = null,
+        IApplicationActivationReader? applicationActivations = null,
+        IStateSpaceAdministrationReader? stateSpaceAdministration = null,
+        IInteractionGateway? interactionGateway = null,
+        IInteractionRecipeStore? interactionRecipes = null)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
 
@@ -141,49 +148,6 @@ public sealed class QueryTool
                     "Returned the full query and commit catalog.",
                     "query(kind: \"procedures\") — read the contract governing what you are about to do.",
                     "query(kind: \"world\") — see what the world already holds before adding to it.")));
-        }
-
-        if (normalizedKind == "quest-summary" && !IsQuestSummaryRequest(
-                id, ids, version, query, nameQuery, withDefinitionId, category, scope, includeInactive, limit, sample,
-                componentIds, containmentDepth, relationshipKinds, relationshipDepth, maxNodes, maxEdges,
-                worldId, travellerId, destinationId, destinationLocationId, groundConveyanceId, aerialConveyanceId,
-                failuresOnly, tool, subject, correlationId, causationId, rootOperationId, type, entityId, afterSequence,
-                from, to, state, topic))
-        {
-            return await ToolRunner.RunAsync(log, "query", () =>
-                Task.FromResult(ToolOutcome.Fail(
-                    "INVALID_QUEST_SUMMARY_QUERY",
-                    "quest-summary accepts exactly one lowercase quest.* id and no other query filters.",
-                    "query(kind: \"quest-summary\", id: \"quest....\")",
-                    "Rejected quest summary query.")));
-        }
-
-        if (normalizedKind == "session-recap" && !IsSessionRecapRequest(
-                id, ids, version, query, nameQuery, withDefinitionId, category, scope, includeInactive, limit, sample,
-                componentIds, containmentDepth, relationshipKinds, relationshipDepth, maxNodes, maxEdges,
-                worldId, travellerId, destinationId, destinationLocationId, groundConveyanceId, aerialConveyanceId,
-                failuresOnly, tool, subject, correlationId, causationId, rootOperationId, type, entityId, afterSequence,
-                from, to, state, topic, includeSession))
-        {
-            return await ToolRunner.RunAsync(log, "query", () =>
-                Task.FromResult(ToolOutcome.Fail(
-                    "INVALID_SESSION_RECAP_QUERY",
-                    "session-recap accepts exactly one lowercase session.* id and no other query filters.",
-                    "query(kind: \"session-recap\", id: \"session....\")",
-                    "Rejected session recap query.")));
-        }
-
-        if (normalizedKind == "story-plan" && !IsStoryPlanRequest(
-                id, ids, version, query, nameQuery, withDefinitionId, category, scope, includeInactive, limit, sample,
-                componentIds, containmentDepth, relationshipKinds, relationshipDepth, maxNodes, maxEdges,
-                worldId, travellerId, destinationId, destinationLocationId, groundConveyanceId, aerialConveyanceId,
-                failuresOnly, tool, subject, correlationId, causationId, rootOperationId, type, entityId, afterSequence,
-                from, to, state, topic, includeSession, afterRevision, waitSeconds))
-        {
-            return await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail(
-                "INVALID_STORY_PLAN", "story-plan requires one story-plan id and accepts only afterRevision and waitSeconds.",
-                "query(kind: \"story-plan\", id: \"story-plan....\", afterRevision: 1, waitSeconds: 20)",
-                "Rejected story-plan query.")));
         }
 
         using var dispatch = ToolRunner.EnterProtocol("query", normalizedKind);
@@ -215,26 +179,11 @@ public sealed class QueryTool
                 log,
                 new GraphQuery(id ?? string.Empty, componentIds, containmentDepth, relationshipKinds, relationshipDepth, maxNodes, maxEdges),
                 cancellationToken),
-            "journey-plan" => await new JourneyPlanTools().GetAsync(journeys, log, new JourneyPlanQuery(worldId ?? string.Empty, travellerId ?? string.Empty, destinationId ?? string.Empty), cancellationToken),
-            "itinerary-plan" => await new ModeAwareItineraryTools().GetAsync(itineraries, log, new ModeAwareItineraryQuery(worldId ?? string.Empty, travellerId ?? string.Empty, destinationLocationId ?? string.Empty, groundConveyanceId, aerialConveyanceId), cancellationToken),
-            "campaign-resume" when includeSession && campaignSessionResumes is not null => await new CampaignTools().ResumeSessionAsync(campaignSessionResumes, log, id ?? string.Empty, cancellationToken),
-            "campaign-resume" when includeSession => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("SESSION_RESUME_UNAVAILABLE", "The session resume reader is not configured.", "query(kind: \"campaign-resume\", id: \"...\")", "Campaign session resume was unavailable."))),
-            "campaign-resume" => await new CampaignTools().ResumeAsync(campaignResumes, log, id ?? string.Empty, cancellationToken),
-            "session-recap" when campaignSessionRecaps is not null => await new CampaignTools().SessionRecapAsync(campaignSessionRecaps, log, id ?? string.Empty, cancellationToken),
-            "session-recap" => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("SESSION_RECAP_UNAVAILABLE", "The session recap reader is not configured.", "query(kind: \"session-recap\", id: \"session....\")", "Session factual recap was unavailable."))),
-            "quest-summary" => await new QuestTools().SummaryAsync(questSummaries, log, id ?? string.Empty, cancellationToken),
-            "knowledge-answer" when knowledgeAnswers is not null => await new KnowledgeTools().AnswerAsync(
-                knowledgeAnswers, log,
-                new AuthorizedKnowledgeAnswerRequest(campaignId ?? string.Empty, question ?? string.Empty, knowledgeKinds, knowledgeSubjectIds, asOfMinute),
-                cancellationToken),
-            "knowledge-answer" => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("KNOWLEDGE_AUDIENCE_UNAVAILABLE", "Knowledge answers require an explicitly enabled local development audience or a future authentication provider.", "Enable the documented local development audience, then retry.", "Knowledge audience was unavailable."))),
             "information-answer" when informationAnswers is not null => await new InformationTools().AnswerAsync(
                 informationAnswers, log, new InformationAnswerRequest(scopeId ?? string.Empty, question ?? string.Empty, sourceIds, limit ?? 12), cancellationToken),
             "information-answer" => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("INFORMATION_UNAVAILABLE", "Generic information answering is not configured.", "orient()", "Information answering was unavailable."))),
             "information-actions" when informationActions is not null => await new InformationTools().ListActionsAsync(informationActions, log, scopeId ?? string.Empty, cancellationToken),
             "information-actions" => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("INFORMATION_UNAVAILABLE", "Generic information actions are not configured.", "orient()", "Information action contracts were unavailable."))),
-            "story-plan" when storyPlans is not null => await new StoryPlanTools().GetAsync(storyPlans, log, new StoryPlanQueryRequest(id!, afterRevision, waitSeconds ?? 0), cancellationToken),
-            "story-plan" => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("STORY_AUDIENCE_DENIED", "Story plans require an explicitly enabled development GM audience.", "Enable the development GM audience for the intended campaign.", "Story-plan query was unavailable."))),
             "mechanics" =>
                 await new MechanicTools().FindMechanicsAsync(
                     mechanics, log, id, version, query, category, scope, includeInactive, limit, cancellationToken),
@@ -248,6 +197,30 @@ public sealed class QueryTool
             "feedback" when feedback is not null => await new SystemFeedbackTools().FindAsync(
                 feedback, log, id, category, impact, state, from, to, limit, cancellationToken),
             "feedback" => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("FEEDBACK_UNAVAILABLE", "Feedback reporting is not configured.", "orient()", "Feedback query was unavailable."))),
+            "system.applications" => await new SystemRegistryTools().ApplicationsAsync(
+                applications, applicationActivations, stateSpaceAdministration, privateOperator, log, applicationId, limit),
+            "system.sources" => await new SystemRegistryTools().SourcesAsync(
+                applications, sources, sourceScans, privateOperator, log, applicationId, id, limit),
+            "system.application-preview" => await new SystemApplicationPreviewTools().PreviewAsync(
+                applicationPreviews, privateOperator, log, applicationId, limit, cancellationToken),
+            "system.dependencies" => await new SystemDependencyTools().InspectAsync(
+                projectionImpacts, privateOperator, log, applicationId, id, transitive, limit),
+            "system.catalogs" => await new SystemCatalogTools().ListAsync(
+                publicCatalogs ?? new EmptyPublicApplicationCatalogProvider(), log, applicationId),
+            "system.catalog.browse" => await new SystemCatalogTools().BrowseAsync(
+                publicCatalogs ?? new EmptyPublicApplicationCatalogProvider(), log, applicationId, collection, branch, pageSize, cursor),
+            "system.catalog.search" => await new SystemCatalogTools().SearchAsync(
+                publicCatalogs ?? new EmptyPublicApplicationCatalogProvider(), log, applicationId, query, collection, branch, kinds, statuses, pageSize, cursor),
+            "system.catalog.record" => await new SystemCatalogTools().RecordAsync(
+                publicCatalogs ?? new EmptyPublicApplicationCatalogProvider(), log, applicationId, collection, id),
+            "system.feature-search" => await new SystemInteractionTools().SearchAsync(
+                interactionGateway, privateOperator, log, applicationId, query, id, limit, cancellationToken),
+            "system.interaction-plan" => await new SystemInteractionTools().PlanAsync(
+                interactionGateway, privateOperator, log, applicationId, request, cancellationToken),
+            "system.interaction-receipt" => await new SystemInteractionTools().ReceiptAsync(
+                interactionGateway, privateOperator, log, applicationId, stateSpaceId, id, cancellationToken),
+            "system.interaction-recipes" => await new SystemInteractionTools().RecipesAsync(
+                interactionRecipes, privateOperator, log, applicationId, id, query, status, cursor, limit, cancellationToken),
             "history" =>
                 await new HistoryTool().HistoryAsync(
                     log, limit ?? 20, failuresOnly, tool, subject, cancellationToken),
@@ -255,58 +228,4 @@ public sealed class QueryTool
         };
     }
 
-    private static bool IsQuestSummaryRequest(
-        string? id, string[]? ids, int? version, string? query, string? nameQuery, string? withDefinitionId,
-        string? category, string? scope, bool includeInactive, int? limit, int? sample, string[]? componentIds,
-        int? containmentDepth, string[]? relationshipKinds, int? relationshipDepth, int? maxNodes, int? maxEdges,
-        string? worldId, string? travellerId, string? destinationId, string? destinationLocationId,
-        string? groundConveyanceId, string? aerialConveyanceId, bool failuresOnly, string? tool, string? subject,
-        string? correlationId, string? causationId, string? rootOperationId, string? type, string? entityId,
-        int? afterSequence, string? from, string? to, string? state, string? topic) =>
-        id is { Length: > 6 } && id == id.Trim() && id.StartsWith("quest.", StringComparison.Ordinal) &&
-        id.All(character => char.IsLower(character) || char.IsDigit(character) || character is '.' or '-') &&
-        ids is null && version is null && query is null && nameQuery is null && withDefinitionId is null &&
-        category is null && scope is null && !includeInactive && limit is null && sample is null && componentIds is null &&
-        containmentDepth is null && relationshipKinds is null && relationshipDepth is null && maxNodes is null &&
-        maxEdges is null && worldId is null && travellerId is null && destinationId is null &&
-        destinationLocationId is null && groundConveyanceId is null && aerialConveyanceId is null && !failuresOnly &&
-        tool is null && subject is null && correlationId is null && causationId is null && rootOperationId is null &&
-        type is null && entityId is null && afterSequence is null && from is null && to is null && state is null && topic is null;
-
-    private static bool IsStoryPlanRequest(
-        string? id, string[]? ids, int? version, string? query, string? nameQuery, string? withDefinitionId,
-        string? category, string? scope, bool includeInactive, int? limit, int? sample, string[]? componentIds,
-        int? containmentDepth, string[]? relationshipKinds, int? relationshipDepth, int? maxNodes, int? maxEdges,
-        string? worldId, string? travellerId, string? destinationId, string? destinationLocationId,
-        string? groundConveyanceId, string? aerialConveyanceId, bool failuresOnly, string? tool, string? subject,
-        string? correlationId, string? causationId, string? rootOperationId, string? type, string? entityId,
-        int? afterSequence, string? from, string? to, string? state, string? topic, bool includeSession,
-        int? afterRevision, int? waitSeconds) =>
-        id is { Length: 43 } && id.StartsWith("story-plan.", StringComparison.Ordinal) &&
-        ids is null && version is null && query is null && nameQuery is null && withDefinitionId is null &&
-        category is null && scope is null && !includeInactive && limit is null && sample is null && componentIds is null &&
-        containmentDepth is null && relationshipKinds is null && relationshipDepth is null && maxNodes is null &&
-        maxEdges is null && worldId is null && travellerId is null && destinationId is null &&
-        destinationLocationId is null && groundConveyanceId is null && aerialConveyanceId is null && !failuresOnly &&
-        tool is null && subject is null && correlationId is null && causationId is null && rootOperationId is null &&
-        type is null && entityId is null && afterSequence is null && from is null && to is null && state is null &&
-        topic is null && !includeSession && (afterRevision is null or >= 0) && (waitSeconds is null or >= 0 and <= 20);
-
-    private static bool IsSessionRecapRequest(
-        string? id, string[]? ids, int? version, string? query, string? nameQuery, string? withDefinitionId,
-        string? category, string? scope, bool includeInactive, int? limit, int? sample, string[]? componentIds,
-        int? containmentDepth, string[]? relationshipKinds, int? relationshipDepth, int? maxNodes, int? maxEdges,
-        string? worldId, string? travellerId, string? destinationId, string? destinationLocationId,
-        string? groundConveyanceId, string? aerialConveyanceId, bool failuresOnly, string? tool, string? subject,
-        string? correlationId, string? causationId, string? rootOperationId, string? type, string? entityId,
-        int? afterSequence, string? from, string? to, string? state, string? topic, bool includeSession) =>
-        id is { Length: > 8 } && id == id.Trim() && id.StartsWith("session.", StringComparison.Ordinal) &&
-        id.All(character => char.IsLower(character) || char.IsDigit(character) || character is '.' or '-') &&
-        ids is null && version is null && query is null && nameQuery is null && withDefinitionId is null &&
-        category is null && scope is null && !includeInactive && limit is null && sample is null && componentIds is null &&
-        containmentDepth is null && relationshipKinds is null && relationshipDepth is null && maxNodes is null &&
-        maxEdges is null && worldId is null && travellerId is null && destinationId is null &&
-        destinationLocationId is null && groundConveyanceId is null && aerialConveyanceId is null && !failuresOnly &&
-        tool is null && subject is null && correlationId is null && causationId is null && rootOperationId is null &&
-        type is null && entityId is null && afterSequence is null && from is null && to is null && state is null && topic is null && !includeSession;
 }

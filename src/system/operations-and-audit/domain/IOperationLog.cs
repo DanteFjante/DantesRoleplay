@@ -7,6 +7,9 @@ namespace DantesRoleplay.Operations;
 /// </summary>
 public interface IOperationLog
 {
+    /// <summary>Returns one exact immutable operation, or null when no such operation was recorded.</summary>
+    Task<Operation?> GetAsync(string id, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Writes one operation. <paramref name="proceduresCited"/> is the caller's own claim; when
     /// <paramref name="consumesReadEvidence"/> is set the implementation also derives what was

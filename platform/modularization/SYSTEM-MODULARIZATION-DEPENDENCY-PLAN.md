@@ -1,6 +1,6 @@
 # System modularization dependency plan
 
-Status: **Implementation active; component moves and standalone local AI verified, compiled-rule eviction next**  
+Status: **Accepted; modular system, standalone local AI, unlinked game adapters, and final independence verified**
 Ruleset alignment: **ruleset-neutral**  
 Source: **not applicable**  
 Downstream semantic redesign: [Generic application kernel](../application-kernel/APPLICATION-KERNEL-DEPENDENCY-PLAN.md)
@@ -173,7 +173,7 @@ output.
 ## Dependency tree
 
 ```text
-Ruleset-neutral modular system                                         [active]
+Ruleset-neutral modular system                                         [accepted]
 ├─ A. Architectural boundary and migration map                         [verified]
 │  ├─ Current source/project/registration inventory                    [verified]
 │  ├─ Target component directory convention                            [verified]
@@ -183,27 +183,27 @@ Ruleset-neutral modular system                                         [active]
 │  ├─ File/directory/glob scanner                                      [verified]
 │  ├─ Generic document model                                           [verified]
 │  ├─ Ollama completion/embedding adapters                             [verified]
-│  ├─ Generic derived index                                            [conflicting with knowledge index]
+│  ├─ Generic derived index                                            [verified downstream; disposable interaction index]
 │  └─ Knowledge/routing/story/information consumer adapters            [verified]
 ├─ C. Per-component composition                                        [verified]
 │  ├─ One registration entry point per component                       [verified]
 │  ├─ Central DataAccess registration reduced to compatibility shim    [verified]
-│  └─ Host explicitly selects components and game adapters             [planned]
-├─ D. Generic kernel decomposition                                     [mostly verified; depends on A/C]
+│  └─ Host explicitly selects components and game adapters             [verified; Slice 24]
+├─ D. Generic kernel decomposition                                     [verified; depends on A/C]
 │  ├─ Catalog, state, procedures, mechanics, actions                    [verified; moved]
 │  ├─ Effects/transactions, events/notifications, operations/audit     [verified; moved]
 │  ├─ Snapshots and feedback                                           [verified; moved]
-│  └─ Deterministic retrieval, SQLite hosting, and MCP protocol         [scaffolded]
-├─ E. Game-code eviction                                               [conflicting; depends on A/C/D]
-│  ├─ Hard-coded D&D character/campaign decisions -> catalog JS/data   [conflicting]
-│  ├─ Game workflows -> catalog declarations or thin game adapters     [conflicting]
-│  ├─ Game-specific protocol dispatch -> optional host adapter         [conflicting]
-│  └─ Generic component examples/messages lose D&D vocabulary          [planned]
-└─ F. Final independence proof                                         [planned; depends on B-E]
-   ├─ Build/test system without game adapter or ruleset catalog         [missing]
-   ├─ Build/test game host by composing system plus game pack           [missing]
+│  └─ Deterministic retrieval, SQLite hosting, and MCP protocol         [verified]
+├─ E. Game-code eviction                                               [accepted compile boundary; Slice 24]
+│  ├─ Hard-coded game implementations excluded from generic compilation [accepted]
+│  ├─ Game workflows retained only as uncompiled compatibility sources  [accepted user-directed exception]
+│  ├─ Game-specific protocol dispatch removed from generic host         [accepted]
+│  └─ Generic production paths guarded against game vocabulary/deps     [verified]
+└─ F. Final independence proof                                         [accepted; Slice 12H]
+   ├─ Build/test system without game adapter or ruleset catalog         [verified]
+   ├─ Build/test application host without compiled game adapter         [verified]
    ├─ Verify local AI with arbitrary non-game directories               [verified]
-   └─ Remove compatibility shims and empty legacy layer directories     [planned; destructive gate]
+   └─ Retain uncompiled legacy files without generic references         [accepted user-directed exception]
 ```
 
 ## Conflicts and decisions
@@ -240,23 +240,19 @@ Ruleset-neutral modular system                                         [active]
 | 5 | Convert existing AI flows to consumer adapters | Leaf 4 | Knowledge, route, and story tests retain bounded prompts, semantic validation, authorization, stale-read checks, and deterministic fallback; local AI contains none of their vocabulary. |
 | 6 | Split composition root by system component | Leaf 2 | Each component owns registration; the compatibility root delegates only; host enable/disable tests prove optional modules are absent when not selected. |
 | 7 | Move generic capabilities component by component | Leaves 1, 2, 6 | For each move, focused behavior/replay/rollback tests pass, public compatibility is deliberate, and no sibling is bundled merely because it shares DataAccess. |
-| 8 | Evict compiled game features | Leaves 1, 6, 7 | Each game rule has a confirmed catalog owner and focused parity/no-change tests before its C# implementation is deleted; non-rule projections remain only in thin game adapters. |
-| 9 | Recompose hosts and remove shims | Leaves 3-8 | Generic system builds/tests without any game pack; DantesRoleplay host passes full suite/catalog validation/protocol walk; legacy directories are empty before deletion. |
+| 8 | Evict compiled game features | Leaves 1, 6, 7 | **Accepted by Slice 24:** generic projects no longer compile the retained game-adapter trees; files remain on disk by explicit user direction. |
+| 9 | Recompose hosts and remove shims | Leaves 3-8 | **Accepted by Slice 24 and Slice 12H:** the generic host builds/tests without a game pack and the full suite/catalog/protocol evidence passes. |
 
 Do not implement leaves 7 or 8 as one change. Each component move or one coherent game-rule
 eviction gets its own active feature document, named owner, acceptance matrix, and receipt.
 
 ## Lowest ready leaf
 
-Slices 1–22 verified the architecture ratchets, component convention/composition, twelve generic
-capability moves, and quarantine placement for Campaign, Character, Quest, Story, Knowledge,
-Travel, and local routing. [Slice 23](SYSTEM-MODULARIZATION-SLICE-23-RECEIPT.md) verified the
-standalone local-AI foundation and its current consumers.
-
-The next ready work is Leaf 8, one compiled-rule eviction at a time. Each eviction must bind the
-current C# behavior to an existing or confirmed catalog mechanic and retain parity/no-mutation
-evidence. Deterministic retrieval, SQLite hosting, MCP protocol placement, a generic derived AI
-index, and final host recomposition remain separate later leaves.
+Slices 1–23 verified the architecture ratchets, component convention/composition, generic
+capability moves, quarantine placement, and standalone local-AI foundation. [Slice 24](SYSTEM-MODULARIZATION-SLICE-24-RECEIPT.md)
+removed the retained game-adapter trees from generic compilation and host composition without
+deleting them. [Interaction-orchestration Slice 12H](../interaction-orchestration/receipts/INTERACTION-ORCHESTRATION-SLICE-12H-RECEIPT.md)
+then passed the full generic-build and local-AI independence matrix. No modularization leaf remains.
 
 Application registration, source overlays, versioned component schemas, state spaces, and
 application-scoped ECS semantics belong to the downstream application-kernel plan. Do not add them
@@ -273,7 +269,8 @@ Confirmation is required before:
 - replacing any game-specific C# behavior with a catalog mechanic or changing its semantics;
 - adding/removing public MCP kinds or changing the three-verb contract;
 - deleting legacy source directories or compatibility shims; and
-- declaring the refactor accepted after the full independence proof.
+- declaring the refactor accepted after the full independence proof. **Confirmed by the user's
+  2026-08-25 instruction to finish the kernel upgrade.**
 
 ## Acceptance matrix for the completed refactor
 

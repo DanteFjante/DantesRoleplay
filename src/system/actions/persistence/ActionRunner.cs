@@ -19,7 +19,7 @@ public sealed class ActionRunner(
     IMechanicEngine engine,
     IEffectApplier applier,
     DantesRoleplay.Operations.IOperationLog log,
-    IMechanicComposer? composer = null) : IActionRunner, IStoryPlanActionRunner
+    IMechanicComposer? composer = null) : IActionRunner
 {
     // The public verb this is served as, not the historical tool name. Everything else records
     // through ToolRunner, which stamps the protocol identity for it; this runner owns its own
@@ -37,17 +37,10 @@ public sealed class ActionRunner(
     public async Task<ActionRunResult> RunAsync(
         ActionRequest request,
         CancellationToken cancellationToken = default)
-        => await ExecuteAsync(request, null, cancellationToken);
-
-    async Task<ActionRunResult> IStoryPlanActionRunner.RunWithParticipantAsync(
-        ActionRequest request,
-        IActionCommitParticipant participant,
-        CancellationToken cancellationToken)
-        => await ExecuteAsync(request, participant, cancellationToken);
+        => await ExecuteAsync(request, cancellationToken);
 
     private async Task<ActionRunResult> ExecuteAsync(
         ActionRequest request,
-        IActionCommitParticipant? participant,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -400,7 +393,6 @@ public sealed class ActionRunner(
                 ElapsedMilliseconds = run.ElapsedMilliseconds,
                 NextSteps = ConfirmationSteps(affected)
             };
-            if (participant is not null) await participant.StageAsync(succeeded, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return succeeded;
         }
@@ -434,23 +426,6 @@ public sealed class ActionRunner(
                 selected,
                 projection,
                 seed);
-        }
-        catch (StoryPlanResultLimitException)
-        {
-            var failure = ActionRunResult.Failed(
-                "STORY_INTERNAL_FAILURE",
-                "The final story handoff exceeds the safe result limit.",
-                "query(kind: \"history\", failuresOnly: true)",
-                "Story receipt exceeded its safe result limit.",
-                candidates) with
-            {
-                Mechanic = selected,
-                Projection = projection,
-                Seed = seed
-            };
-            if (transaction is null)
-                return await RecordFailureAsync(request, failure, selected, projection, seed, CancellationToken.None);
-            return await FailInTransactionAsync(transaction, request, failure, selected, projection, seed);
         }
         catch (Exception ex)
         {

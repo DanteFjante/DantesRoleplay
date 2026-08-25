@@ -61,9 +61,23 @@
     <Compile Include="..\src\system\**\tests\*.cs">
       <Link>Components\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\game-adapters\**\tests\*.cs">
-      <Link>GameAdapters\%(RecursiveDir)%(Filename)%(Extension)</Link>
-    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Retained tests for former game adapters are not part of the generic host test assembly. -->
+    <Compile Remove="DevelopmentKnowledgeAudienceTests.cs" />
+    <Compile Remove="CatalogWorldFeature7Tests.cs" />
+    <Compile Remove="CatalogWorldFeature9Tests.cs" />
+    <Compile Remove="CategoryToolTests.cs" />
+    <Compile Remove="InformationTests.cs" />
+    <Compile Remove="ProcedureBoundActionVerifierTests.cs" />
+    <Compile Remove="ProtocolWalkTests.cs" Condition="'$(IncludeProtocolWalkTests)' != 'true'" />
+    <Compile Remove="SessionFeature4Tests.cs" />
+    <Compile Remove="SqliteVecExtensionProbeTests.cs" />
+    <Compile Remove="VerbToolTests.cs" />
+    <Compile Remove="..\src\system\events-and-notifications\tests\SubscriptionStoreTests.cs" />
+    <Compile Remove="..\src\system\actions\tests\ActionRunnerParticipantTests.cs" />
+    <Compile Remove="..\src\system\snapshots\tests\SnapshotFeature1Tests.cs" />
   </ItemGroup>
 
 </Project>

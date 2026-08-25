@@ -1,0 +1,1 @@
+{"name":"schema-validation","classification":"system","status":"operational","owns":["bounded JSON Schema profiles","schema and value validation"],"mayDependOn":[]}

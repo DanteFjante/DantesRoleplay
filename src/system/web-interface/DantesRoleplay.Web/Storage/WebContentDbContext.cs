@@ -10,6 +10,8 @@ public sealed class WebContentDbContext(DbContextOptions<WebContentDbContext> op
 
     public DbSet<WebPageRevision> PageRevisions => Set<WebPageRevision>();
 
+    public DbSet<WebPageAsset> PageAssets => Set<WebPageAsset>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<WebPage>(entity =>
@@ -46,6 +48,24 @@ public sealed class WebContentDbContext(DbContextOptions<WebContentDbContext> op
                 .HasForeignKey(revision => revision.PageId)
                 .OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(revision => new { revision.PageId, revision.Revision }).IsUnique();
+        });
+
+        modelBuilder.Entity<WebPageAsset>(entity =>
+        {
+            entity.ToTable("web_page_asset");
+            entity.HasKey(asset => asset.Id);
+            entity.Property(asset => asset.PageRevisionId).IsRequired();
+            entity.Property(asset => asset.Path)
+                .HasMaxLength(WebPageBundleLimits.MaximumAssetPathLength)
+                .IsRequired();
+            entity.Property(asset => asset.ContentType).HasMaxLength(127).IsRequired();
+            entity.Property(asset => asset.ContentHash).HasMaxLength(64).IsRequired();
+            entity.Property(asset => asset.Content).IsRequired();
+            entity.HasOne(asset => asset.PageRevision)
+                .WithMany(revision => revision.Assets)
+                .HasForeignKey(asset => asset.PageRevisionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(asset => new { asset.PageRevisionId, asset.Path }).IsUnique();
         });
     }
 }

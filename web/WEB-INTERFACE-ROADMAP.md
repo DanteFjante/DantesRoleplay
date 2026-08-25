@@ -1,7 +1,7 @@
 # Web interface roadmap
 
-Status: **Slice 1 accepted with the recorded repository-level test exception**
-Last updated: 2026-08-23
+Status: **Feature 1 complete — Feature 2 complete (Slices 0–15 accepted)**
+Last updated: 2026-08-24
 
 ## Outcome
 
@@ -29,11 +29,68 @@ the host.
 | Slice | State | Capability |
 | --- | --- | --- |
 | 1 | accepted | Versioned HTML upload/serving plus dynamic entity/component JSON reads. |
-| 2 | planned | Separate uploaded assets or ZIP bundles, only after a real page needs them. |
-| 3 | planned | SSE invalidation and optional live page-revision notification. |
-| 4 | planned | Authentication, trust policy, isolation, CSP, quotas, and remote deployment. |
+| 2 | accepted | Versioned ZIP bundles containing `index.html` and revision-scoped static assets. |
+| 3 | accepted | SSE invalidation and optional live page-revision notification. |
+| 4 | accepted | Local single-user access boundary, trusted-content policy, CSP, and quotas. |
+| 5 | accepted | Private Tailscale identity and remote access with MCP excluded. |
 
 ## Current implementation owner
 
-[Slice 1 receipt](WEB-INTERFACE-SLICE-1-RECEIPT.md) records the delivered foundation. There is no
-active later slice; later work must begin with a separately confirmed implementation document.
+[Slice 5 receipt](WEB-INTERFACE-SLICE-5-RECEIPT.md) verifies the selected private remote access
+boundary. [Slice 4 receipt](WEB-INTERFACE-SLICE-4-RECEIPT.md) remains its local prerequisite.
+
+## Feature 2 — operator control center
+
+The requested settings, activity, assistant, ECS/contracts, and site-editing panels cross existing
+owners and are planned in the
+[operator control-center dependency plan](WEB-CONTROL-CENTER-DEPENDENCY-PLAN.md). [Slice 0](WEB-CONTROL-CENTER-SLICE-0-IMPLEMENTATION.md) established the
+confirmed capability, route, and same-origin foundation; its
+[receipt](WEB-CONTROL-CENTER-SLICE-0-RECEIPT.md) records acceptance and the unrelated repository
+build/test exceptions. [Slice 1](WEB-CONTROL-CENTER-SLICE-1-IMPLEMENTATION.md) delivered the
+read-only shell/status presentation; its
+[receipt](WEB-CONTROL-CENTER-SLICE-1-RECEIPT.md) records the unrelated repository test exception.
+[Slice 2](WEB-CONTROL-CENTER-SLICE-2-IMPLEMENTATION.md) delivers committed event history and exact
+operation context; its [receipt](WEB-CONTROL-CENTER-SLICE-2-RECEIPT.md) records full passing
+verification. [Slice 3](WEB-CONTROL-CENTER-SLICE-3-IMPLEMENTATION.md) delivers bounded application,
+ECS, exact schema/value, and explicitly public catalog exploration; its
+[receipt](WEB-CONTROL-CENTER-SLICE-3-RECEIPT.md) records acceptance.
+[Slice 4](WEB-CONTROL-CENTER-SLICE-4-IMPLEMENTATION.md) delivers inactive page drafts, exact
+revision preview/export, optimistic publish, and immutable rollback; its
+[receipt](WEB-CONTROL-CENTER-SLICE-4-RECEIPT.md) records acceptance.
+[Slice 5](WEB-CONTROL-CENTER-SLICE-5-IMPLEMENTATION.md) delivers the host-owned local-completion
+setting allowlist and redacted read-only panel; its
+[receipt](WEB-CONTROL-CENTER-SLICE-5-RECEIPT.md) records acceptance.
+[Slice 6](WEB-CONTROL-CENTER-SLICE-6-IMPLEMENTATION.md) delivers audited versioned setting
+overrides, reset/rollback history, and restart-only application; its
+[receipt](WEB-CONTROL-CENTER-SLICE-6-RECEIPT.md) records acceptance.
+[Slice 7](WEB-CONTROL-CENTER-SLICE-7-IMPLEMENTATION.md) delivers durable operator-scoped local
+advisory conversations, provider status, exact replay/recovery, and the assistant panel; its
+[receipt](WEB-CONTROL-CENTER-SLICE-7-RECEIPT.md) records acceptance and the strict separation from
+interaction planning/execution authority.
+[Slice 8](WEB-CONTROL-CENTER-SLICE-8-IMPLEMENTATION.md) delivers pinned local Codex app-server
+status, durable read-only conversations, bounded streamed output/activity, resume/recovery, and
+explicit cancellation; its [receipt](WEB-CONTROL-CENTER-SLICE-8-RECEIPT.md) records acceptance and
+the no-approval/no-write/no-network boundary.
+[Slice 9](WEB-CONTROL-CENTER-SLICE-9-IMPLEMENTATION.md) delivers explicit, expiring, turn-scoped
+Codex command, repository file-change, network, and permission approvals; its
+[receipt](WEB-CONTROL-CENTER-SLICE-9-RECEIPT.md) records acceptance of the independent **Sol,
+xhigh** gate and the deliberate exclusion of session-wide authority.
+[Slice 10](WEB-CONTROL-CENTER-SLICE-10-IMPLEMENTATION.md) delivers a persistent sidebar, one routed
+main workspace, and application structure that opens without replacing the control navigation; its
+[receipt](WEB-CONTROL-CENTER-SLICE-10-RECEIPT.md) records acceptance of the client-only boundary.
+[Slice 11](WEB-CONTROL-CENTER-SLICE-11-IMPLEMENTATION.md) adds the local/private root entry route
+for the active control-center page while retaining the direct `/ui` page route and separate MCP
+surface; its [receipt](WEB-CONTROL-CENTER-SLICE-11-RECEIPT.md) records acceptance.
+[Slice 12](WEB-CONTROL-CENTER-SLICE-12-IMPLEMENTATION.md) makes the root an active home page and
+adds direct page navigation from home and Site Editor; its
+[receipt](WEB-CONTROL-CENTER-SLICE-12-RECEIPT.md) records acceptance and the synchronized live
+page revisions. [Slice 13](WEB-CONTROL-CENTER-SLICE-13-IMPLEMENTATION.md) refreshes the reviewed
+local Codex app-server pin and configures the existing development host to use the installed
+standalone CLI without altering assistant authority; its
+[receipt](WEB-CONTROL-CENTER-SLICE-13-RECEIPT.md) records acceptance.
+[Slice 14](WEB-CONTROL-CENTER-SLICE-14-IMPLEMENTATION.md) repairs changed-content preview by
+saving an inactive draft before opening the existing isolated revision preview; its
+[receipt](WEB-CONTROL-CENTER-SLICE-14-RECEIPT.md) records acceptance.
+[Slice 15](WEB-CONTROL-CENTER-SLICE-15-IMPLEMENTATION.md) selects the confirmed Luna model for
+new Codex threads and exposes that host-owned selection as status only; its
+[receipt](WEB-CONTROL-CENTER-SLICE-15-RECEIPT.md) records acceptance.

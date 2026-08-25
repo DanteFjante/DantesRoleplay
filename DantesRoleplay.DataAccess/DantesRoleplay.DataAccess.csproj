@@ -34,14 +34,8 @@
     <Compile Include="..\src\system\**\hosting\*.cs">
       <Link>Components\System\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\game-adapters\**\hosting\*.cs">
-      <Link>Components\GameAdapters\%(RecursiveDir)%(Filename)%(Extension)</Link>
-    </Compile>
     <Compile Include="..\src\system\**\persistence\*.cs">
       <Link>Components\System\%(RecursiveDir)%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="..\src\game-adapters\**\persistence\*.cs">
-      <Link>Components\GameAdapters\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </Compile>
   </ItemGroup>
 

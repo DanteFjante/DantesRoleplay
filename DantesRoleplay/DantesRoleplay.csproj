@@ -53,9 +53,6 @@
     <Compile Include="..\src\system\**\domain\*.cs">
       <Link>Components\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\game-adapters\**\domain\*.cs">
-      <Link>GameAdapters\%(RecursiveDir)%(Filename)%(Extension)</Link>
-    </Compile>
   </ItemGroup>
 
   <ItemGroup>

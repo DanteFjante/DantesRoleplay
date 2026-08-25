@@ -1,13 +1,23 @@
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.Applications;
+using DantesRoleplay.Sources;
 using DantesRoleplay.Events;
 using DantesRoleplay.Notifications;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.Snapshots;
 using DantesRoleplay.SystemFeedback;
-using DantesRoleplay.Story;
 using DantesRoleplay.Information;
 using DantesRoleplay.World;
+using DantesRoleplay.Ecs;
+using DantesRoleplay.SchemaValidation;
+using DantesRoleplay.Projections;
+using DantesRoleplay.ApplicationActivation;
+using DantesRoleplay.StateSpaceAdministration;
+using DantesRoleplay.HostSettings;
+using DantesRoleplay.Assistants;
+using DantesRoleplay.LegacyStateAdoption;
+using DantesRoleplay.Interactions;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.DataAccess;
@@ -27,6 +37,14 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
     public DbSet<ProcedureContractVersion> ProcedureContractVersions => Set<ProcedureContractVersion>();
 
     public DbSet<Operation> Operations => Set<Operation>();
+
+    public DbSet<HostSettingOverride> HostSettingOverrides => Set<HostSettingOverride>();
+    public DbSet<HostSettingOverrideVersion> HostSettingOverrideVersions => Set<HostSettingOverrideVersion>();
+    public DbSet<AssistantConversation> AssistantConversations => Set<AssistantConversation>();
+    public DbSet<AssistantTurn> AssistantTurns => Set<AssistantTurn>();
+    public DbSet<AssistantMessage> AssistantMessages => Set<AssistantMessage>();
+    public DbSet<AssistantTurnActivity> AssistantTurnActivities => Set<AssistantTurnActivity>();
+    public DbSet<AssistantTurnApproval> AssistantTurnApprovals => Set<AssistantTurnApproval>();
 
     public DbSet<Entity> Entities => Set<Entity>();
 
@@ -62,11 +80,15 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
     public DbSet<SystemFeedbackProcedureReference> SystemFeedbackProcedureReferences => Set<SystemFeedbackProcedureReference>();
     public DbSet<SystemFeedbackDisposition> SystemFeedbackDispositions => Set<SystemFeedbackDisposition>();
     public DbSet<SystemFeedbackRetentionAction> SystemFeedbackRetentionActions => Set<SystemFeedbackRetentionAction>();
-    public DbSet<StoryPlanRun> StoryPlanRuns => Set<StoryPlanRun>();
-    public DbSet<StoryPlanStepRun> StoryPlanStepRuns => Set<StoryPlanStepRun>();
     public DbSet<InformationSource> InformationSources => Set<InformationSource>();
     public DbSet<InformationRecord> InformationRecords => Set<InformationRecord>();
     public DbSet<InformationActionContract> InformationActionContracts => Set<InformationActionContract>();
+    public DbSet<InteractionResolutionReceipt> InteractionResolutionReceipts => Set<InteractionResolutionReceipt>();
+    public DbSet<InteractionExecutionReceipt> InteractionExecutionReceipts => Set<InteractionExecutionReceipt>();
+    public DbSet<InteractionExecutionReceiptStep> InteractionExecutionReceiptSteps => Set<InteractionExecutionReceiptStep>();
+    public DbSet<InteractionRecipe> InteractionRecipes => Set<InteractionRecipe>();
+    public DbSet<InteractionRecipeRevision> InteractionRecipeRevisions => Set<InteractionRecipeRevision>();
+    public DbSet<InteractionRecipeEvidence> InteractionRecipeEvidence => Set<InteractionRecipeEvidence>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -74,6 +96,10 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
 
         ConfigureProcedures(modelBuilder);
         ConfigureOperations(modelBuilder);
+        ConfigureInteractionReceipts(modelBuilder);
+        ConfigureInteractionRecipes(modelBuilder);
+        ConfigureHostSettings(modelBuilder);
+        ConfigureAssistantConversations(modelBuilder);
         ConfigureWorld(modelBuilder);
         ConfigureMechanics(modelBuilder);
         ConfigureEventTypes(modelBuilder);
@@ -82,8 +108,531 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         ConfigureNotifications(modelBuilder);
         ConfigureSnapshots(modelBuilder);
         ConfigureSystemFeedback(modelBuilder);
-        ConfigureStoryPlans(modelBuilder);
+        ConfigureRetainedWorkflowTables(modelBuilder);
         ConfigureInformation(modelBuilder);
+        ConfigureApplicationRegistry(modelBuilder);
+        ConfigureSourceRegistry(modelBuilder);
+        ConfigureComponentTypes(modelBuilder);
+        ConfigureApplicationScopedEcs(modelBuilder);
+        ConfigureProjectionMaterialization(modelBuilder);
+        ConfigureApplicationActivation(modelBuilder);
+        ConfigureLegacyStateAdoption(modelBuilder);
+    }
+
+    // The compiled Story adapter is no longer part of this host, but these two tables already
+    // belong to its migration history. Keep an untyped mapping so EF preserves that history and
+    // can initialize an existing database without importing a Story CLR contract or generating a
+    // destructive migration. No generic service reads or writes these retained records.
+    private static void ConfigureRetainedWorkflowTables(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity("DantesRoleplay.Story.StoryPlanRun", entity =>
+        {
+            entity.ToTable("story_plan_run", table =>
+            {
+                table.HasCheckConstraint("CK_story_plan_run_id", "length(\"Id\") = 43 AND substr(\"Id\", 1, 11) = 'story-plan.' AND substr(\"Id\", 12) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_story_plan_run_status", "\"Status\" IN ('pending', 'running', 'completed', 'blocked', 'failed', 'cancelled')");
+                table.HasCheckConstraint("CK_story_plan_run_revision", "\"Revision\" > 0");
+                table.HasCheckConstraint("CK_story_plan_run_step_counts", "\"NextStepIndex\" >= 0 AND \"CompletedStepCount\" >= 0");
+            });
+            entity.Property<string>("Id").HasMaxLength(43);
+            entity.Property<string>("CampaignId").IsRequired().HasMaxLength(200);
+            entity.Property<bool>("CancelRequested");
+            entity.Property<int>("CompletedStepCount");
+            entity.Property<DateTime>("CreatedAtUtc");
+            entity.Property<string>("HandoffJson").HasMaxLength(32000);
+            entity.Property<string>("LeaseOwner").HasMaxLength(100);
+            entity.Property<DateTime?>("LeaseUntilUtc");
+            entity.Property<int>("NextStepIndex");
+            entity.Property<string>("Objective").IsRequired().HasMaxLength(1000);
+            entity.Property<string>("PlanJson").IsRequired().HasMaxLength(16000);
+            entity.Property<string>("PolicyRevision").IsRequired().HasMaxLength(200);
+            entity.Property<string>("PrincipalId").IsRequired().HasMaxLength(200);
+            entity.Property<string>("RequestToken").IsRequired().HasMaxLength(100);
+            entity.Property<int>("Revision").IsConcurrencyToken();
+            entity.Property<string>("Status").IsRequired().HasMaxLength(20);
+            entity.Property<string>("StopCode").IsRequired().HasMaxLength(100);
+            entity.Property<string>("StopMessage").IsRequired().HasMaxLength(1000);
+            entity.Property<DateTime>("UpdatedAtUtc");
+            entity.HasKey("Id");
+            entity.HasIndex("RequestToken").IsUnique();
+            entity.HasIndex("Status", "LeaseUntilUtc", "UpdatedAtUtc");
+        });
+
+        modelBuilder.Entity("DantesRoleplay.Story.StoryPlanStepRun", entity =>
+        {
+            entity.ToTable("story_plan_step_run", table =>
+            {
+                table.HasCheckConstraint("CK_story_plan_step_run_index", "\"StepIndex\" BETWEEN 0 AND 5");
+                table.HasCheckConstraint("CK_story_plan_step_run_kind", "\"Kind\" IN ('campaign-context', 'knowledge', 'action')");
+                table.HasCheckConstraint("CK_story_plan_step_run_status", "\"Status\" IN ('pending', 'running', 'completed', 'blocked', 'failed', 'skipped')");
+            });
+            entity.Property<string>("StoryPlanId").HasMaxLength(43);
+            entity.Property<int>("StepIndex");
+            entity.Property<string>("ActionOperationId").IsRequired().HasMaxLength(32);
+            entity.Property<DateTime?>("CompletedAtUtc");
+            entity.Property<string>("ErrorCode").IsRequired().HasMaxLength(100);
+            entity.Property<string>("ErrorMessage").IsRequired().HasMaxLength(1000);
+            entity.Property<string>("InputJson").IsRequired().HasMaxLength(4000);
+            entity.Property<string>("Intent").IsRequired().HasMaxLength(500);
+            entity.Property<string>("Kind").IsRequired().HasMaxLength(20);
+            entity.Property<string>("MechanicId").IsRequired().HasMaxLength(200);
+            entity.Property<int?>("MechanicVersion");
+            entity.Property<string>("ProcedureEvidenceJson").IsRequired().HasMaxLength(4000);
+            entity.Property<string>("ResultJson").IsRequired().HasMaxLength(32000);
+            entity.Property<string>("RoleEntityIdsJson").IsRequired().HasMaxLength(4000);
+            entity.Property<DateTime?>("StartedAtUtc");
+            entity.Property<string>("Status").IsRequired().HasMaxLength(20);
+            entity.Property<string>("StepId").IsRequired().HasMaxLength(40);
+            entity.HasKey("StoryPlanId", "StepIndex");
+            entity.HasOne("DantesRoleplay.Story.StoryPlanRun", "StoryPlan")
+                .WithMany("Steps")
+                .HasForeignKey("StoryPlanId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+        });
+    }
+
+    private static void ConfigureApplicationRegistry(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ApplicationRegistryRecord>(entity =>
+        {
+            entity.ToTable("system_application", table =>
+            {
+                table.HasCheckConstraint("CK_system_application_id", "\"Id\" <> 'system'");
+            });
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasMaxLength(63);
+            entity.Property(x => x.DisplayName).IsRequired();
+            entity.Property(x => x.Description).IsRequired();
+        });
+
+        modelBuilder.Entity<ApplicationRevisionRecord>(entity =>
+        {
+            entity.ToTable("system_application_revision", table =>
+            {
+                table.HasCheckConstraint("CK_system_application_revision_number", "\"Revision\" > 0");
+                table.HasCheckConstraint("CK_system_application_revision_fingerprint", "length(\"Fingerprint\") = 64 AND \"Fingerprint\" NOT GLOB '*[^0-9A-F]*'");
+            });
+            entity.HasKey(x => new { x.ApplicationId, x.Revision });
+            entity.Property(x => x.ApplicationId).HasMaxLength(63);
+            entity.Property(x => x.Fingerprint).HasMaxLength(64).IsRequired();
+            entity.HasOne<ApplicationRegistryRecord>()
+                .WithMany()
+                .HasForeignKey(x => x.ApplicationId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ApplicationRevisionBaseRecord>(entity =>
+        {
+            entity.ToTable("system_application_revision_base", table =>
+            {
+                table.HasCheckConstraint("CK_system_application_revision_base_ordinal", "\"Ordinal\" >= 0");
+            });
+            entity.HasKey(x => new { x.ApplicationId, x.Revision, x.Ordinal });
+            entity.Property(x => x.ApplicationId).HasMaxLength(63);
+            entity.Property(x => x.BaseApplicationId).HasMaxLength(63);
+            entity.HasIndex(x => new { x.ApplicationId, x.Revision, x.BaseApplicationId }).IsUnique();
+            entity.HasOne<ApplicationRevisionRecord>()
+                .WithMany()
+                .HasForeignKey(x => new { x.ApplicationId, x.Revision })
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<ApplicationRegistryRecord>()
+                .WithMany()
+                .HasForeignKey(x => x.BaseApplicationId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureApplicationActivation(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ApplicationActivationRevisionRecord>(entity =>
+        {
+            entity.ToTable("system_application_activation_revision", table =>
+            {
+                table.HasCheckConstraint("CK_system_application_activation_revision_number", "\"ActivationRevision\" > 0 AND \"ApplicationRevision\" > 0");
+                table.HasCheckConstraint("CK_system_application_activation_revision_hashes", "length(\"ApplicationFingerprint\") = 64 AND \"ApplicationFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"PreviewFingerprint\") = 64 AND \"PreviewFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"ScannedDocumentsFingerprint\") = 64 AND \"ScannedDocumentsFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"CandidateManifestFingerprint\") = 64 AND \"CandidateManifestFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"DependencyGraphFingerprint\") = 64 AND \"DependencyGraphFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"ActivationFingerprint\") = 64 AND \"ActivationFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+            });
+            entity.HasKey(x => new { x.ApplicationId, x.ActivationRevision });
+            entity.Property(x => x.ApplicationId).HasMaxLength(63);
+            entity.Property(x => x.ApplicationFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.PreviewFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.ScannedDocumentsFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.CandidateManifestFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.DependencyGraphFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.ActivationFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.DependencyCoverageVersion).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.ActivatedByOperationId).HasMaxLength(200).IsRequired();
+            entity.HasIndex(x => new { x.ApplicationId, x.ActivationFingerprint });
+            entity.HasOne<ApplicationRevisionRecord>()
+                .WithMany()
+                .HasForeignKey(x => new { x.ApplicationId, Revision = x.ApplicationRevision })
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Operation>()
+                .WithMany()
+                .HasForeignKey(x => x.ActivatedByOperationId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ApplicationActivationCurrentRecord>(entity =>
+        {
+            entity.ToTable("system_application_activation_current", table =>
+                table.HasCheckConstraint("CK_system_application_activation_current_revision", "\"ActivationRevision\" > 0"));
+            entity.HasKey(x => x.ApplicationId);
+            entity.Property(x => x.ApplicationId).HasMaxLength(63);
+            entity.HasOne<ApplicationActivationRevisionRecord>()
+                .WithMany()
+                .HasForeignKey(x => new { x.ApplicationId, x.ActivationRevision })
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ApplicationActivationSourceRecord>(entity =>
+        {
+            entity.ToTable("system_application_activation_source", table =>
+            {
+                table.HasCheckConstraint("CK_system_application_activation_source_counts", "\"Ordinal\" >= 0 AND \"DocumentCount\" >= 0 AND \"ProblemCount\" >= 0");
+                table.HasCheckConstraint("CK_system_application_activation_source_hash", "length(\"RegistrationFingerprint\") = 64 AND \"RegistrationFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+            });
+            entity.HasKey(x => new { x.ApplicationId, x.ActivationRevision, x.Ordinal });
+            entity.Property(x => x.ApplicationId).HasMaxLength(63);
+            entity.Property(x => x.SourceId).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.RegistrationFingerprint).HasMaxLength(64).IsRequired();
+            entity.HasIndex(x => new { x.ApplicationId, x.ActivationRevision, x.SourceId }).IsUnique();
+            entity.HasOne<ApplicationActivationRevisionRecord>()
+                .WithMany()
+                .HasForeignKey(x => new { x.ApplicationId, x.ActivationRevision })
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ApplicationActivationDocumentRecord>(entity =>
+        {
+            entity.ToTable("system_application_activation_document", table =>
+            {
+                table.HasCheckConstraint("CK_system_application_activation_document_values", "\"Ordinal\" >= 0 AND \"Trust\" IN (0, 1) AND \"Length\" >= 0");
+                table.HasCheckConstraint("CK_system_application_activation_document_hash", "length(\"ContentFingerprint\") = 64 AND \"ContentFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+            });
+            entity.HasKey(x => new { x.ApplicationId, x.ActivationRevision, x.Ordinal });
+            entity.Property(x => x.ApplicationId).HasMaxLength(63);
+            entity.Property(x => x.LogicalIdentity).HasMaxLength(1200).IsRequired();
+            entity.Property(x => x.SourceId).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.RelativePath).HasMaxLength(1000).IsRequired();
+            entity.Property(x => x.MediaType).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.ContentFingerprint).HasMaxLength(64).IsRequired();
+            entity.HasIndex(x => new { x.ApplicationId, x.ActivationRevision, x.LogicalIdentity }).IsUnique();
+            entity.HasOne<ApplicationActivationRevisionRecord>()
+                .WithMany()
+                .HasForeignKey(x => new { x.ApplicationId, x.ActivationRevision })
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ApplicationActivationReceiptRecord>(entity =>
+        {
+            entity.ToTable("system_application_activation_receipt", table =>
+            {
+                table.HasCheckConstraint("CK_system_application_activation_receipt_hash", "length(\"RequestFingerprint\") = 64 AND \"RequestFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+                table.HasCheckConstraint("CK_system_application_activation_receipt_outcome", "\"Outcome\" IN ('activated', 'unchanged')");
+            });
+            entity.HasKey(x => x.OperationId);
+            entity.Property(x => x.OperationId).HasMaxLength(200);
+            entity.Property(x => x.RequestFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.ApplicationId).HasMaxLength(63);
+            entity.Property(x => x.Outcome).HasMaxLength(20).IsRequired();
+            entity.HasOne<Operation>()
+                .WithMany()
+                .HasForeignKey(x => x.OperationId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationActivationRevisionRecord>()
+                .WithMany()
+                .HasForeignKey(x => new { x.ApplicationId, x.ActivationRevision })
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureSourceRegistry(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ApplicationSourceRecord>(entity =>
+        {
+            entity.ToTable("system_application_source", table =>
+            {
+                table.HasCheckConstraint("CK_system_application_source_trust", "\"Trust\" IN (0, 1)");
+            });
+            entity.HasKey(x => new { x.ApplicationId, x.SourceId });
+            entity.Property(x => x.ApplicationId).HasMaxLength(63);
+            entity.Property(x => x.SourceId).IsRequired();
+            entity.Property(x => x.AllowedRootId).IsRequired();
+            entity.Property(x => x.RelativePathOrGlob).IsRequired();
+            entity.Property(x => x.LogicalIdentity).IsRequired();
+            entity.HasIndex(x => new { x.ApplicationId, x.LogicalIdentity, x.Precedence }).IsUnique();
+            entity.HasOne<ApplicationRegistryRecord>()
+                .WithMany()
+                .HasForeignKey(x => x.ApplicationId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ApplicationSourceScanRecord>(entity =>
+        {
+            entity.ToTable("system_application_source_scan", table =>
+            {
+                table.HasCheckConstraint("CK_system_application_source_scan_generation", "\"Generation\" > 0");
+                table.HasCheckConstraint("CK_system_application_source_scan_status", "\"Status\" IN (0, 1)");
+                table.HasCheckConstraint("CK_system_application_source_scan_fingerprint", "length(\"ContentFingerprint\") = 64 AND \"ContentFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+            });
+            entity.HasKey(x => new { x.ApplicationId, x.SourceId, x.Generation });
+            entity.Property(x => x.ApplicationId).HasMaxLength(63);
+            entity.Property(x => x.SourceId).IsRequired();
+            entity.Property(x => x.ContentFingerprint).HasMaxLength(64).IsRequired();
+            entity.HasOne<ApplicationSourceRecord>()
+                .WithMany()
+                .HasForeignKey(x => new { x.ApplicationId, x.SourceId })
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureComponentTypes(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ComponentTypeRecord>(entity =>
+        {
+            entity.ToTable("system_component_type");
+            entity.HasKey(x => x.QualifiedId);
+            entity.Property(x => x.QualifiedId).HasMaxLength(200);
+            entity.Property(x => x.ApplicationId).HasMaxLength(63).IsRequired();
+            entity.HasOne<ApplicationRegistryRecord>()
+                .WithMany()
+                .HasForeignKey(x => x.ApplicationId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ComponentTypeVersionRecord>(entity =>
+        {
+            entity.ToTable("system_component_type_version", table =>
+            {
+                table.HasCheckConstraint("CK_system_component_type_version_number", "\"Version\" > 0");
+                table.HasCheckConstraint("CK_system_component_type_version_hash", "length(\"SchemaHash\") = 64 AND \"SchemaHash\" NOT GLOB '*[^0-9A-F]*'");
+                table.HasCheckConstraint("CK_system_component_type_version_profile", "\"ProfileId\" IN ('system-json-schema-2020-12/v1', 'system-json-schema-2020-12/v2')");
+                table.HasCheckConstraint("CK_system_component_type_version_schema_json", "json_valid(\"SchemaJson\")");
+            });
+            entity.HasKey(x => new { x.QualifiedId, x.Version });
+            entity.Property(x => x.QualifiedId).HasMaxLength(200);
+            entity.Property(x => x.ProfileId).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.SchemaJson).HasMaxLength(SystemJsonSchemaProfile.MaximumSchemaBytes).IsRequired();
+            entity.Property(x => x.SchemaHash).HasMaxLength(64).IsRequired();
+            entity.HasOne<ComponentTypeRecord>()
+                .WithMany()
+                .HasForeignKey(x => x.QualifiedId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureApplicationScopedEcs(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ApplicationStateSpaceRecord>(entity =>
+        {
+            entity.ToTable("system_state_space", table =>
+            {
+                table.HasCheckConstraint("CK_system_state_space_revision", "\"ApplicationRevision\" > 0");
+                table.HasCheckConstraint("CK_system_state_space_manifest", "length(\"ManifestFingerprint\") = 64 AND \"ManifestFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+            });
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasMaxLength(200);
+            entity.Property(x => x.ApplicationId).HasMaxLength(63).IsRequired();
+            entity.Property(x => x.ManifestFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.BindingRevision).HasDefaultValue(1);
+            entity.HasOne<ApplicationRevisionRecord>()
+                .WithMany()
+                .HasForeignKey(x => new { x.ApplicationId, Revision = x.ApplicationRevision })
+                .HasPrincipalKey(x => new { x.ApplicationId, x.Revision })
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<StateSpaceBindingRevisionRecord>(entity =>
+        {
+            entity.ToTable("system_state_space_binding_revision", table =>
+            {
+                table.HasCheckConstraint("CK_system_state_space_binding_revision", "\"BindingRevision\" > 0");
+                table.HasCheckConstraint("CK_system_state_space_binding_application_revision", "\"ApplicationRevision\" > 0");
+                table.HasCheckConstraint("CK_system_state_space_binding_application_fingerprint", "length(\"ApplicationFingerprint\") = 64 AND \"ApplicationFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+                table.HasCheckConstraint("CK_system_state_space_binding_active_fingerprint", "length(\"ActiveFingerprint\") = 64 AND \"ActiveFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+                table.HasCheckConstraint("CK_system_state_space_binding_fingerprint", "length(\"BindingFingerprint\") = 64 AND \"BindingFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+                table.HasCheckConstraint("CK_system_state_space_binding_previous", "\"PreviousBindingFingerprint\" IS NULL OR (length(\"PreviousBindingFingerprint\") = 64 AND \"PreviousBindingFingerprint\" NOT GLOB '*[^0-9A-F]*')");
+                table.HasCheckConstraint("CK_system_state_space_binding_counts", "\"EntityCount\" >= 0 AND \"ComponentCount\" >= 0");
+            });
+            entity.HasKey(x => new { x.StateSpaceId, x.BindingRevision });
+            entity.Property(x => x.StateSpaceId).HasMaxLength(200);
+            entity.Property(x => x.ApplicationId).HasMaxLength(63).IsRequired();
+            entity.Property(x => x.ApplicationFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.ActiveFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.BindingFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.PreviousBindingFingerprint).HasMaxLength(64);
+            entity.Property(x => x.CompatibilityCode).HasMaxLength(80).IsRequired();
+            entity.Property(x => x.DependencyCoverageVersion).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.OperationId).HasMaxLength(32);
+            entity.HasIndex(x => x.OperationId).IsUnique();
+            entity.HasOne<ApplicationStateSpaceRecord>()
+                .WithMany()
+                .HasForeignKey(x => x.StateSpaceId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationRevisionRecord>()
+                .WithMany()
+                .HasForeignKey(x => new { x.ApplicationId, Revision = x.ApplicationRevision })
+                .HasPrincipalKey(x => new { x.ApplicationId, x.Revision })
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Operation>()
+                .WithMany()
+                .HasForeignKey(x => x.OperationId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ApplicationEcsEntityRecord>(entity =>
+        {
+            entity.ToTable("system_ecs_entity", table =>
+            {
+                table.HasCheckConstraint("CK_system_ecs_entity_revision", "\"Revision\" > 0");
+            });
+            entity.HasKey(x => new { x.StateSpaceId, x.Id });
+            entity.Property(x => x.StateSpaceId).HasMaxLength(200);
+            entity.Property(x => x.Id).HasMaxLength(200);
+            entity.Property(x => x.Name).HasMaxLength(400).IsRequired();
+            entity.HasOne<ApplicationStateSpaceRecord>()
+                .WithMany()
+                .HasForeignKey(x => x.StateSpaceId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ApplicationEcsComponentRecord>(entity =>
+        {
+            entity.ToTable("system_ecs_component", table =>
+            {
+                table.HasCheckConstraint("CK_system_ecs_component_type_version", "\"TypeVersion\" > 0");
+                table.HasCheckConstraint("CK_system_ecs_component_hash", "length(\"SchemaHash\") = 64 AND \"SchemaHash\" NOT GLOB '*[^0-9A-F]*'");
+                table.HasCheckConstraint("CK_system_ecs_component_data", "json_valid(\"Data\")");
+                table.HasCheckConstraint("CK_system_ecs_component_revision", "\"Revision\" > 0");
+            });
+            entity.HasKey(x => new { x.StateSpaceId, x.EntityId, x.QualifiedTypeId });
+            entity.Property(x => x.StateSpaceId).HasMaxLength(200);
+            entity.Property(x => x.EntityId).HasMaxLength(200);
+            entity.Property(x => x.QualifiedTypeId).HasMaxLength(200);
+            entity.Property(x => x.SchemaHash).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.Data).HasMaxLength(SystemJsonSchemaProfile.MaximumValueBytes).IsRequired();
+            entity.HasIndex(x => new { x.StateSpaceId, x.QualifiedTypeId });
+            entity.HasOne<ApplicationEcsEntityRecord>()
+                .WithMany()
+                .HasForeignKey(x => new { x.StateSpaceId, Id = x.EntityId })
+                .HasPrincipalKey(x => new { x.StateSpaceId, x.Id })
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ComponentTypeVersionRecord>()
+                .WithMany()
+                .HasForeignKey(x => new { QualifiedId = x.QualifiedTypeId, Version = x.TypeVersion })
+                .HasPrincipalKey(x => new { x.QualifiedId, x.Version })
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ApplicationEcsContainmentRecord>(entity =>
+        {
+            entity.ToTable("system_ecs_containment", table =>
+                table.HasCheckConstraint("CK_system_ecs_containment_revision", "\"Revision\" > 0"));
+            entity.HasKey(value => new { value.StateSpaceId, value.ContainedEntityId });
+            entity.Property(value => value.StateSpaceId).HasMaxLength(200);
+            entity.Property(value => value.ContainedEntityId).HasMaxLength(200);
+            entity.Property(value => value.ContainerEntityId).HasMaxLength(200).IsRequired();
+            entity.Property(value => value.Slot).HasMaxLength(100).IsRequired();
+            entity.HasIndex(value => new { value.StateSpaceId, value.ContainerEntityId });
+            entity.HasOne<ApplicationEcsEntityRecord>().WithMany()
+                .HasForeignKey(value => new { value.StateSpaceId, Id = value.ContainedEntityId })
+                .HasPrincipalKey(value => new { value.StateSpaceId, value.Id })
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationEcsEntityRecord>().WithMany()
+                .HasForeignKey(value => new { value.StateSpaceId, Id = value.ContainerEntityId })
+                .HasPrincipalKey(value => new { value.StateSpaceId, value.Id })
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ApplicationEcsRelationshipRecord>(entity =>
+        {
+            entity.ToTable("system_ecs_relationship", table =>
+            {
+                table.HasCheckConstraint("CK_system_ecs_relationship_revision", "\"Revision\" > 0");
+                table.HasCheckConstraint("CK_system_ecs_relationship_data", "json_valid(\"Data\")");
+            });
+            entity.HasKey(value => new
+                { value.StateSpaceId, value.FromEntityId, value.ToEntityId, value.QualifiedKind });
+            entity.Property(value => value.StateSpaceId).HasMaxLength(200);
+            entity.Property(value => value.FromEntityId).HasMaxLength(200);
+            entity.Property(value => value.ToEntityId).HasMaxLength(200);
+            entity.Property(value => value.QualifiedKind).HasMaxLength(200);
+            entity.Property(value => value.Data).HasMaxLength(SystemJsonSchemaProfile.MaximumValueBytes).IsRequired();
+            entity.HasIndex(value => new { value.StateSpaceId, value.QualifiedKind });
+            entity.HasOne<ApplicationEcsEntityRecord>().WithMany()
+                .HasForeignKey(value => new { value.StateSpaceId, Id = value.FromEntityId })
+                .HasPrincipalKey(value => new { value.StateSpaceId, value.Id })
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationEcsEntityRecord>().WithMany()
+                .HasForeignKey(value => new { value.StateSpaceId, Id = value.ToEntityId })
+                .HasPrincipalKey(value => new { value.StateSpaceId, value.Id })
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureLegacyStateAdoption(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<LegacyStateAdoptionRecord>(entity =>
+        {
+            entity.ToTable("system_legacy_state_adoption", table =>
+            {
+                table.HasCheckConstraint("CK_system_legacy_state_adoption_fingerprints",
+                    "length(\"RequestFingerprint\") = 64 AND \"RequestFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"SourceFingerprint\") = 64 AND \"SourceFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"EvidenceFingerprint\") = 64 AND \"EvidenceFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+                table.HasCheckConstraint("CK_system_legacy_state_adoption_counts",
+                    "\"EntityCount\" >= 0 AND \"ComponentCount\" >= 0 AND \"ContainmentCount\" >= 0 AND \"RelationshipCount\" >= 0");
+            });
+            entity.HasKey(value => value.StateSpaceId);
+            entity.Property(value => value.StateSpaceId).HasMaxLength(200);
+            entity.Property(value => value.ApplicationId).HasMaxLength(63).IsRequired();
+            entity.Property(value => value.RequestFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(value => value.SourceFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(value => value.EvidenceFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(value => value.OperationId).HasMaxLength(32).IsRequired();
+            entity.HasIndex(value => value.OperationId).IsUnique();
+            entity.HasOne<ApplicationStateSpaceRecord>().WithMany()
+                .HasForeignKey(value => value.StateSpaceId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationRegistryRecord>().WithMany()
+                .HasForeignKey(value => value.ApplicationId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Operation>().WithMany()
+                .HasForeignKey(value => value.OperationId).OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureProjectionMaterialization(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ProjectionDefinitionRecord>(entity =>
+        {
+            entity.ToTable("system_projection_definition"); entity.HasKey(x => x.QualifiedId);
+            entity.Property(x => x.QualifiedId).HasMaxLength(200); entity.Property(x => x.ApplicationId).HasMaxLength(63).IsRequired();
+            entity.HasOne<ApplicationRegistryRecord>().WithMany().HasForeignKey(x => x.ApplicationId).OnDelete(DeleteBehavior.Restrict);
+        });
+        modelBuilder.Entity<ProjectionDefinitionVersionRecord>(entity =>
+        {
+            entity.ToTable("system_projection_definition_version", table =>
+            {
+                table.HasCheckConstraint("CK_system_projection_definition_version_number", "\"Version\" > 0");
+                table.HasCheckConstraint("CK_system_projection_definition_version_output_hash", "length(\"OutputSchemaHash\") = 64 AND \"OutputSchemaHash\" NOT GLOB '*[^0-9A-F]*'");
+                table.HasCheckConstraint("CK_system_projection_definition_version_content_hash", "length(\"ContentHash\") = 64 AND \"ContentHash\" NOT GLOB '*[^0-9A-F]*'");
+                table.HasCheckConstraint("CK_system_projection_definition_version_schema", "json_valid(\"OutputSchemaJson\")");
+            });
+            entity.HasKey(x => new { x.QualifiedId, x.Version }); entity.Property(x => x.QualifiedId).HasMaxLength(200); entity.Property(x => x.ProfileId).HasMaxLength(64).IsRequired(); entity.Property(x => x.OutputSchemaJson).HasMaxLength(SystemJsonSchemaProfile.MaximumSchemaBytes).IsRequired(); entity.Property(x => x.OutputSchemaHash).HasMaxLength(64).IsRequired(); entity.Property(x => x.ContentHash).HasMaxLength(64).IsRequired();
+            entity.HasIndex(x => new { x.QualifiedId, x.ContentHash }).IsUnique(); entity.HasOne<ProjectionDefinitionRecord>().WithMany().HasForeignKey(x => x.QualifiedId).OnDelete(DeleteBehavior.Restrict);
+        });
+        modelBuilder.Entity<ProjectionComponentInputRecord>(entity =>
+        {
+            entity.ToTable("system_projection_component_input"); entity.HasKey(x => new { x.QualifiedId, x.Version, x.InputId }); entity.Property(x => x.QualifiedId).HasMaxLength(200); entity.Property(x => x.InputId).HasMaxLength(200); entity.Property(x => x.EntityRole).HasMaxLength(200).IsRequired(); entity.Property(x => x.QualifiedTypeId).HasMaxLength(200).IsRequired(); entity.Property(x => x.SchemaHash).HasMaxLength(64).IsRequired();
+            entity.HasOne<ProjectionDefinitionVersionRecord>().WithMany().HasForeignKey(x => new { x.QualifiedId, x.Version }).OnDelete(DeleteBehavior.Restrict); entity.HasOne<ComponentTypeVersionRecord>().WithMany().HasForeignKey(x => new { QualifiedId = x.QualifiedTypeId, Version = x.TypeVersion }).HasPrincipalKey(x => new { x.QualifiedId, x.Version }).OnDelete(DeleteBehavior.Restrict);
+        });
+        modelBuilder.Entity<ProjectionDependencyInputRecord>(entity =>
+        {
+            entity.ToTable("system_projection_dependency_input", table => table.HasCheckConstraint("CK_system_projection_dependency_input_role_bindings", "json_valid(\"RoleBindingsJson\")")); entity.HasKey(x => new { x.QualifiedId, x.Version, x.InputId }); entity.Property(x => x.QualifiedId).HasMaxLength(200); entity.Property(x => x.InputId).HasMaxLength(200); entity.Property(x => x.DependencyQualifiedId).HasMaxLength(200).IsRequired(); entity.Property(x => x.DependencyContentHash).HasMaxLength(64).IsRequired(); entity.Property(x => x.RoleBindingsJson).IsRequired();
+            entity.HasOne<ProjectionDefinitionVersionRecord>().WithMany().HasForeignKey(x => new { x.QualifiedId, x.Version }).OnDelete(DeleteBehavior.Restrict); entity.HasOne<ProjectionDefinitionVersionRecord>().WithMany().HasForeignKey(x => new { QualifiedId = x.DependencyQualifiedId, Version = x.DependencyVersion }).HasPrincipalKey(x => new { x.QualifiedId, x.Version }).OnDelete(DeleteBehavior.Restrict);
+        });
+        modelBuilder.Entity<ProjectionMappingRecord>(entity =>
+        {
+            entity.ToTable("system_projection_mapping"); entity.HasKey(x => new { x.QualifiedId, x.Version, x.TargetPointer }); entity.Property(x => x.QualifiedId).HasMaxLength(200); entity.Property(x => x.TargetPointer).HasMaxLength(1000); entity.Property(x => x.InputId).HasMaxLength(200).IsRequired(); entity.Property(x => x.SourcePointer).HasMaxLength(1000).IsRequired(); entity.HasIndex(x => new { x.QualifiedId, x.Version, x.Ordinal }).IsUnique(); entity.HasOne<ProjectionDefinitionVersionRecord>().WithMany().HasForeignKey(x => new { x.QualifiedId, x.Version }).OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     private static void ConfigureInformation(ModelBuilder modelBuilder)
@@ -142,60 +691,6 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.Property(x => x.ContentHash).HasMaxLength(64).IsRequired();
             entity.Property(x => x.Revision).IsConcurrencyToken().IsRequired();
             entity.HasIndex(x => new { x.ScopeId, x.Id });
-        });
-    }
-
-    private static void ConfigureStoryPlans(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<StoryPlanRun>(entity =>
-        {
-            entity.ToTable("story_plan_run", table =>
-            {
-                table.HasCheckConstraint("CK_story_plan_run_id", "length(\"Id\") = 43 AND substr(\"Id\", 1, 11) = 'story-plan.' AND substr(\"Id\", 12) NOT GLOB '*[^0-9a-f]*'");
-                table.HasCheckConstraint("CK_story_plan_run_status", "\"Status\" IN ('pending', 'running', 'completed', 'blocked', 'failed', 'cancelled')");
-                table.HasCheckConstraint("CK_story_plan_run_revision", "\"Revision\" > 0");
-                table.HasCheckConstraint("CK_story_plan_run_step_counts", "\"NextStepIndex\" >= 0 AND \"CompletedStepCount\" >= 0");
-            });
-            entity.HasKey(x => x.Id);
-            entity.Property(x => x.Id).HasMaxLength(43);
-            entity.Property(x => x.RequestToken).HasMaxLength(100).IsRequired();
-            entity.HasIndex(x => x.RequestToken).IsUnique();
-            entity.Property(x => x.CampaignId).HasMaxLength(200).IsRequired();
-            entity.Property(x => x.Objective).HasMaxLength(1000).IsRequired();
-            entity.Property(x => x.PlanJson).HasMaxLength(16000).IsRequired();
-            entity.Property(x => x.PrincipalId).HasMaxLength(200).IsRequired();
-            entity.Property(x => x.PolicyRevision).HasMaxLength(200).IsRequired();
-            entity.Property(x => x.Status).HasMaxLength(20).IsRequired();
-            entity.Property(x => x.Revision).IsConcurrencyToken().IsRequired();
-            entity.Property(x => x.StopCode).HasMaxLength(100).IsRequired();
-            entity.Property(x => x.StopMessage).HasMaxLength(1000).IsRequired();
-            entity.Property(x => x.HandoffJson).HasMaxLength(32000);
-            entity.Property(x => x.LeaseOwner).HasMaxLength(100);
-            entity.HasIndex(x => new { x.Status, x.LeaseUntilUtc, x.UpdatedAtUtc });
-        });
-        modelBuilder.Entity<StoryPlanStepRun>(entity =>
-        {
-            entity.ToTable("story_plan_step_run", table =>
-            {
-                table.HasCheckConstraint("CK_story_plan_step_run_index", "\"StepIndex\" BETWEEN 0 AND 5");
-                table.HasCheckConstraint("CK_story_plan_step_run_kind", "\"Kind\" IN ('campaign-context', 'knowledge', 'action')");
-                table.HasCheckConstraint("CK_story_plan_step_run_status", "\"Status\" IN ('pending', 'running', 'completed', 'blocked', 'failed', 'skipped')");
-            });
-            entity.HasKey(x => new { x.StoryPlanId, x.StepIndex });
-            entity.Property(x => x.StoryPlanId).HasMaxLength(43);
-            entity.Property(x => x.StepId).HasMaxLength(40).IsRequired();
-            entity.Property(x => x.Kind).HasMaxLength(20).IsRequired();
-            entity.Property(x => x.Intent).HasMaxLength(500).IsRequired();
-            entity.Property(x => x.RoleEntityIdsJson).HasMaxLength(4000).IsRequired();
-            entity.Property(x => x.InputJson).HasMaxLength(4000).IsRequired();
-            entity.Property(x => x.Status).HasMaxLength(20).IsRequired();
-            entity.Property(x => x.ProcedureEvidenceJson).HasMaxLength(4000).IsRequired();
-            entity.Property(x => x.MechanicId).HasMaxLength(200).IsRequired();
-            entity.Property(x => x.ActionOperationId).HasMaxLength(32).IsRequired();
-            entity.Property(x => x.ResultJson).HasMaxLength(32000).IsRequired();
-            entity.Property(x => x.ErrorCode).HasMaxLength(100).IsRequired();
-            entity.Property(x => x.ErrorMessage).HasMaxLength(1000).IsRequired();
-            entity.HasOne(x => x.StoryPlan).WithMany(x => x.Steps).HasForeignKey(x => x.StoryPlanId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 
@@ -529,6 +1024,356 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             // queries by tool + timestamp on every write.
             entity.HasIndex(e => new { e.Tool, e.Timestamp });
             entity.HasIndex(e => e.Subject);
+        });
+    }
+
+    private static void ConfigureInteractionReceipts(ModelBuilder modelBuilder)
+    {
+        const string hash = "length(\"{0}\") = 64 AND \"{0}\" NOT GLOB '*[^0-9A-F]*'";
+        modelBuilder.Entity<InteractionResolutionReceipt>(entity =>
+        {
+            entity.ToTable("interaction_resolution_receipt", table =>
+            {
+                table.HasCheckConstraint("CK_interaction_resolution_receipt_id", "length(\"Id\") = 52 AND substr(\"Id\", 1, 20) = 'interaction-receipt.' AND substr(\"Id\", 21) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_interaction_resolution_receipt_principal", "length(\"PrincipalReference\") = 74 AND substr(\"PrincipalReference\", 1, 10) = 'principal.' AND substr(\"PrincipalReference\", 11) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_interaction_resolution_receipt_status", "\"Status\" IN ('resolved', 'needs-input', 'ambiguous', 'unknown', 'unsupported', 'unavailable', 'unsafe', 'stale')");
+                table.HasCheckConstraint("CK_interaction_resolution_receipt_proposal", "(\"Status\" = 'resolved' AND \"ProposalFingerprint\" IS NOT NULL) OR (\"Status\" <> 'resolved' AND \"ProposalFingerprint\" IS NULL)");
+                table.HasCheckConstraint("CK_interaction_resolution_receipt_evidence", "length(\"EvidenceJson\") <= 16384 AND json_valid(\"EvidenceJson\") AND json_type(\"EvidenceJson\") = 'array' AND json_array_length(\"EvidenceJson\") BETWEEN 0 AND 16");
+                table.HasCheckConstraint("CK_interaction_resolution_receipt_hashes", string.Join(" AND ", string.Format(hash, "ApplicationFingerprint"), string.Format(hash, "EffectiveSetFingerprint"), string.Format(hash, "EnvelopeFingerprint"), "(\"QueryFingerprint\" IS NULL OR (length(\"QueryFingerprint\") = 64 AND \"QueryFingerprint\" NOT GLOB '*[^0-9A-F]*'))", "(\"ProposalFingerprint\" IS NULL OR (length(\"ProposalFingerprint\") = 64 AND \"ProposalFingerprint\" NOT GLOB '*[^0-9A-F]*'))"));
+                table.HasCheckConstraint("CK_interaction_resolution_receipt_bounds", "\"ApplicationRevision\" > 0 AND length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"StateSpaceId\") BETWEEN 1 AND 200 AND length(\"SessionContextId\") BETWEEN 1 AND 200 AND length(\"StateRevision\") BETWEEN 1 AND 200 AND length(\"RoleProfile\") BETWEEN 1 AND 300 AND (\"ConversationId\" IS NULL OR length(\"ConversationId\") BETWEEN 1 AND 200) AND (\"ParentDelegationId\" IS NULL OR length(\"ParentDelegationId\") BETWEEN 1 AND 200) AND length(\"AuthorizationEvidenceReference\") BETWEEN 1 AND 200 AND length(\"IdempotencyKey\") BETWEEN 1 AND 128 AND length(\"Code\") BETWEEN 1 AND 200 AND length(\"SafeSummary\") <= 1000");
+            });
+            entity.HasKey(row => row.Id);
+            entity.Property(row => row.Id).HasMaxLength(52);
+            entity.Property(row => row.PrincipalReference).HasMaxLength(74).IsRequired();
+            entity.Property(row => row.ApplicationId).HasMaxLength(63).IsRequired();
+            entity.Property(row => row.ApplicationFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(row => row.StateSpaceId).HasMaxLength(200).IsRequired();
+            entity.Property(row => row.SessionContextId).HasMaxLength(200).IsRequired();
+            entity.Property(row => row.StateRevision).HasMaxLength(200).IsRequired();
+            entity.Property(row => row.EffectiveSetFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(row => row.RoleProfile).HasMaxLength(300).IsRequired();
+            entity.Property(row => row.ConversationId).HasMaxLength(200);
+            entity.Property(row => row.ParentDelegationId).HasMaxLength(200);
+            entity.Property(row => row.AuthorizationEvidenceReference).HasMaxLength(200).IsRequired();
+            entity.Property(row => row.IdempotencyKey).HasMaxLength(128).IsRequired();
+            entity.Property(row => row.EnvelopeFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(row => row.QueryFingerprint).HasMaxLength(64);
+            entity.Property(row => row.Status).HasMaxLength(20).IsRequired();
+            entity.Property(row => row.Code).HasMaxLength(200).IsRequired();
+            entity.Property(row => row.ProposalFingerprint).HasMaxLength(64);
+            entity.Property(row => row.SafeSummary).HasMaxLength(1000).IsRequired();
+            entity.Property(row => row.EvidenceJson).HasMaxLength(16384).IsRequired();
+            entity.Property(row => row.RecipeId).HasMaxLength(102);
+            entity.Property(row => row.RecipeTemplateFingerprint).HasMaxLength(64);
+            entity.HasIndex(row => new { row.PrincipalReference, row.ApplicationId, row.StateSpaceId, row.IdempotencyKey }).IsUnique();
+            entity.HasIndex(row => new { row.ApplicationId, row.StateSpaceId, row.CreatedAtUtc, row.Id });
+        });
+
+        modelBuilder.Entity<InteractionExecutionReceipt>(entity =>
+        {
+            entity.ToTable("interaction_execution_receipt", table =>
+            {
+                table.HasCheckConstraint("CK_interaction_execution_receipt_id", "length(\"Id\") = 52 AND substr(\"Id\", 1, 20) = 'interaction-receipt.' AND substr(\"Id\", 21) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_interaction_execution_receipt_principal", "length(\"PrincipalReference\") = 74 AND substr(\"PrincipalReference\", 1, 10) = 'principal.' AND substr(\"PrincipalReference\", 11) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_interaction_execution_receipt_disposition", "\"Disposition\" IN ('succeeded', 'failed', 'partial', 'skipped', 'stale', 'unauthorized', 'cancelled', 'timed-out')");
+                table.HasCheckConstraint("CK_interaction_execution_receipt_evidence", "length(\"EvidenceJson\") <= 16384 AND json_valid(\"EvidenceJson\") AND json_type(\"EvidenceJson\") = 'array' AND json_array_length(\"EvidenceJson\") BETWEEN 0 AND 16");
+                table.HasCheckConstraint("CK_interaction_execution_receipt_hashes", string.Join(" AND ", string.Format(hash, "ExecutionRequestFingerprint"), string.Format(hash, "ProposalFingerprint")));
+                table.HasCheckConstraint("CK_interaction_execution_receipt_bounds", "length(\"ResolutionReceiptId\") = 52 AND length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"StateSpaceId\") BETWEEN 1 AND 200 AND length(\"IdempotencyKey\") BETWEEN 1 AND 128 AND length(\"SafeSummary\") <= 1000");
+            });
+            entity.HasKey(row => row.Id);
+            entity.Property(row => row.Id).HasMaxLength(52);
+            entity.Property(row => row.ResolutionReceiptId).HasMaxLength(52).IsRequired();
+            entity.Property(row => row.PrincipalReference).HasMaxLength(74).IsRequired();
+            entity.Property(row => row.ApplicationId).HasMaxLength(63).IsRequired();
+            entity.Property(row => row.StateSpaceId).HasMaxLength(200).IsRequired();
+            entity.Property(row => row.IdempotencyKey).HasMaxLength(128).IsRequired();
+            entity.Property(row => row.ExecutionRequestFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(row => row.ProposalFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(row => row.Disposition).HasMaxLength(20).IsRequired();
+            entity.Property(row => row.SafeSummary).HasMaxLength(1000).IsRequired();
+            entity.Property(row => row.EvidenceJson).HasMaxLength(16384).IsRequired();
+            entity.HasIndex(row => new { row.PrincipalReference, row.ApplicationId, row.StateSpaceId, row.ResolutionReceiptId, row.IdempotencyKey }).IsUnique();
+            entity.HasOne<InteractionResolutionReceipt>().WithMany().HasForeignKey(row => row.ResolutionReceiptId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<InteractionExecutionReceiptStep>(entity =>
+        {
+            entity.ToTable("interaction_execution_receipt_step", table =>
+            {
+                table.HasCheckConstraint("CK_interaction_execution_receipt_step_ordinal", "\"Ordinal\" BETWEEN 1 AND 16");
+                table.HasCheckConstraint("CK_interaction_execution_receipt_step_disposition", "\"Disposition\" IN ('succeeded', 'failed', 'skipped')");
+                table.HasCheckConstraint("CK_interaction_execution_receipt_step_bounds", "length(\"ProposalStepId\") BETWEEN 1 AND 200 AND (\"OperationId\" IS NULL OR length(\"OperationId\") BETWEEN 1 AND 40)");
+            });
+            entity.HasKey(row => new { row.ExecutionReceiptId, row.Ordinal });
+            entity.Property(row => row.ExecutionReceiptId).HasMaxLength(52);
+            entity.Property(row => row.ProposalStepId).HasMaxLength(200).IsRequired();
+            entity.Property(row => row.Disposition).HasMaxLength(20).IsRequired();
+            entity.Property(row => row.OperationId).HasMaxLength(40);
+            entity.HasIndex(row => new { row.ExecutionReceiptId, row.ProposalStepId }).IsUnique();
+            entity.HasOne(row => row.ExecutionReceipt).WithMany(row => row.Steps).HasForeignKey(row => row.ExecutionReceiptId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Operation>().WithMany().HasForeignKey(row => row.OperationId).OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureInteractionRecipes(ModelBuilder modelBuilder)
+    {
+        const string hash = "length(\"{0}\") = 64 AND \"{0}\" NOT GLOB '*[^0-9A-F]*'";
+        modelBuilder.Entity<InteractionRecipe>(entity =>
+        {
+            entity.ToTable("interaction_recipe", table =>
+            {
+                table.HasCheckConstraint("CK_interaction_recipe_id", "length(\"Id\") BETWEEN 41 AND 102 AND \"Id\" GLOB '*.recipe.[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]' ");
+                table.HasCheckConstraint("CK_interaction_recipe_template", "length(\"TemplateJson\") BETWEEN 2 AND 65536 AND json_valid(\"TemplateJson\") AND json_type(\"TemplateJson\") = 'object'");
+                table.HasCheckConstraint("CK_interaction_recipe_hash", string.Format(hash, "TemplateFingerprint"));
+                table.HasCheckConstraint("CK_interaction_recipe_application", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system'");
+            });
+            entity.HasKey(row => row.Id);
+            entity.Property(row => row.Id).HasMaxLength(102);
+            entity.Property(row => row.ApplicationId).HasMaxLength(63).IsRequired();
+            entity.Property(row => row.TemplateFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(row => row.TemplateJson).HasMaxLength(65536).IsRequired();
+            entity.HasIndex(row => new { row.ApplicationId, row.TemplateFingerprint }).IsUnique();
+            entity.HasIndex(row => new { row.ApplicationId, row.CreatedAtUtc, row.Id });
+        });
+
+        modelBuilder.Entity<InteractionRecipeRevision>(entity =>
+        {
+            entity.ToTable("interaction_recipe_revision", table =>
+            {
+                table.HasCheckConstraint("CK_interaction_recipe_revision_status", "\"Status\" IN ('candidate', 'verified', 'stale', 'retired')");
+                table.HasCheckConstraint("CK_interaction_recipe_revision_version", "\"Version\" > 0 AND \"ApplicationRevision\" > 0");
+                table.HasCheckConstraint("CK_interaction_recipe_revision_hashes", string.Join(" AND ", string.Format(hash, "ApplicationFingerprint"), string.Format(hash, "EffectiveSetFingerprint"), string.Format(hash, "RequestFingerprint")));
+                table.HasCheckConstraint("CK_interaction_recipe_revision_bounds", "length(\"RecipeId\") BETWEEN 41 AND 102 AND length(\"ReviewerPrincipalReference\") <= 74 AND length(\"Reason\") <= 1000 AND length(\"RequestToken\") BETWEEN 1 AND 128");
+            });
+            entity.HasKey(row => new { row.RecipeId, row.Version });
+            entity.Property(row => row.RecipeId).HasMaxLength(102);
+            entity.Property(row => row.Status).HasMaxLength(20).IsRequired();
+            entity.Property(row => row.ApplicationFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(row => row.EffectiveSetFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(row => row.ReviewerPrincipalReference).HasMaxLength(74).IsRequired();
+            entity.Property(row => row.Reason).HasMaxLength(1000).IsRequired();
+            entity.Property(row => row.RequestToken).HasMaxLength(128).IsRequired();
+            entity.Property(row => row.RequestFingerprint).HasMaxLength(64).IsRequired();
+            entity.HasIndex(row => new { row.ReviewerPrincipalReference, row.RequestToken }).IsUnique();
+            entity.HasOne(row => row.Recipe).WithMany(row => row.Revisions).HasForeignKey(row => row.RecipeId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<InteractionRecipeEvidence>(entity =>
+        {
+            entity.ToTable("interaction_recipe_evidence", table =>
+            {
+                table.HasCheckConstraint("CK_interaction_recipe_evidence_kind", "\"Kind\" IN ('derived', 'use-success', 'use-failure')");
+                table.HasCheckConstraint("CK_interaction_recipe_evidence_hash", string.Format(hash, "IntentFingerprint"));
+                table.HasCheckConstraint("CK_interaction_recipe_evidence_bounds", "length(\"RecipeId\") BETWEEN 41 AND 102 AND length(\"ExecutionReceiptId\") = 52 AND length(\"ResolutionReceiptId\") = 52 AND length(\"IntentText\") <= 500 AND length(\"RoleProfile\") BETWEEN 1 AND 300");
+            });
+            entity.HasKey(row => new { row.RecipeId, row.ExecutionReceiptId, row.Kind });
+            entity.Property(row => row.RecipeId).HasMaxLength(102);
+            entity.Property(row => row.ExecutionReceiptId).HasMaxLength(52);
+            entity.Property(row => row.ResolutionReceiptId).HasMaxLength(52).IsRequired();
+            entity.Property(row => row.Kind).HasMaxLength(20).IsRequired();
+            entity.Property(row => row.IntentText).HasMaxLength(500).IsRequired();
+            entity.Property(row => row.IntentFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(row => row.RoleProfile).HasMaxLength(300).IsRequired();
+            entity.HasOne(row => row.Recipe).WithMany(row => row.Evidence).HasForeignKey(row => row.RecipeId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<InteractionExecutionReceipt>().WithMany().HasForeignKey(row => row.ExecutionReceiptId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<InteractionResolutionReceipt>().WithMany().HasForeignKey(row => row.ResolutionReceiptId).OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureHostSettings(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<HostSettingOverride>(entity =>
+        {
+            entity.ToTable("host_setting_override", table =>
+            {
+                table.HasCheckConstraint("CK_host_setting_override_versions",
+                    "\"CurrentVersion\" > 0 AND \"AppliedVersion\" >= 0 AND \"AppliedVersion\" <= \"CurrentVersion\"");
+            });
+            entity.HasKey(row => row.Key);
+            entity.Property(row => row.Key).HasMaxLength(100);
+            entity.Property(row => row.CurrentVersion).IsConcurrencyToken();
+        });
+
+        modelBuilder.Entity<HostSettingOverrideVersion>(entity =>
+        {
+            entity.ToTable("host_setting_override_version", table =>
+            {
+                table.HasCheckConstraint("CK_host_setting_override_version_number", "\"Version\" > 0");
+                table.HasCheckConstraint("CK_host_setting_override_version_operation",
+                    "length(\"OperationId\") = 32 AND \"OperationId\" NOT GLOB '*[^0-9a-f]*'");
+            });
+            entity.HasKey(row => row.Id);
+            entity.Property(row => row.SettingKey).HasMaxLength(100);
+            entity.Property(row => row.ValueJson).HasMaxLength(16000);
+            entity.Property(row => row.CreatedBy).HasMaxLength(200).IsRequired();
+            entity.Property(row => row.OperationId).HasMaxLength(32).IsRequired();
+            entity.HasIndex(row => new { row.SettingKey, row.Version }).IsUnique();
+            entity.HasIndex(row => row.OperationId).IsUnique();
+            entity.HasOne(row => row.Setting)
+                .WithMany(row => row.Versions)
+                .HasForeignKey(row => row.SettingKey)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<Operation>()
+                .WithMany()
+                .HasForeignKey(row => row.OperationId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureAssistantConversations(ModelBuilder modelBuilder)
+    {
+        const string statuses = "'pending', 'running', 'awaiting-approval', 'completed', 'failed', 'cancelled'";
+        modelBuilder.Entity<AssistantConversation>(entity =>
+        {
+            entity.ToTable("assistant_conversation", table =>
+            {
+                table.HasCheckConstraint("CK_assistant_conversation_id",
+                    "length(\"Id\") = 45 AND substr(\"Id\", 1, 13) = 'conversation.' AND substr(\"Id\", 14) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_assistant_conversation_operator",
+                    "length(\"OperatorId\") = 74 AND substr(\"OperatorId\", 1, 10) = 'principal.' AND substr(\"OperatorId\", 11) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_assistant_conversation_provider", "\"Provider\" IN ('local', 'codex')");
+                table.HasCheckConstraint("CK_assistant_conversation_revision", "\"Revision\" > 0");
+                table.HasCheckConstraint("CK_assistant_conversation_status", $"\"Status\" IN ({statuses})");
+            });
+            entity.HasKey(item => item.Id);
+            entity.Property(item => item.Id).HasMaxLength(45);
+            entity.Property(item => item.OperatorId).HasMaxLength(74).IsRequired();
+            entity.Property(item => item.Provider).HasMaxLength(20).IsRequired();
+            entity.Property(item => item.Title).HasMaxLength(120).IsRequired();
+            entity.Property(item => item.Revision).IsConcurrencyToken();
+            entity.Property(item => item.Status).HasMaxLength(20).IsRequired();
+            entity.Property(item => item.ExternalThreadId).HasMaxLength(200);
+            entity.HasIndex(item => item.ExternalThreadId).IsUnique();
+            entity.HasIndex(item => new { item.OperatorId, item.Provider, item.UpdatedAtUtc, item.Id });
+        });
+
+        modelBuilder.Entity<AssistantTurn>(entity =>
+        {
+            entity.ToTable("assistant_turn", table =>
+            {
+                table.HasCheckConstraint("CK_assistant_turn_id",
+                    "length(\"Id\") = 37 AND substr(\"Id\", 1, 5) = 'turn.' AND substr(\"Id\", 6) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_assistant_turn_number", "\"TurnNumber\" > 0");
+                table.HasCheckConstraint("CK_assistant_turn_provider", "\"Provider\" IN ('local', 'codex')");
+                table.HasCheckConstraint("CK_assistant_turn_status", $"\"Status\" IN ({statuses})");
+                table.HasCheckConstraint("CK_assistant_turn_hash",
+                    "length(\"RequestHash\") = 64 AND \"RequestHash\" NOT GLOB '*[^0-9A-F]*'");
+                table.HasCheckConstraint("CK_assistant_turn_metrics",
+                    "\"ElapsedMilliseconds\" >= 0 AND \"PromptTokens\" >= 0 AND \"OutputTokens\" >= 0");
+            });
+            entity.HasKey(item => item.Id);
+            entity.Property(item => item.Id).HasMaxLength(37);
+            entity.Property(item => item.ConversationId).HasMaxLength(45).IsRequired();
+            entity.Property(item => item.OperatorId).HasMaxLength(74).IsRequired();
+            entity.Property(item => item.Provider).HasMaxLength(20).IsRequired();
+            entity.Property(item => item.IdempotencyKey).HasMaxLength(100).IsRequired();
+            entity.Property(item => item.RequestHash).HasMaxLength(64).IsRequired();
+            entity.Property(item => item.Status).HasMaxLength(20).IsRequired();
+            entity.Property(item => item.ExternalTurnId).HasMaxLength(200);
+            entity.Property(item => item.ExternalStatus).HasMaxLength(30);
+            entity.HasIndex(item => item.ExternalTurnId).IsUnique();
+            entity.Property(item => item.ErrorCode).HasMaxLength(100);
+            entity.Property(item => item.ErrorMessage).HasMaxLength(500);
+            entity.Property(item => item.ModelProvider).HasMaxLength(50);
+            entity.Property(item => item.Model).HasMaxLength(200);
+            entity.Property(item => item.ModelRevision).HasMaxLength(200);
+            entity.Property(item => item.ModelProfile).HasMaxLength(100);
+            entity.HasIndex(item => new { item.ConversationId, item.TurnNumber }).IsUnique();
+            entity.HasIndex(item => new { item.OperatorId, item.Provider, item.IdempotencyKey }).IsUnique();
+            entity.HasOne(item => item.Conversation).WithMany(item => item.Turns)
+                .HasForeignKey(item => item.ConversationId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<AssistantMessage>(entity =>
+        {
+            entity.ToTable("assistant_message", table =>
+            {
+                table.HasCheckConstraint("CK_assistant_message_id",
+                    "length(\"Id\") = 40 AND substr(\"Id\", 1, 8) = 'message.' AND substr(\"Id\", 9) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_assistant_message_ordinal", "\"Ordinal\" > 0");
+                table.HasCheckConstraint("CK_assistant_message_role", "\"Role\" IN ('user', 'assistant')");
+                table.HasCheckConstraint("CK_assistant_message_content", "length(\"Content\") BETWEEN 1 AND 8000");
+            });
+            entity.HasKey(item => item.Id);
+            entity.Property(item => item.Id).HasMaxLength(40);
+            entity.Property(item => item.ConversationId).HasMaxLength(45).IsRequired();
+            entity.Property(item => item.TurnId).HasMaxLength(37).IsRequired();
+            entity.Property(item => item.Role).HasMaxLength(20).IsRequired();
+            entity.Property(item => item.Content).HasMaxLength(8_000).IsRequired();
+            entity.HasIndex(item => new { item.ConversationId, item.Ordinal }).IsUnique();
+            entity.HasOne(item => item.Conversation).WithMany(item => item.Messages)
+                .HasForeignKey(item => item.ConversationId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(item => item.Turn).WithMany(item => item.Messages)
+                .HasForeignKey(item => item.TurnId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<AssistantTurnActivity>(entity =>
+        {
+            entity.ToTable("assistant_turn_activity", table =>
+            {
+                table.HasCheckConstraint("CK_assistant_turn_activity_id",
+                    "length(\"Id\") = 41 AND substr(\"Id\", 1, 9) = 'activity.' AND substr(\"Id\", 10) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_assistant_turn_activity_sequence", "\"Sequence\" > 0");
+                table.HasCheckConstraint("CK_assistant_turn_activity_kind",
+                    "\"Kind\" IN ('command', 'file-change', 'mcp-tool', 'dynamic-tool', 'web-search', 'warning', 'error')");
+                table.HasCheckConstraint("CK_assistant_turn_activity_content",
+                    "length(\"ExternalItemId\") BETWEEN 1 AND 200 AND length(\"Summary\") BETWEEN 1 AND 500");
+            });
+            entity.HasKey(item => item.Id);
+            entity.Property(item => item.Id).HasMaxLength(41);
+            entity.Property(item => item.ConversationId).HasMaxLength(45).IsRequired();
+            entity.Property(item => item.TurnId).HasMaxLength(37).IsRequired();
+            entity.Property(item => item.ExternalItemId).HasMaxLength(200).IsRequired();
+            entity.Property(item => item.Kind).HasMaxLength(30).IsRequired();
+            entity.Property(item => item.Status).HasMaxLength(30).IsRequired();
+            entity.Property(item => item.Summary).HasMaxLength(500).IsRequired();
+            entity.HasIndex(item => new { item.TurnId, item.ExternalItemId }).IsUnique();
+            entity.HasIndex(item => new { item.TurnId, item.Sequence }).IsUnique();
+            entity.HasOne(item => item.Conversation).WithMany(item => item.Activities)
+                .HasForeignKey(item => item.ConversationId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(item => item.Turn).WithMany(item => item.Activities)
+                .HasForeignKey(item => item.TurnId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<AssistantTurnApproval>(entity =>
+        {
+            entity.ToTable("assistant_turn_approval", table =>
+            {
+                table.HasCheckConstraint("CK_assistant_turn_approval_id",
+                    "length(\"Id\") = 41 AND substr(\"Id\", 1, 9) = 'approval.' AND substr(\"Id\", 10) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_assistant_turn_approval_kind",
+                    "\"Kind\" IN ('command', 'file-change', 'network', 'permissions')");
+                table.HasCheckConstraint("CK_assistant_turn_approval_status",
+                    "\"Status\" IN ('pending', 'decided', 'dispatched', 'resolved', 'expired', 'cancelled', 'failed')");
+                table.HasCheckConstraint("CK_assistant_turn_approval_decision",
+                    "\"Decision\" IS NULL OR \"Decision\" IN ('accept', 'decline', 'cancel')");
+                table.HasCheckConstraint("CK_assistant_turn_approval_revision", "\"Revision\" > 0");
+                table.HasCheckConstraint("CK_assistant_turn_approval_hash",
+                    "length(\"RequestFingerprint\") = 64 AND \"RequestFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+                table.HasCheckConstraint("CK_assistant_turn_approval_content",
+                    "length(\"ExternalRequestId\") BETWEEN 1 AND 200 AND length(\"ExternalItemId\") BETWEEN 1 AND 200 AND length(\"Summary\") BETWEEN 1 AND 500 AND length(\"DetailsJson\") BETWEEN 2 AND 8192");
+            });
+            entity.HasKey(item => item.Id);
+            entity.Property(item => item.Id).HasMaxLength(41);
+            entity.Property(item => item.ConversationId).HasMaxLength(45).IsRequired();
+            entity.Property(item => item.TurnId).HasMaxLength(37).IsRequired();
+            entity.Property(item => item.OperatorId).HasMaxLength(74).IsRequired();
+            entity.Property(item => item.ExternalRequestId).HasMaxLength(200).IsRequired();
+            entity.Property(item => item.ExternalItemId).HasMaxLength(200).IsRequired();
+            entity.Property(item => item.ExternalApprovalId).HasMaxLength(200);
+            entity.Property(item => item.Kind).HasMaxLength(30).IsRequired();
+            entity.Property(item => item.RequestFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(item => item.Summary).HasMaxLength(500).IsRequired();
+            entity.Property(item => item.DetailsJson).HasMaxLength(8_192).IsRequired();
+            entity.Property(item => item.Status).HasMaxLength(20).IsRequired();
+            entity.Property(item => item.Decision).HasMaxLength(20);
+            entity.Property(item => item.Revision).IsConcurrencyToken();
+            entity.HasIndex(item => new { item.TurnId, item.ExternalRequestId }).IsUnique();
+            entity.HasIndex(item => new { item.OperatorId, item.TurnId, item.Status });
+            entity.HasOne(item => item.Conversation).WithMany(item => item.Approvals)
+                .HasForeignKey(item => item.ConversationId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(item => item.Turn).WithMany(item => item.Approvals)
+                .HasForeignKey(item => item.TurnId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 

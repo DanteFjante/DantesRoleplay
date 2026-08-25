@@ -18,6 +18,22 @@ public sealed class OllamaCompletionOptions
 
     public string? Validate()
     {
+        var providerError = ValidateProviderSettings();
+        if (providerError is not null)
+            return providerError;
+        if (AllowedTaskClasses.Count is 0 or > 20 || AllowedTaskClasses.Any(value =>
+                string.IsNullOrWhiteSpace(value) || value.Length > 100))
+            return "AllowedTaskClasses must contain between 1 and 20 bounded values.";
+        return null;
+    }
+
+    /// <summary>
+    /// Validates the provider-wide startup settings independently from the task allowlist. Host
+    /// configuration views use this seam without pretending that a task/provider registration is
+    /// already active.
+    /// </summary>
+    public string? ValidateProviderSettings()
+    {
         if (!Endpoint.IsAbsoluteUri || Endpoint.Scheme is not ("http" or "https") || !Endpoint.IsLoopback)
             return "Endpoint must be an absolute loopback HTTP or HTTPS URI.";
         if (string.IsNullOrWhiteSpace(Model) || Model.Length > 200)
@@ -38,9 +54,6 @@ public sealed class OllamaCompletionOptions
             return "ReadinessCache must be between zero and ten minutes.";
         if (string.IsNullOrWhiteSpace(KeepAlive) || KeepAlive.Length > 20)
             return "KeepAlive must be nonblank and at most 20 characters.";
-        if (AllowedTaskClasses.Count is 0 or > 20 || AllowedTaskClasses.Any(value =>
-                string.IsNullOrWhiteSpace(value) || value.Length > 100))
-            return "AllowedTaskClasses must contain between 1 and 20 bounded values.";
         return null;
     }
 }

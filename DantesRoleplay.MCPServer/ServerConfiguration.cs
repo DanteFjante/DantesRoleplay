@@ -1,14 +1,17 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using DantesRoleplay.DataAccess;
-using DantesRoleplay.DataAccess.Retrieval;
 using DantesRoleplay.MCPServer.Tools;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.RuleAccess;
-using DantesRoleplay.Security;
 using DantesRoleplay.World;
-using DantesRoleplay.Story;
 using DantesRoleplay.Information;
+using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.Retrieval;
+using DantesRoleplay.Authorization;
+using DantesRoleplay.Interactions;
+using DantesRoleplay.Sources;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using ModelContextProtocol;
 
 namespace DantesRoleplay.MCPServer;
@@ -48,46 +51,38 @@ public static class ServerConfiguration
         this IServiceCollection services,
         string connectionString,
         DatabaseProvider provider = DatabaseProvider.Sqlite,
-        KnowledgeRetrievalOptions? knowledgeRetrieval = null,
-        DevelopmentKnowledgeAudienceOptions? developmentKnowledgeAudience = null,
-        string? developmentInformationScope = null)
+        string? developmentInformationScope = null,
+        IReadOnlyDictionary<string, string>? allowedSourceRoots = null,
+        IReadOnlyCollection<string>? publishedApplicationCatalogs = null)
     {
         // The kernel. One call registers the DbContext and every store.
         //
         // SQLite by default: one file you can copy to snapshot a campaign and delete to reset.
         // ARCHITECTURE.md §8.3 explains why there is no Postgres and no vector store yet, and
         // names the conditions that would change that.
-        services.AddDantesRoleplayDataAccess(connectionString, provider, knowledgeRetrieval);
+        services.AddDantesRoleplayDataAccess(connectionString, provider);
+        services.Replace(ServiceDescriptor.Singleton<IAllowedSourceRootResolver>(
+            new ConfiguredAllowedSourceRootResolver(allowedSourceRoots)));
+        services.Replace(ServiceDescriptor.Singleton<IPublicApplicationCatalogPolicy>(
+            new ConfiguredPublicApplicationCatalogPolicy(publishedApplicationCatalogs)));
+        services.AddHttpContextAccessor();
+        services.TryAddSingleton<IPrivateOperatorAuthorizationPolicy, PrivateOperatorAuthorizationPolicy>();
+        services.AddScoped<IPrivateOperatorRequestAuthorizer, McpPrivateOperatorAuthorizer>();
+        services.Replace(ServiceDescriptor.Scoped<IInteractionAuthorizationPolicy, PrivateHostInteractionAuthorizationPolicy>());
         services.AddSingleton<IInformationScopePolicy>(new DevelopmentInformationScopePolicy(
             developmentInformationScope ?? "local.*"));
-        services.AddScoped<IInformationAnswerCoordinator, InformationAnswerCoordinator>();
+        services.AddScoped<IInformationAnswerCoordinator>(provider =>
+        {
+            var completion = provider.GetService<ILocalStructuredCompletionProvider>();
+            return completion is null
+                ? new UnavailableInformationAnswerCoordinator()
+                : new InformationAnswerCoordinator(
+                    provider.GetRequiredService<IInformationScopePolicy>(),
+                    provider.GetRequiredService<IInformationStore>(),
+                    completion);
+        });
         services.AddScoped<IInformationActionCoordinator, InformationActionCoordinator>();
         services.AddScoped<IInformationActionExecutor, MechanicActionInformationExecutor>();
-        developmentKnowledgeAudience ??= new DevelopmentKnowledgeAudienceOptions();
-        var developmentError = developmentKnowledgeAudience.Validate();
-        if (developmentError is not null) throw new ArgumentException(developmentError, nameof(developmentKnowledgeAudience));
-        if (developmentKnowledgeAudience.Enabled)
-        {
-            services.AddSingleton(developmentKnowledgeAudience);
-            // There is intentionally no registration when disabled. Resolving a player-safe
-            // knowledge coordinator then fails rather than silently becoming trusted-GM access.
-            services.AddScoped<IAuthenticatedCampaignAudiencePolicy, DevelopmentCampaignAudiencePolicy>();
-            services.AddDantesRoleplayAuthenticatedCampaignServices();
-            if (provider == DatabaseProvider.Sqlite)
-            {
-                services.AddScoped<IStoryPlanCoordinator, StoryPlanCoordinator>();
-                services.AddHostedService<StoryPlanWorker>();
-            }
-        }
-        else
-        {
-            // Override the data-access answer registration with a safe placeholder. This avoids
-            // MCP attempting to construct a coordinator whose required audience policy is absent.
-            services.AddScoped<IAuthorizedKnowledgeAnswerCoordinator, UnavailableKnowledgeAnswerCoordinator>();
-        }
-        if (provider == DatabaseProvider.Sqlite)
-            services.AddHostedService<KnowledgeBackgroundWorker>();
-
         // The sandbox that runs game rules. A singleton because it holds no state between runs:
         // every call builds a fresh Jint engine, which is what stops one mechanic seeing what
         // another left.
@@ -110,5 +105,20 @@ public static class ServerConfiguration
             .WithTools<CommitTool>(ResponseJson);
 
         return services;
+    }
+
+    /// <summary>
+    /// Keeps the generic host usable when its optional local-completion component is disabled.
+    /// Installing an <see cref="ILocalStructuredCompletionProvider"/> replaces this fallback at
+    /// scoped-coordinator construction time; the MCP host never selects or starts a model itself.
+    /// </summary>
+    private sealed class UnavailableInformationAnswerCoordinator : IInformationAnswerCoordinator
+    {
+        public Task<InformationAnswerResult> AnswerAsync(
+            InformationAnswerRequest request,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(InformationAnswerResult.Unknown(
+                "INFORMATION_MODEL_UNAVAILABLE",
+                "The optional local answer model is not configured."));
     }
 }

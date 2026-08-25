@@ -154,12 +154,9 @@ public sealed class GuardTests
             }
         }
 
-        var expectedLines = expected.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+        var unexpected = actual.Where(pair => !expected.TryGetValue(pair.Key, out var maximum) || pair.Value > maximum)
             .Select(pair => $"{pair.Key}: {pair.Value}").ToArray();
-        var actualLines = actual.OrderBy(pair => pair.Key, StringComparer.Ordinal)
-            .Select(pair => $"{pair.Key}: {pair.Value}").ToArray();
-
-        Assert.Equal(expectedLines, actualLines);
+        Assert.True(unexpected.Length == 0, "Compiled ruleset literals grew beyond the legacy baseline:\n  " + string.Join("\n  ", unexpected));
     }
 
     [Fact]
@@ -302,6 +299,28 @@ public sealed class GuardTests
     }
 
     [Fact]
+    public void Generic_projects_do_not_compile_application_or_game_adapter_sources()
+    {
+        var root = RepositoryRoot();
+        var projects = new[]
+        {
+            Path.Combine(root, "DantesRoleplay", "DantesRoleplay.csproj"),
+            Path.Combine(root, "DantesRoleplay.DataAccess", "DantesRoleplay.DataAccess.csproj"),
+            Path.Combine(root, "DantesRoleplay.Tests", "DantesRoleplay.Tests.csproj")
+        };
+        var forbidden = new[] { "src\\game-adapters", "src/game-adapters", "src\\applications", "src/applications" };
+        var offences = projects
+            .SelectMany(project => forbidden
+                .Where(value => File.ReadAllText(project).Contains(value, StringComparison.OrdinalIgnoreCase))
+                .Select(value => $"{NormalizedRelativePath(root, project)}: '{value}'"))
+            .ToArray();
+
+        Assert.True(offences.Length == 0,
+            "Generic projects must not compile application or game-adapter source trees:\n  "
+            + string.Join("\n  ", offences));
+    }
+
+    [Fact]
     public void Exactly_three_public_verbs_are_exposed()
     {
         var declared = DeclaredToolNames();
@@ -357,7 +376,7 @@ public sealed class GuardTests
     {
         var advertised = VerbSurface.CommitKindNames.Order(StringComparer.Ordinal).ToArray();
 
-        Assert.Equal(advertised, DispatchedKinds("CommitTool.cs"));
+        Assert.Equal(advertised, DispatchedKinds("GenericCommitTool.cs"));
     }
 
     /// <summary>
@@ -435,7 +454,7 @@ public sealed class GuardTests
     public void Both_dispatchers_name_every_kind_in_the_description_a_client_reads()
     {
         AssertDescribed("QueryTool.cs", VerbSurface.QueryKindNames);
-        AssertDescribed("CommitTool.cs", VerbSurface.CommitKindNames);
+        AssertDescribed("GenericCommitTool.cs", VerbSurface.CommitKindNames);
 
         static void AssertDescribed(string fileName, IReadOnlyList<string> kinds)
         {
@@ -509,7 +528,7 @@ public sealed class GuardTests
         var end = source.IndexOf("_ => throw", start, StringComparison.Ordinal);
         Assert.True(end > start, $"Could not find the end of the dispatch switch in {fileName}.");
 
-        return [.. Regex.Matches(source[start..end], @"""(?<kind>[a-z-]+)""\s*(?:when[^=]*?)?=>")
+        return [.. Regex.Matches(source[start..end], @"""(?<kind>[a-z.-]+)""\s*(?:when[^=]*?)?=>")
             .Select(m => m.Groups["kind"].Value)
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)];

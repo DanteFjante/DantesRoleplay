@@ -33,6 +33,14 @@ public sealed class OperationLog(DantesRoleplayDbContext db) : IOperationLog
 
     private readonly DantesRoleplayDbContext _db = db;
 
+    public async Task<Operation?> GetAsync(string id, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        return await _db.Operations
+            .AsNoTracking()
+            .SingleOrDefaultAsync(operation => operation.Id == id, cancellationToken);
+    }
+
     public async Task<Operation> RecordAsync(
         string tool,
         string summary,

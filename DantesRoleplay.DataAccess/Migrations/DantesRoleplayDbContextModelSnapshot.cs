@@ -17,6 +17,1006 @@ namespace DantesRoleplay.DataAccess.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
 
+            modelBuilder.Entity("DantesRoleplay.ApplicationActivation.ApplicationActivationCurrentRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ActivationRevision")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ApplicationId");
+
+                    b.HasIndex("ApplicationId", "ActivationRevision");
+
+                    b.ToTable("system_application_activation_current", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_application_activation_current_revision", "\"ActivationRevision\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.ApplicationActivation.ApplicationActivationDocumentRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ActivationRevision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ContentFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsText")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Length")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LogicalIdentity")
+                        .IsRequired()
+                        .HasMaxLength(1200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MediaType")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Precedence")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RelativePath")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Trust")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ApplicationId", "ActivationRevision", "Ordinal");
+
+                    b.HasIndex("ApplicationId", "ActivationRevision", "LogicalIdentity")
+                        .IsUnique();
+
+                    b.ToTable("system_application_activation_document", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_application_activation_document_hash", "length(\"ContentFingerprint\") = 64 AND \"ContentFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_system_application_activation_document_values", "\"Ordinal\" >= 0 AND \"Trust\" IN (0, 1) AND \"Length\" >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.ApplicationActivation.ApplicationActivationReceiptRecord", b =>
+                {
+                    b.Property<string>("OperationId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ActivationRevision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RequestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("OperationId");
+
+                    b.HasIndex("ApplicationId", "ActivationRevision");
+
+                    b.ToTable("system_application_activation_receipt", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_application_activation_receipt_hash", "length(\"RequestFingerprint\") = 64 AND \"RequestFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_system_application_activation_receipt_outcome", "\"Outcome\" IN ('activated', 'unchanged')");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.ApplicationActivation.ApplicationActivationRevisionRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ActivationRevision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("ActivatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ActivatedByOperationId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ActivationFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ApplicationRevision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CandidateManifestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("DependencyCoverageComplete")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DependencyCoverageVersion")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DependencyGraphFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PreviewFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ScannedDocumentsFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ApplicationId", "ActivationRevision");
+
+                    b.HasIndex("ActivatedByOperationId");
+
+                    b.HasIndex("ApplicationId", "ActivationFingerprint");
+
+                    b.HasIndex("ApplicationId", "ApplicationRevision");
+
+                    b.ToTable("system_application_activation_revision", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_application_activation_revision_hashes", "length(\"ApplicationFingerprint\") = 64 AND \"ApplicationFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"PreviewFingerprint\") = 64 AND \"PreviewFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"ScannedDocumentsFingerprint\") = 64 AND \"ScannedDocumentsFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"CandidateManifestFingerprint\") = 64 AND \"CandidateManifestFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"DependencyGraphFingerprint\") = 64 AND \"DependencyGraphFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"ActivationFingerprint\") = 64 AND \"ActivationFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_system_application_activation_revision_number", "\"ActivationRevision\" > 0 AND \"ApplicationRevision\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.ApplicationActivation.ApplicationActivationSourceRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ActivationRevision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DocumentCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ProblemCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RegistrationFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ApplicationId", "ActivationRevision", "Ordinal");
+
+                    b.HasIndex("ApplicationId", "ActivationRevision", "SourceId")
+                        .IsUnique();
+
+                    b.ToTable("system_application_activation_source", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_application_activation_source_counts", "\"Ordinal\" >= 0 AND \"DocumentCount\" >= 0 AND \"ProblemCount\" >= 0");
+
+                            t.HasCheckConstraint("CK_system_application_activation_source_hash", "length(\"RegistrationFingerprint\") = 64 AND \"RegistrationFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Applications.ApplicationRegistryRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("system_application", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_application_id", "\"Id\" <> 'system'");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Applications.ApplicationRevisionBaseRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("BaseApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ApplicationId", "Revision", "Ordinal");
+
+                    b.HasIndex("BaseApplicationId");
+
+                    b.HasIndex("ApplicationId", "Revision", "BaseApplicationId")
+                        .IsUnique();
+
+                    b.ToTable("system_application_revision_base", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_application_revision_base_ordinal", "\"Ordinal\" >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Applications.ApplicationRevisionRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ApplicationId", "Revision");
+
+                    b.ToTable("system_application_revision", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_application_revision_fingerprint", "length(\"Fingerprint\") = 64 AND \"Fingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_system_application_revision_number", "\"Revision\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Assistants.AssistantConversation", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExternalThreadId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OperatorId")
+                        .IsRequired()
+                        .HasMaxLength(74)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExternalThreadId")
+                        .IsUnique();
+
+                    b.HasIndex("OperatorId", "Provider", "UpdatedAtUtc", "Id");
+
+                    b.ToTable("assistant_conversation", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_assistant_conversation_id", "length(\"Id\") = 45 AND substr(\"Id\", 1, 13) = 'conversation.' AND substr(\"Id\", 14) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_assistant_conversation_operator", "length(\"OperatorId\") = 74 AND substr(\"OperatorId\", 1, 10) = 'principal.' AND substr(\"OperatorId\", 11) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_assistant_conversation_provider", "\"Provider\" IN ('local', 'codex')");
+
+                            t.HasCheckConstraint("CK_assistant_conversation_revision", "\"Revision\" > 0");
+
+                            t.HasCheckConstraint("CK_assistant_conversation_status", "\"Status\" IN ('pending', 'running', 'awaiting-approval', 'completed', 'failed', 'cancelled')");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Assistants.AssistantMessage", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ConversationId")
+                        .IsRequired()
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TurnId")
+                        .IsRequired()
+                        .HasMaxLength(37)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TurnId");
+
+                    b.HasIndex("ConversationId", "Ordinal")
+                        .IsUnique();
+
+                    b.ToTable("assistant_message", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_assistant_message_content", "length(\"Content\") BETWEEN 1 AND 8000");
+
+                            t.HasCheckConstraint("CK_assistant_message_id", "length(\"Id\") = 40 AND substr(\"Id\", 1, 8) = 'message.' AND substr(\"Id\", 9) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_assistant_message_ordinal", "\"Ordinal\" > 0");
+
+                            t.HasCheckConstraint("CK_assistant_message_role", "\"Role\" IN ('user', 'assistant')");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Assistants.AssistantTurn", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(37)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ConversationId")
+                        .IsRequired()
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("ElapsedMilliseconds")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ErrorCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ErrorMessage")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExternalStatus")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExternalTurnId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ModelProfile")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ModelProvider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ModelRevision")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OperatorId")
+                        .IsRequired()
+                        .HasMaxLength(74)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("OutputTokens")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PromptTokens")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RequestHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("StartedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TurnNumber")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExternalTurnId")
+                        .IsUnique();
+
+                    b.HasIndex("ConversationId", "TurnNumber")
+                        .IsUnique();
+
+                    b.HasIndex("OperatorId", "Provider", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.ToTable("assistant_turn", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_assistant_turn_hash", "length(\"RequestHash\") = 64 AND \"RequestHash\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_assistant_turn_id", "length(\"Id\") = 37 AND substr(\"Id\", 1, 5) = 'turn.' AND substr(\"Id\", 6) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_assistant_turn_metrics", "\"ElapsedMilliseconds\" >= 0 AND \"PromptTokens\" >= 0 AND \"OutputTokens\" >= 0");
+
+                            t.HasCheckConstraint("CK_assistant_turn_number", "\"TurnNumber\" > 0");
+
+                            t.HasCheckConstraint("CK_assistant_turn_provider", "\"Provider\" IN ('local', 'codex')");
+
+                            t.HasCheckConstraint("CK_assistant_turn_status", "\"Status\" IN ('pending', 'running', 'awaiting-approval', 'completed', 'failed', 'cancelled')");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Assistants.AssistantTurnActivity", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(41)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ConversationId")
+                        .IsRequired()
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExternalItemId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TurnId")
+                        .IsRequired()
+                        .HasMaxLength(37)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId");
+
+                    b.HasIndex("TurnId", "ExternalItemId")
+                        .IsUnique();
+
+                    b.HasIndex("TurnId", "Sequence")
+                        .IsUnique();
+
+                    b.ToTable("assistant_turn_activity", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_assistant_turn_activity_content", "length(\"ExternalItemId\") BETWEEN 1 AND 200 AND length(\"Summary\") BETWEEN 1 AND 500");
+
+                            t.HasCheckConstraint("CK_assistant_turn_activity_id", "length(\"Id\") = 41 AND substr(\"Id\", 1, 9) = 'activity.' AND substr(\"Id\", 10) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_assistant_turn_activity_kind", "\"Kind\" IN ('command', 'file-change', 'mcp-tool', 'dynamic-tool', 'web-search', 'warning', 'error')");
+
+                            t.HasCheckConstraint("CK_assistant_turn_activity_sequence", "\"Sequence\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Assistants.AssistantTurnApproval", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(41)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("CanAccept")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ConversationId")
+                        .IsRequired()
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DecidedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Decision")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DetailsJson")
+                        .IsRequired()
+                        .HasMaxLength(8192)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DispatchedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExternalApprovalId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExternalItemId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExternalRequestId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OperatorId")
+                        .IsRequired()
+                        .HasMaxLength(74)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RequestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("RequestedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ResolvedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TurnId")
+                        .IsRequired()
+                        .HasMaxLength(37)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId");
+
+                    b.HasIndex("TurnId", "ExternalRequestId")
+                        .IsUnique();
+
+                    b.HasIndex("OperatorId", "TurnId", "Status");
+
+                    b.ToTable("assistant_turn_approval", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_assistant_turn_approval_content", "length(\"ExternalRequestId\") BETWEEN 1 AND 200 AND length(\"ExternalItemId\") BETWEEN 1 AND 200 AND length(\"Summary\") BETWEEN 1 AND 500 AND length(\"DetailsJson\") BETWEEN 2 AND 8192");
+
+                            t.HasCheckConstraint("CK_assistant_turn_approval_decision", "\"Decision\" IS NULL OR \"Decision\" IN ('accept', 'decline', 'cancel')");
+
+                            t.HasCheckConstraint("CK_assistant_turn_approval_hash", "length(\"RequestFingerprint\") = 64 AND \"RequestFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_assistant_turn_approval_id", "length(\"Id\") = 41 AND substr(\"Id\", 1, 9) = 'approval.' AND substr(\"Id\", 10) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_assistant_turn_approval_kind", "\"Kind\" IN ('command', 'file-change', 'network', 'permissions')");
+
+                            t.HasCheckConstraint("CK_assistant_turn_approval_revision", "\"Revision\" > 0");
+
+                            t.HasCheckConstraint("CK_assistant_turn_approval_status", "\"Status\" IN ('pending', 'decided', 'dispatched', 'resolved', 'expired', 'cancelled', 'failed')");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Ecs.ApplicationEcsComponentRecord", b =>
+                {
+                    b.Property<string>("StateSpaceId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EntityId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("QualifiedTypeId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Data")
+                        .IsRequired()
+                        .HasMaxLength(1048576)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SchemaHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TypeVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("StateSpaceId", "EntityId", "QualifiedTypeId");
+
+                    b.HasIndex("QualifiedTypeId", "TypeVersion");
+
+                    b.HasIndex("StateSpaceId", "QualifiedTypeId");
+
+                    b.ToTable("system_ecs_component", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_ecs_component_data", "json_valid(\"Data\")");
+
+                            t.HasCheckConstraint("CK_system_ecs_component_hash", "length(\"SchemaHash\") = 64 AND \"SchemaHash\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_system_ecs_component_revision", "\"Revision\" > 0");
+
+                            t.HasCheckConstraint("CK_system_ecs_component_type_version", "\"TypeVersion\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Ecs.ApplicationEcsContainmentRecord", b =>
+                {
+                    b.Property<string>("StateSpaceId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContainedEntityId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContainerEntityId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Slot")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("StateSpaceId", "ContainedEntityId");
+
+                    b.HasIndex("StateSpaceId", "ContainerEntityId");
+
+                    b.ToTable("system_ecs_containment", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_ecs_containment_revision", "\"Revision\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Ecs.ApplicationEcsEntityRecord", b =>
+                {
+                    b.Property<string>("StateSpaceId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("StateSpaceId", "Id");
+
+                    b.ToTable("system_ecs_entity", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_ecs_entity_revision", "\"Revision\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Ecs.ApplicationEcsRelationshipRecord", b =>
+                {
+                    b.Property<string>("StateSpaceId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FromEntityId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ToEntityId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("QualifiedKind")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Data")
+                        .IsRequired()
+                        .HasMaxLength(1048576)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("StateSpaceId", "FromEntityId", "ToEntityId", "QualifiedKind");
+
+                    b.HasIndex("StateSpaceId", "QualifiedKind");
+
+                    b.HasIndex("StateSpaceId", "ToEntityId");
+
+                    b.ToTable("system_ecs_relationship", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_ecs_relationship_data", "json_valid(\"Data\")");
+
+                            t.HasCheckConstraint("CK_system_ecs_relationship_revision", "\"Revision\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Ecs.ApplicationStateSpaceRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ApplicationRevision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("BindingRevision")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1);
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ManifestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId", "ApplicationRevision");
+
+                    b.ToTable("system_state_space", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_state_space_manifest", "length(\"ManifestFingerprint\") = 64 AND \"ManifestFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_system_state_space_revision", "\"ApplicationRevision\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Ecs.ComponentTypeRecord", b =>
+                {
+                    b.Property<string>("QualifiedId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("QualifiedId");
+
+                    b.HasIndex("ApplicationId");
+
+                    b.ToTable("system_component_type", (string)null);
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Ecs.ComponentTypeVersionRecord", b =>
+                {
+                    b.Property<string>("QualifiedId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProfileId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SchemaHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SchemaJson")
+                        .IsRequired()
+                        .HasMaxLength(65536)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("QualifiedId", "Version");
+
+                    b.ToTable("system_component_type_version", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_component_type_version_hash", "length(\"SchemaHash\") = 64 AND \"SchemaHash\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_system_component_type_version_number", "\"Version\" > 0");
+
+                            t.HasCheckConstraint("CK_system_component_type_version_profile", "\"ProfileId\" IN ('system-json-schema-2020-12/v1', 'system-json-schema-2020-12/v2')");
+
+                            t.HasCheckConstraint("CK_system_component_type_version_schema_json", "json_valid(\"SchemaJson\")");
+                        });
+                });
+
             modelBuilder.Entity("DantesRoleplay.Events.EventEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -407,6 +1407,77 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.ToTable("subscription_version", (string)null);
                 });
 
+            modelBuilder.Entity("DantesRoleplay.HostSettings.HostSettingOverride", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("AppliedVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CurrentVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("host_setting_override", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_host_setting_override_versions", "\"CurrentVersion\" > 0 AND \"AppliedVersion\" >= 0 AND \"AppliedVersion\" <= \"CurrentVersion\"");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.HostSettings.HostSettingOverrideVersion", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OperationId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SettingKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ValueJson")
+                        .HasMaxLength(16000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OperationId")
+                        .IsUnique();
+
+                    b.HasIndex("SettingKey", "Version")
+                        .IsUnique();
+
+                    b.ToTable("host_setting_override_version", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_host_setting_override_version_number", "\"Version\" > 0");
+
+                            t.HasCheckConstraint("CK_host_setting_override_version_operation", "length(\"OperationId\") = 32 AND \"OperationId\" NOT GLOB '*[^0-9a-f]*'");
+                        });
+                });
+
             modelBuilder.Entity("DantesRoleplay.Information.InformationActionContract", b =>
                 {
                     b.Property<string>("Id")
@@ -575,6 +1646,491 @@ namespace DantesRoleplay.DataAccess.Migrations
                             t.HasCheckConstraint("CK_information_source_metadata_schema", "json_valid(\"MetadataSchemaJson\")");
 
                             t.HasCheckConstraint("CK_information_source_revision", "\"Revision\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionExecutionReceipt", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(52)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Disposition")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EvidenceJson")
+                        .IsRequired()
+                        .HasMaxLength(16384)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExecutionRequestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PrincipalReference")
+                        .IsRequired()
+                        .HasMaxLength(74)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProposalFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ResolutionReceiptId")
+                        .IsRequired()
+                        .HasMaxLength(52)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SafeSummary")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StateSpaceId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResolutionReceiptId");
+
+                    b.HasIndex("PrincipalReference", "ApplicationId", "StateSpaceId", "ResolutionReceiptId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.ToTable("interaction_execution_receipt", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_interaction_execution_receipt_bounds", "length(\"ResolutionReceiptId\") = 52 AND length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"StateSpaceId\") BETWEEN 1 AND 200 AND length(\"IdempotencyKey\") BETWEEN 1 AND 128 AND length(\"SafeSummary\") <= 1000");
+
+                            t.HasCheckConstraint("CK_interaction_execution_receipt_disposition", "\"Disposition\" IN ('succeeded', 'failed', 'partial', 'skipped', 'stale', 'unauthorized', 'cancelled', 'timed-out')");
+
+                            t.HasCheckConstraint("CK_interaction_execution_receipt_evidence", "length(\"EvidenceJson\") <= 16384 AND json_valid(\"EvidenceJson\") AND json_type(\"EvidenceJson\") = 'array' AND json_array_length(\"EvidenceJson\") BETWEEN 0 AND 16");
+
+                            t.HasCheckConstraint("CK_interaction_execution_receipt_hashes", "length(\"ExecutionRequestFingerprint\") = 64 AND \"ExecutionRequestFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"ProposalFingerprint\") = 64 AND \"ProposalFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_interaction_execution_receipt_id", "length(\"Id\") = 52 AND substr(\"Id\", 1, 20) = 'interaction-receipt.' AND substr(\"Id\", 21) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_interaction_execution_receipt_principal", "length(\"PrincipalReference\") = 74 AND substr(\"PrincipalReference\", 1, 10) = 'principal.' AND substr(\"PrincipalReference\", 11) NOT GLOB '*[^0-9a-f]*'");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionExecutionReceiptStep", b =>
+                {
+                    b.Property<string>("ExecutionReceiptId")
+                        .HasMaxLength(52)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Disposition")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OperationId")
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProposalStepId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ExecutionReceiptId", "Ordinal");
+
+                    b.HasIndex("OperationId");
+
+                    b.HasIndex("ExecutionReceiptId", "ProposalStepId")
+                        .IsUnique();
+
+                    b.ToTable("interaction_execution_receipt_step", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_interaction_execution_receipt_step_bounds", "length(\"ProposalStepId\") BETWEEN 1 AND 200 AND (\"OperationId\" IS NULL OR length(\"OperationId\") BETWEEN 1 AND 40)");
+
+                            t.HasCheckConstraint("CK_interaction_execution_receipt_step_disposition", "\"Disposition\" IN ('succeeded', 'failed', 'skipped')");
+
+                            t.HasCheckConstraint("CK_interaction_execution_receipt_step_ordinal", "\"Ordinal\" BETWEEN 1 AND 16");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionRecipe", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(102)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TemplateFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TemplateJson")
+                        .IsRequired()
+                        .HasMaxLength(65536)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId", "TemplateFingerprint")
+                        .IsUnique();
+
+                    b.HasIndex("ApplicationId", "CreatedAtUtc", "Id");
+
+                    b.ToTable("interaction_recipe", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_interaction_recipe_application", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system'");
+
+                            t.HasCheckConstraint("CK_interaction_recipe_hash", "length(\"TemplateFingerprint\") = 64 AND \"TemplateFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_interaction_recipe_id", "length(\"Id\") BETWEEN 41 AND 102 AND \"Id\" GLOB '*.recipe.[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]' ");
+
+                            t.HasCheckConstraint("CK_interaction_recipe_template", "length(\"TemplateJson\") BETWEEN 2 AND 65536 AND json_valid(\"TemplateJson\") AND json_type(\"TemplateJson\") = 'object'");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionRecipeEvidence", b =>
+                {
+                    b.Property<string>("RecipeId")
+                        .HasMaxLength(102)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExecutionReceiptId")
+                        .HasMaxLength(52)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IntentFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IntentText")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ResolutionReceiptId")
+                        .IsRequired()
+                        .HasMaxLength(52)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RoleProfile")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("RecipeId", "ExecutionReceiptId", "Kind");
+
+                    b.HasIndex("ExecutionReceiptId");
+
+                    b.HasIndex("ResolutionReceiptId");
+
+                    b.ToTable("interaction_recipe_evidence", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_interaction_recipe_evidence_bounds", "length(\"RecipeId\") BETWEEN 41 AND 102 AND length(\"ExecutionReceiptId\") = 52 AND length(\"ResolutionReceiptId\") = 52 AND length(\"IntentText\") <= 500 AND length(\"RoleProfile\") BETWEEN 1 AND 300");
+
+                            t.HasCheckConstraint("CK_interaction_recipe_evidence_hash", "length(\"IntentFingerprint\") = 64 AND \"IntentFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_interaction_recipe_evidence_kind", "\"Kind\" IN ('derived', 'use-success', 'use-failure')");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionRecipeRevision", b =>
+                {
+                    b.Property<string>("RecipeId")
+                        .HasMaxLength(102)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ApplicationFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ApplicationRevision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EffectiveSetFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RequestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RequestToken")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReviewerPrincipalReference")
+                        .IsRequired()
+                        .HasMaxLength(74)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("RecipeId", "Version");
+
+                    b.HasIndex("ReviewerPrincipalReference", "RequestToken")
+                        .IsUnique();
+
+                    b.ToTable("interaction_recipe_revision", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_interaction_recipe_revision_bounds", "length(\"RecipeId\") BETWEEN 41 AND 102 AND length(\"ReviewerPrincipalReference\") <= 74 AND length(\"Reason\") <= 1000 AND length(\"RequestToken\") BETWEEN 1 AND 128");
+
+                            t.HasCheckConstraint("CK_interaction_recipe_revision_hashes", "length(\"ApplicationFingerprint\") = 64 AND \"ApplicationFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"EffectiveSetFingerprint\") = 64 AND \"EffectiveSetFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"RequestFingerprint\") = 64 AND \"RequestFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_interaction_recipe_revision_status", "\"Status\" IN ('candidate', 'verified', 'stale', 'retired')");
+
+                            t.HasCheckConstraint("CK_interaction_recipe_revision_version", "\"Version\" > 0 AND \"ApplicationRevision\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionResolutionReceipt", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(52)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ApplicationRevision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AuthorizationEvidenceReference")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ConversationId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EffectiveSetFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EnvelopeFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EvidenceJson")
+                        .IsRequired()
+                        .HasMaxLength(16384)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ParentDelegationId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PrincipalReference")
+                        .IsRequired()
+                        .HasMaxLength(74)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProposalFingerprint")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("QueryFingerprint")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RecipeId")
+                        .HasMaxLength(102)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RecipeTemplateFingerprint")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("RecipeVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RoleProfile")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SafeSummary")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SessionContextId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StateRevision")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StateSpaceId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId", "StateSpaceId", "CreatedAtUtc", "Id");
+
+                    b.HasIndex("PrincipalReference", "ApplicationId", "StateSpaceId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.ToTable("interaction_resolution_receipt", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_interaction_resolution_receipt_bounds", "\"ApplicationRevision\" > 0 AND length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"StateSpaceId\") BETWEEN 1 AND 200 AND length(\"SessionContextId\") BETWEEN 1 AND 200 AND length(\"StateRevision\") BETWEEN 1 AND 200 AND length(\"RoleProfile\") BETWEEN 1 AND 300 AND (\"ConversationId\" IS NULL OR length(\"ConversationId\") BETWEEN 1 AND 200) AND (\"ParentDelegationId\" IS NULL OR length(\"ParentDelegationId\") BETWEEN 1 AND 200) AND length(\"AuthorizationEvidenceReference\") BETWEEN 1 AND 200 AND length(\"IdempotencyKey\") BETWEEN 1 AND 128 AND length(\"Code\") BETWEEN 1 AND 200 AND length(\"SafeSummary\") <= 1000");
+
+                            t.HasCheckConstraint("CK_interaction_resolution_receipt_evidence", "length(\"EvidenceJson\") <= 16384 AND json_valid(\"EvidenceJson\") AND json_type(\"EvidenceJson\") = 'array' AND json_array_length(\"EvidenceJson\") BETWEEN 0 AND 16");
+
+                            t.HasCheckConstraint("CK_interaction_resolution_receipt_hashes", "length(\"ApplicationFingerprint\") = 64 AND \"ApplicationFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"EffectiveSetFingerprint\") = 64 AND \"EffectiveSetFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"EnvelopeFingerprint\") = 64 AND \"EnvelopeFingerprint\" NOT GLOB '*[^0-9A-F]*' AND (\"QueryFingerprint\" IS NULL OR (length(\"QueryFingerprint\") = 64 AND \"QueryFingerprint\" NOT GLOB '*[^0-9A-F]*')) AND (\"ProposalFingerprint\" IS NULL OR (length(\"ProposalFingerprint\") = 64 AND \"ProposalFingerprint\" NOT GLOB '*[^0-9A-F]*'))");
+
+                            t.HasCheckConstraint("CK_interaction_resolution_receipt_id", "length(\"Id\") = 52 AND substr(\"Id\", 1, 20) = 'interaction-receipt.' AND substr(\"Id\", 21) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_interaction_resolution_receipt_principal", "length(\"PrincipalReference\") = 74 AND substr(\"PrincipalReference\", 1, 10) = 'principal.' AND substr(\"PrincipalReference\", 11) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_interaction_resolution_receipt_proposal", "(\"Status\" = 'resolved' AND \"ProposalFingerprint\" IS NOT NULL) OR (\"Status\" <> 'resolved' AND \"ProposalFingerprint\" IS NULL)");
+
+                            t.HasCheckConstraint("CK_interaction_resolution_receipt_status", "\"Status\" IN ('resolved', 'needs-input', 'ambiguous', 'unknown', 'unsupported', 'unavailable', 'unsafe', 'stale')");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.LegacyStateAdoption.LegacyStateAdoptionRecord", b =>
+                {
+                    b.Property<string>("StateSpaceId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ComponentCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ContainmentCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EntityCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EvidenceFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OperationId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RelationshipCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RequestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("StateSpaceId");
+
+                    b.HasIndex("ApplicationId");
+
+                    b.HasIndex("OperationId")
+                        .IsUnique();
+
+                    b.ToTable("system_legacy_state_adoption", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_legacy_state_adoption_counts", "\"EntityCount\" >= 0 AND \"ComponentCount\" >= 0 AND \"ContainmentCount\" >= 0 AND \"RelationshipCount\" >= 0");
+
+                            t.HasCheckConstraint("CK_system_legacy_state_adoption_fingerprints", "length(\"RequestFingerprint\") = 64 AND \"RequestFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"SourceFingerprint\") = 64 AND \"SourceFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"EvidenceFingerprint\") = 64 AND \"EvidenceFingerprint\" NOT GLOB '*[^0-9A-F]*'");
                         });
                 });
 
@@ -948,6 +2504,194 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.ToTable("procedure_contract_version", (string)null);
                 });
 
+            modelBuilder.Entity("DantesRoleplay.Projections.ProjectionComponentInputRecord", b =>
+                {
+                    b.Property<string>("QualifiedId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("InputId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EntityRole")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("QualifiedTypeId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SchemaHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TypeVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("QualifiedId", "Version", "InputId");
+
+                    b.HasIndex("QualifiedTypeId", "TypeVersion");
+
+                    b.ToTable("system_projection_component_input", (string)null);
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Projections.ProjectionDefinitionRecord", b =>
+                {
+                    b.Property<string>("QualifiedId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("QualifiedId");
+
+                    b.HasIndex("ApplicationId");
+
+                    b.ToTable("system_projection_definition", (string)null);
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Projections.ProjectionDefinitionVersionRecord", b =>
+                {
+                    b.Property<string>("QualifiedId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OutputSchemaHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OutputSchemaJson")
+                        .IsRequired()
+                        .HasMaxLength(65536)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProfileId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("QualifiedId", "Version");
+
+                    b.HasIndex("QualifiedId", "ContentHash")
+                        .IsUnique();
+
+                    b.ToTable("system_projection_definition_version", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_projection_definition_version_content_hash", "length(\"ContentHash\") = 64 AND \"ContentHash\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_system_projection_definition_version_number", "\"Version\" > 0");
+
+                            t.HasCheckConstraint("CK_system_projection_definition_version_output_hash", "length(\"OutputSchemaHash\") = 64 AND \"OutputSchemaHash\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_system_projection_definition_version_schema", "json_valid(\"OutputSchemaJson\")");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Projections.ProjectionDependencyInputRecord", b =>
+                {
+                    b.Property<string>("QualifiedId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("InputId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DependencyContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DependencyQualifiedId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DependencyVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RoleBindingsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("QualifiedId", "Version", "InputId");
+
+                    b.HasIndex("DependencyQualifiedId", "DependencyVersion");
+
+                    b.ToTable("system_projection_dependency_input", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_projection_dependency_input_role_bindings", "json_valid(\"RoleBindingsJson\")");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Projections.ProjectionMappingRecord", b =>
+                {
+                    b.Property<string>("QualifiedId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("TargetPointer")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InputId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SourcePointer")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("QualifiedId", "Version", "TargetPointer");
+
+                    b.HasIndex("QualifiedId", "Version", "Ordinal")
+                        .IsUnique();
+
+                    b.ToTable("system_projection_mapping", (string)null);
+                });
+
             modelBuilder.Entity("DantesRoleplay.Snapshots.SnapshotPackage", b =>
                 {
                     b.Property<string>("Id")
@@ -1033,6 +2777,175 @@ namespace DantesRoleplay.DataAccess.Migrations
                             t.HasCheckConstraint("CK_snapshot_package_root_operation", "length(\"RootOperationId\") = 32 AND \"RootOperationId\" NOT GLOB '*[^0-9a-f]*'");
 
                             t.HasCheckConstraint("CK_snapshot_package_scope_version", "\"ScopeContractVersion\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Sources.ApplicationSourceRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AllowedRootId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LogicalIdentity")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Precedence")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RelativePathOrGlob")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Trust")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ApplicationId", "SourceId");
+
+                    b.HasIndex("ApplicationId", "LogicalIdentity", "Precedence")
+                        .IsUnique();
+
+                    b.ToTable("system_application_source", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_application_source_trust", "\"Trust\" IN (0, 1)");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Sources.ApplicationSourceScanRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Generation")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ContentFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ApplicationId", "SourceId", "Generation");
+
+                    b.ToTable("system_application_source_scan", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_application_source_scan_fingerprint", "length(\"ContentFingerprint\") = 64 AND \"ContentFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_system_application_source_scan_generation", "\"Generation\" > 0");
+
+                            t.HasCheckConstraint("CK_system_application_source_scan_status", "\"Status\" IN (0, 1)");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.StateSpaceAdministration.StateSpaceBindingRevisionRecord", b =>
+                {
+                    b.Property<string>("StateSpaceId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("BindingRevision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ActiveFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ApplicationRevision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("BindingFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompatibilityCode")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ComponentCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("DependencyCoverageComplete")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DependencyCoverageVersion")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EntityCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("OperationId")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PreviousBindingFingerprint")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("StateSpaceId", "BindingRevision");
+
+                    b.HasIndex("OperationId")
+                        .IsUnique();
+
+                    b.HasIndex("ApplicationId", "ApplicationRevision");
+
+                    b.ToTable("system_state_space_binding_revision", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_state_space_binding_active_fingerprint", "length(\"ActiveFingerprint\") = 64 AND \"ActiveFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_system_state_space_binding_application_fingerprint", "length(\"ApplicationFingerprint\") = 64 AND \"ApplicationFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_system_state_space_binding_application_revision", "\"ApplicationRevision\" > 0");
+
+                            t.HasCheckConstraint("CK_system_state_space_binding_counts", "\"EntityCount\" >= 0 AND \"ComponentCount\" >= 0");
+
+                            t.HasCheckConstraint("CK_system_state_space_binding_fingerprint", "length(\"BindingFingerprint\") = 64 AND \"BindingFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_system_state_space_binding_previous", "\"PreviousBindingFingerprint\" IS NULL OR (length(\"PreviousBindingFingerprint\") = 64 AND \"PreviousBindingFingerprint\" NOT GLOB '*[^0-9A-F]*')");
+
+                            t.HasCheckConstraint("CK_system_state_space_binding_revision", "\"BindingRevision\" > 0");
                         });
                 });
 
@@ -1744,6 +3657,236 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.ToTable("relationship", (string)null);
                 });
 
+            modelBuilder.Entity("DantesRoleplay.ApplicationActivation.ApplicationActivationCurrentRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.ApplicationActivation.ApplicationActivationRevisionRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "ActivationRevision")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.ApplicationActivation.ApplicationActivationDocumentRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.ApplicationActivation.ApplicationActivationRevisionRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "ActivationRevision")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.ApplicationActivation.ApplicationActivationReceiptRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Operations.Operation", null)
+                        .WithMany()
+                        .HasForeignKey("OperationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.ApplicationActivation.ApplicationActivationRevisionRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "ActivationRevision")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.ApplicationActivation.ApplicationActivationRevisionRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Operations.Operation", null)
+                        .WithMany()
+                        .HasForeignKey("ActivatedByOperationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Applications.ApplicationRevisionRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "ApplicationRevision")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.ApplicationActivation.ApplicationActivationSourceRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.ApplicationActivation.ApplicationActivationRevisionRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "ActivationRevision")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Applications.ApplicationRevisionBaseRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Applications.ApplicationRegistryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("BaseApplicationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Applications.ApplicationRevisionRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "Revision")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Applications.ApplicationRevisionRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Applications.ApplicationRegistryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Assistants.AssistantMessage", b =>
+                {
+                    b.HasOne("DantesRoleplay.Assistants.AssistantConversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Assistants.AssistantTurn", "Turn")
+                        .WithMany("Messages")
+                        .HasForeignKey("TurnId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+
+                    b.Navigation("Turn");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Assistants.AssistantTurn", b =>
+                {
+                    b.HasOne("DantesRoleplay.Assistants.AssistantConversation", "Conversation")
+                        .WithMany("Turns")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Assistants.AssistantTurnActivity", b =>
+                {
+                    b.HasOne("DantesRoleplay.Assistants.AssistantConversation", "Conversation")
+                        .WithMany("Activities")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Assistants.AssistantTurn", "Turn")
+                        .WithMany("Activities")
+                        .HasForeignKey("TurnId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+
+                    b.Navigation("Turn");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Assistants.AssistantTurnApproval", b =>
+                {
+                    b.HasOne("DantesRoleplay.Assistants.AssistantConversation", "Conversation")
+                        .WithMany("Approvals")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Assistants.AssistantTurn", "Turn")
+                        .WithMany("Approvals")
+                        .HasForeignKey("TurnId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+
+                    b.Navigation("Turn");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Ecs.ApplicationEcsComponentRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Ecs.ComponentTypeVersionRecord", null)
+                        .WithMany()
+                        .HasForeignKey("QualifiedTypeId", "TypeVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Ecs.ApplicationEcsEntityRecord", null)
+                        .WithMany()
+                        .HasForeignKey("StateSpaceId", "EntityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Ecs.ApplicationEcsContainmentRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Ecs.ApplicationEcsEntityRecord", null)
+                        .WithMany()
+                        .HasForeignKey("StateSpaceId", "ContainedEntityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Ecs.ApplicationEcsEntityRecord", null)
+                        .WithMany()
+                        .HasForeignKey("StateSpaceId", "ContainerEntityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Ecs.ApplicationEcsEntityRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Ecs.ApplicationStateSpaceRecord", null)
+                        .WithMany()
+                        .HasForeignKey("StateSpaceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Ecs.ApplicationEcsRelationshipRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Ecs.ApplicationEcsEntityRecord", null)
+                        .WithMany()
+                        .HasForeignKey("StateSpaceId", "FromEntityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Ecs.ApplicationEcsEntityRecord", null)
+                        .WithMany()
+                        .HasForeignKey("StateSpaceId", "ToEntityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Ecs.ApplicationStateSpaceRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Applications.ApplicationRevisionRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "ApplicationRevision")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Ecs.ComponentTypeRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Applications.ApplicationRegistryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Ecs.ComponentTypeVersionRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Ecs.ComponentTypeRecord", null)
+                        .WithMany()
+                        .HasForeignKey("QualifiedId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("DantesRoleplay.Events.EventEntity", b =>
                 {
                     b.HasOne("DantesRoleplay.Events.EventRecord", "Event")
@@ -1788,6 +3931,23 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.Navigation("Subscription");
                 });
 
+            modelBuilder.Entity("DantesRoleplay.HostSettings.HostSettingOverrideVersion", b =>
+                {
+                    b.HasOne("DantesRoleplay.Operations.Operation", null)
+                        .WithMany()
+                        .HasForeignKey("OperationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.HostSettings.HostSettingOverride", "Setting")
+                        .WithMany("Versions")
+                        .HasForeignKey("SettingKey")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Setting");
+                });
+
             modelBuilder.Entity("DantesRoleplay.Information.InformationRecord", b =>
                 {
                     b.HasOne("DantesRoleplay.Information.InformationSource", "Source")
@@ -1797,6 +3957,86 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .IsRequired();
 
                     b.Navigation("Source");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionExecutionReceipt", b =>
+                {
+                    b.HasOne("DantesRoleplay.Interactions.InteractionResolutionReceipt", null)
+                        .WithMany()
+                        .HasForeignKey("ResolutionReceiptId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionExecutionReceiptStep", b =>
+                {
+                    b.HasOne("DantesRoleplay.Interactions.InteractionExecutionReceipt", "ExecutionReceipt")
+                        .WithMany("Steps")
+                        .HasForeignKey("ExecutionReceiptId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Operations.Operation", null)
+                        .WithMany()
+                        .HasForeignKey("OperationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ExecutionReceipt");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionRecipeEvidence", b =>
+                {
+                    b.HasOne("DantesRoleplay.Interactions.InteractionExecutionReceipt", null)
+                        .WithMany()
+                        .HasForeignKey("ExecutionReceiptId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Interactions.InteractionRecipe", "Recipe")
+                        .WithMany("Evidence")
+                        .HasForeignKey("RecipeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Interactions.InteractionResolutionReceipt", null)
+                        .WithMany()
+                        .HasForeignKey("ResolutionReceiptId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Recipe");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionRecipeRevision", b =>
+                {
+                    b.HasOne("DantesRoleplay.Interactions.InteractionRecipe", "Recipe")
+                        .WithMany("Revisions")
+                        .HasForeignKey("RecipeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Recipe");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.LegacyStateAdoption.LegacyStateAdoptionRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Applications.ApplicationRegistryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Operations.Operation", null)
+                        .WithMany()
+                        .HasForeignKey("OperationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Ecs.ApplicationStateSpaceRecord", null)
+                        .WithMany()
+                        .HasForeignKey("StateSpaceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DantesRoleplay.Mechanics.MechanicVersion", b =>
@@ -1830,6 +4070,101 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .IsRequired();
 
                     b.Navigation("Contract");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Projections.ProjectionComponentInputRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Projections.ProjectionDefinitionVersionRecord", null)
+                        .WithMany()
+                        .HasForeignKey("QualifiedId", "Version")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Ecs.ComponentTypeVersionRecord", null)
+                        .WithMany()
+                        .HasForeignKey("QualifiedTypeId", "TypeVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Projections.ProjectionDefinitionRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Applications.ApplicationRegistryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Projections.ProjectionDefinitionVersionRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Projections.ProjectionDefinitionRecord", null)
+                        .WithMany()
+                        .HasForeignKey("QualifiedId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Projections.ProjectionDependencyInputRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Projections.ProjectionDefinitionVersionRecord", null)
+                        .WithMany()
+                        .HasForeignKey("DependencyQualifiedId", "DependencyVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Projections.ProjectionDefinitionVersionRecord", null)
+                        .WithMany()
+                        .HasForeignKey("QualifiedId", "Version")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Projections.ProjectionMappingRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Projections.ProjectionDefinitionVersionRecord", null)
+                        .WithMany()
+                        .HasForeignKey("QualifiedId", "Version")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Sources.ApplicationSourceRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Applications.ApplicationRegistryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Sources.ApplicationSourceScanRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Sources.ApplicationSourceRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "SourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.StateSpaceAdministration.StateSpaceBindingRevisionRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Operations.Operation", null)
+                        .WithMany()
+                        .HasForeignKey("OperationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DantesRoleplay.Ecs.ApplicationStateSpaceRecord", null)
+                        .WithMany()
+                        .HasForeignKey("StateSpaceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Applications.ApplicationRevisionRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "ApplicationRevision")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DantesRoleplay.Story.StoryPlanStepRun", b =>
@@ -1955,6 +4290,26 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.Navigation("ToEntity");
                 });
 
+            modelBuilder.Entity("DantesRoleplay.Assistants.AssistantConversation", b =>
+                {
+                    b.Navigation("Activities");
+
+                    b.Navigation("Approvals");
+
+                    b.Navigation("Messages");
+
+                    b.Navigation("Turns");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Assistants.AssistantTurn", b =>
+                {
+                    b.Navigation("Activities");
+
+                    b.Navigation("Approvals");
+
+                    b.Navigation("Messages");
+                });
+
             modelBuilder.Entity("DantesRoleplay.Events.EventRecord", b =>
                 {
                     b.Navigation("Entities");
@@ -1970,9 +4325,26 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.Navigation("Versions");
                 });
 
+            modelBuilder.Entity("DantesRoleplay.HostSettings.HostSettingOverride", b =>
+                {
+                    b.Navigation("Versions");
+                });
+
             modelBuilder.Entity("DantesRoleplay.Information.InformationSource", b =>
                 {
                     b.Navigation("Records");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionExecutionReceipt", b =>
+                {
+                    b.Navigation("Steps");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionRecipe", b =>
+                {
+                    b.Navigation("Evidence");
+
+                    b.Navigation("Revisions");
                 });
 
             modelBuilder.Entity("DantesRoleplay.Mechanics.Mechanic", b =>

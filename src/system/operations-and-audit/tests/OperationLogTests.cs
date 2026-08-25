@@ -88,6 +88,20 @@ public sealed class OperationLogTests : IDisposable
     }
 
     [Fact]
+    public async Task Exact_operation_read_does_not_depend_on_a_recent_history_window()
+    {
+        await using var db = _fixture.CreateContext();
+        var log = new OperationLog(db);
+        var written = await log.RecordAsync("commit", "changed world", success: true, id: "operation-exact");
+
+        var found = await log.GetAsync("operation-exact");
+
+        Assert.NotNull(found);
+        Assert.Equal(written.Id, found!.Id);
+        Assert.Null(await log.GetAsync("missing-operation"));
+    }
+
+    [Fact]
     public async Task Procedures_actually_read_are_observed_from_the_log_not_from_the_caller()
     {
         await using var db = _fixture.CreateContext();
