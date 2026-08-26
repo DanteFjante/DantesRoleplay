@@ -102,11 +102,24 @@ public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
     public static bool IsAllowedRemotePath(PathString path) =>
         path == "/" ||
         path.StartsWithSegments("/ui") ||
+        path.StartsWithSegments("/components") ||
         path.StartsWithSegments("/api/pages") ||
         path.StartsWithSegments("/api/data") ||
         path.StartsWithSegments("/api/changes") ||
         path.StartsWithSegments("/api/session") ||
+        IsObservationPath(path) ||
         path.StartsWithSegments(WebControlEndpointConventions.RoutePrefix);
+
+    private static bool IsObservationPath(PathString path)
+    {
+        const string prefix = "/api/applications/";
+        const string suffix = "/observations";
+        var value = path.Value;
+        if (value is null || !value.StartsWith(prefix, StringComparison.Ordinal) ||
+            !value.EndsWith(suffix, StringComparison.Ordinal)) return false;
+        var application = value[prefix.Length..^suffix.Length];
+        return application.Length is >= 1 and <= 63 && !application.Contains('/');
+    }
 
     public static ClaimsPrincipal CreatePrincipal(WebAccessDecision decision)
     {

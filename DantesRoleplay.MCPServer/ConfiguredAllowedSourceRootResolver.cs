@@ -3,7 +3,7 @@ using DantesRoleplay.Sources;
 namespace DantesRoleplay.MCPServer;
 
 /// <summary>Canonical host configuration; protocol callers can select IDs but never define paths.</summary>
-public sealed class ConfiguredAllowedSourceRootResolver : IAllowedSourceRootResolver
+public sealed class ConfiguredAllowedSourceRootResolver : IAllowedSourceRootResolver, IAllowedSourceRootCatalog
 {
     private readonly IReadOnlyDictionary<string, string> _roots;
 
@@ -21,6 +21,12 @@ public sealed class ConfiguredAllowedSourceRootResolver : IAllowedSourceRootReso
 
     public bool TryResolve(string allowedRootId, out string canonicalPath) =>
         _roots.TryGetValue(allowedRootId, out canonicalPath!);
+
+    public IReadOnlyList<string> ListIds(int limit)
+    {
+        if (limit is < 1 or > 128) throw new ArgumentOutOfRangeException(nameof(limit));
+        return _roots.Keys.OrderBy(value => value, StringComparer.Ordinal).Take(limit).ToArray();
+    }
 
     private static bool ValidId(string value) => value is { Length: >= 1 and <= 63 }
         && char.IsAsciiLetterLower(value[0])

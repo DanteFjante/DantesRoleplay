@@ -13,6 +13,7 @@ internal sealed class SystemApplicationPreviewTools
         IPrivateOperatorRequestAuthorizer? authorization,
         IOperationLog log,
         string? applicationId,
+        string[]? sourceIds,
         int? limit,
         CancellationToken cancellationToken) => ToolRunner.RunAsync(log, "query", async () =>
     {
@@ -28,7 +29,7 @@ internal sealed class SystemApplicationPreviewTools
         var size = limit ?? 100;
         if (size is < 1 or > 250)
             return Fail(decision, "INVALID_PAYLOAD", "limit must be from 1 through 250.",
-                Call(applicationId, 100), "Rejected an invalid application-preview limit.");
+                Call(applicationId, sourceIds, 100), "Rejected an invalid application-preview limit.");
 
         ApplicationIdentifier app;
         try { app = ApplicationIdentifier.Parse(applicationId ?? string.Empty); }
@@ -41,7 +42,9 @@ internal sealed class SystemApplicationPreviewTools
 
         try
         {
-            var preview = await previews.PreviewAsync(app, cancellationToken);
+            var preview = sourceIds is null
+                ? await previews.PreviewAsync(app, cancellationToken)
+                : await previews.PreviewAsync(app, sourceIds, cancellationToken);
             return Ok(decision, Describe(preview, size),
                 $"Previewed application '{app.Value}' from its registered sources.",
                 $"query(kind: \"system.sources\", applicationId: {JsonSerializer.Serialize(app.Value)})");
@@ -55,7 +58,7 @@ internal sealed class SystemApplicationPreviewTools
         {
             return Fail(decision, "PREVIEW_FAILED",
                 "Application preview failed without changing application state.",
-                Call(app.Value, size), $"Application preview failed: {exception.GetType().Name}.");
+                Call(app.Value, sourceIds, size), $"Application preview failed: {exception.GetType().Name}.");
         }
     });
 
@@ -108,6 +111,6 @@ internal sealed class SystemApplicationPreviewTools
         new(null, summary, [fix], new(code, why, fix),
             GuardEvidenceJson: JsonSerializer.Serialize(decision.Evidence));
 
-    private static string Call(string? applicationId, int limit) =>
-        $"query(kind: \"system.application-preview\", applicationId: {JsonSerializer.Serialize(applicationId ?? "example")}, limit: {limit})";
+    private static string Call(string? applicationId, string[]? sourceIds, int limit) =>
+        $"query(kind: \"system.application-preview\", applicationId: {JsonSerializer.Serialize(applicationId ?? "example")}, sourceIds: {JsonSerializer.Serialize(sourceIds)}, limit: {limit})";
 }

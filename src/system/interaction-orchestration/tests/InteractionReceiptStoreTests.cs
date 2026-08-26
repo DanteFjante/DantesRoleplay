@@ -1,6 +1,7 @@
 using System.Text.Json;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
+using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Operations;
@@ -110,6 +111,44 @@ public sealed class InteractionReceiptStoreTests : IDisposable
         Assert.Single(db.Operations);
         Assert.Single(db.InteractionExecutionReceipts);
         Assert.Single(db.InteractionExecutionReceiptSteps);
+    }
+
+    [Fact]
+    public async Task Query_receipts_persist_visible_output_redact_binding_only_values_and_replay_without_work()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = Store(db);
+        var resolution = (await store.AppendResolutionAsync(Resolution("query-plan.1", "Read safe facts"))).Receipt!;
+        var consent = new InteractionExecutionConsentReference(resolution.Id,
+            resolution.ProposalFingerprint!, Principal, App(), "state.1", "query-execute.1");
+        var draft = new InteractionExecutionReceiptDraft(consent, HashB,
+            InteractionExecutionReceiptDisposition.Succeeded, "Two queries completed.", [],
+            [
+                new(1, "query.visible", InteractionExecutionStepDisposition.Succeeded),
+                new(2, "query.hidden", InteractionExecutionStepDisposition.Succeeded)
+            ],
+            [
+                new(1, "query.visible", "sample-app.query.visible", HashA, HashB, HashA,
+                    ApplicationQueryExposure.ModelVisible, "{\"answer\":42}"),
+                new(2, "query.hidden", "sample-app.query.hidden", HashB, HashA, HashB,
+                    ApplicationQueryExposure.BindingOnly, null)
+            ]);
+
+        var appended = await store.AppendExecutionAsync(draft);
+        var found = await store.GetAsync(ReadRequest(App(), "state.1"), appended.Receipt!.Id);
+        var replay = await store.FindExecutionAsync(consent, HashB);
+
+        Assert.Equal(2, db.InteractionExecutionQueryResults.Count());
+        Assert.Equal("{\"answer\":42}", db.InteractionExecutionQueryResults.Single(
+            value => value.Exposure == "model-visible").OutputJson);
+        Assert.Null(db.InteractionExecutionQueryResults.Single(
+            value => value.Exposure == "binding-only").OutputJson);
+        Assert.Equal(2, found!.QueryResults!.Count);
+        Assert.Equal(42, found.QueryResults.Single(value => value.Output is not null)
+            .Output!.Value.GetProperty("answer").GetInt32());
+        Assert.Null(found.QueryResults.Single(value => value.QualifiedId.EndsWith("hidden", StringComparison.Ordinal)).Output);
+        Assert.Equal(InteractionReceiptWriteDisposition.Replay, replay!.Disposition);
+        Assert.Equal(found.Id, replay.Receipt!.Id);
     }
 
     [Fact]

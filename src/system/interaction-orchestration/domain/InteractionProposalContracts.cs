@@ -1,6 +1,8 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using DantesRoleplay.Applications;
+using DantesRoleplay.CatalogNavigation;
 
 namespace DantesRoleplay.Interactions;
 
@@ -14,6 +16,86 @@ public enum InteractionPlanStepKind
 {
     Query,
     Action
+}
+
+public sealed record InteractionResultBinding
+{
+    public InteractionResultBinding(
+        string fromStepId,
+        string fromPointer,
+        string? toRole = null,
+        string? toInputPointer = null)
+    {
+        FromStepId = InteractionGuard.Identifier(fromStepId, nameof(fromStepId));
+        FromPointer = Pointer(fromPointer, nameof(fromPointer), allowArrayTargets: true);
+        if ((toRole is null) == (toInputPointer is null))
+            throw new InteractionContractException("RESULT_BINDING_TARGET_INVALID",
+                "A result binding must name exactly one role or input target.");
+        ToRole = toRole is null ? null : InteractionGuard.Identifier(toRole, nameof(toRole));
+        ToInputPointer = toInputPointer is null ? null
+            : Pointer(toInputPointer, nameof(toInputPointer), allowArrayTargets: false);
+    }
+
+    public string FromStepId { get; }
+    public string FromPointer { get; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ToRole { get; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ToInputPointer { get; }
+    public string TargetKey => ToRole is not null ? "role:" + ToRole : "input:" + ToInputPointer;
+
+    private static string Pointer(string value, string parameter, bool allowArrayTargets)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (value.Length > 1_000 || (value.Length > 0 && !value.StartsWith("/", StringComparison.Ordinal)))
+            throw new InteractionContractException("RESULT_BINDING_POINTER_INVALID",
+                "A result binding requires a bounded RFC 6901 JSON pointer.", parameter);
+        var tokens = value.Length == 0 ? [] : value.Split('/').Skip(1).ToArray();
+        if (tokens.Any(token => token.Contains('~')
+                && token.Replace("~0", "", StringComparison.Ordinal)
+                    .Replace("~1", "", StringComparison.Ordinal).Contains('~'))
+            || (!allowArrayTargets && tokens.Any(token => int.TryParse(token, out _))))
+            throw new InteractionContractException("RESULT_BINDING_POINTER_INVALID",
+                "A result binding pointer contains a forbidden token.", parameter);
+        return value;
+    }
+}
+
+public sealed record InteractionQueryContractReference
+{
+    public InteractionQueryContractReference(
+        string executor,
+        string projectionQualifiedId,
+        int projectionVersion,
+        string projectionContentHash,
+        string outputSchemaHash,
+        string outputSchemaJson,
+        ApplicationQueryExposure exposure,
+        IEnumerable<string> roles)
+    {
+        Executor = InteractionGuard.Identifier(executor, nameof(executor));
+        ProjectionQualifiedId = InteractionGuard.Identifier(projectionQualifiedId, nameof(projectionQualifiedId));
+        if (projectionVersion < 1)
+            throw new InteractionContractException("INVALID_QUERY_PROJECTION", "A query projection version must be positive.");
+        ProjectionVersion = projectionVersion;
+        ProjectionContentHash = InteractionGuard.UpperSha256(projectionContentHash, nameof(projectionContentHash));
+        OutputSchemaHash = InteractionGuard.UpperSha256(outputSchemaHash, nameof(outputSchemaHash));
+        OutputSchemaJson = InteractionCanonicalJson.CanonicalizeObject(outputSchemaJson);
+        if (!Enum.IsDefined(exposure))
+            throw new InteractionContractException("INVALID_QUERY_EXPOSURE", "The query exposure is unsupported.");
+        Exposure = exposure;
+        Roles = InteractionGuard.CopyDistinctList(roles, InteractionContractLimits.RoleHints,
+            "INVALID_QUERY_ROLES", sort: true);
+    }
+
+    public string Executor { get; }
+    public string ProjectionQualifiedId { get; }
+    public int ProjectionVersion { get; }
+    public string ProjectionContentHash { get; }
+    public string OutputSchemaHash { get; }
+    public string OutputSchemaJson { get; }
+    public ApplicationQueryExposure Exposure { get; }
+    public IReadOnlyList<string> Roles { get; }
 }
 
 public sealed record InteractionContractReference
@@ -58,7 +140,9 @@ public sealed record InteractionPlanStep
         IEnumerable<string> dependsOn,
         IReadOnlyDictionary<string, string> roleBindings,
         string inputJson,
-        string expectedStateRevision)
+        string expectedStateRevision,
+        IEnumerable<InteractionResultBinding>? resultBindings = null,
+        InteractionQueryContractReference? queryContract = null)
     {
         if (!Enum.IsDefined(kind)) throw new InteractionContractException("INVALID_STEP_KIND", "The step kind is not supported.");
         ArgumentNullException.ThrowIfNull(contract);
@@ -70,6 +154,21 @@ public sealed record InteractionPlanStep
         RoleBindings = InteractionGuard.CopyMap(roleBindings, InteractionContractLimits.RoleHints, "INVALID_ROLE_BINDINGS");
         InputJson = InteractionCanonicalJson.CanonicalizeObject(inputJson);
         ExpectedStateRevision = InteractionGuard.Identifier(expectedStateRevision, nameof(expectedStateRevision));
+        var copiedBindings = resultBindings?.ToArray() ?? [];
+        if (copiedBindings.Length > InteractionContractLimits.ResultBindingsPerStep
+            || copiedBindings.Any(binding => binding is null)
+            || copiedBindings.Select(binding => binding.TargetKey).Distinct(StringComparer.Ordinal).Count() != copiedBindings.Length)
+            throw new InteractionContractException("INVALID_RESULT_BINDINGS",
+                "Result bindings must be bounded with distinct targets.");
+        ResultBindings = Array.AsReadOnly(copiedBindings);
+        if ((kind == InteractionPlanStepKind.Query) != (queryContract is not null))
+            throw new InteractionContractException("QUERY_CONTRACT_REFERENCE_INVALID",
+                "Only query steps require an exact query execution contract.");
+        if (queryContract is not null
+            && !queryContract.ProjectionQualifiedId.StartsWith(contract.ApplicationId.Value + ".", StringComparison.Ordinal))
+            throw new InteractionContractException("QUERY_PROJECTION_NAMESPACE_MISMATCH",
+                "A query projection must belong to the same application as its query contract.");
+        QueryContract = queryContract;
     }
 
     public string StepId { get; }
@@ -79,6 +178,8 @@ public sealed record InteractionPlanStep
     public IReadOnlyDictionary<string, string> RoleBindings { get; }
     public string InputJson { get; }
     public string ExpectedStateRevision { get; }
+    public IReadOnlyList<InteractionResultBinding> ResultBindings { get; }
+    public InteractionQueryContractReference? QueryContract { get; }
 }
 
 public sealed record InteractionProposal
@@ -116,6 +217,10 @@ public sealed record InteractionProposal
                 throw new InteractionContractException("SELF_DEPENDENCY", "A proposal step cannot depend on itself.");
             if (step.DependsOn.Any(x => !seen.Contains(x)))
                 throw new InteractionContractException("MISSING_OR_FORWARD_DEPENDENCY", "Dependencies must name distinct earlier steps.");
+            if (step.ResultBindings.Any(binding => !seen.Contains(binding.FromStepId)
+                    || !step.DependsOn.Contains(binding.FromStepId, StringComparer.Ordinal)))
+                throw new InteractionContractException("RESULT_BINDING_SOURCE_INVALID",
+                    "Result bindings must name earlier explicit dependencies.");
             seen.Add(step.StepId);
         }
 
@@ -143,24 +248,60 @@ public sealed record InteractionProposal
         var canonical = JsonSerializer.Serialize(new
         {
             envelope = envelopeFingerprint,
-            steps = values.Select(step => new
-            {
-                step.StepId,
-                kind = step.Kind.ToString().ToLowerInvariant(),
-                contract = new
+            steps = values.Select(step => step.ResultBindings.Count == 0 && step.QueryContract is null
+                ? (object)new
                 {
-                    scope = step.Contract.Scope.ToString().ToLowerInvariant(),
-                    applicationId = step.Contract.ApplicationId.Value,
-                    step.Contract.QualifiedKey,
-                    step.Contract.AuthoritativeId,
-                    step.Contract.Version,
-                    step.Contract.Fingerprint
-                },
-                dependsOn = step.DependsOn,
-                roleBindings = step.RoleBindings,
-                input = JsonSerializer.Deserialize<JsonElement>(step.InputJson),
-                step.ExpectedStateRevision
-            })
+                    step.StepId,
+                    kind = step.Kind.ToString().ToLowerInvariant(),
+                    contract = new
+                    {
+                        scope = step.Contract.Scope.ToString().ToLowerInvariant(),
+                        applicationId = step.Contract.ApplicationId.Value,
+                        step.Contract.QualifiedKey,
+                        step.Contract.AuthoritativeId,
+                        step.Contract.Version,
+                        step.Contract.Fingerprint
+                    },
+                    dependsOn = step.DependsOn,
+                    roleBindings = step.RoleBindings,
+                    input = JsonSerializer.Deserialize<JsonElement>(step.InputJson),
+                    step.ExpectedStateRevision
+                }
+                : new
+                {
+                    step.StepId,
+                    kind = step.Kind.ToString().ToLowerInvariant(),
+                    contract = new
+                    {
+                        scope = step.Contract.Scope.ToString().ToLowerInvariant(),
+                        applicationId = step.Contract.ApplicationId.Value,
+                        step.Contract.QualifiedKey,
+                        step.Contract.AuthoritativeId,
+                        step.Contract.Version,
+                        step.Contract.Fingerprint
+                    },
+                    dependsOn = step.DependsOn,
+                    roleBindings = step.RoleBindings,
+                    input = JsonSerializer.Deserialize<JsonElement>(step.InputJson),
+                    resultBindings = step.ResultBindings.Select(binding => new
+                    {
+                        binding.FromStepId,
+                        binding.FromPointer,
+                        binding.ToRole,
+                        binding.ToInputPointer
+                    }),
+                    queryContract = step.QueryContract is null ? null : new
+                    {
+                        step.QueryContract.Executor,
+                        step.QueryContract.ProjectionQualifiedId,
+                        step.QueryContract.ProjectionVersion,
+                        step.QueryContract.ProjectionContentHash,
+                        step.QueryContract.OutputSchemaHash,
+                        step.QueryContract.Exposure,
+                        step.QueryContract.Roles
+                    },
+                    step.ExpectedStateRevision
+                })
         });
         return InteractionCanonicalJson.CanonicalizeObject(canonical);
     }

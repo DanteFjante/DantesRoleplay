@@ -378,6 +378,14 @@ public sealed record MechanicProjection
     /// <summary>Role name to the entity filling it. A missing optional role is simply absent.</summary>
     public Dictionary<string, EntityProjection> Roles { get; init; } = [];
 
+    /// <summary>Host-only component revisions observed while materialising the immutable projection.</summary>
+    [JsonIgnore]
+    public Dictionary<string, Dictionary<string, int?>> ComponentRevisions { get; init; } = [];
+
+    /// <summary>Host-only snapshots of each direct containment list observed across the projected graph.</summary>
+    [JsonIgnore]
+    public Dictionary<string, IReadOnlyList<ContainmentRevision>> ContainmentRevisions { get; init; } = [];
+
     /// <summary>Declared component-reference targets, keyed by their stable entity ids.</summary>
     public Dictionary<string, ReferencedEntityProjection> References { get; init; } = [];
 
@@ -447,6 +455,8 @@ public sealed record RelationshipProjection(
     string ToEntityId,
     string Kind,
     string Data);
+
+public sealed record ContainmentRevision(string EntityId, string Slot, int Revision);
 
 /// <summary>Replayable child output supplied to a parent as frozen JSON data.</summary>
 public sealed record ChildMechanicResult(

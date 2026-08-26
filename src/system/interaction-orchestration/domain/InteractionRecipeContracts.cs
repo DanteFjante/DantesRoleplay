@@ -10,6 +10,8 @@ public static class InteractionRecipeProtocol
     public const string IdFingerprintDomain = "dantes-roleplay/interaction-recipe-id/v1";
     public const string TemplateFingerprintDomain = "dantes-roleplay/interaction-recipe-template/v1";
     public const int MaximumStoredIntentText = 500;
+    public const string AutoVerifierPrincipal = "system.interaction.recipe-auto-verifier";
+    public const string AutoVerificationReason = "Verified by the deterministic outer-fallback policy.";
 }
 
 public enum InteractionRecipeStatus
@@ -153,6 +155,8 @@ public sealed record InteractionRecipeTemplate
         ArgumentNullException.ThrowIfNull(proposal);
         if (proposal.Steps.Any(step => step.Kind != InteractionPlanStepKind.Action))
             throw new InteractionContractException("RECIPE_STEP_KIND_UNSUPPORTED", "The first recipe format supports action steps only.");
+        if (proposal.Steps.Any(step => step.ResultBindings is { Count: > 0 }))
+            throw new InteractionContractException("RECIPE_RESULT_BINDINGS_UNSUPPORTED", "A recipe cannot retain result bindings.");
         if (proposal.Steps.Any(step => InteractionCanonicalJson.CanonicalizeObject(step.InputJson) != "{}"))
             throw new InteractionContractException("RECIPE_INPUT_PARAMETERIZATION_UNSUPPORTED", "A recipe cannot retain mechanic input values.");
 
@@ -379,6 +383,29 @@ public sealed record InteractionRecipeLearningRequest(
     AuthorizedInteractionEnvelope Envelope,
     InteractionPlannerProposalCommand Proposal,
     InteractionReceiptProjection ExecutionReceipt);
+
+public sealed record InteractionRecipeAutoVerificationRequest(
+    InteractionRecipeReference Candidate,
+    InteractionReceiptProjection ExecutionReceipt);
+
+public sealed record InteractionRecipeAutoVerificationEligibility(
+    bool Eligible,
+    string Code,
+    string SafeSummary);
+
+public interface IInteractionRecipeAutoVerificationEvidenceReader
+{
+    Task<InteractionRecipeAutoVerificationEligibility> ValidateAsync(
+        InteractionRecipeAutoVerificationRequest request,
+        CancellationToken cancellationToken = default);
+}
+
+public interface IInteractionRecipeAutoVerifier
+{
+    Task<InteractionRecipeLearningResult> VerifyAsync(
+        InteractionRecipeAutoVerificationRequest request,
+        CancellationToken cancellationToken = default);
+}
 
 public interface IInteractionRecipeLearner
 {

@@ -13,6 +13,7 @@ using DantesRoleplay.ComponentTypeAdministration;
 using DantesRoleplay.World;
 using DantesRoleplay.LegacyStateAdoption;
 using DantesRoleplay.Interactions;
+using DantesRoleplay.TriggerScheduling;
 using ModelContextProtocol.Server;
 
 namespace DantesRoleplay.MCPServer.Tools;
@@ -24,7 +25,7 @@ public sealed class CommitTool
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     [McpServerTool(Name = "commit")]
-    [Description("Change state with component, effects, mechanic, action, system.application.register, system.source.register, system.component-type.register, system.application.activate, system.state-space.create, system.state-space.upgrade, system.state-space.adopt-legacy, system.interaction-execute, or system.interaction-recipe-review. Use query(kind: \"capabilities\") for each closed payload catalog.")]
+    [Description("Change state with component, effects, mechanic, action, system.application.register, system.source.register, system.component-type.register, system.application.activate, system.state-space.create, system.state-space.upgrade, system.state-space.adopt-legacy, system.interaction-execute, system.interaction-recipe-review, or system.trigger-scheduling. Use query(kind: \"capabilities\") for each closed payload catalog.")]
     public async Task<ToolEnvelope> CommitAsync(
         IWorldStore world,
         IEffectApplier effects,
@@ -44,7 +45,8 @@ public sealed class CommitTool
         IComponentTypeAdministrationService? componentTypeAdministration = null,
         ILegacyStateAdoptionService? legacyStateAdoption = null,
         IInteractionGateway? interactionGateway = null,
-        IInteractionRecipeReviewService? interactionRecipeReviews = null)
+        IInteractionRecipeReviewService? interactionRecipeReviews = null,
+        ITriggerSchedulingAdministrationService? triggerSchedulingAdministration = null)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
         var spec = VerbSurface.Commit(normalizedKind);
@@ -83,6 +85,9 @@ public sealed class CommitTool
                 interactionGateway, privateOperator, log, payload, intent, proceduresUsed, cancellationToken),
             "system.interaction-recipe-review" => await new SystemInteractionTools().ReviewRecipeAsync(
                 interactionRecipeReviews, privateOperator, log, payload, intent, proceduresUsed, cancellationToken),
+            "system.trigger-scheduling" => await new SystemTriggerSchedulingTools().CommitAsync(
+                triggerSchedulingAdministration, privateOperator, log, payload, intent, proceduresUsed, dryRun,
+                cancellationToken),
             _ => throw new InvalidOperationException($"Unhandled generic commit kind '{normalizedKind}'.")
         };
     }

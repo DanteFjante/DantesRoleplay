@@ -1,6 +1,6 @@
 # Interaction orchestration dependency tree — auditable local/remote intent execution and learning
 
-Status: **Slices 12A–12H accepted; first delivery complete; Slice 13 adaptive extension planning only**
+Status: **Slices 12A–12H and 13A–13E accepted; Slice 13F implemented awaiting final acceptance**
 Ruleset alignment: **ruleset-neutral**  
 Source: **not applicable**  
 Owner: [Platform enabling features roadmap](../PLATFORM-ENABLING-FEATURES-ROADMAP.md)  

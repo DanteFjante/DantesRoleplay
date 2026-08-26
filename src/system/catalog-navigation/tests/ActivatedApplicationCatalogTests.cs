@@ -92,6 +92,61 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
     }
 
     [Fact]
+    public void Active_query_json_is_searchable_with_exact_source_provenance()
+    {
+        var app = ApplicationIdentifier.Parse("query-fixture");
+        const string relativePath = "content/queries/tools/query.inspect.json";
+        var fullPath = Path.Combine(_root, relativePath.Replace('/', Path.DirectorySeparatorChar));
+        Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+        var json = JsonSerializer.Serialize(new
+        {
+            id = "query-fixture.query.inspect",
+            category = "tools.inspect",
+            name = "Inspect fixture state",
+            description = "Returns one bounded safe fixture view.",
+            matches = new[] { "inspect fixture" },
+            roles = new Dictionary<string, string> { ["subject"] = "The fixture entity." },
+            executor = "projection",
+            projection = new
+            {
+                qualifiedId = "query-fixture.projection.inspect",
+                version = 1,
+                contentHash = Sha('A'),
+                outputSchemaHash = Sha('B')
+            },
+            outputSchema = new { type = "object", properties = new { value = new { type = "integer" } } },
+            exposure = "model-visible",
+            status = "active"
+        });
+        File.WriteAllText(fullPath, json, new UTF8Encoding(false));
+        var bytes = File.ReadAllBytes(fullPath);
+        var applications = new InMemoryApplicationRegistry();
+        var revision = applications.Register(new(app, "Query fixture", "Generic query catalog.", []));
+        var sources = new InMemorySourceRegistry();
+        var source = sources.Register(new(app, "catalog", "fixture-root", "content/**/*",
+            SourceTrust.Trusted, 0, "query-catalog"));
+        var activation = new ActiveApplicationManifest(app, 1, revision.Revision, revision.Fingerprint,
+            Sha('C'), Sha('D'), Sha('E'), Sha('F'), Sha('1'), "coverage-v1", false,
+            [new("catalog", SourceRegistrationFingerprint.Compute(source), 1, 0)],
+            [new("file:" + relativePath, "catalog", SourceTrust.Trusted, 0, relativePath,
+                "application/json", Hash(bytes), bytes.LongLength, true)],
+            "operation.query", DateTime.UtcNow);
+        var materializer = new ActivatedApplicationCatalogMaterializer(applications,
+            new StaticActivation(activation), sources, new StaticRoot("fixture-root", _root));
+
+        var manifest = materializer.Build(app);
+        var record = Assert.Single(manifest.Records);
+        Assert.Equal("query", record.Kind);
+        Assert.Equal("query-fixture.query.inspect", record.QualifiedId);
+        Assert.Equal("queries/tools/inspect", record.Path);
+        Assert.Equal(relativePath, record.SourceLogicalPath);
+        var navigator = new InMemoryCatalogNavigator(manifest,
+            new CatalogCursorCodec(Encoding.UTF8.GetBytes("query-catalog-cursor-signing-key")));
+        Assert.Equal(record.QualifiedId, Assert.Single(navigator.Search(new(app,
+            "inspect fixture", app.Value, Kinds: ["query"])).Records).Record.QualifiedId);
+    }
+
+    [Fact]
     public void Zero_and_two_application_hosts_share_one_vector_free_boundary_without_cross_application_leakage()
     {
         var applications = new InMemoryApplicationRegistry();

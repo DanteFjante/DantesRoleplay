@@ -4,14 +4,17 @@ using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.Projections;
 using DantesRoleplay.Sources;
+using System.Text.Json.Nodes;
 
 namespace DantesRoleplay.DataAccess.Composition;
 
 internal sealed class InteractionProposalVerifier(
     IApplicationRegistry applications,
     IApplicationActivationReader activations,
-    IActiveCatalogFeatureSnapshotProvider snapshots) : IInteractionProposalVerifier
+    IActiveCatalogFeatureSnapshotProvider snapshots,
+    IProjectionDefinitionRegistry? projections = null) : IInteractionProposalVerifier
 {
     public InteractionResolutionResult Verify(InteractionProposalVerificationRequest request)
     {
@@ -58,6 +61,7 @@ internal sealed class InteractionProposalVerifier(
         }
 
         var steps = new List<InteractionPlanStep>();
+        var querySchemas = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var draft in request.Draft.Steps)
         {
             if (!inspected.TryGetValue(draft.QualifiedId, out var record))
@@ -66,52 +70,106 @@ internal sealed class InteractionProposalVerifier(
                 return Stale("PROPOSAL_CONTRACT_STALE", "A proposed contract reference does not match the inspected current record.");
             if (record.Status != "active")
                 return Unsupported("CONTRACT_NOT_ACTIVE", "The proposed contract is not active.");
-            if (draft.Kind == InteractionPlanStepKind.Query || record.Kind == "procedure")
-                return Unsupported("QUERY_CONTRACT_UNSUPPORTED", "No trusted query-contract resolver is enabled in this slice.");
-            if (draft.Kind != InteractionPlanStepKind.Action || record.Kind != "mechanic")
+            if (record.Kind == "procedure")
+                return Unsupported("CONTRACT_KIND_UNSUPPORTED", "Procedure prose is not an executable interaction contract.");
+            if ((draft.Kind == InteractionPlanStepKind.Query) != (record.Kind == ApplicationQueryContract.CatalogKind)
+                || (draft.Kind == InteractionPlanStepKind.Action) != (record.Kind == "mechanic"))
                 return Unsupported("CONTRACT_KIND_UNSUPPORTED", "The proposed step does not match a supported contract kind.");
 
             string authoritativeId;
-            MechanicRequirements requirements;
-            try
+            IReadOnlySet<string> declaredRoles;
+            IReadOnlySet<string> requiredRoles;
+            InteractionQueryContractReference? queryContract = null;
+            if (draft.Kind == InteractionPlanStepKind.Query)
             {
-                using var document = JsonDocument.Parse(record.ContentJson);
-                var root = document.RootElement;
-                if (root.ValueKind != JsonValueKind.Object
-                    || !root.TryGetProperty("id", out var id) || id.ValueKind != JsonValueKind.String
-                    || string.IsNullOrWhiteSpace(id.GetString())
-                    || !root.TryGetProperty("requirements", out var requirementsElement)
-                    || requirementsElement.ValueKind != JsonValueKind.String)
-                    return Unsafe("MECHANIC_CONTRACT_INVALID", "The active mechanic contract is malformed.");
-                authoritativeId = id.GetString()!;
-                requirements = MechanicRequirements.Parse(requirementsElement.GetString()!);
+                if (projections is null)
+                    return Unsupported("QUERY_EXECUTOR_UNAVAILABLE", "The read-only query executor is unavailable.");
+                ApplicationQueryContract query;
+                RegisteredProjectionDefinition? projection;
+                try
+                {
+                    query = ApplicationQueryContract.Parse(record.ContentJson,
+                        envelope.Host.ApplicationRevision.ApplicationId);
+                    projection = projections.Get(query.ProjectionQualifiedId, query.ProjectionVersion);
+                }
+                catch (Exception exception) when (exception is ArgumentException or JsonException)
+                {
+                    return Unsafe("QUERY_CONTRACT_INVALID", "The active query contract is malformed.");
+                }
+                if (query.Status != "active")
+                    return Unsupported("QUERY_CONTRACT_NOT_ACTIVE", "The proposed query contract is not active.");
+                if (query.Executor != ApplicationQueryContract.ProjectionExecutor || projection is null)
+                    return Unsupported("QUERY_EXECUTOR_UNAVAILABLE", "The query projection executor is unavailable.");
+                if (projection.Owner != envelope.Host.ApplicationRevision.ApplicationId
+                    || projection.ContentHash != query.ProjectionContentHash
+                    || projection.OutputSchemaHash != query.OutputSchemaHash
+                    || !JsonNode.DeepEquals(JsonNode.Parse(projection.OutputSchemaJson), JsonNode.Parse(query.OutputSchemaJson))
+                    || !projection.EntityRoles.Order(StringComparer.Ordinal)
+                        .SequenceEqual(query.Roles.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal))
+                    return Stale("QUERY_PROJECTION_STALE", "The query contract does not match its exact registered projection.");
+                if (InteractionCanonicalJson.CanonicalizeObject(draft.InputJson) != "{}")
+                    return Unsafe("QUERY_INPUT_FORBIDDEN", "Projection queries do not accept free-form input.");
+                authoritativeId = query.Id;
+                declaredRoles = query.Roles.Keys.ToHashSet(StringComparer.Ordinal);
+                requiredRoles = declaredRoles;
+                try
+                {
+                    queryContract = new(query.Executor, query.ProjectionQualifiedId, query.ProjectionVersion,
+                        query.ProjectionContentHash, query.OutputSchemaHash, query.OutputSchemaJson,
+                        query.Exposure, query.Roles.Keys);
+                }
+                catch (InteractionContractException)
+                {
+                    return Unsafe("QUERY_CONTRACT_INVALID", "The active query contract exceeds the closed interaction bounds.");
+                }
             }
-            catch (JsonException)
+            else
             {
-                return Unsafe("MECHANIC_CONTRACT_INVALID", "The active mechanic requirements are malformed.");
+                MechanicRequirements requirements;
+                try
+                {
+                    using var document = JsonDocument.Parse(record.ContentJson);
+                    var root = document.RootElement;
+                    if (root.ValueKind != JsonValueKind.Object
+                        || !root.TryGetProperty("id", out var id) || id.ValueKind != JsonValueKind.String
+                        || string.IsNullOrWhiteSpace(id.GetString())
+                        || !root.TryGetProperty("requirements", out var requirementsElement)
+                        || requirementsElement.ValueKind != JsonValueKind.String)
+                        return Unsafe("MECHANIC_CONTRACT_INVALID", "The active mechanic contract is malformed.");
+                    authoritativeId = id.GetString()!;
+                    requirements = MechanicRequirements.Parse(requirementsElement.GetString()!);
+                }
+                catch (JsonException)
+                {
+                    return Unsafe("MECHANIC_CONTRACT_INVALID", "The active mechanic requirements are malformed.");
+                }
+                if (requirements.Roles is null || requirements.Children is null)
+                    return Unsafe("MECHANIC_REQUIREMENTS_INVALID", "The active mechanic declares invalid generic requirements.");
+                if (requirements.Event is not null)
+                    return Unsupported("EVENT_MECHANIC_NOT_DIRECT", "An event middleware mechanic cannot be proposed as a direct action.");
+                if (requirements.ProjectionProblems().Count > 0 || requirements.CompositionProblems().Count > 0)
+                    return Unsafe("MECHANIC_REQUIREMENTS_INVALID", "The active mechanic declares invalid generic requirements.");
+                declaredRoles = requirements.Roles.Keys.ToHashSet(StringComparer.Ordinal);
+                requiredRoles = requirements.Roles.Where(value => !value.Value.Optional)
+                    .Select(value => value.Key).ToHashSet(StringComparer.Ordinal);
             }
 
-            if (requirements.Roles is null || requirements.Children is null)
-                return Unsafe("MECHANIC_REQUIREMENTS_INVALID", "The active mechanic declares invalid generic requirements.");
-            if (requirements.Event is not null)
-                return Unsupported("EVENT_MECHANIC_NOT_DIRECT", "An event middleware mechanic cannot be proposed as a direct action.");
-            var declared = requirements.Roles.Keys.ToHashSet(StringComparer.Ordinal);
-            var supplied = draft.RoleBindings.Keys.ToHashSet(StringComparer.Ordinal);
-            var unknown = supplied.Except(declared, StringComparer.Ordinal).Order(StringComparer.Ordinal).FirstOrDefault();
+            var resultBindings = draft.ResultBindings ?? [];
+            var bindingProblem = ValidateResultBindings(draft, resultBindings, querySchemas, declaredRoles);
+            if (bindingProblem is not null) return bindingProblem;
+            var supplied = draft.RoleBindings.Keys.Concat(resultBindings
+                .Where(binding => binding.ToRole is not null).Select(binding => binding.ToRole!))
+                .ToHashSet(StringComparer.Ordinal);
+            var unknown = supplied.Except(declaredRoles, StringComparer.Ordinal).Order(StringComparer.Ordinal).FirstOrDefault();
             if (unknown is not null)
-                return Unsafe("UNKNOWN_MECHANIC_ROLE", "The proposal supplies a role that the mechanic does not declare.");
-            var missing = requirements.Roles
-                .Where(value => !value.Value.Optional && !supplied.Contains(value.Key))
-                .Select(value => value.Key).Order(StringComparer.Ordinal).ToArray();
+                return Unsafe("UNKNOWN_CONTRACT_ROLE", "The proposal supplies a role that the contract does not declare.");
+            var missing = requiredRoles.Where(role => !supplied.Contains(role)).Order(StringComparer.Ordinal).ToArray();
             if (missing.Length > 0)
                 return InteractionResolutionResult.NonResolution(
                     InteractionResolutionStatus.NeedsInput,
                     "MISSING_REQUIRED_ROLE",
                     "The selected contract requires additional role bindings.",
                     missing.Select(value => "role:" + value));
-            if (requirements.ProjectionProblems().Count > 0 || requirements.CompositionProblems().Count > 0)
-                return Unsafe("MECHANIC_REQUIREMENTS_INVALID", "The active mechanic declares invalid generic requirements.");
-
             InteractionContractReference reference;
             try
             {
@@ -129,7 +187,11 @@ internal sealed class InteractionProposalVerifier(
                     draft.DependsOn,
                     draft.RoleBindings,
                     draft.InputJson,
-                    envelope.Host.StateRevision));
+                    envelope.Host.StateRevision,
+                    resultBindings,
+                    queryContract));
+                if (queryContract is not null)
+                    querySchemas.Add(draft.StepId, queryContract.OutputSchemaJson);
             }
             catch (InteractionContractException exception)
             {
@@ -150,6 +212,62 @@ internal sealed class InteractionProposalVerifier(
                 : Unsafe(exception.Code, "The proposed plan violates the closed interaction contract.");
         }
     }
+
+    private static InteractionResolutionResult? ValidateResultBindings(
+        InteractionPlannerDraftStep draft,
+        IReadOnlyList<InteractionResultBinding> bindings,
+        IReadOnlyDictionary<string, string> querySchemas,
+        IReadOnlySet<string> declaredRoles)
+    {
+        if (bindings.Count > InteractionContractLimits.ResultBindingsPerStep
+            || bindings.Select(binding => binding.TargetKey).Distinct(StringComparer.Ordinal).Count() != bindings.Count)
+            return Unsafe("RESULT_BINDINGS_INVALID", "Result bindings are duplicated or unbounded.");
+        var inputTargets = bindings.Where(binding => binding.ToInputPointer is not null)
+            .Select(binding => binding.ToInputPointer!).Order(StringComparer.Ordinal).ToArray();
+        if (inputTargets.SelectMany((value, index) => inputTargets.Skip(index + 1)
+                .Where(other => Overlaps(value, other))).Any())
+            return Unsafe("RESULT_BINDING_TARGET_OVERLAP", "Result binding input targets overlap.");
+        using var inputDocument = JsonDocument.Parse(draft.InputJson);
+        foreach (var binding in bindings)
+        {
+            if (!draft.DependsOn.Contains(binding.FromStepId, StringComparer.Ordinal)
+                || !querySchemas.TryGetValue(binding.FromStepId, out var schema))
+                return Unsafe("RESULT_BINDING_SOURCE_INVALID", "A result binding must name an earlier query dependency.");
+            if (!ProjectionSchemaPath.Exists(schema, binding.FromPointer))
+                return Unsafe("RESULT_BINDING_SOURCE_PATH_INVALID", "A result binding source path is absent from the exact query schema.");
+            if (binding.ToRole is not null)
+            {
+                if (!declaredRoles.Contains(binding.ToRole) || draft.RoleBindings.ContainsKey(binding.ToRole))
+                    return Unsafe("RESULT_BINDING_ROLE_INVALID", "A result binding role is unknown or already supplied statically.");
+                continue;
+            }
+            if (!AvailableInputTarget(inputDocument.RootElement, binding.ToInputPointer!))
+                return Unsafe("RESULT_BINDING_INPUT_TARGET_INVALID", "A result binding input target is absent, occupied, or unsupported.");
+        }
+        return null;
+    }
+
+    private static bool AvailableInputTarget(JsonElement input, string pointer)
+    {
+        if (pointer == "") return !input.EnumerateObject().Any();
+        var tokens = pointer.Split('/').Skip(1).Select(Decode).ToArray();
+        var current = input;
+        for (var index = 0; index < tokens.Length - 1; index++)
+        {
+            if (current.ValueKind != JsonValueKind.Object
+                || !current.TryGetProperty(tokens[index], out current)
+                || current.ValueKind != JsonValueKind.Object)
+                return false;
+        }
+        return current.ValueKind == JsonValueKind.Object && !current.TryGetProperty(tokens[^1], out _);
+    }
+
+    private static string Decode(string value) => value.Replace("~1", "/", StringComparison.Ordinal)
+        .Replace("~0", "~", StringComparison.Ordinal);
+
+    private static bool Overlaps(string left, string right) => left == "" || right == ""
+        || left.StartsWith(right + "/", StringComparison.Ordinal)
+        || right.StartsWith(left + "/", StringComparison.Ordinal);
 
     private static InteractionResolutionResult Stale(string code, string summary) =>
         InteractionResolutionResult.NonResolution(InteractionResolutionStatus.Stale, code, summary, []);

@@ -1,0 +1,171 @@
+{
+  "format": "dnd2024-static-content-transform/v1",
+  "cohort": "slice-10b1a-adventuring-gear",
+  "sourceRevision": "5eaba06d365dcad4fdea0f863491900f87b2c4e3",
+  "officialSource": {
+    "sourceId": "source.dnd2024.srd-5.2.1",
+    "url": "https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf",
+    "locatorPolicy": "Equipment > Adventuring Gear > {item} (PDF exact table/description pages)"
+  },
+  "license": {
+    "classification": "CC-BY-4.0",
+    "attribution": "This work includes material from the System Reference Document 5.2.1 (\"SRD 5.2.1\") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.",
+    "changes": "Nine archived adventuring-gear records were relocated, canonically formatted, given item-specific SRD locators, and the Oil and Rations display names were aligned with SRD 5.2.1. Unsupported archived Rope length/subtype and over-broad Quiver capacity were excluded."
+  },
+  "quarantine": [
+    {
+      "id": "item.dnd2024.hempen-rope-50-foot.v1",
+      "reason": "SRD 5.2.1 does not state the archived 50-foot length or hempen subtype."
+    },
+    {
+      "id": "item.dnd2024.quiver.v1",
+      "reason": "The archived permitted ammunition kind is broader than the SRD capacity of 20 Arrows."
+    }
+  ],
+  "entries": [
+    {
+      "id": "item.dnd2024.backpack.v1",
+      "sourceName": "Backpack (D&D 2024, definition v1)",
+      "targetName": "Backpack (D&D 2024, definition v1)",
+      "sourcePath": "old-dnd/catalog/world/entities/item.dnd2024.backpack.v1.json",
+      "sourceSha256": "3B2959DF5A417466B028B7831079CBDC811C05E752FAB57999996964C2079934",
+      "targetPath": "catalog/applications/dnd2024/content/entities/adventuring-gear/item.dnd2024.backpack.v1.json",
+      "expectedDefinition": {
+        "definitionVersion": 1,
+        "kind": "adventuring-gear",
+        "stackPolicy": "separate",
+        "massPounds": { "numerator": 5, "denominator": 1 },
+        "capacity": {
+          "weightPounds": { "numerator": 30, "denominator": 1 },
+          "volumeCubicFeet": { "numerator": 1, "denominator": 1 }
+        },
+        "equipmentModes": ["worn"],
+        "sourceRef": { "sourceId": "source.dnd2024.srd-5.2.1", "locator": "Equipment > Adventuring Gear > Backpack (PDF pp. 95–96)" }
+      }
+    },
+    {
+      "id": "item.dnd2024.caltrops-bag.v1",
+      "sourceName": "Caltrops (D&D 2024, definition v1)",
+      "targetName": "Caltrops (D&D 2024, definition v1)",
+      "sourcePath": "old-dnd/catalog/world/entities/item.dnd2024.caltrops-bag.v1.json",
+      "sourceSha256": "207EAAA9A2F13D22C84131F5A3CDD6B162EF91113AB365857F40D159914FC0C1",
+      "targetPath": "catalog/applications/dnd2024/content/entities/adventuring-gear/item.dnd2024.caltrops-bag.v1.json",
+      "expectedDefinition": {
+        "definitionVersion": 1,
+        "kind": "adventuring-gear",
+        "stackPolicy": "separate",
+        "massPounds": { "numerator": 2, "denominator": 1 },
+        "sourceRef": { "sourceId": "source.dnd2024.srd-5.2.1", "locator": "Equipment > Adventuring Gear > Caltrops (PDF pp. 95–96)" }
+      }
+    },
+    {
+      "id": "item.dnd2024.crowbar.v1",
+      "sourceName": "Crowbar (D&D 2024, definition v1)",
+      "targetName": "Crowbar (D&D 2024, definition v1)",
+      "sourcePath": "old-dnd/catalog/world/entities/item.dnd2024.crowbar.v1.json",
+      "sourceSha256": "4196E225F0423A69EC7FEB8550534DAAA82373FE510915BB14165C89CC0177F5",
+      "targetPath": "catalog/applications/dnd2024/content/entities/adventuring-gear/item.dnd2024.crowbar.v1.json",
+      "expectedDefinition": {
+        "definitionVersion": 1,
+        "kind": "adventuring-gear",
+        "stackPolicy": "separate",
+        "massPounds": { "numerator": 5, "denominator": 1 },
+        "sourceRef": { "sourceId": "source.dnd2024.srd-5.2.1", "locator": "Equipment > Adventuring Gear > Crowbar (PDF pp. 95, 97)" }
+      }
+    },
+    {
+      "id": "item.dnd2024.oil-flask.v1",
+      "sourceName": "Oil, Flask (D&D 2024, definition v1)",
+      "targetName": "Oil (D&D 2024, definition v1)",
+      "sourcePath": "old-dnd/catalog/world/entities/item.dnd2024.oil-flask.v1.json",
+      "sourceSha256": "92E225E17BEF93E505F1199BFB3389BC0423AEA8675E233B2E7DDC7275BD3654",
+      "targetPath": "catalog/applications/dnd2024/content/entities/adventuring-gear/item.dnd2024.oil-flask.v1.json",
+      "expectedDefinition": {
+        "definitionVersion": 1,
+        "kind": "adventuring-gear",
+        "stackPolicy": "fungible",
+        "massPounds": { "numerator": 1, "denominator": 1 },
+        "sourceRef": { "sourceId": "source.dnd2024.srd-5.2.1", "locator": "Equipment > Adventuring Gear > Oil (PDF pp. 95, 98–99)" }
+      }
+    },
+    {
+      "id": "item.dnd2024.pouch.v1",
+      "sourceName": "Pouch (D&D 2024, definition v1)",
+      "targetName": "Pouch (D&D 2024, definition v1)",
+      "sourcePath": "old-dnd/catalog/world/entities/item.dnd2024.pouch.v1.json",
+      "sourceSha256": "94BF126E3F9B1CF7CA96F5AE5F6CCADE33D4C7276E72F85834E77C90CA491D53",
+      "targetPath": "catalog/applications/dnd2024/content/entities/adventuring-gear/item.dnd2024.pouch.v1.json",
+      "expectedDefinition": {
+        "definitionVersion": 1,
+        "kind": "adventuring-gear",
+        "stackPolicy": "separate",
+        "massPounds": { "numerator": 1, "denominator": 1 },
+        "capacity": {
+          "weightPounds": { "numerator": 6, "denominator": 1 },
+          "volumeCubicFeet": { "numerator": 1, "denominator": 5 }
+        },
+        "sourceRef": { "sourceId": "source.dnd2024.srd-5.2.1", "locator": "Equipment > Adventuring Gear > Pouch (PDF pp. 95, 99)" }
+      }
+    },
+    {
+      "id": "item.dnd2024.rations-one-day.v1",
+      "sourceName": "Rations, One Day (D&D 2024, definition v1)",
+      "targetName": "Rations (D&D 2024, definition v1)",
+      "sourcePath": "old-dnd/catalog/world/entities/item.dnd2024.rations-one-day.v1.json",
+      "sourceSha256": "76BAEBA304EEE270822BD90AEE70EB4A2C1A8E4F60FC06F40709B594912C09D2",
+      "targetPath": "catalog/applications/dnd2024/content/entities/adventuring-gear/item.dnd2024.rations-one-day.v1.json",
+      "expectedDefinition": {
+        "definitionVersion": 1,
+        "kind": "adventuring-gear",
+        "stackPolicy": "fungible",
+        "massPounds": { "numerator": 2, "denominator": 1 },
+        "sourceRef": { "sourceId": "source.dnd2024.srd-5.2.1", "locator": "Equipment > Adventuring Gear > Rations (PDF pp. 95, 99)" }
+      }
+    },
+    {
+      "id": "item.dnd2024.tinderbox.v1",
+      "sourceName": "Tinderbox (D&D 2024, definition v1)",
+      "targetName": "Tinderbox (D&D 2024, definition v1)",
+      "sourcePath": "old-dnd/catalog/world/entities/item.dnd2024.tinderbox.v1.json",
+      "sourceSha256": "8BC0E881E76FBD4294B16E32AF8D3BA910709EA65075F0C6C9B1CEB672509074",
+      "targetPath": "catalog/applications/dnd2024/content/entities/adventuring-gear/item.dnd2024.tinderbox.v1.json",
+      "expectedDefinition": {
+        "definitionVersion": 1,
+        "kind": "adventuring-gear",
+        "stackPolicy": "separate",
+        "massPounds": { "numerator": 1, "denominator": 1 },
+        "sourceRef": { "sourceId": "source.dnd2024.srd-5.2.1", "locator": "Equipment > Adventuring Gear > Tinderbox (PDF pp. 95, 100)" }
+      }
+    },
+    {
+      "id": "item.dnd2024.torch.v1",
+      "sourceName": "Torch (D&D 2024, definition v1)",
+      "targetName": "Torch (D&D 2024, definition v1)",
+      "sourcePath": "old-dnd/catalog/world/entities/item.dnd2024.torch.v1.json",
+      "sourceSha256": "35D66CC815A46C616AB5B42882305FCC45C6414521BED861016AC823FEC512B3",
+      "targetPath": "catalog/applications/dnd2024/content/entities/adventuring-gear/item.dnd2024.torch.v1.json",
+      "expectedDefinition": {
+        "definitionVersion": 1,
+        "kind": "adventuring-gear",
+        "stackPolicy": "fungible",
+        "massPounds": { "numerator": 1, "denominator": 1 },
+        "sourceRef": { "sourceId": "source.dnd2024.srd-5.2.1", "locator": "Equipment > Adventuring Gear > Torch (PDF pp. 95, 100)" }
+      }
+    },
+    {
+      "id": "item.dnd2024.waterskin.v1",
+      "sourceName": "Waterskin (D&D 2024, definition v1)",
+      "targetName": "Waterskin (D&D 2024, definition v1)",
+      "sourcePath": "old-dnd/catalog/world/entities/item.dnd2024.waterskin.v1.json",
+      "sourceSha256": "007A4091512D90CA6F6228B2C7708FA46994E2BB24E9C80003962D7751DA1A65",
+      "targetPath": "catalog/applications/dnd2024/content/entities/adventuring-gear/item.dnd2024.waterskin.v1.json",
+      "expectedDefinition": {
+        "definitionVersion": 1,
+        "kind": "adventuring-gear",
+        "stackPolicy": "separate",
+        "massPounds": { "numerator": 5, "denominator": 1 },
+        "sourceRef": { "sourceId": "source.dnd2024.srd-5.2.1", "locator": "Equipment > Adventuring Gear > Waterskin (PDF pp. 95, 100)" }
+      }
+    }
+  ]
+}

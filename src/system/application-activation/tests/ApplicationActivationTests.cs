@@ -67,6 +67,37 @@ public sealed class ApplicationActivationTests : IDisposable
     }
 
     [Fact]
+    public async Task Source_profile_selection_is_canonical_replay_identity_and_rejects_ambiguous_lists()
+    {
+        await using var db = _fixture.CreateContext();
+        var app = Register(db, "profile-activation");
+        var preview = new MutablePreview(Result(app, 'F'));
+        var service = Service(db, preview);
+        var context = Context("9123456789abcdef0123456789abcdef");
+        var request = new ApplicationActivationRequest(
+            app, preview.Result.PreviewFingerprint, null, ["dnd2024-core", "extension.optional"]);
+
+        await service.PreviewAsync(request, context);
+        var activated = await service.ActivateAsync(request, context);
+        var replay = await service.ActivateAsync(request with
+        {
+            SourceIds = ["extension.optional", "dnd2024-core"]
+        }, context);
+
+        Assert.Equal("activated", activated.Outcome);
+        Assert.Equal(activated.OperationId, replay.OperationId);
+        Assert.Equal(activated.Activation.ActivationFingerprint,
+            replay.Activation.ActivationFingerprint);
+        var conflict = await Assert.ThrowsAsync<ApplicationActivationException>(() =>
+            service.ActivateAsync(request with { SourceIds = ["dnd2024-core"] }, context));
+        var duplicate = await Assert.ThrowsAsync<ApplicationActivationException>(() =>
+            service.PreviewAsync(request with { SourceIds = ["dnd2024-core", "dnd2024-core"] },
+                Context("a123456789abcdef0123456789abcdef")));
+        Assert.Equal("REQUEST_TOKEN_CONFLICT", conflict.Code);
+        Assert.Equal("INVALID_PAYLOAD", duplicate.Code);
+    }
+
+    [Fact]
     public async Task Preview_drift_or_stale_active_expectation_changes_nothing()
     {
         await using var db = _fixture.CreateContext();
@@ -205,6 +236,10 @@ public sealed class ApplicationActivationTests : IDisposable
         public ApplicationPreviewResult Result { get; set; } = result;
         public Task<ApplicationPreviewResult> PreviewAsync(
             ApplicationIdentifier applicationId,
+            CancellationToken cancellationToken = default) => Task.FromResult(Result);
+        public Task<ApplicationPreviewResult> PreviewAsync(
+            ApplicationIdentifier applicationId,
+            IReadOnlyList<string> sourceIds,
             CancellationToken cancellationToken = default) => Task.FromResult(Result);
     }
 

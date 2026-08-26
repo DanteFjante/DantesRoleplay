@@ -36,12 +36,16 @@ internal sealed class SystemApplicationActivationTools
             if (document.RootElement.ValueKind != JsonValueKind.Object)
                 throw Invalid("payload must be a JSON object.");
             var root = document.RootElement;
-            RequireProperties(root, "requestToken", "applicationId", "previewFingerprint", "expectedActiveFingerprint");
+            RequireProperties(root,
+                ["requestToken", "applicationId", "previewFingerprint", "expectedActiveFingerprint"],
+                ["sourceIds"]);
             var token = String(root, "requestToken", 32);
             var app = ApplicationIdentifier.Parse(String(root, "applicationId", 63));
             var previewFingerprint = String(root, "previewFingerprint", 64);
             var expected = NullableString(root, "expectedActiveFingerprint", 64);
-            var request = new ApplicationActivationRequest(app, previewFingerprint, expected);
+            var sourceIds = root.TryGetProperty("sourceIds", out var selected)
+                ? SourceIds(selected) : null;
+            var request = new ApplicationActivationRequest(app, previewFingerprint, expected, sourceIds);
             var context = new ApplicationActivationContext(token, intent,
                 Array.AsReadOnly((procedures ?? []).ToArray()), decision.Evidence);
 
@@ -113,18 +117,38 @@ internal sealed class SystemApplicationActivationTools
         activation.DependencyCoverageVersion,
         activation.DependencyCoverageComplete,
         SourceCount = activation.Sources.Count,
+        SourceIds = activation.Sources.Select(value => value.SourceId).ToArray(),
         WinnerCount = activation.Winners.Count,
         activation.ActivatedAtUtc
     };
 
-    private static void RequireProperties(JsonElement payload, params string[] required)
+    private static void RequireProperties(
+        JsonElement payload,
+        IReadOnlyList<string> required,
+        IReadOnlyList<string> optional)
     {
         var names = payload.EnumerateObject().Select(property => property.Name).ToArray();
         if (names.Length != names.Distinct(StringComparer.Ordinal).Count()
-            || names.Length != required.Length
-            || names.Except(required, StringComparer.Ordinal).Any()
+            || names.Except(required.Concat(optional), StringComparer.Ordinal).Any()
             || required.Except(names, StringComparer.Ordinal).Any())
-            throw Invalid($"payload must contain exactly: {string.Join(", ", required)}.");
+            throw Invalid($"payload must contain {string.Join(", ", required)} and only optional fields: {string.Join(", ", optional)}.");
+    }
+
+    private static IReadOnlyList<string> SourceIds(JsonElement element)
+    {
+        if (element.ValueKind != JsonValueKind.Array)
+            throw Invalid("sourceIds must be an array.");
+        var values = element.EnumerateArray().Select(value =>
+        {
+            if (value.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(value.GetString())
+                || value.GetString()!.Length > 200)
+                throw Invalid("Every sourceIds entry must be a nonblank string of at most 200 characters.");
+            return value.GetString()!;
+        }).ToArray();
+        if (values.Length is < 1 or > 100
+            || values.Distinct(StringComparer.Ordinal).Count() != values.Length)
+            throw Invalid("sourceIds must contain 1 through 100 unique source IDs.");
+        return Array.AsReadOnly(values);
     }
 
     private static string String(JsonElement payload, string name, int maximum)

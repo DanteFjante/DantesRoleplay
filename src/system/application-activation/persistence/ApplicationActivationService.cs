@@ -123,7 +123,12 @@ public sealed class ApplicationActivationService(
         CancellationToken cancellationToken)
     {
         ApplicationPreviewResult preview;
-        try { preview = await previews.PreviewAsync(request.ApplicationId, cancellationToken); }
+        try
+        {
+            preview = request.SourceIds is null
+                ? await previews.PreviewAsync(request.ApplicationId, cancellationToken)
+                : await previews.PreviewAsync(request.ApplicationId, CanonicalSourceIds(request.SourceIds), cancellationToken);
+        }
         catch (ApplicationPreviewException exception)
         {
             throw Invalid(exception.Code, exception.Message);
@@ -295,6 +300,7 @@ public sealed class ApplicationActivationService(
         if (!UpperSha256(request.PreviewFingerprint)
             || request.ExpectedActiveFingerprint is not null && !UpperSha256(request.ExpectedActiveFingerprint))
             throw Invalid("INVALID_PAYLOAD", "Activation fingerprints must be uppercase SHA-256 values or null where allowed.");
+        if (request.SourceIds is not null) _ = CanonicalSourceIds(request.SourceIds);
         if (context.RequestToken.Length != 32
             || context.RequestToken.Any(character => !(char.IsAsciiDigit(character) || character is >= 'a' and <= 'f')))
             throw Invalid("INVALID_PAYLOAD", "requestToken must contain exactly 32 lowercase hexadecimal characters.");
@@ -307,8 +313,18 @@ public sealed class ApplicationActivationService(
         kind = Kind,
         applicationId = request.ApplicationId.Value,
         request.PreviewFingerprint,
-        request.ExpectedActiveFingerprint
+        request.ExpectedActiveFingerprint,
+        sourceIds = request.SourceIds is null ? null : CanonicalSourceIds(request.SourceIds)
     });
+
+    private static IReadOnlyList<string> CanonicalSourceIds(IReadOnlyList<string> values)
+    {
+        if (values.Count is < 1 or > 100
+            || values.Any(value => string.IsNullOrWhiteSpace(value) || value.Length > 200)
+            || values.Distinct(StringComparer.Ordinal).Count() != values.Count)
+            throw Invalid("INVALID_PAYLOAD", "sourceIds must contain 1 through 100 unique source IDs.");
+        return Array.AsReadOnly(values.OrderBy(value => value, StringComparer.Ordinal).ToArray());
+    }
 
     private static string Fingerprint(
         ApplicationPreviewResult preview,

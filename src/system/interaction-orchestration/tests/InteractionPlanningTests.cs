@@ -62,6 +62,42 @@ public sealed class InteractionPlanningTests
         Assert.Equal(0, fixture.ReceiptStore.NonReceiptMutationCount);
     }
 
+    [Theory]
+    [InlineData(InteractionPlannerKind.Local)]
+    [InlineData(InteractionPlannerKind.Remote)]
+    public async Task Value_free_verified_route_guidance_is_observation_only_and_still_uses_common_verification(
+        InteractionPlannerKind kind)
+    {
+        var fixture = Fixture();
+        var provider = new SequenceProvider(kind,
+        [
+            """{"command":"search","query":"apply a declared change","kinds":["mechanic"],"limit":12}""",
+            $$"""{"command":"inspect","qualifiedId":"{{fixture.Record.QualifiedId}}","version":1,"fingerprint":"{{fixture.Record.ContentFingerprint}}"}""",
+            ProposalJson(fixture.Record.ContentFingerprint)
+        ]);
+        var guidance = new VerifiedInteractionRecipeGuidance(
+            new("sample-app.recipe." + new string('a', 32), 2, Hash("template")),
+            [new("step.1", fixture.Record.QualifiedId, 1, fixture.Record.ContentFingerprint,
+                [], ["actor", "target"])]);
+        var planner = new InteractionPlanner(fixture.Authorization, fixture.Retriever, fixture.Snapshots,
+            fixture.Verifier, new GuidanceResolver(guidance), fixture.ReceiptStore,
+            kind == InteractionPlannerKind.Local
+                ? [provider, new SequenceProvider(InteractionPlannerKind.Remote, [])]
+                : [new SequenceProvider(InteractionPlannerKind.Local, []), provider]);
+
+        var outcome = await planner.PlanAsync(fixture.Envelope, fixture.AuthorizationRequest,
+            kind);
+
+        Assert.Equal(InteractionResolutionStatus.Resolved, outcome.Result.Status);
+        using var observation = JsonDocument.Parse(provider.Requests[0].ObservationJson);
+        var route = observation.RootElement.GetProperty("verifiedRoute");
+        Assert.Equal(fixture.Record.QualifiedId,
+            route.GetProperty("steps")[0].GetProperty("qualifiedId").GetString());
+        Assert.DoesNotContain("entity.1", route.GetRawText(), StringComparison.Ordinal);
+        Assert.Equal(3, provider.Calls);
+        Assert.Equal(1, fixture.Retriever.Calls);
+    }
+
     [Fact]
     public async Task Planner_rejects_uninspected_and_stale_references_and_still_writes_safe_evidence()
     {
@@ -83,7 +119,7 @@ public sealed class InteractionPlanningTests
         var verified = fixture.Verifier.Verify(new(fixture.Envelope,
             [new(fixture.Hit, fixture.Record.ContentJson)], Assert.IsType<InteractionPlannerProposalCommand>(queryDraft)));
         Assert.Equal(InteractionResolutionStatus.Unsupported, verified.Status);
-        Assert.Equal("QUERY_CONTRACT_UNSUPPORTED", verified.Code);
+        Assert.Equal("CONTRACT_KIND_UNSUPPORTED", verified.Code);
 
         var staleDraft = Assert.IsType<InteractionPlannerProposalCommand>(InteractionPlannerCommand.Parse(
             ProposalJson(Hash("changed"))));
@@ -224,6 +260,25 @@ public sealed class InteractionPlanningTests
         Assert.Equal(InteractionPlannerProtocol.TaskClass, local.Request!.TaskClass);
         Assert.Equal(InteractionPlannerProtocol.SystemPrompt, local.Request.SystemPrompt);
         Assert.Equal(InteractionPlannerProtocol.ResponseSchema, local.Request.ResponseSchema);
+    }
+
+    [Fact]
+    public async Task Local_outer_planning_uses_the_dedicated_outer_completion_not_the_inner_profile()
+    {
+        var inner = new CapturingLocalProvider();
+        var outerCompletion = new CapturingLocalProvider();
+        var outer = new InteractionOuterLocalCompletionProvider(outerCompletion, new()
+        {
+            Model = "fixture-local", Profile = "profile", MaximumOutputBytes = 4096
+        });
+        var adapter = new LocalInteractionPlanningProvider(inner, outer);
+
+        var result = await adapter.CompleteAsync(new(InteractionRoleProfile.Outer, "{}", 4096));
+
+        Assert.True(result.Ok);
+        Assert.Null(inner.Request);
+        Assert.Equal(InteractionPlannerProtocol.TaskClass, outerCompletion.Request!.TaskClass);
+        Assert.Equal("profile", result.Identity!.Profile);
     }
 
     [Theory]
@@ -446,6 +501,7 @@ public sealed class InteractionPlanningTests
     {
         private readonly Queue<string> values = new(commands);
         public int Calls { get; private set; }
+        public List<InteractionPlanningCompletionRequest> Requests { get; } = [];
         public InteractionPlannerKind Kind => kind;
         public InteractionProviderIsolation Isolation { get; } = eligible
             ? new(true, true, true, true, true, true)
@@ -456,6 +512,7 @@ public sealed class InteractionPlanningTests
             CancellationToken cancellationToken = default)
         {
             Calls++;
+            Requests.Add(request);
             if (!values.TryDequeue(out var command))
                 return Task.FromResult(InteractionPlanningCompletionResult.Failure("FAKE_EXHAUSTED", "No command remains."));
             var profile = request.RoleProfile;
@@ -467,6 +524,20 @@ public sealed class InteractionPlanningTests
                 "test",
                 kind == InteractionPlannerKind.Remote ? profile.ReasoningEffort : ""), command));
         }
+    }
+
+    private sealed class GuidanceResolver(VerifiedInteractionRecipeGuidance guidance)
+        : IVerifiedInteractionRecipeResolver
+    {
+        public Task<VerifiedInteractionRecipeResolution?> ResolveAsync(
+            AuthorizedInteractionEnvelope envelope,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<VerifiedInteractionRecipeResolution?>(null);
+
+        public Task<VerifiedInteractionRecipeGuidance?> GuideAsync(
+            AuthorizedInteractionEnvelope envelope,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<VerifiedInteractionRecipeGuidance?>(guidance);
     }
 
     private sealed class CancellingProvider : IInteractionPlanningCompletionProvider

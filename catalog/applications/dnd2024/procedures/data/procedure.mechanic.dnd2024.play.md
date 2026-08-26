@@ -1,0 +1,23 @@
+---
+id: procedure.mechanic.dnd2024.play
+category: ruleset.dnd2024.core.play
+name: Play an SRD 5.2.1 game
+governs: participant intent and application-mechanic result exchange
+status: active
+---
+
+## Description
+
+Player-facing protocol for declaring an adventurer's fictional intent and receiving a verified
+mechanic result.
+
+## Instructions
+
+Identify the existing actor and relevant choices, resolve through an active scoped mechanic, accept
+its recorded effects/narration, and report a missing capability as unsupported rather than inventing
+a rule or result.
+
+## Constraints
+
+Players do not choose DCs/mechanics/effects or directly mutate state. This contract creates no state
+and authorizes no mechanic by itself; host/orchestration ownership remains separate.

@@ -3,522 +3,203 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Dantes is a real-time dynamic system for information, coordination, and interfaces.">
-  <title>Dantes · Dynamic Intelligence System</title>
+  <meta name="description" content="A private Dantes dashboard for local conversations, notes, and the present moment.">
+  <title>Dantes · Home</title>
   <style>
-    :root {
-      color-scheme: dark;
-      --ink: #f4ead7;
-      --muted: #b8aa96;
-      --surface: rgba(28, 24, 24, .82);
-      --line: rgba(229, 186, 102, .22);
-      --gold: #e5ba66;
-      --ember: #cf6847;
-      --moss: #7f9b78;
-    }
-
+    :root { color-scheme: dark; --ink: #edf7e8; --muted: #a6c3a1; --faint: #71936f; --line: rgba(151,214,137,.2); --leaf: #9fdb8f; --leaf-deep: #3b9b5c; --soil: #08150e; --surface: rgba(12,34,23,.78); --danger: #e9a58b; }
     * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      color: var(--ink);
-      background:
-        radial-gradient(circle at 78% 14%, rgba(207, 104, 71, .18), transparent 30rem),
-        radial-gradient(circle at 12% 70%, rgba(127, 155, 120, .13), transparent 28rem),
-        #100f12;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    button, a { font: inherit; }
-
-    body::before {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      content: "";
-      opacity: .22;
-      background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
-                        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
-      background-size: 32px 32px;
-      mask-image: linear-gradient(to bottom, black, transparent 88%);
-    }
-
-    main {
-      width: auto;
-      max-width: 1120px;
-      margin: 0 40px 0 280px;
-      padding: 28px 0 64px;
-    }
-
-    .sidebar {
-      position: fixed;
-      z-index: 20;
-      inset: 0 auto 0 0;
-      display: flex;
-      width: 248px;
-      flex-direction: column;
-      padding: 24px 18px 20px;
-      border-right: 1px solid var(--line);
-      background: rgba(16, 15, 18, .88);
-      box-shadow: 20px 0 70px rgba(0,0,0,.16);
-      backdrop-filter: blur(18px);
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      color: var(--ink);
-      font-weight: 750;
-      letter-spacing: .02em;
-    }
-
-    .mark {
-      display: grid;
-      width: 38px;
-      aspect-ratio: 1;
-      place-items: center;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      color: var(--gold);
-      background: linear-gradient(145deg, rgba(229,186,102,.14), rgba(207,104,71,.08));
-      box-shadow: inset 0 0 24px rgba(229,186,102,.06);
-    }
-
-    .sidebar-copy {
-      margin: 10px 4px 30px;
-      color: var(--muted);
-      font-size: .76rem;
-      line-height: 1.45;
-    }
-
-    .nav-group { margin-bottom: 26px; }
-
-    .nav-label {
-      display: block;
-      margin: 0 10px 8px;
-      color: #7f7568;
-      font-size: .67rem;
-      font-weight: 800;
-      letter-spacing: .16em;
-      text-transform: uppercase;
-    }
-
-    .nav-list {
-      display: grid;
-      gap: 4px;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-
-    .nav-link {
-      display: flex;
-      align-items: center;
-      gap: 11px;
-      min-height: 42px;
-      padding: 9px 11px;
-      border: 1px solid transparent;
-      border-radius: 11px;
-      color: var(--muted);
-      font-size: .88rem;
-      transition: background .16s ease, border-color .16s ease, color .16s ease;
-    }
-
-    .nav-link:hover, .nav-link:focus-visible {
-      border-color: var(--line);
-      color: var(--ink);
-      background: rgba(229,186,102,.05);
-      outline: none;
-    }
-
-    .nav-link[aria-current="page"] {
-      border-color: var(--line);
-      color: var(--ink);
-      background: linear-gradient(90deg, rgba(229,186,102,.13), rgba(229,186,102,.035));
-    }
-
-    .nav-icon {
-      display: grid;
-      width: 24px;
-      aspect-ratio: 1;
-      flex: 0 0 auto;
-      place-items: center;
-      color: var(--gold);
-      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-      font-size: .72rem;
-    }
-
-    .empty-apps {
-      margin: 0 10px;
-      color: #82776a;
-      font-size: .76rem;
-      line-height: 1.5;
-    }
-
-    .status {
-      display: inline-flex;
-      align-items: center;
-      gap: 9px;
-      margin-top: auto;
-      padding: 14px 10px 0;
-      border-top: 1px solid var(--line);
-      color: var(--muted);
-      font-size: .86rem;
-    }
-
-    .status-dot {
-      width: 8px;
-      aspect-ratio: 1;
-      border-radius: 50%;
-      background: var(--moss);
-      box-shadow: 0 0 15px rgba(127,155,120,.8);
-    }
-
-    .mobile-bar, .scrim { display: none; }
-
-    .hero {
-      display: grid;
-      grid-template-columns: minmax(0, 1.45fr) minmax(260px, .55fr);
-      gap: clamp(36px, 7vw, 100px);
-      align-items: end;
-      padding: 42px 0 70px;
-    }
-
-    .eyebrow {
-      margin: 0 0 18px;
-      color: var(--gold);
-      font-size: .78rem;
-      font-weight: 800;
-      letter-spacing: .19em;
-      text-transform: uppercase;
-    }
-
-    h1 {
-      max-width: 780px;
-      margin: 0;
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: clamp(3.35rem, 8vw, 7rem);
-      font-weight: 500;
-      letter-spacing: -.055em;
-      line-height: .88;
-    }
-
-    h1 em {
-      color: var(--gold);
-      font-weight: inherit;
-    }
-
-    .lead {
-      max-width: 610px;
-      margin: 28px 0 0;
-      color: var(--muted);
-      font-size: clamp(1.05rem, 1.8vw, 1.27rem);
-      line-height: 1.65;
-    }
-
-    .manifesto {
-      padding: 24px;
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      background: var(--surface);
-      box-shadow: 0 24px 80px rgba(0,0,0,.24);
-      backdrop-filter: blur(12px);
-    }
-
-    .manifesto strong {
-      display: block;
-      margin-bottom: 12px;
-      color: var(--gold);
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: 1.35rem;
-      font-weight: 500;
-    }
-
-    .manifesto p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.65;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-    }
-
-    article {
-      min-height: 230px;
-      padding: 32px 30px 34px;
-    }
-
-    article + article { border-left: 1px solid var(--line); }
-
-    .number {
-      display: block;
-      margin-bottom: 34px;
-      color: var(--ember);
-      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-      font-size: .77rem;
-    }
-
-    h2 {
-      margin: 0 0 12px;
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: 1.55rem;
-      font-weight: 500;
-    }
-
-    article p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.6;
-    }
-
-    .flow {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr auto 1fr;
-      gap: 18px;
-      align-items: center;
-      padding: 64px 0 28px;
-    }
-
-    .flow-step {
-      min-height: 145px;
-      padding: 22px;
-      border: 1px solid var(--line);
-      border-radius: 17px;
-      background: rgba(20, 18, 20, .65);
-    }
-
-    .flow-step small {
-      color: var(--gold);
-      font-weight: 800;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-    }
-
-    .flow-step b {
-      display: block;
-      margin: 13px 0 8px;
-      font-size: 1rem;
-    }
-
-    .flow-step span {
-      color: var(--muted);
-      font-size: .9rem;
-      line-height: 1.45;
-    }
-
-    .arrow { color: var(--ember); }
-
-    footer {
-      display: flex;
-      justify-content: space-between;
-      gap: 24px;
-      align-items: center;
-      padding-top: 34px;
-      color: var(--muted);
-      font-size: .9rem;
-    }
-
-    .links { display: flex; gap: 10px; flex-wrap: wrap; }
-
-    a {
-      color: var(--ink);
-      text-decoration: none;
-    }
-
-    .button {
-      display: inline-flex;
-      padding: 10px 14px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      background: rgba(229,186,102,.06);
-    }
-
-    .button:hover, .button:focus-visible {
-      border-color: rgba(229,186,102,.58);
-      outline: none;
-    }
-
-    @media (max-width: 800px) {
-      body { padding-top: 62px; }
-
-      main {
-        width: min(100% - 32px, 680px);
-        margin: 0 auto;
-      }
-
-      .mobile-bar {
-        position: fixed;
-        z-index: 30;
-        inset: 0 0 auto;
-        display: flex;
-        height: 62px;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 16px;
-        border-bottom: 1px solid var(--line);
-        background: rgba(16, 15, 18, .92);
-        backdrop-filter: blur(18px);
-      }
-
-      .mobile-brand { font-weight: 750; }
-
-      .menu-button {
-        display: grid;
-        width: 40px;
-        aspect-ratio: 1;
-        place-items: center;
-        border: 1px solid var(--line);
-        border-radius: 11px;
-        color: var(--ink);
-        background: rgba(229,186,102,.06);
-        cursor: pointer;
-      }
-
-      .sidebar {
-        width: min(280px, calc(100vw - 46px));
-        transform: translateX(-105%);
-        transition: transform .2s ease;
-      }
-
-      body.menu-open .sidebar { transform: translateX(0); }
-
-      .scrim {
-        position: fixed;
-        z-index: 10;
-        inset: 0 0 0 min(280px, calc(100vw - 46px));
-        border: 0;
-        background: rgba(0,0,0,.55);
-      }
-
-      body.menu-open .scrim { display: block; }
-      .hero { grid-template-columns: 1fr; padding-top: 20px; }
-      .grid { grid-template-columns: 1fr; }
-      article + article { border-left: 0; border-top: 1px solid var(--line); }
-      .flow { grid-template-columns: 1fr; }
-      .arrow { transform: rotate(90deg); justify-self: center; }
-      footer { align-items: flex-start; flex-direction: column; }
-    }
+    body { min-height: 100vh; margin: 0; color: var(--ink); background: radial-gradient(circle at 86% -8%, rgba(93,184,94,.22), transparent 31rem), radial-gradient(circle at 6% 84%, rgba(37,115,68,.25), transparent 34rem), var(--soil); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body::before, body::after { position: fixed; z-index: -1; width: 32rem; height: 32rem; pointer-events: none; content: ""; opacity: .34; background: radial-gradient(ellipse 10px 20px at 25% 20%, var(--leaf) 0 44%, transparent 47%), radial-gradient(ellipse 9px 19px at 48% 43%, var(--leaf-deep) 0 44%, transparent 47%), radial-gradient(ellipse 11px 21px at 68% 27%, #75c773 0 44%, transparent 47%), radial-gradient(ellipse 8px 17px at 81% 65%, #4ca766 0 44%, transparent 47%), repeating-linear-gradient(112deg, transparent 0 35px, rgba(142,211,119,.55) 36px 38px, transparent 39px 74px); filter: blur(.2px); }
+    body::before { top: -13rem; right: -12rem; transform: rotate(18deg); }
+    body::after { bottom: -14rem; left: -13rem; transform: rotate(194deg); }
+    a, button, select, textarea { font: inherit; }
+    button, select, textarea { color: inherit; }
+    .shell { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 28px 0 64px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-bottom: 30px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand { color: var(--ink); font-weight: 760; letter-spacing: .02em; text-decoration: none; }
+    .mark { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid var(--line); border-radius: 50% 50% 46% 54%; color: var(--leaf); background: linear-gradient(140deg, rgba(159,219,143,.18), rgba(21,53,37,.78)); box-shadow: inset 0 0 20px rgba(159,219,143,.08); }
+    .quiet-link { padding: 8px 12px; border: 1px solid transparent; border-radius: 999px; color: var(--muted); font-size: .88rem; text-decoration: none; }
+    .quiet-link:hover, .quiet-link:focus-visible { border-color: var(--line); color: var(--ink); outline: none; }
+    system-navigation { --system-navigation-link-color: var(--muted); --system-navigation-muted-color: var(--faint); --system-navigation-border-color: var(--line); --system-navigation-current-border-color: var(--line); --system-navigation-current-background: rgba(96,171,82,.15); }
+    system-chat { --system-chat-color: var(--ink); --system-chat-muted-color: var(--muted); --system-chat-border-color: var(--line); --system-chat-assistant-background: rgba(96,171,82,.12); --system-chat-button-background: rgba(96,171,82,.15); --system-chat-input-background: rgba(4,21,12,.64); }
+    .hero { display: grid; grid-template-columns: minmax(0,1fr) minmax(240px,.46fr); gap: clamp(26px,7vw,92px); align-items: end; padding: 32px 0 46px; }
+    .eyebrow { margin: 0 0 15px; color: var(--leaf); font-size: .74rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
+    h1, h2, p { margin-top: 0; }
+    h1 { max-width: 760px; margin-bottom: 17px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(3.2rem,7.8vw,6.5rem); font-weight: 500; letter-spacing: -.055em; line-height: .9; }
+    h1 em { color: var(--leaf); font-style: normal; }
+    .lead { max-width: 620px; margin-bottom: 0; color: var(--muted); font-size: 1.08rem; line-height: 1.65; }
+    .clock { min-height: 178px; padding: 24px; border: 1px solid var(--line); border-radius: 20px; background: linear-gradient(145deg, rgba(48,113,63,.24), var(--surface)); box-shadow: 0 20px 70px rgba(0,0,0,.2); }
+    .clock small, .card-kicker { display: block; color: var(--faint); font-size: .7rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    #local-date-time { display: block; margin-top: 20px; color: var(--leaf); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: clamp(1.3rem,2.4vw,2rem); line-height: 1.3; }
+    .dashboard { display: grid; grid-template-columns: minmax(0,1.45fr) minmax(285px,.78fr); gap: 18px; align-items: start; }
+    .card { overflow: hidden; border: 1px solid var(--line); border-radius: 19px; background: var(--surface); box-shadow: 0 18px 60px rgba(0,0,0,.16); }
+    .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 25px 26px 20px; border-bottom: 1px solid var(--line); background: linear-gradient(90deg, rgba(84,161,79,.1), transparent 60%); }
+    h2 { margin-bottom: 7px; font-family: Georgia, "Times New Roman", serif; font-size: 1.65rem; font-weight: 500; }
+    .card-head p, .note-copy { margin-bottom: 0; color: var(--muted); font-size: .9rem; line-height: 1.55; }
+    .local-badge { flex: 0 0 auto; color: var(--leaf); font-size: .76rem; font-weight: 750; }
+    .local-badge::before { content: "● "; font-size: .65rem; }
+    .chat-setup { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; padding: 19px 26px; border-bottom: 1px solid var(--line); }
+    .field { display: grid; gap: 7px; }
+    label { color: var(--muted); font-size: .76rem; font-weight: 720; }
+    select, textarea { width: 100%; border: 1px solid rgba(159,219,143,.24); border-radius: 11px; background: rgba(4,21,12,.64); outline: none; }
+    select { min-height: 42px; padding: 0 11px; }
+    select:focus, textarea:focus { border-color: var(--leaf); box-shadow: 0 0 0 3px rgba(159,219,143,.11); }
+    button { min-height: 42px; padding: 0 15px; border: 1px solid rgba(159,219,143,.34); border-radius: 11px; background: rgba(96,171,82,.15); cursor: pointer; }
+    button:hover, button:focus-visible { border-color: var(--leaf); background: rgba(121,196,97,.22); outline: none; }
+    button:disabled, select:disabled { cursor: wait; opacity: .55; }
+    .refresh-button { align-self: end; white-space: nowrap; }
+    .chat-state { min-height: 54px; margin: 0; padding: 15px 26px 0; color: var(--muted); font-size: .88rem; }
+    .chat-state.error, .notes-status.error { color: var(--danger); }
+    #local-outer-chat { min-height: 258px; padding: 12px 26px 26px; }
+    application-conversation { display: grid; gap: 11px; }
+    application-conversation textarea { min-height: 94px; padding: 11px; resize: vertical; }
+    application-conversation button { justify-self: start; }
+    application-conversation [role="log"] p, application-conversation [aria-label="Task progress"] p { margin: 0 0 8px; color: var(--muted); font-size: .9rem; line-height: 1.45; }
+    .notes-body { padding: 19px 22px 22px; }
+    .system-chat-card { grid-column: 1 / -1; }
+    .system-chat-body { padding: 20px 26px 26px; }
+    #personal-notes { min-height: 318px; padding: 14px; resize: vertical; line-height: 1.55; }
+    .notes-status { min-height: 20px; margin: 10px 0 0; color: var(--faint); font-size: .77rem; }
+    .footer { display: flex; justify-content: space-between; gap: 14px; align-items: center; padding-top: 25px; color: var(--faint); font-size: .82rem; }
+    @media (max-width: 820px) { .hero, .dashboard { grid-template-columns: 1fr; } .chat-setup { grid-template-columns: 1fr; } .refresh-button { justify-self: start; } }
+    @media (max-width: 540px) { .shell { width: min(100% - 26px,1180px); padding-top: 18px; } .topbar { align-items: flex-start; padding-bottom: 15px; } system-navigation { --system-navigation-direction: column; --system-navigation-align: flex-end; --system-navigation-padding: 7px; } .card-head, .chat-setup, #local-outer-chat, .system-chat-body { padding-left: 17px; padding-right: 17px; } .hero { padding-top: 20px; } .footer { align-items: flex-start; flex-direction: column; } }
   </style>
 </head>
 <body>
-  <header class="mobile-bar">
-    <span class="mobile-brand">Dantes</span>
-    <button class="menu-button" type="button" aria-controls="system-sidebar" aria-expanded="false" aria-label="Open navigation">☰</button>
-  </header>
-
-  <aside class="sidebar" id="system-sidebar" aria-label="System and application navigation">
-    <a class="brand" href="/"><span class="mark" aria-hidden="true">D</span> Dantes</a>
-    <p class="sidebar-copy">Dynamic interfaces for people, applications, and intelligent agents.</p>
-
-    <nav class="nav-group" aria-labelledby="system-navigation-label">
-      <span class="nav-label" id="system-navigation-label">System</span>
-      <ul class="nav-list">
-        <li><a class="nav-link" href="/" aria-current="page"><span class="nav-icon" aria-hidden="true">⌂</span>Overview</a></li>
-        <li><a class="nav-link" href="/ui/control-center/index.html"><span class="nav-icon" aria-hidden="true">⌘</span>Control center</a></li>
-      </ul>
-    </nav>
-
-    <nav class="nav-group" aria-labelledby="application-navigation-label">
-      <span class="nav-label" id="application-navigation-label">Applications</span>
-      <div id="application-links">
-        <p class="empty-apps">Installed applications will add their main pages here.</p>
-      </div>
-    </nav>
-
-    <div class="status"><span class="status-dot" aria-hidden="true"></span><span id="status">Dynamic system online</span></div>
-  </aside>
-  <button class="scrim" type="button" aria-label="Close navigation"></button>
-
-  <main>
-    <section class="hero">
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Dantes home"><span class="mark" aria-hidden="true">D</span> Dantes</a>
+      <system-navigation></system-navigation>
+    </header>
+    <section class="hero" aria-labelledby="home-heading">
       <div>
-        <p class="eyebrow">Information that can act</p>
-        <h1>A system that becomes <em>whatever you need.</em></h1>
-        <p class="lead">Dantes is a local, real-time system for people and LLMs. It can remember any kind of information, coordinate ongoing work, keep instructions and contracts, and create the interface that makes an idea useful.</p>
+        <p class="eyebrow">Private local workspace</p>
+        <h1 id="home-heading">A quieter place to <em>think and act.</em></h1>
+        <p class="lead">Talk through an intent with your local outer model, keep a private scratchpad, and stay grounded in the moment.</p>
       </div>
-      <aside class="manifesto">
-        <strong>The simple idea</strong>
-        <p>Give information durable structure, give intelligence the context to use it well, and let the web present the result in whatever form the moment requires.</p>
-      </aside>
+      <section class="clock" aria-label="Local date and time"><small>Here and now</small><time id="local-date-time" aria-live="polite"></time></section>
     </section>
-
-    <section class="grid" aria-label="System foundations">
-      <article>
-        <span class="number">01 / INFORMATION</span>
-        <h2>Any structure, remembered</h2>
-        <p>Projects, people, research, plans, inventories, decisions, histories, or entirely new ideas can live as dynamic data without demanding a new application schema.</p>
-      </article>
-      <article>
-        <span class="number">02 / INTELLIGENCE</span>
-        <h2>Context that improves the work</h2>
-        <p>LLMs can retrieve operating contracts, remember commitments, set reminders, follow procedures, and carry useful context forward instead of starting every request from zero.</p>
-      </article>
-      <article>
-        <span class="number">03 / INTERFACE</span>
-        <h2>Ideas become interfaces</h2>
-        <p>An LLM can turn any web-compatible idea or data structure into live HTML, CSS, and JavaScript—from a focused card to a dashboard, map, document, or interactive tool.</p>
-      </article>
+    <section class="dashboard" aria-label="Personal dashboard">
+      <section class="card" aria-labelledby="chat-heading">
+        <header class="card-head">
+          <div><span class="card-kicker">Conversation</span><h2 id="chat-heading">Local outer chat</h2><p>Choose an application and its state space. The existing local outer model plans and narrates; actions still require their normal confirmation.</p></div>
+          <span class="local-badge">Local model</span>
+        </header>
+        <div class="chat-setup">
+          <div class="field"><label for="chat-application">Application</label><select id="chat-application" aria-describedby="chat-state"></select></div>
+          <div class="field"><label for="chat-state-space">State space</label><select id="chat-state-space" aria-describedby="chat-state"></select></div>
+          <button class="refresh-button" id="refresh-chat-context" type="button">Refresh</button>
+        </div>
+        <p class="chat-state" id="chat-state" aria-live="polite">Loading available applications…</p>
+        <div id="local-outer-chat"></div>
+      </section>
+      <section class="card" aria-labelledby="notes-heading">
+        <header class="card-head"><div><span class="card-kicker">Scratchpad</span><h2 id="notes-heading">Notes</h2><p class="note-copy">Saved only in this browser.</p></div></header>
+        <div class="notes-body"><label for="personal-notes">Private notes</label><textarea id="personal-notes" placeholder="Leave yourself a thought, a thread to pick up, or a small plan…"></textarea><p class="notes-status" id="notes-status" aria-live="polite">Notes stay on this device in this browser.</p></div>
+      </section>
+      <section class="card system-chat-card" aria-labelledby="system-chat-heading">
+        <header class="card-head">
+          <div><span class="card-kicker">System scope</span><h2 id="system-chat-heading">General system chat</h2><p>Ask about registered applications and system contracts without entering any application's world state.</p></div>
+          <span class="local-badge">Local model</span>
+        </header>
+        <div class="system-chat-body"><system-chat aria-label="General system chat"></system-chat></div>
+      </section>
     </section>
-
-    <section class="flow" aria-label="Request flow">
-      <div class="flow-step">
-        <small>Capture</small>
-        <b>Information arrives</b>
-        <span>A person, model, file, or process contributes facts, intent, or a new structure.</span>
-      </div>
-      <span class="arrow" aria-hidden="true">→</span>
-      <div class="flow-step">
-        <small>Coordinate</small>
-        <b>The system keeps track</b>
-        <span>Contracts, procedures, events, reminders, and durable state preserve what matters.</span>
-      </div>
-      <span class="arrow" aria-hidden="true">→</span>
-      <div class="flow-step">
-        <small>Present</small>
-        <b>The right interface appears</b>
-        <span>Dynamic web pages request current JSON and present it in the form best suited to the task.</span>
-      </div>
-    </section>
-
-    <footer>
-      <span>Local-first · Real-time by design · Structure without limits</span>
-      <div class="links">
-        <a class="button" href="/ui/control-center/index.html">Open control center</a>
-      </div>
-    </footer>
+    <footer class="footer"><span>Local-first personal dashboard</span><a class="quiet-link" href="/ui/control-center/index.html">Open control center</a></footer>
   </main>
-
+  <script type="module" src="/components/system-workspace.js"></script>
+  <script src="/components/application-conversation.js"></script>
   <script>
-    const menuButton = document.querySelector(".menu-button");
-    const closeMenu = () => {
-      document.body.classList.remove("menu-open");
-      menuButton.setAttribute("aria-expanded", "false");
-    };
-
-    menuButton.addEventListener("click", () => {
-      const isOpen = document.body.classList.toggle("menu-open");
-      menuButton.setAttribute("aria-expanded", String(isOpen));
-    });
-    document.querySelector(".scrim").addEventListener("click", closeMenu);
-    document.addEventListener("keydown", event => {
-      if (event.key === "Escape") closeMenu();
-    });
-
-    fetch("/ui/home", { cache: "no-store" })
-      .then(response => {
-        document.querySelector("#status").textContent = response.ok
-          ? "Live page from SQLite"
-          : "Dynamic system online";
-      })
-      .catch(() => {
-        document.querySelector("#status").textContent = "Interface loaded";
+    (() => {
+      const storageKeys = { notes: "dantes.personal-dashboard.notes.v1", chat: "dantes.personal-dashboard.chat.v1" };
+      const dateTime = document.querySelector("#local-date-time");
+      const notes = document.querySelector("#personal-notes");
+      const notesStatus = document.querySelector("#notes-status");
+      const application = document.querySelector("#chat-application");
+      const stateSpace = document.querySelector("#chat-state-space");
+      const chatState = document.querySelector("#chat-state");
+      const chat = document.querySelector("#local-outer-chat");
+      const refresh = document.querySelector("#refresh-chat-context");
+      let chatPreferences = readStoredJson(storageKeys.chat, {});
+      const updateClock = () => {
+        const now = new Date(); dateTime.dateTime = now.toISOString();
+        dateTime.textContent = new Intl.DateTimeFormat(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(now);
+      };
+      updateClock(); window.setInterval(updateClock, 1000);
+      try { notes.value = localStorage.getItem(storageKeys.notes) || ""; }
+      catch (_) { setNotesStatus("Browser storage is unavailable. This note will not survive a refresh.", true); }
+      notes.addEventListener("input", () => {
+        try { localStorage.setItem(storageKeys.notes, notes.value); setNotesStatus("Saved locally in this browser.", false); }
+        catch (_) { setNotesStatus("Browser storage is unavailable. This note will not survive a refresh.", true); }
       });
+      application.addEventListener("change", async () => { rememberChatPreferences({ applicationId: application.value, stateSpaceId: null }); await loadStateSpaces(); });
+      stateSpace.addEventListener("change", () => { rememberChatPreferences({ stateSpaceId: stateSpace.value }); mountConversation(); });
+      refresh.addEventListener("click", loadApplications);
+      async function loadApplications() {
+        setChatState("Loading available applications…"); disableChatSetup(true);
+        try {
+          const applications = await readAll("/api/control/structure/applications");
+          fillSelect(application, applications, "id", item => item.displayName || item.id, chatPreferences.applicationId);
+          if (!application.value) { chat.replaceChildren(); setChatState("No registered applications are available yet.", true); return; }
+          await loadStateSpaces();
+        } catch (_) { chat.replaceChildren(); setChatState("Application structure is unavailable. Open the control center to check local access and registered applications.", true); }
+        finally { disableChatSetup(false); }
+      }
+      async function loadStateSpaces() {
+        if (!application.value) return;
+        setChatState("Loading state spaces…"); stateSpace.disabled = true;
+        try {
+          const path = "/api/control/structure/applications/" + encodeURIComponent(application.value) + "/state-spaces";
+          const spaces = await readAll(path);
+          fillSelect(stateSpace, spaces, "stateSpaceId", item => item.stateSpaceId, chatPreferences.stateSpaceId);
+          rememberChatPreferences({ applicationId: application.value, stateSpaceId: stateSpace.value || null });
+          if (!stateSpace.value) { chat.replaceChildren(); setChatState("This application has no state spaces yet. Create one from the system workflow, then refresh here.", true); return; }
+          mountConversation();
+        } catch (_) { chat.replaceChildren(); setChatState("State spaces are unavailable for this application. Refresh or inspect it in the control center.", true); }
+        finally { stateSpace.disabled = false; }
+      }
+      function mountConversation() {
+        if (!application.value || !stateSpace.value) return;
+        chat.replaceChildren();
+        const conversation = document.createElement("application-conversation");
+        conversation.setAttribute("application-id", application.value);
+        conversation.setAttribute("state-space-id", stateSpace.value);
+        conversation.setAttribute("session-context-id", chatPreferences.sessionContextId || createSessionContext());
+        conversation.addEventListener("error", event => setChatState(event.detail.message, true));
+        conversation.addEventListener("progress", () => setChatState("Local outer chat is working…"));
+        conversation.addEventListener("receipt", () => setChatState("Action receipt received. Review the conversation for the outcome."));
+        chat.append(conversation); setChatState("Ready for a local outer conversation.");
+      }
+      async function readAll(path) {
+        const values = []; let next = path + (path.includes("?") ? "&" : "?") + "limit=100";
+        while (next) {
+          const response = await fetch(next, { cache: "no-store", credentials: "same-origin" });
+          if (!response.ok) throw new Error("structure-unavailable");
+          const page = await response.json(); values.push(...(page.items || []));
+          next = page.nextCursor ? path + (path.includes("?") ? "&" : "?") + "limit=100&cursor=" + encodeURIComponent(page.nextCursor) : null;
+        }
+        return values;
+      }
+      function fillSelect(select, values, id, label, preferred) {
+        select.replaceChildren();
+        for (const value of values) { const option = document.createElement("option"); option.value = value[id]; option.textContent = label(value); select.append(option); }
+        const match = values.find(value => value[id] === preferred); if (match) select.value = match[id];
+      }
+      function rememberChatPreferences(change) {
+        chatPreferences = { ...chatPreferences, ...change }; if (!chatPreferences.sessionContextId) chatPreferences.sessionContextId = createSessionContext();
+        try { localStorage.setItem(storageKeys.chat, JSON.stringify(chatPreferences)); } catch (_) { }
+      }
+      function createSessionContext() {
+        const random = crypto.randomUUID ? crypto.randomUUID().replaceAll("-", "") : Date.now().toString(36);
+        const sessionContextId = "home-session." + random; chatPreferences.sessionContextId = sessionContextId; return sessionContextId;
+      }
+      function readStoredJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key) || "null") || fallback; } catch (_) { return fallback; } }
+      function disableChatSetup(disabled) { application.disabled = disabled; stateSpace.disabled = disabled; refresh.disabled = disabled; }
+      function setChatState(message, isError = false) { chatState.textContent = message; chatState.classList.toggle("error", isError); }
+      function setNotesStatus(message, isError) { notesStatus.textContent = message; notesStatus.classList.toggle("error", isError); }
+      loadApplications();
+    })();
   </script>
 </body>
 </html>

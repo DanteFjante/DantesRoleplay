@@ -8,6 +8,9 @@ using DantesRoleplay.Authorization;
 using DantesRoleplay.Assistants;
 using DantesRoleplay.CodexBridge;
 using DantesRoleplay.Web.Interactions;
+using DantesRoleplay.TriggerScheduling;
+using DantesRoleplay.SystemConversations;
+using DantesRoleplay.SystemTasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
@@ -50,8 +53,15 @@ public static class WebInterfaceServiceCollectionExtensions
         services.TryAddScoped<IAssistantConversationService, UnavailableAssistantConversationService>();
         services.TryAddScoped<ICodexConversationService, UnavailableCodexConversationService>();
         services.AddScoped<ControlAssistantExplorer>();
+        services.TryAddScoped<ISystemConversationService, UnavailableSystemConversationService>();
+        services.AddScoped<ControlSystemConversationExplorer>();
+        services.TryAddScoped<ISystemTaskService, UnavailableSystemTaskService>();
+        services.AddScoped<ControlSystemTaskExplorer>();
+        services.AddScoped<ControlSystemCapabilityExplorer>();
         services.AddSingleton<ApplicationConversationStore>();
         services.AddScoped<ApplicationConversationService>();
+        services.TryAddScoped<ITriggerSchedulingAdministrationService,
+            UnavailableTriggerSchedulingAdministrationService>();
         services.Configure<WebRemoteAccessOptions>(
             configuration.GetSection(WebRemoteAccessOptions.SectionName));
         services.AddSingleton<WebAccessPolicy>();
@@ -60,6 +70,9 @@ public static class WebInterfaceServiceCollectionExtensions
         services.AddSingleton<WebInterfaceSecurityFilter>();
         services.AddSingleton<WebControlRequestGuard>();
         services.AddSingleton<WebControlRequestFilter>();
+        services.AddScoped<WebObservationRequestGuard>();
+        services.AddScoped<WebObservationRequestFilter>();
+        services.AddSingleton<ObservationHttpRequestReader>();
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -132,4 +145,19 @@ public static class WebInterfaceServiceCollectionExtensions
 
         return $"Data Source={fullPath}";
     }
+}
+
+internal sealed class UnavailableTriggerSchedulingAdministrationService
+    : ITriggerSchedulingAdministrationService
+{
+    public Task<TriggerSchedulingAdministrationView> QueryAsync(TriggerSchedulingAdministrationQuery query,
+        CancellationToken cancellationToken = default) => throw Unavailable();
+    public Task<TriggerSchedulingAdministrationResult> PreviewAsync(
+        TriggerSchedulingAdministrationCommand command, TriggerSchedulingAdministrationContext context,
+        CancellationToken cancellationToken = default) => throw Unavailable();
+    public Task<TriggerSchedulingAdministrationResult> CommitAsync(
+        TriggerSchedulingAdministrationCommand command, TriggerSchedulingAdministrationContext context,
+        CancellationToken cancellationToken = default) => throw Unavailable();
+    private static TriggerSchedulingAdministrationException Unavailable() => new(
+        "TRIGGER_ADMIN_UNAVAILABLE", "Trigger scheduling administration is not configured.");
 }

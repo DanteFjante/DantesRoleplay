@@ -30,6 +30,7 @@ public static class ControlCenterStatus
     [
         new("server-settings", "ready", "Versioned host setting overrides and restart status are available."),
         new("effect-history", "unavailable", "Past effects are not available yet."),
+        new("trigger-scheduling", "ready", "Schedules, external signals, and past trigger fires are available."),
         new("assistant", "ready", "Durable local assistant conversations are available."),
         new("ecs-explorer", "unavailable", "ECS and contract browsing are not available yet."),
         new("site-editor", "ready", "Existing pages can be drafted, previewed, published, or rolled back.")

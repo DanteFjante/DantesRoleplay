@@ -62,9 +62,14 @@ public sealed class ActivatedApplicationCatalogMaterializer(
             var markdown = ReadText(winner, registrations);
             try
             {
-                records.Add(kind == "procedure"
-                    ? ProcedureRecord(applicationId, applicationId.Value, winner, ProcedureFile.Parse(markdown, winner.RelativePath))
-                    : MechanicRecord(applicationId, applicationId.Value, winner, markdown, winners, registrations));
+                records.Add(kind switch
+                {
+                    "procedure" => ProcedureRecord(applicationId, applicationId.Value, winner,
+                        ProcedureFile.Parse(markdown, winner.RelativePath)),
+                    "query" => QueryRecord(applicationId, applicationId.Value, winner,
+                        ApplicationQueryContract.Parse(markdown, applicationId)),
+                    _ => MechanicRecord(applicationId, applicationId.Value, winner, markdown, winners, registrations)
+                });
             }
             catch (ApplicationCatalogMaterializationException) { throw; }
             catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or JsonException)
@@ -155,6 +160,38 @@ public sealed class ActivatedApplicationCatalogMaterializer(
             file.Description, [], file.Status.ToString(), content, winner);
     }
 
+    private static CatalogRecordDefinition QueryRecord(
+        ApplicationIdentifier applicationId,
+        string collection,
+        ActivatedApplicationDocument winner,
+        ApplicationQueryContract file)
+    {
+        using var schema = JsonDocument.Parse(file.OutputSchemaJson);
+        var content = JsonSerializer.Serialize(new
+        {
+            id = file.Id,
+            category = file.Category,
+            name = file.Name,
+            description = file.Description,
+            matches = file.Matches,
+            roles = file.Roles,
+            executor = file.Executor,
+            projection = new
+            {
+                qualifiedId = file.ProjectionQualifiedId,
+                version = file.ProjectionVersion,
+                contentHash = file.ProjectionContentHash,
+                outputSchemaHash = file.OutputSchemaHash
+            },
+            outputSchema = schema.RootElement,
+            exposure = file.Exposure == ApplicationQueryExposure.ModelVisible
+                ? "model-visible" : "binding-only",
+            status = file.Status
+        });
+        return Record(applicationId, collection, ApplicationQueryContract.CatalogKind, file.Id,
+            file.Category, file.Name, file.Description, file.Matches, file.Status, content, winner);
+    }
+
     private static CatalogRecordDefinition Record(
         ApplicationIdentifier applicationId,
         string collection,
@@ -172,7 +209,8 @@ public sealed class ActivatedApplicationCatalogMaterializer(
             ? localId : applicationId.Value + "." + localId;
         var categoryPath = CatalogLayout.CategoryDirectory(category);
         return new(collection, kind, qualifiedId, name, Summary(description), [], matchPhrases,
-            kind + "s/" + categoryPath, status.ToLowerInvariant(), 1, content,
+            (kind == ApplicationQueryContract.CatalogKind ? "queries" : kind + "s") + "/" + categoryPath,
+            status.ToLowerInvariant(), 1, content,
             Hash(Encoding.UTF8.GetBytes(content)), winner.SourceId, winner.RelativePath);
     }
 
@@ -240,8 +278,11 @@ public sealed class ActivatedApplicationCatalogMaterializer(
     private static bool TryRecordKind(string path, out string kind)
     {
         kind = "";
-        if (!path.EndsWith(".md", StringComparison.Ordinal)) return false;
         var segments = path.Split('/');
+        if (path.EndsWith(".json", StringComparison.Ordinal)
+            && segments.Contains("queries", StringComparer.Ordinal))
+        { kind = "query"; return true; }
+        if (!path.EndsWith(".md", StringComparison.Ordinal)) return false;
         if (segments.Contains("procedures", StringComparer.Ordinal)) { kind = "procedure"; return true; }
         if (segments.Contains("mechanics", StringComparer.Ordinal)) { kind = "mechanic"; return true; }
         return false;

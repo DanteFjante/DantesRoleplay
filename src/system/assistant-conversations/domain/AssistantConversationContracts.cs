@@ -1,5 +1,31 @@
 namespace DantesRoleplay.Assistants;
 
+public static class AssistantConversationScopes
+{
+    public const string Advisory = "advisory";
+    public const string System = "system";
+
+    public static bool IsKnown(string? value) => value is Advisory or System;
+}
+
+public static class AssistantTurnContextProfiles
+{
+    public const string SystemReadV1 = "system-read-v1";
+}
+
+public static class AssistantTurnResponseDispositions
+{
+    public const string Answered = "answered";
+    public const string Unknown = "unknown";
+    public const string Unsupported = "unsupported";
+    public const string NeedsInput = "needs-input";
+    public const string NeedsApplication = "needs-application";
+    public const string Unavailable = "unavailable";
+
+    public static bool IsKnown(string? value) => value is Answered or Unknown or Unsupported or
+        NeedsInput or NeedsApplication or Unavailable;
+}
+
 public static class AssistantConversationStatuses
 {
     public const string Pending = "pending";
@@ -15,6 +41,7 @@ public sealed class AssistantConversation
     public required string Id { get; set; }
     public required string OperatorId { get; set; }
     public required string Provider { get; set; }
+    public required string Scope { get; set; }
     public required string Title { get; set; }
     public int Revision { get; set; }
     public required string Status { get; set; }
@@ -48,6 +75,10 @@ public sealed class AssistantTurn
     public long ElapsedMilliseconds { get; set; }
     public int PromptTokens { get; set; }
     public int OutputTokens { get; set; }
+    public string ContextProfile { get; set; } = string.Empty;
+    public string ContextFingerprint { get; set; } = string.Empty;
+    public string ContextSourceReferencesJson { get; set; } = string.Empty;
+    public string ResponseDisposition { get; set; } = string.Empty;
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? StartedAtUtc { get; set; }
     public DateTime? CompletedAtUtc { get; set; }
@@ -138,15 +169,22 @@ public sealed class AssistantTurnApproval
 }
 
 public sealed record AssistantConversationSummary(
-    string Id, string Provider, string Title, int Revision, string Status,
+    string Id, string Provider, string Scope, string Title, int Revision, string Status,
     DateTime CreatedAtUtc, DateTime UpdatedAtUtc);
+
+public sealed record AssistantTurnContextDocument(
+    string Profile,
+    string Fingerprint,
+    IReadOnlyList<string> SourceReferences,
+    string Disposition);
 
 public sealed record AssistantTurnDocument(
     string Id, int TurnNumber, string Status, string? ExternalTurnId, string? ExternalStatus,
     string ErrorCode, string ErrorMessage,
     string ModelProvider, string Model, string ModelRevision, string ModelProfile,
     long ElapsedMilliseconds, int PromptTokens, int OutputTokens,
-    DateTime CreatedAtUtc, DateTime? StartedAtUtc, DateTime? CompletedAtUtc);
+    DateTime CreatedAtUtc, DateTime? StartedAtUtc, DateTime? CompletedAtUtc,
+    AssistantTurnContextDocument? Context);
 
 public sealed record AssistantMessageDocument(
     string Id, string TurnId, int Ordinal, string Role, string Content, DateTime CreatedAtUtc);
@@ -204,7 +242,8 @@ public sealed record AssistantConversationTurnCreate(
 
 public sealed record AssistantTurnBegin(
     string OperatorId, string Provider, string? ConversationId, int? ExpectedRevision,
-    string Message, string IdempotencyKey, string RequestHash);
+    string Message, string IdempotencyKey, string RequestHash,
+    string Scope = AssistantConversationScopes.Advisory);
 
 public sealed record AssistantTurnBeginResult(string ConversationId, string TurnId, bool Replay);
 
@@ -212,7 +251,14 @@ public sealed record AssistantTurnCompletion(
     string TurnId, string Status, string? Reply, string ErrorCode, string ErrorMessage,
     string ModelProvider, string Model, string ModelRevision, string ModelProfile,
     long ElapsedMilliseconds, int PromptTokens, int OutputTokens,
-    string? ExternalStatus = null);
+    string? ExternalStatus = null,
+    AssistantTurnContextCompletion? Context = null);
+
+public sealed record AssistantTurnContextCompletion(
+    string Profile,
+    string Fingerprint,
+    IReadOnlyList<string> SourceReferences,
+    string Disposition);
 
 public sealed record CodexTurnBinding(
     string TurnId, string ExternalThreadId, string ExternalTurnId, string ExternalStatus);
@@ -273,8 +319,13 @@ public interface IAssistantConversationStore
         string turnId, string status, CancellationToken cancellationToken = default);
     Task CompleteTurnAsync(AssistantTurnCompletion completion, CancellationToken cancellationToken = default);
     Task<int> RecoverInterruptedAsync(CancellationToken cancellationToken = default);
-    Task<AssistantConversationDocument?> GetAsync(string operatorId, string conversationId, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<AssistantConversationSummary>> ListAsync(string operatorId, string provider, DateTime? beforeUpdatedAtUtc, string? beforeId, int limit, CancellationToken cancellationToken = default);
+    Task<AssistantConversationDocument?> GetAsync(
+        string operatorId, string conversationId, CancellationToken cancellationToken = default,
+        string scope = AssistantConversationScopes.Advisory);
+    Task<IReadOnlyList<AssistantConversationSummary>> ListAsync(
+        string operatorId, string provider, DateTime? beforeUpdatedAtUtc, string? beforeId, int limit,
+        CancellationToken cancellationToken = default,
+        string scope = AssistantConversationScopes.Advisory);
 }
 
 public interface IAssistantConversationService

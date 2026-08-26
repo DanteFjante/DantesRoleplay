@@ -3,6 +3,8 @@ using System.Text.Json;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Ecs;
+using DantesRoleplay.Authorization;
+using DantesRoleplay.SystemCapabilities;
 using Microsoft.AspNetCore.Http;
 
 namespace DantesRoleplay.Web.Hosting;
@@ -13,7 +15,8 @@ public sealed class ControlStructureExplorer(
     IStateSpaceRegistry stateSpaces,
     IApplicationComponentTypeRegistry componentTypes,
     IEntityComponentStore entities,
-    IPublicApplicationCatalogProvider catalogs)
+    IPublicApplicationCatalogProvider catalogs,
+    ISystemCapabilityCatalog? systemCapabilities = null)
 {
     public const int DefaultPageSize = 25;
     public const int MaximumPageSize = 100;
@@ -24,24 +27,44 @@ public sealed class ControlStructureExplorer(
     private readonly IApplicationComponentTypeRegistry _componentTypes = componentTypes;
     private readonly IEntityComponentStore _entities = entities;
     private readonly IPublicApplicationCatalogProvider _catalogs = catalogs;
+    private readonly ISystemCapabilityCatalog? _systemCapabilities = systemCapabilities;
 
-    public StructurePage<ApplicationSummary> ListApplications(string? cursor, string? limit)
+    public async Task<StructurePage<ApplicationSummary>> ListApplicationsThroughCapabilitiesAsync(
+        AuthorizationAuditEvidence authorization,
+        string? cursor,
+        string? limit,
+        CancellationToken cancellationToken = default)
     {
+        var catalog = RequireSystemCapabilities();
         var pageSize = PageSize(limit);
-        var page = _applications.ListPage(Decode(cursor, "applications", "all", pageSize), pageSize);
-        return Page(page.Applications.Select(Summary).ToArray(), page.NextApplicationId,
-            "applications", "all", pageSize);
+        var afterApplicationId = Decode(cursor, "applications", "all", pageSize);
+        var result = await catalog.ReadAsync(
+            SystemCapabilityIds.Applications,
+            JsonSerializer.Serialize(new { afterApplicationId, limit = pageSize }),
+            SystemCapabilityInvocationContext.FromAuthorization(authorization),
+            cancellationToken);
+        var data = CapabilityData(result);
+        var items = data.GetProperty("applications").EnumerateArray().Select(ApplicationSummary).ToArray();
+        var next = data.GetProperty("nextApplicationId").ValueKind == JsonValueKind.Null
+            ? null
+            : data.GetProperty("nextApplicationId").GetString();
+        return Page(items, next, "applications", "all", pageSize);
     }
 
-    public ApplicationDetail? GetApplication(string applicationId)
+    public async Task<ApplicationDetail?> GetApplicationThroughCapabilitiesAsync(
+        AuthorizationAuditEvidence authorization,
+        string applicationId,
+        CancellationToken cancellationToken = default)
     {
-        var id = Application(applicationId);
-        var registration = _applications.Describe(id);
-        var revision = _applications.Get(id);
-        return registration is null || revision is null ? null : new(
-            id.Value, registration.DisplayName, registration.Description,
-            registration.BaseApplications.Select(value => value.Value).ToArray(),
-            revision.Revision, revision.Fingerprint);
+        var catalog = RequireSystemCapabilities();
+        var result = await catalog.ReadAsync(
+            SystemCapabilityIds.Applications,
+            JsonSerializer.Serialize(new { applicationId, limit = DefaultPageSize }),
+            SystemCapabilityInvocationContext.FromAuthorization(authorization),
+            cancellationToken);
+        if (!result.Ok && result.Error?.Code == "APPLICATION_UNKNOWN") return null;
+        var application = CapabilityData(result).GetProperty("application");
+        return application.ValueKind == JsonValueKind.Null ? null : ApplicationDetail(application);
     }
 
     public StructurePage<StateSpaceSummary> ListStateSpaces(
@@ -198,6 +221,32 @@ public sealed class ControlStructureExplorer(
         return navigator;
     }
 
+    private ISystemCapabilityCatalog RequireSystemCapabilities() =>
+        _systemCapabilities ?? throw new ControlStructureException(
+            "SYSTEM_CAPABILITY_UNAVAILABLE",
+            "System capability dispatch is unavailable.",
+            StatusCodes.Status503ServiceUnavailable);
+
+    private static JsonElement CapabilityData(SystemCapabilityReadResult result)
+    {
+        if (result.Ok && result.Data is not null) return result.Data.Value;
+        var error = result.Error;
+        var status = error?.Code switch
+        {
+            "PRIVATE_OPERATOR_UNAUTHENTICATED" or "PRIVATE_OPERATOR_WRONG_SCOPE" or
+            "PRIVATE_OPERATOR_DENIED" => StatusCodes.Status403Forbidden,
+            "SYSTEM_CAPABILITY_UNKNOWN" or "APPLICATION_UNKNOWN" => StatusCodes.Status404NotFound,
+            "SYSTEM_CAPABILITY_UNAVAILABLE" or "SYSTEM_CAPABILITY_OUTPUT_INVALID" =>
+                StatusCodes.Status503ServiceUnavailable,
+            "CURSOR_STALE" => StatusCodes.Status409Conflict,
+            _ => StatusCodes.Status400BadRequest
+        };
+        throw new ControlStructureException(
+            error?.Code ?? "SYSTEM_CAPABILITY_UNAVAILABLE",
+            error?.Message ?? "System capability dispatch is unavailable.",
+            status);
+    }
+
     private void RequireApplication(ApplicationIdentifier applicationId)
     {
         if (_applications.Get(applicationId) is null)
@@ -291,9 +340,22 @@ public sealed class ControlStructureExplorer(
     private static ControlStructureException Invalid(string code, string message) =>
         new(code, message, StatusCodes.Status400BadRequest);
 
-    private static ApplicationSummary Summary(ApplicationRegistration value) =>
-        new(value.Id.Value, value.DisplayName, value.Description,
-            value.BaseApplications.Select(baseApplication => baseApplication.Value).ToArray());
+    private static ApplicationSummary ApplicationSummary(JsonElement value) =>
+        new(
+            value.GetProperty("id").GetString()!,
+            value.GetProperty("displayName").GetString()!,
+            value.GetProperty("description").GetString()!,
+            value.GetProperty("baseApplications").EnumerateArray()
+                .Select(item => item.GetString()!).ToArray());
+    private static ApplicationDetail ApplicationDetail(JsonElement value) =>
+        new(
+            value.GetProperty("id").GetString()!,
+            value.GetProperty("displayName").GetString()!,
+            value.GetProperty("description").GetString()!,
+            value.GetProperty("baseApplications").EnumerateArray()
+                .Select(item => item.GetString()!).ToArray(),
+            value.GetProperty("revision").GetInt32(),
+            value.GetProperty("fingerprint").GetString()!);
     private static StateSpaceSummary Summary(StateSpaceView value) =>
         new(value.StateSpaceId, value.ApplicationRevision.ApplicationId.Value,
             value.ApplicationRevision.Revision, value.ManifestFingerprint, value.CreatedAtUtc);

@@ -1,6 +1,8 @@
 namespace DantesRoleplay.Interactions;
 
-internal sealed class InteractionRecipeLearner(IInteractionRecipeStore store) : IInteractionRecipeLearner
+internal sealed class InteractionRecipeLearner(
+    IInteractionRecipeStore store,
+    IInteractionRecipeAutoVerifier? autoVerifier = null) : IInteractionRecipeLearner
 {
     public async Task RecordUseAsync(InteractionRecipeUseEvidenceDraft draft, CancellationToken cancellationToken = default) =>
         _ = await store.AppendUseEvidenceAsync(draft, cancellationToken);
@@ -44,7 +46,7 @@ internal sealed class InteractionRecipeLearner(IInteractionRecipeStore store) : 
                 request.Envelope.Intent.IntentText,
                 intentFingerprint,
                 request.Envelope.Host.RoleProfile.StableKey), cancellationToken);
-            return result.Disposition switch
+            InteractionRecipeLearningResult learning = result.Disposition switch
             {
                 InteractionRecipeWriteDisposition.Created => new(InteractionRecipeLearningDisposition.Created,
                     result.Code, result.Code == "RECIPE_CANDIDATE_CREATED"
@@ -55,6 +57,21 @@ internal sealed class InteractionRecipeLearner(IInteractionRecipeStore store) : 
                 _ => new(InteractionRecipeLearningDisposition.Conflict, result.Code,
                     "The completed interaction was not learned because its evidence conflicted.")
             };
+            if (learning.Recipe is null || autoVerifier is null
+                || learning.Disposition == InteractionRecipeLearningDisposition.Conflict)
+                return learning;
+            try
+            {
+                return await autoVerifier.VerifyAsync(new(learning.Recipe, receipt), cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+            catch
+            {
+                return new(InteractionRecipeLearningDisposition.Created,
+                    "RECIPE_AUTO_VERIFICATION_FAILED",
+                    "The route candidate remains inert because automatic verification failed.",
+                    learning.Recipe);
+            }
         }
         catch (InteractionContractException exception)
         {

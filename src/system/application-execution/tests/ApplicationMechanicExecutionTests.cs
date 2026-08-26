@@ -71,7 +71,7 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
             Roles = new Dictionary<string, RoleRequirement>
             {
                 ["subject"] = new(["alpha", "link"], IncludeContents: true,
-                    IncludeRelationships: true, ContentsDepth: 1, ContentComponentIds: ["child"],
+                    IncludeRelationships: true, ContentsDepth: 2, ContentComponentIds: ["child"],
                     ComponentReferences: [new("link", "targetId", ["alpha"])])
             }
         };
@@ -87,6 +87,12 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
         Assert.True(legacy.Ok, string.Join("; ", legacy.Problems));
         Assert.True(application.Ok, string.Join("; ", application.Problems));
         Assert.Equal(JsonSerializer.Serialize(legacy.Projection), JsonSerializer.Serialize(application.Projection));
+        Assert.Equal(1, application.Projection!.ComponentRevisions["actor"]["alpha"]);
+        Assert.Equal(1, application.Projection.ComponentRevisions["child"]["child"]);
+        Assert.Equal(1, application.Projection.ComponentRevisions["reference"]["alpha"]);
+        Assert.Equal(["child"], application.Projection.ContainmentRevisions["actor"]
+            .Select(value => value.EntityId));
+        Assert.Empty(application.Projection.ContainmentRevisions["child"]);
     }
 
     [Fact]
@@ -127,6 +133,48 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
     }
 
     [Fact]
+    public async Task Composed_child_snapshots_are_merged_into_the_root_authority_envelope()
+    {
+        var app = ApplicationIdentifier.Parse("snapshot");
+        var childContent = JsonSerializer.Serialize(new
+        {
+            requirements = "{\"roles\":{\"subject\":{\"components\":[\"state\"]}}}",
+            source = "return {data:{ok:true},effects:[],events:[],notifications:[]};"
+        });
+        var parentContent = JsonSerializer.Serialize(new
+        {
+            requirements = "{\"roles\":{\"container\":{\"components\":[]}},\"children\":{\"state\":{\"mechanicId\":\"mechanic.child\",\"roleBindings\":{\"subject\":\"container\"},\"inheritInput\":false,\"input\":\"{}\"}}}",
+            source = "return {data:{ok:true},effects:[],events:[],notifications:[]};"
+        });
+        var child = new CatalogRecordDefinition(app.Value, "mechanic", app.Value + ".mechanic.child",
+            "Child", "Child.", [], [], "mechanics", "active", 1, childContent, Hash(childContent),
+            "source", "mechanics/child.md");
+        var parent = new CatalogRecordDefinition(app.Value, "mechanic", app.Value + ".mechanic.parent",
+            "Parent", "Parent.", [], [], "mechanics", "active", 1, parentContent, Hash(parentContent),
+            "source", "mechanics/parent.md");
+        var manifest = CatalogNavigationManifest.Create(app, Hash("snapshot-catalog"), "catalog-lexical-v1",
+            [new(app.Value, "Snapshot", "Snapshot catalog.")],
+            [new(app.Value, "", "Snapshot", "Snapshot catalog.", CatalogDescriptionStatus.Authored),
+             new(app.Value, "mechanics", "Mechanics", "Mechanics.", CatalogDescriptionStatus.Authored)],
+            [child, parent]);
+        var provider = new InMemoryPublicApplicationCatalogProvider(new Dictionary<ApplicationIdentifier, ICatalogNavigator>
+        {
+            [app] = new InMemoryCatalogNavigator(manifest,
+                new CatalogCursorCodec(Encoding.UTF8.GetBytes("snapshot-merge-test-cursor-key-32")))
+        });
+        var result = await new ApplicationMechanicEvaluator(
+            provider, new CompositionSnapshotResolver(), new JintMechanicEngine()).EvaluateAsync(new(
+            "space", app, parent.QualifiedId, parent.ContentFingerprint,
+            new(new Dictionary<string, EcsComponentReference>(), new Dictionary<string, string>()),
+            new Dictionary<string, string> { ["container"] = "entity" }, "{}", 42));
+
+        Assert.True(result.Ok, result.Run?.Error ?? string.Join("; ", result.Problems));
+        Assert.Equal(7, result.Projection!.ComponentRevisions["entity"]["state"]);
+        Assert.Equal([new ContainmentRevision("item", "slot", 3)],
+            result.Projection.ContainmentRevisions["entity"]);
+    }
+
+    [Fact]
     public async Task Exact_application_action_applies_to_bound_state_once_and_replays_by_identity()
     {
         await using var db = _fixture.CreateContext();
@@ -138,6 +186,7 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
         stateSpaces.Create(new("action-space", revision, activationFingerprint));
         var schemas = new BoundedJsonSchemaValidator();
         var types = new SqliteComponentTypeRegistry(db, schemas);
+        var createdState = types.Define(new(app, "fixture-action.created-state", "{}"));
         var entities = new SqliteEntityComponentStore(db, types, schemas);
         var edges = new SqliteStateSpaceEdgeStore(db, stateSpaces);
         var operations = new OperationLog(db);
@@ -145,7 +194,7 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
         var content = JsonSerializer.Serialize(new
         {
             id = "mechanic.create",
-            requirements = "{\"roles\":{}}",
+            requirements = "{\"roles\":{\"declarations\":{\"components\":[\"created-state\"]}}}",
             source = "return { effects: [] };"
         });
         var record = new CatalogRecordDefinition(app.Value, "mechanic", app.Value + ".mechanic.create",
@@ -171,7 +220,17 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
                 Seed = 42,
                 Output = new MechanicOutput
                 {
-                    Effects = [new Effect { Type = EffectType.EntityCreate, EntityId = "created", Name = "Created" }],
+                    Effects =
+                    [
+                        new Effect { Type = EffectType.EntityCreate, EntityId = "created", Name = "Created" },
+                        new Effect
+                        {
+                            Type = EffectType.ComponentAdd,
+                            EntityId = "created",
+                            DefinitionId = "created-state",
+                            Data = "{\"ready\":true}"
+                        }
+                    ],
                     Narration = "A fixture appears."
                 }
             }, []));
@@ -187,7 +246,12 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
         Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, first.Disposition);
         Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replay.Disposition);
         Assert.Equal("A fixture appears.", first.Narration);
+        Assert.Equal(2, first.AppliedEffectCount);
         Assert.NotNull(await entities.GetEntityAsync("action-space", "created"));
+        var component = await entities.GetComponentAsync(
+            "action-space", "created", createdState.QualifiedId);
+        Assert.NotNull(component);
+        Assert.Equal("{\"ready\":true}", component.ValueJson);
         Assert.Single((await entities.ListEntitiesAsync("action-space", null, 10)).Entities);
     }
 
@@ -227,6 +291,27 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
             MechanicRequirements requirements, ApplicationMechanicProjectionMapping mapping,
             IReadOnlyDictionary<string, string> roleAssignments, string inputJson, long seed,
             CancellationToken cancellationToken = default) => Task.FromResult(new ProjectionResult(projection, []));
+    }
+
+    private sealed class CompositionSnapshotResolver : IApplicationMechanicProjectionResolver
+    {
+        public Task<ProjectionResult> ResolveAsync(string stateSpaceId, ApplicationIdentifier applicationId,
+            MechanicRequirements requirements, ApplicationMechanicProjectionMapping mapping,
+            IReadOnlyDictionary<string, string> roleAssignments, string inputJson, long seed,
+            CancellationToken cancellationToken = default)
+        {
+            var projection = new MechanicProjection { Input = inputJson, Seed = seed };
+            if (requirements.Roles.ContainsKey("container"))
+                projection.Roles["container"] = new("entity", "Entity", new Dictionary<string, string>());
+            if (requirements.Roles.ContainsKey("subject"))
+            {
+                projection.Roles["subject"] = new("entity", "Entity",
+                    new Dictionary<string, string> { ["state"] = "{\"value\":1}" });
+                projection.ComponentRevisions["entity"] = new(StringComparer.Ordinal) { ["state"] = 7 };
+                projection.ContainmentRevisions["entity"] = [new("item", "slot", 3)];
+            }
+            return Task.FromResult(new ProjectionResult(projection, []));
+        }
     }
 
     private sealed class StaticActivation(ActiveApplicationManifest value) : IApplicationActivationReader

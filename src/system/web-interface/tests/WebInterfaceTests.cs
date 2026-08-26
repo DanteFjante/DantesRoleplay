@@ -16,6 +16,10 @@ using DantesRoleplay.Interactions;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.Operations;
 using DantesRoleplay.SchemaValidation;
+using DantesRoleplay.SystemCapabilities;
+using DantesRoleplay.SystemConversations;
+using DantesRoleplay.SystemTasks;
+using DantesRoleplay.TriggerScheduling;
 using DantesRoleplay.Web.Data;
 using DantesRoleplay.Web.Live;
 using DantesRoleplay.Web.Hosting;
@@ -26,6 +30,7 @@ using DantesRoleplay.Web.Settings;
 using DantesRoleplay.Web.Interactions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -37,6 +42,218 @@ namespace DantesRoleplay.Tests;
 
 public sealed class WebInterfaceTests
 {
+    [Fact]
+    public async Task System_task_body_is_closed_and_allows_bounded_large_semantic_agendas()
+    {
+        var invalid = new DefaultHttpContext();
+        invalid.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(
+            "{\"operation\":\"resolve\",\"intent\":\"test\",\"agenda\":null,\"idempotencyKey\":\"task.test\",\"requestToken\":\"injected\"}"));
+        invalid.Request.ContentLength = invalid.Request.Body.Length;
+
+        var exception = await Assert.ThrowsAsync<ControlAssistantException>(() =>
+            ControlSystemTaskExplorer.ReadBodyAsync<SystemTaskPrepareRequest>(invalid.Request));
+        Assert.Equal("SYSTEM_TASK_BODY_INVALID", exception.Code);
+
+        var largeJson = JsonSerializer.Serialize(new
+        {
+            operation = "submit",
+            intent = "Register a large component schema",
+            agenda = new[] { new { capabilityId = "system.component-type.register",
+                input = new { applicationId = "fixture-app", qualifiedTypeId = "fixture-app.large",
+                    schemaJson = new string('x', 20_000) } } },
+            idempotencyKey = "task.large"
+        });
+        var accepted = new DefaultHttpContext();
+        accepted.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(largeJson));
+        accepted.Request.ContentLength = accepted.Request.Body.Length;
+
+        var parsed = await ControlSystemTaskExplorer.ReadBodyAsync<SystemTaskPrepareRequest>(accepted.Request);
+        Assert.Equal(SystemTaskOperations.Submit, parsed.Operation);
+        Assert.True(accepted.Request.ContentLength > 16 * 1024);
+        Assert.Single(parsed.Agenda!);
+    }
+
+    [Fact]
+    public void System_workspace_surface_is_read_only_bounded_and_generic()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddDantesRoleplayWeb("Data Source=:memory:", new ConfigurationBuilder().Build());
+        var application = builder.Build();
+        application.MapDantesRoleplayWeb();
+
+        var route = Assert.Single(((IEndpointRouteBuilder)application).DataSources
+            .SelectMany(source => source.Endpoints)
+            .OfType<RouteEndpoint>(),
+            endpoint => endpoint.RoutePattern.RawText == "/components/system-workspace.js");
+
+        Assert.Equal([HttpMethods.Get], route.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods);
+        Assert.Contains("customElements.define('system-navigation'", SystemWorkspaceElement.Script,
+            StringComparison.Ordinal);
+        Assert.Contains("/api/control/structure/applications", SystemWorkspaceElement.Script,
+            StringComparison.Ordinal);
+        Assert.Contains("url.searchParams.set('limit', '100')", SystemWorkspaceElement.Script,
+            StringComparison.Ordinal);
+        Assert.Contains("page.nextCursor", SystemWorkspaceElement.Script, StringComparison.Ordinal);
+        Assert.Contains("MAXIMUM_PAGES = 10", SystemWorkspaceElement.Script, StringComparison.Ordinal);
+        Assert.Contains("MAXIMUM_APPLICATIONS = 1000", SystemWorkspaceElement.Script, StringComparison.Ordinal);
+        Assert.Contains("encodeURIComponent(application.id)", SystemWorkspaceElement.Script,
+            StringComparison.Ordinal);
+        Assert.Contains("No applications registered.", SystemWorkspaceElement.Script, StringComparison.Ordinal);
+        Assert.Contains("Applications are unavailable.", SystemWorkspaceElement.Script, StringComparison.Ordinal);
+        Assert.Contains("APPLICATION_DISCOVERY_UNAVAILABLE", SystemWorkspaceElement.Script,
+            StringComparison.Ordinal);
+        Assert.Contains("system-progress", SystemWorkspaceElement.Script, StringComparison.Ordinal);
+        Assert.Contains("system-error", SystemWorkspaceElement.Script, StringComparison.Ordinal);
+        Assert.Contains("bubbles: true, composed: true", SystemWorkspaceElement.Script, StringComparison.Ordinal);
+        Assert.Contains("window.addEventListener('hashchange'", SystemWorkspaceElement.Script,
+            StringComparison.Ordinal);
+        Assert.Contains("window.removeEventListener('hashchange'", SystemWorkspaceElement.Script,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("/mcp", SystemWorkspaceElement.Script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("sql", SystemWorkspaceElement.Script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("dnd", SystemWorkspaceElement.Script, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task System_chat_surface_has_closed_question_and_confirmed_task_routes()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddDantesRoleplayWeb("Data Source=:memory:", new ConfigurationBuilder().Build());
+        var application = builder.Build();
+        application.MapDantesRoleplayWeb();
+
+        var routes = ((IEndpointRouteBuilder)application).DataSources.SelectMany(source => source.Endpoints)
+            .OfType<RouteEndpoint>()
+            .Where(endpoint => endpoint.RoutePattern.RawText!.StartsWith(
+                "/api/control/system/conversations", StringComparison.Ordinal))
+            .Select(endpoint => (endpoint.RoutePattern.RawText,
+                Method: endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods.Single())).ToArray();
+        Assert.Equal([
+            ("/api/control/system/conversations", HttpMethods.Get),
+            ("/api/control/system/conversations/{conversationId}", HttpMethods.Get),
+            ("/api/control/system/conversations", HttpMethods.Post),
+            ("/api/control/system/conversations/{conversationId}/turns", HttpMethods.Post),
+            ("/api/control/system/conversations/{conversationId}/tasks", HttpMethods.Get),
+            ("/api/control/system/conversations/{conversationId}/tasks", HttpMethods.Post)
+        ], routes);
+
+        var script = SystemWorkspaceElement.Script;
+        var chatStart = script.IndexOf("class SystemChat", StringComparison.Ordinal);
+        var chat = script[chatStart..];
+        Assert.Contains("customElements.define('system-chat'", chat, StringComparison.Ordinal);
+        Assert.Contains("/api/control/system/conversations", chat, StringComparison.Ordinal);
+        Assert.Contains("system-progress", chat, StringComparison.Ordinal);
+        Assert.Contains("system-error", chat, StringComparison.Ordinal);
+        Assert.Contains("system-read-v1", chat, StringComparison.Ordinal);
+        Assert.Contains("sourceReferences", chat, StringComparison.Ordinal);
+        Assert.DoesNotContain("/api/applications/", chat, StringComparison.Ordinal);
+        Assert.DoesNotContain("/mcp", chat, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Plan task", chat, StringComparison.Ordinal);
+        Assert.Contains("Confirm and run", chat, StringComparison.Ordinal);
+        Assert.Contains("/tasks", chat, StringComparison.Ordinal);
+        Assert.Contains("/confirmations", chat, StringComparison.Ordinal);
+        Assert.Contains("/executions", chat, StringComparison.Ordinal);
+        Assert.DoesNotContain("provider:", chat, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("scope:", chat, StringComparison.OrdinalIgnoreCase);
+
+        var unknown = new DefaultHttpContext();
+        unknown.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(
+            "{\"message\":\"hello\",\"idempotencyKey\":\"web:system\",\"provider\":\"local\"}"));
+        unknown.Request.ContentLength = unknown.Request.Body.Length;
+        var invalid = await Assert.ThrowsAsync<ControlAssistantException>(() =>
+            ControlAssistantExplorer.ReadBodyAsync<SystemConversationCreate>(unknown.Request));
+        Assert.Equal("ASSISTANT_BODY_INVALID", invalid.Code);
+    }
+
+    [Fact]
+    public void System_component_descriptor_route_is_authorized_exact_and_non_secret()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddDantesRoleplayWeb("Data Source=:memory:", new ConfigurationBuilder().Build());
+        var application = builder.Build();
+        application.MapDantesRoleplayWeb();
+
+        var route = Assert.Single(((IEndpointRouteBuilder)application).DataSources
+            .SelectMany(source => source.Endpoints).OfType<RouteEndpoint>(), endpoint =>
+                endpoint.RoutePattern.RawText == "/api/control/system/capabilities/{capabilityId}");
+        Assert.Equal([HttpMethods.Get], route.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods);
+
+        var applications = new InMemoryApplicationRegistry();
+        var catalog = new SystemCapabilityCatalog(
+            [new ApplicationsSystemCapabilityHandler(applications), new SecretFixtureCapabilityHandler()],
+            new BoundedJsonSchemaValidator(), new PrivateOperatorAuthorizationPolicy());
+        var explorer = new ControlSystemCapabilityExplorer(catalog);
+        var descriptor = explorer.Get(CapabilityAuthorization(), SystemCapabilityIds.Applications);
+
+        Assert.NotNull(descriptor);
+        Assert.Equal(SystemCapabilityIds.Applications, descriptor!.Id);
+        Assert.Equal("read", descriptor.Mode);
+        Assert.Equal(JsonValueKind.Object, descriptor.InputSchema.ValueKind);
+        Assert.Matches("^[0-9A-F]{64}$", descriptor.Fingerprint);
+        Assert.Matches("^[0-9A-F]{64}$", descriptor.InputSchemaHash);
+        Assert.False(descriptor.RequiresConfirmation);
+        Assert.False(descriptor.RequiresIdempotencyKey);
+        Assert.Null(explorer.Get(CapabilityAuthorization(), "system.secret-fixture"));
+        Assert.Null(explorer.Get(CapabilityAuthorization(), "system.unknown-fixture"));
+        Assert.Equal("SYSTEM_CAPABILITY_ID_INVALID", Assert.Throws<ControlAssistantException>(
+            () => explorer.Get(CapabilityAuthorization(), "application.attack")).Code);
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable,
+            Assert.Throws<ControlAssistantException>(() =>
+                new ControlSystemCapabilityExplorer().Get(
+                    CapabilityAuthorization(), SystemCapabilityIds.Applications)).StatusCode);
+
+        var denied = new PrivateOperatorAuthorizationPolicy().Evaluate(new(
+            TrustedPrincipalContext.Unauthenticated("TEST_UNAUTHENTICATED"),
+            PrivateOperatorCapability.ControlRead,
+            PrivateOperatorAuthorizationPolicy.PrivateHostScope,
+            "web-capability-denied")).Evidence;
+        Assert.Equal(StatusCodes.Status403Forbidden,
+            Assert.Throws<ControlAssistantException>(() =>
+                explorer.Get(denied, SystemCapabilityIds.Applications)).StatusCode);
+
+        var publicNames = typeof(ControlSystemCapabilityDocument).GetProperties()
+            .Select(property => property.Name).ToHashSet(StringComparer.Ordinal);
+        Assert.DoesNotContain("OutputSchema", publicNames);
+        Assert.DoesNotContain("AuthorizationEvidence", publicNames);
+        Assert.DoesNotContain("RequiredCapability", publicNames);
+        Assert.DoesNotContain("Sensitivity", publicNames);
+    }
+
+    [Fact]
+    public void System_action_and_form_components_use_schema_and_separate_confirmation()
+    {
+        var script = SystemWorkspaceElement.Script;
+        var start = script.IndexOf("const SYSTEM_CAPABILITY_ENDPOINT", StringComparison.Ordinal);
+        var controls = script[start..];
+
+        Assert.Contains("customElements.define('system-action-button'", controls, StringComparison.Ordinal);
+        Assert.Contains("customElements.define('system-form'", controls, StringComparison.Ordinal);
+        Assert.Contains("/api/control/system/capabilities/", controls, StringComparison.Ordinal);
+        Assert.Contains("capability-id", controls, StringComparison.Ordinal);
+        Assert.Contains("input-json", controls, StringComparison.Ordinal);
+        Assert.Contains("systemComponentClone", controls, StringComparison.Ordinal);
+        Assert.Contains("SYSTEM_COMPONENT_MAXIMUM_INPUT_BYTES = 96 * 1024", controls, StringComparison.Ordinal);
+        Assert.Contains("value.steps.length > 1", controls, StringComparison.Ordinal);
+        Assert.Contains("System request not completed", controls, StringComparison.Ordinal);
+        Assert.Contains("schema.additionalProperties !== false", controls, StringComparison.Ordinal);
+        Assert.Contains("this._form.reportValidity()", controls, StringComparison.Ordinal);
+        Assert.Contains("label.htmlFor = id", controls, StringComparison.Ordinal);
+        Assert.Contains("aria-live", controls, StringComparison.Ordinal);
+        Assert.Contains("role', error ? 'alert' : 'status'", controls, StringComparison.Ordinal);
+        Assert.Contains("system-proposal", controls, StringComparison.Ordinal);
+        Assert.Contains("system-receipt", controls, StringComparison.Ordinal);
+        Assert.Contains("Confirm and run", controls, StringComparison.Ordinal);
+        Assert.Contains("button.addEventListener('click', () => confirm(button))", controls, StringComparison.Ordinal);
+        Assert.True(controls.IndexOf("system-proposal", StringComparison.Ordinal) <
+            controls.IndexOf("/executions", StringComparison.Ordinal));
+        Assert.Contains("SYSTEM_ACTION_CONVERSATION_REQUIRED", controls, StringComparison.Ordinal);
+        Assert.DoesNotContain("conversation-id", controls, StringComparison.Ordinal);
+        Assert.DoesNotContain("/api/applications/", controls, StringComparison.Ordinal);
+        Assert.DoesNotContain("provider:", controls, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("expectedFingerprint", controls, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("requestToken", controls, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Fact]
     public void Application_conversation_surface_is_exact_and_component_has_no_control_authority()
     {
@@ -56,7 +273,8 @@ public sealed class WebInterfaceTests
             ("/api/applications/{applicationId}/conversations/{conversationId}", HttpMethods.Get),
             ("/api/applications/{applicationId}/conversations", HttpMethods.Post),
             ("/api/applications/{applicationId}/conversations/{conversationId}/turns", HttpMethods.Post),
-            ("/api/applications/{applicationId}/conversations/{conversationId}/execute", HttpMethods.Post)
+            ("/api/applications/{applicationId}/conversations/{conversationId}/execute", HttpMethods.Post),
+            ("/api/applications/{applicationId}/observations", HttpMethods.Post)
         ], routes);
         Assert.Contains("customElements.define('application-conversation'", ApplicationConversationElement.Script, StringComparison.Ordinal);
         Assert.Contains("session-context-id", ApplicationConversationElement.Script, StringComparison.Ordinal);
@@ -718,6 +936,44 @@ public sealed class WebInterfaceTests
     }
 
     [Fact]
+    public void Trigger_control_capabilities_are_server_selected_and_device_identity_grants_no_administration()
+    {
+        var guard = ControlGuard(new WebRemoteAccessOptions());
+        var read = RequestContext("localhost:6217", IPAddress.Loopback);
+        read.Request.Method = HttpMethods.Get;
+        read.Request.Scheme = Uri.UriSchemeHttp;
+        var write = RequestContext("localhost:6217", IPAddress.Loopback);
+        write.Request.Method = HttpMethods.Post;
+        write.Request.Scheme = Uri.UriSchemeHttp;
+        write.Request.ContentType = "application/json";
+        write.Request.Headers.Origin = "http://localhost:6217";
+        write.Request.Headers[PhoneCompanionIdentity.CredentialHeader] =
+            "phone-credential." + new string('a', 64);
+        var remoteDevice = RequestContext("roleplay.example.ts.net", IPAddress.Parse("192.0.2.10"));
+        remoteDevice.Request.Method = HttpMethods.Post;
+        remoteDevice.Request.Scheme = Uri.UriSchemeHttps;
+        remoteDevice.Request.ContentType = "application/json";
+        remoteDevice.Request.Headers.Origin = "https://roleplay.example.ts.net";
+        remoteDevice.Request.Headers[PhoneCompanionIdentity.CredentialHeader] =
+            "phone-credential." + new string('a', 64);
+
+        var readDecision = guard.Evaluate(read,
+            PrivateOperatorCapability.TriggerAdministrationRead, mutation: false);
+        var writeDecision = guard.Evaluate(write,
+            PrivateOperatorCapability.TriggerAdministrationWrite, mutation: true);
+        var wrongCapability = guard.Evaluate(write, PrivateOperatorCapability.Read, mutation: true);
+        var deviceOnly = guard.Evaluate(remoteDevice,
+            PrivateOperatorCapability.TriggerAdministrationWrite, mutation: true);
+
+        Assert.True(readDecision.Allowed);
+        Assert.Equal("trigger.admin.read", readDecision.Evidence.Capability);
+        Assert.True(writeDecision.Allowed);
+        Assert.Equal("trigger.admin.write", writeDecision.Evidence.Capability);
+        Assert.False(wrongCapability.Allowed);
+        Assert.False(deviceOnly.Allowed);
+    }
+
+    [Fact]
     public void Tailscale_control_change_requires_the_exact_https_public_origin()
     {
         var options = new WebRemoteAccessOptions
@@ -807,7 +1063,7 @@ public sealed class WebInterfaceTests
             mutation: true);
         var capabilityDecision = ControlGuard(new WebRemoteAccessOptions()).Evaluate(
             wrongCapability,
-            PrivateOperatorCapability.Modify,
+            PrivateOperatorCapability.Read,
             mutation: true);
 
         Assert.False(multipleDecision.Allowed);
@@ -869,6 +1125,225 @@ public sealed class WebInterfaceTests
     }
 
     [Fact]
+    public async Task Observation_authorization_runs_before_the_handler_and_supplies_a_verified_principal()
+    {
+        var denied = RequestContext("roleplay.example.ts.net", IPAddress.Loopback);
+        denied.Request.Method = HttpMethods.Post;
+        denied.Request.ContentType = "application/json";
+        denied.Request.Headers[WebAccessPolicy.TailscaleLoginHeader] = "intruder@example.com";
+        var remoteOptions = new WebRemoteAccessOptions
+        {
+            Enabled = true,
+            TailscaleHost = "roleplay.example.ts.net",
+            AllowedLogins = ["operator@example.com"]
+        };
+        var deniedFilter = new WebObservationRequestFilter(
+            new WebObservationRequestGuard(OperatorGuard(remoteOptions)));
+        var deniedInvoked = false;
+
+        await deniedFilter.InvokeAsync(new TestFilterContext(denied), _ =>
+        {
+            deniedInvoked = true;
+            return ValueTask.FromResult<object?>(Results.Ok());
+        });
+
+        Assert.False(deniedInvoked);
+
+        var accepted = RequestContext("localhost:6217", IPAddress.Loopback);
+        accepted.Request.Method = HttpMethods.Post;
+        accepted.Request.ContentType = "application/json; charset=utf-8";
+        var acceptedFilter = new WebObservationRequestFilter(
+            new WebObservationRequestGuard(OperatorGuard(new WebRemoteAccessOptions())));
+        TrustedPrincipalContext? supplied = null;
+
+        await acceptedFilter.InvokeAsync(new TestFilterContext(accepted), invocation =>
+        {
+            supplied = WebObservationRequestFilter.GetPrincipal(invocation.HttpContext);
+            return ValueTask.FromResult<object?>(Results.Accepted());
+        });
+
+        Assert.NotNull(supplied);
+        Assert.True(supplied!.Verified);
+        Assert.True(TrustedPrincipalContext.IsValidPrincipalId(supplied.PrincipalId));
+    }
+
+    [Theory]
+    [InlineData("GET", "application/json", 405, "OBSERVATION_METHOD_DENIED")]
+    [InlineData("POST", "text/plain", 415, "OBSERVATION_JSON_REQUIRED")]
+    public void Observation_method_and_media_type_fail_closed(
+        string method,
+        string contentType,
+        int statusCode,
+        string errorCode)
+    {
+        var context = RequestContext("localhost:6217", IPAddress.Loopback);
+        context.Request.Method = method;
+        context.Request.ContentType = contentType;
+
+        var decision = new WebObservationRequestGuard(
+            OperatorGuard(new WebRemoteAccessOptions())).Evaluate(context);
+
+        Assert.False(decision.Allowed);
+        Assert.Equal(statusCode, decision.StatusCode);
+        Assert.Equal(errorCode, decision.ErrorCode);
+        Assert.Null(decision.Principal);
+    }
+
+    [Fact]
+    public async Task Phone_observation_authenticates_route_and_credential_before_body_parsing()
+    {
+        var context = RequestContext("localhost:6217", IPAddress.Loopback);
+        context.Request.Method = HttpMethods.Post;
+        context.Request.ContentType = "application/json";
+        context.Request.RouteValues["applicationId"] = "quest";
+        context.Request.Headers[PhoneCompanionIdentity.CredentialHeader] =
+            "phone-credential.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes("not-json"));
+        var authenticator = new RecordingPhoneAuthenticator(allowed: true);
+        var access = AccessPolicy(new WebRemoteAccessOptions());
+        var guard = new WebObservationRequestGuard(
+            new WebPrivateOperatorGuard(access, new PrivateOperatorAuthorizationPolicy()),
+            access, authenticator);
+
+        var decision = await guard.EvaluateAsync(context);
+
+        Assert.True(decision.Allowed);
+        Assert.Equal(1, authenticator.Calls);
+        Assert.Equal("quest", authenticator.ApplicationId!.Value);
+        Assert.Equal(0, context.Request.Body.Position);
+        Assert.Equal(PhoneCompanionIdentity.AuthenticationMethod,
+            decision.Principal!.AuthenticationMethod);
+    }
+
+    [Fact]
+    public async Task Unknown_revoked_and_wrong_application_phone_credentials_share_one_denial()
+    {
+        var access = AccessPolicy(new WebRemoteAccessOptions());
+        var guard = new WebObservationRequestGuard(
+            new WebPrivateOperatorGuard(access, new PrivateOperatorAuthorizationPolicy()),
+            access, new RecordingPhoneAuthenticator(allowed: false));
+        var decisions = new List<WebObservationRequestDecision>();
+        foreach (var application in new[] { "quest", "other" })
+        {
+            var context = RequestContext("localhost:6217", IPAddress.Loopback);
+            context.Request.Method = HttpMethods.Post;
+            context.Request.ContentType = "application/json";
+            context.Request.RouteValues["applicationId"] = application;
+            context.Request.Headers[PhoneCompanionIdentity.CredentialHeader] =
+                "phone-credential.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+            decisions.Add(await guard.EvaluateAsync(context));
+        }
+
+        Assert.All(decisions, decision =>
+        {
+            Assert.False(decision.Allowed);
+            Assert.Equal(StatusCodes.Status403Forbidden, decision.StatusCode);
+            Assert.Equal("PHONE_CREDENTIAL_DENIED", decision.ErrorCode);
+            Assert.Equal("The phone credential was not accepted.", decision.ErrorMessage);
+        });
+    }
+
+    [Fact]
+    public async Task Observation_reader_accepts_only_the_exact_bounded_envelope()
+    {
+        var reader = new ObservationHttpRequestReader();
+        var valid = ObservationRequest(ValidObservationJson());
+
+        var submission = await reader.ReadAsync(valid);
+
+        Assert.Equal("observation-request.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", submission.RequestId);
+        Assert.Equal("phone.dante", submission.Source.Id);
+        Assert.Equal("device.geofence.transition", submission.Structure.Id);
+        Assert.Equal(1, submission.Structure.Version);
+        Assert.Equal("2026-08-25T20:00:00.0000000+00:00", submission.ObservedAt.ToString("O"));
+        Assert.Equal("{\"transition\":\"entered\"}", submission.Data.Json);
+
+        var invalidBodies = new[]
+        {
+            ValidObservationJson().Replace("\"data\":", "\"unknown\":true,\"data\":", StringComparison.Ordinal),
+            ValidObservationJson().Replace("\"source\":", "\"requestId\":\"observation-request.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"source\":", StringComparison.Ordinal),
+            ValidObservationJson().Replace("2026-08-25T20:00:00Z", "2026-08-25T22:00:00+02:00", StringComparison.Ordinal),
+            ValidObservationJson().Replace("{\"transition\":\"entered\"}", "[]", StringComparison.Ordinal)
+        };
+        foreach (var body in invalidBodies)
+        {
+            var exception = await Assert.ThrowsAsync<ObservationHttpRequestException>(
+                () => reader.ReadAsync(ObservationRequest(body)));
+            Assert.Equal(StatusCodes.Status400BadRequest, exception.StatusCode);
+        }
+
+        var oversized = new DefaultHttpContext().Request;
+        oversized.Body = Stream.Null;
+        oversized.ContentLength = TriggerSchedulingLimits.MaximumRequestBytes + 1L;
+        var tooLarge = await Assert.ThrowsAsync<ObservationHttpRequestException>(
+            () => reader.ReadAsync(oversized));
+        Assert.Equal(StatusCodes.Status413PayloadTooLarge, tooLarge.StatusCode);
+
+        var invalidUtf8 = new DefaultHttpContext().Request;
+        invalidUtf8.Body = new MemoryStream([0xC3, 0x28]);
+        invalidUtf8.ContentLength = 2;
+        var encoding = await Assert.ThrowsAsync<ObservationHttpRequestException>(
+            () => reader.ReadAsync(invalidUtf8));
+        Assert.Equal("OBSERVATION_UTF8_INVALID", encoding.Code);
+
+        var resourceBoundBodies = new[]
+        {
+            ObservationJsonWithData("{" + string.Join(',', Enumerable.Range(0, 247).Select(index => $"\"p{index}\":0")) + "}"),
+            ObservationJsonWithData("{\"items\":[" + string.Join(',', Enumerable.Repeat("0", 257)) + "]}"),
+            ObservationJsonWithData("{\"text\":\"" + new string('x', TriggerSchedulingLimits.MaximumStringBytes + 1) + "\"}"),
+            ObservationJsonWithData(string.Concat(Enumerable.Repeat("{\"nest\":", 16)) + "{}" + new string('}', 16)),
+            ObservationJsonWithData("{\"items\":[" + string.Join(',', Enumerable.Repeat("0", 256)) + "]," +
+                string.Join(',', Enumerable.Range(0, 245).Select(index => $"\"p{index}\":0")) + "}")
+        };
+        for (var index = 0; index < resourceBoundBodies.Length; index++)
+        {
+            var failure = await Record.ExceptionAsync(
+                () => reader.ReadAsync(ObservationRequest(resourceBoundBodies[index])));
+            Assert.True(failure is ObservationHttpRequestException,
+                $"Resource-bound request {index} was unexpectedly accepted.");
+            var bounded = Assert.IsType<ObservationHttpRequestException>(failure,
+                exactMatch: true);
+            Assert.Equal(StatusCodes.Status413PayloadTooLarge, bounded.StatusCode);
+            Assert.Equal("OBSERVATION_REQUEST_BOUNDS", bounded.Code);
+        }
+    }
+
+    [Fact]
+    public async Task Observation_endpoint_returns_only_the_safe_acceptance_fields()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddDantesRoleplayWeb("Data Source=:memory:", new ConfigurationBuilder().Build());
+        builder.Services.AddSingleton<IObservationIngestionService, AcceptedObservationIngestion>();
+        var application = builder.Build();
+        application.MapDantesRoleplayWeb();
+        var endpoint = ((IEndpointRouteBuilder)application).DataSources.SelectMany(source => source.Endpoints)
+            .OfType<RouteEndpoint>()
+            .Single(value => value.RoutePattern.RawText == "/api/applications/{applicationId}/observations");
+        Assert.Equal(WebInterfaceSecurity.UploadRateLimitPolicy,
+            endpoint.Metadata.GetMetadata<EnableRateLimitingAttribute>()!.PolicyName);
+        var context = RequestContext("localhost:6217", IPAddress.Loopback);
+        context.RequestServices = application.Services;
+        context.Request.Method = HttpMethods.Post;
+        context.Request.ContentType = "application/json";
+        context.Request.RouteValues["applicationId"] = "quest";
+        context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(ValidObservationJson()));
+        context.Request.ContentLength = context.Request.Body.Length;
+        context.Response.Body = new MemoryStream();
+
+        await endpoint.RequestDelegate!(context);
+
+        Assert.Equal(StatusCodes.Status202Accepted, context.Response.StatusCode);
+        context.Response.Body.Position = 0;
+        using var response = await JsonDocument.ParseAsync(context.Response.Body);
+        var names = response.RootElement.EnumerateObject().Select(value => value.Name).Order().ToArray();
+        Assert.Equal(["accepted", "duplicate", "observationId", "status"], names);
+        Assert.True(response.RootElement.GetProperty("accepted").GetBoolean());
+        Assert.False(response.RootElement.GetProperty("duplicate").GetBoolean());
+        Assert.Equal("recorded", response.RootElement.GetProperty("status").GetString());
+        Assert.Equal("no-store", context.Response.Headers.CacheControl);
+    }
+
+    [Fact]
     public void Control_route_helpers_are_closed_under_the_control_prefix()
     {
         var builder = WebApplication.CreateBuilder();
@@ -880,6 +1355,10 @@ public sealed class WebInterfaceTests
             "/messages",
             PrivateOperatorCapability.ControlAiMessage,
             new Func<IResult>(() => Results.Ok()));
+        application.MapDantesRoleplayControlPost(
+            "/confirmed-system-task",
+            PrivateOperatorCapability.Modify,
+            new Func<IResult>(() => Results.Ok()));
 
         var patterns = ((IEndpointRouteBuilder)application).DataSources
             .SelectMany(source => source.Endpoints)
@@ -889,12 +1368,13 @@ public sealed class WebInterfaceTests
 
         Assert.Contains("/api/control/status", patterns);
         Assert.Contains("/api/control/messages", patterns);
+        Assert.Contains("/api/control/confirmed-system-task", patterns);
         Assert.Throws<ArgumentException>(() => application.MapDantesRoleplayControlGet(
             "/api/escape",
             new Func<IResult>(() => Results.Ok())));
         Assert.Throws<ArgumentOutOfRangeException>(() => application.MapDantesRoleplayControlPut(
             "/settings",
-            PrivateOperatorCapability.Modify,
+            PrivateOperatorCapability.Read,
             new Func<IResult>(() => Results.Ok())));
     }
 
@@ -928,6 +1408,12 @@ public sealed class WebInterfaceTests
             panel => AssertPanel(panel, "effect-history"),
             panel =>
             {
+                Assert.Equal("trigger-scheduling", panel.Id);
+                Assert.Equal("ready", panel.State);
+                Assert.False(string.IsNullOrWhiteSpace(panel.Message));
+            },
+            panel =>
+            {
                 Assert.Equal("assistant", panel.Id);
                 Assert.Equal("ready", panel.State);
                 Assert.False(string.IsNullOrWhiteSpace(panel.Message));
@@ -953,6 +1439,7 @@ public sealed class WebInterfaceTests
         Assert.Contains("id=\"workspace-title\"", html, StringComparison.Ordinal);
         Assert.Contains("href=\"#/settings\"", html, StringComparison.Ordinal);
         Assert.Contains("href=\"#/effects\"", html, StringComparison.Ordinal);
+        Assert.Contains("href=\"#/triggers\"", html, StringComparison.Ordinal);
         Assert.Contains("href=\"#/assistants\"", html, StringComparison.Ordinal);
         Assert.Contains("href=\"#/applications\"", html, StringComparison.Ordinal);
         Assert.Contains("href=\"#/site-editor\"", html, StringComparison.Ordinal);
@@ -963,9 +1450,32 @@ public sealed class WebInterfaceTests
 
         Assert.Equal(1, html.Split("<server-settings-panel", StringSplitOptions.None).Length - 1);
         Assert.Equal(1, html.Split("<effect-history-panel", StringSplitOptions.None).Length - 1);
+        Assert.Equal(1, html.Split("<trigger-scheduling-panel", StringSplitOptions.None).Length - 1);
         Assert.Equal(1, html.Split("<assistant-panel", StringSplitOptions.None).Length - 1);
         Assert.Equal(1, html.Split("<ecs-explorer", StringSplitOptions.None).Length - 1);
         Assert.Equal(1, html.Split("<site-editor", StringSplitOptions.None).Length - 1);
+    }
+
+    [Fact]
+    public void Trigger_panel_previews_before_apply_and_displays_the_phone_secret_only_from_commit()
+    {
+        var html = File.ReadAllText(Path.Combine(
+            RepositoryRoot(), "src", "system", "web-interface", "examples", "control-center", "index.html"));
+        var start = html.IndexOf("class TriggerSchedulingPanel", StringComparison.Ordinal);
+        var end = html.IndexOf("class SiteEditorPanel", start, StringComparison.Ordinal);
+        var panel = html[start..end];
+
+        Assert.Contains("/api/control/triggers/applications", panel, StringComparison.Ordinal);
+        Assert.Contains("/api/control/triggers/commands/preview", panel, StringComparison.Ordinal);
+        Assert.Contains("/api/control/triggers/commands", panel, StringComparison.Ordinal);
+        Assert.Contains("this.pending.set(key, raw)", panel, StringComparison.Ordinal);
+        Assert.Contains("apply.disabled = false", panel, StringComparison.Ordinal);
+        Assert.Contains("will not be shown again", panel, StringComparison.Ordinal);
+        Assert.Contains("crypto.getRandomValues", panel, StringComparison.Ordinal);
+        Assert.Contains("Show derived principal", panel, StringComparison.Ordinal);
+        Assert.Contains("phone.revoke", panel, StringComparison.Ordinal);
+        Assert.DoesNotContain("/api/applications/", panel, StringComparison.Ordinal);
+        Assert.DoesNotContain("credentialVerifier", panel, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -1121,7 +1631,11 @@ public sealed class WebInterfaceTests
         Assert.Equal(TimeSpan.FromSeconds(45), options.Timeout);
         Assert.Equal(2, options.MaxConcurrentRequests);
         Assert.Equal(
-            [AssistantConversationService.TaskClass, InteractionPlannerProtocol.TaskClass],
+            [
+                AssistantConversationService.TaskClass,
+                SystemConversationService.TaskClass,
+                InteractionPlannerProtocol.TaskClass
+            ],
             options.AllowedTaskClasses.Order(StringComparer.Ordinal));
         Assert.Equal(HostSettingRuntimeState.Ready, provider.GetCatalog().Runtime.State);
         Assert.All(provider.GetCatalog().Definitions, definition => Assert.Equal(definition.Value, definition.EffectiveValue));
@@ -1228,8 +1742,23 @@ public sealed class WebInterfaceTests
             "/api/control/conversations/{conversationId}/turns",
             "/api/control/conversations/{conversationId}/turns/{turnId}/cancel",
             "/api/control/conversations/{conversationId}/turns/{turnId}/approvals/{approvalId}",
+            "/api/control/system/conversations",
+            "/api/control/system/conversations/{conversationId}",
+            "/api/control/system/conversations",
+            "/api/control/system/conversations/{conversationId}/turns",
+            "/api/control/system/conversations/{conversationId}/tasks",
+            "/api/control/system/conversations/{conversationId}/tasks",
+            "/api/control/system/tasks/{taskId}",
+            "/api/control/system/tasks/{taskId}/confirmations",
+            "/api/control/system/tasks/{taskId}/executions",
+            "/api/control/system/capabilities/{capabilityId}",
             "/api/control/effects",
             "/api/control/effects/{eventId}",
+            "/api/control/triggers/applications",
+            "/api/control/triggers/applications/{applicationId}",
+            "/api/control/triggers/applications/{applicationId}/phone-principal/{deviceId}",
+            "/api/control/triggers/commands/preview",
+            "/api/control/triggers/commands",
             "/api/control/structure/applications",
             "/api/control/structure/applications/{applicationId}",
             "/api/control/structure/applications/{applicationId}/state-spaces",
@@ -1269,7 +1798,12 @@ public sealed class WebInterfaceTests
         Assert.All(endpoints.Where(endpoint => endpoint.RoutePattern.RawText is
             "/api/control/conversations" or "/api/control/conversations/{conversationId}/turns" or
             "/api/control/conversations/{conversationId}/turns/{turnId}/cancel" or
-            "/api/control/conversations/{conversationId}/turns/{turnId}/approvals/{approvalId}" &&
+            "/api/control/conversations/{conversationId}/turns/{turnId}/approvals/{approvalId}" or
+            "/api/control/system/conversations" or
+            "/api/control/system/conversations/{conversationId}/turns" or
+            "/api/control/system/conversations/{conversationId}/tasks" or
+            "/api/control/system/tasks/{taskId}/confirmations" or
+            "/api/control/system/tasks/{taskId}/executions" &&
             endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods.Single() == HttpMethods.Post),
             endpoint => Assert.Equal(
                 [HttpMethods.Post], endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods));
@@ -1322,6 +1856,118 @@ public sealed class WebInterfaceTests
         Assert.Contains("livePageLink(item.id)", controlCenter, StringComparison.Ordinal);
         Assert.Contains("encodeURIComponent(pageId)", controlCenter, StringComparison.Ordinal);
         Assert.Contains("Open live page", controlCenter, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Private_launcher_maps_reviewed_sources_and_enables_the_local_chat_providers()
+    {
+        var script = File.ReadAllText(Path.Combine(RepositoryRoot(), "src", "system", "web-interface",
+            "scripts", "Start-PrivateWeb.ps1"));
+
+        Assert.Contains("Sources__AllowedRoots__repository", script, StringComparison.Ordinal);
+        Assert.Contains("Catalogs__PublishedApplications__0", script, StringComparison.Ordinal);
+        Assert.Contains("Knowledge__Completion__Enabled', 'true'", script, StringComparison.Ordinal);
+        Assert.Contains("InteractionOuter__Local__Enabled', 'true'", script, StringComparison.Ordinal);
+        Assert.Contains("InteractionOuter__Local__Profile', 'outer'", script, StringComparison.Ordinal);
+        Assert.Contains("$previousEnvironment", script, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Shared_navigation_is_composed_once_by_system_and_application_pages()
+    {
+        var examples = Path.Combine(RepositoryRoot(), "src", "system", "web-interface", "examples");
+        var home = File.ReadAllText(Path.Combine(examples, "home.html"));
+        var controlCenter = File.ReadAllText(Path.Combine(examples, "control-center", "index.html"));
+        var application = File.ReadAllText(Path.Combine(examples, "application-page.html"));
+
+        foreach (var page in new[] { home, controlCenter, application })
+        {
+            Assert.Contains("<system-navigation", page, StringComparison.Ordinal);
+            Assert.Contains("type=\"module\" src=\"/components/system-workspace.js\"", page,
+                StringComparison.Ordinal);
+            Assert.Equal(1, page.Split("<system-navigation", StringSplitOptions.None).Length - 1);
+        }
+
+        Assert.DoesNotContain("<nav class=\"nav\" aria-label=\"System navigation\"", home,
+            StringComparison.Ordinal);
+        Assert.Contains("application-id=\"dnd2024\"", application, StringComparison.Ordinal);
+        Assert.Contains("aria-label=\"Control center functions\"", controlCenter, StringComparison.Ordinal);
+        Assert.Contains("#/applications/", controlCenter, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Authored_pages_compose_system_and_application_chat_without_crossing_scope()
+    {
+        var examples = Path.Combine(RepositoryRoot(), "src", "system", "web-interface", "examples");
+        var home = File.ReadAllText(Path.Combine(examples, "home.html"));
+        var controlCenter = File.ReadAllText(Path.Combine(examples, "control-center", "index.html"));
+        var applicationPage = File.ReadAllText(Path.Combine(examples, "application-page.html"));
+
+        Assert.Contains("General system chat", home, StringComparison.Ordinal);
+        Assert.Contains("<system-chat aria-label=\"General system chat\"></system-chat>", home,
+            StringComparison.Ordinal);
+        Assert.Contains("document.createElement(\"application-conversation\")", home,
+            StringComparison.Ordinal);
+        Assert.Contains("conversation.setAttribute(\"application-id\", application.value)", home,
+            StringComparison.Ordinal);
+        Assert.Contains("conversation.setAttribute(\"state-space-id\", stateSpace.value)", home,
+            StringComparison.Ordinal);
+
+        var assistantStart = controlCenter.IndexOf("class AssistantPanel", StringComparison.Ordinal);
+        var assistantEnd = controlCenter.IndexOf("class EcsExplorerPanel", assistantStart,
+            StringComparison.Ordinal);
+        var assistant = controlCenter[assistantStart..assistantEnd];
+        Assert.Contains("document.createElement(\"system-chat\")", assistant, StringComparison.Ordinal);
+        Assert.DoesNotContain("application-id", assistant, StringComparison.Ordinal);
+        Assert.DoesNotContain("state-space-id", assistant, StringComparison.Ordinal);
+        Assert.DoesNotContain("/api/applications/", assistant, StringComparison.Ordinal);
+
+        var explorerStart = assistantEnd;
+        var explorerEnd = controlCenter.IndexOf("class SiteEditorPanel", explorerStart,
+            StringComparison.Ordinal);
+        var explorer = controlCenter[explorerStart..explorerEnd];
+        Assert.Contains("this.renderApplicationChat(applicationId, spaces.items || [], body)", explorer,
+            StringComparison.Ordinal);
+        Assert.Contains("document.createElement(\"application-conversation\")", explorer,
+            StringComparison.Ordinal);
+        Assert.Contains("conversation.setAttribute(\"application-id\", applicationId)", explorer,
+            StringComparison.Ordinal);
+        Assert.Contains("conversation.setAttribute(\"state-space-id\", stateSpaceId)", explorer,
+            StringComparison.Ordinal);
+        Assert.Contains("conversation.setAttribute(\"session-context-id\"", explorer,
+            StringComparison.Ordinal);
+        Assert.Contains("select.addEventListener(\"change\", mount)", explorer, StringComparison.Ordinal);
+        Assert.Contains("host.replaceChildren()", explorer, StringComparison.Ordinal);
+        Assert.Contains("/components/application-conversation.js", controlCenter, StringComparison.Ordinal);
+
+        Assert.Contains("application-id=\"dnd2024\" state-space-id=\"dnd2024-main\"", applicationPage,
+            StringComparison.Ordinal);
+        Assert.Contains("session-context-id=\"application-page.dnd2024\"", applicationPage,
+            StringComparison.Ordinal);
+        Assert.Contains("<system-chat aria-label=\"General system chat\"></system-chat>", applicationPage,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("<system-chat application-id", applicationPage, StringComparison.Ordinal);
+        Assert.Contains("/components/application-conversation.js", applicationPage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Home_dashboard_uses_existing_local_conversation_structure_and_browser_local_notes()
+    {
+        var home = File.ReadAllText(Path.Combine(
+            RepositoryRoot(), "src", "system", "web-interface", "examples", "home.html"));
+
+        Assert.Contains("Local outer chat", home, StringComparison.Ordinal);
+        Assert.Contains("/components/application-conversation.js", home, StringComparison.Ordinal);
+        Assert.Contains("document.createElement(\"application-conversation\")", home, StringComparison.Ordinal);
+        Assert.Contains("/api/control/structure/applications", home, StringComparison.Ordinal);
+        Assert.Contains("/state-spaces", home, StringComparison.Ordinal);
+        Assert.Contains("dantes.personal-dashboard.notes.v1", home, StringComparison.Ordinal);
+        Assert.Contains("localStorage.setItem(storageKeys.notes", home, StringComparison.Ordinal);
+        Assert.Contains("id=\"local-date-time\"", home, StringComparison.Ordinal);
+        Assert.Contains("window.setInterval(updateClock, 1000)", home, StringComparison.Ordinal);
+        Assert.Contains("radial-gradient", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("api.openai.com", home, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("InteractionOuter:Provider", home, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1397,11 +2043,12 @@ public sealed class WebInterfaceTests
             new(stats.QualifiedId, stats.Version, stats.SchemaHash),
             "{\"health\":12}", 0));
         var changesBeforeReads = await SqliteTotalChangesAsync(db);
+        var capabilities = ApplicationCapabilities(applications);
         var explorer = new ControlStructureExplorer(
-            applications, stateSpaces, types, entities, new EmptyPublicApplicationCatalogProvider());
+            applications, stateSpaces, types, entities, new EmptyPublicApplicationCatalogProvider(), capabilities);
 
-        var appPage = explorer.ListApplications(null, "1");
-        var app = explorer.GetApplication("fixture-app");
+        var appPage = await explorer.ListApplicationsThroughCapabilitiesAsync(CapabilityAuthorization(), null, "1");
+        var app = await explorer.GetApplicationThroughCapabilitiesAsync(CapabilityAuthorization(), "fixture-app");
         var spaces = explorer.ListStateSpaces("fixture-app", null, null);
         var typePage = explorer.ListComponentTypes("fixture-app", null, null);
         var schema = explorer.GetComponentType("fixture-app.stats", 1);
@@ -1483,7 +2130,7 @@ public sealed class WebInterfaceTests
     }
 
     [Fact]
-    public void Structure_explorer_cursors_are_bounded_and_scope_bound()
+    public async Task Structure_explorer_cursors_are_bounded_and_scope_bound()
     {
         var applications = new InMemoryApplicationRegistry();
         applications.Register(new(ApplicationIdentifier.Parse("alpha-app"), "Alpha", "", []));
@@ -1495,17 +2142,20 @@ public sealed class WebInterfaceTests
             new SqliteStateSpaceRegistry(db, applications),
             new SqliteComponentTypeRegistry(db, new BoundedJsonSchemaValidator()),
             new SqliteEntityComponentStore(db, new SqliteComponentTypeRegistry(db, new BoundedJsonSchemaValidator()), new BoundedJsonSchemaValidator()),
-            new EmptyPublicApplicationCatalogProvider());
+            new EmptyPublicApplicationCatalogProvider(),
+            ApplicationCapabilities(applications));
 
-        var first = explorer.ListApplications(null, "1");
+        var authorization = CapabilityAuthorization();
+        var first = await explorer.ListApplicationsThroughCapabilitiesAsync(authorization, null, "1");
         Assert.NotNull(first.NextCursor);
-        Assert.Equal("bravo-app", Assert.Single(explorer.ListApplications(first.NextCursor, "1").Items).Id);
-        Assert.Equal("INVALID_LIMIT", Assert.Throws<ControlStructureException>(
-            () => explorer.ListApplications(null, "101")).Code);
-        Assert.Equal("CURSOR_INVALID", Assert.Throws<ControlStructureException>(
-            () => explorer.ListApplications("not-a-cursor", "1")).Code);
-        Assert.Equal("CURSOR_STALE", Assert.Throws<ControlStructureException>(
-            () => explorer.ListApplications(first.NextCursor, "2")).Code);
+        Assert.Equal("bravo-app", Assert.Single((await explorer.ListApplicationsThroughCapabilitiesAsync(
+            authorization, first.NextCursor, "1")).Items).Id);
+        Assert.Equal("INVALID_LIMIT", (await Assert.ThrowsAsync<ControlStructureException>(
+            () => explorer.ListApplicationsThroughCapabilitiesAsync(authorization, null, "101"))).Code);
+        Assert.Equal("CURSOR_INVALID", (await Assert.ThrowsAsync<ControlStructureException>(
+            () => explorer.ListApplicationsThroughCapabilitiesAsync(authorization, "not-a-cursor", "1"))).Code);
+        Assert.Equal("CURSOR_STALE", (await Assert.ThrowsAsync<ControlStructureException>(
+            () => explorer.ListApplicationsThroughCapabilitiesAsync(authorization, first.NextCursor, "2"))).Code);
     }
 
     [Fact]
@@ -1627,14 +2277,20 @@ public sealed class WebInterfaceTests
     {
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/ui/home"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath("/components/system-workspace.js"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath("/components/application-conversation.js"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/pages/home"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/data/entity/hero"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/changes"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/session"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/control/status"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/applications/quest/observations"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/mcp"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/pages-other"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/control-other"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath("/components-other/system-workspace.js"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/applications/quest/conversations"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/applications/quest/observations/extra"));
     }
 
     [Fact]
@@ -1703,8 +2359,54 @@ public sealed class WebInterfaceTests
     private static WebPrivateOperatorGuard OperatorGuard(WebRemoteAccessOptions options) =>
         new(AccessPolicy(options), new PrivateOperatorAuthorizationPolicy());
 
+    private static SystemCapabilityCatalog ApplicationCapabilities(IApplicationRegistry applications) =>
+        new(
+            [new ApplicationsSystemCapabilityHandler(applications)],
+            new BoundedJsonSchemaValidator(),
+            new PrivateOperatorAuthorizationPolicy());
+
+    private static AuthorizationAuditEvidence CapabilityAuthorization() =>
+        new PrivateOperatorAuthorizationPolicy().Evaluate(new(
+            PrivateOperatorPrincipal.Create("test", "operator"),
+            PrivateOperatorCapability.ControlRead,
+            PrivateOperatorAuthorizationPolicy.PrivateHostScope,
+            "web-capability-test")).Evidence;
+
     private static WebControlRequestGuard ControlGuard(WebRemoteAccessOptions options) =>
         new(OperatorGuard(options));
+
+    private sealed class SecretFixtureCapabilityHandler : ISystemReadCapabilityHandler
+    {
+        public SystemCapabilityRegistration Registration { get; } = new(
+            "system.secret-fixture", 1, "web-interface", "Secret fixture.",
+            SystemCapabilityMode.Read,
+            "{\"type\":\"object\",\"additionalProperties\":false}",
+            "{\"type\":\"object\",\"additionalProperties\":false}",
+            ["procedure.system.use"], PrivateOperatorCapability.Read,
+            SystemCapabilitySensitivity.Secret, false, false);
+
+        public Task<SystemCapabilityHandlerResult> ReadAsync(
+            JsonElement input, CancellationToken cancellationToken = default)
+        {
+            using var document = JsonDocument.Parse("{}");
+            return Task.FromResult(SystemCapabilityHandlerResult.Success(document.RootElement.Clone()));
+        }
+    }
+
+    private static HttpRequest ObservationRequest(string json)
+    {
+        var request = new DefaultHttpContext().Request;
+        request.Body = new MemoryStream(Encoding.UTF8.GetBytes(json));
+        request.ContentLength = request.Body.Length;
+        request.ContentType = "application/json";
+        return request;
+    }
+
+    private static string ValidObservationJson() =>
+        """{"requestId":"observation-request.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","source":{"id":"phone.dante","instanceId":"android-primary","occurrenceId":"arrival.1"},"structure":{"id":"device.geofence.transition","version":1},"observedAt":"2026-08-25T20:00:00Z","data":{"transition":"entered"}}""";
+
+    private static string ObservationJsonWithData(string data) =>
+        ValidObservationJson().Replace("{\"transition\":\"entered\"}", data, StringComparison.Ordinal);
 
     private static void AssertPanel(ControlCenterPanelStatus panel, string id)
     {
@@ -1727,6 +2429,58 @@ public sealed class WebInterfaceTests
         public override HttpContext HttpContext { get; } = context;
         public override IList<object?> Arguments { get; } = [];
         public override T GetArgument<T>(int index) => (T)Arguments[index]!;
+    }
+
+    private sealed class AcceptedObservationIngestion : IObservationIngestionService
+    {
+        public Task<TriggerSchedulingWriteResult<StoredObservation>> SubmitAsync(
+            TrustedPrincipalContext principal,
+            ApplicationIdentifier applicationId,
+            ObservationSubmission submission,
+            CancellationToken cancellationToken = default)
+        {
+            Assert.True(principal.Verified);
+            var stored = new StoredObservation(
+                "observation.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                applicationId,
+                submission.RequestId,
+                submission.Source.Id,
+                1,
+                submission.Source.InstanceId,
+                submission.Source.OccurrenceId,
+                submission.Structure.Id,
+                submission.Structure.Version,
+                new string('A', 64),
+                submission.ObservedAt,
+                submission.ObservedAt,
+                submission.Data.Json,
+                submission.Data.Hash,
+                new string('A', 64),
+                principal.PrincipalId);
+            return Task.FromResult(TriggerSchedulingWriteResult<StoredObservation>.Appended(stored));
+        }
+    }
+
+    private sealed class RecordingPhoneAuthenticator(bool allowed) : IPhoneCompanionAuthenticator
+    {
+        public int Calls { get; private set; }
+        public ApplicationIdentifier? ApplicationId { get; private set; }
+
+        public Task<PhoneCompanionAuthenticationResult> AuthenticateAsync(
+            ApplicationIdentifier applicationId,
+            string credential,
+            CancellationToken cancellationToken = default)
+        {
+            Calls++;
+            ApplicationId = applicationId;
+            var principal = allowed
+                ? TrustedPrincipalContext.VerifiedPrincipal(
+                    PhoneCompanionIdentity.PrincipalId(applicationId,
+                        "phone-device.0123456789abcdef0123456789abcdef"),
+                    PhoneCompanionIdentity.AuthenticationMethod)
+                : null;
+            return Task.FromResult(new PhoneCompanionAuthenticationResult(allowed, principal));
+        }
     }
 
     private sealed class EmptyCatalogNavigator : ICatalogNavigator

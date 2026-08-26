@@ -1,0 +1,13 @@
+{
+  "id": "item.dnd2024.torch.v1",
+  "name": "Torch (D&D 2024, definition v1)",
+  "components": {
+    "dnd2024.item-definition": {
+      "definitionVersion": 1,
+      "kind": "adventuring-gear",
+      "stackPolicy": "fungible",
+      "massPounds": { "numerator": 1, "denominator": 1 },
+      "sourceRef": { "sourceId": "source.dnd2024.srd-5.2.1", "locator": "Equipment > Adventuring Gear > Torch (PDF pp. 95, 100)" }
+    }
+  }
+}

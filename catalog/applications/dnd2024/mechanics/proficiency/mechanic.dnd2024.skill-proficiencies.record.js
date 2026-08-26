@@ -1,0 +1,8 @@
+var valid=["acrobatics","animal-handling","arcana","athletics","deception","history","insight","intimidation","investigation","medicine","nature","perception","performance","persuasion","religion","sleight-of-hand","stealth","survival"];
+function exact(value,keys){if(value===null||Array.isArray(value)||typeof value!=="object")return false;var actual=Object.keys(value).sort(),expected=keys.slice().sort();if(actual.length!==expected.length)return false;for(var i=0;i<expected.length;i++)if(actual[i]!==expected[i])return false;return true;}
+var subject=ctx.roles.subject,input=ctx.input;
+if(!subject||!subject.components)throw new Error("Skill proficiencies require a subject.");
+if(!exact(input,["skills"])||!Array.isArray(input.skills)||input.skills.length>18)throw new Error("Skill-proficiency input must contain exactly skills as an array.");
+var seen={},skills=[];for(var index=0;index<input.skills.length;index++){var skill=input.skills[index];if(typeof skill!=="string"||valid.indexOf(skill)<0||seen[skill])throw new Error("skills must contain unique exact D&D skill ids.");seen[skill]=true;skills.push(skill);}skills.sort();
+var record={skills:skills,sourceRef:{sourceId:"source.dnd2024.srd-5.2.1",locator:"Playing the Game > Proficiency > Skill Proficiencies and Skills"}},previous=subject.components["dnd2024.skill-proficiencies"]||null;
+return {narration:subject.name+"'s skill proficiencies are recorded.",data:{skills:skills,previousSkills:previous===null?null:JSON.parse(previous).skills},effects:[{type:previous===null?"component.add":"component.set",entityId:subject.id,definitionId:"dnd2024.skill-proficiencies",data:JSON.stringify(record)}],events:[],notifications:[]};

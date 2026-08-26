@@ -1,0 +1,49 @@
+{
+  "format": "dnd-code-adoption-slice-9-closure/v1",
+  "inventory": "ruleset/dnd2024/adoption/evidence/slice-9-derivation-candidates.json",
+  "inventorySha256": "F8BF5683C55D709C00018519121D92B2C44AD5307A59A2DC9E06D13B9ED3E69C",
+  "activated": {
+    "mechanic": {
+      "id": "mechanic.dnd2024.character-sheet.read",
+      "contractPath": "catalog/applications/dnd2024/mechanics/proficiency/mechanic.dnd2024.character-sheet.read.md",
+      "contractSha256": "8953290F8A49C4EA892C4D9CCE3C8099DA9736BAAF48C074219C2C4B09AF9607",
+      "sourcePath": "catalog/applications/dnd2024/mechanics/proficiency/mechanic.dnd2024.character-sheet.read.js",
+      "sourceSha256": "5201531845C60D905A963DEB6CC9483142AA8901055905A90A62A83F7B1A2AEC"
+    },
+    "procedure": {
+      "id": "procedure.mechanic.dnd2024.character-sheet",
+      "path": "catalog/applications/dnd2024/procedures/proficiency/procedure.mechanic.dnd2024.character-sheet.md",
+      "sha256": "E2A271A23539D0BE5BEE324AE39ABB283F0BD637B45EC707922AA187BEE5BFBD"
+    },
+    "components": [],
+    "storedProjections": [],
+    "publicOperations": []
+  },
+  "candidateGroups": {
+    "classified": 17,
+    "retainedCurrent": 6,
+    "splitRetainedAndAdapted": 1,
+    "retainedAndDeferred": 3,
+    "adapted": 1,
+    "rejected": 2,
+    "deferred": 4,
+    "unresolved": []
+  },
+  "adaptedSymbols": [
+    {
+      "source": "src/derive/character-view.ts#computeDerivedCharacter",
+      "target": "mechanic.dnd2024.character-sheet.read",
+      "status": "activated"
+    },
+    {
+      "source": "src/derive/ability-check.ts#computePassiveScore",
+      "target": "mechanic.dnd2024.character-sheet.read",
+      "status": "activated-base-score-only"
+    }
+  ],
+  "laterOwners": {
+    "slice10Or11": ["multiattack", "spell-dc", "spell-slots"],
+    "slice11": ["terrain"],
+    "retainedWithLaterExtension": ["attack", "languages", "speed"]
+  }
+}

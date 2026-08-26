@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kindId", "status", "condition", "maximumCondition", "cargoCapacity"],
+  "properties": {
+    "kindId": { "type": "string", "minLength": 1, "maxLength": 100 },
+    "status": { "enum": ["operational", "disabled", "lost"] },
+    "condition": { "type": "integer", "minimum": 0, "maximum": 1000000000 },
+    "maximumCondition": { "type": "integer", "minimum": 1, "maximum": 1000000000 },
+    "cargoCapacity": { "type": "integer", "minimum": 0, "maximum": 1000000000 }
+  }
+}

@@ -53,6 +53,49 @@ public sealed class ApplicationPreviewTests : IDisposable
     }
 
     [Fact]
+    public async Task Exact_source_profile_is_canonical_excludes_unselected_extensions_and_rejects_unknowns()
+    {
+        Directory.CreateDirectory(Path.Combine(_root, "core"));
+        Directory.CreateDirectory(Path.Combine(_root, "extension"));
+        await File.WriteAllTextAsync(Path.Combine(_root, "core", "core.json"), "{\"core\":true}");
+        await File.WriteAllTextAsync(Path.Combine(_root, "extension", "optional.json"), "{\"optional\":true}");
+        await using var db = _fixture.CreateContext();
+        var applications = new SqliteApplicationRegistry(db);
+        var sources = new SqliteSourceRegistry(db);
+        var app = ApplicationIdentifier.Parse("profile-app");
+        applications.Register(new(app, "Profiles", "Neutral source-profile fixture.", []));
+        sources.Register(new(app, "dnd2024-core", "workspace", "core/**/*.json",
+            SourceTrust.Trusted, 0, "core"));
+        sources.Register(new(app, "extension.optional", "workspace", "extension/**/*.json",
+            SourceTrust.Trusted, 10, "optional"));
+        var service = Service(applications, sources);
+
+        var coreOnly = await service.PreviewAsync(app, ["dnd2024-core"]);
+        var extended = await service.PreviewAsync(app, ["dnd2024-core", "extension.optional"]);
+        var reordered = await service.PreviewAsync(app, ["extension.optional", "dnd2024-core"]);
+        var legacyAll = await service.PreviewAsync(app);
+
+        Assert.True(coreOnly.IsValid);
+        Assert.Equal("dnd2024-core", Assert.Single(coreOnly.Sources).SourceId);
+        Assert.Equal("core/core.json", Assert.Single(coreOnly.Winners).RelativePath);
+        Assert.DoesNotContain(coreOnly.Winners, value => value.SourceId == "extension.optional");
+        Assert.True(extended.IsValid);
+        Assert.Equal(2, extended.Sources.Count);
+        Assert.Equal(2, extended.Winners.Count);
+        Assert.NotEqual(coreOnly.PreviewFingerprint, extended.PreviewFingerprint);
+        Assert.Equal(extended.PreviewFingerprint, reordered.PreviewFingerprint);
+        Assert.Equal(extended.PreviewFingerprint, legacyAll.PreviewFingerprint);
+        Assert.Equal(extended.Sources, reordered.Sources);
+
+        var unknown = await Assert.ThrowsAsync<ApplicationPreviewException>(() =>
+            service.PreviewAsync(app, ["dnd2024-core", "extension.unknown"]));
+        var duplicate = await Assert.ThrowsAsync<ApplicationPreviewException>(() =>
+            service.PreviewAsync(app, ["dnd2024-core", "dnd2024-core"]));
+        Assert.Equal("SOURCE_SELECTION_UNKNOWN", unknown.Code);
+        Assert.Equal("SOURCE_SELECTION_INVALID", duplicate.Code);
+    }
+
+    [Fact]
     public async Task Unknown_root_returns_closed_invalid_problem_and_unknown_application_is_typed()
     {
         await using var db = _fixture.CreateContext();

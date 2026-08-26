@@ -152,7 +152,8 @@ public sealed class InteractionOrchestrationContractTests
                 new(InteractionFeatureScope.Application, ApplicationIdentifier.Parse("other-app"), "other-app.lookup", "contract.1", 1, HashA), [])]));
         AssertCode("STALE_PROPOSAL_REVISION", () => InteractionProposal.Create(envelope,
             [new InteractionPlanStep("stale", InteractionPlanStepKind.Query, AppReference("sample-app.one"), [],
-                new Dictionary<string, string>(), "{}", "revision.3")]));
+                new Dictionary<string, string>(), "{}", "revision.3",
+                queryContract: QueryReference(App(), []))]));
         AssertCode("INVALID_PROPOSAL_SIZE", () => InteractionProposal.Create(envelope,
             Enumerable.Range(1, 5).Select(index => Step($"step.{index}", InteractionPlanStepKind.Query,
                 AppReference("sample-app.one"), []))));
@@ -288,7 +289,16 @@ public sealed class InteractionOrchestrationContractTests
         IEnumerable<string> dependencies,
         IReadOnlyDictionary<string, string>? bindings = null,
         string input = "{\"b\":2,\"a\":1}") =>
-        new(id, kind, contract, dependencies, bindings ?? new Dictionary<string, string>(), input, "revision.4");
+        new(id, kind, contract, dependencies, bindings ?? new Dictionary<string, string>(), input, "revision.4",
+            queryContract: kind == InteractionPlanStepKind.Query
+                ? QueryReference(contract.ApplicationId, (bindings ?? new Dictionary<string, string>()).Keys)
+                : null);
+
+    private static InteractionQueryContractReference QueryReference(
+        ApplicationIdentifier applicationId,
+        IEnumerable<string> roles) => new("projection", applicationId.Value + ".projection.fixture",
+            1, HashA, HashB, "{\"type\":\"object\"}",
+            DantesRoleplay.CatalogNavigation.ApplicationQueryExposure.BindingOnly, roles);
 
     private static void AssertCode(string code, Action action) =>
         Assert.Equal(code, Assert.Throws<InteractionContractException>(action).Code);

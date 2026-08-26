@@ -1,6 +1,8 @@
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Operations;
+using DantesRoleplay.CatalogNavigation;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace DantesRoleplay.DataAccess;
 
@@ -49,7 +51,8 @@ public sealed class InteractionReceiptStore(
             parent.StateSpaceId != consent.StateSpaceId || parent.ProposalFingerprint != consent.ProposalFingerprint)
             throw new InteractionContractException("RESOLUTION_RECEIPT_SCOPE_MISMATCH", "The execution consent does not match the resolution receipt.");
 
-        var existing = await db.InteractionExecutionReceipts.AsNoTracking().SingleOrDefaultAsync(row =>
+        var existing = await db.InteractionExecutionReceipts.AsNoTracking()
+            .Include(row => row.Steps).Include(row => row.QueryResults).SingleOrDefaultAsync(row =>
             row.PrincipalReference == consent.PrincipalReference && row.ApplicationId == consent.ApplicationId.Value &&
             row.StateSpaceId == consent.StateSpaceId && row.ResolutionReceiptId == consent.ResolutionReceiptId &&
             row.IdempotencyKey == consent.IdempotencyKey, cancellationToken);
@@ -76,6 +79,19 @@ public sealed class InteractionReceiptStore(
             };
             foreach (var step in draft.Steps)
                 row.Steps.Add(new InteractionExecutionReceiptStep { ExecutionReceiptId = row.Id, Ordinal = step.Ordinal, ProposalStepId = step.ProposalStepId, Disposition = StepDisposition(step.Disposition), OperationId = step.OperationId });
+            foreach (var query in draft.QueryResults)
+                row.QueryResults.Add(new InteractionExecutionQueryResult
+                {
+                    ExecutionReceiptId = row.Id,
+                    Ordinal = query.Ordinal,
+                    ProposalStepId = query.ProposalStepId,
+                    QualifiedId = query.QualifiedId,
+                    OutputSchemaHash = query.OutputSchemaHash,
+                    ResultFingerprint = query.ResultFingerprint,
+                    SourceRevisionFingerprint = query.SourceRevisionFingerprint,
+                    Exposure = query.Exposure == ApplicationQueryExposure.ModelVisible ? "model-visible" : "binding-only",
+                    OutputJson = query.OutputJson
+                });
             db.InteractionExecutionReceipts.Add(row);
             await db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -85,7 +101,8 @@ public sealed class InteractionReceiptStore(
         {
             await transaction.RollbackAsync(CancellationToken.None);
             db.ChangeTracker.Clear();
-            var concurrent = await db.InteractionExecutionReceipts.AsNoTracking().Include(row => row.Steps).SingleOrDefaultAsync(row =>
+            var concurrent = await db.InteractionExecutionReceipts.AsNoTracking().Include(row => row.Steps)
+                .Include(row => row.QueryResults).SingleOrDefaultAsync(row =>
                 row.PrincipalReference == consent.PrincipalReference && row.ApplicationId == consent.ApplicationId.Value &&
                 row.StateSpaceId == consent.StateSpaceId && row.ResolutionReceiptId == consent.ResolutionReceiptId &&
                 row.IdempotencyKey == consent.IdempotencyKey, cancellationToken);
@@ -97,6 +114,31 @@ public sealed class InteractionReceiptStore(
             await transaction.RollbackAsync(CancellationToken.None);
             throw;
         }
+    }
+
+    public async Task<InteractionReceiptWriteResult?> FindExecutionAsync(
+        InteractionExecutionConsentReference consent,
+        string executionRequestFingerprint,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(consent);
+        if (executionRequestFingerprint is not { Length: 64 }
+            || executionRequestFingerprint.Any(character => !(char.IsAsciiDigit(character)
+                || character is >= 'A' and <= 'F')))
+            throw new InteractionContractException("INVALID_EXECUTION_FINGERPRINT",
+                "The execution request fingerprint must be uppercase SHA-256.");
+        var row = await db.InteractionExecutionReceipts.AsNoTracking()
+            .Include(value => value.Steps).Include(value => value.QueryResults)
+            .SingleOrDefaultAsync(value => value.PrincipalReference == consent.PrincipalReference
+                && value.ApplicationId == consent.ApplicationId.Value
+                && value.StateSpaceId == consent.StateSpaceId
+                && value.ResolutionReceiptId == consent.ResolutionReceiptId
+                && value.IdempotencyKey == consent.IdempotencyKey, cancellationToken);
+        if (row is null) return null;
+        return row.ExecutionRequestFingerprint == executionRequestFingerprint
+            && row.ProposalFingerprint == consent.ProposalFingerprint
+                ? InteractionReceiptWriteResult.Replay(Projection(row))
+                : InteractionReceiptWriteResult.Conflict();
     }
 
     public async Task<InteractionReceiptProjection?> GetAsync(InteractionAuthorizationRequest authorizationRequest, string receiptId, CancellationToken cancellationToken = default)
@@ -114,7 +156,8 @@ public sealed class InteractionReceiptStore(
             row.PrincipalReference == authorization.PrincipalReference && row.ApplicationId == authorization.ApplicationId.Value &&
             row.StateSpaceId == authorization.StateSpaceId, cancellationToken);
         if (resolution is not null) return Projection(resolution);
-        var execution = await db.InteractionExecutionReceipts.AsNoTracking().Include(row => row.Steps).SingleOrDefaultAsync(row => row.Id == receiptId &&
+        var execution = await db.InteractionExecutionReceipts.AsNoTracking().Include(row => row.Steps)
+            .Include(row => row.QueryResults).SingleOrDefaultAsync(row => row.Id == receiptId &&
             row.PrincipalReference == authorization.PrincipalReference && row.ApplicationId == authorization.ApplicationId.Value &&
             row.StateSpaceId == authorization.StateSpaceId, cancellationToken);
         return execution is null ? null : Projection(execution);
@@ -189,7 +232,10 @@ public sealed class InteractionReceiptStore(
         row.Id, "execution", row.PrincipalReference, Applications.ApplicationIdentifier.Parse(row.ApplicationId), row.StateSpaceId,
         row.IdempotencyKey, row.ExecutionRequestFingerprint, row.Disposition, "INTERACTION_EXECUTION_" + row.Disposition.ToUpperInvariant(),
         row.ProposalFingerprint, row.SafeSummary, InteractionReceiptSafety.DeserializeEvidence(row.EvidenceJson), row.CreatedAtUtc,
-        row.ResolutionReceiptId, row.Steps.OrderBy(step => step.Ordinal).Select(step => new InteractionExecutionStepReceiptProjection(step.Ordinal, step.ProposalStepId, step.Disposition, step.OperationId)).ToArray());
+        row.ResolutionReceiptId, row.Steps.OrderBy(step => step.Ordinal).Select(step => new InteractionExecutionStepReceiptProjection(step.Ordinal, step.ProposalStepId, step.Disposition, step.OperationId)).ToArray(),
+        QueryResults: row.QueryResults.OrderBy(value => value.Ordinal).Select(value => new InteractionQueryResultProjection(
+            value.ProposalStepId, value.QualifiedId, value.OutputSchemaHash, value.ResultFingerprint,
+            value.SourceRevisionFingerprint, value.OutputJson is null ? null : JsonSerializer.Deserialize<JsonElement>(value.OutputJson))).ToArray());
 
     private static string ExecutionDisposition(InteractionExecutionReceiptDisposition value) => value switch
     {

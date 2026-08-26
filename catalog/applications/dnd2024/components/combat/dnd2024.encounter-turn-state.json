@@ -1,0 +1,1 @@
+{"id":"dnd2024.encounter-turn-state","name":"D&D 2024 encounter turn state","description":"Encounter-owned lifecycle state: active or ended, current round, and position in the immutable Initiative order. The active participant is derived from the order and is never duplicated here."}

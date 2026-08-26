@@ -7,9 +7,22 @@ param(
 $ErrorActionPreference = 'Stop'
 $serveCreated = $false
 $createdServeStatus = $null
+$repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..\..\..')).Path
 $environmentNames = @(
     'ASPNETCORE_ENVIRONMENT',
     'ASPNETCORE_URLS',
+    'Sources__AllowedRoots__repository',
+    'Catalogs__PublishedApplications__0',
+    'Catalogs__PublishedApplications__1',
+    'Knowledge__Completion__Enabled',
+    'Knowledge__Completion__Endpoint',
+    'Knowledge__Completion__Model',
+    'Knowledge__Completion__Profile',
+    'InteractionOuter__Provider',
+    'InteractionOuter__Local__Enabled',
+    'InteractionOuter__Local__Endpoint',
+    'InteractionOuter__Local__Model',
+    'InteractionOuter__Local__Profile',
     'WebInterface__RemoteAccess__Enabled',
     'WebInterface__RemoteAccess__TailscaleHost',
     'WebInterface__RemoteAccess__AllowedLogins__0'
@@ -48,6 +61,18 @@ try {
 
     [Environment]::SetEnvironmentVariable('ASPNETCORE_ENVIRONMENT', 'Production', 'Process')
     [Environment]::SetEnvironmentVariable('ASPNETCORE_URLS', "http://127.0.0.1:$Port", 'Process')
+    [Environment]::SetEnvironmentVariable('Sources__AllowedRoots__repository', $repositoryRoot, 'Process')
+    [Environment]::SetEnvironmentVariable('Catalogs__PublishedApplications__0', 'dnd2024', 'Process')
+    [Environment]::SetEnvironmentVariable('Catalogs__PublishedApplications__1', 'trail-survival', 'Process')
+    [Environment]::SetEnvironmentVariable('Knowledge__Completion__Enabled', 'true', 'Process')
+    [Environment]::SetEnvironmentVariable('Knowledge__Completion__Endpoint', 'http://localhost:11434', 'Process')
+    [Environment]::SetEnvironmentVariable('Knowledge__Completion__Model', 'qwen3:8b', 'Process')
+    [Environment]::SetEnvironmentVariable('Knowledge__Completion__Profile', 'standard', 'Process')
+    [Environment]::SetEnvironmentVariable('InteractionOuter__Provider', 'local', 'Process')
+    [Environment]::SetEnvironmentVariable('InteractionOuter__Local__Enabled', 'true', 'Process')
+    [Environment]::SetEnvironmentVariable('InteractionOuter__Local__Endpoint', 'http://localhost:11434', 'Process')
+    [Environment]::SetEnvironmentVariable('InteractionOuter__Local__Model', 'qwen3:8b', 'Process')
+    [Environment]::SetEnvironmentVariable('InteractionOuter__Local__Profile', 'outer', 'Process')
     [Environment]::SetEnvironmentVariable('WebInterface__RemoteAccess__Enabled', 'true', 'Process')
     [Environment]::SetEnvironmentVariable('WebInterface__RemoteAccess__TailscaleHost', $hostName, 'Process')
     [Environment]::SetEnvironmentVariable('WebInterface__RemoteAccess__AllowedLogins__0', $login, 'Process')
@@ -59,7 +84,6 @@ try {
     $serveCreated = $true
     $createdServeStatus = ((& $tailscaleCommand.Source serve status --json) -join "`n").Trim()
 
-    $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..\..\..')).Path
     $project = Join-Path $repositoryRoot 'DantesRoleplay.MCPServer\DantesRoleplay.MCPServer.csproj'
     Write-Host "Private web access is available at https://$hostName while this process runs."
     Write-Host 'Press Ctrl+C to stop the host and remove its Tailscale Serve mapping.'

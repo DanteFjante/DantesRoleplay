@@ -91,6 +91,12 @@ public sealed class ApplicationMechanicProjectionResolver(
             .ToDictionary(group => group.Key, group => group.ToDictionary(
                 value => reverseComponents[(value.QualifiedTypeId, value.TypeVersion, value.SchemaHash)],
                 value => value.Data, StringComparer.Ordinal), StringComparer.Ordinal);
+        var componentRevisions = componentRows
+            .Where(value => reverseComponents.ContainsKey((value.QualifiedTypeId, value.TypeVersion, value.SchemaHash)))
+            .GroupBy(value => value.EntityId, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.ToDictionary(
+                value => reverseComponents[(value.QualifiedTypeId, value.TypeVersion, value.SchemaHash)],
+                value => (int?)value.Revision, StringComparer.Ordinal), StringComparer.Ordinal);
         var containments = await db.Set<ApplicationEcsContainmentRecord>().AsNoTracking()
             .Where(value => value.StateSpaceId == stateSpaceId).ToArrayAsync(cancellationToken);
         var containerOf = containments.ToDictionary(value => value.ContainedEntityId, StringComparer.Ordinal);
@@ -164,8 +170,46 @@ public sealed class ApplicationMechanicProjectionResolver(
                         || (requirement.ContentComponentIds?.Count ?? 0) > 0,
                     contents, components, role, problems) : null,
                 projectedRelationships);
+            RecordComponentRevisions(entityId, requirement.Components);
+            if (requirement.IncludeContents)
+                foreach (var child in Descendants(entityId, requirement.ContentsDepth ?? 1, contents))
+                    RecordComponentRevisions(child.Id, requirement.ContentComponentIds ?? []);
+            if (requirement.IncludeContents)
+                RecordContainmentRevisions(entityId, requirement.ContentsDepth ?? 1);
         }
+        foreach (var (entityId, localIds) in references)
+            RecordComponentRevisions(entityId, localIds);
         return problems.Count == 0 ? new(projection, []) : new(null, problems);
+
+        void RecordComponentRevisions(string entityId, IEnumerable<string> localIds)
+        {
+            if (!projection.ComponentRevisions.TryGetValue(entityId, out var revisions))
+                projection.ComponentRevisions[entityId] = revisions = new(StringComparer.Ordinal);
+            componentRevisions.TryGetValue(entityId, out var observed);
+            foreach (var localId in localIds.Distinct(StringComparer.Ordinal))
+                revisions[localId] = observed is not null && observed.TryGetValue(localId, out var revision)
+                    ? revision : null;
+        }
+
+        void RecordContainmentRevisions(string rootEntityId, int depth)
+        {
+            var visited = new HashSet<string>(StringComparer.Ordinal);
+            Visit(rootEntityId, depth);
+
+            void Visit(string containerEntityId, int remainingDepth)
+            {
+                if (remainingDepth < 1 || !visited.Add(containerEntityId)) return;
+                projection.ContainmentRevisions[containerEntityId] = containments
+                    .Where(value => value.ContainerEntityId == containerEntityId)
+                    .OrderBy(value => value.ContainedEntityId, StringComparer.Ordinal)
+                    .Select(value => new ContainmentRevision(value.ContainedEntityId, value.Slot, value.Revision))
+                    .ToArray();
+                if (remainingDepth == 1 || !contents.TryGetValue(containerEntityId, out var children)) return;
+                foreach (var child in children.Where(value => entities.ContainsKey(value.Id))
+                             .OrderBy(value => value.Id, StringComparer.Ordinal))
+                    Visit(child.Id, remainingDepth - 1);
+            }
+        }
 
         void CollectReference(string entityId, string role, ComponentReferenceRequirement reference)
         {

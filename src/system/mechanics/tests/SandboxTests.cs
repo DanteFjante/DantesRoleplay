@@ -64,6 +64,37 @@ public sealed class SandboxTests
     }
 
     [Fact]
+    public async Task Projected_roles_components_and_input_are_deeply_frozen()
+    {
+        var projection = new MechanicProjection
+        {
+            Seed = 1,
+            Input = """{"nested":{"value":3}}""",
+            Roles =
+            {
+                ["subject"] = new EntityProjection("orban", "Orban",
+                    new Dictionary<string, string> { ["stats"] = """{"strength":12}""" })
+            }
+        };
+
+        var result = await Engine.RunAsync("""
+            var rejected = 0;
+            try { ctx.roles.subject.name = 'Changed'; } catch (error) { rejected++; }
+            try { ctx.roles.subject.components.stats = '{}'; } catch (error) { rejected++; }
+            try { ctx.input.nested.value = 4; } catch (error) { rejected++; }
+            return { narration: [
+              Object.isFrozen(ctx.roles), Object.isFrozen(ctx.roles.subject),
+              Object.isFrozen(ctx.roles.subject.components), Object.isFrozen(ctx.input),
+              Object.isFrozen(ctx.input.nested), rejected,
+              ctx.roles.subject.name, ctx.roles.subject.components.stats, ctx.input.nested.value
+            ].join('|') };
+            """, projection, ExecutionLimits.Default);
+
+        Assert.True(result.Ok, result.Error);
+        Assert.Equal("true|true|true|true|true|3|Orban|{\"strength\":12}|3", result.Output.Narration);
+    }
+
+    [Fact]
     public async Task The_projection_reaches_javascript_with_javascript_naming()
     {
         // Found by the spike, and it would have been invisible: with .NET's default naming the

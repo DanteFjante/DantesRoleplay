@@ -2,6 +2,14 @@ using DantesRoleplay.ApplicationExecution;
 
 namespace DantesRoleplay.Interactions;
 
+public sealed record InteractionQueryResultProjection(
+    string StepId,
+    string QualifiedId,
+    string OutputSchemaHash,
+    string ResultFingerprint,
+    string SourceRevisionFingerprint,
+    System.Text.Json.JsonElement? Output);
+
 public static class InteractionExecutionProtocol
 {
     public const string RequestFingerprintDomain = "dantes-roleplay/interaction-execution-request/v1";
@@ -50,7 +58,8 @@ public sealed record InteractionExecutionOutcome(
     IReadOnlyList<ApplicationActionExecutionResult> ActionResults,
     InteractionReceiptWriteResult? Receipt,
     string ExecutionRequestFingerprint,
-    InteractionRecipeLearningResult? Learning = null)
+    InteractionRecipeLearningResult? Learning = null,
+    IReadOnlyList<InteractionQueryResultProjection>? QueryResults = null)
 {
     public bool Successful => Disposition == InteractionExecutionReceiptDisposition.Succeeded
         && Receipt?.Receipt is not null;

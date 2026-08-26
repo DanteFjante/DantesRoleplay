@@ -40,7 +40,7 @@ public sealed class SystemCatalogProtocolTests : IDisposable
         Assert.Equal("query(kind: \"capabilities\")", result.Error?.Fix);
         Assert.Contains(data.GetProperty("Query").EnumerateArray(), item => item.GetProperty("Name").GetString() == "system.catalog.browse");
         Assert.Equal(
-            ["system.application.activate", "system.application.register", "system.component-type.register", "system.interaction-execute", "system.interaction-recipe-review", "system.source.register", "system.state-space.adopt-legacy", "system.state-space.create", "system.state-space.upgrade"],
+            ["system.application.activate", "system.application.register", "system.component-type.register", "system.interaction-execute", "system.interaction-recipe-review", "system.source.register", "system.state-space.adopt-legacy", "system.state-space.create", "system.state-space.upgrade", "system.trigger-scheduling"],
             data.GetProperty("Commit").EnumerateArray()
                 .Select(item => item.GetProperty("Name").GetString())
                 .Where(name => name!.StartsWith("system.", StringComparison.Ordinal))
@@ -152,7 +152,9 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
         _databasePath = Path.Combine(Path.GetTempPath(), $"catalog-walk-{Guid.NewGuid():N}.db");
         _sourceRoot = Path.Combine(Path.GetTempPath(), $"catalog-preview-{Guid.NewGuid():N}");
         Directory.CreateDirectory(Path.Combine(_sourceRoot, "catalog"));
+        Directory.CreateDirectory(Path.Combine(_sourceRoot, "extension"));
         await File.WriteAllTextAsync(Path.Combine(_sourceRoot, "catalog", "preview.json"), "{\"preview\":true}");
+        await File.WriteAllTextAsync(Path.Combine(_sourceRoot, "extension", "optional.json"), "{\"optional\":true}");
         var builder = WebApplication.CreateSlimBuilder();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Services.AddDantesRoleplayMcpServer(_databasePath,
@@ -183,6 +185,9 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
                 [new("stats", "/score", "")]));
             scope.ServiceProvider.GetRequiredService<ISourceRegistry>().Register(new(
                 application, "catalog", "workspace", "catalog/**/*.json", SourceTrust.Trusted, 10, "catalog"));
+            scope.ServiceProvider.GetRequiredService<ISourceRegistry>().Register(new(
+                application, "extension.optional", "workspace", "extension/**/*.json",
+                SourceTrust.Trusted, 20, "extension.optional"));
             scope.ServiceProvider.GetRequiredService<ISourceScanReceiptStore>().Record(new(
                 application, "catalog", 1, SourceScanStatus.Succeeded, new string('B', 64), DateTime.UtcNow));
         }
@@ -209,14 +214,19 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
         var application = await ToolAsync("query", new { kind = "system.applications", applicationId = "fixture" });
         var sources = await ToolAsync("query", new { kind = "system.sources", applicationId = "fixture" });
         var source = await ToolAsync("query", new { kind = "system.sources", applicationId = "fixture", id = "catalog" });
-        var preview = await ToolAsync("query", new { kind = "system.application-preview", applicationId = "fixture", limit = 1 });
+        var preview = await ToolAsync("query", new
+        {
+            kind = "system.application-preview", applicationId = "fixture",
+            sourceIds = new[] { "catalog" }, limit = 1
+        });
         var activationToken = "7123456789abcdef0123456789abcdef";
         var activationPayload = JsonSerializer.Serialize(new
         {
             requestToken = activationToken,
             applicationId = "fixture",
             previewFingerprint = preview.Data.GetProperty("previewFingerprint").GetString(),
-            expectedActiveFingerprint = (string?)null
+            expectedActiveFingerprint = (string?)null,
+            sourceIds = new[] { "catalog" }
         });
         var activationWithoutDryRun = await ToolAsync("commit", new
         {
@@ -279,7 +289,8 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
             "{\"preview\":\"second\"}");
         var secondPreview = await ToolAsync("query", new
         {
-            kind = "system.application-preview", applicationId = "fixture", limit = 1
+            kind = "system.application-preview", applicationId = "fixture",
+            sourceIds = new[] { "catalog" }, limit = 1
         });
         var secondActivationToken = "9123456789abcdef0123456789abcdef";
         var secondActivationPayload = JsonSerializer.Serialize(new
@@ -287,7 +298,8 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
             requestToken = secondActivationToken,
             applicationId = "fixture",
             previewFingerprint = secondPreview.Data.GetProperty("previewFingerprint").GetString(),
-            expectedActiveFingerprint = activationCommit.Data.GetProperty("activation").GetProperty("activationFingerprint").GetString()
+            expectedActiveFingerprint = activationCommit.Data.GetProperty("activation").GetProperty("activationFingerprint").GetString(),
+            sourceIds = new[] { "catalog" }
         });
         var secondActivationDryRun = await ToolAsync("commit", new
         {
@@ -477,6 +489,8 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
         Assert.Equal(activationCommit.OperationId, activationReplay.OperationId);
         Assert.Equal(activationCommit.Data.GetRawText(), activationReplay.Data.GetRawText());
         Assert.False(activationCommit.Data.GetProperty("activation").GetProperty("dependencyCoverageComplete").GetBoolean());
+        Assert.Equal(["catalog"], activationCommit.Data.GetProperty("activation").GetProperty("sourceIds")
+            .EnumerateArray().Select(value => value.GetString()));
         Assert.Equal(secondActivationCommit.Data.GetProperty("activation").GetProperty("activationFingerprint").GetString(),
             activatedApplication.Data.GetProperty("application").GetProperty("active").GetProperty("activationFingerprint").GetString());
         Assert.False(stateSpaceWithoutDryRun.Ok);
@@ -542,8 +556,10 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
         Assert.Equal("ledger.reconcile", ledgerRecord.Data.GetProperty("record").GetProperty("summary")
             .GetProperty("qualifiedId").GetString());
         Assert.Equal("fixture", applications.Data.GetProperty("applications")[0].GetProperty("id").GetString());
-        Assert.Equal("catalog/**/*.json", sources.Data.GetProperty("sources")[0].GetProperty("relativePathOrGlob").GetString());
-        Assert.Equal(1, sources.Data.GetProperty("sources")[0].GetProperty("latestScan").GetProperty("generation").GetInt32());
+        var listedCoreSource = Assert.Single(sources.Data.GetProperty("sources").EnumerateArray(),
+            value => value.GetProperty("sourceId").GetString() == "catalog");
+        Assert.Equal("catalog/**/*.json", listedCoreSource.GetProperty("relativePathOrGlob").GetString());
+        Assert.Equal(1, listedCoreSource.GetProperty("latestScan").GetProperty("generation").GetInt32());
         Assert.Equal("Fixture", application.Data.GetProperty("application").GetProperty("displayName").GetString());
         Assert.Equal("catalog", source.Data.GetProperty("source").GetProperty("sourceId").GetString());
         Assert.True(preview.Data.GetProperty("isValid").GetBoolean());
@@ -660,6 +676,183 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
         Assert.Equal(0, await ScalarAsync(database, "SELECT COUNT(*) FROM system_ecs_component"));
         Assert.Equal(2, await ScalarAsync(database,
             "SELECT COUNT(*) FROM system_state_space_binding_revision WHERE StateSpaceId = 'fixture-space'"));
+    }
+
+    [Fact]
+    public async Task Trail_survival_operator_onboarding_uses_only_existing_system_protocol()
+    {
+        var tools = await CallAsync("tools/list", new { });
+        Assert.Equal(["commit", "orient", "query"], tools.GetProperty("tools").EnumerateArray()
+            .Select(tool => tool.GetProperty("name").GetString()).Order(StringComparer.Ordinal));
+
+        var applicationToken = "a123456789abcdef0123456789abcdef";
+        var applicationPayload = JsonSerializer.Serialize(new
+        {
+            requestToken = applicationToken,
+            applicationId = "trail-survival",
+            displayName = "Trail Survival",
+            description = "Original customizable single-player trail-survival application.",
+            baseApplications = Array.Empty<string>(),
+            expectedFingerprint = (string?)null
+        });
+        var applicationDryRun = await ToolAsync("commit", new
+        {
+            kind = "system.application.register", payload = applicationPayload, dryRun = true,
+            intent = "Validate the Trail Survival application registration.",
+            proceduresUsed = new[] { "procedure.system.use" }
+        });
+        var applicationCommit = await ToolAsync("commit", new
+        {
+            kind = "system.application.register", payload = applicationPayload,
+            intent = "Register the Trail Survival application.",
+            proceduresUsed = new[] { "procedure.system.use" }
+        });
+        Assert.True(applicationDryRun.Ok, applicationDryRun.Ok ? "" : applicationDryRun.Error.GetRawText());
+        Assert.True(applicationCommit.Ok, applicationCommit.Ok ? "" : applicationCommit.Error.GetRawText());
+
+        var sourceToken = "b123456789abcdef0123456789abcdef";
+        var sourcePayload = JsonSerializer.Serialize(new
+        {
+            requestToken = sourceToken,
+            applicationId = "trail-survival",
+            sourceId = "trail-survival-core",
+            allowedRootId = "repository",
+            relativePathOrGlob = "catalog/applications/trail-survival/**/*",
+            trust = "trusted",
+            precedence = 0,
+            logicalIdentity = "trail-survival-core-catalog",
+            expectedFingerprint = (string?)null
+        });
+        var sourceDryRun = await ToolAsync("commit", new
+        {
+            kind = "system.source.register", payload = sourcePayload, dryRun = true,
+            intent = "Validate the Trail Survival authored source registration.",
+            proceduresUsed = new[] { "procedure.system.use" }
+        });
+        var sourceCommit = await ToolAsync("commit", new
+        {
+            kind = "system.source.register", payload = sourcePayload,
+            intent = "Register the Trail Survival authored source.",
+            proceduresUsed = new[] { "procedure.system.use" }
+        });
+        Assert.True(sourceDryRun.Ok, sourceDryRun.Ok ? "" : sourceDryRun.Error.GetRawText());
+        Assert.True(sourceCommit.Ok, sourceCommit.Ok ? "" : sourceCommit.Error.GetRawText());
+
+        var preview = await ToolAsync("query", new
+        {
+            kind = "system.application-preview", applicationId = "trail-survival", limit = 100
+        });
+        Assert.True(preview.Ok, preview.Ok ? "" : preview.Error.GetRawText());
+        Assert.True(preview.Data.GetProperty("isValid").GetBoolean());
+        Assert.Equal(0, preview.Data.GetProperty("counts").GetProperty("problems").GetInt32());
+        var winner = Assert.Single(preview.Data.GetProperty("winners").EnumerateArray(), value =>
+            value.GetProperty("relativePath").GetString() ==
+            "catalog/applications/trail-survival/procedures/application/procedure.trail-survival.about.md");
+        Assert.Equal(
+            "catalog/applications/trail-survival/procedures/application/procedure.trail-survival.about.md",
+            winner.GetProperty("relativePath").GetString());
+
+        var activationToken = "c123456789abcdef0123456789abcdef";
+        var activationPayload = JsonSerializer.Serialize(new
+        {
+            requestToken = activationToken,
+            applicationId = "trail-survival",
+            previewFingerprint = preview.Data.GetProperty("previewFingerprint").GetString(),
+            expectedActiveFingerprint = (string?)null
+        });
+        var activationDryRun = await ToolAsync("commit", new
+        {
+            kind = "system.application.activate", payload = activationPayload, dryRun = true,
+            intent = "Validate the exact Trail Survival source activation.",
+            proceduresUsed = new[] { "procedure.system.use" }
+        });
+        var activationCommit = await ToolAsync("commit", new
+        {
+            kind = "system.application.activate", payload = activationPayload,
+            intent = "Activate the exact Trail Survival source.",
+            proceduresUsed = new[] { "procedure.system.use" }
+        });
+        var activationReplay = await ToolAsync("commit", new
+        {
+            kind = "system.application.activate", payload = activationPayload,
+            intent = "Replay the exact Trail Survival source activation.",
+            proceduresUsed = new[] { "procedure.system.use" }
+        });
+        Assert.True(activationDryRun.Ok, activationDryRun.Ok ? "" : activationDryRun.Error.GetRawText());
+        Assert.True(activationCommit.Ok, activationCommit.Ok ? "" : activationCommit.Error.GetRawText());
+        Assert.True(activationReplay.Ok, activationReplay.Ok ? "" : activationReplay.Error.GetRawText());
+        Assert.Equal(activationCommit.OperationId, activationReplay.OperationId);
+        Assert.Equal(activationCommit.Data.GetRawText(), activationReplay.Data.GetRawText());
+
+        using (var scope = _app.Services.CreateScope())
+        {
+            var materializer = scope.ServiceProvider
+                .GetRequiredService<ActivatedApplicationCatalogMaterializer>();
+            var record = Assert.Single(materializer.Build(
+                ApplicationIdentifier.Parse("trail-survival")).Records, value =>
+                value.QualifiedId == "trail-survival.procedure.trail-survival.about");
+            Assert.Equal("trail-survival.procedure.trail-survival.about", record.QualifiedId);
+        }
+
+        var stateSpaceToken = "d123456789abcdef0123456789abcdef";
+        var stateSpacePayload = JsonSerializer.Serialize(new
+        {
+            requestToken = stateSpaceToken,
+            stateSpaceId = "trail-survival-onboarding",
+            applicationId = "trail-survival",
+            activeFingerprint = activationCommit.Data.GetProperty("activation")
+                .GetProperty("activationFingerprint").GetString(),
+            expectedFingerprint = (string?)null
+        });
+        var stateSpaceDryRun = await ToolAsync("commit", new
+        {
+            kind = "system.state-space.create", payload = stateSpacePayload, dryRun = true,
+            intent = "Validate an empty Trail Survival state space.",
+            proceduresUsed = new[] { "procedure.system.use" }
+        });
+        var stateSpaceCommit = await ToolAsync("commit", new
+        {
+            kind = "system.state-space.create", payload = stateSpacePayload,
+            intent = "Create an empty Trail Survival state space.",
+            proceduresUsed = new[] { "procedure.system.use" }
+        });
+        var stateSpaceReplay = await ToolAsync("commit", new
+        {
+            kind = "system.state-space.create", payload = stateSpacePayload,
+            intent = "Replay the empty Trail Survival state-space creation.",
+            proceduresUsed = new[] { "procedure.system.use" }
+        });
+        Assert.True(stateSpaceDryRun.Ok, stateSpaceDryRun.Ok ? "" : stateSpaceDryRun.Error.GetRawText());
+        Assert.True(stateSpaceCommit.Ok, stateSpaceCommit.Ok ? "" : stateSpaceCommit.Error.GetRawText());
+        Assert.True(stateSpaceReplay.Ok, stateSpaceReplay.Ok ? "" : stateSpaceReplay.Error.GetRawText());
+        Assert.Equal(stateSpaceCommit.OperationId, stateSpaceReplay.OperationId);
+        Assert.Equal(stateSpaceCommit.Data.GetRawText(), stateSpaceReplay.Data.GetRawText());
+
+        var application = await ToolAsync("query", new
+        {
+            kind = "system.applications", applicationId = "trail-survival"
+        });
+        var source = await ToolAsync("query", new
+        {
+            kind = "system.sources", applicationId = "trail-survival", id = "trail-survival-core"
+        });
+        Assert.True(application.Ok, application.Ok ? "" : application.Error.GetRawText());
+        Assert.True(source.Ok, source.Ok ? "" : source.Error.GetRawText());
+        Assert.DoesNotContain(RepositoryRoot(), source.Data.GetRawText(), StringComparison.OrdinalIgnoreCase);
+
+        using (var scope = _app.Services.CreateScope())
+        {
+            var stateSpaces = scope.ServiceProvider.GetRequiredService<IStateSpaceRegistry>();
+            Assert.Single(stateSpaces.ListPage(
+                ApplicationIdentifier.Parse("trail-survival"), null, 100).StateSpaces);
+            var database = scope.ServiceProvider.GetRequiredService<DantesRoleplayDbContext>();
+            Assert.Equal(0, await ScalarAsync(database, "SELECT COUNT(*) FROM system_ecs_entity"));
+            Assert.Equal(0, await ScalarAsync(database, "SELECT COUNT(*) FROM system_ecs_component"));
+            Assert.Equal(1, await ScalarAsync(database,
+                "SELECT COUNT(*) FROM system_application_activation_revision WHERE ApplicationId = 'trail-survival'"));
+            Assert.Equal(1, await ScalarAsync(database,
+                "SELECT COUNT(*) FROM system_state_space_binding_revision WHERE StateSpaceId = 'trail-survival-onboarding'"));
+        }
     }
 
     [Fact]

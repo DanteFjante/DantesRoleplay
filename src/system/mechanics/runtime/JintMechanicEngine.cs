@@ -291,9 +291,9 @@ public sealed class JintMechanicEngine : IMechanicEngine
             }
 
             var ctx = {
-              roles: payload.roles,
+              roles: freezeDeep(payload.roles || {}),
               references: freezeDeep(payload.references || {}),
-              input: JSON.parse(payload.input || '{}'),
+              input: freezeDeep(JSON.parse(payload.input || '{}')),
               seed: payload.seed,
               children: freezeDeep(payload.children || {}),
               event: freezeDeep(JSON.parse(payload.event || '{}')),

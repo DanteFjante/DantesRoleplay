@@ -4,6 +4,7 @@ using DantesRoleplay.DataAccess.Retrieval;
 using DantesRoleplay.Web.Settings;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Interactions;
+using DantesRoleplay.SystemConversations;
 using Microsoft.Extensions.Configuration;
 
 namespace DantesRoleplay.MCPServer;
@@ -118,6 +119,7 @@ public sealed class ConfiguredHostSettingDefinitionProvider : IHostSettingDefini
         AllowedTaskClasses = new HashSet<string>(StringComparer.Ordinal)
         {
             AssistantConversationService.TaskClass,
+            SystemConversationService.TaskClass,
             InteractionPlannerProtocol.TaskClass
         }
     };

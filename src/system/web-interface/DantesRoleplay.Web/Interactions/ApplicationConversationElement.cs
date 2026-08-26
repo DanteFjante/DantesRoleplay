@@ -10,8 +10,16 @@ public static class ApplicationConversationElement
         log.setAttribute('role', 'log');
         const input = document.createElement('textarea');
         input.placeholder = 'What do you want to do?';
+        const agenda = document.createElement('div');
+        agenda.setAttribute('aria-label', 'Task progress');
         const send = document.createElement('button');
         send.textContent = 'Send';
+        const replaceLabel = document.createElement('label');
+        const replaceAgenda = document.createElement('input');
+        replaceAgenda.type = 'checkbox';
+        replaceAgenda.checked = false;
+        replaceLabel.append(replaceAgenda, document.createTextNode(' Replace unfinished task plan'));
+        replaceLabel.hidden = true;
         const confirm = document.createElement('button');
         confirm.textContent = 'Confirm actions';
         confirm.hidden = true;
@@ -22,7 +30,7 @@ public static class ApplicationConversationElement
         rememberLabel.append(remember, document.createTextNode(' Remember this route'));
         rememberLabel.hidden = true;
         const status = document.createElement('p');
-        this.append(log, input, send, rememberLabel, confirm, status);
+        this.append(log, agenda, input, replaceLabel, send, rememberLabel, confirm, status);
         const applicationId = this.getAttribute('application-id');
         const stateSpaceId = this.getAttribute('state-space-id');
         const sessionContextId = this.getAttribute('session-context-id');
@@ -35,9 +43,22 @@ public static class ApplicationConversationElement
             line.textContent = `${message.role}: ${message.text}`;
             log.append(line);
           }
+          agenda.replaceChildren();
+          if (value.activeAgenda) {
+            const heading = document.createElement('p');
+            heading.textContent = `Task plan: ${value.activeAgenda.status}`;
+            agenda.append(heading);
+            for (const task of value.activeAgenda.tasks || []) {
+              const row = document.createElement('p');
+              const completed = (task.batches || []).filter(batch => batch.status === 'completed').length;
+              row.textContent = `Task ${task.ordinal}: ${task.status} (${completed}/${(task.batches || []).length} steps)`;
+              agenda.append(row);
+            }
+          }
           status.textContent = value.status || '';
           confirm.hidden = value.status !== 'awaiting-confirmation';
           rememberLabel.hidden = value.status !== 'awaiting-confirmation';
+          replaceLabel.hidden = !value.activeAgenda || ['completed', 'cancelled'].includes(value.activeAgenda.status);
           if (value.pendingPlan) emit('proposal', value.pendingPlan);
         };
         const ensure = async () => {
@@ -59,11 +80,12 @@ public static class ApplicationConversationElement
             emit('progress', {phase:'turn'});
             const response = await fetch(`/api/applications/${encodeURIComponent(applicationId)}/conversations/${encodeURIComponent(conversationId)}/turns`, {
               method: 'POST', headers: {'content-type':'application/json'},
-              body: JSON.stringify({text: input.value})
+              body: JSON.stringify({text: input.value, replaceActiveAgenda: replaceAgenda.checked})
             });
             const value = await response.json();
             if (!response.ok) throw new Error(value.message || 'The turn failed.');
             input.value = '';
+            replaceAgenda.checked = false;
             show(value);
           } catch (error) { status.textContent = error.message; emit('error', {message:error.message}); }
         });

@@ -160,7 +160,7 @@ internal sealed class InteractionGateway(
         new("propose", Array.AsReadOnly(proposal.Steps.Select(step => new InteractionProposalStepProjection(
             step.StepId, step.Kind.ToString().ToLowerInvariant(), step.Contract.QualifiedKey,
             step.Contract.Version, step.Contract.Fingerprint, step.DependsOn, step.RoleBindings,
-            JsonSerializer.Deserialize<JsonElement>(step.InputJson))).ToArray()));
+            JsonSerializer.Deserialize<JsonElement>(step.InputJson), step.ResultBindings)).ToArray()));
 
     private IReadOnlyList<InteractionInspectedFeature> InspectCurrent(
         AuthorizedInteractionEnvelope envelope,

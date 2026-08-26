@@ -328,6 +328,10 @@ public sealed class StateSpaceAdministrationTests : IDisposable
         public Task<ApplicationPreviewResult> PreviewAsync(
             ApplicationIdentifier applicationId,
             CancellationToken cancellationToken = default) => Task.FromResult(Result);
+        public Task<ApplicationPreviewResult> PreviewAsync(
+            ApplicationIdentifier applicationId,
+            IReadOnlyList<string> sourceIds,
+            CancellationToken cancellationToken = default) => Task.FromResult(Result);
     }
 
     private sealed class StaticImpact(ApplicationIdentifier app) : IProjectionImpactService

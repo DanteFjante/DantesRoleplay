@@ -1,9 +1,26 @@
 # Known issues
 
-Last reviewed: 2026-08-23
+Last reviewed: 2026-08-26
 
 Only current reproducible problems belong here. A fixing receipt or version control preserves
 resolved history.
+
+## D&D condition state-effects test uses the character-sheet schema
+
+`Dnd2024AbilityCheckTests.Condition_state_effects_distinguish_unknown_and_derive_stable_shared_branches`
+fails reproducibly by validating the `mechanic.dnd2024.d20-test.state-effects` result against
+`character-sheet.result.schema.json`. The mechanic correctly returns a condition-derived report
+whose `test` is `d20-test-state-effects`; the selected schema instead requires a complete
+`character-sheet-core` document and rejects additional properties. This is a test/schema-owner
+defect outside system-task orchestration, not an orchestration or local-AI failure.
+
+The 2026-08-26 full shared run reported 1,084 passed and two failed. The second failure was the
+repository-catalog immutability assertion while tests ran concurrently; that assertion passes when
+re-run alone. The condition test remains the sole reproducible failure.
+
+Close this entry only after the D&D adoption owner selects or authors the confirmed state-effects
+result contract, updates the test without weakening the mechanic contract, and the focused test and
+full shared suite both pass.
 
 ## Game rules implemented in C#
 
@@ -36,27 +53,3 @@ Close this with a separately approved remediation feature:
 The modularization work has established the inventory guard and quarantine placement. Closing this
 still requires separately confirmed catalog/schema semantics and parity-tested runtime slices; a
 directory move alone is not closure.
-
-## Feature 20 movement/Speed acceptance failures
-
-Against the 2026-08-23 modularization/local-AI worktree, the solution builds with zero
-warnings/errors and disposable catalog validation accepts 426 records with warnings only. The
-full solution test reports local AI 19 passed, plus 805 passed and two failed in the shared suite:
-
-- `CatalogFeature20Tests.Turn_lifecycle_refreshes_remaining_movement_from_each_active_creature_walk_Speed`
-- `CatalogFeature20Tests.Missing_or_corrupt_Speed_rejects_refresh_and_normal_movement_without_mutation`
-
-Both assertions expect a successful action result but receive a rejection. They reproduce when run
-alone and directly construct the Action runner; they do not exercise local-AI projects, provider
-registration, file scanning, or the moved component registration seams.
-
-The Feature 20 owner must reconcile the current turn-lifecycle/Speed catalog composition and test
-fixture, then rerun:
-
-```powershell
-dotnet build DantesRoleplay.slnx --no-restore
-.\roleplay validate catalog
-dotnet test DantesRoleplay.slnx --no-restore
-```
-
-Close this entry only when all three commands pass against the same worktree.

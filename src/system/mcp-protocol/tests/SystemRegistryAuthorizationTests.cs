@@ -358,6 +358,15 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
             Touched = true;
             throw new InvalidOperationException("Preview must not be reached.");
         }
+
+        public Task<ApplicationPreviewResult> PreviewAsync(
+            ApplicationIdentifier applicationId,
+            IReadOnlyList<string> sourceIds,
+            CancellationToken cancellationToken = default)
+        {
+            Touched = true;
+            throw new InvalidOperationException("Preview must not be reached.");
+        }
     }
 
     private sealed class ThrowingImpact : IProjectionImpactService
@@ -500,5 +509,10 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
                 applicationId, 1, new string('C', 64), new string('D', 64), new string('E', 64), new string('F', 64),
                 true, [], winners, [], []));
         }
+
+        public Task<ApplicationPreviewResult> PreviewAsync(
+            ApplicationIdentifier applicationId,
+            IReadOnlyList<string> sourceIds,
+            CancellationToken cancellationToken = default) => PreviewAsync(applicationId, cancellationToken);
     }
 }

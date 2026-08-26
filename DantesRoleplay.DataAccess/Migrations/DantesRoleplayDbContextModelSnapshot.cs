@@ -358,6 +358,13 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("advisory");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -376,7 +383,7 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.HasIndex("ExternalThreadId")
                         .IsUnique();
 
-                    b.HasIndex("OperatorId", "Provider", "UpdatedAtUtc", "Id");
+                    b.HasIndex("OperatorId", "Scope", "Provider", "UpdatedAtUtc", "Id");
 
                     b.ToTable("assistant_conversation", null, t =>
                         {
@@ -387,6 +394,8 @@ namespace DantesRoleplay.DataAccess.Migrations
                             t.HasCheckConstraint("CK_assistant_conversation_provider", "\"Provider\" IN ('local', 'codex')");
 
                             t.HasCheckConstraint("CK_assistant_conversation_revision", "\"Revision\" > 0");
+
+                            t.HasCheckConstraint("CK_assistant_conversation_scope", "\"Scope\" IN ('advisory', 'system')");
 
                             t.HasCheckConstraint("CK_assistant_conversation_status", "\"Status\" IN ('pending', 'running', 'awaiting-approval', 'completed', 'failed', 'cancelled')");
                         });
@@ -450,6 +459,21 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContextFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContextProfile")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContextSourceReferencesJson")
+                        .IsRequired()
+                        .HasMaxLength(8000)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ConversationId")
@@ -527,6 +551,11 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ResponseDisposition")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("StartedAtUtc")
                         .HasColumnType("TEXT");
 
@@ -551,6 +580,12 @@ namespace DantesRoleplay.DataAccess.Migrations
 
                     b.ToTable("assistant_turn", null, t =>
                         {
+                            t.HasCheckConstraint("CK_assistant_turn_context_fingerprint", "\"ContextFingerprint\" = '' OR (length(\"ContextFingerprint\") = 64 AND \"ContextFingerprint\" NOT GLOB '*[^0-9A-F]*')");
+
+                            t.HasCheckConstraint("CK_assistant_turn_context_profile", "\"ContextProfile\" IN ('', 'system-read-v1')");
+
+                            t.HasCheckConstraint("CK_assistant_turn_context_references", "length(\"ContextSourceReferencesJson\") <= 8000");
+
                             t.HasCheckConstraint("CK_assistant_turn_hash", "length(\"RequestHash\") = 64 AND \"RequestHash\" NOT GLOB '*[^0-9A-F]*'");
 
                             t.HasCheckConstraint("CK_assistant_turn_id", "length(\"Id\") = 37 AND substr(\"Id\", 1, 5) = 'turn.' AND substr(\"Id\", 6) NOT GLOB '*[^0-9a-f]*'");
@@ -560,6 +595,8 @@ namespace DantesRoleplay.DataAccess.Migrations
                             t.HasCheckConstraint("CK_assistant_turn_number", "\"TurnNumber\" > 0");
 
                             t.HasCheckConstraint("CK_assistant_turn_provider", "\"Provider\" IN ('local', 'codex')");
+
+                            t.HasCheckConstraint("CK_assistant_turn_response_disposition", "\"ResponseDisposition\" IN ('', 'answered', 'unknown', 'unsupported', 'needs-input', 'needs-application', 'unavailable')");
 
                             t.HasCheckConstraint("CK_assistant_turn_status", "\"Status\" IN ('pending', 'running', 'awaiting-approval', 'completed', 'failed', 'cancelled')");
                         });
@@ -1646,6 +1683,68 @@ namespace DantesRoleplay.DataAccess.Migrations
                             t.HasCheckConstraint("CK_information_source_metadata_schema", "json_valid(\"MetadataSchemaJson\")");
 
                             t.HasCheckConstraint("CK_information_source_revision", "\"Revision\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionExecutionQueryResult", b =>
+                {
+                    b.Property<string>("ExecutionReceiptId")
+                        .HasMaxLength(52)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Exposure")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OutputJson")
+                        .HasMaxLength(65536)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OutputSchemaHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProposalStepId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("QualifiedId")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ResultFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceRevisionFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ExecutionReceiptId", "Ordinal");
+
+                    b.HasIndex("ExecutionReceiptId", "ProposalStepId")
+                        .IsUnique();
+
+                    b.ToTable("interaction_execution_query_result", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_interaction_execution_query_result_bounds", "length(\"ProposalStepId\") BETWEEN 1 AND 200 AND length(\"QualifiedId\") BETWEEN 3 AND 400");
+
+                            t.HasCheckConstraint("CK_interaction_execution_query_result_exposure", "\"Exposure\" IN ('model-visible', 'binding-only')");
+
+                            t.HasCheckConstraint("CK_interaction_execution_query_result_hashes", "length(\"OutputSchemaHash\") = 64 AND \"OutputSchemaHash\" NOT GLOB '*[^0-9A-F]*' AND length(\"ResultFingerprint\") = 64 AND \"ResultFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"SourceRevisionFingerprint\") = 64 AND \"SourceRevisionFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_interaction_execution_query_result_ordinal", "\"Ordinal\" BETWEEN 1 AND 16");
+
+                            t.HasCheckConstraint("CK_interaction_execution_query_result_output", "(\"Exposure\" = 'binding-only' AND \"OutputJson\" IS NULL) OR (\"Exposure\" = 'model-visible' AND length(\"OutputJson\") BETWEEN 1 AND 65536 AND json_valid(\"OutputJson\"))");
                         });
                 });
 
@@ -3486,6 +3585,2418 @@ namespace DantesRoleplay.DataAccess.Migrations
                         });
                 });
 
+            modelBuilder.Entity("DantesRoleplay.SystemTasks.SystemTaskConfirmationRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(57)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AuthorizationEvidenceJson")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ConfirmedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PlanFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PrincipalReference")
+                        .IsRequired()
+                        .HasMaxLength(74)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RequestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TaskId")
+                        .IsRequired()
+                        .HasMaxLength(44)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TaskId");
+
+                    b.HasIndex("PrincipalReference", "TaskId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.ToTable("system_task_confirmation", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_task_confirmation_bounds", "length(\"IdempotencyKey\") BETWEEN 1 AND 100 AND length(\"AuthorizationEvidenceJson\") BETWEEN 2 AND 4000 AND \"ExpiresAtUtc\" > \"ConfirmedAtUtc\"");
+
+                            t.HasCheckConstraint("CK_system_task_confirmation_hashes", "length(\"PlanFingerprint\") = 64 AND \"PlanFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"RequestFingerprint\") = 64 AND \"RequestFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_system_task_confirmation_id", "length(\"Id\") = 57 AND substr(\"Id\", 1, 25) = 'system-task-confirmation.' AND substr(\"Id\", 26) NOT GLOB '*[^0-9a-f]*'");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemTasks.SystemTaskExecutionRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(52)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AuthorizationEvidenceJson")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ConfirmationId")
+                        .IsRequired()
+                        .HasMaxLength(57)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ErrorCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ErrorMessage")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LeaseExpiresAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PlanFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PrincipalReference")
+                        .IsRequired()
+                        .HasMaxLength(74)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RequestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SafeSummary")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("StartedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TaskId")
+                        .IsRequired()
+                        .HasMaxLength(44)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConfirmationId")
+                        .IsUnique();
+
+                    b.HasIndex("TaskId");
+
+                    b.HasIndex("PrincipalReference", "TaskId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.ToTable("system_task_execution", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_task_execution_bounds", "length(\"IdempotencyKey\") BETWEEN 1 AND 100 AND length(\"SafeSummary\") <= 1000 AND length(\"ErrorCode\") <= 100 AND length(\"ErrorMessage\") <= 500 AND length(\"AuthorizationEvidenceJson\") BETWEEN 2 AND 4000");
+
+                            t.HasCheckConstraint("CK_system_task_execution_hashes", "length(\"RequestFingerprint\") = 64 AND \"RequestFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"PlanFingerprint\") = 64 AND \"PlanFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_system_task_execution_id", "length(\"Id\") = 52 AND substr(\"Id\", 1, 20) = 'system-task-receipt.' AND substr(\"Id\", 21) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_system_task_execution_status", "\"Status\" IN ('running', 'succeeded', 'partial', 'failed', 'stale', 'unauthorized', 'cancelled', 'timed-out', 'indeterminate')");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemTasks.SystemTaskExecutionStepRecord", b =>
+                {
+                    b.Property<string>("ExecutionId")
+                        .HasMaxLength(52)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ErrorCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ErrorMessage")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExecutionEvidenceJson")
+                        .IsRequired()
+                        .HasMaxLength(16000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OperationId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OutputFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OutputJson")
+                        .IsRequired()
+                        .HasMaxLength(1048576)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReadBackFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TaskStepId")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ExecutionId", "Ordinal");
+
+                    b.ToTable("system_task_execution_step", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_task_execution_step_bounds", "length(\"TaskStepId\") = 8 AND length(\"ExecutionEvidenceJson\") BETWEEN 2 AND 16000 AND length(\"OperationId\") <= 100 AND length(\"OutputJson\") <= 1048576 AND length(\"ErrorCode\") <= 100 AND length(\"ErrorMessage\") <= 500");
+
+                            t.HasCheckConstraint("CK_system_task_execution_step_completion", "(\"Status\" = 'running' AND \"CompletedAtUtc\" IS NULL) OR (\"Status\" <> 'running' AND \"CompletedAtUtc\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("CK_system_task_execution_step_hashes", "(\"OutputFingerprint\" = '' OR (length(\"OutputFingerprint\") = 64 AND \"OutputFingerprint\" NOT GLOB '*[^0-9A-F]*')) AND (\"ReadBackFingerprint\" = '' OR (length(\"ReadBackFingerprint\") = 64 AND \"ReadBackFingerprint\" NOT GLOB '*[^0-9A-F]*'))");
+
+                            t.HasCheckConstraint("CK_system_task_execution_step_ordinal", "\"Ordinal\" BETWEEN 1 AND 12");
+
+                            t.HasCheckConstraint("CK_system_task_execution_step_status", "\"Status\" IN ('running', 'succeeded', 'failed', 'stale', 'unauthorized', 'cancelled', 'timed-out', 'indeterminate', 'skipped')");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemTasks.SystemTaskRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(44)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContextFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContextProfile")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContextSourceReferencesJson")
+                        .IsRequired()
+                        .HasMaxLength(16000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ConversationId")
+                        .IsRequired()
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ErrorCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ErrorMessage")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Intent")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Operation")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PlanFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PrincipalReference")
+                        .IsRequired()
+                        .HasMaxLength(74)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RequestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SafeSummary")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId");
+
+                    b.HasIndex("PrincipalReference", "ConversationId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("PrincipalReference", "ConversationId", "CreatedAtUtc", "Id");
+
+                    b.ToTable("system_task", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_task_bounds", "length(\"Intent\") BETWEEN 1 AND 8000 AND length(\"IdempotencyKey\") BETWEEN 1 AND 100 AND length(\"SafeSummary\") <= 1000 AND length(\"ContextSourceReferencesJson\") <= 16000 AND length(\"ErrorCode\") <= 100 AND length(\"ErrorMessage\") <= 500");
+
+                            t.HasCheckConstraint("CK_system_task_hashes", "length(\"RequestFingerprint\") = 64 AND \"RequestFingerprint\" NOT GLOB '*[^0-9A-F]*' AND (\"PlanFingerprint\" = '' OR (length(\"PlanFingerprint\") = 64 AND \"PlanFingerprint\" NOT GLOB '*[^0-9A-F]*')) AND (\"ContextFingerprint\" = '' OR (length(\"ContextFingerprint\") = 64 AND \"ContextFingerprint\" NOT GLOB '*[^0-9A-F]*'))");
+
+                            t.HasCheckConstraint("CK_system_task_id", "length(\"Id\") = 44 AND substr(\"Id\", 1, 12) = 'system-task.' AND substr(\"Id\", 13) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_system_task_operation", "\"Operation\" IN ('resolve', 'submit')");
+
+                            t.HasCheckConstraint("CK_system_task_principal", "length(\"PrincipalReference\") = 74 AND substr(\"PrincipalReference\", 1, 10) = 'principal.' AND substr(\"PrincipalReference\", 11) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_system_task_status", "\"Status\" IN ('planning', 'prepared', 'completed', 'needs-input', 'unknown', 'unsupported', 'unavailable', 'failed')");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemTasks.SystemTaskRoundRecord", b =>
+                {
+                    b.Property<string>("TaskId")
+                        .HasMaxLength(44)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ContextFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Disposition")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EvidenceJson")
+                        .IsRequired()
+                        .HasMaxLength(16000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ModelProfile")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ModelProvider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ModelRevision")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OutputJson")
+                        .IsRequired()
+                        .HasMaxLength(524288)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ResponseFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("TaskId", "Ordinal");
+
+                    b.ToTable("system_task_round", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_task_round_bounds", "length(\"Summary\") BETWEEN 1 AND 1000 AND length(\"EvidenceJson\") <= 16000 AND length(\"OutputJson\") <= 524288");
+
+                            t.HasCheckConstraint("CK_system_task_round_disposition", "\"Disposition\" IN ('continue', 'prepared', 'completed', 'needs-input', 'unknown', 'unsupported', 'unavailable')");
+
+                            t.HasCheckConstraint("CK_system_task_round_hashes", "length(\"ContextFingerprint\") = 64 AND \"ContextFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"ResponseFingerprint\") = 64 AND \"ResponseFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_system_task_round_ordinal", "\"Ordinal\" BETWEEN 1 AND 3");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemTasks.SystemTaskStepRecord", b =>
+                {
+                    b.Property<string>("TaskId")
+                        .HasMaxLength(44)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AffectedReferencesJson")
+                        .IsRequired()
+                        .HasMaxLength(16000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CapabilityId")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CapabilityVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DeferredStepIdsJson")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DescriptorFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InputFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InputJson")
+                        .IsRequired()
+                        .HasMaxLength(98304)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Owner")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PreconditionFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PreflightStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ResultFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ResultJson")
+                        .IsRequired()
+                        .HasMaxLength(1048576)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SafeSummary")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StepId")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("TaskId", "Ordinal");
+
+                    b.HasIndex("TaskId", "StepId")
+                        .IsUnique();
+
+                    b.ToTable("system_task_step", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_task_step_bounds", "\"CapabilityVersion\" > 0 AND length(\"InputJson\") BETWEEN 2 AND 98304 AND length(\"SafeSummary\") BETWEEN 1 AND 1000 AND length(\"AffectedReferencesJson\") <= 16000 AND length(\"DeferredStepIdsJson\") <= 1024 AND length(\"ResultJson\") <= 1048576");
+
+                            t.HasCheckConstraint("CK_system_task_step_hashes", "length(\"DescriptorFingerprint\") = 64 AND \"DescriptorFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"InputFingerprint\") = 64 AND \"InputFingerprint\" NOT GLOB '*[^0-9A-F]*' AND (\"PreconditionFingerprint\" = '' OR (length(\"PreconditionFingerprint\") = 64 AND \"PreconditionFingerprint\" NOT GLOB '*[^0-9A-F]*')) AND (\"ResultFingerprint\" = '' OR (length(\"ResultFingerprint\") = 64 AND \"ResultFingerprint\" NOT GLOB '*[^0-9A-F]*'))");
+
+                            t.HasCheckConstraint("CK_system_task_step_id", "length(\"StepId\") = 8 AND substr(\"StepId\", 1, 5) = 'step-' AND substr(\"StepId\", 6) NOT GLOB '*[^0-9]*'");
+
+                            t.HasCheckConstraint("CK_system_task_step_mode", "\"Mode\" IN ('read', 'write')");
+
+                            t.HasCheckConstraint("CK_system_task_step_ordinal", "\"Ordinal\" BETWEEN 1 AND 12");
+
+                            t.HasCheckConstraint("CK_system_task_step_preflight", "\"PreflightStatus\" IN ('read', 'ready', 'deferred')");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ConditionalTriggerCurrentRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CurrentVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ApplicationId", "Id");
+
+                    b.HasIndex("ApplicationId", "Id", "CurrentVersion");
+
+                    b.ToTable("trigger_conditional_current", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_conditional_current_version", "\"CurrentVersion\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ConditionalTriggerDependencyRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TriggerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("QualifiedTypeId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SchemaHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StateSpaceId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TypeVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ApplicationId", "TriggerId", "TriggerVersion", "Ordinal");
+
+                    b.HasIndex("StateSpaceId", "EntityId", "QualifiedTypeId");
+
+                    b.HasIndex("ApplicationId", "TriggerId", "TriggerVersion", "EntityId", "QualifiedTypeId")
+                        .IsUnique();
+
+                    b.ToTable("trigger_conditional_dependency", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_conditional_dependency_hash", "length(\"SchemaHash\") = 64 AND \"SchemaHash\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_trigger_conditional_dependency_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND \"Ordinal\" BETWEEN 0 AND 15 AND length(\"StateSpaceId\") BETWEEN 1 AND 200 AND length(\"EntityId\") BETWEEN 1 AND 200 AND length(\"QualifiedTypeId\") BETWEEN 3 AND 200 AND \"TypeVersion\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ConditionalTriggerFireReceiptRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ChangeOperationId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Disposition")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TriggerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId", "TriggerId", "TriggerVersion", "ChangeOperationId")
+                        .IsUnique();
+
+                    b.ToTable("trigger_conditional_fire_receipt", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_conditional_fire_receipt_id", "length(\"Id\") = 45 AND substr(\"Id\", 1, 13) = 'trigger-fire.' AND substr(\"Id\", 14) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_trigger_conditional_fire_receipt_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND length(\"ChangeOperationId\") = 32 AND \"ChangeOperationId\" NOT GLOB '*[^0-9a-f]*' AND \"Disposition\" = 'due'");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ConditionalTriggerFireWorkRecord", b =>
+                {
+                    b.Property<string>("FireId")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ChangeOperationId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FailureKind")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LeaseExpiresAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LeaseOwner")
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LeaseToken")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("NextAttemptAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TriggerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("FireId");
+
+                    b.HasIndex("State", "NextAttemptAtUtc", "LeaseExpiresAtUtc");
+
+                    b.HasIndex("ApplicationId", "TriggerId", "TriggerVersion", "ChangeOperationId")
+                        .IsUnique();
+
+                    b.ToTable("trigger_conditional_fire_work", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_conditional_fire_work_id", "length(\"FireId\") = 45 AND substr(\"FireId\", 1, 13) = 'trigger-fire.' AND substr(\"FireId\", 14) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_trigger_conditional_fire_work_lease", "\"LeaseOwner\" IS NULL OR (length(\"LeaseOwner\") BETWEEN 1 AND 128 AND \"LeaseOwner\" NOT GLOB '*[^A-Za-z0-9._:-]*')");
+
+                            t.HasCheckConstraint("CK_trigger_conditional_fire_work_state", "\"State\" IN ('ready', 'leased', 'retry', 'completed', 'failed') AND ((\"State\" = 'ready' AND \"AttemptCount\" = 0 AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IS NULL) OR (\"State\" = 'leased' AND \"AttemptCount\" BETWEEN 1 AND 3 AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NOT NULL AND \"LeaseToken\" IS NOT NULL AND \"LeaseExpiresAtUtc\" IS NOT NULL AND \"FailureKind\" IS NULL) OR (\"State\" = 'retry' AND \"AttemptCount\" BETWEEN 1 AND 2 AND \"NextAttemptAtUtc\" IS NOT NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IN ('handler-unavailable', 'transient-database')) OR (\"State\" = 'completed' AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IS NULL) OR (\"State\" = 'failed' AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IN ('permanent-handler', 'stale-trigger', 'attempts-exhausted'))) ");
+
+                            t.HasCheckConstraint("CK_trigger_conditional_fire_work_token", "\"LeaseToken\" IS NULL OR (length(\"LeaseToken\") = 32 AND \"LeaseToken\" NOT GLOB '*[^0-9a-f]*')");
+
+                            t.HasCheckConstraint("CK_trigger_conditional_fire_work_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND length(\"ChangeOperationId\") = 32 AND \"ChangeOperationId\" NOT GLOB '*[^0-9a-f]*' AND \"AttemptCount\" BETWEEN 0 AND 3 AND \"Revision\" >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ConditionalTriggerNotificationEntityRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TriggerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StateSpaceId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ApplicationId", "TriggerId", "TriggerVersion", "Ordinal");
+
+                    b.HasIndex("StateSpaceId", "EntityId");
+
+                    b.HasIndex("ApplicationId", "TriggerId", "TriggerVersion", "EntityId")
+                        .IsUnique();
+
+                    b.ToTable("trigger_conditional_notification_entity", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_conditional_notification_entity_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND \"Ordinal\" BETWEEN 0 AND 31 AND length(\"StateSpaceId\") BETWEEN 1 AND 200 AND length(\"EntityId\") BETWEEN 1 AND 200");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ConditionalTriggerNotificationLinkRecord", b =>
+                {
+                    b.Property<string>("FireId")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ChangeOperationId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TriggerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("FireId");
+
+                    b.HasIndex("NotificationId")
+                        .IsUnique();
+
+                    b.HasIndex("ApplicationId", "TriggerId", "TriggerVersion");
+
+                    b.ToTable("trigger_conditional_notification_link", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_conditional_notification_link_fire", "length(\"FireId\") = 45 AND substr(\"FireId\", 1, 13) = 'trigger-fire.' AND substr(\"FireId\", 14) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_trigger_conditional_notification_link_notification", "length(\"NotificationId\") = 32 AND \"NotificationId\" NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_trigger_conditional_notification_link_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND length(\"ChangeOperationId\") = 32 AND \"ChangeOperationId\" NOT GLOB '*[^0-9a-f]*'");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ConditionalTriggerRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Activation")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AdapterConfigurationHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AdapterConfigurationJson")
+                        .IsRequired()
+                        .HasMaxLength(65536)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AdapterId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("AdapterVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Lifecycle")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationBody")
+                        .IsRequired()
+                        .HasMaxLength(16384)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationStateSpaceId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationSubject")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationTopic")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Rearm")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StateSpaceId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Target")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ApplicationId", "Id", "Version");
+
+                    b.HasIndex("StateSpaceId");
+
+                    b.ToTable("trigger_conditional_definition", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_conditional_definition_clock_policy", "\"Kind\" <> 'world-clock-threshold' OR (\"Activation\" = 'rising-edge' AND \"Rearm\" = 'manual')");
+
+                            t.HasCheckConstraint("CK_trigger_conditional_definition_config", "length(\"AdapterConfigurationJson\") BETWEEN 2 AND 65536 AND json_valid(\"AdapterConfigurationJson\") AND json_type(\"AdapterConfigurationJson\") = 'object'");
+
+                            t.HasCheckConstraint("CK_trigger_conditional_definition_config_hash", "length(\"AdapterConfigurationHash\") = 64 AND \"AdapterConfigurationHash\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_trigger_conditional_definition_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"Id\") BETWEEN 3 AND 200 AND \"Version\" > 0 AND \"Lifecycle\" IN ('active', 'paused', 'cancelled') AND \"Kind\" IN ('world-clock-threshold', 'state-condition') AND \"Activation\" IN ('rising-edge', 'level') AND \"Rearm\" IN ('on-false', 'manual') AND length(\"StateSpaceId\") BETWEEN 1 AND 200 AND length(\"AdapterId\") BETWEEN 3 AND 200 AND \"AdapterVersion\" > 0 AND \"Target\" = 'notification-only'");
+
+                            t.HasCheckConstraint("CK_trigger_conditional_notification_values", "length(\"NotificationTopic\") BETWEEN 1 AND 200 AND length(\"NotificationSubject\") BETWEEN 1 AND 400 AND length(CAST(\"NotificationBody\" AS BLOB)) <= 16384 AND (\"NotificationStateSpaceId\" IS NULL OR length(\"NotificationStateSpaceId\") BETWEEN 1 AND 200)");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ConditionalTriggerStateRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Armed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool?>("CurrentTruth")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CurrentVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("EvaluationRevision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LastFiredOperationId")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastOperationId")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ApplicationId", "TriggerId");
+
+                    b.HasIndex("ApplicationId", "TriggerId", "CurrentVersion");
+
+                    b.ToTable("trigger_conditional_state", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_conditional_state_operations", "(\"LastOperationId\" IS NULL OR (length(\"LastOperationId\") = 32 AND \"LastOperationId\" NOT GLOB '*[^0-9a-f]*')) AND (\"LastFiredOperationId\" IS NULL OR (length(\"LastFiredOperationId\") = 32 AND \"LastFiredOperationId\" NOT GLOB '*[^0-9a-f]*'))");
+
+                            t.HasCheckConstraint("CK_trigger_conditional_state_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"CurrentVersion\" > 0 AND \"EvaluationRevision\" >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ObservationTriggerCurrentRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CurrentVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ApplicationId", "Id");
+
+                    b.HasIndex("ApplicationId", "Id", "CurrentVersion");
+
+                    b.ToTable("trigger_observation_match_current", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_observation_match_current_version", "\"CurrentVersion\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ObservationTriggerMatchReceiptRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Disposition")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ObservationId")
+                        .IsRequired()
+                        .HasMaxLength(44)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TriggerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ObservationId");
+
+                    b.HasIndex("ApplicationId", "TriggerId", "TriggerVersion", "ObservationId")
+                        .IsUnique();
+
+                    b.ToTable("trigger_observation_match_receipt", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_observation_match_receipt_id", "length(\"Id\") = 45 AND substr(\"Id\", 1, 13) = 'trigger-fire.' AND substr(\"Id\", 14) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_trigger_observation_match_receipt_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND length(\"ObservationId\") = 44 AND substr(\"ObservationId\", 1, 12) = 'observation.' AND \"Disposition\" IN ('matched', 'not-matched')");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ObservationTriggerMatchWorkRecord", b =>
+                {
+                    b.Property<string>("FireId")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FailureKind")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LeaseExpiresAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LeaseOwner")
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LeaseToken")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("NextAttemptAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ObservationId")
+                        .IsRequired()
+                        .HasMaxLength(44)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TriggerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("FireId");
+
+                    b.HasIndex("ObservationId");
+
+                    b.HasIndex("State", "NextAttemptAtUtc", "LeaseExpiresAtUtc");
+
+                    b.HasIndex("ApplicationId", "TriggerId", "TriggerVersion", "ObservationId")
+                        .IsUnique();
+
+                    b.ToTable("trigger_observation_match_work", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_observation_match_work_id", "length(\"FireId\") = 45 AND substr(\"FireId\", 1, 13) = 'trigger-fire.' AND substr(\"FireId\", 14) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_trigger_observation_match_work_lease", "\"LeaseOwner\" IS NULL OR (length(\"LeaseOwner\") BETWEEN 1 AND 128 AND \"LeaseOwner\" NOT GLOB '*[^A-Za-z0-9._:-]*')");
+
+                            t.HasCheckConstraint("CK_trigger_observation_match_work_state", "\"State\" IN ('ready', 'leased', 'retry', 'completed', 'failed') AND ((\"State\" = 'ready' AND \"AttemptCount\" = 0 AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IS NULL) OR (\"State\" = 'leased' AND \"AttemptCount\" BETWEEN 1 AND 3 AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NOT NULL AND \"LeaseToken\" IS NOT NULL AND \"LeaseExpiresAtUtc\" IS NOT NULL AND \"FailureKind\" IS NULL) OR (\"State\" = 'retry' AND \"AttemptCount\" BETWEEN 1 AND 2 AND \"NextAttemptAtUtc\" IS NOT NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IN ('handler-unavailable', 'transient-database')) OR (\"State\" = 'completed' AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IS NULL) OR (\"State\" = 'failed' AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IN ('permanent-handler', 'stale-trigger', 'attempts-exhausted'))) ");
+
+                            t.HasCheckConstraint("CK_trigger_observation_match_work_token", "\"LeaseToken\" IS NULL OR (length(\"LeaseToken\") = 32 AND \"LeaseToken\" NOT GLOB '*[^0-9a-f]*')");
+
+                            t.HasCheckConstraint("CK_trigger_observation_match_work_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND length(\"ObservationId\") = 44 AND substr(\"ObservationId\", 1, 12) = 'observation.' AND substr(\"ObservationId\", 13) NOT GLOB '*[^0-9a-f]*' AND \"AttemptCount\" BETWEEN 0 AND 3 AND \"Revision\" >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ObservationTriggerNotificationEntityRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TriggerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StateSpaceId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ApplicationId", "TriggerId", "TriggerVersion", "Ordinal");
+
+                    b.HasIndex("StateSpaceId", "EntityId");
+
+                    b.HasIndex("ApplicationId", "TriggerId", "TriggerVersion", "EntityId")
+                        .IsUnique();
+
+                    b.ToTable("trigger_observation_match_notification_entity", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_observation_match_notification_entity_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND \"Ordinal\" BETWEEN 0 AND 31 AND length(\"StateSpaceId\") BETWEEN 1 AND 200 AND length(\"EntityId\") BETWEEN 1 AND 200");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ObservationTriggerNotificationLinkRecord", b =>
+                {
+                    b.Property<string>("FireId")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ObservationId")
+                        .IsRequired()
+                        .HasMaxLength(44)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TriggerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("FireId");
+
+                    b.HasIndex("NotificationId")
+                        .IsUnique();
+
+                    b.HasIndex("ObservationId");
+
+                    b.ToTable("trigger_observation_match_notification_link", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_observation_match_notification_link_fire", "length(\"FireId\") = 45 AND substr(\"FireId\", 1, 13) = 'trigger-fire.' AND substr(\"FireId\", 14) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_trigger_observation_match_notification_link_notification", "length(\"NotificationId\") = 32 AND \"NotificationId\" NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_trigger_observation_match_notification_link_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND length(\"ObservationId\") = 44 AND substr(\"ObservationId\", 1, 12) = 'observation.'");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ObservationTriggerRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AdapterConfigurationHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AdapterConfigurationJson")
+                        .IsRequired()
+                        .HasMaxLength(65536)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AdapterId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("AdapterVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Lifecycle")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationBody")
+                        .IsRequired()
+                        .HasMaxLength(16384)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationStateSpaceId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationSubject")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationTopic")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SourceVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("StructureHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StructureId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("StructureVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Target")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ApplicationId", "Id", "Version");
+
+                    b.HasIndex("ApplicationId", "StructureId", "StructureVersion");
+
+                    b.HasIndex("ApplicationId", "SourceId", "SourceVersion", "StructureId", "StructureVersion", "StructureHash", "Lifecycle");
+
+                    b.ToTable("trigger_observation_match_definition", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_observation_match_definition_config", "length(\"AdapterConfigurationJson\") BETWEEN 2 AND 65536 AND json_valid(\"AdapterConfigurationJson\") AND json_type(\"AdapterConfigurationJson\") = 'object'");
+
+                            t.HasCheckConstraint("CK_trigger_observation_match_definition_hashes", "length(\"StructureHash\") = 64 AND \"StructureHash\" NOT GLOB '*[^0-9A-F]*' AND length(\"AdapterConfigurationHash\") = 64 AND \"AdapterConfigurationHash\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_trigger_observation_match_definition_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"Id\") BETWEEN 3 AND 200 AND \"Version\" > 0 AND \"Lifecycle\" IN ('active', 'paused', 'cancelled') AND length(\"SourceId\") BETWEEN 3 AND 200 AND \"SourceVersion\" > 0 AND length(\"StructureId\") BETWEEN 3 AND 200 AND \"StructureVersion\" > 0 AND length(\"AdapterId\") BETWEEN 3 AND 200 AND \"AdapterVersion\" > 0 AND \"Target\" = 'notification-only'");
+
+                            t.HasCheckConstraint("CK_trigger_observation_match_notification_values", "length(\"NotificationTopic\") BETWEEN 1 AND 200 AND length(\"NotificationSubject\") BETWEEN 1 AND 400 AND length(CAST(\"NotificationBody\" AS BLOB)) <= 16384 AND (\"NotificationStateSpaceId\" IS NULL OR length(\"NotificationStateSpaceId\") BETWEEN 1 AND 200)");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.OneTimeTriggerCurrentRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CurrentVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ApplicationId", "Id");
+
+                    b.HasIndex("ApplicationId", "Id", "CurrentVersion");
+
+                    b.ToTable("trigger_one_time_current", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_one_time_current_version", "\"CurrentVersion\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.OneTimeTriggerNotificationEntityRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TriggerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StateSpaceId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ApplicationId", "TriggerId", "TriggerVersion", "Ordinal");
+
+                    b.HasIndex("ApplicationId", "TriggerId", "TriggerVersion", "EntityId")
+                        .IsUnique();
+
+                    b.ToTable("trigger_one_time_notification_entity", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_one_time_notification_entity_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND \"Ordinal\" BETWEEN 0 AND 31 AND length(\"StateSpaceId\") BETWEEN 1 AND 200 AND length(\"EntityId\") BETWEEN 1 AND 200");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.OneTimeTriggerRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DueAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Lifecycle")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MisfirePolicy")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationBody")
+                        .IsRequired()
+                        .HasMaxLength(16384)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationStateSpaceId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationSubject")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationTopic")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Target")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ApplicationId", "Id", "Version");
+
+                    b.ToTable("trigger_one_time_definition", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_one_time_definition_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"Id\") BETWEEN 3 AND 200 AND \"Version\" > 0 AND \"MisfirePolicy\" IN ('skip', 'fire-once') AND \"Target\" = 'notification-only' AND \"Lifecycle\" IN ('active', 'cancelled')");
+
+                            t.HasCheckConstraint("CK_trigger_one_time_notification_values", "length(\"NotificationTopic\") BETWEEN 1 AND 200 AND length(\"NotificationSubject\") BETWEEN 1 AND 400 AND length(CAST(\"NotificationBody\" AS BLOB)) <= 16384 AND (\"NotificationStateSpaceId\" IS NULL OR length(\"NotificationStateSpaceId\") BETWEEN 1 AND 200)");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.PhoneCompanionDeviceCurrentRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeviceId")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CurrentRevision")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ApplicationId", "DeviceId");
+
+                    b.HasIndex("ApplicationId", "DeviceId", "CurrentRevision");
+
+                    b.ToTable("trigger_phone_device_current", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_phone_device_current_revision", "\"CurrentRevision\" BETWEEN 1 AND 2");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.PhoneCompanionDeviceRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeviceId")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CredentialVerifier")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PermissionProfile")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PrincipalId")
+                        .IsRequired()
+                        .HasMaxLength(74)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SourceVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ApplicationId", "DeviceId");
+
+                    b.HasIndex("CredentialVerifier")
+                        .IsUnique();
+
+                    b.HasIndex("PrincipalId")
+                        .IsUnique();
+
+                    b.HasIndex("ApplicationId", "SourceId", "SourceVersion");
+
+                    b.ToTable("trigger_phone_device", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_phone_device_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"DeviceId\") = 45 AND substr(\"DeviceId\", 1, 13) = 'phone-device.' AND substr(\"DeviceId\", 14) NOT GLOB '*[^0-9a-f]*' AND length(\"PrincipalId\") = 74 AND substr(\"PrincipalId\", 1, 10) = 'principal.' AND substr(\"PrincipalId\", 11) NOT GLOB '*[^0-9a-f]*' AND length(\"SourceId\") BETWEEN 3 AND 200 AND \"SourceVersion\" > 0 AND \"PermissionProfile\" = 'privacy-minimized-signals'");
+
+                            t.HasCheckConstraint("CK_trigger_phone_device_verifier", "length(\"CredentialVerifier\") = 64 AND \"CredentialVerifier\" NOT GLOB '*[^0-9A-F]*'");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.PhoneCompanionDeviceStatusRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeviceId")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ApplicationId", "DeviceId", "Revision");
+
+                    b.ToTable("trigger_phone_device_status", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_phone_device_status_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"DeviceId\") = 45 AND substr(\"DeviceId\", 1, 13) = 'phone-device.' AND \"Revision\" BETWEEN 1 AND 2 AND \"Status\" IN ('active', 'revoked')");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.PhoneCompanionDeviceStructureRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeviceId")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("StructureHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StructureId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("StructureVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ApplicationId", "DeviceId", "Ordinal");
+
+                    b.HasIndex("ApplicationId", "StructureId", "StructureVersion");
+
+                    b.HasIndex("ApplicationId", "DeviceId", "StructureId", "StructureVersion")
+                        .IsUnique();
+
+                    b.ToTable("trigger_phone_device_structure", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_phone_device_structure_hash", "length(\"StructureHash\") = 64 AND \"StructureHash\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_trigger_phone_device_structure_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"DeviceId\") = 45 AND substr(\"DeviceId\", 1, 13) = 'phone-device.' AND \"Ordinal\" BETWEEN 0 AND 7 AND length(\"StructureId\") BETWEEN 3 AND 200 AND \"StructureVersion\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.RecurringTriggerCurrentRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CurrentVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ApplicationId", "Id");
+
+                    b.HasIndex("ApplicationId", "Id", "CurrentVersion");
+
+                    b.ToTable("trigger_recurring_current", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_recurring_current_version", "\"CurrentVersion\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.RecurringTriggerFireReceiptRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Disposition")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("OccurrenceAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TriggerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId", "TriggerId", "TriggerVersion", "OccurrenceAtUtc")
+                        .IsUnique();
+
+                    b.ToTable("trigger_recurring_fire_receipt", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_recurring_fire_receipt_id", "length(\"Id\") = 45 AND substr(\"Id\", 1, 13) = 'trigger-fire.' AND substr(\"Id\", 14) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_trigger_recurring_fire_receipt_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND \"Disposition\" IN ('due', 'missed')");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.RecurringTriggerFireWorkRecord", b =>
+                {
+                    b.Property<string>("FireId")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FailureKind")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LeaseExpiresAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LeaseOwner")
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LeaseToken")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("NextAttemptAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("OccurrenceAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TriggerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("FireId");
+
+                    b.HasIndex("State", "NextAttemptAtUtc", "LeaseExpiresAtUtc");
+
+                    b.HasIndex("ApplicationId", "TriggerId", "TriggerVersion", "OccurrenceAtUtc")
+                        .IsUnique();
+
+                    b.ToTable("trigger_recurring_fire_work", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_recurring_fire_work_id", "length(\"FireId\") = 45 AND substr(\"FireId\", 1, 13) = 'trigger-fire.' AND substr(\"FireId\", 14) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_trigger_recurring_fire_work_lease", "\"LeaseOwner\" IS NULL OR (length(\"LeaseOwner\") BETWEEN 1 AND 128 AND \"LeaseOwner\" NOT GLOB '*[^A-Za-z0-9._:-]*')");
+
+                            t.HasCheckConstraint("CK_trigger_recurring_fire_work_state", "\"State\" IN ('ready', 'leased', 'retry', 'completed', 'missed', 'failed') AND ((\"State\" = 'ready' AND \"AttemptCount\" = 0 AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IS NULL) OR (\"State\" = 'leased' AND \"AttemptCount\" BETWEEN 1 AND 3 AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NOT NULL AND \"LeaseToken\" IS NOT NULL AND \"LeaseExpiresAtUtc\" IS NOT NULL AND \"FailureKind\" IS NULL) OR (\"State\" = 'retry' AND \"AttemptCount\" BETWEEN 1 AND 2 AND \"NextAttemptAtUtc\" IS NOT NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IN ('handler-unavailable', 'transient-database')) OR (\"State\" IN ('completed', 'missed') AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IS NULL) OR (\"State\" = 'failed' AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IN ('permanent-handler', 'stale-trigger', 'attempts-exhausted'))) ");
+
+                            t.HasCheckConstraint("CK_trigger_recurring_fire_work_token", "\"LeaseToken\" IS NULL OR (length(\"LeaseToken\") = 32 AND \"LeaseToken\" NOT GLOB '*[^0-9a-f]*')");
+
+                            t.HasCheckConstraint("CK_trigger_recurring_fire_work_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND \"AttemptCount\" BETWEEN 0 AND 3 AND \"Revision\" >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.RecurringTriggerNotificationEntityRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TriggerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StateSpaceId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ApplicationId", "TriggerId", "TriggerVersion", "Ordinal");
+
+                    b.HasIndex("ApplicationId", "TriggerId", "TriggerVersion", "EntityId")
+                        .IsUnique();
+
+                    b.ToTable("trigger_recurring_notification_entity", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_recurring_notification_entity_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND \"Ordinal\" BETWEEN 0 AND 31 AND length(\"StateSpaceId\") BETWEEN 1 AND 200 AND length(\"EntityId\") BETWEEN 1 AND 200");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.RecurringTriggerNotificationLinkRecord", b =>
+                {
+                    b.Property<string>("FireId")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("OccurrenceAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TriggerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("FireId");
+
+                    b.HasIndex("NotificationId")
+                        .IsUnique();
+
+                    b.HasIndex("ApplicationId", "TriggerId", "TriggerVersion", "OccurrenceAtUtc");
+
+                    b.ToTable("trigger_recurring_notification_link", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_recurring_notification_link_fire", "length(\"FireId\") = 45 AND substr(\"FireId\", 1, 13) = 'trigger-fire.' AND substr(\"FireId\", 14) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_trigger_recurring_notification_link_notification", "length(\"NotificationId\") = 32 AND \"NotificationId\" NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_trigger_recurring_notification_link_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.RecurringTriggerRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("DayOfMonth")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("GapPolicy")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Interval")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Lifecycle")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("LocalTimeSeconds")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("MisfirePolicy")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationBody")
+                        .IsRequired()
+                        .HasMaxLength(16384)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationStateSpaceId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationSubject")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationTopic")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OverlapPolicy")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("StartDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Target")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TimeZoneId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("WeekdaysMask")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ApplicationId", "Id", "Version");
+
+                    b.ToTable("trigger_recurring_definition", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_recurring_definition_dates", "\"StartDate\" IS NULL OR \"EndDate\" IS NULL OR \"EndDate\" >= \"StartDate\"");
+
+                            t.HasCheckConstraint("CK_trigger_recurring_definition_shape", "(\"Kind\" = 'daily' AND \"WeekdaysMask\" = 0 AND \"DayOfMonth\" IS NULL) OR (\"Kind\" = 'weekly' AND \"WeekdaysMask\" BETWEEN 1 AND 127 AND \"DayOfMonth\" IS NULL) OR (\"Kind\" = 'monthly' AND \"WeekdaysMask\" = 0 AND \"DayOfMonth\" BETWEEN 1 AND 31)");
+
+                            t.HasCheckConstraint("CK_trigger_recurring_definition_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"Id\") BETWEEN 3 AND 200 AND \"Version\" > 0 AND \"Lifecycle\" IN ('active', 'paused', 'cancelled') AND \"Kind\" IN ('daily', 'weekly', 'monthly') AND \"Interval\" BETWEEN 1 AND 365 AND \"LocalTimeSeconds\" BETWEEN 0 AND 86399 AND length(\"TimeZoneId\") BETWEEN 3 AND 100 AND \"GapPolicy\" IN ('skip', 'next-valid') AND \"OverlapPolicy\" IN ('earlier', 'later') AND \"MisfirePolicy\" IN ('skip', 'fire-once') AND \"Target\" = 'notification-only'");
+
+                            t.HasCheckConstraint("CK_trigger_recurring_notification_values", "length(\"NotificationTopic\") BETWEEN 1 AND 200 AND length(\"NotificationSubject\") BETWEEN 1 AND 400 AND length(CAST(\"NotificationBody\" AS BLOB)) <= 16384 AND (\"NotificationStateSpaceId\" IS NULL OR length(\"NotificationStateSpaceId\") BETWEEN 1 AND 200)");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.RecurringTriggerStateRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CurrentVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LastDisposition")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastFailureKind")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastOccurrenceAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("NextOccurrenceAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ApplicationId", "TriggerId");
+
+                    b.HasIndex("ApplicationId", "TriggerId", "CurrentVersion");
+
+                    b.HasIndex("NextOccurrenceAtUtc", "ApplicationId", "TriggerId");
+
+                    b.ToTable("trigger_recurring_state", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_recurring_state_disposition", "\"LastDisposition\" IS NULL OR \"LastDisposition\" IN ('due', 'missed')");
+
+                            t.HasCheckConstraint("CK_trigger_recurring_state_failure", "\"LastFailureKind\" IS NULL OR \"LastFailureKind\" IN ('permanent-handler', 'stale-trigger', 'attempts-exhausted')");
+
+                            t.HasCheckConstraint("CK_trigger_recurring_state_last", "(\"LastOccurrenceAtUtc\" IS NULL AND \"LastDisposition\" IS NULL AND \"LastFailureKind\" IS NULL) OR (\"LastOccurrenceAtUtc\" IS NOT NULL AND ((\"LastDisposition\" IS NULL) <> (\"LastFailureKind\" IS NULL)))");
+
+                            t.HasCheckConstraint("CK_trigger_recurring_state_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"CurrentVersion\" > 0 AND \"Revision\" >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerFireReceiptRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Disposition")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("OccurrenceAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TriggerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId", "TriggerId", "TriggerVersion", "OccurrenceAtUtc")
+                        .IsUnique();
+
+                    b.ToTable("trigger_fire_receipt", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_fire_receipt_id", "length(\"Id\") = 45 AND substr(\"Id\", 1, 13) = 'trigger-fire.' AND substr(\"Id\", 14) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_trigger_fire_receipt_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND \"Disposition\" IN ('due', 'missed')");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerFireWorkRecord", b =>
+                {
+                    b.Property<string>("FireId")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FailureKind")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LeaseExpiresAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LeaseOwner")
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LeaseToken")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("NextAttemptAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("OccurrenceAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TriggerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("FireId");
+
+                    b.HasIndex("State", "NextAttemptAtUtc", "LeaseExpiresAtUtc");
+
+                    b.HasIndex("ApplicationId", "TriggerId", "TriggerVersion", "OccurrenceAtUtc")
+                        .IsUnique();
+
+                    b.ToTable("trigger_fire_work", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_fire_work_id", "length(\"FireId\") = 45 AND substr(\"FireId\", 1, 13) = 'trigger-fire.' AND substr(\"FireId\", 14) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_trigger_fire_work_lease", "\"LeaseOwner\" IS NULL OR (length(\"LeaseOwner\") BETWEEN 1 AND 128 AND \"LeaseOwner\" NOT GLOB '*[^A-Za-z0-9._:-]*')");
+
+                            t.HasCheckConstraint("CK_trigger_fire_work_state", "\"State\" IN ('ready', 'leased', 'retry', 'completed', 'missed', 'failed') AND ((\"State\" = 'ready' AND \"AttemptCount\" = 0 AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IS NULL) OR (\"State\" = 'leased' AND \"AttemptCount\" BETWEEN 1 AND 3 AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NOT NULL AND \"LeaseToken\" IS NOT NULL AND \"LeaseExpiresAtUtc\" IS NOT NULL AND \"FailureKind\" IS NULL) OR (\"State\" = 'retry' AND \"AttemptCount\" BETWEEN 1 AND 2 AND \"NextAttemptAtUtc\" IS NOT NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IN ('handler-unavailable', 'transient-database')) OR (\"State\" IN ('completed', 'missed') AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IS NULL) OR (\"State\" = 'failed' AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IN ('permanent-handler', 'stale-trigger', 'attempts-exhausted'))) ");
+
+                            t.HasCheckConstraint("CK_trigger_fire_work_token", "\"LeaseToken\" IS NULL OR (length(\"LeaseToken\") = 32 AND \"LeaseToken\" NOT GLOB '*[^0-9a-f]*')");
+
+                            t.HasCheckConstraint("CK_trigger_fire_work_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND \"AttemptCount\" BETWEEN 0 AND 3 AND \"Revision\" >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerNotificationLinkRecord", b =>
+                {
+                    b.Property<string>("FireId")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("OccurrenceAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TriggerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("FireId");
+
+                    b.HasIndex("NotificationId")
+                        .IsUnique();
+
+                    b.HasIndex("ApplicationId", "TriggerId", "TriggerVersion", "OccurrenceAtUtc");
+
+                    b.ToTable("trigger_notification_link", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_notification_link_fire", "length(\"FireId\") = 45 AND substr(\"FireId\", 1, 13) = 'trigger-fire.' AND substr(\"FireId\", 14) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_trigger_notification_link_notification", "length(\"NotificationId\") = 32 AND \"NotificationId\" NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_trigger_notification_link_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerObservationRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(44)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DataHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DataJson")
+                        .IsRequired()
+                        .HasMaxLength(65536)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ObservedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OccurrenceId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PrincipalId")
+                        .HasMaxLength(74)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ReceivedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RequestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RequestId")
+                        .IsRequired()
+                        .HasMaxLength(52)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceInstanceId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SourceVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("StructureHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StructureId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("StructureVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId", "RequestId")
+                        .IsUnique();
+
+                    b.HasIndex("ApplicationId", "ReceivedAtUtc", "Id");
+
+                    b.HasIndex("ApplicationId", "StructureId", "StructureVersion");
+
+                    b.HasIndex("ApplicationId", "SourceId", "SourceVersion", "PrincipalId");
+
+                    b.HasIndex("ApplicationId", "SourceId", "SourceVersion", "SourceInstanceId", "OccurrenceId")
+                        .IsUnique();
+
+                    b.HasIndex("ApplicationId", "SourceId", "SourceVersion", "StructureId", "StructureVersion");
+
+                    b.ToTable("trigger_observation", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_observation_hashes", "length(\"StructureHash\") = 64 AND \"StructureHash\" NOT GLOB '*[^0-9A-F]*' AND length(\"DataHash\") = 64 AND \"DataHash\" NOT GLOB '*[^0-9A-F]*' AND length(\"RequestFingerprint\") = 64 AND \"RequestFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_trigger_observation_id", "length(\"Id\") = 44 AND substr(\"Id\", 1, 12) = 'observation.' AND substr(\"Id\", 13) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_trigger_observation_principal", "\"PrincipalId\" IS NULL OR (length(\"PrincipalId\") = 74 AND substr(\"PrincipalId\", 1, 10) = 'principal.' AND substr(\"PrincipalId\", 11) NOT GLOB '*[^0-9a-f]*')");
+
+                            t.HasCheckConstraint("CK_trigger_observation_request", "length(\"RequestId\") = 52 AND substr(\"RequestId\", 1, 20) = 'observation-request.' AND substr(\"RequestId\", 21) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_trigger_observation_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"SourceId\") BETWEEN 3 AND 200 AND \"SourceVersion\" > 0 AND length(\"SourceInstanceId\") BETWEEN 1 AND 128 AND length(\"OccurrenceId\") BETWEEN 1 AND 200 AND length(\"StructureId\") BETWEEN 3 AND 200 AND \"StructureVersion\" > 0 AND length(\"DataJson\") BETWEEN 2 AND 65536 AND json_valid(\"DataJson\") AND json_type(\"DataJson\") = 'object'");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerObservationSourceCurrentRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CurrentVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ApplicationId", "Id");
+
+                    b.HasIndex("ApplicationId", "Id", "CurrentVersion");
+
+                    b.ToTable("trigger_observation_source_current", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_observation_source_current_version", "\"CurrentVersion\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerObservationSourcePrincipalRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SourceVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PrincipalId")
+                        .HasMaxLength(74)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ApplicationId", "SourceId", "SourceVersion", "PrincipalId");
+
+                    b.ToTable("trigger_observation_source_principal", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_observation_source_principal_id", "length(\"PrincipalId\") = 74 AND substr(\"PrincipalId\", 1, 10) = 'principal.' AND substr(\"PrincipalId\", 11) NOT GLOB '*[^0-9a-f]*'");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerObservationSourceRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ReplayWindowSeconds")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RequestsPerMinute")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ApplicationId", "Id", "Version");
+
+                    b.ToTable("trigger_observation_source", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_observation_source_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"Id\") BETWEEN 3 AND 200 AND \"Version\" > 0 AND \"Status\" IN ('enabled', 'disabled') AND \"ReplayWindowSeconds\" BETWEEN 1 AND 604800 AND \"RequestsPerMinute\" BETWEEN 1 AND 10");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerObservationSourceStructureRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SourceVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("StructureId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("StructureVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ApplicationId", "SourceId", "SourceVersion", "StructureId", "StructureVersion");
+
+                    b.HasIndex("ApplicationId", "StructureId", "StructureVersion");
+
+                    b.ToTable("trigger_observation_source_structure", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_observation_source_structure_ids", "length(\"SourceId\") BETWEEN 3 AND 200 AND length(\"StructureId\") BETWEEN 3 AND 200");
+
+                            t.HasCheckConstraint("CK_trigger_observation_source_structure_versions", "\"SourceVersion\" > 0 AND \"StructureVersion\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerObservationStructureCurrentRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CurrentVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ApplicationId", "Id");
+
+                    b.HasIndex("ApplicationId", "Id", "CurrentVersion");
+
+                    b.ToTable("trigger_observation_structure_current", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_observation_structure_current_version", "\"CurrentVersion\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerObservationStructureRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DataClassification")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NormalizedSchema")
+                        .IsRequired()
+                        .HasMaxLength(65536)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SchemaHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SchemaProfileId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ApplicationId", "Id", "Version");
+
+                    b.ToTable("trigger_observation_structure", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_trigger_observation_structure_hash", "length(\"SchemaHash\") = 64 AND \"SchemaHash\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_trigger_observation_structure_values", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"Id\") BETWEEN 3 AND 200 AND \"Version\" > 0 AND \"Status\" IN ('active', 'retired') AND \"DataClassification\" IN ('general', 'privacy-minimized-signal', 'raw-location', 'third-party-notification-content') AND length(\"SchemaProfileId\") BETWEEN 1 AND 200 AND length(\"NormalizedSchema\") BETWEEN 2 AND 65536 AND json_valid(\"NormalizedSchema\") AND json_type(\"NormalizedSchema\") = 'object' AND length(\"Description\") BETWEEN 1 AND 1024");
+                        });
+                });
+
             modelBuilder.Entity("DantesRoleplay.World.Component", b =>
                 {
                     b.Property<long>("Id")
@@ -3959,6 +6470,17 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.Navigation("Source");
                 });
 
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionExecutionQueryResult", b =>
+                {
+                    b.HasOne("DantesRoleplay.Interactions.InteractionExecutionReceipt", "ExecutionReceipt")
+                        .WithMany("QueryResults")
+                        .HasForeignKey("ExecutionReceiptId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ExecutionReceipt");
+                });
+
             modelBuilder.Entity("DantesRoleplay.Interactions.InteractionExecutionReceipt", b =>
                 {
                     b.HasOne("DantesRoleplay.Interactions.InteractionResolutionReceipt", null)
@@ -4233,6 +6755,563 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.Navigation("Report");
                 });
 
+            modelBuilder.Entity("DantesRoleplay.SystemTasks.SystemTaskConfirmationRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.SystemTasks.SystemTaskRecord", "Task")
+                        .WithMany("Confirmations")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Task");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemTasks.SystemTaskExecutionRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.SystemTasks.SystemTaskConfirmationRecord", "Confirmation")
+                        .WithMany("Executions")
+                        .HasForeignKey("ConfirmationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.SystemTasks.SystemTaskRecord", "Task")
+                        .WithMany("Executions")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Confirmation");
+
+                    b.Navigation("Task");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemTasks.SystemTaskExecutionStepRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.SystemTasks.SystemTaskExecutionRecord", "Execution")
+                        .WithMany("Steps")
+                        .HasForeignKey("ExecutionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Execution");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemTasks.SystemTaskRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Assistants.AssistantConversation", null)
+                        .WithMany()
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemTasks.SystemTaskRoundRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.SystemTasks.SystemTaskRecord", "Task")
+                        .WithMany("Rounds")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Task");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemTasks.SystemTaskStepRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.SystemTasks.SystemTaskRecord", "Task")
+                        .WithMany("Steps")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Task");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ConditionalTriggerCurrentRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.ConditionalTriggerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "Id", "CurrentVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ConditionalTriggerDependencyRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Ecs.ApplicationEcsEntityRecord", null)
+                        .WithMany()
+                        .HasForeignKey("StateSpaceId", "EntityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.TriggerScheduling.ConditionalTriggerRecord", "Trigger")
+                        .WithMany("Dependencies")
+                        .HasForeignKey("ApplicationId", "TriggerId", "TriggerVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Trigger");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ConditionalTriggerFireReceiptRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.ConditionalTriggerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "TriggerId", "TriggerVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ConditionalTriggerFireWorkRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.ConditionalTriggerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "TriggerId", "TriggerVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ConditionalTriggerNotificationEntityRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Ecs.ApplicationEcsEntityRecord", null)
+                        .WithMany()
+                        .HasForeignKey("StateSpaceId", "EntityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.TriggerScheduling.ConditionalTriggerRecord", "Trigger")
+                        .WithMany("NotificationEntities")
+                        .HasForeignKey("ApplicationId", "TriggerId", "TriggerVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Trigger");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ConditionalTriggerNotificationLinkRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.ConditionalTriggerFireReceiptRecord", null)
+                        .WithOne()
+                        .HasForeignKey("DantesRoleplay.TriggerScheduling.ConditionalTriggerNotificationLinkRecord", "FireId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Notifications.Notification", null)
+                        .WithOne()
+                        .HasForeignKey("DantesRoleplay.TriggerScheduling.ConditionalTriggerNotificationLinkRecord", "NotificationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.TriggerScheduling.ConditionalTriggerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "TriggerId", "TriggerVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ConditionalTriggerRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Applications.ApplicationRegistryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Ecs.ApplicationStateSpaceRecord", null)
+                        .WithMany()
+                        .HasForeignKey("StateSpaceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ConditionalTriggerStateRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.ConditionalTriggerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "TriggerId", "CurrentVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ObservationTriggerCurrentRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.ObservationTriggerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "Id", "CurrentVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ObservationTriggerMatchReceiptRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.TriggerObservationRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ObservationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.TriggerScheduling.ObservationTriggerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "TriggerId", "TriggerVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ObservationTriggerMatchWorkRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.TriggerObservationRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ObservationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.TriggerScheduling.ObservationTriggerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "TriggerId", "TriggerVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ObservationTriggerNotificationEntityRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Ecs.ApplicationEcsEntityRecord", null)
+                        .WithMany()
+                        .HasForeignKey("StateSpaceId", "EntityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.TriggerScheduling.ObservationTriggerRecord", "Trigger")
+                        .WithMany("NotificationEntities")
+                        .HasForeignKey("ApplicationId", "TriggerId", "TriggerVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Trigger");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ObservationTriggerNotificationLinkRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.ObservationTriggerMatchReceiptRecord", null)
+                        .WithOne()
+                        .HasForeignKey("DantesRoleplay.TriggerScheduling.ObservationTriggerNotificationLinkRecord", "FireId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Notifications.Notification", null)
+                        .WithOne()
+                        .HasForeignKey("DantesRoleplay.TriggerScheduling.ObservationTriggerNotificationLinkRecord", "NotificationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.TriggerScheduling.TriggerObservationRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ObservationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ObservationTriggerRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Applications.ApplicationRegistryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.TriggerScheduling.TriggerObservationSourceRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "SourceId", "SourceVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.TriggerScheduling.TriggerObservationStructureRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "StructureId", "StructureVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.OneTimeTriggerCurrentRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.OneTimeTriggerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "Id", "CurrentVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.OneTimeTriggerNotificationEntityRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.OneTimeTriggerRecord", "Trigger")
+                        .WithMany("NotificationEntities")
+                        .HasForeignKey("ApplicationId", "TriggerId", "TriggerVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Trigger");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.OneTimeTriggerRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Applications.ApplicationRegistryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.PhoneCompanionDeviceCurrentRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.PhoneCompanionDeviceStatusRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "DeviceId", "CurrentRevision")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.PhoneCompanionDeviceRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.TriggerObservationSourceRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "SourceId", "SourceVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.PhoneCompanionDeviceStatusRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.PhoneCompanionDeviceRecord", "Device")
+                        .WithMany("StatusRevisions")
+                        .HasForeignKey("ApplicationId", "DeviceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.PhoneCompanionDeviceStructureRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.PhoneCompanionDeviceRecord", "Device")
+                        .WithMany("Structures")
+                        .HasForeignKey("ApplicationId", "DeviceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.TriggerScheduling.TriggerObservationStructureRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "StructureId", "StructureVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.RecurringTriggerCurrentRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.RecurringTriggerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "Id", "CurrentVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.RecurringTriggerFireReceiptRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.RecurringTriggerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "TriggerId", "TriggerVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.RecurringTriggerFireWorkRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.RecurringTriggerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "TriggerId", "TriggerVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.RecurringTriggerNotificationEntityRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.RecurringTriggerRecord", "Trigger")
+                        .WithMany("NotificationEntities")
+                        .HasForeignKey("ApplicationId", "TriggerId", "TriggerVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Trigger");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.RecurringTriggerNotificationLinkRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.RecurringTriggerFireReceiptRecord", null)
+                        .WithOne()
+                        .HasForeignKey("DantesRoleplay.TriggerScheduling.RecurringTriggerNotificationLinkRecord", "FireId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Notifications.Notification", null)
+                        .WithOne()
+                        .HasForeignKey("DantesRoleplay.TriggerScheduling.RecurringTriggerNotificationLinkRecord", "NotificationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.TriggerScheduling.RecurringTriggerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "TriggerId", "TriggerVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.RecurringTriggerRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Applications.ApplicationRegistryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.RecurringTriggerStateRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.RecurringTriggerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "TriggerId", "CurrentVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerFireReceiptRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.OneTimeTriggerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "TriggerId", "TriggerVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerFireWorkRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.OneTimeTriggerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "TriggerId", "TriggerVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerNotificationLinkRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.TriggerFireReceiptRecord", null)
+                        .WithOne()
+                        .HasForeignKey("DantesRoleplay.TriggerScheduling.TriggerNotificationLinkRecord", "FireId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.Notifications.Notification", null)
+                        .WithOne()
+                        .HasForeignKey("DantesRoleplay.TriggerScheduling.TriggerNotificationLinkRecord", "NotificationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.TriggerScheduling.OneTimeTriggerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "TriggerId", "TriggerVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerObservationRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.TriggerObservationSourceRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "SourceId", "SourceVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.TriggerScheduling.TriggerObservationStructureRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "StructureId", "StructureVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.TriggerScheduling.TriggerObservationSourcePrincipalRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "SourceId", "SourceVersion", "PrincipalId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DantesRoleplay.TriggerScheduling.TriggerObservationSourceStructureRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "SourceId", "SourceVersion", "StructureId", "StructureVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerObservationSourceCurrentRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.TriggerObservationSourceRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "Id", "CurrentVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerObservationSourcePrincipalRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.TriggerObservationSourceRecord", "Source")
+                        .WithMany("AllowedPrincipals")
+                        .HasForeignKey("ApplicationId", "SourceId", "SourceVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Source");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerObservationSourceRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Applications.ApplicationRegistryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerObservationSourceStructureRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.TriggerObservationSourceRecord", "Source")
+                        .WithMany("AllowedStructures")
+                        .HasForeignKey("ApplicationId", "SourceId", "SourceVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DantesRoleplay.TriggerScheduling.TriggerObservationStructureRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "StructureId", "StructureVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Source");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerObservationStructureCurrentRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.TriggerScheduling.TriggerObservationStructureRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId", "Id", "CurrentVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerObservationStructureRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Applications.ApplicationRegistryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("DantesRoleplay.World.Component", b =>
                 {
                     b.HasOne("DantesRoleplay.World.ComponentDefinition", "Definition")
@@ -4337,6 +7416,8 @@ namespace DantesRoleplay.DataAccess.Migrations
 
             modelBuilder.Entity("DantesRoleplay.Interactions.InteractionExecutionReceipt", b =>
                 {
+                    b.Navigation("QueryResults");
+
                     b.Navigation("Steps");
                 });
 
@@ -4378,6 +7459,63 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.Navigation("RetentionActions");
 
                     b.Navigation("Steps");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemTasks.SystemTaskConfirmationRecord", b =>
+                {
+                    b.Navigation("Executions");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemTasks.SystemTaskExecutionRecord", b =>
+                {
+                    b.Navigation("Steps");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.SystemTasks.SystemTaskRecord", b =>
+                {
+                    b.Navigation("Confirmations");
+
+                    b.Navigation("Executions");
+
+                    b.Navigation("Rounds");
+
+                    b.Navigation("Steps");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ConditionalTriggerRecord", b =>
+                {
+                    b.Navigation("Dependencies");
+
+                    b.Navigation("NotificationEntities");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.ObservationTriggerRecord", b =>
+                {
+                    b.Navigation("NotificationEntities");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.OneTimeTriggerRecord", b =>
+                {
+                    b.Navigation("NotificationEntities");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.PhoneCompanionDeviceRecord", b =>
+                {
+                    b.Navigation("StatusRevisions");
+
+                    b.Navigation("Structures");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.RecurringTriggerRecord", b =>
+                {
+                    b.Navigation("NotificationEntities");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.TriggerScheduling.TriggerObservationSourceRecord", b =>
+                {
+                    b.Navigation("AllowedPrincipals");
+
+                    b.Navigation("AllowedStructures");
                 });
 
             modelBuilder.Entity("DantesRoleplay.World.Entity", b =>

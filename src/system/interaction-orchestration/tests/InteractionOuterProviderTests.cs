@@ -61,6 +61,30 @@ public sealed class InteractionOuterProviderTests
         Assert.False(rejected.Available);
     }
 
+    [Fact]
+    public async Task Remote_task_agenda_uses_the_fixed_schema_and_no_tools()
+    {
+        HttpRequestMessage? observed = null;
+        string? body = null;
+        var provider = Provider(new Handler(async request =>
+        {
+            observed = request;
+            body = await request.Content!.ReadAsStringAsync();
+            return Response("{\"tasks\":[{\"intentText\":\"Prepare\",\"dependsOn\":[],\"batches\":[{\"intentText\":\"Inspect\"}]}]}");
+        }));
+
+        var result = await provider.CreateAgendaAsync(new("Prepare safely."));
+
+        Assert.True(result.Available);
+        Assert.Equal(InteractionOuterProtocol.TaskAgendaTask,
+            observed!.Headers.GetValues("X-Dantes-Task-Class").Single());
+        using var document = JsonDocument.Parse(body!);
+        Assert.Equal(InteractionOuterProtocol.TaskAgendaSchemaName,
+            document.RootElement.GetProperty("text").GetProperty("format").GetProperty("name").GetString());
+        Assert.Empty(document.RootElement.GetProperty("tools").EnumerateArray());
+        Assert.Equal("none", document.RootElement.GetProperty("tool_choice").GetString());
+    }
+
     [Theory]
     [InlineData("[]")]
     [InlineData("{\"status\":1,\"model\":\"gpt-5.6-luna\",\"output\":[]}")]

@@ -12,7 +12,10 @@ public enum PrivateOperatorCapability
     ControlPagesWrite,
     ControlSettingsWrite,
     ControlAiMessage,
-    ControlCodexApprove
+    ControlCodexApprove,
+    TriggerObservationSubmit,
+    TriggerAdministrationRead,
+    TriggerAdministrationWrite
 }
 
 public static class PrivateOperatorCapabilityNames
@@ -30,6 +33,9 @@ public static class PrivateOperatorCapabilityNames
             PrivateOperatorCapability.ControlSettingsWrite => "control.settings.write",
             PrivateOperatorCapability.ControlAiMessage => "control.ai.message",
             PrivateOperatorCapability.ControlCodexApprove => "control.codex.approve",
+            PrivateOperatorCapability.TriggerObservationSubmit => "trigger.observation.submit",
+            PrivateOperatorCapability.TriggerAdministrationRead => "trigger.admin.read",
+            PrivateOperatorCapability.TriggerAdministrationWrite => "trigger.admin.write",
             _ => "invalid"
         };
         return name != "invalid";
@@ -70,6 +76,9 @@ public sealed record TrustedPrincipalContext
             throw new ArgumentException("The authentication method is invalid.", nameof(authenticationMethod));
         return new(true, principalId, authenticationMethod, "");
     }
+
+    public static bool IsValidPrincipalId(string? value) =>
+        value is not null && PrincipalPattern.IsMatch(value);
 
     public static TrustedPrincipalContext Unauthenticated(string failureCode)
     {

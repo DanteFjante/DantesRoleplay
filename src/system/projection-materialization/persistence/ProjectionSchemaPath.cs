@@ -3,11 +3,11 @@ using System.Text.Json.Nodes;
 namespace DantesRoleplay.Projections;
 
 /// <summary>Conservative path discovery over the closed Slice 5 JSON Schema profile.</summary>
-internal static class ProjectionSchemaPath
+public static class ProjectionSchemaPath
 {
     private const int MaximumTraversalDepth = 64;
 
-    internal static bool Exists(string schemaJson, string pointer)
+    public static bool Exists(string schemaJson, string pointer)
     {
         if (pointer == "") return true;
         var root = JsonNode.Parse(schemaJson);

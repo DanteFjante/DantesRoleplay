@@ -5,6 +5,7 @@ using DantesRoleplay.Operations;
 using DantesRoleplay.Sources;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.StateSpaceAdministration;
+using DantesRoleplay.SystemCapabilities;
 
 namespace DantesRoleplay.MCPServer.Tools;
 
@@ -12,61 +13,71 @@ namespace DantesRoleplay.MCPServer.Tools;
 internal sealed class SystemRegistryTools
 {
     public Task<ToolEnvelope> ApplicationsAsync(
-        IApplicationRegistry? applications,
-        IApplicationActivationReader? activations,
-        IStateSpaceAdministrationReader? stateSpaces,
+        ISystemCapabilityCatalog? capabilities,
         IPrivateOperatorRequestAuthorizer? authorization,
         IOperationLog log,
         string? applicationId,
-        int? limit) => ToolRunner.RunAsync(log, "query", () => Task.FromResult(
-            ExecuteApplications(applications, activations, stateSpaces, authorization, applicationId, limit)));
+        int? limit,
+        CancellationToken cancellationToken = default) => ToolRunner.RunAsync(log, "query", () =>
+            ExecuteApplicationsAsync(capabilities, authorization, applicationId, limit, cancellationToken));
 
-    private static ToolOutcome ExecuteApplications(
-        IApplicationRegistry? applications,
-        IApplicationActivationReader? activations,
-        IStateSpaceAdministrationReader? stateSpaces,
+    private static async Task<ToolOutcome> ExecuteApplicationsAsync(
+        ISystemCapabilityCatalog? capabilities,
         IPrivateOperatorRequestAuthorizer? authorization,
         string? applicationId,
-        int? limit)
+        int? limit,
+        CancellationToken cancellationToken)
     {
         var decision = Authorize(authorization);
         if (!decision.Allowed) return Denied(decision, "system.applications");
-        if (applications is null)
-            return Fail(decision, "REGISTRY_UNAVAILABLE", "Application registry is not configured.",
-                Capabilities, "Application registry was unavailable.");
+        if (capabilities is null)
+            return Fail(decision, "SYSTEM_CAPABILITY_UNAVAILABLE", "System capability dispatch is not configured.",
+                Capabilities, "System application capability dispatch was unavailable.");
         var size = limit ?? 50;
-        if (size is < 1 or > 100) return Invalid(decision, "limit must be from 1 through 100.");
-        try
+        var normalizedApplicationId = string.IsNullOrWhiteSpace(applicationId) ? null : applicationId;
+        var input = JsonSerializer.Serialize(new { applicationId = normalizedApplicationId, limit = size });
+        var result = await capabilities.ReadAsync(
+            SystemCapabilityIds.Applications,
+            input,
+            SystemCapabilityInvocationContext.FromAuthorization(decision.Evidence),
+            cancellationToken);
+        if (!result.Ok || result.Data is null)
         {
-            if (!string.IsNullOrWhiteSpace(applicationId))
-            {
-                var id = ApplicationIdentifier.Parse(applicationId);
-                var registration = applications.Describe(id);
-                var revision = applications.Get(id);
-                if (registration is null || revision is null)
-                    return Fail(decision, "APPLICATION_UNKNOWN", "The requested application is not registered.",
-                        ApplicationsCall(null, size), "No registered application matched the exact identifier.");
-                return Ok(decision, new
-                {
-                    Application = Describe(registration, revision, activations?.Current(id)),
-                    StateSpaces = stateSpaces?.List(id, size).Select(SystemStateSpaceTools.Summary).ToArray()
-                },
-                    $"Returned registered application '{id.Value}'.", SourcesCall(id.Value, null, 50));
-            }
+            var error = result.Error ?? new SystemCapabilityError(
+                "SYSTEM_CAPABILITY_UNAVAILABLE", "System capability dispatch is unavailable.", "", []);
+            var code = error.Code == "SYSTEM_CAPABILITY_INPUT_INVALID" ? "INVALID_PAYLOAD" : error.Code;
+            var fix = code == "APPLICATION_UNKNOWN" ? ApplicationsCall(null, Math.Clamp(size, 1, 100)) : Capabilities;
+            return new ToolOutcome(
+                null,
+                code == "APPLICATION_UNKNOWN"
+                    ? "No registered application matched the exact identifier."
+                    : "System application capability dispatch failed.",
+                [fix],
+                new ToolError(code, error.Message, fix),
+                GuardEvidenceJson: JsonSerializer.Serialize(result.AuthorizationEvidence));
+        }
 
-            var registrations = applications.List(size);
-            var values = registrations
-                .Select(registration => Describe(registration, applications.Get(registration.Id)!,
-                    activations?.Current(registration.Id))).ToArray();
-            var next = values.Length == 0 ? Capabilities : ApplicationsCall(registrations[0].Id.Value, size);
-            return Ok(decision, new { Applications = values, Limit = size },
-                $"Returned {values.Length} registered application(s).", next);
-        }
-        catch (ArgumentException)
+        var data = result.Data.Value;
+        if (normalizedApplicationId is not null)
         {
-            return Fail(decision, "INVALID_APPLICATION", "applicationId is not a valid non-system application identifier.",
-                ApplicationsCall(null, size), "Rejected an invalid application identifier.");
+            var application = data.GetProperty("application").Clone();
+            var stateSpaces = data.GetProperty("stateSpaces").Clone();
+            return new ToolOutcome(
+                new { Application = application, StateSpaces = stateSpaces },
+                $"Returned registered application '{normalizedApplicationId}'.",
+                [SourcesCall(normalizedApplicationId, null, 50)],
+                GuardEvidenceJson: JsonSerializer.Serialize(result.AuthorizationEvidence));
         }
+
+        var applications = data.GetProperty("applications").Clone();
+        var first = applications.ValueKind == JsonValueKind.Array && applications.GetArrayLength() > 0
+            ? applications[0].GetProperty("id").GetString()
+            : null;
+        return new ToolOutcome(
+            new { Applications = applications, Limit = size },
+            $"Returned {applications.GetArrayLength()} registered application(s).",
+            [first is null ? Capabilities : ApplicationsCall(first, size)],
+            GuardEvidenceJson: JsonSerializer.Serialize(result.AuthorizationEvidence));
     }
 
     public Task<ToolEnvelope> SourcesAsync(
@@ -126,20 +137,6 @@ internal sealed class SystemRegistryTools
         return Ok(decision, new { ApplicationId = app.Value, Sources = values, Limit = size },
             $"Returned {values.Length} registered source(s) for '{app.Value}'.", next);
     }
-
-    private static object Describe(
-        ApplicationRegistration registration,
-        ApplicationRevision revision,
-        ActiveApplicationManifest? active) => new
-    {
-        Id = registration.Id.Value,
-        registration.DisplayName,
-        registration.Description,
-        Revision = revision.Revision,
-        revision.Fingerprint,
-        BaseApplications = registration.BaseApplications.Select(value => value.Value).ToArray(),
-        Active = active is null ? null : SystemApplicationActivationTools.Summary(active)
-    };
 
     private static object Describe(SourceRegistration source, SourceScanReceipt? latestScan) => new
     {

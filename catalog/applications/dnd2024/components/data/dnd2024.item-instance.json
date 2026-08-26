@@ -1,0 +1,1 @@
+{"id":"dnd2024.item-instance","name":"Physical item instance (D&D 2024)","description":"One campaign-local physical item referencing an exact immutable definition. Containment is sole custody/location; quantity, equipment, burden, and definition facts are separate owners. Governed by procedure.mechanic.dnd2024.item-instance."}

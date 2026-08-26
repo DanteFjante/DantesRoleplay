@@ -26,10 +26,13 @@ public sealed class AssistantConversationStore(
     private async Task<AssistantTurnBeginResult> BeginTurnCoreAsync(
         AssistantTurnBegin request, CancellationToken cancellationToken)
     {
+        if (!AssistantConversationScopes.IsKnown(request.Scope))
+            throw new ArgumentException("The assistant conversation scope is invalid.", nameof(request));
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
-            var replay = await db.AssistantTurns.AsNoTracking().SingleOrDefaultAsync(turn =>
+            var replay = await db.AssistantTurns.AsNoTracking().Include(turn => turn.Conversation)
+                .SingleOrDefaultAsync(turn =>
                 turn.OperatorId == request.OperatorId && turn.Provider == request.Provider &&
                 turn.IdempotencyKey == request.IdempotencyKey, cancellationToken);
             if (replay is not null)
@@ -38,7 +41,7 @@ public sealed class AssistantConversationStore(
                     ? replay.TurnNumber == 1
                     : replay.ConversationId == request.ConversationId && replay.TurnNumber > 1;
                 if (replay.RequestHash != request.RequestHash ||
-                    !sameRequestTarget)
+                    !sameRequestTarget || replay.Conversation?.Scope != request.Scope)
                     throw Conflict("ASSISTANT_IDEMPOTENCY_CONFLICT", "The idempotency key was already used for another request.");
                 await transaction.CommitAsync(cancellationToken);
                 return new(replay.ConversationId, replay.Id, true);
@@ -53,6 +56,7 @@ public sealed class AssistantConversationStore(
                 conversation = new()
                 {
                     Id = NewId("conversation."), OperatorId = request.OperatorId, Provider = request.Provider,
+                    Scope = request.Scope,
                     Title = Title(request.Message), Revision = 0, Status = AssistantConversationStatuses.Pending,
                     CreatedAtUtc = now, UpdatedAtUtc = now
                 };
@@ -62,7 +66,8 @@ public sealed class AssistantConversationStore(
             {
                 conversation = await db.AssistantConversations
                     .Include(item => item.Turns).Include(item => item.Messages)
-                    .SingleOrDefaultAsync(item => item.Id == request.ConversationId && item.OperatorId == request.OperatorId,
+                    .SingleOrDefaultAsync(item => item.Id == request.ConversationId &&
+                        item.OperatorId == request.OperatorId && item.Scope == request.Scope,
                         cancellationToken)
                     ?? throw Conflict("ASSISTANT_CONVERSATION_UNKNOWN", "The conversation was not found.");
                 if (conversation.Provider != request.Provider)
@@ -413,6 +418,7 @@ public sealed class AssistantConversationStore(
                     Ordinal = ordinal, Role = "assistant", Content = completion.Reply, CreatedAtUtc = now
                 });
             }
+            ApplyContext(turn, completion.Context, completion.Status);
             turn.Status = completion.Status;
             if (completion.ExternalStatus is not null)
                 turn.ExternalStatus = Bound(completion.ExternalStatus, 30);
@@ -446,7 +452,9 @@ public sealed class AssistantConversationStore(
                 completion.Status == AssistantConversationStatuses.Completed,
                 intent: turn.Provider == "codex"
                     ? "Send a repository Codex message with explicit one-request side-effect approvals."
-                    : "Send a message to the local advisory assistant.",
+                    : turn.Conversation.Scope == AssistantConversationScopes.System
+                        ? "Send a read-only message to the local system assistant."
+                        : "Send a message to the local advisory assistant.",
                 subject: turn.ConversationId,
                 error: turn.ErrorCode,
                 consumesReadEvidence: false,
@@ -509,44 +517,99 @@ public sealed class AssistantConversationStore(
     }
 
     public async Task<AssistantConversationDocument?> GetAsync(
-        string operatorId, string conversationId, CancellationToken cancellationToken = default)
+        string operatorId, string conversationId, CancellationToken cancellationToken = default,
+        string scope = AssistantConversationScopes.Advisory)
     {
+        if (!AssistantConversationScopes.IsKnown(scope))
+            throw new ArgumentException("The assistant conversation scope is invalid.", nameof(scope));
         var conversation = await db.AssistantConversations.AsNoTracking()
             .Include(item => item.Turns).Include(item => item.Messages).Include(item => item.Activities)
             .Include(item => item.Approvals)
-            .SingleOrDefaultAsync(item => item.Id == conversationId && item.OperatorId == operatorId, cancellationToken);
+            .SingleOrDefaultAsync(item => item.Id == conversationId && item.OperatorId == operatorId &&
+                item.Scope == scope, cancellationToken);
         return conversation is null ? null : Document(conversation);
     }
 
     public async Task<IReadOnlyList<AssistantConversationSummary>> ListAsync(
         string operatorId, string provider, DateTime? beforeUpdatedAtUtc, string? beforeId, int limit,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string scope = AssistantConversationScopes.Advisory)
     {
+        if (!AssistantConversationScopes.IsKnown(scope))
+            throw new ArgumentException("The assistant conversation scope is invalid.", nameof(scope));
         var query = db.AssistantConversations.AsNoTracking()
-            .Where(item => item.OperatorId == operatorId && item.Provider == provider);
+            .Where(item => item.OperatorId == operatorId && item.Provider == provider && item.Scope == scope);
         if (beforeUpdatedAtUtc.HasValue)
             query = query.Where(item => item.UpdatedAtUtc < beforeUpdatedAtUtc.Value ||
                 item.UpdatedAtUtc == beforeUpdatedAtUtc.Value && string.Compare(item.Id, beforeId) < 0);
         return await query.OrderByDescending(item => item.UpdatedAtUtc).ThenByDescending(item => item.Id)
             .Take(limit).Select(item => new AssistantConversationSummary(
-                item.Id, item.Provider, item.Title, item.Revision, item.Status, item.CreatedAtUtc, item.UpdatedAtUtc))
+                item.Id, item.Provider, item.Scope, item.Title, item.Revision, item.Status,
+                item.CreatedAtUtc, item.UpdatedAtUtc))
             .ToListAsync(cancellationToken);
     }
 
     private static AssistantConversationDocument Document(AssistantConversation item) => new(
-        new(item.Id, item.Provider, item.Title, item.Revision, item.Status, item.CreatedAtUtc, item.UpdatedAtUtc),
+        new(item.Id, item.Provider, item.Scope, item.Title, item.Revision, item.Status,
+            item.CreatedAtUtc, item.UpdatedAtUtc),
         item.ExternalThreadId,
         item.Turns.OrderBy(turn => turn.TurnNumber).Select(turn => new AssistantTurnDocument(
             turn.Id, turn.TurnNumber, turn.Status, turn.ExternalTurnId, turn.ExternalStatus,
             turn.ErrorCode, turn.ErrorMessage,
             turn.ModelProvider, turn.Model, turn.ModelRevision, turn.ModelProfile,
             turn.ElapsedMilliseconds, turn.PromptTokens, turn.OutputTokens,
-            turn.CreatedAtUtc, turn.StartedAtUtc, turn.CompletedAtUtc)).ToArray(),
+            turn.CreatedAtUtc, turn.StartedAtUtc, turn.CompletedAtUtc,
+            Context(turn))).ToArray(),
         item.Messages.OrderBy(message => message.Ordinal).Select(message => new AssistantMessageDocument(
             message.Id, message.TurnId, message.Ordinal, message.Role, message.Content, message.CreatedAtUtc)).ToArray(),
         item.Activities.OrderBy(activity => activity.Sequence).Select(Activity).ToArray(),
         item.Approvals.OrderBy(approval => approval.RequestedAtUtc).ThenBy(approval => approval.Id)
             .Select(Approval).ToArray());
+
+    private static AssistantTurnContextDocument? Context(AssistantTurn turn)
+    {
+        if (string.IsNullOrEmpty(turn.ContextProfile)) return null;
+        var references = JsonSerializer.Deserialize<string[]>(turn.ContextSourceReferencesJson)
+            ?? throw new InvalidOperationException("The stored assistant context references are invalid.");
+        return new(turn.ContextProfile, turn.ContextFingerprint, references, turn.ResponseDisposition);
+    }
+
+    private static void ApplyContext(
+        AssistantTurn turn,
+        AssistantTurnContextCompletion? context,
+        string completionStatus)
+    {
+        var system = turn.Conversation?.Scope == AssistantConversationScopes.System;
+        if (!system)
+        {
+            if (context is not null)
+                throw new ArgumentException("Advisory assistant turns cannot store system context.", nameof(context));
+            return;
+        }
+        if (completionStatus != AssistantConversationStatuses.Completed)
+        {
+            if (context is not null)
+                throw new ArgumentException("Failed system turns cannot claim completed context evidence.", nameof(context));
+            return;
+        }
+        if (context is null || context.Profile != AssistantTurnContextProfiles.SystemReadV1 ||
+            context.Fingerprint.Length != 64 || context.Fingerprint.Any(character =>
+                character is not (>= '0' and <= '9') and not (>= 'A' and <= 'F')) ||
+            !AssistantTurnResponseDispositions.IsKnown(context.Disposition) ||
+            context.SourceReferences is null || context.SourceReferences.Count > 24 ||
+            context.SourceReferences.Any(value => string.IsNullOrWhiteSpace(value) ||
+                value.Length > 320 || value.Any(char.IsControl)) ||
+            context.SourceReferences.Distinct(StringComparer.Ordinal).Count() != context.SourceReferences.Count ||
+            !context.SourceReferences.SequenceEqual(context.SourceReferences.OrderBy(value => value, StringComparer.Ordinal)))
+            throw new ArgumentException("The assistant context completion is invalid.", nameof(context));
+        var referencesJson = JsonSerializer.Serialize(context.SourceReferences);
+        if (referencesJson.Length > 8_000)
+            throw new ArgumentException("The assistant context references are too large.", nameof(context));
+        turn.ContextProfile = context.Profile;
+        turn.ContextFingerprint = context.Fingerprint;
+        turn.ContextSourceReferencesJson = referencesJson;
+        turn.ResponseDisposition = context.Disposition;
+    }
 
     private static AssistantTurnActivityDocument Activity(AssistantTurnActivity item) => new(
         item.Id, item.TurnId, item.ExternalItemId, item.Sequence, item.Kind, item.Status,

@@ -43,7 +43,24 @@ public sealed record ApplicationEcsEffectBatch
     public string Intent { get; init; } = string.Empty;
     public IReadOnlyList<string> ProceduresUsed { get; init; } = [];
     public ApplicationEcsExecutionIdentity? ExecutionIdentity { get; init; }
+    public IReadOnlyList<ApplicationEcsContainmentExpectation> ContainmentExpectations { get; init; } = [];
+
+    /// <summary>
+    /// Optional exact mechanic evidence supplied by a generic evaluated-action owner. Ordinary
+    /// structural ECS callers leave the complete group empty.
+    /// </summary>
+    public string MechanicId { get; init; } = string.Empty;
+    public int? MechanicVersion { get; init; }
+    public long? Seed { get; init; }
+    public string ProjectionJson { get; init; } = string.Empty;
 }
+
+/// <summary>Host-only direct-roster snapshot that must still match inside the effect transaction.</summary>
+public sealed record ApplicationEcsContainmentExpectation(
+    string ContainerEntityId,
+    IReadOnlyList<EcsContainmentExpectationItem> Contents);
+
+public sealed record EcsContainmentExpectationItem(string EntityId, string Slot, int Revision);
 
 /// <summary>
 /// Optional host-owned identity for at-most-once execution. Ordinary callers leave this absent;
@@ -86,12 +103,34 @@ public interface IApplicationEcsEffectApplier
         CancellationToken cancellationToken = default);
 }
 
+/// <summary>
+/// Optional kernel participant staged after all effects and before the root audit/commit. It must
+/// use the same scoped persistence context and must never commit independently.
+/// </summary>
+public interface IApplicationEcsTransactionParticipant
+{
+    Task StageAsync(
+        ApplicationEcsEffectBatch batch,
+        IReadOnlyList<ApplicationEcsEffectReceipt> receipts,
+        string operationId,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed class ApplicationEcsTransactionParticipantException(string message)
+    : InvalidOperationException(message);
+
 public static class ApplicationEcsEffectValidation
 {
     public const int MaximumEffects = 128;
     public const int MaximumIntentLength = 2_000;
     public const int MaximumProcedures = 64;
     public const int MaximumProcedureIdLength = 200;
+    public const int MaximumProjectionJsonLength = 2_000_000;
+    // One action accepts at most 32 role assignments; each role projection is bounded to 100
+    // descendants and its root. Keep transaction checks closed without rejecting a valid maximal
+    // nested projection solely because structural concurrency evidence was attached.
+    public const int MaximumContainmentExpectations = 32 * 101;
+    public const int MaximumContentsPerExpectation = 100;
 
     public static IReadOnlyList<ApplicationEcsEffectProblem> Validate(ApplicationEcsEffectBatch? batch)
     {
@@ -118,11 +157,85 @@ public static class ApplicationEcsEffectValidation
                     problems.Add(new(-1, "PROCEDURE_INVALID", $"Procedure ID {procedureIndex} is missing or exceeds {MaximumProcedureIdLength} characters."));
             }
         }
+        if (batch.ContainmentExpectations is null)
+            problems.Add(new(-1, "CONTAINMENT_EXPECTATIONS_REQUIRED", "The containment-expectation list is required."));
+        else if (batch.ContainmentExpectations.Count > MaximumContainmentExpectations)
+            problems.Add(new(-1, "CONTAINMENT_EXPECTATION_LIMIT",
+                $"At most {MaximumContainmentExpectations} containment snapshots may be checked."));
+        else
+        {
+            var containers = new HashSet<string>(StringComparer.Ordinal);
+            for (var expectationIndex = 0; expectationIndex < batch.ContainmentExpectations.Count; expectationIndex++)
+            {
+                var expectation = batch.ContainmentExpectations[expectationIndex];
+                if (expectation is null)
+                {
+                    problems.Add(new(-1, "CONTAINMENT_EXPECTATION_INVALID",
+                        $"Containment snapshot {expectationIndex} is missing."));
+                    continue;
+                }
+                if (string.IsNullOrWhiteSpace(expectation.ContainerEntityId)
+                    || expectation.ContainerEntityId.Length > 200
+                    || !containers.Add(expectation.ContainerEntityId))
+                    problems.Add(new(-1, "CONTAINMENT_EXPECTATION_INVALID",
+                        $"Containment snapshot {expectationIndex} needs one unique bounded container ID."));
+                if (expectation.Contents is null)
+                {
+                    problems.Add(new(-1, "CONTAINMENT_EXPECTATION_INVALID",
+                        $"Containment snapshot {expectationIndex} needs a contents list."));
+                    continue;
+                }
+                if (expectation.Contents.Count > MaximumContentsPerExpectation)
+                {
+                    problems.Add(new(-1, "CONTAINMENT_CONTENT_LIMIT",
+                        $"Containment snapshot {expectationIndex} may contain at most {MaximumContentsPerExpectation} entries."));
+                    continue;
+                }
+                var contents = new HashSet<string>(StringComparer.Ordinal);
+                for (var contentIndex = 0; contentIndex < expectation.Contents.Count; contentIndex++)
+                {
+                    var item = expectation.Contents[contentIndex];
+                    if (item is null || string.IsNullOrWhiteSpace(item.EntityId) || item.EntityId.Length > 200
+                        || item.Slot is null || item.Slot.Length > 100 || item.Revision < 1
+                        || !contents.Add(item.EntityId))
+                        problems.Add(new(-1, "CONTAINMENT_EXPECTATION_INVALID",
+                            $"Containment snapshot {expectationIndex} entry {contentIndex} is invalid or duplicated."));
+                }
+            }
+        }
         if (batch.ExecutionIdentity is not null
             && (!IsOperationId(batch.ExecutionIdentity.OperationId)
                 || !IsUpperSha256(batch.ExecutionIdentity.RequestFingerprint)))
             problems.Add(new(-1, "EXECUTION_IDENTITY_INVALID",
                 "Execution identity requires a 32-character lowercase operation ID and uppercase SHA-256 request fingerprint."));
+        var hasMechanicAudit = !string.IsNullOrEmpty(batch.MechanicId)
+            || batch.MechanicVersion is not null || batch.Seed is not null
+            || !string.IsNullOrEmpty(batch.ProjectionJson);
+        if (hasMechanicAudit)
+        {
+            if (string.IsNullOrWhiteSpace(batch.MechanicId) || batch.MechanicId.Length > 200
+                || batch.MechanicVersion is null or < 1 || batch.Seed is null
+                || string.IsNullOrWhiteSpace(batch.ProjectionJson)
+                || batch.ProjectionJson.Length > MaximumProjectionJsonLength)
+            {
+                problems.Add(new(-1, "MECHANIC_AUDIT_INVALID",
+                    "Mechanic audit requires a bounded ID, positive version, seed, and bounded JSON-object projection."));
+            }
+            else
+            {
+                try
+                {
+                    using var projection = System.Text.Json.JsonDocument.Parse(batch.ProjectionJson);
+                    if (projection.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object)
+                        throw new System.Text.Json.JsonException();
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                    problems.Add(new(-1, "MECHANIC_AUDIT_INVALID",
+                        "Mechanic audit projection must be one valid JSON object."));
+                }
+            }
+        }
         for (var index = 0; index < batch.Effects.Count; index++)
         {
             var effect = batch.Effects[index];

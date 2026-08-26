@@ -61,6 +61,8 @@ public sealed class InteractionProtocolAdapterTests
         Assert.Equal("LEARNING_INTENT_REQUIRED", invalid.Error?.Code);
         Assert.True(on.Ok);
         Assert.Equal(2, gateway.ExecutionRequests.Count);
+        Assert.Equal("safe", Assert.Single(Assert.IsType<InteractionExecutionOutcome>(off.Data)
+            .QueryResults!).Output!.Value.GetProperty("value").GetString());
         Assert.False(System.Text.Json.JsonDocument.Parse(gateway.ExecutionRequests[0]).RootElement.GetProperty("learn").GetBoolean());
         Assert.Equal("Inspect the fixture", System.Text.Json.JsonDocument.Parse(gateway.ExecutionRequests[1])
             .RootElement.GetProperty("learningIntent").GetProperty("intentText").GetString());
@@ -115,9 +117,12 @@ public sealed class InteractionProtocolAdapterTests
                 "execution", principal.PrincipalId, applicationId, stateSpaceId, "execute.1",
                 new string('A', 64), "succeeded", "INTERACTION_EXECUTION_SUCCEEDED", new string('A', 64),
                 "Completed.", [], DateTime.UtcNow);
+            using var output = System.Text.Json.JsonDocument.Parse("{\"value\":\"safe\"}");
+            var query = new InteractionQueryResultProjection("query.1", "fixture-app.query.safe",
+                new string('B', 64), new string('C', 64), new string('D', 64), output.RootElement.Clone());
             return Task.FromResult(new InteractionExecutionOutcome(InteractionExecutionReceiptDisposition.Succeeded,
                 "INTERACTION_EXECUTION_SUCCEEDED", "Completed.", [],
-                InteractionReceiptWriteResult.Appended(receipt), new string('A', 64)));
+                InteractionReceiptWriteResult.Appended(receipt), new string('A', 64), QueryResults: [query]));
         }
     }
 

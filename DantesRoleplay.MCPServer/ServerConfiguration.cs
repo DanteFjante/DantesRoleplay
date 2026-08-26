@@ -61,8 +61,9 @@ public static class ServerConfiguration
         // ARCHITECTURE.md §8.3 explains why there is no Postgres and no vector store yet, and
         // names the conditions that would change that.
         services.AddDantesRoleplayDataAccess(connectionString, provider);
-        services.Replace(ServiceDescriptor.Singleton<IAllowedSourceRootResolver>(
-            new ConfiguredAllowedSourceRootResolver(allowedSourceRoots)));
+        var configuredRoots = new ConfiguredAllowedSourceRootResolver(allowedSourceRoots);
+        services.Replace(ServiceDescriptor.Singleton<IAllowedSourceRootResolver>(configuredRoots));
+        services.Replace(ServiceDescriptor.Singleton<IAllowedSourceRootCatalog>(configuredRoots));
         services.Replace(ServiceDescriptor.Singleton<IPublicApplicationCatalogPolicy>(
             new ConfiguredPublicApplicationCatalogPolicy(publishedApplicationCatalogs)));
         services.AddHttpContextAccessor();

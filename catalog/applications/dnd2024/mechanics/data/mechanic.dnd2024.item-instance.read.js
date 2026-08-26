@@ -1,0 +1,3 @@
+var item=ctx.roles.item;if(ctx.input===null||Array.isArray(ctx.input)||typeof ctx.input!=='object'||Object.keys(ctx.input).length!==0)throw new Error('This action takes no input.');
+var value;try{value=JSON.parse(item.components['dnd2024.item-instance']);}catch(error){throw new Error('Item instance is invalid.');}if(!value||Array.isArray(value)||typeof value!=='object'||Object.keys(value).length!==1||typeof value.definitionId!=='string'||value.definitionId.length<4)throw new Error('Item instance is invalid.');
+return {narration:item.name+' is an instance of '+value.definitionId+'.',effects:[],events:[],notifications:[],data:{itemId:item.id,definitionId:value.definitionId,containerId:item.containerId||null,slot:item.containerSlot||null}};

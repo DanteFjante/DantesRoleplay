@@ -1,0 +1,1382 @@
+{
+  "format": "dnd-code-adoption-later-feature-classification/v1",
+  "generatedFrom": {
+    "matrix": "ruleset/dnd2024/adoption/evidence/coverage-matrix-1b.json",
+    "matrixSha256": "2B07ED18F7C55FE116171DD4A70A2746D2B1542B71F15A192598C15418B5666B",
+    "inventoryCommit": "5eaba06d365dcad4fdea0f863491900f87b2c4e3"
+  },
+  "scope": {
+    "classifiedFeatures": 22,
+    "plannedOnlyExcludedFeatures": [
+      18,
+      19,
+      30,
+      34,
+      35,
+      37,
+      38
+    ],
+    "directCapabilityKeys": 79,
+    "dependencyClosureCapabilityKeys": 123,
+    "sharedCapabilityKeys": 87
+  },
+  "features": [
+    {
+      "feature": 11,
+      "historicalEvidence": "verified",
+      "scopeNote": "turn and round lifecycle",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-11/FEATURE-11-DEPENDENCY-PLAN.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature11InitiativeEventTests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature11Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "componentdefinition.dnd2024.encounter-initiative-order.v0",
+        "componentdefinition.dnd2024.encounter-turn-state.v0",
+        "componentdefinition.dnd2024.speed.v0",
+        "componentdefinition.dnd2024.turn-budget.v0",
+        "entity.creature.dnd2024.feature-10.hero.v0",
+        "entity.creature.dnd2024.feature-10.training-target.v0",
+        "entity.encounter.dnd2024.feature-10.training.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "mechanic.mechanic.dnd2024.encounter-initiative-order.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.advance.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.end.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.start.v1",
+        "procedure.procedure.mechanic.dnd2024.encounter-turn-lifecycle.v1"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.character-level.v0",
+        "componentdefinition.dnd2024.conditions.v0",
+        "componentdefinition.dnd2024.encounter-initiative-order.v0",
+        "componentdefinition.dnd2024.encounter-turn-state.v0",
+        "componentdefinition.dnd2024.hit-points.v0",
+        "componentdefinition.dnd2024.saving-throw-proficiencies.v0",
+        "componentdefinition.dnd2024.skill-proficiencies.v0",
+        "componentdefinition.dnd2024.source.v0",
+        "componentdefinition.dnd2024.speed.v0",
+        "componentdefinition.dnd2024.turn-budget.v0",
+        "componentdefinition.dnd2024.weapon-proficiencies.v0",
+        "entity.creature.dnd2024.feature-10.hero.v0",
+        "entity.creature.dnd2024.feature-10.training-target.v0",
+        "entity.encounter.dnd2024.feature-10.training.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "mechanic.mechanic.dnd2024.character-level.record.v1",
+        "mechanic.mechanic.dnd2024.conditions.write.v1",
+        "mechanic.mechanic.dnd2024.d20-test.state-effects.v1",
+        "mechanic.mechanic.dnd2024.encounter-initiative-order.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.advance.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.end.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.start.v1",
+        "mechanic.mechanic.dnd2024.hit-points.write.v1",
+        "mechanic.mechanic.dnd2024.initiative.roll.v1",
+        "mechanic.mechanic.dnd2024.saving-throw-proficiencies.record.v1",
+        "mechanic.mechanic.dnd2024.saving-throw.v1",
+        "mechanic.mechanic.dnd2024.skill-proficiencies.record.v1",
+        "mechanic.mechanic.dnd2024.speed.read.v1",
+        "mechanic.mechanic.dnd2024.speed.write.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.read.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.spend.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.write.v1",
+        "mechanic.mechanic.dnd2024.weapon-proficiencies.write.v1",
+        "procedure.procedure.mechanic.dnd2024.abilities.v1",
+        "procedure.procedure.mechanic.dnd2024.character-level.v1",
+        "procedure.procedure.mechanic.dnd2024.conditions.v1",
+        "procedure.procedure.mechanic.dnd2024.encounter-initiative-order.v1",
+        "procedure.procedure.mechanic.dnd2024.encounter-turn-lifecycle.v1",
+        "procedure.procedure.mechanic.dnd2024.hit-points.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.skill-proficiencies.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1",
+        "procedure.procedure.mechanic.dnd2024.speed.v1",
+        "procedure.procedure.mechanic.dnd2024.turn-budget.v1",
+        "procedure.procedure.mechanic.dnd2024.weapon-proficiencies.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 12,
+      "historicalEvidence": "verified",
+      "scopeNote": "action economy",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-12/FEATURE-12-IMPLEMENTATION-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-12/FEATURE-12-SLICE-1-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-12/FEATURE-12-SLICE-2-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-12/FEATURE-12-SLICE-3-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature12Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "componentdefinition.dnd2024.encounter-turn-state.v0",
+        "componentdefinition.dnd2024.turn-budget.v0",
+        "entity.creature.dnd2024.feature-10.hero.v0",
+        "entity.creature.dnd2024.feature-10.training-target.v0",
+        "entity.encounter.dnd2024.feature-10.training.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "mechanic.mechanic.dnd2024.turn-budget.read.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.spend.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.write.v1",
+        "procedure.procedure.mechanic.dnd2024.turn-budget.v1"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.character-level.v0",
+        "componentdefinition.dnd2024.conditions.v0",
+        "componentdefinition.dnd2024.encounter-initiative-order.v0",
+        "componentdefinition.dnd2024.encounter-turn-state.v0",
+        "componentdefinition.dnd2024.hit-points.v0",
+        "componentdefinition.dnd2024.saving-throw-proficiencies.v0",
+        "componentdefinition.dnd2024.skill-proficiencies.v0",
+        "componentdefinition.dnd2024.source.v0",
+        "componentdefinition.dnd2024.speed.v0",
+        "componentdefinition.dnd2024.turn-budget.v0",
+        "componentdefinition.dnd2024.weapon-proficiencies.v0",
+        "entity.creature.dnd2024.feature-10.hero.v0",
+        "entity.creature.dnd2024.feature-10.training-target.v0",
+        "entity.encounter.dnd2024.feature-10.training.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "mechanic.mechanic.dnd2024.character-level.record.v1",
+        "mechanic.mechanic.dnd2024.conditions.write.v1",
+        "mechanic.mechanic.dnd2024.d20-test.state-effects.v1",
+        "mechanic.mechanic.dnd2024.encounter-initiative-order.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.advance.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.end.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.start.v1",
+        "mechanic.mechanic.dnd2024.hit-points.write.v1",
+        "mechanic.mechanic.dnd2024.initiative.roll.v1",
+        "mechanic.mechanic.dnd2024.saving-throw-proficiencies.record.v1",
+        "mechanic.mechanic.dnd2024.saving-throw.v1",
+        "mechanic.mechanic.dnd2024.skill-proficiencies.record.v1",
+        "mechanic.mechanic.dnd2024.speed.read.v1",
+        "mechanic.mechanic.dnd2024.speed.write.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.read.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.spend.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.write.v1",
+        "mechanic.mechanic.dnd2024.weapon-proficiencies.write.v1",
+        "procedure.procedure.mechanic.dnd2024.abilities.v1",
+        "procedure.procedure.mechanic.dnd2024.character-level.v1",
+        "procedure.procedure.mechanic.dnd2024.conditions.v1",
+        "procedure.procedure.mechanic.dnd2024.encounter-initiative-order.v1",
+        "procedure.procedure.mechanic.dnd2024.encounter-turn-lifecycle.v1",
+        "procedure.procedure.mechanic.dnd2024.hit-points.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.skill-proficiencies.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1",
+        "procedure.procedure.mechanic.dnd2024.speed.v1",
+        "procedure.procedure.mechanic.dnd2024.turn-budget.v1",
+        "procedure.procedure.mechanic.dnd2024.weapon-proficiencies.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 13,
+      "historicalEvidence": "verified",
+      "scopeNote": "conditions",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-13/FEATURE-13-SLICE-1-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-13/FEATURE-13-SLICE-2-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-13/FEATURE-13-SLICE-3-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-13/FEATURE-13-SLICE-4-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-13/FEATURE-13-SLICE-5-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-13/FEATURE-13-SLICE-6-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature13Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "componentdefinition.dnd2024.conditions.v0",
+        "entity.creature.dnd2024.feature-10.hero.v0",
+        "entity.creature.dnd2024.feature-10.training-target.v0",
+        "entity.encounter.dnd2024.feature-10.training.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "entity.weapon.dnd2024.dagger.v0",
+        "mechanic.mechanic.dnd2024.conditions.write.v1",
+        "mechanic.mechanic.dnd2024.d20-test.state-effects.v1",
+        "procedure.procedure.mechanic.dnd2024.conditions.v1"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.character-level.v0",
+        "componentdefinition.dnd2024.conditions.v0",
+        "componentdefinition.dnd2024.encounter-initiative-order.v0",
+        "componentdefinition.dnd2024.encounter-turn-state.v0",
+        "componentdefinition.dnd2024.hit-points.v0",
+        "componentdefinition.dnd2024.saving-throw-proficiencies.v0",
+        "componentdefinition.dnd2024.skill-proficiencies.v0",
+        "componentdefinition.dnd2024.source.v0",
+        "componentdefinition.dnd2024.speed.v0",
+        "componentdefinition.dnd2024.turn-budget.v0",
+        "componentdefinition.dnd2024.weapon-proficiencies.v0",
+        "componentdefinition.dnd2024.weapon-profile.v0",
+        "entity.creature.dnd2024.feature-10.hero.v0",
+        "entity.creature.dnd2024.feature-10.training-target.v0",
+        "entity.encounter.dnd2024.feature-10.training.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "entity.weapon.dnd2024.battleaxe.v0",
+        "entity.weapon.dnd2024.dagger.v0",
+        "entity.weapon.dnd2024.shortbow.v0",
+        "mechanic.mechanic.dnd2024.character-level.record.v1",
+        "mechanic.mechanic.dnd2024.conditions.write.v1",
+        "mechanic.mechanic.dnd2024.d20-test.state-effects.v1",
+        "mechanic.mechanic.dnd2024.encounter-initiative-order.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.advance.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.end.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.start.v1",
+        "mechanic.mechanic.dnd2024.hit-points.write.v1",
+        "mechanic.mechanic.dnd2024.initiative.roll.v1",
+        "mechanic.mechanic.dnd2024.saving-throw-proficiencies.record.v1",
+        "mechanic.mechanic.dnd2024.saving-throw.v1",
+        "mechanic.mechanic.dnd2024.skill-proficiencies.record.v1",
+        "mechanic.mechanic.dnd2024.speed.read.v1",
+        "mechanic.mechanic.dnd2024.speed.write.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.read.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.spend.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.write.v1",
+        "mechanic.mechanic.dnd2024.weapon-proficiencies.write.v1",
+        "mechanic.mechanic.dnd2024.weapon-profile.write.v1",
+        "procedure.procedure.mechanic.dnd2024.abilities.v1",
+        "procedure.procedure.mechanic.dnd2024.character-level.v1",
+        "procedure.procedure.mechanic.dnd2024.conditions.v1",
+        "procedure.procedure.mechanic.dnd2024.encounter-initiative-order.v1",
+        "procedure.procedure.mechanic.dnd2024.encounter-turn-lifecycle.v1",
+        "procedure.procedure.mechanic.dnd2024.hit-points.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.skill-proficiencies.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1",
+        "procedure.procedure.mechanic.dnd2024.speed.v1",
+        "procedure.procedure.mechanic.dnd2024.turn-budget.v1",
+        "procedure.procedure.mechanic.dnd2024.weapon-proficiencies.v1",
+        "procedure.procedure.mechanic.dnd2024.weapon-profile.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 14,
+      "historicalEvidence": "verified",
+      "scopeNote": "exhaustion",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-14/FEATURE-14-SLICE-0-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-14/FEATURE-14-SLICE-1-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-14/FEATURE-14-SLICE-2-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-14/FEATURE-14-SLICE-3-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature14Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "componentdefinition.dnd2024.conditions.v0",
+        "componentdefinition.dnd2024.encounter-turn-state.v0",
+        "componentdefinition.dnd2024.turn-budget.v0",
+        "entity.creature.dnd2024.feature-10.hero.v0",
+        "entity.creature.dnd2024.feature-10.training-target.v0",
+        "entity.encounter.dnd2024.feature-10.training.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "entity.weapon.dnd2024.dagger.v0"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.character-level.v0",
+        "componentdefinition.dnd2024.conditions.v0",
+        "componentdefinition.dnd2024.encounter-initiative-order.v0",
+        "componentdefinition.dnd2024.encounter-turn-state.v0",
+        "componentdefinition.dnd2024.hit-points.v0",
+        "componentdefinition.dnd2024.saving-throw-proficiencies.v0",
+        "componentdefinition.dnd2024.skill-proficiencies.v0",
+        "componentdefinition.dnd2024.source.v0",
+        "componentdefinition.dnd2024.speed.v0",
+        "componentdefinition.dnd2024.turn-budget.v0",
+        "componentdefinition.dnd2024.weapon-proficiencies.v0",
+        "componentdefinition.dnd2024.weapon-profile.v0",
+        "entity.creature.dnd2024.feature-10.hero.v0",
+        "entity.creature.dnd2024.feature-10.training-target.v0",
+        "entity.encounter.dnd2024.feature-10.training.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "entity.weapon.dnd2024.battleaxe.v0",
+        "entity.weapon.dnd2024.dagger.v0",
+        "entity.weapon.dnd2024.shortbow.v0",
+        "mechanic.mechanic.dnd2024.character-level.record.v1",
+        "mechanic.mechanic.dnd2024.conditions.write.v1",
+        "mechanic.mechanic.dnd2024.d20-test.state-effects.v1",
+        "mechanic.mechanic.dnd2024.encounter-initiative-order.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.advance.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.end.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.start.v1",
+        "mechanic.mechanic.dnd2024.hit-points.write.v1",
+        "mechanic.mechanic.dnd2024.initiative.roll.v1",
+        "mechanic.mechanic.dnd2024.saving-throw-proficiencies.record.v1",
+        "mechanic.mechanic.dnd2024.saving-throw.v1",
+        "mechanic.mechanic.dnd2024.skill-proficiencies.record.v1",
+        "mechanic.mechanic.dnd2024.speed.read.v1",
+        "mechanic.mechanic.dnd2024.speed.write.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.read.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.spend.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.write.v1",
+        "mechanic.mechanic.dnd2024.weapon-proficiencies.write.v1",
+        "mechanic.mechanic.dnd2024.weapon-profile.write.v1",
+        "procedure.procedure.mechanic.dnd2024.abilities.v1",
+        "procedure.procedure.mechanic.dnd2024.character-level.v1",
+        "procedure.procedure.mechanic.dnd2024.conditions.v1",
+        "procedure.procedure.mechanic.dnd2024.encounter-initiative-order.v1",
+        "procedure.procedure.mechanic.dnd2024.encounter-turn-lifecycle.v1",
+        "procedure.procedure.mechanic.dnd2024.hit-points.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.skill-proficiencies.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1",
+        "procedure.procedure.mechanic.dnd2024.speed.v1",
+        "procedure.procedure.mechanic.dnd2024.turn-budget.v1",
+        "procedure.procedure.mechanic.dnd2024.weapon-proficiencies.v1",
+        "procedure.procedure.mechanic.dnd2024.weapon-profile.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 15,
+      "historicalEvidence": "verified",
+      "scopeNote": "damage mitigation",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-15/FEATURE-15-SLICE-1-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-15/FEATURE-15-SLICE-2-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-15/FEATURE-15-SLICE-3-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-15/FEATURE-15-SLICE-4-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature15Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.conditions.v0",
+        "componentdefinition.dnd2024.hit-points.v0",
+        "componentdefinition.dnd2024.weapon-profile.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "entity.weapon.dnd2024.dagger.v0"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.conditions.v0",
+        "componentdefinition.dnd2024.hit-points.v0",
+        "componentdefinition.dnd2024.source.v0",
+        "componentdefinition.dnd2024.weapon-profile.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "entity.weapon.dnd2024.battleaxe.v0",
+        "entity.weapon.dnd2024.dagger.v0",
+        "entity.weapon.dnd2024.shortbow.v0",
+        "mechanic.mechanic.dnd2024.conditions.write.v1",
+        "mechanic.mechanic.dnd2024.hit-points.write.v1",
+        "mechanic.mechanic.dnd2024.weapon-profile.write.v1",
+        "procedure.procedure.mechanic.dnd2024.abilities.v1",
+        "procedure.procedure.mechanic.dnd2024.conditions.v1",
+        "procedure.procedure.mechanic.dnd2024.hit-points.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1",
+        "procedure.procedure.mechanic.dnd2024.weapon-profile.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 16,
+      "historicalEvidence": "verified",
+      "scopeNote": "temporary HP and healing",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-16/FEATURE-16-SLICE-1-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-16/FEATURE-16-SLICE-2-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-16/FEATURE-16-SLICE-3-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature16Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.hit-points.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "entity.weapon.dnd2024.dagger.v0"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.hit-points.v0",
+        "componentdefinition.dnd2024.source.v0",
+        "componentdefinition.dnd2024.weapon-profile.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "entity.weapon.dnd2024.battleaxe.v0",
+        "entity.weapon.dnd2024.dagger.v0",
+        "entity.weapon.dnd2024.shortbow.v0",
+        "mechanic.mechanic.dnd2024.hit-points.write.v1",
+        "mechanic.mechanic.dnd2024.weapon-profile.write.v1",
+        "procedure.procedure.mechanic.dnd2024.abilities.v1",
+        "procedure.procedure.mechanic.dnd2024.hit-points.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1",
+        "procedure.procedure.mechanic.dnd2024.weapon-profile.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 17,
+      "historicalEvidence": "partial-verified",
+      "scopeNote": "dying slices 1-3 only",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-17/FEATURE-17-DEPENDENCY-PLAN.md",
+        "old-dnd/ruleset/dnd2024/feature-17/FEATURE-17-SLICE-1-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-17/FEATURE-17-SLICE-2-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-17/FEATURE-17-SLICE-3-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature17Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "componentdefinition.dnd2024.conditions.v0",
+        "componentdefinition.dnd2024.hit-points.v0",
+        "entity.creature.dnd2024.feature-10.hero.v0",
+        "entity.creature.dnd2024.feature-10.training-target.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "procedure.procedure.mechanic.dnd2024.conditions.v1"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.character-level.v0",
+        "componentdefinition.dnd2024.conditions.v0",
+        "componentdefinition.dnd2024.encounter-initiative-order.v0",
+        "componentdefinition.dnd2024.encounter-turn-state.v0",
+        "componentdefinition.dnd2024.hit-points.v0",
+        "componentdefinition.dnd2024.saving-throw-proficiencies.v0",
+        "componentdefinition.dnd2024.skill-proficiencies.v0",
+        "componentdefinition.dnd2024.source.v0",
+        "componentdefinition.dnd2024.speed.v0",
+        "componentdefinition.dnd2024.turn-budget.v0",
+        "componentdefinition.dnd2024.weapon-proficiencies.v0",
+        "entity.creature.dnd2024.feature-10.hero.v0",
+        "entity.creature.dnd2024.feature-10.training-target.v0",
+        "entity.encounter.dnd2024.feature-10.training.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "mechanic.mechanic.dnd2024.character-level.record.v1",
+        "mechanic.mechanic.dnd2024.conditions.write.v1",
+        "mechanic.mechanic.dnd2024.d20-test.state-effects.v1",
+        "mechanic.mechanic.dnd2024.encounter-initiative-order.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.advance.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.end.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.start.v1",
+        "mechanic.mechanic.dnd2024.hit-points.write.v1",
+        "mechanic.mechanic.dnd2024.initiative.roll.v1",
+        "mechanic.mechanic.dnd2024.saving-throw-proficiencies.record.v1",
+        "mechanic.mechanic.dnd2024.saving-throw.v1",
+        "mechanic.mechanic.dnd2024.skill-proficiencies.record.v1",
+        "mechanic.mechanic.dnd2024.speed.read.v1",
+        "mechanic.mechanic.dnd2024.speed.write.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.read.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.spend.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.write.v1",
+        "mechanic.mechanic.dnd2024.weapon-proficiencies.write.v1",
+        "procedure.procedure.mechanic.dnd2024.abilities.v1",
+        "procedure.procedure.mechanic.dnd2024.character-level.v1",
+        "procedure.procedure.mechanic.dnd2024.conditions.v1",
+        "procedure.procedure.mechanic.dnd2024.encounter-initiative-order.v1",
+        "procedure.procedure.mechanic.dnd2024.encounter-turn-lifecycle.v1",
+        "procedure.procedure.mechanic.dnd2024.hit-points.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.skill-proficiencies.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1",
+        "procedure.procedure.mechanic.dnd2024.speed.v1",
+        "procedure.procedure.mechanic.dnd2024.turn-budget.v1",
+        "procedure.procedure.mechanic.dnd2024.weapon-proficiencies.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Historical evidence is explicitly partial; unimplemented behavior remains outside recovery scope.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 20,
+      "historicalEvidence": "partial-verified",
+      "scopeNote": "movement slices 1-5 only",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-20/FEATURE-20-DEPENDENCY-PLAN.md",
+        "old-dnd/ruleset/dnd2024/feature-20/FEATURE-20-SLICE-1-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-20/FEATURE-20-SLICE-2-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-20/FEATURE-20-SLICE-3-TACTICAL-MELEE-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-20/FEATURE-20-SLICE-4-MOVEMENT-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-20/FEATURE-20-SLICE-5-MOVEMENT-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature20TacticalMeleeTests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature20TacticalMovementTests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature20Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "componentdefinition.dnd2024.creature-size.v0",
+        "componentdefinition.dnd2024.encounter-initiative-order.v0",
+        "componentdefinition.dnd2024.encounter-turn-state.v0",
+        "componentdefinition.dnd2024.speed.v0",
+        "componentdefinition.dnd2024.turn-budget.v0",
+        "entity.creature.dnd2024.feature-10.hero.v0",
+        "entity.creature.dnd2024.feature-10.training-target.v0",
+        "entity.encounter.dnd2024.feature-10.training.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "entity.weapon.dnd2024.dagger.v0",
+        "entity.weapon.dnd2024.shortbow.v0",
+        "mechanic.mechanic.dnd2024.speed.read.v1",
+        "mechanic.mechanic.dnd2024.speed.write.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.spend.v1",
+        "mechanic.mechanic.dnd2024.weapon-attack.v1",
+        "procedure.procedure.mechanic.dnd2024.speed.v1"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.armor-class.v0",
+        "componentdefinition.dnd2024.character-level.v0",
+        "componentdefinition.dnd2024.conditions.v0",
+        "componentdefinition.dnd2024.creature-size.v0",
+        "componentdefinition.dnd2024.encounter-initiative-order.v0",
+        "componentdefinition.dnd2024.encounter-turn-state.v0",
+        "componentdefinition.dnd2024.equipment-state.v0",
+        "componentdefinition.dnd2024.hit-points.v0",
+        "componentdefinition.dnd2024.item-definition.v0",
+        "componentdefinition.dnd2024.item-instance.v0",
+        "componentdefinition.dnd2024.item-quantity.v0",
+        "componentdefinition.dnd2024.saving-throw-proficiencies.v0",
+        "componentdefinition.dnd2024.skill-proficiencies.v0",
+        "componentdefinition.dnd2024.source.v0",
+        "componentdefinition.dnd2024.speed.v0",
+        "componentdefinition.dnd2024.turn-budget.v0",
+        "componentdefinition.dnd2024.weapon-proficiencies.v0",
+        "componentdefinition.dnd2024.weapon-profile.v0",
+        "entity.creature.dnd2024.feature-10.hero.v0",
+        "entity.creature.dnd2024.feature-10.training-target.v0",
+        "entity.encounter.dnd2024.feature-10.training.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "entity.weapon.dnd2024.battleaxe.v0",
+        "entity.weapon.dnd2024.dagger.v0",
+        "entity.weapon.dnd2024.shortbow.v0",
+        "mechanic.mechanic.dnd2024.armor-class.write.v1",
+        "mechanic.mechanic.dnd2024.carrying-capacity.read.v1",
+        "mechanic.mechanic.dnd2024.character-level.record.v1",
+        "mechanic.mechanic.dnd2024.conditions.write.v1",
+        "mechanic.mechanic.dnd2024.creature-size.record.v1",
+        "mechanic.mechanic.dnd2024.d20-test.state-effects.v1",
+        "mechanic.mechanic.dnd2024.encounter-initiative-order.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.advance.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.end.v1",
+        "mechanic.mechanic.dnd2024.encounter-turn.start.v1",
+        "mechanic.mechanic.dnd2024.hit-points.write.v1",
+        "mechanic.mechanic.dnd2024.initiative.roll.v1",
+        "mechanic.mechanic.dnd2024.item-burden.read.v1",
+        "mechanic.mechanic.dnd2024.item-instance.create-and-place.v1",
+        "mechanic.mechanic.dnd2024.item-instance.move.v1",
+        "mechanic.mechanic.dnd2024.item-instance.read.v1",
+        "mechanic.mechanic.dnd2024.item-instance.record.v1",
+        "mechanic.mechanic.dnd2024.item-stack.consume.v1",
+        "mechanic.mechanic.dnd2024.item-stack.create-and-place.v1",
+        "mechanic.mechanic.dnd2024.item-stack.merge.v1",
+        "mechanic.mechanic.dnd2024.item-stack.record.v1",
+        "mechanic.mechanic.dnd2024.item-stack.split.v1",
+        "mechanic.mechanic.dnd2024.item.equip.v1",
+        "mechanic.mechanic.dnd2024.item.equipment.read.v1",
+        "mechanic.mechanic.dnd2024.item.transfer.v1",
+        "mechanic.mechanic.dnd2024.item.unequip.v1",
+        "mechanic.mechanic.dnd2024.saving-throw-proficiencies.record.v1",
+        "mechanic.mechanic.dnd2024.saving-throw.v1",
+        "mechanic.mechanic.dnd2024.skill-proficiencies.record.v1",
+        "mechanic.mechanic.dnd2024.speed.read.v1",
+        "mechanic.mechanic.dnd2024.speed.write.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.read.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.spend.v1",
+        "mechanic.mechanic.dnd2024.turn-budget.write.v1",
+        "mechanic.mechanic.dnd2024.weapon-attack.v1",
+        "mechanic.mechanic.dnd2024.weapon-proficiencies.write.v1",
+        "mechanic.mechanic.dnd2024.weapon-profile.write.v1",
+        "procedure.procedure.mechanic.dnd2024.abilities.v1",
+        "procedure.procedure.mechanic.dnd2024.armor-class.v1",
+        "procedure.procedure.mechanic.dnd2024.carrying-capacity.v1",
+        "procedure.procedure.mechanic.dnd2024.character-level.v1",
+        "procedure.procedure.mechanic.dnd2024.conditions.v1",
+        "procedure.procedure.mechanic.dnd2024.creature-size.v1",
+        "procedure.procedure.mechanic.dnd2024.encounter-initiative-order.v1",
+        "procedure.procedure.mechanic.dnd2024.encounter-turn-lifecycle.v1",
+        "procedure.procedure.mechanic.dnd2024.equipment-state.v1",
+        "procedure.procedure.mechanic.dnd2024.hit-points.v1",
+        "procedure.procedure.mechanic.dnd2024.item-definition.v1",
+        "procedure.procedure.mechanic.dnd2024.item-instance.v1",
+        "procedure.procedure.mechanic.dnd2024.item-quantity.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.skill-proficiencies.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1",
+        "procedure.procedure.mechanic.dnd2024.speed.v1",
+        "procedure.procedure.mechanic.dnd2024.turn-budget.v1",
+        "procedure.procedure.mechanic.dnd2024.weapon-attack.v1",
+        "procedure.procedure.mechanic.dnd2024.weapon-proficiencies.v1",
+        "procedure.procedure.mechanic.dnd2024.weapon-profile.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Historical evidence is explicitly partial; unimplemented behavior remains outside recovery scope.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 21,
+      "historicalEvidence": "partial-verified",
+      "scopeNote": "static Shortbow range only",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-21/FEATURE-21-DEPENDENCY-PLAN.md",
+        "old-dnd/ruleset/dnd2024/feature-21/FEATURE-21-SLICE-1-RECEIPT.md"
+      ],
+      "historicalTests": [],
+      "directCapabilityKeys": [
+        "entity.weapon.dnd2024.shortbow.v0"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.source.v0",
+        "componentdefinition.dnd2024.weapon-profile.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "entity.weapon.dnd2024.battleaxe.v0",
+        "entity.weapon.dnd2024.dagger.v0",
+        "entity.weapon.dnd2024.shortbow.v0",
+        "mechanic.mechanic.dnd2024.weapon-profile.write.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1",
+        "procedure.procedure.mechanic.dnd2024.weapon-profile.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Historical evidence is explicitly partial; unimplemented behavior remains outside recovery scope.",
+        "No feature-specific historical test file was found; direct evidence is manually constrained.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 22,
+      "historicalEvidence": "partial-verified",
+      "scopeNote": "unarmed strike evidence only",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-22/FEATURE-22-DEPENDENCY-PLAN.md",
+        "old-dnd/ruleset/dnd2024/feature-22/FEATURE-22-SLICE-1-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature22Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.armor-class.v0",
+        "componentdefinition.dnd2024.character-level.v0",
+        "componentdefinition.dnd2024.conditions.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.armor-class.v0",
+        "componentdefinition.dnd2024.character-level.v0",
+        "componentdefinition.dnd2024.conditions.v0",
+        "componentdefinition.dnd2024.source.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "mechanic.mechanic.dnd2024.armor-class.write.v1",
+        "mechanic.mechanic.dnd2024.character-level.record.v1",
+        "mechanic.mechanic.dnd2024.conditions.write.v1",
+        "procedure.procedure.mechanic.dnd2024.abilities.v1",
+        "procedure.procedure.mechanic.dnd2024.armor-class.v1",
+        "procedure.procedure.mechanic.dnd2024.character-level.v1",
+        "procedure.procedure.mechanic.dnd2024.conditions.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Historical evidence is explicitly partial; unimplemented behavior remains outside recovery scope.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 23,
+      "historicalEvidence": "accepted",
+      "scopeNote": "equipment and inventory",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-23/FEATURE-23-SLICE-1-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-23/FEATURE-23-SLICE-10-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-23/FEATURE-23-SLICE-11-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-23/FEATURE-23-SLICE-2-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-23/FEATURE-23-SLICE-3-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-23/FEATURE-23-SLICE-4-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-23/FEATURE-23-SLICE-5-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-23/FEATURE-23-SLICE-6-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-23/FEATURE-23-SLICE-7-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-23/FEATURE-23-SLICE-8-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-23/FEATURE-23-SLICE-9-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-23/IMPLEMENTATION-STATUS.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature23Slice10Tests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature23Slice11Tests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature23Slice3Tests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature23Slice4Tests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature23Slice5Tests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature23Slice6Tests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature23Slice7Tests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature23Slice8Tests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature23Slice9Tests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature23Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.creature-size.v0",
+        "componentdefinition.dnd2024.equipment-state.v0",
+        "componentdefinition.dnd2024.item-activity.v0",
+        "componentdefinition.dnd2024.item-definition.v0",
+        "componentdefinition.dnd2024.item-instance.v0",
+        "componentdefinition.dnd2024.item-quantity.v0",
+        "entity.currency.dnd2024.copper-piece.v1.v0",
+        "entity.currency.dnd2024.electrum-piece.v1.v0",
+        "entity.currency.dnd2024.gold-piece.v1.v0",
+        "entity.currency.dnd2024.platinum-piece.v1.v0",
+        "entity.currency.dnd2024.silver-piece.v1.v0",
+        "entity.item.dnd2024.backpack.v1.v0",
+        "entity.item.dnd2024.dagger.v1.v0",
+        "entity.item.dnd2024.hempen-rope-50-foot.v1.v0",
+        "entity.item.dnd2024.pouch.v1.v0",
+        "entity.item.dnd2024.quiver.v1.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "entity.weapon.dnd2024.dagger.v0",
+        "mechanic.mechanic.dnd2024.item-instance.create-and-place.v1",
+        "mechanic.mechanic.dnd2024.item.equip.v1",
+        "mechanic.mechanic.dnd2024.item.transfer.v1",
+        "procedure.procedure.mechanic.dnd2024.item-activity.v1",
+        "procedure.procedure.mechanic.dnd2024.item-definition.v1",
+        "procedure.procedure.mechanic.dnd2024.item-instance.v1",
+        "procedure.procedure.mechanic.dnd2024.item-quantity.v1"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.creature-size.v0",
+        "componentdefinition.dnd2024.equipment-state.v0",
+        "componentdefinition.dnd2024.item-activity.v0",
+        "componentdefinition.dnd2024.item-definition.v0",
+        "componentdefinition.dnd2024.item-instance.v0",
+        "componentdefinition.dnd2024.item-quantity.v0",
+        "componentdefinition.dnd2024.source.v0",
+        "componentdefinition.dnd2024.weapon-profile.v0",
+        "entity.currency.dnd2024.copper-piece.v1.v0",
+        "entity.currency.dnd2024.electrum-piece.v1.v0",
+        "entity.currency.dnd2024.gold-piece.v1.v0",
+        "entity.currency.dnd2024.platinum-piece.v1.v0",
+        "entity.currency.dnd2024.silver-piece.v1.v0",
+        "entity.item.dnd2024.backpack.v1.v0",
+        "entity.item.dnd2024.dagger.v1.v0",
+        "entity.item.dnd2024.hempen-rope-50-foot.v1.v0",
+        "entity.item.dnd2024.pouch.v1.v0",
+        "entity.item.dnd2024.quiver.v1.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "entity.weapon.dnd2024.battleaxe.v0",
+        "entity.weapon.dnd2024.dagger.v0",
+        "entity.weapon.dnd2024.shortbow.v0",
+        "mechanic.mechanic.dnd2024.carrying-capacity.read.v1",
+        "mechanic.mechanic.dnd2024.creature-size.record.v1",
+        "mechanic.mechanic.dnd2024.item-activity.use.v1",
+        "mechanic.mechanic.dnd2024.item-burden.read.v1",
+        "mechanic.mechanic.dnd2024.item-instance.create-and-place.v1",
+        "mechanic.mechanic.dnd2024.item-instance.move.v1",
+        "mechanic.mechanic.dnd2024.item-instance.read.v1",
+        "mechanic.mechanic.dnd2024.item-instance.record.v1",
+        "mechanic.mechanic.dnd2024.item-stack.consume.v1",
+        "mechanic.mechanic.dnd2024.item-stack.create-and-place.v1",
+        "mechanic.mechanic.dnd2024.item-stack.merge.v1",
+        "mechanic.mechanic.dnd2024.item-stack.record.v1",
+        "mechanic.mechanic.dnd2024.item-stack.split.v1",
+        "mechanic.mechanic.dnd2024.item.equip.v1",
+        "mechanic.mechanic.dnd2024.item.equipment.read.v1",
+        "mechanic.mechanic.dnd2024.item.transfer.v1",
+        "mechanic.mechanic.dnd2024.item.unequip.v1",
+        "mechanic.mechanic.dnd2024.weapon-profile.write.v1",
+        "procedure.procedure.mechanic.dnd2024.abilities.v1",
+        "procedure.procedure.mechanic.dnd2024.carrying-capacity.v1",
+        "procedure.procedure.mechanic.dnd2024.creature-size.v1",
+        "procedure.procedure.mechanic.dnd2024.equipment-state.v1",
+        "procedure.procedure.mechanic.dnd2024.item-activity.v1",
+        "procedure.procedure.mechanic.dnd2024.item-definition.v1",
+        "procedure.procedure.mechanic.dnd2024.item-instance.v1",
+        "procedure.procedure.mechanic.dnd2024.item-quantity.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1",
+        "procedure.procedure.mechanic.dnd2024.weapon-profile.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 24,
+      "historicalEvidence": "accepted",
+      "scopeNote": "armor and AC aggregation",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-24/FEATURE-24-DEPENDENCY-PLAN.md",
+        "old-dnd/ruleset/dnd2024/feature-24/FEATURE-24-SLICE-1-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-24/FEATURE-24-SLICE-2-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-24/FEATURE-24-SLICE-3-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-24/FEATURE-24-SLICE-4-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature24Slice2Tests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature24Slice3Tests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature24Slice4Tests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature24Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.armor-class.v0",
+        "componentdefinition.dnd2024.equipment-state.v0",
+        "componentdefinition.dnd2024.item-definition.v0",
+        "componentdefinition.dnd2024.item-instance.v0",
+        "componentdefinition.dnd2024.item-quantity.v0",
+        "entity.item.dnd2024.dagger.v1.v0",
+        "entity.item.dnd2024.pouch.v1.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "entity.weapon.dnd2024.dagger.v0",
+        "mechanic.mechanic.dnd2024.armor-class.write.v1"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.armor-class.v0",
+        "componentdefinition.dnd2024.equipment-state.v0",
+        "componentdefinition.dnd2024.item-definition.v0",
+        "componentdefinition.dnd2024.item-instance.v0",
+        "componentdefinition.dnd2024.item-quantity.v0",
+        "componentdefinition.dnd2024.source.v0",
+        "componentdefinition.dnd2024.weapon-profile.v0",
+        "entity.item.dnd2024.dagger.v1.v0",
+        "entity.item.dnd2024.pouch.v1.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "entity.weapon.dnd2024.battleaxe.v0",
+        "entity.weapon.dnd2024.dagger.v0",
+        "entity.weapon.dnd2024.shortbow.v0",
+        "mechanic.mechanic.dnd2024.armor-class.write.v1",
+        "mechanic.mechanic.dnd2024.item-instance.create-and-place.v1",
+        "mechanic.mechanic.dnd2024.item-instance.move.v1",
+        "mechanic.mechanic.dnd2024.item-instance.read.v1",
+        "mechanic.mechanic.dnd2024.item-instance.record.v1",
+        "mechanic.mechanic.dnd2024.item-stack.consume.v1",
+        "mechanic.mechanic.dnd2024.item-stack.create-and-place.v1",
+        "mechanic.mechanic.dnd2024.item-stack.merge.v1",
+        "mechanic.mechanic.dnd2024.item-stack.record.v1",
+        "mechanic.mechanic.dnd2024.item-stack.split.v1",
+        "mechanic.mechanic.dnd2024.item.equip.v1",
+        "mechanic.mechanic.dnd2024.item.equipment.read.v1",
+        "mechanic.mechanic.dnd2024.item.transfer.v1",
+        "mechanic.mechanic.dnd2024.item.unequip.v1",
+        "mechanic.mechanic.dnd2024.weapon-profile.write.v1",
+        "procedure.procedure.mechanic.dnd2024.abilities.v1",
+        "procedure.procedure.mechanic.dnd2024.armor-class.v1",
+        "procedure.procedure.mechanic.dnd2024.equipment-state.v1",
+        "procedure.procedure.mechanic.dnd2024.item-definition.v1",
+        "procedure.procedure.mechanic.dnd2024.item-instance.v1",
+        "procedure.procedure.mechanic.dnd2024.item-quantity.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1",
+        "procedure.procedure.mechanic.dnd2024.weapon-profile.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 25,
+      "historicalEvidence": "partial-verified",
+      "scopeNote": "static weapon property/mastery facts only",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-25/FEATURE-25-DEPENDENCY-PLAN.md",
+        "old-dnd/ruleset/dnd2024/feature-25/FEATURE-25-SLICE-1-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature25Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "componentdefinition.dnd2024.weapon-profile.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "entity.weapon.dnd2024.battleaxe.v0",
+        "entity.weapon.dnd2024.dagger.v0",
+        "entity.weapon.dnd2024.shortbow.v0"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.source.v0",
+        "componentdefinition.dnd2024.weapon-profile.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "entity.weapon.dnd2024.battleaxe.v0",
+        "entity.weapon.dnd2024.dagger.v0",
+        "entity.weapon.dnd2024.shortbow.v0",
+        "mechanic.mechanic.dnd2024.weapon-profile.write.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1",
+        "procedure.procedure.mechanic.dnd2024.weapon-profile.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Historical evidence is explicitly partial; unimplemented behavior remains outside recovery scope.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 26,
+      "historicalEvidence": "partial-verified",
+      "scopeNote": "static species profiles only",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-26/FEATURE-26-DEPENDENCY-PLAN.md",
+        "old-dnd/ruleset/dnd2024/feature-26/FEATURE-26-SLICE-1-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-26/FEATURE-26-SLICE-2-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature26Slice2Tests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature26Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "componentdefinition.dnd2024.character.content-definition.v0",
+        "entity.content.dnd2024.species.human.v1.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.character.content-definition.v0",
+        "componentdefinition.dnd2024.source.v0",
+        "entity.content.dnd2024.species.human.v1.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "mechanic.mechanic.dnd2024.character-content-definition.record.v1",
+        "procedure.procedure.mechanic.dnd2024.character-content-definition.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Historical evidence is explicitly partial; unimplemented behavior remains outside recovery scope.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 27,
+      "historicalEvidence": "partial-verified",
+      "scopeNote": "Fighter 1-2 progression reader only",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-27/FEATURE-27-DEPENDENCY-PLAN.md",
+        "old-dnd/ruleset/dnd2024/feature-27/FEATURE-27-SLICE-1-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature27Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "componentdefinition.dnd2024.character.content-definition.v0",
+        "componentdefinition.dnd2024.class-progression.v0",
+        "entity.content.dnd2024.class.fighter.v1.v0",
+        "entity.content.dnd2024.feature.fighter.action-surge.v1.v0",
+        "entity.content.dnd2024.feature.fighter.fighting-style.v1.v0",
+        "entity.content.dnd2024.feature.fighter.second-wind.v1.v0",
+        "entity.content.dnd2024.feature.fighter.tactical-mind.v1.v0",
+        "entity.content.dnd2024.feature.fighter.weapon-mastery.v1.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "mechanic.mechanic.dnd2024.class-progression.read.v1",
+        "procedure.procedure.mechanic.dnd2024.class-progression.v1"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.character.content-definition.v0",
+        "componentdefinition.dnd2024.class-progression.v0",
+        "componentdefinition.dnd2024.source.v0",
+        "entity.content.dnd2024.class.fighter.v1.v0",
+        "entity.content.dnd2024.feature.fighter.action-surge.v1.v0",
+        "entity.content.dnd2024.feature.fighter.fighting-style.v1.v0",
+        "entity.content.dnd2024.feature.fighter.second-wind.v1.v0",
+        "entity.content.dnd2024.feature.fighter.tactical-mind.v1.v0",
+        "entity.content.dnd2024.feature.fighter.weapon-mastery.v1.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "mechanic.mechanic.dnd2024.character-content-definition.record.v1",
+        "mechanic.mechanic.dnd2024.class-progression.read.v1",
+        "procedure.procedure.mechanic.dnd2024.character-content-definition.v1",
+        "procedure.procedure.mechanic.dnd2024.class-progression.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Historical evidence is explicitly partial; unimplemented behavior remains outside recovery scope.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 28,
+      "historicalEvidence": "accepted",
+      "scopeNote": "origin foundation in accepted scope",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-28/FEATURE-28-DEPENDENCY-PLAN.md",
+        "old-dnd/ruleset/dnd2024/feature-28/FEATURE-28-SLICE-1-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-28/FEATURE-28-SLICE-2-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-28/FEATURE-28-SLICE-3-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-28/FEATURE-28-SLICE-4-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature28Slice2Tests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature28Slice3Tests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature28Slice4Tests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature28Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.character.content-definition.v0",
+        "componentdefinition.dnd2024.language-proficiencies.v0",
+        "componentdefinition.dnd2024.tool-proficiencies.v0",
+        "entity.content.dnd2024.background.soldier.v1.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "mechanic.mechanic.dnd2024.language-proficiencies.record.v1",
+        "mechanic.mechanic.dnd2024.tool-proficiencies.record.v1",
+        "procedure.procedure.mechanic.dnd2024.languages-and-tools.v1"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.character.content-definition.v0",
+        "componentdefinition.dnd2024.language-proficiencies.v0",
+        "componentdefinition.dnd2024.source.v0",
+        "componentdefinition.dnd2024.tool-proficiencies.v0",
+        "entity.content.dnd2024.background.soldier.v1.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "mechanic.mechanic.dnd2024.character-content-definition.record.v1",
+        "mechanic.mechanic.dnd2024.language-proficiencies.record.v1",
+        "mechanic.mechanic.dnd2024.tool-proficiencies.record.v1",
+        "procedure.procedure.mechanic.dnd2024.abilities.v1",
+        "procedure.procedure.mechanic.dnd2024.character-content-definition.v1",
+        "procedure.procedure.mechanic.dnd2024.languages-and-tools.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 29,
+      "historicalEvidence": "partial-verified",
+      "scopeNote": "static magic-item profiles only",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-29/FEATURE-29-DEPENDENCY-PLAN.md",
+        "old-dnd/ruleset/dnd2024/feature-29/FEATURE-29-SLICE-1-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature29Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "entity.source.dnd2024.srd-5.2.1.v0"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.source.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Historical evidence is explicitly partial; unimplemented behavior remains outside recovery scope.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 31,
+      "historicalEvidence": "partial-verified",
+      "scopeNote": "static spell identities only",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-31/FEATURE-31-DEPENDENCY-PLAN.md",
+        "old-dnd/ruleset/dnd2024/feature-31/FEATURE-31-SLICE-1-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature31Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "entity.source.dnd2024.srd-5.2.1.v0"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.source.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Historical evidence is explicitly partial; unimplemented behavior remains outside recovery scope.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 32,
+      "historicalEvidence": "partial-verified",
+      "scopeNote": "static spell resolution profiles only",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-32/FEATURE-32-DEPENDENCY-PLAN.md",
+        "old-dnd/ruleset/dnd2024/feature-32/FEATURE-32-SLICE-1-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature32Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "entity.source.dnd2024.srd-5.2.1.v0"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.source.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Historical evidence is explicitly partial; unimplemented behavior remains outside recovery scope.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 33,
+      "historicalEvidence": "accepted",
+      "scopeNote": "rest policy and bounded episode",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-33/FEATURE-33-DEPENDENCY-PLAN.md",
+        "old-dnd/ruleset/dnd2024/feature-33/FEATURE-33-SLICE-1-RECEIPT.md",
+        "old-dnd/ruleset/dnd2024/feature-33/FEATURE-33-SLICE-2-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature33Slice2Tests.cs",
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature33Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "componentdefinition.dnd2024.hit-points.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.hit-points.v0",
+        "componentdefinition.dnd2024.source.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "mechanic.mechanic.dnd2024.hit-points.write.v1",
+        "procedure.procedure.mechanic.dnd2024.hit-points.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 36,
+      "historicalEvidence": "implemented-not-accepted",
+      "scopeNote": "XP state and next-level eligibility only",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-36/FEATURE-36-DEPENDENCY-PLAN.md",
+        "old-dnd/ruleset/dnd2024/feature-36/FEATURE-36-SLICE-1-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature36Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "componentdefinition.dnd2024.character-experience.v0",
+        "componentdefinition.dnd2024.character-level.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "mechanic.mechanic.dnd2024.character-experience.read.v1",
+        "mechanic.mechanic.dnd2024.character-experience.write.v1",
+        "procedure.procedure.mechanic.dnd2024.character-experience.v1"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.character-experience.v0",
+        "componentdefinition.dnd2024.character-level.v0",
+        "componentdefinition.dnd2024.source.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "mechanic.mechanic.dnd2024.character-experience.read.v1",
+        "mechanic.mechanic.dnd2024.character-experience.write.v1",
+        "mechanic.mechanic.dnd2024.character-level.record.v1",
+        "procedure.procedure.mechanic.dnd2024.character-experience.v1",
+        "procedure.procedure.mechanic.dnd2024.character-level.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Historical evidence is explicitly partial; unimplemented behavior remains outside recovery scope.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    },
+    {
+      "feature": 39,
+      "historicalEvidence": "accepted",
+      "scopeNote": "Heroic Inspiration presence/grant recorder only",
+      "archivedEvidence": [
+        "old-dnd/ruleset/dnd2024/feature-39/FEATURE-39-DEPENDENCY-PLAN.md",
+        "old-dnd/ruleset/dnd2024/feature-39/FEATURE-39-SLICE-1-RECEIPT.md"
+      ],
+      "historicalTests": [
+        "old-dnd/DantesRoleplay.Tests/CatalogFeature39Tests.cs"
+      ],
+      "directCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.character.profile.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0"
+      ],
+      "dependencyClosureCapabilityKeys": [
+        "componentdefinition.dnd2024.abilities.v0",
+        "componentdefinition.dnd2024.character.profile.v0",
+        "componentdefinition.dnd2024.source.v0",
+        "entity.source.dnd2024.srd-5.2.1.v0",
+        "mechanic.mechanic.dnd2024.character-profile.record.v1",
+        "procedure.procedure.mechanic.dnd2024.abilities.v1",
+        "procedure.procedure.mechanic.dnd2024.character-profile.v1",
+        "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+        "procedure.procedure.mechanic.dnd2024.source-registry.v1"
+      ],
+      "classification": "recover-archive-candidate",
+      "readiness": "blocked",
+      "blockers": [
+        "Current application-kernel projection, effect, transaction, replay, and source-registration compatibility is unproven.",
+        "Some closure rows lack archived SRD locator evidence; official source review is required."
+      ]
+    }
+  ],
+  "sharedCapabilityKeys": [
+    "componentdefinition.dnd2024.abilities.v0",
+    "componentdefinition.dnd2024.armor-class.v0",
+    "componentdefinition.dnd2024.character-level.v0",
+    "componentdefinition.dnd2024.character.content-definition.v0",
+    "componentdefinition.dnd2024.conditions.v0",
+    "componentdefinition.dnd2024.creature-size.v0",
+    "componentdefinition.dnd2024.encounter-initiative-order.v0",
+    "componentdefinition.dnd2024.encounter-turn-state.v0",
+    "componentdefinition.dnd2024.equipment-state.v0",
+    "componentdefinition.dnd2024.hit-points.v0",
+    "componentdefinition.dnd2024.item-definition.v0",
+    "componentdefinition.dnd2024.item-instance.v0",
+    "componentdefinition.dnd2024.item-quantity.v0",
+    "componentdefinition.dnd2024.saving-throw-proficiencies.v0",
+    "componentdefinition.dnd2024.skill-proficiencies.v0",
+    "componentdefinition.dnd2024.source.v0",
+    "componentdefinition.dnd2024.speed.v0",
+    "componentdefinition.dnd2024.turn-budget.v0",
+    "componentdefinition.dnd2024.weapon-proficiencies.v0",
+    "componentdefinition.dnd2024.weapon-profile.v0",
+    "entity.creature.dnd2024.feature-10.hero.v0",
+    "entity.creature.dnd2024.feature-10.training-target.v0",
+    "entity.encounter.dnd2024.feature-10.training.v0",
+    "entity.item.dnd2024.dagger.v1.v0",
+    "entity.item.dnd2024.pouch.v1.v0",
+    "entity.source.dnd2024.srd-5.2.1.v0",
+    "entity.weapon.dnd2024.battleaxe.v0",
+    "entity.weapon.dnd2024.dagger.v0",
+    "entity.weapon.dnd2024.shortbow.v0",
+    "mechanic.mechanic.dnd2024.armor-class.write.v1",
+    "mechanic.mechanic.dnd2024.carrying-capacity.read.v1",
+    "mechanic.mechanic.dnd2024.character-content-definition.record.v1",
+    "mechanic.mechanic.dnd2024.character-level.record.v1",
+    "mechanic.mechanic.dnd2024.conditions.write.v1",
+    "mechanic.mechanic.dnd2024.creature-size.record.v1",
+    "mechanic.mechanic.dnd2024.d20-test.state-effects.v1",
+    "mechanic.mechanic.dnd2024.encounter-initiative-order.v1",
+    "mechanic.mechanic.dnd2024.encounter-turn.advance.v1",
+    "mechanic.mechanic.dnd2024.encounter-turn.end.v1",
+    "mechanic.mechanic.dnd2024.encounter-turn.start.v1",
+    "mechanic.mechanic.dnd2024.hit-points.write.v1",
+    "mechanic.mechanic.dnd2024.initiative.roll.v1",
+    "mechanic.mechanic.dnd2024.item-burden.read.v1",
+    "mechanic.mechanic.dnd2024.item-instance.create-and-place.v1",
+    "mechanic.mechanic.dnd2024.item-instance.move.v1",
+    "mechanic.mechanic.dnd2024.item-instance.read.v1",
+    "mechanic.mechanic.dnd2024.item-instance.record.v1",
+    "mechanic.mechanic.dnd2024.item-stack.consume.v1",
+    "mechanic.mechanic.dnd2024.item-stack.create-and-place.v1",
+    "mechanic.mechanic.dnd2024.item-stack.merge.v1",
+    "mechanic.mechanic.dnd2024.item-stack.record.v1",
+    "mechanic.mechanic.dnd2024.item-stack.split.v1",
+    "mechanic.mechanic.dnd2024.item.equip.v1",
+    "mechanic.mechanic.dnd2024.item.equipment.read.v1",
+    "mechanic.mechanic.dnd2024.item.transfer.v1",
+    "mechanic.mechanic.dnd2024.item.unequip.v1",
+    "mechanic.mechanic.dnd2024.saving-throw-proficiencies.record.v1",
+    "mechanic.mechanic.dnd2024.saving-throw.v1",
+    "mechanic.mechanic.dnd2024.skill-proficiencies.record.v1",
+    "mechanic.mechanic.dnd2024.speed.read.v1",
+    "mechanic.mechanic.dnd2024.speed.write.v1",
+    "mechanic.mechanic.dnd2024.turn-budget.read.v1",
+    "mechanic.mechanic.dnd2024.turn-budget.spend.v1",
+    "mechanic.mechanic.dnd2024.turn-budget.write.v1",
+    "mechanic.mechanic.dnd2024.weapon-proficiencies.write.v1",
+    "mechanic.mechanic.dnd2024.weapon-profile.write.v1",
+    "procedure.procedure.mechanic.dnd2024.abilities.v1",
+    "procedure.procedure.mechanic.dnd2024.armor-class.v1",
+    "procedure.procedure.mechanic.dnd2024.carrying-capacity.v1",
+    "procedure.procedure.mechanic.dnd2024.character-content-definition.v1",
+    "procedure.procedure.mechanic.dnd2024.character-level.v1",
+    "procedure.procedure.mechanic.dnd2024.conditions.v1",
+    "procedure.procedure.mechanic.dnd2024.creature-size.v1",
+    "procedure.procedure.mechanic.dnd2024.encounter-initiative-order.v1",
+    "procedure.procedure.mechanic.dnd2024.encounter-turn-lifecycle.v1",
+    "procedure.procedure.mechanic.dnd2024.equipment-state.v1",
+    "procedure.procedure.mechanic.dnd2024.hit-points.v1",
+    "procedure.procedure.mechanic.dnd2024.item-definition.v1",
+    "procedure.procedure.mechanic.dnd2024.item-instance.v1",
+    "procedure.procedure.mechanic.dnd2024.item-quantity.v1",
+    "procedure.procedure.mechanic.dnd2024.ruleset.v1",
+    "procedure.procedure.mechanic.dnd2024.skill-proficiencies.v1",
+    "procedure.procedure.mechanic.dnd2024.source-registry.v1",
+    "procedure.procedure.mechanic.dnd2024.speed.v1",
+    "procedure.procedure.mechanic.dnd2024.turn-budget.v1",
+    "procedure.procedure.mechanic.dnd2024.weapon-proficiencies.v1",
+    "procedure.procedure.mechanic.dnd2024.weapon-profile.v1"
+  ],
+  "status": "classification-complete-no-cohort-selected"
+}

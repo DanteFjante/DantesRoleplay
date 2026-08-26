@@ -64,4 +64,5 @@ public sealed record InteractionProposalStepProjection(
     string Fingerprint,
     IReadOnlyList<string> DependsOn,
     IReadOnlyDictionary<string, string> RoleBindings,
-    JsonElement Input);
+    JsonElement Input,
+    IReadOnlyList<InteractionResultBinding> ResultBindings);

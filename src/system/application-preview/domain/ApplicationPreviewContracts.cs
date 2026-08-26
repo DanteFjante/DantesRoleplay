@@ -33,4 +33,9 @@ public interface IApplicationPreviewService
     Task<ApplicationPreviewResult> PreviewAsync(
         ApplicationIdentifier applicationId,
         CancellationToken cancellationToken = default);
+
+    Task<ApplicationPreviewResult> PreviewAsync(
+        ApplicationIdentifier applicationId,
+        IReadOnlyList<string> sourceIds,
+        CancellationToken cancellationToken = default);
 }

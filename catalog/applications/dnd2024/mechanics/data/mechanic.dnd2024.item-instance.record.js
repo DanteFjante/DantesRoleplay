@@ -1,0 +1,5 @@
+var item=ctx.roles.item,definition=ctx.roles.definition;
+if(ctx.input===null||Array.isArray(ctx.input)||typeof ctx.input!=='object'||Object.keys(ctx.input).length!==0)throw new Error('This action takes no input.');
+if(item.components['dnd2024.item-definition'])throw new Error('A definition entity cannot become a physical item.');if(item.components['dnd2024.item-instance'])throw new Error('Item definition identity is write-once.');
+var raw=definition.components['dnd2024.item-definition'],value;try{value=JSON.parse(raw);}catch(error){throw new Error('The definition role lacks a valid item definition.');}if(!value||typeof value!=='object'||Array.isArray(value)||value.definitionVersion!==1)throw new Error('The definition role lacks a valid item definition.');
+return {narration:item.name+' is recorded as an instance of '+definition.name+'.',effects:[{type:'component.add',entityId:item.id,definitionId:'dnd2024.item-instance',data:JSON.stringify({definitionId:definition.id})}],events:[],notifications:[],data:{itemId:item.id,definitionId:definition.id}};

@@ -378,6 +378,59 @@ public sealed class ApplicationEcsEffectApplierTests : IDisposable
         Assert.Equal("first", (await setup.Edges.GetContainmentAsync("effect-space", "child"))!.ContainerEntityId);
     }
 
+    [Fact]
+    public void Containment_expectation_shape_is_bounded_and_closed()
+    {
+        var tooMany = Enumerable.Range(0, ApplicationEcsEffectValidation.MaximumContainmentExpectations + 1)
+            .Select(index => new ApplicationEcsContainmentExpectation("container-" + index, []))
+            .ToArray();
+        var excessive = ApplicationEcsEffectValidation.Validate(new()
+        {
+            StateSpaceId = "effect-space",
+            Effects = [],
+            ContainmentExpectations = tooMany
+        });
+        Assert.Contains(excessive, problem => problem.Code == "CONTAINMENT_EXPECTATION_LIMIT");
+
+        var malformed = ApplicationEcsEffectValidation.Validate(new()
+        {
+            StateSpaceId = "effect-space",
+            Effects = [],
+            ContainmentExpectations =
+            [
+                new("container", [new("child", "slot", 0), new("child", "slot", 1)]),
+                new("container", [])
+            ]
+        });
+        Assert.Contains(malformed, problem => problem.Code == "CONTAINMENT_EXPECTATION_INVALID");
+    }
+
+    [Fact]
+    public async Task Stale_containment_snapshot_rejects_the_whole_effect_transaction()
+    {
+        var setup = Setup();
+        foreach (var id in new[] { "child", "container" })
+            await setup.Store.CreateEntityAsync("effect-space", id, id);
+        var observed = await setup.Edges.MoveContainmentAsync(
+            "effect-space", "child", "container", "participant", 0);
+        _ = await setup.Edges.MoveContainmentAsync(
+            "effect-space", "child", "container", "changed", observed.Revision);
+
+        var result = await setup.Applier.ApplyAsync(new()
+        {
+            StateSpaceId = "effect-space",
+            Effects = [new() { Type = ApplicationEcsEffectType.EntityCreate, EntityId = "must-not-exist", Name = "Rejected" }],
+            ContainmentExpectations =
+            [
+                new("container", [new("child", "participant", observed.Revision)])
+            ]
+        });
+
+        Assert.False(result.Applied);
+        Assert.Equal("REVISION_STALE", Assert.Single(result.Problems).Code);
+        Assert.Null(await setup.Store.GetEntityAsync("effect-space", "must-not-exist"));
+    }
+
     private SetupResult Setup()
     {
         var db = _fixture.CreateContext(); var app = ApplicationIdentifier.Parse("fixture-effects");

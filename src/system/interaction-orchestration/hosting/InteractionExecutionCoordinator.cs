@@ -20,7 +20,8 @@ internal sealed class InteractionExecutionCoordinator(
     IActiveCatalogFeatureSnapshotProvider snapshots,
     IInteractionProposalVerifier verifier,
     IApplicationActionRunner actions,
-    IInteractionRecipeLearner? recipeLearner = null) : IInteractionExecutionCoordinator
+    IInteractionRecipeLearner? recipeLearner = null,
+    IInteractionQueryExecutorRegistry? queryExecutors = null) : IInteractionExecutionCoordinator
 {
     public async Task<InteractionExecutionOutcome> ExecuteAsync(
         InteractionExecutionRequest request,
@@ -81,8 +82,25 @@ internal sealed class InteractionExecutionCoordinator(
 
         var executionFingerprint = ExecutionFingerprint(authority, request);
         var consent = Consent(authority, request);
+        var existingExecution = await receipts.FindExecutionAsync(consent, executionFingerprint, cancellationToken);
+        if (existingExecution is not null)
+        {
+            if (existingExecution.Disposition == InteractionReceiptWriteDisposition.Conflict
+                || existingExecution.Receipt is null)
+                return new(InteractionExecutionReceiptDisposition.Failed,
+                    "INTERACTION_EXECUTION_IDEMPOTENCY_CONFLICT",
+                    "The execution idempotency key is already bound to another request.",
+                    [], existingExecution, executionFingerprint);
+            var replayDisposition = ReceiptDisposition(existingExecution.Receipt.Status);
+            return new(replayDisposition, existingExecution.Receipt.Code,
+                existingExecution.Receipt.SafeSummary, [], existingExecution, executionFingerprint,
+                QueryResults: existingExecution.Receipt.QueryResults ?? []);
+        }
         var stepReceipts = new List<InteractionExecutionStepReceiptDraft>(verified.Proposal.Steps.Count);
         var actionResults = new List<ApplicationActionExecutionResult>(verified.Proposal.Steps.Count);
+        var queryResults = new Dictionary<string, InteractionQueryExecutionResult>(StringComparer.Ordinal);
+        var queryProjections = new List<InteractionQueryResultProjection>();
+        var queryReceiptDrafts = new List<InteractionExecutionQueryResultDraft>();
         var stopped = false;
         var cancelled = false;
         for (var index = 0; index < verified.Proposal.Steps.Count; index++)
@@ -101,9 +119,59 @@ internal sealed class InteractionExecutionCoordinator(
                 continue;
             }
 
-            var stepFingerprint = StepFingerprint(executionFingerprint, request.ProposalFingerprint, step, index + 1);
+            InteractionBoundStepInput bound;
+            try { bound = InteractionResultBinder.Bind(step, queryResults); }
+            catch (InteractionContractException)
+            {
+                stopped = true;
+                stepReceipts.Add(new(index + 1, step.StepId, InteractionExecutionStepDisposition.Failed));
+                continue;
+            }
+
+            var baseStepFingerprint = StepFingerprint(executionFingerprint, request.ProposalFingerprint, step, index + 1);
+            var stepFingerprint = step.ResultBindings.Count == 0 ? baseStepFingerprint
+                : BoundStepFingerprint(baseStepFingerprint, bound);
+            if (step.Kind == InteractionPlanStepKind.Query)
+            {
+                if (step.QueryContract is null || queryExecutors is null
+                    || !queryExecutors.TryGet(step.QueryContract.Executor, out var executor))
+                {
+                    stopped = true;
+                    stepReceipts.Add(new(index + 1, step.StepId, InteractionExecutionStepDisposition.Failed));
+                    continue;
+                }
+                try
+                {
+                    var query = await executor.ExecuteAsync(new(authority.StateSpaceId,
+                        authority.ApplicationId, step.QueryContract, bound.RoleBindings), cancellationToken);
+                    queryResults.Add(step.StepId, query);
+                    queryProjections.Add(new(step.StepId, step.Contract.QualifiedKey,
+                        query.OutputSchemaHash, query.ResultFingerprint, query.SourceRevisionFingerprint,
+                        step.QueryContract.Exposure == ApplicationQueryExposure.ModelVisible
+                            ? JsonSerializer.Deserialize<JsonElement>(query.OutputJson) : null));
+                    queryReceiptDrafts.Add(new(index + 1, step.StepId, step.Contract.QualifiedKey,
+                        query.OutputSchemaHash, query.ResultFingerprint, query.SourceRevisionFingerprint,
+                        step.QueryContract.Exposure,
+                        step.QueryContract.Exposure == ApplicationQueryExposure.ModelVisible
+                            ? query.OutputJson : null));
+                    stepReceipts.Add(new(index + 1, step.StepId, InteractionExecutionStepDisposition.Succeeded));
+                }
+                catch (OperationCanceledException)
+                {
+                    cancelled = true;
+                    stopped = true;
+                    stepReceipts.Add(new(index + 1, step.StepId, InteractionExecutionStepDisposition.Failed));
+                }
+                catch
+                {
+                    stopped = true;
+                    stepReceipts.Add(new(index + 1, step.StepId, InteractionExecutionStepDisposition.Failed));
+                }
+                continue;
+            }
+
             var identity = new ApplicationEcsExecutionIdentity(
-                stepFingerprint[..32].ToLowerInvariant(), stepFingerprint);
+                baseStepFingerprint[..32].ToLowerInvariant(), stepFingerprint);
             var seedBytes = Convert.FromHexString(stepFingerprint[..16]);
             var seed = BinaryPrimitives.ReadInt64BigEndian(seedBytes);
             ApplicationActionExecutionResult action;
@@ -114,8 +182,8 @@ internal sealed class InteractionExecutionCoordinator(
                     authority.ApplicationId,
                     step.Contract.QualifiedKey,
                     step.Contract.Fingerprint,
-                    step.RoleBindings,
-                    step.InputJson,
+                    bound.RoleBindings,
+                    bound.InputJson,
                     seed,
                     identity), cancellationToken);
             }
@@ -162,7 +230,8 @@ internal sealed class InteractionExecutionCoordinator(
         var draft = new InteractionExecutionReceiptDraft(consent, executionFingerprint, disposition,
             summary,
             ["steps:" + verified.Proposal.Steps.Count, "committed-or-replayed:" + successful, "failed:" + failed],
-            stepReceipts);
+            stepReceipts,
+            queryReceiptDrafts);
         var write = await receipts.AppendExecutionAsync(draft, CancellationToken.None);
         if (write.Disposition == InteractionReceiptWriteDisposition.Conflict)
             return new(InteractionExecutionReceiptDisposition.Failed,
@@ -214,7 +283,8 @@ internal sealed class InteractionExecutionCoordinator(
                     : disposition == InteractionExecutionReceiptDisposition.Cancelled
                         ? "INTERACTION_EXECUTION_CANCELLED"
                         : "INTERACTION_EXECUTION_FAILED",
-            summary, actionResults.AsReadOnly(), write, executionFingerprint, learning);
+            summary, actionResults.AsReadOnly(), write, executionFingerprint, learning,
+            write.Receipt?.QueryResults ?? queryProjections.AsReadOnly());
     }
 
     private AuthorizedInteractionEnvelope? Rehydrate(
@@ -367,10 +437,34 @@ internal sealed class InteractionExecutionCoordinator(
                 contract = step.Contract.Fingerprint
             })));
 
+    private static string BoundStepFingerprint(string baseStepFingerprint, InteractionBoundStepInput bound) =>
+        InteractionCanonicalJson.Fingerprint(
+            "dantes-roleplay/interaction-bound-step/v1",
+            InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+            {
+                baseStepFingerprint,
+                roles = bound.RoleBindings,
+                input = JsonSerializer.Deserialize<JsonElement>(bound.InputJson),
+                sourceResults = bound.SourceResultFingerprints
+            })));
+
     private static bool SameRevision(ApplicationRevision left, ApplicationRevision right) =>
         left.ApplicationId == right.ApplicationId && left.Revision == right.Revision
         && left.Fingerprint == right.Fingerprint
         && left.BaseApplications.SequenceEqual(right.BaseApplications);
+
+    private static InteractionExecutionReceiptDisposition ReceiptDisposition(string value) => value switch
+    {
+        "succeeded" => InteractionExecutionReceiptDisposition.Succeeded,
+        "failed" => InteractionExecutionReceiptDisposition.Failed,
+        "partial" => InteractionExecutionReceiptDisposition.Partial,
+        "skipped" => InteractionExecutionReceiptDisposition.Skipped,
+        "stale" => InteractionExecutionReceiptDisposition.Stale,
+        "unauthorized" => InteractionExecutionReceiptDisposition.Unauthorized,
+        "cancelled" => InteractionExecutionReceiptDisposition.Cancelled,
+        "timed-out" => InteractionExecutionReceiptDisposition.TimedOut,
+        _ => InteractionExecutionReceiptDisposition.Failed
+    };
 
     private static InteractionExecutionOutcome Terminal(
         InteractionExecutionReceiptDisposition disposition,

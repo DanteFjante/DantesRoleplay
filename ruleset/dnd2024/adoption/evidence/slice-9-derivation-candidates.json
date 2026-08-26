@@ -1,0 +1,35 @@
+{
+  "format": "dnd-code-adoption-slice-9-derivation-candidates/v1",
+  "donor": {
+    "repository": "https://github.com/greghcarr/dnd-srd-engine.git",
+    "commit": "ead852b19b9e45f54f43e193caf4f10aad91a91b",
+    "publicIndex": "src/derive/index.ts",
+    "publicIndexSha256": "48FB9AADFA6409B66148EF2D15320224E52C94E5DDCC55BB4246DD6DDA0B0372"
+  },
+  "candidates": [
+    { "key": "ability", "paths": ["src/derive/ability.ts"], "disposition": "retain-current", "owner": "current D&D ability/check/save/attack mechanics", "reason": "Ability modifier and PB behavior already has accepted native owners." },
+    { "key": "ability-check", "paths": ["src/derive/ability-check.ts"], "disposition": "split-retain-adapt", "owner": "mechanic.dnd2024.check.ability + Slice 9B character-sheet reader", "reason": "Active checks are current; computePassiveScore is an uncovered pure character calculation." },
+    { "key": "armor-class", "paths": ["src/derive/ac.ts"], "disposition": "retain-current", "owner": "dnd2024.armor-class + mechanic.dnd2024.armor-class.write", "reason": "Direct donor derivation would conflict with the accepted current AC authority." },
+    { "key": "action-economy", "paths": ["src/derive/action-economy.ts"], "disposition": "retain-current", "owner": "dnd2024.turn-budget mechanics", "reason": "Slice 8B owns current action, bonus action, reaction, interaction, and movement budget." },
+    { "key": "attack", "paths": ["src/derive/attack.ts"], "disposition": "retain-and-defer-complex", "owner": "current weapon attack/damage mechanics; Slice 11 for unarmed and feature-specific behavior", "reason": "Base weapon calculations are active; martial-arts and unarmed branches require later feature owners." },
+    { "key": "carrying-capacity", "paths": ["src/derive/carrying-capacity.ts"], "disposition": "retain-current", "owner": "mechanic.dnd2024.carrying-capacity.read", "reason": "Slice 8F owns the compatible SRD capacity derivation." },
+    { "key": "character-view", "paths": ["src/derive/character-view.ts"], "disposition": "adapt-slice-9b", "owner": "mechanic.dnd2024.character-sheet.read", "reason": "Core ability, PB, skill, save, initiative, and passive fields are derived without donor state or writes." },
+    { "key": "creature-size", "paths": ["src/derive/creature-size.ts"], "disposition": "retain-current", "owner": "dnd2024.creature-size + mechanic.dnd2024.creature-size.record", "reason": "Current canonical size owner is accepted; donor content lookup is unnecessary." },
+    { "key": "encumbrance", "paths": ["src/derive/encumbrance.ts"], "disposition": "reject", "owner": null, "reason": "The donor public index exports only the result type, and the candidate thresholds lack selected SRD 5.2.1 authority; no legacy optional rule is imported." },
+    { "key": "effect-stack", "paths": ["src/derive/effect-stack.ts"], "disposition": "reject-runtime", "owner": "future bounded content/effect mechanics", "reason": "The donor whole-character/content effect accumulator is prohibited runtime authority and is not a pure portable cohort." },
+    { "key": "languages", "paths": ["src/derive/languages.ts"], "disposition": "retain-and-defer-content", "owner": "dnd2024.language-proficiencies; Slices 10/11 for content-granted languages", "reason": "Explicit current language state is authoritative; content/effect combination prerequisites are absent." },
+    { "key": "multiattack", "paths": ["src/derive/multiattack.ts"], "disposition": "defer-slices-10-11", "owner": "future statblock content and complex attack planner", "reason": "Requires static monster content plus action planning beyond a character-sheet derivation." },
+    { "key": "saving-throw", "paths": ["src/derive/save.ts"], "disposition": "retain-current", "owner": "mechanic.dnd2024.saving-throw", "reason": "Current seeded saving throw owner is accepted; deterministic sheet modifiers are adapted through character-view." },
+    { "key": "speed", "paths": ["src/derive/speed.ts"], "disposition": "retain-and-defer-effects", "owner": "current Speed/turn-budget owners; Slice 11 for feature/effect modifiers", "reason": "Base modes and Exhaustion integration are active; donor effect-stack modifiers lack current owners." },
+    { "key": "spell-dc", "paths": ["src/derive/spell-dc.ts"], "disposition": "defer-slices-10-11", "owner": "future spellcasting-feature content and spell-resolution mechanic", "reason": "The spellcasting ability must come from the granting feature; no current owner may safely accept it from the caller." },
+    { "key": "spell-slots", "paths": ["src/derive/spell-slots.ts"], "disposition": "defer-slices-10-11", "owner": "future class-content and spell-resource owners", "reason": "Class/Pact progression tables and multiclass semantics need independently verified content and resource contracts." },
+    { "key": "terrain", "paths": ["src/derive/terrain.ts"], "disposition": "defer-slice-11", "owner": "future D&D tactical-map/movement family", "reason": "Grid, position, difficult terrain, range, and line-of-effect owners are absent and are not character-sheet calculations." }
+  ],
+  "summary": {
+    "candidateGroups": 17,
+    "dependencyReadyAdaptations": 2,
+    "targetCohorts": 1,
+    "targetMechanic": "mechanic.dnd2024.character-sheet.read",
+    "targetProcedure": "procedure.mechanic.dnd2024.character-sheet"
+  }
+}

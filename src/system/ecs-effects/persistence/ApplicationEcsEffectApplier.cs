@@ -12,7 +12,8 @@ public sealed class ApplicationEcsEffectApplier(
     IEntityComponentStore store,
     IStateSpaceRegistry stateSpaces,
     IOperationLog operations,
-    IStateSpaceEdgeStore? edges = null) : IApplicationEcsEffectApplier
+    IStateSpaceEdgeStore? edges = null,
+    IEnumerable<IApplicationEcsTransactionParticipant>? transactionParticipants = null) : IApplicationEcsEffectApplier
 {
     private const string AuditIdentity = ApplicationEcsExecutionIdentity.AuditTool;
 
@@ -47,6 +48,7 @@ public sealed class ApplicationEcsEffectApplier(
         try
         {
             transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            await VerifyContainmentsAsync(batch, cancellationToken);
             for (var index = 0; index < batch.Effects.Count; index++)
             {
                 currentIndex = index;
@@ -62,6 +64,9 @@ public sealed class ApplicationEcsEffectApplier(
                 await RecordAsync(batch, operationId, success: true, dryRun: true, receipts.Count, "", CancellationToken.None);
                 return new(false, true, operationId, receipts.AsReadOnly(), []);
             }
+
+            foreach (var participant in transactionParticipants ?? [])
+                await participant.StageAsync(batch, receipts.AsReadOnly(), operationId, cancellationToken);
 
             await RecordAsync(batch, operationId, success: true, dryRun: false, receipts.Count, "", cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -158,6 +163,21 @@ public sealed class ApplicationEcsEffectApplier(
         }
     }
 
+    private async Task VerifyContainmentsAsync(ApplicationEcsEffectBatch batch, CancellationToken cancellationToken)
+    {
+        if (batch.ContainmentExpectations.Count == 0) return;
+        var current = await RequireEdges().ListContainmentsAsync(batch.StateSpaceId, cancellationToken);
+        foreach (var expected in batch.ContainmentExpectations)
+        {
+            var actual = current.Where(value => value.ContainerEntityId == expected.ContainerEntityId)
+                .OrderBy(value => value.ContainedEntityId, StringComparer.Ordinal).ToArray();
+            if (actual.Length != expected.Contents.Count
+                || actual.Where((value, index) => value.ContainedEntityId != expected.Contents[index].EntityId
+                    || value.Slot != expected.Contents[index].Slot || value.Revision != expected.Contents[index].Revision).Any())
+                throw new InvalidOperationException("Containment roster is stale.");
+        }
+    }
+
     private static EcsComponentWrite Write(string stateSpaceId, ApplicationEcsEffect effect) =>
         new(stateSpaceId, effect.EntityId, effect.ComponentType!, effect.DataJson, effect.ExpectedRevision);
 
@@ -225,6 +245,10 @@ public sealed class ApplicationEcsEffectApplier(
             error: error,
             consumesReadEvidence: success && !dryRun,
             cancellationToken: cancellationToken,
+            mechanicId: batch.MechanicId ?? string.Empty,
+            mechanicVersion: batch.MechanicVersion,
+            seed: batch.Seed,
+            projectionJson: batch.ProjectionJson ?? string.Empty,
             id: operationId);
     }
 

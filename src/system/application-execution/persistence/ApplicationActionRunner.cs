@@ -21,6 +21,11 @@ public sealed class ApplicationActionRunner(
     IApplicationEcsEffectApplier effects,
     IOperationLog operations) : IApplicationActionRunner
 {
+    private static readonly JsonSerializerOptions AuditProjectionJson = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
     public async Task<ApplicationActionExecutionResult> RunAsync(
         ApplicationActionExecutionRequest request,
         CancellationToken cancellationToken = default)
@@ -81,12 +86,15 @@ public sealed class ApplicationActionRunner(
             return Failed(request, ApplicationActionExecutionDisposition.Unsupported,
                 "MECHANIC_CONTRACT_INVALID", "The exact mechanic requirements are invalid.");
         }
-        if (requirements.Event is not null || requirements.Children.Count > 0
-            || requirements.ProjectionProblems().Count > 0 || requirements.CompositionProblems().Count > 0)
+        // The evaluator owns projection and child-declaration validation so action execution and
+        // read-only evaluation share one interpretation of composed mechanics. Event middleware
+        // remains a distinct execution surface.
+        if (requirements.Event is not null)
             return Failed(request, ApplicationActionExecutionDisposition.Unsupported,
                 "MECHANIC_EXECUTION_UNSUPPORTED", "This mechanic requires an execution feature not enabled by this action owner.");
 
-        var mapping = await BuildMappingAsync(stateSpace, requirements, cancellationToken);
+        var mapping = await BuildMappingAsync(stateSpace, catalog, request.ApplicationId,
+            request.QualifiedMechanicId, requirements, cancellationToken);
         if (mapping.Problems.Count > 0)
             return Failed(request, ApplicationActionExecutionDisposition.Unsupported,
                 mapping.Problems[0].Code, mapping.Problems[0].SafeMessage);
@@ -112,7 +120,7 @@ public sealed class ApplicationActionRunner(
                 "MECHANIC_OUTPUT_UNSUPPORTED", "Application event or notification output is not enabled for direct execution.");
 
         var translated = await TranslateAsync(
-            stateSpace, mapping.Mapping!, evaluation.Run.Output.Effects, cancellationToken);
+            stateSpace, mapping.Mapping!, evaluation.Projection!, evaluation.Run.Output.Effects, cancellationToken);
         if (translated.Problems.Count > 0)
             return Failed(request, translated.Stale
                     ? ApplicationActionExecutionDisposition.Stale
@@ -125,7 +133,16 @@ public sealed class ApplicationActionRunner(
             Effects = translated.Effects,
             Intent = "Execute one verified application interaction step.",
             ProceduresUsed = [],
-            ExecutionIdentity = request.ExecutionIdentity
+            ExecutionIdentity = request.ExecutionIdentity,
+            ContainmentExpectations = evaluation.Projection!.ContainmentRevisions
+                .OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                .Select(pair => new ApplicationEcsContainmentExpectation(pair.Key,
+                    pair.Value.Select(value => new EcsContainmentExpectationItem(value.EntityId, value.Slot, value.Revision)).ToArray()))
+                .ToArray(),
+            MechanicId = record.Summary.QualifiedId,
+            MechanicVersion = record.Summary.Version,
+            Seed = request.Seed,
+            ProjectionJson = JsonSerializer.Serialize(evaluation.Projection, AuditProjectionJson)
         }, cancellationToken: cancellationToken);
         if (applied.Replayed)
             return Result(request, ApplicationActionExecutionDisposition.Replayed, applied.OperationId,
@@ -165,16 +182,20 @@ public sealed class ApplicationActionRunner(
 
     private async Task<MappingResult> BuildMappingAsync(
         StateSpaceView stateSpace,
+        ICatalogNavigator catalog,
+        ApplicationIdentifier applicationId,
+        string mechanicId,
         MechanicRequirements requirements,
         CancellationToken cancellationToken)
     {
         var owners = stateSpace.ApplicationRevision.BaseApplications
             .Prepend(stateSpace.ApplicationRevision.ApplicationId).ToArray();
-        var localIds = requirements.Roles.Values.SelectMany(value =>
-                value.Components.Concat(value.ContentComponentIds ?? [])
-                    .Concat((value.ComponentReferences ?? []).SelectMany(reference =>
-                        new[] { reference.SourceComponentId }.Concat(reference.TargetComponentIds))))
-            .Distinct(StringComparer.Ordinal).ToArray();
+        var localIds = new HashSet<string>(StringComparer.Ordinal);
+        var dependencyVisits = 0;
+        var dependencyProblem = await CollectComponentIdsAsync(
+            requirements, mechanicId, depth: 0, new HashSet<string>(StringComparer.Ordinal));
+        if (dependencyProblem is not null)
+            return MappingResult.Failed("CHILD_DEPENDENCY_INVALID", dependencyProblem);
         var components = new Dictionary<string, EcsComponentReference>(StringComparer.Ordinal);
         foreach (var localId in localIds)
         {
@@ -199,6 +220,53 @@ public sealed class ApplicationActionRunner(
                     "An application relationship mapping is ambiguous.");
         }
         return new(new(components, relationships), []);
+
+        async Task<string?> CollectComponentIdsAsync(
+            MechanicRequirements declared,
+            string currentMechanicId,
+            int depth,
+            HashSet<string> lineage)
+        {
+            foreach (var localId in declared.Roles.Values.SelectMany(value =>
+                         value.Components.Concat(value.ContentComponentIds ?? [])
+                             .Concat((value.ComponentReferences ?? []).SelectMany(reference =>
+                                 new[] { reference.SourceComponentId }.Concat(reference.TargetComponentIds)))))
+                localIds.Add(localId);
+
+            if (declared.Children.Count == 0) return null;
+            if (declared.Children.Count > 64) return "The declared child-mechanic count exceeds the supported limit.";
+            if (depth >= 8) return "The declared child-mechanic depth exceeds the supported limit.";
+            if (!lineage.Add(currentMechanicId))
+                return "The declared child-mechanic graph contains a cycle.";
+
+            foreach (var child in declared.Children.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+            {
+                if (++dependencyVisits > 256) return "The declared child-mechanic graph exceeds the supported traversal limit.";
+                var childMechanicId = QualifyMechanicId(applicationId, child.Value.MechanicId);
+                if (lineage.Contains(childMechanicId))
+                    return "The declared child-mechanic graph contains a cycle.";
+                CatalogRecordView childRecord;
+                try { childRecord = catalog.Inspect(new(applicationId, applicationId.Value, childMechanicId)); }
+                catch (Exception) { return $"Declared child '{child.Key}' is unavailable."; }
+                if (childRecord.Summary.Kind != "mechanic" || childRecord.Summary.Status != "active")
+                    return $"Declared child '{child.Key}' is inactive.";
+                try
+                {
+                    using var document = JsonDocument.Parse(childRecord.ContentJson);
+                    if (!document.RootElement.TryGetProperty("requirements", out var value)
+                        || value.ValueKind != JsonValueKind.String)
+                        return $"Declared child '{child.Key}' has invalid requirements.";
+                    var childRequirements = MechanicRequirements.Parse(value.GetString()!);
+                    if (childRequirements.ProjectionProblems().Count > 0 || childRequirements.CompositionProblems().Count > 0)
+                        return $"Declared child '{child.Key}' has invalid requirements.";
+                    var nested = await CollectComponentIdsAsync(childRequirements, childRecord.Summary.QualifiedId, depth + 1,
+                        new HashSet<string>(lineage, StringComparer.Ordinal));
+                    if (nested is not null) return nested;
+                }
+                catch (JsonException) { return $"Declared child '{child.Key}' has invalid requirements."; }
+            }
+            return null;
+        }
     }
 
     private EcsComponentReference? ResolveComponent(
@@ -220,9 +288,14 @@ public sealed class ApplicationActionRunner(
         return null;
     }
 
+    private static string QualifyMechanicId(ApplicationIdentifier applicationId, string mechanicId) =>
+        mechanicId.StartsWith(applicationId.Value + ".", StringComparison.Ordinal)
+            ? mechanicId : applicationId.Value + "." + mechanicId;
+
     private async Task<TranslationResult> TranslateAsync(
         StateSpaceView stateSpace,
         ApplicationMechanicProjectionMapping mapping,
+        MechanicProjection projection,
         IReadOnlyList<Effect> proposed,
         CancellationToken cancellationToken)
     {
@@ -231,6 +304,7 @@ public sealed class ApplicationActionRunner(
         var owners = stateSpace.ApplicationRevision.BaseApplications
             .Prepend(stateSpace.ApplicationRevision.ApplicationId).ToArray();
         var result = new List<ApplicationEcsEffect>(proposed.Count);
+        var createdEntityIds = new HashSet<string>(StringComparer.Ordinal);
         foreach (var effect in proposed)
         {
             if (effect is null) return TranslationResult.Failed("EFFECT_REQUIRED", "The mechanic proposed an empty effect.");
@@ -238,6 +312,7 @@ public sealed class ApplicationActionRunner(
             {
                 case EffectType.EntityCreate:
                     result.Add(new() { Type = ApplicationEcsEffectType.EntityCreate, EntityId = effect.EntityId, Name = effect.Name });
+                    createdEntityIds.Add(effect.EntityId);
                     break;
                 case EffectType.EntityDelete:
                 {
@@ -254,9 +329,20 @@ public sealed class ApplicationActionRunner(
                     var type = mapping.Components.TryGetValue(effect.DefinitionId, out var declared)
                         ? declared : ResolveComponent(owners, effect.DefinitionId);
                     if (type is null) return TranslationResult.Failed("COMPONENT_MAPPING_MISSING", "An affected component has no exact mapping.");
-                    var current = await entities.GetComponentAsync(stateSpace.StateSpaceId, effect.EntityId, type.QualifiedTypeId, cancellationToken);
+                    var localId = mapping.Components.ContainsKey(effect.DefinitionId)
+                        ? effect.DefinitionId
+                        : mapping.Components.FirstOrDefault(pair => pair.Value == type).Key;
+                    if (string.IsNullOrWhiteSpace(localId))
+                        return TranslationResult.Failed("COMPONENT_SNAPSHOT_MISSING",
+                            "An affected component was not declared in the evaluated projection.");
                     var add = effect.Type == EffectType.ComponentAdd;
-                    if ((!add && current is null) || (current is not null && current.Type != type))
+                    int? observedRevision = null;
+                    var hasSnapshot = projection.ComponentRevisions.TryGetValue(effect.EntityId, out var revisions)
+                        && revisions.TryGetValue(localId, out observedRevision);
+                    if (!hasSnapshot && (!add || !createdEntityIds.Contains(effect.EntityId)))
+                        return TranslationResult.Failed("COMPONENT_SNAPSHOT_MISSING",
+                            "An affected component was not declared in the evaluated projection.");
+                    if ((add && observedRevision is not null) || (!add && observedRevision is null))
                         return TranslationResult.StaleFailure("COMPONENT_STALE", "An affected component changed or is unavailable.");
                     result.Add(new()
                     {
@@ -264,7 +350,7 @@ public sealed class ApplicationActionRunner(
                         EntityId = effect.EntityId,
                         ComponentType = type,
                         DataJson = effect.Type == EffectType.ComponentRemove ? "" : effect.Data,
-                        ExpectedRevision = add ? 0 : current!.Revision
+                        ExpectedRevision = observedRevision ?? 0
                     });
                     break;
                 }

@@ -6,7 +6,7 @@ public sealed class OllamaCompletionOptions
     public Uri Endpoint { get; init; } = new("http://localhost:11434");
     public string Model { get; init; } = "qwen3:8b";
     public string Profile { get; init; } = "standard";
-    public int MaxPromptCharacters { get; init; } = 30_000;
+    public int MaxPromptCharacters { get; init; } = 72_000;
     public int MaxResponseCharacters { get; init; } = 16_000;
     public int MaxOutputTokens { get; init; } = 1_024;
     public int MaxConcurrentRequests { get; init; } = 1;

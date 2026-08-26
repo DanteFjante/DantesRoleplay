@@ -94,3 +94,31 @@ saving an inactive draft before opening the existing isolated revision preview; 
 [Slice 15](WEB-CONTROL-CENTER-SLICE-15-IMPLEMENTATION.md) selects the confirmed Luna model for
 new Codex threads and exposes that host-owned selection as status only; its
 [receipt](WEB-CONTROL-CENTER-SLICE-15-RECEIPT.md) records acceptance.
+
+## Feature 3 — personal dashboard
+
+[Slice 0](WEB-PERSONAL-DASHBOARD-SLICE-0-IMPLEMENTATION.md) personalizes the existing private
+`home` page with the already-selected local outer chat, browser-local notes, and a local clock,
+without adding a durable personal-data store or changing any backend route or AI contract; its
+[receipt](WEB-PERSONAL-DASHBOARD-SLICE-0-RECEIPT.md) records active live revision 4 and verification.
+
+## Feature 4 — application-aware private workspace
+
+The [application-aware workspace dependency plan](WEB-APPLICATION-AWARE-WORKSPACE-DEPENDENCY-PLAN.md)
+is complete. Slice A's reviewed `dnd2024` and `trail-survival` live registrations, activations, and
+initial state spaces are accepted under its
+[receipt](WEB-APPLICATION-AWARE-WORKSPACE-SLICE-A-RECEIPT.md). Slice B's shared browser-native
+navigation foundation is accepted under its
+[receipt](WEB-APPLICATION-AWARE-WORKSPACE-SLICE-B-RECEIPT.md). Slice C's reusable system-capability
+read catalog is accepted under its
+[receipt](WEB-APPLICATION-AWARE-WORKSPACE-SLICE-C-RECEIPT.md). Slice D's read-only general system
+chat is accepted under its
+[receipt](WEB-APPLICATION-AWARE-WORKSPACE-SLICE-D-RECEIPT.md), with exact durable scope, bounded
+provenance-bearing context, private routes, and migration evidence.
+Confirmed system administration and application-page composition remain in ordered Slices E–H
+with separate system/application authority. Slice E's exact task-orchestration artifacts are
+[accepted](WEB-APPLICATION-AWARE-WORKSPACE-SLICE-E-RECEIPT.md). Slice F's reusable action and form
+components are [accepted](WEB-APPLICATION-AWARE-WORKSPACE-SLICE-F-RECEIPT.md). Slice G's scoped page
+composition is [accepted](WEB-APPLICATION-AWARE-WORKSPACE-SLICE-G-RECEIPT.md). Slice H's final
+combined acceptance, live activation, and accepted-boundary chat corrections are
+[accepted](WEB-APPLICATION-AWARE-WORKSPACE-SLICE-H-RECEIPT.md).

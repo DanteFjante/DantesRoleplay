@@ -9,9 +9,10 @@ namespace DantesRoleplay.Interactions;
 /// <summary>Fixed schema-only outer conversation adapter. It never sends tool definitions.</summary>
 public sealed class OpenAiResponsesOuterInteractionProvider(
     HttpClient http,
-    OpenAiInteractionPlanningOptions options) : IInteractionOuterTurnProvider, IInteractionNarrationProvider
+    OpenAiInteractionPlanningOptions options) : IInteractionOuterProviderAdapter
 {
     private const int MaximumEnvelopeBytes = 256 * 1024;
+    public InteractionOuterProviderKind Kind => InteractionOuterProviderKind.Remote;
 
     public async Task<InteractionOuterTurnResult> DecideAsync(
         InteractionOuterTurnRequest request,
@@ -64,6 +65,29 @@ public sealed class OpenAiResponsesOuterInteractionProvider(
                 : InteractionNarrationResult.Unavailable("NARRATION_RESPONSE_INVALID");
         }
         catch (JsonException) { return InteractionNarrationResult.Unavailable("NARRATION_RESPONSE_INVALID"); }
+    }
+
+    public async Task<InteractionTaskAgendaResult> CreateAgendaAsync(
+        InteractionTaskAgendaRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (string.IsNullOrWhiteSpace(request.GoalText)
+            || request.GoalText.Length > InteractionContractLimits.IntentText
+            || request.GoalText.Any(char.IsControl))
+            return InteractionTaskAgendaResult.Unavailable("TASK_AGENDA_REQUEST_INVALID");
+        var output = await CompleteAsync(InteractionOuterProtocol.TaskAgendaTask,
+            InteractionOuterProtocol.TaskAgendaPrompt, InteractionOuterProtocol.TaskAgendaSchemaName,
+            InteractionOuterProtocol.TaskAgendaSchema, JsonSerializer.Serialize(request), cancellationToken);
+        if (!output.Ok) return InteractionTaskAgendaResult.Unavailable(output.Code);
+        try
+        {
+            return new(true, InteractionTaskAgenda.Parse(output.Json), "TASK_AGENDA_COMPLETED");
+        }
+        catch (InteractionContractException)
+        {
+            return InteractionTaskAgendaResult.Unavailable("TASK_AGENDA_INVALID");
+        }
     }
 
     private async Task<(bool Ok, string Json, string Code)> CompleteAsync(

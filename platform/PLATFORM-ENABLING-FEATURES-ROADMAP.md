@@ -1,8 +1,8 @@
 # Platform enabling features roadmap
 
-Status: **E6 Slices 1–2, E10 Slices 1–3A, application-kernel Slices 0–11J and interaction-orchestration Slices 12A–12H, and its legacy ownership ratification are accepted. E10 Slice
+Status: **E6 Slices 1–2, E8 Slices 1–2 plus downstream trigger Slices 0–10, E10 Slices 1–3A, application-kernel Slices 0–11J and interaction-orchestration Slices 12A–12H, and its legacy ownership ratification are accepted. E10 Slice
 3A has an implemented decision proposal; E9 private-host Slice 1 is accepted while its general
-multi-user and transport-parity work remains planned. E7–E8 remain planned implementation features, not
+multi-user and transport-parity work remains planned. E7 remains planned; E8 consumer adoption remains separately owned, not
 informal exceptions.**
 Last updated: 2026-08-25
 
@@ -87,12 +87,21 @@ review/promotion, and current-authority verified retrieval. Slice 12H closes the
 and independence matrix, including the guarded removal of game-adapter compile wildcards from the
 generic build.
 
-A [planning-only Slice 13 extension](interaction-orchestration/INTERACTION-ORCHESTRATION-SLICE-13-DEPENDENCY-PLAN.md)
-captures the next product direction: a local or remote outer AI, inner-first typed fallback, safe
-outer traversal when inner resolution is unknown, query-result binding, bounded intent-level task
-lists and runtime work batches with fresh-state replanning, and reusable learning from successful outer fallback. It adds
-no runtime artifact until its provider, consent, continuation, query, promotion, and public-shape
-gates are confirmed.
+A [Slice 13 adaptive extension](interaction-orchestration/INTERACTION-ORCHESTRATION-SLICE-13-DEPENDENCY-PLAN.md)
+has accepted [13A](interaction-orchestration/INTERACTION-ORCHESTRATION-SLICE-13A-IMPLEMENTATION.md): an
+explicit local or remote outer provider with no automatic network fallback, and
+[13B](interaction-orchestration/INTERACTION-ORCHESTRATION-SLICE-13B-IMPLEMENTATION.md): correlated
+inner-first resolution with one typed outer fallback. [13C](interaction-orchestration/INTERACTION-ORCHESTRATION-SLICE-13C-IMPLEMENTATION.md) is accepted:
+application-owned read-only query contracts
+can return safe results or bind typed values into later actions with exact private receipts and replay.
+The accepted [13D implementation](interaction-orchestration/INTERACTION-ORCHESTRATION-SLICE-13D-IMPLEMENTATION.md)
+adds bounded intent-level task agendas and process-local fresh-state work batches. The
+Accepted [13E](interaction-orchestration/INTERACTION-ORCHESTRATION-SLICE-13E-IMPLEMENTATION.md)
+adds explicit value-free outer-fallback learning, deterministic host promotion, and safe later inner
+route guidance without a migration or new transport operation. Final
+[13F combined acceptance](interaction-orchestration/INTERACTION-ORCHESTRATION-SLICE-13F-IMPLEMENTATION.md)
+is implemented with green repository evidence and awaits completed-feature acceptance; see its
+[receipt](interaction-orchestration/receipts/INTERACTION-ORCHESTRATION-SLICE-13F-RECEIPT.md).
 
 ## Dependency graph
 
@@ -111,10 +120,11 @@ Platform enabling capabilities
 ├─ E7 atomic staged composition and virtual projections               [planned; depends on E6]
 │  ├─ Character CH5 creation
 │  └─ F35 monster bootstrap
-├─ E8 dynamic event role binding and bounded indexed fan-out          [planned; depends on E1]
+├─ E8 dynamic event role binding and bounded indexed fan-out          [Slices 1–2 accepted; depends on E1]
 │  ├─ F33 active-rest clock/interruption lifecycle
 │  ├─ F17/F18 dynamic event consumers
-│  └─ F32 timed active effects
+│  ├─ F32 timed active effects
+│  └─ durable scheduling/external triggers                            [downstream Slices 0–10 accepted]
 ├─ E9 trusted principal context and authorization hook                [private-host Slice 1 + MCP read parity accepted]
    ├─ F38 GM social adjudication
    ├─ campaign trusted-host actions
@@ -130,12 +140,16 @@ Platform enabling capabilities
 | ---: | --- | --- | --- |
 | E6 | Typed dependent mechanic composition | **Slices 1–2 accepted** — [receipts](e6/); one named consumer adoption is next | F20, F32, F34, F38 |
 | E7 | Atomic staged composition | Internal virtual-effect/projection overlay proof | CH5, F35 |
-| E8 | Dynamic event role binding and bounded fan-out | **Slice 1 accepted** — exact event-payload role binding; Slice 2 bounded selector awaits confirmation | F17, F18, F33, F32 |
+| E8 | [Dynamic event role binding and bounded fan-out](e8/E8-DEPENDENCY-PLAN.md) | **Slices 1–2 accepted** — exact event-payload role binding and bounded indexed fan-out; Slice 3 is consumer adoption. The separate [downstream trigger plan](e8/E8-TRIGGER-SCHEDULING-DEPENDENCY-PLAN.md) has **Slices 0–10 accepted** and is complete for notification-only triggers. | F17, F18, F33, F32; scheduled reminders and external sources downstream |
 | E9 | Trusted principal context and authorization hook | **Private local/Tailscale web Slice 1 plus loopback MCP administrative reads and registry writes accepted**; other MCP writes, multi-user identity, persistent grants, and consumers remain planned | F38, campaigns, CH14 |
 | E10 | [Durable system feedback](e10/E10-DEPENDENCY-PLAN.md) | **Slices 1–3A accepted**; remote slices remain gated by E9 | Integration testing and developer review |
 
 E6 precedes E7 because staged roots need the same reviewed data-flow vocabulary. E8 is independent
-of E6/E7 and may be scheduled after its own current contracts are re-read. E9 is a security and
+of E6/E7; its generic routing Slices 1–2 are accepted and consumers adopt them under their own
+plans. Durable schedules, conditions, feeds, and device observations have accepted semantic and
+pure-contract, persistence, security-hardening, private-ingestion, durable-worker, and atomic
+notification/status/recurrence/state-condition/observation-match/phone-identity/management Slices 0–10 under the separate downstream E8 trigger dependency tree;
+that notification-only downstream plan is complete. E9 is a security and
 product-identity boundary; it is not made “ready” by a catalog-only implementation. E10 is
 independent of game-feature delivery and may proceed after its own semantic/public boundary is
 confirmed; remote access to its reports remains blocked by E9 and deployment policy.
@@ -166,6 +180,7 @@ feedback work is intentionally deferred and summarized in
 | Features 32/34/38 | E6 trusted child-result input | Spell, visibility, social, D20, or action rules |
 | CH5 and Feature 35 | E7 virtual actor construction | Character/monster source selection or component semantics |
 | Features 17/18/32/33 | E8 dynamic event routing | A scheduler, automatic time advance, or free event queries |
+| Scheduled reminders and external inputs | [E8 downstream trigger scheduling](e8/E8-TRIGGER-SCHEDULING-DEPENDENCY-PLAN.md) | Direct event insertion, automatic world-clock advancement, ambient action authority, or arbitrary uploaded code |
 | Feature 38 / Campaign / CH14 | E9 trusted principal/authorization hook | Login, identity provider, RBAC language, or player policy itself |
 | Integration testing | E10 append-only feedback report | Automatic bug diagnosis, source edits, issue-tracker delivery, or remediation |
 
@@ -174,4 +189,5 @@ feedback work is intentionally deferred and summarized in
 Split a feature again if it needs unrestricted JSON transformation, dynamic code evaluation,
 arbitrary graph/database querying, a new public tool kind, background scheduling, or a
 feature-specific authorization model. Those are separate semantic boundaries, not implementation
-details of E6–E10.
+details of E6–E10. The planned scheduling/external-observation boundary is recorded in the
+[E8 downstream trigger plan](e8/E8-TRIGGER-SCHEDULING-DEPENDENCY-PLAN.md).

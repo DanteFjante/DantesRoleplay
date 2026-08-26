@@ -55,6 +55,18 @@ public sealed class OllamaStructuredCompletionProviderTests
     }
 
     [Fact]
+    public async Task Default_prompt_budget_accepts_a_bounded_seventy_thousand_character_request()
+    {
+        var handler = ValidHandler(_ => Task.FromResult(Chat("{\"value\":\"answer\"}")));
+        var provider = Provider(handler);
+
+        var result = await provider.CompleteAsync(Request(new string('a', 70_000)));
+
+        Assert.True(result.Ok, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.Equal(3, handler.Calls);
+    }
+
+    [Fact]
     public async Task Unsupported_task_and_schema_mismatch_fail_closed()
     {
         var unsupportedHandler = ValidHandler(_ => Task.FromResult(Chat("{\"value\":\"answer\"}")));

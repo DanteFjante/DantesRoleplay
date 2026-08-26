@@ -1,0 +1,24 @@
+---
+id: procedure.mechanic.dnd2024.character-content-definition
+category: ruleset.dnd2024.character.content-definition
+name: Record immutable D&D 2024 character content
+governs: dnd2024.character.content-definition; mechanic.dnd2024.character-content-definition.record
+status: active
+---
+
+## Description
+
+Records a versioned, source-cited identity for one D&D 2024 character-content option. It creates no
+character and stores no rules, grants, choices, campaign state, item state, or eligibility result.
+
+## Instructions
+
+1. The recorder accepts exactly kind, canonical content key, positive version, active/archived
+   status, and a trimmed SRD locator ending in a PDF page reference.
+2. It fixes `source.dnd2024.srd-5.2.1` from the application source registry and adds one immutable
+   component to an existing versioned content entity.
+
+## Constraints
+
+Identity is write-once. A correction is a new versioned entity. This is administrative authoring,
+not a player-facing character-creation or content-grant action.

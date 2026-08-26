@@ -19,27 +19,17 @@ internal sealed class VerifiedInteractionRecipeResolver(
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(envelope);
-        var found = await recipes.SearchAsync(envelope.Host.ApplicationRevision.ApplicationId,
-            envelope.Intent.IntentText, InteractionRecipeStatus.Verified, 2, cancellationToken);
-        if (found.Count == 0)
-            found = await VectorMatches(envelope, cancellationToken);
-        if (found.Count != 1) return null;
-        var recipe = found[0];
-        if (recipe.ApplicationRevision != envelope.Host.ApplicationRevision.Revision
-            || recipe.ApplicationFingerprint != envelope.Host.ApplicationRevision.Fingerprint
-            || recipe.EffectiveSetFingerprint != envelope.Host.EffectiveSetFingerprint)
-        {
-            await MarkStale(recipe, envelope, "Application or activation authority changed.", cancellationToken);
-            return null;
-        }
-        if (!snapshots.TryGetSnapshot(envelope.Host.ApplicationRevision.ApplicationId, out var snapshot))
-            return null;
+        var current = await CurrentMatch(envelope, cancellationToken);
+        if (current is null) return null;
+        var recipe = current.Recipe;
+        var snapshot = current.Snapshot;
 
         var inspected = new List<InteractionInspectedFeature>();
         var draftSteps = new List<InteractionPlannerDraftStep>();
         foreach (var step in recipe.Template.Steps)
         {
             var record = snapshot.Documents.SingleOrDefault(document => document.Trust == SourceTrust.Trusted
+                && document.Record.Kind == "mechanic" && document.Record.Status == "active"
                 && document.Record.QualifiedId == step.QualifiedId
                 && document.Record.Version == step.ContractVersion
                 && document.Record.ContentFingerprint == step.ContractFingerprint)?.Record;
@@ -66,6 +56,52 @@ internal sealed class VerifiedInteractionRecipeResolver(
             ? new(result.Proposal, recipe.Reference) : null;
     }
 
+    public async Task<VerifiedInteractionRecipeGuidance?> GuideAsync(
+        AuthorizedInteractionEnvelope envelope,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(envelope);
+        var current = await CurrentMatch(envelope, cancellationToken);
+        if (current is null) return null;
+        var required = current.Recipe.Template.Steps.SelectMany(step => step.RoleSlots)
+            .Distinct(StringComparer.Ordinal).ToArray();
+        if (required.All(envelope.Intent.RoleHints.ContainsKey)) return null;
+        return new(current.Recipe.Reference, current.Recipe.Template.Steps);
+    }
+
+    private async Task<CurrentRecipe?> CurrentMatch(
+        AuthorizedInteractionEnvelope envelope,
+        CancellationToken cancellationToken)
+    {
+        var found = await recipes.SearchAsync(envelope.Host.ApplicationRevision.ApplicationId,
+            envelope.Intent.IntentText, InteractionRecipeStatus.Verified, 2, cancellationToken);
+        if (found.Count == 0)
+            found = await VectorMatches(envelope, cancellationToken);
+        if (found.Count != 1) return null;
+        var recipe = found[0];
+        if (recipe.ApplicationRevision != envelope.Host.ApplicationRevision.Revision
+            || recipe.ApplicationFingerprint != envelope.Host.ApplicationRevision.Fingerprint
+            || recipe.EffectiveSetFingerprint != envelope.Host.EffectiveSetFingerprint)
+        {
+            await MarkStale(recipe, envelope, "Application or activation authority changed.", cancellationToken);
+            return null;
+        }
+        if (!snapshots.TryGetSnapshot(envelope.Host.ApplicationRevision.ApplicationId, out var snapshot))
+            return null;
+        foreach (var step in recipe.Template.Steps)
+        {
+            var record = snapshot.Documents.SingleOrDefault(document => document.Trust == SourceTrust.Trusted
+                && document.Record.Kind == "mechanic" && document.Record.Status == "active"
+                && document.Record.QualifiedId == step.QualifiedId
+                && document.Record.Version == step.ContractVersion
+                && document.Record.ContentFingerprint == step.ContractFingerprint)?.Record;
+            if (record is not null) continue;
+            await MarkStale(recipe, envelope, "A referenced mechanic contract changed.", cancellationToken);
+            return null;
+        }
+        return new(recipe, snapshot);
+    }
+
     private async Task<IReadOnlyList<InteractionRecipeProjection>> VectorMatches(
         AuthorizedInteractionEnvelope envelope,
         CancellationToken cancellationToken)
@@ -85,6 +121,7 @@ internal sealed class VerifiedInteractionRecipeResolver(
                 foreach (var step in recipe.Template.Steps)
                 {
                     var record = snapshot.Documents.SingleOrDefault(value => value.Trust == SourceTrust.Trusted
+                        && value.Record.Kind == "mechanic" && value.Record.Status == "active"
                         && value.Record.QualifiedId == step.QualifiedId
                         && value.Record.Version == step.ContractVersion
                         && value.Record.ContentFingerprint == step.ContractFingerprint)?.Record;
@@ -154,4 +191,8 @@ internal sealed class VerifiedInteractionRecipeResolver(
             // A failed diagnostic transition cannot make a stale recipe executable.
         }
     }
+
+    private sealed record CurrentRecipe(
+        InteractionRecipeProjection Recipe,
+        ActiveCatalogFeatureSnapshot Snapshot);
 }

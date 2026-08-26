@@ -24,7 +24,8 @@ public sealed class InteractionRecipeProvenanceReader(DantesRoleplayDbContext db
                     && row.ApplicationId == recipe.ApplicationId.Value, cancellationToken);
             if (resolution is null || resolution.Status != "resolved" || execution is null
                 || execution.Disposition != "succeeded" || execution.ProposalFingerprint != resolution.ProposalFingerprint
-                || execution.Steps.Count == 0 || execution.Steps.Any(step => step.Disposition != "succeeded"))
+                || execution.Steps.Count == 0
+                || execution.Steps.Any(step => step.Disposition is not ("succeeded" or "replayed")))
                 return Invalid("RECIPE_PROVENANCE_INVALID", "A learning receipt is missing or not completely successful.");
             var operationIds = execution.Steps.Select(step => step.OperationId).ToArray();
             if (operationIds.Any(string.IsNullOrWhiteSpace))

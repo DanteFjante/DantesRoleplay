@@ -16,6 +16,8 @@ using DantesRoleplay.Projections;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.StateSpaceAdministration;
 using DantesRoleplay.Interactions;
+using DantesRoleplay.TriggerScheduling;
+using DantesRoleplay.SystemCapabilities;
 using ModelContextProtocol.Server;
 
 namespace DantesRoleplay.MCPServer.Tools;
@@ -34,7 +36,7 @@ public sealed class QueryTool
     [McpServerTool(Name = "query")]
     [Description(
         "Read anything in this system. kind is one of: capabilities, procedures, categories, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, session-recap, quest-summary, knowledge-answer, information-answer, information-actions, story-plan, " +
-        "mechanics, event-types, events, subscriptions, notifications, feedback, system.applications, system.sources, system.application-preview, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, history. Omit id for a list or search; " +
+        "mechanics, event-types, events, subscriptions, notifications, feedback, system.applications, system.sources, system.application-preview, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, system.trigger-scheduling, history. Omit id for a list or search; " +
         "pass id for one record in full. When you are unsure what a kind takes or what a commit payload looks like, call " +
         "query(kind: \"capabilities\") — it is the exact catalog. Irrelevant filters are ignored unless a fixed query kind explicitly rejects them. Never changes state.")]
     public async Task<ToolEnvelope> QueryAsync(
@@ -49,7 +51,7 @@ public sealed class QueryTool
         INotificationStore notifications,
         [Description(
             "Closed kind: capabilities, procedures, categories, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, session-recap, quest-summary, knowledge-answer, mechanics, event-types, events, "
-            + "subscriptions, notifications, feedback, information-answer, information-actions, story-plan, system.applications, system.sources, system.application-preview, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, or history.")]
+            + "subscriptions, notifications, feedback, information-answer, information-actions, story-plan, system.applications, system.sources, system.application-preview, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, system.trigger-scheduling, or history.")]
         string kind,
         [Description("Full-record id for procedures, mechanics, or one entity.")] string? id = null,
         [Description("Entity ids for a full batch read.")] string[]? ids = null,
@@ -99,7 +101,7 @@ public sealed class QueryTool
         [Description("Feedback filter: blocked, degraded, minor, or none.")] string? impact = null,
         [Description("Knowledge answer: bounded natural-language question.")] string? question = null,
         [Description("Generic information answer: required authorized information scope.")] string? scopeId = null,
-        [Description("Generic information answer: optional source ids within the scope.")] string[]? sourceIds = null,
+        [Description("Optional exact source IDs for information answers or application source-profile previews.")] string[]? sourceIds = null,
         [Description("System catalog queries: required non-system application ID.")] string? applicationId = null,
         [Description("System catalog queries: application-declared collection ID.")] string? collection = null,
         [Description("System catalog browse/search: slash-separated logical branch; empty means root.")] string? branch = null,
@@ -111,6 +113,7 @@ public sealed class QueryTool
         [Description("Interaction queries: application-bound state-space ID.")] string? stateSpaceId = null,
         [Description("Interaction plan: closed request JSON containing operation (resolve or submit), stateSpaceId, sessionContextId, intent, and proposal only for submit.")] string? request = null,
         [Description("Interaction recipes: optional closed status candidate, verified, stale, or retired.")] string? status = null,
+        [Description("Trigger scheduling: overview, structures, sources, devices, one-time, recurring, conditional, observation-triggers, observations, fires, or phone-principal.")] string? resource = null,
         CancellationToken cancellationToken = default,
         ISystemFeedbackService? feedback = null,
         IInformationAnswerCoordinator? informationAnswers = null,
@@ -125,7 +128,9 @@ public sealed class QueryTool
         IApplicationActivationReader? applicationActivations = null,
         IStateSpaceAdministrationReader? stateSpaceAdministration = null,
         IInteractionGateway? interactionGateway = null,
-        IInteractionRecipeStore? interactionRecipes = null)
+        IInteractionRecipeStore? interactionRecipes = null,
+        ITriggerSchedulingAdministrationService? triggerSchedulingAdministration = null,
+        ISystemCapabilityCatalog? systemCapabilities = null)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
 
@@ -198,11 +203,11 @@ public sealed class QueryTool
                 feedback, log, id, category, impact, state, from, to, limit, cancellationToken),
             "feedback" => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("FEEDBACK_UNAVAILABLE", "Feedback reporting is not configured.", "orient()", "Feedback query was unavailable."))),
             "system.applications" => await new SystemRegistryTools().ApplicationsAsync(
-                applications, applicationActivations, stateSpaceAdministration, privateOperator, log, applicationId, limit),
+                systemCapabilities, privateOperator, log, applicationId, limit, cancellationToken),
             "system.sources" => await new SystemRegistryTools().SourcesAsync(
                 applications, sources, sourceScans, privateOperator, log, applicationId, id, limit),
             "system.application-preview" => await new SystemApplicationPreviewTools().PreviewAsync(
-                applicationPreviews, privateOperator, log, applicationId, limit, cancellationToken),
+                applicationPreviews, privateOperator, log, applicationId, sourceIds, limit, cancellationToken),
             "system.dependencies" => await new SystemDependencyTools().InspectAsync(
                 projectionImpacts, privateOperator, log, applicationId, id, transitive, limit),
             "system.catalogs" => await new SystemCatalogTools().ListAsync(
@@ -221,6 +226,8 @@ public sealed class QueryTool
                 interactionGateway, privateOperator, log, applicationId, stateSpaceId, id, cancellationToken),
             "system.interaction-recipes" => await new SystemInteractionTools().RecipesAsync(
                 interactionRecipes, privateOperator, log, applicationId, id, query, status, cursor, limit, cancellationToken),
+            "system.trigger-scheduling" => await new SystemTriggerSchedulingTools().QueryAsync(
+                triggerSchedulingAdministration, privateOperator, log, applicationId, resource, id, limit, cancellationToken),
             "history" =>
                 await new HistoryTool().HistoryAsync(
                     log, limit ?? 20, failuresOnly, tool, subject, cancellationToken),

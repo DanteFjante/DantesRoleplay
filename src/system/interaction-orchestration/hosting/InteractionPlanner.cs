@@ -33,6 +33,7 @@ internal sealed class InteractionPlanner(
         var rounds = 0;
         var searchCount = 0;
         var inspectionCount = 0;
+        VerifiedInteractionRecipeGuidance? verifiedRoute = null;
 
         InteractionResolutionResult? terminal = FreshAuthorization(envelope, authorizationRequest);
         if (terminal is null)
@@ -43,6 +44,8 @@ internal sealed class InteractionPlanner(
                 if (recipe is not null)
                     terminal = InteractionResolutionResult.Resolved(recipe.Proposal,
                         "Resolved from a current verified route.", ["verified-recipe"], recipe.Reference);
+                else
+                    verifiedRoute = await recipes.GuideAsync(envelope, cancellationToken);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -75,7 +78,7 @@ internal sealed class InteractionPlanner(
             {
                 deadline.Token.ThrowIfCancellationRequested();
                 rounds++;
-                var observation = Observation(envelope, searches, inspectedById.Values,
+                var observation = Observation(envelope, verifiedRoute, searches, inspectedById.Values,
                     rounds, searchCount, inspectionCount, candidateById.Count, watch.ElapsedMilliseconds);
                 if (Encoding.UTF8.GetByteCount(observation) > envelope.Host.Budgets.MaximumObservationBytes)
                 {
@@ -232,7 +235,7 @@ internal sealed class InteractionPlanner(
 
         var usage = new InteractionPlannerUsage(rounds, searchCount, inspectionCount,
             candidateById.Count, Math.Min(watch.ElapsedMilliseconds, InteractionPlannerLimits.MaximumElapsedMilliseconds));
-        var trace = TraceFingerprint(envelope, searches, inspectedById.Values, usage);
+        var trace = TraceFingerprint(envelope, verifiedRoute, searches, inspectedById.Values, usage);
         terminal = WithPlannerEvidence(terminal!, identity, usage);
         var receipt = await receipts.AppendResolutionAsync(new(envelope, terminal, trace), CancellationToken.None);
         if (receipt.Disposition == InteractionReceiptWriteDisposition.Replay
@@ -274,6 +277,7 @@ internal sealed class InteractionPlanner(
 
     private static string Observation(
         AuthorizedInteractionEnvelope envelope,
+        VerifiedInteractionRecipeGuidance? verifiedRoute,
         IReadOnlyList<SearchTrace> searches,
         IEnumerable<InteractionInspectedFeature> inspected,
         int rounds,
@@ -309,6 +313,24 @@ internal sealed class InteractionPlanner(
                 candidates = InteractionPlannerLimits.MaximumCandidates - candidateCount,
                 elapsedMilliseconds = Math.Max(0, InteractionPlannerLimits.MaximumElapsedMilliseconds - elapsed)
             },
+            verifiedRoute = verifiedRoute is null ? null : new
+            {
+                recipe = new
+                {
+                    id = verifiedRoute.Reference.Id,
+                    version = verifiedRoute.Reference.Version,
+                    templateFingerprint = verifiedRoute.Reference.TemplateFingerprint
+                },
+                steps = verifiedRoute.Steps.Select(step => new
+                {
+                    stepId = step.StepId,
+                    qualifiedId = step.QualifiedId,
+                    version = step.ContractVersion,
+                    fingerprint = step.ContractFingerprint,
+                    dependsOn = step.DependsOn,
+                    roleSlots = step.RoleSlots
+                })
+            },
             searches = searches.Select(search => new
             {
                 search.Query,
@@ -337,6 +359,7 @@ internal sealed class InteractionPlanner(
 
     private static string TraceFingerprint(
         AuthorizedInteractionEnvelope envelope,
+        VerifiedInteractionRecipeGuidance? verifiedRoute,
         IReadOnlyList<SearchTrace> searches,
         IEnumerable<InteractionInspectedFeature> inspected,
         InteractionPlannerUsage usage)
@@ -344,6 +367,21 @@ internal sealed class InteractionPlanner(
         var value = JsonSerializer.Serialize(new
         {
             envelope = envelope.Fingerprint,
+            verifiedRoute = verifiedRoute is null ? null : new
+            {
+                verifiedRoute.Reference.Id,
+                verifiedRoute.Reference.Version,
+                verifiedRoute.Reference.TemplateFingerprint,
+                steps = verifiedRoute.Steps.Select(step => new
+                {
+                    step.StepId,
+                    step.QualifiedId,
+                    step.ContractVersion,
+                    step.ContractFingerprint,
+                    step.DependsOn,
+                    step.RoleSlots
+                })
+            },
             searches = searches.Select(search => new
             {
                 search.Query,

@@ -21,6 +21,8 @@ internal static class InteractionOrchestrationComponentRegistration
         services.TryAddScoped<IInteractionExecutionAuthorityStore>(provider =>
             provider.GetRequiredService<InteractionReceiptStore>());
         services.TryAddScoped<IInteractionRecipeStore, InteractionRecipeStore>();
+        services.TryAddScoped<IInteractionRecipeAutoVerificationEvidenceReader, InteractionRecipeAutoVerificationEvidenceReader>();
+        services.TryAddScoped<IInteractionRecipeAutoVerifier, InteractionRecipeAutoVerifier>();
         services.TryAddScoped<IInteractionRecipeLearner, InteractionRecipeLearner>();
         services.TryAddScoped<IInteractionRecipeProvenanceReader, InteractionRecipeProvenanceReader>();
         services.TryAddScoped<IInteractionRecipeReviewService, InteractionRecipeReviewService>();
@@ -35,6 +37,8 @@ internal static class InteractionOrchestrationComponentRegistration
             provider.GetService<ITextEmbeddingProvider>(),
             provider.GetService<IInteractionDerivedVectorIndex>()));
         services.TryAddScoped<IInteractionProposalVerifier, InteractionProposalVerifier>();
+        services.TryAddScoped<IInteractionQueryExecutor, ProjectionInteractionQueryExecutor>();
+        services.TryAddScoped<IInteractionQueryExecutorRegistry, InteractionQueryExecutorRegistry>();
         services.TryAddScoped<IInteractionEnvelopeFactory, InteractionEnvelopeFactory>();
         services.TryAddScoped<IInteractionExecutionCoordinator, InteractionExecutionCoordinator>();
         services.TryAddScoped<IInteractionGateway, InteractionGateway>();
@@ -42,6 +46,8 @@ internal static class InteractionOrchestrationComponentRegistration
         services.TryAddSingleton<IInteractionOuterTurnProvider>(provider =>
             provider.GetRequiredService<UnavailableInteractionOuterProvider>());
         services.TryAddSingleton<IInteractionNarrationProvider>(provider =>
+            provider.GetRequiredService<UnavailableInteractionOuterProvider>());
+        services.TryAddSingleton<IInteractionTaskAgendaProvider>(provider =>
             provider.GetRequiredService<UnavailableInteractionOuterProvider>());
         services.TryAddScoped<IInteractionPlanner>(provider => new InteractionPlanner(
             provider.GetRequiredService<IInteractionAuthorizationPolicy>(),
@@ -51,7 +57,9 @@ internal static class InteractionOrchestrationComponentRegistration
             provider.GetRequiredService<IVerifiedInteractionRecipeResolver>(),
             provider.GetRequiredService<IInteractionReceiptStore>(),
             [
-                new LocalInteractionPlanningProvider(provider.GetService<ILocalStructuredCompletionProvider>()),
+                new LocalInteractionPlanningProvider(
+                    provider.GetService<ILocalStructuredCompletionProvider>(),
+                    provider.GetService<IInteractionOuterLocalCompletionProvider>()),
                 (IInteractionPlanningCompletionProvider?)provider.GetService<OpenAiResponsesInteractionPlanningProvider>()
                     ?? new UnavailableRemoteInteractionPlanningProvider()
             ]));

@@ -1,0 +1,6 @@
+function exact(value,keys){if(value===null||Array.isArray(value)||typeof value!=="object")return false;var actual=Object.keys(value).sort(),expected=keys.slice().sort();if(actual.length!==expected.length)return false;for(var i=0;i<expected.length;i++)if(actual[i]!==expected[i])return false;return true;}
+var subject=ctx.roles.subject,input=ctx.input;
+if(!subject||!subject.components)throw new Error("Character level requires a subject.");
+if(!exact(input,["level"])||typeof input.level!=="number"||!isFinite(input.level)||Math.floor(input.level)!==input.level||input.level<1||input.level>20)throw new Error("Character-level input must contain exactly one integer level from 1 through 20.");
+var record={level:input.level,sourceRef:{sourceId:"source.dnd2024.srd-5.2.1",locator:"Character Creation > Level Advancement > Character Advancement"}},previous=subject.components["dnd2024.character-level"]||null,bonus=2+Math.floor((input.level-1)/4);
+return {narration:subject.name+"'s character level is "+input.level+" (Proficiency Bonus +"+bonus+").",data:{level:input.level,proficiencyBonus:bonus,previousLevel:previous===null?null:JSON.parse(previous).level},effects:[{type:previous===null?"component.add":"component.set",entityId:subject.id,definitionId:"dnd2024.character-level",data:JSON.stringify(record)}],events:[],notifications:[]};

@@ -11,12 +11,24 @@ public interface IAllowedSourceRootResolver
     bool TryResolve(string allowedRootId, out string canonicalPath);
 }
 
-public sealed class EmptyAllowedSourceRootResolver : IAllowedSourceRootResolver
+/// <summary>Safe host metadata for planning. It exposes configured opaque IDs, never paths.</summary>
+public interface IAllowedSourceRootCatalog
+{
+    IReadOnlyList<string> ListIds(int limit);
+}
+
+public sealed class EmptyAllowedSourceRootResolver : IAllowedSourceRootResolver, IAllowedSourceRootCatalog
 {
     public bool TryResolve(string allowedRootId, out string canonicalPath)
     {
         canonicalPath = string.Empty;
         return false;
+    }
+
+    public IReadOnlyList<string> ListIds(int limit)
+    {
+        if (limit is < 1 or > 128) throw new ArgumentOutOfRangeException(nameof(limit));
+        return [];
     }
 }
 

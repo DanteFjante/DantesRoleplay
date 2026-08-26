@@ -191,19 +191,32 @@ public sealed class LegacyStateAdoptionService(
             || active.ApplicationFingerprint != application.Fingerprint)
             throw Invalid("APPLICATION_STALE", "The active overlay no longer matches the registered application revision.");
 
-        var entities = db.Entities.AsNoTracking().OrderBy(value => value.Id).ToArray();
-        var components = db.Components.AsNoTracking()
+        var allEntities = db.Entities.AsNoTracking().OrderBy(value => value.Id).ToArray();
+        var allComponents = db.Components.AsNoTracking()
             .OrderBy(value => value.EntityId).ThenBy(value => value.DefinitionId).ToArray();
-        var containments = db.Containments.AsNoTracking()
+        var allContainments = db.Containments.AsNoTracking()
             .OrderBy(value => value.ContainedId).ToArray();
-        var relationships = db.Relationships.AsNoTracking()
+        var allRelationships = db.Relationships.AsNoTracking()
             .OrderBy(value => value.FromEntityId).ThenBy(value => value.ToEntityId).ThenBy(value => value.Kind).ToArray();
 
-        var entityIds = entities.Select(value => value.Id).ToHashSet(StringComparer.Ordinal);
-        if (components.Any(value => !entityIds.Contains(value.EntityId))
-            || containments.Any(value => !entityIds.Contains(value.ContainerId) || !entityIds.Contains(value.ContainedId))
-            || relationships.Any(value => !entityIds.Contains(value.FromEntityId) || !entityIds.Contains(value.ToEntityId)))
+        var knownEntityIds = allEntities.Select(value => value.Id).ToHashSet(StringComparer.Ordinal);
+        if (allComponents.Any(value => !knownEntityIds.Contains(value.EntityId))
+            || allContainments.Any(value => !knownEntityIds.Contains(value.ContainerId)
+                || !knownEntityIds.Contains(value.ContainedId))
+            || allRelationships.Any(value => !knownEntityIds.Contains(value.FromEntityId)
+                || !knownEntityIds.Contains(value.ToEntityId)))
             throw Invalid("LEGACY_REFERENCE_INVALID", "Legacy state contains an edge or component with an unknown entity reference.");
+
+        // Legacy deletion is a tombstone: WorldStore excludes the entity from every runtime read
+        // while deliberately retaining its component and edge rows as historical evidence. Adoption
+        // must materialize that same active graph, not resurrect tombstones in a new state space.
+        var entities = allEntities.Where(value => value.DeletedAt is null).ToArray();
+        var entityIds = entities.Select(value => value.Id).ToHashSet(StringComparer.Ordinal);
+        var components = allComponents.Where(value => entityIds.Contains(value.EntityId)).ToArray();
+        var containments = allContainments.Where(value => entityIds.Contains(value.ContainerId)
+            && entityIds.Contains(value.ContainedId)).ToArray();
+        var relationships = allRelationships.Where(value => entityIds.Contains(value.FromEntityId)
+            && entityIds.Contains(value.ToEntityId)).ToArray();
         ValidateContainment(containments);
 
         var componentMappings = ExactComponentMappings(request, components);

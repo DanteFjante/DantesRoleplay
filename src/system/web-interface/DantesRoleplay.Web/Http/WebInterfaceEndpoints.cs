@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Text;
 using System.Text.Json;
 using DantesRoleplay.Authorization;
@@ -10,12 +11,16 @@ using DantesRoleplay.Assistants;
 using DantesRoleplay.CodexBridge;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Interactions;
+using DantesRoleplay.TriggerScheduling;
+using DantesRoleplay.SystemConversations;
+using DantesRoleplay.SystemTasks;
 using DantesRoleplay.Web.Interactions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.Web.Hosting;
 
@@ -36,10 +41,14 @@ public static class WebInterfaceEndpoints
         Secure(endpoints.MapGet("/api/changes", StreamChangesAsync), WebInterfaceSecurity.StreamRateLimitPolicy);
         Secure(endpoints.MapGet("/api/session", GetSession), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/components/application-conversation.js", GetApplicationConversationElement), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/components/system-workspace.js", GetSystemWorkspaceElement), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/api/applications/{applicationId}/conversations/{conversationId}", GetApplicationConversation), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapPost("/api/applications/{applicationId}/conversations", CreateApplicationConversationAsync), WebInterfaceSecurity.UploadRateLimitPolicy);
         Secure(endpoints.MapPost("/api/applications/{applicationId}/conversations/{conversationId}/turns", SendApplicationConversationTurnAsync), WebInterfaceSecurity.UploadRateLimitPolicy);
         Secure(endpoints.MapPost("/api/applications/{applicationId}/conversations/{conversationId}/execute", ExecuteApplicationConversationAsync), WebInterfaceSecurity.UploadRateLimitPolicy);
+        endpoints.MapPost("/api/applications/{applicationId}/observations", SubmitObservationAsync)
+            .AddEndpointFilter<WebObservationRequestFilter>()
+            .RequireRateLimiting(WebInterfaceSecurity.UploadRateLimitPolicy);
         endpoints.MapDantesRoleplayControlGet("/status", GetControlCenterStatus);
         endpoints.MapDantesRoleplayControlGet("/settings", GetControlSettings);
         endpoints.MapDantesRoleplayControlGet("/settings/{key}", GetControlSetting);
@@ -64,8 +73,43 @@ public static class WebInterfaceEndpoints
         endpoints.MapDantesRoleplayControlPost(
             "/conversations/{conversationId}/turns/{turnId}/approvals/{approvalId}",
             PrivateOperatorCapability.ControlCodexApprove, DecideCodexApprovalAsync);
+        endpoints.MapDantesRoleplayControlGet(
+            "/system/conversations", GetSystemConversationsAsync);
+        endpoints.MapDantesRoleplayControlGet(
+            "/system/conversations/{conversationId}", GetSystemConversationAsync);
+        endpoints.MapDantesRoleplayControlPost(
+            "/system/conversations", PrivateOperatorCapability.ControlAiMessage,
+            CreateSystemConversationAsync);
+        endpoints.MapDantesRoleplayControlPost(
+            "/system/conversations/{conversationId}/turns", PrivateOperatorCapability.ControlAiMessage,
+            SendSystemConversationTurnAsync);
+        endpoints.MapDantesRoleplayControlGet(
+            "/system/conversations/{conversationId}/tasks", GetSystemTasksAsync);
+        endpoints.MapDantesRoleplayControlPost(
+            "/system/conversations/{conversationId}/tasks", PrivateOperatorCapability.ControlAiMessage,
+            PrepareSystemTaskAsync);
+        endpoints.MapDantesRoleplayControlGet(
+            "/system/tasks/{taskId}", GetSystemTaskAsync);
+        endpoints.MapDantesRoleplayControlPost(
+            "/system/tasks/{taskId}/confirmations", PrivateOperatorCapability.Modify,
+            ConfirmSystemTaskAsync);
+        endpoints.MapDantesRoleplayControlPost(
+            "/system/tasks/{taskId}/executions", PrivateOperatorCapability.Modify,
+            ExecuteSystemTaskAsync);
+        endpoints.MapDantesRoleplayControlGet(
+            "/system/capabilities/{capabilityId}", GetSystemCapability);
         endpoints.MapDantesRoleplayControlGet("/effects", GetCommittedEffectsAsync);
         endpoints.MapDantesRoleplayControlGet("/effects/{eventId}", GetCommittedEffectAsync);
+        endpoints.MapDantesRoleplayControlGet("/triggers/applications",
+            PrivateOperatorCapability.TriggerAdministrationRead, GetTriggerApplicationsAsync);
+        endpoints.MapDantesRoleplayControlGet("/triggers/applications/{applicationId}",
+            PrivateOperatorCapability.TriggerAdministrationRead, GetTriggerApplicationAsync);
+        endpoints.MapDantesRoleplayControlGet("/triggers/applications/{applicationId}/phone-principal/{deviceId}",
+            PrivateOperatorCapability.TriggerAdministrationRead, GetPhonePrincipalAsync);
+        endpoints.MapDantesRoleplayControlPost("/triggers/commands/preview",
+            PrivateOperatorCapability.TriggerAdministrationWrite, PreviewTriggerCommandAsync);
+        endpoints.MapDantesRoleplayControlPost("/triggers/commands",
+            PrivateOperatorCapability.TriggerAdministrationWrite, ApplyTriggerCommandAsync);
         endpoints.MapDantesRoleplayControlGet("/structure/applications", GetApplications);
         endpoints.MapDantesRoleplayControlGet("/structure/applications/{applicationId}", GetApplication);
         endpoints.MapDantesRoleplayControlGet("/structure/applications/{applicationId}/state-spaces", GetStateSpaces);
@@ -113,6 +157,95 @@ public static class WebInterfaceEndpoints
 
     private static IResult GetApplicationConversationElement() => Results.Text(
         ApplicationConversationElement.Script, "text/javascript; charset=utf-8", Encoding.UTF8);
+
+    private static IResult GetSystemWorkspaceElement() => Results.Text(
+        SystemWorkspaceElement.Script, "text/javascript; charset=utf-8", Encoding.UTF8);
+
+    private static async Task<IResult> SubmitObservationAsync(
+        string applicationId,
+        HttpContext context,
+        ObservationHttpRequestReader reader,
+        IObservationIngestionService ingestion,
+        CancellationToken cancellationToken)
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        try
+        {
+            var submission = await reader.ReadAsync(context.Request, cancellationToken);
+            var result = await ingestion.SubmitAsync(
+                WebObservationRequestFilter.GetPrincipal(context),
+                ApplicationIdentifier.Parse(applicationId),
+                submission,
+                cancellationToken);
+            if (result.Disposition == TriggerSchedulingWriteDisposition.Conflict)
+                return ObservationError("OBSERVATION_IDENTITY_CONFLICT",
+                    "The request or occurrence identity was already used for different observation data.",
+                    StatusCodes.Status409Conflict);
+            return Results.Json(new
+            {
+                observationId = result.Value!.Id,
+                accepted = true,
+                duplicate = result.Disposition == TriggerSchedulingWriteDisposition.Replay,
+                status = "recorded"
+            }, statusCode: StatusCodes.Status202Accepted);
+        }
+        catch (ObservationHttpRequestException exception)
+        {
+            return ObservationError(exception.Code, exception.Message, exception.StatusCode);
+        }
+        catch (ObservationIngestionException exception)
+        {
+            return ObservationError(exception.Code, exception.Message, IngestionStatus(exception.Code));
+        }
+        catch (TriggerSchedulingContractException exception)
+        {
+            return ObservationError(exception.Code, exception.Message, ContractStatus(exception.Code));
+        }
+        catch (ArgumentException exception)
+        {
+            return ObservationError("OBSERVATION_REQUEST_INVALID", exception.Message,
+                StatusCodes.Status400BadRequest);
+        }
+        catch (Exception exception) when (exception is DbException or DbUpdateException)
+        {
+            return ObservationError("OBSERVATION_RECORDING_UNAVAILABLE",
+                "The observation could not be durably recorded. Try again shortly.",
+                StatusCodes.Status503ServiceUnavailable);
+        }
+    }
+
+    private static int IngestionStatus(string code) => code switch
+    {
+        "OBSERVATION_RATE_LIMITED" => StatusCodes.Status429TooManyRequests,
+        "OBSERVATION_SCHEMA_INVALID" => StatusCodes.Status422UnprocessableEntity,
+        "OBSERVATION_SCHEMA_UNAVAILABLE" => StatusCodes.Status503ServiceUnavailable,
+        "TRIGGER_SCHEDULING_APPLICATION_NOT_FOUND" or
+        "TRIGGER_SCHEDULING_SOURCE_NOT_FOUND" or
+        "TRIGGER_SCHEDULING_STRUCTURE_NOT_FOUND" or
+        "TRIGGER_SCHEDULING_OBSERVATION_STALE" => StatusCodes.Status404NotFound,
+        "OBSERVATION_PRINCIPAL_REQUIRED" or
+        "OBSERVATION_PRINCIPAL_FORBIDDEN" or
+        "PHONE_SUBMISSION_DENIED" or
+        "OBSERVATION_SOURCE_DISABLED" => StatusCodes.Status403Forbidden,
+        _ => StatusCodes.Status400BadRequest
+    };
+
+    private static int ContractStatus(string code) => code switch
+    {
+        "TRIGGER_SCHEDULING_APPLICATION_NOT_FOUND" or
+        "TRIGGER_SCHEDULING_SOURCE_NOT_FOUND" or
+        "TRIGGER_SCHEDULING_STRUCTURE_NOT_FOUND" or
+        "TRIGGER_SCHEDULING_OBSERVATION_STALE" => StatusCodes.Status404NotFound,
+        "OBSERVATION_PRINCIPAL_REQUIRED" or
+        "OBSERVATION_PRINCIPAL_FORBIDDEN" or
+        "OBSERVATION_SOURCE_DISABLED" or
+        "OBSERVATION_STRUCTURE_FORBIDDEN" => StatusCodes.Status403Forbidden,
+        "TRIGGER_CLOCK_NOT_UTC" => StatusCodes.Status503ServiceUnavailable,
+        _ => StatusCodes.Status400BadRequest
+    };
+
+    private static IResult ObservationError(string code, string message, int statusCode) =>
+        Results.Json(new { error = code, message }, statusCode: statusCode);
 
     private static IResult GetApplicationConversation(
         string applicationId, string conversationId, HttpContext context,
@@ -319,6 +452,120 @@ public static class WebInterfaceEndpoints
             await ControlAssistantExplorer.ReadBodyAsync<CodexApprovalDecisionInput>(
                 context.Request, cancellationToken), cancellationToken));
 
+    private static Task<IResult> GetSystemConversationsAsync(
+        HttpContext context,
+        ControlSystemConversationExplorer explorer,
+        CancellationToken cancellationToken) =>
+        AssistantAsync(context, async () => (object?)await explorer.ListAsync(
+            WebControlRequestFilter.GetAuthorizationEvidence(context),
+            context.Request.Query["cursor"].FirstOrDefault(),
+            context.Request.Query["limit"].FirstOrDefault(),
+            cancellationToken));
+
+    private static Task<IResult> GetSystemConversationAsync(
+        string conversationId,
+        HttpContext context,
+        ControlSystemConversationExplorer explorer,
+        CancellationToken cancellationToken) =>
+        AssistantAsync(context, async () => (object?)await explorer.GetAsync(
+            WebControlRequestFilter.GetAuthorizationEvidence(context),
+            conversationId,
+            cancellationToken));
+
+    private static async Task<IResult> CreateSystemConversationAsync(
+        HttpContext context,
+        ControlSystemConversationExplorer explorer,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var request = await ControlAssistantExplorer.ReadBodyAsync<SystemConversationCreate>(
+                context.Request, cancellationToken);
+            return await AssistantAsync(context, async () => (object?)await explorer.CreateAsync(
+                WebControlRequestFilter.GetAuthorizationEvidence(context),
+                request,
+                cancellationToken));
+        }
+        catch (ControlAssistantException exception) { return AssistantError(exception); }
+    }
+
+    private static async Task<IResult> SendSystemConversationTurnAsync(
+        string conversationId,
+        HttpContext context,
+        ControlSystemConversationExplorer explorer,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var request = await ControlAssistantExplorer.ReadBodyAsync<AssistantConversationTurnCreate>(
+                context.Request, cancellationToken);
+            return await AssistantAsync(context, async () => (object?)await explorer.SendAsync(
+                WebControlRequestFilter.GetAuthorizationEvidence(context),
+                conversationId,
+                request,
+                cancellationToken));
+        }
+        catch (ControlAssistantException exception) { return AssistantError(exception); }
+    }
+
+    private static Task<IResult> GetSystemTasksAsync(
+        string conversationId, HttpContext context, ControlSystemTaskExplorer explorer,
+        CancellationToken cancellationToken) => AssistantAsync(context, async () => (object?)await explorer.ListAsync(
+            WebControlRequestFilter.GetAuthorizationEvidence(context), conversationId,
+            context.Request.Query["cursor"].FirstOrDefault(), context.Request.Query["limit"].FirstOrDefault(),
+            cancellationToken));
+
+    private static Task<IResult> GetSystemTaskAsync(
+        string taskId, HttpContext context, ControlSystemTaskExplorer explorer,
+        CancellationToken cancellationToken) => AssistantAsync(context, async () => (object?)await explorer.GetAsync(
+            WebControlRequestFilter.GetAuthorizationEvidence(context), taskId, cancellationToken));
+
+    private static async Task<IResult> PrepareSystemTaskAsync(
+        string conversationId, HttpContext context, ControlSystemTaskExplorer explorer,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var request = await ControlSystemTaskExplorer.ReadBodyAsync<SystemTaskPrepareRequest>(context.Request, cancellationToken);
+            return await AssistantAsync(context, async () => (object?)await explorer.PrepareAsync(
+                WebControlRequestFilter.GetAuthorizationEvidence(context), conversationId, request, cancellationToken));
+        }
+        catch (ControlAssistantException exception) { return AssistantError(exception); }
+    }
+
+    private static async Task<IResult> ConfirmSystemTaskAsync(
+        string taskId, HttpContext context, ControlSystemTaskExplorer explorer,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var request = await ControlSystemTaskExplorer.ReadBodyAsync<SystemTaskConfirmationRequest>(context.Request, cancellationToken);
+            return await AssistantAsync(context, async () => (object?)await explorer.ConfirmAsync(
+                WebControlRequestFilter.GetAuthorizationEvidence(context), taskId, request, cancellationToken));
+        }
+        catch (ControlAssistantException exception) { return AssistantError(exception); }
+    }
+
+    private static async Task<IResult> ExecuteSystemTaskAsync(
+        string taskId, HttpContext context, ControlSystemTaskExplorer explorer,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var request = await ControlSystemTaskExplorer.ReadBodyAsync<SystemTaskExecutionRequest>(context.Request, cancellationToken);
+            return await AssistantAsync(context, async () => (object?)await explorer.ExecuteAsync(
+                WebControlRequestFilter.GetAuthorizationEvidence(context), taskId, request, cancellationToken));
+        }
+        catch (ControlAssistantException exception) { return AssistantError(exception); }
+    }
+
+    private static Task<IResult> GetSystemCapability(
+        string capabilityId,
+        HttpContext context,
+        ControlSystemCapabilityExplorer explorer) =>
+        AssistantAsync(context, () => Task.FromResult<object?>(explorer.Get(
+            WebControlRequestFilter.GetAuthorizationEvidence(context), capabilityId)));
+
     private static async Task<IResult> StreamCodexAsync(
         HttpContext context, IAsyncEnumerable<CodexConversationEvent> events,
         CancellationToken cancellationToken)
@@ -462,14 +709,25 @@ public static class WebInterfaceEndpoints
             new { error = exception.Code, message = exception.Message },
             statusCode: exception.StatusCode);
 
-    private static IResult GetApplications(HttpContext context, ControlStructureExplorer explorer) =>
-        Structure(context, () => explorer.ListApplications(
+    private static Task<IResult> GetApplications(
+        HttpContext context,
+        ControlStructureExplorer explorer,
+        CancellationToken cancellationToken) =>
+        StructureAsync(context, () => explorer.ListApplicationsThroughCapabilitiesAsync(
+            WebControlRequestFilter.GetAuthorizationEvidence(context),
             context.Request.Query["cursor"].FirstOrDefault(),
-            context.Request.Query["limit"].FirstOrDefault()));
+            context.Request.Query["limit"].FirstOrDefault(),
+            cancellationToken));
 
-    private static IResult GetApplication(
-        string applicationId, HttpContext context, ControlStructureExplorer explorer) =>
-        Structure(context, () => explorer.GetApplication(applicationId));
+    private static Task<IResult> GetApplication(
+        string applicationId,
+        HttpContext context,
+        ControlStructureExplorer explorer,
+        CancellationToken cancellationToken) =>
+        StructureAsync(context, () => explorer.GetApplicationThroughCapabilitiesAsync(
+            WebControlRequestFilter.GetAuthorizationEvidence(context),
+            applicationId,
+            cancellationToken));
 
     private static IResult GetStateSpaces(
         string applicationId, HttpContext context, ControlStructureExplorer explorer) =>
@@ -557,6 +815,88 @@ public static class WebInterfaceEndpoints
         context.Request.Query[key]
             .SelectMany(value => (value ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             .ToArray();
+
+    private static Task<IResult> GetTriggerApplicationsAsync(HttpContext context,
+        ITriggerSchedulingAdministrationService administration, CancellationToken cancellationToken) =>
+        TriggerAdministrationAsync(context, async () => await administration.QueryAsync(
+            TriggerSchedulingAdministrationQuery.Create(null, limit: QueryLimit(context)), cancellationToken));
+
+    private static Task<IResult> GetTriggerApplicationAsync(string applicationId, HttpContext context,
+        ITriggerSchedulingAdministrationService administration, CancellationToken cancellationToken) =>
+        TriggerAdministrationAsync(context, async () => await administration.QueryAsync(
+            TriggerSchedulingAdministrationQuery.Create(ApplicationIdentifier.Parse(applicationId),
+                context.Request.Query["resource"].FirstOrDefault(),
+                context.Request.Query["id"].FirstOrDefault(), QueryLimit(context)), cancellationToken));
+
+    private static Task<IResult> GetPhonePrincipalAsync(string applicationId, string deviceId,
+        HttpContext context, ITriggerSchedulingAdministrationService administration,
+        CancellationToken cancellationToken) => TriggerAdministrationAsync(context,
+            async () => await administration.QueryAsync(TriggerSchedulingAdministrationQuery.Create(
+                ApplicationIdentifier.Parse(applicationId), "phone-principal", deviceId, 1), cancellationToken));
+
+    private static Task<IResult> PreviewTriggerCommandAsync(HttpContext context,
+        ITriggerSchedulingAdministrationService administration, CancellationToken cancellationToken) =>
+        TriggerCommandAsync(context, administration, preview: true, cancellationToken);
+
+    private static Task<IResult> ApplyTriggerCommandAsync(HttpContext context,
+        ITriggerSchedulingAdministrationService administration, CancellationToken cancellationToken) =>
+        TriggerCommandAsync(context, administration, preview: false, cancellationToken);
+
+    private static async Task<IResult> TriggerCommandAsync(HttpContext context,
+        ITriggerSchedulingAdministrationService administration, bool preview,
+        CancellationToken cancellationToken)
+    {
+        ControlCenterStatus.ApplyCacheHeaders(context.Response);
+        try
+        {
+            var command = await TriggerAdministrationHttpRequestReader.ReadAsync(context.Request, cancellationToken);
+            var authorization = WebControlRequestFilter.GetAuthorizationEvidence(context);
+            var operationContext = new TriggerSchedulingAdministrationContext(
+                "Manage trigger scheduling from the private control center.",
+                ["procedure.system.use"], authorization);
+            var result = preview
+                ? await administration.PreviewAsync(command, operationContext, cancellationToken)
+                : await administration.CommitAsync(command, operationContext, cancellationToken);
+            return Results.Json(result);
+        }
+        catch (Exception exception) when (IsTriggerAdministrationClientError(exception))
+        { return TriggerAdministrationError(exception); }
+    }
+
+    private static async Task<IResult> TriggerAdministrationAsync(HttpContext context,
+        Func<Task<TriggerSchedulingAdministrationView>> action)
+    {
+        ControlCenterStatus.ApplyCacheHeaders(context.Response);
+        try { return Results.Json(await action()); }
+        catch (Exception exception) when (IsTriggerAdministrationClientError(exception))
+        { return TriggerAdministrationError(exception); }
+    }
+
+    private static int QueryLimit(HttpContext context) =>
+        int.TryParse(context.Request.Query["limit"].FirstOrDefault(), out var limit) ? limit : 50;
+
+    private static bool IsTriggerAdministrationClientError(Exception exception) => exception is
+        TriggerSchedulingAdministrationException or TriggerSchedulingContractException or
+        ArgumentException or JsonException or InvalidOperationException;
+
+    private static IResult TriggerAdministrationError(Exception exception)
+    {
+        var code = exception switch
+        {
+            TriggerSchedulingAdministrationException administration => administration.Code,
+            TriggerSchedulingContractException contract => contract.Code,
+            _ => "TRIGGER_ADMIN_INVALID_REQUEST"
+        };
+        var status = code switch
+        {
+            "APPLICATION_UNKNOWN" or "PHONE_DEVICE_NOT_FOUND" => StatusCodes.Status404NotFound,
+            "DRY_RUN_REQUIRED" or "REQUEST_TOKEN_CONFLICT" or "TRIGGER_ADMIN_INCONSISTENT" or
+                "TRIGGER_SCHEDULING_IDEMPOTENCY_CONFLICT" => StatusCodes.Status409Conflict,
+            "TRIGGER_ADMIN_PAYLOAD_TOO_LARGE" => StatusCodes.Status413PayloadTooLarge,
+            _ => StatusCodes.Status400BadRequest
+        };
+        return Results.Json(new { error = code, message = exception.Message }, statusCode: status);
+    }
 
     private static IResult Structure<T>(HttpContext context, Func<T?> read)
     {

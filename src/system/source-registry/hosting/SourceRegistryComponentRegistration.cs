@@ -12,6 +12,9 @@ internal static class SourceRegistryComponentRegistration
         services.AddScoped<ISourceRegistry, SqliteSourceRegistry>();
         services.AddScoped<ISourceScanReceiptStore, SqliteSourceScanReceiptStore>();
         services.TryAddSingleton<IAllowedSourceRootResolver, EmptyAllowedSourceRootResolver>();
+        services.TryAddSingleton<IAllowedSourceRootCatalog>(provider =>
+            provider.GetRequiredService<IAllowedSourceRootResolver>() as IAllowedSourceRootCatalog
+            ?? new EmptyAllowedSourceRootResolver());
         services.TryAddSingleton<ILocalDocumentScanner, LocalDocumentScanner>();
         services.TryAddSingleton<ISourceOverlayResolver, SourceOverlayResolver>();
         services.AddScoped<IRegisteredSourceScanner, RegisteredSourceScanner>();

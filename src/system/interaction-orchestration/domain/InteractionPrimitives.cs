@@ -21,6 +21,7 @@ public static class InteractionContractLimits
     public const int ConversationFacts = 32;
     public const int ProposalSteps = 16;
     public const int DependenciesPerStep = 16;
+    public const int ResultBindingsPerStep = 32;
     public const int EvidenceItems = 16;
     public const int SafeEvidenceText = 1_000;
     public const int JsonBytes = 65_536;

@@ -111,6 +111,53 @@ public sealed class LegacyStateAdoptionTests : IDisposable
     }
 
     [Fact]
+    public async Task Soft_deleted_entities_and_their_retained_graph_rows_are_not_adopted()
+    {
+        await using var db = _fixture.CreateContext();
+        var setup = await SetupAsync(db);
+        var now = DateTime.UtcNow;
+        db.Entities.Add(new Entity
+        {
+            Id = "deleted-fixture", Name = "Deleted fixture", CreatedAt = now.AddMinutes(-2),
+            DeletedAt = now.AddMinutes(-1)
+        });
+        db.Components.Add(new Component
+        {
+            EntityId = "deleted-fixture", DefinitionId = "stats", Data = "{\"value\":\"invalid\"}",
+            Revision = 1, CreatedAt = now.AddMinutes(-2), UpdatedAt = now.AddMinutes(-1)
+        });
+        db.Containments.Add(new Containment
+        {
+            ContainerId = "target", ContainedId = "deleted-fixture", Slot = "retained",
+            CreatedAt = now.AddMinutes(-2)
+        });
+        db.Relationships.Add(new Relationship
+        {
+            FromEntityId = "deleted-fixture", ToEntityId = "target", Kind = "knows",
+            Data = "{\"strength\":99}", CreatedAt = now.AddMinutes(-2)
+        });
+        await db.SaveChangesAsync();
+        var context = Context("5123456789abcdef0123456789abcdef");
+
+        var preview = await setup.Service.PreviewAsync(setup.Request, context);
+        var receipt = await setup.Service.AdoptAsync(setup.Request, context);
+
+        Assert.Equal(new LegacyStateInventory(2, 1, 1, 1,
+            preview.Inventory.SourceFingerprint, preview.Inventory.EvidenceFingerprint), preview.Inventory);
+        Assert.Equal(preview.Inventory, receipt.Inventory);
+        Assert.Equal(3, await CountAsync(db, "entity"));
+        Assert.Equal(2, await CountAsync(db, "component"));
+        Assert.Equal(2, await CountAsync(db, "containment"));
+        Assert.Equal(2, await CountAsync(db, "relationship"));
+        Assert.Equal(2, await CountAsync(db, "system_ecs_entity"));
+        Assert.Equal(1, await CountAsync(db, "system_ecs_component"));
+        Assert.Equal(1, await CountAsync(db, "system_ecs_containment"));
+        Assert.Equal(1, await CountAsync(db, "system_ecs_relationship"));
+        Assert.DoesNotContain(await db.Set<ApplicationEcsEntityRecord>().AsNoTracking().ToListAsync(),
+            value => value.Id == "deleted-fixture");
+    }
+
+    [Fact]
     public async Task Audit_failure_rolls_back_binding_graph_and_adoption_evidence()
     {
         await using var db = _fixture.CreateContext();

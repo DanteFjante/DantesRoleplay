@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dantesroleplay.example/schemas/adoption/content-transform-manifest/v1",
+  "title": "Staged content transformation manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "batch", "entries"],
+  "properties": {
+    "format": { "const": "application-adoption-content-transform-manifest/v1" },
+    "batch": { "$ref": "#/$defs/batch" },
+    "entries": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/entry" } }
+  },
+  "$defs": {
+    "identifier": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$" },
+    "candidateKey": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{0,159}$" },
+    "hash": { "type": "string", "pattern": "^[A-F0-9]{64}$" },
+    "relativePath": { "type": "string", "minLength": 1, "maxLength": 500, "pattern": "^(?![A-Za-z]:)(?!/)(?!.*(?:^|/)[.][.](?:/|$))[A-Za-z0-9._/-]+$" },
+    "pointer": { "type": "string", "pattern": "^(?:/(?:[^~/]|~[01])*)+$" },
+    "batch": {
+      "type": "object", "additionalProperties": false, "required": ["id", "purpose"],
+      "properties": { "id": { "$ref": "#/$defs/identifier" }, "purpose": { "type": "string", "minLength": 1, "maxLength": 500 } }
+    },
+    "source": {
+      "type": "object", "additionalProperties": false, "required": ["sourceKey", "repository", "revision", "commit", "lockSha256", "path", "symbol", "sha256", "recordPointer", "review"],
+      "properties": {
+        "sourceKey": { "$ref": "#/$defs/candidateKey" }, "repository": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "revision": { "type": "string", "minLength": 1, "maxLength": 100 }, "commit": { "type": ["string", "null"], "pattern": "^[0-9a-f]{40}$" }, "lockSha256": { "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }] },
+        "path": { "$ref": "#/$defs/relativePath" }, "symbol": { "type": ["string", "null"], "maxLength": 300 }, "sha256": { "$ref": "#/$defs/hash" }, "recordPointer": { "$ref": "#/$defs/pointer" }, "review": { "type": "object", "additionalProperties": false, "required": ["state", "evidence"], "properties": { "state": { "enum": ["approved", "rejected", "not-reviewed"] }, "evidence": { "type": ["string", "null"], "maxLength": 500 } } }
+      }
+    },
+    "target": {
+      "type": "object", "additionalProperties": false, "required": ["kind", "id", "path", "schemaPath", "schemaSha256", "payloadPointer"],
+      "properties": {
+        "kind": { "const": "content-data" }, "id": { "$ref": "#/$defs/candidateKey" }, "path": { "$ref": "#/$defs/relativePath" },
+        "schemaPath": { "$ref": "#/$defs/relativePath" }, "schemaSha256": { "$ref": "#/$defs/hash" }, "payloadPointer": { "$ref": "#/$defs/pointer" }
+      }
+    },
+    "license": {
+      "type": "object", "additionalProperties": false,
+      "required": ["classification", "disposition", "noticeFiles", "copyrightNoticePreserved", "attribution", "changesIndicated", "review"],
+      "properties": {
+        "classification": { "enum": ["first-party", "MIT", "CC-BY-4.0", "asset", "mixed", "unknown", "non-srd", "premium"] },
+        "disposition": { "enum": ["first-party-recovery", "approved-mit-software", "approved-cc-by-srd-content", "blocked-asset", "blocked-mixed-or-unknown", "blocked-non-srd-or-premium", "rejected"] },
+        "noticeFiles": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/relativePath" } },
+        "copyrightNoticePreserved": { "type": "boolean" }, "attribution": { "type": ["string", "null"], "maxLength": 3000 }, "changesIndicated": { "type": "boolean" },
+        "review": { "type": "object", "additionalProperties": false, "required": ["state", "evidence"], "properties": { "state": { "enum": ["approved", "rejected", "not-reviewed"] }, "evidence": { "type": ["string", "null"], "maxLength": 500 } } }
+      }
+    },
+    "ruleset": {
+      "type": "object", "additionalProperties": false, "required": ["alignment", "sourceId", "locator", "officialVerified"],
+      "properties": { "alignment": { "enum": ["ruleset-neutral", "dnd2024-compatible", "dnd2024-owned"] }, "sourceId": { "type": ["string", "null"], "maxLength": 200 }, "locator": { "type": ["string", "null"], "maxLength": 1000 }, "officialVerified": { "type": "boolean" } }
+    },
+    "entry": {
+      "type": "object", "additionalProperties": false, "required": ["candidateKey", "source", "target", "transformation", "license", "ruleset"],
+      "properties": { "candidateKey": { "$ref": "#/$defs/candidateKey" }, "source": { "$ref": "#/$defs/source" }, "target": { "$ref": "#/$defs/target" }, "transformation": { "type": "object", "additionalProperties": false, "required": ["tool", "toolSha256", "mappingSha256"], "properties": { "tool": { "const": "Invoke-ContentTransformation.ps1" }, "toolSha256": { "$ref": "#/$defs/hash" }, "mappingSha256": { "$ref": "#/$defs/hash" } } }, "license": { "$ref": "#/$defs/license" }, "ruleset": { "$ref": "#/$defs/ruleset" } },
+      "allOf": [
+        {
+          "if": { "properties": { "license": { "properties": { "classification": { "enum": ["asset", "mixed", "unknown", "non-srd", "premium"] } } } } },
+          "then": { "properties": { "license": { "properties": { "disposition": { "enum": ["blocked-asset", "blocked-mixed-or-unknown", "blocked-non-srd-or-premium", "rejected"] }, "review": { "properties": { "state": { "enum": ["rejected", "not-reviewed"] } } } } } } }
+        },
+        {
+          "if": { "properties": { "license": { "properties": { "classification": { "const": "first-party" } } } } },
+          "then": { "properties": { "license": { "properties": { "disposition": { "const": "first-party-recovery" }, "review": { "properties": { "state": { "const": "approved" }, "evidence": { "type": "string", "minLength": 1 } } } } } } }
+        },
+        {
+          "if": { "properties": { "license": { "properties": { "classification": { "const": "MIT" } } } } },
+          "then": { "properties": { "license": { "properties": { "disposition": { "const": "approved-mit-software" }, "noticeFiles": { "minItems": 1 }, "copyrightNoticePreserved": { "const": true }, "review": { "properties": { "state": { "const": "approved" }, "evidence": { "type": "string", "minLength": 1 } } } } } } }
+        },
+        {
+          "if": { "properties": { "license": { "properties": { "classification": { "const": "CC-BY-4.0" } } } } },
+          "then": { "properties": { "license": { "properties": { "disposition": { "const": "approved-cc-by-srd-content" }, "attribution": { "type": "string", "minLength": 20 }, "changesIndicated": { "const": true }, "review": { "properties": { "state": { "const": "approved" }, "evidence": { "type": "string", "minLength": 1 } } } } }, "ruleset": { "properties": { "alignment": { "const": "dnd2024-owned" }, "sourceId": { "const": "source.dnd2024.srd-5.2.1" }, "locator": { "type": "string", "minLength": 5 }, "officialVerified": { "const": true } } } } }
+        },
+        {
+          "if": { "properties": { "ruleset": { "properties": { "alignment": { "const": "dnd2024-owned" } } } } },
+          "then": { "properties": { "source": { "properties": { "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" }, "lockSha256": { "$ref": "#/$defs/hash" }, "review": { "properties": { "state": { "const": "approved" }, "evidence": { "type": "string", "minLength": 1 } } } } }, "ruleset": { "properties": { "sourceId": { "const": "source.dnd2024.srd-5.2.1" }, "locator": { "type": "string", "minLength": 5 }, "officialVerified": { "const": true } } } } }
+        }
+      ]
+    }
+  }
+}

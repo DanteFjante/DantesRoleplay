@@ -1,0 +1,51 @@
+{
+  "format": "dnd-code-adoption-donor-lock/v1",
+  "policy": {
+    "checkoutKind": "unique-os-temp-child",
+    "temporaryDirectoryPrefix": "dantesroleplay-dnd-donor-",
+    "automaticActivation": false,
+    "productionDependency": false,
+    "floatingRefsAllowed": false
+  },
+  "sources": [
+    {
+      "key": "dnd-srd-engine",
+      "role": "primary-engineering-donor",
+      "repository": "https://github.com/greghcarr/dnd-srd-engine.git",
+      "branchEvidence": "main",
+      "commit": "ead852b19b9e45f54f43e193caf4f10aad91a91b",
+      "initializeSubmodules": true,
+      "executionMode": "install-build-test",
+      "commands": {
+        "install": ["ci"],
+        "build": ["run", "build"],
+        "test": ["test"]
+      },
+      "fingerprints": [
+        { "path": "LICENSE", "required": true },
+        { "path": "NOTICE", "required": true },
+        { "path": "package.json", "required": true },
+        { "path": "package-lock.json", "required": true },
+        { "path": ".gitmodules", "required": true },
+        { "path": "docs/content-attribution.md", "required": true }
+      ]
+    },
+    {
+      "key": "foundry-dnd5e",
+      "role": "engineering-reference-only",
+      "repository": "https://github.com/foundryvtt/dnd5e.git",
+      "branchEvidence": "6.0.x",
+      "commit": "275bed0be4ccfa15e6b3347acccb8da8784726d9",
+      "initializeSubmodules": false,
+      "executionMode": "fingerprint-only",
+      "commands": null,
+      "fingerprints": [
+        { "path": "LICENSE.txt", "required": true },
+        { "path": "README.md", "required": true },
+        { "path": "package.json", "required": true },
+        { "path": "package-lock.json", "required": true },
+        { "path": "system.json", "required": true }
+      ]
+    }
+  ]
+}

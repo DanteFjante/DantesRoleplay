@@ -12,8 +12,11 @@ public sealed class PrivateOperatorAuthorizationTests
     [InlineData(PrivateOperatorCapability.ControlRead, "control.read")]
     [InlineData(PrivateOperatorCapability.ControlPagesWrite, "control.pages.write")]
     [InlineData(PrivateOperatorCapability.ControlSettingsWrite, "control.settings.write")]
+    [InlineData(PrivateOperatorCapability.TriggerObservationSubmit, "trigger.observation.submit")]
     [InlineData(PrivateOperatorCapability.ControlAiMessage, "control.ai.message")]
     [InlineData(PrivateOperatorCapability.ControlCodexApprove, "control.codex.approve")]
+    [InlineData(PrivateOperatorCapability.TriggerAdministrationRead, "trigger.admin.read")]
+    [InlineData(PrivateOperatorCapability.TriggerAdministrationWrite, "trigger.admin.write")]
     public void Verified_private_operator_is_allowed_for_the_closed_capabilities(
         PrivateOperatorCapability capability,
         string evidenceName)

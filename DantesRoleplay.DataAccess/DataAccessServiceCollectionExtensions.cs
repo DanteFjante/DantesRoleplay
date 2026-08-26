@@ -22,6 +22,10 @@ using DantesRoleplay.ComponentTypeAdministration;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.LegacyStateAdoption;
 using DantesRoleplay.ApplicationExecution;
+using DantesRoleplay.TriggerScheduling;
+using DantesRoleplay.SystemCapabilities;
+using DantesRoleplay.SystemConversations;
+using DantesRoleplay.SystemTasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -108,7 +112,11 @@ public static class DataAccessServiceCollectionExtensions
             .AddCatalogNavigationComponent()
             .AddInteractionOrchestrationComponent()
             .AddStateSpaceAdministrationComponent()
+            .AddSystemCapabilitiesComponent()
+            .AddSystemConversationsComponent()
+            .AddSystemTaskOrchestrationComponent()
             .AddLegacyStateAdoptionComponent()
+            .AddTriggerSchedulingComponent()
             .AddApplicationExecutionComponent();
 
         return services;
@@ -130,6 +138,7 @@ public static class DataAccessServiceCollectionExtensions
 
         var db = scope.ServiceProvider.GetRequiredService<DantesRoleplayDbContext>();
         await db.Database.MigrateAsync(cancellationToken);
+        _ = scope.ServiceProvider.GetRequiredService<ISystemCapabilityCatalog>();
 
         // BEFORE the seeders, not after. Both of them decide whether to write by comparing the
         // stored fingerprint against the file's, so running them against stale fingerprints would

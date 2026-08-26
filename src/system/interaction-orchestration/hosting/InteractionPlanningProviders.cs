@@ -7,7 +7,9 @@ using DantesRoleplay.Retrieval;
 
 namespace DantesRoleplay.DataAccess.Composition;
 
-internal sealed class LocalInteractionPlanningProvider(ILocalStructuredCompletionProvider? local)
+internal sealed class LocalInteractionPlanningProvider(
+    ILocalStructuredCompletionProvider? inner,
+    IInteractionOuterLocalCompletionProvider? outer = null)
     : IInteractionPlanningCompletionProvider
 {
     public InteractionPlannerKind Kind => InteractionPlannerKind.Local;
@@ -17,17 +19,20 @@ internal sealed class LocalInteractionPlanningProvider(ILocalStructuredCompletio
         InteractionPlanningCompletionRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (local is null)
-            return InteractionPlanningCompletionResult.Failure("LOCAL_MODEL_DISABLED", "The local planner provider is disabled.");
+        if (request.RoleProfile.Role == InteractionAiRole.Inner && inner is null)
+            return InteractionPlanningCompletionResult.Failure("LOCAL_MODEL_DISABLED", "The local inner planner provider is disabled.");
+        if (request.RoleProfile.Role == InteractionAiRole.Outer && outer is null)
+            return InteractionPlanningCompletionResult.Failure("LOCAL_OUTER_MODEL_DISABLED", "The local outer planner provider is disabled.");
         StructuredCompletionResult result;
         try
         {
-            result = await local.CompleteAsync(new(
-                InteractionPlannerProtocol.TaskClass,
-                InteractionPlannerProtocol.SystemPrompt,
-                request.ObservationJson,
-                InteractionPlannerProtocol.ResponseSchema,
-                LocalModelPriority.Interactive), cancellationToken);
+            var completion = new StructuredCompletionRequest(
+                InteractionPlannerProtocol.TaskClass, InteractionPlannerProtocol.SystemPrompt,
+                request.ObservationJson, InteractionPlannerProtocol.ResponseSchema,
+                LocalModelPriority.Interactive);
+            result = request.RoleProfile.Role == InteractionAiRole.Outer
+                ? await outer!.CompleteAsync(completion, cancellationToken)
+                : await inner!.CompleteAsync(completion, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

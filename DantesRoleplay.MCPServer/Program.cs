@@ -26,7 +26,9 @@ var publishedApplicationCatalogs = builder.Configuration.GetSection("Catalogs:Pu
     .GetChildren().Select(child => child.Value ?? string.Empty).ToArray();
 
 var hostSettings = new ConfiguredHostSettingDefinitionProvider(builder.Configuration);
+var outerHostOptions = new InteractionOuterHostOptions(builder.Configuration);
 builder.Services.AddSingleton<IHostSettingDefinitionProvider>(hostSettings);
+builder.Services.AddSingleton(outerHostOptions.Selection);
 builder.Services.AddHttpClient("local-assistant", client => client.Timeout = Timeout.InfiniteTimeSpan);
 builder.Services.AddSingleton<ILocalStructuredCompletionProvider>(services =>
     new OllamaStructuredCompletionProvider(
@@ -46,10 +48,26 @@ builder.Services.AddHttpClient<OpenAiResponsesInteractionPlanningProvider>(clien
 builder.Services.AddHttpClient<OpenAiResponsesOuterInteractionProvider>(client =>
     client.Timeout = Timeout.InfiniteTimeSpan)
     .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
+builder.Services.AddHttpClient("local-interaction-outer", client => client.Timeout = Timeout.InfiniteTimeSpan);
+builder.Services.AddSingleton<IInteractionOuterLocalCompletionProvider>(services =>
+    new InteractionOuterLocalCompletionProvider(
+        new OllamaStructuredCompletionProvider(
+            services.GetRequiredService<IHttpClientFactory>().CreateClient("local-interaction-outer"),
+            outerHostOptions.LocalCompletion),
+        outerHostOptions.LocalAdapter));
+builder.Services.AddSingleton<LocalInteractionOuterProvider>(services => new(
+    services.GetRequiredService<IInteractionOuterLocalCompletionProvider>()));
+builder.Services.AddSingleton<IInteractionOuterProviderAdapter>(services =>
+    services.GetRequiredService<LocalInteractionOuterProvider>());
+builder.Services.AddSingleton<IInteractionOuterProviderAdapter>(services =>
+    services.GetRequiredService<OpenAiResponsesOuterInteractionProvider>());
+builder.Services.AddSingleton<SelectedInteractionOuterProvider>();
 builder.Services.AddSingleton<IInteractionOuterTurnProvider>(services =>
-    services.GetRequiredService<OpenAiResponsesOuterInteractionProvider>());
+    services.GetRequiredService<SelectedInteractionOuterProvider>());
 builder.Services.AddSingleton<IInteractionNarrationProvider>(services =>
-    services.GetRequiredService<OpenAiResponsesOuterInteractionProvider>());
+    services.GetRequiredService<SelectedInteractionOuterProvider>());
+builder.Services.AddSingleton<IInteractionTaskAgendaProvider>(services =>
+    services.GetRequiredService<SelectedInteractionOuterProvider>());
 
 // Everything this application registers lives in one method, which the end-to-end test also
 // calls — so the surface the test walks is the surface this host serves, by construction.

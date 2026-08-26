@@ -14,7 +14,7 @@ reads anything, `commit` changes anything. Nothing else exists.
 1. Call `orient()` first. It states what this system is, what exists in it right now, what is not
    built, and which call to make next. Call it again whenever you lose track — it is cheap.
 2. Read with `query(kind: ...)`. The kinds are `capabilities`, `procedures`, `categories`, `world`, `entities`,
-   `graph`, `journey-plan`, `itinerary-plan`, `campaign-resume`, `session-recap`, `quest-summary`, `knowledge-answer`, `information-answer`, `information-actions`, `story-plan`, `mechanics`, `event-types`, `events`, `subscriptions`, `notifications`, `feedback`, `system.applications`, `system.sources`, `system.application-preview`, `system.dependencies`, `system.catalogs`, `system.catalog.browse`, `system.catalog.search`, `system.catalog.record`, `system.feature-search`, `system.interaction-plan`, `system.interaction-receipt`, `system.interaction-recipes`, and `history`. No `id` returns a list or search; `id` returns one record in full; fixed planning/summary kinds state their required ID and reject unrelated filters in their own contract.
+   `graph`, `journey-plan`, `itinerary-plan`, `campaign-resume`, `session-recap`, `quest-summary`, `knowledge-answer`, `information-answer`, `information-actions`, `story-plan`, `mechanics`, `event-types`, `events`, `subscriptions`, `notifications`, `feedback`, `system.applications`, `system.sources`, `system.application-preview`, `system.dependencies`, `system.catalogs`, `system.catalog.browse`, `system.catalog.search`, `system.catalog.record`, `system.feature-search`, `system.interaction-plan`, `system.interaction-receipt`, `system.interaction-recipes`, `system.trigger-scheduling`, and `history`. No `id` returns a list or search; `id` returns one record in full; fixed planning/summary kinds state their required ID and reject unrelated filters in their own contract.
    `version` with `id` returns an older revision. Read the full record before revising anything —
    a summary is not the thing itself.
    Use `query(kind: "categories", catalog: "procedures")` or
@@ -33,6 +33,13 @@ reads anything, `commit` changes anything. Nothing else exists.
    component-field and projection dependencies. Supply a returned canonical node `id` to traverse
    its direct or transitive dependents. The response names consumer kinds not yet indexed; the
    system never guesses dependencies by parsing JavaScript or filenames.
+   In the private web workspace, ordinary **Ask** remains read-only. **Plan task** may resolve a
+   bounded `system.*` administration intent through read-only discovery rounds, or an authorized
+   outer assistant may submit an ordered semantic agenda. Treat the returned plan as inert: review
+   every exact capability, owner, step, and plan fingerprint before choosing **Confirm and run**.
+   Confirmation expires after five minutes, current authority and owner preconditions are checked
+   again before each write, and every step receives a durable receipt. If a later step fails,
+   earlier successful owner transactions remain committed; never claim a cross-step rollback.
    For an application catalog, start with
    `query(kind: "system.catalogs", applicationId: "...")`, browse one described logical node with
    `system.catalog.browse`, search without vectors using `system.catalog.search`, then inspect the
@@ -42,8 +49,19 @@ reads anything, `commit` changes anything. Nothing else exists.
    inert proposal with `system.interaction-plan` operation `resolve`, or submit a caller-built
    proposal through the same verifier with operation `submit`. Inspect its durable evidence with
    `system.interaction-receipt`. Private operators may inspect learned routes with
-   `system.interaction-recipes`; candidate routes are inert until explicitly verified. Do not execute until an operator explicitly confirms the exact
+   `system.interaction-recipes`; candidate routes are inert until explicitly verified. The only
+   automatic verification path is the deterministic host policy for an explicitly opted-in,
+   value-free action route whose durable receipts prove one eligible inner non-resolution followed
+   by one completely successful correlated outer fallback. Query steps, result bindings, non-empty
+   inputs, old entity values, and model review decisions are never eligible. A verified route may
+   guide later trusted search and inspection but remains non-executable until a new current proposal
+   passes the common verifier. Do not execute until an operator explicitly confirms the exact
    receipt ID, proposal fingerprint, full proposal, application, and state-space scope.
+   Private operators inspect scheduling with `system.trigger-scheduling`. Omit `applicationId` for
+   bounded application summaries; otherwise select one closed `resource`: `overview`, `structures`,
+   `sources`, `devices`, `one-time`, `recurring`, `conditional`, `observation-triggers`,
+   `observations`, `fires`, or `phone-principal`. These projections never recover a phone
+   credential or expose stored verifiers, raw observation JSON, transport headers, or leases.
 3. When you do not know a payload shape or which parameters a kind reads, call
    `query(kind: "capabilities")`. It is the exact catalog, and it is generated from the same
    structure the two dispatchers switch on, so it cannot describe a kind that does not work.
@@ -56,15 +74,15 @@ reads anything, `commit` changes anything. Nothing else exists.
 5. Change with `commit(kind: ..., payload: ...)`. The generic-host kinds are `component`,
    `effects`, `mechanic`, `action`, `system.application.register`, `system.component-type.register`, `system.source.register`, and
    `system.application.activate`, `system.state-space.create`, `system.state-space.upgrade`, and
-   `system.state-space.adopt-legacy`, `system.interaction-execute`, and
-   `system.interaction-recipe-review`. Every `system.*` kind
+   `system.state-space.adopt-legacy`, `system.interaction-execute`,
+   `system.interaction-recipe-review`, and `system.trigger-scheduling`. Every `system.*` kind
    authenticates from the transport. Registry, activation, component-type, and state-space
    administration commits require a 32-character lowercase hexadecimal `requestToken`.
    `system.interaction-execute` instead requires a distinct bounded idempotency key and the exact
    prior resolution evidence; equal retries replay and conflicting reuse fails. Its `learn` option
-   is false by default and requires the exact original `learningIntent` when true. Review a candidate
-   only with `system.interaction-recipe-review`; verification and retirement are append-only and
-   request-token replay protected. Application and source registration require
+   is false by default and requires the exact original `learningIntent` when true. Review other
+   candidates only with `system.interaction-recipe-review`; manual and deterministic verification
+   and retirement are append-only and request-token replay protected. Application and source registration require
    `expectedFingerprint`: use `null` only when the target must be absent, otherwise use the exact
    current fingerprint from the corresponding `system.applications` or `system.sources` query.
    `system.component-type.register` accepts only an already registered application, an owner-qualified
@@ -91,6 +109,14 @@ reads anything, `commit` changes anything. Nothing else exists.
    every used legacy component definition and relationship kind. Dry run fingerprints the entire
    source graph; commit copies it atomically and leaves all legacy rows unchanged. Never infer a
    mapping or retry after `DRY_RUN_STALE` without a new dry run.
+   Trigger scheduling accepts exactly `{requestToken, operation, applicationId, value}`. The closed
+   operations are `structure.register`, `source.register`, `one-time.register`,
+   `recurring.register`, `conditional.register`, `observation-trigger.register`, `phone.register`,
+   and `phone.revoke`. The value cannot contain effects, events, actions, code, destinations,
+   authorization, current pointers, receipts, or observations. A structure command synchronizes
+   an already reviewed catalog-authored schema into live SQLite; it never edits catalog files.
+   Preview the identical command first. A phone credential appears only in the first successful
+   registration response, so copy it then; replay and every query intentionally omit it.
    Dry-run the identical administrative payload first, then confirm it through the matching query
    where a query exists; component-type registration returns its immutable receipt directly.
    Retained application adapters may additionally expose `procedure`,

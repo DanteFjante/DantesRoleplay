@@ -3,14 +3,18 @@
 > **D&D implementation reference:** When this work includes D&D 2024 mechanics, inspect [Foundry VTT dnd5e](https://github.com/foundryvtt/dnd5e) before designing or coding. Use it as a licensed engineering reference—not a direct dependency or rules authority—while retaining the exact `source.dnd2024.srd-5.2.1` locator and all applicable MIT, CC-BY, and asset-license notices for any reused material.
 
 Status: **Slices 1–2 accepted; consumer adoption remains separately owned.**
-Last updated: 2026-08-21
+Last updated: 2026-08-25
 
-## Execution rule
+Downstream expansion: [durable scheduling and external triggers](E8-TRIGGER-SCHEDULING-DEPENDENCY-PLAN.md)
 
-This is planning only. A future pass re-reads E1 event, subscription, guard/reaction, chain-limit,
-projection, and `procedure.system.modify` contracts before one coherent slice. It adds focused
-event-dispatch/rollback/replay tests, preserves the behavior of fixed-role subscriptions, runs the
-full suite and diff check, writes a receipt, and stops before consumer migration.
+## Implementation evidence and continuing rule
+
+Slices 1 and 2 are implemented and accepted by their respective
+[Slice 1](E8-SLICE-1-RECEIPT.md) and [Slice 2](E8-SLICE-2-RECEIPT.md) receipts. Slice 3 is not a
+missing generic runtime capability: it is adoption by separately owned consumers. Each future
+consumer re-reads the E1 event, subscription, guard/reaction, chain-limit, projection, and
+`procedure.system.modify` contracts, adds focused event-dispatch/rollback/replay tests, preserves
+fixed-role behavior, runs the full suite and diff check, and writes its own receipt.
 
 ## Target capability
 
@@ -30,7 +34,9 @@ the same declared scope without a feature inventing a scheduler or an unbounded 
 
 - Arbitrary JSON payload paths, arbitrary database predicates/SQL, dynamic code, background
   polling/scheduling, automatic time advancement, cross-world scans, multicast choice UI,
-  notifications as state, or game-specific event semantics.
+  notifications as state, or game-specific event semantics. Background scheduling and typed
+  external observations are instead specified by the separate
+  [downstream trigger plan](E8-TRIGGER-SCHEDULING-DEPENDENCY-PLAN.md).
 
 ## Existing evidence and owner decision
 
@@ -48,14 +54,15 @@ arbitrary component JSON.
 ## Dependency graph
 
 ~~~text
-E8 dynamic event roles and fan-out                                  [blocked parent]
+E8 dynamic event roles and fan-out                                  [Slices 1–2 accepted]
 ├─ E1 event ledger, guards, subscriptions, chain limits             [implemented]
 ├─ declared event schemas and payload validation                     [implemented]
 ├─ payload entity-role binding                                       [accepted Slice 1]
 ├─ deterministic one-receiver reaction fixture                       [accepted Slice 1]
 ├─ bounded indexed scope selector                                    [implemented Slice 2]
 ├─ deterministic fan-out / chain-limit aggregation                   [implemented Slice 2]
-└─ F17/F18/F32/F33 consumers                                          [awaiting each consumer owner slice]
+├─ F17/F18/F32/F33 consumers                                          [awaiting each consumer owner slice]
+└─ durable scheduling and external triggers                           [downstream Slices 0–9 accepted]
 ~~~
 
 ## Ownership decisions
@@ -81,6 +88,7 @@ E8 dynamic event roles and fan-out                                  [blocked par
 | 1. Exact payload role binding | E1 contracts and event schemas re-read | One reaction receives one event-named entity through a declared role; mismatches roll back the root. |
 | 2. Indexed bounded fan-out | Slice 1 and [selector confirmation](E8-SLICE-2-SELECTOR-RECONCILIATION.md) | One scoped event selects a canonically ordered bounded active set and every reaction joins/rolls back atomically. |
 | 3. Consumer adoption | Prior slices plus each event owner | One named F17/F18/F32/F33 consumer adopts no private subscription workaround. |
+| Downstream 0–10. Scheduling and external triggers | Accepted E8 routing plus separate owner confirmation | [Slices 0–9 are accepted](E8-TRIGGER-SCHEDULING-SLICE-9-RECEIPT.md); Slice 10 web/MCP management and final acceptance is next. This does not reopen or change E8's accepted transactional routing. |
 
 ## Slice 1 specification
 
@@ -162,4 +170,7 @@ Split a new feature if a consumer needs recursive graph traversal, arbitrary fil
 dynamic role before the data model proves it, a distinct index shape, fan-out beyond confirmed chain
 bounds, or fan-out without an accepted causal event. E8 itself does not permit reaction children:
 Feature 18 still waits for E6; Feature 33 waits for Slice 2 and must declare active episode/world
-membership through the accepted component and relationship records.
+membership through the accepted component and relationship records. Work that must create a cause
+from wall time, a condition, a feed, or a device follows the
+[durable scheduling and external triggers plan](E8-TRIGGER-SCHEDULING-DEPENDENCY-PLAN.md) and enters
+the normal action/effect/event pipeline rather than extending E8 subscriptions into a scheduler.

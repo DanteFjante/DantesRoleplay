@@ -41,7 +41,8 @@ public sealed record ActiveApplicationManifest(
 public sealed record ApplicationActivationRequest(
     ApplicationIdentifier ApplicationId,
     string PreviewFingerprint,
-    string? ExpectedActiveFingerprint);
+    string? ExpectedActiveFingerprint,
+    IReadOnlyList<string>? SourceIds = null);
 
 public sealed record ApplicationActivationContext(
     string RequestToken,

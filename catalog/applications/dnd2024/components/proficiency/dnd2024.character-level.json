@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.character-level",
+  "name": "D&D 2024 total character level",
+  "description": "A character's total level from 1 through 20. Proficiency Bonus is derived as 2 + floor((level - 1) / 4) and is never stored."
+}

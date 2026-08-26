@@ -142,11 +142,14 @@ public sealed class WebControlRequestGuard(WebPrivateOperatorGuard operators)
         PrivateOperatorCapability capability,
         bool mutation) =>
         mutation
-            ? capability is PrivateOperatorCapability.ControlPagesWrite or
+            ? capability is PrivateOperatorCapability.Modify or
+                PrivateOperatorCapability.ControlPagesWrite or
                 PrivateOperatorCapability.ControlSettingsWrite or
                 PrivateOperatorCapability.ControlAiMessage or
-                PrivateOperatorCapability.ControlCodexApprove
-            : capability == PrivateOperatorCapability.ControlRead;
+                PrivateOperatorCapability.ControlCodexApprove or
+                PrivateOperatorCapability.TriggerAdministrationWrite
+            : capability is PrivateOperatorCapability.ControlRead or
+                PrivateOperatorCapability.TriggerAdministrationRead;
 
     private static bool IsJson(string? contentType)
     {
@@ -192,6 +195,14 @@ public sealed class WebControlRequestGuard(WebPrivateOperatorGuard operators)
 
 public sealed class WebControlRequestFilter(WebControlRequestGuard guard)
 {
+    private const string AuthorizationEvidenceItem = "dantes-roleplay.control.authorization-evidence";
+
+    public static AuthorizationAuditEvidence GetAuthorizationEvidence(HttpContext context) =>
+        context.Items.TryGetValue(AuthorizationEvidenceItem, out var value) &&
+        value is AuthorizationAuditEvidence evidence
+            ? evidence
+            : throw new InvalidOperationException("Control authorization evidence is unavailable.");
+
     public async ValueTask<object?> InvokeAsync(
         EndpointFilterInvocationContext context,
         EndpointFilterDelegate next,
@@ -212,6 +223,7 @@ public sealed class WebControlRequestFilter(WebControlRequestGuard guard)
         }
 
         context.HttpContext.User = decision.Principal!;
+        context.HttpContext.Items[AuthorizationEvidenceItem] = decision.Evidence;
         return await next(context);
     }
 }
@@ -225,11 +237,19 @@ public static class WebControlEndpointConventions
         this IEndpointRouteBuilder endpoints,
         string relativePattern,
         Delegate handler) =>
+        MapDantesRoleplayControlGet(endpoints, relativePattern,
+            PrivateOperatorCapability.ControlRead, handler);
+
+    public static RouteHandlerBuilder MapDantesRoleplayControlGet(
+        this IEndpointRouteBuilder endpoints,
+        string relativePattern,
+        PrivateOperatorCapability capability,
+        Delegate handler) =>
         Map(
             endpoints,
             HttpMethods.Get,
             relativePattern,
-            PrivateOperatorCapability.ControlRead,
+            capability,
             mutation: false,
             handler);
 
@@ -259,10 +279,12 @@ public static class WebControlEndpointConventions
         ArgumentNullException.ThrowIfNull(handler);
         var pattern = BuildPattern(relativePattern);
         if (mutation && capability is not (
+            PrivateOperatorCapability.Modify or
             PrivateOperatorCapability.ControlPagesWrite or
             PrivateOperatorCapability.ControlSettingsWrite or
             PrivateOperatorCapability.ControlAiMessage or
-            PrivateOperatorCapability.ControlCodexApprove))
+            PrivateOperatorCapability.ControlCodexApprove or
+            PrivateOperatorCapability.TriggerAdministrationWrite))
         {
             throw new ArgumentOutOfRangeException(
                 nameof(capability),

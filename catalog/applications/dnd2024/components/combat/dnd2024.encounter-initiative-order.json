@@ -1,0 +1,1 @@
+{"id":"dnd2024.encounter-initiative-order","name":"D&D 2024 encounter Initiative order","description":"One immutable encounter-owned Initiative snapshot. It stores final participant order and derived counts only; containment remains the roster and participant scores remain authoritative elsewhere."}

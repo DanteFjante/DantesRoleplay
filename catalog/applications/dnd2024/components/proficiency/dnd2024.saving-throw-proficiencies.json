@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.saving-throw-proficiencies",
+  "name": "D&D 2024 saving-throw proficiencies",
+  "description": "The complete known set of a character's proficient saving-throw ability IDs. An empty list is known none; missing state is unknown. Scores and Proficiency Bonus are derived, never stored."
+}

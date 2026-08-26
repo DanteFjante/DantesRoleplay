@@ -1,5 +1,6 @@
 using System.Text.Json;
 using DantesRoleplay.Applications;
+using DantesRoleplay.CatalogNavigation;
 
 namespace DantesRoleplay.Interactions;
 
@@ -83,7 +84,8 @@ public sealed record InteractionExecutionReceiptDraft
         InteractionExecutionReceiptDisposition disposition,
         string safeSummary,
         IEnumerable<string> evidence,
-        IEnumerable<InteractionExecutionStepReceiptDraft> steps)
+        IEnumerable<InteractionExecutionStepReceiptDraft> steps,
+        IEnumerable<InteractionExecutionQueryResultDraft>? queryResults = null)
     {
         Consent = consent ?? throw new ArgumentNullException(nameof(consent));
         ExecutionRequestFingerprint = InteractionGuard.UpperSha256(executionRequestFingerprint, nameof(executionRequestFingerprint));
@@ -98,6 +100,17 @@ public sealed record InteractionExecutionReceiptDraft
             !values.Select(x => x.Ordinal).Order().SequenceEqual(Enumerable.Range(1, values.Length)))
             throw new InteractionContractException("INVALID_EXECUTION_RECEIPT_STEPS", "Execution receipt steps must be distinct, ordered, and contiguous.");
         Steps = Array.AsReadOnly(values);
+        var queries = queryResults?.ToArray() ?? [];
+        if (queries.Length > InteractionContractLimits.ProposalSteps
+            || queries.Select(value => value.Ordinal).Distinct().Count() != queries.Length
+            || queries.Select(value => value.ProposalStepId).Distinct(StringComparer.Ordinal).Count() != queries.Length
+            || queries.Any(value => !values.Any(step => step.Ordinal == value.Ordinal
+                && step.ProposalStepId == value.ProposalStepId
+                && step.Disposition is InteractionExecutionStepDisposition.Succeeded
+                    or InteractionExecutionStepDisposition.Replayed)))
+            throw new InteractionContractException("INVALID_EXECUTION_QUERY_RESULTS",
+                "Query results must name distinct successful execution steps.");
+        QueryResults = Array.AsReadOnly(queries);
     }
 
     public InteractionExecutionConsentReference Consent { get; }
@@ -106,6 +119,50 @@ public sealed record InteractionExecutionReceiptDraft
     public string SafeSummary { get; }
     public IReadOnlyList<string> Evidence { get; }
     public IReadOnlyList<InteractionExecutionStepReceiptDraft> Steps { get; }
+    public IReadOnlyList<InteractionExecutionQueryResultDraft> QueryResults { get; }
+}
+
+public sealed record InteractionExecutionQueryResultDraft
+{
+    public InteractionExecutionQueryResultDraft(
+        int ordinal,
+        string proposalStepId,
+        string qualifiedId,
+        string outputSchemaHash,
+        string resultFingerprint,
+        string sourceRevisionFingerprint,
+        ApplicationQueryExposure exposure,
+        string? outputJson)
+    {
+        if (ordinal < 1 || ordinal > InteractionContractLimits.ProposalSteps)
+            throw new InteractionContractException("INVALID_QUERY_RESULT_ORDINAL",
+                "The query result ordinal is outside the closed limit.");
+        Ordinal = ordinal;
+        ProposalStepId = InteractionGuard.Identifier(proposalStepId, nameof(proposalStepId));
+        QualifiedId = InteractionGuard.Identifier(qualifiedId, nameof(qualifiedId));
+        OutputSchemaHash = InteractionGuard.UpperSha256(outputSchemaHash, nameof(outputSchemaHash));
+        ResultFingerprint = InteractionGuard.UpperSha256(resultFingerprint, nameof(resultFingerprint));
+        SourceRevisionFingerprint = InteractionGuard.UpperSha256(sourceRevisionFingerprint, nameof(sourceRevisionFingerprint));
+        if (!Enum.IsDefined(exposure))
+            throw new InteractionContractException("INVALID_QUERY_EXPOSURE", "The query result exposure is invalid.");
+        Exposure = exposure;
+        if (exposure == ApplicationQueryExposure.BindingOnly && outputJson is not null)
+            throw new InteractionContractException("BINDING_ONLY_OUTPUT_FORBIDDEN",
+                "Binding-only query output cannot be persisted.");
+        if (exposure == ApplicationQueryExposure.ModelVisible && outputJson is null)
+            throw new InteractionContractException("MODEL_VISIBLE_OUTPUT_REQUIRED",
+                "A model-visible query result requires its bounded output.");
+        OutputJson = outputJson is null ? null : InteractionCanonicalJson.Canonicalize(outputJson);
+    }
+
+    public int Ordinal { get; }
+    public string ProposalStepId { get; }
+    public string QualifiedId { get; }
+    public string OutputSchemaHash { get; }
+    public string ResultFingerprint { get; }
+    public string SourceRevisionFingerprint { get; }
+    public ApplicationQueryExposure Exposure { get; }
+    public string? OutputJson { get; }
 }
 
 public sealed record InteractionReceiptProjection(
@@ -124,7 +181,8 @@ public sealed record InteractionReceiptProjection(
     DateTime CreatedAtUtc,
     string? ResolutionReceiptId = null,
     IReadOnlyList<InteractionExecutionStepReceiptProjection>? Steps = null,
-    InteractionRecipeReference? RecipeReference = null);
+    InteractionRecipeReference? RecipeReference = null,
+    IReadOnlyList<InteractionQueryResultProjection>? QueryResults = null);
 
 public sealed record InteractionExecutionStepReceiptProjection(
     int Ordinal,
@@ -146,6 +204,11 @@ public interface IInteractionReceiptStore
 {
     Task<InteractionReceiptWriteResult> AppendResolutionAsync(InteractionResolutionReceiptDraft draft, CancellationToken cancellationToken = default);
     Task<InteractionReceiptWriteResult> AppendExecutionAsync(InteractionExecutionReceiptDraft draft, CancellationToken cancellationToken = default);
+    Task<InteractionReceiptWriteResult?> FindExecutionAsync(
+        InteractionExecutionConsentReference consent,
+        string executionRequestFingerprint,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<InteractionReceiptWriteResult?>(null);
     Task<InteractionReceiptProjection?> GetAsync(InteractionAuthorizationRequest authorizationRequest, string receiptId, CancellationToken cancellationToken = default);
 }
 
@@ -222,6 +285,7 @@ public sealed class InteractionExecutionReceipt
     public required string EvidenceJson { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public ICollection<InteractionExecutionReceiptStep> Steps { get; } = new List<InteractionExecutionReceiptStep>();
+    public ICollection<InteractionExecutionQueryResult> QueryResults { get; } = new List<InteractionExecutionQueryResult>();
 }
 
 public sealed class InteractionExecutionReceiptStep
@@ -231,6 +295,20 @@ public sealed class InteractionExecutionReceiptStep
     public required string ProposalStepId { get; set; }
     public required string Disposition { get; set; }
     public string? OperationId { get; set; }
+    public InteractionExecutionReceipt? ExecutionReceipt { get; set; }
+}
+
+public sealed class InteractionExecutionQueryResult
+{
+    public required string ExecutionReceiptId { get; set; }
+    public int Ordinal { get; set; }
+    public required string ProposalStepId { get; set; }
+    public required string QualifiedId { get; set; }
+    public required string OutputSchemaHash { get; set; }
+    public required string ResultFingerprint { get; set; }
+    public required string SourceRevisionFingerprint { get; set; }
+    public required string Exposure { get; set; }
+    public string? OutputJson { get; set; }
     public InteractionExecutionReceipt? ExecutionReceipt { get; set; }
 }
 

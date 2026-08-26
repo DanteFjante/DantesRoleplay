@@ -1,0 +1,1 @@
+{"id":"dnd2024.tool-proficiencies","name":"Tool proficiencies (D&D 2024)","description":"Closed character state containing canonical known SRD tool-proficiency IDs and fixed provenance. Empty means known none; absence means unknown. Items, grants, checks, and crafting are separate owners. Governed by procedure.mechanic.dnd2024.languages-and-tools."}
