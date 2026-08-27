@@ -280,7 +280,14 @@ public sealed class SqliteEntityComponentStore(
         write.Validate();
         var stateSpace = await RequireStateSpaceAsync(write.StateSpaceId, cancellationToken);
         var type = types.Get(write.Type.QualifiedTypeId, write.Type.TypeVersion);
-        if (type is null || type.Owner.Value != stateSpace.ApplicationId || type.SchemaHash != write.Type.SchemaHash)
+        var exactBaseOwner = type is not null && await db.Set<ApplicationRevisionBaseRecord>()
+            .AsNoTracking()
+            .AnyAsync(value => value.ApplicationId == stateSpace.ApplicationId
+                && value.Revision == stateSpace.ApplicationRevision
+                && value.BaseApplicationId == type.Owner.Value, cancellationToken);
+        if (type is null
+            || (type.Owner.Value != stateSpace.ApplicationId && !exactBaseOwner)
+            || type.SchemaHash != write.Type.SchemaHash)
             throw new InvalidOperationException("The component type is unknown, stale, or outside this state space's application.");
 
         var validated = mode == WriteMode.Merge

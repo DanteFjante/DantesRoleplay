@@ -37,6 +37,45 @@ public sealed class SqliteStateSpaceEdgeStore(
         return Array.AsReadOnly(rows.Select(View).ToArray());
     }
 
+    public async Task<EcsContainmentDiscoveryPage> ListContainmentsAsync(
+        string stateSpaceId,
+        string containerEntityId,
+        string? afterContainedEntityId,
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateId(stateSpaceId, nameof(stateSpaceId));
+        ValidateId(containerEntityId, nameof(containerEntityId));
+        ValidateLimit(limit);
+        await RequireEntityAsync(stateSpaceId, containerEntityId, cancellationToken);
+
+        string? after = null;
+        if (!string.IsNullOrWhiteSpace(afterContainedEntityId))
+        {
+            ValidateId(afterContainedEntityId, nameof(afterContainedEntityId));
+            var cursorExists = await db.Set<ApplicationEcsContainmentRecord>().AsNoTracking().AnyAsync(
+                value => value.StateSpaceId == stateSpaceId
+                    && value.ContainerEntityId == containerEntityId
+                    && value.ContainedEntityId == afterContainedEntityId,
+                cancellationToken);
+            if (!cursorExists) throw new InvalidOperationException("CURSOR_STALE");
+            after = afterContainedEntityId;
+        }
+
+        var rows = await db.Set<ApplicationEcsContainmentRecord>().AsNoTracking()
+            .Where(value => value.StateSpaceId == stateSpaceId
+                && value.ContainerEntityId == containerEntityId
+                && (after == null || string.Compare(value.ContainedEntityId, after) > 0))
+            .OrderBy(value => value.ContainedEntityId)
+            .Take(limit + 1)
+            .ToArrayAsync(cancellationToken);
+        var hasMore = rows.Length > limit;
+        var page = hasMore ? rows[..limit] : rows;
+        return new(
+            Array.AsReadOnly(page.Select(View).ToArray()),
+            hasMore ? page[^1].ContainedEntityId : null);
+    }
+
     public async Task<EcsContainmentView> MoveContainmentAsync(
         string stateSpaceId,
         string containedEntityId,
@@ -258,6 +297,12 @@ public sealed class SqliteStateSpaceEdgeStore(
     {
         if (string.IsNullOrWhiteSpace(value) || value.Length > 200)
             throw new ArgumentException("A bounded ID is required.", parameterName);
+    }
+
+    private static void ValidateLimit(int limit)
+    {
+        if (limit is < 1 or > 100)
+            throw new ArgumentOutOfRangeException(nameof(limit), "A containment page may contain 1 through 100 rows.");
     }
 
     private static void ValidateJson(string dataJson)

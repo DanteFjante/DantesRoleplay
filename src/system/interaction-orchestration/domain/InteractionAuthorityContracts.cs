@@ -90,7 +90,8 @@ public interface IInteractionAuthorizationPolicy
 public enum InteractionAiRole
 {
     Inner,
-    Outer
+    Outer,
+    Direct
 }
 
 public sealed record InteractionRoleProfile
@@ -109,11 +110,13 @@ public sealed record InteractionRoleProfile
 
     public static InteractionRoleProfile Inner { get; } = new(InteractionAiRole.Inner, "gpt-5.6-luna", "low");
     public static InteractionRoleProfile Outer { get; } = new(InteractionAiRole.Outer, "gpt-5.6-luna", "high");
+    public static InteractionRoleProfile Direct { get; } = new(InteractionAiRole.Direct, "none", "none");
 
     public static InteractionRoleProfile For(InteractionAiRole role) => role switch
     {
         InteractionAiRole.Inner => Inner,
         InteractionAiRole.Outer => Outer,
+        InteractionAiRole.Direct => Direct,
         _ => throw new InteractionContractException("INVALID_AI_ROLE", "The interaction AI role is not supported.")
     };
 

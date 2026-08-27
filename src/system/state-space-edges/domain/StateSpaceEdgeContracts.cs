@@ -9,6 +9,10 @@ public sealed record EcsContainmentView(
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc);
 
+public sealed record EcsContainmentDiscoveryPage(
+    IReadOnlyList<EcsContainmentView> Containments,
+    string? NextContainedEntityId);
+
 public sealed record EcsRelationshipView(
     string StateSpaceId,
     string FromEntityId,
@@ -28,6 +32,13 @@ public interface IStateSpaceEdgeStore
 
     Task<IReadOnlyList<EcsContainmentView>> ListContainmentsAsync(
         string stateSpaceId,
+        CancellationToken cancellationToken = default);
+
+    Task<EcsContainmentDiscoveryPage> ListContainmentsAsync(
+        string stateSpaceId,
+        string containerEntityId,
+        string? afterContainedEntityId,
+        int limit,
         CancellationToken cancellationToken = default);
 
     Task<EcsContainmentView> MoveContainmentAsync(

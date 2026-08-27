@@ -61,6 +61,34 @@ public sealed class StateSpaceEdgeStoreTests : IDisposable
         Assert.Empty(await setup.Edges.ListRelationshipsAsync("space"));
     }
 
+    [Fact]
+    public async Task Direct_containments_are_filtered_bounded_and_cursor_scoped()
+    {
+        var setup = Setup();
+        foreach (var id in new[] { "root", "other-root", "item-a", "item-b", "item-c" })
+            await setup.Entities.CreateEntityAsync("space", id, id);
+        await setup.Edges.MoveContainmentAsync("space", "item-b", "root", "belt", 0);
+        await setup.Edges.MoveContainmentAsync("space", "item-a", "root", "pack", 0);
+        await setup.Edges.MoveContainmentAsync("space", "item-c", "other-root", "pack", 0);
+
+        var first = await setup.Edges.ListContainmentsAsync("space", "root", null, 1);
+        Assert.Equal("item-a", Assert.Single(first.Containments).ContainedEntityId);
+        Assert.Equal("item-a", first.NextContainedEntityId);
+
+        var second = await setup.Edges.ListContainmentsAsync(
+            "space", "root", first.NextContainedEntityId, 1);
+        Assert.Equal("item-b", Assert.Single(second.Containments).ContainedEntityId);
+        Assert.Null(second.NextContainedEntityId);
+        Assert.DoesNotContain(second.Containments, value => value.ContainedEntityId == "item-c");
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            setup.Edges.ListContainmentsAsync("space", "root", "item-c", 1));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            setup.Edges.ListContainmentsAsync("space", "root", null, 101));
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            setup.Edges.ListContainmentsAsync("space", "missing", null, 1));
+    }
+
     private SetupResult Setup()
     {
         var db = _fixture.CreateContext();

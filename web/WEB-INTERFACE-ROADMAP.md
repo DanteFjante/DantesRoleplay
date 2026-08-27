@@ -1,7 +1,7 @@
 # Web interface roadmap
 
-Status: **Feature 1 complete — Feature 2 complete (Slices 0–15 accepted)**
-Last updated: 2026-08-24
+Status: **Features 1–4 accepted selected scope; Feature 5 D&D 2024 workspace in progress**
+Last updated: 2026-08-27
 
 ## Outcome
 
@@ -122,3 +122,42 @@ components are [accepted](WEB-APPLICATION-AWARE-WORKSPACE-SLICE-F-RECEIPT.md). S
 composition is [accepted](WEB-APPLICATION-AWARE-WORKSPACE-SLICE-G-RECEIPT.md). Slice H's final
 combined acceptance, live activation, and accepted-boundary chat corrections are
 [accepted](WEB-APPLICATION-AWARE-WORKSPACE-SLICE-H-RECEIPT.md).
+
+The user-confirmed application-to-page association is now implemented by
+[Application-page association Slice 1](WEB-APPLICATION-PAGE-ASSOCIATION-SLICE-1-IMPLEMENTATION.md):
+each registered application has the deterministic direct URL `/ui/<application-id>-play`, with an
+authored page taking precedence over a safe generated landing page. Its
+[receipt](WEB-APPLICATION-PAGE-ASSOCIATION-SLICE-1-RECEIPT.md) records focused route/navigation
+evidence; feature acceptance remains pending.
+
+## Feature 5 — D&D 2024 player and GM workspace
+
+The [D&D 2024 web UI dependency plan](DND2024-WEB-UI-DEPENDENCY-PLAN.md) inventories the
+existing shared web components and current D&D catalog owners, defines a ruleset-neutral
+application read/action seam, and lists the D&D-specific character, inventory, encounter, dice,
+action, and content components that can be built over accepted mechanics. It deliberately leaves
+spells, monsters, tactical maps, rests, dying, Inspiration use, magic items, and complete character
+construction behind their independent D&D gameplay gates.
+
+Order 0 is confirmed. [Slice 1](DND2024-WEB-UI-SLICE-1-IMPLEMENTATION.md) and its
+[receipt](DND2024-WEB-UI-SLICE-1-RECEIPT.md) accept the private exact application-state read seam,
+reviewed browser-component asset host, `<dnd2024-workspace>` game HUD, and authored
+`dnd2024-play` page. The page is not live-activated and has no action/write controls. [Slice 2A](DND2024-WEB-UI-SLICE-2A-IMPLEMENTATION.md) and its
+[receipt](DND2024-WEB-UI-SLICE-2A-RECEIPT.md) add the character profile/Size/experience dossier and
+selected-encounter Initiative/turn cards without calculations or writes. [Slice 2B](DND2024-WEB-UI-SLICE-2B-IMPLEMENTATION.md)
+and its [receipt](DND2024-WEB-UI-SLICE-2B-RECEIPT.md) accept a private paged direct-containment read
+plus game-styled direct carried-item cards with exact identity, quantity, equipment state, slot, and
+custody revision. [Slice 2C](DND2024-WEB-UI-SLICE-2C-IMPLEMENTATION.md) and its
+[receipt](DND2024-WEB-UI-SLICE-2C-RECEIPT.md) now accept explicitly published activated entity
+records and exact item-definition facts/provenance on those cards. [Slice 2D](DND2024-WEB-UI-SLICE-2D-IMPLEMENTATION.md)
+and its [receipt](DND2024-WEB-UI-SLICE-2D-RECEIPT.md) complete the bounded read-only nested
+containment tree with explicit depth, entry, and page cutoffs. Plus/minus mutations, dice/check
+execution, inventory actions, and encounter mutations remain planned. [Slice 3](DND2024-WEB-UI-SLICE-3-IMPLEMENTATION.md)
+and its [receipt](DND2024-WEB-UI-SLICE-3-RECEIPT.md) accept the ruleset-neutral exact mechanic
+descriptor and private prepare/explicit-confirm/execute boundary over the existing interaction,
+action, transaction, replay, and receipt owners. No browser control was added: the next action-side
+leaf was the generic game-styled entity picker/button/form surface. [Slice 4](DND2024-WEB-UI-SLICE-4-IMPLEMENTATION.md)
+and its [receipt](DND2024-WEB-UI-SLICE-4-RECEIPT.md) now accept that reusable review-first control
+layer without binding a D&D mechanic or adding a raw JSON form. [Slice 5](DND2024-WEB-UI-SLICE-5-RECEIPT.md)
+implements the purpose-built dice, raw ability-check, and saving-throw controls over that layer and
+awaits feature-acceptance confirmation; the read-only inventory remainder is complete.

@@ -107,8 +107,66 @@ public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
         path.StartsWithSegments("/api/data") ||
         path.StartsWithSegments("/api/changes") ||
         path.StartsWithSegments("/api/session") ||
+        IsApplicationCatalogReadPath(path) ||
+        IsApplicationMechanicPath(path) ||
+        IsApplicationStateReadPath(path) ||
         IsObservationPath(path) ||
         path.StartsWithSegments(WebControlEndpointConventions.RoutePrefix);
+
+    private static bool IsApplicationMechanicPath(PathString path)
+    {
+        var value = path.Value;
+        if (string.IsNullOrEmpty(value) || value.EndsWith("/", StringComparison.Ordinal) ||
+            value.Contains("//", StringComparison.Ordinal)) return false;
+        var segments = value.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return segments.Length is 7 or 8 &&
+            segments[0] == "api" && segments[1] == "applications" &&
+            IsRouteIdentifier(segments[2], 63) && segments[3] == "state-spaces" &&
+            IsRouteIdentifier(segments[4], 200) && segments[5] == "mechanics" &&
+            IsRouteIdentifier(segments[6], 200) &&
+            (segments.Length == 7 || segments[7] is "prepare" or "execute");
+    }
+
+    private static bool IsApplicationCatalogReadPath(PathString path)
+    {
+        var value = path.Value;
+        if (string.IsNullOrEmpty(value) || value.EndsWith("/", StringComparison.Ordinal) ||
+            value.Contains("//", StringComparison.Ordinal)) return false;
+        var segments = value.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return segments.Length == 6 &&
+            segments[0] == "api" &&
+            segments[1] == "applications" &&
+            IsRouteIdentifier(segments[2], 63) &&
+            segments[3] == "catalog" &&
+            segments[4] == "records" &&
+            IsRouteIdentifier(segments[5], 400);
+    }
+
+    private static bool IsApplicationStateReadPath(PathString path)
+    {
+        var value = path.Value;
+        if (string.IsNullOrEmpty(value) || value.EndsWith("/", StringComparison.Ordinal) ||
+            value.Contains("//", StringComparison.Ordinal)) return false;
+        var segments = value.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length < 4 ||
+            segments[0] != "api" ||
+            segments[1] != "applications" ||
+            segments[3] != "state-spaces" ||
+            !IsRouteIdentifier(segments[2], 63)) return false;
+        if (segments.Length == 4) return true;
+        if (segments.Length < 6 || !IsRouteIdentifier(segments[4], 200)) return false;
+        if (segments.Length == 6 && segments[5] == "containments") return true;
+        if (segments[5] != "entities") return false;
+        if (segments.Length == 6) return true;
+        if (!IsRouteIdentifier(segments[6], 200)) return false;
+        if (segments.Length == 7) return true;
+        if (segments.Length < 8 || segments[7] != "components") return false;
+        if (segments.Length == 8) return true;
+        return segments.Length == 9 && IsRouteIdentifier(segments[8], 200);
+    }
+
+    private static bool IsRouteIdentifier(string value, int maximum) =>
+        value.Length is >= 1 && value.Length <= maximum && !value.Any(char.IsControl);
 
     private static bool IsObservationPath(PathString path)
     {

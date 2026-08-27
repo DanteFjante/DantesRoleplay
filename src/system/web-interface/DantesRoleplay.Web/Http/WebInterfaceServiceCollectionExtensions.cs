@@ -60,6 +60,7 @@ public static class WebInterfaceServiceCollectionExtensions
         services.AddScoped<ControlSystemCapabilityExplorer>();
         services.AddSingleton<ApplicationConversationStore>();
         services.AddScoped<ApplicationConversationService>();
+        services.AddScoped<ApplicationMechanicWebService>();
         services.TryAddScoped<ITriggerSchedulingAdministrationService,
             UnavailableTriggerSchedulingAdministrationService>();
         services.Configure<WebRemoteAccessOptions>(

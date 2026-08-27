@@ -98,6 +98,10 @@ public sealed class WebInterfaceTests
         Assert.Contains("MAXIMUM_APPLICATIONS = 1000", SystemWorkspaceElement.Script, StringComparison.Ordinal);
         Assert.Contains("encodeURIComponent(application.id)", SystemWorkspaceElement.Script,
             StringComparison.Ordinal);
+        Assert.Contains("`/ui/${encodeURIComponent(application.id)}-play`", SystemWorkspaceElement.Script,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("#/applications/${encodeURIComponent(application.id)}", SystemWorkspaceElement.Script,
+            StringComparison.Ordinal);
         Assert.Contains("No applications registered.", SystemWorkspaceElement.Script, StringComparison.Ordinal);
         Assert.Contains("Applications are unavailable.", SystemWorkspaceElement.Script, StringComparison.Ordinal);
         Assert.Contains("APPLICATION_DISCOVERY_UNAVAILABLE", SystemWorkspaceElement.Script,
@@ -112,6 +116,66 @@ public sealed class WebInterfaceTests
         Assert.DoesNotContain("/mcp", SystemWorkspaceElement.Script, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("sql", SystemWorkspaceElement.Script, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("dnd", SystemWorkspaceElement.Script, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Registered_applications_have_direct_pages_and_authored_pages_take_precedence()
+    {
+        var connectionString = SharedMemoryConnectionString();
+        await using var keeper = new SqliteConnection(connectionString);
+        await keeper.OpenAsync();
+        var applications = new InMemoryApplicationRegistry();
+        var quest = new ApplicationRegistration(ApplicationIdentifier.Parse("quest"), "Quest", "A new game.", []);
+        var dnd = new ApplicationRegistration(ApplicationIdentifier.Parse("dnd2024"), "D&D 2024", "An authored game.", []);
+        applications.Register(quest);
+        applications.Register(dnd);
+
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddSingleton<IApplicationRegistry>(applications);
+        builder.Services.AddDantesRoleplayWeb(connectionString, new ConfigurationBuilder().Build());
+        var application = builder.Build();
+        application.MapDantesRoleplayWeb();
+        await using (var setup = application.Services.CreateAsyncScope())
+        {
+            var pages = setup.ServiceProvider.GetRequiredService<WebContentDbContext>();
+            await pages.Database.EnsureCreatedAsync();
+            await new WebPageStore(pages).SaveAndActivateAsync("dnd2024-play", "<h1>Authored D&D page</h1>");
+        }
+
+        var route = Assert.Single(((IEndpointRouteBuilder)application).DataSources
+            .SelectMany(source => source.Endpoints).OfType<RouteEndpoint>(), endpoint =>
+                endpoint.RoutePattern.RawText == "/ui/{id}");
+        await using var scope = application.Services.CreateAsyncScope();
+
+        async Task<(int Status, string Html)> GetAsync(string pageId)
+        {
+            var context = RequestContext("localhost:6217", IPAddress.Loopback);
+            context.RequestServices = scope.ServiceProvider;
+            context.Request.Method = HttpMethods.Get;
+            context.Request.RouteValues["id"] = pageId;
+            context.Response.Body = new MemoryStream();
+            await route.RequestDelegate!(context);
+            context.Response.Body.Position = 0;
+            using var reader = new StreamReader(context.Response.Body);
+            return (context.Response.StatusCode, await reader.ReadToEndAsync());
+        }
+
+        var generated = await GetAsync("quest-play");
+        var authored = await GetAsync("dnd2024-play");
+        var unknown = await GetAsync("missing-play");
+
+        Assert.Equal(StatusCodes.Status200OK, generated.Status);
+        Assert.Contains("<system-navigation application-id=\"quest\">", generated.Html, StringComparison.Ordinal);
+        Assert.Contains("<h1>Quest</h1>", generated.Html, StringComparison.Ordinal);
+        Assert.DoesNotContain("control-center", generated.Html, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(StatusCodes.Status200OK, authored.Status);
+        Assert.Equal("<h1>Authored D&D page</h1>", authored.Html);
+        Assert.Equal(StatusCodes.Status404NotFound, unknown.Status);
+        Assert.Empty(unknown.Html);
+        Assert.Equal("quest-play", ApplicationPageId.For(quest.Id));
+        Assert.True(ApplicationPageId.TryGetApplicationId("quest-play", out var parsed));
+        Assert.Equal(quest.Id, parsed);
+        Assert.False(ApplicationPageId.TryGetApplicationId("quest-admin", out _));
     }
 
     [Fact]
@@ -255,7 +319,7 @@ public sealed class WebInterfaceTests
     }
 
     [Fact]
-    public void Application_conversation_surface_is_exact_and_component_has_no_control_authority()
+    public async Task Application_surface_is_exact_and_components_have_no_control_authority()
     {
         var builder = WebApplication.CreateBuilder();
         builder.Services.AddDantesRoleplayWeb("Data Source=:memory:", new ConfigurationBuilder().Build());
@@ -265,17 +329,49 @@ public sealed class WebInterfaceTests
         var routes = ((IEndpointRouteBuilder)application).DataSources.SelectMany(source => source.Endpoints)
             .OfType<RouteEndpoint>()
             .Where(endpoint => endpoint.RoutePattern.RawText!.StartsWith("/api/applications/", StringComparison.Ordinal)
-                || endpoint.RoutePattern.RawText == "/components/application-conversation.js")
+                || endpoint.RoutePattern.RawText == "/components/application-conversation.js"
+                || endpoint.RoutePattern.RawText == "/components/{name}.js")
             .Select(endpoint => (endpoint.RoutePattern.RawText,
                 Method: endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods.Single())).ToArray();
         Assert.Equal([
             ("/components/application-conversation.js", HttpMethods.Get),
+            ("/components/{name}.js", HttpMethods.Get),
+            ("/api/applications/{applicationId}/catalog/records/{qualifiedId}", HttpMethods.Get),
+            ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}", HttpMethods.Get),
+            ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}/prepare", HttpMethods.Post),
+            ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}/execute", HttpMethods.Post),
+            ("/api/applications/{applicationId}/state-spaces", HttpMethods.Get),
+            ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/containments", HttpMethods.Get),
+            ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities", HttpMethods.Get),
+            ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}", HttpMethods.Get),
+            ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/components", HttpMethods.Get),
+            ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/components/{qualifiedTypeId}", HttpMethods.Get),
             ("/api/applications/{applicationId}/conversations/{conversationId}", HttpMethods.Get),
             ("/api/applications/{applicationId}/conversations", HttpMethods.Post),
             ("/api/applications/{applicationId}/conversations/{conversationId}/turns", HttpMethods.Post),
             ("/api/applications/{applicationId}/conversations/{conversationId}/execute", HttpMethods.Post),
             ("/api/applications/{applicationId}/observations", HttpMethods.Post)
         ], routes);
+        var applicationStateReads = ((IEndpointRouteBuilder)application).DataSources
+            .SelectMany(source => source.Endpoints)
+            .OfType<RouteEndpoint>()
+            .Where(endpoint => endpoint.RoutePattern.RawText!.Contains("/state-spaces", StringComparison.Ordinal))
+            .Where(endpoint => endpoint.RoutePattern.RawText!.StartsWith("/api/applications/", StringComparison.Ordinal))
+            .Where(endpoint => endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods.Single() == HttpMethods.Get)
+            .ToArray();
+        Assert.Equal(7, applicationStateReads.Length);
+        Assert.All(applicationStateReads, endpoint => Assert.Equal(
+            WebInterfaceSecurity.ReadRateLimitPolicy,
+            endpoint.Metadata.GetMetadata<EnableRateLimitingAttribute>()!.PolicyName));
+        var applicationActionWrites = ((IEndpointRouteBuilder)application).DataSources
+            .SelectMany(source => source.Endpoints)
+            .OfType<RouteEndpoint>()
+            .Where(endpoint => endpoint.RoutePattern.RawText!.Contains("/{qualifiedMechanicId}/", StringComparison.Ordinal))
+            .ToArray();
+        Assert.Equal(2, applicationActionWrites.Length);
+        Assert.All(applicationActionWrites, endpoint => Assert.Equal(
+            WebInterfaceSecurity.UploadRateLimitPolicy,
+            endpoint.Metadata.GetMetadata<EnableRateLimitingAttribute>()!.PolicyName));
         Assert.Contains("customElements.define('application-conversation'", ApplicationConversationElement.Script, StringComparison.Ordinal);
         Assert.Contains("session-context-id", ApplicationConversationElement.Script, StringComparison.Ordinal);
         Assert.Contains("new CustomEvent", ApplicationConversationElement.Script, StringComparison.Ordinal);
@@ -283,6 +379,183 @@ public sealed class WebInterfaceTests
         Assert.Contains("remember.checked = false", ApplicationConversationElement.Script, StringComparison.Ordinal);
         Assert.DoesNotContain("/api/control", ApplicationConversationElement.Script, StringComparison.Ordinal);
         Assert.DoesNotContain("/mcp", ApplicationConversationElement.Script, StringComparison.Ordinal);
+        var dndScript = await BrowserComponentAssets.ReadAsync("dnd2024-workspace");
+        Assert.NotNull(dndScript);
+        Assert.Contains("customElements.define('dnd2024-workspace'", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("DND2024_MAXIMUM_PAGES = 10", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("DND2024_CHARACTER_FILTER_CONCURRENCY = 6", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("DND2024_CHARACTER_COMPONENTS = Object.freeze", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("async _findPlayableStateSpaces", dndScript, StringComparison.Ordinal);
+        Assert.Contains("async _isPlayableStateSpace", dndScript, StringComparison.Ordinal);
+        Assert.Contains("mechanic.dnd2024.dice')", dndScript, StringComparison.Ordinal);
+        Assert.Contains("No playable D&D campaign space is available.", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("async _findDndCharacters", dndScript, StringComparison.Ordinal);
+        Assert.Contains("async _isDndCharacter", dndScript, StringComparison.Ordinal);
+        Assert.Contains("DND2024_CHARACTER_COMPONENTS.every", dndScript, StringComparison.Ordinal);
+        Assert.Contains("No D&D character record exists in this state space.", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("url.searchParams.set('limit', '100')", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("encodeURIComponent(this.applicationId)", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("dnd2024-progress", dndScript, StringComparison.Ordinal);
+        Assert.Contains("dnd2024-error", dndScript, StringComparison.Ordinal);
+        Assert.Contains("bubbles: true, composed: true", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("characterProfile: 'dnd2024.character.profile'", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("characterExperience: 'dnd2024.character-experience'", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("creatureSize: 'dnd2024.creature-size'", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("encounterOrder: 'dnd2024.encounter-initiative-order'", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("encounterTurn: 'dnd2024.encounter-turn-state'", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("itemInstance: 'dnd2024.item-instance'", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("itemDefinition: 'dnd2024.item-definition'", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("itemQuantity: 'dnd2024.item-quantity'", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("equipmentState: 'dnd2024.equipment-state'", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("_renderDossier()", dndScript, StringComparison.Ordinal);
+        Assert.Contains("Not recorded", dndScript, StringComparison.Ordinal);
+        Assert.Contains("Character profile is unavailable.", dndScript, StringComparison.Ordinal);
+        Assert.Contains("_renderEncounter()", dndScript, StringComparison.Ordinal);
+        Assert.Contains("initiative-card", dndScript, StringComparison.Ordinal);
+        Assert.Contains("aria-current", dndScript, StringComparison.Ordinal);
+        Assert.Contains("No Initiative snapshot is recorded", dndScript, StringComparison.Ordinal);
+        Assert.Contains("Initiative order is unavailable.", dndScript, StringComparison.Ordinal);
+        Assert.Contains("'/containments'", dndScript, StringComparison.Ordinal);
+        Assert.Contains("DND2024_INVENTORY_MAXIMUM_DEPTH = 4", dndScript, StringComparison.Ordinal);
+        Assert.Contains("DND2024_INVENTORY_MAXIMUM_ENTRIES = 96", dndScript, StringComparison.Ordinal);
+        Assert.Contains("DND2024_INVENTORY_PAGE_SIZE = 24", dndScript, StringComparison.Ordinal);
+        Assert.Contains("url.searchParams.set('containerEntityId', containerEntityId)", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("url.searchParams.set('limit', String(limit))", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("_loadInventoryBranch", dndScript, StringComparison.Ordinal);
+        Assert.Contains("new Set([entityId])", dndScript, StringComparison.Ordinal);
+        Assert.Contains("_isInventoryContainment", dndScript, StringComparison.Ordinal);
+        Assert.Contains("context.remainingEntries -= 1", dndScript, StringComparison.Ordinal);
+        Assert.Contains("Math.min(DND2024_INVENTORY_PAGE_SIZE, context.remainingEntries)", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("_renderInventory()", dndScript, StringComparison.Ordinal);
+        Assert.Contains("inventory-grid", dndScript, StringComparison.Ordinal);
+        Assert.Contains("inventory-children", dndScript, StringComparison.Ordinal);
+        Assert.Contains("Nested contents are read-only", dndScript, StringComparison.Ordinal);
+        Assert.Contains("customElements.define('dnd2024-dice-tray'", dndScript, StringComparison.Ordinal);
+        Assert.Contains("customElements.define('dnd2024-action-panel'", dndScript, StringComparison.Ordinal);
+        Assert.Contains("mechanic.dnd2024.dice", dndScript, StringComparison.Ordinal);
+        Assert.Contains("mechanic.dnd2024.check.ability", dndScript, StringComparison.Ordinal);
+        Assert.Contains("mechanic.dnd2024.saving-throw", dndScript, StringComparison.Ordinal);
+        Assert.Contains("rollCircumstances", dndScript, StringComparison.Ordinal);
+        Assert.Contains("voluntaryFailure", dndScript, StringComparison.Ordinal);
+        Assert.Contains("application-action-button", dndScript, StringComparison.Ordinal);
+        Assert.Contains("Further contents are not checked beyond depth 4.", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("The inventory tree stops after 96 visible contents.", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("More direct contents are recorded here. This view shows the first 24.", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("Other contents", dndScript, StringComparison.Ordinal);
+        Assert.Contains("/catalog/records/", dndScript, StringComparison.Ordinal);
+        Assert.Contains("url.searchParams.set('collection', this.applicationId)", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("record.summary.kind !== 'entity'", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("Definition unavailable", dndScript, StringComparison.Ordinal);
+        Assert.Contains("Equipment modes", dndScript, StringComparison.Ordinal);
+        Assert.Contains("source.sourceId", dndScript, StringComparison.Ordinal);
+        Assert.DoesNotContain(".sort(", dndScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("localStorage", dndScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("sessionStorage", dndScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("method: 'POST'", dndScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("method: 'PUT'", dndScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("method: 'DELETE'", dndScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("Math.random", dndScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("/api/control", dndScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("/mcp", dndScript, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("innerHTML", dndScript, StringComparison.Ordinal);
+
+        var applicationScript = await BrowserComponentAssets.ReadAsync("application-workspace");
+        Assert.NotNull(applicationScript);
+        Assert.Contains("customElements.define('application-entity-picker'", applicationScript,
+            StringComparison.Ordinal);
+        Assert.Contains("customElements.define('application-action-button'", applicationScript,
+            StringComparison.Ordinal);
+        Assert.Contains("customElements.define('application-form'", applicationScript,
+            StringComparison.Ordinal);
+        Assert.Contains("MAXIMUM_ENTITY_PAGE = 100", applicationScript, StringComparison.Ordinal);
+        Assert.Contains("url.searchParams.set('limit', String(MAXIMUM_ENTITY_PAGE))", applicationScript,
+            StringComparison.Ordinal);
+        Assert.Contains("application-entity-change", applicationScript, StringComparison.Ordinal);
+        Assert.Contains("/mechanics/${encodeURIComponent(scope.mechanicId)}", applicationScript,
+            StringComparison.Ordinal);
+        Assert.Contains("/prepare", applicationScript, StringComparison.Ordinal);
+        Assert.Contains("/execute", applicationScript, StringComparison.Ordinal);
+        Assert.Contains("Confirm and execute", applicationScript, StringComparison.Ordinal);
+        Assert.Contains("actionResults", applicationScript, StringComparison.Ordinal);
+        Assert.Contains("result?.narration", applicationScript, StringComparison.Ordinal);
+        Assert.Contains("schemaStatus !== 'authored'", applicationScript, StringComparison.Ordinal);
+        Assert.Contains("empty input object", applicationScript, StringComparison.Ordinal);
+        Assert.Contains("bubbles: true, composed: true", applicationScript, StringComparison.Ordinal);
+        Assert.Contains("method: 'POST'", applicationScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("url.searchParams.set('cursor'", applicationScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("localStorage", applicationScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("sessionStorage", applicationScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("/api/control", applicationScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("/mcp", applicationScript, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("/conversations", applicationScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("method: 'PUT'", applicationScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("method: 'DELETE'", applicationScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("innerHTML", applicationScript, StringComparison.Ordinal);
+
+        var inventoryStart = dndScript.IndexOf("async _loadInventory(", StringComparison.Ordinal);
+        var inventoryEnd = dndScript.IndexOf("async _loadItemDefinition", StringComparison.Ordinal);
+        Assert.True(inventoryStart >= 0 && inventoryEnd > inventoryStart);
+        var inventory = dndScript[inventoryStart..inventoryEnd];
+        Assert.DoesNotContain("url.searchParams.set('cursor'", inventory, StringComparison.Ordinal);
+        Assert.DoesNotContain("method: 'POST'", inventory, StringComparison.Ordinal);
+        Assert.Null(await BrowserComponentAssets.ReadAsync("../dnd2024-workspace"));
+        Assert.Null(await BrowserComponentAssets.ReadAsync("missing-browser-component"));
+
+        var assetRoute = Assert.Single(((IEndpointRouteBuilder)application).DataSources
+            .SelectMany(source => source.Endpoints).OfType<RouteEndpoint>(), endpoint =>
+                endpoint.RoutePattern.RawText == "/components/{name}.js");
+        var assetContext = RequestContext("localhost:6217", IPAddress.Loopback);
+        assetContext.RequestServices = application.Services;
+        assetContext.Request.Method = HttpMethods.Get;
+        assetContext.Request.RouteValues["name"] = "dnd2024-workspace";
+        assetContext.Response.Body = new MemoryStream();
+
+        await assetRoute.RequestDelegate!(assetContext);
+
+        Assert.Equal(StatusCodes.Status200OK, assetContext.Response.StatusCode);
+        Assert.Equal("text/javascript; charset=utf-8", assetContext.Response.ContentType);
+        assetContext.Response.Body.Position = 0;
+        using var reader = new StreamReader(assetContext.Response.Body);
+        Assert.Contains("customElements.define('dnd2024-workspace'", await reader.ReadToEndAsync(),
+            StringComparison.Ordinal);
+
+        assetContext.Response.Clear();
+        assetContext.Request.RouteValues["name"] = "application-workspace";
+        assetContext.Response.Body = new MemoryStream();
+        await assetRoute.RequestDelegate!(assetContext);
+
+        Assert.Equal(StatusCodes.Status200OK, assetContext.Response.StatusCode);
+        Assert.Equal("text/javascript; charset=utf-8", assetContext.Response.ContentType);
+        assetContext.Response.Body.Position = 0;
+        using var applicationReader = new StreamReader(assetContext.Response.Body);
+        Assert.Contains("customElements.define('application-form'", await applicationReader.ReadToEndAsync(),
+            StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1853,6 +2126,8 @@ public sealed class WebInterfaceTests
         Assert.Contains("GetPageAsync(HomePageId", endpoints, StringComparison.Ordinal);
         Assert.Contains("href=\"/ui/control-center/index.html\"", home, StringComparison.Ordinal);
         Assert.Contains("Open control center", home, StringComparison.Ordinal);
+        Assert.Contains("href=\"/ui/dnd2024-play\"", home, StringComparison.Ordinal);
+        Assert.Contains("Enter D&amp;D 2024 game table", home, StringComparison.Ordinal);
         Assert.Contains("livePageLink(item.id)", controlCenter, StringComparison.Ordinal);
         Assert.Contains("encodeURIComponent(pageId)", controlCenter, StringComparison.Ordinal);
         Assert.Contains("Open live page", controlCenter, StringComparison.Ordinal);
@@ -1951,6 +2226,26 @@ public sealed class WebInterfaceTests
     }
 
     [Fact]
+    public void Dnd2024_play_page_is_a_game_viewport_not_a_generated_form()
+    {
+        var html = File.ReadAllText(Path.Combine(
+            RepositoryRoot(), "src", "system", "web-interface", "examples", "dnd2024-play", "index.html"));
+
+        Assert.Contains("<dnd2024-workspace application-id=\"dnd2024\">", html, StringComparison.Ordinal);
+        Assert.Contains("/components/application-workspace.js", html, StringComparison.Ordinal);
+        Assert.Contains("/components/dnd2024-workspace.js", html, StringComparison.Ordinal);
+        Assert.Contains("<system-navigation application-id=\"dnd2024\">", html, StringComparison.Ordinal);
+        Assert.Contains("<application-conversation", html, StringComparison.Ordinal);
+        Assert.Contains("session-context-id=\"dnd2024-play\"", html, StringComparison.Ordinal);
+        Assert.Contains("Game table", html, StringComparison.Ordinal);
+        Assert.Contains("Opening the game table", html, StringComparison.Ordinal);
+        Assert.Contains("radial-gradient", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("<system-form", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("<form", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("application/json", html, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Home_dashboard_uses_existing_local_conversation_structure_and_browser_local_notes()
     {
         var home = File.ReadAllText(Path.Combine(
@@ -1965,6 +2260,8 @@ public sealed class WebInterfaceTests
         Assert.Contains("localStorage.setItem(storageKeys.notes", home, StringComparison.Ordinal);
         Assert.Contains("id=\"local-date-time\"", home, StringComparison.Ordinal);
         Assert.Contains("window.setInterval(updateClock, 1000)", home, StringComparison.Ordinal);
+        Assert.Contains("href=\"/ui/dnd2024-play\"", home, StringComparison.Ordinal);
+        Assert.Contains("Enter D&amp;D 2024 game table", home, StringComparison.Ordinal);
         Assert.Contains("radial-gradient", home, StringComparison.Ordinal);
         Assert.DoesNotContain("api.openai.com", home, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("InteractionOuter:Provider", home, StringComparison.Ordinal);
@@ -2031,8 +2328,11 @@ public sealed class WebInterfaceTests
         var applicationId = ApplicationIdentifier.Parse("fixture-app");
         var applications = new SqliteApplicationRegistry(db);
         var revision = applications.Register(new(applicationId, "Fixture", "Explorer fixture", []));
+        var otherApplicationId = ApplicationIdentifier.Parse("other-app");
+        var otherRevision = applications.Register(new(otherApplicationId, "Other", "Other fixture", []));
         var stateSpaces = new SqliteStateSpaceRegistry(db, applications);
         stateSpaces.Create(new("fixture-space", revision, new string('A', 64)));
+        stateSpaces.Create(new("other-space", otherRevision, new string('B', 64)));
         var validator = new BoundedJsonSchemaValidator();
         var types = new SqliteComponentTypeRegistry(db, validator);
         var stats = types.Define(new(applicationId, "fixture-app.stats", "{\"type\":\"object\"}"));
@@ -2042,30 +2342,54 @@ public sealed class WebInterfaceTests
             "fixture-space", "hero",
             new(stats.QualifiedId, stats.Version, stats.SchemaHash),
             "{\"health\":12}", 0));
+        await entities.CreateEntityAsync("fixture-space", "item-lantern", "Lantern");
+        var edges = new SqliteStateSpaceEdgeStore(db, stateSpaces);
+        await edges.MoveContainmentAsync("fixture-space", "item-lantern", "hero", "pack", 0);
         var changesBeforeReads = await SqliteTotalChangesAsync(db);
         var capabilities = ApplicationCapabilities(applications);
         var explorer = new ControlStructureExplorer(
-            applications, stateSpaces, types, entities, new EmptyPublicApplicationCatalogProvider(), capabilities);
+            applications, stateSpaces, types, entities, new EmptyPublicApplicationCatalogProvider(), capabilities,
+            edges);
 
         var appPage = await explorer.ListApplicationsThroughCapabilitiesAsync(CapabilityAuthorization(), null, "1");
         var app = await explorer.GetApplicationThroughCapabilitiesAsync(CapabilityAuthorization(), "fixture-app");
         var spaces = explorer.ListStateSpaces("fixture-app", null, null);
+        var applicationSpaces = explorer.ListApplicationStateSpaces("fixture-app", null, null);
         var typePage = explorer.ListComponentTypes("fixture-app", null, null);
         var schema = explorer.GetComponentType("fixture-app.stats", 1);
         var entityPage = await explorer.ListEntitiesAsync("fixture-space", null, null);
         var componentPage = await explorer.ListComponentsAsync("fixture-space", "hero", null, null);
         var component = await explorer.GetComponentAsync("fixture-space", "hero", "fixture-app.stats");
+        var applicationEntities = await explorer.ListApplicationEntitiesAsync(
+            "fixture-app", "fixture-space", null, null);
+        var applicationEntity = await explorer.GetApplicationEntityAsync(
+            "fixture-app", "fixture-space", "hero");
+        var applicationComponents = await explorer.ListApplicationComponentsAsync(
+            "fixture-app", "fixture-space", "hero", null, null);
+        var applicationComponent = await explorer.GetApplicationComponentAsync(
+            "fixture-app", "fixture-space", "hero", "fixture-app.stats");
+        var containments = await explorer.ListApplicationContainmentsAsync(
+            "fixture-app", "fixture-space", "hero", null, "1");
         var catalog = explorer.GetCatalog("fixture-app");
 
         Assert.Equal("fixture-app", Assert.Single(appPage.Items).Id);
         Assert.Equal("Explorer fixture", app!.Description);
         Assert.Equal("fixture-space", Assert.Single(spaces.Items).StateSpaceId);
+        Assert.Equal("fixture-space", Assert.Single(applicationSpaces.Items).StateSpaceId);
         Assert.Equal(stats.SchemaHash, Assert.Single(typePage.Items).SchemaHash);
         Assert.Equal("{\"type\":\"object\"}", schema!.SchemaJson);
-        Assert.Equal("hero", Assert.Single(entityPage.Items).EntityId);
+        Assert.Equal(["hero", "item-lantern"], entityPage.Items.Select(value => value.EntityId));
         Assert.Equal("fixture-app.stats", Assert.Single(componentPage.Items).QualifiedTypeId);
         Assert.Equal("{\"health\":12}", component!.ValueJson);
         Assert.Equal(stats.SchemaHash, component.SchemaHash);
+        Assert.Equal(["hero", "item-lantern"], applicationEntities.Items.Select(value => value.EntityId));
+        Assert.Equal("hero", applicationEntity!.EntityId);
+        Assert.Equal("fixture-app.stats", Assert.Single(applicationComponents.Items).QualifiedTypeId);
+        Assert.Equal("{\"health\":12}", applicationComponent!.ValueJson);
+        var containment = Assert.Single(containments.Items);
+        Assert.Equal("item-lantern", containment.ContainedEntityId);
+        Assert.Equal("hero", containment.ContainerEntityId);
+        Assert.Equal("pack", containment.Slot);
         Assert.Equal("unavailable", catalog.Status);
         Assert.Empty(catalog.Collections);
         Assert.Null(explorer.GetComponentType("fixture-app.stats", 2));
@@ -2073,6 +2397,22 @@ public sealed class WebInterfaceTests
             () => explorer.GetEntityAsync("missing-space", "hero"))).Code);
         Assert.Equal("ENTITY_UNKNOWN", (await Assert.ThrowsAsync<ControlStructureException>(
             () => explorer.ListComponentsAsync("fixture-space", "missing", null, null))).Code);
+        Assert.Equal("STATE_SPACE_WRONG_APPLICATION", (await Assert.ThrowsAsync<ControlStructureException>(
+            () => explorer.ListApplicationEntitiesAsync("fixture-app", "other-space", null, null))).Code);
+        Assert.Equal("STATE_SPACE_WRONG_APPLICATION", (await Assert.ThrowsAsync<ControlStructureException>(
+            () => explorer.GetApplicationEntityAsync("other-app", "fixture-space", "hero"))).Code);
+        Assert.Equal("STATE_SPACE_WRONG_APPLICATION", (await Assert.ThrowsAsync<ControlStructureException>(
+            () => explorer.ListApplicationComponentsAsync(
+                "other-app", "fixture-space", "hero", null, null))).Code);
+        Assert.Equal("STATE_SPACE_WRONG_APPLICATION", (await Assert.ThrowsAsync<ControlStructureException>(
+            () => explorer.GetApplicationComponentAsync(
+                "other-app", "fixture-space", "hero", "fixture-app.stats"))).Code);
+        Assert.Equal("STATE_SPACE_WRONG_APPLICATION", (await Assert.ThrowsAsync<ControlStructureException>(
+            () => explorer.ListApplicationContainmentsAsync(
+                "other-app", "fixture-space", "hero", null, null))).Code);
+        Assert.Equal("ENTITY_UNKNOWN", (await Assert.ThrowsAsync<ControlStructureException>(
+            () => explorer.ListApplicationContainmentsAsync(
+                "fixture-app", "fixture-space", "missing", null, null))).Code);
         Assert.Equal(changesBeforeReads, await SqliteTotalChangesAsync(db));
     }
 
@@ -2279,18 +2619,60 @@ public sealed class WebInterfaceTests
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/ui/home"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/components/system-workspace.js"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/components/application-conversation.js"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath("/components/dnd2024-workspace.js"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath("/components/application-workspace.js"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/pages/home"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/data/entity/hero"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/changes"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/session"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/control/status"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/applications/quest/observations"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/catalog/records/quest.item.fixture.v1"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/state-spaces/main/mechanics/quest.mechanic.fixture"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/state-spaces/main/mechanics/quest.mechanic.fixture/prepare"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/state-spaces/main/mechanics/quest.mechanic.fixture/execute"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/applications/quest/state-spaces"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/state-spaces/main/entities"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/state-spaces/main/containments"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/state-spaces/main/entities/hero"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/state-spaces/main/entities/hero/components"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/state-spaces/main/entities/hero/components/quest.stats"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/mcp"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/pages-other"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/control-other"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/components-other/system-workspace.js"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/applications/quest/conversations"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/applications/quest/observations/extra"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/catalog/records/quest.item.fixture.v1/extra"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/catalog/records/quest.item.fixture.v1/"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/catalog//records/quest.item.fixture.v1"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/state-spaces/main/mechanics/quest.mechanic.fixture/"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/state-spaces/main/mechanics/quest.mechanic.fixture/preview"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/state-spaces/main/mechanics/quest.mechanic.fixture/execute/extra"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/applications/quest/state-spaces/"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/state-spaces/main//entities"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/state-spaces/main/entities/hero/components/quest.stats/extra"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/state-spaces/main/actions"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/state-spaces/main/containments/extra"));
     }
 
     [Fact]

@@ -17,6 +17,12 @@ Register the authored D&D catalog as immutable application source `dnd2024-core`
 and activation fingerprints. Rules-bearing artifacts cite `source.dnd2024.srd-5.2.1` plus an exact
 locator and retain the CC-BY-4.0 attribution governed by the adoption policy.
 
+Register the existing `game` application before `dnd2024` and declare it as an ordered D&D base
+application whenever D&D mechanics consume generic world-owned components such as
+`game.core.world.root` or `game.core.world.clock`. Map those exact base component type versions;
+never copy their schemas or values into a D&D-owned parallel component and never accept their
+state as caller input.
+
 Keep optional, compatibility, homebrew, and third-party packages outside the core source glob under
 `catalog/extensions/dnd2024/<package>/`. Each package has a closed `extension-package.json`, is
 registered as its own immutable application source, declares `dnd2024-core` in

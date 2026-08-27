@@ -96,6 +96,8 @@ public sealed class InteractionOrchestrationContractTests
         Assert.Equal("base-app", host.ApplicationRevision.BaseApplications.Single().Value);
         Assert.Equal("inner:gpt-5.6-luna:low", InteractionRoleProfile.Inner.StableKey);
         Assert.Equal("outer:gpt-5.6-luna:high", InteractionRoleProfile.Outer.StableKey);
+        Assert.Equal("direct:none:none", InteractionRoleProfile.Direct.StableKey);
+        Assert.Same(InteractionRoleProfile.Direct, InteractionRoleProfile.For(InteractionAiRole.Direct));
         InteractionRoleProfile.EnsureResumeCompatible(InteractionRoleProfile.Inner, InteractionRoleProfile.Inner);
         AssertCode("ROLE_PROFILE_CHANGED", () =>
             InteractionRoleProfile.EnsureResumeCompatible(InteractionRoleProfile.Inner, InteractionRoleProfile.Outer));

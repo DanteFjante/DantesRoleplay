@@ -1,0 +1,10 @@
+var subject=ctx.roles.subject,DEF='dnd2024.heroic-inspiration',PROFILE='dnd2024.character.profile',sourceRef={sourceId:'source.dnd2024.srd-5.2.1',locator:'Rules Glossary > Heroic Inspiration PDF page 183'};
+function object(value){return value!==null&&!Array.isArray(value)&&typeof value==='object';}
+function only(value,keys){if(!object(value))return false;var actual=Object.keys(value).sort();if(actual.length!==keys.length)return false;for(var i=0;i<keys.length;i++)if(actual[i]!==keys[i])return false;return true;}
+function parse(raw,name){try{return typeof raw==='string'?JSON.parse(raw):raw;}catch(error){throw new Error(name+' is malformed.');}}
+function validProfile(value){if(!object(value))return false;var keys=Object.keys(value).sort(),allowed=['appearance','biography','pronouns'];if(keys.length<1||keys.length>3)return false;for(var i=0;i<keys.length;i++){if(allowed.indexOf(keys[i])<0)return false;var text=value[keys[i]],maximum=keys[i]==='pronouns'?80:(keys[i]==='appearance'?1000:2000);if(typeof text!=='string'||text.trim()!==text||text.length<1||text.length>maximum)return false;}return true;}
+if(!only(ctx.input,[]))throw new Error('Granting Heroic Inspiration requires exactly an empty object input.');
+if(!subject||!subject.components||!Object.prototype.hasOwnProperty.call(subject.components,PROFILE))throw new Error('Heroic Inspiration can be granted only to an existing player character.');
+if(!validProfile(parse(subject.components[PROFILE],'Character profile')))throw new Error('The subject character profile is invalid.');
+if(Object.prototype.hasOwnProperty.call(subject.components,DEF)){if(!only(parse(subject.components[DEF],'Heroic Inspiration state'),[]))throw new Error('The subject Heroic Inspiration state is invalid.');throw new Error('The subject already has Heroic Inspiration.');}
+return {narration:subject.name+' gains Heroic Inspiration.',effects:[{type:'component.add',entityId:subject.id,definitionId:DEF,data:'{}'}],events:[],notifications:[],data:{test:'heroic-inspiration-grant',subjectId:subject.id,heldBefore:false,heldAfter:true,sourceRef:sourceRef}};

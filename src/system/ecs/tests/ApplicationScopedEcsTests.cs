@@ -90,6 +90,40 @@ public sealed class ApplicationScopedEcsTests : IDisposable
     }
 
     [Fact]
+    public async Task State_space_component_writes_admit_exact_direct_base_owner_and_reject_unrelated_owner()
+    {
+        using var fixture = new SqliteFixture();
+        await using var db = fixture.CreateContext();
+        var applications = new SqliteApplicationRegistry(db);
+        var baseApplication = ApplicationIdentifier.Parse("base-app");
+        var derivedApplication = ApplicationIdentifier.Parse("derived-app");
+        var unrelatedApplication = ApplicationIdentifier.Parse("unrelated-app");
+        applications.Register(new(baseApplication, "Base", "", []));
+        var derivedRevision = applications.Register(new(
+            derivedApplication, "Derived", "", [baseApplication]));
+        applications.Register(new(unrelatedApplication, "Unrelated", "", []));
+        new SqliteStateSpaceRegistry(db, applications).Create(new(
+            "derived-space", derivedRevision, Manifest));
+        var schemas = new BoundedJsonSchemaValidator();
+        var types = new SqliteComponentTypeRegistry(db, schemas);
+        var baseType = types.Define(new(baseApplication, "base-app.marker", "{\"type\":\"string\"}"));
+        var unrelatedType = types.Define(new(
+            unrelatedApplication, "unrelated-app.marker", "{\"type\":\"string\"}"));
+        var store = new SqliteEntityComponentStore(db, types, schemas);
+        await store.CreateEntityAsync("derived-space", "fixture", "Fixture");
+
+        var written = await store.AddComponentAsync(new(
+            "derived-space", "fixture",
+            new(baseType.QualifiedId, baseType.Version, baseType.SchemaHash), "\"base\"", 0));
+
+        Assert.Equal("\"base\"", written.ValueJson);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => store.AddComponentAsync(new(
+            "derived-space", "fixture",
+            new(unrelatedType.QualifiedId, unrelatedType.Version, unrelatedType.SchemaHash),
+            "\"unrelated\"", 0)));
+    }
+
+    [Fact]
     public void State_space_bindings_are_registered_immutable_and_pre_activation_only()
     {
         var setup = Setup("fixture-app", "space-one");

@@ -1,6 +1,7 @@
 using System.Data.Common;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.Web.Data;
 using DantesRoleplay.Web.Live;
@@ -18,6 +19,7 @@ using DantesRoleplay.Web.Interactions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +29,12 @@ namespace DantesRoleplay.Web.Hosting;
 public static class WebInterfaceEndpoints
 {
     private const string HomePageId = "home";
+    private static readonly UTF8Encoding StrictInteractionUtf8 = new(false, true);
+    private static readonly JsonSerializerOptions StrictInteractionJson = new(JsonSerializerDefaults.Web)
+    {
+        PropertyNameCaseInsensitive = false,
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow
+    };
 
     public static IEndpointRouteBuilder MapDantesRoleplayWeb(this IEndpointRouteBuilder endpoints)
     {
@@ -42,6 +50,17 @@ public static class WebInterfaceEndpoints
         Secure(endpoints.MapGet("/api/session", GetSession), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/components/application-conversation.js", GetApplicationConversationElement), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/components/system-workspace.js", GetSystemWorkspaceElement), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/components/{name}.js", GetBrowserComponentAssetAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/api/applications/{applicationId}/catalog/records/{qualifiedId}", InspectCatalog), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}", GetApplicationMechanicAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapPost("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}/prepare", PrepareApplicationMechanicAsync), WebInterfaceSecurity.UploadRateLimitPolicy);
+        Secure(endpoints.MapPost("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}/execute", ExecuteApplicationMechanicAsync), WebInterfaceSecurity.UploadRateLimitPolicy);
+        Secure(endpoints.MapGet("/api/applications/{applicationId}/state-spaces", GetApplicationStateSpaces), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/containments", GetApplicationContainmentsAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities", GetApplicationEntitiesAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}", GetApplicationEntityAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/components", GetApplicationComponentsAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/components/{qualifiedTypeId}", GetApplicationComponentAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/api/applications/{applicationId}/conversations/{conversationId}", GetApplicationConversation), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapPost("/api/applications/{applicationId}/conversations", CreateApplicationConversationAsync), WebInterfaceSecurity.UploadRateLimitPolicy);
         Secure(endpoints.MapPost("/api/applications/{applicationId}/conversations/{conversationId}/turns", SendApplicationConversationTurnAsync), WebInterfaceSecurity.UploadRateLimitPolicy);
@@ -161,6 +180,15 @@ public static class WebInterfaceEndpoints
     private static IResult GetSystemWorkspaceElement() => Results.Text(
         SystemWorkspaceElement.Script, "text/javascript; charset=utf-8", Encoding.UTF8);
 
+    private static async Task<IResult> GetBrowserComponentAssetAsync(
+        string name, CancellationToken cancellationToken)
+    {
+        var script = await BrowserComponentAssets.ReadAsync(name, cancellationToken);
+        return script is null
+            ? Results.NotFound()
+            : Results.Text(script, "text/javascript; charset=utf-8", Encoding.UTF8);
+    }
+
     private static async Task<IResult> SubmitObservationAsync(
         string applicationId,
         HttpContext context,
@@ -276,6 +304,34 @@ public static class WebInterfaceEndpoints
             await ReadInteractionBodyAsync<ApplicationConversationExecuteRequest>(context, cancellationToken),
             cancellationToken));
 
+    private static Task<IResult> GetApplicationMechanicAsync(
+        string applicationId, string stateSpaceId, string qualifiedMechanicId,
+        HttpContext context, ApplicationMechanicWebService mechanics,
+        CancellationToken cancellationToken) =>
+        ApplicationMechanicWebAsync(context, async () => await mechanics.DescribeAsync(
+            ApplicationIdentifier.Parse(applicationId), stateSpaceId, qualifiedMechanicId,
+            cancellationToken));
+
+    private static Task<IResult> PrepareApplicationMechanicAsync(
+        string applicationId, string stateSpaceId, string qualifiedMechanicId,
+        HttpContext context, ApplicationMechanicWebService mechanics,
+        CancellationToken cancellationToken) =>
+        ApplicationMechanicWebAsync(context, async () => await mechanics.PrepareAsync(
+            InteractionPrincipal(context), ApplicationIdentifier.Parse(applicationId),
+            stateSpaceId, qualifiedMechanicId,
+            await ReadApplicationMechanicBodyAsync<ApplicationMechanicPrepareRequest>(context, cancellationToken),
+            cancellationToken));
+
+    private static Task<IResult> ExecuteApplicationMechanicAsync(
+        string applicationId, string stateSpaceId, string qualifiedMechanicId,
+        HttpContext context, ApplicationMechanicWebService mechanics,
+        CancellationToken cancellationToken) =>
+        ApplicationMechanicWebAsync(context, async () => await mechanics.ExecuteAsync(
+            InteractionPrincipal(context), ApplicationIdentifier.Parse(applicationId),
+            stateSpaceId, qualifiedMechanicId,
+            await ReadApplicationMechanicBodyAsync<ApplicationMechanicExecuteRequest>(context, cancellationToken),
+            cancellationToken));
+
     private static DantesRoleplay.Authorization.TrustedPrincipalContext InteractionPrincipal(HttpContext context)
     {
         var tailscale = string.Equals(context.User.Identity?.AuthenticationType,
@@ -310,6 +366,62 @@ public static class WebInterfaceEndpoints
             var code = exception is InteractionContractException contract ? contract.Code : "INTERACTION_REQUEST_INVALID";
             return Results.Json(new { error = code, message = exception.Message }, statusCode: StatusCodes.Status400BadRequest);
         }
+    }
+
+    private static async Task<IResult> ApplicationMechanicWebAsync<T>(
+        HttpContext context, Func<Task<T>> action)
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        try
+        {
+            return Results.Json(await action());
+        }
+        catch (ApplicationMechanicWebException exception)
+        {
+            return Results.Json(new { error = exception.Code, message = exception.Message },
+                statusCode: exception.StatusCode);
+        }
+        catch (InteractionContractException exception)
+        {
+            var status = exception.Code.Contains("CONFLICT", StringComparison.Ordinal)
+                || exception.Code.Contains("STALE", StringComparison.Ordinal)
+                ? StatusCodes.Status409Conflict : StatusCodes.Status400BadRequest;
+            return Results.Json(new { error = exception.Code, message = exception.Message },
+                statusCode: status);
+        }
+        catch (Exception exception) when (exception is ArgumentException or JsonException or DecoderFallbackException)
+        {
+            return Results.Json(new { error = "APPLICATION_ACTION_REQUEST_INVALID", message = exception.Message },
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    private static async Task<T> ReadApplicationMechanicBodyAsync<T>(
+        HttpContext context, CancellationToken cancellationToken)
+    {
+        const int maximumBytes = 64 * 1024;
+        if (context.Request.ContentLength > maximumBytes)
+            throw new InteractionContractException("INTERACTION_REQUEST_TOO_LARGE",
+                "The application action request is too large.");
+        using var stream = new MemoryStream();
+        var buffer = new byte[8192];
+        while (true)
+        {
+            var read = await context.Request.Body.ReadAsync(buffer, cancellationToken);
+            if (read == 0) break;
+            if (stream.Length + read > maximumBytes)
+                throw new InteractionContractException("INTERACTION_REQUEST_TOO_LARGE",
+                    "The application action request is too large.");
+            stream.Write(buffer, 0, read);
+        }
+        if (stream.Length == 0)
+            throw new InteractionContractException("INTERACTION_REQUEST_INVALID",
+                "The application action request body is required.");
+        var json = StrictInteractionUtf8.GetString(stream.ToArray());
+        var canonical = InteractionCanonicalJson.CanonicalizeObject(json);
+        return JsonSerializer.Deserialize<T>(canonical, StrictInteractionJson)
+            ?? throw new InteractionContractException("INTERACTION_REQUEST_INVALID",
+                "The application action request body is required.");
     }
 
     private static async Task<T> ReadInteractionBodyAsync<T>(HttpContext context, CancellationToken cancellationToken)
@@ -735,6 +847,58 @@ public static class WebInterfaceEndpoints
             applicationId,
             context.Request.Query["cursor"].FirstOrDefault(),
             context.Request.Query["limit"].FirstOrDefault()));
+
+    private static IResult GetApplicationStateSpaces(
+        string applicationId, HttpContext context, ControlStructureExplorer explorer) =>
+        Structure(context, () => explorer.ListApplicationStateSpaces(
+            applicationId,
+            context.Request.Query["cursor"].FirstOrDefault(),
+            context.Request.Query["limit"].FirstOrDefault()));
+
+    private static Task<IResult> GetApplicationEntitiesAsync(
+        string applicationId, string stateSpaceId, HttpContext context,
+        ControlStructureExplorer explorer, CancellationToken cancellationToken) =>
+        StructureAsync(context, () => explorer.ListApplicationEntitiesAsync(
+            applicationId,
+            stateSpaceId,
+            context.Request.Query["cursor"].FirstOrDefault(),
+            context.Request.Query["limit"].FirstOrDefault(),
+            cancellationToken));
+
+    private static Task<IResult> GetApplicationContainmentsAsync(
+        string applicationId, string stateSpaceId, HttpContext context,
+        ControlStructureExplorer explorer, CancellationToken cancellationToken) =>
+        StructureAsync(context, () => explorer.ListApplicationContainmentsAsync(
+            applicationId,
+            stateSpaceId,
+            context.Request.Query["containerEntityId"].FirstOrDefault() ?? string.Empty,
+            context.Request.Query["cursor"].FirstOrDefault(),
+            context.Request.Query["limit"].FirstOrDefault(),
+            cancellationToken));
+
+    private static Task<IResult> GetApplicationEntityAsync(
+        string applicationId, string stateSpaceId, string entityId, HttpContext context,
+        ControlStructureExplorer explorer, CancellationToken cancellationToken) =>
+        StructureAsync(context, () => explorer.GetApplicationEntityAsync(
+            applicationId, stateSpaceId, entityId, cancellationToken));
+
+    private static Task<IResult> GetApplicationComponentsAsync(
+        string applicationId, string stateSpaceId, string entityId, HttpContext context,
+        ControlStructureExplorer explorer, CancellationToken cancellationToken) =>
+        StructureAsync(context, () => explorer.ListApplicationComponentsAsync(
+            applicationId,
+            stateSpaceId,
+            entityId,
+            context.Request.Query["cursor"].FirstOrDefault(),
+            context.Request.Query["limit"].FirstOrDefault(),
+            cancellationToken));
+
+    private static Task<IResult> GetApplicationComponentAsync(
+        string applicationId, string stateSpaceId, string entityId, string qualifiedTypeId,
+        HttpContext context, ControlStructureExplorer explorer,
+        CancellationToken cancellationToken) =>
+        StructureAsync(context, () => explorer.GetApplicationComponentAsync(
+            applicationId, stateSpaceId, entityId, qualifiedTypeId, cancellationToken));
 
     private static IResult GetComponentTypes(
         string applicationId, HttpContext context, ControlStructureExplorer explorer) =>
@@ -1182,7 +1346,7 @@ public static class WebInterfaceEndpoints
         string id,
         HttpRequest request,
         IWebPageStore pages,
-        WebHtmlReader htmlReader,
+        [FromServices] WebHtmlReader htmlReader,
         CancellationToken cancellationToken)
     {
         if (!WebPageId.IsValid(id))
@@ -1226,18 +1390,23 @@ public static class WebInterfaceEndpoints
     private static async Task<IResult> GetPageAsync(
         string id,
         IWebPageStore pages,
+        [FromServices] IApplicationRegistry applications,
         CancellationToken cancellationToken)
     {
         var page = await pages.GetActiveAsync(id, cancellationToken);
-        return page is null
+        if (page is not null) return Results.Text(page.Html, "text/html", Encoding.UTF8);
+        if (!ApplicationPageId.TryGetApplicationId(id, out var applicationId)) return Results.NotFound();
+        var application = applications.Describe(applicationId!);
+        return application is null
             ? Results.NotFound()
-            : Results.Text(page.Html, "text/html", Encoding.UTF8);
+            : Results.Text(ApplicationPageTemplate.Render(application), "text/html", Encoding.UTF8);
     }
 
     private static Task<IResult> GetHomePageAsync(
         IWebPageStore pages,
+        [FromServices] IApplicationRegistry applications,
         CancellationToken cancellationToken) =>
-        GetPageAsync(HomePageId, pages, cancellationToken);
+        GetPageAsync(HomePageId, pages, applications, cancellationToken);
 
     private static async Task<IResult> GetAssetAsync(
         string id,

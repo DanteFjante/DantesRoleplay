@@ -147,6 +147,58 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
     }
 
     [Fact]
+    public void Active_content_entity_is_inspectable_by_original_id_with_exact_json_and_provenance()
+    {
+        var app = ApplicationIdentifier.Parse("fixture");
+        const string relativePath = "content/entities/adventuring-gear/item.fixture.lantern.v1.json";
+        var fullPath = Path.Combine(_root, relativePath.Replace('/', Path.DirectorySeparatorChar));
+        Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+        const string json = """
+            {
+              "id": "item.fixture.lantern.v1",
+              "name": "Fixture Lantern",
+              "components": {
+                "fixture.item-definition": {
+                  "kind": "adventuring-gear"
+                }
+              }
+            }
+            """;
+        File.WriteAllText(fullPath, json, new UTF8Encoding(false));
+        var bytes = File.ReadAllBytes(fullPath);
+        var applications = new InMemoryApplicationRegistry();
+        var revision = applications.Register(new(app, "Fixture application", "Generic public fixture content.", []));
+        var sources = new InMemorySourceRegistry();
+        var source = sources.Register(new(app, "catalog", "fixture-root", "content/**/*",
+            SourceTrust.Trusted, 0, "fixture-catalog"));
+        var activation = new ActiveApplicationManifest(
+            app, 1, revision.Revision, revision.Fingerprint, Sha('B'), Sha('C'), Sha('D'), Sha('E'),
+            Sha('A'), "fixture-coverage-v1", false,
+            [new("catalog", SourceRegistrationFingerprint.Compute(source), 1, 0)],
+            [new("file:" + relativePath, "catalog", SourceTrust.Trusted, 0, relativePath,
+                "application/json", Hash(bytes), bytes.LongLength, true)],
+            "fixture-operation", DateTime.UtcNow);
+        var materializer = new ActivatedApplicationCatalogMaterializer(
+            applications, new StaticActivation(activation), sources,
+            new StaticRoot("fixture-root", _root));
+
+        var manifest = materializer.Build(app);
+        var record = Assert.Single(manifest.Records);
+        Assert.Equal("entity", record.Kind);
+        Assert.Equal("fixture.item.fixture.lantern.v1", record.QualifiedId);
+        Assert.Equal("entities/adventuring-gear", record.Path);
+        Assert.Equal(["item.fixture.lantern.v1"], record.Aliases);
+        Assert.Equal(json, record.ContentJson);
+        Assert.Equal(relativePath, record.SourceLogicalPath);
+        var navigator = new InMemoryCatalogNavigator(manifest,
+            new CatalogCursorCodec(Encoding.UTF8.GetBytes("entity-catalog-cursor-signing-key")));
+        var hit = Assert.Single(navigator.Search(new(app, "item.fixture.lantern.v1", app.Value,
+            Kinds: ["entity"])).Records);
+        Assert.Equal(record.QualifiedId, hit.Record.QualifiedId);
+        Assert.Equal(json, navigator.Inspect(new(app, app.Value, record.QualifiedId)).ContentJson);
+    }
+
+    [Fact]
     public void Zero_and_two_application_hosts_share_one_vector_free_boundary_without_cross_application_leakage()
     {
         var applications = new InMemoryApplicationRegistry();

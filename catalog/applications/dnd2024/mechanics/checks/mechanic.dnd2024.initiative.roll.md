@@ -8,7 +8,8 @@ status: active
 
 ## Description
 
-Resolves one effect-free D&D 2024 Initiative count from the subject's Dexterity score.
+Resolves one effect-free D&D 2024 Initiative count from Dexterity and returns a closed optional
+active-rest interruption plan for an authoritative encounter root to apply.
 
 ## Matches
 
@@ -19,5 +20,5 @@ roll for initiative
 ## Requirements
 
 ```json
-{"roles":{"subject":{"components":["dnd2024.abilities"],"description":"The creature rolling individual D&D 2024 Initiative."}}}
+{"roles":{"subject":{"components":["dnd2024.abilities","dnd2024.rest-episode"],"includeRelationships":true,"description":"The creature rolling individual D&D 2024 Initiative with optional source-bound rest state."}}}
 ```

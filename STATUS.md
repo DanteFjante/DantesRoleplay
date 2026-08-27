@@ -7,9 +7,9 @@ carry the details.
 ## Current baseline
 
 This checkout contains concurrent in-progress campaign, story-plan, tactical, catalog, migration,
-and test changes. On 2026-08-27 the solution built with zero warnings/errors and the disposable
-catalog validated 144 records with 21 non-blocking near-duplicate warnings. The full shared suite
-reported 1,117 passed with no failures. Run acceptance commands against the same worktree rather than copying
+and test changes. On 2026-08-27 the disposable catalog validated 144 records with 21 non-blocking
+near-duplicate warnings, and the full solution reported 1,249 shared tests plus 21 Local AI tests
+passing with no failures. Run acceptance commands against the same worktree rather than copying
 this count into another plan.
 
 The public MCP surface remains exactly `orient`, `query`, and `commit`. The engine is C#; game rules
@@ -29,7 +29,7 @@ and game-specific decisions are catalog data and sandboxed JavaScript. See
 | Campaign | Existing-world continuity and quest-context integration are implemented; composition/participation work has current receipts | [CAMPAIGN_CREATION_PLAN.md](CAMPAIGN_CREATION_PLAN.md) |
 | Quest | Closed creation, manual lifecycle, and bounded summary are implemented | [QUEST_IMPLEMENTATION_PLAN.md](QUEST_IMPLEMENTATION_PLAN.md) and `quest/**/` receipts |
 | Session/snapshot | Start, resume, end/recap, and immutable snapshot-package foundations are accepted; later recovery/table features remain planned | [SESSION_OPERATIONS_PLAN.md](SESSION_OPERATIONS_PLAN.md), [SNAPSHOT_OPERATIONS_PLAN.md](SNAPSHOT_OPERATIONS_PLAN.md) |
-| Character/items | Inventory foundation is accepted; character participation, profile, abilities, and staged composition have verified slices; complete player creation remains open | [CHARACTER_CREATION_PLAN.md](CHARACTER_CREATION_PLAN.md), [ITEMS_AND_INVENTORY_PLAN.md](ITEMS_AND_INVENTORY_PLAN.md) |
+| Character/items | Inventory and the basic-playable D&D creation root are accepted: a source-bound Soldier actor can use any of twelve SRD level-1 class models with class-specific core state, campaign participation, replay/rollback, and an explicit no-behavior pending ledger. Source-complete spell/exertion adapters, class-feature mechanics, finish/recovery, Resourceful, equipment, and remaining grants/feat behavior remain open | [D&D 2024 character-creation dependency tree](ruleset/dnd2024/DND2024-CHARACTER-CREATION-DEPENDENCY-PLAN.md), [all-class receipt](ruleset/dnd2024/evidence/DND2024-CHARACTER-CREATION-ALL-CLASS-RECEIPT.md), [ITEMS_AND_INVENTORY_PLAN.md](ITEMS_AND_INVENTORY_PLAN.md) |
 | Knowledge/retrieval | Knowledge state, timeline, lexical/vector retrieval, and bounded local orchestration have receipts | [Knowledge and facts](knowledge/KNOWLEDGE_AND_FACTS_PLAN.md) |
 | Private web workspace | Shared navigation, system/application chat scopes, system controls, and live Home/Control pages are accepted | [Slice H receipt](web/WEB-APPLICATION-AWARE-WORKSPACE-SLICE-H-RECEIPT.md) |
 | Story orchestration | An in-progress implementation is governed by its approved confirmation and implementation receipt | [confirmation](storytelling/story-plan-orchestration/STORY_PLAN_ORCHESTRATION-SLICE-0-CONFIRMATION.md), [implementation receipt](storytelling/story-plan-orchestration/STORY_PLAN_ORCHESTRATION-IMPLEMENTATION-RECEIPT.md) |

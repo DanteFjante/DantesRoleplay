@@ -28,6 +28,20 @@ The preferred sequence is:
   six accepted reduced Slice 10B3A weapon profiles plus four accepted Slice 10B3B weapon item links
   and the accepted Slice 10F Fighter levels 1–2 progression identity cohort under the registered
   `dnd2024` application source.
+- Character creation CC1, CC2A–CC2H2, and the all-class basic-playable MVP are accepted. Pure role-bound JavaScript resolves Standard
+  Array plus Soldier increases, plans any of nine species with canonical Size/base Speed, turns
+  Human Skillful into a skill contribution, and resolves the recommended Versatile/Skilled feat
+  into three skill/tool contributions. Four Origin-feat identities are active without implying
+  undeveloped benefits. A shared one-instance Heroic Inspiration state and guarded normal grant
+  are active; immutable source-corrected rest policy supplies lifecycle values; and authenticated
+  Short/Long Rest starts bind exact HP, policy, active base world, and authoritative clock state into
+  one atomic episode/membership transaction. Stateless progress now classifies each authoritative
+  clock interval as sleep/light activity, records every exact source interruption, adds Long Rest
+  hours, stops interrupted Short Rests atomically, and reaches duration-ready without benefits.
+  The MVP now composes a Soldier actor using any of twelve source-bound SRD level-1 class models,
+  class-specific core state, an explicit pending ledger, and campaign participation in one replayable transaction. Automatic event adapters,
+  finish/recovery, Resourceful, executable background/class grants, and source-complete creation
+  remain later independent leaves.
 - `old-dnd/` retains the previous D&D implementation and tests by explicit user decision. The
   accepted [Slice 13 inventory](adoption/evidence/retained-archive-inventory-13a.json) fingerprints
   all 737 files and proves zero runtime/build/catalog/production-source consumers. It remains
@@ -75,6 +89,19 @@ The cross-owner import/recovery work is owned by the
 ladder, donor boundaries, effort forecast, small-model assignments, acceleration tooling, and
 confirmation gates.
 
+New playable-character work is owned by the
+[D&D 2024 character-creation dependency tree](DND2024-CHARACTER-CREATION-DEPENDENCY-PLAN.md). Its
+first species subslices are accepted: source-bound ability generation/background increases,
+species-definition/selection planning, Human Skillful, recommended Versatile/Skilled, the Heroic
+Inspiration presence/grant foundation, immutable standard-rest policy content, authenticated rest
+start, and clock-derived activity/interruption progress through no-benefit duration readiness. No
+later leaf is active, and CC2 remains open on automatic interruption adapters, finish/recovery,
+Resourceful triggering, and final trait composition.
+For a token-constrained first delivery, the
+[basic character-creation MVP plan](DND2024-CHARACTER-CREATION-MVP-PLAN.md) provides one 5-8 EP
+vertical slice to an explicitly `basic-playable` actor with unresolved entitlements recorded rather
+than silently granted. That slice is accepted; it does not close the full-resolution plan.
+
 ## Delivery lanes
 
 | Lane | Outcome | State |
@@ -85,6 +112,7 @@ confirmation gates.
 | Playable vertical | Ability/D20, proficiency, AC/HP, weapons, damage, turn flow, and one fresh-host replayable encounter | accepted through Slice 7D |
 | Breadth | Character progression, conditions, equipment, spells, monsters, and magic items in independent cohorts | Parents 10–11 accepted selected scope; every incomplete family has an explicit independent-feature gate |
 | Maintenance | Pinned upstream-diff reports, attribution, conformance regression, and retained archive recovery | Slices 12–13 accepted; archive removal remains a separately confirmed future proposal |
+| Character creation | Stateless, source-bound creation choices composed into one actor transaction | Basic-playable Soldier creation with any of twelve SRD level-1 classes is accepted with class-specific core state, campaign participation, replay/rollback, and an explicit no-behavior pending ledger; source-complete spell/exertion, finish/recovery, Resourceful, equipment, and remaining grants stay planned |
 
 ## Historical evidence
 

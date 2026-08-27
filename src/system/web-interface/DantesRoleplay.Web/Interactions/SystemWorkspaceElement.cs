@@ -168,7 +168,7 @@ public static class SystemWorkspaceElement
         const fragment = document.createDocumentFragment();
         for (const application of this._applications) {
           const link = this._link(
-            `${CONTROL_CENTER_PATH}#/applications/${encodeURIComponent(application.id)}`,
+            `/ui/${encodeURIComponent(application.id)}-play`,
             this._label(application),
             'application-link');
           link.dataset.applicationId = application.id;

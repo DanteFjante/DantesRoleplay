@@ -14,10 +14,14 @@ Rolls a creature's D&D 2024 Initiative from authoritative Dexterity and a kernel
 
 1. Accept only an empty object or explicit 7A3-style roll circumstances.
 2. Apply the Dexterity modifier to the selected d20 result, using non-stacking Advantage/Disadvantage when circumstances specify it.
-3. Report the Initiative count without storing an order, consuming a turn, or applying an effect.
+3. Project optional subject rest state/relationships, validate its exact source-bound scope, and
+   return null, a Short Rest stop plan, or a Long Rest one-hour/count plan for the encounter root.
+4. Report the Initiative count and plan without storing an order, consuming a turn, or applying an
+   effect in this individual child.
 
 ## Constraints
 
-- Initiative count, encounter membership, turn state, and tie breaking are outside this individual-roll leaf.
+- Initiative count persistence, encounter membership, turn state, tie breaking, and applying the
+  rest plan are outside this individual-roll child.
 - Natural 1 and natural 20 have no additional effect.
 - Persistent/derived conditions are deferred; only explicit audit circumstances are accepted.

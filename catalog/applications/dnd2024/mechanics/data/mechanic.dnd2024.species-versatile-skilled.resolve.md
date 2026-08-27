@@ -1,0 +1,23 @@
+---
+id: mechanic.dnd2024.species-versatile-skilled.resolve
+category: ruleset.dnd2024.character.species-traits.versatile
+name: Resolve Human Versatile with Skilled
+scope: dnd2024-srd-5.2.1
+status: active
+---
+
+## Description
+
+Validates a bound Versatile species and Skilled feat, then returns one canonical zero-effect feat
+selection and three skill/tool contributions.
+
+## Matches
+
+resolve Human Versatile Skilled choices
+validate Versatile Origin feat Skilled
+
+## Requirements
+
+```json
+{"roles":{"species":{"components":["dnd2024.character.content-definition","dnd2024.species-profile"],"description":"The exact active species definition declaring Versatile."},"feat":{"components":["dnd2024.character.content-definition","dnd2024.feat-profile"],"description":"The exact active Skilled Origin-feat definition."}}}
+```

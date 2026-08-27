@@ -21,6 +21,9 @@
     .mark { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid var(--line); border-radius: 50% 50% 46% 54%; color: var(--leaf); background: linear-gradient(140deg, rgba(159,219,143,.18), rgba(21,53,37,.78)); box-shadow: inset 0 0 20px rgba(159,219,143,.08); }
     .quiet-link { padding: 8px 12px; border: 1px solid transparent; border-radius: 999px; color: var(--muted); font-size: .88rem; text-decoration: none; }
     .quiet-link:hover, .quiet-link:focus-visible { border-color: var(--line); color: var(--ink); outline: none; }
+    .game-link { display: inline-flex; align-items: center; gap: 9px; margin-top: 24px; padding: 12px 16px; border: 1px solid rgba(159,219,143,.56); border-radius: 999px; color: #f1ffe9; background: linear-gradient(135deg, rgba(96,171,82,.45), rgba(24,74,42,.72)); box-shadow: 0 12px 30px rgba(0,0,0,.18); font-weight: 800; text-decoration: none; }
+    .game-link::after { content: "→"; color: var(--leaf); font-size: 1.1rem; }
+    .game-link:hover, .game-link:focus-visible { border-color: var(--leaf); background: linear-gradient(135deg, rgba(112,195,93,.56), rgba(24,74,42,.82)); outline: none; transform: translateY(-1px); }
     system-navigation { --system-navigation-link-color: var(--muted); --system-navigation-muted-color: var(--faint); --system-navigation-border-color: var(--line); --system-navigation-current-border-color: var(--line); --system-navigation-current-background: rgba(96,171,82,.15); }
     system-chat { --system-chat-color: var(--ink); --system-chat-muted-color: var(--muted); --system-chat-border-color: var(--line); --system-chat-assistant-background: rgba(96,171,82,.12); --system-chat-button-background: rgba(96,171,82,.15); --system-chat-input-background: rgba(4,21,12,.64); }
     .hero { display: grid; grid-template-columns: minmax(0,1fr) minmax(240px,.46fr); gap: clamp(26px,7vw,92px); align-items: end; padding: 32px 0 46px; }
@@ -77,6 +80,7 @@
         <p class="eyebrow">Private local workspace</p>
         <h1 id="home-heading">A quieter place to <em>think and act.</em></h1>
         <p class="lead">Talk through an intent with your local outer model, keep a private scratchpad, and stay grounded in the moment.</p>
+        <a class="game-link" href="/ui/dnd2024-play">Enter D&amp;D 2024 game table</a>
       </div>
       <section class="clock" aria-label="Local date and time"><small>Here and now</small><time id="local-date-time" aria-live="polite"></time></section>
     </section>

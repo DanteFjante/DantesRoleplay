@@ -18,7 +18,7 @@ public sealed class ApplicationCatalogMaterializationException : Exception
 }
 
 /// <summary>
-/// Converts exact active procedure/mechanic source winners into the generic immutable navigation
+/// Converts exact active procedure/mechanic/query/entity source winners into the generic immutable navigation
 /// model. It contains no application IDs and never executes application content.
 /// </summary>
 public sealed class ActivatedApplicationCatalogMaterializer(
@@ -27,7 +27,7 @@ public sealed class ActivatedApplicationCatalogMaterializer(
     ISourceRegistry sources,
     IAllowedSourceRootResolver allowedRoots)
 {
-    private const string MaterializerVersion = "activated-action-catalog-v1";
+    private const string MaterializerVersion = "activated-application-catalog-v2";
     private const string SearchSortVersion = "catalog-lexical-v1";
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
 
@@ -59,16 +59,17 @@ public sealed class ActivatedApplicationCatalogMaterializer(
         foreach (var winner in activation.Winners.OrderBy(value => value.RelativePath, StringComparer.Ordinal))
         {
             if (!TryRecordKind(winner.RelativePath, out var kind)) continue;
-            var markdown = ReadText(winner, registrations);
+            var sourceText = ReadText(winner, registrations);
             try
             {
                 records.Add(kind switch
                 {
                     "procedure" => ProcedureRecord(applicationId, applicationId.Value, winner,
-                        ProcedureFile.Parse(markdown, winner.RelativePath)),
+                        ProcedureFile.Parse(sourceText, winner.RelativePath)),
                     "query" => QueryRecord(applicationId, applicationId.Value, winner,
-                        ApplicationQueryContract.Parse(markdown, applicationId)),
-                    _ => MechanicRecord(applicationId, applicationId.Value, winner, markdown, winners, registrations)
+                        ApplicationQueryContract.Parse(sourceText, applicationId)),
+                    "entity" => EntityRecord(applicationId, applicationId.Value, winner, sourceText),
+                    _ => MechanicRecord(applicationId, applicationId.Value, winner, sourceText, winners, registrations)
                 });
             }
             catch (ApplicationCatalogMaterializationException) { throw; }
@@ -192,6 +193,26 @@ public sealed class ActivatedApplicationCatalogMaterializer(
             file.Category, file.Name, file.Description, file.Matches, file.Status, content, winner);
     }
 
+    private static CatalogRecordDefinition EntityRecord(
+        ApplicationIdentifier applicationId,
+        string collection,
+        ActivatedApplicationDocument winner,
+        string content)
+    {
+        var file = EntityFile.Parse(content, winner.RelativePath);
+        var qualifiedId = file.Id.StartsWith(applicationId.Value + ".", StringComparison.Ordinal)
+            ? file.Id : applicationId.Value + "." + file.Id;
+        var segments = winner.RelativePath.Split('/');
+        var entityIndex = ContentEntityIndex(segments);
+        if (entityIndex < 0)
+            throw Failure("CATALOG_ENTITY_PATH_INVALID", "An active entity is outside the authored content/entities boundary.");
+        var pathSegments = new[] { "entities" }
+            .Concat(segments.Skip(entityIndex + 2).Take(Math.Max(0, segments.Length - entityIndex - 3)));
+        return new(collection, "entity", qualifiedId, file.Name, file.Name, [file.Id], [],
+            string.Join('/', pathSegments), "active", 1, content,
+            Hash(Encoding.UTF8.GetBytes(content)), winner.SourceId, winner.RelativePath);
+    }
+
     private static CatalogRecordDefinition Record(
         ApplicationIdentifier applicationId,
         string collection,
@@ -279,6 +300,8 @@ public sealed class ActivatedApplicationCatalogMaterializer(
     {
         kind = "";
         var segments = path.Split('/');
+        if (path.EndsWith(".json", StringComparison.Ordinal) && ContentEntityIndex(segments) >= 0)
+        { kind = "entity"; return true; }
         if (path.EndsWith(".json", StringComparison.Ordinal)
             && segments.Contains("queries", StringComparer.Ordinal))
         { kind = "query"; return true; }
@@ -286,6 +309,15 @@ public sealed class ActivatedApplicationCatalogMaterializer(
         if (segments.Contains("procedures", StringComparer.Ordinal)) { kind = "procedure"; return true; }
         if (segments.Contains("mechanics", StringComparer.Ordinal)) { kind = "mechanic"; return true; }
         return false;
+    }
+
+    private static int ContentEntityIndex(IReadOnlyList<string> segments)
+    {
+        for (var index = 0; index + 1 < segments.Count; index++)
+        {
+            if (segments[index] == "content" && segments[index + 1] == "entities") return index;
+        }
+        return -1;
     }
 
     private static bool Inside(string root, string path)

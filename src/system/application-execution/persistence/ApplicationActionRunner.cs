@@ -274,16 +274,20 @@ public sealed class ApplicationActionRunner(
         string localOrQualifiedId)
     {
         if (string.IsNullOrWhiteSpace(localOrQualifiedId)) return null;
+        var explicitOwner = owners.FirstOrDefault(owner =>
+            localOrQualifiedId.StartsWith(owner.Value + ".", StringComparison.Ordinal));
+        if (explicitOwner is not null)
+        {
+            var explicitValue = componentTypes.GetLatest(localOrQualifiedId);
+            return explicitValue is not null && explicitValue.Owner == explicitOwner
+                ? new(explicitValue.QualifiedId, explicitValue.Version, explicitValue.SchemaHash)
+                : null;
+        }
         foreach (var owner in owners)
         {
-            var qualified = localOrQualifiedId.StartsWith(owner.Value + ".", StringComparison.Ordinal)
-                ? localOrQualifiedId
-                : owner.Value + "." + localOrQualifiedId;
+            var qualified = owner.Value + "." + localOrQualifiedId;
             var value = componentTypes.GetLatest(qualified);
             if (value is not null) return new(value.QualifiedId, value.Version, value.SchemaHash);
-            if (localOrQualifiedId.Contains('.', StringComparison.Ordinal)
-                && owners.Any(candidate => localOrQualifiedId.StartsWith(candidate.Value + ".", StringComparison.Ordinal)))
-                return null;
         }
         return null;
     }

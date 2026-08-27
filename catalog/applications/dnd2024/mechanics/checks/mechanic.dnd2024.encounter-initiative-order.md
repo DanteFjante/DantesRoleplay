@@ -8,7 +8,8 @@ status: active
 
 ## Description
 
-Composes per-participant Initiative results into one immutable encounter-owned snapshot.
+Composes per-participant Initiative results into one immutable encounter-owned snapshot and applies
+their optional active-rest interruption plans in the same transaction.
 
 ## Matches
 

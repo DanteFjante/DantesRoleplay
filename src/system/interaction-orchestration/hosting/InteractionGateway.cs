@@ -46,6 +46,9 @@ internal sealed class InteractionGateway(
         string? parentDelegationId = null,
         CancellationToken cancellationToken = default)
     {
+        if (role == InteractionAiRole.Direct && string.IsNullOrWhiteSpace(submittedProposalJson))
+            throw new InteractionContractException("DIRECT_PROPOSAL_REQUIRED",
+                "A direct interaction requires one exact submitted proposal.");
         var envelope = envelopes.Create(principal, applicationId, stateSpaceId, sessionContextId,
             intentJson, role, conversationId, parentDelegationId);
         var authorization = new InteractionAuthorizationRequest(principal, applicationId, stateSpaceId,

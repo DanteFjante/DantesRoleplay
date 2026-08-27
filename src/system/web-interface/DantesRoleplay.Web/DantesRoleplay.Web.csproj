@@ -24,4 +24,12 @@
     <ProjectReference Include="..\..\..\..\DantesRoleplay\DantesRoleplay.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="BrowserComponents\*.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>BrowserComponents\%(Filename)%(Extension)</TargetPath>
+    </Content>
+  </ItemGroup>
+
 </Project>

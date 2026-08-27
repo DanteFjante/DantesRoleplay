@@ -9,7 +9,8 @@ status: active
 ## Description
 
 Consumes one declared weapon-damage child and one dependency-aware defender profile, calculates SRD
-mitigation, then spends optional Temporary Hit Points before target current Hit Points.
+mitigation, spends optional Temporary Hit Points before current Hit Points, then applies a positive
+damage interruption to optional active standard-rest state in the same transaction.
 
 ## Instructions
 
@@ -21,11 +22,17 @@ doubling. Preserve both Resistance reasons but halve once. Reject unsafe arithme
 Validate a present positive Temporary HP buffer after mitigation is calculated. Spend it before HP,
 removing it at zero or setting the positive remainder. Apply only leftover damage to HP, clamp HP at
 zero, and preserve maximum/provenance. Return the buffer split, actual HP damage, and post-buffer
-overkill. Emit no effects when final damage is zero.
+overkill. Project optional target `dnd2024.rest-episode` and relationships without adding caller
+roles. When the episode exists, validate its exact source-bound shape and exactly one incoming
+`dnd2024.rest.world` membership from its stored world. Positive final damage stops an active Short
+Rest with no benefit or increments an active Long Rest interruption count and required duration by
+60 minutes. Damage absorbed entirely by Temporary HP still interrupts; zero final damage, absent
+rest, and duration-ready rest do not. Return closed interruption evidence or null.
 
 ## Constraints
 
-The parent never rerolls or accepts caller damage/mitigation/buffer/result values. It grants no
+The parent never rerolls or accepts caller damage/mitigation/buffer/rest/result values. It grants no
 Temporary HP and has no event, zero-HP consequence, death, healing, concentration, adjustment,
 threshold, bypass, range, turn, or attack-legality owner. Buffer and optional HP effects commit in
-one existing generic root transaction.
+one existing generic root transaction with any rest interruption effects. Administrative HP writes
+and non-weapon damage remain outside this adapter.

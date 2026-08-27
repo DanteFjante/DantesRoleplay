@@ -305,6 +305,7 @@ internal sealed class InteractionExecutionCoordinator(
         InteractionRoleProfile role;
         if (authority.RoleProfile == InteractionRoleProfile.Inner.StableKey) role = InteractionRoleProfile.Inner;
         else if (authority.RoleProfile == InteractionRoleProfile.Outer.StableKey) role = InteractionRoleProfile.Outer;
+        else if (authority.RoleProfile == InteractionRoleProfile.Direct.StableKey) role = InteractionRoleProfile.Direct;
         else return null;
         var planRequest = new InteractionAuthorizationRequest(principal, authority.ApplicationId,
             authority.StateSpaceId, InteractionCapability.Plan, "execution.rehydrate");

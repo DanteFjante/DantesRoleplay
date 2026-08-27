@@ -14,6 +14,55 @@ namespace DantesRoleplay.Interactions.Tests;
 public sealed class InteractionOrchestrationAcceptanceTests
 {
     [Fact]
+    public async Task Direct_role_requires_an_exact_submitted_proposal_and_never_calls_a_planner()
+    {
+        var fixture = new Fixture();
+        var planner = new DisabledPlanner();
+        var gateway = fixture.Gateway(planner, new RecipeStore(), out var actions, out _);
+        var intent = fixture.Intent("plan.direct", "entity.current-actor", "automatic");
+        var proposal = fixture.ProposalJson("entity.current-actor");
+
+        var error = await Assert.ThrowsAsync<InteractionContractException>(() => gateway.PlanAsync(
+            fixture.Principal, fixture.Application, fixture.State.StateSpaceId,
+            "session.direct", intent, role: InteractionAiRole.Direct));
+        Assert.Equal("DIRECT_PROPOSAL_REQUIRED", error.Code);
+
+        var planned = await gateway.PlanAsync(fixture.Principal, fixture.Application,
+            fixture.State.StateSpaceId, "session.direct", intent,
+            proposal, role: InteractionAiRole.Direct);
+
+        Assert.Equal(InteractionResolutionStatus.Resolved, planned.Status);
+        Assert.Equal(0, planner.Calls);
+        var execution = await gateway.ExecuteAsync(fixture.Principal, fixture.Application,
+            fixture.State.StateSpaceId,
+            ExecutionJson(planned, proposal, intent, "execute.direct", learn: false));
+        Assert.True(execution.Successful);
+        Assert.Equal(1, actions.Calls);
+
+        var missingRoleProposal = JsonSerializer.Serialize(new
+        {
+            command = "propose",
+            steps = new[]
+            {
+                new
+                {
+                    stepId = "step.1", kind = "action", qualifiedId = fixture.Record.QualifiedId,
+                    version = fixture.Record.Version, fingerprint = fixture.Record.ContentFingerprint,
+                    dependsOn = Array.Empty<string>(), roleBindings = new Dictionary<string, string>(),
+                    input = new { }
+                }
+            }
+        });
+        var missing = await gateway.PlanAsync(fixture.Principal, fixture.Application,
+            fixture.State.StateSpaceId, "session.direct",
+            fixture.Intent("plan.direct.missing", "entity.current-actor", "automatic"),
+            missingRoleProposal, role: InteractionAiRole.Direct);
+        Assert.Equal(InteractionResolutionStatus.NeedsInput, missing.Status);
+        Assert.Contains("role:actor", missing.Evidence);
+        Assert.Equal(0, planner.Calls);
+    }
+
+    [Fact]
     public async Task Remote_closed_proposal_executes_and_learns_without_local_or_vector_services()
     {
         var fixture = new Fixture();

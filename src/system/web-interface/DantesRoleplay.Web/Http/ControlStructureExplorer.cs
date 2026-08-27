@@ -16,7 +16,8 @@ public sealed class ControlStructureExplorer(
     IApplicationComponentTypeRegistry componentTypes,
     IEntityComponentStore entities,
     IPublicApplicationCatalogProvider catalogs,
-    ISystemCapabilityCatalog? systemCapabilities = null)
+    ISystemCapabilityCatalog? systemCapabilities = null,
+    IStateSpaceEdgeStore? edges = null)
 {
     public const int DefaultPageSize = 25;
     public const int MaximumPageSize = 100;
@@ -28,6 +29,7 @@ public sealed class ControlStructureExplorer(
     private readonly IEntityComponentStore _entities = entities;
     private readonly IPublicApplicationCatalogProvider _catalogs = catalogs;
     private readonly ISystemCapabilityCatalog? _systemCapabilities = systemCapabilities;
+    private readonly IStateSpaceEdgeStore? _edges = edges;
 
     public async Task<StructurePage<ApplicationSummary>> ListApplicationsThroughCapabilitiesAsync(
         AuthorizationAuditEvidence authorization,
@@ -78,6 +80,14 @@ public sealed class ControlStructureExplorer(
             "state-spaces", scope, pageSize);
     }
 
+    public StructurePage<StateSpaceSummary> ListApplicationStateSpaces(
+        string applicationId, string? cursor, string? limit)
+    {
+        var id = Application(applicationId);
+        RequireApplication(id);
+        return ListStateSpaces(id.Value, cursor, limit);
+    }
+
     public StructurePage<ComponentTypeSummary> ListComponentTypes(
         string applicationId, string? cursor, string? limit)
     {
@@ -113,6 +123,14 @@ public sealed class ControlStructureExplorer(
             "entities", stateSpaceId, pageSize);
     }
 
+    public async Task<StructurePage<EntitySummary>> ListApplicationEntitiesAsync(
+        string applicationId, string stateSpaceId, string? cursor, string? limit,
+        CancellationToken cancellationToken = default)
+    {
+        RequireApplicationStateSpace(applicationId, stateSpaceId);
+        return await ListEntitiesAsync(stateSpaceId, cursor, limit, cancellationToken);
+    }
+
     public async Task<EntityDetail?> GetEntityAsync(
         string stateSpaceId, string entityId,
         CancellationToken cancellationToken = default)
@@ -124,6 +142,14 @@ public sealed class ControlStructureExplorer(
         return value is null ? null : new(
             value.StateSpaceId, value.EntityId, value.Name, value.Revision,
             value.CreatedAtUtc, value.DeletedAtUtc);
+    }
+
+    public async Task<EntityDetail?> GetApplicationEntityAsync(
+        string applicationId, string stateSpaceId, string entityId,
+        CancellationToken cancellationToken = default)
+    {
+        RequireApplicationStateSpace(applicationId, stateSpaceId);
+        return await GetEntityAsync(stateSpaceId, entityId, cancellationToken);
     }
 
     public async Task<StructurePage<ComponentSummary>> ListComponentsAsync(
@@ -142,6 +168,15 @@ public sealed class ControlStructureExplorer(
             "components", scope, pageSize);
     }
 
+    public async Task<StructurePage<ComponentSummary>> ListApplicationComponentsAsync(
+        string applicationId, string stateSpaceId, string entityId, string? cursor, string? limit,
+        CancellationToken cancellationToken = default)
+    {
+        RequireApplicationStateSpace(applicationId, stateSpaceId);
+        return await ListComponentsAsync(
+            stateSpaceId, entityId, cursor, limit, cancellationToken);
+    }
+
     public async Task<ComponentDetail?> GetComponentAsync(
         string stateSpaceId, string entityId, string qualifiedTypeId,
         CancellationToken cancellationToken = default)
@@ -156,6 +191,42 @@ public sealed class ControlStructureExplorer(
             value.StateSpaceId, value.EntityId, value.Type.QualifiedTypeId,
             value.Type.TypeVersion, value.Type.SchemaHash, value.ValueJson,
             value.Revision, value.CreatedAtUtc, value.UpdatedAtUtc);
+    }
+
+    public async Task<ComponentDetail?> GetApplicationComponentAsync(
+        string applicationId, string stateSpaceId, string entityId, string qualifiedTypeId,
+        CancellationToken cancellationToken = default)
+    {
+        RequireApplicationStateSpace(applicationId, stateSpaceId);
+        return await GetComponentAsync(
+            stateSpaceId, entityId, qualifiedTypeId, cancellationToken);
+    }
+
+    public async Task<StructurePage<ContainmentSummary>> ListApplicationContainmentsAsync(
+        string applicationId,
+        string stateSpaceId,
+        string containerEntityId,
+        string? cursor,
+        string? limit,
+        CancellationToken cancellationToken = default)
+    {
+        RequireApplicationStateSpace(applicationId, stateSpaceId);
+        containerEntityId = BoundedId(containerEntityId, 200, "containerEntityId");
+        await RequireEntityAsync(stateSpaceId, containerEntityId, cancellationToken);
+        var pageSize = PageSize(limit);
+        var scope = stateSpaceId + "\n" + containerEntityId;
+        var page = await RequireEdges().ListContainmentsAsync(
+            stateSpaceId,
+            containerEntityId,
+            Decode(cursor, "containments", scope, pageSize),
+            pageSize,
+            cancellationToken);
+        return Page(
+            page.Containments.Select(Summary).ToArray(),
+            page.NextContainedEntityId,
+            "containments",
+            scope,
+            pageSize);
     }
 
     public CatalogOverview GetCatalog(string applicationId)
@@ -227,6 +298,12 @@ public sealed class ControlStructureExplorer(
             "System capability dispatch is unavailable.",
             StatusCodes.Status503ServiceUnavailable);
 
+    private IStateSpaceEdgeStore RequireEdges() =>
+        _edges ?? throw new ControlStructureException(
+            "APPLICATION_CONTAINMENT_UNAVAILABLE",
+            "Application containment reads are unavailable.",
+            StatusCodes.Status503ServiceUnavailable);
+
     private static JsonElement CapabilityData(SystemCapabilityReadResult result)
     {
         if (result.Ok && result.Data is not null) return result.Data.Value;
@@ -259,6 +336,22 @@ public sealed class ControlStructureExplorer(
         if (_stateSpaces.Get(stateSpaceId) is null)
             throw new ControlStructureException(
                 "STATE_SPACE_UNKNOWN", "The state space is unknown.", StatusCodes.Status404NotFound);
+    }
+
+    private void RequireApplicationStateSpace(string applicationId, string stateSpaceId)
+    {
+        var application = Application(applicationId);
+        RequireApplication(application);
+        stateSpaceId = BoundedId(stateSpaceId, 200, "stateSpaceId");
+        var stateSpace = _stateSpaces.Get(stateSpaceId);
+        if (stateSpace is null)
+            throw new ControlStructureException(
+                "STATE_SPACE_UNKNOWN", "The state space is unknown.", StatusCodes.Status404NotFound);
+        if (stateSpace.ApplicationRevision.ApplicationId != application)
+            throw new ControlStructureException(
+                "STATE_SPACE_WRONG_APPLICATION",
+                "The state space is unavailable for this application.",
+                StatusCodes.Status404NotFound);
     }
 
     private async Task RequireEntityAsync(
@@ -367,6 +460,9 @@ public sealed class ControlStructureExplorer(
     private static ComponentSummary Summary(EcsComponentView value) =>
         new(value.StateSpaceId, value.EntityId, value.Type.QualifiedTypeId,
             value.Type.TypeVersion, value.Type.SchemaHash, value.Revision, value.UpdatedAtUtc);
+    private static ContainmentSummary Summary(EcsContainmentView value) =>
+        new(value.StateSpaceId, value.ContainedEntityId, value.ContainerEntityId, value.Slot,
+            value.Revision, value.CreatedAtUtc, value.UpdatedAtUtc);
 
     private sealed record StructureCursor(string Kind, string Scope, int PageSize, string LastKey);
 }
@@ -387,4 +483,5 @@ public sealed record EntitySummary(string StateSpaceId, string EntityId, string 
 public sealed record EntityDetail(string StateSpaceId, string EntityId, string Name, int Revision, DateTime CreatedAtUtc, DateTime? DeletedAtUtc);
 public sealed record ComponentSummary(string StateSpaceId, string EntityId, string QualifiedTypeId, int TypeVersion, string SchemaHash, int Revision, DateTime UpdatedAtUtc);
 public sealed record ComponentDetail(string StateSpaceId, string EntityId, string QualifiedTypeId, int TypeVersion, string SchemaHash, string ValueJson, int Revision, DateTime CreatedAtUtc, DateTime UpdatedAtUtc);
+public sealed record ContainmentSummary(string StateSpaceId, string ContainedEntityId, string ContainerEntityId, string Slot, int Revision, DateTime CreatedAtUtc, DateTime UpdatedAtUtc);
 public sealed record CatalogOverview(string Status, IReadOnlyList<CatalogCollectionSummary> Collections);

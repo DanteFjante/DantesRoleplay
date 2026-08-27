@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "templateKey", "selections", "appliedComponentIds", "unresolvedEntitlements", "sourceRefs"],
+  "properties": {
+    "status": { "const": "basic-playable" },
+    "templateKey": { "enum": ["soldier-barbarian-level-1-v1", "soldier-bard-level-1-v1", "soldier-cleric-level-1-v1", "soldier-druid-level-1-v1", "soldier-fighter-level-1-v1", "soldier-monk-level-1-v1", "soldier-paladin-level-1-v1", "soldier-ranger-level-1-v1", "soldier-rogue-level-1-v1", "soldier-sorcerer-level-1-v1", "soldier-warlock-level-1-v1", "soldier-wizard-level-1-v1"] },
+    "selections": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["abilityPolicyDefinitionId", "backgroundDefinitionId", "classDefinitionId", "classLevel", "speciesDefinitionId", "size", "classSkillChoices"],
+      "properties": {
+        "abilityPolicyDefinitionId": { "const": "content.dnd2024.ability-assignment.standard-array.v1" },
+        "backgroundDefinitionId": { "const": "content.dnd2024.background.soldier.v1" },
+        "classDefinitionId": { "enum": ["content.dnd2024.class.barbarian.v1", "content.dnd2024.class.bard.v1", "content.dnd2024.class.cleric.v1", "content.dnd2024.class.druid.v1", "content.dnd2024.class.fighter.v1", "content.dnd2024.class.monk.v1", "content.dnd2024.class.paladin.v1", "content.dnd2024.class.ranger.v1", "content.dnd2024.class.rogue.v1", "content.dnd2024.class.sorcerer.v1", "content.dnd2024.class.warlock.v1", "content.dnd2024.class.wizard.v1"] },
+        "classLevel": { "const": 1 },
+        "speciesDefinitionId": { "type": "string", "minLength": 10, "maxLength": 200 },
+        "size": { "enum": ["small", "medium"] },
+        "classSkillChoices": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": { "enum": ["acrobatics", "animal-handling", "arcana", "athletics", "deception", "history", "insight", "intimidation", "investigation", "medicine", "nature", "perception", "performance", "persuasion", "religion", "sleight-of-hand", "stealth", "survival"] }
+        }
+      }
+    },
+    "appliedComponentIds": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 4, "maxLength": 200 }
+    },
+    "unresolvedEntitlements": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ownerDefinitionId", "entitlementKey", "reason"],
+        "properties": {
+          "ownerDefinitionId": { "type": "string", "minLength": 4, "maxLength": 200 },
+          "entitlementKey": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "reason": { "enum": ["application-deferred", "behavior-unimplemented", "choice-deferred", "equipment-deferred", "state-owner-unavailable"] }
+        }
+      }
+    },
+    "sourceRefs": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sourceId", "locator"],
+        "properties": {
+          "sourceId": { "const": "source.dnd2024.srd-5.2.1" },
+          "locator": { "type": "string", "minLength": 4, "maxLength": 200 }
+        }
+      }
+    }
+  }
+}
