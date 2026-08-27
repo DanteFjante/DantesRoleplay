@@ -1,6 +1,6 @@
 # D&D code-adoption Slice 10B2A implementation — light armor definitions
 
-Status: **implemented; acceptance pending confirmation**  
+Status: **accepted**
 Parent: [Slice 10 static-content design](DND-CODE-ADOPTION-SLICE-10-DESIGN.md), leaf 10B2A  
 Ruleset alignment: `dnd2024-owned`  
 Source: `source.dnd2024.srd-5.2.1`, `Equipment > Armor > Armor table` (PDF p. 92)  

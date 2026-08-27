@@ -100,7 +100,7 @@ Accepted [13E](interaction-orchestration/INTERACTION-ORCHESTRATION-SLICE-13E-IMP
 adds explicit value-free outer-fallback learning, deterministic host promotion, and safe later inner
 route guidance without a migration or new transport operation. Final
 [13F combined acceptance](interaction-orchestration/INTERACTION-ORCHESTRATION-SLICE-13F-IMPLEMENTATION.md)
-is implemented with green repository evidence and awaits completed-feature acceptance; see its
+is accepted with green repository evidence; see its
 [receipt](interaction-orchestration/receipts/INTERACTION-ORCHESTRATION-SLICE-13F-RECEIPT.md).
 
 ## Dependency graph

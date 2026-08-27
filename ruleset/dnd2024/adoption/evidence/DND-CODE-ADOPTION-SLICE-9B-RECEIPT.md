@@ -1,7 +1,7 @@
 # D&D code-adoption Slice 9B receipt — stateless core character calculations
 
 Date: 2026-08-26  
-Status: **verified; Parent 9 acceptance pending unrelated shared-worktree failures**  
+Status: **accepted; repository-wide hold cleared by Slice 9C**
 Boundary: `mechanic.dnd2024.character-sheet.read` and
 `procedure.mechanic.dnd2024.character-sheet`
 
@@ -37,17 +37,18 @@ Boundary: `mechanic.dnd2024.character-sheet.read` and
 - Local-AI suite — passed, 20/20.
 - `git diff --check` over the Slice 9 boundary — passed.
 
-## Parent acceptance hold
+## Cleared parent acceptance hold
 
-The full main repository run completed with 1,064 passing and three failures, all outside Slice 9:
+The original main repository run completed with 1,064 passing and three failures outside Slice 9:
 
 1. six new `system_task*` tables are not yet classified for catalog round-tripping;
 2. their columns are likewise not yet classified; and
 3. `src/system/system-task-orchestration/component.json` is incomplete under the component-manifest
    contract.
 
-Those files are concurrent user-owned work and were deliberately left unchanged. Parent Slice 9
-must not be marked accepted until a clean full-suite rerun proves the repository-wide gate.
+Those files were concurrent user-owned work and were deliberately left unchanged. On 2026-08-26,
+Slice 9C reran the current repository and recorded 1,106/1,106 shared tests plus 21/21 local-AI
+tests passing. The hold is cleared and Parent Slice 9 is accepted.
 
 ## Deliberate exclusions
 

@@ -1,15 +1,15 @@
 # DantesRoleplay status
 
-Last updated: 2026-08-26
+Last updated: 2026-08-27
 Purpose: compact cross-system summary. Owning roadmaps, catalog records, code, tests, and receipts
 carry the details.
 
 ## Current baseline
 
 This checkout contains concurrent in-progress campaign, story-plan, tactical, catalog, migration,
-and test changes. On 2026-08-26 the solution built with zero warnings/errors and the disposable
+and test changes. On 2026-08-27 the solution built with zero warnings/errors and the disposable
 catalog validated 144 records with 21 non-blocking near-duplicate warnings. The full shared suite
-reported 1,106 passed with no failures. Run acceptance commands against the same worktree rather than copying
+reported 1,117 passed with no failures. Run acceptance commands against the same worktree rather than copying
 this count into another plan.
 
 The public MCP surface remains exactly `orient`, `query`, and `commit`. The engine is C#; game rules
@@ -24,7 +24,7 @@ and game-specific decisions are catalog data and sandboxed JavaScript. See
 | Events and subscriptions | Implemented: pre-commit guards, structural/declared events, deterministic reactions, notifications | [receipt](platform/e1/EVENTS_AND_SUBSCRIPTIONS_RECEIPT.md) |
 | Catalog portability | Implemented file-first validation/import/export workflow | [CATALOG_HANDOVER.md](CATALOG_HANDOVER.md) |
 | MCP surface | Three-verb migration complete; extend closed kinds rather than tools | [VERB_MIGRATION.md](VERB_MIGRATION.md) |
-| D&D 2024 | Features 1–16 verified; code-adoption Slices 0–6, 7A1–7A2, and native-recovery Slice 8 are accepted; later work remains mixed verified/planned | [ruleset/dnd2024/ROADMAP.md](ruleset/dnd2024/ROADMAP.md) |
+| D&D 2024 | Code-adoption Slices 0–13 accepted selected scope. The 737-file old implementation is retained as fingerprinted recovery/provenance evidence with zero runtime consumers; all numbered adoption work is closed, while incomplete gameplay stays in independent feature gates | [ruleset/dnd2024/ROADMAP.md](ruleset/dnd2024/ROADMAP.md) |
 | World | Persistent topology, knowledge, time, travel modes, reactions, and small-world composition have verified slices | [WORLD_AND_LORE_PLAN.md](WORLD_AND_LORE_PLAN.md) and `world/**/` receipts |
 | Campaign | Existing-world continuity and quest-context integration are implemented; composition/participation work has current receipts | [CAMPAIGN_CREATION_PLAN.md](CAMPAIGN_CREATION_PLAN.md) |
 | Quest | Closed creation, manual lifecycle, and bounded summary are implemented | [QUEST_IMPLEMENTATION_PLAN.md](QUEST_IMPLEMENTATION_PLAN.md) and `quest/**/` receipts |

@@ -1,7 +1,7 @@
 # D&D code-adoption Slice 10B3B receipt — archived weapon item links
 
 Date: 2026-08-26  
-Status: **implemented and verified; acceptance pending user confirmation**
+Status: **accepted**
 
 ## Delivered
 
@@ -34,4 +34,5 @@ Status: **implemented and verified; acceptance pending user confirmation**
 | `item.dnd2024.javelin` | `4D972BC18CA7C9665C4805175ED28AEAD0DF7CA8FCAA11BCF2C15054F855E69C` |
 
 Automatic campaign installation, the two missing weapon item IDs, ammunition, weapon properties,
-range, and mastery remain outside this leaf. Final acceptance requires user confirmation.
+range, and mastery remain outside this leaf. The user accepted this completed static-content leaf
+on 2026-08-26.

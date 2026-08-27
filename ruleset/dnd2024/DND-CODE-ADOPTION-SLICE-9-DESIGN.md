@@ -1,6 +1,6 @@
 # D&D code-adoption Slice 9 design — pure derivation gap closure
 
-Status: **active; 9A complete, 9B activated after confirmation, 9C acceptance in progress**  
+Status: **accepted; 9A–9C complete**
 Owner/roadmap: [D&D 2024 application roadmap](ROADMAP.md), donor-gap-filling lane  
 Dependency tree/leaf: [D&D code-adoption dependency plan](DND-CODE-ADOPTION-DEPENDENCY-PLAN.md),
 Slice 9 / F1 pure derivations and character-sheet calculations  
@@ -36,14 +36,14 @@ state.
 ## Dependency tree
 
 ```text
-Slice 9 — pure derivation gap closure [active]
+Slice 9 — pure derivation gap closure [accepted]
 ├─ 9A candidate/source/owner classification [verified planning evidence]
-├─ 9B stateless core character calculations [activated; focused acceptance pending]
+├─ 9B stateless core character calculations [accepted]
 │  ├─ existing ability, level, skill, and save state [verified]
 │  ├─ SRD Fill In Numbers and Passive Perception locators [verified]
 │  ├─ pinned donor character-view/passive-score evidence [verified]
 │  └─ Foundry deterministic actor/skill preparation review [verified]
-└─ 9C donor/native/SRD conformance and parent closure [depends on 9B]
+└─ 9C donor/native/SRD conformance and parent closure [accepted]
 ```
 
 ## Candidate decisions

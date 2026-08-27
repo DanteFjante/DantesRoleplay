@@ -316,6 +316,103 @@ public sealed class Dnd2024AbilityCheckTests
     }
 
     [Fact]
+    public async Task Fresh_host_slice_12_composes_play_replay_and_unchanged_failure()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddEncounterFixturesAsync();
+        await harness.AddCombatFixturesAsync();
+        const string extensionPath =
+            "catalog/extensions/dnd2024/legacy-equipment/content/entities/adventuring-gear/item.dnd2024.hempen-rope-50-foot.v1.json";
+        Assert.DoesNotContain(extensionPath, harness.ActiveSourcePaths);
+
+        var first = await harness.EvaluateAsync("subject.high", "{}", DeriveSeed(120, 0),
+            "mechanic.dnd2024.initiative.roll");
+        var second = await harness.EvaluateAsync("subject.low", "{}", DeriveSeed(120, 1),
+            "mechanic.dnd2024.initiative.roll");
+        Assert.True(first.Ok, first.Run?.Error);
+        Assert.True(second.Ok, second.Run?.Error);
+        var ties = Initiative(first) == Initiative(second)
+            ? new[] { new[] { "subject.high", "subject.low" } }
+            : [];
+        var encounterRoles = new Dictionary<string, string>
+        {
+            ["encounter"] = "encounter.fixture"
+        };
+        var ordered = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "mechanic.dnd2024.encounter-initiative-order", encounterRoles,
+            JsonSerializer.Serialize(new
+            {
+                participants = new Dictionary<string, object>
+                {
+                    ["subject.high"] = new(), ["subject.low"] = new()
+                },
+                tieDecisions = ties
+            }), 120, "12000000000000000000000000000001"));
+        var started = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "mechanic.dnd2024.encounter-turn.start", encounterRoles, "{}", 0,
+            "12000000000000000000000000000002"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, ordered.Disposition);
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, started.Disposition);
+
+        var granted = await harness.Runner.RunAsync(harness.ActionFor(
+            "mechanic.dnd2024.temporary-hit-points.write", "target.fixture",
+            "{\"mode\":\"grant\",\"amount\":2}", 0,
+            "12000000000000000000000000000003"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, granted.Disposition);
+
+        var combatRoles = new Dictionary<string, string>
+        {
+            ["subject"] = "subject.high", ["weapon"] = "weapon.fixture",
+            ["target"] = "target.fixture"
+        };
+        var damageRequest = harness.ActionForRoles(
+            "mechanic.dnd2024.weapon-damage.apply", combatRoles,
+            "{\"ability\":\"str\",\"critical\":false}", 120,
+            "12000000000000000000000000000004");
+        var damaged = await harness.Runner.RunAsync(damageRequest);
+        var afterDamage = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.fixture", "dnd2024.hit-points");
+        var replayed = await harness.Runner.RunAsync(damageRequest);
+        var afterReplay = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.fixture", "dnd2024.hit-points");
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, damaged.Disposition);
+        Assert.Equal(2, damaged.AppliedEffectCount);
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replayed.Disposition);
+        Assert.Equal(afterDamage!.Revision, afterReplay!.Revision);
+        Assert.Equal(afterDamage.ValueJson, afterReplay.ValueJson);
+        Assert.Null(await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.fixture", "dnd2024.temporary-hit-points"));
+
+        var healed = await harness.Runner.RunAsync(harness.ActionFor(
+            "mechanic.dnd2024.healing.apply", "target.fixture", "{\"amount\":3}", 0,
+            "12000000000000000000000000000005"));
+        var afterHealing = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.fixture", "dnd2024.hit-points");
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, healed.Disposition);
+        Assert.Equal(1, healed.AppliedEffectCount);
+        Assert.True(afterHealing!.Revision > afterReplay.Revision);
+
+        await harness.AddDamageTargetAsync("target.slice12.corrupt", 20, 20);
+        await harness.AddApplicationComponentAsync("target.slice12.corrupt",
+            "dnd2024.temporary-hit-points",
+            "{\"amount\":1,\"sourceRef\":{\"sourceId\":\"source.dnd2024.srd-5.2.1\",\"locator\":\"Playing the Game > Damage and Healing > Temporary Hit Points (PDF p. 18)\"}}");
+        await harness.ReplaceApplicationComponentRawAsync(
+            "target.slice12.corrupt", "dnd2024.temporary-hit-points", "{}");
+        var corruptBefore = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.slice12.corrupt", "dnd2024.hit-points");
+        combatRoles["target"] = "target.slice12.corrupt";
+        var rejected = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "mechanic.dnd2024.weapon-damage.apply", combatRoles,
+            "{\"ability\":\"str\",\"critical\":false}", 120,
+            "12000000000000000000000000000006"));
+        var corruptAfter = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.slice12.corrupt", "dnd2024.hit-points");
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, rejected.Disposition);
+        Assert.Equal(corruptBefore!.Revision, corruptAfter!.Revision);
+        Assert.Equal(corruptBefore.ValueJson, corruptAfter.ValueJson);
+    }
+
+    [Fact]
     public async Task Combat_recorders_commit_closed_authoritative_state()
     {
         await using var harness = await DndHarness.CreateAsync();
@@ -676,6 +773,619 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.DoesNotContain("poisoned", stored.ValueJson, StringComparison.Ordinal);
         Assert.Contains("petrified", stored.ValueJson, StringComparison.Ordinal);
         Assert.Contains("prone", stored.ValueJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Damage_mitigation_writer_records_corrects_and_replays_canonical_state()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        foreach (var relative in new[]
+                 {
+                     "catalog/applications/dnd2024/components/combat/dnd2024.damage-mitigation.json",
+                     "catalog/applications/dnd2024/mechanics/combat/mechanic.dnd2024.damage-mitigation.write.md",
+                     "catalog/applications/dnd2024/mechanics/combat/mechanic.dnd2024.damage.resolve.md",
+                     "catalog/applications/dnd2024/procedures/combat/procedure.mechanic.dnd2024.damage-mitigation.md",
+                     "catalog/applications/dnd2024/procedures/combat/procedure.mechanic.dnd2024.damage.resolve.md"
+                 })
+            Assert.Contains(relative, harness.ActiveSourcePaths);
+
+        const string input =
+            "{\"mode\":\"record\",\"resistances\":[\"fire\",\"acid\"],\"immunities\":[\"poison\"],\"vulnerabilities\":[\"cold\"]}";
+        var request = harness.ActionFor(
+            "mechanic.dnd2024.damage-mitigation.write", "subject.high", input, 0,
+            "aa23456789abcdef0123456789abcdea");
+        var recorded = await harness.Runner.RunAsync(request);
+        var replayed = await harness.Runner.RunAsync(request);
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, recorded.Disposition);
+        Assert.Equal(1, recorded.AppliedEffectCount);
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replayed.Disposition);
+        var stored = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.damage-mitigation");
+        Assert.NotNull(stored);
+        Assert.Equal(1, stored.Revision);
+        Assert.Equal(
+            "{\"resistances\":[\"acid\",\"fire\"],\"immunities\":[\"poison\"],\"vulnerabilities\":[\"cold\"],\"sourceRef\":{\"sourceId\":\"source.dnd2024.srd-5.2.1\",\"locator\":\"Playing the Game > Damage and Healing > Resistance and Vulnerability; Immunity (PDF p. 17)\"}}",
+            stored.ValueJson);
+
+        const string correctedInput =
+            "{\"mode\":\"correct\",\"resistances\":[\"thunder\"],\"immunities\":[\"fire\"],\"vulnerabilities\":[]}";
+        var correctionPreview = await harness.EvaluateAsync(
+            "subject.high", correctedInput, 0, "mechanic.dnd2024.damage-mitigation.write");
+        Assert.True(correctionPreview.Ok, correctionPreview.Run?.Error);
+        Assert.Contains("\"previous\":{\"resistances\":[\"acid\",\"fire\"]",
+            correctionPreview.Run!.Output.Data, StringComparison.Ordinal);
+        var corrected = await harness.Runner.RunAsync(harness.ActionFor(
+            "mechanic.dnd2024.damage-mitigation.write", "subject.high",
+            correctedInput,
+            0, "ab23456789abcdef0123456789abcdea"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, corrected.Disposition);
+        Assert.Equal(1, corrected.AppliedEffectCount);
+        stored = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.damage-mitigation");
+        Assert.Equal(2, stored!.Revision);
+        Assert.Contains("\"resistances\":[\"thunder\"]", stored.ValueJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Damage_mitigation_profile_composes_conditions_and_distinguishes_unknown_state()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        var absent = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.damage.resolve",
+            new Dictionary<string, string> { ["defender"] = "subject.low" }, "{}", 0);
+
+        Assert.True(absent.Ok, absent.Run?.Error);
+        Assert.Empty(absent.Run!.Output.Effects);
+        Assert.Empty(absent.Run.Output.Events);
+        Assert.Empty(absent.Run.Output.Notifications);
+        using (var data = JsonDocument.Parse(absent.Run.Output.Data))
+        {
+            Assert.False(data.RootElement.GetProperty("mitigationKnown").GetBoolean());
+            Assert.False(data.RootElement.GetProperty("conditionsKnown").GetBoolean());
+            Assert.Equal(0, data.RootElement.GetProperty("resistances").GetArrayLength());
+            Assert.False(data.RootElement.GetProperty("petrified").GetBoolean());
+        }
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded,
+            (await harness.Runner.RunAsync(harness.ActionFor(
+                "mechanic.dnd2024.damage-mitigation.write", "subject.high",
+                "{\"mode\":\"record\",\"resistances\":[\"cold\"],\"immunities\":[\"poison\"],\"vulnerabilities\":[\"fire\"]}",
+                0, "ac23456789abcdef0123456789abcdea"))).Disposition);
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded,
+            (await harness.Runner.RunAsync(harness.ActionFor(
+                "mechanic.dnd2024.conditions.write", "subject.high", "{\"mode\":\"record\"}", 0,
+                "ad23456789abcdef0123456789abcdea"))).Disposition);
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded,
+            (await harness.Runner.RunAsync(harness.ActionFor(
+                "mechanic.dnd2024.conditions.write", "subject.high",
+                "{\"mode\":\"apply\",\"conditions\":[\"petrified\"]}", 0,
+                "ae23456789abcdef0123456789abcdea"))).Disposition);
+
+        var first = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.damage.resolve",
+            new Dictionary<string, string> { ["defender"] = "subject.high" }, "{}", 0);
+        var second = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.damage.resolve",
+            new Dictionary<string, string> { ["defender"] = "subject.high" }, "{}", 0);
+        Assert.True(first.Ok, first.Run?.Error);
+        Assert.Equal(first.Run!.Output.Data, second.Run!.Output.Data);
+        using var profile = JsonDocument.Parse(first.Run.Output.Data);
+        Assert.True(profile.RootElement.GetProperty("mitigationKnown").GetBoolean());
+        Assert.True(profile.RootElement.GetProperty("conditionsKnown").GetBoolean());
+        Assert.True(profile.RootElement.GetProperty("petrified").GetBoolean());
+        Assert.Equal("cold", profile.RootElement.GetProperty("resistances")[0].GetString());
+        Assert.Equal("poison", profile.RootElement.GetProperty("immunities")[0].GetString());
+        Assert.Equal("fire", profile.RootElement.GetProperty("vulnerabilities")[0].GetString());
+    }
+
+    [Fact]
+    public async Task Damage_mitigation_family_rejects_invalid_input_and_corrupt_state_unchanged()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        var invalid = await harness.Runner.RunAsync(harness.ActionFor(
+            "mechanic.dnd2024.damage-mitigation.write", "subject.low",
+            "{\"mode\":\"record\",\"resistances\":[\"fire\",\"fire\"],\"immunities\":[],\"vulnerabilities\":[]}",
+            0, "af23456789abcdef0123456789abcdea"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, invalid.Disposition);
+        Assert.Null(await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.low", "dnd2024.damage-mitigation"));
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded,
+            (await harness.Runner.RunAsync(harness.ActionFor(
+                "mechanic.dnd2024.damage-mitigation.write", "subject.high",
+                "{\"mode\":\"record\",\"resistances\":[\"acid\"],\"immunities\":[],\"vulnerabilities\":[]}",
+                0, "ba23456789abcdef0123456789abcdea"))).Disposition);
+        var before = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.damage-mitigation");
+        var duplicateRecord = await harness.Runner.RunAsync(harness.ActionFor(
+            "mechanic.dnd2024.damage-mitigation.write", "subject.high",
+            "{\"mode\":\"record\",\"resistances\":[],\"immunities\":[],\"vulnerabilities\":[]}",
+            0, "bb23456789abcdef0123456789abcdea"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, duplicateRecord.Disposition);
+        var after = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.damage-mitigation");
+        Assert.Equal(before!.Revision, after!.Revision);
+        Assert.Equal(before.ValueJson, after.ValueJson);
+
+        await harness.ReplaceApplicationComponentRawAsync(
+            "subject.high", "dnd2024.damage-mitigation",
+            "{\"resistances\":[\"fire\",\"acid\"],\"immunities\":[],\"vulnerabilities\":[],\"sourceRef\":{\"sourceId\":\"source.dnd2024.srd-5.2.1\",\"locator\":\"Playing the Game > Damage and Healing > Resistance and Vulnerability; Immunity (PDF p. 17)\"}}");
+        var corruptProfile = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.damage.resolve",
+            new Dictionary<string, string> { ["defender"] = "subject.high" }, "{}", 0);
+        Assert.False(corruptProfile.Ok);
+        Assert.Empty(corruptProfile.Run!.Output.Effects);
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded,
+            (await harness.Runner.RunAsync(harness.ActionFor(
+                "mechanic.dnd2024.conditions.write", "subject.low", "{\"mode\":\"record\"}", 0,
+                "bc23456789abcdef0123456789abcdea"))).Disposition);
+        await harness.ReplaceConditionsRawAsync("subject.low", "{\"entries\":[]}");
+        var corruptConditions = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.damage.resolve",
+            new Dictionary<string, string> { ["defender"] = "subject.low" }, "{}", 0);
+        Assert.False(corruptConditions.Ok);
+        Assert.True(corruptConditions.Run is null || corruptConditions.Run.Output.Effects.Count == 0);
+    }
+
+    [Fact]
+    public async Task Weapon_damage_mitigation_applies_srd_order_once_and_replays_one_hp_write()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddCombatFixturesAsync();
+        const string locator =
+            "Playing the Game > Damage and Healing > Resistance and Vulnerability; Immunity (PDF p. 17)";
+        await harness.AddDamageTargetAsync("target.resistant", 100, 100,
+            "{\"resistances\":[\"piercing\"],\"immunities\":[],\"vulnerabilities\":[],\"sourceRef\":{\"sourceId\":\"source.dnd2024.srd-5.2.1\",\"locator\":\"" + locator + "\"}}");
+        await harness.AddDamageTargetAsync("target.vulnerable", 100, 100,
+            "{\"resistances\":[],\"immunities\":[],\"vulnerabilities\":[\"piercing\"],\"sourceRef\":{\"sourceId\":\"source.dnd2024.srd-5.2.1\",\"locator\":\"" + locator + "\"}}");
+        await harness.AddDamageTargetAsync("target.combined", 100, 100,
+            "{\"resistances\":[\"piercing\"],\"immunities\":[],\"vulnerabilities\":[\"piercing\"],\"sourceRef\":{\"sourceId\":\"source.dnd2024.srd-5.2.1\",\"locator\":\"" + locator + "\"}}");
+        await harness.AddDamageTargetAsync("target.immune", 100, 100,
+            "{\"resistances\":[\"piercing\"],\"immunities\":[\"piercing\"],\"vulnerabilities\":[\"piercing\"],\"sourceRef\":{\"sourceId\":\"source.dnd2024.srd-5.2.1\",\"locator\":\"" + locator + "\"}}");
+        await harness.AddDamageTargetAsync("target.petrified", 100, 100,
+            "{\"resistances\":[\"piercing\"],\"immunities\":[],\"vulnerabilities\":[],\"sourceRef\":{\"sourceId\":\"source.dnd2024.srd-5.2.1\",\"locator\":\"" + locator + "\"}}");
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded,
+            (await harness.Runner.RunAsync(harness.ActionFor(
+                "mechanic.dnd2024.conditions.write", "target.petrified", "{\"mode\":\"record\"}", 0,
+                "bd23456789abcdef0123456789abcdea"))).Disposition);
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded,
+            (await harness.Runner.RunAsync(harness.ActionFor(
+                "mechanic.dnd2024.conditions.write", "target.petrified",
+                "{\"mode\":\"apply\",\"conditions\":[\"petrified\"]}", 0,
+                "be23456789abcdef0123456789abcdea"))).Disposition);
+
+        static Dictionary<string, string> Roles(string target) => new()
+        {
+            ["subject"] = "subject.high", ["weapon"] = "weapon.fixture", ["target"] = target
+        };
+        const string input = "{\"ability\":\"str\",\"critical\":false}";
+        var normal = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.weapon-damage.apply", Roles("target.fixture"), input, 77);
+        var resistant = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.weapon-damage.apply", Roles("target.resistant"), input, 77);
+        var vulnerable = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.weapon-damage.apply", Roles("target.vulnerable"), input, 77);
+        var combined = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.weapon-damage.apply", Roles("target.combined"), input, 77);
+        var immune = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.weapon-damage.apply", Roles("target.immune"), input, 77);
+        var petrified = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.weapon-damage.apply", Roles("target.petrified"), input, 77);
+        Assert.All([normal, resistant, vulnerable, combined, immune, petrified], result =>
+            Assert.True(result.Ok, result.Run?.Error ?? string.Join("; ", result.Problems)));
+
+        using var normalData = JsonDocument.Parse(normal.Run!.Output.Data);
+        using var resistantData = JsonDocument.Parse(resistant.Run!.Output.Data);
+        using var vulnerableData = JsonDocument.Parse(vulnerable.Run!.Output.Data);
+        using var combinedData = JsonDocument.Parse(combined.Run!.Output.Data);
+        using var immuneData = JsonDocument.Parse(immune.Run!.Output.Data);
+        using var petrifiedData = JsonDocument.Parse(petrified.Run!.Output.Data);
+        var raw = normalData.RootElement.GetProperty("rawDamage").GetInt32();
+        Assert.True(raw > 0);
+        Assert.Equal(raw, normalData.RootElement.GetProperty("damage").GetInt32());
+        Assert.Equal(raw / 2, resistantData.RootElement.GetProperty("damage").GetInt32());
+        Assert.Equal(raw * 2, vulnerableData.RootElement.GetProperty("damage").GetInt32());
+        Assert.Equal((raw / 2) * 2, combinedData.RootElement.GetProperty("damage").GetInt32());
+        Assert.Equal(0, immuneData.RootElement.GetProperty("damage").GetInt32());
+        Assert.True(immuneData.RootElement.GetProperty("immune").GetBoolean());
+        Assert.False(immuneData.RootElement.GetProperty("resistanceApplied").GetBoolean());
+        Assert.False(immuneData.RootElement.GetProperty("vulnerabilityApplied").GetBoolean());
+        Assert.Empty(immune.Run.Output.Effects);
+        Assert.Equal(raw / 2, petrifiedData.RootElement.GetProperty("damage").GetInt32());
+        Assert.Equal(2, petrifiedData.RootElement.GetProperty("resistanceReasons").GetArrayLength());
+        Assert.Equal("damage-mitigation:piercing",
+            petrifiedData.RootElement.GetProperty("resistanceReasons")[0].GetString());
+        Assert.Equal("condition:petrified",
+            petrifiedData.RootElement.GetProperty("resistanceReasons")[1].GetString());
+
+        var request = harness.ActionForRoles(
+            "mechanic.dnd2024.weapon-damage.apply", Roles("target.fixture"), input, 77,
+            "bf23456789abcdef0123456789abcdea");
+        var applied = await harness.Runner.RunAsync(request);
+        var replayed = await harness.Runner.RunAsync(request);
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, applied.Disposition);
+        Assert.Equal(1, applied.AppliedEffectCount);
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replayed.Disposition);
+        var normalHp = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.fixture", "dnd2024.hit-points");
+        Assert.Equal(2, normalHp!.Revision);
+        using (var hp = JsonDocument.Parse(normalHp.ValueJson))
+            Assert.Equal(20 - raw, hp.RootElement.GetProperty("current").GetInt32());
+
+        var immuneAction = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "mechanic.dnd2024.weapon-damage.apply", Roles("target.immune"), input, 77,
+            "ca23456789abcdef0123456789abcdea"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, immuneAction.Disposition);
+        Assert.Equal(0, immuneAction.AppliedEffectCount);
+        var immuneHp = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.immune", "dnd2024.hit-points");
+        Assert.Equal(1, immuneHp!.Revision);
+        using (var hp = JsonDocument.Parse(immuneHp.ValueJson))
+            Assert.Equal(100, hp.RootElement.GetProperty("current").GetInt32());
+    }
+
+    [Fact]
+    public async Task Weapon_damage_mitigation_rejects_corrupt_profile_before_hp_effect()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddCombatFixturesAsync();
+        const string locator =
+            "Playing the Game > Damage and Healing > Resistance and Vulnerability; Immunity (PDF p. 17)";
+        await harness.AddDamageTargetAsync("target.corrupt", 40, 40,
+            "{\"resistances\":[\"acid\"],\"immunities\":[],\"vulnerabilities\":[],\"sourceRef\":{\"sourceId\":\"source.dnd2024.srd-5.2.1\",\"locator\":\"" + locator + "\"}}");
+        await harness.ReplaceApplicationComponentRawAsync(
+            "target.corrupt", "dnd2024.damage-mitigation",
+            "{\"resistances\":[\"fire\",\"acid\"],\"immunities\":[],\"vulnerabilities\":[],\"sourceRef\":{\"sourceId\":\"source.dnd2024.srd-5.2.1\",\"locator\":\"" + locator + "\"}}");
+        var roles = new Dictionary<string, string>
+        {
+            ["subject"] = "subject.high", ["weapon"] = "weapon.fixture", ["target"] = "target.corrupt"
+        };
+        var before = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.corrupt", "dnd2024.hit-points");
+        var failed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "mechanic.dnd2024.weapon-damage.apply", roles,
+            "{\"ability\":\"str\",\"critical\":false}", 77,
+            "cb23456789abcdef0123456789abcdea"));
+        var injected = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.weapon-damage.apply", roles,
+            "{\"ability\":\"str\",\"critical\":false,\"damage\":999}", 77);
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, failed.Disposition);
+        Assert.False(injected.Ok);
+        var after = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.corrupt", "dnd2024.hit-points");
+        Assert.Equal(before!.Revision, after!.Revision);
+        Assert.Equal(before.ValueJson, after.ValueJson);
+    }
+
+    [Fact]
+    public async Task Temporary_hit_points_are_positive_nonstacking_replayable_and_expirable()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        var hpBefore = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.hit-points");
+        var grant = harness.ActionFor(
+            "mechanic.dnd2024.temporary-hit-points.write", "subject.high",
+            "{\"mode\":\"grant\",\"amount\":8}", 0,
+            "d123456789abcdef0123456789abcdea");
+        var granted = await harness.Runner.RunAsync(grant);
+        var replayed = await harness.Runner.RunAsync(grant);
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, granted.Disposition);
+        Assert.Equal(1, granted.AppliedEffectCount);
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replayed.Disposition);
+        var buffer = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.temporary-hit-points");
+        Assert.NotNull(buffer);
+        Assert.Equal(1, buffer.Revision);
+        Assert.Contains("\"amount\":8", buffer.ValueJson, StringComparison.Ordinal);
+        Assert.Contains("Temporary Hit Points (PDF p. 18)", buffer.ValueJson,
+            StringComparison.Ordinal);
+
+        var kept = await harness.Runner.RunAsync(harness.ActionFor(
+            "mechanic.dnd2024.temporary-hit-points.write", "subject.high",
+            "{\"mode\":\"grant\",\"amount\":12,\"onExisting\":\"keep\"}", 0,
+            "e123456789abcdef0123456789abcdea"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, kept.Disposition);
+        Assert.Equal(0, kept.AppliedEffectCount);
+        var afterKeep = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.temporary-hit-points");
+        Assert.Equal(buffer.Revision, afterKeep!.Revision);
+        Assert.Equal(buffer.ValueJson, afterKeep.ValueJson);
+
+        var replaced = await harness.Runner.RunAsync(harness.ActionFor(
+            "mechanic.dnd2024.temporary-hit-points.write", "subject.high",
+            "{\"mode\":\"grant\",\"amount\":5,\"onExisting\":\"replace\"}", 0,
+            "f123456789abcdef0123456789abcdea"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, replaced.Disposition);
+        Assert.Equal(1, replaced.AppliedEffectCount);
+        buffer = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.temporary-hit-points");
+        Assert.Equal(2, buffer!.Revision);
+        Assert.Contains("\"amount\":5", buffer.ValueJson, StringComparison.Ordinal);
+
+        var invalid = await harness.Runner.RunAsync(harness.ActionFor(
+            "mechanic.dnd2024.temporary-hit-points.write", "subject.high",
+            "{\"mode\":\"grant\",\"amount\":0,\"onExisting\":\"keep\"}", 0,
+            "0123456789abcdef0123456789abcdea"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, invalid.Disposition);
+        var afterInvalid = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.temporary-hit-points");
+        Assert.Equal(buffer.Revision, afterInvalid!.Revision);
+        Assert.Equal(buffer.ValueJson, afterInvalid.ValueJson);
+
+        var expired = await harness.Runner.RunAsync(harness.ActionFor(
+            "mechanic.dnd2024.temporary-hit-points.write", "subject.high",
+            "{\"mode\":\"expire\"}", 0, "1123456789abcdef0123456789abcdea"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, expired.Disposition);
+        Assert.Equal(1, expired.AppliedEffectCount);
+        Assert.Null(await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.temporary-hit-points"));
+        var absentExpiry = await harness.Runner.RunAsync(harness.ActionFor(
+            "mechanic.dnd2024.temporary-hit-points.write", "subject.high",
+            "{\"mode\":\"expire\"}", 0, "2123456789abcdef0123456789abcdea"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, absentExpiry.Disposition);
+        Assert.Equal(hpBefore, await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.hit-points"));
+    }
+
+    [Fact]
+    public async Task Healing_clamps_preserves_temporary_hp_and_avoids_a_full_hp_write()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddDamageTargetAsync("target.healing", 3, 10);
+        await harness.AddApplicationComponentAsync("target.healing", "dnd2024.temporary-hit-points",
+            "{\"amount\":8,\"sourceRef\":{\"sourceId\":\"source.dnd2024.srd-5.2.1\",\"locator\":\"Playing the Game > Damage and Healing > Temporary Hit Points (PDF p. 18)\"}}");
+        var roles = new Dictionary<string, string> { ["subject"] = "target.healing" };
+        var preview = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.healing.apply", roles, "{\"amount\":20}", 0);
+        Assert.True(preview.Ok, preview.Run?.Error);
+        using (var data = JsonDocument.Parse(preview.Run!.Output.Data))
+        {
+            Assert.Equal(7, data.RootElement.GetProperty("appliedAmount").GetInt32());
+            Assert.Equal(13, data.RootElement.GetProperty("lostToMaximum").GetInt32());
+            Assert.Equal(10, data.RootElement.GetProperty("afterCurrent").GetInt32());
+        }
+        Assert.Single(preview.Run.Output.Effects);
+        Assert.Empty(preview.Run.Output.Events);
+
+        var temporaryBefore = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.healing", "dnd2024.temporary-hit-points");
+        var healed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "mechanic.dnd2024.healing.apply", roles, "{\"amount\":4}", 0,
+            "3123456789abcdef0123456789abcdea"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, healed.Disposition);
+        Assert.Equal(1, healed.AppliedEffectCount);
+        var hp = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.healing", "dnd2024.hit-points");
+        Assert.Contains("\"current\":7", hp!.ValueJson, StringComparison.Ordinal);
+        var temporaryAfter = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.healing", "dnd2024.temporary-hit-points");
+        Assert.Equal(temporaryBefore!.Revision, temporaryAfter!.Revision);
+        Assert.Equal(temporaryBefore.ValueJson, temporaryAfter.ValueJson);
+
+        var capped = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "mechanic.dnd2024.healing.apply", roles, "{\"amount\":20}", 0,
+            "4123456789abcdef0123456789abcdea"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, capped.Disposition);
+        Assert.Equal(1, capped.AppliedEffectCount);
+        var fullBefore = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.healing", "dnd2024.hit-points");
+        Assert.Contains("\"current\":10", fullBefore!.ValueJson, StringComparison.Ordinal);
+        var atMaximumRequest = harness.ActionForRoles(
+            "mechanic.dnd2024.healing.apply", roles, "{\"amount\":1}", 0,
+            "5123456789abcdef0123456789abcdea");
+        var atMaximum = await harness.Runner.RunAsync(atMaximumRequest);
+        var atMaximumReplay = await harness.Runner.RunAsync(atMaximumRequest);
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, atMaximum.Disposition);
+        Assert.Equal(0, atMaximum.AppliedEffectCount);
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, atMaximumReplay.Disposition);
+        var fullAfter = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.healing", "dnd2024.hit-points");
+        Assert.Equal(fullBefore.Revision, fullAfter!.Revision);
+        Assert.Equal(fullBefore.ValueJson, fullAfter.ValueJson);
+    }
+
+    [Fact]
+    public async Task Weapon_damage_spends_temporary_hp_after_mitigation_before_hp_atomically()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddCombatFixturesAsync();
+        var roles = new Dictionary<string, string>
+        {
+            ["subject"] = "subject.high", ["weapon"] = "weapon.fixture",
+            ["target"] = "target.fixture"
+        };
+        const string input = "{\"ability\":\"str\",\"critical\":false}";
+        var baseline = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.weapon-damage.apply", roles, input, 77);
+        Assert.True(baseline.Ok, baseline.Run?.Error);
+        using var baselineData = JsonDocument.Parse(baseline.Run!.Output.Data);
+        var raw = baselineData.RootElement.GetProperty("damage").GetInt32();
+        Assert.True(raw > 2);
+        Assert.Equal(0, baselineData.RootElement.GetProperty("temporaryBefore").GetInt32());
+        Assert.Equal(raw, baselineData.RootElement.GetProperty("hitPointDamage").GetInt32());
+
+        static string Temporary(int amount) => JsonSerializer.Serialize(new
+        {
+            amount,
+            sourceRef = new
+            {
+                sourceId = "source.dnd2024.srd-5.2.1",
+                locator = "Playing the Game > Damage and Healing > Temporary Hit Points (PDF p. 18)"
+            }
+        });
+        const string mitigationLocator =
+            "Playing the Game > Damage and Healing > Resistance and Vulnerability; Immunity (PDF p. 17)";
+        await harness.AddDamageTargetAsync("target.temp.partial", 20, 20);
+        await harness.AddApplicationComponentAsync(
+            "target.temp.partial", "dnd2024.temporary-hit-points", Temporary(raw - 1));
+        await harness.AddDamageTargetAsync("target.temp.exact", 20, 20);
+        await harness.AddApplicationComponentAsync(
+            "target.temp.exact", "dnd2024.temporary-hit-points", Temporary(raw));
+        await harness.AddDamageTargetAsync("target.temp.retained", 20, 20);
+        await harness.AddApplicationComponentAsync(
+            "target.temp.retained", "dnd2024.temporary-hit-points", Temporary(raw + 1));
+        await harness.AddDamageTargetAsync("target.temp.resistant", 20, 20,
+            "{\"resistances\":[\"piercing\"],\"immunities\":[],\"vulnerabilities\":[],\"sourceRef\":{\"sourceId\":\"source.dnd2024.srd-5.2.1\",\"locator\":\"" + mitigationLocator + "\"}}");
+        await harness.AddApplicationComponentAsync(
+            "target.temp.resistant", "dnd2024.temporary-hit-points", Temporary(1));
+        await harness.AddDamageTargetAsync("target.temp.overkill", 1, 20);
+        await harness.AddApplicationComponentAsync(
+            "target.temp.overkill", "dnd2024.temporary-hit-points", Temporary(1));
+
+        static Dictionary<string, string> TargetRoles(string target) => new()
+        {
+            ["subject"] = "subject.high", ["weapon"] = "weapon.fixture", ["target"] = target
+        };
+        var partial = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.weapon-damage.apply", TargetRoles("target.temp.partial"), input, 77);
+        var exact = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.weapon-damage.apply", TargetRoles("target.temp.exact"), input, 77);
+        var retained = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.weapon-damage.apply", TargetRoles("target.temp.retained"), input, 77);
+        var resistant = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.weapon-damage.apply", TargetRoles("target.temp.resistant"), input, 77);
+        var overkill = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.weapon-damage.apply", TargetRoles("target.temp.overkill"), input, 77);
+        Assert.All([partial, exact, retained, resistant, overkill], result =>
+            Assert.True(result.Ok, result.Run?.Error ?? string.Join("; ", result.Problems)));
+        using (var data = JsonDocument.Parse(partial.Run!.Output.Data))
+        {
+            Assert.Equal(raw - 1, data.RootElement.GetProperty("temporaryAbsorbed").GetInt32());
+            Assert.Equal(0, data.RootElement.GetProperty("temporaryAfter").GetInt32());
+            Assert.Equal(1, data.RootElement.GetProperty("hitPointDamage").GetInt32());
+            Assert.Equal(2, partial.Run.Output.Effects.Count);
+        }
+        using (var data = JsonDocument.Parse(exact.Run!.Output.Data))
+        {
+            Assert.Equal(raw, data.RootElement.GetProperty("temporaryAbsorbed").GetInt32());
+            Assert.Equal(0, data.RootElement.GetProperty("hitPointDamage").GetInt32());
+            Assert.Single(exact.Run.Output.Effects);
+        }
+        using (var data = JsonDocument.Parse(retained.Run!.Output.Data))
+        {
+            Assert.Equal(1, data.RootElement.GetProperty("temporaryAfter").GetInt32());
+            Assert.Equal(0, data.RootElement.GetProperty("hitPointDamage").GetInt32());
+            Assert.Single(retained.Run.Output.Effects);
+        }
+        using (var data = JsonDocument.Parse(resistant.Run!.Output.Data))
+        {
+            var mitigated = raw / 2;
+            Assert.Equal(mitigated, data.RootElement.GetProperty("damage").GetInt32());
+            Assert.Equal(1, data.RootElement.GetProperty("temporaryAbsorbed").GetInt32());
+            Assert.Equal(mitigated - 1,
+                data.RootElement.GetProperty("hitPointDamage").GetInt32());
+        }
+        using (var data = JsonDocument.Parse(overkill.Run!.Output.Data))
+            Assert.Equal(raw - 2, data.RootElement.GetProperty("overkill").GetInt32());
+
+        var partialRequest = harness.ActionForRoles(
+            "mechanic.dnd2024.weapon-damage.apply", TargetRoles("target.temp.partial"), input, 77,
+            "8123456789abcdef0123456789abcdea");
+        var applied = await harness.Runner.RunAsync(partialRequest);
+        var replayed = await harness.Runner.RunAsync(partialRequest);
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, applied.Disposition);
+        Assert.Equal(2, applied.AppliedEffectCount);
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replayed.Disposition);
+        Assert.Null(await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.temp.partial", "dnd2024.temporary-hit-points"));
+        var partialHp = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.temp.partial", "dnd2024.hit-points");
+        Assert.Equal(2, partialHp!.Revision);
+        Assert.Contains("\"current\":19", partialHp.ValueJson, StringComparison.Ordinal);
+
+        var exactApplied = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "mechanic.dnd2024.weapon-damage.apply", TargetRoles("target.temp.exact"), input, 77,
+            "9123456789abcdef0123456789abcdea"));
+        Assert.Equal(1, exactApplied.AppliedEffectCount);
+        var exactHp = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.temp.exact", "dnd2024.hit-points");
+        Assert.Equal(1, exactHp!.Revision);
+        Assert.Contains("\"current\":20", exactHp.ValueJson, StringComparison.Ordinal);
+
+        var retainedApplied = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "mechanic.dnd2024.weapon-damage.apply", TargetRoles("target.temp.retained"), input, 77,
+            "a123456789abcdef0123456789abcdea"));
+        Assert.Equal(1, retainedApplied.AppliedEffectCount);
+        var retainedBuffer = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.temp.retained", "dnd2024.temporary-hit-points");
+        Assert.Equal(2, retainedBuffer!.Revision);
+        Assert.Contains("\"amount\":1", retainedBuffer.ValueJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Weapon_damage_rejects_corrupt_temporary_hp_before_any_root_effect()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddCombatFixturesAsync();
+        await harness.AddDamageTargetAsync("target.temp.corrupt", 20, 20);
+        await harness.AddApplicationComponentAsync("target.temp.corrupt",
+            "dnd2024.temporary-hit-points",
+            "{\"amount\":1,\"sourceRef\":{\"sourceId\":\"source.dnd2024.srd-5.2.1\",\"locator\":\"Playing the Game > Damage and Healing > Temporary Hit Points (PDF p. 18)\"}}");
+        await harness.ReplaceApplicationComponentRawAsync(
+            "target.temp.corrupt", "dnd2024.temporary-hit-points", "{}");
+        var hpBefore = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.temp.corrupt", "dnd2024.hit-points");
+        var bufferBefore = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.temp.corrupt", "dnd2024.temporary-hit-points");
+        var failed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "mechanic.dnd2024.weapon-damage.apply", new Dictionary<string, string>
+            {
+                ["subject"] = "subject.high", ["weapon"] = "weapon.fixture",
+                ["target"] = "target.temp.corrupt"
+            }, "{\"ability\":\"str\",\"critical\":false}", 77,
+            "b123456789abcdef0123456789abcdea"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, failed.Disposition);
+        var hpAfter = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.temp.corrupt", "dnd2024.hit-points");
+        var bufferAfter = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.temp.corrupt", "dnd2024.temporary-hit-points");
+        Assert.Equal(hpBefore!.Revision, hpAfter!.Revision);
+        Assert.Equal(hpBefore.ValueJson, hpAfter.ValueJson);
+        Assert.Equal(bufferBefore!.Revision, bufferAfter!.Revision);
+        Assert.Equal(bufferBefore.ValueJson, bufferAfter.ValueJson);
+    }
+
+    [Fact]
+    public async Task Temporary_hit_points_and_healing_reject_corrupt_or_derived_input_unchanged()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddDamageTargetAsync("target.invalid-healing", 3, 10);
+        await harness.AddApplicationComponentAsync("target.invalid-healing",
+            "dnd2024.temporary-hit-points",
+            "{\"amount\":8,\"sourceRef\":{\"sourceId\":\"source.dnd2024.srd-5.2.1\",\"locator\":\"Playing the Game > Damage and Healing > Temporary Hit Points (PDF p. 18)\"}}");
+        await harness.ReplaceApplicationComponentRawAsync(
+            "target.invalid-healing", "dnd2024.temporary-hit-points", "{}");
+        var corruptTemporaryBefore = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.invalid-healing", "dnd2024.temporary-hit-points");
+        var corruptTemporary = await harness.Runner.RunAsync(harness.ActionFor(
+            "mechanic.dnd2024.temporary-hit-points.write", "target.invalid-healing",
+            "{\"mode\":\"grant\",\"amount\":4,\"onExisting\":\"keep\"}", 0,
+            "6123456789abcdef0123456789abcdea"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, corruptTemporary.Disposition);
+        var corruptTemporaryAfter = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.invalid-healing", "dnd2024.temporary-hit-points");
+        Assert.Equal(corruptTemporaryBefore!.ValueJson, corruptTemporaryAfter!.ValueJson);
+
+        await harness.ReplaceCoreComponentRawAsync("target.invalid-healing", "dnd2024.hit-points",
+            "{\"current\":11,\"maximum\":10,\"sourceRef\":{\"sourceId\":\"source.dnd2024.srd-5.2.1\",\"locator\":\"Playing the Game > Damage and Healing > Hit Points\"}}");
+        var corruptHpBefore = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.invalid-healing", "dnd2024.hit-points");
+        var corruptHealing = await harness.Runner.RunAsync(harness.ActionFor(
+            "mechanic.dnd2024.healing.apply", "target.invalid-healing", "{\"amount\":4}", 0,
+            "7123456789abcdef0123456789abcdea"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, corruptHealing.Disposition);
+        var corruptHpAfter = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "target.invalid-healing", "dnd2024.hit-points");
+        Assert.Equal(corruptHpBefore!.Revision, corruptHpAfter!.Revision);
+        Assert.Equal(corruptHpBefore.ValueJson, corruptHpAfter.ValueJson);
+        var injected = await harness.EvaluateRolesAsync(
+            "mechanic.dnd2024.healing.apply",
+            new Dictionary<string, string> { ["subject"] = "target.invalid-healing" },
+            "{\"amount\":4,\"afterCurrent\":7}", 0);
+        Assert.False(injected.Ok);
     }
 
     [Fact]
@@ -2525,6 +3235,8 @@ public sealed class Dnd2024AbilityCheckTests
                 "data/dnd2024.item-definition",
                 "data/dnd2024.item-instance",
                 "data/dnd2024.item-quantity",
+                "combat/dnd2024.damage-mitigation",
+                "combat/dnd2024.temporary-hit-points",
                 "proficiency/dnd2024.character-experience",
                 "proficiency/dnd2024.class-progression"
             })
@@ -2653,6 +3365,26 @@ public sealed class Dnd2024AbilityCheckTests
             await Entities.AddComponentAsync(new(StateSpaceId, "target.fixture", new(_hitPoints.QualifiedId, _hitPoints.Version, _hitPoints.SchemaHash), "{\"current\":20,\"maximum\":20,\"sourceRef\":{\"sourceId\":\"source.dnd2024.srd-5.2.1\",\"locator\":\"Playing the Game > Damage and Healing > Hit Points\"}}", 0));
         }
 
+        public async Task AddDamageTargetAsync(
+            string targetId, int current, int maximum, string? mitigationJson = null)
+        {
+            await Entities.CreateEntityAsync(StateSpaceId, targetId, targetId);
+            await Entities.AddComponentAsync(new(StateSpaceId, targetId,
+                new(_hitPoints.QualifiedId, _hitPoints.Version, _hitPoints.SchemaHash),
+                JsonSerializer.Serialize(new
+                {
+                    current,
+                    maximum,
+                    sourceRef = new
+                    {
+                        sourceId = "source.dnd2024.srd-5.2.1",
+                        locator = "Playing the Game > Damage and Healing > Hit Points"
+                    }
+                }), 0));
+            if (mitigationJson is not null)
+                await AddApplicationComponentAsync(targetId, "dnd2024.damage-mitigation", mitigationJson);
+        }
+
         public async Task AddEncounterFixturesAsync()
         {
             await Entities.CreateEntityAsync(StateSpaceId, "encounter.fixture", "Encounter");
@@ -2722,8 +3454,9 @@ public sealed class Dnd2024AbilityCheckTests
                 "dnd2024.character-level" => _level,
                 "dnd2024.skill-proficiencies" => _skills,
                 "dnd2024.saving-throw-proficiencies" => _saves,
+                "dnd2024.hit-points" => _hitPoints,
                 _ => throw new ArgumentOutOfRangeException(nameof(componentId), componentId,
-                    "Not a core character-sheet component.")
+                    "Not a registered core component.")
             };
             var row = await _db.Set<ApplicationEcsComponentRecord>().SingleAsync(value =>
                 value.StateSpaceId == StateSpaceId && value.EntityId == entityId

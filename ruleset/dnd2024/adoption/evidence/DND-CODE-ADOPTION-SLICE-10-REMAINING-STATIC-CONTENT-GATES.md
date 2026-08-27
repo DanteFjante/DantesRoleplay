@@ -1,7 +1,7 @@
 # D&D code-adoption Slice 10 — remaining static-content gates
 
 Date: 2026-08-26  
-Status: **verified scope audit; Parent 10 remains active**
+Status: **accepted defer map; Parent 10 closed**
 
 ## Exhausted schema-ready archive cohorts
 
@@ -56,5 +56,6 @@ some individual component schemas already exist.
 
 No additional static archive cohort can be safely adopted into core without a confirmed new ID,
 schema, schema-meaning change, or family-specific behavior decision. Optional compatibility
-adoption still requires its own exact source/profile review. Parent 10 also continues to defer
-automatic materialization into campaign state until that installation policy is separately confirmed.
+adoption still requires its own exact source/profile review. Parent 10 defers automatic
+materialization into campaign state until that installation policy is separately confirmed. These
+explicit gates close Parent 10 without misrepresenting absent families as delivered content.

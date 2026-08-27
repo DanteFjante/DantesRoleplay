@@ -1,6 +1,6 @@
 # D&D code-adoption Slice 7A4 implementation — saving throws
 
-Status: **verified 2026-08-25 — final Sol review pending**
+Status: **accepted 2026-08-26**
 Owner/roadmap: [D&D 2024 application roadmap](ROADMAP.md)
 Dependency tree/leaf: [D&D code-adoption dependency tree](DND-CODE-ADOPTION-DEPENDENCY-PLAN.md), Parent 7 / 7A4
 Ruleset alignment: **dnd2024-owned**

@@ -1,7 +1,7 @@
 # D&D code-adoption Slice 7A4 receipt — saving throws
 
 Date: 2026-08-25  
-Status: **verified — final Sol review pending**
+Status: **accepted — Sol review and user acceptance complete**
 Boundary: Parent 7 / 7A4 only
 
 ## Delivered

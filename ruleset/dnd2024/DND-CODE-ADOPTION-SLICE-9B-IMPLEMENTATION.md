@@ -1,6 +1,6 @@
 # D&D code-adoption Slice 9B implementation — stateless core character calculations
 
-Status: **implemented; focused/full acceptance pending**  
+Status: **accepted**
 Owner/roadmap: [D&D 2024 application roadmap](ROADMAP.md), donor-gap-filling lane  
 Dependency tree/leaf: [Slice 9 design](DND-CODE-ADOPTION-SLICE-9-DESIGN.md), leaf 9B  
 Ruleset alignment: `dnd2024-owned`  
@@ -63,8 +63,8 @@ external/public operation is introduced.
 
 ## Runtime artifacts
 
-- New mechanic ID: `mechanic.dnd2024.character-sheet.read` (pending confirmation).
-- New governing procedure ID: `procedure.mechanic.dnd2024.character-sheet` (pending confirmation).
+- Accepted mechanic ID: `mechanic.dnd2024.character-sheet.read`.
+- Accepted governing procedure ID: `procedure.mechanic.dnd2024.character-sheet`.
 - No component, schema, fixture entity, migration, C# seam, effect type, or public kind.
 
 ## Authoritative state and closed input
@@ -123,6 +123,5 @@ application activation and evaluation audit remain generic kernel responsibiliti
 
 ## Completion receipt and exit gate
 
-Record delivery in `adoption/evidence/DND-CODE-ADOPTION-SLICE-9B-RECEIPT.md`. Do not mark Parent 9
-accepted until 9C proves every candidate inventory row has its declared current disposition and the
-full acceptance commands pass.
+Delivery is recorded in `adoption/evidence/DND-CODE-ADOPTION-SLICE-9B-RECEIPT.md`; Parent 9 closure
+is recorded by the accepted Slice 9C implementation and receipt.

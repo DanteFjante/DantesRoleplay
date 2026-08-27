@@ -1,6 +1,6 @@
 # D&D code-adoption Slice 10B1A implementation — schema-faithful adventuring gear
 
-Status: **implemented; acceptance pending confirmation**  
+Status: **accepted**
 Parent: [Slice 10 static-content design](DND-CODE-ADOPTION-SLICE-10-DESIGN.md), leaf 10B1A  
 Ruleset alignment: `dnd2024-owned`  
 Source: `source.dnd2024.srd-5.2.1`, `Equipment > Adventuring Gear` (PDF pp. 95–100)  

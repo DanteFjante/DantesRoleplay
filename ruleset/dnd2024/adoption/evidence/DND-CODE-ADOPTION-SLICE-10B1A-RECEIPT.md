@@ -1,7 +1,7 @@
 # D&D code-adoption Slice 10B1A receipt — schema-faithful adventuring gear
 
 Date: 2026-08-26  
-Status: **implemented and verified; acceptance pending user confirmation**  
+Status: **accepted**
 Boundary: Parent 10 / first mundane-equipment leaf
 
 ## Delivered
@@ -59,9 +59,9 @@ Boundary: Parent 10 / first mundane-equipment leaf
 | `item.dnd2024.torch.v1` | `9F782D5242D897B93B86861B451D0118F5C3015083CC4C8033577C9EF65FF220` |
 | `item.dnd2024.waterskin.v1` | `B630B9F03B126CD9E5A4F3B18B2199113CB72DF3AA6D72AC2DECB60469738024` |
 
-## Next gate
+## Parent closure
 
-Parent 10 remains active. Armor/shields, weapons, ammunition, tools, spells, monsters, and magic
-items remain independent cohorts. Rope/Quiver need an explicit schema decision before import, and
-automatic installation into campaign state still needs the separately approved materialization
-boundary described by the Parent 10 design. Final Slice 10B1A acceptance requires user confirmation.
+Parent 10 is accepted. Armor/shields and selected weapon cohorts have accepted leaves;
+ammunition, tools, spells, monsters, and magic items remain explicitly deferred families. Rope is
+available only through the opt-in compatibility extension, Quiver remains deferred, and automatic
+campaign installation remains outside the accepted source-content boundary.

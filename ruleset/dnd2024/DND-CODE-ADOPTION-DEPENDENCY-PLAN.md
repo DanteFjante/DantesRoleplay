@@ -1,6 +1,6 @@
 # D&D code-adoption dependency tree — recover and import licensed rules work
 
-Status: **planning with accepted deliveries; Slices 0–6, 7A1–7A2, and 8 accepted; 7A3–7D verified after Sol review**
+Status: **Slices 0–11 accepted selected scope; Slices 12–13 planned**
 Ruleset alignment: **dnd2024-compatible adoption pipeline; every rule-bearing child slice is
 dnd2024-owned**
 Source: **not applicable to the pipeline itself**. Every rule-bearing child must cite
@@ -84,50 +84,50 @@ evidence before relying on it.
 | Exact application JavaScript execution | `application-execution` and bounded sandbox | verified | Completion receipt and Slice 11J parity evidence |
 | Effects, transaction, replay, and audit | application ECS effects plus generic application action runner | verified | Completion receipt; canonical state is never owned by JavaScript or a model |
 | Current game/world application sources | authored `catalog/`, ratified to `dnd2024` | verified but deliberately narrow | 33 accepted game component schemas and 14 mechanics are covered by catalog/application-kernel tests |
-| D&D rule mechanics and content | application-owned catalog JavaScript/data | missing from the active catalog | the prior ruleset tree is retained only under `old-dnd/` |
-| Prior D&D implementation | `old-dnd/catalog` plus archived receipts/tests | planned recovery source | uncompiled and intentionally retained; exact files require keep/adapt/replace/drop classification |
-| External donor semantics | pinned donor commit and per-symbol provenance ledger | planned | donor owns whole-state/event-sourced shapes that conflict with our authority if imported unchanged |
-| Official 2024 rule meaning | `source.dnd2024.srd-5.2.1` and exact locators | planned re-adoption | source record exists in the archive; per-rule locator review is still required |
-| Foundry edge-case review | relevant Foundry paths at a pinned commit/branch | planned per rule cohort | required by D&D implementation protocol; it never replaces the SRD locator |
+| D&D rule mechanics and content | application-owned catalog JavaScript/data | accepted through Slice 10 | Slices 7–10 receipts prove the playable vertical, native-recovery matrix, stateless character sheet, and selected static cohorts |
+| Prior D&D implementation | `old-dnd/catalog` plus archived receipts/tests | classified retained recovery source | the archive is uncompiled and non-authoritative; accepted matrices give every reviewed record an explicit disposition |
+| External donor semantics | pinned donor commit and per-symbol provenance ledger | accepted development evidence | donor state/reducers remain excluded; only reviewed stateless symbols and vectors were adapted |
+| Official 2024 rule meaning | `source.dnd2024.srd-5.2.1` and exact locators | verified per accepted cohort | every accepted rule-bearing slice records its exact locator; future gameplay features must do the same |
+| Foundry edge-case review | relevant Foundry paths at a pinned commit/branch | verified per accepted cohort | reference-only reviews are recorded by the accepted slices and never replace SRD authority |
 | Live application-state migration | explicit operator adoption/upgrade boundary | blocked and out of scope | non-empty upgrades require separate compatibility evidence; this plan changes no live database |
 
 ## Dependency tree
 
 ~~~text
-Safely recover/import D&D 2024 code                                      [planned]
-├─ A. Freeze authority and legal boundary                               [planned]
+Safely recover/import D&D 2024 code                                      [Slices 0–11 accepted selected scope]
+├─ A. Freeze authority and legal boundary                               [accepted]
 │  ├─ A1. Confirm selective-transplant policy and donor roles            [accepted]
 │  ├─ A2. Pin exact donor commits/submodules and record licenses         [0A accepted]
 │  └─ A3. Define per-file/symbol/content provenance + attribution ledger [0B accepted]
-├─ B. Produce one four-way coverage matrix                              [source review remains]
+├─ B. Produce one four-way coverage matrix                              [accepted through Slice 10]
 │  ├─ B1. Active catalog/application owner inventory                     [1A accepted]
 │  ├─ B2. Archived native keep/adapt/replace/drop inventory              [2A–2C classified and first cohort selected]
 │  ├─ B3. Standalone donor capability/test/content inventory             [1B accepted]
-│  └─ B4. SRD + Foundry evidence and 2014/non-SRD exclusion columns      [selected ability-check source reviewed; remaining rows planned]
+│  └─ B4. SRD + Foundry evidence and 2014/non-SRD exclusion columns      [accepted cohorts reviewed; future families remain per-slice]
 ├─ C. Prove the adapter seam without production activation              [Slice 3 accepted]
 │  ├─ C1. Materialize an operation-specific donor-compatible view       [3A accepted]
 │  ├─ C2. Run one pure donor/native rule with kernel-owned seeded RNG    [3B accepted]
 │  ├─ C3. Normalize the effect-free result and prove parity              [3C accepted]
 │  └─ C4. Prove no donor state/reducer/persistence/undeclared reads      [3C accepted]
-├─ D. Build reusable adoption tooling                                   [partial]
+├─ D. Build reusable adoption tooling                                   [accepted pre-11 boundary]
 │  ├─ D1. Deterministic schema/content transformer with dry-run diff     [5A–5C accepted]
-│  ├─ D2. TypeScript-AST wrapper generator for sandbox-compatible JS     [planned]
+│  ├─ D2. TypeScript-AST wrapper generator for sandbox-compatible JS     [explicitly deferred; not required by accepted cohorts]
 │  ├─ D3. Test-vector converter and native/donor/SRD conformance runner  [4A–4C accepted]
-│  └─ D4. Dependency/mapping manifest and reverse-impact checks          [planned]
-├─ E. Recover already-proven native gameplay                            [blocked by C–D]
-│  ├─ E1. Ability, D20, proficiency, saves, and Initiative cohort        [planned]
-│  ├─ E2. HP, AC, weapons, damage, and one encounter cohort              [planned]
-│  └─ E3. Turn flow, conditions, mitigation, healing, and inventory      [planned]
-├─ F. Fill verified gaps from donor/SRD                                 [blocked by D–E]
-│  ├─ F1. Pure derivations and character-sheet calculations              [planned]
-│  ├─ F2. Character origin, class, feat, and advancement cohorts         [planned]
-│  ├─ F3. Equipment, magic-item, and bestiary content cohorts            [planned]
-│  ├─ F4. Combat timing, reactions, movement, and condition cohorts      [planned]
-│  └─ F5. Spellcasting resources and spell-resolution cohorts            [planned]
-└─ G. Accept and maintain                                               [blocked by E/F]
-   ├─ G1. Fresh-host vertical play, replay, rollback, and parity          [planned]
-   ├─ G2. Upstream pinned-diff report; never automatic activation         [planned]
-   └─ G3. Optional archive retirement after independent acceptance        [blocked/destructive]
+│  └─ D4. Dependency/mapping manifest and reverse-impact checks          [Slice 6 accepted]
+├─ E. Recover already-proven native gameplay                            [Slices 7–8 accepted]
+│  ├─ E1. Ability, D20, proficiency, saves, and Initiative cohort        [Slice 7 accepted]
+│  ├─ E2. HP, AC, weapons, damage, and one encounter cohort              [Slice 7 accepted]
+│  └─ E3. Turn flow, conditions, mitigation, healing, and inventory      [Slice 8 recovery dispositions accepted]
+├─ F. Fill verified gaps from donor/SRD                                 [active after accepted 9–10]
+│  ├─ F1. Pure derivations and character-sheet calculations              [Slice 9 accepted]
+│  ├─ F2. Character origin, class, feat, and advancement cohorts         [selected identities accepted; behavior explicitly deferred]
+│  ├─ F3. Equipment, magic-item, and bestiary content cohorts            [selected equipment accepted; remaining families explicitly deferred]
+│  ├─ F4. Combat timing, reactions, movement, and condition cohorts      [mitigation and Temporary HP/healing accepted; remaining families explicitly deferred]
+│  └─ F5. Spellcasting resources and spell-resolution cohorts            [explicitly deferred to independent feature plans]
+└─ G. Accept and maintain                                               [active]
+   ├─ G1. Fresh-host vertical play, replay, rollback, and parity          [Slice 7D accepted]
+   ├─ G2. Upstream pinned-diff report; never automatic activation         [Slice 12 planned]
+   └─ G3. Retained archive inventory and optional retirement              [Slice 13 planned; deletion not authorized]
 ~~~
 
 ## State and bridge contract
@@ -262,19 +262,19 @@ contains more than one semantic decision or runtime artifact.
 | Parent | Planned subslices | Default model |
 | ---: | --- | --- |
 | 0 | **0A accepted** — donor pins/build baseline; **0B accepted** — license/provenance policy and confirmation | Sol high |
-| 1 | 1A active/archive inventory; 1B donor/SRD/Foundry inventory; 1C conflict and gap report | Luna medium; Sol reviews 1C |
+| 1 | **accepted after corrective review** — 1A active/archive inventory; 1B donor/SRD/Foundry inventory; 1C conflict and gap report | receipts preserve review evidence |
 | 2 | **2A–2C accepted** — Features 1–10 and later accepted-feature classification; first test-only cohort selection | Luna/Terra; Sol review at cohort activation |
 | 3 | **accepted** — 3A operation-view mapping; 3B test-only pure-rule wrapper; 3C normalized parity and boundary proof | [3C receipt](adoption/evidence/DND-CODE-ADOPTION-SLICE-3C-RECEIPT.md) |
 | 4 | **accepted** — 4A neutral scenario schema; 4B archive/donor/adapted converters with provenance; 4C deterministic conformance runner and intentional-difference gate | [4C receipt](adoption/conformance/evidence/DND-CODE-ADOPTION-SLICE-4C-RECEIPT.md) |
 | 5 | **accepted** — 5A provenance/content manifest; 5B schema/content transformer; 5C dry-run collision/license rejection | [Sol-approved review packet](adoption/transformation/review/SOL-SLICE-5-REVIEW.md) |
 | 6 | **accepted** — 6A candidate projection/dependency mapping/static root closure; 6B result/effect allowlist; 6C impact, replay, and rollback proof | Terra high; Sol xhigh review packet recorded for 6B |
-| 7 | 7A1 raw ability-score/fixed-DC check; 7A2 proficiency/skills; 7A3 Advantage/Disadvantage; 7A4 saves; 7B Initiative/turn flow; 7C HP/AC/weapons/damage; 7D fresh-host encounter acceptance | Terra high; Luna fixtures; Sol reviews family gates and 7D |
+| 7 | **accepted** — 7A1 raw ability-score/fixed-DC check; 7A2 proficiency/skills; 7A3 Advantage/Disadvantage; 7A4 saves; 7B Initiative/turn flow; 7C HP/AC/weapons/damage; 7D fresh-host encounter acceptance | Sol runtime review and user acceptance complete |
 | 8 | **accepted** — all 51 mechanics, 26 component dispositions, and 39 procedures in the accepted native-recovery matrix are resolved; see the [Parent 8 receipt](adoption/evidence/DND-CODE-ADOPTION-SLICE-8-RECEIPT.md) | Terra high implementation and full acceptance evidence |
-| 9 | one derivation cohort per parent, split into mapping, wrapper, and conformance subslices when effects or multiple owners appear | Terra high; Luna cases; Sol reviews rule mapping |
-| 10 | one homogeneous content cohort per parent, split only when schema, attribution, or source locators differ | Luna medium; Terra review |
-| 11 | one complex mechanic family per parent: 11A rule/dependency decision, 11B primitive/effect seam, 11C behavior cohort, 11D family acceptance | Sol xhigh; Terra only after each contract freezes |
-| 12 | 12A fresh-host play/replay; 12B full validation/protocol evidence; 12C attribution/upstream-diff workflow | Terra high; Sol acceptance |
-| 13 | 13A retained-use inventory; 13B separately confirmed removal; 13C clean-build/recovery evidence | Sol high |
+| 9 | **accepted** — 9A inventory, 9B stateless character-sheet cohort, and 9C conformance/closure | [9C receipt](adoption/evidence/DND-CODE-ADOPTION-SLICE-9C-RECEIPT.md) |
+| 10 | **accepted selected scope** — independent currency, equipment, armor, weapon, progression-identity, and optional compatibility leaves; remaining families explicitly deferred | [Parent 10 receipt](adoption/evidence/DND-CODE-ADOPTION-SLICE-10-RECEIPT.md) |
+| 11 | **accepted selected scope** — damage mitigation 11A–11D, Temporary HP/healing 11E–11H, and 11I explicit remaining-family closure | [Parent 11 receipt](adoption/evidence/DND-CODE-ADOPTION-SLICE-11-RECEIPT.md) |
+| 12 | **accepted** — 12A fresh-host play/replay/rollback; 12B full validation/protocol evidence; 12C attribution/upstream-diff workflow; 12D parent closure | [Parent 12 receipt](adoption/evidence/DND-CODE-ADOPTION-SLICE-12-RECEIPT.md) |
+| 13 | **accepted retained scope** — 13A retained-use inventory; 13B retain-all/empty-removal disposition; 13C clean-build/recovery evidence; 13D parent closure | [Parent 13 receipt](adoption/evidence/DND-CODE-ADOPTION-SLICE-13-RECEIPT.md) |
 
 Rows 0–2 may remain small documentation/tooling subslices. Rows 3 and 6 must be divided because
 mapping, execution/effects, and parity are different semantic boundaries. Rows 7–11 must never be
@@ -308,35 +308,15 @@ character advancement or monster bootstrap.
 
 ## Lowest ready leaf
 
-Slice 6 is accepted. Its three closed subslices add a candidate-only projection/dependency mapping,
-a schema-pinned proposal/effect allowlist, and a read-only proof binding their exact hashes to the
-existing generic reverse-impact, replay, and rollback behavior. It registers no production candidate
-or D&D content. The [Slice 7 design](DND-CODE-ADOPTION-SLICE-7-DESIGN.md) separates the broad
-7A label: 7A1 raw ability scores/fixed-DC checks is accepted; its
-[receipt](adoption/evidence/DND-CODE-ADOPTION-SLICE-7A1-RECEIPT.md) records the catalog source,
-activated-path verification, and user acceptance. 7A2 proficiency/skills is accepted. 7A3 explicit
-Advantage/Disadvantage, saving throws, Initiative/turn flow, combat state, and fresh-host encounter
-acceptance are verified after Sol review. Their exact delivered boundary and verification
-are retained in the Slice 7B–7D implementation documents and receipt.
-
-Slice 1 was accepted after corrective review. Its manifest-keyed matrix contains 271 capabilities:
-127 exact active/archive matches and 144 archive-only gaps. It preserves historical tests,
-dependencies, and archived SRD locator evidence; attaches only exact matched donor/Foundry files;
-and leaves unmatched or unverified evidence explicit. Slices 2A–2B classified the historical
-vertical and later accepted families as blocked archive-recovery candidates with explicit dependency
-closures. Slice 2C selected Feature 1's ability-score/fixed-DC seam as the first test-only recovery
-cohort, explicitly deferring the other candidates. The [Slice 3 design](DND-CODE-ADOPTION-SLICE-3-DESIGN.md)
-divides the proof into 3A mapping, 3B wrapper, and 3C parity/isolation, with executable stop points.
-
-The selected seam is an ability-score fixed-DC check with closed inputs of ability state, fixed DC,
-and kernel-owned seeded RNG. The probe excludes skill proficiency, character level, conditions,
-whole donor campaign state, and donor persistence, events, and reducers. Exact SRD 5.2.1 locators
-are now verified at `Playing the Game > The Six Abilities > Ability Scores/Ability Modifiers` (PDF
-pp. 5–6), `Playing the Game > D20 Tests > Ability Checks/Difficulty Class` (PDF p. 6), and the
-attack-only `Rolling 20 or 1` rule (PDF p. 7). Foundry's pinned `module/dice/d20-roll.mjs` was
-reviewed as reference-only. [Slice 3A](DND-CODE-ADOPTION-SLICE-3A-IMPLEMENTATION.md) is accepted;
-its [receipt](adoption/evidence/DND-CODE-ADOPTION-SLICE-3A-RECEIPT.md) records the mapping proof and
-stops before JavaScript or any production registration.
+Slices 0–12 are accepted in their selected scopes. Parent 11's
+[remaining-family gate map](adoption/evidence/DND-CODE-ADOPTION-SLICE-11-REMAINING-COMPLEX-FAMILY-GATES.md)
+moves incomplete gameplay candidates to independent feature plans with executable prerequisites.
+Slice 12 supplies accepted fresh-host, full-regression/protocol, attribution, and pinned-upstream
+maintenance evidence. Slice 13 is accepted in retained scope: all archive files are inventoried,
+zero runtime consumers are proved, recovery consumers remain reproducible, and the removal set is
+empty. No numbered adoption leaf remains pending. A deferred gameplay family must author its own
+dependency tree and exact SRD/Foundry boundary before runtime work; it does not reopen Parent 11 or
+the completed adoption plan implicitly. Future archive removal remains a new destructive proposal.
 
 ## Confirmation gates
 

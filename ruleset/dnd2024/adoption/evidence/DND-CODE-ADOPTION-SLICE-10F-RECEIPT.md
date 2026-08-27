@@ -1,7 +1,7 @@
 # D&D code-adoption Slice 10F receipt — Fighter levels 1–2 progression identities
 
 Date: 2026-08-26  
-Status: **implemented and verified; acceptance pending user confirmation**
+Status: **accepted**
 
 ## Delivered
 
@@ -38,5 +38,5 @@ Status: **implemented and verified; acceptance pending user confirmation**
 | `content.dnd2024.feature.fighter.weapon-mastery.v1` | `9B75010D9F901AAF32F6894765306B4917F006ED4D55A719C048D8AF39A41C9D` |
 
 Feature behavior, choices, resources, actor advancement, HP mutation, multiclass handling, later
-levels, and automatic campaign installation remain outside this leaf. Final acceptance requires
-user confirmation.
+levels, and automatic campaign installation remain outside this leaf. The user accepted the
+remaining implemented slices on 2026-08-26.

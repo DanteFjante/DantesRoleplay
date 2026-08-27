@@ -1,6 +1,6 @@
 # Interaction orchestration Slice 13F receipt — combined adaptive-AI acceptance
 
-Status: **implemented; awaiting completed-feature acceptance**  
+Status: **accepted by user confirmation on 2026-08-26**  
 Evidence completed: **2026-08-25**  
 Ruleset alignment: **ruleset-neutral**  
 Implementation contract: [Slice 13F implementation](../INTERACTION-ORCHESTRATION-SLICE-13F-IMPLEMENTATION.md)
@@ -75,5 +75,5 @@ hosting, silent provider/network fallback, model-authored review/code/effects, a
 policy remain excluded and require separately confirmed owners.
 
 The user's continuation on 2026-08-25 recorded Slice 13E acceptance and authorized this bounded
-final audit. Completed-feature acceptance for Slice 13F and the complete Slice 13 extension is
-pending.
+final audit. The user's explicit confirmation on 2026-08-26 accepts Slice 13F and the complete
+Slice 13 extension.

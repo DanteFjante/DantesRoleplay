@@ -1,6 +1,6 @@
 # D&D code-adoption Slice 7 design — first recovered gameplay seams
 
-Status: **7A1–7A2 accepted; 7A3–7D verified after Sol review**
+Status: **accepted; 7A1–7D complete**
 Owner/roadmap: [D&D 2024 application roadmap](ROADMAP.md)
 Dependency tree: [D&D code-adoption dependency tree](DND-CODE-ADOPTION-DEPENDENCY-PLAN.md), Parent 7
 Ruleset alignment: **dnd2024-owned**

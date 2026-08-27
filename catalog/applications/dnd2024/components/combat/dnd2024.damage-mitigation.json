@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.damage-mitigation",
+  "name": "D&D 2024 Damage Mitigation",
+  "description": "Canonical known Resistance, Immunity, and Vulnerability damage-type memberships. Missing state is unknown; three empty lists are known-empty. Damage instances, arithmetic, Conditions, Hit Points, and source grants are owned elsewhere."
+}

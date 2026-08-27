@@ -1,7 +1,7 @@
 # D&D code-adoption Slice 7B–7D receipt — encounter and combat vertical
 
 Date: 2026-08-25  
-Status: **verified — revalidated and hardened after Sol runtime review**  
+Status: **accepted — revalidated and hardened after Sol runtime review**
 Boundary: Parent 7 / 7B–7D
 
 ## Delivered

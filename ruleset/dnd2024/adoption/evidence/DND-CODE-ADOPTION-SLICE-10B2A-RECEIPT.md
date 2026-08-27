@@ -1,7 +1,7 @@
 # D&D code-adoption Slice 10B2A receipt — light armor definitions
 
 Date: 2026-08-26  
-Status: **implemented and verified; acceptance pending user confirmation**  
+Status: **accepted**
 Boundary: Parent 10 / armor-and-shields / light-armor leaf
 
 ## Delivered
@@ -45,5 +45,5 @@ Boundary: Parent 10 / armor-and-shields / light-armor leaf
 
 Prices, training eligibility, Dexterity calculation, derived Armor Class, Stealth application, and
 don/doff timing behavior remain later mechanic work. Medium armor, heavy armor, and Shield are
-separate complete-category leaves that can reuse the verifier. Final Slice 10B2A acceptance requires
-user confirmation.
+separate complete-category leaves that can reuse the verifier. The user accepted the remaining
+implemented slices on 2026-08-26.

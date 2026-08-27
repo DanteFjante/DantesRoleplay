@@ -1,0 +1,25 @@
+---
+id: procedure.mechanic.dnd2024.temporary-hit-points
+category: ruleset.dnd2024.core.data.temporary-hit-points
+name: Grant or expire D&D 2024 Temporary Hit Points
+governs: mechanic.dnd2024.temporary-hit-points.write
+status: active
+---
+
+## Description
+
+Owns the optional positive Temporary Hit Point buffer and its explicit grant/choice/expiry
+transition. Temporary Hit Points are separate from Hit Points and healing.
+
+## Instructions
+
+Store exactly a positive safe-integer amount and fixed SRD source reference. Absence is the only zero
+representation. A first grant adds the component. When a buffer exists, require the recipient's
+explicit `keep` or `replace` choice; keeping emits no effect and replacement sets the complete state.
+Expiry removes a present buffer. Return prior, incoming, resulting, and discarded amounts.
+
+## Constraints
+
+Never read or change Hit Points, conditions, death state, duration, a grant source, or another
+entity. Never accept caller source, derived result, effect, event, or notification fields. Weapon
+damage may consume this state only through its own later root-composition leaf.

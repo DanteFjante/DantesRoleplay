@@ -1,7 +1,7 @@
 # D&D code-adoption Slice 10B2B–D receipt — remaining armor table
 
 Date: 2026-08-26  
-Status: **implemented and verified; acceptance pending user confirmation**
+Status: **accepted**
 
 ## Delivered
 
@@ -20,9 +20,9 @@ Status: **implemented and verified; acceptance pending user confirmation**
 - Focused full-table schema/profile/equipment/burden test: 1/1.
 - Activated D&D suite: 78/78.
 - Core catalog validation: 144 records valid with 21 existing advisories; no live data touched.
-- Repository-wide project run was attempted after the focused gates: 1,090 tests passed and one
-  unrelated concurrent `WebInterfaceTests` assertion failed because its in-progress page no longer
-  contains `System request not completed`. The D&D boundary remained green.
+- The original repository-wide project run had 1,090 passing tests and one unrelated concurrent
+  web-interface failure. The pre-11 acceptance audit later cleared that hold with a clean current
+  shared-suite run.
 
 ## Target hashes
 
@@ -40,4 +40,4 @@ Status: **implemented and verified; acceptance pending user confirmation**
 | Shield | `item.dnd2024.shield.v1` | `3E19718333D9BB0BDB27E4A4814871505A6853DEC03F87540B36E2586A2DCD54` |
 
 Derived Armor Class, training, penalties, Stealth effects, exclusivity, and don/doff execution remain
-Parent 11 behavior. Final acceptance requires user confirmation.
+Parent 11 behavior. The user accepted this completed static-content leaf on 2026-08-26.

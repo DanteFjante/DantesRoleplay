@@ -1,6 +1,6 @@
 # Interaction orchestration Slice 13 dependency plan — adaptive local/remote outer AI and bounded task batches
 
-Status: **Slices 13A–13E accepted; Slice 13F implemented awaiting final acceptance**
+Status: **complete — Slices 13A–13F accepted**
 Ruleset alignment: **ruleset-neutral**
 Source: **not applicable**
 Owner: [Interaction orchestration dependency plan](INTERACTION-ORCHESTRATION-DEPENDENCY-PLAN.md)
@@ -109,12 +109,11 @@ Adaptive outer/inner goal execution and reusable learning              [planned]
 | 13C | [Query-contract execution and typed result references](INTERACTION-ORCHESTRATION-SLICE-13C-IMPLEMENTATION.md) | **Accepted 2026-08-25**; [receipt](receipts/INTERACTION-ORCHESTRATION-SLICE-13C-RECEIPT.md) | Authorized read-only queries have exact output contracts and receipts; later actions may bind declared result paths without copying hidden/unbounded values or allowing model expressions. |
 | 13D | [Bounded task agendas and fresh-state work batches](INTERACTION-ORCHESTRATION-SLICE-13D-IMPLEMENTATION.md) | **Accepted 2026-08-25**; [receipt](receipts/INTERACTION-ORCHESTRATION-SLICE-13D-RECEIPT.md) | One goal advances through a bounded intent-level task agenda; each task uses recipe-first/fresh discovery and one or more fresh-state batches with exact continuation evidence, explicit consent policy, deterministic stop conditions, and no unbounded autonomous loop. |
 | 13E | [Safe outer-fallback learning and promotion](INTERACTION-ORCHESTRATION-SLICE-13E-IMPLEMENTATION.md) | **Accepted 2026-08-25**; [receipt](receipts/INTERACTION-ORCHESTRATION-SLICE-13E-RECEIPT.md) | Only completely successful correlated action-only routes become value-free candidates; deterministic host verification makes eligible routes reusable, while query outputs and old entity/input values remain excluded. |
-| 13F | [Combined adaptive-AI acceptance](INTERACTION-ORCHESTRATION-SLICE-13F-IMPLEMENTATION.md) | **Implemented; awaiting final acceptance**; [receipt](receipts/INTERACTION-ORCHESTRATION-SLICE-13F-RECEIPT.md) | The complete inner-success, outer-fallback, learned second-use, multi-batch, provider-disabled, isolation, replay, catalog, protocol, build, and full-suite matrix passes. |
+| 13F | [Combined adaptive-AI acceptance](INTERACTION-ORCHESTRATION-SLICE-13F-IMPLEMENTATION.md) | **Accepted 2026-08-26**; [receipt](receipts/INTERACTION-ORCHESTRATION-SLICE-13F-RECEIPT.md) | The complete inner-success, outer-fallback, learned second-use, multi-batch, provider-disabled, isolation, replay, catalog, protocol, build, and full-suite matrix passes. |
 
 ## Next leaf
 
-Slices 13A–13E are accepted. Slice 13F has green combined evidence and awaits completed-feature
-acceptance for the complete Slice 13 extension.
+Slices 13A–13F and the complete Slice 13 extension are accepted.
 
 ## Task-list contract direction
 
@@ -151,5 +150,4 @@ compatibility aliases, or structural query-recipe format not already covered by 
 - Slice 13C added the application-owned `query` catalog kind through existing interaction surfaces;
   it added no MCP tool, route, authorization capability, or game contract.
 - Slices 13A–13D have runtime artifacts and accepted evidence linked above.
-- Slice 13E has accepted runtime artifacts and evidence. Slice 13F has a completion receipt and
-  awaits final completed-feature acceptance.
+- Slices 13E–13F have accepted runtime artifacts and evidence; the Slice 13 extension is complete.

@@ -1,6 +1,6 @@
 # D&D code-adoption Slice 10B2B–D implementation — remaining armor table
 
-Status: **implemented; acceptance pending confirmation**  
+Status: **accepted**
 Parent: [Slice 10 static-content design](DND-CODE-ADOPTION-SLICE-10-DESIGN.md), leaves 10B2B–10B2D  
 Ruleset alignment: `dnd2024-owned`  
 Source: `source.dnd2024.srd-5.2.1`, `Equipment > Armor > Armor table` (PDF p. 92)  

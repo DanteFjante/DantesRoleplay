@@ -1,7 +1,7 @@
 # D&D 2024 application roadmap
 
-Status: **Active; Slices 0–8 accepted; Slices 9 and implemented Parent 10 leaves await confirmation**
-Last updated: 2026-08-26
+Status: **Active; code-adoption Slices 0–13 accepted selected scope**
+Last updated: 2026-08-27
 
 ## Outcome
 
@@ -22,14 +22,17 @@ The preferred sequence is:
   applications, source overlays, application-owned schemas, ECS state, structural projections,
   exact JavaScript execution, typed effects, state adoption, and reverse dependency impact.
 - The current authored `catalog/` contains the accepted D&D check, proficiency, combat, encounter,
-  and standalone base-Speed families, the verified Slice 9 stateless character-sheet reader, and
-  the verified five-record Slice 10A currency cohort, the verified nine-record Slice 10B1A
-  adventuring-gear cohort, the verified complete thirteen-record Slice 10B2 Armor-table cohort, and
-  six verified reduced Slice 10B3A weapon profiles plus four verified Slice 10B3B weapon item links
-  and the verified Slice 10F Fighter levels 1–2 progression identity cohort under the registered
+  and standalone base-Speed families, the accepted Slice 9 stateless character-sheet reader, and
+  the accepted five-record Slice 10A currency cohort, the accepted nine-record Slice 10B1A
+  adventuring-gear cohort, the accepted complete thirteen-record Slice 10B2 Armor-table cohort, and
+  six accepted reduced Slice 10B3A weapon profiles plus four accepted Slice 10B3B weapon item links
+  and the accepted Slice 10F Fighter levels 1–2 progression identity cohort under the registered
   `dnd2024` application source.
-- `old-dnd/` retains the previous D&D implementation and tests by explicit user decision. It is
-  uncompiled and non-authoritative until a reviewed application slice adopts an exact subset.
+- `old-dnd/` retains the previous D&D implementation and tests by explicit user decision. The
+  accepted [Slice 13 inventory](adoption/evidence/retained-archive-inventory-13a.json) fingerprints
+  all 737 files and proves zero runtime/build/catalog/production-source consumers. It remains
+  non-authoritative recovery/provenance material; 43 accepted transformation sources and other
+  development evidence still depend on its exact bytes.
 - The official rule authority remains `source.dnd2024.srd-5.2.1`. Donor repositories are
   implementation evidence, never rule authority.
 - `dnd2024-core` remains SRD-faithful. Homebrew, compatibility content, and non-SRD additions must
@@ -43,6 +46,27 @@ The preferred sequence is:
   catalog glob. It is compatibility-classified, requires `dnd2024-core`, is disabled by default,
   and contains one hash-locked, non-SRD hempen-rope definition. Core-only campaigns exclude it;
   campaigns selecting the exact two-source profile can consume it through existing item mechanics.
+- The [pre-Slice 11 acceptance](adoption/evidence/DND-CODE-ADOPTION-PRE-SLICE-11-ACCEPTANCE.md)
+  revalidated every delivered adoption/tooling/content/runtime boundary through Slice 10. The
+  [Slice 11 design](DND-CODE-ADOPTION-SLICE-11-DESIGN.md) is accepted selected scope: damage mitigation is
+  accepted through 11A–11D, and Temporary Hit Points/healing are accepted through 11E–11H. Weapon
+  damage now composes mitigation, optional buffer absorption, and HP in one atomic root.
+- The accepted families add no C# rule logic, migration, live-state mutation, or automatic campaign
+  upgrade. Long Rest expiry, damage events, 0-HP consequences, death saves, concentration, and
+  non-weapon damage remain separately gated.
+- The accepted [Parent 11 remaining-family gate map](adoption/evidence/DND-CODE-ADOPTION-SLICE-11-REMAINING-COMPLEX-FAMILY-GATES.md)
+  gives every incomplete combat, progression, rest, spell, monster, magic-item, and Inspiration
+  candidate an executable prerequisite. Those are independent product features, not pending import
+  rows.
+- The accepted [Parent 12 receipt](adoption/evidence/DND-CODE-ADOPTION-SLICE-12-RECEIPT.md) adds a
+  repeatable full acceptance runner, fresh-host/replay/rollback evidence, attribution auditing, and
+  a review-only pinned-upstream diff. The primary donor is unchanged; Foundry's reference-only
+  branch has a 42-file review report and remains inactive. Slice 13 archive retirement is still
+  separately gated.
+- The accepted [Parent 13 receipt](adoption/evidence/DND-CODE-ADOPTION-SLICE-13-RECEIPT.md) closes
+  archive maintenance in retained scope: retain all 737 files, remove none, keep zero runtime
+  consumers, and preserve reproducible transformation/recovery evidence. The numbered adoption
+  plan has no remaining implementation leaf.
 
 ## Active dependency plan
 
@@ -55,12 +79,12 @@ confirmation gates.
 
 | Lane | Outcome | State |
 | --- | --- | --- |
-| Adoption foundation | Pinned donors, license/provenance ledger, four-way coverage inventory, test-only seam proof, reusable conformance tooling, staged content transformation, candidate dependency mapping/result-effect allowlisting, and generic impact/replay/rollback proof | Slices 0–6 and 7A1–7A2 accepted; 7A3–7D verified after Sol review |
+| Adoption foundation | Pinned donors, license/provenance ledger, four-way coverage inventory, test-only seam proof, reusable conformance tooling, staged content transformation, candidate dependency mapping/result-effect allowlisting, and generic impact/replay/rollback proof | Slices 0–7 accepted after Sol review and user acceptance |
 | Native recovery | Re-adopt compatible archived components, mechanics, procedures, and tests in bounded feature families | Slice 8 accepted: exact 51-mechanic, 26-component-disposition, and 39-procedure matrix closure |
-| Donor gap filling | Adapt pure derivations, planners, SRD content encodings, and golden tests only for uncovered behavior | Slice 9 character calculations implemented; parent acceptance awaits a clean repository-wide test gate |
-| Playable vertical | Ability/D20, proficiency, AC/HP, weapons, damage, turn flow, and one fresh-host replayable encounter | planned |
-| Breadth | Character progression, conditions, equipment, spells, monsters, and magic items in independent cohorts | Currency, schema-faithful adventuring gear, the complete Armor table, six reduced weapon profiles, four archived weapon item links, and Fighter levels 1–2 progression identities are implemented and verified; every remaining archive family is mapped to an explicit schema or permanent-ID gate |
-| Maintenance | Pinned upstream-diff reports, attribution, conformance regression, and optional archive retirement | planned |
+| Donor gap filling | Adapt pure derivations, planners, SRD content encodings, and golden tests only for uncovered behavior | Slice 9 accepted; all 17 candidate groups have closed dispositions |
+| Playable vertical | Ability/D20, proficiency, AC/HP, weapons, damage, turn flow, and one fresh-host replayable encounter | accepted through Slice 7D |
+| Breadth | Character progression, conditions, equipment, spells, monsters, and magic items in independent cohorts | Parents 10–11 accepted selected scope; every incomplete family has an explicit independent-feature gate |
+| Maintenance | Pinned upstream-diff reports, attribution, conformance regression, and retained archive recovery | Slices 12–13 accepted; archive removal remains a separately confirmed future proposal |
 
 ## Historical evidence
 

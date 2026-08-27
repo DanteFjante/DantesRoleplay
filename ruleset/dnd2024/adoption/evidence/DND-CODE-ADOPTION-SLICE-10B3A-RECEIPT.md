@@ -1,7 +1,7 @@
 # D&D code-adoption Slice 10B3A receipt — reduced weapon profiles
 
 Date: 2026-08-26  
-Status: **implemented and verified; acceptance pending user confirmation**
+Status: **accepted**
 
 ## Delivered
 
@@ -36,4 +36,5 @@ Status: **implemented and verified; acceptance pending user confirmation**
 | `weapon.dnd2024.shortbow` | `9D7F8E0462B546C3A06FC994B25096A61A2164F9046EB0362B47FEDD5F035104` |
 
 Weapon item-definition links exist for only four of these six archived profiles and remain a separate
-cohort. Rich weapon properties and behaviors remain Parent 11. Final acceptance requires user confirmation.
+cohort. Rich weapon properties and behaviors remain Parent 11. The user accepted this completed
+static-content leaf on 2026-08-26.

@@ -1,6 +1,6 @@
 # D&D code-adoption Slice 10 design — static SRD content cohorts
 
-Status: **active**  
+Status: **accepted; selected static cohorts complete and remaining families explicitly deferred**
 Owner/roadmap: [D&D 2024 application roadmap](ROADMAP.md), breadth lane  
 Dependency source: [D&D code-adoption dependency plan](DND-CODE-ADOPTION-DEPENDENCY-PLAN.md), Parent 10  
 Ruleset alignment: `dnd2024-owned`
@@ -24,29 +24,26 @@ meaning into core records or silently changing an existing non-empty campaign's 
 ## Dependency tree
 
 ```text
-Parent 10 — static SRD content breadth
-├── 10A currency definitions [implemented; acceptance pending]
+Parent 10 — static SRD content breadth [accepted]
+├── 10A currency definitions [accepted]
 │   ├── existing dnd2024.item-definition schema [accepted prerequisite]
 │   ├── archived five-record source cohort [hash locked]
 │   ├── official SRD Coins / Coin Values verification [verified]
 │   ├── deterministic transform and change indication
 │   └── activated-source, schema, collision, and mechanic-consumption tests
-├── 10B mundane equipment [active]
-│   ├── 10B1A schema-faithful adventuring gear [implemented; acceptance pending]
-│   ├── 10B1B rope/quiver representation gaps [deferred; requires a schema decision]
-│   ├── 10B2 armor and shields [active]
-│   │   ├── 10B2A light armor [implemented; acceptance pending]
-│   │   └── 10B2B–D medium, heavy, and Shield [implemented; acceptance pending]
-│   ├── 10B3A reduced weapon profiles [implemented; acceptance pending]
-│   ├── 10B3B archived weapon item links [implemented; acceptance pending]
-│   └── missing weapon links, ammunition, and tools [gated by new IDs and tool representation]
-├── 10C spells [pending]
-│   └── requires a separately confirmed static spell-definition schema
-├── 10D monsters [pending]
-│   └── requires a separately confirmed static monster-definition schema
-├── 10E magic items [pending]
-│   └── static identity may import here; complex behavior remains Parent 11
-└── 10F Fighter levels 1–2 progression identities [implemented; acceptance pending]
+├── 10B mundane equipment [selected leaves accepted]
+│   ├── 10B1A schema-faithful adventuring gear [accepted]
+│   ├── 10B1B rope/quiver gaps [optional rope accepted; Quiver explicitly deferred]
+│   ├── 10B2 armor and shields [accepted]
+│   │   ├── 10B2A light armor [accepted]
+│   │   └── 10B2B–D medium, heavy, and Shield [accepted]
+│   ├── 10B3A reduced weapon profiles [accepted]
+│   ├── 10B3B archived weapon item links [accepted]
+│   └── missing weapon links, ammunition, and tools [explicitly deferred]
+├── 10C spells [explicitly deferred to a spell-definition family]
+├── 10D monsters [explicitly deferred to a monster-definition family]
+├── 10E magic items [explicitly deferred to a magic-item family]
+└── 10F Fighter levels 1–2 progression identities [accepted]
     ├── existing character content-definition and class-progression schemas [accepted prerequisites]
     ├── archived Fighter class plus five feature identities [hash locked]
     ├── official SRD Fighter traits and feature table verification [verified]
@@ -77,6 +74,10 @@ may batch another content family merely because the records share a donor packag
 
 ## Parent stop point
 
-Parent 10 remains active until every selected static family has its own accepted leaf or an explicit
-defer decision. Parent 10 acceptance additionally requires a separately confirmed materialization
-policy if the records are to be installed into non-empty campaign state automatically.
+Every selected static family has an accepted leaf and every other archive family has an explicit
+defer gate. Parent 10 is therefore accepted as production-source-ready content. Records are not
+installed into non-empty campaign state automatically; any future materialization remains a
+separately confirmed downstream boundary.
+
+Acceptance is recorded in
+[`adoption/evidence/DND-CODE-ADOPTION-SLICE-10-RECEIPT.md`](adoption/evidence/DND-CODE-ADOPTION-SLICE-10-RECEIPT.md).

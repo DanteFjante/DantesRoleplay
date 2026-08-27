@@ -1,7 +1,7 @@
 # D&D code-adoption Slice 10A receipt — SRD currency definitions
 
 Date: 2026-08-26  
-Status: **implemented and verified; acceptance pending user confirmation**  
+Status: **accepted**
 Boundary: Parent 10 / first homogeneous static-content cohort
 
 ## Delivered
@@ -50,4 +50,4 @@ materialization boundary therefore needs its own cross-owner decision before aut
 
 Mundane equipment, spells, monsters, and magic items remain separate Parent 10 cohorts. They may
 not reuse this receipt because their schemas and official locators differ; complex behavior remains
-Parent 11 work. Final Slice 10A acceptance requires user confirmation.
+Parent 11 work. The user accepted the remaining implemented slices on 2026-08-26.

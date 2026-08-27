@@ -40,6 +40,18 @@ identity records for levels 1–2. The records are exact semantic relocations: t
 Fighter's Hit Point Die/fixed gain and level-indexed feature identities, but do not reproduce feature
 descriptions or implement feature behavior.
 
+Slice 11B recovers the archived first-party damage-mitigation component, writer, and effect-free
+profile IDs. Their source locator is corrected to `Playing the Game > Damage and Healing >
+Resistance and Vulnerability` and `Immunity` (PDF p. 17), with the composed Petrified dependency
+at `Rules Glossary > Petrified > Resist Damage` (PDF p. 186). No SRD prose is reproduced in the
+runtime records and no Foundry code or data is copied.
+
+Slices 11F–11G recover the archived first-party Temporary Hit Point component/writer ID and adapt
+the archived healing and damage-absorption behavior to the current application action/effect seam.
+Their exact locators are `Playing the Game > Damage and Healing > Healing` (PDF p. 17) and
+`Temporary Hit Points` (PDF p. 18). Unsupported archived event output is not activated. No SRD prose
+is reproduced in runtime records and no Foundry code, data, assets, or dependency is copied.
+
 ## dnd-srd-engine derivation code
 
 The Slice 9 character-sheet derivation adapts ideas and code structure from the following MIT

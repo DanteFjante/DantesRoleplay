@@ -1,6 +1,6 @@
 # D&D code-adoption Slice 10F implementation — Fighter levels 1–2 progression identities
 
-Status: **implemented; acceptance pending confirmation**  
+Status: **accepted**
 Owner/roadmap: [D&D 2024 application roadmap](ROADMAP.md), breadth lane  
 Dependency tree/leaf: [Slice 10 static-content design](DND-CODE-ADOPTION-SLICE-10-DESIGN.md), leaf 10F  
 Ruleset alignment: `dnd2024-owned`  
@@ -101,6 +101,6 @@ write, transaction, replay key, or rollback path in this static/read-only leaf.
 
 ## Completion receipt and exit gate
 
-Record results in `adoption/evidence/DND-CODE-ADOPTION-SLICE-10F-RECEIPT.md`. Final acceptance still
-requires user confirmation; this leaf must not expand into executable class features or actor
-advancement.
+Results are recorded in `adoption/evidence/DND-CODE-ADOPTION-SLICE-10F-RECEIPT.md`. The user
+accepted the remaining implemented leaves on 2026-08-26. This leaf does not expand into executable
+class features or actor advancement.
