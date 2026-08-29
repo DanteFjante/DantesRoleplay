@@ -1,0 +1,24 @@
+---
+id: mechanic.dnd2024.rest.progress
+category: ruleset.dnd2024.core.gameplay.rest
+name: Progress an active standard rest
+scope: dnd2024-srd-5.2.1
+status: active
+---
+
+## Description
+
+Classifies the complete authoritative clock interval since one active rest episode's last
+observation as permitted light activity or sleep. It can mark duration-ready but grants no benefit.
+
+## Matches
+
+progress a rest
+record rest activity
+sleep during a long rest
+
+## Requirements
+
+```json
+{"roles":{"creature":{"components":["dnd2024.rest-episode"],"description":"Creature whose active rest interval is classified."},"world":{"components":["game.core.world.root","game.core.world.clock"],"includeRelationships":true,"description":"Matching active base world whose clock supplies the interval end."},"policy":{"components":["dnd2024.rest-policy"],"description":"Canonical immutable standard-rest policy."}}}
+```

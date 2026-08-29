@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.thalmon-constitution",
+  "name": "Thalmon's Constitution",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Thalmon established a constitution intended to constrain future imperial rulers.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "rule",
+      "sensitivity": "open"
+    }
+  }
+}

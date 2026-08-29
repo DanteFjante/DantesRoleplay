@@ -1,0 +1,32 @@
+{
+  "id": "dnd2024.equipment.food-drink.ale-mug",
+  "name": "Ale (mug)",
+  "archetype": "dnd2024.archetype.item-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Equipment > Food, Drink, and Lodging > Ale (mug) (SRD 5.2.1, pages 101-101)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.item.price": {
+      "basePrice": {
+        "amount": {
+          "numerator": 4,
+          "denominator": 1
+        },
+        "denomination": {
+          "entityId": "dnd2024.equipment.currency.copper-piece"
+        }
+      }
+    }
+  }
+}

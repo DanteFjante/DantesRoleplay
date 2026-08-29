@@ -1,0 +1,25 @@
+{
+  "id": "dnd2024.subclass-feature.bard.college-of-lore.bonus-proficiencies",
+  "name": "Bonus Proficiencies",
+  "archetype": "dnd2024.archetype.feature-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Classes > Bard Subclass: College of Lore > Bonus Proficiencies (SRD 5.2.1, pages 35-35)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.feature": {
+      "ruleRefs": [],
+      "grantRefs": []
+    }
+  }
+}

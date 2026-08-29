@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dantesroleplay:dnd2024:prototype:value:containment-edge-reference",
+  "title": "Containment edge reference",
+  "description": "The complete identity of one generic state-space containment edge; the current container and slot are mutable edge data, not identity.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["stateSpaceId", "containedEntityId"],
+  "properties": {
+    "stateSpaceId": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S",
+      "maxLength": 200
+    },
+    "containedEntityId": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S",
+      "maxLength": 200
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "dnd2024.vocabulary.skill.persuasion",
+  "name": "Persuasion",
+  "archetype": "dnd2024.archetype.vocabulary-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Playing the Game > Proficiency > Skills (SRD 5.2.1, pages 9-9)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.vocabulary.term": {
+      "code": "persuasion",
+      "categoryRef": {
+        "entityId": "dnd2024.vocabulary.category.skill",
+        "expectedArchetype": "dnd2024.archetype.vocabulary-category-definition"
+      }
+    }
+  }
+}

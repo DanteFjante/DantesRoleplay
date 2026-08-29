@@ -1,0 +1,1 @@
+{"id":"dnd2024.encounter.turn","name":"Encounter turn","description":"Tracks one participant turn within an encounter round without embedding turn-budget rules."}

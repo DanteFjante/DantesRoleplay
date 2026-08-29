@@ -120,6 +120,26 @@ public sealed class SystemAudienceContextToolsTests
     }
 
     [Fact]
+    public async Task Returns_verified_game_master_context_without_actor_or_participation_read()
+    {
+        var bindings = new Bindings(Binding());
+        var participation = new Participation(ParticipationState.Active);
+
+        var result = await SystemAudienceContextTools.ResolveAsync(
+            new Seats(GameMasterSeat()), new Audience(true, KnowledgeAudienceRole.GameMaster), bindings,
+            participation, CancellationToken.None);
+
+        Assert.Null(result.Error);
+        Assert.Equal("campaign.fixture", result.Subject);
+        using var data = JsonDocument.Parse(JsonSerializer.Serialize(result.Data));
+        Assert.Equal("bound", data.RootElement.GetProperty("status").GetString());
+        Assert.Equal("game-master", data.RootElement.GetProperty("role").GetString());
+        Assert.False(data.RootElement.TryGetProperty("actorId", out _));
+        Assert.Equal(1, bindings.Calls);
+        Assert.Equal(0, participation.Calls);
+    }
+
+    [Fact]
     public void Dnd_chat_contract_uses_the_server_bound_creation_identity()
     {
         var path = Path.Combine(RepositoryRoot(), "catalog", "applications", "dnd2024", "procedures",
@@ -134,6 +154,9 @@ public sealed class SystemAudienceContextToolsTests
 
     private static LocalKnowledgeSeatSnapshot Seat() => new(
         true, "principal.fixture", "dnd2024", "campaign.fixture", "actor.fixture");
+
+    private static LocalKnowledgeSeatSnapshot GameMasterSeat() => new(
+        true, "principal.fixture", "dnd2024", "campaign.fixture", null, KnowledgeAudienceRole.GameMaster);
 
     private static KnowledgeApplicationBinding Binding()
     {
@@ -161,12 +184,12 @@ public sealed class SystemAudienceContextToolsTests
         public LocalKnowledgeSeatSnapshot Current() => value;
     }
 
-    private sealed class Audience(bool allowed) : IAuthorizedKnowledgeAudiencePolicy
+    private sealed class Audience(bool allowed, KnowledgeAudienceRole role = KnowledgeAudienceRole.Actor) : IAuthorizedKnowledgeAudiencePolicy
     {
         public Task<KnowledgeAudienceResolution> ResolveAsync(string campaignId, CancellationToken cancellationToken = default) =>
             Task.FromResult(allowed
                 ? new KnowledgeAudienceResolution(new("principal.fixture", campaignId,
-                    KnowledgeAudienceRole.Actor, "actor.fixture", "policy.fixture"))
+                    role, role == KnowledgeAudienceRole.Actor ? "actor.fixture" : null, "policy.fixture"))
                 : KnowledgeAudienceResolution.Denied());
     }
 

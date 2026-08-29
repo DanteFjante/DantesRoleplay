@@ -1,0 +1,30 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.object-instance",
+  "kind": "runtime",
+  "description": "A materialized item, vehicle, trap, or other object assembled from optional durability, inventory, magic, crew, and resource capabilities.",
+  "requiredComponents": [
+    "dnd2024.core.definition-link"
+  ],
+  "optionalComponents": [
+    "dnd2024.core.presentation",
+    "dnd2024.core.tags",
+    "dnd2024.object.durability",
+    "dnd2024.item.equipment",
+    "dnd2024.item.quantity",
+    "dnd2024.magic-item.attunement",
+    "dnd2024.magic-item.conflict",
+    "dnd2024.hazard.trap-state"
+  ],
+  "sourceSections": ["Equipment 89–103", "Gameplay Toolbox 192–203", "Magic Items 204–253"],
+  "externalOwners": [
+    {
+      "owner": "generic world containment and ownership relationships",
+      "usage": "Own current location, container membership, cargo manifest, and owner association."
+    },
+    {
+      "owner": "generic events and operation history",
+      "usage": "Own mutation and destruction provenance."
+    }
+  ]
+}

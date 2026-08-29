@@ -1,0 +1,1 @@
+{"id":"dnd2024.world.location","name":"World Location","description":"Closed shared-game place state for regions and playable locations. Containment is the only hierarchy and game.core.world.location.connected-to is the only initial adjacency convention. Governed by procedure.game.core.world.location."}

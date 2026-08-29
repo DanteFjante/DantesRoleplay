@@ -1,0 +1,77 @@
+{
+  "id": "dnd2024.species.dragonborn",
+  "name": "Dragonborn",
+  "archetype": "dnd2024.archetype.species-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Character Origins > Character Species > Dragonborn (SRD 5.2.1, pages 84-84)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.species": {
+      "grantRefs": []
+    },
+    "dnd2024.creature.classification": {
+      "creatureTypeRef": {
+        "entityId": "dnd2024.vocabulary.creature-type.humanoid",
+        "expectedArchetype": "dnd2024.archetype.vocabulary-definition"
+      },
+      "descriptiveTagRefs": []
+    },
+    "dnd2024.creature.body-basis": {
+      "allowedSizeRefs": [
+        {
+          "entityId": "dnd2024.vocabulary.size.medium",
+          "expectedArchetype": "dnd2024.archetype.vocabulary-definition"
+        }
+      ],
+      "defaultSizeRef": {
+        "entityId": "dnd2024.vocabulary.size.medium",
+        "expectedArchetype": "dnd2024.archetype.vocabulary-definition"
+      }
+    },
+    "dnd2024.creature.movement-basis": {
+      "speeds": {
+        "dnd2024.vocabulary.movement-mode.walk": {
+          "distance": {
+            "dimension": "distance",
+            "value": {
+              "numerator": 1143,
+              "denominator": 125
+            },
+            "unit": {
+              "entityId": "dnd2024.vocabulary.distance-unit.meter",
+              "expectedArchetype": "dnd2024.archetype.vocabulary-definition"
+            }
+          }
+        }
+      }
+    },
+    "dnd2024.creature.senses-basis": {
+      "senses": {
+        "dnd2024.vocabulary.sense.darkvision": {
+          "range": {
+            "dimension": "distance",
+            "value": {
+              "numerator": 2286,
+              "denominator": 125
+            },
+            "unit": {
+              "entityId": "dnd2024.vocabulary.distance-unit.meter",
+              "expectedArchetype": "dnd2024.archetype.vocabulary-definition"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.class-definition",
+  "kind": "authored",
+  "description": "An authored character class linking its grants, choices, level progression, and spellcasting sources.",
+  "requiredComponents": [
+    "dnd2024.core.source",
+    "dnd2024.core.version",
+    "dnd2024.advancement.class"
+  ],
+  "optionalComponents": [
+    "dnd2024.core.presentation",
+    "dnd2024.core.rules-text",
+    "dnd2024.core.tags"
+  ],
+  "sourceSections": ["Classes 28–82"]
+}

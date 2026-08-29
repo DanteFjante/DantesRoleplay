@@ -330,10 +330,40 @@ public sealed class KnowledgeCoreTests
         Assert.Contains(result.Entries, value => value.Text.Contains("old tolls", StringComparison.Ordinal));
         Assert.Contains(result.Entries, value => value.Stance == "familiar" &&
             value.Text == "You recognize this as a familiar topic, but do not remember details.");
+        Assert.Empty(result.Locations);
         var json = System.Text.Json.JsonSerializer.Serialize(result);
         Assert.DoesNotContain("hidden", json, StringComparison.Ordinal);
         Assert.DoesNotContain("names the spy", json, StringComparison.Ordinal);
         Assert.DoesNotContain("KnowledgeId", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Notebook_groups_only_known_active_location_subjects_without_ids()
+    {
+        using var fixture = new KnowledgeFixture();
+        await fixture.AddCoreAsync();
+        await fixture.AddActiveLocationAsync("market", "Market");
+        await fixture.AddKnowledgeAsync("known", "The market archive records old tolls.", "market");
+        await fixture.AddKnowledgeAsync("familiar", "The market seal is familiar.", "market");
+        await fixture.RelateAsync(fixture.Actor, "known", fixture.Binding.ExplicitStateRelationshipKind,
+            "{\"stance\":\"known\"}");
+        await fixture.RelateAsync(fixture.Actor, "familiar", fixture.Binding.ExplicitStateRelationshipKind,
+            "{\"stance\":\"familiar\"}");
+        var reader = new AuthorizedKnowledgeNotebookReader(
+            new Policy(new(new("principal", fixture.Campaign, KnowledgeAudienceRole.Actor,
+                fixture.Actor, "policy.1"))),
+            new Binding(fixture.Binding), new Participation(), fixture.Source, fixture.States,
+            new DeterministicKnowledgeLexicalRetriever());
+
+        var result = await reader.ReadAsync(new(fixture.Campaign));
+
+        var location = Assert.Single(result.Locations);
+        Assert.Equal("Market", location.Name);
+        var entry = Assert.Single(location.Entries);
+        Assert.Contains("old tolls", entry.Text, StringComparison.Ordinal);
+        var json = System.Text.Json.JsonSerializer.Serialize(result.Locations);
+        Assert.DoesNotContain("SubjectId", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("market seal", json, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -376,7 +406,7 @@ public sealed class KnowledgeCoreTests
     }
 
     private static CanonicalKnowledgeDocument Document(string id, string text) => new(
-        id, "world", "statement", "active", false, "subject", null, null,
+        id, "world", "statement", "active", false, "subject", "Subject", false, null, null,
         text, text, "statement", "revision");
 
     private static AuthorizedKnowledgeCandidateSet Set(
@@ -528,16 +558,23 @@ public sealed class KnowledgeCoreTests
             await RelateAsync(Campaign, World, Binding.CampaignWorldRelationshipKind, "{}");
         }
 
-        public async Task AddKnowledgeAsync(string id, string text)
+        public async Task AddKnowledgeAsync(string id, string text, string? subjectId = null)
         {
-            var subject = $"subject-{id}";
-            await EntityAsync(subject, $"Subject {id}");
+            var subject = subjectId ?? $"subject-{id}";
+            if (subjectId is null) await EntityAsync(subject, $"Subject {id}");
             await EntityAsync(id, $"Record {id}");
             await ComponentAsync(id, Binding.KnowledgeKinds[0].ComponentTypeId,
                 $"{{\"state\":\"active\",\"text\":{System.Text.Json.JsonSerializer.Serialize(text)}}}");
             await ComponentAsync(id, Binding.ClassificationComponentTypeId, "{\"level\":\"reviewed\"}");
             await RelateAsync(id, World, Binding.KnowledgeWorldRelationshipKind, "{}");
             await RelateAsync(id, subject, Binding.KnowledgeAboutRelationshipKind, "{}");
+        }
+
+        public async Task AddActiveLocationAsync(string id, string name)
+        {
+            await EntityAsync(id, name);
+            await ComponentAsync(id, Binding.LocationComponentTypeId,
+                "{\"state\":\"ready\",\"kind\":\"region\"}");
         }
 
         public Task AddEntityAsync(string id, string name) => EntityAsync(id, name);

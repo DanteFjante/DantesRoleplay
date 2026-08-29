@@ -1,0 +1,13 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.monster-variant-definition",
+  "kind": "authored",
+  "description": "An authored variant that references and modifies a base monster without copying its stat block.",
+  "requiredComponents": [
+    "dnd2024.core.source",
+    "dnd2024.core.version",
+    "dnd2024.monster.variant"
+  ],
+  "optionalComponents": ["dnd2024.core.presentation", "dnd2024.core.rules-text", "dnd2024.core.tags"],
+  "sourceSections": ["Monsters 254–257", "Monsters A–Z 258–343"]
+}

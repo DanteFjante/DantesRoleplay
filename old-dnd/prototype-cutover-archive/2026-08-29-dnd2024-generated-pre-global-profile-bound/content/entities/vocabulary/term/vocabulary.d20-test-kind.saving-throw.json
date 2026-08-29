@@ -1,0 +1,28 @@
+{
+  "id": "dnd2024.vocabulary.d20-test-kind.saving-throw",
+  "name": "Saving Throw",
+  "archetype": "dnd2024.archetype.vocabulary-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Rules Glossary > Saving Throw (SRD 5.2.1, pages 187-187)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.vocabulary.term": {
+      "code": "saving-throw",
+      "categoryRef": {
+        "entityId": "dnd2024.vocabulary.category.d20-test-kind",
+        "expectedArchetype": "dnd2024.archetype.vocabulary-category-definition"
+      }
+    }
+  }
+}

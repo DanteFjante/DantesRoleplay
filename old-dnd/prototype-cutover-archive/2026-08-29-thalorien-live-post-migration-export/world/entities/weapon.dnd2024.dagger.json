@@ -1,0 +1,23 @@
+{
+  "id": "weapon.dnd2024.dagger",
+  "name": "Dagger (D&D 2024)",
+  "components": {
+    "dnd2024.weapon-profile": {
+      "category": "simple",
+      "kind": "melee",
+      "attackAbilities": [
+        "str",
+        "dex"
+      ],
+      "damage": {
+        "count": 1,
+        "faces": 4,
+        "type": "piercing"
+      },
+      "sourceRef": {
+        "sourceId": "source.dnd2024.srd-5.2.1",
+        "locator": "Equipment > Weapons"
+      }
+    }
+  }
+}

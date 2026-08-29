@@ -1,0 +1,46 @@
+{
+  "id": "dnd2024.spell.beacon-of-hope",
+  "name": "Beacon of Hope",
+  "archetype": "dnd2024.archetype.spell-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Spells > Spell Descriptions > Beacon of Hope (SRD 5.2.1, pages 112-112)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.core.presentation": {
+      "summary": "Level 3; school: Abjuration; class spell lists: Cleric."
+    },
+    "dnd2024.spellcasting.spell": {
+      "level": 3,
+      "school": {
+        "entityId": "dnd2024.spell-school.abjuration"
+      },
+      "castingActivity": {
+        "entityId": "dnd2024.shared.action.magic",
+        "expectedArchetype": "dnd2024.archetype.activity-definition"
+      },
+      "ritual": false
+    },
+    "dnd2024.spellcasting.components": {
+      "requirements": []
+    },
+    "dnd2024.spellcasting.spell-list-membership": {
+      "lists": [
+        {
+          "entityId": "dnd2024.spell-list.cleric",
+          "expectedArchetype": "dnd2024.archetype.spellcasting-source-definition"
+        }
+      ]
+    }
+  }
+}

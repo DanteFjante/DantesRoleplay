@@ -1,0 +1,28 @@
+{
+  "id": "dnd2024.magic-item.sentient-demand.its-time-for-a-change",
+  "name": "It’s Time for a Change",
+  "archetype": "dnd2024.archetype.vocabulary-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Magic Items > Sentient Magic Items > Conflict > It’s Time for a Change (SRD 5.2.1, pages 208-208)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.vocabulary.term": {
+      "code": "its-time-for-a-change",
+      "categoryRef": {
+        "entityId": "dnd2024.vocabulary.category.sentient-item-demand",
+        "expectedArchetype": "dnd2024.archetype.vocabulary-category-definition"
+      }
+    }
+  }
+}

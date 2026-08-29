@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dantesroleplay:dnd2024:prototype:value:money",
+  "title": "Money amount",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["amount", "denomination"],
+  "properties": {
+    "amount": { "$ref": "urn:dantesroleplay:dnd2024:prototype:value:nonnegative-rational" },
+    "denomination": { "$ref": "urn:dantesroleplay:dnd2024:prototype:value:entity-reference" }
+  }
+}

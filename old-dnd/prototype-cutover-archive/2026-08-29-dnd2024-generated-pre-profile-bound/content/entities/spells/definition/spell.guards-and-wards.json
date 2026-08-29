@@ -1,0 +1,50 @@
+{
+  "id": "dnd2024.spell.guards-and-wards",
+  "name": "Guards and Wards",
+  "archetype": "dnd2024.archetype.spell-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Spells > Spell Descriptions > Guards and Wards (SRD 5.2.1, pages 137-137)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.core.presentation": {
+      "summary": "Level 6; school: Abjuration; class spell lists: Bard, Wizard."
+    },
+    "dnd2024.spellcasting.spell": {
+      "level": 6,
+      "school": {
+        "entityId": "dnd2024.spell-school.abjuration"
+      },
+      "castingActivity": {
+        "entityId": "dnd2024.shared.action.magic",
+        "expectedArchetype": "dnd2024.archetype.activity-definition"
+      },
+      "ritual": false
+    },
+    "dnd2024.spellcasting.components": {
+      "requirements": []
+    },
+    "dnd2024.spellcasting.spell-list-membership": {
+      "lists": [
+        {
+          "entityId": "dnd2024.spell-list.bard",
+          "expectedArchetype": "dnd2024.archetype.spellcasting-source-definition"
+        },
+        {
+          "entityId": "dnd2024.spell-list.wizard",
+          "expectedArchetype": "dnd2024.archetype.spellcasting-source-definition"
+        }
+      ]
+    }
+  }
+}

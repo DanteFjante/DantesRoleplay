@@ -1,0 +1,1 @@
+{"id":"dnd2024.creature.hit-point-basis","name":"Creature Hit Point basis","description":"Immutable fixed, average-plus-dice, or calculated Hit Point maximum using the shared rollable-amount shape."}

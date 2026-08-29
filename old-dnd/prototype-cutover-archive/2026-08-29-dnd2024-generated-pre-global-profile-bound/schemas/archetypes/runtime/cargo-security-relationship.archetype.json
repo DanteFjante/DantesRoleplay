@@ -1,0 +1,15 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.cargo-security-relationship",
+  "kind": "runtime",
+  "description": "Vehicle-specific securing facts layered onto a generic cargo-containment relationship.",
+  "requiredComponents": ["dnd2024.vehicle.cargo-security"],
+  "optionalComponents": [],
+  "sourceSections": ["Equipment 89–103", "Gameplay Toolbox 192–203"],
+  "externalOwners": [
+    {
+      "owner": "generic containment relationship",
+      "usage": "Owns cargo, vehicle, compartment, ordering, and manifest membership."
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{"id":"dnd2024.resource.pool","name":"Limited resource pool state","description":"One entity-addressable limited-resource pool; its ECS identity disambiguates multiple pools that use the same resource definition, and generic relationships link it to an owner."}

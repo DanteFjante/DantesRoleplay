@@ -1,0 +1,27 @@
+---
+id: mechanic.dnd2024.encounter-initiative-order
+category: ruleset.dnd2024.core.combat.initiative.order
+name: Materialize encounter Initiative participation
+scope: dnd2024-srd-5.2.1
+status: active
+---
+
+## Description
+
+Composes one effect-free Initiative result per pre-combat contained actor, applies optional active-rest interruption plans, and atomically creates the authoritative encounter participation graph with one locked Initiative component per participation. It stores no encounter-owned order snapshot.
+
+The atomic materialization admits at most 18 actors so even the maximum Short Rest cleanup remains
+within the generic 128-effect transaction boundary.
+
+## Matches
+
+start combat encounter
+set encounter initiative order
+order encounter by initiative
+determine encounter turn order
+
+## Requirements
+
+```json
+{"roles":{"encounter":{"components":["dnd2024.encounter.participation","dnd2024.combat.initiative"],"includeContents":true,"includeRelationships":true,"description":"The encounter whose pre-Initiative containment roster is materialized as participation entities."}},"children":{"initiative":{"mechanicId":"mechanic.dnd2024.initiative.roll","roleBindings":{"subject":"$item"},"forEachContentsOf":"encounter","inheritInput":false,"inputFromParentProperty":"participants","inputForEachItem":true}}}
+```

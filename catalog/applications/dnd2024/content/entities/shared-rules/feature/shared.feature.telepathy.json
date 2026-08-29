@@ -1,0 +1,25 @@
+{
+  "id": "dnd2024.shared.feature.telepathy",
+  "name": "Telepathy",
+  "archetype": "dnd2024.archetype.feature-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Rules Glossary > Telepathy (SRD 5.2.1, pages 190-190)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.core.presentation": {
+      "summary": "A reusable communication feature referenced by monster senses/languages fields; range and recipient constraints belong in its structured rule data."
+    },
+    "dnd2024.advancement.feature": {}
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.modern-national-balance",
+  "name": "Modern Balance Among the Nations",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The nations that lost so much in the great Thalos war have replaced its old points of interest with newer ones over the centuries. In the present day, the seven nations are more balanced than they were when the war began.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

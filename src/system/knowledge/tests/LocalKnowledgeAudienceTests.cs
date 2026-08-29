@@ -55,7 +55,23 @@ public sealed class LocalKnowledgeAudienceTests
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IAuthorizedKnowledgeCoordinator>());
     }
 
-    private static WebApplication Host()
+    [Fact]
+    public async Task Loopback_exact_campaign_grants_fixed_game_master_without_an_actor()
+    {
+        using var app = Host(gameMaster: true);
+        var accessor = app.Services.GetRequiredService<IHttpContextAccessor>();
+        accessor.HttpContext = Context(IPAddress.Loopback);
+        var policy = app.Services.GetRequiredService<IAuthorizedKnowledgeAudiencePolicy>();
+
+        var granted = await policy.ResolveAsync("campaign.fixture");
+
+        Assert.True(granted.Granted);
+        Assert.Equal(KnowledgeAudienceRole.GameMaster, granted.Grant!.Role);
+        Assert.Null(granted.Grant.ActorId);
+        Assert.Equal("principal.fixture", granted.Grant.PrincipalId);
+    }
+
+    private static WebApplication Host(bool gameMaster = false)
     {
         var builder = WebApplication.CreateSlimBuilder();
         builder.Host.UseDefaultServiceProvider(options =>
@@ -67,7 +83,8 @@ public sealed class LocalKnowledgeAudienceTests
         builder.Configuration["Knowledge:LocalPlayer:PrincipalId"] = "principal.fixture";
         builder.Configuration["Knowledge:LocalPlayer:ApplicationId"] = "fixture";
         builder.Configuration["Knowledge:LocalPlayer:CampaignId"] = "campaign.fixture";
-        builder.Configuration["Knowledge:LocalPlayer:ActorId"] = "actor.fixture";
+        builder.Configuration["Knowledge:LocalPlayer:Role"] = gameMaster ? "GameMaster" : "Actor";
+        if (!gameMaster) builder.Configuration["Knowledge:LocalPlayer:ActorId"] = "actor.fixture";
         builder.Services.AddSingleton<ILocalStructuredCompletionProvider, Completion>();
         builder.Services.AddDantesRoleplayMcpServer(
             "Data Source=:memory:", DatabaseProvider.Sqlite,

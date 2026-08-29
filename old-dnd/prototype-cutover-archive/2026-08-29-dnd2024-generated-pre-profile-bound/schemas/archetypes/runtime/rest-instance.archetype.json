@@ -1,0 +1,19 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.rest-instance",
+  "kind": "runtime",
+  "description": "One declared rest whose participant membership and recovery effects remain externally owned.",
+  "requiredComponents": ["dnd2024.exploration.rest"],
+  "optionalComponents": [],
+  "sourceSections": ["Playing the Game 5–18", "Rules Glossary 176–191"],
+  "externalOwners": [
+    {
+      "owner": "generic participation relationships",
+      "usage": "Own the rest participant roster."
+    },
+    {
+      "owner": "generic events, clocks, and operation history",
+      "usage": "Own interruption timing and transactional recovery effects."
+    }
+  ]
+}

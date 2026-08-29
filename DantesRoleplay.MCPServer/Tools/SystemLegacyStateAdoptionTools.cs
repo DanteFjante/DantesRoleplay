@@ -37,8 +37,8 @@ internal sealed class SystemLegacyStateAdoptionTools
             var root = document.RootElement;
             if (root.ValueKind != JsonValueKind.Object)
                 throw Invalid("payload must be a JSON object.");
-            RequireProperties(root, "requestToken", "stateSpaceId", "applicationId",
-                "activeFingerprint", "componentMappings", "relationshipMappings");
+            RequireRootProperties(root, ["requestToken", "stateSpaceId", "applicationId",
+                "activeFingerprint", "componentMappings", "relationshipMappings"], ["entityIds"]);
             var token = String(root, "requestToken", 32);
             var app = ApplicationIdentifier.Parse(String(root, "applicationId", 63));
             var request = new LegacyStateAdoptionRequest(
@@ -46,7 +46,8 @@ internal sealed class SystemLegacyStateAdoptionTools
                 app,
                 String(root, "activeFingerprint", 64),
                 ComponentMappings(root.GetProperty("componentMappings")),
-                RelationshipMappings(root.GetProperty("relationshipMappings")));
+                RelationshipMappings(root.GetProperty("relationshipMappings")),
+                root.TryGetProperty("entityIds", out var entityIds) ? EntityIds(entityIds) : null);
             var context = new LegacyStateAdoptionContext(token, intent,
                 Array.AsReadOnly((procedures ?? []).ToArray()), decision.Evidence);
 
@@ -126,6 +127,22 @@ internal sealed class SystemLegacyStateAdoptionTools
         return values.AsReadOnly();
     }
 
+    private static IReadOnlyList<string> EntityIds(JsonElement element)
+    {
+        if (element.ValueKind != JsonValueKind.Array || element.GetArrayLength() is < 1 or > 1_000)
+            throw Invalid("entityIds must be an array with 1 through 1,000 entries.");
+        var values = element.EnumerateArray().Select(value =>
+        {
+            var entityId = value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+            if (string.IsNullOrWhiteSpace(entityId) || entityId.Length > 200 || entityId.Any(char.IsControl))
+                throw Invalid("Every entityIds entry must be a bounded identifier without control characters.");
+            return entityId;
+        }).ToArray();
+        if (values.Distinct(StringComparer.Ordinal).Count() != values.Length)
+            throw Invalid("entityIds must not contain duplicates.");
+        return Array.AsReadOnly(values);
+    }
+
     private static object Data(bool dryRun, string token, string outcome, LegacyStateInventory inventory) => new
     {
         DryRun = dryRun,
@@ -143,6 +160,17 @@ internal sealed class SystemLegacyStateAdoptionTools
             || names.Except(required, StringComparer.Ordinal).Any()
             || required.Except(names, StringComparer.Ordinal).Any())
             throw Invalid($"payload object must contain exactly: {string.Join(", ", required)}.");
+    }
+
+    private static void RequireRootProperties(JsonElement payload, IReadOnlyList<string> required,
+        IReadOnlyList<string> optional)
+    {
+        if (payload.ValueKind != JsonValueKind.Object) throw Invalid("payload must be a JSON object.");
+        var names = payload.EnumerateObject().Select(value => value.Name).ToArray();
+        if (names.Length != names.Distinct(StringComparer.Ordinal).Count()
+            || names.Except(required.Concat(optional), StringComparer.Ordinal).Any()
+            || required.Except(names, StringComparer.Ordinal).Any())
+            throw Invalid($"payload must contain {string.Join(", ", required)} and only optional fields: {string.Join(", ", optional)}.");
     }
 
     private static string String(JsonElement payload, string name, int maximum)

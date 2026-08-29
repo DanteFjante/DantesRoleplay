@@ -1,0 +1,28 @@
+{
+  "id": "dnd2024.vocabulary.creature-state.stable",
+  "name": "Stable",
+  "archetype": "dnd2024.archetype.vocabulary-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Rules Glossary > Stable (SRD 5.2.1, pages 188-188)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.vocabulary.term": {
+      "code": "stable",
+      "categoryRef": {
+        "entityId": "dnd2024.vocabulary.category.creature-state",
+        "expectedArchetype": "dnd2024.archetype.vocabulary-category-definition"
+      }
+    }
+  }
+}

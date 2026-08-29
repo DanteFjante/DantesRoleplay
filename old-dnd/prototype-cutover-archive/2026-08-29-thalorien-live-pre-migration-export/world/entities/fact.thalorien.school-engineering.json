@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.school-engineering",
+  "name": "The School of Non-Magical Engineering",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Thalmon founded a School of non-magical Engineering alongside the University.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

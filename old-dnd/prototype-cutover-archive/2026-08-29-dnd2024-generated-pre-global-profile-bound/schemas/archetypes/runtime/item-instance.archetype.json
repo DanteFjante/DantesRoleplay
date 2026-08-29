@@ -1,0 +1,25 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.item-instance",
+  "kind": "runtime",
+  "description": "A definition-linked item stack with optional equipment, durability, attunement, and sentient-conflict state.",
+  "requiredComponents": [
+    "dnd2024.core.definition-link",
+    "dnd2024.item.quantity"
+  ],
+  "optionalComponents": [
+    "dnd2024.core.presentation",
+    "dnd2024.core.tags",
+    "dnd2024.item.equipment",
+    "dnd2024.object.durability",
+    "dnd2024.magic-item.attunement",
+    "dnd2024.magic-item.conflict"
+  ],
+  "sourceSections": ["Equipment 89–103", "Magic Items 204–253"],
+  "externalOwners": [
+    {
+      "owner": "generic ownership, containment, resource-pool, and knowledge relationships",
+      "usage": "Own bearer, owner, placement, limited resources, and per-observer magic-item knowledge."
+    }
+  ]
+}

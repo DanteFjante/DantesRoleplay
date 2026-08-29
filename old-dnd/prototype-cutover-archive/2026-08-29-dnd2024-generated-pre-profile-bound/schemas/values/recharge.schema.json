@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dantesroleplay:dnd2024:prototype:value:recharge",
+  "title": "Recharge rule",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "enum": ["short-rest", "long-rest", "dawn", "start-of-turn", "end-of-turn", "never"]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "roll", "minimumResult"],
+      "properties": {
+        "kind": { "const": "roll" },
+        "roll": { "$ref": "urn:dantesroleplay:dnd2024:prototype:value:dice-expression" },
+        "minimumResult": { "type": "integer" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "duration"],
+      "properties": {
+        "kind": { "const": "measured-time" },
+        "duration": {
+          "allOf": [
+            { "$ref": "urn:dantesroleplay:dnd2024:prototype:value:duration" },
+            {
+              "properties": { "kind": { "const": "measured" } },
+              "required": ["kind"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "rule"],
+      "properties": {
+        "kind": { "const": "special" },
+        "rule": { "$ref": "urn:dantesroleplay:dnd2024:prototype:value:entity-reference" }
+      }
+    }
+  ]
+}

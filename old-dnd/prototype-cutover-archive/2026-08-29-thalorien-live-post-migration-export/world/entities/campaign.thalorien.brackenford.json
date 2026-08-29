@@ -1,0 +1,22 @@
+{
+  "id": "campaign.thalorien.brackenford",
+  "name": "The Waystone at Brackenford",
+  "components": {
+    "game.core.campaign.root": {
+      "status": "active",
+      "title": "The Waystone at Brackenford",
+      "premise": "In a warm frontier village beside a smaller, ancient forest, a lull in goblin attacks and a forgotten waystone cellar hint that something old is waking beneath the trees.",
+      "partyGoals": [
+        "Build trust with the people of Brackenford and learn what has changed along the old patrol road.",
+        "Follow the clues toward the waystone cellar without losing sight of the village's safety."
+      ],
+      "toneAndBoundaries": [
+        "Cozy high fantasy with poetic scenery, kind communities, and space for quiet relationships.",
+        "Mysteries, riddles, hidden quests, and occasional frightening danger are welcome; player choices matter and companions are not disposable."
+      ],
+      "rulesetScope": "dnd2024",
+      "creationMethod": "manual",
+      "reviewFingerprint": "202dd66937c5d91d84cbb41a6f84dc5acea70cdb5282dcdb2fb22b5e25ccce6e"
+    }
+  }
+}

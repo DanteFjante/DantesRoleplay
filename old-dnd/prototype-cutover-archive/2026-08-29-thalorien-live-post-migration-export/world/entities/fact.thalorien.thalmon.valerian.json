@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.thalmon.valerian",
+  "name": "Prince Valerian",
+  "components": {
+    "game.core.world.fact": {
+      "status": "archived",
+      "summary": "Prince Valerian, Thalmon's fourth child and third son, was trained in warfare and defence.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22). Superseded by the approved ancient-name revision.",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "identity",
+      "sensitivity": "open"
+    }
+  }
+}

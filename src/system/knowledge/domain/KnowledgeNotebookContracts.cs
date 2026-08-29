@@ -17,16 +17,25 @@ public sealed record AuthorizedKnowledgeNotebookEntry(
     string Stance,
     string PresentationKind);
 
+/// <summary>
+/// A player-safe location label derived only from already-admitted knowledge. It carries neither
+/// an entity ID nor location data; its entries repeat notebook content that is visible already.
+/// </summary>
+public sealed record AuthorizedKnowledgeNotebookLocation(
+    string Name,
+    IReadOnlyList<AuthorizedKnowledgeNotebookEntry> Entries);
+
 public sealed record AuthorizedKnowledgeNotebookResult(
     string Status,
     IReadOnlyList<AuthorizedKnowledgeNotebookEntry> Entries,
+    IReadOnlyList<AuthorizedKnowledgeNotebookLocation> Locations,
     string ErrorCode = "")
 {
     public static AuthorizedKnowledgeNotebookResult Denied() =>
-        new("denied", [], "KNOWLEDGE_AUDIENCE_DENIED");
+        new("denied", [], [], "KNOWLEDGE_AUDIENCE_DENIED");
 
     public static AuthorizedKnowledgeNotebookResult Unavailable(string code = "KNOWLEDGE_UNAVAILABLE") =>
-        new("unavailable", [], code);
+        new("unavailable", [], [], code);
 }
 
 public interface IAuthorizedKnowledgeNotebookReader

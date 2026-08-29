@@ -1,0 +1,34 @@
+{
+  "id": "dnd2024.class.wizard",
+  "name": "Wizard",
+  "archetype": "dnd2024.archetype.class-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Classes > Wizard (SRD 5.2.1, pages 77-82)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.class": {
+      "primaryAbilityRefs": [
+        {
+          "entityId": "dnd2024.vocabulary.ability.intelligence"
+        }
+      ],
+      "hitDieRef": {
+        "entityId": "dnd2024.vocabulary.die.d6"
+      },
+      "progressionRef": {
+        "entityId": "dnd2024.class-progression.wizard"
+      }
+    }
+  }
+}

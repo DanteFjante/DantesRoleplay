@@ -390,7 +390,9 @@ public sealed class WebInterfaceTests
             StringComparison.Ordinal);
         Assert.Contains("customElements.define('dnd2024-workspace'", dndScript,
             StringComparison.Ordinal);
-        Assert.Contains("this._selectedView = 'character'", dndScript, StringComparison.Ordinal);
+        Assert.Contains("this._selectedView = 'party'", dndScript, StringComparison.Ordinal);
+        Assert.Contains("['world', 'World', '⌘']", dndScript, StringComparison.Ordinal);
+        Assert.Contains("Dante\\'s Roleplay · D&D 2024 table", dndScript, StringComparison.Ordinal);
         Assert.Contains("viewTabs.setAttribute('role', 'tablist')", dndScript,
             StringComparison.Ordinal);
         Assert.Contains("button.setAttribute('role', 'tab')", dndScript,
@@ -404,16 +406,14 @@ public sealed class WebInterfaceTests
         Assert.Contains("event.key === 'End'", dndScript, StringComparison.Ordinal);
         Assert.Contains("characterView.append(characterMain, characterSide)", dndScript,
             StringComparison.Ordinal);
-        Assert.Contains("['scene', 'Scene', '◉']", dndScript, StringComparison.Ordinal);
-        Assert.Contains("['knowledge', 'Knowledge', '✦']", dndScript, StringComparison.Ordinal);
+        Assert.Contains("['current', 'Current', '◉']", dndScript, StringComparison.Ordinal);
+        Assert.Contains("['rules', 'Rules', '✦']", dndScript, StringComparison.Ordinal);
         Assert.Contains("async _loadKnowledge(campaignId, signal)", dndScript, StringComparison.Ordinal);
         Assert.Contains("_renderKnowledge()", dndScript, StringComparison.Ordinal);
         Assert.Contains("/campaigns/${encodeURIComponent(campaignId)}/knowledge", dndScript,
             StringComparison.Ordinal);
         Assert.DoesNotContain("knowledgeId", dndScript, StringComparison.Ordinal);
-        Assert.Contains("sceneView.append(this._location.panel, this._scenePeople.panel)", dndScript,
-            StringComparison.Ordinal);
-        Assert.Contains("knowledgeView.append(this._knowledgePanel.panel)", dndScript,
+        Assert.Contains("sceneView.append(this._location.panel, this._scenePeople.panel, this._knowledgePanel.panel)", dndScript,
             StringComparison.Ordinal);
         Assert.Contains("campaignView.append(this._campaignPanel.panel)", dndScript,
             StringComparison.Ordinal);
@@ -1273,6 +1273,7 @@ public sealed class WebInterfaceTests
 
         Assert.Equal(WebInterfaceSecurity.ContentSecurityPolicy, context.Response.Headers.ContentSecurityPolicy);
         Assert.Contains("connect-src 'self'", context.Response.Headers.ContentSecurityPolicy.ToString(), StringComparison.Ordinal);
+        Assert.Contains("frame-src 'self' http://localhost:5173", context.Response.Headers.ContentSecurityPolicy.ToString(), StringComparison.Ordinal);
         Assert.Contains("object-src 'none'", context.Response.Headers.ContentSecurityPolicy.ToString(), StringComparison.Ordinal);
         Assert.Contains("frame-ancestors 'none'", context.Response.Headers.ContentSecurityPolicy.ToString(), StringComparison.Ordinal);
         Assert.Equal("nosniff", context.Response.Headers.XContentTypeOptions);
@@ -2404,20 +2405,16 @@ public sealed class WebInterfaceTests
     }
 
     [Fact]
-    public void Dnd2024_play_page_is_a_game_viewport_not_a_generated_form()
+    public void Dnd2024_play_page_mounts_the_actual_local_information_hub()
     {
         var html = File.ReadAllText(Path.Combine(
             RepositoryRoot(), "src", "system", "web-interface", "examples", "dnd2024-play", "index.html"));
 
-        Assert.Contains("<dnd2024-workspace application-id=\"dnd2024\">", html, StringComparison.Ordinal);
-        Assert.Contains("/components/application-workspace.js", html, StringComparison.Ordinal);
-        Assert.Contains("/components/dnd2024-workspace.js", html, StringComparison.Ordinal);
-        Assert.Contains("<system-navigation application-id=\"dnd2024\">", html, StringComparison.Ordinal);
-        Assert.Contains("<application-conversation", html, StringComparison.Ordinal);
-        Assert.Contains("session-context-id=\"dnd2024-play\"", html, StringComparison.Ordinal);
-        Assert.Contains("Game table", html, StringComparison.Ordinal);
-        Assert.Contains("Opening the game table", html, StringComparison.Ordinal);
-        Assert.Contains("radial-gradient", html, StringComparison.Ordinal);
+        Assert.Contains("<iframe", html, StringComparison.Ordinal);
+        Assert.Contains("class=\"prototype-frame\"", html, StringComparison.Ordinal);
+        Assert.Contains("src=\"http://localhost:5173/\"", html, StringComparison.Ordinal);
+        Assert.Contains("Dante's Roleplay D&D 2024 information hub", html, StringComparison.Ordinal);
+        Assert.Contains("Dante's Roleplay", html, StringComparison.Ordinal);
         Assert.DoesNotContain("<system-form", html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("<form", html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("application/json", html, StringComparison.OrdinalIgnoreCase);

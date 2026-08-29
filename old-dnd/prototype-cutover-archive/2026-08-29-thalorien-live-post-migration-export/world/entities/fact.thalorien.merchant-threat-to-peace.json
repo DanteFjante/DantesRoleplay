@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.merchant-threat-to-peace",
+  "name": "The Merchant Threat to Peace",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The current peace is quietly threatened by a secret merchant coalition seeking to weaken the shared civic education that protects citizens from manipulation, while persuading the kingdoms that this safeguard is obsolete.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

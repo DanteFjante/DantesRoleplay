@@ -1,0 +1,28 @@
+{
+  "id": "dnd2024.vocabulary.roll-mode.advantage",
+  "name": "Advantage",
+  "archetype": "dnd2024.archetype.vocabulary-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Rules Glossary > Advantage (SRD 5.2.1, pages 176-176)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.vocabulary.term": {
+      "code": "advantage",
+      "categoryRef": {
+        "entityId": "dnd2024.vocabulary.category.roll-mode",
+        "expectedArchetype": "dnd2024.archetype.vocabulary-category-definition"
+      }
+    }
+  }
+}

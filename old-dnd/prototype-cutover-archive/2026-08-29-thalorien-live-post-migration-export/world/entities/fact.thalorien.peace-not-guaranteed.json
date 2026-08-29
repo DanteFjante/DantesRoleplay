@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.peace-not-guaranteed",
+  "name": "An Uncertain Peace",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The present peace is not guaranteed to last forever; tensions may develop into more serious conflict as play changes the world.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

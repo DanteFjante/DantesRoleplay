@@ -1,0 +1,37 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.monster-instance",
+  "kind": "runtime",
+  "description": "A definition-linked monster materialized with authoritative creature state and spawn provenance.",
+  "requiredComponents": [
+    "dnd2024.core.definition-link",
+    "dnd2024.monster.spawn-provenance",
+    "dnd2024.creature.classification",
+    "dnd2024.creature.ability-scores",
+    "dnd2024.creature.body",
+    "dnd2024.creature.defenses",
+    "dnd2024.creature.hit-points",
+    "dnd2024.creature.languages",
+    "dnd2024.creature.movement",
+    "dnd2024.creature.proficiencies",
+    "dnd2024.creature.senses"
+  ],
+  "optionalComponents": [
+    "dnd2024.core.presentation",
+    "dnd2024.core.tags",
+    "dnd2024.creature.condition-immunities",
+    "dnd2024.creature.temporary-hit-points",
+    "dnd2024.spellcasting.concentration"
+  ],
+  "sourceSections": ["Monsters 254–257", "Monsters A–Z 258–343", "Animals 344–364"],
+  "externalOwners": [
+    {
+      "owner": "generic relationships to resource pools, spellcasting sources, and slot pools",
+      "usage": "Own one-to-many association with entity-addressable limited-use and spellcasting records."
+    },
+    {
+      "owner": "generic control, encounter-membership, and world-containment relationships",
+      "usage": "Own controller, encounter roster, and current location."
+    }
+  ]
+}

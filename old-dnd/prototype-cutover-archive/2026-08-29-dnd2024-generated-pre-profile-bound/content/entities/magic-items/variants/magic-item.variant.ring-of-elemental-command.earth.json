@@ -1,0 +1,31 @@
+{
+  "id": "dnd2024.magic-item.variant.ring-of-elemental-command.earth",
+  "name": "Ring of Elemental Command (earth)",
+  "archetype": "dnd2024.archetype.magic-item-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Magic Items > Magic Items A–Z > Ring of Elemental Command > Ring of Elemental Command (earth) (SRD 5.2.1, pages 237-237)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.magic-item.category": {
+      "category": {
+        "entityId": "dnd2024.magic-item.category.other"
+      }
+    },
+    "dnd2024.magic-item.rarity": {
+      "rarity": {
+        "entityId": "dnd2024.magic-item.rarity.uncommon"
+      }
+    }
+  }
+}

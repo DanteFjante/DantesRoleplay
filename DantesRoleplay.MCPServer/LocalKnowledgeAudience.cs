@@ -13,7 +13,8 @@ public sealed record LocalKnowledgeSeatSnapshot(
     string PrincipalId,
     string ApplicationId,
     string CampaignId,
-    string ActorId);
+    string? ActorId,
+    KnowledgeAudienceRole Role = KnowledgeAudienceRole.Actor);
 
 public interface ILocalKnowledgeSeatProvider
 {
@@ -26,17 +27,24 @@ internal sealed class ConfigurationLocalKnowledgeSeatProvider(IConfiguration? co
     public LocalKnowledgeSeatSnapshot Current()
     {
         var section = configuration?.GetSection("Knowledge:LocalPlayer");
+        var role = section?["Role"] switch
+        {
+            null or "Actor" => KnowledgeAudienceRole.Actor,
+            "GameMaster" => KnowledgeAudienceRole.GameMaster,
+            _ => (KnowledgeAudienceRole)(-1)
+        };
         return new(
             section?.GetValue<bool>("Enabled") ?? false,
             section?["PrincipalId"] ?? "",
             section?["ApplicationId"] ?? "",
             section?["CampaignId"] ?? "",
-            section?["ActorId"] ?? "");
+            section?["ActorId"],
+            role);
     }
 }
 
 /// <summary>
-/// Temporary private-player policy. It trusts only current host configuration and the server-side
+/// Temporary private-table policy. It trusts only current host configuration and the server-side
 /// loopback peer; request bodies, browser selections, forwarded headers, and remote access never
 /// select a principal, role, application, campaign, or actor.
 /// </summary>
@@ -57,17 +65,18 @@ internal sealed class LocalKnowledgeAudiencePolicy(
 
         var revision = Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new
         {
-            policy = "local-loopback-actor-v1",
+            policy = "local-loopback-seat-v1",
             seat.Enabled,
             seat.PrincipalId,
             seat.ApplicationId,
             seat.CampaignId,
-            seat.ActorId
+            seat.ActorId,
+            seat.Role
         })));
         return Task.FromResult(new KnowledgeAudienceResolution(new(
             seat.PrincipalId,
             seat.CampaignId,
-            KnowledgeAudienceRole.Actor,
+            seat.Role,
             seat.ActorId,
             revision)));
     }
@@ -75,7 +84,9 @@ internal sealed class LocalKnowledgeAudiencePolicy(
     private static bool Valid(LocalKnowledgeSeatSnapshot seat)
     {
         if (!seat.Enabled || !Token(seat.PrincipalId) || !Token(seat.CampaignId) ||
-            !Token(seat.ActorId)) return false;
+            !Enum.IsDefined(seat.Role)) return false;
+        if (seat.Role == KnowledgeAudienceRole.GameMaster && seat.ActorId is not null) return false;
+        if (seat.Role == KnowledgeAudienceRole.Actor && !Token(seat.ActorId)) return false;
         try { return ApplicationIdentifier.Parse(seat.ApplicationId).Value == seat.ApplicationId; }
         catch (ArgumentException) { return false; }
     }

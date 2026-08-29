@@ -1,0 +1,24 @@
+{
+  "id": "dnd2024.vocabulary.category.monster-descriptive-tag",
+  "name": "Monster Descriptive Tag",
+  "archetype": "dnd2024.archetype.vocabulary-category-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Monsters > Stat Blocks > Size, Type, and Alignment (SRD 5.2.1, pages 254-255)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.vocabulary.category": {
+      "code": "monster-descriptive-tag"
+    }
+  }
+}

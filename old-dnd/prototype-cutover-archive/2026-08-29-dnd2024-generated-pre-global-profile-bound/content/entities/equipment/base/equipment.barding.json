@@ -1,0 +1,24 @@
+{
+  "id": "dnd2024.equipment.barding",
+  "name": "Barding",
+  "archetype": "dnd2024.archetype.item-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Equipment > Mounts and Vehicles > Barding (SRD 5.2.1, pages 100-100)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.core.presentation": {
+      "summary": "Template over any armor-table type; cost is four times and weight twice the normal armor. The source does not assign separate names to the base-armor alternatives."
+    }
+  }
+}

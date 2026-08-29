@@ -1,0 +1,24 @@
+{
+  "id": "dnd2024.vocabulary.category.equipment-slot",
+  "name": "Equipment Slot",
+  "archetype": "dnd2024.archetype.vocabulary-category-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Equipment > Weapons (SRD 5.2.1, pages 89-92)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.vocabulary.category": {
+      "code": "equipment-slot"
+    }
+  }
+}

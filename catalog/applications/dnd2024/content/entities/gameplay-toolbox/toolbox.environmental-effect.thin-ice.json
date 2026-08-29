@@ -1,0 +1,31 @@
+{
+  "id": "dnd2024.toolbox.environmental-effect.thin-ice",
+  "name": "Thin Ice",
+  "archetype": "dnd2024.archetype.environment-hazard-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Gameplay Toolbox > Environmental Effects > Thin Ice (SRD 5.2.1, pages 195-195)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.hazard.environment": {
+      "category": {
+        "entityId": "dnd2024.hazard-category.environment"
+      },
+      "exposureTrigger": {
+        "event": "exposure.applied",
+        "timing": "when"
+      },
+      "effects": []
+    }
+  }
+}

@@ -1,0 +1,1 @@
+{"id":"dnd2024.character.hit-dice","name":"Character Hit Dice state component","description":"Spent Hit Dice keyed by class-membership entity ID; duplicate pool authority is impossible, while maxima and remaining dice derive from class levels."}

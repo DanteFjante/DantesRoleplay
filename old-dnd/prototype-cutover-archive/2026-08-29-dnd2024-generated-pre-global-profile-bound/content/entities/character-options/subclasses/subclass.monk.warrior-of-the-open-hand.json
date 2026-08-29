@@ -1,0 +1,30 @@
+{
+  "id": "dnd2024.subclass.monk.warrior-of-the-open-hand",
+  "name": "Warrior of the Open Hand",
+  "archetype": "dnd2024.archetype.subclass-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Classes > Monk Subclass: Warrior of the Open Hand (SRD 5.2.1, pages 52-52)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.subclass": {
+      "classRef": {
+        "entityId": "dnd2024.class.monk"
+      },
+      "progressionRef": {
+        "entityId": "dnd2024.subclass-progression.monk.warrior-of-the-open-hand"
+      },
+      "minimumClassLevel": 3
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.merceron-trade-monopoly-motive",
+  "name": "The One-Trade-Hub Motive",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The king of Merceros decided that there should be only one major trade hub from then on, and ordered the attack on Harrowfall to eliminate his commercial rival.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "intention",
+      "sensitivity": "open"
+    }
+  }
+}

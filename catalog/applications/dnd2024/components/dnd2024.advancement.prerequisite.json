@@ -1,0 +1,1 @@
+{"id":"dnd2024.advancement.prerequisite","name":"Prerequisite definition component","description":"A named reusable owner for an inline prerequisite expression plus explicit definition dependencies; consumers may either reference this entity or embed a one-use expression."}

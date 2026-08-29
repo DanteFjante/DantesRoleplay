@@ -1,0 +1,34 @@
+{
+  "id": "dnd2024.equipment.mount.camel",
+  "name": "Camel",
+  "archetype": "dnd2024.archetype.mount-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Equipment > Mounts and Vehicles > Mounts and Other Animals > Camel (SRD 5.2.1, pages 100-100)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.vehicle.mount": {
+      "carryingCapacity": {
+        "dimension": "mass",
+        "value": {
+          "numerator": 408233133,
+          "denominator": 2000000
+        },
+        "unit": {
+          "entityId": "dnd2024.vocabulary.mass-unit.kilogram"
+        }
+      },
+      "riderCapacity": 1
+    }
+  }
+}

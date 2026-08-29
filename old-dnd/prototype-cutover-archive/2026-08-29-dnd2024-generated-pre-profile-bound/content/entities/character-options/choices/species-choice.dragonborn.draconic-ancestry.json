@@ -1,0 +1,56 @@
+{
+  "id": "dnd2024.species-choice.dragonborn.draconic-ancestry",
+  "name": "Draconic Ancestry",
+  "archetype": "dnd2024.archetype.choice-set-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Character Origins > Character Species > Draconic Ancestry (SRD 5.2.1, pages 84-84)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.choice-set": {
+      "selectionMode": "all",
+      "optionRefs": [
+        {
+          "entityId": "dnd2024.species-choice-option.dragonborn.draconic-ancestry.black"
+        },
+        {
+          "entityId": "dnd2024.species-choice-option.dragonborn.draconic-ancestry.blue"
+        },
+        {
+          "entityId": "dnd2024.species-choice-option.dragonborn.draconic-ancestry.brass"
+        },
+        {
+          "entityId": "dnd2024.species-choice-option.dragonborn.draconic-ancestry.bronze"
+        },
+        {
+          "entityId": "dnd2024.species-choice-option.dragonborn.draconic-ancestry.copper"
+        },
+        {
+          "entityId": "dnd2024.species-choice-option.dragonborn.draconic-ancestry.gold"
+        },
+        {
+          "entityId": "dnd2024.species-choice-option.dragonborn.draconic-ancestry.green"
+        },
+        {
+          "entityId": "dnd2024.species-choice-option.dragonborn.draconic-ancestry.red"
+        },
+        {
+          "entityId": "dnd2024.species-choice-option.dragonborn.draconic-ancestry.silver"
+        },
+        {
+          "entityId": "dnd2024.species-choice-option.dragonborn.draconic-ancestry.white"
+        }
+      ]
+    }
+  }
+}

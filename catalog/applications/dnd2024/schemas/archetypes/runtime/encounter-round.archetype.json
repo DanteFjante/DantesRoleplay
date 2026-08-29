@@ -1,0 +1,15 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.encounter-round",
+  "kind": "runtime",
+  "description": "One numbered round in an active encounter.",
+  "requiredComponents": ["dnd2024.encounter.round"],
+  "optionalComponents": [],
+  "sourceSections": ["Playing the Game 13–16"],
+  "externalOwners": [
+    {
+      "owner": "generic events and encounter context",
+      "usage": "Own round transition events and the containing encounter."
+    }
+  ]
+}

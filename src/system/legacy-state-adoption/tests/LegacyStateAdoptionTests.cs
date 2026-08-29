@@ -158,6 +158,41 @@ public sealed class LegacyStateAdoptionTests : IDisposable
     }
 
     [Fact]
+    public async Task Explicit_closed_scope_adopts_only_the_selected_legacy_graph()
+    {
+        await using var db = _fixture.CreateContext();
+        var setup = await SetupAsync(db);
+        var now = DateTime.UtcNow;
+        db.Entities.Add(new Entity { Id = "unselected", Name = "Unselected", CreatedAt = now });
+        await db.SaveChangesAsync();
+
+        var scoped = setup.Request with { EntityIds = ["actor", "target"] };
+        var context = Context("6123456789abcdef0123456789abcdef");
+        var preview = await setup.Service.PreviewAsync(scoped, context);
+        var receipt = await setup.Service.AdoptAsync(scoped, context);
+
+        Assert.Equal(2, preview.Inventory.EntityCount);
+        Assert.Equal(preview.Inventory, receipt.Inventory);
+        var migrated = await db.Set<ApplicationEcsEntityRecord>().AsNoTracking()
+            .Where(value => value.StateSpaceId == "adopted-space").Select(value => value.Id).ToArrayAsync();
+        Assert.Equal(["actor", "target"], migrated.OrderBy(value => value));
+    }
+
+    [Fact]
+    public async Task Explicit_scope_must_include_both_ends_of_an_active_edge()
+    {
+        await using var db = _fixture.CreateContext();
+        var setup = await SetupAsync(db);
+        var scoped = setup.Request with { EntityIds = ["actor"] };
+
+        var failure = await Assert.ThrowsAsync<LegacyStateAdoptionException>(() =>
+            setup.Service.PreviewAsync(scoped, Context("7123456789abcdef0123456789abcdef")));
+
+        Assert.Equal("ENTITY_SCOPE_NOT_CLOSED", failure.Code);
+        Assert.Equal(0, await CountAsync(db, "system_ecs_entity"));
+    }
+
+    [Fact]
     public async Task Audit_failure_rolls_back_binding_graph_and_adoption_evidence()
     {
         await using var db = _fixture.CreateContext();

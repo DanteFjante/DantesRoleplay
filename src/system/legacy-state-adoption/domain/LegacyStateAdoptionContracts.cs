@@ -17,7 +17,8 @@ public sealed record LegacyStateAdoptionRequest(
     ApplicationIdentifier ApplicationId,
     string ActiveFingerprint,
     IReadOnlyList<LegacyComponentTypeMapping> ComponentMappings,
-    IReadOnlyList<LegacyRelationshipKindMapping> RelationshipMappings);
+    IReadOnlyList<LegacyRelationshipKindMapping> RelationshipMappings,
+    IReadOnlyList<string>? EntityIds = null);
 
 public sealed record LegacyStateAdoptionContext(
     string RequestToken,

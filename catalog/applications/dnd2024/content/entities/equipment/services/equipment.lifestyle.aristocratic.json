@@ -1,0 +1,22 @@
+{
+  "id": "dnd2024.equipment.lifestyle.aristocratic",
+  "name": "Aristocratic",
+  "archetype": "dnd2024.archetype.choice-option-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Equipment > Lifestyle Expenses > Aristocratic (SRD 5.2.1, pages 101-101)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.choice-option": {}
+  }
+}

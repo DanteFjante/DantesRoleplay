@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dantesroleplay:dnd2024:prototype:value:entity-reference",
+  "title": "Entity reference",
+  "description": "References an entity in the enclosing component's state space; cross-state-space host records use their dedicated reference shapes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["entityId"],
+  "properties": {
+    "entityId": { "$ref": "urn:dantesroleplay:dnd2024:prototype:value:entity-id" },
+    "expectedArchetype": { "$ref": "urn:dantesroleplay:dnd2024:prototype:value:archetype-key" }
+  }
+}

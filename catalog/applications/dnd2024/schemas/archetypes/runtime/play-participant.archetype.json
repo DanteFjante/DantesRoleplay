@@ -1,0 +1,22 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.play-participant",
+  "kind": "runtime",
+  "description": "A human or AI participant assigned a current D&D play role.",
+  "requiredComponents": ["dnd2024.play.participation"],
+  "optionalComponents": [
+    "dnd2024.core.presentation",
+    "dnd2024.core.tags"
+  ],
+  "sourceSections": ["Playing the Game 5–18"],
+  "externalOwners": [
+    {
+      "owner": "generic control relationships",
+      "usage": "Own which game entities the participant controls."
+    },
+    {
+      "owner": "generic session participation",
+      "usage": "Own connection to the current campaign and session."
+    }
+  ]
+}

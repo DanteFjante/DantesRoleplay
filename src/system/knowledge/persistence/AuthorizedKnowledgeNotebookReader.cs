@@ -16,7 +16,7 @@ public sealed class AuthorizedKnowledgeNotebookReader(
         AuthorizedKnowledgeNotebookRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (!Valid(request)) return new("invalid", [], "INVALID_KNOWLEDGE_REQUEST");
+        if (!Valid(request)) return new("invalid", [], [], "INVALID_KNOWLEDGE_REQUEST");
 
         KnowledgeAudienceResolution resolvedAudience;
         try { resolvedAudience = await audience.ResolveAsync(request.CampaignId, cancellationToken); }
@@ -34,7 +34,7 @@ public sealed class AuthorizedKnowledgeNotebookReader(
             var knownKinds = binding.KnowledgeKinds.Select(value => value.Kind)
                 .ToHashSet(StringComparer.Ordinal);
             if (request.Kinds is { Count: > 0 } && request.Kinds.Any(value => !knownKinds.Contains(value)))
-                return new("invalid", [], "INVALID_KNOWLEDGE_REQUEST");
+                return new("invalid", [], [], "INVALID_KNOWLEDGE_REQUEST");
 
             var scope = await source.ReadCampaignScopeAsync(binding, cancellationToken);
             if (scope is null || scope.CampaignId != request.CampaignId)
@@ -88,6 +88,8 @@ public sealed class AuthorizedKnowledgeNotebookReader(
             }
 
             var entries = new List<AuthorizedKnowledgeNotebookEntry>(selected.Count);
+            var locationIndexes = new Dictionary<string, int>(StringComparer.Ordinal);
+            var locations = new List<(string Name, List<AuthorizedKnowledgeNotebookEntry> Entries)>();
             foreach (var document in selected)
             {
                 var hydrated = await source.ReadDocumentAsync(
@@ -107,14 +109,28 @@ public sealed class AuthorizedKnowledgeNotebookReader(
                         !binding.ContentStates.Contains(stance, StringComparer.Ordinal)) continue;
                 }
 
-                // Familiarity deliberately does not reveal the proposition text.
-                entries.Add(stance == binding.FamiliarState
-                    ? new("You recognize this as a familiar topic, but do not remember details.",
+                // Familiarity deliberately does not reveal the proposition text or its subject.
+                var entry = stance == binding.FamiliarState
+                    ? new AuthorizedKnowledgeNotebookEntry(
+                        "You recognize this as a familiar topic, but do not remember details.",
                         stance, "recognition")
-                    : new(hydrated.DisplayText, stance, hydrated.PresentationKind));
+                    : new AuthorizedKnowledgeNotebookEntry(
+                        hydrated.DisplayText, stance, hydrated.PresentationKind);
+                entries.Add(entry);
+                if (stance == binding.FamiliarState || !hydrated.SubjectIsActiveLocation) continue;
+
+                if (!locationIndexes.TryGetValue(hydrated.SubjectId, out var locationIndex))
+                {
+                    locationIndex = locations.Count;
+                    locationIndexes.Add(hydrated.SubjectId, locationIndex);
+                    locations.Add((hydrated.SubjectName, []));
+                }
+                locations[locationIndex].Entries.Add(entry);
             }
 
-            return new(entries.Count == 0 ? "empty" : "ready", entries.AsReadOnly());
+            return new(entries.Count == 0 ? "empty" : "ready", entries.AsReadOnly(),
+                locations.Select(location => new AuthorizedKnowledgeNotebookLocation(
+                    location.Name, location.Entries.AsReadOnly())).ToArray());
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

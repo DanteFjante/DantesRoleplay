@@ -1,1 +1,29 @@
-var input=ctx.input;if(input===null||Array.isArray(input)||typeof input!=='object')throw new Error('Input must be an object.');var keys=Object.keys(input);for(var k=0;k<keys.length;k++)if(['count','sides','modifier'].indexOf(keys[k])<0)throw new Error('Input may contain only count, sides, and modifier.');var count=Object.prototype.hasOwnProperty.call(input,'count')?input.count:1,sides=Object.prototype.hasOwnProperty.call(input,'sides')?input.sides:20,modifier=Object.prototype.hasOwnProperty.call(input,'modifier')?input.modifier:0;if(!Number.isSafeInteger(count)||count<1||count>100)throw new Error('count must be an integer from 1 through 100.');if(!Number.isSafeInteger(sides)||sides<2||sides>1000000)throw new Error('sides must be an integer from 2 through 1,000,000.');if(!Number.isSafeInteger(modifier))throw new Error('modifier must be a safe integer.');var minimum=count+modifier,maximum=count*sides+modifier;if(!Number.isSafeInteger(minimum)||!Number.isSafeInteger(maximum))throw new Error('Possible total exceeds the exact safe-integer range.');var rolls=[],total=modifier;for(var i=0;i<count;i++){var roll=ctx.randomInt(1,sides);rolls.push(roll);total+=roll;}return {narration:count+'d'+sides+(modifier?(modifier>0?'+':'')+modifier:'')+' rolled '+rolls.join(', ')+' for '+total+'.',effects:[],events:[],notifications:[],data:{count:count,sides:sides,modifier:modifier,rolls:rolls,total:total}};
+var count = ctx.input && typeof ctx.input.count === "number" ? ctx.input.count : 1;
+var sides = ctx.input && typeof ctx.input.sides === "number" ? ctx.input.sides : 20;
+var modifier = ctx.input && typeof ctx.input.modifier === "number" ? ctx.input.modifier : 0;
+
+if (!Number.isInteger(count) || count < 1) {
+  throw new Error("input.count must be a positive integer.");
+}
+if (!Number.isInteger(sides) || sides < 2) {
+  throw new Error("input.sides must be an integer of at least 2.");
+}
+if (!Number.isInteger(modifier)) {
+  throw new Error("input.modifier must be an integer.");
+}
+
+var rolls = [];
+var total = modifier;
+for (var i = 0; i < count; i++) {
+  var roll = ctx.randomInt(1, sides);
+  rolls.push(roll);
+  total += roll;
+}
+
+ctx.log("rolled " + count + "d" + sides + (modifier ? (modifier > 0 ? "+" : "") + modifier : "") + " = " + total);
+
+return {
+  narration: count + "d" + sides + (modifier ? (modifier > 0 ? "+" : "") + modifier : "") + " rolled " + rolls.join(", ") + " for a total of " + total + ".",
+  effects: [],
+  data: { count: count, sides: sides, modifier: modifier, rolls: rolls, total: total }
+};

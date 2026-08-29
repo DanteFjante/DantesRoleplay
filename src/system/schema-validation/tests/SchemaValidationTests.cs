@@ -96,7 +96,6 @@ public sealed class SchemaValidationTests
     [InlineData("{\"pattern\":\"^[a-z]+$\",\"maxLength\":1001}", "SCHEMA_PATTERN")]
     [InlineData("{\"$ref\":\"https://example.invalid/schema\"}", "SCHEMA_REFERENCE")]
     [InlineData("{\"$ref\":\"#/missing\"}", "SCHEMA_REFERENCE_MISSING")]
-    [InlineData("{\"$defs\":{\"loop\":{\"$ref\":\"#/$defs/loop\"}},\"$ref\":\"#/$defs/loop\"}", "SCHEMA_REFERENCE_CYCLE")]
     [InlineData("{\"$schema\":\"https://json-schema.org/draft/2019-09/schema\"}", "SCHEMA_DIALECT")]
     [InlineData("{\"minLength\":\"not-a-number\"}", "SCHEMA_SEMANTICS")]
     public void Profile_rejects_unsupported_or_unsafe_schemas(string schema, string code)
@@ -104,6 +103,22 @@ public sealed class SchemaValidationTests
         var result = _validator.Compile(schema);
         Assert.False(result.IsAccepted);
         Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == code);
+    }
+
+    [Fact]
+    public void Profile_supports_bounded_recursive_local_references_and_conditionals()
+    {
+        const string schema = """
+            {"$defs":{"node":{"type":"object","additionalProperties":false,"required":["kind"],"properties":{"kind":{"enum":["leaf","branch"]},"child":{"anyOf":[{"type":"null"},{"$ref":"#/$defs/node"}]}},"if":{"properties":{"kind":{"const":"branch"}},"required":["kind"]},"then":{"required":["child"]}}},"$ref":"#/$defs/node"}
+            """;
+
+        var compiled = _validator.Compile(schema);
+
+        Assert.True(compiled.IsAccepted);
+        Assert.Equal(SchemaValueStatus.Valid, _validator.Validate(compiled.NormalizedSchema,
+            "{\"kind\":\"branch\",\"child\":{\"kind\":\"leaf\"}}").Status);
+        Assert.Equal(SchemaValueStatus.Invalid, _validator.Validate(compiled.NormalizedSchema,
+            "{\"kind\":\"branch\"}").Status);
     }
 
     [Fact]

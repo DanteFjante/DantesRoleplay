@@ -1,0 +1,28 @@
+{
+  "id": "dnd2024.vocabulary.terrain-type.arctic",
+  "name": "Arctic",
+  "archetype": "dnd2024.archetype.vocabulary-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Gameplay Toolbox > Travel Terrain (SRD 5.2.1, pages 192-192)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.vocabulary.term": {
+      "code": "arctic",
+      "categoryRef": {
+        "entityId": "dnd2024.vocabulary.category.terrain-type",
+        "expectedArchetype": "dnd2024.archetype.vocabulary-category-definition"
+      }
+    }
+  }
+}

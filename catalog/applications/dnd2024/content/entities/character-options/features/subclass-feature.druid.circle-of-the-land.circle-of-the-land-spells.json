@@ -1,0 +1,25 @@
+{
+  "id": "dnd2024.subclass-feature.druid.circle-of-the-land.circle-of-the-land-spells",
+  "name": "Circle of the Land Spells",
+  "archetype": "dnd2024.archetype.feature-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Classes > Druid Subclass: Circle of the Land > Circle of the Land Spells (SRD 5.2.1, pages 46-46)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.feature": {
+      "ruleRefs": [],
+      "grantRefs": []
+    }
+  }
+}

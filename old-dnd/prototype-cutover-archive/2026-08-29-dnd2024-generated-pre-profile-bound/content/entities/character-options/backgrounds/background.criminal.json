@@ -1,0 +1,24 @@
+{
+  "id": "dnd2024.background.criminal",
+  "name": "Criminal",
+  "archetype": "dnd2024.archetype.background-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Character Origins > Character Backgrounds > Criminal (SRD 5.2.1, pages 83-83)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.background": {
+      "proficiencyGrantRefs": []
+    }
+  }
+}

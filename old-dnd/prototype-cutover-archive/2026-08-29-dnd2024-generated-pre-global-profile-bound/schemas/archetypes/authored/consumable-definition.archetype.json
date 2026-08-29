@@ -1,0 +1,16 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.consumable-definition",
+  "kind": "authored",
+  "description": "A complete expendable item whose use activities own application effects.",
+  "requiredComponents": [
+    "dnd2024.core.source",
+    "dnd2024.core.version",
+    "dnd2024.item.consumable",
+    "dnd2024.item.physical",
+    "dnd2024.item.price",
+    "dnd2024.activity.membership"
+  ],
+  "optionalComponents": ["dnd2024.core.presentation", "dnd2024.core.rules-text", "dnd2024.core.tags"],
+  "sourceSections": ["Equipment 89–103", "Magic Items 204–253"]
+}

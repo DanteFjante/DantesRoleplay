@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.oathshield-range",
+  "name": "The Oathshield Range",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The Oathshield Range is Valeros's southeastern mountain range, named for the kingdom's defensive founding purpose.",
+      "provenance": "Approved as a Slice S4 regional proposal during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "location",
+      "sensitivity": "open"
+    }
+  }
+}

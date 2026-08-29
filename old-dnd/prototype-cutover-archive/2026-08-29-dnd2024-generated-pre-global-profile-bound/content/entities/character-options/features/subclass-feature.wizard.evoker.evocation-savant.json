@@ -1,0 +1,25 @@
+{
+  "id": "dnd2024.subclass-feature.wizard.evoker.evocation-savant",
+  "name": "Evocation Savant",
+  "archetype": "dnd2024.archetype.feature-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Classes > Wizard Subclass: Evoker > Evocation Savant (SRD 5.2.1, pages 82-82)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.feature": {
+      "ruleRefs": [],
+      "grantRefs": []
+    }
+  }
+}

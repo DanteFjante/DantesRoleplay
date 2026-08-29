@@ -1,0 +1,110 @@
+{
+  "id": "dnd2024.class-choice.warlock.eldritch-invocations",
+  "name": "Eldritch Invocation Options",
+  "archetype": "dnd2024.archetype.choice-set-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Classes > Eldritch Invocation Options (SRD 5.2.1, pages 72-74)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.choice-set": {
+      "selectionMode": "all",
+      "optionRefs": [
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.agonizing-blast"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.armor-of-shadows"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.ascendant-step"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.devils-sight"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.devouring-blade"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.eldritch-mind"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.eldritch-smite"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.eldritch-spear"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.fiendish-vigor"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.gaze-of-two-minds"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.gift-of-the-depths"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.gift-of-the-protectors"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.investment-of-the-chain-master"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.lessons-of-the-first-ones"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.lifedrinker"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.mask-of-many-faces"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.master-of-myriad-forms"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.misty-visions"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.one-with-shadows"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.otherworldly-leap"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.pact-of-the-blade"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.pact-of-the-chain"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.pact-of-the-tome"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.repelling-blast"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.thirsting-blade"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.visions-of-distant-realms"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.whispers-of-the-grave"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.warlock.eldritch-invocations.witch-sight"
+        }
+      ]
+    }
+  }
+}

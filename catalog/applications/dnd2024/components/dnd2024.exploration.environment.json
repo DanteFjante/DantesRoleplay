@@ -1,0 +1,1 @@
+{"id":"dnd2024.exploration.environment","name":"Exploration environment","description":"Projects referenced world state into rule-facing terrain, condition, hazard, and visibility inputs without becoming world authority."}

@@ -1,0 +1,23 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.vocabulary-category-definition",
+  "kind": "authored",
+  "description": "An authored vocabulary category such as abilities, skills, languages, damage types, conditions, dice, units, or action kinds.",
+  "requiredComponents": [
+    "dnd2024.core.source",
+    "dnd2024.core.version",
+    "dnd2024.vocabulary.category"
+  ],
+  "optionalComponents": [
+    "dnd2024.core.presentation",
+    "dnd2024.core.rules-text",
+    "dnd2024.core.tags"
+  ],
+  "sourceSections": ["System Reference Document 5.2.1", "Rules Glossary 176–191"],
+  "externalOwners": [
+    {
+      "owner": "generic ECS entity identity",
+      "usage": "Owns the stable storage identifier and display name."
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "id": "dnd2024.vehicle-kind.galley",
+  "name": "Galley",
+  "archetype": "dnd2024.archetype.vocabulary-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Equipment > Vehicles (SRD 5.2.1, pages 95-103)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.vocabulary.term": {
+      "code": "galley",
+      "categoryRef": {
+        "entityId": "dnd2024.vocabulary.category.vehicle-kind",
+        "expectedArchetype": "dnd2024.archetype.vocabulary-category-definition"
+      }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "dnd2024.class-choice-option.barbarian.brutal-strike.forceful-blow",
+  "name": "Forceful Blow",
+  "archetype": "dnd2024.archetype.choice-option-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Classes > Brutal Strike Effects > Forceful Blow (SRD 5.2.1, pages 29-29)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.choice-option": {}
+  }
+}

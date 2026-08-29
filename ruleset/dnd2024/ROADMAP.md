@@ -1,7 +1,7 @@
 # D&D 2024 application roadmap
 
-Status: **Active; code-adoption Slices 0–13 and item runtime core accepted selected scope**
-Last updated: 2026-08-28
+Status: **Active; prototype-first canonical source cutover accepted; live-data migration pending**
+Last updated: 2026-08-29
 
 ## Outcome
 
@@ -18,10 +18,17 @@ The preferred sequence is:
 
 ## Current boundary
 
+- On 2026-08-29, the user confirmed a clean prototype-first source cutover. The active
+  `catalog/applications/dnd2024` source now contains 154 prototype ECS component schemas, 71
+  archetypes, and 2,329 records; it intentionally has no legacy mechanics or procedures. The
+  prior active source is recoverably preserved under
+  `old-dnd/prototype-cutover-archive/2026-08-29-dnd2024-pre-cutover`. Live SQLite, world, and
+  campaign state were not imported or changed. The next boundary is an explicit data-migration
+  plan, not restoration of the archived mechanics.
 - The generic application kernel is accepted through its first delivery and supports registered
   applications, source overlays, application-owned schemas, ECS state, structural projections,
   exact JavaScript execution, typed effects, state adoption, and reverse dependency impact.
-- The current authored `catalog/` contains the accepted D&D check, proficiency, combat, encounter,
+- The archived pre-cutover authored `catalog/` contains the accepted D&D check, proficiency, combat, encounter,
   and standalone base-Speed families, the accepted Slice 9 stateless character-sheet reader, and
   the accepted five-record Slice 10A currency cohort, the accepted nine-record Slice 10B1A
   adventuring-gear cohort, the accepted complete thirteen-record Slice 10B2 Armor-table cohort, and

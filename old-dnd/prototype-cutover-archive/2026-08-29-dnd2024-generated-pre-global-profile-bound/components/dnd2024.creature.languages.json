@@ -1,0 +1,1 @@
+{"id":"dnd2024.creature.languages","name":"Creature languages state component","description":"A creature instance's current language capabilities keyed once by language entity ID with all unique grant sources preserved."}

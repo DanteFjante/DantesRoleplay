@@ -1,0 +1,67 @@
+{
+  "id": "dnd2024.equipment.weapon.greatclub",
+  "name": "Greatclub",
+  "archetype": "dnd2024.archetype.weapon-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Equipment > Weapons > Weapons table > Greatclub (SRD 5.2.1, pages 91-91)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.item.weapon": {
+      "category": {
+        "entityId": "dnd2024.equipment.weapon-category.simple"
+      },
+      "properties": [
+        {
+          "entityId": "dnd2024.equipment.weapon-property.two-handed"
+        }
+      ],
+      "masteryProperty": {
+        "entityId": "dnd2024.equipment.weapon-mastery.push"
+      }
+    },
+    "dnd2024.item.physical": {
+      "weight": {
+        "dimension": "mass",
+        "value": {
+          "numerator": 45359237,
+          "denominator": 10000000
+        },
+        "unit": {
+          "entityId": "dnd2024.vocabulary.mass-unit.kilogram"
+        }
+      }
+    },
+    "dnd2024.item.price": {
+      "basePrice": {
+        "amount": {
+          "numerator": 2,
+          "denominator": 1
+        },
+        "denomination": {
+          "entityId": "dnd2024.equipment.currency.silver-piece"
+        }
+      }
+    },
+    "dnd2024.item.equippable": {
+      "equipmentSlots": [
+        {
+          "entityId": "dnd2024.equipment-slot.main-hand"
+        }
+      ]
+    },
+    "dnd2024.activity.membership": {
+      "activities": []
+    }
+  }
+}

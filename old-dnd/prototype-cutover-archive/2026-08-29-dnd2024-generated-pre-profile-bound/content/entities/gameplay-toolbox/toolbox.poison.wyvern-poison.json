@@ -1,0 +1,32 @@
+{
+  "id": "dnd2024.toolbox.poison.wyvern-poison",
+  "name": "Wyvern Poison",
+  "archetype": "dnd2024.archetype.poison-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Gameplay Toolbox > Poisons > Sample Poisons > Wyvern Poison (SRD 5.2.1, pages 198-198)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.hazard.poison": {
+      "category": {
+        "entityId": "dnd2024.hazard-category.poison"
+      },
+      "deliveryMethods": [
+        {
+          "entityId": "dnd2024.vocabulary.poison-delivery.ingested"
+        }
+      ],
+      "effects": []
+    }
+  }
+}

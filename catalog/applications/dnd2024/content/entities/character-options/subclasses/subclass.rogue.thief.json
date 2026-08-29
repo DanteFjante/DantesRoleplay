@@ -1,0 +1,30 @@
+{
+  "id": "dnd2024.subclass.rogue.thief",
+  "name": "Thief",
+  "archetype": "dnd2024.archetype.subclass-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Classes > Rogue Subclass: Thief (SRD 5.2.1, pages 64-64)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.subclass": {
+      "classRef": {
+        "entityId": "dnd2024.class.rogue"
+      },
+      "progressionRef": {
+        "entityId": "dnd2024.subclass-progression.rogue.thief"
+      },
+      "minimumClassLevel": 3
+    }
+  }
+}

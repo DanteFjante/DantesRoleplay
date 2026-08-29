@@ -1,0 +1,67 @@
+{
+  "id": "dnd2024.equipment.vehicle.airship",
+  "name": "Airship",
+  "archetype": "dnd2024.archetype.vehicle-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Equipment > Mounts and Vehicles > Airborne and Waterborne Vehicles > Airship (SRD 5.2.1, pages 101-101)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.vehicle.profile": {
+      "vehicleKind": {
+        "entityId": "dnd2024.vehicle-kind.airship"
+      },
+      "speed": {
+        "distance": {
+          "dimension": "distance",
+          "value": {
+            "numerator": 201168,
+            "denominator": 15625
+          },
+          "unit": {
+            "entityId": "dnd2024.vocabulary.distance-unit.kilometer"
+          }
+        },
+        "period": {
+          "dimension": "time",
+          "value": {
+            "numerator": 1,
+            "denominator": 1
+          },
+          "unit": {
+            "entityId": "dnd2024.vocabulary.time-unit.hour"
+          }
+        }
+      },
+      "crewRequired": 10,
+      "passengerCapacity": 20,
+      "cargoCapacity": {
+        "dimension": "mass",
+        "value": {
+          "numerator": 45359237,
+          "denominator": 50000
+        },
+        "unit": {
+          "entityId": "dnd2024.vocabulary.mass-unit.kilogram"
+        }
+      }
+    },
+    "dnd2024.activity.membership": {
+      "activities": []
+    },
+    "dnd2024.object.durability-basis": {
+      "armorClass": 13,
+      "maximumHitPoints": 300
+    }
+  }
+}

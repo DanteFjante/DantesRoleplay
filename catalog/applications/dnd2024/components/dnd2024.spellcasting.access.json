@@ -1,0 +1,1 @@
+{"id":"dnd2024.spellcasting.access","name":"Spell access state component","description":"Spells available from the containing runtime spellcasting source, keyed once by spell entity ID with rule-owned access type and grant provenance."}

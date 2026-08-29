@@ -1,0 +1,22 @@
+{
+  "id": "dnd2024.class-choice-option.druid.primal-order.magician",
+  "name": "Magician",
+  "archetype": "dnd2024.archetype.choice-option-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Classes > Primal Order > Magician (SRD 5.2.1, pages 42-42)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.choice-option": {}
+  }
+}

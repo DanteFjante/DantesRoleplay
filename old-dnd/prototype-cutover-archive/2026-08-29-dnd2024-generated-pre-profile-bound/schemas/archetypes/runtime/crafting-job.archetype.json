@@ -1,0 +1,19 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.crafting-job",
+  "kind": "runtime",
+  "description": "One transactional crafting job progressing against an authored recipe.",
+  "requiredComponents": ["dnd2024.crafting.job"],
+  "optionalComponents": [],
+  "sourceSections": ["Equipment 89–103", "Gameplay Toolbox 192–203"],
+  "externalOwners": [
+    {
+      "owner": "generic participation and containment relationships",
+      "usage": "Own crafters, committed material membership, and work location."
+    },
+    {
+      "owner": "generic events, clocks, and operation history",
+      "usage": "Own elapsed work, phase transitions, consumption, and output transactions."
+    }
+  ]
+}

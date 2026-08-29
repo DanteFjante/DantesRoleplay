@@ -1,0 +1,19 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.resource-pool",
+  "kind": "runtime",
+  "description": "One entity-addressable limited-resource pool with authoritative expenditure state.",
+  "requiredComponents": ["dnd2024.resource.pool"],
+  "optionalComponents": [],
+  "sourceSections": ["Classes 28–82", "Magic Items 204–253", "Monsters 254–257", "Rules Glossary 176–191"],
+  "externalOwners": [
+    {
+      "owner": "generic owner-to-resource-pool relationship",
+      "usage": "Associates the pool with a creature, item, vehicle, or other runtime owner."
+    },
+    {
+      "owner": "generic operation history",
+      "usage": "Owns expenditure and recharge provenance."
+    }
+  ]
+}

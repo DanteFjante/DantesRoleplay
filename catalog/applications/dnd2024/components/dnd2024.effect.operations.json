@@ -1,0 +1,1 @@
+{"id":"dnd2024.effect.operations","name":"Typed effect operations","description":"Defines explicit typed rule operations; it cannot mutate an arbitrary component path."}

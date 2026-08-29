@@ -1,0 +1,33 @@
+{
+  "id": "dnd2024.toolbox.curse.demonic-possession",
+  "name": "Demonic Possession",
+  "archetype": "dnd2024.archetype.curse-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Gameplay Toolbox > Curses > Environmental Curses > Demonic Possession (SRD 5.2.1, pages 193-193)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.hazard.curse": {
+      "bindingTrigger": {
+        "event": "exposure.applied",
+        "timing": "when"
+      },
+      "effects": [],
+      "removalRequirement": {
+        "operator": "predicate",
+        "predicateId": "predicate.always",
+        "arguments": []
+      }
+    }
+  }
+}

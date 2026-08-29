@@ -1,0 +1,44 @@
+{
+  "id": "dnd2024.equipment.mount-support.feed-per-day",
+  "name": "Feed per day",
+  "archetype": "dnd2024.archetype.item-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Equipment > Mounts and Vehicles > Tack, Harness, and Drawn Vehicles > Feed per day (SRD 5.2.1, pages 100-100)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.item.price": {
+      "basePrice": {
+        "amount": {
+          "numerator": 5,
+          "denominator": 1
+        },
+        "denomination": {
+          "entityId": "dnd2024.equipment.currency.copper-piece"
+        }
+      }
+    },
+    "dnd2024.item.physical": {
+      "weight": {
+        "dimension": "mass",
+        "value": {
+          "numerator": 45359237,
+          "denominator": 10000000
+        },
+        "unit": {
+          "entityId": "dnd2024.vocabulary.mass-unit.kilogram"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1 @@
+{"id":"dnd2024.combat.turn-budget","name":"Combat turn budget state","description":"Tracks resources already consumed or still available during one turn; maximum allowances remain rule-derived."}

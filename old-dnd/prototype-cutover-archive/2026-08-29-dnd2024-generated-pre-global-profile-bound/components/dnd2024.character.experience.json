@@ -1,0 +1,1 @@
+{"id":"dnd2024.character.experience","name":"Character experience state component","description":"Accumulated Experience Points only; thresholds, awards, class levels, and advancement eligibility remain separate owners."}

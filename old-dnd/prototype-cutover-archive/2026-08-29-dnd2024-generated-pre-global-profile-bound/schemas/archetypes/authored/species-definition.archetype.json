@@ -1,0 +1,21 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.species-definition",
+  "kind": "authored",
+  "description": "An authored species with direct creature classification, body, movement, and optional senses bases plus referenced grants.",
+  "requiredComponents": [
+    "dnd2024.core.source",
+    "dnd2024.core.version",
+    "dnd2024.advancement.species",
+    "dnd2024.creature.classification",
+    "dnd2024.creature.body-basis",
+    "dnd2024.creature.movement-basis"
+  ],
+  "optionalComponents": [
+    "dnd2024.core.presentation",
+    "dnd2024.core.rules-text",
+    "dnd2024.core.tags",
+    "dnd2024.creature.senses-basis"
+  ],
+  "sourceSections": ["Character Creation 19–27", "Character Origins 83–86"]
+}

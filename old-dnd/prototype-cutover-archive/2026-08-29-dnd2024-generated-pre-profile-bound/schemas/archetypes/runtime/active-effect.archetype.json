@@ -1,0 +1,24 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.active-effect",
+  "kind": "runtime",
+  "description": "One active effect application with optional suppression and hazard-specific phase counters.",
+  "requiredComponents": [
+    "dnd2024.effect.active-effect-state",
+    "dnd2024.effect.provenance"
+  ],
+  "optionalComponents": [
+    "dnd2024.effect.suppression",
+    "dnd2024.hazard.contagion-application",
+    "dnd2024.hazard.environment-exposure",
+    "dnd2024.hazard.poison-application"
+  ],
+  "sourceSections": ["Playing the Game 5–18", "Spells 104–175", "Gameplay Toolbox 192–203"],
+  "externalOwners": [
+    {
+      "owner": "generic events, clocks, and operation history",
+      "usage": "Own expiry timing, ended history, and application provenance."
+    }
+  ],
+  "invariantNotes": ["Hazard-specific components extend, rather than replace, the generic active-effect state."]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.great-invasion-origin",
+  "name": "The Origin of the Great Monster Invasion",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The ancient monster wards eventually waned and failed, causing the great monster invasion. No such wards remain active today. The invasion was especially damaging to humanity because monster populations had grown while human defensive capabilities had atrophied during the long period of safety.",
+      "provenance": "Corrected during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "event",
+      "sensitivity": "open"
+    }
+  }
+}

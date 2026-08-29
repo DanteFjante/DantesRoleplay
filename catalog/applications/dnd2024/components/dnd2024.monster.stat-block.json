@@ -1,0 +1,1 @@
+{"id":"dnd2024.monster.stat-block","name":"Monster stat block definition","description":"Monster-only gear or initiative facts printed in a stat block; creature bases are direct ECS components on the same definition entity."}

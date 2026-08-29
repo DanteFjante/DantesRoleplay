@@ -1,0 +1,68 @@
+{
+  "id": "dnd2024.equipment.gear.backpack",
+  "name": "Backpack",
+  "archetype": "dnd2024.archetype.item-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Equipment > Adventuring Gear > Backpack (SRD 5.2.1, pages 95-96)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.item.price": {
+      "basePrice": {
+        "amount": {
+          "numerator": 2,
+          "denominator": 1
+        },
+        "denomination": {
+          "entityId": "dnd2024.equipment.currency.gold-piece"
+        }
+      }
+    },
+    "dnd2024.item.physical": {
+      "weight": {
+        "dimension": "mass",
+        "value": {
+          "numerator": 45359237,
+          "denominator": 20000000
+        },
+        "unit": {
+          "entityId": "dnd2024.vocabulary.mass-unit.kilogram"
+        }
+      }
+    },
+    "dnd2024.item.container": {
+      "maximumWeight": {
+        "dimension": "mass",
+        "value": {
+          "numerator": 136077711,
+          "denominator": 10000000
+        },
+        "unit": {
+          "entityId": "dnd2024.vocabulary.mass-unit.kilogram"
+        }
+      },
+      "volumeCapacities": {
+        "any": {
+          "dimension": "volume",
+          "value": {
+            "numerator": 55306341,
+            "denominator": 1953125
+          },
+          "unit": {
+            "entityId": "dnd2024.vocabulary.volume-unit.liter"
+          }
+        }
+      }
+    }
+  }
+}

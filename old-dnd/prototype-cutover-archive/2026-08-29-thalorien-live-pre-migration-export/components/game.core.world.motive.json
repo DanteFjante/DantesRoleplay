@@ -1,0 +1,5 @@
+{
+  "id": "game.core.world.motive",
+  "name": "World Motive",
+  "description": "Closed shared-game durable motive state for a recurring world actor. The entity name identifies the actor; faction membership and location/control references remain relationships. Governed by procedure.game.core.world.faction."
+}

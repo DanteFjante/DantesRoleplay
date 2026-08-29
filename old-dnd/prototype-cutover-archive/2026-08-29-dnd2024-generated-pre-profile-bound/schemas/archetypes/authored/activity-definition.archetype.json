@@ -1,0 +1,31 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.activity-definition",
+  "kind": "authored",
+  "description": "An executable rules activity assembled from optional targeting, roll, outcome, cost, and duration capabilities.",
+  "requiredComponents": [
+    "dnd2024.core.source",
+    "dnd2024.core.version",
+    "dnd2024.activity.activation"
+  ],
+  "optionalComponents": [
+    "dnd2024.core.presentation",
+    "dnd2024.core.rules-text",
+    "dnd2024.core.tags",
+    "dnd2024.activity.targeting",
+    "dnd2024.activity.range",
+    "dnd2024.activity.duration",
+    "dnd2024.activity.cost",
+    "dnd2024.activity.check",
+    "dnd2024.activity.attack",
+    "dnd2024.activity.save",
+    "dnd2024.activity.damage",
+    "dnd2024.activity.healing",
+    "dnd2024.activity.applied-effects",
+    "dnd2024.activity.sequence"
+  ],
+  "sourceSections": ["Playing the Game 5–18", "Spells 104–175", "Rules Glossary 176–191"],
+  "invariantNotes": [
+    "Roll and outcome capabilities are composed only when the activity actually uses them; final totals remain mechanics-owned."
+  ]
+}

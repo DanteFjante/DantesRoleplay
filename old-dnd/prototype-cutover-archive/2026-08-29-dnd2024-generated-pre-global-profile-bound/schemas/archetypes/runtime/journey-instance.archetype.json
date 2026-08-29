@@ -1,0 +1,19 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.journey-instance",
+  "kind": "runtime",
+  "description": "One planned or active journey whose travellers and current location remain generic relationship state.",
+  "requiredComponents": ["dnd2024.exploration.journey"],
+  "optionalComponents": [],
+  "sourceSections": ["Playing the Game 5–18", "Gameplay Toolbox 192–203"],
+  "externalOwners": [
+    {
+      "owner": "generic world containment and participation relationships",
+      "usage": "Own current location, route membership, and traveller membership."
+    },
+    {
+      "owner": "generic events and clocks",
+      "usage": "Own journey transitions and elapsed time."
+    }
+  ]
+}

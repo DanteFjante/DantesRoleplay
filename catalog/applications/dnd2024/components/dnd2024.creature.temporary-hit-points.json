@@ -1,0 +1,1 @@
+{"id":"dnd2024.creature.temporary-hit-points","name":"Creature Temporary Hit Points state component","description":"The one current Temporary Hit Point buffer; absence of the component means no buffer."}

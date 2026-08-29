@@ -1,0 +1,28 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.creature-definition",
+  "kind": "authored",
+  "description": "A reusable creature or form definition assembled from immutable classification and rule bases.",
+  "requiredComponents": [
+    "dnd2024.core.source",
+    "dnd2024.core.version"
+  ],
+  "optionalComponents": [
+    "dnd2024.core.presentation",
+    "dnd2024.core.rules-text",
+    "dnd2024.core.tags",
+    "dnd2024.activity.membership",
+    "dnd2024.creature.classification",
+    "dnd2024.creature.ability-score-basis",
+    "dnd2024.creature.body-basis",
+    "dnd2024.creature.condition-immunity-basis",
+    "dnd2024.creature.defense-basis",
+    "dnd2024.creature.hit-point-basis",
+    "dnd2024.creature.language-basis",
+    "dnd2024.creature.movement-basis",
+    "dnd2024.creature.proficiency-basis",
+    "dnd2024.creature.senses-basis"
+  ],
+  "sourceSections": ["Character Origins 83–86", "Monsters 254–257", "Animals 344–364"],
+  "invariantNotes": ["At least one classification or creature-basis capability is required by the authoring procedure."]
+}

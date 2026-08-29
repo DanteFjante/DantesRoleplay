@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.weapon-profile",
+  "name": "Weapon Profile (D&D 2024)",
+  "description": "One canonical SRD 5.2.1 weapon profile: Simple or Martial category, Melee or Ranged kind, permitted attack abilities, one base damage expression, and fixed source attribution. Use mechanic.dnd2024.weapon-profile.write to record or correct it. This component stores no ownership, equipment, range, properties, attack result, or damage dealt."
+}

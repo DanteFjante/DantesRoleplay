@@ -883,6 +883,16 @@ public static class WebInterfaceEndpoints
                     text = value.Text,
                     stance = value.Stance,
                     presentationKind = value.PresentationKind
+                }).ToArray(),
+                locations = result.Locations.Select(location => new
+                {
+                    name = location.Name,
+                    entries = location.Entries.Select(value => new
+                    {
+                        text = value.Text,
+                        stance = value.Stance,
+                        presentationKind = value.PresentationKind
+                    }).ToArray()
                 }).ToArray()
             }),
             "invalid" => Results.Json(new { error = "INVALID_KNOWLEDGE_REQUEST" },

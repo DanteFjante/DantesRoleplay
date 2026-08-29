@@ -1,0 +1,50 @@
+{
+  "id": "dnd2024.spell.prayer-of-healing",
+  "name": "Prayer of Healing",
+  "archetype": "dnd2024.archetype.spell-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Spells > Spell Descriptions > Prayer of Healing (SRD 5.2.1, pages 154-154)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.core.presentation": {
+      "summary": "Level 2; school: Abjuration; class spell lists: Cleric, Paladin."
+    },
+    "dnd2024.spellcasting.spell": {
+      "level": 2,
+      "school": {
+        "entityId": "dnd2024.spell-school.abjuration"
+      },
+      "castingActivity": {
+        "entityId": "dnd2024.shared.action.magic",
+        "expectedArchetype": "dnd2024.archetype.activity-definition"
+      },
+      "ritual": false
+    },
+    "dnd2024.spellcasting.components": {
+      "requirements": []
+    },
+    "dnd2024.spellcasting.spell-list-membership": {
+      "lists": [
+        {
+          "entityId": "dnd2024.spell-list.cleric",
+          "expectedArchetype": "dnd2024.archetype.spellcasting-source-definition"
+        },
+        {
+          "entityId": "dnd2024.spell-list.paladin",
+          "expectedArchetype": "dnd2024.archetype.spellcasting-source-definition"
+        }
+      ]
+    }
+  }
+}

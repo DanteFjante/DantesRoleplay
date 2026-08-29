@@ -1,6 +1,6 @@
 # D&D 2024 prototype audience-projection implementation — player knowledge panel
 
-Status: active
+Status: accepted
 Owner/roadmap: `ruleset/dnd2024/ROADMAP.md`
 Dependency tree/leaf: `DND2024-PROTOTYPE-SERVER-INTEGRATION-DEPENDENCY-TREE.md` / server-owned companion projection
 Ruleset alignment: dnd2024-compatible

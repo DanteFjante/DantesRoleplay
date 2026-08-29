@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dantesroleplay:dnd2024:prototype:value:target",
+  "title": "Target selector",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["subject", "count", "selection"],
+  "properties": {
+    "subject": { "enum": ["self", "creature", "object", "space", "creature-or-object"] },
+    "count": { "$ref": "urn:dantesroleplay:dnd2024:prototype:value:bounded-value" },
+    "selection": { "enum": ["chosen", "all-in-area", "source", "random"] },
+    "area": { "$ref": "urn:dantesroleplay:dnd2024:prototype:value:area" },
+    "restrictions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "urn:dantesroleplay:dnd2024:prototype:value:prerequisite" }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "selection": { "const": "all-in-area" } },
+        "required": ["selection"]
+      },
+      "then": { "required": ["area"] }
+    }
+  ]
+}

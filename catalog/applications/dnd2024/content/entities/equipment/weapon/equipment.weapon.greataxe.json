@@ -1,0 +1,70 @@
+{
+  "id": "dnd2024.equipment.weapon.greataxe",
+  "name": "Greataxe",
+  "archetype": "dnd2024.archetype.weapon-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Equipment > Weapons > Weapons table > Greataxe (SRD 5.2.1, pages 91-91)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.item.weapon": {
+      "category": {
+        "entityId": "dnd2024.equipment.weapon-category.martial"
+      },
+      "properties": [
+        {
+          "entityId": "dnd2024.equipment.weapon-property.heavy"
+        },
+        {
+          "entityId": "dnd2024.equipment.weapon-property.two-handed"
+        }
+      ],
+      "masteryProperty": {
+        "entityId": "dnd2024.equipment.weapon-mastery.cleave"
+      }
+    },
+    "dnd2024.item.physical": {
+      "weight": {
+        "dimension": "mass",
+        "value": {
+          "numerator": 317514659,
+          "denominator": 100000000
+        },
+        "unit": {
+          "entityId": "dnd2024.vocabulary.mass-unit.kilogram"
+        }
+      }
+    },
+    "dnd2024.item.price": {
+      "basePrice": {
+        "amount": {
+          "numerator": 30,
+          "denominator": 1
+        },
+        "denomination": {
+          "entityId": "dnd2024.equipment.currency.gold-piece"
+        }
+      }
+    },
+    "dnd2024.item.equippable": {
+      "equipmentSlots": [
+        {
+          "entityId": "dnd2024.equipment-slot.main-hand"
+        }
+      ]
+    },
+    "dnd2024.activity.membership": {
+      "activities": []
+    }
+  }
+}

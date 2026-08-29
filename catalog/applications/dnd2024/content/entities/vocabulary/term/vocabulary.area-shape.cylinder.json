@@ -1,0 +1,28 @@
+{
+  "id": "dnd2024.vocabulary.area-shape.cylinder",
+  "name": "Cylinder",
+  "archetype": "dnd2024.archetype.vocabulary-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Rules Glossary > Cylinder (SRD 5.2.1, pages 180-180)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.vocabulary.term": {
+      "code": "cylinder",
+      "categoryRef": {
+        "entityId": "dnd2024.vocabulary.category.area-shape",
+        "expectedArchetype": "dnd2024.archetype.vocabulary-category-definition"
+      }
+    }
+  }
+}

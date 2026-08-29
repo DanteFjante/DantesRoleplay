@@ -1,0 +1,1 @@
+{"id":"dnd2024.activity.activation","name":"Activity activation","description":"Declares either turn-economy activation or a measured activation time, plus any trigger or eligibility condition, without storing remaining turn economy."}

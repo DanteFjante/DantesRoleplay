@@ -1,0 +1,1 @@
+{"id":"dnd2024.vocabulary.term","name":"Vocabulary term component","description":"One named member of a referenced D&D vocabulary category; concrete categories and terms are authored later as entities, while the generic relationship owner links terms such as skills to abilities."}

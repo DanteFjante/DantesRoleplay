@@ -1,0 +1,1 @@
+{"id":"dnd2024.character.identity","name":"Character identity state component","description":"Pronouns, appearance, biography, and player-facing notes; the ECS entity owns the name, creature classification owns alignment, and play participation owns controller association."}

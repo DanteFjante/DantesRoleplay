@@ -1,0 +1,1 @@
+{"id":"dnd2024.advancement.feature","name":"Feature definition component","description":"Reusable authored feature that composes rule references and one normalized grant path; an activity-membership component owns any activities supplied by the feature."}

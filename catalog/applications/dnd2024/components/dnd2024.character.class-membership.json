@@ -1,0 +1,1 @@
+{"id":"dnd2024.character.class-membership","name":"Character class membership state","description":"One entity-addressable class level and optional subclass selection; generic relationships associate one or more memberships with a character, and total level and Proficiency Bonus are derived."}

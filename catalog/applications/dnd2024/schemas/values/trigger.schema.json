@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dantesroleplay:dnd2024:prototype:value:trigger",
+  "title": "Rule trigger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event", "timing"],
+  "properties": {
+    "event": { "type": "string", "pattern": "^[a-z][a-z0-9-]*(?:\\.[a-z][a-z0-9-]*)*$", "maxLength": 160 },
+    "timing": { "enum": ["before", "when", "after"] },
+    "condition": { "$ref": "urn:dantesroleplay:dnd2024:prototype:value:prerequisite" }
+  }
+}

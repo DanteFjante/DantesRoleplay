@@ -1,0 +1,35 @@
+{
+  "id": "dnd2024.species-choice.elf.elven-lineage",
+  "name": "Elven Lineage",
+  "archetype": "dnd2024.archetype.choice-set-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Character Origins > Character Species > Elven Lineage (SRD 5.2.1, pages 84-85)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.choice-set": {
+      "selectionMode": "all",
+      "optionRefs": [
+        {
+          "entityId": "dnd2024.species-choice-option.elf.elven-lineage.drow"
+        },
+        {
+          "entityId": "dnd2024.species-choice-option.elf.elven-lineage.high-elf"
+        },
+        {
+          "entityId": "dnd2024.species-choice-option.elf.elven-lineage.wood-elf"
+        }
+      ]
+    }
+  }
+}

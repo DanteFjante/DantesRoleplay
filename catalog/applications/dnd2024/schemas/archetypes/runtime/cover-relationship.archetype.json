@@ -1,0 +1,15 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.cover-relationship",
+  "kind": "runtime",
+  "description": "D&D cover facts layered onto a generic directional relationship.",
+  "requiredComponents": ["dnd2024.exploration.cover"],
+  "optionalComponents": [],
+  "sourceSections": ["Playing the Game 13–16", "Rules Glossary 176–191"],
+  "externalOwners": [
+    {
+      "owner": "generic relationship graph",
+      "usage": "Owns observer, target, and obstruction endpoints."
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+---
+id: procedure.mechanic.dnd2024.speed
+category: ruleset.dnd2024.core.data.speed
+name: Govern D&D 2024 creature Speed
+governs: mechanic.dnd2024.speed.write; mechanic.dnd2024.speed.read; dnd2024.creature.movement
+status: active
+---
+
+## Description
+
+Owns one creature's persistent D&D 2024 base Speed profile. It records walk Speed and the four
+source-defined special Speeds without storing a turn allowance or a temporary derived value.
+
+## Instructions
+
+1. Source: `source.dnd2024.srd-5.2.1`, `Rules Glossary > Speed` (PDF p. 188). A creature has a
+   Speed measured in feet and may also have Burrow, Climb, Fly, or Swim Speed.
+2. Keep at most one closed `dnd2024.creature.movement` component. Walk Speed is positive; zero in a special
+   field is the canonical absent value.
+3. The writer accepts exactly `record|correct` and all five base-Speed fields, fixes provenance,
+   and proposes one add/set effect. The reader accepts `{}`, reports explicit diagnostics, and
+   never writes or invents a default.
+4. Temporary changes, condition effects, switching costs, turn refresh/spending, and actual
+   movement belong to later owners and must not be persisted here.
+
+## Constraints
+
+Every stored value is an integer multiple of five feet. Walk is 5–1,000; each special field is
+0–1,000. These are closed repository bounds, not a claim that the SRD sets a universal maximum.
+This component stores no current movement, maximum allowance, encounter, position, reach, route,
+travel pace, terrain, condition, effect formula, or history.

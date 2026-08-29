@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.university-civil-service",
+  "name": "The University and Imperial Administration",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The University worked closely with the imperial crown family and helped educate government officials in administration and governance, making formal learning important to the imperial civil service.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

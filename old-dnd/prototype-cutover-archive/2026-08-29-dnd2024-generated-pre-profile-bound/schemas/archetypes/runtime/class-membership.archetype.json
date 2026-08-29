@@ -1,0 +1,16 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.class-membership",
+  "kind": "runtime",
+  "description": "One entity-addressable class level and optional subclass selection for a character.",
+  "requiredComponents": ["dnd2024.character.class-membership"],
+  "optionalComponents": [],
+  "sourceSections": ["Character Creation 19–27", "Classes 28–82"],
+  "externalOwners": [
+    {
+      "owner": "generic character-to-class-membership relationship",
+      "usage": "Associates one or more membership entities with a character."
+    }
+  ],
+  "invariantNotes": ["Total character level and Proficiency Bonus are derived across related membership entities."]
+}

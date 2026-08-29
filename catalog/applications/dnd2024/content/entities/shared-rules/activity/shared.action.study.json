@@ -1,0 +1,27 @@
+{
+  "id": "dnd2024.shared.action.study",
+  "name": "Study",
+  "archetype": "dnd2024.archetype.activity-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Playing the Game > Actions > Study (SRD 5.2.1, pages 10-10)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.core.presentation": {
+      "summary": "Make a specified Intelligence check to recall or deduce information."
+    },
+    "dnd2024.activity.activation": {
+      "economy": "action"
+    }
+  }
+}

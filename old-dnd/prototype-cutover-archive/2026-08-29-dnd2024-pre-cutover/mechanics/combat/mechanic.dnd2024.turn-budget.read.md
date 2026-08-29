@@ -1,0 +1,22 @@
+---
+id: mechanic.dnd2024.turn-budget.read
+category: ruleset.dnd2024.core.combat.economy
+name: Read explicit turn-budget diagnostics
+scope: dnd2024-srd-5.2.1
+status: active
+---
+
+## Description
+
+Reports the explicit turn lifecycle component and its counted, metric budget without changing either.
+
+## Matches
+
+inspect action-economy budget diagnostics
+read action-economy budget diagnostics
+
+## Requirements
+
+```json
+{"roles":{"turn":{"components":["dnd2024.encounter.turn","dnd2024.combat.turn-budget"],"description":"The explicit turn whose lifecycle and budget are reported."}}}
+```

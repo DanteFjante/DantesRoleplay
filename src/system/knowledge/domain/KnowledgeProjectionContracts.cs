@@ -7,6 +7,8 @@ public sealed record CanonicalKnowledgeDocument(
     string Status,
     bool Archived,
     string SubjectId,
+    string SubjectName,
+    bool SubjectIsActiveLocation,
     long? ValidFromMinute,
     long? ValidUntilMinute,
     string DisplayText,

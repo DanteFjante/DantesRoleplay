@@ -1,0 +1,32 @@
+{
+  "id": "dnd2024.equipment.gear.ink",
+  "name": "Ink",
+  "archetype": "dnd2024.archetype.item-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Equipment > Adventuring Gear > Ink (SRD 5.2.1, pages 95-98)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.item.price": {
+      "basePrice": {
+        "amount": {
+          "numerator": 10,
+          "denominator": 1
+        },
+        "denomination": {
+          "entityId": "dnd2024.equipment.currency.gold-piece"
+        }
+      }
+    }
+  }
+}

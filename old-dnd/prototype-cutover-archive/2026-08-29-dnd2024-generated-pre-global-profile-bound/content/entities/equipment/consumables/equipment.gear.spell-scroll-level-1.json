@@ -1,0 +1,39 @@
+{
+  "id": "dnd2024.equipment.gear.spell-scroll-level-1",
+  "name": "Spell Scroll (Level 1)",
+  "archetype": "dnd2024.archetype.consumable-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Equipment > Adventuring Gear > Spell Scroll (Level 1) (SRD 5.2.1, pages 95-99)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.item.consumable": {
+      "unitsConsumedPerUse": 1
+    },
+    "dnd2024.item.physical": {},
+    "dnd2024.item.price": {
+      "basePrice": {
+        "amount": {
+          "numerator": 50,
+          "denominator": 1
+        },
+        "denomination": {
+          "entityId": "dnd2024.equipment.currency.gold-piece"
+        }
+      }
+    },
+    "dnd2024.activity.membership": {
+      "activities": []
+    }
+  }
+}

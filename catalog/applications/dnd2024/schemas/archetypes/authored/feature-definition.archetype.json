@@ -1,0 +1,18 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.feature-definition",
+  "kind": "authored",
+  "description": "A reusable authored feature that references activities, triggers, rules text, and normalized grants.",
+  "requiredComponents": [
+    "dnd2024.core.source",
+    "dnd2024.core.version",
+    "dnd2024.advancement.feature"
+  ],
+  "optionalComponents": [
+    "dnd2024.core.presentation",
+    "dnd2024.core.rules-text",
+    "dnd2024.core.tags",
+    "dnd2024.activity.membership"
+  ],
+  "sourceSections": ["Classes 28–82", "Character Origins 83–86", "Feats 87–88", "Monsters 254–257"]
+}

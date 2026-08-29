@@ -44,10 +44,10 @@ Prototype companion reads and requests authoritative server play [planning]
 │   ├── Reuse existing world root/location/faction/fact/map-anchor owners [verified]
 │   ├── Map only server-owned state into the companion read model [partial: campaign root and character record]
 │   └── Bind the selected campaign to its world and player knowledge [planned]
-├── Server-owned companion projection [missing]
-│   ├── Declare the bounded application projection and player/DM visibility contract [missing]
-│   ├── Read only generic state/projection APIs and catalog-owned definitions [missing]
-│   └── Prove no secret data crosses a player boundary [missing]
+├── Server-owned companion projection [partial]
+│   ├── Bounded player-knowledge notebook contract [verified: existing `IAuthorizedKnowledgeNotebookReader`]
+│   ├── Read only generic state/projection APIs and catalog-owned definitions [partial: notebook only]
+│   └── Prove no secret data crosses a player boundary [verified for notebook adapter]
 ├── Server-served prototype route [ready]
 │   ├── Serve the prototype through the existing `/ui/{id}` page/bundle route [ready]
 │   └── Use same-origin generic application-state and mechanic APIs [ready]
@@ -56,7 +56,9 @@ Prototype companion reads and requests authoritative server play [planning]
 └── Prototype adapter [partial]
     ├── Existing-campaign context and direct campaign/actor reads [verified]
     ├── Campaign root and character-record projection [verified]
-    ├── Detailed world/campaign projection [planned]
+    ├── Audience-filtered campaign/world knowledge [verified]
+    ├── Player-safe known-location directory [verified: active locations named only through admitted knowledge]
+    ├── Detailed locations/maps/factions projection [planned]
     └── Send action requests through the existing command path; never mutate local fixture state
 ```
 
@@ -108,7 +110,7 @@ generic UI document.
 | 1 | Select the first companion projection | convergence owners | fields, visibility, source components, empty/denied behavior, and no-leak tests are declared |
 | 2 | Resolve the existing campaign through a generic web-safe audience binding | leaf 1 | **verified:** `GET /api/audience-context` has no parameters and returns only the existing validated binding or an empty denial |
 | 3 | Complete the fixture-to-server read-model crosswalk | leaf 2 | every displayed value is server state, catalog content, or deliberately unavailable; no fixture fallback. **Partial:** campaign premise/goals and active character entries read from their server components. |
-| 4 | Implement the generic server projection seam | leaf 3 | no D&D-specific C# logic; read-only projection returns source-owned data |
+| 4 | Implement the generic server projection seam | leaf 3 | **partial:** the prototype consumes the existing identity-free authorized notebook; no D&D-specific C# logic or new route. Locations/maps/factions remain separate projections. |
 | 5 | Serve/connect the prototype through the existing page/bundle route | leaf 4 | fixture is not used when connected; browser reads same-origin generic APIs |
 | 6 | Optionally host the prototype separately | leaf 5 | remote identity and gateway are explicitly authorized |
 
@@ -116,10 +118,13 @@ generic UI document.
 
 The prototype's server-only adapter now resolves the existing host-selected campaign, then reads
 only its campaign root and bound actor's temporary character record in addition to their entity
-identity. It renders those values without an Eldervale fallback. The next implementation leaf maps
-the remaining server-owned campaign/world components into detailed companion views. A separately
-hosted slice remains optional and needs a generic authenticated relay/gateway; it cannot reuse the
-loopback-only operator path.
+identity. It also consumes the existing authorized, identity-free knowledge notebook and renders
+only server-filtered entries without an Eldervale fallback. The notebook additionally provides a
+safe directory of active locations only where a non-familiar admitted entry explicitly concerns
+that location; it exposes a name and the already-admitted entries, never an ID, summary, route, or
+world graph. The next implementation leaf maps detailed locations, maps, and factions into companion
+views. A separately hosted slice remains optional and needs a generic authenticated relay/gateway;
+it cannot reuse the loopback-only operator path.
 
 ## Confirmation gates
 

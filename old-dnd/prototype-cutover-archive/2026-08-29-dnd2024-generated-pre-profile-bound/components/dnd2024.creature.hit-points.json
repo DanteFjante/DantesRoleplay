@@ -1,0 +1,1 @@
+{"id":"dnd2024.creature.hit-points","name":"Creature Hit Points state component","description":"A creature instance's authoritative current and current-maximum Hit Points; damage, healing, and death consequences are separate mechanics."}

@@ -1,0 +1,54 @@
+{
+  "id": "dnd2024.spell.animate-objects",
+  "name": "Animate Objects",
+  "archetype": "dnd2024.archetype.spell-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Spells > Spell Descriptions > Animate Objects (SRD 5.2.1, pages 108-108)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.core.presentation": {
+      "summary": "Level 5; school: Transmutation; class spell lists: Bard, Sorcerer, Wizard."
+    },
+    "dnd2024.spellcasting.spell": {
+      "level": 5,
+      "school": {
+        "entityId": "dnd2024.spell-school.transmutation"
+      },
+      "castingActivity": {
+        "entityId": "dnd2024.shared.action.magic",
+        "expectedArchetype": "dnd2024.archetype.activity-definition"
+      },
+      "ritual": false
+    },
+    "dnd2024.spellcasting.components": {
+      "requirements": []
+    },
+    "dnd2024.spellcasting.spell-list-membership": {
+      "lists": [
+        {
+          "entityId": "dnd2024.spell-list.bard",
+          "expectedArchetype": "dnd2024.archetype.spellcasting-source-definition"
+        },
+        {
+          "entityId": "dnd2024.spell-list.sorcerer",
+          "expectedArchetype": "dnd2024.archetype.spellcasting-source-definition"
+        },
+        {
+          "entityId": "dnd2024.spell-list.wizard",
+          "expectedArchetype": "dnd2024.archetype.spellcasting-source-definition"
+        }
+      ]
+    }
+  }
+}

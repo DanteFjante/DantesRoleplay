@@ -1,0 +1,19 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.effect-definition",
+  "kind": "authored",
+  "description": "An authored effect whose typed operations may optionally have duration and stacking rules.",
+  "requiredComponents": [
+    "dnd2024.core.source",
+    "dnd2024.core.version",
+    "dnd2024.effect.definition",
+    "dnd2024.effect.operations"
+  ],
+  "optionalComponents": [
+    "dnd2024.core.presentation",
+    "dnd2024.core.rules-text",
+    "dnd2024.core.tags",
+    "dnd2024.effect.stacking"
+  ],
+  "sourceSections": ["Playing the Game 5–18", "Rules Glossary 176–191", "Gameplay Toolbox 192–203"]
+}

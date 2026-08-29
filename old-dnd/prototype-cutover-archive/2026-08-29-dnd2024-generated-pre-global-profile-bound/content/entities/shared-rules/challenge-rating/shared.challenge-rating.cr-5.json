@@ -1,0 +1,33 @@
+{
+  "id": "dnd2024.shared.challenge-rating.cr-5",
+  "name": "Challenge Rating 5",
+  "archetype": "dnd2024.archetype.challenge-rating-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Monsters > Challenge Rating > CR 5 (SRD 5.2.1, pages 256-256)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.core.presentation": {
+      "summary": "SRD table row: 1,800 XP; proficiency bonus +3. CR 0 intentionally preserves both permitted XP awards in one definition."
+    },
+    "dnd2024.monster.challenge-rating-definition": {
+      "rating": {
+        "numerator": 5,
+        "denominator": 1
+      },
+      "experienceAwards": [
+        1800
+      ]
+    }
+  }
+}

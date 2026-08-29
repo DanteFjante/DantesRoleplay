@@ -1,0 +1,28 @@
+{
+  "id": "dnd2024.vocabulary.area-shape.line",
+  "name": "Line",
+  "archetype": "dnd2024.archetype.vocabulary-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Rules Glossary > Line (SRD 5.2.1, pages 184-184)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.vocabulary.term": {
+      "code": "line",
+      "categoryRef": {
+        "entityId": "dnd2024.vocabulary.category.area-shape",
+        "expectedArchetype": "dnd2024.archetype.vocabulary-category-definition"
+      }
+    }
+  }
+}

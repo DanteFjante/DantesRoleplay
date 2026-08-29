@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dantesroleplay:dnd2024:prototype:value:bounded-value",
+  "title": "Literal or calculated non-negative value",
+  "oneOf": [
+    { "type": "integer", "minimum": 0 },
+    { "$ref": "urn:dantesroleplay:dnd2024:prototype:value:calculation-reference" }
+  ]
+}

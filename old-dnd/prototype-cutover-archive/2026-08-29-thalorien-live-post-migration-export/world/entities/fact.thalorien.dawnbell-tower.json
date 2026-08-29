@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.dawnbell-tower",
+  "name": "The Dawnbell Tower",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The Dawnbell Tower is Rhiannos's active magic tower, associated with healing, refuge, and the joining of divine and arcane learning.",
+      "provenance": "Approved as a Slice S4 regional proposal during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "location",
+      "sensitivity": "open"
+    }
+  }
+}

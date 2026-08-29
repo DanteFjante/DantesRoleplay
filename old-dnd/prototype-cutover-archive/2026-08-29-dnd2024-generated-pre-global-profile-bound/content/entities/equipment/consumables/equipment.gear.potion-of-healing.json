@@ -1,0 +1,50 @@
+{
+  "id": "dnd2024.equipment.gear.potion-of-healing",
+  "name": "Potion of Healing",
+  "archetype": "dnd2024.archetype.consumable-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Equipment > Adventuring Gear > Potion of Healing (SRD 5.2.1, pages 95-99)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.item.consumable": {
+      "unitsConsumedPerUse": 1
+    },
+    "dnd2024.item.physical": {
+      "weight": {
+        "dimension": "mass",
+        "value": {
+          "numerator": 45359237,
+          "denominator": 200000000
+        },
+        "unit": {
+          "entityId": "dnd2024.vocabulary.mass-unit.kilogram"
+        }
+      }
+    },
+    "dnd2024.item.price": {
+      "basePrice": {
+        "amount": {
+          "numerator": 50,
+          "denominator": 1
+        },
+        "denomination": {
+          "entityId": "dnd2024.equipment.currency.gold-piece"
+        }
+      }
+    },
+    "dnd2024.activity.membership": {
+      "activities": []
+    }
+  }
+}

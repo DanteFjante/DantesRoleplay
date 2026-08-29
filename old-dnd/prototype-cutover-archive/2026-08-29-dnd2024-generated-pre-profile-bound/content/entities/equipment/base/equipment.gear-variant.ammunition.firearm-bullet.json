@@ -1,0 +1,24 @@
+{
+  "id": "dnd2024.equipment.gear-variant.ammunition.firearm-bullet",
+  "name": "Bullets, Firearm",
+  "archetype": "dnd2024.archetype.item-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Equipment > Adventuring Gear > Ammunition > Bullets, Firearm (SRD 5.2.1, pages 96-96)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.core.presentation": {
+      "summary": "Ammunition variant"
+    }
+  }
+}

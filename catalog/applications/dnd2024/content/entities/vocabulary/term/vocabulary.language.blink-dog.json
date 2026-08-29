@@ -1,0 +1,28 @@
+{
+  "id": "dnd2024.vocabulary.language.blink-dog",
+  "name": "Blink Dog",
+  "archetype": "dnd2024.archetype.vocabulary-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Monsters A–Z > Blink Dog > Languages (SRD 5.2.1, pages 265-265)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.vocabulary.term": {
+      "code": "blink-dog",
+      "categoryRef": {
+        "entityId": "dnd2024.vocabulary.category.language",
+        "expectedArchetype": "dnd2024.archetype.vocabulary-category-definition"
+      }
+    }
+  }
+}

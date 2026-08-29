@@ -17,30 +17,10 @@
     "worldClockComponentTypeId": "dnd2024.game.core.world.clock",
     "currentMinuteProperty": "currentMinute",
     "knowledgeKinds": [
-      {
-        "componentTypeId": "dnd2024.game.core.world.fact",
-        "kind": "fact",
-        "presentationKind": "statement",
-        "archivedStatuses": ["archived"]
-      },
-      {
-        "componentTypeId": "dnd2024.game.core.world.rumour",
-        "kind": "rumour",
-        "presentationKind": "rumour",
-        "archivedStatuses": ["archived"]
-      },
-      {
-        "componentTypeId": "dnd2024.game.core.world.secret",
-        "kind": "secret",
-        "presentationKind": "statement",
-        "archivedStatuses": ["archived"]
-      },
-      {
-        "componentTypeId": "dnd2024.game.core.world.clue",
-        "kind": "clue",
-        "presentationKind": "evidence",
-        "archivedStatuses": []
-      }
+      { "componentTypeId": "dnd2024.game.core.world.fact", "kind": "fact", "presentationKind": "statement", "archivedStatuses": ["archived"] },
+      { "componentTypeId": "dnd2024.game.core.world.rumour", "kind": "rumour", "presentationKind": "rumour", "archivedStatuses": ["archived"] },
+      { "componentTypeId": "dnd2024.game.core.world.secret", "kind": "secret", "presentationKind": "statement", "archivedStatuses": ["archived"] },
+      { "componentTypeId": "dnd2024.game.core.world.clue", "kind": "clue", "presentationKind": "evidence", "archivedStatuses": [] }
     ],
     "primaryStatusProperty": "status",
     "primarySummaryProperty": "summary",

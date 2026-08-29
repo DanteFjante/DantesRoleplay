@@ -1,0 +1,27 @@
+{
+  "id": "dnd2024.spell-list.druid",
+  "name": "Druid Spell List",
+  "archetype": "dnd2024.archetype.spellcasting-source-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Classes > Druid > Druid Spell List (SRD 5.2.1, pages 44-45)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.core.presentation": {
+      "summary": "124 spell memberships; membership is also printed in each spell header on pages 107-175."
+    },
+    "dnd2024.spellcasting.source-definition": {
+      "spellLists": []
+    }
+  }
+}

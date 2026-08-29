@@ -1,0 +1,49 @@
+---
+id: procedure.mechanic.dnd2024.rest-episode
+category: ruleset.dnd2024.core.gameplay.rest
+name: Govern authenticated D&D 2024 rest progress
+governs: dnd2024.rest-episode; dnd2024.rest.world; mechanic.dnd2024.rest.begin; mechanic.dnd2024.rest.progress; mechanic.dnd2024.rest.interrupt
+status: active
+---
+
+## Description
+
+Starts and progresses one standard Short or Long Rest episode from current authoritative creature,
+policy, active world, and world-clock state. Duration-ready is evidence only and grants no benefit.
+
+## Instructions
+
+1. Bind `creature`, `world`, and canonical `policy` roles. The D&D application must explicitly
+   declare the existing `game` application as a base so `game.core.world.root` and
+   `game.core.world.clock` resolve through exact component mappings.
+2. Accept exactly one rest `kind`. Derive policy identity, duration, start minute, world identity,
+   status, and source reference from projected state; none is request input.
+3. Require valid current Hit Points of at least 1, an active root world with valid clock, the exact
+   immutable standard policy, no existing episode, and no existing `dnd2024.rest.world` membership.
+4. Atomically add one active episode and one empty-data relationship from world to creature. Emit no
+   event or notification and grant no benefit.
+5. Progress classifies the complete interval since the episode's last observed world-clock
+   coordinate. Accept `light` for a Short Rest and `sleep` or `light` for a Long Rest. Derive the
+   interval, next observation, counters, required duration, and readiness; never accept them.
+6. A Short Rest becomes duration-ready after 60 classified light-activity minutes. A Long Rest
+   becomes duration-ready only after its derived required duration, at least 360 sleeping minutes,
+   and no more than 120 light-activity minutes.
+7. Accept only interruption kinds declared by the immutable policy. Require the episode observed
+   through the current clock before applying one. A Short Rest interruption atomically removes the
+   episode and membership with no benefit. A Long Rest interruption adds 60 required minutes,
+   remains active, and reports but does not grant possible Short Rest credit after 60 minutes.
+8. The accepted weapon-damage root automatically consumes optional target episode/membership state.
+   Positive resolved damage applies the same Short/Long damage consequences in that root transaction
+   without caller rest roles or interruption input. Damage absorbed by Temporary Hit Points counts;
+   zero damage and duration-ready episodes do not change rest state.
+9. The accepted encounter Initiative root composes every initially contained actor's optional
+   episode/membership state through the individual Initiative child and atomically applies all
+   active-rest Initiative consequences with the immutable order. Ready episodes remain unchanged.
+
+## Constraints
+
+- A caller's activity/interruption is gameplay intent for the complete current interval/coordinate;
+  it is not permission to provide time, revision, counters, readiness, policy, source, or effects.
+- Ready is not finished. Do not advance the clock, automatically infer activity/interruption,
+  apply recovery or recharge, enforce restart cadence, grant Heroic Inspiration, or alter a world
+  component.

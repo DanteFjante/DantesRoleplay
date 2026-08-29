@@ -1,0 +1,41 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.item-definition",
+  "kind": "authored",
+  "description": "An item, service, lifestyle, or magic item assembled from optional physical, use, equipment, and magical capabilities.",
+  "requiredComponents": [
+    "dnd2024.core.source",
+    "dnd2024.core.version"
+  ],
+  "optionalComponents": [
+    "dnd2024.core.presentation",
+    "dnd2024.core.rules-text",
+    "dnd2024.core.tags",
+    "dnd2024.activity.membership",
+    "dnd2024.item.ammunition",
+    "dnd2024.item.armor",
+    "dnd2024.item.consumable",
+    "dnd2024.item.container",
+    "dnd2024.item.equippable",
+    "dnd2024.item.lifestyle",
+    "dnd2024.item.physical",
+    "dnd2024.item.price",
+    "dnd2024.item.service",
+    "dnd2024.item.tool",
+    "dnd2024.item.weapon",
+    "dnd2024.magic-item.attunement-requirement",
+    "dnd2024.magic-item.base-variant",
+    "dnd2024.magic-item.category",
+    "dnd2024.magic-item.charges",
+    "dnd2024.magic-item.curse",
+    "dnd2024.magic-item.rarity",
+    "dnd2024.magic-item.resilience",
+    "dnd2024.magic-item.sentience",
+    "dnd2024.object.durability-basis"
+  ],
+  "sourceSections": ["Equipment 89–103", "Magic Items 204–253"],
+  "invariantNotes": [
+    "At least one item or magic-item capability is required by the authoring procedure.",
+    "Weapon, armor, tool, container, consumable, service, and magic item are capabilities rather than separate ECS entity kinds."
+  ]
+}

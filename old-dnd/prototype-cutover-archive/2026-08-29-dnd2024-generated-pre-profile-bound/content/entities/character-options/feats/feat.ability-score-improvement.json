@@ -1,0 +1,28 @@
+{
+  "id": "dnd2024.feat.ability-score-improvement",
+  "name": "Ability Score Improvement",
+  "archetype": "dnd2024.archetype.feat-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Feats > Ability Score Improvement (SRD 5.2.1, pages 87-87)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.feat": {
+      "categoryRef": {
+        "entityId": "dnd2024.feat-category.origin"
+      },
+      "repeatable": false,
+      "grantRefs": []
+    }
+  }
+}

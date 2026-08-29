@@ -1,0 +1,1 @@
+{"id":"dnd2024.creature.senses-basis","name":"Creature senses basis component","description":"Immutable dimensioned senses keyed once by sense entity ID and granted by a creature definition, feature, item, or form."}

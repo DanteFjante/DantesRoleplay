@@ -163,6 +163,11 @@ public sealed class ApplicationKnowledgeCanonicalSource(
         var subject = await entities.GetEntityAsync(
             binding.StateSpaceId, subjects[0], cancellationToken);
         if (subject is null) return null;
+        var subjectLocation = await entities.GetComponentAsync(
+            binding.StateSpaceId, subject.EntityId, binding.LocationComponentTypeId, cancellationToken);
+        var subjectIsActiveLocation = subjectLocation is not null &&
+            Text(subjectLocation.ValueJson, binding.LocationStatusProperty, out var locationStatus) &&
+            locationStatus == binding.ActiveLocationStatus;
 
         var validity = components.Where(value =>
             value.Type.QualifiedTypeId == binding.ValidityComponentTypeId).ToArray();
@@ -191,10 +196,19 @@ public sealed class ApplicationKnowledgeCanonicalSource(
             validity = validity.Select(value => new { value.Type.TypeVersion, value.Type.SchemaHash,
                 value.Revision, value.ValueJson }),
             subject = new { subject.EntityId, subject.Name, subject.Revision },
+            subjectLocation = subjectLocation is null ? null : new
+            {
+                subjectLocation.Type.QualifiedTypeId,
+                subjectLocation.Type.TypeVersion,
+                subjectLocation.Type.SchemaHash,
+                subjectLocation.Revision,
+                subjectLocation.ValueJson
+            },
             relevantEdges
         });
         return new(entity.EntityId, worldId, kind.Kind, status,
             kind.ArchivedStatuses.Contains(status, StringComparer.Ordinal), subject.EntityId,
+            subject.Name, subjectIsActiveLocation,
             validFrom, validUntil, display, search, kind.PresentationKind, revision);
     }
 

@@ -15,6 +15,7 @@ public static class WebInterfaceSecurity
         "connect-src 'self'; " +
         "font-src 'self' data:; " +
         "form-action 'none'; " +
+        "frame-src 'self' http://localhost:5173; " +
         "frame-ancestors 'none'; " +
         "img-src 'self' data: blob:; " +
         "media-src 'self' data: blob:; " +

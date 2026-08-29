@@ -1,0 +1,24 @@
+{
+  "id": "dnd2024.equipment.gear-variant.druidic-focus.wooden-staff",
+  "name": "Wooden staff (also a Quarterstaff)",
+  "archetype": "dnd2024.archetype.item-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Equipment > Adventuring Gear > Druidic Focus > Wooden staff (also a Quarterstaff) (SRD 5.2.1, pages 97-97)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.core.presentation": {
+      "summary": "Druidic Focus variant"
+    }
+  }
+}

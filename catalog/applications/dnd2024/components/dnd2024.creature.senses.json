@@ -1,0 +1,1 @@
+{"id":"dnd2024.creature.senses","name":"Creature senses state component","description":"A creature instance's dimensioned current senses keyed once by sense entity ID; Passive Perception remains derived."}

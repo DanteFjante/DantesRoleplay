@@ -1,0 +1,15 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.choice-resolution",
+  "kind": "runtime",
+  "description": "One entity-addressable resolution of an authored choice set.",
+  "requiredComponents": ["dnd2024.character.choice-resolution"],
+  "optionalComponents": [],
+  "sourceSections": ["Character Creation 19–27", "Classes 28–82", "Feats 87–88"],
+  "externalOwners": [
+    {
+      "owner": "generic character-to-choice relationship",
+      "usage": "Associates this resolution with its character without embedding a collection row."
+    }
+  ]
+}

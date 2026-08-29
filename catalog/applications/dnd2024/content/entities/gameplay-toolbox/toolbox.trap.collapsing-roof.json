@@ -1,0 +1,34 @@
+{
+  "id": "dnd2024.toolbox.trap.collapsing-roof",
+  "name": "Collapsing Roof",
+  "archetype": "dnd2024.archetype.trap-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Gameplay Toolbox > Traps > Example Traps > Collapsing Roof (SRD 5.2.1, pages 199-199)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.hazard.trap": {
+      "category": {
+        "entityId": "dnd2024.trap-category.general"
+      },
+      "trigger": {
+        "event": "exposure.applied",
+        "timing": "when"
+      },
+      "duration": {
+        "kind": "instantaneous"
+      },
+      "triggerEffects": []
+    }
+  }
+}

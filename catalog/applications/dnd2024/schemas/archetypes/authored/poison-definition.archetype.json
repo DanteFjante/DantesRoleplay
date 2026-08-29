@@ -1,0 +1,13 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.poison-definition",
+  "kind": "authored",
+  "description": "An authored poison with delivery, timing, save, effect, recovery, and harvesting rules.",
+  "requiredComponents": [
+    "dnd2024.core.source",
+    "dnd2024.core.version",
+    "dnd2024.hazard.poison"
+  ],
+  "optionalComponents": ["dnd2024.core.presentation", "dnd2024.core.rules-text", "dnd2024.core.tags"],
+  "sourceSections": ["Gameplay Toolbox 192–203"]
+}

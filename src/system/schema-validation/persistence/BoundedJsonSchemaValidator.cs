@@ -14,7 +14,8 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
         "$schema", "$defs", "$ref", "type", "enum", "const", "allOf", "anyOf", "oneOf", "not",
         "properties", "required", "additionalProperties", "minProperties", "maxProperties", "items",
         "prefixItems", "minItems", "maxItems", "uniqueItems", "minLength", "maxLength", "minimum",
-        "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf", "pattern", "format"
+        "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf", "pattern", "format",
+        "propertyNames", "if", "then", "else"
     };
 
     public SchemaCompilationResult Compile(string schemaJson) => Compile(schemaJson, null);
@@ -239,6 +240,10 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
                     case "not":
                     case "items":
                     case "additionalProperties":
+                    case "propertyNames":
+                    case "if":
+                    case "then":
+                    case "else":
                         InspectSchema(property.Value, childPointer);
                         break;
                     case "pattern":
@@ -266,41 +271,10 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
                     Add("SCHEMA_REFERENCE_MISSING", reference.Source, "A fragment reference does not resolve in this schema.");
             if (diagnostics.Count != 0) return;
 
-            var completed = new HashSet<string>(StringComparer.Ordinal);
-            if (HasCycle(root, "#", [], completed))
-                Add("SCHEMA_REFERENCE_CYCLE", "", "Cyclic fragment references are not supported by this profile.");
-        }
-
-        private bool HasCycle(JsonElement schema, string pointer, HashSet<string> stack, HashSet<string> completed)
-        {
-            if (!stack.Add(pointer)) return true;
-            if (completed.Contains(pointer)) { stack.Remove(pointer); return false; }
-
-            foreach (var target in DescendantReferences(schema))
-            {
-                if (!TryResolve(target, out var resolved)) continue;
-                if (HasCycle(resolved, target, stack, completed)) return true;
-            }
-            stack.Remove(pointer);
-            completed.Add(pointer);
-            return false;
-        }
-
-        private static IEnumerable<string> DescendantReferences(JsonElement element)
-        {
-            if (element.ValueKind == JsonValueKind.Object)
-            {
-                foreach (var property in element.EnumerateObject())
-                {
-                    if (property.NameEquals("$ref") && property.Value.ValueKind == JsonValueKind.String)
-                        yield return property.Value.GetString()!;
-                    else
-                        foreach (var value in DescendantReferences(property.Value)) yield return value;
-                }
-            }
-            else if (element.ValueKind == JsonValueKind.Array)
-                foreach (var item in element.EnumerateArray())
-                    foreach (var value in DescendantReferences(item)) yield return value;
+            // Recursive local references are safe because both schema and value depth/node limits
+            // are enforced before the evaluator runs. They are needed for bounded recursive data
+            // structures such as a nested prerequisite expression; external references remain
+            // forbidden and cannot expand the evaluator's trust boundary.
         }
 
         private void InspectSchemaMap(JsonElement value, string pointer, bool definitions)
@@ -343,6 +317,13 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
             }
 
             var pattern = value.GetString()!;
+            if (pattern == "\\S")
+            {
+                if (!HasBoundedStringLength(schema, out _))
+                    Add("SCHEMA_PATTERN", pointer, "A non-whitespace pattern requires a bounded sibling maxLength.");
+                return;
+            }
+
             if (pattern.Length is < 3 or > SystemJsonSchemaProfile.MaximumPatternLength ||
                 pattern[0] != '^' || pattern[^1] != '$')
             {
@@ -352,61 +333,100 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
 
             var index = 1;
             var end = pattern.Length - 1;
-            while (index < end)
-            {
-                if (!InspectPatternAtom(pattern, ref index, end))
-                {
-                    Add("SCHEMA_PATTERN", pointer, "The pattern uses syntax outside the bounded non-branching grammar.");
-                    return;
-                }
-
-                if (index < end && pattern[index] == '+')
-                {
-                    index++;
-                    if (index != end || !schema.TryGetProperty("maxLength", out var maxLength) ||
-                        maxLength.ValueKind != JsonValueKind.Number || !maxLength.TryGetInt32(out var maximum) ||
-                        maximum is < 1 or > SystemJsonSchemaProfile.MaximumUnboundedPatternValueLength)
-                    {
-                        Add("SCHEMA_PATTERN", pointer, "A final plus quantifier requires a bounded sibling maxLength.");
-                        return;
-                    }
-                }
-                else if (index < end && pattern[index] == '{')
-                {
-                    var close = pattern.IndexOf('}', index + 1);
-                    if (close < 0 || close >= end ||
-                        !int.TryParse(pattern.AsSpan(index + 1, close - index - 1), out var repetition) ||
-                        repetition is < 1 or > SystemJsonSchemaProfile.MaximumPatternRepetition)
-                    {
-                        Add("SCHEMA_PATTERN", pointer, "Only bounded exact repetition is supported.");
-                        return;
-                    }
-                    index = close + 1;
-                }
-            }
+            if (!InspectPatternSequence(pattern, ref index, end, schema, 0) || index != end)
+                Add("SCHEMA_PATTERN", pointer, "The pattern uses syntax outside the bounded expression grammar.");
         }
 
-        private static bool InspectPatternAtom(string pattern, ref int index, int end)
+        private static bool InspectPatternSequence(
+            string pattern,
+            ref int index,
+            int end,
+            JsonElement schema,
+            int groupDepth)
+        {
+            var expectAtom = true;
+            while (index < end && pattern[index] != ')')
+            {
+                if (pattern[index] == '|')
+                {
+                    if (groupDepth == 0 || expectAtom) return false;
+                    index++;
+                    expectAtom = true;
+                    continue;
+                }
+
+                if (!InspectPatternAtom(pattern, ref index, end, schema, groupDepth)) return false;
+                expectAtom = false;
+            }
+            return !expectAtom;
+        }
+
+        private static bool InspectPatternAtom(
+            string pattern,
+            ref int index,
+            int end,
+            JsonElement schema,
+            int groupDepth)
         {
             if (pattern[index] == '\\')
             {
-                if (++index >= end || pattern[index] is not ('.' or '-' or '_' or '/' or ':')) return false;
+                if (++index >= end || pattern[index] is not ('.' or '-' or '_' or '/' or ':' or 'S')) return false;
                 index++;
-                return true;
             }
-            if (pattern[index] == '[')
+            else if (pattern[index] == '[')
             {
                 var close = pattern.IndexOf(']', index + 1);
                 if (close <= index + 1 || close >= end) return false;
                 for (var i = index + 1; i < close; i++)
                     if (!(char.IsAsciiLetterOrDigit(pattern[i]) || pattern[i] is '.' or '-' or '_')) return false;
                 index = close + 1;
+            }
+            else if (pattern[index] == '(')
+            {
+                if (groupDepth >= 4 || index + 2 >= end || pattern[index + 1] != '?' || pattern[index + 2] != ':') return false;
+                index += 3;
+                if (!InspectPatternSequence(pattern, ref index, end, schema, groupDepth + 1) ||
+                    index >= end || pattern[index] != ')') return false;
+                index++;
+            }
+            else if (!(char.IsAsciiLetterOrDigit(pattern[index]) || pattern[index] is '_' or '-' or '/' or ':'))
+                return false;
+
+            else index++;
+
+            if (index >= end) return true;
+            if (pattern[index] is '*' or '+')
+            {
+                if (!HasBoundedStringLength(schema, out _)) return false;
+                index++;
                 return true;
             }
-            if (!(char.IsAsciiLetterOrDigit(pattern[index]) || pattern[index] is '_' or '-' or '/' or ':'))
+            if (pattern[index] == '?')
+            {
+                index++;
+                return true;
+            }
+            if (pattern[index] != '{') return true;
+
+            var closeBrace = pattern.IndexOf('}', index + 1);
+            if (closeBrace < 0 || closeBrace >= end) return false;
+            var range = pattern.AsSpan(index + 1, closeBrace - index - 1);
+            var comma = range.IndexOf(',');
+            var minimumText = comma < 0 ? range : range[..comma];
+            var maximumText = comma < 0 ? range : range[(comma + 1)..];
+            if (!int.TryParse(minimumText, out var minimum) || !int.TryParse(maximumText, out var maximum) ||
+                minimum < 0 || maximum < minimum || maximum > SystemJsonSchemaProfile.MaximumPatternRepetition)
                 return false;
-            index++;
+            index = closeBrace + 1;
             return true;
+        }
+
+        private static bool HasBoundedStringLength(JsonElement schema, out int maximum)
+        {
+            maximum = 0;
+            return schema.TryGetProperty("maxLength", out var maxLength) &&
+                maxLength.ValueKind == JsonValueKind.Number && maxLength.TryGetInt32(out maximum) &&
+                maximum is >= 1 and <= SystemJsonSchemaProfile.MaximumUnboundedPatternValueLength;
         }
 
         private bool TryResolve(string reference, out JsonElement value)

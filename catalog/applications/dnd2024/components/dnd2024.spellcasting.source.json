@@ -1,0 +1,1 @@
+{"id":"dnd2024.spellcasting.source","name":"Spellcasting source state","description":"One entity-addressable resolved spellcasting source and selected ability; other spellcasting state can safely reference this entity."}

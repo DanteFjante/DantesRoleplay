@@ -1,0 +1,58 @@
+{
+  "id": "dnd2024.spell.minor-illusion",
+  "name": "Minor Illusion",
+  "archetype": "dnd2024.archetype.spell-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Spells > Spell Descriptions > Minor Illusion (SRD 5.2.1, pages 149-149)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.core.presentation": {
+      "summary": "Cantrip; school: Illusion; class spell lists: Bard, Sorcerer, Warlock, Wizard."
+    },
+    "dnd2024.spellcasting.spell": {
+      "level": 0,
+      "school": {
+        "entityId": "dnd2024.spell-school.illusion"
+      },
+      "castingActivity": {
+        "entityId": "dnd2024.shared.action.magic",
+        "expectedArchetype": "dnd2024.archetype.activity-definition"
+      },
+      "ritual": false
+    },
+    "dnd2024.spellcasting.components": {
+      "requirements": []
+    },
+    "dnd2024.spellcasting.spell-list-membership": {
+      "lists": [
+        {
+          "entityId": "dnd2024.spell-list.bard",
+          "expectedArchetype": "dnd2024.archetype.spellcasting-source-definition"
+        },
+        {
+          "entityId": "dnd2024.spell-list.sorcerer",
+          "expectedArchetype": "dnd2024.archetype.spellcasting-source-definition"
+        },
+        {
+          "entityId": "dnd2024.spell-list.warlock",
+          "expectedArchetype": "dnd2024.archetype.spellcasting-source-definition"
+        },
+        {
+          "entityId": "dnd2024.spell-list.wizard",
+          "expectedArchetype": "dnd2024.archetype.spellcasting-source-definition"
+        }
+      ]
+    }
+  }
+}

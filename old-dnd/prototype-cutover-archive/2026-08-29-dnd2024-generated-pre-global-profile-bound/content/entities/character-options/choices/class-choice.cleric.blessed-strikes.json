@@ -1,0 +1,32 @@
+{
+  "id": "dnd2024.class-choice.cleric.blessed-strikes",
+  "name": "Blessed Strikes",
+  "archetype": "dnd2024.archetype.choice-set-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Classes > Blessed Strikes (SRD 5.2.1, pages 38-38)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.choice-set": {
+      "selectionMode": "all",
+      "optionRefs": [
+        {
+          "entityId": "dnd2024.class-choice-option.cleric.blessed-strikes.divine-strike"
+        },
+        {
+          "entityId": "dnd2024.class-choice-option.cleric.blessed-strikes.potent-spellcasting"
+        }
+      ]
+    }
+  }
+}

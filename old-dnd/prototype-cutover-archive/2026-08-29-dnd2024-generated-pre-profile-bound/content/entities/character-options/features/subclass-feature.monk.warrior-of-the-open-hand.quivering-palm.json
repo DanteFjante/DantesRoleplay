@@ -1,0 +1,25 @@
+{
+  "id": "dnd2024.subclass-feature.monk.warrior-of-the-open-hand.quivering-palm",
+  "name": "Quivering Palm",
+  "archetype": "dnd2024.archetype.feature-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Classes > Monk Subclass: Warrior of the Open Hand > Quivering Palm (SRD 5.2.1, pages 52-52)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.feature": {
+      "ruleRefs": [],
+      "grantRefs": []
+    }
+  }
+}

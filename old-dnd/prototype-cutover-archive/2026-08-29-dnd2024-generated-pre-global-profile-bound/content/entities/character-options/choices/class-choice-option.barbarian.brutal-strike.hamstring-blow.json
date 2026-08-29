@@ -1,0 +1,22 @@
+{
+  "id": "dnd2024.class-choice-option.barbarian.brutal-strike.hamstring-blow",
+  "name": "Hamstring Blow",
+  "archetype": "dnd2024.archetype.choice-option-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Classes > Brutal Strike Effects > Hamstring Blow (SRD 5.2.1, pages 30-30)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.choice-option": {}
+  }
+}

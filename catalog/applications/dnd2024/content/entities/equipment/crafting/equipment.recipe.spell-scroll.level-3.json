@@ -1,0 +1,41 @@
+{
+  "id": "dnd2024.equipment.recipe.spell-scroll.level-3",
+  "name": "Scribing Spell Scroll (Level 3)",
+  "archetype": "dnd2024.archetype.crafting-recipe",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Equipment > Scribing Spell Scrolls > Spell Scroll Costs > Scribing Spell Scroll (Level 3) (SRD 5.2.1, pages 103-103)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.crafting.recipe": {
+      "outputs": [],
+      "workDuration": {
+        "kind": "measured",
+        "amount": 1,
+        "unit": {
+          "entityId": "dnd2024.vocabulary.time-unit.day"
+        }
+      },
+      "toolRequirement": {
+        "operator": "predicate",
+        "predicateId": "predicate.proficiency.tool",
+        "arguments": []
+      },
+      "crafterRequirement": {
+        "operator": "predicate",
+        "predicateId": "predicate.proficiency.crafter",
+        "arguments": []
+      }
+    }
+  }
+}

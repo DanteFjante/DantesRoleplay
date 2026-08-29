@@ -1,0 +1,52 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.character-instance",
+  "kind": "runtime",
+  "description": "A completed player character sheet with materialized origin, creature, advancement, and optional personal-detail and spellcasting state.",
+  "requiredComponents": [
+    "dnd2024.character.provenance",
+    "dnd2024.character.origin-selections",
+    "dnd2024.character.feature-entitlements",
+    "dnd2024.character.experience",
+    "dnd2024.character.hit-dice",
+    "dnd2024.creature.classification",
+    "dnd2024.creature.ability-scores",
+    "dnd2024.creature.body",
+    "dnd2024.creature.defenses",
+    "dnd2024.creature.hit-points",
+    "dnd2024.creature.languages",
+    "dnd2024.creature.movement",
+    "dnd2024.creature.proficiencies",
+    "dnd2024.creature.senses"
+  ],
+  "optionalComponents": [
+    "dnd2024.core.presentation",
+    "dnd2024.core.tags",
+    "dnd2024.character.identity",
+    "dnd2024.character.death-saves",
+    "dnd2024.character.heroic-inspiration",
+    "dnd2024.creature.condition-immunities",
+    "dnd2024.creature.temporary-hit-points",
+    "dnd2024.spellcasting.concentration"
+  ],
+  "sourceSections": ["Character Creation 19–27", "Classes 28–82", "Character Origins 83–86", "Feats 87–88", "Equipment 89–103", "Spells 104–175"],
+  "externalOwners": [
+    {
+      "owner": "generic relationships to class memberships, choice resolutions, resource pools, spellcasting sources, and active effects",
+      "usage": "Own one-to-many association with entity-addressable advancement, limited-use, spellcasting, condition, exhaustion, and other effect records."
+    },
+    {
+      "owner": "generic containment and ownership",
+      "usage": "Own inventory, equipped item placement, carried currency-item stacks, and current world location."
+    },
+    {
+      "owner": "generic campaign participation and control relationships",
+      "usage": "Own campaign membership, player association, and control authority."
+    },
+    {
+      "owner": "generic events and operation history",
+      "usage": "Own mutation, choice, roll, and effect provenance."
+    }
+  ],
+  "invariantNotes": ["Derived ability modifiers, total level, Proficiency Bonus, passive scores, and remaining resource totals are not stored."]
+}

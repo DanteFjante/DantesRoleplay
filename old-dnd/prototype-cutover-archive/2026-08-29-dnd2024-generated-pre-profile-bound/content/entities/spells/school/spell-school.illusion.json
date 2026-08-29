@@ -1,0 +1,31 @@
+{
+  "id": "dnd2024.spell-school.illusion",
+  "name": "Illusion",
+  "archetype": "dnd2024.archetype.vocabulary-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Spells > School of Magic > Schools of Magic > Illusion (SRD 5.2.1, pages 105-105)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.core.presentation": {
+      "summary": "Named school used by spell definitions and class spell lists."
+    },
+    "dnd2024.vocabulary.term": {
+      "code": "illusion",
+      "categoryRef": {
+        "entityId": "dnd2024.vocabulary.category.spell-school",
+        "expectedArchetype": "dnd2024.archetype.vocabulary-category-definition"
+      }
+    }
+  }
+}

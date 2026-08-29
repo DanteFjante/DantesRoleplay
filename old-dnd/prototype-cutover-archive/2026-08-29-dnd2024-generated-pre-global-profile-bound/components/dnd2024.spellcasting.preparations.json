@@ -1,0 +1,1 @@
+{"id":"dnd2024.spellcasting.preparations","name":"Spell preparations state component","description":"Current prepared and always-prepared spells for the containing runtime spellcasting source, keyed once by spell entity ID without duplicating definitions."}

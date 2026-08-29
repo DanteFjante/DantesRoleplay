@@ -210,8 +210,10 @@ public sealed class LegacyStateAdoptionService(
         // Legacy deletion is a tombstone: WorldStore excludes the entity from every runtime read
         // while deliberately retaining its component and edge rows as historical evidence. Adoption
         // must materialize that same active graph, not resurrect tombstones in a new state space.
-        var entities = allEntities.Where(value => value.DeletedAt is null).ToArray();
+        var activeEntities = allEntities.Where(value => value.DeletedAt is null).ToArray();
+        var entities = SelectEntities(request, activeEntities);
         var entityIds = entities.Select(value => value.Id).ToHashSet(StringComparer.Ordinal);
+        RejectBoundaryEdges(request, allContainments, allRelationships, entityIds);
         var components = allComponents.Where(value => entityIds.Contains(value.EntityId)).ToArray();
         var containments = allContainments.Where(value => entityIds.Contains(value.ContainerId)
             && entityIds.Contains(value.ContainedId)).ToArray();
@@ -246,7 +248,7 @@ public sealed class LegacyStateAdoptionService(
             application.Fingerprint,
             active.ActivationFingerprint
         });
-        var inventory = new LegacyStateInventory(entities.Length, components.Length,
+        var inventory = new LegacyStateInventory(entities.Count, components.Length,
             containments.Length, relationships.Length, sourceFingerprint, evidenceFingerprint);
         return new(application, active, entities, components, containments, relationships,
             componentMappings, relationshipMappings, requestFingerprint, inventory);
@@ -375,6 +377,11 @@ public sealed class LegacyStateAdoptionService(
         if (request.ComponentMappings is null || request.ComponentMappings.Count > 256
             || request.RelationshipMappings is null || request.RelationshipMappings.Count > 256)
             throw Invalid("INVALID_PAYLOAD", "Mapping lists are required and may contain at most 256 entries each.");
+        if (request.EntityIds is not null && (request.EntityIds.Count is < 1 or > 1_000
+            || request.EntityIds.Any(value => string.IsNullOrWhiteSpace(value) || value.Length > 200
+                || value.Any(char.IsControl))
+            || request.EntityIds.Distinct(StringComparer.Ordinal).Count() != request.EntityIds.Count))
+            throw Invalid("INVALID_PAYLOAD", "entityIds must be 1 through 1,000 unique bounded identifiers when supplied.");
         if (context.RequestToken is not { Length: 32 }
             || context.RequestToken.Any(value => !(char.IsAsciiDigit(value) || value is >= 'a' and <= 'f')))
             throw Invalid("INVALID_PAYLOAD", "requestToken must contain exactly 32 lowercase hexadecimal characters.");
@@ -392,6 +399,7 @@ public sealed class LegacyStateAdoptionService(
         request.StateSpaceId,
         applicationId = request.ApplicationId.Value,
         request.ActiveFingerprint,
+        entityIds = request.EntityIds?.OrderBy(value => value, StringComparer.Ordinal).ToArray(),
         componentMappings = request.ComponentMappings.OrderBy(value => value.LegacyDefinitionId, StringComparer.Ordinal)
             .Select(value => new { value.LegacyDefinitionId, value.ComponentType.QualifiedTypeId,
                 value.ComponentType.TypeVersion, value.ComponentType.SchemaHash }).ToArray(),
@@ -413,6 +421,32 @@ public sealed class LegacyStateAdoptionService(
         relationships = relationships.Select(value => new { value.FromEntityId, value.ToEntityId,
             value.Kind, value.Data, value.CreatedAt }).ToArray()
     });
+
+    private static IReadOnlyList<DantesRoleplay.World.Entity> SelectEntities(
+        LegacyStateAdoptionRequest request,
+        IReadOnlyList<DantesRoleplay.World.Entity> activeEntities)
+    {
+        if (request.EntityIds is null) return activeEntities;
+        var requested = request.EntityIds.ToHashSet(StringComparer.Ordinal);
+        var available = activeEntities.Select(value => value.Id).ToHashSet(StringComparer.Ordinal);
+        var missing = requested.Where(value => !available.Contains(value)).OrderBy(value => value, StringComparer.Ordinal).ToArray();
+        if (missing.Length > 0)
+            throw Invalid("ENTITY_SCOPE_UNKNOWN", "entityIds must identify active legacy entities.");
+        return activeEntities.Where(value => requested.Contains(value.Id)).ToArray();
+    }
+
+    private static void RejectBoundaryEdges(
+        LegacyStateAdoptionRequest request,
+        IReadOnlyList<DantesRoleplay.World.Containment> containments,
+        IReadOnlyList<DantesRoleplay.World.Relationship> relationships,
+        IReadOnlySet<string> entityIds)
+    {
+        if (request.EntityIds is null) return;
+        var containmentCrosses = containments.Any(value => entityIds.Contains(value.ContainerId) != entityIds.Contains(value.ContainedId));
+        var relationshipCrosses = relationships.Any(value => entityIds.Contains(value.FromEntityId) != entityIds.Contains(value.ToEntityId));
+        if (containmentCrosses || relationshipCrosses)
+            throw Invalid("ENTITY_SCOPE_NOT_CLOSED", "entityIds must include both ends of every active containment and relationship in the selected legacy graph.");
+    }
 
     private static string BindingFingerprint(string stateSpaceId, ApplicationRevision application,
         string activeFingerprint, int bindingRevision) => Hash(new

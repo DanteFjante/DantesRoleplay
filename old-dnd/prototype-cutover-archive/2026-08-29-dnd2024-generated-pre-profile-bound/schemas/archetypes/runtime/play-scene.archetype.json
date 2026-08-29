@@ -1,0 +1,15 @@
+{
+  "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:entity-archetype",
+  "key": "dnd2024.archetype.play-scene",
+  "kind": "runtime",
+  "description": "D&D play phase and optional current decision rhythm layered onto a generic scene or world context.",
+  "requiredComponents": ["dnd2024.play.scene-state"],
+  "optionalComponents": ["dnd2024.play.decision-point"],
+  "sourceSections": ["Playing the Game 5–18"],
+  "externalOwners": [
+    {
+      "owner": "generic scene, world, campaign, and session state",
+      "usage": "Own scene identity, narration history, participants, and durable world changes."
+    }
+  ]
+}

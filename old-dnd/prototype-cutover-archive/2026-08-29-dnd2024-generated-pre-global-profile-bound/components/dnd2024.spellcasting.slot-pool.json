@@ -1,0 +1,1 @@
+{"id":"dnd2024.spellcasting.slot-pool","name":"Spell slot pool state","description":"Identifies one entity-addressable spell-slot pool by source, level, and kind; the generic resource-pool component on the same entity owns expenditure."}

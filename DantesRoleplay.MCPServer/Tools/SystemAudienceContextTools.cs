@@ -34,9 +34,10 @@ internal sealed class SystemAudienceContextTools
 
         var audience = await audiences.ResolveAsync(configured.CampaignId, cancellationToken);
         var grant = audience.Grant;
-        if (!audience.Granted || grant is null || grant.Role != KnowledgeAudienceRole.Actor ||
-            grant.ActorId is null || grant.PrincipalId != configured.PrincipalId ||
-            grant.CampaignId != configured.CampaignId || grant.ActorId != configured.ActorId)
+        if (!audience.Granted || grant is null || grant.PrincipalId != configured.PrincipalId ||
+            grant.CampaignId != configured.CampaignId || grant.Role != configured.Role ||
+            (grant.Role == KnowledgeAudienceRole.Actor && grant.ActorId != configured.ActorId) ||
+            (grant.Role == KnowledgeAudienceRole.GameMaster && grant.ActorId is not null))
             return Denied();
 
         var binding = await bindings.ResolveAsync(grant.CampaignId, cancellationToken);
@@ -47,6 +48,23 @@ internal sealed class SystemAudienceContextTools
         try { binding.Validate(); }
         catch (ArgumentException) { return Denied(); }
 
+        if (grant.Role == KnowledgeAudienceRole.GameMaster)
+        {
+            return ToolOutcome.OkAbout(grant.CampaignId, new
+            {
+                status = "bound",
+                applicationId = binding.ApplicationId,
+                stateSpaceId = binding.StateSpaceId,
+                campaignId = grant.CampaignId,
+                role = "game-master",
+                roleHints = new { },
+                policyRevision = grant.PolicyRevision,
+                bindingRevision = binding.BindingRevision
+            }, "Returned the current host-authorized audience context.",
+            "query(kind: \"system.interaction-plan\", applicationId: \"...\", request: \"{...}\")");
+        }
+
+        if (grant.Role != KnowledgeAudienceRole.Actor || grant.ActorId is null) return Denied();
         var member = await participation.ResolveAsync(binding, grant.ActorId, cancellationToken);
         if (!member.Active)
             return member.ActorMissing ? CharacterCreationRequired(binding, grant) : Denied();
@@ -85,20 +103,23 @@ internal sealed class SystemAudienceContextTools
 
     private static bool Configured(LocalKnowledgeSeatSnapshot value) =>
         value.Enabled && Token(value.PrincipalId) && Token(value.ApplicationId) &&
-        Token(value.CampaignId) && Token(value.ActorId);
+        Token(value.CampaignId) && Enum.IsDefined(value.Role) &&
+        (value.Role == KnowledgeAudienceRole.GameMaster
+            ? value.ActorId is null
+            : Token(value.ActorId));
 
     private static bool Token(string? value) => !string.IsNullOrWhiteSpace(value) &&
         value == value.Trim() && value.Length <= 200 && !value.Any(char.IsWhiteSpace);
 
     private static ToolOutcome Denied() => ToolOutcome.Fail(
         "AUDIENCE_CONTEXT_DENIED",
-        "No current host-authorized player context is available.",
-        "Configure the local player seat and active campaign participation, then retry.",
+        "No current host-authorized table context is available.",
+        "Configure the local table seat and active campaign participation when using an actor seat, then retry.",
         "Denied audience context before exposing any binding.");
 
     private static ToolOutcome Unavailable() => ToolOutcome.Fail(
         "AUDIENCE_CONTEXT_UNAVAILABLE",
         "Audience context is not configured in this host.",
-        "Configure the local player seat and active campaign participation, then retry.",
+        "Configure the local table seat and active campaign participation when using an actor seat, then retry.",
         "Audience context dependencies were unavailable.");
 }

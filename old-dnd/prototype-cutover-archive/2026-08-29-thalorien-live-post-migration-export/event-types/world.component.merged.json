@@ -1,0 +1,10 @@
+{
+  "id": "world.component.merged",
+  "category": "world",
+  "name": "Component merged",
+  "description": "A structural component merge.",
+  "scope": "",
+  "status": "Active",
+  "createdBy": "seed",
+  "changeNote": "Re-seeded: the embedded structural event type changed."
+}

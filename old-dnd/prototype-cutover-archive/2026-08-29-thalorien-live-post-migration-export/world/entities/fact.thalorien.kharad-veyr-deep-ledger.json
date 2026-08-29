@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.kharad-veyr-deep-ledger",
+  "name": "Kharad Veyr and the Deep Ledger",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Kharad Veyr is a venerable Dwarven mountain settlement whose archivists maintain the Deep Ledger, a tradition of recording craft, lineage, treaties, and remembered dangers in stone and metal. The Ledger preserves fragments of history that survived the monster invasion.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "identity",
+      "sensitivity": "open"
+    }
+  }
+}

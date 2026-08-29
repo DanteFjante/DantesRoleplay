@@ -1,25 +1,27 @@
 ---
 id: mechanic.dnd2024.healing.apply
-category: ruleset.dnd2024.core.gameplay.healing
+category: dnd2024.core.gameplay.healing
 name: Apply healing to Hit Points
 scope: dnd2024-srd-5.2.1
 status: active
 ---
 
 ## Description
-
-Applies one positive D&D 2024 healing amount to authoritative Hit Points, capped at the existing
-maximum. It does not grant, restore, or consume Temporary Hit Points.
+Applies one positive healing amount to a creature's current Hit Points, capped at its existing
+maximum. Temporary Hit Points are owned by a separate component and are not changed.
 
 ## Matches
-
 heal the character
 heal hit points
 restore hit points
 apply healing
 
 ## Requirements
-
 ```json
-{"roles":{"subject":{"components":["dnd2024.creature.hit-points"],"description":"The creature whose authoritative Hit Points receive bounded healing."}}}
+{"roles":{"subject":{"components":["dnd2024.creature.hit-points"],"description":"The creature whose authoritative Hit Points receive healing."}}}
 ```
+
+## Input and result
+Provide exactly `{"amount": <positive integer>}`. The result reports requested, applied, and
+overflow amounts and proposes one `component.set` effect for `dnd2024.creature.hit-points`.
+Malformed or invalid Hit Point state fails without an effect.

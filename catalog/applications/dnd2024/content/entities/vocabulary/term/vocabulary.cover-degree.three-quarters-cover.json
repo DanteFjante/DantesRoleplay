@@ -1,0 +1,28 @@
+{
+  "id": "dnd2024.vocabulary.cover-degree.three-quarters-cover",
+  "name": "Three-Quarters Cover",
+  "archetype": "dnd2024.archetype.vocabulary-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Rules Glossary > Cover (SRD 5.2.1, pages 179-179)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.vocabulary.term": {
+      "code": "three-quarters-cover",
+      "categoryRef": {
+        "entityId": "dnd2024.vocabulary.category.cover-degree",
+        "expectedArchetype": "dnd2024.archetype.vocabulary-category-definition"
+      }
+    }
+  }
+}

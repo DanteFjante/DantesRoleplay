@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dantesroleplay:dnd2024:prototype:meta:entity-envelope",
+  "title": "Prototype ECS entity envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "archetype", "components"],
+  "properties": {
+    "id": { "$ref": "urn:dantesroleplay:dnd2024:prototype:value:entity-id" },
+    "name": { "type": "string", "minLength": 1, "pattern": "\\S", "maxLength": 400 },
+    "archetype": { "$ref": "urn:dantesroleplay:dnd2024:prototype:value:archetype-key" },
+    "components": {
+      "type": "object",
+      "propertyNames": { "$ref": "urn:dantesroleplay:dnd2024:prototype:value:component-key" },
+      "additionalProperties": { "type": "object" }
+    }
+  }
+}

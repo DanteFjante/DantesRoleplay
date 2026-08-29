@@ -1,0 +1,29 @@
+{
+  "id": "dnd2024.class-choice.bard.subclass",
+  "name": "Bard Subclass Choice",
+  "archetype": "dnd2024.archetype.choice-set-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Classes > Bard > Bard Subclass (SRD 5.2.1, pages 31-35)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.advancement.choice-set": {
+      "selectionMode": "all",
+      "optionRefs": [
+        {
+          "entityId": "dnd2024.subclass.bard.college-of-lore"
+        }
+      ]
+    }
+  }
+}
