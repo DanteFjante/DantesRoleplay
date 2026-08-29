@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.5984942">
+  <PropertyGroup>
+    <ShouldRunNpmInstall>false</ShouldRunNpmInstall>
+    <ShouldRunNpmAudit>false</ShouldRunNpmAudit>
+    <ShouldRunBuildScript>false</ShouldRunBuildScript>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../../prototype/dnd2024/**/*"
+          Exclude="../../../prototype/dnd2024/node_modules/**"
+          Link="Prototype/%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="../../../DnD2024CSVersion/**/*.cs"
+          Exclude="../../../DnD2024CSVersion/bin/**;../../../DnD2024CSVersion/obj/**"
+          Link="Reference/CSharpPrototype/%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="../../../DnD2024CSVersion/Records/*.json"
+          Link="Reference/CSharpPrototype/Records/%(Filename)%(Extension)" />
+    <None Include="../../../DnD2024CSVersion/DnD2024CSVersion.csproj"
+          Link="Reference/CSharpPrototype/DnD2024CSVersion.csproj" />
+  </ItemGroup>
+</Project>

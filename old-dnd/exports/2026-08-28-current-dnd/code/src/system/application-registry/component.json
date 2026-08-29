@@ -1,0 +1,1 @@
+{"name":"application-registry","classification":"system","status":"operational","owns":["application identities","immutable application registrations","application revisions","bounded application discovery"],"mayDependOn":[]}

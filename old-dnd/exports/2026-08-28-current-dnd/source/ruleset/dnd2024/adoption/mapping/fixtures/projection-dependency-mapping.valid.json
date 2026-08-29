@@ -1,0 +1,57 @@
+{
+  "format": "application-adoption-projection-dependency-mapping/v1",
+  "applicationId": "mapping-fixture",
+  "candidateKey": "mapping-fixture.operation-view",
+  "projection": {
+    "qualifiedId": "mapping-fixture.operation-view",
+    "version": 1,
+    "contentHash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+  },
+  "roles": ["subject"],
+  "inputs": [
+    {
+      "id": "ability-score",
+      "kind": "component",
+      "entityRole": "subject",
+      "component": {
+        "qualifiedTypeId": "mapping-fixture.ability-state",
+        "typeVersion": 1,
+        "schemaHash": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+      },
+      "sourcePointer": "/dex",
+      "targetPointer": "/score"
+    },
+    {
+      "id": "check-policy",
+      "kind": "projection",
+      "projection": {
+        "qualifiedId": "mapping-fixture.check-policy",
+        "version": 1,
+        "contentHash": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+      },
+      "roleBindings": { "subject": "subject" },
+      "sourcePointer": "/mode",
+      "targetPointer": "/policy/mode"
+    }
+  ],
+  "impactEvidence": [
+    {
+      "inputId": "ability-score",
+      "canonicalRoot": "component:mapping-fixture.ability-state@1#/dex",
+      "dependentProjection": {
+        "qualifiedId": "mapping-fixture.operation-view",
+        "version": 1,
+        "contentHash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    },
+    {
+      "inputId": "check-policy",
+      "canonicalRoot": "projection:mapping-fixture.check-policy@1",
+      "dependentProjection": {
+        "qualifiedId": "mapping-fixture.operation-view",
+        "version": 1,
+        "contentHash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    }
+  ]
+}

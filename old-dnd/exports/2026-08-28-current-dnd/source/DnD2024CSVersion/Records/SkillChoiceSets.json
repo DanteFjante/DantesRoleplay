@@ -1,0 +1,83 @@
+{
+  "skillChoiceSets": [
+    {
+      "id": "skill-choice-set.all",
+      "name": "Any Skill",
+      "skillIds": [
+        "skill.acrobatics",
+        "skill.animal-handling",
+        "skill.arcana",
+        "skill.athletics",
+        "skill.deception",
+        "skill.history",
+        "skill.insight",
+        "skill.intimidation",
+        "skill.investigation",
+        "skill.medicine",
+        "skill.nature",
+        "skill.perception",
+        "skill.performance",
+        "skill.persuasion",
+        "skill.religion",
+        "skill.sleight-of-hand",
+        "skill.stealth",
+        "skill.survival"
+      ]
+    },
+    {
+      "id": "skill-choice-set.barbarian",
+      "name": "Barbarian Skills",
+      "skillIds": ["skill.animal-handling", "skill.athletics", "skill.intimidation", "skill.nature", "skill.perception", "skill.survival"]
+    },
+    {
+      "id": "skill-choice-set.cleric",
+      "name": "Cleric Skills",
+      "skillIds": ["skill.history", "skill.insight", "skill.medicine", "skill.persuasion", "skill.religion"]
+    },
+    {
+      "id": "skill-choice-set.druid",
+      "name": "Druid Skills",
+      "skillIds": ["skill.arcana", "skill.animal-handling", "skill.insight", "skill.medicine", "skill.nature", "skill.perception", "skill.religion", "skill.survival"]
+    },
+    {
+      "id": "skill-choice-set.fighter",
+      "name": "Fighter Skills",
+      "skillIds": ["skill.acrobatics", "skill.animal-handling", "skill.athletics", "skill.history", "skill.insight", "skill.intimidation", "skill.perception", "skill.persuasion", "skill.survival"]
+    },
+    {
+      "id": "skill-choice-set.monk",
+      "name": "Monk Skills",
+      "skillIds": ["skill.acrobatics", "skill.athletics", "skill.history", "skill.insight", "skill.religion", "skill.stealth"]
+    },
+    {
+      "id": "skill-choice-set.paladin",
+      "name": "Paladin Skills",
+      "skillIds": ["skill.athletics", "skill.insight", "skill.intimidation", "skill.medicine", "skill.persuasion", "skill.religion"]
+    },
+    {
+      "id": "skill-choice-set.ranger",
+      "name": "Ranger Skills",
+      "skillIds": ["skill.animal-handling", "skill.athletics", "skill.insight", "skill.investigation", "skill.nature", "skill.perception", "skill.stealth", "skill.survival"]
+    },
+    {
+      "id": "skill-choice-set.rogue",
+      "name": "Rogue Skills",
+      "skillIds": ["skill.acrobatics", "skill.athletics", "skill.deception", "skill.insight", "skill.intimidation", "skill.investigation", "skill.perception", "skill.persuasion", "skill.sleight-of-hand", "skill.stealth"]
+    },
+    {
+      "id": "skill-choice-set.sorcerer",
+      "name": "Sorcerer Skills",
+      "skillIds": ["skill.arcana", "skill.deception", "skill.insight", "skill.intimidation", "skill.persuasion", "skill.religion"]
+    },
+    {
+      "id": "skill-choice-set.warlock",
+      "name": "Warlock Skills",
+      "skillIds": ["skill.arcana", "skill.deception", "skill.history", "skill.intimidation", "skill.investigation", "skill.nature", "skill.religion"]
+    },
+    {
+      "id": "skill-choice-set.wizard",
+      "name": "Wizard Skills",
+      "skillIds": ["skill.arcana", "skill.history", "skill.insight", "skill.investigation", "skill.medicine", "skill.nature", "skill.religion"]
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{"name":"source-registry","classification":"system","status":"operational","owns":["immutable relative source registrations","source precedence","source scan receipts","registered-source scan adaptation","deterministic source overlays"],"mayDependOn":["application-registry","local-ai"]}

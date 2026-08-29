@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocolVersion", "sessionId", "campaignId", "worldId", "package"],
+  "properties": {
+    "protocolVersion": { "const": "session.s4.evidence-only.v1" },
+    "sessionId": { "type": "string", "pattern": "^session\\.[a-z0-9.-]+$", "maxLength": 200 },
+    "campaignId": { "type": "string", "pattern": "^campaign\\.[a-z0-9.-]+$", "maxLength": 200 },
+    "worldId": { "type": "string", "pattern": "^world\\.[a-z0-9.-]+$", "maxLength": 200 },
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "scopeContractId", "scopeContractVersion", "producerId", "producerVersion",
+        "contentEncoding", "boundaryFingerprint", "digestAlgorithm", "contentDigest",
+        "byteCount", "capturedAt", "availability"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^snapshot\\.[0-9a-f]{32}$", "maxLength": 200 },
+        "scopeContractId": { "const": "procedure.campaign.session" },
+        "scopeContractVersion": { "type": "integer", "minimum": 1 },
+        "producerId": { "const": "snapshot.producer.campaign-session-evidence" },
+        "producerVersion": { "const": 1 },
+        "contentEncoding": { "const": "dantes-canonical-json-v1" },
+        "boundaryFingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "digestAlgorithm": { "const": "sha256" },
+        "contentDigest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "byteCount": { "type": "integer", "minimum": 1, "maximum": 1048576 },
+        "capturedAt": { "type": "string", "format": "date-time" },
+        "availability": { "const": "available" }
+      }
+    }
+  }
+}

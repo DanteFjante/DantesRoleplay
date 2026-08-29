@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.nethravai-wardens",
+  "name": "The Nethravai Wardens",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The Nethravai were the civilization that created the oldest known dungeons between roughly 4,000 and 6,000 years ago. They built maze-like complexes to contain monsters from the deep caves and later developed monster wards that kept those creatures from reaching the overworld. Their own history, name, and culture remain only partly understood.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

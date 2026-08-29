@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["backgroundKey", "skillProficiencies", "toolProficiency", "originFeat", "startingEquipment", "sourceRef"],
+  "properties": {
+    "backgroundKey": { "enum": ["acolyte", "criminal", "sage", "soldier"] },
+    "skillProficiencies": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": { "enum": ["acrobatics", "animal-handling", "arcana", "athletics", "deception", "history", "insight", "intimidation", "investigation", "medicine", "nature", "perception", "performance", "persuasion", "religion", "sleight-of-hand", "stealth", "survival"] }
+    },
+    "toolProficiency": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "toolId"],
+          "properties": {
+            "kind": { "const": "fixed" },
+            "toolId": { "enum": ["calligraphers-supplies", "thieves-tools"] }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "optionFamily", "choiceCount"],
+          "properties": {
+            "kind": { "const": "choice" },
+            "optionFamily": { "const": "gaming-set" },
+            "choiceCount": { "const": 1 }
+          }
+        }
+      ]
+    },
+    "originFeat": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["definitionId", "configurationKey"],
+          "properties": {
+            "definitionId": { "const": "content.dnd2024.feature.alert.v1" },
+            "configurationKey": { "const": "default" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["definitionId", "configurationKey"],
+          "properties": {
+            "definitionId": { "const": "content.dnd2024.feature.magic-initiate.v1" },
+            "configurationKey": { "enum": ["cleric", "wizard"] }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["definitionId", "configurationKey"],
+          "properties": {
+            "definitionId": { "const": "content.dnd2024.feature.savage-attacker.v1" },
+            "configurationKey": { "const": "default" }
+          }
+        }
+      ]
+    },
+    "startingEquipment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["packageEntries", "packageCurrencyGp", "cashAlternativeGp"],
+      "properties": {
+        "packageEntries": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["kind", "itemKey", "quantity"],
+                "properties": {
+                  "kind": { "const": "item" },
+                  "itemKey": { "type": "string", "minLength": 1, "maxLength": 80, "pattern": "^[a-z0-9-]+$" },
+                  "quantity": { "type": "integer", "minimum": 1, "maximum": 100 }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["kind", "selectionKey", "quantity"],
+                "properties": {
+                  "kind": { "const": "selected-tool" },
+                  "selectionKey": { "const": "background-tool" },
+                  "quantity": { "const": 1 }
+                }
+              }
+            ]
+          }
+        },
+        "packageCurrencyGp": { "type": "integer", "minimum": 0, "maximum": 50 },
+        "cashAlternativeGp": { "const": 50 }
+      }
+    },
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceId", "locator"],
+      "properties": {
+        "sourceId": { "const": "source.dnd2024.srd-5.2.1" },
+        "locator": { "type": "string", "minLength": 4, "maxLength": 200 }
+      }
+    }
+  }
+}

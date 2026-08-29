@@ -1,0 +1,1 @@
+{"id":"game.core.campaign.character-participation","name":"Campaign Character Participation","description":"Closed campaign-owned availability state for one actor participation. Campaign and actor scope remain empty-data directed relationships. Governed by procedure.campaign.character-participation."}

@@ -1,0 +1,1 @@
+{"name":"component-type-administration","classification":"system","status":"operational","owns":["authenticated component-type registration transactions","component-type dry-run receipts","component-type idempotency binding"],"mayDependOn":["ecs","schema-validation","authorization","operations-and-audit"]}

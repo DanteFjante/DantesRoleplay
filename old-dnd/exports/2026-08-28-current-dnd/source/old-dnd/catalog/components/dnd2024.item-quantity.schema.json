@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "D&D 2024 fungible physical item quantity",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["count", "stackKey"],
+  "properties": {
+    "count": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "The number of indistinguishable physical items represented by this entity. Zero is never stored."
+    },
+    "stackKey": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9.-]*\\.v[1-9][0-9]*$",
+      "maxLength": 200,
+      "description": "An immutable mechanic-derived compatibility key. In Slice 4 it exactly equals the item-instance definitionId; callers do not choose it."
+    }
+  },
+  "$comment": "Governed by procedure.mechanic.dnd2024.item-quantity. A future feature that makes a physical property fungibility-relevant must revise the derived stack-key contract before it permits merging those items."
+}

@@ -1,0 +1,173 @@
+{
+  "relationships": [
+    {
+      "from": "location.feature-01.gate",
+      "to": "location.feature-01.market",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "location.feature-01.market",
+      "to": "location.feature-01.observatory",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "route.feature-08.gate-to-market-on-foot",
+      "to": "world.feature-01.fixture",
+      "kind": "game.core.world.route.in-world",
+      "data": {}
+    },
+    {
+      "from": "route.feature-08.gate-to-market-on-foot",
+      "to": "location.feature-01.gate",
+      "kind": "game.core.world.route.from",
+      "data": {}
+    },
+    {
+      "from": "route.feature-08.gate-to-market-on-foot",
+      "to": "location.feature-01.market",
+      "kind": "game.core.world.route.to",
+      "data": {}
+    },
+    {
+      "from": "conveyance-route.feature-12.gate-to-market-ground",
+      "to": "world.feature-01.fixture",
+      "kind": "game.core.world.conveyance-route.in-world",
+      "data": {}
+    },
+    {
+      "from": "conveyance-route.feature-12.gate-to-market-ground",
+      "to": "location.feature-01.gate",
+      "kind": "game.core.world.conveyance-route.from",
+      "data": {}
+    },
+    {
+      "from": "conveyance-route.feature-12.gate-to-market-ground",
+      "to": "location.feature-01.market",
+      "kind": "game.core.world.conveyance-route.to",
+      "data": {}
+    },
+    {
+      "from": "aerial-route.feature-13.gate-to-observatory",
+      "to": "world.feature-01.fixture",
+      "kind": "game.core.world.aerial-route.in-world",
+      "data": {}
+    },
+    {
+      "from": "aerial-route.feature-13.gate-to-observatory",
+      "to": "location.feature-01.gate",
+      "kind": "game.core.world.aerial-route.from",
+      "data": {}
+    },
+    {
+      "from": "aerial-route.feature-13.gate-to-observatory",
+      "to": "location.feature-01.observatory",
+      "kind": "game.core.world.aerial-route.to",
+      "data": {}
+    },
+    {
+      "from": "teleport-gate.feature-15.gate-to-observatory",
+      "to": "world.feature-01.fixture",
+      "kind": "game.core.world.teleport-gate.in-world",
+      "data": {}
+    },
+    {
+      "from": "teleport-gate.feature-15.gate-to-observatory",
+      "to": "location.feature-01.observatory",
+      "kind": "game.core.world.teleport-gate.to",
+      "data": {}
+    },
+    {
+      "from": "condition.feature-10.gate-market-closure",
+      "to": "world.feature-01.fixture",
+      "kind": "game.core.world.condition.in-world",
+      "data": {}
+    },
+    {
+      "from": "condition.feature-10.gate-market-closure",
+      "to": "route.feature-08.gate-to-market-on-foot",
+      "kind": "game.core.world.condition.affects",
+      "data": {}
+    },
+    {
+      "from": "faction.feature-03.fixture",
+      "to": "world.feature-01.fixture",
+      "kind": "game.core.world.faction.in-world",
+      "data": {}
+    },
+    {
+      "from": "faction.feature-03.fixture",
+      "to": "location.feature-01.market",
+      "kind": "game.core.world.faction.territory-controls",
+      "data": {}
+    },
+    {
+      "from": "front.feature-11.observatory-claim",
+      "to": "world.feature-01.fixture",
+      "kind": "game.core.world.faction.front.in-world",
+      "data": {}
+    },
+    {
+      "from": "front.feature-11.observatory-claim",
+      "to": "faction.feature-03.fixture",
+      "kind": "game.core.world.faction.front.for-faction",
+      "data": {}
+    },
+    {
+      "from": "front.feature-11.observatory-claim",
+      "to": "location.feature-01.observatory",
+      "kind": "game.core.world.faction.front.contests",
+      "data": {}
+    },
+    {
+      "from": "faction.feature-03.fixture",
+      "to": "actor.feature-03.mara-vell",
+      "kind": "game.core.world.faction.member",
+      "data": {}
+    },
+    {
+      "from": "faction.feature-03.fixture",
+      "to": "location.feature-01.market",
+      "kind": "game.core.world.faction.controls",
+      "data": {}
+    },
+    {"from":"fact.feature-04.toll-ledger","to":"world.feature-01.fixture","kind":"game.core.world.knowledge.in-world","data":{}},
+    {"from":"fact.feature-04.toll-ledger","to":"location.feature-01.market","kind":"game.core.world.knowledge.about","data":{}},
+    {"from":"rumour.feature-04.observatory-signal","to":"world.feature-01.fixture","kind":"game.core.world.knowledge.in-world","data":{}},
+    {"from":"rumour.feature-04.observatory-signal","to":"location.feature-01.observatory","kind":"game.core.world.knowledge.about","data":{}},
+    {"from":"secret.feature-04.oren-correspondence","to":"world.feature-01.fixture","kind":"game.core.world.knowledge.in-world","data":{}},
+    {"from":"secret.feature-04.oren-correspondence","to":"actor.feature-03.oren-dale","kind":"game.core.world.knowledge.about","data":{}},
+    {"from":"clue.feature-04.ledger-seal","to":"world.feature-01.fixture","kind":"game.core.world.knowledge.in-world","data":{}},
+    {"from":"clue.feature-04.ledger-seal","to":"location.feature-01.market","kind":"game.core.world.knowledge.about","data":{}},
+    {"from":"clue.feature-04.ledger-seal","to":"fact.feature-04.toll-ledger","kind":"game.core.world.clue.supports","data":{}},
+    {"from":"clue.feature-04.oren-letter","to":"world.feature-01.fixture","kind":"game.core.world.knowledge.in-world","data":{}},
+    {"from":"clue.feature-04.oren-letter","to":"actor.feature-03.oren-dale","kind":"game.core.world.knowledge.about","data":{}},
+    {"from":"clue.feature-04.oren-letter","to":"secret.feature-04.oren-correspondence","kind":"game.core.world.clue.supports","data":{}},
+    {"from":"clue.feature-04.observatory-lantern","to":"world.feature-01.fixture","kind":"game.core.world.knowledge.in-world","data":{}},
+    {"from":"clue.feature-04.observatory-lantern","to":"location.feature-01.observatory","kind":"game.core.world.knowledge.about","data":{}},
+    {"from":"clue.feature-04.observatory-lantern","to":"secret.feature-04.oren-correspondence","kind":"game.core.world.clue.supports","data":{}},
+    {"from":"world.feature-01.fixture","to":"fact.feature-04.toll-ledger","kind":"game.core.world.knowledge.baseline","data":{"inheritance":"current-scope"}},
+    {"from":"region.feature-01.fixture","to":"rumour.feature-04.observatory-signal","kind":"game.core.world.knowledge.baseline","data":{"inheritance":"current-scope"}},
+    {"from":"faction.feature-03.fixture","to":"secret.feature-04.oren-correspondence","kind":"game.core.world.knowledge.baseline","data":{"inheritance":"current-scope"}},
+    {"from":"actor.knowledge-slice1.outsider","to":"fact.feature-04.toll-ledger","kind":"game.core.world.knowledge.state","data":{"state":"unknown"}},
+    {"from":"interaction.knowledge-slice2.oren-conversation","to":"world.feature-01.fixture","kind":"game.core.world.interaction.in-world","data":{}},
+    {"from":"interaction.knowledge-slice2.oren-conversation","to":"actor.feature-03.oren-dale","kind":"game.core.world.interaction.participant","data":{}},
+    {"from":"interaction.knowledge-slice2.oren-conversation","to":"actor.knowledge-slice2.learner","kind":"game.core.world.interaction.participant","data":{}},
+    {"from":"acquisition.knowledge-slice2.oren-correspondence","to":"world.feature-01.fixture","kind":"game.core.world.knowledge.acquisition.in-world","data":{}},
+    {"from":"acquisition.knowledge-slice2.oren-correspondence","to":"actor.knowledge-slice2.learner","kind":"game.core.world.knowledge.acquisition.knower","data":{}},
+    {"from":"acquisition.knowledge-slice2.oren-correspondence","to":"secret.feature-04.oren-correspondence","kind":"game.core.world.knowledge.acquisition.knowledge","data":{}},
+    {"from":"acquisition.knowledge-slice2.oren-correspondence","to":"interaction.knowledge-slice2.oren-conversation","kind":"game.core.world.knowledge.acquisition.source","data":{}},
+    {"from":"actor.knowledge-slice2.learner","to":"secret.feature-04.oren-correspondence","kind":"game.core.world.knowledge.state","data":{"state":"believed"}},
+    {"from":"fact.knowledge-slice3.market-toll-old","to":"world.feature-01.fixture","kind":"game.core.world.knowledge.in-world","data":{}},
+    {"from":"fact.knowledge-slice3.market-toll-old","to":"location.feature-01.market","kind":"game.core.world.knowledge.about","data":{}},
+    {"from":"fact.knowledge-slice3.market-toll-new","to":"world.feature-01.fixture","kind":"game.core.world.knowledge.in-world","data":{}},
+    {"from":"fact.knowledge-slice3.market-toll-new","to":"location.feature-01.market","kind":"game.core.world.knowledge.about","data":{}},
+    {"from":"fact.knowledge-slice3.market-toll-new","to":"fact.knowledge-slice3.market-toll-old","kind":"game.core.world.knowledge.supersedes","data":{}},
+    {"from":"rumour.knowledge-slice3.observatory-a","to":"world.feature-01.fixture","kind":"game.core.world.knowledge.in-world","data":{}},
+    {"from":"rumour.knowledge-slice3.observatory-a","to":"location.feature-01.observatory","kind":"game.core.world.knowledge.about","data":{}},
+    {"from":"rumour.knowledge-slice3.observatory-b","to":"world.feature-01.fixture","kind":"game.core.world.knowledge.in-world","data":{}},
+    {"from":"rumour.knowledge-slice3.observatory-b","to":"location.feature-01.observatory","kind":"game.core.world.knowledge.about","data":{}},
+    {"from":"rumour.knowledge-slice3.observatory-a","to":"rumour.knowledge-slice3.observatory-b","kind":"game.core.world.knowledge.contradicts","data":{}}
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["elapsedMinutes"],
+  "properties": {
+    "elapsedMinutes": { "type": "integer", "minimum": 0, "maximum": 1000000000 }
+  }
+}

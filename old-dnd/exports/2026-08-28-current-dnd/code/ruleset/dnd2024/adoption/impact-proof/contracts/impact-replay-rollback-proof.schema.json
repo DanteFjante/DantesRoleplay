@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dantesroleplay.example/schemas/adoption/impact-replay-rollback-proof/v1",
+  "title": "Candidate impact replay rollback proof",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "candidateKey", "mapping", "allowlist", "result", "expected"],
+  "properties": {
+    "format": { "const": "application-adoption-impact-replay-rollback-proof/v1" },
+    "candidateKey": { "$ref": "#/$defs/candidateKey" },
+    "mapping": { "$ref": "#/$defs/artifact" },
+    "allowlist": { "$ref": "#/$defs/artifact" },
+    "result": { "$ref": "#/$defs/artifact" },
+    "expected": {
+      "type": "object", "additionalProperties": false,
+      "required": ["impactRoots", "focusedTests"],
+      "properties": {
+        "impactRoots": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^(?:component|projection):" } },
+        "focusedTests": { "type": "array", "minItems": 3, "uniqueItems": true, "items": { "enum": ["declarative-impact", "effect-replay", "effect-rollback"] } }
+      }
+    }
+  },
+  "$defs": {
+    "candidateKey": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{0,159}$" },
+    "hash": { "type": "string", "pattern": "^[A-F0-9]{64}$" },
+    "relativePath": { "type": "string", "minLength": 1, "maxLength": 500, "pattern": "^(?![A-Za-z]:)(?!/)(?!.*(?:^|/)[.][.](?:/|$))[A-Za-z0-9._/-]+$" },
+    "artifact": { "type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": { "path": { "$ref": "#/$defs/relativePath" }, "sha256": { "$ref": "#/$defs/hash" } } }
+  }
+}

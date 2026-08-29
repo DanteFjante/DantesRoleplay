@@ -1,0 +1,8 @@
+{
+  "proposals": [
+    {
+      "kind": "set-subject-state",
+      "state": { "value": 11 }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.seven-way-division",
+  "name": "The Seven-Way Division",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "After the rebellion, the seven surviving siblings kept the council but divided the Thalmos Empire into seven countries, one ruled by each sibling. The division was made as fairly as they could manage so each new kingdom possessed a major source of value and authority.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

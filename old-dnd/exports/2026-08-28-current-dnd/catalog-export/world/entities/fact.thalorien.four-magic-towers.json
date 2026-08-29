@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.four-magic-towers",
+  "name": "The Four Kingdoms with Magic Towers",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Minevros, Valeros, Rhiannos, and Waylos each had a magic tower.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "capability",
+      "sensitivity": "open"
+    }
+  }
+}

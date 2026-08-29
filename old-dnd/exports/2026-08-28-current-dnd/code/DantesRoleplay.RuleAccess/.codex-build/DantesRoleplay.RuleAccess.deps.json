@@ -1,0 +1,73 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "DantesRoleplay.RuleAccess/1.0.0": {
+        "dependencies": {
+          "DantesRoleplay": "1.0.0",
+          "Jint": "4.15.0"
+        },
+        "runtime": {
+          "DantesRoleplay.RuleAccess.dll": {}
+        }
+      },
+      "Acornima/1.6.2": {
+        "runtime": {
+          "lib/net8.0/Acornima.dll": {
+            "assemblyVersion": "1.6.2.0",
+            "fileVersion": "1.6.2.0"
+          }
+        }
+      },
+      "Jint/4.15.0": {
+        "dependencies": {
+          "Acornima": "1.6.2"
+        },
+        "runtime": {
+          "lib/net10.0/Jint.dll": {
+            "assemblyVersion": "4.15.0.0",
+            "fileVersion": "4.15.0.0"
+          }
+        }
+      },
+      "DantesRoleplay/1.0.0": {
+        "runtime": {
+          "DantesRoleplay.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "DantesRoleplay.RuleAccess/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Acornima/1.6.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-laakpDHzMwHr5C8+q5RlRf0XJJshUvghNeo4xDerICrYR3iEuGvwfpauCmXuU3RE437XDaQO5ZxieWDpADuD+w==",
+      "path": "acornima/1.6.2",
+      "hashPath": "acornima.1.6.2.nupkg.sha512"
+    },
+    "Jint/4.15.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-uGTeFjwDfPpNp22ft0RJvpM26ixmQAL/Nwso0v1q+L1/lhOQHwnCb4bETuYvuiErjZMf0aVRQ2BlajLvdXPU9w==",
+      "path": "jint/4.15.0",
+      "hashPath": "jint.4.15.0.nupkg.sha512"
+    },
+    "DantesRoleplay/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

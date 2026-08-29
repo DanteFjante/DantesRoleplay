@@ -1,0 +1,1 @@
+{"name":"catalog","classification":"system","status":"migrated","owns":["catalog layout","catalog validation","catalog import and export"],"mayDependOn":["building-blocks","procedures","mechanics","state","events-and-notifications"]}

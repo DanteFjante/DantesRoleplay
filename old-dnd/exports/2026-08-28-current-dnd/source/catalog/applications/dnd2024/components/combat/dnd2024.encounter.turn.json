@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.encounter.turn",
+  "name": "Encounter Turn (D&D 2024)",
+  "description": "One participant turn within one explicit encounter round."
+}

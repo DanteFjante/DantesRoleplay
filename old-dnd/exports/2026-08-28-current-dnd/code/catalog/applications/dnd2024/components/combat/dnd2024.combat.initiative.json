@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.combat.initiative",
+  "name": "Combat Initiative (D&D 2024)",
+  "description": "One encounter-qualified Initiative result and deterministic tie position on an encounter participation."
+}

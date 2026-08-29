@@ -1,0 +1,1 @@
+{"id":"subscription.dnd2024.dying.on-damage","category":"ruleset.dnd2024.core.gameplay.dying","eventTypeId":"dnd2024.damage.dealt","eventMechanicId":"mechanic.dnd2024.dying.on-damage","mode":"Reaction","order":0,"fixedRoleEntityIds":{},"trackedEntityIds":[],"payloadEquals":{},"maxExecutionsPerChain":1,"scope":"","status":"Active"}

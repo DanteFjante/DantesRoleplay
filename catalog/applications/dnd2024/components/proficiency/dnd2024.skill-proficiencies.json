@@ -1,5 +1,0 @@
-{
-  "id": "dnd2024.skill-proficiencies",
-  "name": "D&D 2024 skill proficiencies",
-  "description": "The complete known set of a character's 18 SRD skill proficiency IDs. An empty list is known none; a missing component is unknown. Ability mappings and Proficiency Bonus are derived, never stored."
-}

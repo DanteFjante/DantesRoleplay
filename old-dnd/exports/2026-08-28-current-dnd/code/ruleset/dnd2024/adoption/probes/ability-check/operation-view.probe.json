@@ -1,0 +1,113 @@
+{
+  "format": "dnd-code-adoption-operation-view-probe/v1",
+  "fixture": {
+    "applicationId": "probe-adapter",
+    "applicationName": "Test-only operation-view probe",
+    "stateSpaceId": "probe-space",
+    "subject": { "id": "subject", "name": "Subject" },
+    "components": [
+      {
+        "id": "ability-state",
+        "qualifiedTypeId": "probe-adapter.ability-state",
+        "schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["str", "dex", "con", "int", "wis", "cha"],
+          "properties": {
+            "str": { "type": "integer", "minimum": 1, "maximum": 30 },
+            "dex": { "type": "integer", "minimum": 1, "maximum": 30 },
+            "con": { "type": "integer", "minimum": 1, "maximum": 30 },
+            "int": { "type": "integer", "minimum": 1, "maximum": 30 },
+            "wis": { "type": "integer", "minimum": 1, "maximum": 30 },
+            "cha": { "type": "integer", "minimum": 1, "maximum": 30 }
+          }
+        },
+        "data": { "str": 12, "dex": 16, "con": 14, "int": 10, "wis": 13, "cha": 8 }
+      }
+    ]
+  },
+  "projections": [
+    {
+      "id": "probe-adapter.ability-state-view",
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scores"],
+        "properties": {
+          "scores": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["str", "dex", "con", "int", "wis", "cha"],
+            "properties": {
+              "str": { "type": "integer", "minimum": 1, "maximum": 30 },
+              "dex": { "type": "integer", "minimum": 1, "maximum": 30 },
+              "con": { "type": "integer", "minimum": 1, "maximum": 30 },
+              "int": { "type": "integer", "minimum": 1, "maximum": 30 },
+              "wis": { "type": "integer", "minimum": 1, "maximum": 30 },
+              "cha": { "type": "integer", "minimum": 1, "maximum": 30 }
+            }
+          }
+        }
+      },
+      "componentInputs": [
+        { "inputId": "ability-state", "entityRole": "subject", "componentId": "ability-state" }
+      ],
+      "dependencyInputs": [],
+      "mappings": [
+        { "inputId": "ability-state", "sourcePointer": "/str", "targetPointer": "/scores/str" },
+        { "inputId": "ability-state", "sourcePointer": "/dex", "targetPointer": "/scores/dex" },
+        { "inputId": "ability-state", "sourcePointer": "/con", "targetPointer": "/scores/con" },
+        { "inputId": "ability-state", "sourcePointer": "/int", "targetPointer": "/scores/int" },
+        { "inputId": "ability-state", "sourcePointer": "/wis", "targetPointer": "/scores/wis" },
+        { "inputId": "ability-state", "sourcePointer": "/cha", "targetPointer": "/scores/cha" }
+      ]
+    },
+    {
+      "id": "probe-adapter.raw-check-view",
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scores"],
+        "properties": {
+          "scores": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["str", "dex", "con", "int", "wis", "cha"],
+            "properties": {
+              "str": { "type": "integer", "minimum": 1, "maximum": 30 },
+              "dex": { "type": "integer", "minimum": 1, "maximum": 30 },
+              "con": { "type": "integer", "minimum": 1, "maximum": 30 },
+              "int": { "type": "integer", "minimum": 1, "maximum": 30 },
+              "wis": { "type": "integer", "minimum": 1, "maximum": 30 },
+              "cha": { "type": "integer", "minimum": 1, "maximum": 30 }
+            }
+          }
+        }
+      },
+      "componentInputs": [],
+      "dependencyInputs": [
+        {
+          "inputId": "ability-state",
+          "projectionId": "probe-adapter.ability-state-view",
+          "roleBindings": { "subject": "subject" }
+        }
+      ],
+      "mappings": [
+        { "inputId": "ability-state", "sourcePointer": "/scores", "targetPointer": "/scores" }
+      ]
+    }
+  ],
+  "materialization": {
+    "projectionId": "probe-adapter.raw-check-view",
+    "roleEntityIds": { "subject": "subject" }
+  },
+  "expected": {
+    "output": { "scores": { "str": 12, "dex": 16, "con": 14, "int": 10, "wis": 13, "cha": 8 } },
+    "sourceRevision": 1,
+    "componentImpact": {
+      "componentId": "ability-state",
+      "pointer": "/dex",
+      "dependentProjectionIds": ["probe-adapter.ability-state-view", "probe-adapter.raw-check-view"]
+    }
+  }
+}

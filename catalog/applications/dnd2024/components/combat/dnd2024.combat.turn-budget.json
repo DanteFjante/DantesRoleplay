@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.combat.turn-budget",
+  "name": "Combat Turn Budget (D&D 2024)",
+  "description": "Counted remaining resources and exact metric movement/interactions used during one explicit turn."
+}

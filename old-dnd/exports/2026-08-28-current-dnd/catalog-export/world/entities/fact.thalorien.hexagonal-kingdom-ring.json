@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.hexagonal-kingdom-ring",
+  "name": "The Six Kingdoms Around Aldros",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Six kingdoms form a hexagonal ring around central Aldros: Minevros northwest, Evandos north, Rhiannos northeast, Valeros southeast, Merceros south, and Waylos southwest. Minevros and Valeros oppose one another across Aldros.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "location",
+      "sensitivity": "open"
+    }
+  }
+}

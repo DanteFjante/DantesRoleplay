@@ -1,1 +1,0 @@
-{"id":"dnd2024.speed","name":"Creature Speed (D&D 2024)","description":"The explicit D&D 2024 base movement speeds of one creature. It stores walk Speed and the four source-defined special Speeds, but no remaining movement, temporary modifier, terrain cost, position, route, pace, condition, or history. Governed by procedure.mechanic.dnd2024.speed."}

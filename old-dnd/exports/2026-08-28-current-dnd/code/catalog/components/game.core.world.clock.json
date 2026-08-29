@@ -1,0 +1,1 @@
+{"id":"game.core.world.clock","name":"World Clock","description":"Closed root-owned in-world clock state: calendar identity, elapsed minutes, and revision. It is not wall-clock time, a schedule, or a route cost. Governed by procedure.game.core.world.time."}

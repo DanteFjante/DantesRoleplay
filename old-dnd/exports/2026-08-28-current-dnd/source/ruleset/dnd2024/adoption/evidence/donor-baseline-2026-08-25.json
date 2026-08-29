@@ -1,0 +1,85 @@
+{
+  "format": "dnd-code-adoption-donor-baseline-evidence/v1",
+  "observedAtUtc": "2026-08-25T09:34:46.1535776+00:00",
+  "reproducedAtUtc": "2026-08-25T09:37:49.1827173+00:00",
+  "lockSha256": "43A3980EC299D57501135B48DEDB70B7B8A77FEC7716DE20E8A566A14CB9F468",
+  "stableEvidenceEqual": true,
+  "tools": {
+    "git": "git version 2.53.0.windows.3",
+    "node": "v24.14.1",
+    "npm": "11.11.0"
+  },
+  "sources": [
+    {
+      "key": "dnd-srd-engine",
+      "role": "primary-engineering-donor",
+      "repository": "https://github.com/greghcarr/dnd-srd-engine.git",
+      "branchEvidence": "main",
+      "commit": "ead852b19b9e45f54f43e193caf4f10aad91a91b",
+      "tree": "3ba1b25ed10231799a3d0f5d752d5aedc4b21aff",
+      "packageVersion": "0.11.0-alpha.0",
+      "submodules": [
+        {
+          "path": "references/srd-markdown",
+          "commit": "1b4b99dcb786cdd1a2fb26f8acec1551191f1ca4"
+        }
+      ],
+      "fingerprints": [
+        { "path": "LICENSE", "sha256": "1DAFB03A1DFBD9C87EE00A2DBA25F6CC356ECCAE8A7D5FEBADC83D89E729AA05", "length": 2050 },
+        { "path": "NOTICE", "sha256": "4C18BBC7643B196B037AF72F71B91EDA8D6783F6A68068BB8F817C0F2AD5E899", "length": 4425 },
+        { "path": "package.json", "sha256": "4BD8D25A638945940EBBE811BF426ED6B0D986B20C610707318DA071EF81BC7A", "length": 2694 },
+        { "path": "package-lock.json", "sha256": "EE105EA7DC1276C2914E3E54662F2126FDE113A53DA550E83D0273F4E196A2C4", "length": 114499 },
+        { "path": ".gitmodules", "sha256": "0D42E39ECEB5A778F8E7891932FCF9894757EE3AB8D3B5B5BEDD0E90E7A9EBCE", "length": 133 },
+        { "path": "docs/content-attribution.md", "sha256": "C5E4E2BBF8238525C759458AD42CFAE5283E476270ECAD4CA2B42B54E143DAB9", "length": 17046 }
+      ],
+      "commands": [
+        { "command": "npm ci", "firstExitCode": 0, "secondExitCode": 0 },
+        { "command": "npm run build", "firstExitCode": 0, "secondExitCode": 0 },
+        { "command": "npm test", "firstExitCode": 1, "secondExitCode": 1 }
+      ],
+      "testSummary": {
+        "passed": 4610,
+        "failed": 4,
+        "skipped": 173,
+        "failures": [
+          "tests/audit/doc-links.test.ts > every internal link resolves (GitHub-relative)",
+          "tests/audit/srd-background-skill-conformance.test.ts > parses skills for the SRD backgrounds in the pack",
+          "tests/audit/srd-species-speed-conformance.test.ts > parses a speed for every pack species",
+          "tests/unit/engine/slice-581-frightened-movement-gate.test.ts > movement-gate code path exists at src/engine/plan/movement.ts:127"
+        ],
+        "classification": "The documentation-link, SRD-markdown parser, and source-path smoke checks fail on this Windows checkout. They are donor limitations, not accepted rule differences. Every future reuse row remains independently SRD- and native-test-gated."
+      },
+      "installAuditObservation": "npm ci reported 9 dependency vulnerabilities: 2 moderate, 5 high, and 2 critical. No donor npm dependency is approved for production runtime use."
+    },
+    {
+      "key": "foundry-dnd5e",
+      "role": "engineering-reference-only",
+      "repository": "https://github.com/foundryvtt/dnd5e.git",
+      "branchEvidence": "6.0.x",
+      "commit": "275bed0be4ccfa15e6b3347acccb8da8784726d9",
+      "tree": "df5ae6627620ad68e5b5d7a1851a8d9a885c15e0",
+      "packageVersion": null,
+      "fingerprints": [
+        { "path": "LICENSE.txt", "sha256": "7B3B690D4D3B5E9979C7767E298BD33384E5A39AF0B90C38657F2DD5222958B2", "length": 1061 },
+        { "path": "README.md", "sha256": "7BAD99EDEF072CD0D0C7380B187D6EBBD39F6D05D5D5D59DA4C81D492B3DE3A9", "length": 2325 },
+        { "path": "package.json", "sha256": "F64F172B6A4304B2DD5BDBEE47433AC26EC8AAB4102D619B1E3627EB73D8135B", "length": 1309 },
+        { "path": "package-lock.json", "sha256": "377C34AEA1923F062CF3419231A0860ADDD03CBE5A3A0782B9CAC7055CCA5627", "length": 195369 },
+        { "path": "system.json", "sha256": "CDEA589F5C7C8BE3FD4B9BFE4362EB8BCC146292B48E61DCF9D2745F20DC4FB4", "length": 16708 }
+      ],
+      "execution": "fingerprint-only; no install, build, or runtime load"
+    }
+  ],
+  "cleanup": {
+    "firstRunDeleted": true,
+    "secondRunDeleted": true,
+    "remainingCheckoutCount": 0
+  },
+  "negativeEvidence": {
+    "case": "repository path supplied as TemporaryParent",
+    "rejected": true,
+    "message": "TemporaryParent must resolve to the operating-system temporary directory.",
+    "evidenceCreated": false,
+    "remainingCheckoutCount": 0
+  },
+  "baselineStatus": "reproduced-with-test-failures"
+}

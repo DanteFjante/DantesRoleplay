@@ -1,0 +1,29 @@
+---
+id: procedure.mechanic.dnd2024.d20-test.state-effects
+category: ruleset.dnd2024.core.gameplay.d20-tests
+name: Derive D&D 2024 Condition effects
+governs: mechanic.dnd2024.d20-test.state-effects
+status: active
+---
+
+## Description
+
+Owns the effect-free translation from stored creature Conditions to shared D20 Test and resource
+inputs. Consumers compose this resolver instead of duplicating Condition tables.
+
+## Instructions
+
+1. Accept exactly `{}` and one subject. Missing Condition state is unknown, not known-empty.
+2. Return stored entries, implied/effective Conditions, source identities, closed D20 branches,
+   the Exhaustion modifier, and ordered resource prohibitions with fixed provenance.
+3. Paralyzed, Petrified, and Stunned imply Incapacitated. Unconscious implies Incapacitated and
+   Prone. Derived Conditions are never written back.
+4. Exhaustion contributes `-2 × level` to D20 Tests. Other branches follow their exact SRD
+   Condition effects and retain `condition:<id>` provenance.
+5. Prohibitions are resource-unique: Incapacitated blocks Action, Bonus Action, and Reaction; the
+   first effective Speed-zero Condition blocks movement. Free interaction is not prohibited here.
+
+## Constraints
+
+The resolver writes nothing, rolls nothing, changes no outcome, and fails on malformed/invalid
+present state. Applying, clearing, timing, causing, and expiring Conditions are outside this owner.

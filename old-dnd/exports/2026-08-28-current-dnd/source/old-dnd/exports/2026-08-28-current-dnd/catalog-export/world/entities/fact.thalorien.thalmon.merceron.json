@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.thalmon.merceron",
+  "name": "Prince Merceron",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Prince Merceron, Thalmon's seventh child and fifth son, was trained in commerce and trade.",
+      "provenance": "Approved ancient-language naming revision from the world-creation conversation (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "identity",
+      "sensitivity": "open"
+    }
+  }
+}

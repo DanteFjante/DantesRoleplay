@@ -1,0 +1,310 @@
+{
+  "classes": [
+    {
+      "id": "barbarian",
+      "name": "Barbarian",
+      "description": "A mighty warrior who channels primal power through Rage.",
+      "primaryAbilityIds": ["ability.strength"],
+      "primaryAbilityRule": "All",
+      "hitPointDieId": "die.d12",
+      "startingProficiencies": {
+        "savingThrowAbilityIds": ["ability.strength", "ability.constitution"],
+        "skillChoice": { "choiceSetId": "skill-choice-set.barbarian", "choose": 2 },
+        "weaponProficiencies": ["Simple weapons", "Martial weapons"],
+        "armorTraining": ["Light armor", "Medium armor", "Shields"]
+      },
+      "multiclassRequirements": [
+        { "anyOfAbilityIds": ["ability.strength"], "minimumScore": 13 }
+      ],
+      "multiclassProficiencies": {
+        "weaponProficiencies": ["Martial weapons"],
+        "armorTraining": ["Shields"]
+      },
+      "startingEquipment": [
+        { "id": "a", "name": "Equipment", "description": "Greataxe, 4 Handaxes, Explorer's Pack, and 15 GP." },
+        { "id": "b", "name": "Gold", "description": "75 GP." }
+      ]
+    },
+    {
+      "id": "bard",
+      "name": "Bard",
+      "description": "A versatile performer who uses expertise, inspiration, and magic.",
+      "primaryAbilityIds": ["ability.charisma"],
+      "primaryAbilityRule": "All",
+      "hitPointDieId": "die.d8",
+      "startingProficiencies": {
+        "savingThrowAbilityIds": ["ability.dexterity", "ability.charisma"],
+        "skillChoice": { "choiceSetId": "skill-choice-set.all", "choose": 3 },
+        "weaponProficiencies": ["Simple weapons"],
+        "toolOptions": ["Musical Instrument"],
+        "toolChoices": 3,
+        "armorTraining": ["Light armor"]
+      },
+      "multiclassRequirements": [
+        { "anyOfAbilityIds": ["ability.charisma"], "minimumScore": 13 }
+      ],
+      "multiclassProficiencies": {
+        "skillChoice": { "choiceSetId": "skill-choice-set.all", "choose": 1 },
+        "toolOptions": ["Musical Instrument"],
+        "toolChoices": 1,
+        "armorTraining": ["Light armor"]
+      },
+      "startingEquipment": [
+        { "id": "a", "name": "Equipment", "description": "Leather Armor, 2 Daggers, one Musical Instrument, Entertainer's Pack, and 19 GP." },
+        { "id": "b", "name": "Gold", "description": "90 GP." }
+      ]
+    },
+    {
+      "id": "cleric",
+      "name": "Cleric",
+      "description": "A divine spellcaster who channels power from gods and immortal forces.",
+      "primaryAbilityIds": ["ability.wisdom"],
+      "primaryAbilityRule": "All",
+      "hitPointDieId": "die.d8",
+      "startingProficiencies": {
+        "savingThrowAbilityIds": ["ability.wisdom", "ability.charisma"],
+        "skillChoice": { "choiceSetId": "skill-choice-set.cleric", "choose": 2 },
+        "weaponProficiencies": ["Simple weapons"],
+        "armorTraining": ["Light armor", "Medium armor", "Shields"]
+      },
+      "multiclassRequirements": [
+        { "anyOfAbilityIds": ["ability.wisdom"], "minimumScore": 13 }
+      ],
+      "multiclassProficiencies": {
+        "armorTraining": ["Light armor", "Medium armor", "Shields"]
+      },
+      "startingEquipment": [
+        { "id": "a", "name": "Equipment", "description": "Chain Shirt, Shield, Mace, Holy Symbol, Priest's Pack, and 7 GP." },
+        { "id": "b", "name": "Gold", "description": "110 GP." }
+      ]
+    },
+    {
+      "id": "druid",
+      "name": "Druid",
+      "description": "A primal spellcaster who commands nature and can transform into animals.",
+      "primaryAbilityIds": ["ability.wisdom"],
+      "primaryAbilityRule": "All",
+      "hitPointDieId": "die.d8",
+      "startingProficiencies": {
+        "savingThrowAbilityIds": ["ability.intelligence", "ability.wisdom"],
+        "skillChoice": { "choiceSetId": "skill-choice-set.druid", "choose": 2 },
+        "weaponProficiencies": ["Simple weapons"],
+        "grantedTools": ["Herbalism Kit"],
+        "armorTraining": ["Light armor", "Shields"]
+      },
+      "multiclassRequirements": [
+        { "anyOfAbilityIds": ["ability.wisdom"], "minimumScore": 13 }
+      ],
+      "multiclassProficiencies": {
+        "armorTraining": ["Light armor", "Shields"]
+      },
+      "startingEquipment": [
+        { "id": "a", "name": "Equipment", "description": "Leather Armor, Shield, Sickle, Druidic Focus (Quarterstaff), Explorer's Pack, Herbalism Kit, and 9 GP." },
+        { "id": "b", "name": "Gold", "description": "50 GP." }
+      ]
+    },
+    {
+      "id": "fighter",
+      "name": "Fighter",
+      "description": "A martial expert trained in weapons, armor, and specialized fighting styles.",
+      "primaryAbilityIds": ["ability.strength", "ability.dexterity"],
+      "primaryAbilityRule": "ChooseOne",
+      "hitPointDieId": "die.d10",
+      "startingProficiencies": {
+        "savingThrowAbilityIds": ["ability.strength", "ability.constitution"],
+        "skillChoice": { "choiceSetId": "skill-choice-set.fighter", "choose": 2 },
+        "weaponProficiencies": ["Simple weapons", "Martial weapons"],
+        "armorTraining": ["Light armor", "Medium armor", "Heavy armor", "Shields"]
+      },
+      "multiclassRequirements": [
+        { "anyOfAbilityIds": ["ability.strength", "ability.dexterity"], "minimumScore": 13 }
+      ],
+      "multiclassProficiencies": {
+        "weaponProficiencies": ["Martial weapons"],
+        "armorTraining": ["Light armor", "Medium armor", "Shields"]
+      },
+      "startingEquipment": [
+        { "id": "a", "name": "Heavy Equipment", "description": "Chain Mail, Greatsword, Flail, 8 Javelins, Dungeoneer's Pack, and 4 GP." },
+        { "id": "b", "name": "Light Equipment", "description": "Studded Leather Armor, Scimitar, Shortsword, Longbow, 20 Arrows, Quiver, Dungeoneer's Pack, and 11 GP." },
+        { "id": "c", "name": "Gold", "description": "155 GP." }
+      ]
+    },
+    {
+      "id": "monk",
+      "name": "Monk",
+      "description": "A disciplined martial artist who focuses internal power into extraordinary techniques.",
+      "primaryAbilityIds": ["ability.dexterity", "ability.wisdom"],
+      "primaryAbilityRule": "All",
+      "hitPointDieId": "die.d8",
+      "startingProficiencies": {
+        "savingThrowAbilityIds": ["ability.strength", "ability.dexterity"],
+        "skillChoice": { "choiceSetId": "skill-choice-set.monk", "choose": 2 },
+        "weaponProficiencies": ["Simple weapons", "Martial weapons with the Light property"],
+        "toolOptions": ["Artisan's Tools", "Musical Instrument"],
+        "toolChoices": 1,
+        "armorTraining": []
+      },
+      "multiclassRequirements": [
+        { "anyOfAbilityIds": ["ability.dexterity"], "minimumScore": 13 },
+        { "anyOfAbilityIds": ["ability.wisdom"], "minimumScore": 13 }
+      ],
+      "multiclassProficiencies": {},
+      "startingEquipment": [
+        { "id": "a", "name": "Equipment", "description": "Spear, 5 Daggers, the chosen Artisan's Tools or Musical Instrument, Explorer's Pack, and 11 GP." },
+        { "id": "b", "name": "Gold", "description": "50 GP." }
+      ]
+    },
+    {
+      "id": "paladin",
+      "name": "Paladin",
+      "description": "An armored champion empowered by a sacred oath.",
+      "primaryAbilityIds": ["ability.strength", "ability.charisma"],
+      "primaryAbilityRule": "All",
+      "hitPointDieId": "die.d10",
+      "startingProficiencies": {
+        "savingThrowAbilityIds": ["ability.wisdom", "ability.charisma"],
+        "skillChoice": { "choiceSetId": "skill-choice-set.paladin", "choose": 2 },
+        "weaponProficiencies": ["Simple weapons", "Martial weapons"],
+        "armorTraining": ["Light armor", "Medium armor", "Heavy armor", "Shields"]
+      },
+      "multiclassRequirements": [
+        { "anyOfAbilityIds": ["ability.strength"], "minimumScore": 13 },
+        { "anyOfAbilityIds": ["ability.charisma"], "minimumScore": 13 }
+      ],
+      "multiclassProficiencies": {
+        "weaponProficiencies": ["Martial weapons"],
+        "armorTraining": ["Light armor", "Medium armor", "Shields"]
+      },
+      "startingEquipment": [
+        { "id": "a", "name": "Equipment", "description": "Chain Mail, Shield, Longsword, 6 Javelins, Holy Symbol, Priest's Pack, and 9 GP." },
+        { "id": "b", "name": "Gold", "description": "150 GP." }
+      ]
+    },
+    {
+      "id": "ranger",
+      "name": "Ranger",
+      "description": "A wilderness warrior who combines martial skill, tracking, and primal magic.",
+      "primaryAbilityIds": ["ability.dexterity", "ability.wisdom"],
+      "primaryAbilityRule": "All",
+      "hitPointDieId": "die.d10",
+      "startingProficiencies": {
+        "savingThrowAbilityIds": ["ability.strength", "ability.dexterity"],
+        "skillChoice": { "choiceSetId": "skill-choice-set.ranger", "choose": 3 },
+        "weaponProficiencies": ["Simple weapons", "Martial weapons"],
+        "armorTraining": ["Light armor", "Medium armor", "Shields"]
+      },
+      "multiclassRequirements": [
+        { "anyOfAbilityIds": ["ability.dexterity"], "minimumScore": 13 },
+        { "anyOfAbilityIds": ["ability.wisdom"], "minimumScore": 13 }
+      ],
+      "multiclassProficiencies": {
+        "skillChoice": { "choiceSetId": "skill-choice-set.ranger", "choose": 1 },
+        "weaponProficiencies": ["Martial weapons"],
+        "armorTraining": ["Light armor", "Medium armor", "Shields"]
+      },
+      "startingEquipment": [
+        { "id": "a", "name": "Equipment", "description": "Studded Leather Armor, Scimitar, Shortsword, Longbow, 20 Arrows, Quiver, Druidic Focus (sprig of mistletoe), Explorer's Pack, and 7 GP." },
+        { "id": "b", "name": "Gold", "description": "150 GP." }
+      ]
+    },
+    {
+      "id": "rogue",
+      "name": "Rogue",
+      "description": "A cunning expert who relies on skill, stealth, and precise attacks.",
+      "primaryAbilityIds": ["ability.dexterity"],
+      "primaryAbilityRule": "All",
+      "hitPointDieId": "die.d8",
+      "startingProficiencies": {
+        "savingThrowAbilityIds": ["ability.dexterity", "ability.intelligence"],
+        "skillChoice": { "choiceSetId": "skill-choice-set.rogue", "choose": 4 },
+        "weaponProficiencies": ["Simple weapons", "Martial weapons with the Finesse or Light property"],
+        "grantedTools": ["Thieves' Tools"],
+        "armorTraining": ["Light armor"]
+      },
+      "multiclassRequirements": [
+        { "anyOfAbilityIds": ["ability.dexterity"], "minimumScore": 13 }
+      ],
+      "multiclassProficiencies": {
+        "skillChoice": { "choiceSetId": "skill-choice-set.rogue", "choose": 1 },
+        "grantedTools": ["Thieves' Tools"],
+        "armorTraining": ["Light armor"]
+      },
+      "startingEquipment": [
+        { "id": "a", "name": "Equipment", "description": "Leather Armor, 2 Daggers, Shortsword, Shortbow, 20 Arrows, Quiver, Thieves' Tools, Burglar's Pack, and 8 GP." },
+        { "id": "b", "name": "Gold", "description": "100 GP." }
+      ]
+    },
+    {
+      "id": "sorcerer",
+      "name": "Sorcerer",
+      "description": "A spellcaster who learns to control magic inherent within them.",
+      "primaryAbilityIds": ["ability.charisma"],
+      "primaryAbilityRule": "All",
+      "hitPointDieId": "die.d6",
+      "startingProficiencies": {
+        "savingThrowAbilityIds": ["ability.constitution", "ability.charisma"],
+        "skillChoice": { "choiceSetId": "skill-choice-set.sorcerer", "choose": 2 },
+        "weaponProficiencies": ["Simple weapons"],
+        "armorTraining": []
+      },
+      "multiclassRequirements": [
+        { "anyOfAbilityIds": ["ability.charisma"], "minimumScore": 13 }
+      ],
+      "multiclassProficiencies": {},
+      "startingEquipment": [
+        { "id": "a", "name": "Equipment", "description": "Spear, 2 Daggers, Arcane Focus (crystal), Dungeoneer's Pack, and 28 GP." },
+        { "id": "b", "name": "Gold", "description": "50 GP." }
+      ]
+    },
+    {
+      "id": "warlock",
+      "name": "Warlock",
+      "description": "An occult spellcaster who gains magical secrets through a supernatural pact.",
+      "primaryAbilityIds": ["ability.charisma"],
+      "primaryAbilityRule": "All",
+      "hitPointDieId": "die.d8",
+      "startingProficiencies": {
+        "savingThrowAbilityIds": ["ability.wisdom", "ability.charisma"],
+        "skillChoice": { "choiceSetId": "skill-choice-set.warlock", "choose": 2 },
+        "weaponProficiencies": ["Simple weapons"],
+        "armorTraining": ["Light armor"]
+      },
+      "multiclassRequirements": [
+        { "anyOfAbilityIds": ["ability.charisma"], "minimumScore": 13 }
+      ],
+      "multiclassProficiencies": {
+        "armorTraining": ["Light armor"]
+      },
+      "startingEquipment": [
+        { "id": "a", "name": "Equipment", "description": "Leather Armor, Sickle, 2 Daggers, Arcane Focus (orb), Book (occult lore), Scholar's Pack, and 15 GP." },
+        { "id": "b", "name": "Gold", "description": "100 GP." }
+      ]
+    },
+    {
+      "id": "wizard",
+      "name": "Wizard",
+      "description": "A scholarly spellcaster who masters magic through extensive study.",
+      "primaryAbilityIds": ["ability.intelligence"],
+      "primaryAbilityRule": "All",
+      "hitPointDieId": "die.d6",
+      "startingProficiencies": {
+        "savingThrowAbilityIds": ["ability.intelligence", "ability.wisdom"],
+        "skillChoice": { "choiceSetId": "skill-choice-set.wizard", "choose": 2 },
+        "weaponProficiencies": ["Simple weapons"],
+        "armorTraining": []
+      },
+      "multiclassRequirements": [
+        { "anyOfAbilityIds": ["ability.intelligence"], "minimumScore": 13 }
+      ],
+      "multiclassProficiencies": {},
+      "startingEquipment": [
+        { "id": "a", "name": "Equipment", "description": "2 Daggers, Arcane Focus (Quarterstaff), Robe, Spellbook, Scholar's Pack, and 5 GP." },
+        { "id": "b", "name": "Gold", "description": "55 GP." }
+      ]
+    }
+  ],
+  "source": {
+    "id": "srd-5.2.1",
+    "section": "Classes > Core Class Traits and Becoming a Class"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "system-task-orchestration",
+  "classification": "system",
+  "status": "operational",
+  "owns": [
+    "system task requests and planning rounds",
+    "inert verified system task plans",
+    "principal-bound expiring confirmations",
+    "aggregate and per-step system task receipts"
+  ],
+  "mayDependOn": [
+    "authorization",
+    "assistant-conversations",
+    "system-conversations",
+    "system-capabilities",
+    "local-ai",
+    "registry-administration",
+    "component-type-administration",
+    "application-preview",
+    "application-activation",
+    "projection-materialization",
+    "state-space-administration",
+    "legacy-state-adoption",
+    "operations-and-audit"
+  ]
+}

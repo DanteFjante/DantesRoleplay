@@ -1,0 +1,62 @@
+{
+  "format": "dnd2024-static-content-transform/v1",
+  "cohort": "slice-10a-currency",
+  "sourceRevision": "5eaba06d365dcad4fdea0f863491900f87b2c4e3",
+  "officialSource": {
+    "sourceId": "source.dnd2024.srd-5.2.1",
+    "url": "https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf",
+    "locator": "Equipment > Coins > Coin Values (PDF p. 89)"
+  },
+  "license": {
+    "classification": "CC-BY-4.0",
+    "attribution": "This work includes material from the System Reference Document 5.2.1 (\"SRD 5.2.1\") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.",
+    "changes": "Archived currency records were relocated, canonically formatted, and given the exact SRD Coins / Coin Values locator."
+  },
+  "entries": [
+    {
+      "id": "currency.dnd2024.copper-piece.v1",
+      "name": "Copper Piece (D&D 2024, definition v1)",
+      "denomination": "cp",
+      "copperValue": 1,
+      "sourcePath": "old-dnd/catalog/world/entities/currency.dnd2024.copper-piece.v1.json",
+      "sourceSha256": "8562F69D44B1388E9DAF4FD4485D4F17279BFEC966B2C22E6B3585B643B634FA",
+      "targetPath": "catalog/applications/dnd2024/content/entities/currency/currency.dnd2024.copper-piece.v1.json"
+    },
+    {
+      "id": "currency.dnd2024.silver-piece.v1",
+      "name": "Silver Piece (D&D 2024, definition v1)",
+      "denomination": "sp",
+      "copperValue": 10,
+      "sourcePath": "old-dnd/catalog/world/entities/currency.dnd2024.silver-piece.v1.json",
+      "sourceSha256": "DBF92896E2D3752C9FD82A68963D973FFC65C4EC6972398A2C20CC8D3BFACE06",
+      "targetPath": "catalog/applications/dnd2024/content/entities/currency/currency.dnd2024.silver-piece.v1.json"
+    },
+    {
+      "id": "currency.dnd2024.electrum-piece.v1",
+      "name": "Electrum Piece (D&D 2024, definition v1)",
+      "denomination": "ep",
+      "copperValue": 50,
+      "sourcePath": "old-dnd/catalog/world/entities/currency.dnd2024.electrum-piece.v1.json",
+      "sourceSha256": "F010C3E1284E6BA3202F54ABAD6E057B2E494FF2FDC5CEA33D19DA7BBF3CAD6B",
+      "targetPath": "catalog/applications/dnd2024/content/entities/currency/currency.dnd2024.electrum-piece.v1.json"
+    },
+    {
+      "id": "currency.dnd2024.gold-piece.v1",
+      "name": "Gold Piece (D&D 2024, definition v1)",
+      "denomination": "gp",
+      "copperValue": 100,
+      "sourcePath": "old-dnd/catalog/world/entities/currency.dnd2024.gold-piece.v1.json",
+      "sourceSha256": "1EAC18FE5BA04BA4EA2E4F564CF00DC69073885FFB09AF81598C7E4E320A30F3",
+      "targetPath": "catalog/applications/dnd2024/content/entities/currency/currency.dnd2024.gold-piece.v1.json"
+    },
+    {
+      "id": "currency.dnd2024.platinum-piece.v1",
+      "name": "Platinum Piece (D&D 2024, definition v1)",
+      "denomination": "pp",
+      "copperValue": 1000,
+      "sourcePath": "old-dnd/catalog/world/entities/currency.dnd2024.platinum-piece.v1.json",
+      "sourceSha256": "BA8A1A5933A50D23D51A0E3C122E3735BEB02DD5C4697D2D65606CDE397665C9",
+      "targetPath": "catalog/applications/dnd2024/content/entities/currency/currency.dnd2024.platinum-piece.v1.json"
+    }
+  ]
+}

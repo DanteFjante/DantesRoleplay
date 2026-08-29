@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,"required":["kind","status","summary"],"properties":{"kind":{"enum":["conversation","observation","document","discovery","other"]},"status":{"enum":["accepted","void"]},"summary":{"type":"string","minLength":1,"maxLength":1000}}}

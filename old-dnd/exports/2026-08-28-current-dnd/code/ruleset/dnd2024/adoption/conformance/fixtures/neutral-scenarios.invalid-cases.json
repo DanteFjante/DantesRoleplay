@@ -1,0 +1,10 @@
+{
+  "schema": "conformance-scenario.schema.json",
+  "base": "neutral-scenarios.valid.json",
+  "cases": [
+    { "name": "extra top-level property", "mutations": [{ "pointer": "/unexpected", "value": true }] },
+    { "name": "empty compare list", "mutations": [{ "pointer": "/cases/0/compare", "value": [] }] },
+    { "name": "malformed pointer", "mutations": [{ "pointer": "/cases/0/compare/0/pointer", "value": "data/value" }] },
+    { "name": "empty source identity", "mutations": [{ "pointer": "/suite/source/identity", "value": "" }] }
+  ]
+}

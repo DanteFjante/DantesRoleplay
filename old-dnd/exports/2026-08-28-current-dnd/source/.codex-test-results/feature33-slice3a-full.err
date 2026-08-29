@@ -1,0 +1,6 @@
+[xUnit.net 00:00:09.79]     DantesRoleplay.Tests.CatalogFeature20TacticalMovementTests.Tactical_movement_rejects_bounds_blocked_corner_and_occupied_paths_unchanged [FAIL]
+[xUnit.net 00:00:16.30]     DantesRoleplay.Tests.CatalogFeature20TacticalMovementTests.Tactical_movement_charges_difficult_terrain_and_admits_only_documented_passage [FAIL]
+[xUnit.net 00:00:21.98]     DantesRoleplay.Tests.CatalogFeature20TacticalMovementTests.Tactical_movement_derives_cost_and_atomically_updates_position_and_budget [FAIL]
+[xUnit.net 00:00:48.86]     DantesRoleplay.Tests.CatalogFeature20Tests.Missing_or_corrupt_Speed_rejects_refresh_and_normal_movement_without_mutation [FAIL]
+[xUnit.net 00:00:54.92]     DantesRoleplay.Tests.CatalogFeature20Tests.Turn_lifecycle_refreshes_remaining_movement_from_each_active_creature_walk_Speed [FAIL]
+[xUnit.net 00:01:01.55]     DantesRoleplay.Tests.CatalogFeature12Tests.Active_participants_spend_each_resource_while_off_turn_reactions_are_the_only_exception [FAIL]

@@ -134,6 +134,28 @@ public sealed class InteractionPlanningTests
             [new(fixture.Hit, fixture.Record.ContentJson)], missingRoleDraft));
         Assert.Equal(InteractionResolutionStatus.NeedsInput, needsInput.Status);
         Assert.Contains("role:target", needsInput.Evidence);
+
+        var impersonating = new SequenceProvider(InteractionPlannerKind.Local,
+        [
+            $$"""{"command":"search","query":"apply a declared change","kinds":["mechanic"],"limit":12}""",
+            $$"""{"command":"inspect","qualifiedId":"{{fixture.Record.QualifiedId}}","version":1,"fingerprint":"{{fixture.Record.ContentFingerprint}}"}""",
+            ProposalJson(fixture.Record.ContentFingerprint).Replace("entity.1", "entity.impostor", StringComparison.Ordinal)
+        ]);
+        var rejected = await Planner(fixture, impersonating,
+            new SequenceProvider(InteractionPlannerKind.Remote, [])).PlanAsync(
+            fixture.Envelope, fixture.AuthorizationRequest, InteractionPlannerKind.Local);
+        Assert.Equal(InteractionResolutionStatus.Unsafe, rejected.Result.Status);
+        Assert.Equal("ROLE_HINT_BINDING_MISMATCH", rejected.Result.Code);
+
+        var resultBindingImpersonation = new InteractionPlannerProposalCommand([
+            new("apply", InteractionPlanStepKind.Action, fixture.Record.QualifiedId, fixture.Record.Version,
+                fixture.Record.ContentFingerprint, [], new Dictionary<string, string> { ["target"] = "entity.2" }, "{}",
+                [new("unavailable-query", "/entityId", toRole: "actor")])
+        ]);
+        var resultBindingRejected = fixture.Verifier.Verify(new(fixture.Envelope,
+            [new(fixture.Hit, fixture.Record.ContentJson)], resultBindingImpersonation));
+        Assert.Equal(InteractionResolutionStatus.Unsafe, resultBindingRejected.Status);
+        Assert.Equal("ROLE_HINT_RESULT_BINDING_FORBIDDEN", resultBindingRejected.Code);
     }
 
     [Theory]

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["encounter", "number", "status"],
+  "properties": {
+    "encounter": {
+      "type": "object", "additionalProperties": false, "required": ["entityId"],
+      "properties": { "entityId": { "type": "string", "minLength": 1, "maxLength": 200 } }
+    },
+    "number": { "type": "integer", "minimum": 1 },
+    "status": { "enum": ["upcoming", "active", "complete"] },
+    "startedByEvent": {
+      "type": "object", "additionalProperties": false, "required": ["eventId"],
+      "properties": { "eventId": { "type": "string", "minLength": 1, "maxLength": 200 } }
+    },
+    "endedByEvent": {
+      "type": "object", "additionalProperties": false, "required": ["eventId"],
+      "properties": { "eventId": { "type": "string", "minLength": 1, "maxLength": 200 } }
+    }
+  }
+}

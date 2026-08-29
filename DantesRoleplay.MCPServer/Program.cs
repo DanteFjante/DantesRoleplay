@@ -76,7 +76,8 @@ builder.Services.AddDantesRoleplayMcpServer(
     DatabaseProvider.Sqlite,
     developmentInformationScope,
     allowedSourceRoots,
-    publishedApplicationCatalogs);
+    publishedApplicationCatalogs,
+    builder.Configuration);
 builder.Services.AddCodexBridgeComponent(new CodexBridgeOptions(
     builder.Configuration["Codex:ExecutablePath"] ?? "codex",
     ResolveRepositoryRoot(
@@ -120,6 +121,9 @@ await using (var assistantScope = app.Services.CreateAsyncScope())
 app.UseDantesRoleplayRemoteWebBoundary();
 app.UseRateLimiter();
 app.MapMcp(ServerConfiguration.McpEndpoint);
+app.MapGet("/api/audience-context", AudienceContextWebEndpoint.CurrentAsync)
+    .AddEndpointFilter<WebInterfaceSecurityFilter>()
+    .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
 app.MapDantesRoleplayWeb();
 
 // Deliberately no HTTPS redirection. The MCP endpoint is reached over loopback by a local

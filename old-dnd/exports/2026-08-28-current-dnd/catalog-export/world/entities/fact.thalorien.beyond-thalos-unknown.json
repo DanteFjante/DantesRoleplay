@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.beyond-thalos-unknown",
+  "name": "Beyond Thalos",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The existence, nature, and extent of lands beyond Thalos are unknown rather than established as nonexistent.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "location",
+      "sensitivity": "open"
+    }
+  }
+}

@@ -1,0 +1,2 @@
+[xUnit.net 00:00:44.33]     DantesRoleplay.Tests.CatalogWorldFeature8Tests.One_active_route_moves_the_traveller_and_advances_its_root_clock_in_one_action [FAIL]
+[xUnit.net 00:01:06.76]     DantesRoleplay.Tests.CatalogWorldFeature10Tests.Clock_boundaries_reconcile_once_deny_closed_travel_and_restore_the_route_after_expiry [FAIL]

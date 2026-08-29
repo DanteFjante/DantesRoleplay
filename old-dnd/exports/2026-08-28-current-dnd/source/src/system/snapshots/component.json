@@ -1,0 +1,1 @@
+{"name":"snapshots","classification":"system","status":"migrated","owns":["immutable snapshot packages"],"mayDependOn":["building-blocks","operations-and-audit"]}

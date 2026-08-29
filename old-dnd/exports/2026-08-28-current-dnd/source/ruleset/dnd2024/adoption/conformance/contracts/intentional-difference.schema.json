@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dantesroleplay.example/schemas/adoption/intentional-difference/v1",
+  "type": "object", "additionalProperties": false,
+  "required": ["format", "suite", "differences"],
+  "properties": {
+    "format": { "const": "application-adoption-intentional-differences/v1" },
+    "suite": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "$ref": "https://dantesroleplay.example/schemas/adoption/conformance-scenario/v1#/$defs/identifier" } } },
+    "differences": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/difference" } }
+  },
+  "$defs": {
+    "difference": {
+      "type": "object", "additionalProperties": false,
+      "required": ["caseId", "field", "reason", "evidence"],
+      "properties": {
+        "caseId": { "$ref": "https://dantesroleplay.example/schemas/adoption/conformance-scenario/v1#/$defs/identifier" },
+        "field": { "$ref": "https://dantesroleplay.example/schemas/adoption/conformance-scenario/v1#/$defs/identifier" },
+        "reason": { "enum": ["deliberate-adaptation", "source-version-drift", "known-source-defect"] },
+        "evidence": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

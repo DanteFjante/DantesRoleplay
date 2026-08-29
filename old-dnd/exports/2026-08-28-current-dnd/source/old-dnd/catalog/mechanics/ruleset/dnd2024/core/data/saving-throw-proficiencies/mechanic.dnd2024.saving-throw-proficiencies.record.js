@@ -1,0 +1,69 @@
+// Administrative saving-throw-proficiency recording for D&D 2024 characters.
+// Governed by procedure.mechanic.dnd2024.skill-proficiencies v2.
+var subject = ctx.roles.subject;
+var keys = Object.keys(ctx.input).sort();
+
+if (keys.length !== 1 || keys[0] !== 'abilities') {
+  throw new Error('Input must contain exactly one field: {"abilities":[<str|dex|con|int|wis|cha>]}. Do not supply sourceRef, a bonus, roll, DC, or result.');
+}
+
+var abilities = ctx.input.abilities;
+if (!Array.isArray(abilities)) {
+  throw new Error('input.abilities must be an array of exact lowercase ability ids.');
+}
+if (abilities.length > 6) {
+  throw new Error('input.abilities cannot contain more than six entries.');
+}
+
+var ORDER = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+var ALLOWED = { str: true, dex: true, con: true, int: true, wis: true, cha: true };
+var seen = {};
+for (var i = 0; i < abilities.length; i++) {
+  var ability = abilities[i];
+  if (typeof ability !== 'string') {
+    throw new Error('Every input.abilities member must be a string containing an exact ability id.');
+  }
+  if (ALLOWED[ability] !== true) {
+    throw new Error('Unknown saving-throw ability id "' + ability + '". Valid ids: str, dex, con, int, wis, cha.');
+  }
+  if (seen[ability] === true) {
+    throw new Error('Duplicate saving-throw ability id "' + ability + '" is not allowed.');
+  }
+  seen[ability] = true;
+}
+
+var canonical = [];
+for (var j = 0; j < ORDER.length; j++) {
+  if (seen[ORDER[j]] === true) { canonical.push(ORDER[j]); }
+}
+
+var raw = subject.components['dnd2024.saving-throw-proficiencies'];
+var previousAbilities = null;
+if (raw) {
+  var previous = JSON.parse(raw);
+  if (Array.isArray(previous.abilities)) { previousAbilities = previous.abilities; }
+}
+
+var sourceRef = {
+  sourceId: 'source.dnd2024.srd-5.2.1',
+  locator: 'Playing the Game > Proficiency > Saving Throw Proficiencies'
+};
+var record = { abilities: canonical, sourceRef: sourceRef };
+var effectType = raw ? 'component.set' : 'component.add';
+
+ctx.log('Record ' + canonical.length + ' canonical saving-throw proficiencies.');
+
+return {
+  narration: subject.name + "'s saving-throw proficiencies are recorded as [" + canonical.join(', ') + '].',
+  effects: [{
+    type: effectType,
+    entityId: subject.id,
+    definitionId: 'dnd2024.saving-throw-proficiencies',
+    data: JSON.stringify(record)
+  }],
+  data: {
+    abilities: canonical,
+    previousAbilities: previousAbilities,
+    sourceRef: sourceRef
+  }
+};

@@ -1,0 +1,1 @@
+{"name":"local-ai","classification":"system","status":"operational","owns":["generic file discovery","generic documents","embeddings","schema-bound completion"],"mayDependOn":[]}

@@ -1,0 +1,24 @@
+---
+id: mechanic.dnd2024.weapon-attack
+category: ruleset.dnd2024.core.gameplay.weapon-attacks
+name: Resolve a weapon attack against Armor Class
+scope: dnd2024-srd-5.2.1
+status: active
+---
+
+## Description
+Resolves one seeded D&D 2024 weapon attack against a target's final Armor Class. It reads canonical
+weapon facts, category proficiency, and derived attacker/defender condition circumstances; it
+explains hit/miss and natural 20/1 precedence and applies no effects or damage.
+
+## Matches
+attack with weapon
+weapon attack
+make weapon attack
+roll weapon attack
+attack target with dagger
+
+## Requirements
+```json
+{"roles":{"subject":{"components":["dnd2024.abilities","dnd2024.character-level","dnd2024.weapon-proficiencies"],"description":"The creature making the attack."},"target":{"components":["dnd2024.conditions"],"description":"The creature whose derived Armor Class and condition state inform the attack."},"weapon":{"components":["dnd2024.weapon-profile"],"description":"The canonical weapon profile used for the attack."}},"children":{"attackerEffects":{"mechanicId":"mechanic.dnd2024.d20-test.state-effects","roleBindings":{"subject":"subject"},"inheritInput":false,"input":"{}"},"targetEffects":{"mechanicId":"mechanic.dnd2024.d20-test.state-effects","roleBindings":{"subject":"target"},"inheritInput":false,"input":"{}"},"targetArmorClass":{"mechanicId":"mechanic.dnd2024.armor-class.read","roleBindings":{"subject":"target"},"inheritInput":false,"input":"{}"}}}
+```

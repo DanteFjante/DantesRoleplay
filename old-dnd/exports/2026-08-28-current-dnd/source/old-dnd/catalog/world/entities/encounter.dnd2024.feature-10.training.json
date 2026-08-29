@@ -1,0 +1,28 @@
+{
+  "id": "encounter.dnd2024.feature-10.training",
+  "name": "Feature 10 Training Encounter",
+  "components": {
+    "dnd2024.encounter-sides": {
+      "assignments": [
+        {
+          "participantId": "creature.dnd2024.feature-10.hero",
+          "sideId": "side.party"
+        },
+        {
+          "participantId": "creature.dnd2024.feature-10.training-target",
+          "sideId": "side.training-opposition"
+        }
+      ],
+      "hostilePairs": [
+        {
+          "firstSideId": "side.party",
+          "secondSideId": "side.training-opposition"
+        }
+      ],
+      "sourceRef": {
+        "sourceId": "source.dnd2024.srd-5.2.1",
+        "locator": "Playing the Game > Movement and Position > Moving around Other Creatures; Making an Attack > Ranged Attacks in Close Combat"
+      }
+    }
+  }
+}

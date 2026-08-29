@@ -134,10 +134,11 @@ evidence; feature acceptance remains pending.
 
 The [D&D 2024 web UI dependency plan](DND2024-WEB-UI-DEPENDENCY-PLAN.md) inventories the
 existing shared web components and current D&D catalog owners, defines a ruleset-neutral
-application read/action seam, and lists the D&D-specific character, inventory, encounter, dice,
-action, and content components that can be built over accepted mechanics. It deliberately leaves
-spells, monsters, tactical maps, rests, dying, Inspiration use, magic items, and complete character
-construction behind their independent D&D gameplay gates.
+application read/action seam, and now prioritizes a player-information viewport: character sheet,
+current place and imagery, remembered player-safe knowledge, and switchable people in the current
+scene. Accepted inventory and encounter controls remain available but are secondary to game context.
+It deliberately leaves spells, monsters, tactical battle maps, rests, dying, Inspiration use, magic
+items, and complete character construction behind their independent D&D gameplay gates.
 
 Order 0 is confirmed. [Slice 1](DND2024-WEB-UI-SLICE-1-IMPLEMENTATION.md) and its
 [receipt](DND2024-WEB-UI-SLICE-1-RECEIPT.md) accept the private exact application-state read seam,
@@ -161,3 +162,40 @@ and its [receipt](DND2024-WEB-UI-SLICE-4-RECEIPT.md) now accept that reusable re
 layer without binding a D&D mechanic or adding a raw JSON form. [Slice 5](DND2024-WEB-UI-SLICE-5-RECEIPT.md)
 implements the purpose-built dice, raw ability-check, and saving-throw controls over that layer and
 awaits feature-acceptance confirmation; the read-only inventory remainder is complete.
+[Slice 5A](DND2024-WEB-UI-SLICE-5A-RECEIPT.md) implements top-level registered campaign selection,
+campaign-scoped actor discovery through canonical relationships, and readable legacy campaign state
+without enabling stale D&D action controls. Both Slice 5 and Slice 5A are accepted.
+[Slice 6A](DND2024-WEB-UI-SLICE-6A-RECEIPT.md) accepts healing and Temporary HP controls. The
+[Slice 6B](DND2024-WEB-UI-SLICE-6B-RECEIPT.md) accepts direct-item equip/unequip card controls. The
+final [Slice 6C](DND2024-WEB-UI-SLICE-6C-RECEIPT.md) accepts ordinary transfer, stack quantity, and
+descriptor-authored item-use controls; administrative bootstrap/move helpers remain outside the
+player game UI. [Slice 7A](DND2024-WEB-UI-SLICE-7A-RECEIPT.md) accepts recorded encounter
+selection, turn lifecycle, and spendable turn-resource controls. [Slice 7B](DND2024-WEB-UI-SLICE-7B-IMPLEMENTATION.md)
+and its [receipt](DND2024-WEB-UI-SLICE-7B-RECEIPT.md) accept the player-first
+Character/Campaign/Combat viewport composition. [Slice 7C](DND2024-WEB-UI-SLICE-7C-IMPLEMENTATION.md)
+and its [receipt](DND2024-WEB-UI-SLICE-7C-RECEIPT.md) accept the exact direct-parent containment
+read and Scene view for current place and co-present people. [Slice 7D0](DND2024-WEB-UI-SLICE-7D0-RECEIPT.md)
+accepts the provider-neutral authorized knowledge core in current modular owners. [Slice 7D1](DND2024-WEB-UI-SLICE-7D1-RECEIPT.md)
+accepts the fixed loopback Orban player seat, catalog-owned D&D binding, and exact participation
+proof. The [combined 7D2–7D3 batch](DND2024-WEB-UI-SLICE-7D2-7D3-RECEIPT.md) now accepts the
+reviewed live Orban knowledge state and game-styled, campaign-scoped Knowledge viewport with eleven
+safe lore entries, search/filter controls, keyboard navigation, and excluded-secret verification.
+Orders 7E–7F retain a display-only known-place map and reviewed location/person imagery as their
+independent authority gates close. In the separate information-hub prototype, the scoped map
+workspace's [Slice 1](../prototype/dnd2024/planning/DND2024-SCOPED-MAP-VIEWS-SLICE-1-IMPLEMENTATION.md)
+is accepted under its [receipt](../prototype/dnd2024/planning/DND2024-SCOPED-MAP-VIEWS-SLICE-1-RECEIPT.md):
+World → Region → City navigation over explicit scope links, componentized breadcrumbs, and
+independent per-scope coordinate spaces, all fixture-backed.
+[Slice 2](../prototype/dnd2024/planning/DND2024-SCOPED-MAP-VIEWS-SLICE-2-IMPLEMENTATION.md) and its
+[receipt](../prototype/dnd2024/planning/DND2024-SCOPED-MAP-VIEWS-SLICE-2-RECEIPT.md) accept
+audience-safe projection: per-layer audience policy, per-audience base variants, features that cannot
+outlive their layer, and a missing Player-safe variant that fails closed instead of borrowing the DM
+asset. [Slice 5](../prototype/dnd2024/planning/DND2024-SCOPED-MAP-VIEWS-SLICE-5-RECEIPT.md) adds
+authored Location reference views, completing World → Region → City → Location, and
+[Slice 7](../prototype/dnd2024/planning/DND2024-SCOPED-MAP-VIEWS-SLICE-7-RECEIPT.md) adds campaign
+knowledge overlays that annotate World maps while leaving their geography byte-identical. Slice 4
+needed no separate prototype deliverable. The two remaining slices — live World/Region maps and
+optional reviewed generated imagery — stay blocked in the
+[scoped map views dependency tree](../prototype/dnd2024/planning/DND2024-SCOPED-MAP-VIEWS-DEPENDENCY-TREE.md)
+on live state and on approved media provenance. Encounter/Initiative authoring, weapon attack/damage, and an interactive tactical
+battle map move to deferred Order 10 and do not block the player-information viewport.

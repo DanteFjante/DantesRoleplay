@@ -1,0 +1,1 @@
+{"type":"object","additionalProperties":false,"required":["effectIndex","entityId","before","after"],"properties":{"effectIndex":{"type":"integer","minimum":0},"entityId":{"type":"string"},"before":{},"after":{}}}

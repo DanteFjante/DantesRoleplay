@@ -1,0 +1,29 @@
+{
+  "format": "application-adoption-result-effect-allowlist/v1",
+  "applicationId": "mapping-fixture",
+  "candidateKey": "mapping-fixture.operation-view",
+  "projectionMapping": {
+    "candidateKey": "mapping-fixture.operation-view",
+    "manifestPath": "mapping/fixtures/projection-dependency-mapping.valid.json",
+    "sha256": "E734A65793099007EEA287F29A5F70D5C932CB465F9ABC03A82CD2CCBC424767"
+  },
+  "roles": ["subject"],
+  "result": {
+    "schemaPath": "contracts/result-effect-allowlist.result.schema.json",
+    "schemaHash": "C92661F0CBCCC6E518C695F7F0DFF284BE0BBC94FB9BB29F6B6D60D71615A0C1",
+    "proposalsPointer": "/proposals"
+  },
+  "allowlist": [
+    {
+      "proposalKind": "set-subject-state",
+      "effectType": "component.set",
+      "entityRole": "subject",
+      "component": {
+        "qualifiedTypeId": "mapping-fixture.subject-state",
+        "typeVersion": 1,
+        "schemaHash": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+      },
+      "dataPointer": "/state"
+    }
+  ]
+}

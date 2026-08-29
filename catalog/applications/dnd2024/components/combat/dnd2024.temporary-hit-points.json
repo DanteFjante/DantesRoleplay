@@ -1,5 +1,0 @@
-{
-  "id": "dnd2024.temporary-hit-points",
-  "name": "Temporary Hit Points (D&D 2024)",
-  "description": "A creature's current positive D&D 2024 Temporary Hit Point buffer. Component absence represents no buffer. This state is separate from Hit Points and healing."
-}

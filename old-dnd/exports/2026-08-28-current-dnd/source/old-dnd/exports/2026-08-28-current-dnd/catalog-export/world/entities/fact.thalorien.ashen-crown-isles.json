@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.ashen-crown-isles",
+  "name": "The Ashen Crown Isles",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The Ashen Crown Isles are Waylos's offshore volcanic island chain beyond Mount Cinderwake.",
+      "provenance": "Approved as a Slice S4 regional proposal during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "location",
+      "sensitivity": "open"
+    }
+  }
+}

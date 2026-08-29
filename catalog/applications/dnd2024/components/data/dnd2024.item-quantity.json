@@ -1,1 +1,0 @@
-{"id":"dnd2024.item-quantity","name":"Fungible item quantity (D&D 2024)","description":"A positive count for one fungible physical stack. stackKey is mechanic-derived from the exact immutable definition ID. Custody, capacity, value, and equipment are separate owners. Governed by procedure.mechanic.dnd2024.item-quantity."}

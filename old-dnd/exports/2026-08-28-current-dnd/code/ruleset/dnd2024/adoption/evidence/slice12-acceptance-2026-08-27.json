@@ -1,0 +1,379 @@
+{
+  "format": "dnd2024-adoption-slice12-acceptance/v1",
+  "status": "passed",
+  "javascriptFiles": 56,
+  "publicMcpVerbs": [
+    "orient",
+    "query",
+    "commit"
+  ],
+  "automaticActivation": false,
+  "writesLiveData": false,
+  "checks": [
+    {
+      "name": "javascript:mechanic.dnd2024.check.ability.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.dice.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.encounter-initiative-order.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.encounter-turn.advance.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.encounter-turn.end.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.encounter-turn.start.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.initiative.roll.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.saving-throw.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.armor-class.write.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.damage-mitigation.write.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.damage.resolve.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.healing.apply.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.hit-points.write.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.temporary-hit-points.write.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.turn-budget.read.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.turn-budget.spend.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.turn-budget.write.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.weapon-attack.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.weapon-damage.apply.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.weapon-damage.roll.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.weapon-proficiencies.write.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.weapon-profile.write.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.conditions.write.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.d20-test.state-effects.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.carrying-capacity.read.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.character-content-definition.record.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.character-profile.record.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.creature-size.record.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.currency-value.read.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.inventory.read.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.item-activity.use.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.item-burden.read.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.item-instance.create-and-place.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.item-instance.move.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.item-instance.read.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.item-instance.record.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.item-stack.consume.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.item-stack.create-and-place.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.item-stack.merge.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.item-stack.record.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.item-stack.split.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.item.equip.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.item.equipment.read.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.item.transfer.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.item.unequip.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.language-proficiencies.record.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.tool-proficiencies.record.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.speed.read.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.speed.write.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.character-experience.read.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.character-experience.write.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.character-level.record.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.character-sheet.read.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.class-progression.read.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.saving-throw-proficiencies.record.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "javascript:mechanic.dnd2024.skill-proficiencies.record.js",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "adoption-contracts",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "conformance",
+      "status": "passed",
+      "summary": "\"format\": \"application-adoption-conformance-tooling-test/v1\","
+    },
+    {
+      "name": "content-transformation",
+      "status": "passed",
+      "summary": "\"format\": \"application-adoption-content-transform-test/v1\","
+    },
+    {
+      "name": "adventuring-gear-cohort",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "armor-cohort",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "currency-cohort",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "fighter-progression-cohort",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "weapon-item-link-cohort",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "weapon-profile-cohort",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "projection-mapping",
+      "status": "passed",
+      "summary": "\"format\": \"application-adoption-projection-dependency-mapping-test/v1\","
+    },
+    {
+      "name": "effect-allowlist",
+      "status": "passed",
+      "summary": "\"format\": \"application-adoption-result-effect-allowlist-test/v1\","
+    },
+    {
+      "name": "impact-replay-rollback",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "release-build",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "catalog-validation",
+      "status": "passed",
+      "summary": null
+    },
+    {
+      "name": "shared-suite",
+      "status": "passed",
+      "summary": "Passed!  - Failed:     0, Passed:  1117, Skipped:     0, Total:  1117, Duration: 1 m 21 s - DantesRoleplay.Tests.dll (net10.0)"
+    },
+    {
+      "name": "local-ai-suite",
+      "status": "passed",
+      "summary": "Passed!  - Failed:     0, Passed:    21, Skipped:     0, Total:    21, Duration: 121 ms - DantesRoleplay.LocalAI.Tests.dll (net10.0)"
+    },
+    {
+      "name": "protocol-walk",
+      "status": "passed",
+      "summary": "Passed!  - Failed:     0, Passed:     6, Skipped:     2, Total:     8, Duration: 7 s - DantesRoleplay.Tests.dll (net10.0)"
+    }
+  ]
+}

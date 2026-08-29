@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.item-instance",
+  "name": "Physical item instance (D&D 2024)",
+  "description": "One campaign-local physical item whose immutable static facts are named by definitionId. The instance's containment is its sole custody/location. It stores no copied definition properties, owner, quantity, stack key, current equipment state, derived burden, price, magic, or action state. Governed by procedure.mechanic.dnd2024.item-instance."
+}

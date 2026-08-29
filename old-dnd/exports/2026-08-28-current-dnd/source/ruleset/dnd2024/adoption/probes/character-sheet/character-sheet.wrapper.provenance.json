@@ -1,0 +1,173 @@
+{
+  "format": "dnd-code-adoption-provenance-ledger/v1",
+  "lockSha256": "43A3980EC299D57501135B48DEDB70B7B8A77FEC7716DE20E8A566A14CB9F468",
+  "entries": [
+    {
+      "candidateKey": "slice-9b.character-sheet.character-view",
+      "target": {
+        "kind": "catalog-javascript",
+        "path": "ruleset/dnd2024/adoption/probes/character-sheet/character-sheet.wrapper.js",
+        "symbol": "evaluate",
+        "sha256": "8CE3CA75FF11457D2DEB1AC85F4E6F1509B885EA210E6939A3966CAD50AB4F55"
+      },
+      "source": {
+        "sourceKey": "dnd-srd-engine",
+        "repository": "https://github.com/greghcarr/dnd-srd-engine.git",
+        "commit": "ead852b19b9e45f54f43e193caf4f10aad91a91b",
+        "path": "src/derive/character-view.ts",
+        "symbol": "computeDerivedCharacter",
+        "sha256": "EA56EAE4BEA26936109F1C8D89A92DA44A73F6F19BD01559E6F399800B6516B3"
+      },
+      "license": {
+        "classification": "MIT",
+        "disposition": "approved-mit-software",
+        "noticeFiles": ["ruleset/dnd2024/adoption/THIRD-PARTY-NOTICES.md"],
+        "copyrightNoticePreserved": true,
+        "attribution": "Adapted from dnd-srd-engine derivation code, copyright (c) 2026 Greg Carr, under the MIT License; local changes are described in the transformation record and third-party notice.",
+        "changesIndicated": true
+      },
+      "ruleset": {
+        "alignment": "dnd2024-owned",
+        "edition": "2024",
+        "sourceId": "source.dnd2024.srd-5.2.1",
+        "locator": "Character Creation > Step 5: Character Creation Details > Fill In Numbers (PDF pp. 21-22)",
+        "officialVerified": true
+      },
+      "ownership": {
+        "existingOwner": "Slice 9 stateless core character-sheet calculation cohort",
+        "ownerEvidence": [
+          "ruleset/dnd2024/DND-CODE-ADOPTION-SLICE-9-DESIGN.md",
+          "ruleset/dnd2024/DND-CODE-ADOPTION-SLICE-9B-IMPLEMENTATION.md"
+        ],
+        "conflicts": []
+      },
+      "transformation": {
+        "kind": "adapted",
+        "description": "Narrowed the donor aggregate to ability modifiers, total-level proficiency bonus, saving throws, skills, initiative, and base Passive Perception derived only from four closed current component views; donor state, AC, HP, inventory, effects, spell slots, choices, RNG, and persistence are excluded.",
+        "tool": null,
+        "mappingSha256": "F8BF5683C55D709C00018519121D92B2C44AD5307A59A2DC9E06D13B9ED3E69C"
+      },
+      "dependencies": {
+        "components": [
+          "dnd2024.abilities",
+          "dnd2024.character-level",
+          "dnd2024.saving-throw-proficiencies",
+          "dnd2024.skill-proficiencies"
+        ],
+        "projections": [],
+        "mechanics": []
+      },
+      "validation": {
+        "tests": [
+          {
+            "path": "ruleset/dnd2024/adoption/probes/character-sheet/character-sheet.wrapper.probe.json",
+            "result": "passed",
+            "evidenceSha256": "4BE645AF7759DA85452E4F5489A09157202C1795CF7231688E2BF9D1B03ACF59"
+          },
+          {
+            "path": "ruleset/dnd2024/adoption/conformance/fixtures/donor-character-sheet.source-vectors.json",
+            "result": "passed",
+            "evidenceSha256": "11F4AFDA5410C90B3C74BD794B5707E5923DBD246E0D18F184E68AE87FE7EE79"
+          }
+        ],
+        "semanticReview": {
+          "state": "approved",
+          "evidence": "ruleset/dnd2024/DND-CODE-ADOPTION-SLICE-9B-IMPLEMENTATION.md"
+        },
+        "licenseReview": {
+          "state": "approved",
+          "evidence": "ruleset/dnd2024/adoption/ADOPTION-POLICY.md"
+        },
+        "foundryIndependenceReview": {
+          "state": "approved",
+          "evidence": "ruleset/dnd2024/DND-CODE-ADOPTION-SLICE-9B-IMPLEMENTATION.md"
+        },
+        "acceptedBy": null
+      },
+      "status": "reviewed"
+    },
+    {
+      "candidateKey": "slice-9b.character-sheet.passive-score",
+      "target": {
+        "kind": "catalog-javascript",
+        "path": "ruleset/dnd2024/adoption/probes/character-sheet/character-sheet.wrapper.js",
+        "symbol": "evaluate",
+        "sha256": "8CE3CA75FF11457D2DEB1AC85F4E6F1509B885EA210E6939A3966CAD50AB4F55"
+      },
+      "source": {
+        "sourceKey": "dnd-srd-engine",
+        "repository": "https://github.com/greghcarr/dnd-srd-engine.git",
+        "commit": "ead852b19b9e45f54f43e193caf4f10aad91a91b",
+        "path": "src/derive/ability-check.ts",
+        "symbol": "computePassiveScore",
+        "sha256": "6A6C18B4DDE529D327943A020128E9449F1C0409EF1D3A150F7BED793A58C519"
+      },
+      "license": {
+        "classification": "MIT",
+        "disposition": "approved-mit-software",
+        "noticeFiles": ["ruleset/dnd2024/adoption/THIRD-PARTY-NOTICES.md"],
+        "copyrightNoticePreserved": true,
+        "attribution": "Adapted from dnd-srd-engine derivation code, copyright (c) 2026 Greg Carr, under the MIT License; local changes are described in the transformation record and third-party notice.",
+        "changesIndicated": true
+      },
+      "ruleset": {
+        "alignment": "dnd2024-owned",
+        "edition": "2024",
+        "sourceId": "source.dnd2024.srd-5.2.1",
+        "locator": "Rules Glossary > Passive Perception (PDF p. 185)",
+        "officialVerified": true
+      },
+      "ownership": {
+        "existingOwner": "Slice 9 stateless core character-sheet calculation cohort",
+        "ownerEvidence": [
+          "ruleset/dnd2024/DND-CODE-ADOPTION-SLICE-9-DESIGN.md",
+          "ruleset/dnd2024/DND-CODE-ADOPTION-SLICE-9B-IMPLEMENTATION.md"
+        ],
+        "conflicts": []
+      },
+      "transformation": {
+        "kind": "adapted",
+        "description": "Adapted only the SRD-backed base passive score of 10 plus the Wisdom (Perception) modifier. The donor's effect-stack and contextual Advantage or Disadvantage adjustment are deliberately excluded until a current authoritative context owner exists.",
+        "tool": null,
+        "mappingSha256": "F8BF5683C55D709C00018519121D92B2C44AD5307A59A2DC9E06D13B9ED3E69C"
+      },
+      "dependencies": {
+        "components": [
+          "dnd2024.abilities",
+          "dnd2024.character-level",
+          "dnd2024.skill-proficiencies"
+        ],
+        "projections": [],
+        "mechanics": []
+      },
+      "validation": {
+        "tests": [
+          {
+            "path": "ruleset/dnd2024/adoption/probes/character-sheet/character-sheet.wrapper.probe.json",
+            "result": "passed",
+            "evidenceSha256": "4BE645AF7759DA85452E4F5489A09157202C1795CF7231688E2BF9D1B03ACF59"
+          },
+          {
+            "path": "ruleset/dnd2024/adoption/conformance/fixtures/srd-character-sheet.source-vectors.json",
+            "result": "passed",
+            "evidenceSha256": "9E54D51AC97E7C64517AFF3712875B671BBB51229A38C6CFA0B48F6B8DAC6A4A"
+          }
+        ],
+        "semanticReview": {
+          "state": "approved",
+          "evidence": "ruleset/dnd2024/DND-CODE-ADOPTION-SLICE-9B-IMPLEMENTATION.md"
+        },
+        "licenseReview": {
+          "state": "approved",
+          "evidence": "ruleset/dnd2024/adoption/ADOPTION-POLICY.md"
+        },
+        "foundryIndependenceReview": {
+          "state": "approved",
+          "evidence": "ruleset/dnd2024/DND-CODE-ADOPTION-SLICE-9B-IMPLEMENTATION.md"
+        },
+        "acceptedBy": null
+      },
+      "status": "reviewed"
+    }
+  ]
+}

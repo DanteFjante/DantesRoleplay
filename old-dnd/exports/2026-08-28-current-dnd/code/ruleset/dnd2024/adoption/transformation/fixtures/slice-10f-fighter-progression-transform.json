@@ -1,0 +1,19 @@
+{
+  "format": "dnd2024-static-content-transform/v1",
+  "cohort": "slice-10f-fighter-progression",
+  "sourceRevision": "5eaba06d365dcad4fdea0f863491900f87b2c4e3",
+  "officialSource": { "sourceId": "source.dnd2024.srd-5.2.1", "url": "https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf", "locator": "Classes > Fighter, PDF pages 47–48" },
+  "license": {
+    "classification": "CC-BY-4.0",
+    "attribution": "This work includes material from the System Reference Document 5.2.1 (\"SRD 5.2.1\") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.",
+    "changes": "One archived Fighter class progression and five feature identities were relocated and canonically formatted without semantic changes."
+  },
+  "entries": [
+    { "id": "content.dnd2024.class.fighter.v1", "sourcePath": "old-dnd/catalog/world/entities/content.dnd2024.class.fighter.v1.json", "sourceSha256": "59D7CDFF2634B7DEC63193CC64C27CB5DE3729A654C699D8473FDD7D95562488", "targetPath": "catalog/applications/dnd2024/content/entities/character-progression/content.dnd2024.class.fighter.v1.json" },
+    { "id": "content.dnd2024.feature.fighter.action-surge.v1", "sourcePath": "old-dnd/catalog/world/entities/content.dnd2024.feature.fighter.action-surge.v1.json", "sourceSha256": "B077D255EF643228194E0705901493E599B2C867B3F4FAD588BE5F565035C77A", "targetPath": "catalog/applications/dnd2024/content/entities/character-progression/content.dnd2024.feature.fighter.action-surge.v1.json" },
+    { "id": "content.dnd2024.feature.fighter.fighting-style.v1", "sourcePath": "old-dnd/catalog/world/entities/content.dnd2024.feature.fighter.fighting-style.v1.json", "sourceSha256": "B6BED0B6A606887D029FBA2FD3924DE6131F6581F0A4B4FF0A6B6793898CD939", "targetPath": "catalog/applications/dnd2024/content/entities/character-progression/content.dnd2024.feature.fighter.fighting-style.v1.json" },
+    { "id": "content.dnd2024.feature.fighter.second-wind.v1", "sourcePath": "old-dnd/catalog/world/entities/content.dnd2024.feature.fighter.second-wind.v1.json", "sourceSha256": "ACC7E1E28D07A4A6B7C53C1BD2E21055938F4E586C11D6982C077E0E5A5E02A2", "targetPath": "catalog/applications/dnd2024/content/entities/character-progression/content.dnd2024.feature.fighter.second-wind.v1.json" },
+    { "id": "content.dnd2024.feature.fighter.tactical-mind.v1", "sourcePath": "old-dnd/catalog/world/entities/content.dnd2024.feature.fighter.tactical-mind.v1.json", "sourceSha256": "BE3DDEE2FACB46B5ECB2DF29BBF5F885325EE6F8480B6BD5E314C58BF9A2F8FE", "targetPath": "catalog/applications/dnd2024/content/entities/character-progression/content.dnd2024.feature.fighter.tactical-mind.v1.json" },
+    { "id": "content.dnd2024.feature.fighter.weapon-mastery.v1", "sourcePath": "old-dnd/catalog/world/entities/content.dnd2024.feature.fighter.weapon-mastery.v1.json", "sourceSha256": "9B75010D9F901AAF32F6894765306B4917F006ED4D55A719C048D8AF39A41C9D", "targetPath": "catalog/applications/dnd2024/content/entities/character-progression/content.dnd2024.feature.fighter.weapon-mastery.v1.json" }
+  ]
+}

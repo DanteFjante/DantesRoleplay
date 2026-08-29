@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.southwestern-volcanic-region-waylos",
+  "name": "Waylos's Volcanic Region",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The Southwestern Volcanic Region, including its volcano and offshore volcanic island chain, lies within Waylos's territory.",
+      "provenance": "Confirmed during the world-creation interview; Slice S2 geographic default accepted when the user instructed continuation (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "relationship",
+      "sensitivity": "open"
+    }
+  }
+}

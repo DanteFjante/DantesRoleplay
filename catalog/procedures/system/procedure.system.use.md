@@ -14,7 +14,7 @@ reads anything, `commit` changes anything. Nothing else exists.
 1. Call `orient()` first. It states what this system is, what exists in it right now, what is not
    built, and which call to make next. Call it again whenever you lose track — it is cheap.
 2. Read with `query(kind: ...)`. The kinds are `capabilities`, `procedures`, `categories`, `world`, `entities`,
-   `graph`, `journey-plan`, `itinerary-plan`, `campaign-resume`, `session-recap`, `quest-summary`, `knowledge-answer`, `information-answer`, `information-actions`, `story-plan`, `mechanics`, `event-types`, `events`, `subscriptions`, `notifications`, `feedback`, `system.applications`, `system.sources`, `system.application-preview`, `system.dependencies`, `system.catalogs`, `system.catalog.browse`, `system.catalog.search`, `system.catalog.record`, `system.feature-search`, `system.interaction-plan`, `system.interaction-receipt`, `system.interaction-recipes`, `system.trigger-scheduling`, and `history`. No `id` returns a list or search; `id` returns one record in full; fixed planning/summary kinds state their required ID and reject unrelated filters in their own contract.
+   `graph`, `journey-plan`, `itinerary-plan`, `campaign-resume`, `session-recap`, `quest-summary`, `knowledge-answer`, `information-answer`, `information-actions`, `story-plan`, `system.audience-context`, `mechanics`, `event-types`, `events`, `subscriptions`, `notifications`, `feedback`, `system.applications`, `system.sources`, `system.application-preview`, `system.dependencies`, `system.catalogs`, `system.catalog.browse`, `system.catalog.search`, `system.catalog.record`, `system.feature-search`, `system.interaction-plan`, `system.interaction-receipt`, `system.interaction-recipes`, `system.trigger-scheduling`, and `history`. No `id` returns a list or search; `id` returns one record in full; fixed planning/summary kinds state their required ID and reject unrelated filters in their own contract.
    `version` with `id` returns an older revision. Read the full record before revising anything —
    a summary is not the thing itself.
    Use `query(kind: "categories", catalog: "procedures")` or
@@ -62,6 +62,9 @@ reads anything, `commit` changes anything. Nothing else exists.
    `sources`, `devices`, `one-time`, `recurring`, `conditional`, `observation-triggers`,
    `observations`, `fires`, or `phone-principal`. These projections never recover a phone
    credential or expose stored verifiers, raw observation JSON, transport headers, or leases.
+   A local player chat begins with `query(kind: "system.audience-context")`. It accepts no
+   caller-selected identity and returns only the current host-authorized application, state-space,
+   campaign, and actor binding when one is available.
 3. When you do not know a payload shape or which parameters a kind reads, call
    `query(kind: "capabilities")`. It is the exact catalog, and it is generated from the same
    structure the two dispatchers switch on, so it cannot describe a kind that does not work.
@@ -75,7 +78,8 @@ reads anything, `commit` changes anything. Nothing else exists.
    `effects`, `mechanic`, `action`, `system.application.register`, `system.component-type.register`, `system.source.register`, and
    `system.application.activate`, `system.state-space.create`, `system.state-space.upgrade`, and
    `system.state-space.adopt-legacy`, `system.interaction-execute`,
-   `system.interaction-recipe-review`, and `system.trigger-scheduling`. Every `system.*` kind
+   `system.interaction-recipe-review`, `system.trigger-scheduling`, and
+   `system.knowledge-state.sync`. Every `system.*` kind
    authenticates from the transport. Registry, activation, component-type, and state-space
    administration commits require a 32-character lowercase hexadecimal `requestToken`.
    `system.interaction-execute` instead requires a distinct bounded idempotency key and the exact
@@ -117,6 +121,13 @@ reads anything, `commit` changes anything. Nothing else exists.
    an already reviewed catalog-authored schema into live SQLite; it never edits catalog files.
    Preview the identical command first. A phone credential appears only in the first successful
    registration response, so copy it then; replay and every query intentionally omit it.
+   Reviewed knowledge-state synchronization accepts exactly
+   `{requestToken, campaignId, entries:[{knowledgeId,state}]}`. The private host resolves the actor
+   from ambient policy, validates exact campaign participation and canonical campaign-world
+   membership, and atomically applies only the reviewed entries through the application ECS effect
+   owner. It never accepts an actor, role, world, visibility, sensitivity, or baseline override,
+   and it never infers knowledge from record visibility or presence. Dry-run the identical manifest
+   first and confirm its reviewed/change counts before committing it.
    Dry-run the identical administrative payload first, then confirm it through the matching query
    where a query exists; component-type registration returns its immutable receipt directly.
    Retained application adapters may additionally expose `procedure`,
@@ -131,8 +142,9 @@ reads anything, `commit` changes anything. Nothing else exists.
    reporting what you did.
 
 ## Constraints
-- `query` never changes state. `commit` is the only write path, and `commit(kind: "effects")` and
-  `commit(kind: "action")` are the only ways world state changes.
+- `query` never changes state. `commit` is the only write path. Raw generic world changes use
+  `commit(kind: "effects")` or `commit(kind: "action")`; the closed reviewed knowledge-state sync
+  delegates its validated edge batch to the same generic application ECS transaction owner.
 - Never invent a kind, a parameter or a payload field. If it is not in
   `query(kind: "capabilities")`, it does not exist.
 - Never commit a payload that differs from the one that passed its dry run.

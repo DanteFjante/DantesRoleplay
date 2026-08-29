@@ -1,0 +1,16 @@
+{
+  "id": "location.thalorien.larkspire-university",
+  "name": "Larkspire University",
+  "container": {
+    "id": "location.thalorien.aldros",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "site",
+      "status": "draft",
+      "summary": "Thalmon's historic university, west of the World Tree Elven Enclave in Aldros. It remains a center of civic, scholarly, magical, and martial education.",
+      "visibility": "public"
+    }
+  }
+}

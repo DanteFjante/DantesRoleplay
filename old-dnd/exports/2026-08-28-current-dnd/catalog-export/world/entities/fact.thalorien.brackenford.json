@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.brackenford",
+  "name": "Brackenford, Greenmantle Frontier Village",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Brackenford is a Valeros frontier village beside a smaller, ancient forest. Its inn, shrine, smith, small market, patrol traffic, timber trade, and frontier supplies make it a natural local starting setting.",
+      "provenance": "Approved as a local starting setting during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "location",
+      "sensitivity": "open"
+    }
+  }
+}

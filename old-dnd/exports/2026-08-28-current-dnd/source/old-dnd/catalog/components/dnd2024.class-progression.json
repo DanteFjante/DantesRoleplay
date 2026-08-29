@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.class-progression",
+  "name": "Class progression declaration (D&D 2024)",
+  "description": "Immutable source-backed class progression facts attached only to a D&D 2024 class content entity. It declares Hit Die size, fixed Hit Point gain before Constitution, and exact class-level feature/choice entitlements. It stores no actor class level, Hit Points, resources, feature state, campaign policy, or advancement result. Governed by procedure.mechanic.dnd2024.class-progression."
+}

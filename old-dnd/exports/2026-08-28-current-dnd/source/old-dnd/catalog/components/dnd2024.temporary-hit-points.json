@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.temporary-hit-points",
+  "name": "Temporary Hit Points (D&D 2024)",
+  "description": "A creature's current D&D 2024 Temporary Hit Point buffer. It exists only while its positive amount remains. Use mechanic.dnd2024.temporary-hit-points.write to grant or expire it. This is not healing, maximum Hit Points, damage mitigation, duration, or a source grant record."
+}

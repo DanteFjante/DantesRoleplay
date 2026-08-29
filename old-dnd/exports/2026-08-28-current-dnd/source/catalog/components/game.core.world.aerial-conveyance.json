@@ -1,0 +1,1 @@
+{"id":"game.core.world.aerial-conveyance","name":"World Aerial Conveyance","description":"Closed state for one generic aerial conveyance. Entity identity and summary describe a dragon, airship, flying carpet, or similar craft; containment supplies its current location. Governed by procedure.game.core.world.travel."}

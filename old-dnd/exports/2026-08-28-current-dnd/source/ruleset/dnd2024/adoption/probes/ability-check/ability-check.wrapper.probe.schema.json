@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "sourcePath", "resultSchemaPath", "operationViewManifestPath", "role", "viewComponent", "vectors", "invalidInputs", "invalidViews"],
+  "properties": {
+    "format": { "const": "dnd-code-adoption-wrapper-probe/v1" },
+    "sourcePath": { "type": "string", "minLength": 1, "maxLength": 300 },
+    "resultSchemaPath": { "type": "string", "minLength": 1, "maxLength": 300 },
+    "operationViewManifestPath": { "type": "string", "minLength": 1, "maxLength": 300 },
+    "role": { "type": "string", "minLength": 1, "maxLength": 100 },
+    "viewComponent": { "type": "string", "minLength": 1, "maxLength": 100 },
+    "vectors": { "type": "array", "minItems": 1, "maxItems": 32, "items": { "$ref": "#/$defs/vector" } },
+    "invalidInputs": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/invalid" } },
+    "invalidViews": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/invalid" } }
+  },
+  "$defs": {
+    "vector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "input", "seed", "expected"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "input": { "type": "object" },
+        "seed": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+        "expected": { "type": "object" },
+        "view": { "type": "object" }
+      }
+    },
+    "invalid": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "value"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "value": {}
+      }
+    }
+  }
+}

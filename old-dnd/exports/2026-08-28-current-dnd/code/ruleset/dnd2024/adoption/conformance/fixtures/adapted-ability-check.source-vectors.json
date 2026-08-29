@@ -1,0 +1,18 @@
+{
+  "format": "application-adoption-source-vectors/v1",
+  "suite": {
+    "id": "fixed-dc-check-sample",
+    "subject": "Frozen fixed-DC result sample for converter verification only",
+    "source": { "kind": "adapted", "identity": "ability-check-wrapper", "revision": "slice-3c", "path": "ruleset/dnd2024/adoption/probes/ability-check/ability-check.wrapper.js" }
+  },
+  "compare": [
+    { "name": "roll", "pointer": "/data/roll" },
+    { "name": "modifier", "pointer": "/data/modifiers/0/value" },
+    { "name": "total", "pointer": "/data/total" },
+    { "name": "succeeded", "pointer": "/data/succeeded" }
+  ],
+  "cases": [
+    { "id": "negative-modifier", "context": { "opaque": "adapted-context" }, "input": { "opaque": "adapted-input" }, "seed": 7, "result": { "data": { "roll": 6, "modifiers": [{ "value": -2 }], "total": 4, "succeeded": false } } },
+    { "id": "equal-total", "context": { "opaque": "adapted-context" }, "input": { "opaque": "adapted-input" }, "seed": 2, "result": { "data": { "roll": 15, "modifiers": [{ "value": 0 }], "total": 15, "succeeded": true } } }
+  ]
+}

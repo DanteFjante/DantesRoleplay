@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["encounter", "status"],
+  "properties": {
+    "encounter": {
+      "type": "object", "additionalProperties": false, "required": ["entityId"],
+      "properties": { "entityId": { "type": "string", "minLength": 1, "maxLength": 200 } }
+    },
+    "status": { "enum": ["unrolled", "rolled", "locked"] },
+    "result": { "type": "integer" },
+    "tieBreakOrder": { "type": "integer", "minimum": 0 },
+    "rollRecord": {
+      "type": "object", "additionalProperties": false, "required": ["operationId"],
+      "properties": { "operationId": { "type": "string", "minLength": 1, "maxLength": 200 } }
+    }
+  },
+  "oneOf": [
+    { "properties": { "status": { "const": "unrolled" } }, "not": { "required": ["result"] } },
+    { "required": ["result"], "properties": { "status": { "enum": ["rolled", "locked"] } } }
+  ]
+}

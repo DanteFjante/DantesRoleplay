@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.peace-generations",
+  "name": "Peace as the Normal Age",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Enough time has passed that most people are accustomed to living in peace.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["membershipRelationship", "status"],
+  "properties": {
+    "membershipRelationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stateSpaceId", "fromEntityId", "toEntityId", "qualifiedKind"],
+      "properties": {
+        "stateSpaceId": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "fromEntityId": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "toEntityId": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "qualifiedKind": { "const": "dnd2024.encounter.has-participation" }
+      }
+    },
+    "side": {
+      "type": "object", "additionalProperties": false, "required": ["entityId"],
+      "properties": { "entityId": { "type": "string", "minLength": 1, "maxLength": 200 } }
+    },
+    "status": { "enum": ["active", "defeated", "fled", "removed"] },
+    "joinedInRound": { "type": "integer", "minimum": 1 }
+  }
+}

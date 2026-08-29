@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.item-definition",
+  "name": "D&D 2024 Immutable Item Definition",
+  "description": "One immutable, source-cited D&D 2024 physical-item definition revision. The definition entity id is the durable reference later item instances store exactly; a correction creates a new entity revision rather than rewriting this one. Static physical facts, ordinary capacity, currency conversion, equipment-state eligibility, weapon-profile link, and armor/shield table profiles belong together here. It stores no physical instance, custody, quantity, current equipment state, price, derived Armor Class, training, speed, timing result, or combat result. A weapon definition may point to the existing canonical weapon profile but never copies combat statistics; armor/shield definitions declare static table facts only. Governed by procedure.mechanic.dnd2024.item-definition."
+}

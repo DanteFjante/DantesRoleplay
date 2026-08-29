@@ -1,0 +1,13 @@
+{
+  "id": "traveller.feature-02.fixture",
+  "name": "Feature 2 Fixture Traveller",
+  "container": {
+    "id": "location.feature-01.gate",
+    "slot": "presence"
+  },
+  "components": {
+    "game.core.world.traveller": {
+      "status": "active"
+    }
+  }
+}

@@ -1,0 +1,1 @@
+{"id":"conveyance-route.feature-12.gate-to-market-ground","name":"Gate-to-Market Ground Road","components":{"game.core.world.conveyance-route":{"status":"active","summary":"A maintained one-way ground-conveyance road from the fixture gate to the fixture market.","visibility":"party","travelMode":"ground","distanceUnits":300}}}

@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,"required":["calendarId","currentMinute","revision"],"properties":{"calendarId":{"type":"string","minLength":1,"maxLength":100},"currentMinute":{"type":"integer","minimum":0,"maximum":1000000000},"revision":{"type":"integer","minimum":0,"maximum":2147483647}}}

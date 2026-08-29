@@ -1,0 +1,1 @@
+{"name":"projection-materialization","classification":"system","status":"operational","owns":["versioned structural projections","dependency validation","declared component-field and projection impact graph","committed-state projection materialization"],"mayDependOn":["application-registry","schema-validation","ecs"]}

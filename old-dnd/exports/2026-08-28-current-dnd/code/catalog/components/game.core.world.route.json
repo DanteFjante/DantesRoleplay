@@ -1,0 +1,1 @@
+{"id":"game.core.world.route","name":"World Route","description":"Closed metadata for one directed, world-scoped on-foot journey with an authored duration. Endpoints and scope are relationships; it contains no position, geometry, distance, party, or clock copy. Governed by procedure.game.core.world.travel."}

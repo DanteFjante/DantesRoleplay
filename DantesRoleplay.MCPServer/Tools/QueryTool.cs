@@ -18,6 +18,7 @@ using DantesRoleplay.StateSpaceAdministration;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.TriggerScheduling;
 using DantesRoleplay.SystemCapabilities;
+using DantesRoleplay.Knowledge;
 using ModelContextProtocol.Server;
 
 namespace DantesRoleplay.MCPServer.Tools;
@@ -35,7 +36,7 @@ public sealed class QueryTool
 {
     [McpServerTool(Name = "query")]
     [Description(
-        "Read anything in this system. kind is one of: capabilities, procedures, categories, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, session-recap, quest-summary, knowledge-answer, information-answer, information-actions, story-plan, " +
+        "Read anything in this system. kind is one of: capabilities, procedures, categories, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, session-recap, quest-summary, knowledge-answer, information-answer, information-actions, story-plan, system.audience-context, " +
         "mechanics, event-types, events, subscriptions, notifications, feedback, system.applications, system.sources, system.application-preview, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, system.trigger-scheduling, history. Omit id for a list or search; " +
         "pass id for one record in full. When you are unsure what a kind takes or what a commit payload looks like, call " +
         "query(kind: \"capabilities\") — it is the exact catalog. Irrelevant filters are ignored unless a fixed query kind explicitly rejects them. Never changes state.")]
@@ -51,7 +52,7 @@ public sealed class QueryTool
         INotificationStore notifications,
         [Description(
             "Closed kind: capabilities, procedures, categories, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, session-recap, quest-summary, knowledge-answer, mechanics, event-types, events, "
-            + "subscriptions, notifications, feedback, information-answer, information-actions, story-plan, system.applications, system.sources, system.application-preview, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, system.trigger-scheduling, or history.")]
+            + "subscriptions, notifications, feedback, information-answer, information-actions, story-plan, system.audience-context, system.applications, system.sources, system.application-preview, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, system.trigger-scheduling, or history.")]
         string kind,
         [Description("Full-record id for procedures, mechanics, or one entity.")] string? id = null,
         [Description("Entity ids for a full batch read.")] string[]? ids = null,
@@ -130,7 +131,11 @@ public sealed class QueryTool
         IInteractionGateway? interactionGateway = null,
         IInteractionRecipeStore? interactionRecipes = null,
         ITriggerSchedulingAdministrationService? triggerSchedulingAdministration = null,
-        ISystemCapabilityCatalog? systemCapabilities = null)
+        ISystemCapabilityCatalog? systemCapabilities = null,
+        ILocalKnowledgeSeatProvider? localKnowledgeSeats = null,
+        IAuthorizedKnowledgeAudiencePolicy? knowledgeAudiences = null,
+        IKnowledgeApplicationBindingResolver? knowledgeBindings = null,
+        IKnowledgeActorParticipationVerifier? knowledgeParticipation = null)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
 
@@ -202,6 +207,9 @@ public sealed class QueryTool
             "feedback" when feedback is not null => await new SystemFeedbackTools().FindAsync(
                 feedback, log, id, category, impact, state, from, to, limit, cancellationToken),
             "feedback" => await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail("FEEDBACK_UNAVAILABLE", "Feedback reporting is not configured.", "orient()", "Feedback query was unavailable."))),
+            "system.audience-context" => await new SystemAudienceContextTools().CurrentAsync(
+                localKnowledgeSeats, knowledgeAudiences, knowledgeBindings, knowledgeParticipation,
+                log, cancellationToken),
             "system.applications" => await new SystemRegistryTools().ApplicationsAsync(
                 systemCapabilities, privateOperator, log, applicationId, limit, cancellationToken),
             "system.sources" => await new SystemRegistryTools().SourcesAsync(

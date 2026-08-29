@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.warm-high-fantasy",
+  "name": "Thalorien's Warm High Fantasy",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Thalorien is warm high fantasy shaped by travel, exploration, quiet melancholy, ancient history, and occasional focused danger.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

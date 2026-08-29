@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dantesroleplay.example/schemas/adoption/conformance-observation/v1",
+  "type": "object", "additionalProperties": false,
+  "required": ["format", "suite", "source", "cases"],
+  "properties": {
+    "format": { "const": "application-adoption-conformance-observations/v1" },
+    "suite": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "$ref": "https://dantesroleplay.example/schemas/adoption/conformance-scenario/v1#/$defs/identifier" } } },
+    "source": { "$ref": "https://dantesroleplay.example/schemas/adoption/conformance-scenario/v1#/$defs/source" },
+    "cases": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/case" } }
+  },
+  "$defs": {
+    "case": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "values"],
+      "properties": {
+        "id": { "$ref": "https://dantesroleplay.example/schemas/adoption/conformance-scenario/v1#/$defs/identifier" },
+        "values": { "type": "object", "minProperties": 1 }
+      }
+    }
+  }
+}

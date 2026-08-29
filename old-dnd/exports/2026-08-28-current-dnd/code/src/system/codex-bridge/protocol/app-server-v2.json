@@ -1,0 +1,31 @@
+{
+  "generator": "codex-cli 0.149.1",
+  "protocol": "app-server-v2",
+  "transport": "stdio-jsonl",
+  "clientMethods": [
+    "initialize",
+    "initialized",
+    "thread/start",
+    "thread/resume",
+    "turn/start",
+    "turn/interrupt",
+    "item/commandExecution/requestApproval response",
+    "item/fileChange/requestApproval response",
+    "item/permissions/requestApproval response"
+  ],
+  "serverNotifications": [
+    "item/agentMessage/delta",
+    "item/started",
+    "item/completed",
+    "turn/completed",
+    "serverRequest/resolved",
+    "warning",
+    "error"
+  ],
+  "policy": {
+    "approvalPolicy": "on-request",
+    "sandboxPolicy": { "type": "readOnly", "networkAccess": false },
+    "decisions": ["accept", "decline", "cancel"],
+    "scope": "turn-only"
+  }
+}

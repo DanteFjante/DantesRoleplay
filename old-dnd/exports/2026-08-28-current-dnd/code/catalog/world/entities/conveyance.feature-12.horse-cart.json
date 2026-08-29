@@ -1,0 +1,1 @@
+{"id":"conveyance.feature-12.horse-cart","name":"Fixture Horse Cart","container":{"id":"location.feature-01.gate","slot":"presence"},"components":{"game.core.world.conveyance":{"status":"active","summary":"A sturdy horse cart prepared for the maintained ground road.","visibility":"party","travelMode":"ground","speedUnitsPerMinute":15}}}

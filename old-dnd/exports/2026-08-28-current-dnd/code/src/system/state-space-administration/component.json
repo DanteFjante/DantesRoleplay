@@ -1,0 +1,1 @@
+{"name":"state-space-administration","classification":"system","status":"operational","owns":["exact-activation state-space creation","empty-state exact-activation upgrade","state-space binding history, compatibility evidence, dry-run, and replay","state-space binding summaries"],"mayDependOn":["application-registry","application-activation","ecs","operations-and-audit"]}

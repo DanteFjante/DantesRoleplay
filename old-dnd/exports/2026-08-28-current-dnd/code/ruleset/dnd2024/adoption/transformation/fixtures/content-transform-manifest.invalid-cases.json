@@ -1,0 +1,12 @@
+{
+  "schema": "content-transform-manifest.schema.json",
+  "base": "content-transform-manifest.valid.json",
+  "cases": [
+    { "name": "unsafe source path", "mutations": [{ "pointer": "/entries/0/source/path", "value": "../outside.json" }] },
+    { "name": "unhashed source", "mutations": [{ "pointer": "/entries/0/source/sha256", "value": "" }] },
+    { "name": "unknown license as candidate", "mutations": [{ "pointer": "/entries/0/license/classification", "value": "unknown" }, { "pointer": "/entries/0/license/disposition", "value": "first-party-recovery" }] },
+    { "name": "first-party source without review", "mutations": [{ "pointer": "/entries/0/license/review/state", "value": "not-reviewed" }, { "pointer": "/entries/0/license/review/evidence", "value": null }] },
+    { "name": "dnd owned source without official verification", "mutations": [{ "pointer": "/entries/0/ruleset/alignment", "value": "dnd2024-owned" }, { "pointer": "/entries/0/ruleset/sourceId", "value": "source.dnd2024.srd-5.2.1" }, { "pointer": "/entries/0/ruleset/locator", "value": "Playing the Game > Ability Checks" }, { "pointer": "/entries/0/ruleset/officialVerified", "value": false }] },
+    { "name": "MIT source without required notice", "mutations": [{ "pointer": "/entries/0/license/classification", "value": "MIT" }, { "pointer": "/entries/0/license/disposition", "value": "approved-mit-software" }] }
+  ]
+}

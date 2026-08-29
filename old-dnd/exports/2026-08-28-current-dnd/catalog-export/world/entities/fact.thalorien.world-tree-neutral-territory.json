@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.world-tree-neutral-territory",
+  "name": "The Neutral World Tree Grounds",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The World Tree Grounds are neutral shared territory at the centre of Thalos. They remain politically independent of Aldros while directly adjoining it.",
+      "provenance": "Confirmed during the world-creation interview; Slice S2 geographic default accepted when the user instructed continuation (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "relationship",
+      "sensitivity": "open"
+    }
+  }
+}

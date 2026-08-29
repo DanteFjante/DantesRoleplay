@@ -60,6 +60,15 @@ public sealed class InteractionOrchestrationAcceptanceTests
         Assert.Equal(InteractionResolutionStatus.NeedsInput, missing.Status);
         Assert.Contains("role:actor", missing.Evidence);
         Assert.Equal(0, planner.Calls);
+
+        var impersonating = await gateway.PlanAsync(fixture.Principal, fixture.Application,
+            fixture.State.StateSpaceId, "session.direct.impersonating",
+            fixture.Intent("plan.direct.impersonating", "entity.current-actor", "automatic"),
+            fixture.ProposalJson("entity.other-actor"), role: InteractionAiRole.Direct);
+        Assert.Equal(InteractionResolutionStatus.Unsafe, impersonating.Status);
+        Assert.Equal("ROLE_HINT_BINDING_MISMATCH", impersonating.Code);
+        Assert.Null(impersonating.Proposal);
+        Assert.Equal(0, planner.Calls);
     }
 
     [Fact]

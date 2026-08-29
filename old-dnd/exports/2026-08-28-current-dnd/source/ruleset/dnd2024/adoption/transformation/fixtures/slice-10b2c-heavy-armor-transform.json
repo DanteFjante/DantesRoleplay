@@ -1,0 +1,18 @@
+{
+  "format": "dnd2024-static-content-transform/v1",
+  "cohort": "slice-10b2c-heavy-armor",
+  "category": "heavy",
+  "sourceRevision": "5eaba06d365dcad4fdea0f863491900f87b2c4e3",
+  "officialSource": { "sourceId": "source.dnd2024.srd-5.2.1", "url": "https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf", "locator": "Equipment > Armor > Armor table (PDF p. 92)" },
+  "license": {
+    "classification": "CC-BY-4.0",
+    "attribution": "This work includes material from the System Reference Document 5.2.1 (\"SRD 5.2.1\") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.",
+    "changes": "Four archived Heavy Armor definitions were relocated, canonically formatted, and given the exact SRD Armor table locator."
+  },
+  "entries": [
+    { "id": "item.dnd2024.ring-mail.v1", "name": "Ring Mail (D&D 2024, definition v1)", "sourcePath": "old-dnd/catalog/world/entities/item.dnd2024.ring-mail.v1.json", "sourceSha256": "91F038CD213E73D87B1A73353DAD2439755D66D3D70EF71CCA910C384DE6DB36", "targetPath": "catalog/applications/dnd2024/content/entities/armor/item.dnd2024.ring-mail.v1.json" },
+    { "id": "item.dnd2024.chain-mail.v1", "name": "Chain Mail (D&D 2024, definition v1)", "sourcePath": "old-dnd/catalog/world/entities/item.dnd2024.chain-mail.v1.json", "sourceSha256": "7030F8EB04A41FBD933F360E342E9D97285B48B26444011673FBA04452571620", "targetPath": "catalog/applications/dnd2024/content/entities/armor/item.dnd2024.chain-mail.v1.json" },
+    { "id": "item.dnd2024.splint-armor.v1", "name": "Splint Armor (D&D 2024, definition v1)", "sourcePath": "old-dnd/catalog/world/entities/item.dnd2024.splint-armor.v1.json", "sourceSha256": "CB6DA0F6CDBB3D32C363B0E23BD631AC6D35A86390D503C4AA0D6264EC47D2DF", "targetPath": "catalog/applications/dnd2024/content/entities/armor/item.dnd2024.splint-armor.v1.json" },
+    { "id": "item.dnd2024.plate-armor.v1", "name": "Plate Armor (D&D 2024, definition v1)", "sourcePath": "old-dnd/catalog/world/entities/item.dnd2024.plate-armor.v1.json", "sourceSha256": "236921902E21CCF9826ECF096EFA1CEFB536E1D8986D9288284ACB5F256A3602", "targetPath": "catalog/applications/dnd2024/content/entities/armor/item.dnd2024.plate-armor.v1.json" }
+  ]
+}

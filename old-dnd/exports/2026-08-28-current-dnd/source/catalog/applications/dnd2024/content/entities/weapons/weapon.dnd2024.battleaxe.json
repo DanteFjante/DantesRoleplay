@@ -1,0 +1,1 @@
+{"id":"weapon.dnd2024.battleaxe","name":"Battleaxe (D&D 2024)","components":{"dnd2024.weapon-profile":{"category":"martial","kind":"melee","attackAbilities":["str"],"damage":{"count":1,"faces":8,"type":"slashing"},"sourceRef":{"sourceId":"source.dnd2024.srd-5.2.1","locator":"Equipment > Weapons"}}}}

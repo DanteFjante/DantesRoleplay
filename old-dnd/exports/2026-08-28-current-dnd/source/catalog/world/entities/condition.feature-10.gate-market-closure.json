@@ -1,0 +1,1 @@
+{"id":"condition.feature-10.gate-market-closure","name":"Gate-to-Market Road Closure","components":{"game.core.world.condition":{"kind":"route-closure","status":"scheduled","summary":"A scheduled closure will temporarily bar the maintained gate-to-market road.","source":"Reviewed gate maintenance notice.","visibility":"party","startMinute":60,"endMinute":180}}}

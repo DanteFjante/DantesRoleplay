@@ -1,0 +1,20 @@
+{
+  "id": "location.feature-01.observatory",
+  "name": "Fixture Observatory",
+  "container": {
+    "id": "region.feature-01.fixture",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "interior",
+      "status": "active",
+      "summary": "The interior destination in the topology fixture.",
+      "visibility": "gm"
+    },
+    "game.core.world.map.anchor": {
+      "x": 850,
+      "y": 250
+    }
+  }
+}

@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"D&D 2024 creature Size","type":"object","additionalProperties":false,"required":["size"],"properties":{"size":{"enum":["tiny","small","medium","large","huge","gargantuan"]}},"$comment":"Source: SRD 5.2.1, Playing the Game > Creature Size. Carrying is derived by procedure.mechanic.dnd2024.carrying-capacity."}

@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,"required":["method","resultingState"],"properties":{"method":{"enum":["observed","told","read","inferred","taught","recalled"]},"resultingState":{"enum":["known","familiar","suspected","believed","doubted","disbelieved","unknown"]}}}

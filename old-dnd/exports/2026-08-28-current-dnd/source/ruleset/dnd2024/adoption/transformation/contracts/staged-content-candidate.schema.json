@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dantesroleplay.example/schemas/adoption/staged-content-candidate/v1",
+  "type": "object", "additionalProperties": false,
+  "required": ["format", "candidateKey", "target", "source", "transformation", "license", "ruleset", "mapping", "payload"],
+  "properties": {
+    "format": { "const": "application-adoption-staged-content-candidate/v1" },
+    "candidateKey": { "$ref": "https://dantesroleplay.example/schemas/adoption/content-transform-manifest/v1#/$defs/candidateKey" },
+    "target": { "type": "object", "additionalProperties": false, "required": ["kind", "id", "path"], "properties": { "kind": { "const": "content-data" }, "id": { "$ref": "https://dantesroleplay.example/schemas/adoption/content-transform-manifest/v1#/$defs/candidateKey" }, "path": { "$ref": "https://dantesroleplay.example/schemas/adoption/content-transform-manifest/v1#/$defs/relativePath" } } },
+    "source": { "$ref": "https://dantesroleplay.example/schemas/adoption/content-transform-manifest/v1#/$defs/source" },
+    "license": { "$ref": "https://dantesroleplay.example/schemas/adoption/content-transform-manifest/v1#/$defs/license" },
+    "ruleset": { "$ref": "https://dantesroleplay.example/schemas/adoption/content-transform-manifest/v1#/$defs/ruleset" },
+    "transformation": { "type": "object", "additionalProperties": false, "required": ["tool", "toolSha256", "mappingSha256"], "properties": { "tool": { "const": "Invoke-ContentTransformation.ps1" }, "toolSha256": { "$ref": "https://dantesroleplay.example/schemas/adoption/content-transform-manifest/v1#/$defs/hash" }, "mappingSha256": { "$ref": "https://dantesroleplay.example/schemas/adoption/content-transform-manifest/v1#/$defs/hash" } } },
+    "mapping": { "type": "object", "additionalProperties": false, "required": ["schemaPath", "schemaSha256", "payloadPointer"], "properties": { "schemaPath": { "$ref": "https://dantesroleplay.example/schemas/adoption/content-transform-manifest/v1#/$defs/relativePath" }, "schemaSha256": { "$ref": "https://dantesroleplay.example/schemas/adoption/content-transform-manifest/v1#/$defs/hash" }, "payloadPointer": { "$ref": "https://dantesroleplay.example/schemas/adoption/content-transform-manifest/v1#/$defs/pointer" } } },
+    "payload": {}
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "id": "homer",
+  "name": "Homer",
+  "components": {
+    "stats": {
+      "species": "Human",
+      "class": "Philosopher",
+      "level": 1,
+      "age": 68,
+      "background": "Spy and inventor",
+      "alignment": "Unaligned",
+      "abilityScores": {
+        "strength": 10,
+        "dexterity": 14,
+        "constitution": 12,
+        "intelligence": 15,
+        "wisdom": 13,
+        "charisma": 8
+      },
+      "proficiencies": [
+        "Investigation",
+        "Insight",
+        "Deception",
+        "Tinker's tools"
+      ],
+      "languages": [
+        "Common"
+      ],
+      "hitPoints": 9,
+      "armorClass": 12,
+      "equipment": [
+        "Notebook",
+        "Disguise kit",
+        "Tinker's tools",
+        "Magnifying lens",
+        "Odd brass device",
+        "Travel-worn coat"
+      ],
+      "traits": [
+        "Clever observation",
+        "Suspicious mind",
+        "Compulsive tinkerer"
+      ],
+      "notes": "An old spy who thinks deeply and builds ingenious inventions."
+    }
+  }
+}

@@ -1,0 +1,364 @@
+{
+  "components": [
+    {
+      "id": "character.identity",
+      "name": "Identity",
+      "category": "Identity",
+      "description": "Name, player name, alignment, biography, and personality.",
+      "model": "IdentityComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.physical-description",
+      "name": "Physical Description",
+      "category": "Identity",
+      "description": "Appearance, pronouns, gender, age, height, weight, eyes, skin, hair, and additional details.",
+      "model": "PhysicalDescriptionComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.player-notes",
+      "name": "Player Notes",
+      "category": "Identity",
+      "description": "Private or player-facing notes about the character.",
+      "model": "PlayerNotesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.creation-provenance",
+      "name": "Creation Provenance",
+      "category": "Creation",
+      "description": "The selections and inputs from which the initial character state was produced.",
+      "model": "CreationProvenanceComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.species",
+      "name": "Species",
+      "category": "Origin",
+      "description": "The selected species and its choices.",
+      "model": "SpeciesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.background",
+      "name": "Background",
+      "category": "Origin",
+      "description": "The selected background and its choices.",
+      "model": "BackgroundComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.languages",
+      "name": "Languages",
+      "category": "Origin",
+      "description": "Languages the character can communicate with.",
+      "model": "LanguagesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.experience",
+      "name": "Experience",
+      "category": "Advancement",
+      "description": "The character's accumulated Experience Points.",
+      "model": "ExperienceComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.classes",
+      "name": "Classes and Levels",
+      "category": "Advancement",
+      "description": "The starting class and current level in each class.",
+      "model": "ClassesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.subclasses",
+      "name": "Subclasses",
+      "category": "Advancement",
+      "description": "The subclass selected for each applicable class.",
+      "model": "SubclassesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.choices",
+      "name": "Character Choices",
+      "category": "Advancement",
+      "description": "Selected options for choices introduced by character advancement.",
+      "model": "CharacterChoicesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.ability-scores",
+      "name": "Ability Scores",
+      "category": "Ability Scores",
+      "description": "Strength, Dexterity, Constitution, Intelligence, Wisdom, and Charisma.",
+      "model": "AbilityScoresComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.saving-throw-proficiencies",
+      "name": "Saving Throw Proficiencies",
+      "category": "Proficiencies",
+      "description": "Abilities whose saving throws add the character's Proficiency Bonus.",
+      "model": "SavingThrowProficienciesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.skill-proficiencies",
+      "name": "Skills and Expertise",
+      "category": "Proficiencies",
+      "description": "Skill proficiency and Expertise ranks.",
+      "model": "SkillProficienciesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.armor-weapon-proficiencies",
+      "name": "Armor and Weapon Proficiencies",
+      "category": "Proficiencies",
+      "description": "Armor training and weapon proficiencies.",
+      "model": "ArmorAndWeaponProficienciesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.tool-proficiencies",
+      "name": "Tool Proficiencies",
+      "category": "Proficiencies",
+      "description": "Tools with which the character has proficiency.",
+      "model": "ToolProficienciesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.weapon-masteries",
+      "name": "Weapon Masteries",
+      "category": "Proficiencies",
+      "description": "Weapons whose mastery properties the character can use.",
+      "model": "WeaponMasteriesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.creature-type",
+      "name": "Creature Type",
+      "category": "Body",
+      "description": "The character's creature type.",
+      "model": "CreatureTypeComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.size",
+      "name": "Size",
+      "category": "Body",
+      "description": "The character's current Size.",
+      "model": "SizeComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.movement",
+      "name": "Movement Speeds",
+      "category": "Body",
+      "description": "Walking, climbing, swimming, flying, and burrowing speeds.",
+      "model": "MovementComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.senses",
+      "name": "Senses",
+      "category": "Body",
+      "description": "Special senses and their ranges.",
+      "model": "SensesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.defenses",
+      "name": "Defenses",
+      "category": "Body",
+      "description": "Damage and condition resistances, immunities, and vulnerabilities.",
+      "model": "DefensesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.species-features",
+      "name": "Species Features",
+      "category": "Features",
+      "description": "Features granted by the selected species.",
+      "model": "SpeciesFeaturesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.background-feat",
+      "name": "Background Feat",
+      "category": "Features",
+      "description": "The feat granted by the selected background and its choices.",
+      "model": "BackgroundFeatComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.class-features",
+      "name": "Class Features",
+      "category": "Features",
+      "description": "Features granted by class advancement.",
+      "model": "ClassFeaturesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.other-features",
+      "name": "Other Feats and Boons",
+      "category": "Features",
+      "description": "Feats and boons not represented by the species, background, or class feature components.",
+      "model": "OtherFeaturesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.spellcasting-sources",
+      "name": "Spellcasting Sources",
+      "category": "Spellcasting",
+      "description": "Sources of spellcasting and the ability used by each source.",
+      "model": "SpellcastingSourcesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.spells",
+      "name": "Known and Prepared Spells",
+      "category": "Spellcasting",
+      "description": "Cantrips and known or prepared spells grouped by source.",
+      "model": "SpellsComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.spell-slots",
+      "name": "Spell Slots",
+      "category": "Spellcasting",
+      "description": "Maximum and expended spell slots grouped by level and slot kind.",
+      "model": "SpellSlotsComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.inventory",
+      "name": "Item Instances",
+      "category": "Inventory",
+      "description": "Owned item instances, quantities, and container relationships.",
+      "model": "InventoryComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.equipment-state",
+      "name": "Equipment State",
+      "category": "Inventory",
+      "description": "Whether owned item instances are carried, held, worn, or stored.",
+      "model": "EquipmentComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.attunement",
+      "name": "Attunement",
+      "category": "Inventory",
+      "description": "Magic item instances to which the character is attuned.",
+      "model": "AttunementComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.currency",
+      "name": "Currency",
+      "category": "Inventory",
+      "description": "Copper, silver, electrum, gold, and platinum pieces.",
+      "model": "CurrencyComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.hit-points",
+      "name": "Hit Points",
+      "category": "Current State",
+      "description": "Maximum, current, and Temporary Hit Points.",
+      "model": "HitPointsComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.hit-dice",
+      "name": "Hit Dice",
+      "category": "Current State",
+      "description": "Maximum and remaining Hit Dice grouped by die kind.",
+      "model": "HitDiceComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.death-saves",
+      "name": "Death Saves",
+      "category": "Current State",
+      "description": "Death save successes, failures, and stability.",
+      "model": "DeathSavesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.conditions",
+      "name": "Conditions and Exhaustion",
+      "category": "Current State",
+      "description": "Active conditions, their sources and durations, and Exhaustion level.",
+      "model": "ConditionsComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.concentration",
+      "name": "Concentration",
+      "category": "Current State",
+      "description": "The spell on which the character is currently concentrating.",
+      "model": "ConcentrationComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.resources",
+      "name": "Limited-use Resources",
+      "category": "Current State",
+      "description": "Limited-use resources and their recharge rules.",
+      "model": "LimitedUseResourcesComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.heroic-inspiration",
+      "name": "Heroic Inspiration",
+      "category": "Current State",
+      "description": "Whether the character currently has Heroic Inspiration.",
+      "model": "HeroicInspirationComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.active-effects",
+      "name": "Active Effects",
+      "category": "Current State",
+      "description": "Applied temporary effects and their remaining runtime state.",
+      "model": "ActiveEffectsComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.feature-state",
+      "name": "Feature State",
+      "category": "Current State",
+      "description": "Active modes and mutable state belonging to granted features.",
+      "model": "FeatureStateComponent",
+      "authority": "stored"
+    },
+    {
+      "id": "character.attack-options",
+      "name": "Attack Options",
+      "category": "Derived",
+      "description": "Display-ready attacks derived from features, spells, and equipped items.",
+      "model": "AttackOptionsComponent",
+      "authority": "derived"
+    },
+    {
+      "id": "character.derived-statistics",
+      "name": "Derived Statistics",
+      "category": "Derived",
+      "description": "Proficiency Bonus, Armor Class, Initiative, Passive Perception, saving throws, and skill modifiers.",
+      "model": "DerivedStatisticsComponent",
+      "authority": "derived"
+    },
+    {
+      "id": "character.spellcasting-statistics",
+      "name": "Spellcasting Statistics",
+      "category": "Derived",
+      "description": "Spell attack bonuses and save DCs calculated for each spellcasting source.",
+      "model": "SpellcastingStatisticsComponent",
+      "authority": "derived"
+    }
+  ]
+}

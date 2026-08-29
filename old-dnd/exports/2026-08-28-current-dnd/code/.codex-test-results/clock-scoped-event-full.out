@@ -1,0 +1,25 @@
+Test run for C:\Users\dante\source\repos\DantesRoleplay\DantesRoleplay.Tests\.codex-build\DantesRoleplay.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+  Failed DantesRoleplay.Tests.CatalogWorldFeature8Tests.One_active_route_moves_the_traveller_and_advances_its_root_clock_in_one_action [5 s]
+  Error Message:
+   Assert.Equal() Failure: Collections differ
+Expected: string[]                                 ["world.containment.moved", "world.component.replaced"]
+Actual:   ListSelectIterator<EventSummary, string> ["world.containment.moved", "world.component.replaced", "game.core.world.clock.advanced"]
+                                                                                                           ↑ (pos 2)
+  Stack Trace:
+     at DantesRoleplay.Tests.CatalogWorldFeature8Tests.One_active_route_moves_the_traveller_and_advances_its_root_clock_in_one_action() in C:\Users\dante\source\repos\DantesRoleplay\DantesRoleplay.Tests\CatalogWorldFeature8Tests.cs:line 83
+   at DantesRoleplay.Tests.CatalogWorldFeature8Tests.One_active_route_moves_the_traveller_and_advances_its_root_clock_in_one_action() in C:\Users\dante\source\repos\DantesRoleplay\DantesRoleplay.Tests\CatalogWorldFeature8Tests.cs:line 84
+--- End of stack trace from previous location ---
+  Failed DantesRoleplay.Tests.CatalogWorldFeature10Tests.Clock_boundaries_reconcile_once_deny_closed_travel_and_restore_the_route_after_expiry [3 s]
+  Error Message:
+   Assert.Equal() Failure: Collections differ
+                                                    ↓ (pos 1)
+Expected: int[]                                 [0, 1, 1]
+Actual:   ListSelectIterator<EventSummary, int> [0, 0, 1, 1]
+                                                    ↑ (pos 1)
+  Stack Trace:
+     at DantesRoleplay.Tests.CatalogWorldFeature10Tests.Clock_boundaries_reconcile_once_deny_closed_travel_and_restore_the_route_after_expiry() in C:\Users\dante\source\repos\DantesRoleplay\DantesRoleplay.Tests\CatalogWorldFeature10Tests.cs:line 94
+   at DantesRoleplay.Tests.CatalogWorldFeature10Tests.Clock_boundaries_reconcile_once_deny_closed_travel_and_restore_the_route_after_expiry() in C:\Users\dante\source\repos\DantesRoleplay\DantesRoleplay.Tests\CatalogWorldFeature10Tests.cs:line 104
+--- End of stack trace from previous location ---
+
+Failed!  - Failed:     2, Passed:   801, Skipped:     0, Total:   803, Duration: 1 m 13 s - DantesRoleplay.Tests.dll (net10.0)

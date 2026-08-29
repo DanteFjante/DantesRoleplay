@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "productionRoots": {
+    "DantesRoleplay": "system-capability",
+    "DantesRoleplay.DataAccess": "system-capability",
+    "DantesRoleplay.RuleAccess": "system-capability",
+    "DantesRoleplay.MCPServer": "host-composition",
+    "DantesRoleplay.Tools": "host-composition",
+    "src/system": "system-capability",
+    "src/applications": "host-composition",
+    "src/game-adapters": "game-adapter"
+  },
+  "pathOverrides": {
+    "DantesRoleplay.DataAccess/Migrations/": "migration",
+    "DantesRoleplay.MCPServer/DevelopmentKnowledgeAudience.cs": "game-adapter",
+    "DantesRoleplay.MCPServer/KnowledgeBackgroundWorker.cs": "game-adapter",
+    "DantesRoleplay.MCPServer/StoryPlanWorker.cs": "game-adapter",
+    "DantesRoleplay.MCPServer/Tools/CampaignTools.cs": "game-adapter",
+    "DantesRoleplay.MCPServer/Tools/ItineraryAdvanceTools.cs": "game-adapter",
+    "DantesRoleplay.MCPServer/Tools/JourneyPlanTools.cs": "game-adapter",
+    "DantesRoleplay.MCPServer/Tools/KnowledgeTools.cs": "game-adapter",
+    "DantesRoleplay.MCPServer/Tools/ModeAwareItineraryTools.cs": "game-adapter",
+    "DantesRoleplay.MCPServer/Tools/QuestTools.cs": "game-adapter",
+    "DantesRoleplay.MCPServer/Tools/StoryPlanTools.cs": "game-adapter"
+  },
+  "legacyRulesetLiterals": {
+    "src/game-adapters/dantes-roleplay/campaign/domain/CampaignBlueprint.cs": 2,
+    "src/game-adapters/dantes-roleplay/character/persistence/BackgroundAbilityScoreIncreaseResolver.cs": 4,
+    "src/game-adapters/dantes-roleplay/campaign/persistence/CampaignBootstrapper.cs": 1,
+    "src/game-adapters/dantes-roleplay/campaign/persistence/CampaignCompositionAdapter.cs": 1,
+    "src/game-adapters/dantes-roleplay/character/persistence/CharacterAbilityAssignmentValidator.cs": 2,
+    "src/game-adapters/dantes-roleplay/character/persistence/CharacterAbilityScoreRecorder.cs": 1,
+    "src/game-adapters/dantes-roleplay/character/persistence/CharacterOriginLanguageResolver.cs": 2,
+    "src/game-adapters/dantes-roleplay/character/persistence/CharacterProfileRecorder.cs": 1,
+    "src/game-adapters/dantes-roleplay/character/persistence/CharacterSpeciesSelectionResolver.cs": 4
+  }
+}

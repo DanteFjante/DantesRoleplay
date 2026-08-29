@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.encounter.participation",
+  "name": "Encounter Participation (D&D 2024)",
+  "description": "D&D encounter status attached to one entity-addressable generic encounter-membership relationship."
+}

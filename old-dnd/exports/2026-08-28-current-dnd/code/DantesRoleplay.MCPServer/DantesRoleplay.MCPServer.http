@@ -1,0 +1,84 @@
+# A scratch client for this server's three verbs. Send a request from the gutter in Visual Studio.
+#
+# This file shipped as the Web SDK template's example and called `get_random_number` on port 5144
+# — a tool that never existed on a port this project never used. It is now the shortest way to
+# check the surface by hand: the same walk the protocol tests automate.
+
+@HostAddress = http://localhost:6217
+
+### Every tool there is. Expect exactly three: orient, query, commit.
+POST {{HostAddress}}/mcp
+Accept: application/json, text/event-stream
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}
+
+### Start here. What this system is, what exists in it, and what to call next.
+POST {{HostAddress}}/mcp
+Accept: application/json, text/event-stream
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"orient","arguments":{}}}
+
+### The exact catalog: every kind, the parameters it reads, every payload shape.
+POST {{HostAddress}}/mcp
+Accept: application/json, text/event-stream
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"query","arguments":{"kind":"capabilities"}}}
+
+### The operating manual.
+POST {{HostAddress}}/mcp
+Accept: application/json, text/event-stream
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"query","arguments":{"kind":"procedures"}}}
+
+### One contract in full. Reads are recorded, and a later commit reports what was actually opened.
+POST {{HostAddress}}/mcp
+Accept: application/json, text/event-stream
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"query","arguments":{"kind":"procedures","id":"procedure.system.use"}}}
+
+### What the world holds, and which component definitions exist.
+POST {{HostAddress}}/mcp
+Accept: application/json, text/event-stream
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"query","arguments":{"kind":"world"}}}
+
+### The rules that exist, searched the way a player would say it.
+POST {{HostAddress}}/mcp
+Accept: application/json, text/event-stream
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"query","arguments":{"kind":"mechanics","query":"can they manage it"}}}
+
+### Declare a component definition. Note payload is a JSON object encoded as a STRING.
+POST {{HostAddress}}/mcp
+Accept: application/json, text/event-stream
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"commit","arguments":{"kind":"component","payload":"{\"id\":\"stats\",\"name\":\"Stats\",\"description\":\"Numbers about an entity.\"}","intent":"set up a scratch world"}}}
+
+### Change the world. dryRun first, always — then send the identical payload without it.
+POST {{HostAddress}}/mcp
+Accept: application/json, text/event-stream
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"commit","arguments":{"kind":"effects","payload":"{\"effects\":[{\"type\":\"entity.create\",\"entityId\":\"orban\",\"name\":\"Orban\"},{\"type\":\"component.set\",\"entityId\":\"orban\",\"definitionId\":\"stats\",\"data\":\"{\\\"vigour\\\":6}\"}]}","dryRun":true,"intent":"create a character","proceduresUsed":["procedure.world.change"]}}}
+
+### Resolve an action. This RUNS a rule — selection is by intent, and there is no dry run.
+POST {{HostAddress}}/mcp
+Accept: application/json, text/event-stream
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"commit","arguments":{"kind":"action","payload":"{\"intent\":\"can they manage it\",\"roleEntityIds\":{\"subject\":\"orban\"},\"input\":\"{\\\"field\\\":\\\"vigour\\\",\\\"threshold\\\":5}\"}","proceduresUsed":["procedure.action.run"]}}}
+
+### What has been done, newest first. Add failuresOnly or subject to narrow it.
+POST {{HostAddress}}/mcp
+Accept: application/json, text/event-stream
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"query","arguments":{"kind":"history","limit":20}}}

@@ -1,0 +1,1 @@
+{"name":"codex-bridge","classification":"system","status":"operational","owns":["pinned Codex app-server stdio seam","read-only-baseline Codex process lifecycle","normalized Codex turn events","one-request Codex approval dispatch","Codex turn cancellation"],"mayDependOn":["assistant-conversations"]}

@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.core.definition-link",
+  "name": "Runtime Definition Link (D&D 2024)",
+  "description": "A write-once reference from one mutable runtime entity to its exact immutable authored definition."
+}

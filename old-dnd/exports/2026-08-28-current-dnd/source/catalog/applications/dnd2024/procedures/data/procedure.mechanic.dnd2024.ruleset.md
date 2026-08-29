@@ -1,0 +1,22 @@
+---
+id: procedure.mechanic.dnd2024.ruleset
+category: ruleset.dnd2024.core.governance
+name: Build a contract-first SRD 5.2.1 ruleset
+governs: all ruleset.dnd2024 mechanics, components, effects, and actions
+status: active
+---
+
+## Description
+
+Governs incremental modular D&D rule contracts under the generic application kernel.
+
+## Instructions
+
+Search for the existing owner, author one bounded procedure/component/mechanic family, cite exact SRD
+5.2.1 source, declare every dependency, use typed effects, and verify through activation and tests.
+
+## Constraints
+
+C# owns generic storage/projection/sandbox/effect/transaction invariants; D&D formulas, vocabulary,
+eligibility, and outcomes stay in catalog JavaScript/data. IDs are permanent and duplicate owners,
+implicit state, donor runtime dependencies, and uncited rule meaning are forbidden.

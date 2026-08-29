@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.creature.defense-basis",
+  "name": "Creature Defense Basis (D&D 2024)",
+  "description": "An immutable literal or declared Armor Class calculation and damage-response basis supplied by creature content."
+}

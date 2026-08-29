@@ -1,0 +1,1 @@
+{"name":"effects-and-transactions","classification":"system","status":"migrated","owns":["typed effect vocabulary","batch simulation","root transaction"],"mayDependOn":["building-blocks","state","events-and-notifications","operations-and-audit"]}

@@ -155,6 +155,8 @@ internal sealed class InteractionProposalVerifier(
             }
 
             var resultBindings = draft.ResultBindings ?? [];
+            var roleHintProblem = ValidateRoleHints(envelope.Intent.RoleHints, draft, resultBindings);
+            if (roleHintProblem is not null) return roleHintProblem;
             var bindingProblem = ValidateResultBindings(draft, resultBindings, querySchemas, declaredRoles);
             if (bindingProblem is not null) return bindingProblem;
             var supplied = draft.RoleBindings.Keys.Concat(resultBindings
@@ -211,6 +213,25 @@ internal sealed class InteractionProposalVerifier(
                 ? Stale(exception.Code, "The proposed plan no longer matches current authority.")
                 : Unsafe(exception.Code, "The proposed plan violates the closed interaction contract.");
         }
+    }
+
+    private static InteractionResolutionResult? ValidateRoleHints(
+        IReadOnlyDictionary<string, string> roleHints,
+        InteractionPlannerDraftStep draft,
+        IReadOnlyList<InteractionResultBinding> resultBindings)
+    {
+        foreach (var hint in roleHints)
+        {
+            if (draft.RoleBindings.TryGetValue(hint.Key, out var supplied) && supplied != hint.Value)
+                return Unsafe("ROLE_HINT_BINDING_MISMATCH",
+                    "A proposed role binding conflicts with the host-authorized role reference.");
+        }
+
+        if (resultBindings.Any(binding => binding.ToRole is not null && roleHints.ContainsKey(binding.ToRole)))
+            return Unsafe("ROLE_HINT_RESULT_BINDING_FORBIDDEN",
+                "A proposed result binding cannot replace a host-authorized role reference.");
+
+        return null;
     }
 
     private static InteractionResolutionResult? ValidateResultBindings(

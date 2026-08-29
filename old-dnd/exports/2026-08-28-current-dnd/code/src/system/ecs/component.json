@@ -1,0 +1,1 @@
+{"name":"ecs","classification":"system","status":"operational","owns":["component type contracts","component versions","application-scoped state spaces","application-scoped entities and components","bounded ECS discovery"],"mayDependOn":["application-registry","schema-validation"]}

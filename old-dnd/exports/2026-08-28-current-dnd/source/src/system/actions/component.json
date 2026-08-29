@@ -1,0 +1,1 @@
+{"name":"actions","classification":"system","status":"migrated","owns":["closed action envelope","deterministic action orchestration"],"mayDependOn":["building-blocks","procedures","mechanics","effects-and-transactions","operations-and-audit"]}

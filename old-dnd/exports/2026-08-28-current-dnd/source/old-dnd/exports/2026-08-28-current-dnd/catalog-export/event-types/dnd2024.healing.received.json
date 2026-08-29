@@ -1,0 +1,10 @@
+{
+  "id": "dnd2024.healing.received",
+  "category": "ruleset.dnd2024.core.gameplay.healing",
+  "name": "D&D 2024 healing received",
+  "description": "A D&D 2024 healing instance was applied to a creature's Hit Points. It records the requested, applied, and maximum-lost amounts for later reactions.",
+  "scope": "dnd2024-srd-5.2.1",
+  "status": "Active",
+  "createdBy": "seed",
+  "changeNote": "Seeded from the embedded structural event types."
+}

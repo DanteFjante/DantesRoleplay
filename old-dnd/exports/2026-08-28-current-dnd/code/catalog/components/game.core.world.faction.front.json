@@ -1,0 +1,1 @@
+{"id":"game.core.world.faction.front","name":"World Faction Front","description":"Closed current pressure state for one manual, world-scoped faction front. Scope, ownership, and contested location are directed relationships; it contains no faction, location, world, territory, clock, outcome, or history reference. Governed by procedure.game.core.world.faction."}

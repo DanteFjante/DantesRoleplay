@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.11" />
+    <PackageReference Include="JsonSchema.Net" Version="9.4.0" />
+    <!-- Design is referenced here so `dotnet ef` runs against this project on its own, via
+         DesignTimeDbContextFactory. PrivateAssets keeps it out of anything referencing us. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <!-- EF Core still permits the vulnerable SQLitePCLRaw 2.1.11. Pin the patched bundle until
+         the provider raises its own minimum; the bundle keeps its native/provider pieces aligned. -->
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
+    <!-- Design-time tooling brings this transitively. Pin the current patched net10 release so
+         restores do not select the vulnerable 9.0.0 dependency. -->
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DantesRoleplay\DantesRoleplay.csproj" />
+    <ProjectReference Include="..\src\system\local-ai\DantesRoleplay.LocalAI\DantesRoleplay.LocalAI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Transitional compile links: capability-owned hosting code now lives with its component.
+         Implementations move in later slices; the assembly/public surface remains unchanged. -->
+    <Compile Include="..\src\system\**\hosting\*.cs">
+      <Link>Components\System\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\system\**\persistence\*.cs">
+      <Link>Components\System\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
+  </ItemGroup>
+
+</Project>

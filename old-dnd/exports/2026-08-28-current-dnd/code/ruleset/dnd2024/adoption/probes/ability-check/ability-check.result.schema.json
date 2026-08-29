@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["test", "ability", "score", "dc", "die", "roll", "modifiers", "total", "succeeded", "sourceId", "sourceLocator"],
+  "properties": {
+    "test": { "const": "ability-check" },
+    "ability": { "enum": ["str", "dex", "con", "int", "wis", "cha"] },
+    "score": { "type": "integer", "minimum": 1, "maximum": 30 },
+    "dc": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "die": { "const": "1d20" },
+    "roll": { "type": "integer", "minimum": 1, "maximum": 20 },
+    "modifiers": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source", "value"],
+        "properties": {
+          "source": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "value": { "type": "integer", "minimum": -5, "maximum": 10 }
+        }
+      }
+    },
+    "total": { "type": "integer", "minimum": -4, "maximum": 30 },
+    "succeeded": { "type": "boolean" },
+    "sourceId": { "const": "source.dnd2024.srd-5.2.1" },
+    "sourceLocator": { "const": "Playing the Game > D20 Tests > Ability Checks" }
+  }
+}

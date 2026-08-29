@@ -1,0 +1,1 @@
+{"id":"dnd2024.creature.movement","name":"Creature Movement (D&D 2024)","description":"Current dimensioned movement speeds keyed by movement-mode entity ID. Per-turn movement expenditure, terrain, position, and route state are separate owners."}
