@@ -7,9 +7,11 @@ Character status: narrative concept approved; executable D&D character not yet c
 
 ## Ganji
 
-Ganji is a young monk who was born with catlike eyes, ears, balance, and reflexes. His shepherd
-village in the Button Hills surrendered him as an infant to the Tensor Sect after treating those
-traits as an omen. The sect revered his natural gifts while denying him an ordinary childhood.
+Ganji is an eighteen-year-old monk who was born with subtly catlike eyes, ears, balance, and
+reflexes. His unknown human father and elven mother abandoned him as an infant in Merebutton, a
+Button Hills shepherd village. Rumours about the unusual child became an attraction for passing
+travellers; Tensor monks heard them, investigated, and took Ganji to Highmead as a possible prophecy.
+The sect revered his natural gifts while denying him an ordinary childhood.
 They named him **the Unbidden Eye** and subjected him to increasingly strict training because they
 believed he might achieve omniscient perception.
 
@@ -21,17 +23,18 @@ instrument.
 
 - **Ideal:** Devotion must be chosen. Obedience without love is captivity.
 - **Bond:** Ganji sympathizes with people trapped by duties that others call honourable.
-- **Flaw:** Praise for his gifts makes him suspicious because admiration has often become ownership.
+- **Flaw:** He laughs off defeat or embarrassment, sometimes before he has learned the lesson.
 - **Fear:** The sect may be right that he has a unique destiny, and leaving may have endangered
   people who tried to protect him.
-- **Immediate desire:** Experience ordinary life, form relationships without prophecy attached,
-  and find a purpose worth choosing.
+- **Immediate desire:** Experience ordinary life, make friends, enjoy adventure, and find a purpose
+  worth choosing.
 - **Long question:** Can Ganji become powerful without becoming another person's instrument?
 
 His Tensor training supports a future D&D 2024 Monk focused on agility, perception, insight,
-stealth, and anticipating movement. It grants no executable species trait, supernatural prediction,
-class feature, proficiency, score, or rule result until the governed character-creation mechanic
-records those choices.
+stealth, and anticipating movement. He normally fights with his hands, but readily uses a staff or
+an improvised tool when the situation suggests it. It grants no executable species trait,
+supernatural prediction, class feature, proficiency, score, or rule result until the governed
+character-creation mechanic records those choices.
 
 ## The Tensor Sect
 
@@ -61,11 +64,24 @@ ringing them while instructors introduce distractions. Ganji crossed the entire 
 escape without sounding a bell. The sect has covered and preserved his final footprints as a sacred
 and politically inconvenient mystery.
 
-### The Button Hills
+### Merebutton and the Button Hills
 
-Ganji's birthplace remains uncertain within the existing chalk sheep country. Several pages naming
-his family were removed from the sect's intake folio. At least one villager who participated in
-surrendering him has regretted it ever since.
+Merebutton is Ganji's birthplace: a damp Button Hills sheep village of low stone cottages, button
+collections, and rumours. Ganji does not know why his parents abandoned him and assumes the worst.
+Their identities and reasons exist as optional background, not as the purpose of his life.
+
+### Master Orun Vale
+
+The Tensor headmaster and strongest living fighter trained Ganji directly. Orun’s affection is real,
+but so is his conviction that the sect has a claim on Ganji’s future. Ganji’s former sect friends
+are similarly complicated: people he misses, even if some will help bring him back.
+
+### Nettle
+
+Nettle is a soot-grey cat with one white toe. He understands Ganji but makes no promise to obey him;
+he follows when curious, disappears when bored, and has a talent for being near unattended food and
+the one person who knows more than they say. Nettle is companionship and colour, not a combat pet or
+a required plot device.
 
 ## Character-linked quest hooks
 
@@ -92,8 +108,9 @@ without accepting the sect's claim that every discovery belongs to it.
 
 ## Opening connection
 
-Ganji reaches Bramblebridge shortly before the opening of *The Thirteenth Bell*. When the apparently
-driverless tax wagon enters the rainy market, his training makes crowd movement, the horse's
-attention, and one bystander's premature reaction natural things for him to examine. What he notices
-and whether uncertainty requires a check remain decisions for the live D&D rules owner.
-
+Two weeks after escaping, Ganji reaches Bramblebridge shortly before the opening of *The Thirteenth
+Bell*. He has stopped running hard enough to notice the rainy market, a possible new friend, and
+Nettle’s sudden interest in a seemingly driverless tax wagon. Ganji’s training makes crowd movement,
+the horse's attention, and one bystander's premature reaction natural things for him to examine.
+What he notices and whether uncertainty requires a check remain decisions for the live D&D rules
+owner.

@@ -44,6 +44,7 @@ public sealed record ApplicationEcsEffectBatch
     public IReadOnlyList<string> ProceduresUsed { get; init; } = [];
     public ApplicationEcsExecutionIdentity? ExecutionIdentity { get; init; }
     public IReadOnlyList<ApplicationEcsContainmentExpectation> ContainmentExpectations { get; init; } = [];
+    public IReadOnlyList<ApplicationEcsContainmentEdgeExpectation> ContainmentEdgeExpectations { get; init; } = [];
 
     /// <summary>
     /// Optional exact mechanic evidence supplied by a generic evaluated-action owner. Ordinary
@@ -61,6 +62,13 @@ public sealed record ApplicationEcsContainmentExpectation(
     IReadOnlyList<EcsContainmentExpectationItem> Contents);
 
 public sealed record EcsContainmentExpectationItem(string EntityId, string Slot, int Revision);
+
+/// <summary>Host-only exact containment edge that must still match inside the effect transaction.</summary>
+public sealed record ApplicationEcsContainmentEdgeExpectation(
+    string ContainedEntityId,
+    string ContainerEntityId,
+    string Slot,
+    int Revision);
 
 /// <summary>
 /// Optional host-owned identity for at-most-once execution. Ordinary callers leave this absent;
@@ -131,6 +139,7 @@ public static class ApplicationEcsEffectValidation
     // nested projection solely because structural concurrency evidence was attached.
     public const int MaximumContainmentExpectations = 32 * 101;
     public const int MaximumContentsPerExpectation = 100;
+    public const int MaximumContainmentEdgeExpectations = 32 * 101;
 
     public static IReadOnlyList<ApplicationEcsEffectProblem> Validate(ApplicationEcsEffectBatch? batch)
     {
@@ -201,6 +210,34 @@ public static class ApplicationEcsEffectValidation
                         problems.Add(new(-1, "CONTAINMENT_EXPECTATION_INVALID",
                             $"Containment snapshot {expectationIndex} entry {contentIndex} is invalid or duplicated."));
                 }
+            }
+        }
+        if (batch.ContainmentEdgeExpectations is null)
+            problems.Add(new(-1, "CONTAINMENT_EDGE_EXPECTATIONS_REQUIRED",
+                "The containment-edge-expectation list is required."));
+        else if (batch.ContainmentEdgeExpectations.Count > MaximumContainmentEdgeExpectations)
+            problems.Add(new(-1, "CONTAINMENT_EDGE_EXPECTATION_LIMIT",
+                $"At most {MaximumContainmentEdgeExpectations} exact containment edges may be checked."));
+        else
+        {
+            var containedEntities = new HashSet<string>(StringComparer.Ordinal);
+            for (var expectationIndex = 0;
+                 expectationIndex < batch.ContainmentEdgeExpectations.Count;
+                 expectationIndex++)
+            {
+                var expectation = batch.ContainmentEdgeExpectations[expectationIndex];
+                if (expectation is null
+                    || string.IsNullOrWhiteSpace(expectation.ContainedEntityId)
+                    || expectation.ContainedEntityId.Length > 200
+                    || string.IsNullOrWhiteSpace(expectation.ContainerEntityId)
+                    || expectation.ContainerEntityId.Length > 200
+                    || expectation.ContainedEntityId == expectation.ContainerEntityId
+                    || expectation.Slot is null
+                    || expectation.Slot.Length > 100
+                    || expectation.Revision < 1
+                    || !containedEntities.Add(expectation.ContainedEntityId))
+                    problems.Add(new(-1, "CONTAINMENT_EDGE_EXPECTATION_INVALID",
+                        $"Exact containment edge {expectationIndex} is invalid or duplicated."));
             }
         }
         if (batch.ExecutionIdentity is not null

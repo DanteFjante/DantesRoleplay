@@ -267,8 +267,8 @@ public sealed class ApplicationWorldAuthoringSynchronizer(
                 .Where(value => !manifestById.TryGetValue(value, out var authored) || authored.ExpectedRevision > 0)
                 .Distinct(StringComparer.Ordinal)
                 .ToArray();
-            var expectations = BuildContainmentExpectations(
-                relevantExisting, request.RootEntityId, containmentByChild, currentContainments);
+            var expectations = BuildContainmentEdgeExpectations(
+                relevantExisting, request.RootEntityId, containmentByChild);
             if (expectations is null)
                 return Rejected(dryRun, "WORLD_SCOPE_TOO_LARGE",
                     "The relevant containment ancestry exceeds the bounded transaction snapshot.");
@@ -282,7 +282,7 @@ public sealed class ApplicationWorldAuthoringSynchronizer(
                     ? ["procedure.system.use"]
                     : context.ProceduresUsed,
                 ExecutionIdentity = new(operationId, requestFingerprint),
-                ContainmentExpectations = expectations
+                ContainmentEdgeExpectations = expectations
             };
             var applied = await effects.ApplyAsync(batch, dryRun, cancellationToken);
             return new(applied.Valid, dryRun, applied.Replayed, manifestEntities.Length,
@@ -334,13 +334,12 @@ public sealed class ApplicationWorldAuthoringSynchronizer(
         return null;
     }
 
-    private static IReadOnlyList<ApplicationEcsContainmentExpectation>? BuildContainmentExpectations(
+    private static IReadOnlyList<ApplicationEcsContainmentEdgeExpectation>? BuildContainmentEdgeExpectations(
         IEnumerable<string> entityIds,
         string rootId,
-        IReadOnlyDictionary<string, EcsContainmentView> containmentByChild,
-        IReadOnlyList<EcsContainmentView> containments)
+        IReadOnlyDictionary<string, EcsContainmentView> containmentByChild)
     {
-        var containers = new HashSet<string>(StringComparer.Ordinal);
+        var edges = new Dictionary<string, EcsContainmentView>(StringComparer.Ordinal);
         foreach (var entityId in entityIds)
         {
             var current = entityId;
@@ -348,24 +347,17 @@ public sealed class ApplicationWorldAuthoringSynchronizer(
             while (current != rootId && containmentByChild.TryGetValue(current, out var edge))
             {
                 if (!seen.Add(current)) return null;
-                containers.Add(edge.ContainerEntityId);
+                edges[edge.ContainedEntityId] = edge;
                 current = edge.ContainerEntityId;
             }
             if (current != rootId) return null;
         }
-        if (containers.Count > ApplicationEcsEffectValidation.MaximumContainmentExpectations) return null;
-        var result = new List<ApplicationEcsContainmentExpectation>(containers.Count);
-        foreach (var container in containers.Order(StringComparer.Ordinal))
-        {
-            var contents = containments.Where(value => value.ContainerEntityId == container)
-                .OrderBy(value => value.ContainedEntityId, StringComparer.Ordinal)
-                .Select(value => new EcsContainmentExpectationItem(
-                    value.ContainedEntityId, value.Slot, value.Revision))
-                .ToArray();
-            if (contents.Length > ApplicationEcsEffectValidation.MaximumContentsPerExpectation) return null;
-            result.Add(new(container, contents));
-        }
-        return result.AsReadOnly();
+        if (edges.Count > ApplicationEcsEffectValidation.MaximumContainmentEdgeExpectations) return null;
+        return Array.AsReadOnly(edges.Values
+            .OrderBy(value => value.ContainedEntityId, StringComparer.Ordinal)
+            .Select(value => new ApplicationEcsContainmentEdgeExpectation(
+                value.ContainedEntityId, value.ContainerEntityId, value.Slot, value.Revision))
+            .ToArray());
     }
 
     private static bool NewEntityReachesRoot(

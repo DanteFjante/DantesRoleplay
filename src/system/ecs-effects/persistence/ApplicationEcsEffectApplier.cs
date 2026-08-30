@@ -165,16 +165,29 @@ public sealed class ApplicationEcsEffectApplier(
 
     private async Task VerifyContainmentsAsync(ApplicationEcsEffectBatch batch, CancellationToken cancellationToken)
     {
-        if (batch.ContainmentExpectations.Count == 0) return;
-        var current = await RequireEdges().ListContainmentsAsync(batch.StateSpaceId, cancellationToken);
-        foreach (var expected in batch.ContainmentExpectations)
+        foreach (var expected in batch.ContainmentEdgeExpectations)
         {
-            var actual = current.Where(value => value.ContainerEntityId == expected.ContainerEntityId)
-                .OrderBy(value => value.ContainedEntityId, StringComparer.Ordinal).ToArray();
-            if (actual.Length != expected.Contents.Count
-                || actual.Where((value, index) => value.ContainedEntityId != expected.Contents[index].EntityId
-                    || value.Slot != expected.Contents[index].Slot || value.Revision != expected.Contents[index].Revision).Any())
-                throw new InvalidOperationException("Containment roster is stale.");
+            var actual = await RequireEdges().GetContainmentAsync(
+                batch.StateSpaceId, expected.ContainedEntityId, cancellationToken);
+            if (actual is null
+                || actual.ContainerEntityId != expected.ContainerEntityId
+                || actual.Slot != expected.Slot
+                || actual.Revision != expected.Revision)
+                throw new InvalidOperationException("Containment edge is stale.");
+        }
+
+        if (batch.ContainmentExpectations.Count > 0)
+        {
+            var current = await RequireEdges().ListContainmentsAsync(batch.StateSpaceId, cancellationToken);
+            foreach (var expected in batch.ContainmentExpectations)
+            {
+                var actual = current.Where(value => value.ContainerEntityId == expected.ContainerEntityId)
+                    .OrderBy(value => value.ContainedEntityId, StringComparer.Ordinal).ToArray();
+                if (actual.Length != expected.Contents.Count
+                    || actual.Where((value, index) => value.ContainedEntityId != expected.Contents[index].EntityId
+                        || value.Slot != expected.Contents[index].Slot || value.Revision != expected.Contents[index].Revision).Any())
+                    throw new InvalidOperationException("Containment roster is stale.");
+            }
         }
     }
 

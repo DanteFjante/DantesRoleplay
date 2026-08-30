@@ -158,6 +158,29 @@ public sealed class ApplicationWorldAuthoringSynchronizerTests : IDisposable
             "world-space", "location.fixture.anchor", setup.Type.QualifiedTypeId))!.ValueJson);
     }
 
+    [Fact]
+    public async Task Mature_root_with_more_than_one_hundred_unrelated_children_accepts_a_small_manifest()
+    {
+        var setup = await SetupAsync();
+        for (var index = 0; index < 101; index++)
+        {
+            var entityId = $"location.fixture.existing-{index:D3}";
+            await setup.Store.CreateEntityAsync("world-space", entityId, entityId);
+            await setup.Edges.MoveContainmentAsync(
+                "world-space", entityId, "world.fixture", "location", 0);
+        }
+        var request = NewSingleEntityManifest(
+            "6123456789abcdef0123456789abcdef", "location.fixture.new", "New");
+
+        var dryRun = await setup.Synchronizer.SynchronizeAsync(request, Context, dryRun: true);
+        var committed = await setup.Synchronizer.SynchronizeAsync(request, Context, dryRun: false);
+
+        Assert.True(dryRun.Accepted);
+        Assert.True(committed.Accepted);
+        Assert.Equal("world.fixture", (await setup.Edges.GetContainmentAsync(
+            "world-space", "location.fixture.new"))!.ContainerEntityId);
+    }
+
     private async Task<SetupResult> SetupAsync()
     {
         var db = _fixture.CreateContext();

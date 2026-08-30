@@ -1,6 +1,6 @@
 # Caldris Slice 7 validation — Ganji narrative integration
 
-Status: **blocked without live changes**
+Status: **verified with live readback**
 Date: 2026-08-30
 
 ## Repository result
@@ -26,10 +26,19 @@ Date: 2026-08-30
   relationship endpoints were outside the selected root, operations
   `33056df6e0ec467bb31986e164605447` and `0874faf82e8b47f3b348459119496fa6`;
   no state changed.
+- Application Kernel Slice 12B replaced complete unrelated-sibling snapshots with exact bounded
+  ancestry-edge checks inside the same transaction.
+- The exact revised-attempt manifest passed dry run with eight reviewed entities and 41 effects;
+  effect operation `2a606ff22f60748bf92fb8d638fe4a67`.
+- The byte-identical payload committed through the plugin; effect operation
+  `6f4cb51f8c6cc527a720070d0fb3c2fb`, outer operation
+  `c8c050f65a8f4aa2bae123e2b10a0b0e`.
+- Live application readback verified 8/8 entities at revision 1, every declared component count,
+  8/8 containments, and 12/12 relationships.
 
 ## Retained gates
 
-Live import requires a separately approved platform repair for bounded additive authoring beneath a
-mature World root. Ganji's executable character additionally requires the player's species
-representation, SRD background, Standard Array placement, languages, Monk tool choice, and starting
-equipment choice. Neither gate is silently guessed or bypassed.
+The narrative import gate is closed. Ganji's executable character still requires the player's
+species representation, SRD background, Standard Array placement, languages, Monk tool choice, and
+starting equipment choice. That separate character-creation gate is not silently guessed or
+bypassed.

@@ -1,6 +1,6 @@
 # Caldris Slice 7 implementation — Ganji narrative integration
 
-Status: **blocked**
+Status: **accepted**
 Owner/roadmap: Caldris character-linked hooks and application World state
 Dependency tree/leaf: Caldris playable opening; character-linked narrative preparation
 Ruleset alignment: **dnd2024-compatible**
@@ -48,15 +48,10 @@ made.
   GM-only preparation;
 - no actor, participation, D&D rule state, quest progress, or played outcome is created.
 
-## Current blocker
+## Completion evidence
 
-The exact reviewed manifest is repository-complete but cannot yet be committed through the live
-plugin. A Caldris-root preview fails `WORLD_SCOPE_TOO_LARGE` because the root's containment ancestry
-now exceeds the transaction snapshot bound. Narrowing to Alderwick or Campaign roots fails closed
-with `WORLD_SCOPE_INVALID` because the mandatory faction/knowledge `in-world` relationship endpoint
-lies outside those selected roots. Splitting the package does not remove either invariant.
-
-No live state was changed. Bypassing `system.world-state.sync`, omitting required World-scope links,
-or creating Ganji through generic effects would violate the governing procedures. The smallest
-prerequisite is a separately approved platform slice that permits a bounded additive sync to prove
-World membership without snapshotting the complete mature Caldris root.
+Application Kernel Slice 12B repaired mature-root synchronization without changing the public
+manifest or relaxing World scope. The exact manifest then passed dry run and committed atomically.
+Live readback verified all eight entities, their components and containments, and all twelve
+relationships. Ganji's playable actor remains the separate character-creation boundary described
+above.
