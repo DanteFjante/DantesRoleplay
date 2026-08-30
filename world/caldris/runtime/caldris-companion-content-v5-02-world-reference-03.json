@@ -1,0 +1,802 @@
+{
+  "requestToken": "ca1d215e500000000000000000000016",
+  "applicationId": "dnd2024",
+  "stateSpaceId": "dnd2024-main",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.faith.the-storm",
+      "name": "The Storm",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Concerns: sailors, courage, change, necessary risk. Everyday practice: bell signals, rescue vows, shared storm meals.",
+            "provenance": "Caldris world bible — Nine Lamps Covenant",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "rule",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.faith.the-forge",
+      "name": "The Forge",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Concerns: labour, transformation, invention. Everyday practice: tool dedications, apprentice feasts, repairing before replacing.",
+            "provenance": "Caldris world bible — Nine Lamps Covenant",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "rule",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.faith.the-quiet",
+      "name": "The Quiet",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Concerns: death, grief, rest, endings. Everyday practice: washing the dead, name recitations, memorial gardens.",
+            "provenance": "Caldris world bible — Nine Lamps Covenant",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "rule",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.faith.the-laughing-lamp",
+      "name": "The Laughing Lamp",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Concerns: humility, joy, honest embarrassment. Everyday practice: feast-day misrule, comic saints' tales, pardoning small social debts.",
+            "provenance": "Caldris world bible — Nine Lamps Covenant",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "rule",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.era.the-first-footprints",
+      "name": "Era — The First Footprints",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "before c. 3100 BS. The oldest stories describe people following immense animals between receding ice and warm river valleys. Dragons appear in these stories as weather, mountains, judges, and neighbours, making it unclear which passages are literal. Present residues include migration songs, standing stones, seasonal rights of passage, and burial mounds placed where no modern border makes sense. Hidden possibility: several “roads of the first people” follow a pattern visible only from the air and converge on six places now occupied by dragon domains.",
+            "provenance": "Caldris world bible — seven eras",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.era.hearths-and-standing-stones",
+      "name": "Era — Hearths and Standing Stones",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "c. 3100–1900 BS. Permanent villages, managed woodland, long barrows, river shrines, and seasonal moot grounds spread across both continents. Authority was local and layered rather than royal. Many modern customary rights—common grazing, guest-right, sanctuary at a lit hearth—claim origin here. Present residues: village commons, oath stones, funeral breads, taboo groves, and land claims that predate written title. Scholars dispute whether the era's carved “lamps” depict stars, seed baskets, or something held by a dragon's claw.",
+            "provenance": "Caldris world bible — seven eras",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.era.the-river-thrones",
+      "name": "Era — The River Thrones",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "c. 1900–840 BS. Irrigation, bronze and early iron, walled river towns, written toll records, and dynastic temples produced the first durable states. Eredane's lower Mere and Solasca's Aur and Namar valleys grew powerful independently, then discovered one another through sea trade. Present residues: canal alignments, royal burial islands, inherited water courts, archaic weights, and several city districts built above older streets. The period ended through regional collapses, not one universal disaster.",
+            "provenance": "Caldris world bible — seven eras",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.era.the-lantern-concord",
+      "name": "Era — The Lantern Concord",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "c. 840–116 BS. The Concord began as mutual protection for merchants, pilgrims, and messengers. It standardized measures, seals, road maintenance, maritime signals, debt arbitration, and the safety of certain archives. Over centuries it accumulated land, courts, armed escorts, hostage guarantees, and the power to declare whose records counted. It never formally called itself an empire. Its critics did. The Concord linked both continents and created many roads, lighthouses, script traditions, and legal concepts still used today. It also turned obligations into inheritable instruments, displaced communities whose claims could not be expressed in its forms, and learned to hide coercion inside neutral procedure. Present residues: Lantern Roads, seven-sided seals, archive houses, standard bridge widths, international guest-right, suspiciously similar court vocabulary, and dormant debt clauses.",
+            "provenance": "Caldris world bible — seven eras",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.era.the-sundering-of-seals",
+      "name": "Era — The Sundering of Seals",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "116 BS–1 AS. The Concord collapsed over a century. Grain failures, forged tallies, regional revolts, unpaid escorts, dragon interference, succession struggles, and competing reforms all contributed. The last High Assessor disappeared during negotiations at Aster Quay. In Year 1 AS, twelve successor delegations publicly broke the master seal and declared old hereditary debts void. Present residues: abandoned archive forts, disputed land, missing ledgers, noble families founded by rebels and auditors alike, and a deep fear of centralized record power. The secret Seventh Ledger society believes the Concord fell because it compromised, not because it controlled too much.",
+            "provenance": "Caldris world bible — seven eras",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.era.the-crownmaking",
+      "name": "Era — The Crownmaking",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "1–560 AS. Modern kingdoms, marches, leagues, and city institutions consolidated. Borders shifted through marriage, river change, local consent, conquest, and clerical arbitration. This was not constant war: long local peaces alternated with short brutal conflicts. Most present capitals acquired their walls, courts, guild privileges, and civic identities in this era. Present residues: royal law, layered local rights, city charters, noble titles, border monasteries, and the common belief that each current polity is older and more inevitable than it really is.",
+            "provenance": "Caldris world bible — seven eras",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.era.the-long-reprieve-and-fraying-peace",
+      "name": "Era — The Long Reprieve and Fraying Peace",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "560 AS to present. The Three Banner War ended in 560 AS after six years of confused alliances, failed sieges, disease, and one winter in which soldiers on both sides informally stopped fighting to repair the same flood bank. The Lantern Sea Accord established protected grain routes, prisoner exchange, pilgrim rights, and regular diplomatic congresses. Eighty-three years later, the generation that remembers the war is fading. New officials treat peace as an administrative fact rather than a hard-won habit. Recent events include the Summer Without Swallows, the death of two heirs in unrelated accidents, counterfeit seven-sided seals, unusual dragon signs, and a rise in “temporary” tolls that never expire. ## The twelve polities | Continent | Polity | Form | Capital | Other primary cities | Present pressure | | --- | --- | --- | --- | --- | --- | | Eredane | Alderwick | Kingdom | Merecross | Highmead, Dunwarren | A childless queen, aggressive toll reform, and a suspiciously organize…",
+            "provenance": "Caldris world bible — seven eras",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.tension.counterfeit-seven-sided-seals-revive-obligations-supposedly-destroyed-in-the-sundering",
+      "name": "Present tension",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Counterfeit seven-sided seals revive obligations supposedly destroyed in the Sundering.",
+            "provenance": "Caldris world bible — current tensions",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.tension.two-unrelated-royal-heirs-died-within-eighteen-months-making-marriages-and-minor-claims-newly",
+      "name": "Present tension",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Two unrelated royal heirs died within eighteen months, making marriages and minor claims newly",
+            "provenance": "Caldris world bible — current tensions",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.tension.the-summer-without-swallows-damaged-insect-cycles-and-became-a-canvas-for-prophecy-and-fraud",
+      "name": "Present tension",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "The Summer Without Swallows damaged insect cycles and became a canvas for prophecy and fraud.",
+            "provenance": "Caldris world bible — current tensions",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.tension.autumn-grain-shipping-depends-on-carrowmere-shipwrights-whose-safety-demands-are-justified",
+      "name": "Present tension",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Autumn grain shipping depends on Carrowmere shipwrights whose safety demands are justified.",
+            "provenance": "Caldris world bible — current tensions",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.tension.the-veyr-succession-could-strengthen-local-cooperation-or-produce-the-first-standing-continental",
+      "name": "Present tension",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "The Veyr succession could strengthen local cooperation or produce the first standing continental",
+            "provenance": "Caldris world bible — current tensions",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.tension.the-lantern-sea-accord-congress-meets-next-year-at-aster-quay-whose-presiding-chair-is-missing",
+      "name": "Present tension",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "The Lantern Sea Accord congress meets next year at Aster Quay, whose presiding chair is missing.",
+            "provenance": "Caldris world bible — current tensions",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.tension.dragon-evidence-is-appearing-in-alderwick-lornesse-kethria-and-namarra-for-different-reasons",
+      "name": "Present tension",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Dragon evidence is appearing in Alderwick, Lornesse, Kethria, and Namarra for different reasons;",
+            "provenance": "Caldris world bible — current tensions",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.faith.the-storm",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.faith.the-storm",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.faith.the-forge",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.faith.the-forge",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.faith.the-quiet",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.faith.the-quiet",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.faith.the-laughing-lamp",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.faith.the-laughing-lamp",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.the-first-footprints",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.the-first-footprints",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.hearths-and-standing-stones",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.hearths-and-standing-stones",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.the-river-thrones",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.the-river-thrones",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.the-lantern-concord",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.the-lantern-concord",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.the-sundering-of-seals",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.the-sundering-of-seals",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.the-crownmaking",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.the-crownmaking",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.the-long-reprieve-and-fraying-peace",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.the-long-reprieve-and-fraying-peace",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.counterfeit-seven-sided-seals-revive-obligations-supposedly-destroyed-in-the-sundering",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.counterfeit-seven-sided-seals-revive-obligations-supposedly-destroyed-in-the-sundering",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.two-unrelated-royal-heirs-died-within-eighteen-months-making-marriages-and-minor-claims-newly",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.two-unrelated-royal-heirs-died-within-eighteen-months-making-marriages-and-minor-claims-newly",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.the-summer-without-swallows-damaged-insect-cycles-and-became-a-canvas-for-prophecy-and-fraud",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.the-summer-without-swallows-damaged-insect-cycles-and-became-a-canvas-for-prophecy-and-fraud",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.autumn-grain-shipping-depends-on-carrowmere-shipwrights-whose-safety-demands-are-justified",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.autumn-grain-shipping-depends-on-carrowmere-shipwrights-whose-safety-demands-are-justified",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.the-veyr-succession-could-strengthen-local-cooperation-or-produce-the-first-standing-continental",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.the-veyr-succession-could-strengthen-local-cooperation-or-produce-the-first-standing-continental",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.the-lantern-sea-accord-congress-meets-next-year-at-aster-quay-whose-presiding-chair-is-missing",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.the-lantern-sea-accord-congress-meets-next-year-at-aster-quay-whose-presiding-chair-is-missing",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.dragon-evidence-is-appearing-in-alderwick-lornesse-kethria-and-namarra-for-different-reasons",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.dragon-evidence-is-appearing-in-alderwick-lornesse-kethria-and-namarra-for-different-reasons",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    }
+  ]
+}

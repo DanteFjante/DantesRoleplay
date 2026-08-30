@@ -143,7 +143,7 @@ public sealed class SystemAudienceContextToolsTests
     public void Dnd_chat_contract_uses_the_server_bound_creation_identity()
     {
         var path = Path.Combine(RepositoryRoot(), "catalog", "applications", "dnd2024", "procedures",
-            "play", "procedure.play.dnd2024.mini-game.md");
+            "play", "dnd2024.procedure.play.mini-game.md");
         var contract = File.ReadAllText(path);
 
         Assert.Contains("system.audience-context", contract, StringComparison.Ordinal);
@@ -153,10 +153,12 @@ public sealed class SystemAudienceContextToolsTests
     }
 
     private static LocalKnowledgeSeatSnapshot Seat() => new(
-        true, "principal.fixture", "dnd2024", "campaign.fixture", "actor.fixture");
+        true, "principal.fixture", "dnd2024", "campaign.fixture", "actor.fixture",
+        SourceIds: ["dnd2024-core"]);
 
     private static LocalKnowledgeSeatSnapshot GameMasterSeat() => new(
-        true, "principal.fixture", "dnd2024", "campaign.fixture", null, KnowledgeAudienceRole.GameMaster);
+        true, "principal.fixture", "dnd2024", "campaign.fixture", null,
+        KnowledgeAudienceRole.GameMaster, ["dnd2024-core"]);
 
     private static KnowledgeApplicationBinding Binding()
     {

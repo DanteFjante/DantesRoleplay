@@ -1,11 +1,14 @@
 import type { LocationPerson, WorldLocation } from "../data/hub-types";
 import { Icon } from "./Icon";
+import { MediaImage } from "./MediaImage";
 
 function PersonCard({ person }: { person: LocationPerson }) {
   return (
     <article className="location-person-card" aria-labelledby={`${person.id}-heading`}>
       <header>
-        <span className="location-person-card__portrait" aria-hidden="true">{person.initials}</span>
+        <span className="location-person-card__portrait">
+          <MediaImage fallback={<span aria-hidden="true">{person.initials}</span>} media={person.portrait} />
+        </span>
         <div>
           <small>{person.kind} · {person.role}</small>
           <h3 id={`${person.id}-heading`}>{person.name}</h3>

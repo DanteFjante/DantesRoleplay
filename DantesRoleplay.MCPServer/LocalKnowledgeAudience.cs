@@ -14,7 +14,8 @@ public sealed record LocalKnowledgeSeatSnapshot(
     string ApplicationId,
     string CampaignId,
     string? ActorId,
-    KnowledgeAudienceRole Role = KnowledgeAudienceRole.Actor);
+    KnowledgeAudienceRole Role = KnowledgeAudienceRole.Actor,
+    IReadOnlyList<string>? SourceIds = null);
 
 public interface ILocalKnowledgeSeatProvider
 {
@@ -39,7 +40,9 @@ internal sealed class ConfigurationLocalKnowledgeSeatProvider(IConfiguration? co
             section?["ApplicationId"] ?? "",
             section?["CampaignId"] ?? "",
             section?["ActorId"],
-            role);
+            role,
+            Array.AsReadOnly((section?.GetSection("SourceIds").GetChildren()
+                .Select(value => value.Value ?? "").ToArray()) ?? []));
     }
 }
 
@@ -59,9 +62,14 @@ internal sealed class LocalKnowledgeAudiencePolicy(
     {
         cancellationToken.ThrowIfCancellationRequested();
         var seat = seats.Current();
-        if (!Valid(seat) || seat.ApplicationId != application.ApplicationId ||
-            campaignId != seat.CampaignId || !Loopback(http.HttpContext?.Connection.RemoteIpAddress))
+        if (!Valid(seat) || !Token(campaignId) || seat.ApplicationId != application.ApplicationId ||
+            (seat.Role != KnowledgeAudienceRole.GameMaster && campaignId != seat.CampaignId) ||
+            !Loopback(http.HttpContext?.Connection.RemoteIpAddress))
             return Task.FromResult(KnowledgeAudienceResolution.Denied());
+
+        var effectiveCampaignId = seat.Role == KnowledgeAudienceRole.GameMaster
+            ? campaignId
+            : seat.CampaignId;
 
         var revision = Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new
         {
@@ -70,12 +78,14 @@ internal sealed class LocalKnowledgeAudiencePolicy(
             seat.PrincipalId,
             seat.ApplicationId,
             seat.CampaignId,
+            effectiveCampaignId,
             seat.ActorId,
-            seat.Role
+            seat.Role,
+            SourceIds = seat.SourceIds?.Order(StringComparer.Ordinal).ToArray() ?? []
         })));
         return Task.FromResult(new KnowledgeAudienceResolution(new(
             seat.PrincipalId,
-            seat.CampaignId,
+            effectiveCampaignId,
             seat.Role,
             seat.ActorId,
             revision)));
@@ -85,6 +95,10 @@ internal sealed class LocalKnowledgeAudiencePolicy(
     {
         if (!seat.Enabled || !Token(seat.PrincipalId) || !Token(seat.CampaignId) ||
             !Enum.IsDefined(seat.Role)) return false;
+        if (seat.SourceIds is { Count: > 32 } ||
+            seat.SourceIds is not null && (seat.SourceIds.Any(value => !Token(value)) ||
+                seat.SourceIds.Distinct(StringComparer.Ordinal).Count() != seat.SourceIds.Count))
+            return false;
         if (seat.Role == KnowledgeAudienceRole.GameMaster && seat.ActorId is not null) return false;
         if (seat.Role == KnowledgeAudienceRole.Actor && !Token(seat.ActorId)) return false;
         try { return ApplicationIdentifier.Parse(seat.ApplicationId).Value == seat.ApplicationId; }

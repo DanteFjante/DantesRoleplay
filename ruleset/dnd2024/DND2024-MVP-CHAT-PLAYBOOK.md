@@ -4,7 +4,7 @@ Status: **active MVP boundary**
 Ruleset: `dnd2024`  
 Interface: chat is authoritative; the web companion is optional presentation only.
 
-The executable chat-host contract is [`procedure.play.dnd2024.mini-game`](../../catalog/applications/dnd2024/procedures/play/procedure.play.dnd2024.mini-game.md).
+The executable chat-host contract is [`dnd2024.procedure.play.mini-game`](../../catalog/applications/dnd2024/procedures/play/dnd2024.procedure.play.mini-game.md).
 
 ## Purpose
 

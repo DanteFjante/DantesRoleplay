@@ -623,7 +623,10 @@ export function projectHubEnvelope(source, sourceRevision, audience) {
       projectedMaps,
     ),
     party: source.party.map((member) => ({ ...member })),
-    rules: source.rules.map((rule) => ({ ...rule })),
+    rules: source.rules.map((rule) => ({
+      ...rule,
+      source: rule.source ? { ...rule.source } : null,
+    })),
   };
 }
 

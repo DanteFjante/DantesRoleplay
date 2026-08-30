@@ -15,11 +15,20 @@ public sealed record AuthorizedKnowledgeNotebookRequest(
 public sealed record AuthorizedKnowledgeNotebookEntry(
     string Text,
     string Stance,
-    string PresentationKind);
+    string PresentationKind,
+    AuthorizedKnowledgeNotebookSubject? Subject = null,
+    string? MediaOwnerId = null);
 
 /// <summary>
-/// A player-safe location label derived only from already-admitted knowledge. It carries neither
-/// an entity ID nor location data; its entries repeat notebook content that is visible already.
+/// The exact subject of already-admitted non-familiar knowledge. Consumers must independently
+/// authorize and project the target before using this identity for navigation.
+/// </summary>
+public sealed record AuthorizedKnowledgeNotebookSubject(string Id, string Name);
+
+/// <summary>
+/// A player-safe location label derived only from already-admitted knowledge. The label carries no
+/// location data; its entries repeat notebook content that is visible already and may carry the
+/// same admitted subject reference as the main entry list.
 /// </summary>
 public sealed record AuthorizedKnowledgeNotebookLocation(
     string Name,

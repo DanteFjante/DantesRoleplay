@@ -87,10 +87,10 @@ owner-only local prototype may simulate both views only while it contains no rea
 | Character inventory and location containers | containment, `mechanic.dnd2024.inventory.read`, accepted nested inventory UI | `verified` structurally; `planned` for authorization | The bounded four-level read does not infer secrecy. Ambient character custody and DM-only location holdings need separate audience-safe entry points. |
 | Campaign summaries | chapter/arc closing summaries and immutable session recap | `verified` as bounded continuity data; runtime subject to the campaign conflict | Existing summaries can seed an Adventure Log. They do not prove every session event, situation outcome, or visit. |
 | World History and Places Visited | no player-facing owner | `missing` | The event ledger is structural/administrative and is not a safe narrative history. Visited places cannot be inferred from prose, names, or current containment. |
-| Combat Current View | accepted encounter, initiative, turn-state, and turn-budget reads | `verified` for an explicitly selected encounter; `planned` for automatic current context | No accepted campaign-owned current-encounter selector exists. |
-| Conversation Current View | `game.core.world.interaction` | `missing` as a current-scene discriminator | A durable conversation-type interaction is not a dialogue engine and does not identify the currently active conversation. |
+| Combat Current View | accepted encounter, initiative, turn-state, turn-budget reads, and `game.core.campaign.current-scene` | `implementation complete; acceptance pending` | The campaign selector names the exact encounter; existing encounter owners remain authoritative. |
+| Conversation Current View | `game.core.world.interaction` plus `game.core.campaign.current-scene` | `implementation complete; acceptance pending` | The campaign selector identifies the current accepted conversation without turning the durable interaction into a dialogue engine. |
 | Images and maps | current web asset storage can serve bytes | `missing` as game-state association | No reviewed entity-to-visual reference owns a portrait, location image, world map, audience variant, crop, or alt text. Filenames and directories cannot become authority. |
-| Rules reference | reviewed prototype records with source citations | `planned` | Forty-nine accepted shared-rule records provide a small safe seed, but the broader record audit still reports unresolved fidelity debt. Developer procedures and raw catalog navigation are not a player rulebook. |
+| Rules reference | active source-cited D&D entity catalog | `accepted for registered index` | The Rules tab dynamically indexes every active entity record and preserves exact source-cited detail. Internal mechanics, procedures, queries, and raw JSON remain excluded; richer executable rule text is still separate work. |
 | Durable state and hosted access | game SQLite plus a future narrow HTTPS adapter | `planned` | SQLite remains world/campaign authority. The hosted page must not create a second D1/browser-storage copy of game truth; a remote page cannot read the local database directly. |
 
 ## Dependency tree
@@ -124,19 +124,23 @@ Shared D&D information hub                                                    [p
 │  └─ D4. Explicit authorized visited-place projection                        [missing]
 ├─ E. Party                                                                    [planned]
 │  ├─ E1. Audience-safe active participation roster                           [accepted]
-│  ├─ E2. Canonical character sheet dossier                                   [planned]
-│  ├─ E3. Knowledge, Backstory, Origin, and bounded Inventory                  [planned; provisional presentation accepted]
-│  └─ E4. Character portrait reference                                        [missing]
+│  ├─ E2. Canonical character sheet dossier                                   [planned; stored-state presentation accepted]
+│  ├─ E3. Knowledge, Backstory, Origin, and bounded Inventory                  [planned; direct inventory and provisional presentation accepted]
+│  ├─ E4. Character portrait reference                                        [missing]
+│  └─ E5. Shared owned locations, vehicles, and cargo                          [missing ownership projection]
 ├─ F. Current View                                                             [planned]
-│  ├─ F1. Audience-safe Exploration snapshot                                  [planned]
-│  ├─ F2. Campaign-owned current encounter                                    [missing]
-│  ├─ F3. Current conversation lifecycle                                      [missing]
-│  ├─ F4. Deterministic Combat > Conversation > Exploration resolver          [blocked by F2–F3]
-│  └─ F5. Known travel choices and declared available actions                 [planned]
-├─ G. Rules                                          [pilot accepted; expansion planned]
-│  ├─ G1. Reviewed player-facing reference-entry contract       [accepted for activity pilot]
-│  ├─ G2. Source-cited index, category, search, and detail       [accepted for activity pilot]
-│  └─ G3. Accepted-record-only fidelity gate                                  [verified as a testable seam]
+│  ├─ F1. Audience-safe Exploration snapshot                  [implementation complete; acceptance pending]
+│  ├─ F2. Campaign-owned current encounter selector           [implementation complete; acceptance pending]
+│  ├─ F3. Current conversation selector                       [implementation complete; acceptance pending]
+│  ├─ F4. Deterministic Combat > Conversation > Exploration   [implementation complete; acceptance pending]
+│  ├─ F4A. Preserve projected place context across all modes  [implementation complete; acceptance pending]
+│  └─ F5. Known travel choices and declared available actions [implementation complete; acceptance pending]
+│     ├─ exact player-known open on-foot routes       [implementation complete; acceptance pending]
+│     └─ authored scene affordances/actions            [implementation complete; acceptance pending]
+├─ G. Rules                                          [dynamic registered index accepted]
+│  ├─ G1. Registered entity reference-entry contract             [accepted]
+│  ├─ G2. Source-cited index, category, search, refresh, detail   [accepted]
+│  └─ G3. Active-version and current-source fidelity gate         [accepted]
 └─ H. Product quality and activation                                           [planned]
    ├─ H1. Responsive, keyboard, screen-reader, contrast, and reduced motion   [planned]
    ├─ H2. Loading, absent, denied, stale, disconnected, and empty states       [planned]
@@ -160,7 +164,7 @@ Shared D&D information hub                                                    [p
 | NPC motive versus biography | Keep motive semantics intact. Add a separate generic presentation profile only after its permanent ID/schema meaning is confirmed. |
 | Location inventory versus item secrecy | Containment owns physical structure, not awareness. Only a DM-authorized location-holdings projection may return undiscovered chest contents. |
 | Current View inference versus authoritative state | The server returns a closed scene kind and exact references. The browser does not guess from prose or merely choose the first encounter/interaction it finds. |
-| Helpful suggestions versus hidden LLM work | Show declared available actions, known exits/routes, and authored scene affordances. Optional generated narration must be explicitly attributed and is not required to use the page. |
+| Helpful suggestions versus hidden LLM work | Show exact known open routes and authored scene affordances. Affordances are read-only narrative opportunities, not mechanics, eligibility, or execution. Optional generated narration must be explicitly attributed and is not required to use the page. |
 | Rules browser versus raw catalog/debug docs | Publish a curated, source-cited reference projection. Never expose internal procedure Markdown or fidelity-failing records as player rules. |
 | Hosted persistence versus existing SQLite | SQLite remains canonical. Browser storage holds only harmless preferences; hosted services may store media bytes, but an authoritative entity-to-asset reference and audience policy remain in game state. |
 
@@ -189,10 +193,10 @@ as the primary product surface.
 | 7 | World History | `missing` | 2, world clock/event/domain review | A bounded chronology shows reviewed world events in world time with audience filtering and source references; it does not expose the raw event/audit ledger. |
 | 8 | Active campaign authority restoration/read proof | `conflicting` | current generic application boundary | Current code can resolve an existing campaign-to-world link and read continuity without copying World. A focused test proves two campaigns can reference one world and later reads observe a committed world change. Creation itself may remain outside the UI. |
 | 9 | Campaign overview, Adventure Log, Outcomes, and Places Visited | `planned` | 2 and 8; explicit visit owner for Places Visited | Safe active chapter/arc and immutable recaps render as friendly narrative sections. Outcomes retain their owner/audience. Visits come only from the explicit projection; missing data is shown as unknown, not guessed. |
-| 10 | Party roster and character dossier | `planned` | 2 and active participation | Slice 1 accepts the exact active roster, selection, and six-section provisional dossier. Remaining acceptance requires the canonical sheet and bounded inventory projections; Backstory, mechanical Origin, and Knowledge stay distinct and audience-safe. No character-builder or unsupported spell surface is implied. |
-| 11 | Exploration Current View | `implementation complete; acceptance pending` | 2, 3, accepted current-location/people reads | A location scene shows safe description, observations, co-present people, known exits, and an optional authorized image without requiring a model response. |
-| 12 | Combat and Conversation Current View | `missing` in part | 11 plus current-encounter and current-conversation owners | The server deterministically resolves Combat, Conversation, or Exploration. Combat composes accepted encounter/turn reads; Conversation shows exact participants and safe context; no first-entity scan or prose guess selects a mode. |
-| 13 | Rules reference pilot, then curated expansion | `pilot accepted; expansion planned` | 1; confirmed reference-entry contract for expansion | The accepted pilot exposes the fourteen reviewed activity records through exact catalog reads with search/category/detail and attribution. Further families require their own reviewed expansion slice. |
+| 10 | Party roster and character dossier | `planned` | 2 and active participation | Slice 1 accepts the exact active roster, selection, and six-section provisional dossier. Slice 2 accepts authoritative stored character components, class memberships, and a bounded direct-inventory projection when those records exist, while preserving the explicit provisional fallback. Slice 3 accepts the original cinematic companion Overview, carried-equipment preview, and an honest shared-holdings seam. Remaining acceptance requires the derived character-sheet aggregate, deeper canonical inventory projection, portrait owner, and an explicit audience-safe ownership projection for party locations, vehicles, and cargo; campaign references, visits, containment, and prose never imply ownership. Backstory, mechanical Origin, and Knowledge stay distinct and audience-safe. No character-builder or unsupported spell surface is implied. |
+| 11 | Exploration Current View | `implementation complete; acceptance pending` | 2, 3, accepted current-location/people/knowledge reads | A location scene shows safe description, observations, co-present people, exact known open on-foot routes, read-only authored scene affordances, and an optional authorized image without requiring a model response. No action is inferred or executed. |
+| 12 | Combat and Conversation Current View | `implementation complete; acceptance pending` | 11 plus confirmed `game.core.campaign.current-scene` | The server deterministically resolves Combat, Conversation, or Exploration. Combat composes accepted encounter/turn reads; Conversation shows exact authorized participants; both retain the same audience-projected place description and observations. No first-entity scan or prose guess selects a mode. |
+| 13 | Rules reference registered catalog | `accepted` | 1 | The live page indexes every active D&D entity without a maintained ID list, derives family filters, searches the complete set, refreshes safely, and shows exact source-cited detail. Internal mechanics/procedures/queries and raw JSON are absent. |
 | 14 | Responsive, revision-aware private acceptance | `planned` | Delivered leaves from 2–13 | Mobile/desktop, keyboard, screen reader, contrast, reconnect/stale/empty/denied states pass. Automated tests prove Player bytes exclude secrets, DM preview matches Player, tabs require no LLM call, and every read leaves SQLite unchanged. |
 
 If a missing World History or media contract blocks its leaf, Party, Exploration, or the Rules pilot
@@ -246,15 +250,26 @@ The user's 2026-08-28 instruction to continue with the next planned slices confi
 server-issued audience/read-envelope Leaf 2. It does not authorize public sharing or app-owned
 authentication.
 
+The user's 2026-08-30 confirmation authorizes the campaign current-situation owner using the
+existing D&D application namespace. The authored `game.core.campaign.current-scene` component is
+therefore runtime-qualified as `dnd2024.game.core.campaign.current-scene`. It does not authorize a
+live state write or activation. The user's later instruction to continue implementing the Current
+tab confirms the separate read-only player-known route projection described by Slice 3.
+The user's next instruction to continue after the permanent-contract gate confirms the authored
+`game.core.campaign.scene-affordances` owner, runtime-qualified as
+`dnd2024.game.core.campaign.scene-affordances`, and its read-only Current View projection.
+
 Separate confirmation is still required before introducing:
 
 - public sharing, app-owned authentication, or a seat-management surface;
 - a current campaign-root definition or restored existing-world campaign-create surface;
-- a player-known location/route projection;
+- a broader player-known location projection beyond the already confirmed notebook subject and
+  exact Current View route boundary;
 - a generic NPC presentation-profile component;
 - a visual-reference component, asset storage meaning, or database migration;
 - a World chronology or campaign visited-place/outcome component;
-- a current-scene, current-conversation, or campaign-current-encounter component;
+- any additional current-conversation/current-encounter component or semantic revision to the
+  confirmed `game.core.campaign.current-scene` selector;
 - a player-facing rules-reference content family;
 - any game-state write, public route, schema-meaning change, or final feature acceptance; or
 - activation/deployment of a live-data revision.

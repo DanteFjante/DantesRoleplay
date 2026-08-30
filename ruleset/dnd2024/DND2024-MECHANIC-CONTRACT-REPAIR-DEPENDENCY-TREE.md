@@ -38,7 +38,7 @@ Close all active mechanic contract owners and useful accepted gaps [subsumed; de
 ## Repair rules
 
 - Search current component, archetype, and content owners before changing a contract.
-- Keep one mechanic ID and one `ruleset.dnd2024.*` category for each capability.
+- Keep one mechanic ID and one `dnd2024.ruleset.*` category for each capability.
 - Adapt inputs/results only when required to express canonical component state; document the exact
   boundary in the active family slice and test the current schema payload.
 - Do not recreate retired stored totals, monolithic item definitions, final Armor Class, encounter

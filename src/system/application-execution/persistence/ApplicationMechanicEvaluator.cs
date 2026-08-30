@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
@@ -32,6 +34,8 @@ public sealed class ApplicationMechanicEvaluator(
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        if (!ValidExecution(request.Execution))
+            return Failed(request, "MECHANIC_EXECUTION_INVALID: The host execution identity is invalid.");
         if (!catalogs.TryGet(request.ApplicationId, out var catalog))
             return Failed(request, "APPLICATION_CATALOG_UNAVAILABLE: The exact active application catalog is unavailable.");
         CatalogRecordView record;
@@ -57,7 +61,8 @@ public sealed class ApplicationMechanicEvaluator(
             requirements, request.Mapping, request.RoleEntityIds, request.InputJson, request.Seed, cancellationToken);
         if (!projection.Ok)
             return new(request.QualifiedMechanicId, request.ContentFingerprint, null, null, projection.Problems);
-        var composed = await ComposeAsync(request, requirements, projection.Projection!, depth, ancestors, budget, cancellationToken);
+        var exactProjection = projection.Projection! with { Execution = request.Execution };
+        var composed = await ComposeAsync(request, requirements, exactProjection, depth, ancestors, budget, cancellationToken);
         if (composed.Projection is null) return Failed(request, composed.Error);
         var run = await engine.RunAsync(document.Source ?? "", composed.Projection, ExecutionLimits.Default, cancellationToken);
         return new(request.QualifiedMechanicId, request.ContentFingerprint, composed.Projection, run, []);
@@ -109,9 +114,16 @@ public sealed class ApplicationMechanicEvaluator(
                 catch (Exception) { return (null, $"CHILD_NOT_ACTIVE ({pair.Key}): '{childMechanicId}' is unavailable."); }
                 if (childRecord.Summary.Kind != "mechanic" || childRecord.Summary.Status != "active")
                     return (null, $"CHILD_NOT_ACTIVE ({pair.Key}): '{pair.Value.MechanicId}' is inactive.");
+                var childExecution = parent.Execution is null ? null : new MechanicExecutionContext(
+                    parent.Execution.RootOperationId,
+                    DeriveChildOperationId(parent.Execution, invocation.Ordinal,
+                        childRecord.Summary.QualifiedId, childRecord.Summary.ContentFingerprint),
+                    parent.Execution.OperationId,
+                    invocation.Ordinal);
                 var child = await EvaluateCoreAsync(new(parent.StateSpaceId, parent.ApplicationId,
                     childRecord.Summary.QualifiedId, childRecord.Summary.ContentFingerprint, parent.Mapping,
-                    invocation.RoleEntityIds, invocation.Input, DeriveSeed(parent.Seed, invocation.Ordinal)),
+                    invocation.RoleEntityIds, invocation.Input, DeriveSeed(parent.Seed, invocation.Ordinal),
+                    childExecution),
                     depth + 1, lineage, budget, cancellationToken);
                 if (!child.Ok || child.Projection is null || child.Run is null)
                     return (null, $"CHILD_FAILED ({pair.Key}): " + (child.Problems.FirstOrDefault() ?? child.Run?.Error ?? "Child did not produce a result."));
@@ -123,7 +135,7 @@ public sealed class ApplicationMechanicEvaluator(
                     return (null, $"CHILD_SNAPSHOT_CONFLICT ({pair.Key}): {snapshotProblem}");
                 results.Add(new ChildMechanicResult(child.QualifiedMechanicId, childRecord.Summary.Version,
                     child.Projection.Seed, invocation.RoleEntityIds, child.Run.Output, child.Run.Log,
-                    child.Run.ElapsedMilliseconds));
+                    child.Run.ElapsedMilliseconds, child.Projection.Execution));
             }
             children[pair.Key] = results;
         }
@@ -275,6 +287,41 @@ public sealed class ApplicationMechanicEvaluator(
             return value ^ (value >> 31);
         }
     }
+
+    private static string DeriveChildOperationId(
+        MechanicExecutionContext parent,
+        int ordinal,
+        string qualifiedMechanicId,
+        string contentFingerprint)
+    {
+        var canonical = string.Join('\n',
+            "mechanic-child-operation-v1",
+            parent.RootOperationId,
+            parent.OperationId,
+            ordinal.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            qualifiedMechanicId,
+            contentFingerprint);
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)))[..32]
+            .ToLowerInvariant();
+    }
+
+    private static bool ValidExecution(MechanicExecutionContext? execution)
+    {
+        if (execution is null) return true;
+        if (!LowerHexOperationId(execution.RootOperationId)
+            || !LowerHexOperationId(execution.OperationId)
+            || execution.InvocationOrdinal < 0)
+            return false;
+        if (execution.ParentOperationId is null)
+            return execution.InvocationOrdinal == 0
+                && execution.OperationId == execution.RootOperationId;
+        return LowerHexOperationId(execution.ParentOperationId)
+            && execution.OperationId != execution.ParentOperationId
+            && execution.OperationId != execution.RootOperationId;
+    }
+
+    private static bool LowerHexOperationId(string value) => value is { Length: 32 }
+        && value.All(character => character is >= '0' and <= '9' or >= 'a' and <= 'f');
 
     private static string QualifyMechanicId(ApplicationIdentifier applicationId, string mechanicId) =>
         mechanicId.StartsWith(applicationId.Value + ".", StringComparison.Ordinal)

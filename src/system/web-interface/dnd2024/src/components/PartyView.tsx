@@ -85,16 +85,25 @@ function sectionEmptyCopy(section: PartySectionId, member: PartyMemberReadModel)
     case "origin":
       return "No class direction or background has been recorded for this character.";
     case "inventory":
-      return "No inventory entries are available. The site will not infer belongings from prose or equipment suggestions.";
+      return member.inventoryStatus === "empty" && member.recordStatus === "Canonical character state"
+        ? "The canonical direct inventory read contains no items. Nested containers are not expanded here."
+        : "No inventory entries are available. The site will not infer belongings from prose or equipment suggestions.";
     default:
       return "No information has been recorded for this section.";
   }
 }
 
-function Overview({ member }: { member: PartyMemberReadModel }) {
+function Overview({
+  member,
+  onOpenSection,
+}: {
+  member: PartyMemberReadModel;
+  onOpenSection: (section: PartySectionId) => void;
+}) {
   const highlights = [...member.origin, ...member.sheet, ...member.backstory]
     .filter((entry, index, all) => all.findIndex((candidate) => candidate.id === entry.id) === index)
-    .slice(0, 4);
+    .slice(0, 3);
+  const equipment = member.inventory.slice(0, 3);
   const availableSections = [
     member.sheet.length,
     member.knowledge.length,
@@ -102,21 +111,52 @@ function Overview({ member }: { member: PartyMemberReadModel }) {
     member.origin.length,
     member.inventory.length,
   ].filter((count) => count > 0).length;
+  const focusCopy = highlights[0]?.detail
+    ?? "This companion is active in the campaign, but their recorded character detail is still taking shape.";
 
   return (
-    <div className="party-overview">
-      <section className="party-overview__facts" aria-label={`${member.name} summary`}>
-        <article><span>Status</span><strong>{member.status}</strong><small>Campaign participation</small></article>
-        <article><span>Record</span><strong>{member.recordStatus}</strong><small>No values are inferred</small></article>
-        <article><span>Dossier</span><strong>{availableSections} sections</strong><small>With recorded information</small></article>
-      </section>
-      {highlights.length ? (
-        <section className="party-overview__highlights">
-          <div className="party-section-heading">
-            <div><span className="eyebrow">At a glance</span><h2>Character highlights</h2></div>
-            <p>{highlights.length} recorded details</p>
+    <div className="party-cinematic-overview">
+      <section className="party-cinematic-stage" aria-label={`${member.name} companion overview`}>
+        <div className="party-cinematic-stage__portrait" aria-hidden="true">
+          <span className="party-cinematic-stage__halo" />
+          <span className="party-cinematic-stage__sigil">{member.initials}</span>
+          <span className="party-cinematic-stage__ground" />
+        </div>
+        <div className="party-cinematic-stage__copy">
+          <span className="eyebrow">Selected companion</span>
+          <h2>{member.name}</h2>
+          <p className="party-cinematic-stage__role">{member.detail}</p>
+          <p className="party-cinematic-stage__lead">{focusCopy}</p>
+          <dl className="party-cinematic-vitals">
+            <div><dt>Campaign</dt><dd>{member.status}</dd></div>
+            <div><dt>Record</dt><dd>{member.recordStatus}</dd></div>
+            <div><dt>Dossier</dt><dd>{availableSections} sections</dd></div>
+          </dl>
+          <div className="party-cinematic-actions">
+            <button onClick={() => onOpenSection("sheet")} type="button">
+              <Icon name="Shield" size={16} /> Open character sheet
+            </button>
+            <button onClick={() => onOpenSection("inventory")} type="button">
+              <Icon name="PackageOpen" size={16} /> View inventory
+            </button>
           </div>
-          <DossierEntries entries={highlights} />
+        </div>
+      </section>
+
+      {highlights.length ? (
+        <section className="party-cinematic-highlights">
+          <div className="party-section-heading">
+            <div><span className="eyebrow">Companion profile</span><h2>Defining details</h2></div>
+            <p>Exact recorded information</p>
+          </div>
+          <div className="party-cinematic-highlight-grid">
+            {highlights.map((entry, index) => (
+              <article className="party-cinematic-highlight" key={entry.id}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <div><small>{entry.kind}</small><h3>{entry.title}</h3><p>{entry.detail}</p></div>
+              </article>
+            ))}
+          </div>
         </section>
       ) : (
         <EmptySection
@@ -124,6 +164,47 @@ function Overview({ member }: { member: PartyMemberReadModel }) {
           title="Identity available"
         />
       )}
+
+      <section className="party-cinematic-loadout">
+        <div className="party-section-heading">
+          <div><span className="eyebrow">On the road</span><h2>Carried equipment</h2></div>
+          <button onClick={() => onOpenSection("inventory")} type="button">
+            Full inventory <Icon name="ArrowRight" size={15} />
+          </button>
+        </div>
+        {equipment.length ? (
+          <div className="party-cinematic-loadout__grid">
+            {equipment.map((entry) => (
+              <article key={entry.id}>
+                <span><Icon name="PackageOpen" size={20} /></span>
+                <div><small>{entry.kind}</small><strong>{entry.title}</strong><p>{entry.detail}</p></div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="party-cinematic-loadout__empty">
+            <Icon name="PackageOpen" size={20} />
+            <span>No carried equipment is available in this character record.</span>
+          </div>
+        )}
+      </section>
+
+      <section className="party-shared-holdings" aria-labelledby="party-shared-holdings-heading">
+        <div className="party-section-heading">
+          <div><span className="eyebrow">Shared by the company</span><h2 id="party-shared-holdings-heading">Party holdings</h2></div>
+          <p>Ownership must be explicitly recorded</p>
+        </div>
+        <div className="party-shared-holdings__grid">
+          <article>
+            <span className="party-shared-holdings__icon"><Icon name="Castle" size={23} /></span>
+            <div><small>Owned locations</small><strong>Not recorded</strong><p>No authoritative party-property relationship is available. Visited or referenced places are not treated as owned.</p></div>
+          </article>
+          <article>
+            <span className="party-shared-holdings__icon"><Icon name="Route" size={23} /></span>
+            <div><small>Wagons &amp; caravans</small><strong>Not recorded</strong><p>No party-owned vehicle is recorded. A future wagon or caravan can expose its information and cargo here once ownership exists.</p></div>
+          </article>
+        </div>
+      </section>
     </div>
   );
 }
@@ -243,7 +324,13 @@ export function PartyView({ party }: { party: PartyMemberReadModel[] }) {
 
           <div className="party-dossier__content">
             {section === "overview" ? (
-              <Overview member={selectedMember} />
+              <Overview
+                member={selectedMember}
+                onOpenSection={(nextSection) => {
+                  setSection(nextSection);
+                  setQuery("");
+                }}
+              />
             ) : (
               <>
                 <div className="party-section-heading">
@@ -254,11 +341,23 @@ export function PartyView({ party }: { party: PartyMemberReadModel[] }) {
                   <p>{entries.length} recorded {entries.length === 1 ? "entry" : "entries"}</p>
                 </div>
                 {section === "sheet" || section === "inventory" ? (
-                  <p className="party-provisional-note">
-                    <Icon name="Shield" size={16} />
+                  <p className={`party-provisional-note ${
+                    (section === "sheet" ? selectedMember.sheetStatus : selectedMember.inventoryStatus) === "canonical"
+                      ? "party-provisional-note--canonical"
+                      : ""
+                  }`}>
+                    <Icon name={
+                      (section === "sheet" ? selectedMember.sheetStatus : selectedMember.inventoryStatus) === "canonical"
+                        ? "BadgeCheck"
+                        : "Shield"
+                    } size={16} />
                     {section === "sheet"
-                      ? "These are recorded character directions, not derived mechanical sheet values."
-                      : "These are recorded belongings, not a canonical custody or equipment calculation."}
+                      ? (selectedMember.sheetStatus === "canonical"
+                        ? "These values come from canonical character state. Derived bonuses remain with the rules engine."
+                        : "These are recorded character directions, not derived mechanical sheet values.")
+                      : (selectedMember.inventoryStatus === "canonical" || selectedMember.inventoryStatus === "empty"
+                        ? "This is the canonical direct inventory projection. Nested containers are not expanded."
+                        : "These are recorded belongings, not a canonical custody or equipment calculation.")}
                   </p>
                 ) : null}
                 {entries.length > 8 ? (

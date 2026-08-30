@@ -1,0 +1,537 @@
+{
+  "requestToken": "ca1d215e000000000000000000000007",
+  "applicationId": "dnd2024",
+  "stateSpaceId": "dnd2024-main",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.ordelain.the-bent-mile",
+      "name": "The Bent Mile",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Riverbank farming strip where every boundary curves around a channel that no longer exists. Present pressure: Surveyors arrive to straighten titles and displace tenant families.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.inkfish-wharf",
+      "name": "Inkfish Wharf",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Mud-brick landing for scribes' ink, fish oil, reeds, and legal couriers, notorious for black-stained cats. Present pressure: Official documents fade to blank within days.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.pomegranate-court",
+      "name": "Pomegranate Court",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Shaded caravan court where fruit sellers, petition writers, and musicians share a long cistern. Present pressure: The cistern tastes of copper and rumors blame a curse.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.reed-judges-rest",
+      "name": "Reed Judge's Rest",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Small island courthouse and ferry inn that hears cases when the Aur changes local boundaries. Present pressure: The island is drifting downstream faster than precedent allows.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.namarra.three-spoon-village",
+      "name": "Three Spoon Village",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Delta settlement famous for communal kitchens and three enormous wooden serving spoons carried during floods. Present pressure: One neighbourhood refuses the evacuation signal.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.namarra.mosquito-abbey",
+      "name": "Mosquito Abbey",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Raised monastery studying fever seasons, drainage, and inexpensive nets amid relentless buzzing. Present pressure: Stored remedies are missing while nearby families fall ill.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.namarra.the-saffron-ox",
+      "name": "The Saffron Ox",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Dry-season cattle market and dye stop with orange awnings visible for miles across the flats. Present pressure: A prized breeding ox apparently predicts which bidder will die.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.namarra.drowned-door-orchard",
+      "name": "Drowned Door Orchard",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Fruit trees grow on narrow levees around the upper frame of a submerged stone doorway. Present pressure: Divers seeking treasure destabilize the levee.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.tessarane.kitewife-mesa",
+      "name": "Kitewife Mesa",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Windy plateau where couriers test signal kites and families dry cheese in woven cages. Present pressure: Kites return with extra knots that resemble military code.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.tessarane.red-cup-spring",
+      "name": "Red Cup Spring",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Caravan water stop whose iron-rich spring stains every drinking cup rust-red. Present pressure: The flow dwindles as three caravans converge.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.tessarane.the-patient-stair",
+      "name": "The Patient Stair",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Thousands of shallow steps carry pilgrims, salt, and pack animals over a high pass. Present pressure: Sections have been rearranged, sending travelers in circles.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.tessarane.cloud-apricot-farm",
+      "name": "Cloud Apricot Farm",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Sheltered highland orchard producing small pale fruit and hosting astronomers during clear winters. Present pressure: Every telescope points slightly wrong despite careful calibration.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.selucia.borrowed-bell-isle",
+      "name": "Borrowed Bell Isle",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Tiny island where every household keeps a bell rescued from another ship or shore. Present pressure: One bell's original owners arrive with a royal order for its return.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.selucia.needle-current",
+      "name": "Needle Current",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Narrow sea passage guided by shore needles, tide boards, and hereditary rowing pilots. Present pressure: The current reverses at the wrong hour.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.selucia.the-unfinished-palace",
+      "name": "The Unfinished Palace",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Roofless royal retreat abandoned after every architect disagreed, now used for weddings and public theatre. Present pressure: A noble claims one completed room as private property during festival week.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.selucia.orangewake",
+      "name": "Orangewake",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Fishing village, citrus garden, and storm refuge where boats return through floating orange peels. Present pressure: Nets fill with carefully folded paper boats instead of fish.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.kethria.copper-rain-terrace",
+      "name": "Copper Rain Terrace",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Vineyard and ore-washing terraces where runoff stains stone green beneath dry-season storms. Present pressure: Crops fail below a newly reopened wash channel.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.kethria.breadshield-monastery",
+      "name": "Breadshield Monastery",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Fortified bakery and refuge storing grain against snow closures; loaves are stamped like little shields. Present pressure: Its flour reserve is infested just before winter.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.kethria.whisper-kiln",
+      "name": "Whisper Kiln",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Remote pottery works whose cooling vents make conversational sounds in mountain wind. Present pressure: Workers hear specific names whispered before accidents.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.kethria.the-empty-saddle",
+      "name": "The Empty Saddle",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Caravanserai at a pass where travelers hang one unused saddle in memory of those lost to winter. Present pressure: Someone removes saddles bearing particular family marks.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.seven-lamps-league.halfprice-bridge",
+      "name": "Halfprice Bridge",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Merchant-funded toll bridge whose fee drops at sunset, producing a daily race of carts and insults. Present pressure: The bridge keeper abolishes the discount without council authority.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.seven-lamps-league.the-fifth-warehouse",
+      "name": "The Fifth Warehouse",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Neutral bonded store with four visible buildings and a famous joke about the missing fifth. Present pressure: Inventories show goods entering a warehouse no one can find.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.seven-lamps-league.pepperglass-yard",
+      "name": "Pepperglass Yard",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Courtyard where spice brokers use coloured glass tubes to compare powders without revealing recipes. Present pressure: Every sample smells faintly of smoke and buyers suspect adulteration.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.seven-lamps-league.chairmans-nap",
+      "name": "Chairman's Nap",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Roadside inn founded where a League chair once slept through a vote; meetings there cannot exceed one hour. Present pressure: Delegates exploit the rule to prevent testimony from remote villages.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    }
+  ],
+  "relationships": []
+}

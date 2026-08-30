@@ -1,0 +1,639 @@
+{
+  "requestToken": "ca1d215e000000000000000000000010",
+  "applicationId": "dnd2024",
+  "stateSpaceId": "dnd2024-main",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "actor.caldris.sabine-thatch",
+      "name": "Sabine Thatch",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Dramatic romantic and Quince Ladder mule driver who narrates deliveries as doomed expeditions. Wants the stair-road kept public; can load animals and read orchard weather flawlessly; avoids discussing a sibling who left for court. Delivers Mothglass sand and Rain Parlour preserves. A letter proving her sibling tried to return softens her theatrical resentment.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.master-olin-vey",
+      "name": "Master Olin Vey",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Strict glassmaker with exquisite manners and an unexpectedly competitive interest in children's spinning tops. Wants the moth swarm understood before rivals close his furnace; knows heat, sand, glass flaws, and contracts; assumes apprentices conceal errors. Owes the Silver Pear Society money. He changes after an apprentice's observation proves more valuable than his reputation.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.pru-damas",
+      "name": "Pru Damas",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Earnest eccentric preserve-maker who catalogs anonymous Rain Letters by emotional weather. Wants threatening messages stopped without ending the custom; notices handwriting, fruit seasons, and reused jars; overshares other people's harmless sentiments. Sends preserves to Merrit Vale. She learns discretion when one confidence protects a vulnerable child.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.bera-flint",
+      "name": "Bera Flint",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Tired authority and elected goat judge who prepares legal opinions while her decorated goat eats the ribbons. Wants missing animals returned without a border incident; understands grazing law and kinship networks; worries outsiders see her court as ridiculous. Respected by Oath Rope Lodges. Serious engagement with the ritual makes her an inventive negotiator.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.iven-coil",
+      "name": "Iven Coil",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Overprepared quarry signaler carrying chalk, bells, coloured cord, spare cord, and notes about the spare cord. Wants the seventh echo restored; maps sound precisely; panics in silence after surviving a collapse. His mentor works at Copperdeep. A nonverbal rescue plan lets him master rather than magically lose his fear.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.maela-dorn",
+      "name": "Maela Dorn",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Warm rogue and bath attendant who trades gossip for chores but will not reveal medical confidences. Wants the spring restored; knows underground service passages and social alliances; owes dangerous lenders for a relative's care. Friendly rival to Della Crookshaw over remedies. Clearing her debt honestly makes her stop facilitating small smuggling.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.edrin-mott",
+      "name": "Edrin Mott",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Literal scholar of posts, boundaries, and obsolete punctuation who answers questions in charter clauses. Wants the tenth post preserved until authenticated; compares tool marks and legal hands; misses obvious intimidation. Works uneasily with the Nine March Moot. Seeing procedure weaponized against a family makes him interpret law toward its purpose.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.rhea-axlebright",
+      "name": "Rhea Axlebright",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Laid-back wheelwright who whistles during emergencies and becomes ferociously concise when safety fails. Wants proof of road sabotage; can diagnose a wheel from its sound; hates formal testimony after being mocked for her accent. Cousin to a Free Axle captain implicated in the scheme. Respectful preparation helps her testify anyway.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.lord-pate-ospen",
+      "name": "Lord Pate Ospen",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Cringeworthy minor noble and enthusiastic host at the Courteous Ruin, forever practicing historical greetings. Wants claimants to honor guest law; knows family histories and recipes better than warfare; desperately needs the manor to matter. Corresponds with Sera Lark about pageants. He gives up his claim when the guest book can protect living families.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.judge-miren-sol",
+      "name": "Judge Miren Sol",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Strict professional stationed at Reed Judge's Rest, with a dry habit of issuing rulings to furniture during rehearsal. Wants the drifting court preserved and cases heard; masters river precedent; fears any improvisation will validate corrupt rivals. Former teacher of an Aur River reformer. A transparent temporary procedure convinces her flexibility can protect law.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.basto-inkhand",
+      "name": "Basto Inkhand",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Gentle grump and Inkfish Wharf maker whose hands, sleeves, and household goat are permanently black. Wants the fading-document panic stopped; understands pigments and paper; once sold poor ink during hardship and expects suspicion. Supplies the Vessa Open Archive League. He confesses his old fault when others distinguish it from the current sabotage.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.yara-pom",
+      "name": "Yara Pom",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Cheerful petition writer at Pomegranate Court who celebrates correctly completed forms with tiny fanfares. Wants copper contamination addressed before officials minimize it; reads bureaucracy and public mood; risks losing her license for helping illiterate clients. Sends legal jokes to Elowen Pike. She becomes a public organizer if protected from retaliatory paperwork.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.sister-dema-voss",
+      "name": "Sister Dema Voss",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Strict Mosquito Abbey healer who labels everything, including chairs, and secretly writes sentimental bird poems. Wants remedies distributed by need; tracks fever patterns and drainage; fears reform will empty stores before the worst month. Debates the Seed Mothers' Compact. Reliable resupply and transparent triage move her from restriction to coalition.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.kavi-three-spoons",
+      "name": "Kavi Three-Spoons",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Grandiose amateur flood marshal wearing a magnificent sash his aunt made from curtain cloth. Wants every neighborhood evacuated safely; knows boats and kitchens, not command; covers uncertainty with speeches. Adored and corrected by Three Spoon cooks. He grows when he delegates publicly and keeps responsibility.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.nemi-oru",
+      "name": "Nemi Oru",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Quietly intense orchard diver who communicates care by sharpening other people's tools. Wants treasure seekers away from Drowned Door levees; can hold breath, read submerged masonry, and graft fruit trees; distrusts scholars after a theft. Has exchanged seeds with Cloud Apricot Farm. Returning credit and control over finds earns her expertise.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.felis-kitewife",
+      "name": "Felis Kitewife",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Earnest eccentric signal-kite maker who describes people by wind behavior. Wants the extra knots decoded; understands lift, fiber, and plateau weather; assumes every pattern is intentional. Supplies the Tessa Sky College but resents its condescension. Accepting an animal explanation lets her notice the genuine old warning.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.old-caro-redcup",
+      "name": "Old Caro Redcup",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Laid-back spring keeper who never hurries and somehow has water ready before anyone asks. Wants caravans to share diminishing water; knows hidden cisterns and burial etiquette; is physically unable to inspect the steep site alone. Once guided Karsh Veyru's copper agents without knowing it. He speaks only when offered practical aid, not interrogation.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.palen-sero",
+      "name": "Palen Sero",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Overprepared road keeper whose emergency list includes spare jokes sorted by audience. Wants the Patient Stair made safe; reads wear, crowds, and mountain risk; sympathizes with the saboteur more than he admits. His dismissed colleague moved the markers. He opposes punishment if officials accept an enforceable maintenance plan.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.mara-bellward",
+      "name": "Mara Bellward",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Strict traditionalist and keeper of Borrowed Bell Isle who corrects provenance stories mid-sentence. Wants the disputed bell to remain until its rescue record is heard; recognizes bronze, inscriptions, and storm tones; fears compromise dishonors ancestors. Her mainland counterpart is a childhood pen friend. Shared public recitation can turn ownership into custodianship.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.joss-oranger",
+      "name": "Joss Oranger",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Cheerful meddler and Orangewake boat librarian who lends books, soup pots, and unsolicited courtship advice. Wants the quarantine children reached safely; reads currents and household needs; has ignored one legitimate health warning before. Knows Houses of Rescue captains. Clear safety conditions turn his defiance into disciplined service.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.architect-sola-mere",
+      "name": "Architect Sola Mere",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Cringeworthy palace guide with elaborate gestures, incorrect heroic poses, and excellent structural judgment. Wants the Unfinished Palace kept public; understands load paths and encoded measurements; longs for noble patronage. Directs pageants with Sera Lark by letter. Refusing a lucrative private commission becomes her proof of maturity.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.brother-tovan-crust",
+      "name": "Brother Tovan Crust",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Gentle grump and Breadshield baker who considers praise suspicious but remembers every hungry household. Wants winter flour saved; can grade grain by touch and organize ovens; concealed the steward's debt out of compassion. Trades recipes with Bramblebridge's Gilded Kettle. A rescue plan that avoids public humiliation earns his full account.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.esi-rillan",
+      "name": "Esi Rillan",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Dry realist and Copper Rain vintner who answers dragon theories by asking who will repair the channel. Wants runoff stopped; knows terrace hydraulics and labour debts; her family benefited from the old tithe road. Distrusts Kethrian court archivists. She supports truth-telling if farmers receive restitution before spectacle.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.varo-senn",
+      "name": "Varo Senn",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Dramatic romantic caravan guard who dedicates each crossing to a different legendary lost traveler. Wants the saddle theft solved; excellent with animals and mountain pursuit; secretly recognizes one supposed dead survivor. Former rival of Arlen Pott. He reveals the survivor only when convinced the party respects chosen lives.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.talla-halfprice",
+      "name": "Talla Halfprice",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Tired bridge keeper with impeccable safety habits and a hobby painting tiny cheerful tollbooths. Wants the bridge closed without causing a riot; reads timber movement and crowds; broke procedure by hiding the cracks. Answerable to rival League councils. She accepts investigation if engineers, not politicians, control reopening.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.venn-pepperglass",
+      "name": "Venn Pepperglass",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Socially awkward spice broker who identifies aromas brilliantly and compliments people as if describing soup. Wants the smoke-tainted cargo cleared; knows trade routes and plant scents; accidentally insults important buyers. Purchases saffron through Namarra. Patient interpretation lets Venn trace the threatened forest without becoming a joke.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.chair-mira-doss",
+      "name": "Chair Mira Doss",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Strict but fair former council chair who can end any speech in exactly one minute and bakes terrible diplomatic biscuits. Wants remote testimony restored at Chairman's Nap; masters procedure; fears appearing nostalgic and irrelevant. Mentored the missing League chair. Evidence of deliberate clause removal brings her back into public conflict.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.provost-halwen-drail",
+      "name": "Provost Halwen Drail",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "the superior who calls exploitation reform. Regional revenue provost, severe, controlled, and convinced that predictable extraction is kinder than arbitrary local privilege. Drail sponsors selective toll chaos so favored carriers and new central offices appear necessary. Rusk believes Drail is the top of the network. Drail actually receives policy packages from Chancellor Sera Vane's office and resents the implied supervision. Defeating Drail may mean public proof, removal, forced testimony, loss of patronage, or a negotiated reform. Drail's fall exposes higher authority but still matters: regional coercion decreases and several honest officials are freed to act.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.chancellor-sera-vane",
+      "name": "Chancellor Sera Vane",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "the higher official who wants a stronger peace. Queen Adela's Chancellor of Roads and Revenue, composed, funny in private, and increasingly willing to manipulate law. Vane fears a succession crisis will break the Lantern Sea Accord. She uses old Concord methods to centralize tolls, messages, and emergency authority, believing temporary control can prevent war. Vane is not formally a member of the Seventh Ledger. Her confidential adviser is. She can become an antagonist, reluctant ally, deposed reformer, or architect of a less coercive system depending on what the party proves and what alternatives they build.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "actor.caldris.auditor-celyn-marr",
+      "name": "Auditor Celyn Marr",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.motive",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "the sponsor above the minister. A pleasant, forgettable policy adviser who never carries a weapon and rarely tells a direct lie. Celyn leads a Seventh Ledger restoration cell and supplied Vane with convincing analyses, forged precedents, and real evidence of approaching instability. Celyn views people as entries that should be made legible for their own protection. Celyn answers to a Council of Margins distributed across both continents. The Council itself is divided: restorationists want Concord authority, custodians want dangerous archives contained, and reformers want public standards without inherited debt. “The boss” becomes a political network, not an infinite line of stronger combatants.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "people",
+        "expectedRevision": 0
+      }
+    }
+  ],
+  "relationships": []
+}

@@ -646,6 +646,63 @@ test("client envelope validation accepts only the closed ready shape", () => {
   };
 
   assert.equal(isReadyHubEnvelope(ready), true);
+  assert.equal(isReadyHubEnvelope({
+    ...ready,
+    world: {
+      ...ready.world,
+      history: [{ ...history[0], consequence: undefined }],
+    },
+  }), true);
+  assert.equal(isReadyHubEnvelope({
+    ...ready,
+    currentSituation: { status: "ready", kind: "exploration", locationId: "archive" },
+  }), true);
+  assert.equal(isReadyHubEnvelope({
+    ...ready,
+    currentSituation: {
+      status: "ready",
+      kind: "exploration",
+      locationId: "archive",
+      affordances: [{ key: "inspect-door", label: "Inspect the door", summary: "Study its runes." }],
+    },
+  }), true);
+  assert.equal(isReadyHubEnvelope({
+    ...ready,
+    currentSituation: {
+      status: "ready",
+      kind: "exploration",
+      locationId: "archive",
+      affordances: [
+        { key: "inspect-door", label: "Inspect the door", summary: "Study its runes." },
+        { key: "inspect-door", label: "Inspect it again", summary: "Duplicate the key." },
+      ],
+    },
+  }), false);
+  assert.equal(isReadyHubEnvelope({
+    ...ready,
+    currentSituation: { status: "ready", kind: "exploration", locationId: "hidden" },
+  }), false);
+  assert.equal(isReadyHubEnvelope({
+    ...ready,
+    currentSituation: {
+      status: "ready",
+      kind: "combat",
+      locationId: "archive",
+      combat: {
+        id: "encounter.archive.ambush",
+        name: "Archive ambush",
+        participants: [{ id: "actor.hero", name: "Hero", initiative: 17, active: true }],
+        turn: {
+          id: "turn.archive.1",
+          participationId: "participation.hero",
+          actorId: "actor.hero",
+          actorName: "Hero",
+          ordinal: 0,
+          budget: { actions: -1, bonusActions: 1, reactions: 1 },
+        },
+      },
+    },
+  }), false);
   assert.equal(isReadyHubEnvelope({ ...ready, status: "denied" }), false);
   assert.equal(isReadyHubEnvelope({ ...ready, audience: { ...ready.audience, seat: "admin" } }), false);
   assert.equal(isReadyHubEnvelope({ ...ready, world: { ...ready.world, locations: [] } }), false);

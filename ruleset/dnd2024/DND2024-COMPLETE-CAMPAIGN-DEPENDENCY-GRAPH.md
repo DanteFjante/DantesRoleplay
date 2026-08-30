@@ -1,6 +1,6 @@
 # D&D 2024 complete-campaign dependency graph
 
-Status: **G1 accepted; no implementation leaf active**
+Status: **G1/G7 accepted; G7N implemented, acceptance pending unrelated D&D suite repair**
 Ruleset alignment: **dnd2024-compatible** at the complete-campaign root; each generic host leaf is
 `ruleset-neutral`, and each rule leaf is `dnd2024-owned`
 Source: **not applicable to the compatible root**; every `dnd2024-owned` implementation leaf must
@@ -53,7 +53,7 @@ and `2b07ed18f7c55fe116171dd4a70a2746d2b1542b71f15a192598c15418b5666b` for cover
 | --- | --- | --- | --- |
 | Generic application kernel | Generic C# application/ECS/effect/operation hosts | Registered applications, exact schemas, declared projections, sandboxed JavaScript, typed effects, transactions, operation history, replay, and adoption exist. | `verified` |
 | Generic world topology | `game.core.world.root`, `game.core.world.location`, containment, `game.core.world.location.connected-to` | World read/spatial/travel procedures and focused tests exist. | `verified` |
-| World/campaign convergence | Generic `game.core.*` contracts versus parallel `dnd2024.world.*`/`dnd2024.campaign.*` application shapes | Campaign creation names incompatible qualified owners; the D&D application still exposes parallel prototype-shaped state. | `conflicting` |
+| World/campaign convergence | Live `dnd2024.game.core.*` component types; parallel prototype roots are migration inputs only | G7 established the runtime owner; G7N has removed application-local identity inversion and unqualified D&D references. | `implemented` |
 | Campaign, quest, and session structures | Generic campaign/chapter/arc/session/quest owners | Participation, checkpoints, recaps, objectives, and procedures exist, but creation, restore, and general quest transitions are incomplete. | `conflicting` |
 | World knowledge | Generic facts, secrets, clues, rumours, factions, motives, fronts, and audience knowledge | Read/authoring structures exist; complete Player-byte secrecy and live authoring remain acceptance work. | `planned` |
 | D&D structure/content | D&D application schemas/archetypes/authored records | 154 component schemas, 71 archetypes, and 2,329+ authored records provide broad structural coverage. | `verified` |
@@ -66,8 +66,8 @@ and `2b07ed18f7c55fe116171dd4a70a2746d2b1542b71f15a192598c15418b5666b` for cover
 | Conditions | Active-effect schemas plus current condition mechanics | Definitions, target relationships, timed lifecycle, and related-effect projection are absent; current mechanics still request `dnd2024.conditions`. | `planned` |
 | Rests | `dnd2024.exploration.rest` | Start/progress/interruption structure exists; completion, authoritative clock events, and reset-provider closure do not. | `planned` |
 | DM/Player table | Information-hub/audience contracts | Shared projections exist; authentication, membership, control, requested view, live transport, and two local-DM-seat expectations are not all closed. | `planned` |
-| Location map owner | `game.core.world.map.visual` and `procedure.game.core.world.spatial` | The owner is confirmed in the [scoped-map tree](../../web/DND2024-SCOPED-MAP-VIEWS-DEPENDENCY-TREE.md); asset registration, guarded writes, safe projection, and component-driven rendering remain. | `verified` |
-| Live world authoring | No reviewed public application-ECS mutation owner | Reads exist; no reviewed action atomically creates, moves, archives, or corrects live graphs. | `missing` |
+| Location map owner | `dnd2024.game.core.world.map.visual` and `procedure.game.core.world.spatial` | The owner is confirmed in the [scoped-map tree](../../web/DND2024-SCOPED-MAP-VIEWS-DEPENDENCY-TREE.md); asset registration, guarded writes, safe projection, and component-driven rendering remain. | `verified` |
+| Live world authoring | `system.world-state.sync` and `IApplicationWorldAuthoringSynchronizer` | Private, replay-safe graph authoring code and focused tests exist; full cross-worktree acceptance remains a separate gate. | `planned` |
 | Durable restore/export | Operation history plus evidence-only session checkpoints | Checkpoints do not capture restorable domain state; no complete package listing/download/restore/migration owner exists. | `missing` |
 
 Primary evidence: [canonical component crosswalk](evidence/modeling/canonical-component-crosswalk.json),
@@ -82,16 +82,18 @@ and the linked focused implementation evidence.
 
 1. SQLite owns live campaigns/world/events/operations/knowledge. Catalog files own authored
    rules/content. The website and plans own neither.
-2. Generic world facts are intended to remain under accepted `game.core.*` owners. The parallel
-   `dnd2024.world.*` and `dnd2024.campaign.*` shapes are a named convergence conflict, not a second
-   accepted authority. No live authoring or migration proceeds until the qualified owner set and
-   rewrite are confirmed.
-3. Location hierarchy is containment only. Connections are reviewed
-   `game.core.world.location.connected-to` edges; routes are separate directed entities.
-4. A country is a `game.core.world.location` with `kind: "region"`. A continent may be a nested
+2. `game.core.*` remains a reusable generic catalog namespace outside the D&D application. Inside
+   the installed D&D application every authored identity and dependency reference is explicitly
+   `dnd2024.*`, including `dnd2024.game.core.*`. The parallel `dnd2024.world.*` and
+   `dnd2024.campaign.*` prototype shapes are migration inputs only, never aliases or new live-write
+   owners. The [G7 convergence record](adoption/evidence/complete-campaign-world-campaign-owner-convergence.json)
+   captures the confirmed disposition; backup and migration gates still apply before any rewrite.
+3. Location hierarchy is containment only. Connections in the D&D application are reviewed
+   `dnd2024.game.core.world.location.connected-to` edges; routes are separate directed entities.
+4. A country is a `dnd2024.game.core.world.location` with `kind: "region"`. A continent may be a nested
    Region. Settlements, sites, and interiors keep their distinct kinds.
-5. Current-style IDs/categories win. Search current owners before adding an ID. Old
-   `ruleset.dnd2024.core.tactical.*` categories do not return.
+5. Current-style IDs/categories win. Search current owners before adding an ID. Retired tactical
+   category branches do not return under a different prefix.
 6. C# may add only generic projection, orchestration, event, clock, transaction, and security
    capabilities. D&D decisions/calculations stay in catalog JavaScript.
 7. The DM/Player switch requests a permitted projection; it is never authorization. Player
@@ -103,16 +105,16 @@ and the linked focused implementation evidence.
    not a third seat or a privilege change.
 10. A verified full-state backup/export must exist before the first live owner rewrite, hierarchy
     migration, or old-campaign migration. Evidence checkpoints alone are not restore authority.
-11. Campaign creation is blocked until `game.core.campaign.root`, the runtime-qualified
-    `dnd2024.game.core.campaign.root`, and the open `dnd2024.campaign.root` application shape are
-    converged to one declared owner and one transaction boundary.
+11. Campaign creation and the authored D&D catalog both use
+    `dnd2024.game.core.campaign.root`; `dnd2024.campaign.root` remains a migration-only prototype
+    shape.
 12. Duplicate gaming-set/instrument choices and the categories for Navigator's Tools and Thieves'
     Tools are a data conflict. G1 inventories it; C1 performs the confirmed rewrite and alias
     retirement before grants or character creation consume those identities.
 13. Retired mechanic owners are never restored wholesale. Each current contract receives one
     disposition: adapt to a current owner, replace with a confirmed missing owner, or document the
     current derived/composed owner that supersedes it.
-14. `game.core.world.map.visual`, nested Region containment, and
+14. `dnd2024.game.core.world.map.visual`, nested Region containment, and
     `location.thalorien.thalos` are confirmed. TypeScript filename/location tables are the conflicting
     presentation path and are removed only after guarded component authoring and projection work.
 
@@ -133,12 +135,12 @@ Run a complete persistent D&D 2024 campaign                                     
 │   ├── G1. Owner/ID/category/reference/empty-behavior ledger                      [verified]
 │   ├── G2. Related-endpoint and optional-component projection                    [missing]
 │   ├── G3. Bounded list/path reference projection                                [missing]
-│   ├── G4. Immutable parent/child operation identity reaches JavaScript          [missing]
+│   ├── G4. Immutable parent/child operation identity reaches JavaScript          [verified]
 │   ├── G5. Generic application events, reactions, and timing windows             [missing]
-│   ├── G6. Authoritative application/world clock bridge                          [missing]
-│   ├── G7. One canonical world/campaign owner set and rewrite plan               [conflicting]
-│   ├── G8. Exact activation/source profile/private-table server lifecycle        [planned]
-│   └── G9. Reviewed live application-ECS authoring transaction                   [missing]
+│   ├── G6. Authoritative application/world clock bridge                          [verified]
+│   ├── G7. One canonical world/campaign owner set and rewrite plan               [verified]
+│   ├── G8. Exact activation/source profile/private-table server lifecycle        [verified]
+│   └── G9. Reviewed live application-ECS authoring transaction                   [verified]
 ├── W. Reusable world, locations, and campaign                                     [planned]
 │   ├── W1. World root, location containment, adjacency, and route structures     [verified]
 │   ├── W2. World validate/create/select/archive and initial clock/reference      [missing]
@@ -293,7 +295,7 @@ settlement may contain sites; a site may contain interiors. Actors/objects use c
 
 Connections remain separate from nesting:
 
-- `game.core.world.location.connected-to` records reviewed undirected adjacency once;
+- `dnd2024.game.core.world.location.connected-to` records reviewed undirected adjacency once;
 - route entities own directed travel, world scope, availability, and duration/distance;
 - on-foot/ground, aerial, water, and teleport paths remain distinct owners when their admission,
   traversal, interruption, or consequences differ;
@@ -375,7 +377,7 @@ Connections remain separate from nesting:
   `character-ability-assignment-policy.validate` → assignment/choice/grant composition;
 - `character-level.record` → class memberships plus derived total;
 - `conditions.guard` → active-effect validation/consumers;
-- `damage-mitigation.write` → `mechanic.dnd2024.creature.defenses.write`;
+- `damage-mitigation.write` → `dnd2024.mechanic.creature.defenses.write`;
 - `melee-reach.write` → activity range plus derived unarmed reach;
 - `origin-languages.resolve` → choices/grants/language writer;
 - `rest.clock-reconcile` → clock-derived activity-classified progress.
@@ -384,17 +386,17 @@ Connections remain separate from nesting:
 
 | Capability | Existing/proposed owner | Decision |
 | --- | --- | --- |
-| World/location | Existing `game.core.world.root/location` plus containment | Preserve `world.thalorien` and country IDs; confirmed new identity is only `location.thalorien.thalos`. Parallel `dnd2024.world.*` state is a G7 conflict, not an alias. |
-| Campaign | Intended generic `game.core.campaign.*`; conflicting D&D-qualified/application shapes | G7 chooses one qualified owner and one creation transaction before any migration/public write. |
-| Location adjacency | Existing `game.core.world.location.connected-to` | No D&D duplicate or embedded connection list. |
-| Condition definitions | Candidate `dnd2024.effect.condition.{blinded,charmed,deafened,frightened,grappled,incapacitated,invisible,paralyzed,petrified,poisoned,prone,restrained,stunned,unconscious,exhaustion}` | Immutable rule definitions use exact `ruleset.dnd2024.core.state.conditions`; active-effect instance entities remain the only applied-condition state. |
+| World/location | Authored and runtime `dnd2024.game.core.world.root/location` | Preserve `world.thalorien` and country IDs. The installed D&D types are canonical; `dnd2024.world.root` is migration-only and not an alias. |
+| Campaign | Authored and runtime `dnd2024.game.core.campaign.root` | The installed D&D type is canonical; `dnd2024.campaign.root` is migration-only and no public/live write may use it. |
+| Location adjacency | Existing `dnd2024.game.core.world.location.connected-to` | No D&D duplicate or embedded connection list. |
+| Condition definitions | Candidate `dnd2024.effect.condition.{blinded,charmed,deafened,frightened,grappled,incapacitated,invisible,paralyzed,petrified,poisoned,prone,restrained,stunned,unconscious,exhaustion}` | Immutable rule definitions use exact `dnd2024.ruleset.core.state.conditions`; active-effect instance entities remain the only applied-condition state. |
 | Active-effect target | Candidate manifest-local kind `effect.active-for-target`, whose sole runtime-qualified identity is `dnd2024.effect.active-for-target` | The local key and qualified kind are one identity at two representation layers, never two peer registrations; active-effect entity → target, with no creature-attached list. |
-| Rest graph | Existing `dnd2024.exploration.rest`; candidate runtime kinds `dnd2024.exploration.has-rest` and `dnd2024.exploration.rest.for-actor` | Use exact category `ruleset.dnd2024.core.gameplay.rest`; candidate mechanics are `mechanic.dnd2024.rest.finish` and `mechanic.dnd2024.rest.hit-die.spend`, each separately confirmed. |
-| Battlefield | Candidate `dnd2024.combat.battlefield`, `dnd2024.archetype.combat-battlefield`, and qualified kinds `dnd2024.encounter.has-battlefield`, `dnd2024.encounter.has-side`, `dnd2024.encounter.side.hostile-to` | Candidate categories awaiting leaf confirmation are `ruleset.dnd2024.core.combat.movement` and `ruleset.dnd2024.core.combat.relationships`; reach/melee reuse `ruleset.dnd2024.core.gameplay.weapon-attacks`. |
-| Character assignment/grants | Candidate `dnd2024.advancement.ability-assignment`; `dnd2024.grant.<owner>.<subject>` | Reuse exact `ruleset.dnd2024.character.creation.abilities`, `ruleset.dnd2024.character.creation.basic`, and `ruleset.dnd2024.character.advancement`; no `content.*.v1` aliases. |
-| Zero HP | Candidate `dnd2024.creature.zero-hit-point-behavior` | Use exact `ruleset.dnd2024.core.gameplay.dying`; distinguish Death Saves/die-at-zero without inferring creature kind. |
+| Rest graph | Existing `dnd2024.exploration.rest`; candidate runtime kinds `dnd2024.exploration.has-rest` and `dnd2024.exploration.rest.for-actor` | Use exact category `dnd2024.ruleset.core.gameplay.rest`; candidate mechanics are `dnd2024.mechanic.rest.finish` and `dnd2024.mechanic.rest.hit-die.spend`, each separately confirmed. |
+| Battlefield | Candidate `dnd2024.combat.battlefield`, `dnd2024.archetype.combat-battlefield`, and qualified kinds `dnd2024.encounter.has-battlefield`, `dnd2024.encounter.has-side`, `dnd2024.encounter.side.hostile-to` | Candidate categories awaiting leaf confirmation are `dnd2024.ruleset.core.combat.movement` and `dnd2024.ruleset.core.combat.relationships`; reach/melee reuse `dnd2024.ruleset.core.gameplay.weapon-attacks`. |
+| Character assignment/grants | Candidate `dnd2024.advancement.ability-assignment`; `dnd2024.grant.<owner>.<subject>` | Reuse exact `dnd2024.ruleset.character.creation.abilities`, `dnd2024.ruleset.character.creation.basic`, and `dnd2024.ruleset.character.advancement`; no `content.*.v1` aliases. |
+| Zero HP | Candidate `dnd2024.creature.zero-hit-point-behavior` | Use exact `dnd2024.ruleset.core.gameplay.dying`; distinguish Death Saves/die-at-zero without inferring creature kind. |
 | D&D events | Candidate `dnd2024.combat.initiative.rolled`, `dnd2024.combat.damage.taken`, `dnd2024.spellcasting.spell.cast`, `dnd2024.exploration.rest.completed` | Payload/timing contracts require separate confirmation. |
-| Map visuals | Confirmed existing `game.core.world.map.visual` | Presentation only; no route/knowledge/geometry authority. TypeScript filename tables are not a second owner. |
+| Map visuals | Confirmed existing `dnd2024.game.core.world.map.visual` | Presentation only; no route/knowledge/geometry authority. TypeScript filename tables are not a second owner. |
 
 ## Tactical and rest ordering
 
@@ -429,16 +431,17 @@ does not reappear as work.
 | ID | Leaf | State | Direct providers | Exit gate |
 | --- | --- | --- | --- | --- |
 | G1 | Owner/ID/category/reference/empty-behavior ledger | `ready` | — | Deterministic machine ledger closes duplicate/retired/empty-owner inventory with no runtime effects. |
-| G8 | Stable activation/source-profile/private-table context | `planned` | G1 | Restart/refresh retains the exact campaign binding and both local-DM-seat tests pass. |
+| G8 | Stable activation/source-profile/private-table context | `verified` | G1 | Restart/refresh retains the exact campaign binding and both local-DM-seat tests pass. |
 | G2 | Related-endpoint and optional-component projection | `planned` | G1 | Exact revision, endpoint, optionality, limit, and fail-closed tests pass generically. |
 | G3 | Bounded list/path reference projection | `planned` | G1 | Depth/count/component limits and malformed/missing/duplicate/stale reference tests pass. |
-| G4 | Parent/child operation identity into JavaScript | `planned` | G1 | Host-issued immutable IDs reach JavaScript and typed effects; callers cannot forge future IDs. |
+| G4 | Parent/child operation identity into JavaScript | `verified` | G1 | Host-issued immutable IDs reach JavaScript and typed effects; callers cannot forge future IDs. |
 | G5 | Generic deterministic event/reaction/timing seam | `blocked` | G4 | Ordered event envelopes, windows, once-only reactions, replay, and rollback pass with no D&D vocabulary in C#. |
-| G6 | Application/world clock bridge | `planned` | G1 | One coordinate/revision drives elapsed-time consumers and rejects stale or backward updates. |
-| G7 | Canonical world/campaign owner convergence decision | `conflicting` | G1 | One qualified owner/transaction/rewrite matrix is confirmed; every parallel shape has a disposition. |
+| G6 | Application/world clock bridge | `verified` | G1 | One coordinate/revision drives elapsed-time consumers and rejects stale or backward updates. |
+| G7 | Canonical world/campaign owner convergence decision | `verified` | G1 | `dnd2024.game.core.*` is the sole runtime owner; prototype migration inputs have explicit dispositions. |
+| G7N | D&D application namespace containment | `implemented` | G7 | Every current D&D application identity/reference begins `dnd2024.`; generic catalogs remain outside the application; no compatibility aliases or live writes occur. Full feature acceptance waits on the separately recorded D&D suite blockers. |
 | P1 | Full-state capture/restore owner | `missing` | G1, G4 | A complete authorized domain snapshot restores exactly; evidence checkpoints remain evidence-only. |
-| P3 | Immutable pre-migration backup | `blocked` | G7, P1 | Integrity/access/retention/list/download/restore proof exists before any live rewrite. |
-| G9 | Authorized live application-ECS authoring | `blocked` | G4, G7, G8 | Idempotent validated graph mutations commit atomically and are replay/rollback safe. |
+| P3 | Immutable pre-migration backup | `blocked` | G7N, P1 | Integrity/access/retention/list/download/restore proof exists before any live rewrite. |
+| G9 | Authorized live application-ECS authoring | `verified` | G4, G7N, G8 | Private-operator protocol authorization, bounded root scope, exact revisions, typed atomic effects, replay/conflict, and rollback acceptance pass. |
 
 ### World, campaign, access, and their paired UI
 
@@ -566,7 +569,7 @@ does not reappear as work.
 The user confirmed on 2026-08-30 that missing useful D&D features should receive current-style IDs,
 countries are Region locations, and categories/identities must not duplicate. That confirms this
 graph's direction, `location.thalorien.thalos`, nested Region containment, and
-`game.core.world.map.visual`. Planning creates no runtime authority.
+`dnd2024.game.core.world.map.visual`. Planning creates no runtime authority.
 
 Implementation documents still require exact confirmation for candidate schema/ID meanings,
 generic public projection/event/timing contracts, duplicate-content retirement/migration, live ECS
@@ -582,9 +585,10 @@ the complete deterministic input fingerprint, 13 active mechanics whose contract
 owners, the 14 duplicate tool identity groups, two category anomalies, and the conflicting qualified
 world/campaign owner shapes.
 
-G7 is now the next gate, but it remains `conflicting`: it must select one qualified world/campaign
-owner and one migration transaction before G9 can author a live world, create Thalos, or move any
-country. No new world/location leaf is independently ready until that semantic decision is confirmed.
+G7 is verified: the live D&D owner is `dnd2024.game.core.*`, and prototype roots are migration-only
+inputs. G7N is the active identity cutover: current authored D&D application records and references
+must use explicit `dnd2024.*` identities. G9/G8 and the immutable backup gate still prevent live
+world authoring, Thalos creation, or country migration.
 
 ## Planning receipt
 

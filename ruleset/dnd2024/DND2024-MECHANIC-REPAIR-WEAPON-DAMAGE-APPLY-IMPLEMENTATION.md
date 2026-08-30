@@ -4,7 +4,7 @@ Status: **implemented; focused acceptance passed, parent acceptance pending**
 Owner/roadmap: [D&D 2024 roadmap](ROADMAP.md)
 Dependency tree/leaf: [mechanic contract-owner repair](DND2024-MECHANIC-CONTRACT-REPAIR-DEPENDENCY-TREE.md), conditions, checks, and combat
 Ruleset alignment: **dnd2024-compatible**
-Outcome: adapt `mechanic.dnd2024.weapon-damage.apply` to current HP, Temporary HP, and mitigation
+Outcome: adapt `dnd2024.mechanic.weapon-damage.apply` to current HP, Temporary HP, and mitigation
 state without requiring retired weapon-profile or creature-attached rest components.
 Exclusions: rolling weapon damage, rest interruption, death saves, activity execution, schema/content
 changes, and live data.

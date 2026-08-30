@@ -4,9 +4,9 @@ Status: **implemented; focused acceptance passed, parent acceptance pending**
 Owner/roadmap: [D&D 2024 roadmap](ROADMAP.md)
 Dependency tree/leaf: [mechanic contract-owner repair](DND2024-MECHANIC-CONTRACT-REPAIR-DEPENDENCY-TREE.md), physical burden and carrying capacity
 Ruleset alignment: **dnd2024-compatible**
-Source: `source.dnd2024.srd-5.2.1`, `Rules Glossary > Carrying Capacity`
-Outcome: adapt `mechanic.dnd2024.item-burden.read` and
-`mechanic.dnd2024.carrying-capacity.read` to canonical definition links, positive item quantities,
+Source: `dnd2024.source.srd-5.2.1`, `Rules Glossary > Carrying Capacity`
+Outcome: adapt `dnd2024.mechanic.item-burden.read` and
+`dnd2024.mechanic.carrying-capacity.read` to canonical definition links, positive item quantities,
 metric item weights, creature ability scores, and creature Size.
 Exclusions: inventory admission, container volume/weight limits, encumbrance variants, magic
 containers, item movement, schema changes, live data, events, and effects.

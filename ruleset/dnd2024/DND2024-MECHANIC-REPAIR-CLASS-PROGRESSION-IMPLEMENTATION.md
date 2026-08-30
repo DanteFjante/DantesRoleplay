@@ -4,7 +4,7 @@ Status: **implemented; focused acceptance passed, parent acceptance pending**
 Owner/roadmap: [D&D 2024 roadmap](ROADMAP.md)
 Dependency tree/leaf: [mechanic contract-owner repair](DND2024-MECHANIC-CONTRACT-REPAIR-DEPENDENCY-TREE.md), character creation, progression, and rest
 Ruleset alignment: **dnd2024-compatible**
-Outcome: adapt `mechanic.dnd2024.class-progression.read` to the canonical class definition and its
+Outcome: adapt `dnd2024.mechanic.class-progression.read` to the canonical class definition and its
 referenced progression entity without recreating retired progression state.
 Exclusions: character creation, applying grants, advancement transactions, feature behavior, Hit
 Point changes, class membership changes, schema changes, and live data.

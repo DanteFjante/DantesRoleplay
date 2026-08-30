@@ -16,7 +16,8 @@ public sealed record ApplicationMechanicEvaluationRequest(
     ApplicationMechanicProjectionMapping Mapping,
     IReadOnlyDictionary<string, string> RoleEntityIds,
     string InputJson,
-    long Seed);
+    long Seed,
+    MechanicExecutionContext? Execution = null);
 
 public sealed record ApplicationMechanicEvaluationResult(
     string QualifiedMechanicId,

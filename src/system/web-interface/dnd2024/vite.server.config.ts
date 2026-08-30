@@ -1,9 +1,11 @@
-import { cpSync, mkdirSync } from "node:fs";
+import { cpSync, mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+
+import { buildBundledRulesCatalog } from "./src/server/bundled-rules-catalog";
 
 const projectRoot = fileURLToPath(new URL(".", import.meta.url));
 const reviewedMapAssets = [
@@ -25,6 +27,9 @@ export default defineConfig({
         for (const asset of reviewedMapAssets) {
           cpSync(resolve(projectRoot, "public", asset), resolve(outputAssets, asset));
         }
+        const entitiesRoot = resolve(projectRoot, "../../../..", "catalog/applications/dnd2024/content/entities");
+        const rules = buildBundledRulesCatalog(entitiesRoot);
+        writeFileSync(resolve(outputAssets, "rules-catalog.json"), JSON.stringify(rules), "utf8");
       },
     },
   ],

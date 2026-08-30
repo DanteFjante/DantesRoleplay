@@ -8,14 +8,14 @@ public sealed class Dnd2024MovedMechanicTests
 {
     private static readonly string[] MovedMechanics =
     [
-        "checks/mechanic.dnd2024.dice",
-        "movement/mechanic.dnd2024.speed.read",
-        "movement/mechanic.dnd2024.speed.write",
-        "combat/mechanic.dnd2024.healing.apply",
-        "combat/mechanic.dnd2024.temporary-hit-points.write",
-        "combat/mechanic.dnd2024.death-state.write",
-        "data/mechanic.dnd2024.heroic-inspiration.grant",
-        "proficiency/mechanic.dnd2024.character-experience.write"
+        "checks/dnd2024.mechanic.dice",
+        "movement/dnd2024.mechanic.speed.read",
+        "movement/dnd2024.mechanic.speed.write",
+        "combat/dnd2024.mechanic.healing.apply",
+        "combat/dnd2024.mechanic.temporary-hit-points.write",
+        "combat/dnd2024.mechanic.death-state.write",
+        "data/dnd2024.mechanic.heroic-inspiration.grant",
+        "proficiency/dnd2024.mechanic.character-experience.write"
     ];
 
     [Fact]
@@ -33,7 +33,7 @@ public sealed class Dnd2024MovedMechanicTests
             Assert.True(File.Exists(path + ".js"), relative + " is missing JavaScript.");
             Assert.True(File.Exists(path + ".md"), relative + " is missing its contract.");
             var contract = File.ReadAllText(path + ".md");
-            Assert.Contains("category: ruleset.dnd2024.", contract, StringComparison.Ordinal);
+            Assert.Contains("category: dnd2024.ruleset.", contract, StringComparison.Ordinal);
             Assert.Contains("## Description", contract, StringComparison.Ordinal);
             Assert.Contains("## Requirements", contract, StringComparison.Ordinal);
 
@@ -49,44 +49,44 @@ public sealed class Dnd2024MovedMechanicTests
     [Fact]
     public async Task Moved_mechanics_execute_against_current_component_shapes()
     {
-        var dice = await RunAsync("checks/mechanic.dnd2024.dice", "{}", []);
+        var dice = await RunAsync("checks/dnd2024.mechanic.dice", "{}", []);
         Assert.True(dice.Ok, dice.Error);
         Assert.Empty(dice.Output.Effects);
-        Assert.False((await RunAsync("checks/mechanic.dnd2024.dice", "{\"count\":101}", [])).Ok);
-        Assert.False((await RunAsync("checks/mechanic.dnd2024.dice", "{\"cheat\":20}", [])).Ok);
+        Assert.False((await RunAsync("checks/dnd2024.mechanic.dice", "{\"count\":101}", [])).Ok);
+        Assert.False((await RunAsync("checks/dnd2024.mechanic.dice", "{\"cheat\":20}", [])).Ok);
 
         const string speedInput =
             "{\"mode\":\"record\",\"walkFeet\":30,\"burrowFeet\":0,\"climbFeet\":0,\"flyFeet\":0,\"swimFeet\":0}";
-        var speed = await RunAsync("movement/mechanic.dnd2024.speed.write", speedInput, Subject());
+        var speed = await RunAsync("movement/dnd2024.mechanic.speed.write", speedInput, Subject());
         Assert.True(speed.Ok, speed.Error);
         var movement = Assert.Single(speed.Output.Effects);
         Assert.Equal("dnd2024.creature.movement", movement.DefinitionId);
         AssertCurrentSchema("dnd2024.creature.movement", movement.Data);
-        var read = await RunAsync("movement/mechanic.dnd2024.speed.read", "{}",
+        var read = await RunAsync("movement/dnd2024.mechanic.speed.read", "{}",
             Subject((movement.DefinitionId, movement.Data)));
         Assert.True(read.Ok, read.Error);
         Assert.Contains("\"valid\":true", read.Output.Data, StringComparison.Ordinal);
 
-        var healing = await RunAsync("combat/mechanic.dnd2024.healing.apply", "{\"amount\":20}",
+        var healing = await RunAsync("combat/dnd2024.mechanic.healing.apply", "{\"amount\":20}",
             Subject(("dnd2024.creature.hit-points", "{\"current\":5,\"maximum\":10}")));
         Assert.True(healing.Ok, healing.Error);
         var healed = Assert.Single(healing.Output.Effects);
         AssertCurrentSchema("dnd2024.creature.hit-points", healed.Data);
-        var capped = await RunAsync("combat/mechanic.dnd2024.healing.apply", "{\"amount\":1}",
+        var capped = await RunAsync("combat/dnd2024.mechanic.healing.apply", "{\"amount\":1}",
             Subject(("dnd2024.creature.hit-points", healed.Data)));
         Assert.True(capped.Ok, capped.Error);
         Assert.Empty(capped.Output.Effects);
 
-        var temporary = await RunAsync("combat/mechanic.dnd2024.temporary-hit-points.write",
+        var temporary = await RunAsync("combat/dnd2024.mechanic.temporary-hit-points.write",
             "{\"mode\":\"grant\",\"amount\":7}", Subject());
         Assert.True(temporary.Ok, temporary.Error);
         AssertCurrentSchema("dnd2024.creature.temporary-hit-points", Assert.Single(temporary.Output.Effects).Data);
 
-        var death = await RunAsync("combat/mechanic.dnd2024.death-state.write",
+        var death = await RunAsync("combat/dnd2024.mechanic.death-state.write",
             "{\"mode\":\"begin\"}", Subject());
         Assert.True(death.Ok, death.Error);
         AssertCurrentSchema("dnd2024.character.death-saves", Assert.Single(death.Output.Effects).Data);
-        var deathCorrection = await RunAsync("combat/mechanic.dnd2024.death-state.write",
+        var deathCorrection = await RunAsync("combat/dnd2024.mechanic.death-state.write",
             "{\"mode\":\"correct\",\"successes\":1,\"failures\":0,\"stable\":false,\"dead\":false}",
             Subject(("dnd2024.character.death-saves",
                 "{\"status\":\"dying\",\"successes\":0,\"failures\":0,\"lastChangeRef\":{\"operationId\":\"0123456789abcdef0123456789abcdef\"}}")));
@@ -95,12 +95,12 @@ public sealed class Dnd2024MovedMechanicTests
         Assert.Contains("lastChangeRef", Assert.Single(deathCorrection.Output.Effects).Data,
             StringComparison.Ordinal);
 
-        var inspiration = await RunAsync("data/mechanic.dnd2024.heroic-inspiration.grant", "{}",
+        var inspiration = await RunAsync("data/dnd2024.mechanic.heroic-inspiration.grant", "{}",
             Subject(("dnd2024.character.identity", "{\"pronouns\":\"they/them\"}")));
         Assert.True(inspiration.Ok, inspiration.Error);
         AssertCurrentSchema("dnd2024.character.heroic-inspiration", Assert.Single(inspiration.Output.Effects).Data);
 
-        var experience = await RunAsync("proficiency/mechanic.dnd2024.character-experience.write",
+        var experience = await RunAsync("proficiency/dnd2024.mechanic.character-experience.write",
             "{\"mode\":\"record\",\"total\":300}", Subject());
         Assert.True(experience.Ok, experience.Error);
         AssertCurrentSchema("dnd2024.character.experience", Assert.Single(experience.Output.Effects).Data);

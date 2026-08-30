@@ -1,0 +1,28 @@
+{
+  "format": "system.world-chronology.binding.v1",
+  "applicationId": "dnd2024",
+  "binding": {
+    "componentTypeId": "dnd2024.game.core.world.chronology",
+    "statusProperty": "status",
+    "activeStatus": "active",
+    "archivedStatus": "archived",
+    "titleProperty": "title",
+    "summaryProperty": "summary",
+    "calendarIdProperty": "calendarId",
+    "occurredAtMinuteProperty": "occurredAtMinute",
+    "precisionProperty": "precision",
+    "precisions": ["exact", "approximate", "era"],
+    "dateLabelProperty": "dateLabel",
+    "visibilityProperty": "visibility",
+    "publicVisibility": "public",
+    "partyVisibility": "party",
+    "gameMasterVisibility": "gm",
+    "inWorldRelationshipKind": "dnd2024.game.core.world.chronology.in-world",
+    "aboutRelationshipKind": "dnd2024.game.core.world.chronology.about",
+    "worldClockCalendarIdProperty": "calendarId",
+    "subjectWorldRelationshipKinds": [
+      "dnd2024.game.core.world.faction.in-world",
+      "dnd2024.game.core.world.knowledge.in-world"
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 # World Feature 19 Slice 1 implementation — dedicated dated chronology records
 
-Status: **awaiting confirmation**
-Owner/roadmap: `WORLD_AND_LORE_PLAN.md`, proposed W19
+Status: **verified implementation; repository-wide acceptance constrained by unrelated checkout failures**
+Owner/roadmap: `WORLD_AND_LORE_PLAN.md`, W19
 Dependency tree/leaf: `web/DND2024-WORLD-TAB-COMPLETION-DEPENDENCY-TREE.md`, C1 / ordered leaf 4
 Ruleset alignment: **ruleset-neutral**
 Source ID and locator: **not applicable**; this feature defines setting chronology, not a D&D rule
@@ -10,17 +10,17 @@ audience classification, World scope, and optional subjects can later drive the 
 Exclusions: Thalorien entries, website projection, player authorization, campaign recaps/outcomes,
 knowledge conversion, event-ledger conversion, automatic record creation, calendar formatting,
 date arithmetic, mechanics, migrations, maps, media, NPC profiles, and completed World-tab acceptance
-Allowed files/areas after confirmation: this document; generic and D&D 2024 materialized component
-definitions/schemas; one governing World procedure; the trusted-GM World read recipe; fixture records
+Allowed files/areas: this document; the generic component definition/schema (materialized into the
+D&D 2024 application through the existing base-component mapping); one governing World procedure; the trusted-GM World read recipe; fixture records
 and relationships; focused catalog tests; disposable catalog validation; receipt and owning-plan status
 Stop point: stop when the chronology owner validates, imports, reads in stable date order, rejects
 wrong-world/malformed records and links, and has no mechanic or UI consumer
 
-## Confirmation still required
+## Confirmed decisions
 
-The user's 2026-08-30 World-tab request confirms the outcome: History must read dedicated dated
-World records rather than reinterpret authorized knowledge. Repository policy still requires exact
-confirmation of these new permanent IDs and schema meanings before runtime/catalog implementation:
+The user's 2026-08-30 confirmation approves the outcome and these exact permanent IDs and schema
+meanings: History must read dedicated dated World records rather than reinterpret authorized
+knowledge.
 
 - component `game.core.world.chronology`, materialized as
   `dnd2024.game.core.world.chronology`;
@@ -29,7 +29,9 @@ confirmation of these new permanent IDs and schema meanings before runtime/catal
 - the complete record shape proposed below, including signed calendar minutes and an authored date
   label.
 
-No catalog, SQLite, route, response, or live Thalorien record changes while this gate is open.
+The application-qualified `dnd2024.game.core.world.chronology` ID is produced by the existing base
+component materialization seam; no copied D&D-owned schema is introduced. This slice still changes
+no live SQLite, route, response, or Thalorien record.
 
 ## D&D 5e 2024 alignment
 
@@ -55,7 +57,7 @@ content.
   because no dated chronology owner exists.
 - Campaign session recaps already own campaign milestones and must remain a separate history.
 
-## Proposed runtime artifacts
+## Runtime artifacts
 
 ### Closed chronology component
 
@@ -85,8 +87,9 @@ because the repository has no calendar-formatting owner. It is presentation text
   the component.
 - New `procedure.game.core.world.chronology` governs declaration, reviewed effects authoring,
   complete replacement, scoping, stable read order, and archival behavior.
-- `procedure.game.core.world.read` gains one trusted-GM chronology recipe, ordered by
-  `occurredAtMinute`, then permanent entity ID, capped at 100 records/200 edges.
+- `procedure.game.core.world.read` gains one trusted-GM chronology recipe selecting chronology and
+  root-clock components, ordered by `occurredAtMinute`, then permanent entity ID, capped at 100
+  records/200 edges.
 
 No mechanic, semantic event, subscription, notification, migration, or new query kind is created.
 
@@ -123,9 +126,9 @@ same minute, infer causal order, or generate prose.
   prior reviewed complete component after import. No clock, campaign, knowledge, or event row is
   rewritten.
 
-## Implementation sequence after confirmation
+## Implemented sequence
 
-1. Add generic component definition/schema and D&D 2024 materialized definition/schema.
+1. Add the generic component definition/schema and verify its existing D&D 2024 materialization.
 2. Add the governing procedure and trusted-GM read recipe extension.
 3. Add a small generic fixture with pre-epoch, same-minute, and archived records plus scope/subject
    links; add focused schema/scope/order/failure tests.
@@ -156,7 +159,6 @@ The protocol walk is not required because this slice adds no MCP surface or depe
 
 ## Completion receipt and exit gate
 
-After confirmation and implementation, write
-`world/feature-19/WORLD-FEATURE-19-SLICE-1-RECEIPT.md`, update this document and the two owning plans
-once, and stop. Live Thalorien chronology entries, audience-safe projection, History-screen
+The [completion receipt](WORLD-FEATURE-19-SLICE-1-RECEIPT.md) records the delivered contract and
+verification. Live Thalorien chronology entries, audience-safe projection, History-screen
 consumption, and final World-tab acceptance remain separate confirmed slices.

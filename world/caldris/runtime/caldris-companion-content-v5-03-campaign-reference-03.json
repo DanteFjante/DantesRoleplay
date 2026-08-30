@@ -1,0 +1,318 @@
+{
+  "requestToken": "ca1d215e50000000000000000000002a",
+  "applicationId": "dnd2024",
+  "stateSpaceId": "dnd2024-main",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.campaign.cozy.supper-and-changed-gossip-at-the-gilded-kettle",
+      "name": "Cozy return",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "supper and changed gossip at the Gilded Kettle;",
+            "provenance": "Caldris campaign tapestry — cozy",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.campaign.cozy.flood-preparation-with-nessa-in-candlefen",
+      "name": "Cozy return",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "flood preparation with Nessa in Candlefen;",
+            "provenance": "Caldris campaign tapestry — cozy",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.campaign.cozy.a-terrible-rehearsal-at-bramble-theatre-loft",
+      "name": "Cozy return",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "a terrible rehearsal at Bramble Theatre Loft;",
+            "provenance": "Caldris campaign tapestry — cozy",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.campaign.cozy.worker-breakfasts-in-copperdeep-or-gullstrand",
+      "name": "Cozy return",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "worker breakfasts in Copperdeep or Gullstrand;",
+            "provenance": "Caldris campaign tapestry — cozy",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.campaign.cozy.a-festival-memorial-meal-repair-day-orchard-pressing-or-rescue-knot-ceremony",
+      "name": "Cozy return",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "a festival, memorial meal, repair day, orchard pressing, or rescue-knot ceremony;",
+            "provenance": "Caldris campaign tapestry — cozy",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.campaign.cozy.correspondence-from-npcs-whose-lives-continued-offscreen",
+      "name": "Cozy return",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "correspondence from NPCs whose lives continued offscreen; and",
+            "provenance": "Caldris campaign tapestry — cozy",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.campaign.cozy.small-consequences-such-as-a-repaired-stair-renamed-dish-new-apprentice-changed-sign-missing",
+      "name": "Cozy return",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "small consequences such as a repaired stair, renamed dish, new apprentice, changed sign, missing",
+            "provenance": "Caldris campaign tapestry — cozy",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.campaign.cozy.supper-and-changed-gossip-at-the-gilded-kettle",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.cozy.supper-and-changed-gossip-at-the-gilded-kettle",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.cozy.flood-preparation-with-nessa-in-candlefen",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.cozy.flood-preparation-with-nessa-in-candlefen",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.cozy.a-terrible-rehearsal-at-bramble-theatre-loft",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.cozy.a-terrible-rehearsal-at-bramble-theatre-loft",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.cozy.worker-breakfasts-in-copperdeep-or-gullstrand",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.cozy.worker-breakfasts-in-copperdeep-or-gullstrand",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.cozy.a-festival-memorial-meal-repair-day-orchard-pressing-or-rescue-knot-ceremony",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.cozy.a-festival-memorial-meal-repair-day-orchard-pressing-or-rescue-knot-ceremony",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.cozy.correspondence-from-npcs-whose-lives-continued-offscreen",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.cozy.correspondence-from-npcs-whose-lives-continued-offscreen",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.cozy.small-consequences-such-as-a-repaired-stair-renamed-dish-new-apprentice-changed-sign-missing",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.cozy.small-consequences-such-as-a-repaired-stair-renamed-dish-new-apprentice-changed-sign-missing",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    }
+  ]
+}

@@ -19,6 +19,20 @@ export type WorldSectionId =
   | "lore";
 export type LocationSectionId = "details" | "people" | "holdings";
 
+export type VisualMedia = {
+  imageUrl: string;
+  alt: string;
+  width: number;
+  height: number;
+};
+
+export type EntityVisualMedia = {
+  portrait?: VisualMedia;
+  setting?: VisualMedia;
+  scene?: VisualMedia;
+  handout?: VisualMedia;
+};
+
 export type LocationPerson = {
   id: string;
   initials: string;
@@ -28,6 +42,7 @@ export type LocationPerson = {
   summary: string;
   background: string;
   disposition: string;
+  portrait?: VisualMedia;
   motive?: string;
   dmSecret?: string;
 };
@@ -56,6 +71,7 @@ export type WorldLocation = {
   routes: Array<{ destination: string; detail: string }>;
   mapAnchor: { x: number; y: number };
   people: LocationPerson[];
+  media?: EntityVisualMedia;
   holdings?: LocationHolding[];
   dmSecret?: string;
 };
@@ -70,7 +86,7 @@ export type WorldHistoryEvent = {
   region: string;
   status: string;
   summary: string;
-  consequence: string;
+  consequence?: string;
   linkedLocations: Array<{ id: string; name: string }>;
   linkedPeople: Array<{ id: string; name: string; kind: "NPC" | "Creature" }>;
   dmTruth?: string;
@@ -308,6 +324,7 @@ export type CampaignClue = {
   partyConclusion: string;
   discoveredAt: string;
   links: CampaignEntityLinks;
+  handout?: VisualMedia;
   dmTruth?: string;
   dmConnection?: string;
 };
@@ -356,6 +373,8 @@ export type PartyMemberReadModel = {
   status: string;
   isCurrent: boolean;
   recordStatus: string;
+  sheetStatus: "canonical" | "provisional" | "empty";
+  inventoryStatus: "canonical" | "provisional" | "unavailable" | "empty";
   sheet: PartyDossierEntry[];
   knowledge: PartyKnowledgeEntry[];
   backstory: PartyDossierEntry[];
@@ -363,15 +382,17 @@ export type PartyMemberReadModel = {
   inventory: PartyDossierEntry[];
 };
 
-export type RuleCategory = "Action" | "Reaction";
-
 export type RuleReadModel = {
   id: string;
   title: string;
-  category: RuleCategory;
+  category: string;
+  subcategory: string;
+  path: string;
+  contentFingerprint: string;
   summary: string;
-  source: {
-    id: "source.dnd2024.srd-5.2.1";
+  revision: number | null;
+  source: null | {
+    id: "dnd2024.source.srd-5.2.1";
     locator: string;
   };
 };
@@ -392,6 +413,76 @@ export type HubContextSelection = {
   }>;
 };
 
+export type CurrentSceneAffordance = {
+  key: string;
+  label: string;
+  summary: string;
+};
+
+export type CurrentSituationReadModel =
+  | {
+      status: "unavailable";
+      locationId?: string;
+      message: string;
+    }
+  | {
+      status: "ready";
+      kind: "exploration";
+      locationId: string;
+      scene?: VisualMedia;
+      affordances?: CurrentSceneAffordance[];
+    }
+  | {
+      status: "ready";
+      kind: "conversation";
+      locationId: string;
+      scene?: VisualMedia;
+      affordances?: CurrentSceneAffordance[];
+      conversation: {
+        id: string;
+        name: string;
+        summary?: string;
+        participants: Array<{ id: string; name: string; portrait?: VisualMedia }>;
+      };
+    }
+  | {
+      status: "ready";
+      kind: "combat";
+      locationId: string;
+      scene?: VisualMedia;
+      affordances?: CurrentSceneAffordance[];
+      combat: {
+        id: string;
+        name: string;
+        round?: { id: string; number: number };
+        turn?: {
+          id: string;
+          participationId: string;
+          actorId: string;
+          actorName: string;
+          ordinal: number;
+          budget?: { actions: number; bonusActions: number; reactions: number };
+        };
+        participants: Array<{
+          id: string;
+          name: string;
+          initiative: number;
+          active: boolean;
+          portrait?: VisualMedia;
+        }>;
+      };
+    };
+
+export type KnownRouteReadModel = {
+  id: string;
+  originId: string;
+  destinationId: string;
+  destinationName: string;
+  detail: string;
+  mode: "on-foot";
+  durationMinutes: number;
+};
+
 export type ReadyHubEnvelope = {
   version: 1;
   status: "ready";
@@ -402,6 +493,7 @@ export type ReadyHubEnvelope = {
   campaign: CampaignReadModel;
   party: PartyMemberReadModel[];
   rules: RuleReadModel[];
+  currentSituation?: CurrentSituationReadModel;
 };
 
 export type DeniedHubEnvelope = {
@@ -416,6 +508,8 @@ export type ConnectedCampaignEnvelope = {
   applicationId: string;
   stateSpaceId: string;
   currentLocationId?: string;
+  currentSituation?: CurrentSituationReadModel;
+  knownRoutes?: KnownRouteReadModel[];
   audience: {
     seat: Perspective;
     perspective?: Perspective;
@@ -438,6 +532,7 @@ export type ConnectedCampaignEnvelope = {
       updatedAtUtc: string | null;
       closingSummary?: string;
       gmContext?: string;
+      worldEntityIds?: string[];
     }>;
     arcs: Array<{
       id: string;
@@ -448,12 +543,14 @@ export type ConnectedCampaignEnvelope = {
       updatedAtUtc: string | null;
       closingSummary?: string;
       gmContext?: string;
+      worldEntityIds?: string[];
     }>;
     sessions: Array<{
       id: string;
       status: "active" | "ended";
       ordinal: number;
       updatedAtUtc: string | null;
+      worldEntityIds?: string[];
       recap?: {
         chapter: { id: string; status: "active"; title: string; partyQuestion: string };
         arc: { id: string; status: "active"; title: string; partyStake: string };
@@ -465,6 +562,17 @@ export type ConnectedCampaignEnvelope = {
           sequence: number;
         }>;
       };
+    }>;
+    visits: Array<{
+      id: string;
+      locationId: string;
+      firstVisitedMinute: number;
+      lastVisitedMinute: number;
+      visitCount: number;
+      status: "current" | "departed";
+      summary: string;
+      memory: string;
+      gmContext?: string;
     }>;
   };
   actor: {
@@ -479,13 +587,63 @@ export type ConnectedCampaignEnvelope = {
     state: string | null;
     current: boolean;
     entries: Array<{ kind: string; key: string; label: string; details?: string }>;
+    canonical?: {
+      identity: {
+        pronouns?: string;
+        appearance?: string;
+        biography?: string;
+        playerNotes?: string;
+      } | null;
+      origin: { speciesId: string; backgroundId: string } | null;
+      abilities: Array<{ id: string; score: number }> | null;
+      hitPoints: { current: number; maximum: number; maximumReduction?: number } | null;
+      temporaryHitPoints: { amount: number } | null;
+      body: { sizeId: string } | null;
+      movement: Array<{ id: string; numerator: number; denominator: number; unitId: string }> | null;
+      proficiencies: Array<{ id: string; rankId: string }> | null;
+      experience: { total: number } | null;
+      classes: Array<{ id: string; name: string; classId: string; level: number; subclassId?: string }>;
+      inventoryStatus: "ready" | "unavailable";
+      inventory: Array<{
+        id: string;
+        name: string;
+        definitionId: string;
+        quantity: number;
+        slot: string;
+        equipmentSlots: string[];
+      }>;
+    };
   }>;
   knowledge: {
     status: "ready" | "empty" | "unavailable";
-    entries: Array<{ text: string; stance: string; presentationKind: string }>;
+    entries: Array<{
+      text: string;
+      stance: string;
+      presentationKind: string;
+      subject?: { id: string; name: string };
+      media?: EntityVisualMedia;
+    }>;
     locations: Array<{
       name: string;
-      entries: Array<{ text: string; stance: string; presentationKind: string }>;
+      entries: Array<{
+        text: string;
+        stance: string;
+        presentationKind: string;
+        subject?: { id: string; name: string };
+      }>;
+    }>;
+  };
+  chronology: {
+    status: "ready" | "empty" | "unavailable";
+    perspective: Perspective;
+    entries: Array<{
+      id: string;
+      occurredAtMinute: number;
+      dateLabel: string;
+      precision: "exact" | "approximate" | "era";
+      title: string;
+      summary: string;
+      subjects?: Array<{ id: string; name: string }>;
     }>;
   };
   locationDirectoryAudience?: Perspective;
@@ -498,6 +656,7 @@ export type ConnectedCampaignEnvelope = {
     containmentSlot?: string;
     mapAnchor?: { x: number; y: number };
     mapVisual?: { assetKey: string; alt: string };
+    media?: EntityVisualMedia;
   }>;
   worldDirectory?: {
     people: Array<{
@@ -505,6 +664,7 @@ export type ConnectedCampaignEnvelope = {
       name: string;
       kind: "NPC" | "Creature";
       locationId: string;
+      media?: EntityVisualMedia;
       motive?: { status: string; visibility: string; summary: string };
     }>;
     factions: Array<{

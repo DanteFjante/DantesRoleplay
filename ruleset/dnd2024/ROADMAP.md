@@ -58,7 +58,7 @@ The preferred sequence is:
   all 737 paths and hashes as historical provenance; 69 unique receipts remain under
   `evidence/retired-implementation/`, and rollback material remains under `evidence/state-exports/`.
   No runtime, build, catalog, or production source consumes the retired tree.
-- The official rule authority remains `source.dnd2024.srd-5.2.1`. Donor repositories are
+- The official rule authority remains `dnd2024.source.srd-5.2.1`. Donor repositories are
   implementation evidence, never rule authority.
 - `dnd2024-core` remains SRD-faithful. Homebrew, compatibility content, and non-SRD additions must
   be separate registered sources explicitly selected before a campaign is created; an exact source
@@ -109,8 +109,18 @@ The master cross-owner planning root is the
 It covers the prerequisites for creating and running persistent worlds, nested locations,
 campaigns, characters, sessions, rules, encounters, content, shared DM/Player views, and
 export/recovery. It subsumes the remaining execution order in the narrower plans below. Its read-only
-owner/ID/category audit is accepted; G7 canonical world/campaign convergence is now the blocking next
-gate, and no implementation leaf is active.
+owner/ID/category audit is accepted. G7 verifies that the installed `dnd2024.game.core.*` types are
+the only live world/campaign owners. The implemented G7N cutover makes every authored D&D application
+identity and reference explicitly `dnd2024.*`; reusable generic `game.core.*` contracts remain
+outside the application, and prototype roots remain migration-only inputs. G8 now pins the
+private-table seat to one exact source profile and activation, and G9's authorized atomic World
+authoring transaction is accepted. The backup gate and separately recorded D&D suite repairs remain
+before live prototype migration or full-campaign acceptance.
+
+Campaign-tab follow-up now has reviewed post-closure actions for explicit session/outcome World
+references and authoritative aggregate location visits. The writer uses G4 operation replay and G6
+clock state through G9's typed transaction; Player visit projection remains gated on A5 rather than
+exposing raw relationship reads.
 
 The accepted [D&D code-adoption evidence](adoption/evidence/) preserves the reuse ladder, donor
 boundaries, completed adoption evidence, acceleration tooling, and confirmation history. The

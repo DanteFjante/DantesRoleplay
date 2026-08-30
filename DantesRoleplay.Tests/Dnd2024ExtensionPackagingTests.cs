@@ -17,7 +17,7 @@ public sealed class Dnd2024ExtensionPackagingTests : IDisposable
     private const string ExtensionPath =
         "catalog/extensions/dnd2024/legacy-equipment/extension-package.json";
     private const string RopePath =
-        "catalog/extensions/dnd2024/legacy-equipment/content/entities/adventuring-gear/item.dnd2024.hempen-rope-50-foot.v1.json";
+        "catalog/extensions/dnd2024/legacy-equipment/content/entities/adventuring-gear/dnd2024.item.hempen-rope-50-foot.v1.json";
     private readonly SqliteFixture _fixture = new();
 
     [Fact]
@@ -109,7 +109,7 @@ public sealed class Dnd2024ExtensionPackagingTests : IDisposable
             .Order(StringComparer.Ordinal).ToArray();
 
         Assert.Equal([
-            "content/entities/adventuring-gear/item.dnd2024.hempen-rope-50-foot.v1.json",
+            "content/entities/adventuring-gear/dnd2024.item.hempen-rope-50-foot.v1.json",
             "extension-package.json"
         ], files);
         Assert.DoesNotContain(files, path => path.EndsWith(".js", StringComparison.OrdinalIgnoreCase));
@@ -135,12 +135,12 @@ public sealed class Dnd2024ExtensionPackagingTests : IDisposable
 
         var coreRoot = Path.Combine(root, "catalog", "applications", "dnd2024", "content", "entities");
         Assert.DoesNotContain(Directory.GetFiles(coreRoot, "*.json", SearchOption.AllDirectories),
-            path => Path.GetFileName(path) is "item.dnd2024.hempen-rope-50-foot.v1.json" or
+            path => Path.GetFileName(path) is "dnd2024.item.hempen-rope-50-foot.v1.json" or
                 "item.dnd2024.quiver.v1.json");
 
         var targetPath = Path.Combine(root, RopePath.Replace('/', Path.DirectorySeparatorChar));
         var targetEntity = EntityFile.Parse(await File.ReadAllTextAsync(targetPath), RopePath);
-        Assert.Equal("item.dnd2024.hempen-rope-50-foot.v1", targetEntity.Id);
+        Assert.Equal("dnd2024.item.hempen-rope-50-foot.v1", targetEntity.Id);
         Assert.Contains("Legacy Compatibility", targetEntity.Name, StringComparison.Ordinal);
         var targetComponent = Assert.Single(targetEntity.Components);
         Assert.Equal("dnd2024.item-definition", targetComponent.DefinitionId);

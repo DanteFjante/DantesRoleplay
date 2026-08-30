@@ -124,6 +124,11 @@ app.MapMcp(ServerConfiguration.McpEndpoint);
 app.MapGet("/api/audience-context", AudienceContextWebEndpoint.CurrentAsync)
     .AddEndpointFilter<WebInterfaceSecurityFilter>()
     .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
+app.MapGet(
+        "/api/applications/{applicationId}/campaigns/{campaignId}/chronology",
+        WorldChronologyWebEndpoint.ReadAsync)
+    .AddEndpointFilter<WebInterfaceSecurityFilter>()
+    .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
 app.MapDantesRoleplayWeb();
 
 // Deliberately no HTTPS redirection. The MCP endpoint is reached over loopback by a local

@@ -1,19 +1,79 @@
+import { resolveMediaAssetUrl } from "../data/media-assets.js";
+
 const TOKEN_MAXIMUM = 200;
 const LOCATION_COMPONENT_TYPE_ID = "dnd2024.game.core.world.location";
 const WORLD_MAP_ANCHOR_COMPONENT_TYPE_ID = "dnd2024.game.core.world.map.anchor";
 const WORLD_MAP_VISUAL_COMPONENT_TYPE_ID = "dnd2024.game.core.world.map.visual";
+const WORLD_MEDIA_VISUAL_COMPONENT_TYPE_ID = "dnd2024.game.core.world.media.visual";
+const WORLD_ROUTE_COMPONENT_TYPE_ID = "dnd2024.game.core.world.route";
+const WORLD_ROUTE_AVAILABILITY_COMPONENT_TYPE_ID = "dnd2024.game.core.world.route.availability";
+const WORLD_ROUTE_RELATIONSHIP_KINDS = {
+  world: "dnd2024.game.core.world.route.in-world",
+  origin: "dnd2024.game.core.world.route.from",
+  destination: "dnd2024.game.core.world.route.to",
+};
 const CAMPAIGN_ROOT_COMPONENT_TYPE_ID = "dnd2024.game.core.campaign.root";
+const CAMPAIGN_CURRENT_SCENE_COMPONENT_TYPE_ID = "dnd2024.game.core.campaign.current-scene";
+const CAMPAIGN_SCENE_AFFORDANCES_COMPONENT_TYPE_ID =
+  "dnd2024.game.core.campaign.scene-affordances";
 const CAMPAIGN_CHAPTER_COMPONENT_TYPE_ID = "dnd2024.game.core.campaign.chapter";
 const CAMPAIGN_ARC_COMPONENT_TYPE_ID = "dnd2024.game.core.campaign.arc";
 const CAMPAIGN_SESSION_COMPONENT_TYPE_ID = "dnd2024.game.core.campaign.session";
 const CAMPAIGN_SESSION_RECAP_COMPONENT_TYPE_ID = "dnd2024.game.core.campaign.session-recap";
+const CAMPAIGN_LOCATION_VISIT_COMPONENT_TYPE_ID = "dnd2024.game.core.campaign.location-visit";
 const CAMPAIGN_HAS_SESSION_RELATIONSHIP_KIND = "dnd2024.game.core.campaign.has-session";
+const CAMPAIGN_HAS_LOCATION_VISIT_RELATIONSHIP_KIND =
+  "dnd2024.game.core.campaign.has-location-visit";
+const CAMPAIGN_LOCATION_VISIT_AT_LOCATION_RELATIONSHIP_KIND =
+  "dnd2024.game.core.campaign.location-visit.at-location";
+const CAMPAIGN_RECORD_WORLD_REFERENCE_RELATIONSHIP_KIND =
+  "dnd2024.game.core.campaign.record.references-world-entity";
 const CAMPAIGN_PARTICIPATION_COMPONENT_TYPE_ID = "dnd2024.game.core.campaign.character-participation";
 const CAMPAIGN_HAS_PARTICIPATION_RELATIONSHIP_KIND =
   "dnd2024.game.core.campaign.has-character-participation";
 const CAMPAIGN_PARTICIPATION_ACTOR_RELATIONSHIP_KIND =
   "dnd2024.game.core.campaign.character-participation.for-actor";
 const PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID = "dnd2024.playtest-character-record";
+const WORLD_INTERACTION_COMPONENT_TYPE_ID = "dnd2024.game.core.world.interaction";
+const WORLD_INTERACTION_PARTICIPANT_RELATIONSHIP_KIND =
+  "dnd2024.game.core.world.interaction.participant";
+const ENCOUNTER_DEFINITION_COMPONENT_TYPE_ID = "dnd2024.encounter.definition";
+const ENCOUNTER_PARTICIPATION_COMPONENT_TYPE_ID = "dnd2024.encounter.participation";
+const COMBAT_INITIATIVE_COMPONENT_TYPE_ID = "dnd2024.combat.initiative";
+const ENCOUNTER_ROUND_COMPONENT_TYPE_ID = "dnd2024.encounter.round";
+const ENCOUNTER_TURN_COMPONENT_TYPE_ID = "dnd2024.encounter.turn";
+const COMBAT_TURN_BUDGET_COMPONENT_TYPE_ID = "dnd2024.combat.turn-budget";
+const ENCOUNTER_RELATIONSHIP_KINDS = {
+  participants: "dnd2024.encounter.has-participation",
+  actor: "dnd2024.encounter.participation.for-actor",
+  activeRound: "dnd2024.encounter.active-round",
+  activeTurn: "dnd2024.encounter.active-turn",
+};
+const CHARACTER_IDENTITY_COMPONENT_TYPE_ID = "dnd2024.character.identity";
+const CHARACTER_ORIGIN_COMPONENT_TYPE_ID = "dnd2024.character.origin-selections";
+const CHARACTER_EXPERIENCE_COMPONENT_TYPE_ID = "dnd2024.character.experience";
+const CHARACTER_CLASS_MEMBERSHIP_COMPONENT_TYPE_ID = "dnd2024.character.class-membership";
+const CHARACTER_CLASS_MEMBERSHIP_RELATIONSHIP_KIND = "dnd2024.character.has-class-membership";
+const CREATURE_ABILITY_SCORES_COMPONENT_TYPE_ID = "dnd2024.creature.ability-scores";
+const CREATURE_HIT_POINTS_COMPONENT_TYPE_ID = "dnd2024.creature.hit-points";
+const CREATURE_TEMPORARY_HIT_POINTS_COMPONENT_TYPE_ID = "dnd2024.creature.temporary-hit-points";
+const CREATURE_BODY_COMPONENT_TYPE_ID = "dnd2024.creature.body";
+const CREATURE_MOVEMENT_COMPONENT_TYPE_ID = "dnd2024.creature.movement";
+const CREATURE_PROFICIENCIES_COMPONENT_TYPE_ID = "dnd2024.creature.proficiencies";
+const ITEM_DEFINITION_LINK_COMPONENT_TYPE_ID = "dnd2024.core.definition-link";
+const ITEM_QUANTITY_COMPONENT_TYPE_ID = "dnd2024.item.quantity";
+const ITEM_EQUIPMENT_COMPONENT_TYPE_ID = "dnd2024.item.equipment";
+const CANONICAL_CHARACTER_COMPONENT_IDS = [
+  CHARACTER_IDENTITY_COMPONENT_TYPE_ID,
+  CHARACTER_ORIGIN_COMPONENT_TYPE_ID,
+  CHARACTER_EXPERIENCE_COMPONENT_TYPE_ID,
+  CREATURE_ABILITY_SCORES_COMPONENT_TYPE_ID,
+  CREATURE_HIT_POINTS_COMPONENT_TYPE_ID,
+  CREATURE_TEMPORARY_HIT_POINTS_COMPONENT_TYPE_ID,
+  CREATURE_BODY_COMPONENT_TYPE_ID,
+  CREATURE_MOVEMENT_COMPONENT_TYPE_ID,
+  CREATURE_PROFICIENCIES_COMPONENT_TYPE_ID,
+];
 const WORLD_MOTIVE_COMPONENT_TYPE_ID = "dnd2024.game.core.world.motive";
 const WORLD_FACTION_COMPONENT_TYPE_ID = "dnd2024.game.core.world.faction";
 const WORLD_FACTION_RELATIONSHIP_KINDS = {
@@ -160,6 +220,55 @@ function hasExactKeys(value, keys) {
     Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key));
 }
 
+function exactEntityReference(value) {
+  if (!hasExactKeys(value, ["entityId"])) return null;
+  const entityId = token(value.entityId);
+  return entityId ? { entityId } : null;
+}
+
+export function resolveCurrentSceneRecord(value, authorizedLocationIds) {
+  const allowedKeys = ["location", "conversation", "encounter"];
+  if (!value || typeof value !== "object" || Array.isArray(value) ||
+      Object.keys(value).some((key) => !allowedKeys.includes(key)) ||
+      !Object.hasOwn(value, "location")) return null;
+  const location = exactEntityReference(value.location);
+  const conversation = value.conversation === undefined ? null : exactEntityReference(value.conversation);
+  const encounter = value.encounter === undefined ? null : exactEntityReference(value.encounter);
+  if (!location || (value.conversation !== undefined && !conversation) ||
+      (value.encounter !== undefined && !encounter) ||
+      !authorizedLocationIds.includes(location.entityId)) return null;
+  return {
+    kind: encounter ? "combat" : (conversation ? "conversation" : "exploration"),
+    locationId: location.entityId,
+    ...(conversation ? { conversationId: conversation.entityId } : {}),
+    ...(encounter ? { encounterId: encounter.entityId } : {}),
+  };
+}
+
+export function resolveSceneAffordancesRecord(value, currentScene, perspective) {
+  if (!hasExactKeys(value, ["scene", "items"]) || !currentScene ||
+      !["player", "dm"].includes(perspective)) return null;
+  const selector = resolveCurrentSceneRecord(value.scene, [currentScene.locationId]);
+  if (!selector || selector.locationId !== currentScene.locationId ||
+      selector.conversationId !== currentScene.conversationId ||
+      selector.encounterId !== currentScene.encounterId ||
+      !Array.isArray(value.items) || value.items.length > 24) return null;
+  const keys = new Set();
+  const items = [];
+  for (const item of value.items) {
+    if (!hasExactKeys(item, ["key", "label", "summary", "visibility"])) return null;
+    const key = text(item.key, 64);
+    const label = text(item.label, 120);
+    const summary = text(item.summary, 500);
+    if (!key || !/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u.test(key) ||
+        !label || !/\S/u.test(label) || !summary || !/\S/u.test(summary) ||
+        !["party", "gm"].includes(item.visibility) || keys.has(key)) return null;
+    keys.add(key);
+    if (item.visibility === "party" || perspective === "dm") items.push({ key, label, summary });
+  }
+  return items;
+}
+
 function mapAnchor(value, expectedEntityId) {
   const parsed = componentValue(value, expectedEntityId, WORLD_MAP_ANCHOR_COMPONENT_TYPE_ID);
   if (!hasExactKeys(parsed, ["x", "y"])) return null;
@@ -182,6 +291,63 @@ function mapVisual(value, expectedEntityId, perspective) {
   return assetKey && /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/u.test(assetKey) && alt
     ? { assetKey, alt }
     : null;
+}
+
+function validMediaVariant(value) {
+  if (!hasExactKeys(value, ["assetKey", "alt", "mimeType", "width", "height", "sha256"])) return false;
+  return text(value.assetKey, 128) && /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/u.test(value.assetKey) &&
+    text(value.alt, 500) && /\S/u.test(value.alt) &&
+    ["image/png", "image/jpeg", "image/webp"].includes(value.mimeType) &&
+    Number.isInteger(value.width) && value.width >= 1 && value.width <= 10_000 &&
+    Number.isInteger(value.height) && value.height >= 1 && value.height <= 10_000 &&
+    typeof value.sha256 === "string" && /^[a-f0-9]{64}$/u.test(value.sha256);
+}
+
+function validMediaProvenance(value) {
+  return hasExactKeys(value, ["kind", "credit", "source", "reviewedOn", "version"]) &&
+    ["generated", "original", "commissioned", "licensed"].includes(value.kind) &&
+    text(value.credit, 500) && /\S/u.test(value.credit) &&
+    text(value.source, 500) && /\S/u.test(value.source) &&
+    typeof value.reviewedOn === "string" && /^\d{4}-\d{2}-\d{2}$/u.test(value.reviewedOn) &&
+    Number.isInteger(value.version) && value.version >= 1 && value.version <= 1_000_000;
+}
+
+export function projectMediaVisual(value, perspective, assetBaseUrl = "/") {
+  if (!hasExactKeys(value, ["status", "slots"]) || value.status !== "active" ||
+      !["player", "dm"].includes(perspective) || !value.slots ||
+      typeof value.slots !== "object" || Array.isArray(value.slots)) return null;
+  const allowedSlots = new Set(["portrait", "setting", "scene", "handout"]);
+  const slotEntries = Object.entries(value.slots);
+  if (slotEntries.length === 0 || slotEntries.some(([slot]) => !allowedSlots.has(slot))) return null;
+  const projected = {};
+  for (const [slotName, slot] of slotEntries) {
+    if (!hasExactKeys(slot, ["variants", "provenance"]) || !validMediaProvenance(slot.provenance) ||
+        !slot.variants || typeof slot.variants !== "object" || Array.isArray(slot.variants)) return null;
+    const variantEntries = Object.entries(slot.variants);
+    if (variantEntries.length === 0 || variantEntries.some(([name, variant]) =>
+      !["player", "dm"].includes(name) || !validMediaVariant(variant))) return null;
+    const selected = slot.variants[perspective];
+    if (!selected) continue;
+    const imageUrl = resolveMediaAssetUrl(
+      selected.assetKey,
+      selected.sha256,
+      selected.mimeType,
+      assetBaseUrl,
+    );
+    if (!imageUrl) return null;
+    projected[slotName] = {
+      imageUrl,
+      alt: selected.alt,
+      width: selected.width,
+      height: selected.height,
+    };
+  }
+  return Object.keys(projected).length > 0 ? projected : null;
+}
+
+function mediaVisual(value, expectedEntityId, perspective, assetBaseUrl) {
+  const parsed = componentValue(value, expectedEntityId, WORLD_MEDIA_VISUAL_COMPONENT_TYPE_ID);
+  return parsed ? projectMediaVisual(parsed, perspective, assetBaseUrl) : null;
 }
 
 function textList(value, maximumItems, maximumLength) {
@@ -280,6 +446,35 @@ function campaignSessionRecap(value) {
   };
 }
 
+function campaignLocationVisit(value, includeGmContext) {
+  const firstVisitedMinute = Number.isSafeInteger(value?.firstVisitedMinute) && value.firstVisitedMinute >= 0
+    ? value.firstVisitedMinute
+    : null;
+  const lastVisitedMinute = Number.isSafeInteger(value?.lastVisitedMinute) && value.lastVisitedMinute >= 0
+    ? value.lastVisitedMinute
+    : null;
+  const visitCount = Number.isInteger(value?.visitCount) && value.visitCount >= 1 && value.visitCount <= 1_000_000
+    ? value.visitCount
+    : null;
+  const status = value?.status === "current" || value?.status === "departed" ? value.status : null;
+  const summary = text(value?.summary, 1_000);
+  const memory = text(value?.memory, 2_000);
+  const gmContext = includeGmContext ? optionalText(value, "gmContext", 2_000) : undefined;
+  if (firstVisitedMinute === null || lastVisitedMinute === null ||
+      lastVisitedMinute < firstVisitedMinute || visitCount === null || !status || !summary || !memory) {
+    return null;
+  }
+  return {
+    firstVisitedMinute,
+    lastVisitedMinute,
+    visitCount,
+    status,
+    summary,
+    memory,
+    ...(gmContext ? { gmContext } : {}),
+  };
+}
+
 function worldMotive(value) {
   const status = new Set(["draft", "active", "archived"]).has(value?.status) ? value.status : null;
   const visibility = new Set(["public", "party", "gm"]).has(value?.visibility) ? value.visibility : null;
@@ -318,6 +513,288 @@ function characterDetails(value) {
   return { state: text(value?.state, 32), entries };
 }
 
+function referenceId(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const keys = Object.keys(value).sort().join(",");
+  if (keys !== "entityId" && keys !== "entityId,expectedArchetype") return null;
+  if (value.expectedArchetype !== undefined && !token(value.expectedArchetype)) return null;
+  return token(value.entityId);
+}
+
+function canonicalIdentity(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const allowed = new Set(["pronouns", "appearance", "biography", "playerNotes"]);
+  if (Object.keys(value).length === 0 || Object.keys(value).some((key) => !allowed.has(key))) return null;
+  const result = {};
+  for (const [key, maximum] of [["pronouns", 200], ["appearance", 5_000], ["biography", 20_000], ["playerNotes", 20_000]]) {
+    if (value[key] === undefined) continue;
+    const normalized = text(value[key], maximum);
+    if (!normalized) return null;
+    result[key] = normalized;
+  }
+  return Object.keys(result).length > 0 ? result : null;
+}
+
+function canonicalOrigin(value) {
+  if (!hasExactKeys(value, ["backgroundRef", "speciesRef"])) return null;
+  const speciesId = referenceId(value.speciesRef);
+  const backgroundId = referenceId(value.backgroundRef);
+  return speciesId && backgroundId ? { speciesId, backgroundId } : null;
+}
+
+function canonicalAbilityScores(value) {
+  if (!hasExactKeys(value, ["scores"]) || !value.scores || typeof value.scores !== "object" || Array.isArray(value.scores)) return null;
+  const entries = Object.entries(value.scores).flatMap(([id, score]) => {
+    const abilityId = token(id);
+    return abilityId && Number.isInteger(score) && score >= 0 && score <= 100
+      ? [{ id: abilityId, score }]
+      : [];
+  });
+  return entries.length === Object.keys(value.scores).length && entries.length > 0
+    ? entries.sort((left, right) => left.id.localeCompare(right.id))
+    : null;
+}
+
+function canonicalHitPoints(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const allowed = new Set(["current", "maximum", "maximumReduction"]);
+  if (Object.keys(value).some((key) => !allowed.has(key)) ||
+      !Number.isSafeInteger(value.current) || value.current < 0 ||
+      !Number.isSafeInteger(value.maximum) || value.maximum < 1 || value.current > value.maximum) return null;
+  if (value.maximumReduction !== undefined &&
+      (!Number.isSafeInteger(value.maximumReduction) || value.maximumReduction < 0)) return null;
+  return {
+    current: value.current,
+    maximum: value.maximum,
+    ...(value.maximumReduction !== undefined ? { maximumReduction: value.maximumReduction } : {}),
+  };
+}
+
+function canonicalTemporaryHitPoints(value) {
+  if (!hasExactKeys(value, ["amount", "sourceRef"]) ||
+      !Number.isSafeInteger(value.amount) || value.amount < 1 || !referenceId(value.sourceRef)) return null;
+  return { amount: value.amount };
+}
+
+function canonicalBody(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const allowed = new Set(["sizeRef", "activeFormRef", "bodyStateRef"]);
+  if (Object.keys(value).some((key) => !allowed.has(key))) return null;
+  const sizeId = referenceId(value.sizeRef);
+  return sizeId ? { sizeId } : null;
+}
+
+function canonicalMovement(value) {
+  if (!hasExactKeys(value, ["speeds"]) || !value.speeds || typeof value.speeds !== "object" || Array.isArray(value.speeds)) return null;
+  const parsed = Object.entries(value.speeds).map(([modeId, speed]) => {
+    const id = token(modeId);
+    const distance = speed?.distance;
+    const numerator = distance?.value?.numerator;
+    const denominator = distance?.value?.denominator;
+    const unitId = referenceId(distance?.unit);
+    if (!id || typeof speed?.enabled !== "boolean" || distance?.dimension !== "distance" ||
+        !Number.isSafeInteger(numerator) || numerator < 0 ||
+        !Number.isSafeInteger(denominator) || denominator < 1 || !unitId ||
+        !Array.isArray(speed.sourceRefs) || speed.sourceRefs.length === 0 ||
+        speed.sourceRefs.some((entry) => !referenceId(entry))) return null;
+    return speed.enabled
+      ? { id, numerator, denominator, unitId }
+      : false;
+  });
+  if (parsed.some((entry) => entry === null)) return null;
+  return parsed.filter(Boolean).sort((left, right) => left.id.localeCompare(right.id));
+}
+
+function canonicalProficiencies(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value) ||
+      !value.entries || typeof value.entries !== "object" || Array.isArray(value.entries) ||
+      !Array.isArray(value.recordedFamilies)) return null;
+  const entries = Object.entries(value.entries).flatMap(([id, entry]) => {
+    const proficiencyId = token(id);
+    const rankId = referenceId(entry?.rankRef);
+    return proficiencyId && rankId ? [{ id: proficiencyId, rankId }] : [];
+  });
+  return entries.length === Object.keys(value.entries).length
+    ? entries.sort((left, right) => left.id.localeCompare(right.id))
+    : null;
+}
+
+function canonicalExperience(value) {
+  return hasExactKeys(value, ["total"]) && Number.isSafeInteger(value.total) && value.total >= 0
+    ? { total: value.total }
+    : null;
+}
+
+function canonicalClassMembership(value, id, name) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const allowed = new Set(["classRef", "level", "subclassRef"]);
+  if (Object.keys(value).some((key) => !allowed.has(key))) return null;
+  const classId = referenceId(value.classRef);
+  const subclassId = value.subclassRef === undefined ? null : referenceId(value.subclassRef);
+  if (!classId || (value.subclassRef !== undefined && !subclassId) ||
+      !Number.isInteger(value.level) || value.level < 1 || value.level > 20) return null;
+  return { id, name, classId, level: value.level, ...(subclassId ? { subclassId } : {}) };
+}
+
+function canonicalItem(linkValue, quantityValue, equipmentValue, containment, item) {
+  if (!linkValue || typeof linkValue !== "object" || Array.isArray(linkValue)) return null;
+  const linkKeys = Object.keys(linkValue).sort().join(",");
+  const definitionId = (linkKeys === "definition" || linkKeys === "definition,definitionRevision")
+    ? referenceId(linkValue.definition)
+    : null;
+  if (!definitionId || !hasExactKeys(quantityValue, ["current"]) ||
+      !Number.isSafeInteger(quantityValue.current) || quantityValue.current < 1) return null;
+  let equipmentSlots = [];
+  if (equipmentValue !== null) {
+    if (!equipmentValue || typeof equipmentValue !== "object" || Array.isArray(equipmentValue) ||
+        Object.keys(equipmentValue).some((key) => !["equippedBy", "slots", "configuration"].includes(key)) ||
+        !referenceId(equipmentValue.equippedBy) || !Array.isArray(equipmentValue.slots) ||
+        equipmentValue.slots.length === 0) return null;
+    equipmentSlots = equipmentValue.slots.map(referenceId);
+    if (equipmentSlots.some((entry) => !entry) || new Set(equipmentSlots).size !== equipmentSlots.length) return null;
+  }
+  return {
+    id: item.id,
+    name: item.name,
+    definitionId,
+    quantity: quantityValue.current,
+    slot: containment.slot,
+    equipmentSlots,
+  };
+}
+
+async function readCanonicalCharacter({ fetchImpl, origin, applicationId, stateSpaceId, actorId }) {
+  const applicationRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/state-spaces/${encodeURIComponent(stateSpaceId)}`;
+  const entityRoot = `${applicationRoot}/entities`;
+  const headers = { Accept: "application/json" };
+  let summaries;
+  try {
+    const response = await fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(actorId)}/components?limit=100`), {
+      headers,
+      cache: "no-store",
+    });
+    if (!response?.ok) return null;
+    summaries = await json(response);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(summaries?.items) || summaries.items.length > 100) return null;
+  const present = new Set(summaries.items.flatMap((item) => {
+    const id = token(item?.qualifiedTypeId);
+    return id ? [id] : [];
+  }));
+  const componentIds = CANONICAL_CHARACTER_COMPONENT_IDS.filter((id) => present.has(id));
+  if (componentIds.length === 0) return null;
+
+  const componentPairs = await Promise.all(componentIds.map(async (componentId) => {
+    try {
+      const response = await fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(actorId)}` +
+        `/components/${encodeURIComponent(componentId)}`), { headers, cache: "no-store" });
+      const payload = response?.ok ? await json(response) : null;
+      return [componentId, payload ? componentValue(payload, actorId, componentId) : null];
+    } catch {
+      return [componentId, null];
+    }
+  }));
+  const components = new Map(componentPairs);
+
+  let classes = [];
+  try {
+    const relationshipResponse = await fetchImpl(url(origin, `${applicationRoot}/relationships` +
+      `?fromEntityId=${encodeURIComponent(actorId)}` +
+      `&qualifiedKind=${encodeURIComponent(CHARACTER_CLASS_MEMBERSHIP_RELATIONSHIP_KIND)}` +
+      "&limit=100"), { headers, cache: "no-store" });
+    const relationshipPayload = relationshipResponse?.ok ? await json(relationshipResponse) : null;
+    const membershipIds = relationshipTargetIds(
+      relationshipPayload,
+      actorId,
+      CHARACTER_CLASS_MEMBERSHIP_RELATIONSHIP_KIND,
+    );
+    const uniqueIds = [...new Set(membershipIds)];
+    if (uniqueIds.length === membershipIds.length) {
+      classes = (await Promise.all(uniqueIds.map(async (membershipId) => {
+        try {
+          const [entityResponse, componentResponse] = await Promise.all([
+            fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(membershipId)}`), { headers, cache: "no-store" }),
+            fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(membershipId)}` +
+              `/components/${CHARACTER_CLASS_MEMBERSHIP_COMPONENT_TYPE_ID}`), { headers, cache: "no-store" }),
+          ]);
+          if (!entityResponse?.ok || !componentResponse?.ok) return null;
+          const [entityPayload, componentPayload] = await Promise.all([json(entityResponse), json(componentResponse)]);
+          const membershipEntity = entity(entityPayload, membershipId);
+          const value = componentValue(componentPayload, membershipId, CHARACTER_CLASS_MEMBERSHIP_COMPONENT_TYPE_ID);
+          return membershipEntity ? canonicalClassMembership(value, membershipId, membershipEntity.name) : null;
+        } catch {
+          return null;
+        }
+      }))).filter(Boolean).sort((left, right) => left.classId.localeCompare(right.classId));
+    }
+  } catch {
+    classes = [];
+  }
+
+  let inventoryStatus = "unavailable";
+  let inventory = [];
+  try {
+    const containmentResponse = await fetchImpl(url(origin, `${applicationRoot}/containments` +
+      `?containerEntityId=${encodeURIComponent(actorId)}&limit=24`), { headers, cache: "no-store" });
+    const containmentPayload = containmentResponse?.ok ? await json(containmentResponse) : null;
+    if (Array.isArray(containmentPayload?.items) && containmentPayload.items.length <= 24) {
+      inventoryStatus = "ready";
+      inventory = (await Promise.all(containmentPayload.items.map(async (edge) => {
+        const containedId = token(edge?.containedEntityId);
+        const container = token(edge?.containerEntityId);
+        const slot = text(edge?.slot, 100);
+        if (!containedId || container !== actorId || !slot) return null;
+        try {
+          const [itemResponse, linkResponse, quantityResponse, equipmentResponse] = await Promise.all([
+            fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(containedId)}`), { headers, cache: "no-store" }),
+            fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(containedId)}/components/${ITEM_DEFINITION_LINK_COMPONENT_TYPE_ID}`), { headers, cache: "no-store" }),
+            fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(containedId)}/components/${ITEM_QUANTITY_COMPONENT_TYPE_ID}`), { headers, cache: "no-store" }),
+            fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(containedId)}/components/${ITEM_EQUIPMENT_COMPONENT_TYPE_ID}`), { headers, cache: "no-store" }).catch(() => null),
+          ]);
+          if (!itemResponse?.ok || !linkResponse?.ok || !quantityResponse?.ok) return null;
+          const [itemPayload, linkPayload, quantityPayload, equipmentPayload] = await Promise.all([
+            json(itemResponse),
+            json(linkResponse),
+            json(quantityResponse),
+            equipmentResponse?.ok ? json(equipmentResponse) : Promise.resolve(null),
+          ]);
+          const itemEntity = entity(itemPayload, containedId);
+          if (!itemEntity) return null;
+          return canonicalItem(
+            componentValue(linkPayload, containedId, ITEM_DEFINITION_LINK_COMPONENT_TYPE_ID),
+            componentValue(quantityPayload, containedId, ITEM_QUANTITY_COMPONENT_TYPE_ID),
+            equipmentPayload ? componentValue(equipmentPayload, containedId, ITEM_EQUIPMENT_COMPONENT_TYPE_ID) : null,
+            { slot },
+            itemEntity,
+          );
+        } catch {
+          return null;
+        }
+      }))).filter(Boolean).sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id));
+    }
+  } catch {
+    inventoryStatus = "unavailable";
+  }
+
+  return {
+    identity: canonicalIdentity(components.get(CHARACTER_IDENTITY_COMPONENT_TYPE_ID)),
+    origin: canonicalOrigin(components.get(CHARACTER_ORIGIN_COMPONENT_TYPE_ID)),
+    abilities: canonicalAbilityScores(components.get(CREATURE_ABILITY_SCORES_COMPONENT_TYPE_ID)),
+    hitPoints: canonicalHitPoints(components.get(CREATURE_HIT_POINTS_COMPONENT_TYPE_ID)),
+    temporaryHitPoints: canonicalTemporaryHitPoints(components.get(CREATURE_TEMPORARY_HIT_POINTS_COMPONENT_TYPE_ID)),
+    body: canonicalBody(components.get(CREATURE_BODY_COMPONENT_TYPE_ID)),
+    movement: canonicalMovement(components.get(CREATURE_MOVEMENT_COMPONENT_TYPE_ID)),
+    proficiencies: canonicalProficiencies(components.get(CREATURE_PROFICIENCIES_COMPONENT_TYPE_ID)),
+    experience: canonicalExperience(components.get(CHARACTER_EXPERIENCE_COMPONENT_TYPE_ID)),
+    classes,
+    inventoryStatus,
+    inventory,
+  };
+}
+
 function activeCharacterParticipation(value, expectedEntityId) {
   const parsed = componentValue(value, expectedEntityId, CAMPAIGN_PARTICIPATION_COMPONENT_TYPE_ID);
   return hasExactKeys(parsed, ["status"]) && parsed.status === "active";
@@ -332,8 +809,17 @@ function knowledgeEntries(value) {
     const textValue = text(entry?.text, 1_500);
     const stance = token(entry?.stance);
     const presentationKind = token(entry?.presentationKind);
+    const subjectId = stance === "familiar" ? null : token(entry?.subject?.id);
+    const subjectName = stance === "familiar" ? null : text(entry?.subject?.name, 200);
+    const mediaOwnerId = stance === "familiar" ? null : token(entry?.mediaOwnerId);
     return textValue && stance && presentationKind
-      ? { text: textValue, stance, presentationKind }
+      ? {
+          text: textValue,
+          stance,
+          presentationKind,
+          ...(mediaOwnerId ? { mediaOwnerId } : {}),
+          ...(subjectId && subjectName ? { subject: { id: subjectId, name: subjectName } } : {}),
+        }
       : null;
   });
   return entries.every(Boolean) ? entries : null;
@@ -365,6 +851,88 @@ function knowledge(value) {
   return locations.every(Boolean)
     ? { status: "ready", entries, locations }
     : { status: "unavailable", entries: [], locations: [] };
+}
+
+async function attachAuthorizedKnowledgeMedia({
+  fetchImpl,
+  origin,
+  entityRoot,
+  projectedKnowledge,
+  perspective,
+  mediaAssetBaseUrl,
+}) {
+  if (projectedKnowledge.status !== "ready") return projectedKnowledge;
+  const cache = new Map();
+  async function mediaFor(ownerId) {
+    if (!cache.has(ownerId)) {
+      cache.set(ownerId, readExactComponent(
+        fetchImpl, origin, entityRoot, ownerId, WORLD_MEDIA_VISUAL_COMPONENT_TYPE_ID,
+      ).then((value) => value ? projectMediaVisual(value, perspective, mediaAssetBaseUrl) : null));
+    }
+    return cache.get(ownerId);
+  }
+  async function enrich(entries) {
+    return Promise.all(entries.map(async (entry) => {
+      const { mediaOwnerId, ...projectedEntry } = entry;
+      const ownerId = token(mediaOwnerId);
+      if (!ownerId) return projectedEntry;
+      const media = await mediaFor(ownerId);
+      return media ? { ...projectedEntry, media } : projectedEntry;
+    }));
+  }
+  return {
+    ...projectedKnowledge,
+    entries: await enrich(projectedKnowledge.entries),
+    locations: await Promise.all(projectedKnowledge.locations.map(async (location) => ({
+      ...location,
+      entries: await enrich(location.entries),
+    }))),
+  };
+}
+
+function chronology(value, expectedPerspective) {
+  if (!hasExactKeys(value, ["status", "perspective", "entries"]) ||
+      value.perspective !== expectedPerspective ||
+      (value.status !== "ready" && value.status !== "empty") ||
+      !Array.isArray(value.entries) || value.entries.length > 100) {
+    return { status: "unavailable", perspective: expectedPerspective, entries: [] };
+  }
+  const includeSubjects = expectedPerspective === "dm";
+  const entries = value.entries.map((entry) => {
+    const expectedKeys = includeSubjects
+      ? ["id", "occurredAtMinute", "dateLabel", "precision", "title", "summary", "subjects"]
+      : ["id", "occurredAtMinute", "dateLabel", "precision", "title", "summary"];
+    if (!hasExactKeys(entry, expectedKeys)) return null;
+    const id = token(entry.id);
+    const dateLabel = text(entry.dateLabel, 100);
+    const precision = new Set(["exact", "approximate", "era"]).has(entry.precision)
+      ? entry.precision
+      : null;
+    const title = text(entry.title, 160);
+    const summary = text(entry.summary, 1_000);
+    const occurredAtMinute = Number.isSafeInteger(entry.occurredAtMinute) &&
+      entry.occurredAtMinute >= -1_000_000_000 && entry.occurredAtMinute <= 1_000_000_000
+      ? entry.occurredAtMinute
+      : null;
+    if (!id || !dateLabel || !precision || !title || !summary || occurredAtMinute === null) return null;
+    if (!includeSubjects) {
+      return { id, occurredAtMinute, dateLabel, precision, title, summary };
+    }
+    if (!Array.isArray(entry.subjects) || entry.subjects.length > 10) return null;
+    const subjects = entry.subjects.map((subject) => hasExactKeys(subject, ["id", "name"])
+      ? { id: token(subject.id), name: text(subject.name, 200) }
+      : null);
+    if (!subjects.every((subject) => subject?.id && subject?.name) ||
+        new Set(subjects.map((subject) => subject.id)).size !== subjects.length) return null;
+    return { id, occurredAtMinute, dateLabel, precision, title, summary, subjects };
+  });
+  if (!entries.every(Boolean) ||
+      (value.status === "empty" && entries.length !== 0) ||
+      (value.status === "ready" && entries.length === 0) ||
+      new Set(entries.map((entry) => entry.id)).size !== entries.length) {
+    return { status: "unavailable", perspective: expectedPerspective, entries: [] };
+  }
+  return { status: value.status, perspective: expectedPerspective, entries };
 }
 
 function campaignWorldId(campaignId) {
@@ -594,7 +1162,10 @@ async function readRawLocationDirectory({
     const visualPath = `/api/applications/${encodeURIComponent(applicationId)}` +
       `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities/${encodeURIComponent(id)}` +
       `/components/${WORLD_MAP_VISUAL_COMPONENT_TYPE_ID}`;
-    const [containmentResult, componentResult, anchorResult, visualResult] = await Promise.allSettled([
+    const mediaPath = `/api/applications/${encodeURIComponent(applicationId)}` +
+      `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities/${encodeURIComponent(id)}` +
+      `/components/${WORLD_MEDIA_VISUAL_COMPONENT_TYPE_ID}`;
+    const [containmentResult, componentResult, anchorResult, visualResult, mediaResult] = await Promise.allSettled([
       fetchImpl(url(origin, containmentPath), {
         headers: { Accept: "application/json" },
         cache: "no-store",
@@ -611,6 +1182,10 @@ async function readRawLocationDirectory({
         headers: { Accept: "application/json" },
         cache: "no-store",
       }),
+      fetchImpl(url(origin, mediaPath), {
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      }),
     ]);
     try {
       const containmentResponse = containmentResult.status === "fulfilled"
@@ -621,11 +1196,13 @@ async function readRawLocationDirectory({
         : null;
       const anchorResponse = anchorResult.status === "fulfilled" ? anchorResult.value : null;
       const visualResponse = visualResult.status === "fulfilled" ? visualResult.value : null;
-      const [containmentPayload, componentPayload, anchorPayload, visualPayload] = await Promise.all([
+      const mediaResponse = mediaResult.status === "fulfilled" ? mediaResult.value : null;
+      const [containmentPayload, componentPayload, anchorPayload, visualPayload, mediaPayload] = await Promise.all([
         containmentResponse?.ok ? json(containmentResponse) : Promise.resolve(null),
         componentResponse?.ok ? json(componentResponse) : Promise.resolve(null),
         anchorResponse?.ok ? json(anchorResponse) : Promise.resolve(null),
         visualResponse?.ok ? json(visualResponse) : Promise.resolve(null),
+        mediaResponse?.ok ? json(mediaResponse) : Promise.resolve(null),
       ]);
       const componentValueJson = componentValue(componentPayload, id, LOCATION_COMPONENT_TYPE_ID);
       const summary = componentValueJson ? text(componentValueJson.summary, 2000) : null;
@@ -643,9 +1220,10 @@ async function readRawLocationDirectory({
         ...(discoveredContainmentSlot ? { containmentSlot: discoveredContainmentSlot } : {}),
         ...(discoveredMapAnchor ? { mapAnchor: discoveredMapAnchor } : {}),
         visualPayload,
+        mediaPayload,
       };
     } catch {
-      return { id, name, visibility: null, visualPayload: null };
+      return { id, name, visibility: null, visualPayload: null, mediaPayload: null };
     }
   }));
   return locationDirectory
@@ -678,10 +1256,14 @@ async function readLocationDirectory(options) {
     const selectedVisual = entry.visualPayload
       ? mapVisual(entry.visualPayload, entry.id, options.perspective)
       : null;
-    const { visibility: _, visualPayload: __, ...safeEntry } = entry;
+    const selectedMedia = entry.mediaPayload
+      ? mediaVisual(entry.mediaPayload, entry.id, options.perspective, options.mediaAssetBaseUrl)
+      : null;
+    const { visibility: _, visualPayload: __, mediaPayload: ___, ...safeEntry } = entry;
     return [{
       ...safeEntry,
       ...(selectedVisual ? { mapVisual: selectedVisual } : {}),
+      ...(selectedMedia ? { media: selectedMedia } : {}),
     }];
   });
 }
@@ -703,6 +1285,438 @@ function relationshipTargetIds(value, expectedFromId, expectedKind) {
   });
 }
 
+async function readNamedEntity(fetchImpl, origin, entityRoot, entityId) {
+  try {
+    const response = await fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(entityId)}`), {
+      headers: { Accept: "application/json" }, cache: "no-store",
+    });
+    return response?.ok ? entity(await json(response), entityId) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function readExactComponent(fetchImpl, origin, entityRoot, entityId, componentTypeId) {
+  try {
+    const response = await fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(entityId)}` +
+      `/components/${encodeURIComponent(componentTypeId)}`), {
+      headers: { Accept: "application/json" }, cache: "no-store",
+    });
+    return response?.ok
+      ? componentValue(await json(response), entityId, componentTypeId)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+async function readExactRelationshipTargets(fetchImpl, origin, entityRoot, fromEntityId, qualifiedKind) {
+  try {
+    const relationshipRoot = entityRoot.replace(/\/entities$/u, "/relationships");
+    const response = await fetchImpl(url(origin, `${relationshipRoot}` +
+      `?fromEntityId=${encodeURIComponent(fromEntityId)}` +
+      `&qualifiedKind=${encodeURIComponent(qualifiedKind)}&limit=100`), {
+      headers: { Accept: "application/json" }, cache: "no-store",
+    });
+    if (!response?.ok) return null;
+    const payload = await json(response);
+    const targets = relationshipTargetIds(payload, fromEntityId, qualifiedKind);
+    return payload?.items?.length === targets.length ? [...new Set(targets)] : null;
+  } catch {
+    return null;
+  }
+}
+
+async function readSingleExactRelationshipTarget(
+  fetchImpl,
+  origin,
+  entityRoot,
+  fromEntityId,
+  qualifiedKind,
+) {
+  try {
+    const relationshipRoot = entityRoot.replace(/\/entities$/u, "/relationships");
+    const response = await fetchImpl(url(origin, `${relationshipRoot}` +
+      `?fromEntityId=${encodeURIComponent(fromEntityId)}` +
+      `&qualifiedKind=${encodeURIComponent(qualifiedKind)}&limit=100`), {
+      headers: { Accept: "application/json" }, cache: "no-store",
+    });
+    if (!response?.ok) return null;
+    const payload = await json(response);
+    if (!payload || !Array.isArray(payload.items) || payload.items.length !== 1) return null;
+    const item = payload.items[0];
+    return token(item?.fromEntityId) === fromEntityId && token(item?.qualifiedKind) === qualifiedKind
+      ? token(item?.toEntityId)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function validActiveRoute(value) {
+  return hasExactKeys(value, ["status", "summary", "visibility", "mode", "durationMinutes"]) &&
+    value.status === "active" && text(value.summary, 1_000) &&
+    ["public", "party", "gm"].includes(value.visibility) && value.mode === "on-foot" &&
+    Number.isInteger(value.durationMinutes) && value.durationMinutes >= 1 && value.durationMinutes <= 1_440;
+}
+
+function validOpenRouteAvailability(value) {
+  return hasExactKeys(value, ["status"]) && value.status === "open";
+}
+
+function validActiveLocation(value) {
+  return hasExactKeys(value, ["kind", "status", "summary", "visibility"]) &&
+    ["region", "settlement", "site", "interior"].includes(value.kind) && value.status === "active" &&
+    text(value.summary, 1_000) && ["public", "party", "gm"].includes(value.visibility);
+}
+
+/**
+ * Resolves only exact, active, open, directed on-foot routes admitted by the authorized notebook.
+ * Knowledge supplies candidate identity; canonical route/location state independently proves the
+ * target and never lets descriptive visibility stand in for Player authorization.
+ */
+export async function readKnownOpenRoutes({
+  fetchImpl,
+  origin,
+  entityRoot,
+  worldId,
+  currentLocationId,
+  perspective,
+  projectedKnowledge,
+  locationDirectory,
+}) {
+  if (!worldId || !currentLocationId || projectedKnowledge?.status !== "ready") return [];
+  const subjectEntries = new Map();
+  for (const entry of projectedKnowledge.entries) {
+    const subjectId = token(entry?.subject?.id);
+    if (!subjectId || entry.stance === "familiar") continue;
+    const values = subjectEntries.get(subjectId) ?? [];
+    values.push(entry);
+    subjectEntries.set(subjectId, values);
+  }
+  if (subjectEntries.size === 0) return [];
+
+  const locationById = new Map(locationDirectory.map((location) => [location.id, location]));
+  const candidates = await Promise.all([...subjectEntries.keys()].map(async (routeId) => {
+    const route = await readExactComponent(
+      fetchImpl, origin, entityRoot, routeId, WORLD_ROUTE_COMPONENT_TYPE_ID,
+    );
+    return validActiveRoute(route) ? { routeId, route } : null;
+  }));
+
+  const resolved = await Promise.all(candidates.filter(Boolean).map(async ({ routeId, route }) => {
+    const [availability, routeWorldId, originId, destinationId] = await Promise.all([
+      readExactComponent(
+        fetchImpl, origin, entityRoot, routeId, WORLD_ROUTE_AVAILABILITY_COMPONENT_TYPE_ID,
+      ),
+      readSingleExactRelationshipTarget(
+        fetchImpl, origin, entityRoot, routeId, WORLD_ROUTE_RELATIONSHIP_KINDS.world,
+      ),
+      readSingleExactRelationshipTarget(
+        fetchImpl, origin, entityRoot, routeId, WORLD_ROUTE_RELATIONSHIP_KINDS.origin,
+      ),
+      readSingleExactRelationshipTarget(
+        fetchImpl, origin, entityRoot, routeId, WORLD_ROUTE_RELATIONSHIP_KINDS.destination,
+      ),
+    ]);
+    if (!validOpenRouteAvailability(availability) || routeWorldId !== worldId ||
+        originId !== currentLocationId || !destinationId || destinationId === originId) return null;
+    const destination = locationById.get(destinationId);
+    if (!destination || (perspective === "player" && !subjectEntries.has(destinationId))) return null;
+    const destinationState = await readExactComponent(
+      fetchImpl, origin, entityRoot, destinationId, LOCATION_COMPONENT_TYPE_ID,
+    );
+    if (!validActiveLocation(destinationState)) return null;
+    const admittedDetail = subjectEntries.get(routeId)?.map((entry) => text(entry.text, 1_500))
+      .find(Boolean);
+    const detail = perspective === "dm" ? route.summary : admittedDetail;
+    if (!detail) return null;
+    return {
+      id: routeId,
+      originId,
+      destinationId,
+      destinationName: destination.name,
+      detail,
+      mode: "on-foot",
+      durationMinutes: route.durationMinutes,
+    };
+  }));
+  return resolved.filter(Boolean).sort((left, right) =>
+    left.destinationName.localeCompare(right.destinationName) || left.id.localeCompare(right.id));
+}
+
+function validInteraction(value) {
+  return hasExactKeys(value, ["kind", "status", "summary"]) && value.kind === "conversation" &&
+    value.status === "accepted" && text(value.summary, 1_000);
+}
+
+export async function readConversationCurrentScene({
+  fetchImpl, origin, entityRoot, conversationId, perspective, authorizedActorIds, mediaAssetBaseUrl,
+}) {
+  const [conversation, interaction, participantIds, sceneMediaValue] = await Promise.all([
+    readNamedEntity(fetchImpl, origin, entityRoot, conversationId),
+    readExactComponent(fetchImpl, origin, entityRoot, conversationId, WORLD_INTERACTION_COMPONENT_TYPE_ID),
+    readExactRelationshipTargets(
+      fetchImpl, origin, entityRoot, conversationId, WORLD_INTERACTION_PARTICIPANT_RELATIONSHIP_KIND,
+    ),
+    readExactComponent(fetchImpl, origin, entityRoot, conversationId, WORLD_MEDIA_VISUAL_COMPONENT_TYPE_ID),
+  ]);
+  if (!conversation || !validInteraction(interaction) || participantIds === null) return null;
+  const visibleIds = perspective === "dm"
+    ? participantIds
+    : participantIds.filter((id) => authorizedActorIds.has(id));
+  const participants = (await Promise.all(visibleIds.map(async (id) => {
+    const [participant, mediaValue] = await Promise.all([
+      readNamedEntity(fetchImpl, origin, entityRoot, id),
+      readExactComponent(fetchImpl, origin, entityRoot, id, WORLD_MEDIA_VISUAL_COMPONENT_TYPE_ID),
+    ]);
+    if (!participant) return null;
+    const media = mediaValue ? projectMediaVisual(mediaValue, perspective, mediaAssetBaseUrl) : null;
+    return { ...participant, ...(media?.portrait ? { portrait: media.portrait } : {}) };
+  }))).filter(Boolean);
+  if (participants.length !== visibleIds.length) return null;
+  return {
+    status: "ready",
+    kind: "conversation",
+    ...(() => {
+      const media = sceneMediaValue
+        ? projectMediaVisual(sceneMediaValue, perspective, mediaAssetBaseUrl)
+        : null;
+      return media?.scene ? { scene: media.scene } : {};
+    })(),
+    conversation: {
+      id: conversation.id,
+      name: conversation.name,
+      participants,
+      ...(perspective === "dm" ? { summary: interaction.summary } : {}),
+    },
+  };
+}
+
+function validRound(value, encounterId) {
+  return hasExactKeys(value, ["encounter", "number", "status"]) &&
+    exactEntityReference(value.encounter)?.entityId === encounterId &&
+    Number.isInteger(value.number) && value.number > 0 && value.status === "active";
+}
+
+function validTurn(value, encounterId) {
+  return hasExactKeys(value, ["encounter", "round", "participant", "ordinal", "status"]) &&
+    exactEntityReference(value.encounter)?.entityId === encounterId && exactEntityReference(value.round) &&
+    exactEntityReference(value.participant) && Number.isInteger(value.ordinal) && value.ordinal >= 0 &&
+    value.status === "active";
+}
+
+function validInitiative(value, encounterId) {
+  return hasExactKeys(value, ["encounter", "status", "result", "tieBreakOrder"]) &&
+    exactEntityReference(value.encounter)?.entityId === encounterId && value.status === "locked" &&
+    Number.isInteger(value.result) && Number.isInteger(value.tieBreakOrder) && value.tieBreakOrder >= 0;
+}
+
+function validParticipation(value, encounterId, participationId, stateSpaceId) {
+  if (!hasExactKeys(value, ["membershipRelationship", "status"]) || value.status !== "active") return false;
+  const membership = value.membershipRelationship;
+  return hasExactKeys(membership, ["stateSpaceId", "fromEntityId", "toEntityId", "qualifiedKind"]) &&
+    membership.stateSpaceId === stateSpaceId && membership.fromEntityId === encounterId &&
+    membership.toEntityId === participationId &&
+    membership.qualifiedKind === ENCOUNTER_RELATIONSHIP_KINDS.participants;
+}
+
+function normalizedTurnBudget(value, turnId) {
+  if (!hasExactKeys(value, ["turn", "remaining", "movementSpent", "interactionsUsed"]) ||
+      exactEntityReference(value.turn)?.entityId !== turnId ||
+      !hasExactKeys(value.remaining, ["actions", "bonusActions", "reactions"]) ||
+      ![value.remaining.actions, value.remaining.bonusActions, value.remaining.reactions, value.interactionsUsed]
+        .every((count) => Number.isInteger(count) && count >= 0) || !Array.isArray(value.movementSpent)) return null;
+  return {
+    actions: value.remaining.actions,
+    bonusActions: value.remaining.bonusActions,
+    reactions: value.remaining.reactions,
+  };
+}
+
+async function readCombatParticipant({
+  fetchImpl, origin, entityRoot, encounterId, participationId, stateSpaceId,
+}) {
+  const [participation, initiative, actorIds] = await Promise.all([
+    readExactComponent(fetchImpl, origin, entityRoot, participationId, ENCOUNTER_PARTICIPATION_COMPONENT_TYPE_ID),
+    readExactComponent(fetchImpl, origin, entityRoot, participationId, COMBAT_INITIATIVE_COMPONENT_TYPE_ID),
+    readExactRelationshipTargets(
+      fetchImpl, origin, entityRoot, participationId, ENCOUNTER_RELATIONSHIP_KINDS.actor,
+    ),
+  ]);
+  if (!validParticipation(participation, encounterId, participationId, stateSpaceId) ||
+      !validInitiative(initiative, encounterId) || actorIds?.length !== 1) return null;
+  const actor = await readNamedEntity(fetchImpl, origin, entityRoot, actorIds[0]);
+  return actor ? {
+    participationId,
+    actor,
+    initiative: initiative.result,
+    order: initiative.tieBreakOrder,
+  } : null;
+}
+
+export async function readCombatCurrentScene({
+  fetchImpl, origin, entityRoot, encounterId, stateSpaceId, perspective, authorizedActorIds,
+  mediaAssetBaseUrl,
+}) {
+  const [encounter, definition, participantIds, activeRoundIds, activeTurnIds, sceneMediaValue] = await Promise.all([
+    readNamedEntity(fetchImpl, origin, entityRoot, encounterId),
+    readExactComponent(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_DEFINITION_COMPONENT_TYPE_ID),
+    readExactRelationshipTargets(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_RELATIONSHIP_KINDS.participants),
+    readExactRelationshipTargets(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_RELATIONSHIP_KINDS.activeRound),
+    readExactRelationshipTargets(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_RELATIONSHIP_KINDS.activeTurn),
+    readExactComponent(fetchImpl, origin, entityRoot, encounterId, WORLD_MEDIA_VISUAL_COMPONENT_TYPE_ID),
+  ]);
+  if (!encounter || !definition || participantIds === null || activeRoundIds === null || activeTurnIds === null ||
+      activeRoundIds.length > 1 || activeTurnIds.length > 1) return null;
+  const participantRows = await Promise.all(participantIds.map((participationId) => readCombatParticipant({
+    fetchImpl, origin, entityRoot, encounterId, participationId, stateSpaceId,
+  })));
+  if (participantRows.some((row) => row === null)) return null;
+  const orderedRows = participantRows.sort((left, right) => left.order - right.order);
+  if (orderedRows.some((row, index) => row.order !== index)) return null;
+
+  let round = null;
+  if (activeRoundIds.length === 1) {
+    const value = await readExactComponent(
+      fetchImpl, origin, entityRoot, activeRoundIds[0], ENCOUNTER_ROUND_COMPONENT_TYPE_ID,
+    );
+    if (!validRound(value, encounterId)) return null;
+    round = { id: activeRoundIds[0], number: value.number };
+  }
+  let turn = null;
+  if (activeTurnIds.length === 1) {
+    const turnId = activeTurnIds[0];
+    const [value, budgetValue] = await Promise.all([
+      readExactComponent(fetchImpl, origin, entityRoot, turnId, ENCOUNTER_TURN_COMPONENT_TYPE_ID),
+      readExactComponent(fetchImpl, origin, entityRoot, turnId, COMBAT_TURN_BUDGET_COMPONENT_TYPE_ID),
+    ]);
+    if (!validTurn(value, encounterId) || (round && value.round.entityId !== round.id)) return null;
+    const activeRow = orderedRows.find((row) => row.participationId === value.participant.entityId);
+    if (!activeRow) return null;
+    const budget = normalizedTurnBudget(budgetValue, turnId);
+    turn = {
+      id: turnId,
+      participationId: activeRow.participationId,
+      actorId: activeRow.actor.id,
+      actorName: activeRow.actor.name,
+      ordinal: value.ordinal,
+      ...(budget && (perspective === "dm" || authorizedActorIds.has(activeRow.actor.id)) ? { budget } : {}),
+    };
+  }
+  const visibleRows = perspective === "dm"
+    ? orderedRows
+    : orderedRows.filter((row) => authorizedActorIds.has(row.actor.id));
+  const visibleParticipants = await Promise.all(visibleRows.map(async (row) => {
+    const mediaValue = await readExactComponent(
+      fetchImpl, origin, entityRoot, row.actor.id, WORLD_MEDIA_VISUAL_COMPONENT_TYPE_ID,
+    );
+    const media = mediaValue ? projectMediaVisual(mediaValue, perspective, mediaAssetBaseUrl) : null;
+    return {
+      id: row.actor.id,
+      name: row.actor.name,
+      initiative: row.initiative,
+      active: turn?.participationId === row.participationId,
+      ...(media?.portrait ? { portrait: media.portrait } : {}),
+    };
+  }));
+  const sceneMedia = sceneMediaValue
+    ? projectMediaVisual(sceneMediaValue, perspective, mediaAssetBaseUrl)
+    : null;
+  return {
+    status: "ready",
+    kind: "combat",
+    ...(sceneMedia?.scene ? { scene: sceneMedia.scene } : {}),
+    combat: {
+      id: encounter.id,
+      name: encounter.name,
+      participants: visibleParticipants,
+      ...(round ? { round } : {}),
+      ...(turn && (perspective === "dm" || authorizedActorIds.has(turn.actorId)) ? { turn } : {}),
+    },
+  };
+}
+
+async function campaignRecordWorldEntityIds({ fetchImpl, origin, relationshipRoot, recordId }) {
+  try {
+    const path = `${relationshipRoot}?fromEntityId=${encodeURIComponent(recordId)}` +
+      `&qualifiedKind=${encodeURIComponent(CAMPAIGN_RECORD_WORLD_REFERENCE_RELATIONSHIP_KIND)}&limit=100`;
+    const response = await fetchImpl(url(origin, path), {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
+    const payload = response?.ok ? await json(response) : null;
+    return [...new Set(relationshipTargetIds(
+      payload,
+      recordId,
+      CAMPAIGN_RECORD_WORLD_REFERENCE_RELATIONSHIP_KIND,
+    ))];
+  } catch {
+    return [];
+  }
+}
+
+async function readCampaignLocationVisits({
+  fetchImpl,
+  origin,
+  listRoot,
+  relationshipRoot,
+  campaignId,
+  includeGmContext,
+}) {
+  if (!includeGmContext) return [];
+  try {
+    const ownershipPath = `${relationshipRoot}?fromEntityId=${encodeURIComponent(campaignId)}` +
+      `&qualifiedKind=${encodeURIComponent(CAMPAIGN_HAS_LOCATION_VISIT_RELATIONSHIP_KIND)}&limit=100`;
+    const ownershipResponse = await fetchImpl(url(origin, ownershipPath), {
+      headers: { Accept: "application/json" }, cache: "no-store",
+    });
+    const ownershipPayload = ownershipResponse?.ok ? await json(ownershipResponse) : null;
+    const visitIds = [...new Set(relationshipTargetIds(
+      ownershipPayload,
+      campaignId,
+      CAMPAIGN_HAS_LOCATION_VISIT_RELATIONSHIP_KIND,
+    ))];
+    const visits = (await Promise.all(visitIds.map(async (visitId) => {
+      const componentPath = `${listRoot}/${encodeURIComponent(visitId)}` +
+        `/components/${CAMPAIGN_LOCATION_VISIT_COMPONENT_TYPE_ID}`;
+      const targetPath = `${relationshipRoot}?fromEntityId=${encodeURIComponent(visitId)}` +
+        `&qualifiedKind=${encodeURIComponent(CAMPAIGN_LOCATION_VISIT_AT_LOCATION_RELATIONSHIP_KIND)}&limit=2`;
+      try {
+        const [componentResponse, targetResponse] = await Promise.all([
+          fetchImpl(url(origin, componentPath), { headers: { Accept: "application/json" }, cache: "no-store" }),
+          fetchImpl(url(origin, targetPath), { headers: { Accept: "application/json" }, cache: "no-store" }),
+        ]);
+        if (!componentResponse?.ok || !targetResponse?.ok) return null;
+        const [componentPayload, targetPayload] = await Promise.all([
+          json(componentResponse), json(targetResponse),
+        ]);
+        const value = campaignLocationVisit(componentValue(
+          componentPayload,
+          visitId,
+          CAMPAIGN_LOCATION_VISIT_COMPONENT_TYPE_ID,
+        ), includeGmContext);
+        const locationIds = [...new Set(relationshipTargetIds(
+          targetPayload,
+          visitId,
+          CAMPAIGN_LOCATION_VISIT_AT_LOCATION_RELATIONSHIP_KIND,
+        ))];
+        return value && locationIds.length === 1
+          ? { id: visitId, locationId: locationIds[0], ...value }
+          : null;
+      } catch {
+        return null;
+      }
+    }))).filter(Boolean);
+    const counts = new Map();
+    for (const visit of visits) counts.set(visit.locationId, (counts.get(visit.locationId) ?? 0) + 1);
+    return visits.filter((visit) => counts.get(visit.locationId) === 1)
+      .sort((left, right) => right.lastVisitedMinute - left.lastVisitedMinute || left.id.localeCompare(right.id));
+  } catch {
+    return [];
+  }
+}
+
 async function readPartyRoster({
   fetchImpl,
   origin,
@@ -713,10 +1727,11 @@ async function readPartyRoster({
   perspective,
   boundActor,
   boundActorDetails,
+  boundCanonical,
 }) {
   if (serverRole.role === "actor") {
     return boundActor
-      ? [{ ...boundActor, ...boundActorDetails, current: true }]
+      ? [{ ...boundActor, ...boundActorDetails, ...(boundCanonical ? { canonical: boundCanonical } : {}), current: true }]
       : [];
   }
   if (perspective !== "dm") return [];
@@ -793,11 +1808,19 @@ async function readPartyRoster({
       ]);
       const actor = entity(actorPayload, actorId);
       if (!actor) return null;
+      const canonical = await readCanonicalCharacter({
+        fetchImpl,
+        origin,
+        applicationId,
+        stateSpaceId,
+        actorId,
+      });
       return {
         ...actor,
         ...characterDetails(recordPayload
           ? componentValue(recordPayload, actorId, PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID)
           : null),
+        ...(canonical ? { canonical } : {}),
         current: false,
       };
     } catch {
@@ -822,11 +1845,14 @@ async function readWorldDirectory({
   stateSpaceId,
   worldId,
   locationDirectory,
+  perspective,
+  mediaAssetBaseUrl,
 }) {
   const empty = { people: [], factions: [], holdings: [] };
   if (!applicationId || !stateSpaceId || !worldId || locationDirectory.length === 0) return empty;
   const listRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
     `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
+  const relationshipRoot = listRoot.replace(/\/entities$/u, "/relationships");
   const headers = { Accept: "application/json" };
   const entities = new Map();
   const seenCursors = new Set();
@@ -885,20 +1911,34 @@ async function readWorldDirectory({
     const record = entities.get(entry.entityId);
     return [Promise.resolve().then(async () => {
       let motive = null;
+      let media = null;
       try {
-        const response = await fetchImpl(url(origin,
-          `${listRoot}/${encodeURIComponent(entry.entityId)}/components/${WORLD_MOTIVE_COMPONENT_TYPE_ID}`),
-        { headers, cache: "no-store" });
-        const payload = response?.ok ? await json(response) : null;
-        motive = worldMotive(componentValue(payload, entry.entityId, WORLD_MOTIVE_COMPONENT_TYPE_ID));
+        const [motiveResponse, mediaResponse] = await Promise.all([
+          fetchImpl(url(origin,
+            `${listRoot}/${encodeURIComponent(entry.entityId)}/components/${WORLD_MOTIVE_COMPONENT_TYPE_ID}`),
+          { headers, cache: "no-store" }),
+          fetchImpl(url(origin,
+            `${listRoot}/${encodeURIComponent(entry.entityId)}/components/${WORLD_MEDIA_VISUAL_COMPONENT_TYPE_ID}`),
+          { headers, cache: "no-store" }),
+        ]);
+        const [motivePayload, mediaPayload] = await Promise.all([
+          motiveResponse?.ok ? json(motiveResponse) : Promise.resolve(null),
+          mediaResponse?.ok ? json(mediaResponse) : Promise.resolve(null),
+        ]);
+        motive = worldMotive(componentValue(motivePayload, entry.entityId, WORLD_MOTIVE_COMPONENT_TYPE_ID));
+        media = mediaPayload
+          ? mediaVisual(mediaPayload, entry.entityId, perspective, mediaAssetBaseUrl)
+          : null;
       } catch {
         motive = null;
+        media = null;
       }
       return {
         id: entry.entityId,
         name: record.name,
         kind: isCreature ? "Creature" : "NPC",
         locationId: entry.locationId,
+        ...(media ? { media } : {}),
         ...(motive ? { motive } : {}),
       };
     })];
@@ -966,10 +2006,11 @@ async function readCampaignStructure({
   campaignId,
   includeGmContext,
 }) {
-  const empty = { chapters: [], arcs: [], sessions: [] };
+  const empty = { chapters: [], arcs: [], sessions: [], visits: [] };
   if (!applicationId || !stateSpaceId || !campaignId) return empty;
   const listRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
     `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
+  const relationshipRoot = listRoot.replace(/\/entities$/u, "/relationships");
   const headers = { Accept: "application/json" };
   const candidates = new Map();
   const seenCursors = new Set();
@@ -1025,6 +2066,14 @@ async function readCampaignStructure({
         ? campaignChapter(parsed, includeGmContext)
         : campaignArc(parsed, includeGmContext);
       if (!value) return null;
+      const terminal = candidate.kind === "chapter"
+        ? value.status === "closed"
+        : value.status !== "active";
+      const worldEntityIds = includeGmContext && terminal
+        ? await campaignRecordWorldEntityIds({
+            fetchImpl, origin, relationshipRoot, recordId: candidate.id,
+          })
+        : [];
       return {
         kind: candidate.kind,
         record: {
@@ -1032,6 +2081,7 @@ async function readCampaignStructure({
           createdAtUtc: candidate.createdAtUtc,
           updatedAtUtc: text(payload?.updatedAtUtc, 64),
           ...value,
+          ...(worldEntityIds.length > 0 ? { worldEntityIds } : {}),
         },
       };
     } catch {
@@ -1043,7 +2093,7 @@ async function readCampaignStructure({
     (left.createdAtUtc ?? "").localeCompare(right.createdAtUtc ?? "") || left.id.localeCompare(right.id);
   let sessions = [];
   if (includeGmContext) try {
-    const relationshipPath = `${listRoot.replace(/\/entities$/u, "/relationships")}` +
+    const relationshipPath = `${relationshipRoot}` +
       `?fromEntityId=${encodeURIComponent(campaignId)}` +
       `&qualifiedKind=${encodeURIComponent(CAMPAIGN_HAS_SESSION_RELATIONSHIP_KIND)}&limit=100`;
     const relationshipResponse = await fetchImpl(url(origin, relationshipPath), { headers, cache: "no-store" });
@@ -1081,11 +2131,15 @@ async function readCampaignStructure({
           ))
           : null;
         if (session.status === "ended" && !recap) return null;
+        const worldEntityIds = session.status === "ended"
+          ? await campaignRecordWorldEntityIds({ fetchImpl, origin, relationshipRoot, recordId: sessionId })
+          : [];
         return {
           id: sessionId,
           ...session,
           updatedAtUtc: text(sessionPayload?.updatedAtUtc, 64),
           ...(recap ? { recap } : {}),
+          ...(worldEntityIds.length > 0 ? { worldEntityIds } : {}),
         };
       } catch {
         return null;
@@ -1094,10 +2148,19 @@ async function readCampaignStructure({
   } catch {
     sessions = [];
   }
+  const visits = await readCampaignLocationVisits({
+    fetchImpl,
+    origin,
+    listRoot,
+    relationshipRoot,
+    campaignId,
+    includeGmContext,
+  });
   return {
     chapters: records.filter((value) => value?.kind === "chapter").map((value) => value.record).sort(compare),
     arcs: records.filter((value) => value?.kind === "arc").map((value) => value.record).sort(compare),
     sessions,
+    visits,
   };
 }
 
@@ -1112,6 +2175,7 @@ export async function readGameServerContext({
   requestedPerspective = "dm",
   requestedCampaignId = null,
   localSeat,
+  mediaAssetBaseUrl = "/ui/dnd2024-play/assets/",
 }) {
   const normalizedRequestedPerspective = requestedPerspective === null ? "dm" : requestedPerspective;
   const origin = normalizeGameServerOrigin(serverOrigin);
@@ -1180,10 +2244,13 @@ export async function readGameServerContext({
   let campaignResponse;
   let actorResponse;
   let campaignComponentResponse;
+  let currentSceneComponentResponse;
   let actorComponentResponse;
   let knowledgeResponse;
+  let chronologyResponse;
   try {
-    [campaignResponse, actorResponse, campaignComponentResponse, actorComponentResponse, knowledgeResponse] = await Promise.all([
+    [campaignResponse, actorResponse, campaignComponentResponse, currentSceneComponentResponse,
+      actorComponentResponse, knowledgeResponse, chronologyResponse] = await Promise.all([
       fetchImpl(url(origin, `${root}/${encodeURIComponent(selectedCampaignId)}`), {
         headers: { Accept: "application/json" }, cache: "no-store",
       }),
@@ -1196,6 +2263,10 @@ export async function readGameServerContext({
         `/components/${CAMPAIGN_ROOT_COMPONENT_TYPE_ID}`), {
         headers: { Accept: "application/json" }, cache: "no-store",
       }),
+      fetchImpl(url(origin, `${root}/${encodeURIComponent(selectedCampaignId)}` +
+        `/components/${CAMPAIGN_CURRENT_SCENE_COMPONENT_TYPE_ID}`), {
+        headers: { Accept: "application/json" }, cache: "no-store",
+      }).catch(() => null),
       serverRole.role === "actor"
         ? fetchImpl(url(origin, `${root}/${encodeURIComponent(binding.actorId)}` +
           `/components/${PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID}`), {
@@ -1208,17 +2279,25 @@ export async function readGameServerContext({
           headers: { Accept: "application/json" }, cache: "no-store",
         }).catch(() => null)
         : Promise.resolve(null),
+      fetchImpl(url(origin, `/api/applications/${encodeURIComponent(binding.applicationId)}` +
+        `/campaigns/${encodeURIComponent(selectedCampaignId)}/chronology` +
+        `?perspective=${encodeURIComponent(contextAudience.perspective ?? "player")}`), {
+        headers: { Accept: "application/json" }, cache: "no-store",
+      }).catch(() => null),
     ]);
   } catch {
     return unavailable("The campaign binding was found, but the game state could not be read.");
   }
 
-  const [campaign, actor, campaignComponent, actorComponent, knowledgeEnvelope] = await Promise.all([
+  const [campaign, actor, campaignComponent, currentSceneComponent, actorComponent, knowledgeEnvelope,
+    chronologyEnvelope] = await Promise.all([
     json(campaignResponse),
     json(actorResponse),
     json(campaignComponentResponse),
+    json(currentSceneComponentResponse),
     json(actorComponentResponse),
     json(knowledgeResponse),
+    json(chronologyResponse),
   ]);
   const campaignEntity = campaignResponse?.ok ? entity(campaign, selectedCampaignId) : null;
   const actorEntity = isGameMaster
@@ -1229,6 +2308,20 @@ export async function readGameServerContext({
   if (!campaignEntity || !actorEntity) {
     return unavailable("The campaign binding no longer matches readable game state.");
   }
+  let projectedKnowledge = knowledgeResponse?.ok
+    ? knowledge(knowledgeEnvelope)
+    : { status: "unavailable", entries: [], locations: [] };
+  projectedKnowledge = await attachAuthorizedKnowledgeMedia({
+    fetchImpl,
+    origin,
+    entityRoot: root,
+    projectedKnowledge,
+    perspective: contextAudience.perspective ?? "player",
+    mediaAssetBaseUrl,
+  });
+  const projectedChronology = chronologyResponse?.ok
+    ? chronology(chronologyEnvelope, contextAudience.perspective ?? "player")
+    : { status: "unavailable", perspective: contextAudience.perspective ?? "player", entries: [] };
   const [locationDirectory, campaignStructure] = await Promise.all([
     readLocationDirectory({
       fetchImpl,
@@ -1237,6 +2330,7 @@ export async function readGameServerContext({
       stateSpaceId: binding.stateSpaceId,
       worldId: campaignWorldId(selectedCampaignId),
       perspective: contextAudience.perspective,
+      mediaAssetBaseUrl,
     }),
     readCampaignStructure({
       fetchImpl,
@@ -1272,12 +2366,23 @@ export async function readGameServerContext({
       stateSpaceId: binding.stateSpaceId,
       worldId: campaignWorldId(selectedCampaignId),
       locationDirectory,
+      perspective: contextAudience.perspective,
+      mediaAssetBaseUrl,
     })
     : null;
   const boundActorDetails = characterDetails(actorComponentResponse?.ok
     && serverRole.role === "actor"
     ? componentValue(actorComponent, binding.actorId, PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID)
     : null);
+  const boundCanonical = serverRole.role === "actor"
+    ? await readCanonicalCharacter({
+      fetchImpl,
+      origin,
+      applicationId: binding.applicationId,
+      stateSpaceId: binding.stateSpaceId,
+      actorId: binding.actorId,
+    })
+    : null;
   const party = await readPartyRoster({
     fetchImpl,
     origin,
@@ -1288,7 +2393,96 @@ export async function readGameServerContext({
     perspective: contextAudience.perspective,
     boundActor: serverRole.role === "actor" ? actorEntity : null,
     boundActorDetails,
+    boundCanonical,
   });
+  const authorizedLocationIds = locationDirectory.map((location) => location.id);
+  const sceneComponentWasReturned = currentSceneComponentResponse?.ok === true;
+  const sceneRecord = sceneComponentWasReturned
+    ? resolveCurrentSceneRecord(
+      componentValue(currentSceneComponent, selectedCampaignId, CAMPAIGN_CURRENT_SCENE_COMPONENT_TYPE_ID),
+      authorizedLocationIds,
+    )
+    : null;
+  let currentSituation;
+  if (sceneComponentWasReturned && (!sceneRecord ||
+      (serverRole.role === "actor" && currentLocationId !== sceneRecord.locationId))) {
+    currentSituation = {
+      status: "unavailable",
+      message: "The recorded current scene is unavailable to this seat.",
+    };
+  } else if (sceneRecord) {
+    currentLocationId = sceneRecord.locationId;
+    const authorizedActorIds = new Set([
+      ...(serverRole.role === "actor" ? [binding.actorId] : []),
+      ...(party ?? []).map((member) => member.id),
+    ]);
+    if (sceneRecord.kind === "combat") {
+      const resolved = await readCombatCurrentScene({
+        fetchImpl,
+        origin,
+        entityRoot: root,
+        encounterId: sceneRecord.encounterId,
+        stateSpaceId: binding.stateSpaceId,
+        perspective: contextAudience.perspective,
+        authorizedActorIds,
+        mediaAssetBaseUrl,
+      });
+      currentSituation = resolved
+        ? { ...resolved, locationId: sceneRecord.locationId }
+        : { status: "unavailable", locationId: sceneRecord.locationId,
+          message: "The current encounter could not be read safely." };
+    } else if (sceneRecord.kind === "conversation") {
+      const resolved = await readConversationCurrentScene({
+        fetchImpl,
+        origin,
+        entityRoot: root,
+        conversationId: sceneRecord.conversationId,
+        perspective: contextAudience.perspective,
+        authorizedActorIds,
+        mediaAssetBaseUrl,
+      });
+      currentSituation = resolved
+        ? { ...resolved, locationId: sceneRecord.locationId }
+        : { status: "unavailable", locationId: sceneRecord.locationId,
+          message: "The current conversation could not be read safely." };
+    } else {
+      currentSituation = { status: "ready", kind: "exploration", locationId: sceneRecord.locationId };
+    }
+  } else if (serverRole.role === "actor" && currentLocationId) {
+    currentSituation = { status: "ready", kind: "exploration", locationId: currentLocationId };
+  } else {
+    currentSituation = {
+      status: "unavailable",
+      message: "No authoritative current scene has been recorded for this campaign.",
+    };
+  }
+  if (sceneRecord && currentSituation.status === "ready") {
+    const affordanceRecord = await readExactComponent(
+      fetchImpl,
+      origin,
+      root,
+      selectedCampaignId,
+      CAMPAIGN_SCENE_AFFORDANCES_COMPONENT_TYPE_ID,
+    );
+    const affordances = resolveSceneAffordancesRecord(
+      affordanceRecord,
+      sceneRecord,
+      contextAudience.perspective,
+    );
+    if (affordances !== null) currentSituation = { ...currentSituation, affordances };
+  }
+  const knownRoutes = currentSituation.status === "ready" && currentSituation.kind === "exploration"
+    ? await readKnownOpenRoutes({
+      fetchImpl,
+      origin,
+      entityRoot: root,
+      worldId: selectedContext.selectedWorldId,
+      currentLocationId: currentSituation.locationId,
+      perspective: contextAudience.perspective,
+      projectedKnowledge,
+      locationDirectory,
+    })
+    : [];
 
   return {
     version: 1,
@@ -1309,10 +2503,11 @@ export async function readGameServerContext({
       ...boundActorDetails,
     },
     ...(currentLocationId ? { currentLocationId } : {}),
+    currentSituation,
+    ...(knownRoutes.length > 0 ? { knownRoutes } : {}),
     party,
-    knowledge: knowledgeResponse?.ok
-      ? knowledge(knowledgeEnvelope)
-      : { status: "unavailable", entries: [], locations: [] },
+    knowledge: projectedKnowledge,
+    chronology: projectedChronology,
     ...(locationDirectory.length > 0 ? { locationDirectoryAudience: contextAudience.perspective } : {}),
     ...(locationDirectory.length > 0 ? { locationDirectory } : {}),
     ...(worldDirectory && (

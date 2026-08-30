@@ -1,0 +1,16 @@
+{
+  "id": "location.thalorien.rhiannos",
+  "name": "Rhiannos",
+  "container": {
+    "id": "world.thalorien",
+    "slot": "region"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "region",
+      "status": "draft",
+      "summary": "Rhiannos is the northeastern kingdom of Thalorien, founded by Rhiannon and associated with welfare, religion, and healing.",
+      "visibility": "public"
+    }
+  }
+}

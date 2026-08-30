@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.thalmon.name-echoes",
+  "name": "The Echoes of the Imperial Children's Names",
+  "components": {
+    "game.core.world.fact": {
+      "status": "archived",
+      "summary": "The names Aldren, Evandor, Minevra, Valerian, Oberon, Rhiannon, Merceran, and Wayland belong to the early Thalmos royal dynasty. Their historical or mythological echoes are not canonically literal derivations; Thalmon named his children before their later specialties were known, though later historians and storytellers associate their names with their fields.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22). Superseded by the approved ancient-name revision.",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "identity",
+      "sensitivity": "open"
+    }
+  }
+}

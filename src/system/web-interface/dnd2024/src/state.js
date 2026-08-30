@@ -723,7 +723,7 @@ function isWorldHistoryEvent(event) {
     typeof event.region === "string" &&
     typeof event.status === "string" &&
     typeof event.summary === "string" &&
-    typeof event.consequence === "string" &&
+    (event.consequence === undefined || typeof event.consequence === "string") &&
     Array.isArray(event.linkedLocations) &&
     event.linkedLocations.every(isHistoryLocationLink) &&
     Array.isArray(event.linkedPeople) &&
@@ -903,6 +903,8 @@ function isPartyMember(value) {
     typeof value.status === "string" &&
     typeof value.isCurrent === "boolean" &&
     typeof value.recordStatus === "string" &&
+    ["canonical", "provisional", "empty"].includes(value.sheetStatus) &&
+    ["canonical", "provisional", "unavailable", "empty"].includes(value.inventoryStatus) &&
     Array.isArray(value.sheet) && value.sheet.every(isPartyDossierEntry) &&
     Array.isArray(value.knowledge) && value.knowledge.every(isPartyKnowledgeEntry) &&
     Array.isArray(value.backstory) && value.backstory.every(isPartyDossierEntry) &&
@@ -915,12 +917,62 @@ function isRuleReference(value) {
     value &&
     typeof value.id === "string" &&
     typeof value.title === "string" &&
-    (value.category === "Action" || value.category === "Reaction") &&
+    typeof value.category === "string" && value.category.length > 0 &&
+    typeof value.subcategory === "string" &&
+    typeof value.path === "string" && value.path.startsWith("entities/") &&
+    typeof value.contentFingerprint === "string" && value.contentFingerprint.length > 0 &&
     typeof value.summary === "string" &&
-    value.source &&
-    value.source.id === "source.dnd2024.srd-5.2.1" &&
-    typeof value.source.locator === "string",
+    (value.revision === null || (Number.isInteger(value.revision) && value.revision > 0)) &&
+    (value.source === null || (
+      value.source &&
+      value.source.id === "dnd2024.source.srd-5.2.1" &&
+      typeof value.source.locator === "string"
+    )),
   );
+}
+
+function isCurrentSituation(value, locations) {
+  if (!value || typeof value !== "object" || !["ready", "unavailable"].includes(value.status)) return false;
+  if (value.status === "unavailable") {
+    return typeof value.message === "string" &&
+      (value.locationId === undefined || locations.some((location) => location.id === value.locationId));
+  }
+  if (typeof value.locationId !== "string" ||
+      !locations.some((location) => location.id === value.locationId) ||
+      !["exploration", "conversation", "combat"].includes(value.kind)) return false;
+  if (value.affordances !== undefined) {
+    if (!Array.isArray(value.affordances) || value.affordances.length > 24) return false;
+    const keys = new Set();
+    for (const item of value.affordances) {
+      if (!item || typeof item !== "object" || typeof item.key !== "string" ||
+          !/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u.test(item.key) || item.key.length > 64 ||
+          typeof item.label !== "string" || !/\S/u.test(item.label) || item.label.length > 120 ||
+          typeof item.summary !== "string" || !/\S/u.test(item.summary) || item.summary.length > 500 ||
+          keys.has(item.key)) return false;
+      keys.add(item.key);
+    }
+  }
+  if (value.kind === "exploration") return true;
+  if (value.kind === "conversation") {
+    return value.conversation && typeof value.conversation.id === "string" &&
+      typeof value.conversation.name === "string" &&
+      (value.conversation.summary === undefined || typeof value.conversation.summary === "string") &&
+      Array.isArray(value.conversation.participants) &&
+      value.conversation.participants.every((participant) =>
+        participant && typeof participant.id === "string" && typeof participant.name === "string");
+  }
+  return value.combat && typeof value.combat.id === "string" && typeof value.combat.name === "string" &&
+    Array.isArray(value.combat.participants) && value.combat.participants.every((participant) =>
+      participant && typeof participant.id === "string" && typeof participant.name === "string" &&
+      Number.isInteger(participant.initiative) && typeof participant.active === "boolean") &&
+    (value.combat.round === undefined || (typeof value.combat.round.id === "string" &&
+      Number.isInteger(value.combat.round.number) && value.combat.round.number > 0)) &&
+    (value.combat.turn === undefined || (typeof value.combat.turn.id === "string" &&
+      typeof value.combat.turn.participationId === "string" && typeof value.combat.turn.actorId === "string" &&
+      typeof value.combat.turn.actorName === "string" && Number.isInteger(value.combat.turn.ordinal) &&
+      value.combat.turn.ordinal >= 0 && (value.combat.turn.budget === undefined ||
+        (value.combat.turn.budget && ["actions", "bonusActions", "reactions"].every((key) =>
+          Number.isInteger(value.combat.turn.budget[key]) && value.combat.turn.budget[key] >= 0)))));
 }
 
 export function isReadyHubEnvelope(value) {
@@ -997,6 +1049,7 @@ export function isReadyHubEnvelope(value) {
     Array.isArray(party) &&
     party.every(isPartyMember) &&
     Array.isArray(rules) &&
-    rules.every(isRuleReference)
+    rules.every(isRuleReference) &&
+    (value.currentSituation === undefined || isCurrentSituation(value.currentSituation, world.locations))
   );
 }

@@ -26,3 +26,10 @@ test("place names behave as visual tooltips without replacing accessible button 
   assert.match(styles, /\.world-map-marker:focus-visible \.world-map-marker__label,/);
   assert.match(styles, /\.world-map-marker\[aria-pressed="true"\] \.world-map-marker__label\s*\{[^}]*visibility:\s*visible;/s);
 });
+
+test("selected place stays in page flow and empty map space clears marker selection", () => {
+  assert.match(styles, /\.world-map-selection\s*\{[^}]*position:\s*static;/s);
+  assert.doesNotMatch(styles, /\.world-map-selection\s*\{[^}]*position:\s*sticky;/s);
+  assert.match(component, /className="world-map-canvas"[\s\S]*?onClick=\{\(\) => onFeatureSelect\(""\)\}/s);
+  assert.match(component, /onClick=\{\(event\) => \{\s*event\.stopPropagation\(\);\s*onFeatureSelect\(feature\.id\);/s);
+});

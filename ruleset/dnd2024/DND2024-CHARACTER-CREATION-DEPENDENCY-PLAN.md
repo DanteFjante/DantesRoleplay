@@ -2,7 +2,7 @@
 
 Status: **all-class basic-playable MVP, CC1–CC2H2, CC3A–CC3C, CC3D1A, CC3E1–CC3E3, and CC3F1 verified**
 Ruleset alignment: `dnd2024-owned`
-Source: `source.dnd2024.srd-5.2.1`, *Character Creation > Create Your Character* and
+Source: `dnd2024.source.srd-5.2.1`, *Character Creation > Create Your Character* and
 *Step 2: Character Origin* and *Step 3: Ability Scores* (PDF pp. 19–21); *Character Origins >
 Character Backgrounds > Parts of a Background / Acolyte / Criminal / Sage / Soldier* (PDF p. 83);
 *Rules Glossary > Long Rest* (PDF p. 185) and

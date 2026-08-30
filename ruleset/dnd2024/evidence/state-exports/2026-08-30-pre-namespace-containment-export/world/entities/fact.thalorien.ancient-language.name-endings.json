@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.ancient-language.name-endings",
+  "name": "Ancient Name Endings",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "In the mostly forgotten ancient language of Thalorien, -on is a personal-name ending and -os is a place-name ending. Thalmon becomes Thalmos under this convention. Thalorien is a later name for the world derived from the same linguistic root rather than a direct ancient place-name.",
+      "provenance": "Approved ancient-language naming revision from the world-creation conversation (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "rule",
+      "sensitivity": "open"
+    }
+  }
+}

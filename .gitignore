@@ -385,3 +385,4 @@ _to_delete/
 # terminal, not in version control.
 out-*.txt
 verify.txt
+DantesRoleplay.MCPServer/data/dantesroleplay.db

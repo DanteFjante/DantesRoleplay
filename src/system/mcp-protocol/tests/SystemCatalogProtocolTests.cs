@@ -890,7 +890,7 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
             })
             .Where(schema => new BoundedJsonSchemaValidator().Compile(schema.SchemaJson).IsAccepted)
             .ToArray();
-        Assert.Equal(34, compatibleComponentSchemas.Length);
+        Assert.Equal(39, compatibleComponentSchemas.Length);
         var componentOperations = new List<(string Token, JsonElement Data, string OperationId, string Payload)>();
         foreach (var (schema, index) in compatibleComponentSchemas.Select((value, index) => (value, index)))
         {
@@ -1007,7 +1007,7 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
             .Select(winner => winner.GetProperty("relativePath").GetString()!)
             .Order(StringComparer.Ordinal)
             .ToArray();
-        Assert.Equal(120, previewPaths.Length);
+        Assert.Equal(134, previewPaths.Length);
         Assert.All(previewPaths, path => Assert.True(IsRatifiedLegacyGameSource(path), path));
         Assert.Contains("catalog/components/game.core.world.clock.json", previewPaths);
         Assert.Contains("catalog/components/stats.json", previewPaths);
@@ -1056,7 +1056,7 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
         {
             var materializer = materializationScope.ServiceProvider
                 .GetRequiredService<ActivatedApplicationCatalogMaterializer>();
-            Assert.Equal(34, materializer.Build(ApplicationIdentifier.Parse("dnd2024")).Records.Count);
+            Assert.Equal(38, materializer.Build(ApplicationIdentifier.Parse("dnd2024")).Records.Count);
         }
         var catalogs = await ToolAsync("query", new
         {
@@ -1099,12 +1099,12 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
         Assert.True(catalogRecord.Ok, catalogRecord.Ok ? "" : catalogRecord.Error.GetRawText());
         Assert.True(hiddenSystemSearch.Ok, hiddenSystemSearch.Ok ? "" : hiddenSystemSearch.Error.GetRawText());
         Assert.Equal(activationCommit.Data.GetRawText(), activationReplay.Data.GetRawText());
-        Assert.Equal(120, activationCommit.Data.GetProperty("activation").GetProperty("winnerCount").GetInt32());
+        Assert.Equal(134, activationCommit.Data.GetProperty("activation").GetProperty("winnerCount").GetInt32());
         Assert.Equal(activationCommit.Data.GetProperty("activation").GetProperty("activationFingerprint").GetString(),
             application.Data.GetProperty("application").GetProperty("active").GetProperty("activationFingerprint").GetString());
         var collection = Assert.Single(catalogs.Data.GetProperty("collections").EnumerateArray());
         Assert.Equal("dnd2024", collection.GetProperty("id").GetString());
-        Assert.Equal(34, collection.GetProperty("recordCount").GetInt32());
+        Assert.Equal(38, collection.GetProperty("recordCount").GetInt32());
         Assert.NotNull(catalogRoot.Data.GetProperty("result").GetProperty("nextCursor").GetString());
         Assert.Equal("mechanics", catalogRoot.Data.GetProperty("result").GetProperty("entries")[0]
             .GetProperty("node").GetProperty("path").GetString());
@@ -1133,7 +1133,7 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
         Assert.Equal(previewPaths, active.Winners.Select(winner => winner.RelativePath).Order(StringComparer.Ordinal));
         var publicCatalogs = scope.ServiceProvider.GetRequiredService<IPublicApplicationCatalogProvider>();
         Assert.True(publicCatalogs.TryGet(ApplicationIdentifier.Parse("dnd2024"), out var navigator));
-        Assert.Equal(34, Assert.Single(navigator.ListCollections(ApplicationIdentifier.Parse("dnd2024"))).RecordCount);
+        Assert.Equal(38, Assert.Single(navigator.ListCollections(ApplicationIdentifier.Parse("dnd2024"))).RecordCount);
         var rootNode = navigator.Browse(new(ApplicationIdentifier.Parse("dnd2024"), "dnd2024"));
         Assert.Equal(CatalogDescriptionStatus.Authored, rootNode.Node.DescriptionStatus);
         Assert.All(rootNode.Entries.Where(entry => entry.Node is not null),
@@ -1145,7 +1145,7 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
             Assert.Equal(1, database.Operations.AsNoTracking().Count(value => value.Id == operation.Token)));
         var registeredTypes = scope.ServiceProvider.GetRequiredService<IApplicationComponentTypeRegistry>()
             .ListLatestPage(ApplicationIdentifier.Parse("dnd2024"), null, 100).ComponentTypes;
-        Assert.Equal(34, registeredTypes.Count);
+        Assert.Equal(39, registeredTypes.Count);
         Assert.Equal(compatibleComponentSchemas.Select(schema => "dnd2024." + schema.LegacyId).Order(StringComparer.Ordinal),
             registeredTypes.Select(type => type.QualifiedId).Order(StringComparer.Ordinal));
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IApplicationComponentTypeRegistry>()

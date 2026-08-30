@@ -85,6 +85,7 @@ function connected(perspective, entries = directory(perspective)) {
         entries: [{ text: "The party knows the old well.", stance: "known", presentationKind: "statement" }],
       }],
     },
+    chronology: { status: "empty", perspective, entries: [] },
     locationDirectoryAudience: perspective,
     locationDirectory: entries,
   };
@@ -119,6 +120,49 @@ test("Thalos is the main map and uses the reviewed public atlas for both perspec
   assert.equal(mapFor(dm, "location.thalorien.thalos")?.base?.imageUrl, "/components/maps/thalos-world.png");
   assert.equal(mapFor(player, "location.thalorien.thalos")?.base?.imageUrl, "/components/maps/thalos-world.png");
   assert.equal(JSON.stringify(player).includes("thalos-map-dm.svg"), false);
+});
+
+test("Caldris map keys resolve only to the reviewed world and Eredane atlas bytes", () => {
+  const entries = [
+    {
+      id: "location.caldris.eredane",
+      name: "Eredane",
+      kind: "region",
+      containerId: "world.caldris",
+      containmentSlot: "region",
+      mapAnchor: { x: 310, y: 510 },
+      mapVisual: visual("caldris.world.player", "Caldris world map"),
+    },
+    {
+      id: "location.caldris.bramblebridge",
+      name: "Bramblebridge",
+      kind: "settlement",
+      containerId: "location.caldris.eredane",
+      containmentSlot: "location",
+      mapAnchor: { x: 540, y: 520 },
+      mapVisual: visual("caldris.region.eredane.player", "Eredane regional map"),
+    },
+    {
+      id: "location.caldris.gilded-kettle",
+      name: "The Gilded Kettle",
+      kind: "interior",
+      containerId: "location.caldris.bramblebridge",
+      containmentSlot: "location",
+      mapAnchor: { x: 430, y: 610 },
+      mapVisual: visual("caldris.town.bramblebridge.player", "Bramblebridge town map"),
+    },
+  ];
+  const envelope = connectedCampaignToHubEnvelope({
+    ...connected("player", entries),
+    campaign: { ...CAMPAIGN, id: "campaign.caldris.measure-of-mercy", name: "The Measure of Mercy" },
+  });
+
+  assert.equal(mapFor(envelope, "location.caldris.eredane")?.base?.imageUrl,
+    "/components/maps/caldris-world.png");
+  assert.equal(mapFor(envelope, "location.caldris.bramblebridge")?.base?.imageUrl,
+    "/components/maps/caldris-eredane-v2.png");
+  assert.equal(mapFor(envelope, "location.caldris.gilded-kettle")?.base?.imageUrl,
+    "/components/maps/caldris-eredane.png");
 });
 
 test("server page bundles keep host-served atlas routes while relocating page-owned city maps", () => {

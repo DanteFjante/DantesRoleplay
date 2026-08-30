@@ -168,6 +168,14 @@
     {"from":"rumour.knowledge-slice3.observatory-a","to":"location.feature-01.observatory","kind":"game.core.world.knowledge.about","data":{}},
     {"from":"rumour.knowledge-slice3.observatory-b","to":"world.feature-01.fixture","kind":"game.core.world.knowledge.in-world","data":{}},
     {"from":"rumour.knowledge-slice3.observatory-b","to":"location.feature-01.observatory","kind":"game.core.world.knowledge.about","data":{}},
-    {"from":"rumour.knowledge-slice3.observatory-a","to":"rumour.knowledge-slice3.observatory-b","kind":"game.core.world.knowledge.contradicts","data":{}}
+    {"from":"rumour.knowledge-slice3.observatory-a","to":"rumour.knowledge-slice3.observatory-b","kind":"game.core.world.knowledge.contradicts","data":{}},
+    {"from":"chronology.feature-19.market-charter","to":"world.feature-01.fixture","kind":"game.core.world.chronology.in-world","data":{}},
+    {"from":"chronology.feature-19.market-charter","to":"location.feature-01.market","kind":"game.core.world.chronology.about","data":{}},
+    {"from":"chronology.feature-19.gate-dedication","to":"world.feature-01.fixture","kind":"game.core.world.chronology.in-world","data":{}},
+    {"from":"chronology.feature-19.gate-dedication","to":"location.feature-01.gate","kind":"game.core.world.chronology.about","data":{}},
+    {"from":"chronology.feature-19.observatory-era","to":"world.feature-01.fixture","kind":"game.core.world.chronology.in-world","data":{}},
+    {"from":"chronology.feature-19.observatory-era","to":"location.feature-01.observatory","kind":"game.core.world.chronology.about","data":{}},
+    {"from":"chronology.feature-19.archived-draft","to":"world.feature-01.fixture","kind":"game.core.world.chronology.in-world","data":{}},
+    {"from":"chronology.feature-19.archived-draft","to":"location.feature-01.market","kind":"game.core.world.chronology.about","data":{}}
   ]
 }

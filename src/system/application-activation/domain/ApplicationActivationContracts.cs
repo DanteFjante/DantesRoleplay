@@ -77,7 +77,8 @@ public sealed record ActivatedApplicationTextDocument(
     string SourceId,
     string RelativePath,
     string ContentFingerprint,
-    string Text);
+    string Text,
+    IReadOnlyList<string>? SourceIds = null);
 
 /// <summary>
 /// Reads one exact text winner from the current active application manifest. Implementations must

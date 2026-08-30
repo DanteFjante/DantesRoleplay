@@ -92,7 +92,7 @@ public static class WebInterfaceServiceCollectionExtensions
                 WebInterfaceSecurity.ReadRateLimitPolicy,
                 limiter =>
                 {
-                    limiter.PermitLimit = 240;
+                    limiter.PermitLimit = WebInterfaceSecurity.ReadRequestsPerMinute;
                     limiter.Window = TimeSpan.FromMinutes(1);
                     limiter.QueueLimit = 0;
                     limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
@@ -102,7 +102,7 @@ public static class WebInterfaceServiceCollectionExtensions
                 WebInterfaceSecurity.UploadRateLimitPolicy,
                 limiter =>
                 {
-                    limiter.PermitLimit = 10;
+                    limiter.PermitLimit = WebInterfaceSecurity.UploadRequestsPerMinute;
                     limiter.Window = TimeSpan.FromMinutes(1);
                     limiter.QueueLimit = 0;
                     limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
@@ -112,7 +112,7 @@ public static class WebInterfaceServiceCollectionExtensions
                 WebInterfaceSecurity.StreamRateLimitPolicy,
                 limiter =>
                 {
-                    limiter.PermitLimit = 4;
+                    limiter.PermitLimit = WebInterfaceSecurity.ConcurrentStreams;
                     limiter.QueueLimit = 0;
                     limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
                 });

@@ -1,8 +1,10 @@
 namespace DantesRoleplay.Knowledge;
 
 /// <summary>
-/// Produces an ID-free notebook only after ambient authorization, exact application binding,
+/// Produces an authorized notebook only after ambient authorization, exact application binding,
 /// campaign participation, canonical world projection, and effective actor-state filtering.
+/// Non-familiar entries retain only their own admitted owner ID for downstream media projection;
+/// familiar and excluded knowledge reveal no owner or subject identity.
 /// </summary>
 public sealed class AuthorizedKnowledgeNotebookReader(
     IAuthorizedKnowledgeAudiencePolicy audience,
@@ -115,7 +117,8 @@ public sealed class AuthorizedKnowledgeNotebookReader(
                         "You recognize this as a familiar topic, but do not remember details.",
                         stance, "recognition")
                     : new AuthorizedKnowledgeNotebookEntry(
-                        hydrated.DisplayText, stance, hydrated.PresentationKind);
+                        hydrated.DisplayText, stance, hydrated.PresentationKind,
+                        new(hydrated.SubjectId, hydrated.SubjectName), hydrated.KnowledgeId);
                 entries.Add(entry);
                 if (stance == binding.FamiliarState || !hydrated.SubjectIsActiveLocation) continue;
 

@@ -133,13 +133,14 @@ public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
         if (string.IsNullOrEmpty(value) || value.EndsWith("/", StringComparison.Ordinal) ||
             value.Contains("//", StringComparison.Ordinal)) return false;
         var segments = value.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        return segments.Length == 6 &&
+        return segments.Length is 5 or 6 &&
             segments[0] == "api" &&
             segments[1] == "applications" &&
             IsRouteIdentifier(segments[2], 63) &&
             segments[3] == "catalog" &&
-            segments[4] == "records" &&
-            IsRouteIdentifier(segments[5], 400);
+            (segments.Length == 5
+                ? segments[4] == "browse"
+                : segments[4] == "records" && IsRouteIdentifier(segments[5], 400));
     }
 
     private static bool IsApplicationStateReadPath(PathString path)

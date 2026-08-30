@@ -1,0 +1,714 @@
+{
+  "requestToken": "ca1d215e00000000000000000000001a",
+  "applicationId": "dnd2024",
+  "stateSpaceId": "dnd2024-main",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.quest.q33.water-owed-to-the-dead",
+      "name": "Q33 — Water Owed to the Dead",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Thread: Independent labour-and-memory story. Hook: Latchwater's upper gate opens for a fourth night, draining the reservoir as an underground peat fire approaches remote homes. Layers: apparent sabotage → water exposes a sealed mine shaft → Marta's late colleague arranged the releases so forgotten workers could finally be recovered and named. Objectives: 1. Preserve enough water for fire control, households, and mill power. 2. Identify the gate operator and assess the sealed shaft before another release. 3. Find a lawful and physically safe way to address the buried workers. Approaches and clues: Gate-handle wear, silt levels, old shift songs, union rolls, mine maps, controlled pumping, a public vigil, or confronting the mine company all help. The night operator will surrender if offered a credible recovery plan. Failure forward: The reservoir drops below milling level, causing food and wage pressure, but the exposed shaft becomes undeniable and emergency funds c…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q34.one-blow-owed",
+      "name": "Q34 — One Blow Owed",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Thread: Road story with a possible Concord-material clue. Hook: A quarry chisel shatters during a public demonstration; moments later the rooks above Rook Anvil repeat a hammer rhythm from an empty workshop. Layers: flawed workmanship accusation → contaminated scrap supply → a broker deliberately filed marks from salvaged Concord metal to avoid ownership restrictions. Objectives: 1. Prevent further use of brittle tools without destroying innocent smiths' livelihoods. 2. Trace the metal from fracture patterns, accounts, transport, or witness memory. 3. Recover or contain the remaining scrap and decide how responsibility is assigned. Approaches and clues: Ylsa can compare grain and break lines; Pella recognizes a repair mark; rooks repeat the broker's loading rhythm; charcoal ash differs by valley. Public recall, discreet replacement, buyer coalition, or trapping the broker with marked scrap are all viable. Failure forward: Some stock leaves the district, but warni…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q35.forty-oars-forty-names",
+      "name": "Q35 — Forty Oars, Forty Names",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Thread: Road and shared history. Hook: Storm damage at Brinewife's Steps exposes an inscribed rescue compact just as Selucian sailors request shelter under the rights it appears to grant. Layers: emergency salt-pan repair → disputed translation and nationalist embarrassment → the compact names ordinary crews omitted from both kingdoms' monuments. Objectives: 1. Protect workers, sailors, and the salt terraces from the next tide. 2. Document enough of the compact to test the immediate harbour claim. 3. Negotiate shelter and future study without letting either crown seize the stone. Approaches and clues: Tide knowledge, salt-worker oral history, Selucian bell patterns, charcoal rubbings, photography-like magic only if accepted later, or a temporary co-custody agreement can help. Missing name fragments repeat on blue roof tiles at Mackerel Crown. Failure forward: The inscription suffers damage, but independent tile records and survivor songs preserve its essential sh…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q36.the-dry-admirals-fleet",
+      "name": "Q36 — The Dry Admiral's Fleet",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Thread: Independent comic caper with real labour stakes. Hook: Three enormous seasoned masts disappear from an inland yard without wheel tracks, and six retired captains each claim to have predicted exactly this crime. Layers: impossible theft → hidden flood channel and night flotation → the thieves are unpaid yard workers selling one mast to cover injuries while a professional crew steals the other two. Objectives: 1. Determine how the masts left and where the channel can carry them. 2. Separate the workers' grievance from the organized theft before blame becomes collective. 3. Recover the timber or its value while securing immediate safety for injured households. Approaches and clues: Damp bark, reed cuts, moon tides, Tomas's excellent accounts, absurdly embroidered captain stories, decoy timber, river pursuit, or bargaining with buyers all work. One retiree's “imaginary” voyage accurately maps the flood channel. Failure forward: One mast reaches the coast, but…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q37.the-orchard-flowers-twice",
+      "name": "Q37 — The Orchard Flowers Twice",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Thread: Independent ecology and old infrastructure. Hook: Quince Ladder blossoms a second time in late summer, beautiful enough to draw crowds and dangerous enough to leave the trees too exhausted for winter. Layers: suspected enchantment → soil warming along one terrace → a River Thrones conduit reopened after an upstream excavation diverted mineral water. Objectives: 1. Protect the orchard from trampling, fire risk, and panicked cutting. 2. Locate the heat source and determine whether the trees can recover. 3. Redirect or close the conduit while settling water claims created by its discovery. Approaches and clues: Sabine's mule routes, root temperatures, moth behavior, old irrigation verse, controlled trenching, grafting, water-court petition, or a temporary shared nursery can all contribute. The verse's “winter river” means warm underground water, not a magical season. Failure forward: Part of the orchard is lost, but cuttings preserve its strain and the new w…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q38.the-echo-that-stayed",
+      "name": "Q38 — The Echo That Stayed",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Thread: Deep history with a contained supernatural ambiguity. Hook: Seven Echo Quarry loses one familiar echo; then a worker's whispered warning returns hours later from inside solid stone. Layers: unstable quarry acoustics → sound-absorbing copper chamber → old curtains stored and released voices under particular wind and tension rather than housing a speaking ghost. Objectives: 1. Find two missing workers and mark safe routes without relying on normal call-and-response. 2. Establish what the chamber does and whether blasting can continue. 3. Resolve sacred, scholarly, and livelihood claims before anyone removes the copper curtains. Approaches and clues: Iven's cord system, touch signals, dust flow, warm breath, vibration, written quarry records, or a negotiated quiet day all matter. A three-tone riddle—“first made, second carried, third returned”—asks for blow, air, and echo. Failure forward: The chamber is damaged, releasing a confusing chorus, but the missing…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q39.the-tenth-post",
+      "name": "Q39 — The Tenth Post",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Thread: Crown and regional politics, not the Measure hierarchy. Hook: A tenth carved post appears at Ninepost Field on the morning of a major moot, weathered as if it has stood there for centuries. Layers: provocative forgery → genuinely old post stored in a barn for two generations → heirs of an erased march timed its return because the High Warden is dying. Objectives: 1. Prevent the moot from destroying or seizing the post before examination. 2. Test its age, legal context, and the claimants' connection through multiple sources. 3. Secure a temporary voice, hearing, or settlement that does not prejudge every land claim. Approaches and clues: Edrin reads punctuation; tool marks match the Courteous Ruin; Tenth-Plate custom identifies scattered households; soil on the base proves recent placement but not forgery. Formal injunction, public storytelling, guarded evidence, or bargaining among marches can work. Failure forward: The post is split, exposing an internal…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q40.the-court-that-would-not-stay-put",
+      "name": "Q40 — The Court That Would Not Stay Put",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Thread: Road and institutional comedy with serious land consequences. Hook: Reed Judge's Rest detaches during a hearing and drifts downstream with the judge, parties, records, lunch, and one increasingly pleased courtroom cat. Layers: river emergency → ancient detachable platform working as designed → rival banks attempt to manipulate where the court lands so jurisdiction favours them. Objectives: 1. Keep passengers and archives safe while controlling or accompanying the drifting court. 2. Determine why it detached and which landing choices are physically possible. 3. Preserve a fair hearing despite competing jurisdiction claims. Approaches and clues: Boats, tow ropes, upstream anchors, old platform diagrams, Judge Miren's precedent, negotiated neutral mooring, or continuing testimony afloat all work. The cat repeatedly returns to the only dry compartment containing emergency steering poles. Failure forward: Some records get wet and the platform grounds in disput…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q41.a-decree-in-vanishing-ink",
+      "name": "Q41 — A Decree in Vanishing Ink",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Thread: Crown mystery with a higher sponsor, separate from Celyn Marr. Hook: Testimony, debts, and a navigation decree fade from fresh official copies while private duplicates remain clear. Layers: defective ink → deliberate reactive lampblack substitution → a respected river-law advocate commissioned it to erase evidence against a patron, who serves a coalition resisting boundary reform. Objectives: 1. Preserve or reconstruct the endangered texts before deadlines pass. 2. Trace the altered material through makers, couriers, and purchasing authority. 3. Stop the erasure scheme and protect witnesses without treating every ink worker as complicit. Approaches and clues: Impressions, sand residue, readers' memory, Basto's pigment tests, cats' black paws, account weights, decoy documents, public recitation, or legal stays offer redundant paths. Failure forward: One decisive page vanishes, but contradictions in surviving delivery weights shift the case from document pr…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q42.three-spoons-before-the-flood",
+      "name": "Q42 — Three Spoons Before the Flood",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Thread: Hearth at a distant home; independent disaster and governance story. Hook: Flood markers rise faster than forecast, but one neighbourhood refuses Kavi's evacuation because its assigned refuge has been converted into a locked warehouse. Layers: stubborn residents → illegal sale of refuge rights → the warehouse contains relief grain quietly reserved for politically recognized villages only. Objectives: 1. Move vulnerable people, animals, food, and records above the projected waterline. 2. Establish who controls the refuge and what safe alternatives exist now. 3. Decide how the stored grain and shelter are used during and after the flood. Approaches and clues: Communal kitchens, serving spoons as boat poles and signals, roof routes, canal captains, breaking or lawfully opening the warehouse, public inventory, and improvised rafts all matter. Failure forward: Water reaches the lower homes, but pre-positioned kitchens prevent isolation and floating paper boats…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q43.the-ox-chooses-a-corpse",
+      "name": "Q43 — The Ox Chooses a Corpse",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Thread: Independent social mystery. Hook: At the Saffron Ox market, a valuable breeding animal kneels before three bidders in turn; each receives an anonymous note predicting death before sunset. Layers: animal prophecy → scent-triggered trained response → poisoned account tablets share the same resin and would harm whoever moistens a stylus to calculate bids. Objectives: 1. Keep the named bidders and crowded market safe without causing a stampede. 2. Determine what controls the ox's behavior and how the poison would be delivered. 3. Identify the intended victim and motive before contracts make the scheme irreversible. Approaches and clues: Animal handling, scent comparison, market accounts, tablet makers, false bidding, protective isolation, public announcement, or following the note carrier can work. The ox also kneels at a resin-painted gate, proving behavior rather than foresight. Failure forward: A bidder falls ill but survives with rapid mundane care; their…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q44.knots-that-cross-the-sky",
+      "name": "Q44 — Knots That Cross the Sky",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Thread: Road exploration with a Deep-history aftertaste. Hook: Signal kites return to Kitewife Mesa with additional knots matching a military code unused for a century. Layers: suspected spy message → cliff-creatures collect and retie bright cord → their nesting route repeats an old shepherd evacuation warning around a newly unstable escarpment. Objectives: 1. Prevent false signals from misdirecting caravans and patrols. 2. Follow the cord's route and distinguish animal behavior from human communication. 3. Interpret the historical warning and act on the present hazard it identifies. Approaches and clues: Felis's kite craft, natural observation, old songs, nonlethal lures, climbing, watching shadows, or comparing knot wear all work. Human knots tighten from both ends; creature knots contain feathers and only one tension direction. Failure forward: Officials seize the kites and mobilize against imaginary spies, but the public movement exposes the unstable route an…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q45.the-bell-borrowed-twice",
+      "name": "Q45 — The Bell Borrowed Twice",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Thread: Shared history and reconciliation. Hook: A mainland delegation arrives at Borrowed Bell Isle with a royal return order moments before the bell must sound an approaching storm. Layers: ownership dispute → contradictory gift and salvage accounts → the bell contains a hidden crew list proving mutual rescue and an older promise of shared custodianship. Objectives: 1. Keep the storm-warning system functioning during the dispute. 2. establish the bell's provenance through metal, inscription, songs, and family records. 3. Reach an arrangement that respects rescue memory, current safety, and lawful claims. Approaches and clues: Mara's bronze knowledge, roof-tile names, Brinewife's compact, a temporary replacement signal, shared public recitation, copying the inscription, or alternating custody are possible. The “riddle” is a name list readable only when the bell is lit from below. Failure forward: Officials remove the clapper, but islanders improvise a safe warni…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q46.one-room-under-no-roof",
+      "name": "Q46 — One Room Under No Roof",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Thread: Independent legal farce with political consequences. Hook: During a public wedding, a noble ropes off the Unfinished Palace's only completed room and produces a deed granting private ownership “beneath its roof.” The palace has no roof. Layers: absurd property dispute → deed language intentionally exploits unfinished architecture → wall measurements preserve an island levy compromise that would cost the claimant's allies dearly. Objectives: 1. Let the wedding and public use continue safely without prejudging the property case. 2. Test the deed, architectural history, and encoded measurements. 3. Resolve immediate access and decide how the tax discovery reaches affected islands. Approaches and clues: Sola's structural expertise, performance blocking, old architect models, measuring shadows, public custom, temporary partitions, negotiation, or a hearing in the room all work. “Beneath its roof” may describe a painted plan rather than a built structure. Failu…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q47.the-hollow-shield-loaf",
+      "name": "Q47 — The Hollow Shield Loaf",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Thread: Hearth and winter logistics; central conspiracy optional. Hook: Breadshield Monastery's ceremonial first loaf collapses hollow, revealing that damp and weevils have spoiled much of the winter reserve. Layers: storage failure → steward hid cheap damp purchases to cover charitable debt → a grain broker knowingly sold unsafe stock while buying sound flour for a private dragon-tithe convoy. Objectives: 1. Assess, sort, and stretch safe food before snow closes the pass. 2. Reconstruct the purchasing failure without delaying emergency resupply. 3. Decide how to address debt, fraud, and the suspicious convoy while protecting hungry households. Approaches and clues: Tovan grades grain, shield stamps trace ovens, neighboring stores can form a mutual-aid chain, spoiled flour has nonfood uses, caravans can be intercepted commercially or politically, and the steward may confess if residents are fed first. Failure forward: Rations tighten and some households relocate…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q48.the-warehouse-that-moves-at-night",
+      "name": "Q48 — The Warehouse That Moves at Night",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.secret",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Thread: Crown and institutional mystery with an apparent-boss ladder. Hook: League inventories show relief goods entering “the Fifth Warehouse,” although only four bonded stores exist and night watch records no carts leaving them. Layers: accounting ghost → floating barge-store protected by an obsolete emergency exemption → its master serves a customs advocate, who serves a council bloc using crisis law to corner grain and influence the missing League-chair investigation. Objectives: 1. Locate the goods and determine whether any community currently depends on them. 2. Prove how the exemption, manifests, tides, and custody chain conceal the floating store. 3. Stop present diversion while deciding whether the old emergency mechanism should survive reform. Approaches and clues: Tide tables, warehouse shadows, barge drafts, duplicate seals, Venn's cargo scents, following night pilots, creating a legitimate emergency order, or confronting buyers all work. The apparent…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds",
+        "expectedRevision": 0
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.quest.q33.water-owed-to-the-dead",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q33.water-owed-to-the-dead",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q34.one-blow-owed",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q34.one-blow-owed",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q35.forty-oars-forty-names",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q35.forty-oars-forty-names",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q36.the-dry-admirals-fleet",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q36.the-dry-admirals-fleet",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q37.the-orchard-flowers-twice",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q37.the-orchard-flowers-twice",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q38.the-echo-that-stayed",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q38.the-echo-that-stayed",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q39.the-tenth-post",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q39.the-tenth-post",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q40.the-court-that-would-not-stay-put",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q40.the-court-that-would-not-stay-put",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q41.a-decree-in-vanishing-ink",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q41.a-decree-in-vanishing-ink",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q42.three-spoons-before-the-flood",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q42.three-spoons-before-the-flood",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q43.the-ox-chooses-a-corpse",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q43.the-ox-chooses-a-corpse",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q44.knots-that-cross-the-sky",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q44.knots-that-cross-the-sky",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q45.the-bell-borrowed-twice",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q45.the-bell-borrowed-twice",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q46.one-room-under-no-roof",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q46.one-room-under-no-roof",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q47.the-hollow-shield-loaf",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q47.the-hollow-shield-loaf",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q48.the-warehouse-that-moves-at-night",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q48.the-warehouse-that-moves-at-night",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    }
+  ]
+}

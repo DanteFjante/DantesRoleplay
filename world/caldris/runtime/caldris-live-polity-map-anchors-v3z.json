@@ -1,0 +1,20 @@
+{
+  "requestToken": "ca1d215e00000000000000000000001c",
+  "applicationId": "dnd2024",
+  "stateSpaceId": "dnd2024-main",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    { "entityId": "location.caldris.dunmarrow", "name": "Dunmarrow", "expectedRevision": 1, "components": [{ "qualifiedTypeId": "dnd2024.game.core.world.map.anchor", "expectedRevision": 0, "value": { "x": 450, "y": 180 } }], "containment": null },
+    { "entityId": "location.caldris.carrowmere", "name": "Carrowmere", "expectedRevision": 1, "components": [{ "qualifiedTypeId": "dnd2024.game.core.world.map.anchor", "expectedRevision": 0, "value": { "x": 260, "y": 570 } }], "containment": null },
+    { "entityId": "location.caldris.bellafont", "name": "Bellafont", "expectedRevision": 1, "components": [{ "qualifiedTypeId": "dnd2024.game.core.world.map.anchor", "expectedRevision": 0, "value": { "x": 470, "y": 770 } }], "containment": null },
+    { "entityId": "location.caldris.lornesse", "name": "Lornesse", "expectedRevision": 1, "components": [{ "qualifiedTypeId": "dnd2024.game.core.world.map.anchor", "expectedRevision": 0, "value": { "x": 820, "y": 490 } }], "containment": null },
+    { "entityId": "location.caldris.veyr-marches", "name": "Veyr Marches", "expectedRevision": 1, "components": [{ "qualifiedTypeId": "dnd2024.game.core.world.map.anchor", "expectedRevision": 0, "value": { "x": 380, "y": 370 } }], "containment": null },
+    { "entityId": "location.caldris.ordelain", "name": "Ordelain", "expectedRevision": 1, "components": [{ "qualifiedTypeId": "dnd2024.game.core.world.map.anchor", "expectedRevision": 0, "value": { "x": 250, "y": 360 } }], "containment": null },
+    { "entityId": "location.caldris.namarra", "name": "Namarra", "expectedRevision": 1, "components": [{ "qualifiedTypeId": "dnd2024.game.core.world.map.anchor", "expectedRevision": 0, "value": { "x": 280, "y": 680 } }], "containment": null },
+    { "entityId": "location.caldris.tessarane", "name": "Tessarane", "expectedRevision": 1, "components": [{ "qualifiedTypeId": "dnd2024.game.core.world.map.anchor", "expectedRevision": 0, "value": { "x": 500, "y": 470 } }], "containment": null },
+    { "entityId": "location.caldris.selucia", "name": "Selucia", "expectedRevision": 1, "components": [{ "qualifiedTypeId": "dnd2024.game.core.world.map.anchor", "expectedRevision": 0, "value": { "x": 800, "y": 760 } }], "containment": null },
+    { "entityId": "location.caldris.kethria", "name": "Kethria", "expectedRevision": 1, "components": [{ "qualifiedTypeId": "dnd2024.game.core.world.map.anchor", "expectedRevision": 0, "value": { "x": 730, "y": 480 } }], "containment": null },
+    { "entityId": "location.caldris.seven-lamps-league", "name": "Seven Lamps League", "expectedRevision": 1, "components": [{ "qualifiedTypeId": "dnd2024.game.core.world.map.anchor", "expectedRevision": 0, "value": { "x": 820, "y": 230 } }], "containment": null }
+  ],
+  "relationships": []
+}

@@ -304,7 +304,7 @@ public sealed class KnowledgeCoreTests
     }
 
     [Fact]
-    public async Task Notebook_lists_only_effective_actor_knowledge_and_never_returns_ids()
+    public async Task Notebook_lists_only_effective_actor_knowledge_and_hides_familiar_subjects()
     {
         using var fixture = new KnowledgeFixture();
         await fixture.AddCoreAsync();
@@ -327,14 +327,20 @@ public sealed class KnowledgeCoreTests
 
         Assert.Equal("ready", result.Status);
         Assert.Equal(2, result.Entries.Count);
-        Assert.Contains(result.Entries, value => value.Text.Contains("old tolls", StringComparison.Ordinal));
-        Assert.Contains(result.Entries, value => value.Stance == "familiar" &&
+        var known = Assert.Single(result.Entries, value =>
+            value.Text.Contains("old tolls", StringComparison.Ordinal));
+        Assert.Equal("subject-known", known.Subject?.Id);
+        Assert.Equal("Subject known", known.Subject?.Name);
+        Assert.Equal("known", known.MediaOwnerId);
+        var familiar = Assert.Single(result.Entries, value => value.Stance == "familiar" &&
             value.Text == "You recognize this as a familiar topic, but do not remember details.");
+        Assert.Null(familiar.Subject);
+        Assert.Null(familiar.MediaOwnerId);
         Assert.Empty(result.Locations);
         var json = System.Text.Json.JsonSerializer.Serialize(result);
         Assert.DoesNotContain("hidden", json, StringComparison.Ordinal);
         Assert.DoesNotContain("names the spy", json, StringComparison.Ordinal);
-        Assert.DoesNotContain("KnowledgeId", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("subject-hidden", json, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -357,7 +363,7 @@ public sealed class KnowledgeCoreTests
     }
 
     [Fact]
-    public async Task Notebook_groups_only_known_active_location_subjects_without_ids()
+    public async Task Notebook_groups_only_known_active_location_subjects_with_admitted_subjects()
     {
         using var fixture = new KnowledgeFixture();
         await fixture.AddCoreAsync();
@@ -380,8 +386,9 @@ public sealed class KnowledgeCoreTests
         Assert.Equal("Market", location.Name);
         var entry = Assert.Single(location.Entries);
         Assert.Contains("old tolls", entry.Text, StringComparison.Ordinal);
+        Assert.Equal("market", entry.Subject?.Id);
+        Assert.Equal("Market", entry.Subject?.Name);
         var json = System.Text.Json.JsonSerializer.Serialize(result.Locations);
-        Assert.DoesNotContain("SubjectId", json, StringComparison.Ordinal);
         Assert.DoesNotContain("market seal", json, StringComparison.OrdinalIgnoreCase);
     }
 

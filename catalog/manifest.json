@@ -132,6 +132,20 @@
     },
     {
       "kind": "procedure",
+      "id": "procedure.campaign.current-scene",
+      "version": 1,
+      "contentHash": "2315E921FD688B65B669FA26BF6DDEACD433CB9DFEB3FD3F4E93E8D1BE197429",
+      "path": "procedures/campaign/procedure.campaign.current-scene.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.campaign.scene-affordances",
+      "version": 1,
+      "contentHash": "536E03E54257680B85DAF5A9E496BD234833BD043700FADBC5B6ACB27E9CA1C9",
+      "path": "procedures/campaign/procedure.campaign.scene-affordances.md"
+    },
+    {
+      "kind": "procedure",
       "id": "procedure.campaign.quest-context",
       "version": 1,
       "contentHash": "93DC9178C3C515FBC10088DE7E5AF4897CD082D183ADE99B8E4F1DDC2150D40B",
@@ -220,6 +234,13 @@
       "version": 1,
       "contentHash": "696975621A9C1209E1982B9E7CA257260C03784B2B248E03C082F19CDFF5E7CD",
       "path": "procedures/game/core/world/topology/procedure.game.core.world.location.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.game.core.world.media",
+      "version": 1,
+      "contentHash": "1E93D1B634FDBE0FCAD5FEAD31213BEF41D2F0E65488FFC4B8944514973D73BB",
+      "path": "procedures/game/core/world/procedure.game.core.world.media.md"
     },
     {
       "kind": "procedure",
@@ -440,6 +461,20 @@
     },
     {
       "kind": "componentDefinition",
+      "id": "game.core.campaign.current-scene",
+      "version": 0,
+      "contentHash": "67AE0B32B0DEA429F0463FB5BA5B7A920EDA610DFF316C86893A474134D189AA",
+      "path": "components/game.core.campaign.current-scene.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "game.core.campaign.scene-affordances",
+      "version": 0,
+      "contentHash": "3B818800F04C2B903B108D71E0847CF3E4092AE45977BD308FD00B146C1006E1",
+      "path": "components/game.core.campaign.scene-affordances.json"
+    },
+    {
+      "kind": "componentDefinition",
       "id": "game.core.campaign.session",
       "version": 0,
       "contentHash": "7022290408D97966398973787ACAA388EC986523C8F92F8DA135FB4A0428BD96",
@@ -577,6 +612,13 @@
       "version": 0,
       "contentHash": "55632896256D9D5DF8B9A40DFAC9641B2630A5AF5CB7ED9FA8871D6019CC79EB",
       "path": "components/game.core.world.map.anchor.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "game.core.world.media.visual",
+      "version": 0,
+      "contentHash": "E86B26543FDD5537F3B4103AA06DC3C9E069F1F2FCD097D939EFFB6B2ADBBCCC",
+      "path": "components/game.core.world.media.visual.json"
     },
     {
       "kind": "componentDefinition",

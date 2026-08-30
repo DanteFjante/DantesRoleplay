@@ -10,6 +10,7 @@ import type {
   MainTabId,
   Perspective,
   ReadyHubEnvelope,
+  RuleReadModel,
   WorldLocation,
   WorldSectionId,
 } from "../data/hub-types";
@@ -79,12 +80,19 @@ type HubEnvelopeLoader = (
   campaignId: string,
 ) => Promise<ReadyHubEnvelope>;
 
+type RulesLoader = () => Promise<RuleReadModel[]>;
+type RuleDetailLoader = (rule: RuleReadModel) => Promise<RuleReadModel | null>;
+
 export function DndInformationHub({
   initialEnvelope,
   loadEnvelope,
+  loadRules,
+  loadRuleDetail,
 }: {
   initialEnvelope: ReadyHubEnvelope;
   loadEnvelope?: HubEnvelopeLoader;
+  loadRules?: RulesLoader;
+  loadRuleDetail?: RuleDetailLoader;
 }) {
   const [envelope, setEnvelope] = useState(initialEnvelope);
   const [activeTab, setActiveTab] = useState<MainTabId>("world");
@@ -124,10 +132,12 @@ export function DndInformationHub({
     allLocations,
     envelope.world.currentLocationId,
   ) as WorldLocation | null;
-  const currentSceneImage = currentSceneLocation
-    ? envelope.world.maps.find((map) =>
-      map.scope === "location" && map.subject.id === currentSceneLocation.id && map.base !== null)?.base ?? null
-    : null;
+  const currentSituation = envelope.currentSituation ?? (currentSceneLocation
+    ? { status: "ready" as const, kind: "exploration" as const, locationId: currentSceneLocation.id }
+    : { status: "unavailable" as const, message: "No authoritative current scene is available." });
+  const currentSceneImage = currentSituation.status === "ready" && currentSituation.scene
+    ? currentSituation.scene
+    : currentSceneLocation?.media?.scene ?? currentSceneLocation?.media?.setting ?? null;
   const selectedLocation = resolveSelectedLocation(
     allLocations,
     selectedLocationId,
@@ -327,9 +337,13 @@ export function DndInformationHub({
       case "party":
         return <PartyView party={envelope.party} />;
       case "current":
-        return <CurrentViewPreview image={currentSceneImage} location={currentSceneLocation} />;
+        return <CurrentViewPreview
+          image={currentSceneImage}
+          location={currentSceneLocation}
+          situation={currentSituation}
+        />;
       case "rules":
-        return <RulesView rules={envelope.rules} />;
+        return <RulesView loadRuleDetail={loadRuleDetail} loadRules={loadRules} rules={envelope.rules} />;
       case "world":
       default:
         return (

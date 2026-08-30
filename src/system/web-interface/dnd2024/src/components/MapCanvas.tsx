@@ -33,7 +33,11 @@ export function MapCanvas({
 }) {
   return (
     <section className="world-map-panel" aria-label={`${map.subject.name} map`}>
-      <div className="world-map-canvas" data-base={map.base ? "present" : "absent"}>
+      <div
+        className="world-map-canvas"
+        data-base={map.base ? "present" : "absent"}
+        onClick={() => onFeatureSelect("")}
+      >
         {map.base ? (
           <img alt={map.base.alt} src={map.base.imageUrl} />
         ) : (
@@ -59,8 +63,14 @@ export function MapCanvas({
                 data-influenced={influencedFeatureIds.has(feature.id) ? "true" : undefined}
                 data-scope-link={childMapId ? "true" : undefined}
                 key={feature.id}
-                onClick={() => onFeatureSelect(feature.id)}
-                onDoubleClick={childMapId ? () => onOpenScope(childMapId) : undefined}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onFeatureSelect(feature.id);
+                }}
+                onDoubleClick={childMapId ? (event) => {
+                  event.stopPropagation();
+                  onOpenScope(childMapId);
+                } : undefined}
                 style={placement(feature, map)}
                 type="button"
               >

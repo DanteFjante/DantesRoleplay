@@ -412,6 +412,12 @@ public sealed record MechanicProjection
     /// </summary>
     public string StateSpaceId { get; init; } = string.Empty;
 
+    /// <summary>
+    /// Host-owned identity of this exact mechanic invocation. It is absent for read-only
+    /// evaluation that has no authorized execution operation and is never sourced from input.
+    /// </summary>
+    public MechanicExecutionContext? Execution { get; init; }
+
     /// <summary>Role name to the entity filling it. A missing optional role is simply absent.</summary>
     public Dictionary<string, EntityProjection> Roles { get; init; } = [];
 
@@ -507,6 +513,13 @@ public sealed record RelatedEntityProjection(
 
 public sealed record ContainmentRevision(string EntityId, string Slot, int Revision);
 
+/// <summary>Immutable host-owned identity projected into one mechanic invocation.</summary>
+public sealed record MechanicExecutionContext(
+    string RootOperationId,
+    string OperationId,
+    string? ParentOperationId,
+    int InvocationOrdinal);
+
 /// <summary>Replayable child output supplied to a parent as frozen JSON data.</summary>
 public sealed record ChildMechanicResult(
     string MechanicId,
@@ -515,7 +528,8 @@ public sealed record ChildMechanicResult(
     IReadOnlyDictionary<string, string> RoleEntityIds,
     MechanicOutput Output,
     IReadOnlyList<string> Log,
-    int ElapsedMilliseconds);
+    int ElapsedMilliseconds,
+    MechanicExecutionContext? Execution = null);
 
 // ---- what comes back ------------------------------------------------------------------
 

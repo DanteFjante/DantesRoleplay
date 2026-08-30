@@ -2,11 +2,12 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { DndInformationHub } from "../components/DndInformationHub";
-import { HubUnavailable } from "../components/HubUnavailable";
-import type { HubEnvelope, Perspective, ReadyHubEnvelope } from "../data/hub-types";
+import { RulesOnlyHub } from "../components/RulesOnlyHub";
+import { resolveHubSurface } from "../data/hub-availability.js";
+import type { HubEnvelope, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
 import { connectedCampaignToHubEnvelope } from "../server/connected-hub-envelope";
 import { readGameServerContext } from "../server/game-server-context.js";
-import { readRulesReference } from "../server/rules-reference";
+import { readRuleReferenceDetail, readRulesReference } from "../server/rules-reference";
 import "../styles.css";
 
 const PAGE_ASSET_BASE = "/ui/dnd2024-play/assets/";
@@ -20,18 +21,30 @@ async function loadEnvelope(
     requestedPerspective: perspective,
     requestedCampaignId: campaignId,
     localSeat: "dm",
+    mediaAssetBaseUrl: PAGE_ASSET_BASE,
   }) as HubEnvelope;
 
   if (sourceEnvelope.status !== "connected") return sourceEnvelope;
 
-  const rules = await readRulesReference({
-    serverOrigin: window.location.origin,
-    applicationId: sourceEnvelope.applicationId,
-  });
   return connectedCampaignToHubEnvelope(
-    { ...sourceEnvelope, rules },
+    { ...sourceEnvelope, rules: [] },
     { assetBaseUrl: PAGE_ASSET_BASE },
   );
+}
+
+async function loadRulesReference(): Promise<RuleReadModel[]> {
+  return readRulesReference({
+    serverOrigin: window.location.origin,
+    applicationId: "dnd2024",
+  });
+}
+
+async function loadRuleDetail(rule: RuleReadModel): Promise<RuleReadModel | null> {
+  return readRuleReferenceDetail({
+    serverOrigin: window.location.origin,
+    applicationId: "dnd2024",
+    rule,
+  });
 }
 
 async function loadReadyEnvelope(
@@ -51,22 +64,33 @@ const root = createRoot(rootElement);
 
 try {
   const initialEnvelope = await loadEnvelope("player");
+  const surface = resolveHubSurface(initialEnvelope);
   root.render(
     <StrictMode>
-      {initialEnvelope.status === "ready" ? (
+      {surface === "table" && initialEnvelope.status === "ready" ? (
         <DndInformationHub
           initialEnvelope={initialEnvelope}
           loadEnvelope={loadReadyEnvelope}
+          loadRuleDetail={loadRuleDetail}
+          loadRules={loadRulesReference}
         />
       ) : (
-        <HubUnavailable message={initialEnvelope.message} />
+        <RulesOnlyHub
+          loadRuleDetail={loadRuleDetail}
+          loadRules={loadRulesReference}
+          message={initialEnvelope.message}
+        />
       )}
     </StrictMode>,
   );
 } catch {
   root.render(
     <StrictMode>
-      <HubUnavailable message="The live D&D server could not prepare the table view." />
+      <RulesOnlyHub
+        loadRuleDetail={loadRuleDetail}
+        loadRules={loadRulesReference}
+        message="The private campaign view could not be prepared."
+      />
     </StrictMode>,
   );
 }

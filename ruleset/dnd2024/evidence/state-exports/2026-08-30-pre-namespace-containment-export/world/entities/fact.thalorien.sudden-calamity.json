@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.sudden-calamity",
+  "name": "The Sudden Calamity",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The great monster invasion that preceded the founding of the Thalmos Empire was called The Sudden Calamity.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "event",
+      "sensitivity": "open"
+    }
+  }
+}

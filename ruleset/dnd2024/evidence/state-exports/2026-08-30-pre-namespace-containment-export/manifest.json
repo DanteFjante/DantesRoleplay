@@ -1,0 +1,2409 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-30T08:35:01.4303066Z",
+  "sourceDatabase": "C:\\Users\\dante\\source\\repos\\DantesRoleplay\\DantesRoleplay.MCPServer\\data\\dantesroleplay.db",
+  "includesWorld": true,
+  "records": [
+    {
+      "kind": "mechanic",
+      "id": "mechanic.check.threshold",
+      "version": 1,
+      "contentHash": "10E859BCA76B122A9D00EB54DF9797E25C9EFD3BF6FA3911A7A924C9EDC83311",
+      "path": "mechanics/check/mechanic.check.threshold.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.armor-class.write",
+      "version": 1,
+      "contentHash": "664A2E2D1C56DC6EA5746C6601448C90792C36491677A6048975475800B2489A",
+      "path": "mechanics/ruleset/dnd2024/core/data/armor-class/mechanic.dnd2024.armor-class.write.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.character-level.record",
+      "version": 1,
+      "contentHash": "79AF9F2291D5E6969BA91C80C097DD8A60FE62D3E7F4E856999375A0E1873E71",
+      "path": "mechanics/ruleset/dnd2024/core/data/character-level/mechanic.dnd2024.character-level.record.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.check.ability",
+      "version": 4,
+      "contentHash": "2FA7CDDEE6CE3228EB31DA27BCF31CDBBD53A8CC1193EFBE2CD132DCB551E903",
+      "path": "mechanics/ruleset/dnd2024/core/gameplay/ability-checks/fixed-dc/mechanic.dnd2024.check.ability.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.dice",
+      "version": 1,
+      "contentHash": "3167F0E27B9174458DDB251A87438E72E7BD5E132D5C600BC50BF68B5596B3A4",
+      "path": "mechanics/ruleset/dnd2024/core/gameplay/dice/mechanic.dnd2024.dice.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.encounter-initiative-order",
+      "version": 5,
+      "contentHash": "F043A5E63C0E42878F60079B03A4E362C70C37A1AA56B8C7360DAB962C185026",
+      "path": "mechanics/ruleset/dnd2024/core/combat/initiative/order/mechanic.dnd2024.encounter-initiative-order.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.hit-points.write",
+      "version": 1,
+      "contentHash": "3E9C6D7F8309681115B128B4DAC9839E4ADF3D59282180D9BB9A4E606A35A596",
+      "path": "mechanics/ruleset/dnd2024/core/data/hit-points/mechanic.dnd2024.hit-points.write.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.initiative.roll",
+      "version": 3,
+      "contentHash": "671C39266B5DF1D0FEC8128FC914154937FE5F4C18463E85488F2CD44ED7CC51",
+      "path": "mechanics/ruleset/dnd2024/core/gameplay/initiative/roll/mechanic.dnd2024.initiative.roll.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.saving-throw",
+      "version": 2,
+      "contentHash": "FD1FD86AA79377637D0783F68F864A0A12463D9069386693EF67090AAB0B0891",
+      "path": "mechanics/ruleset/dnd2024/core/gameplay/saving-throws/fixed-dc/mechanic.dnd2024.saving-throw.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.saving-throw-proficiencies.record",
+      "version": 1,
+      "contentHash": "3F1F81EE4F9B15EC6CD4D54F718BCC9782FBA26CDBE59ACB4CDB1C93F853BFF5",
+      "path": "mechanics/ruleset/dnd2024/core/data/saving-throw-proficiencies/mechanic.dnd2024.saving-throw-proficiencies.record.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.skill-proficiencies.record",
+      "version": 1,
+      "contentHash": "8354805F5EB0BDD531ECBF0D6C3493A2C372D27E054BE5E2F359E8C8180DFB65",
+      "path": "mechanics/ruleset/dnd2024/core/data/skill-proficiencies/mechanic.dnd2024.skill-proficiencies.record.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.weapon-attack",
+      "version": 1,
+      "contentHash": "EED7D99D306E5A29E02BB4BE2B037ACF4C5A9DE281612E1D64B5164B2C3827FF",
+      "path": "mechanics/ruleset/dnd2024/core/gameplay/weapon-attacks/mechanic.dnd2024.weapon-attack.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.weapon-damage.apply",
+      "version": 1,
+      "contentHash": "49D70C8A8C2491118773B37005B1D99793B146DF7BB3922034729267BB6544EE",
+      "path": "mechanics/ruleset/dnd2024/core/gameplay/weapon-damage/mechanic.dnd2024.weapon-damage.apply.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.weapon-damage.roll",
+      "version": 1,
+      "contentHash": "8CF99368C171BB434B45086E58FC2985808B54C6F6E4B4F131B0E227D69FD9B7",
+      "path": "mechanics/ruleset/dnd2024/core/gameplay/weapon-damage/mechanic.dnd2024.weapon-damage.roll.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.weapon-proficiencies.write",
+      "version": 1,
+      "contentHash": "06FE84EC74F73C53BB6309B8C71A2ED0221102E8D63F36CF82E72918E98B9EC8",
+      "path": "mechanics/ruleset/dnd2024/core/data/weapon-proficiencies/mechanic.dnd2024.weapon-proficiencies.write.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.dnd2024.weapon-profile.write",
+      "version": 1,
+      "contentHash": "9E1F5A7EF22D22BAA9166F716131BFDB4C3F094EC9EEB4DB306A3587B0D6BD27",
+      "path": "mechanics/ruleset/dnd2024/core/data/weapon-profile/mechanic.dnd2024.weapon-profile.write.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.game.core.world.aerial-conveyance.travel",
+      "version": 2,
+      "contentHash": "310B65E649CF2CE58220C40B7678B01A5878667F1FF511ED715B39ABE920A98E",
+      "path": "mechanics/game/core/world/travel/mechanic.game.core.world.aerial-conveyance.travel.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.game.core.world.clock.advance",
+      "version": 2,
+      "contentHash": "9767194A9979F6D7605FA112D6F25FA9DCD3D5D46FF323C1DC96A6E467A9B09B",
+      "path": "mechanics/game/core/world/time/mechanic.game.core.world.clock.advance.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.game.core.world.clue.reveal",
+      "version": 1,
+      "contentHash": "0167B75023351A42F3E5A83EFE07F651EE824540ED1F4F2A917ACC2BB7FAA169",
+      "path": "mechanics/game/core/world/knowledge/mechanic.game.core.world.clue.reveal.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.game.core.world.clue.reveal-on-faction-agenda",
+      "version": 1,
+      "contentHash": "09CF2C1D906FDC8B2AE9FF1AD435FEAC2FCA186185E5F3F233C51A5F21AA0B14",
+      "path": "mechanics/game/core/world/reactive/mechanic.game.core.world.clue.reveal-on-faction-agenda.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.game.core.world.condition.sync-route-closure",
+      "version": 1,
+      "contentHash": "01823355C40CD6F2EA5942C058DAFCADCC592A20EB9986DCBD93BC4DAC4D4D72",
+      "path": "mechanics/game/core/world/reactive/mechanic.game.core.world.condition.sync-route-closure.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.game.core.world.conveyance.travel-ground",
+      "version": 2,
+      "contentHash": "404FA575195875005F1E0EAF21DB19B440E5597D80D0212ACCF901810EDCFA95",
+      "path": "mechanics/game/core/world/travel/mechanic.game.core.world.conveyance.travel-ground.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.game.core.world.faction.agenda",
+      "version": 1,
+      "contentHash": "3D1437646FC317D327E4BC76F6A7123A3872C6D0E5E5552693C95BAFC2FDED56",
+      "path": "mechanics/game/core/world/faction/mechanic.game.core.world.faction.agenda.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.game.core.world.faction.front.advance",
+      "version": 1,
+      "contentHash": "B25493B9D96E1186E7A9F6621B1FC6A28CB7A6711B45EBF28FF44FEF75E422A3",
+      "path": "mechanics/game/core/world/faction/mechanic.game.core.world.faction.front.advance.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.game.core.world.location.move",
+      "version": 1,
+      "contentHash": "593433845A55A003A15D330B8B006CF135166CB5D0E3DF8CB18F38053CEAB023",
+      "path": "mechanics/game/core/world/travel/mechanic.game.core.world.location.move.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.game.core.world.route.travel-on-foot",
+      "version": 2,
+      "contentHash": "090F3DB83424A3CE1406B2F69F158737E6DF947EFF307180155B77EAED42ED87",
+      "path": "mechanics/game/core/world/travel/mechanic.game.core.world.route.travel-on-foot.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.game.core.world.rumour.confirm",
+      "version": 1,
+      "contentHash": "65928B52808D8B5D4607EF35781109D51E5A66FC628269A1E1F02B146CC7846A",
+      "path": "mechanics/game/core/world/knowledge/mechanic.game.core.world.rumour.confirm.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.game.core.world.teleport-gate.teleport",
+      "version": 1,
+      "contentHash": "7A5DC47E8400454A2324F49F89168E8E3F10C56206022AF352E7F8E4BB9AEEFC",
+      "path": "mechanics/game/core/world/travel/mechanic.game.core.world.teleport-gate.teleport.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.lock.pick",
+      "version": 1,
+      "contentHash": "E7D6445708EF8EA1FB771CAFCADC623F97DD7143E0F3BEF5087657FD88F6E585",
+      "path": "mechanics/check/mechanic.lock.pick.md"
+    },
+    {
+      "kind": "mechanic",
+      "id": "mechanic.value.adjust",
+      "version": 1,
+      "contentHash": "700B4F9A87315A43F6146275129BD3B7113EFAE12ED9C6FA9AB757D96522770A",
+      "path": "mechanics/change/mechanic.value.adjust.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.action.run",
+      "version": 5,
+      "contentHash": "068DF3CED7FB2321B8181CD7B4BC99D040DA3F3E5CDBDA02BADCFBA00DB1545E",
+      "path": "procedures/mechanic/procedure.action.run.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.campaign.chapter",
+      "version": 1,
+      "contentHash": "E684B80ADA7218503B963FAF56A290C90BA557E74F243D9DB04F80C36A04C346",
+      "path": "procedures/campaign/procedure.campaign.chapter.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.campaign.character-participation",
+      "version": 1,
+      "contentHash": "EC20BF597645885AA0A8DCA979F5942FB1DEB8FC9D813E608D0CD012205B41C9",
+      "path": "procedures/campaign/procedure.campaign.character-participation.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.campaign.create",
+      "version": 1,
+      "contentHash": "3DE3D1B94A8393A9C8F9ACDE848C855E3FEA7553E42B312229172F5B4CD4EB67",
+      "path": "procedures/campaign/procedure.campaign.create.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.campaign.quest-context",
+      "version": 4,
+      "contentHash": "2B9DE51A78A5DE97A560CBB642000DB0A9BF049C10C07463D637A55B0DEE90CD",
+      "path": "procedures/campaign/procedure.campaign.quest-context.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.campaign.session",
+      "version": 1,
+      "contentHash": "DCA3C53195134A31CAB62D938372FA563C7AD59FFE13703F7AC97028E9EA3075",
+      "path": "procedures/campaign/procedure.campaign.session.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.character.playtest-bootstrap",
+      "version": 1,
+      "contentHash": "5194672D00267262DF72727F967CF8BCE53EE2E786CA619E571BA1E4A0852A94",
+      "path": "procedures/character/playtest/procedure.character.playtest-bootstrap.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.contract.create",
+      "version": 4,
+      "contentHash": "BAB7F89E87E282CEE4EEA608F5648C40873A50D46359D38967199E78506EF5B6",
+      "path": "procedures/contracts/procedure.contract.create.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.event.chain-limits",
+      "version": 1,
+      "contentHash": "9F418D9D00480FADE35AED4B9D06E7C79C7B09435E40AF0F2AAD43E4721B46B1",
+      "path": "procedures/event/procedure.event.chain-limits.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.event.define",
+      "version": 2,
+      "contentHash": "C4CA64952AF0989BC218F02EE5B020648DBEA7672F3747A3CD3C77AC66F238C7",
+      "path": "procedures/event/procedure.event.define.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.event.guard",
+      "version": 4,
+      "contentHash": "18AA177C88F1B1F889745985F505911B7E33CEC85B86577A7335E8A022AF6252",
+      "path": "procedures/event/procedure.event.guard.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.event.inspect",
+      "version": 2,
+      "contentHash": "38490BE8D1F2D4E9BC4ACCADAFD85151278442BF617EA2ED7D709D35907D1A01",
+      "path": "procedures/event/procedure.event.inspect.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.event.react",
+      "version": 2,
+      "contentHash": "0A93604C6FFD91068F7F71D96D949B2BFD0F4BC28C539F87AEEF979E271CD516",
+      "path": "procedures/event/procedure.event.react.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.game.core.world.condition",
+      "version": 1,
+      "contentHash": "851AF4D429352912797BA7BE886A0689FA90C89FD130FF3B73D1773B476C9380",
+      "path": "procedures/game/core/world/condition/procedure.game.core.world.condition.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.game.core.world.faction",
+      "version": 1,
+      "contentHash": "352971A122581D49E2FD3D87E3FA0CE02B8222DA83EBBF960EE70365C17B8E5F",
+      "path": "procedures/game/core/world/faction/procedure.game.core.world.faction.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.game.core.world.itinerary",
+      "version": 1,
+      "contentHash": "338A9AA3DE9A03FE413A849CAD3C6EE499AD7F4CFC2D0DD3567EF357DFA2FC6A",
+      "path": "procedures/game/core/world/travel/procedure.game.core.world.itinerary.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.game.core.world.knowledge",
+      "version": 1,
+      "contentHash": "1369E9DA586294DA41CB191873E4D3DA42A21FDB370413ACADB73764CB07C933",
+      "path": "procedures/game/core/world/knowledge/procedure.game.core.world.knowledge.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.game.core.world.location",
+      "version": 2,
+      "contentHash": "F3C05718206AA2969364B6F7F0708D917F2495C35061DF9E7564FE0791DF2DFE",
+      "path": "procedures/game/core/world/topology/procedure.game.core.world.location.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.game.core.world.reactive",
+      "version": 1,
+      "contentHash": "495B42310B6636B60E008713FF42CA5152BF351E58F6FBD6F32E05A9748257F7",
+      "path": "procedures/game/core/world/reactive/procedure.game.core.world.reactive.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.game.core.world.read",
+      "version": 2,
+      "contentHash": "0C3F5F8B2C721F7E534D0837F48DF32393DCA94EEBDD7B480D68B1B3757578D0",
+      "path": "procedures/game/core/world/read/procedure.game.core.world.read.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.game.core.world.spatial",
+      "version": 3,
+      "contentHash": "BAD4894D96E1F68E923C952F889F0E40523E9136C456771CE2AC3F1AA3122676",
+      "path": "procedures/game/core/world/spatial/procedure.game.core.world.spatial.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.game.core.world.time",
+      "version": 2,
+      "contentHash": "B0117F1671DEC1D5ADF5909CB45FC19246F406C4EB64CAD807EDD0353CFAB43B",
+      "path": "procedures/game/core/world/time/procedure.game.core.world.time.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.game.core.world.travel",
+      "version": 1,
+      "contentHash": "CDAE4E53E26198C39337653BD27E96C5200B7D6E4895203EDF0D28411C88D377",
+      "path": "procedures/game/core/world/travel/procedure.game.core.world.travel.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.information.action",
+      "version": 1,
+      "contentHash": "4790DBFEE58C03A59E1960135AA2B6874D01573EA1C1C52234CE8E2E91072F7D",
+      "path": "procedures/information/procedure.information.action.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.information.answer",
+      "version": 1,
+      "contentHash": "D29B5B540E5900B36124B4498E8617E58C2AF0600F1CA4E53C9A9575280CC4DE",
+      "path": "procedures/information/procedure.information.answer.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.information.manage",
+      "version": 1,
+      "contentHash": "7F1DC9A85F0306E5FC03B0440A94F2252C997331FE8072854024C75D71C17C32",
+      "path": "procedures/information/procedure.information.manage.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mcp.add-tool",
+      "version": 3,
+      "contentHash": "317F3A6AB47FE045E787CF909E824B4F80670928BA0504F15EF6DE95F0A3B5F7",
+      "path": "procedures/mcp/procedure.mcp.add-tool.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.create",
+      "version": 1,
+      "contentHash": "10BBAAEB9E92B07B0AE383D3EADF926C5E7F38254D7E1378634AE3A17D779B81",
+      "path": "procedures/mechanics/procedure.mechanic.create.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.abilities",
+      "version": 1,
+      "contentHash": "4A0E00674863FD111399B50BBE4AFCA5C5DE4FBDA8338892B6531903C42BCF11",
+      "path": "procedures/ruleset/dnd2024/core/data/abilities/procedure.mechanic.dnd2024.abilities.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.armor-class",
+      "version": 1,
+      "contentHash": "BE7BCA7DC193EA8B6A75215FE04F68DA4040B46B673C5B84F9CD11090A743E3E",
+      "path": "procedures/ruleset/dnd2024/core/data/armor-class/procedure.mechanic.dnd2024.armor-class.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.character-level",
+      "version": 1,
+      "contentHash": "4497E249CB1048F9104E75150CB6292D764AF602FE7E19EB28BCEA95B5527F8E",
+      "path": "procedures/ruleset/dnd2024/core/data/character-level/procedure.mechanic.dnd2024.character-level.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.check.ability",
+      "version": 3,
+      "contentHash": "82DAB042471D38AC80D3B96B3C0F09AAFE84238D55E5B1DE702651E16EAB5CD8",
+      "path": "procedures/ruleset/dnd2024/core/gameplay/ability-checks/fixed-dc/procedure.mechanic.dnd2024.check.ability.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.dice",
+      "version": 1,
+      "contentHash": "38AF1ACF5107E3A07BE4AB7E4885A62ADC7D3F31CE6B44B4A31304C38ACDF45E",
+      "path": "procedures/ruleset/dnd2024/core/gameplay/dice/procedure.mechanic.dnd2024.dice.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.encounter-initiative-order",
+      "version": 1,
+      "contentHash": "0F0DA85686872CBD3CA0FD35CBB0F6DAC16588CAD09B37EAEF9D0C1130E21B42",
+      "path": "procedures/ruleset/dnd2024/core/combat/initiative/order/procedure.mechanic.dnd2024.encounter-initiative-order.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.hit-points",
+      "version": 1,
+      "contentHash": "FBD5C4475137A8DAA356914C96E12CEBFC50E7554F017B8E1A10B024D1DF26D6",
+      "path": "procedures/ruleset/dnd2024/core/data/hit-points/procedure.mechanic.dnd2024.hit-points.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.initiative",
+      "version": 1,
+      "contentHash": "F701C077F2919F7621CBCC78C1B218DE5B60BB843BFC064EFD52E1BDAE1BB4B6",
+      "path": "procedures/ruleset/dnd2024/core/gameplay/initiative/roll/procedure.mechanic.dnd2024.initiative.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.play",
+      "version": 3,
+      "contentHash": "3BF08899F490D64C0F16D6F3F5E0A6DA49D4B6EE50439F9B39D7B9A7C736710C",
+      "path": "procedures/ruleset/dnd2024/core/play/procedure.mechanic.dnd2024.play.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.ruleset",
+      "version": 4,
+      "contentHash": "C5F8BA2335439703C40F881F88FE92285838C0C0DEA65EC15A6BDAAF80860D1D",
+      "path": "procedures/ruleset/dnd2024/core/governance/procedure.mechanic.dnd2024.ruleset.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.saving-throw",
+      "version": 1,
+      "contentHash": "7B64DD66A270C5C93874C91B49DFB53BC5EFB2511B44BD4BEBE983F745F8E273",
+      "path": "procedures/ruleset/dnd2024/core/gameplay/saving-throws/fixed-dc/procedure.mechanic.dnd2024.saving-throw.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.skill-proficiencies",
+      "version": 2,
+      "contentHash": "8D4E2B4C92C5D5B1943CE773B0A5661439EE5644B712F702363B4872F02A1302",
+      "path": "procedures/ruleset/dnd2024/core/data/skill-proficiencies/procedure.mechanic.dnd2024.skill-proficiencies.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.source-registry",
+      "version": 1,
+      "contentHash": "3853E501A127C3219C5C808B2ADFE7B9A867ACA04F8853AF8615ABE0A3D5C664",
+      "path": "procedures/ruleset/dnd2024/core/governance/sources/procedure.mechanic.dnd2024.source-registry.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.weapon-attack",
+      "version": 1,
+      "contentHash": "1CAE8D3A636A612C51B6875BAC231E74FD6466BFA7B8E690A82AA535F52CBAF9",
+      "path": "procedures/ruleset/dnd2024/core/gameplay/weapon-attacks/procedure.mechanic.dnd2024.weapon-attack.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.weapon-damage.apply",
+      "version": 1,
+      "contentHash": "B9E1F20DDA32372E988143AEE84DBF29A44753567BAAF61209D17EC50F58244A",
+      "path": "procedures/ruleset/dnd2024/core/gameplay/weapon-damage/procedure.mechanic.dnd2024.weapon-damage.apply.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.weapon-damage.roll",
+      "version": 1,
+      "contentHash": "C5D6B7B506A468AF5BBD9E1B65E179645F0FCA0AFAD144F191E84C8051DC4C98",
+      "path": "procedures/ruleset/dnd2024/core/gameplay/weapon-damage/procedure.mechanic.dnd2024.weapon-damage.roll.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.weapon-proficiencies",
+      "version": 1,
+      "contentHash": "0BB2FF126D9274803DEBD54D5B7B0A2EDBC3903A6A3282D15E44F18E759B251C",
+      "path": "procedures/ruleset/dnd2024/core/data/weapon-proficiencies/procedure.mechanic.dnd2024.weapon-proficiencies.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.dnd2024.weapon-profile",
+      "version": 1,
+      "contentHash": "F441B26017542E6FB7829D2DE2B362D918EC3DA8AD2CCD94F7E62D5EF37032E3",
+      "path": "procedures/ruleset/dnd2024/core/data/weapon-profile/procedure.mechanic.dnd2024.weapon-profile.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.find",
+      "version": 2,
+      "contentHash": "BC2D69FDB1D0968554307F0C2E54B7498107C7AFA55E0DD39370D3605CCE0A98",
+      "path": "procedures/mechanics/procedure.mechanic.find.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.projection",
+      "version": 4,
+      "contentHash": "1E6991490303CFE76463E5F493F1E6B72E9DBF59A9BF7941BCEF30D58097D3E6",
+      "path": "procedures/mechanics/procedure.mechanic.projection.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.run",
+      "version": 1,
+      "contentHash": "2E0722FD0AB17860696376C3657EF362171E4A604AF6EA05E77FE2B39FD42E0F",
+      "path": "procedures/mechanics/procedure.mechanic.run.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.mechanic.write",
+      "version": 2,
+      "contentHash": "C702230A093B00A73EF03C0229C723EDFED94B36E9992C57193138A26A1A87E0",
+      "path": "procedures/mechanic/procedure.mechanic.write.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.notification.inspect",
+      "version": 1,
+      "contentHash": "B22884707158C752A7858C6C717DF3FEA51DB049F3CC983FC2DF447FDD2A20B9",
+      "path": "procedures/notification/procedure.notification.inspect.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.play.story-plan",
+      "version": 1,
+      "contentHash": "6123F57467F6655DA435E0CC6E396B0F0BEB10B6A03F7B50F28E0BEE213F47B5",
+      "path": "procedures/play/procedure.play.story-plan.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.play.storytelling",
+      "version": 1,
+      "contentHash": "C07ADD045F8F1E22C667CC27F34CC2792BAC0A61D4BCE26B5B7E664EE1DF2C48",
+      "path": "procedures/play/procedure.play.storytelling.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.quest.create",
+      "version": 4,
+      "contentHash": "BA4754344F70D4836751162CEAED1A890293B843FD8CA5700A6A18509AAAD3B1",
+      "path": "procedures/quest/procedure.quest.create.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.quest.inspect",
+      "version": 4,
+      "contentHash": "8ECCA1809015025CD99A9109C284E53886957395AC811220F59CB6133D2BC64D",
+      "path": "procedures/quest/procedure.quest.inspect.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.quest.modify",
+      "version": 4,
+      "contentHash": "2338E2DB72B517B3C74A15EE8EF8A76CB70CCF662F722B61551080905A009A79",
+      "path": "procedures/quest/procedure.quest.modify.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.snapshot.package",
+      "version": 1,
+      "contentHash": "03774EDEDE75B4F675D569DD752BE92C127EE1DE20FE7603CD03795D6FCE1445",
+      "path": "procedures/snapshot/procedure.snapshot.package.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.subscription.create",
+      "version": 3,
+      "contentHash": "52917051214D6B4D17ACE1C11820C5CEE3B1F85477E6CA88CCF45E3787B8E817",
+      "path": "procedures/subscription/procedure.subscription.create.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.subscription.modify",
+      "version": 3,
+      "contentHash": "BBF84CA64900EC6001837BB51F64134BEB83B31585F894977B08FB9231D962D8",
+      "path": "procedures/subscription/procedure.subscription.modify.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.system.create-feature",
+      "version": 7,
+      "contentHash": "29D53710CA350F2C3067182766EB039BA40E4232225E43BD52AA9456FF3BC6AE",
+      "path": "procedures/system/procedure.system.create-feature.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.system.feedback",
+      "version": 1,
+      "contentHash": "90DB125A3F2E4DB92CBE8656AAB284196C897D2F0206EE2D753DFA60B1CF4945",
+      "path": "procedures/system/procedure.system.feedback.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.system.hierarchical-catalogs",
+      "version": 1,
+      "contentHash": "F69E295546D8EBB423EAE587BBE0B4A4E7B3C4B64A827EFC6AEED511C8DE4F63",
+      "path": "procedures/system/procedure.system.hierarchical-catalogs.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.system.inspect",
+      "version": 4,
+      "contentHash": "5E8F90CC4BEBB2CCE994A748E9A961CCBE1090E7A29ED744A8A532302A419940",
+      "path": "procedures/system/procedure.system.inspect.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.system.modify",
+      "version": 2,
+      "contentHash": "D4944852F0CB5BF406E0FA39C09C2DC6883CABC96B614065076662248099810D",
+      "path": "procedures/system/procedure.system.modify.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.system.use",
+      "version": 16,
+      "contentHash": "66F2729875A5E6E085432B416C0EC0C04D9723FD8B807233A2FA7FBED3E305E5",
+      "path": "procedures/system/procedure.system.use.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.system.verify",
+      "version": 3,
+      "contentHash": "6922298C0E92CE5192DD506BCF6CDDD5954EE4B70748E3503BE0F118FD44BAC4",
+      "path": "procedures/system/procedure.system.verify.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.world.change",
+      "version": 2,
+      "contentHash": "70C3FD6AF78B31BF19F5F457658FE14E1BF400B7DB10475306431979A715135A",
+      "path": "procedures/world/procedure.world.change.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.world.model",
+      "version": 4,
+      "contentHash": "C3069579FAB052DC4FB1F64E6CB6F96898430CDBA1C9B45870D9C85801677078",
+      "path": "procedures/world/procedure.world.model.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.world.naming",
+      "version": 1,
+      "contentHash": "FD273D79602B34F357F911B1F7EDF00C470A154C1B133CA1FDB36FE58683DC1C",
+      "path": "procedures/world/procedure.world.naming.md"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.abilities",
+      "version": 0,
+      "contentHash": "681606CD0D857153C44BF47A98F645A792B2C4C29CA809BACEA1F78EC075B678",
+      "path": "components/dnd2024.abilities.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.armor-class",
+      "version": 0,
+      "contentHash": "F2A4F22E5B02FF7F21FA2F5A37958DD4D0DD7592869AE947C81CBF1C61D2BB1C",
+      "path": "components/dnd2024.armor-class.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.character-level",
+      "version": 0,
+      "contentHash": "573583F26474CAE70738F0DE893CD5B14EB3F29B517ECC443A907FC3351B5019",
+      "path": "components/dnd2024.character-level.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.encounter-initiative-order",
+      "version": 0,
+      "contentHash": "3EBEE437C70B0766C6D6F6C82E21E22B1A6F5C60E56A116C63B03CD892994C21",
+      "path": "components/dnd2024.encounter-initiative-order.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.hit-points",
+      "version": 0,
+      "contentHash": "33EFD0DCD13480652AA072712ABC9109E449ACFEF38A7A7C7387F07F909410BB",
+      "path": "components/dnd2024.hit-points.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.playtest-character-record",
+      "version": 0,
+      "contentHash": "8CF25573010F1CAD1EED2D7BB459F3B5FCCA36EEA2307A15F8BCBFF80592362D",
+      "path": "components/dnd2024.playtest-character-record.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.saving-throw-proficiencies",
+      "version": 0,
+      "contentHash": "4848ABC1377048138ED4CA34375A7CD95D12C4CB6C0FAC63B852FB0657640350",
+      "path": "components/dnd2024.saving-throw-proficiencies.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.skill-proficiencies",
+      "version": 0,
+      "contentHash": "A1F96E25B3525ECA1073ED9B571F1EEE4EC2BD2F41048E520E8F7DCCD5D34456",
+      "path": "components/dnd2024.skill-proficiencies.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.source",
+      "version": 0,
+      "contentHash": "9D3951B5F54DC0210220A59E056F1661356639CFA47F713753516F25934FD691",
+      "path": "components/dnd2024.source.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.weapon-proficiencies",
+      "version": 0,
+      "contentHash": "D7912308B4B446FBFCC1F6FC5F12F3F35EE4B6BE026EA940DEFED51E3F605E5C",
+      "path": "components/dnd2024.weapon-proficiencies.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "dnd2024.weapon-profile",
+      "version": 0,
+      "contentHash": "4A359C6D73FA46BFADAFF9A9AAF77C4BA2CB6BD6AE7ABB137EFE7FDA9FAA1427",
+      "path": "components/dnd2024.weapon-profile.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "game.core.campaign.arc",
+      "version": 0,
+      "contentHash": "F8D5C065D213EF056D7668E9E7FFA2491845503D0BDAE4AC237CFB021963F5A6",
+      "path": "components/game.core.campaign.arc.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "game.core.campaign.chapter",
+      "version": 0,
+      "contentHash": "EC0535EBE41D92F248B72E01AC8BF2C84888273CE5DD1F92E7F21BADBB694866",
+      "path": "components/game.core.campaign.chapter.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "game.core.campaign.character-participation",
+      "version": 0,
+      "contentHash": "F15BDE4B028EA3D492F08D6E4909F22D1DC40D818D57B02F7113DDC7B6EC1A52",
+      "path": "components/game.core.campaign.character-participation.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "game.core.campaign.root",
+      "version": 0,
+      "contentHash": "CC65D1FB8E1362B37B753466349BD7C747F61AC6304F790915C951E69CC48B40",
+      "path": "components/game.core.campaign.root.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "game.core.world.clock",
+      "version": 0,
+      "contentHash": "72CA01166CE03F6553154520A0A44F8A06EF5B1C0F1C14AA34531F3B09327E4E",
+      "path": "components/game.core.world.clock.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "game.core.world.fact",
+      "version": 0,
+      "contentHash": "4F968B86346CF5795337393B266EBBA8B032AF3757A786E100EAF26F16C1658E",
+      "path": "components/game.core.world.fact.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "game.core.world.faction",
+      "version": 0,
+      "contentHash": "EEC48A4863F812DB1B26E7AFB35B12BB253B487A75F997152A2EE6896B63FE37",
+      "path": "components/game.core.world.faction.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "game.core.world.knowledge.classification",
+      "version": 0,
+      "contentHash": "BEEA4535CC449AE800A0F4BBA7E5A6B22FD15448E69EBCF8752781991AE5331D",
+      "path": "components/game.core.world.knowledge.classification.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "game.core.world.location",
+      "version": 0,
+      "contentHash": "992FB8CA3979ECCC0A16BC0820A69FF23CC0BFBED6B90AEFE24FBFC37FBD7064",
+      "path": "components/game.core.world.location.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "game.core.world.motive",
+      "version": 0,
+      "contentHash": "D1B88D992A9F070B76A3C78B26270E3FB7F39137C7DC4A7D9F09169524CDC1F9",
+      "path": "components/game.core.world.motive.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "game.core.world.root",
+      "version": 0,
+      "contentHash": "253D6FE03861A588D64369FBFF02953FFA92F6C00B98387B424ECC48ED7FAF25",
+      "path": "components/game.core.world.root.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "game.core.world.secret",
+      "version": 0,
+      "contentHash": "786AC0D2F08826961F75F010E05E5A30D850E78F737324632158383EEF24E695",
+      "path": "components/game.core.world.secret.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "lock",
+      "version": 0,
+      "contentHash": "C7C7BC8938C9808FFC6D3615E7BD4BC8AEAC334C96314A1BA432577420806191",
+      "path": "components/lock.json"
+    },
+    {
+      "kind": "componentDefinition",
+      "id": "stats",
+      "version": 0,
+      "contentHash": "7826AC66E09848BE74AB793896EE2AE2499882E8E4E8C7E0FAD57926BB458D69",
+      "path": "components/stats.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.damage.dealt",
+      "version": 2,
+      "contentHash": "C417F98E039C7F94DED330DC16B44F399270B8569F71C2EB961789D422B6061F",
+      "path": "event-types/dnd2024.damage.dealt.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.exhaustion.reached-lethal",
+      "version": 1,
+      "contentHash": "629170B1F947273AF821EB0D2C8A61B5B57270220DEAB73FFC69FCC21B9E2EC6",
+      "path": "event-types/dnd2024.exhaustion.reached-lethal.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.healing.received",
+      "version": 1,
+      "contentHash": "05CC1F53D028DD11E69FDB55D07888C42A751168BEFEC6EF84259EB053C34D63",
+      "path": "event-types/dnd2024.healing.received.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.initiative.rolled",
+      "version": 1,
+      "contentHash": "F070FA002EF9622727F1DECE8E25EB5EB34492F1BBE8937E4C821FB901E484CA",
+      "path": "event-types/dnd2024.initiative.rolled.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "game.core.world.clock.advanced",
+      "version": 1,
+      "contentHash": "65BF64064BD87329077945F2AF8532C3743DF296F5A71584F944D57F883AB2A8",
+      "path": "event-types/game.core.world.clock.advanced.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "world.component.added",
+      "version": 2,
+      "contentHash": "2628786F498681322A058C915C72BD4F87D4AFC1D38C8A7BAA2A0B54A7FBF032",
+      "path": "event-types/world.component.added.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "world.component.merged",
+      "version": 2,
+      "contentHash": "92893536736275205DEEDCB83006F5BE43073730D449561016E0967E595DC25F",
+      "path": "event-types/world.component.merged.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "world.component.removed",
+      "version": 2,
+      "contentHash": "6994F134C26DBD0F78B432A4D8F5CC46A388BDDA47A35C6A5806D19D392ACD79",
+      "path": "event-types/world.component.removed.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "world.component.replaced",
+      "version": 2,
+      "contentHash": "9726DFAF59E90A85719F97BF342F1081BAAC1F6CC6E1E36BF1F575FD8FE01DBE",
+      "path": "event-types/world.component.replaced.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "world.containment.moved",
+      "version": 2,
+      "contentHash": "ECB6B72820F44E57431B55B9675772C135F44C17B5F713692451014E1DF392E0",
+      "path": "event-types/world.containment.moved.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "world.entity.created",
+      "version": 2,
+      "contentHash": "41E512D718D16AE8757B08991DB4F9DECF868E2E3745CDCF5F35195EF317B250",
+      "path": "event-types/world.entity.created.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "world.entity.deleted",
+      "version": 2,
+      "contentHash": "1BDB012654DCBB4E3E63CFDF7EFA819607EE6037C63E3D2122648C374DE89375",
+      "path": "event-types/world.entity.deleted.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "world.relationship.created",
+      "version": 2,
+      "contentHash": "F20FD219E35FD605A1AC1B6DC1A26C9655424DDA684D4015FE19B80B41C184CA",
+      "path": "event-types/world.relationship.created.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "world.relationship.removed",
+      "version": 2,
+      "contentHash": "756D0DF36C520494C69E9FA010F3AE0188C83B733EB41831605BF675E8637770",
+      "path": "event-types/world.relationship.removed.json"
+    },
+    {
+      "kind": "entity",
+      "id": "actor.thalorien.brackenford.elian-voss",
+      "version": 0,
+      "contentHash": "36C50DEEC974AB39AF109947D7B94BAE548CE9705256BCB57C900C77AB4D7D6F",
+      "path": "world/entities/actor.thalorien.brackenford.elian-voss.json"
+    },
+    {
+      "kind": "entity",
+      "id": "actor.thalorien.brackenford.orban",
+      "version": 0,
+      "contentHash": "9A79D07332515BFA467C7B2E084F0C5F6AA267DFC84DC52E9E77D9B83F629480",
+      "path": "world/entities/actor.thalorien.brackenford.orban.json"
+    },
+    {
+      "kind": "entity",
+      "id": "actor.thalorien.brackenford.sella-bramble",
+      "version": 0,
+      "contentHash": "2706DFF7408C1C6E1E2C706B48671E403481815D078D294474374A827D7C08B9",
+      "path": "world/entities/actor.thalorien.brackenford.sella-bramble.json"
+    },
+    {
+      "kind": "entity",
+      "id": "campaign.thalorien.brackenford",
+      "version": 0,
+      "contentHash": "491652F4531E2DB36D1A0178164F8A42352298C980B1B8243F9A52A3B8BFAA69",
+      "path": "world/entities/campaign.thalorien.brackenford.json"
+    },
+    {
+      "kind": "entity",
+      "id": "campaign.thalorien.brackenford.arc.the-waking-depths",
+      "version": 0,
+      "contentHash": "A0D60971EAC38F2FF0D78B65584A41DE04A2D35EE2CEA34EB6865F24FA04C5DF",
+      "path": "world/entities/campaign.thalorien.brackenford.arc.the-waking-depths.json"
+    },
+    {
+      "kind": "entity",
+      "id": "campaign.thalorien.brackenford.chapter.brackenford-arrivals",
+      "version": 0,
+      "contentHash": "9662949613F728A58E9E80AFD93FD83F42DF7E7A57C0838AA4B4F87B1812BD4F",
+      "path": "world/entities/campaign.thalorien.brackenford.chapter.brackenford-arrivals.json"
+    },
+    {
+      "kind": "entity",
+      "id": "campaign.thalorien.brackenford.participation.actor.thalorien.brackenford.orban",
+      "version": 0,
+      "contentHash": "39611071A8B017EA02D22E87B471DBBE3EA6BDFFB957F88A6A83DDF5DFC31733",
+      "path": "world/entities/campaign.thalorien.brackenford.participation.actor.thalorien.brackenford.orban.json"
+    },
+    {
+      "kind": "entity",
+      "id": "f5-natural-probe",
+      "version": 0,
+      "contentHash": "F0C98BD38DEC12AF7AB42A4995AFF266F4F654B9931E036E9265F853F57C5B77",
+      "path": "world/entities/f5-natural-probe.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.age.thalmos-foundation",
+      "version": 0,
+      "contentHash": "C49CDB806702D6C996FFFD0A7C4D1EC4C53DE56C5A7522DA32600F015C4FA984",
+      "path": "world/entities/fact.thalorien.age.thalmos-foundation.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.ages-two-thousand-years",
+      "version": 0,
+      "contentHash": "ADD4E94D94075FB25C457E91B1449680AB410F1E65BB1D0F92BEB5A351B322DE",
+      "path": "world/entities/fact.thalorien.ages-two-thousand-years.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.amnesty-settlements",
+      "version": 0,
+      "contentHash": "4BAE9DA68EBB6FC38C24CFE708B52F383D5506E5C9515DA4DCDD842EDFAF4679",
+      "path": "world/entities/fact.thalorien.amnesty-settlements.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.ancestral-war-stories",
+      "version": 0,
+      "contentHash": "1CC731D4398C7B66250DF4A506B4FFD355B1947B421CC64363E44682BAD6FEE3",
+      "path": "world/entities/fact.thalorien.ancestral-war-stories.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.ancient-dungeons",
+      "version": 0,
+      "contentHash": "58D17EE967F355E41CDC0AA3C371434EEA304E2AE9BFE31E5061929E6FDE9823",
+      "path": "world/entities/fact.thalorien.ancient-dungeons.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.ancient-language.name-endings",
+      "version": 0,
+      "contentHash": "89D0879F1340D5E4F76A9F794097E0D3E8003611FDEAF1624A40577F9FC7F8ED",
+      "path": "world/entities/fact.thalorien.ancient-language.name-endings.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.ancient-species-settlements",
+      "version": 0,
+      "contentHash": "509F105D9FF3C3E58E89853D77ACD598E569A0ACFE5FF230C760A5551D8009B1",
+      "path": "world/entities/fact.thalorien.ancient-species-settlements.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.annual-council",
+      "version": 0,
+      "contentHash": "572F65A639FC2D93BBD20044EE1651C8D4AEF05B20F30CF054B8E861CA9E1E74",
+      "path": "world/entities/fact.thalorien.annual-council.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.arts-school-destruction",
+      "version": 0,
+      "contentHash": "5067EFC60E8A8250F6FD97B8CB163FF7FB556177E8EC931B62CFF759F3ECACE4",
+      "path": "world/entities/fact.thalorien.arts-school-destruction.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.ashen-crown-isles",
+      "version": 0,
+      "contentHash": "653A3E0596F46224C650F53F18A3B234B5C1667A78047418AF8FF91E8B771154",
+      "path": "world/entities/fact.thalorien.ashen-crown-isles.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.bannerfall-tower",
+      "version": 0,
+      "contentHash": "C90874A844F480577991BEBA46689DE915E46161B2687098B5CC14A2F98CC4E4",
+      "path": "world/entities/fact.thalorien.bannerfall-tower.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.beyond-thalos-unknown",
+      "version": 0,
+      "contentHash": "595204FFB8C1CF22C796AD2458CB3FF51081F737ADCA5F65D0EC0996DA910A33",
+      "path": "world/entities/fact.thalorien.beyond-thalos-unknown.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.book-of-truth",
+      "version": 0,
+      "contentHash": "B34A804D0C0EC1643F620B6C620E6D32CAAFB69BFFE9E5E783356CD8C969BF22",
+      "path": "world/entities/fact.thalorien.book-of-truth.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.book-of-truth-as-obstacle",
+      "version": 0,
+      "contentHash": "C81D7A68EA88C37283C4C8F63F0982F10EEACCBF590A69BE505075C0EC53BADC",
+      "path": "world/entities/fact.thalorien.book-of-truth-as-obstacle.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.book-of-wisdom",
+      "version": 0,
+      "contentHash": "E9FA42ABD938BCC56A87B0C83D724AE21E4AB5AD2660D32136919474ECF82443",
+      "path": "world/entities/fact.thalorien.book-of-wisdom.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.brackenford",
+      "version": 0,
+      "contentHash": "E0AC6E2427AE0833E60491C1DD02E60475E662D853634F63E74E620FCC50C2FB",
+      "path": "world/entities/fact.thalorien.brackenford.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.cave-sealing-pattern",
+      "version": 0,
+      "contentHash": "B83FC0DF3D652C644D13AB42CB11994CAC9A671CB74EF1F64F87769258ED7918",
+      "path": "world/entities/fact.thalorien.cave-sealing-pattern.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.church-peace-mandate",
+      "version": 0,
+      "contentHash": "9AAB57E44328B250D3101B84568125B76A040B21BFF985114819EC708CDC5C7F",
+      "path": "world/entities/fact.thalorien.church-peace-mandate.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.churches-and-clerics",
+      "version": 0,
+      "contentHash": "4D8A4F535F0493741FBA0F39F8CA692B4568F405A59936DFBF270215D3C144A1",
+      "path": "world/entities/fact.thalorien.churches-and-clerics.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.civic-peace-education",
+      "version": 0,
+      "contentHash": "F5C60F761ED43BA023F751B6E188A6639F7232C5FC8688475E93FCE479DA77FD",
+      "path": "world/entities/fact.thalorien.civic-peace-education.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.continent.thalos",
+      "version": 0,
+      "contentHash": "94EFFC97EAC5FA69EE1A0F4147843143502435599F7D18B554A1D9F22B05A014",
+      "path": "world/entities/fact.thalorien.continent.thalos.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.creatures-of-legend",
+      "version": 0,
+      "contentHash": "96848F9861EE216C56C8159C684E46567066A37EA6A552D0FFB229D5F498775E",
+      "path": "world/entities/fact.thalorien.creatures-of-legend.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.crownmere-capital",
+      "version": 0,
+      "contentHash": "73239EEF94780FCE3B598C5B956775A9639A6D178DCD42E370D2FC210180BB89",
+      "path": "world/entities/fact.thalorien.crownmere-capital.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.current-age-question",
+      "version": 0,
+      "contentHash": "3098300B7AFD169277E71474A94220FA088AE1CE4E660A5596CABBD0DDF6EEE7",
+      "path": "world/entities/fact.thalorien.current-age-question.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.dark-market-origin",
+      "version": 0,
+      "contentHash": "3F31E4DE8480018E8FCC116DAF4F5D7C1D865E6CAE0518F72BC1FB2DD769F636",
+      "path": "world/entities/fact.thalorien.dark-market-origin.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.dawnbell-tower",
+      "version": 0,
+      "contentHash": "D1CA08F33EACE5FEF3484F3D6A51BA96469626BD0DE567BFAE6C53A5AE16B33A",
+      "path": "world/entities/fact.thalorien.dawnbell-tower.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.distinct-kingdom-cultures",
+      "version": 0,
+      "contentHash": "F5B0B253304CFA7F9D2F74E8AA3A47AF7006B5CF45BD01FDB6F5FB055DF514F6",
+      "path": "world/entities/fact.thalorien.distinct-kingdom-cultures.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.dungeon-design",
+      "version": 0,
+      "contentHash": "C75ACA66F96E07D8347065F005CE125A818D322A1016C2C381D96764EB45F2AD",
+      "path": "world/entities/fact.thalorien.dungeon-design.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.dungeon-monster-growth",
+      "version": 0,
+      "contentHash": "37270ED7FB11116DFBF66CCE9C42449B281691C9A804AF0B24F54D6A57FB5D53",
+      "path": "world/entities/fact.thalorien.dungeon-monster-growth.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.dwarven-historical-memory",
+      "version": 0,
+      "contentHash": "97017EF513BB2901B1F4D963C695E77F4EA053BC34F65366865971C780FC7510",
+      "path": "world/entities/fact.thalorien.dwarven-historical-memory.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.eight-sibling-council",
+      "version": 0,
+      "contentHash": "47C0BC990678B8F28E0C3E9CA4585045B87889AB17725C95AF5C665A1B4AD20C",
+      "path": "world/entities/fact.thalorien.eight-sibling-council.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.elaris-long-remembrance",
+      "version": 0,
+      "contentHash": "C01264971CEF4E22E78A0410461585BA99FF84FBC54694717C257E3DF3887B43",
+      "path": "world/entities/fact.thalorien.elaris-long-remembrance.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.elven-historical-memory",
+      "version": 0,
+      "contentHash": "667308511347247C24BEACC9B5672DF671DE8B1B6F6491381783ABC57C430C6B",
+      "path": "world/entities/fact.thalorien.elven-historical-memory.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.elven-remembrance",
+      "version": 0,
+      "contentHash": "E514FB6869B79E9BD815C16FE02A4818E671CC494911352693DD87B077CADE93",
+      "path": "world/entities/fact.thalorien.elven-remembrance.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.emberwright-tower",
+      "version": 0,
+      "contentHash": "2B28CB0E19C4155213E473A747147258302A5CD4CB25733F5FB34A4DCE655EE2",
+      "path": "world/entities/fact.thalorien.emberwright-tower.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.fallen-tower-magicians",
+      "version": 0,
+      "contentHash": "1230251097DC21BA0829ABC10DACB96B84F9F45A9A6FE922F61C4CFA2CEEE181",
+      "path": "world/entities/fact.thalorien.fallen-tower-magicians.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.four-magic-towers",
+      "version": 0,
+      "contentHash": "C2922BBA0C71846BE084C20EC7EED2049419E22CF822F010EC6A78DB3BD68E8B",
+      "path": "world/entities/fact.thalorien.four-magic-towers.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.four-magic-towers-authority",
+      "version": 0,
+      "contentHash": "8E82B86AA05A2EA5200B6A2E0518D48639FB9C261BBB90E9100A8199C56256ED",
+      "path": "world/entities/fact.thalorien.four-magic-towers-authority.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.four-towers-battle-magic",
+      "version": 0,
+      "contentHash": "74327CCC7905B35274BC9E21128A94E98EC6543FC02EF63BE1BA1BA22F5B2B1A",
+      "path": "world/entities/fact.thalorien.four-towers-battle-magic.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.fragmentary-pre-empire-history",
+      "version": 0,
+      "contentHash": "2AB4822C4F332B660A0B54DB31285B721A90DEFA1A03209C792BEB191F9E308A",
+      "path": "world/entities/fact.thalorien.fragmentary-pre-empire-history.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.frontier-watch",
+      "version": 0,
+      "contentHash": "9F0DE50C2A4249FE955687B413DE48EF7240C7C5FA67BEA1F516412D5F39214D",
+      "path": "world/entities/fact.thalorien.frontier-watch.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.great-invasion-origin",
+      "version": 0,
+      "contentHash": "82ECDE6168313AD7665F502C24F26773E05F2C7B73B5FCDF693B279AD814F074",
+      "path": "world/entities/fact.thalorien.great-invasion-origin.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.great-seven-kingdom-war",
+      "version": 0,
+      "contentHash": "CFD9421AE3EB6926934AE9C0B5BE55BC58EA1BB77CA816E022B5A6FFD3519BBF",
+      "path": "world/entities/fact.thalorien.great-seven-kingdom-war.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.great-thalos-war-ended",
+      "version": 0,
+      "contentHash": "935BE393CFE50E6A86C7D65BBE74A0CAA332AD9EC8DA4953ECF8E3BCFE574C69",
+      "path": "world/entities/fact.thalorien.great-thalos-war-ended.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.greenmantle",
+      "version": 0,
+      "contentHash": "9A8DB2915B19424490BB37B17F38736AA6319A098220E817EA665CA658BC1F40",
+      "path": "world/entities/fact.thalorien.greenmantle.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.harrowfall-cold-storage-advantage",
+      "version": 0,
+      "contentHash": "F890BB7DEE92E7123214DAE789DCEF7598FCE29A873478A85F33BD79DCDC2452",
+      "path": "world/entities/fact.thalorien.harrowfall-cold-storage-advantage.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.harrowfall-destruction",
+      "version": 0,
+      "contentHash": "FC395460F4073557389BA6737CB52C766F5E59835FB829CFE3B0E452BCA58F8F",
+      "path": "world/entities/fact.thalorien.harrowfall-destruction.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.harrowfall-evandos-location",
+      "version": 0,
+      "contentHash": "71BC066BC989DB7ED541248227C354F3549BEEB1AEC7A4EAF4F4AA2F3819110A",
+      "path": "world/entities/fact.thalorien.harrowfall-evandos-location.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.harrowfall-inaccessible",
+      "version": 0,
+      "contentHash": "87F97F0691FCB1B22A701868F58E88BA7D84A6B4527CA8346593FE1D21E6DEA1",
+      "path": "world/entities/fact.thalorien.harrowfall-inaccessible.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.harrowfall-massacre",
+      "version": 0,
+      "contentHash": "2239F5545C32C29F40DC8C7784620BEC51806B274F0979F91CA7FCB70DE419EF",
+      "path": "world/entities/fact.thalorien.harrowfall-massacre.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.harrowfall-northern-highlands",
+      "version": 0,
+      "contentHash": "AE61ECE252A235D047E1E2E23C076A6BA3F0E64EE1FCD24BF88416FFD75B4BF9",
+      "path": "world/entities/fact.thalorien.harrowfall-northern-highlands.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.harrowfall-prosperity",
+      "version": 0,
+      "contentHash": "32825FE426A13C77D1C78581E443AD7F8454D5761E8A638C52FC550B6AD9B2B6",
+      "path": "world/entities/fact.thalorien.harrowfall-prosperity.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.harrowfall-spirits",
+      "version": 0,
+      "contentHash": "D1DF7056D1F452CCF409D00A894F32A4D4B54B1351EEC53DA41ED8E33EF6E7C6",
+      "path": "world/entities/fact.thalorien.harrowfall-spirits.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.hexagonal-kingdom-ring",
+      "version": 0,
+      "contentHash": "6396E70776A0D1AAC05611187B947F4E68D9A2CBF025F0B126E6FC70C09672FC",
+      "path": "world/entities/fact.thalorien.hexagonal-kingdom-ring.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.hidden-networks",
+      "version": 0,
+      "contentHash": "C5C71485FA119A1EC6199DC3BA4A1B97D1515EAD9B0A4DF5C5C89423815D0D8F",
+      "path": "world/entities/fact.thalorien.hidden-networks.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.hunted-magicians",
+      "version": 0,
+      "contentHash": "5053F23AB247587F74EE697CFEAAB721D5E92773EE79B7D5F2DB015DF246CBA5",
+      "path": "world/entities/fact.thalorien.hunted-magicians.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.imperial-stagnation",
+      "version": 0,
+      "contentHash": "02AE1342FEA62E0FC9366312B77AF5267ABD7CF243EF74E016453DBE4D3E22EA",
+      "path": "world/entities/fact.thalorien.imperial-stagnation.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.imperial-welfare",
+      "version": 0,
+      "contentHash": "C5796DF62C3E05DD5896F7CEE15B09BA8D1746E83F1D1004E92C3BC0BE3FBA13",
+      "path": "world/entities/fact.thalorien.imperial-welfare.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.independent-settlements",
+      "version": 0,
+      "contentHash": "CBE83D70B2B1D68EBA539A6780550B13F1C6F0995C465CD55B1A70AD644DC57D",
+      "path": "world/entities/fact.thalorien.independent-settlements.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.kharad-veyr-deep-ledger",
+      "version": 0,
+      "contentHash": "F3876A511986CD6B7AECAE3C1D9DBA4A32A4EB2711A62C88301239F53CAAE379",
+      "path": "world/entities/fact.thalorien.kharad-veyr-deep-ledger.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.kingdom-allocation",
+      "version": 0,
+      "contentHash": "04335934E8993C332E1F89E8BAC75F5F5FD5BC99408F099A429AF52C8D26EF46",
+      "path": "world/entities/fact.thalorien.kingdom-allocation.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.kingdom-relationships",
+      "version": 0,
+      "contentHash": "C793C6C73D30F9C368453D344F38E79D744B530752E138A2CB10BC1014A86A54",
+      "path": "world/entities/fact.thalorien.kingdom-relationships.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.kingdom-tensions",
+      "version": 0,
+      "contentHash": "1DBE6585675623C2DFE426BF44199E49E8036878F52818EFB71C8810082608D3",
+      "path": "world/entities/fact.thalorien.kingdom-tensions.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.knot-and-musical-magic",
+      "version": 0,
+      "contentHash": "045A5D905759A554F5DCBEE681117CA93464C2C43096C94321C789856FE7F41F",
+      "path": "world/entities/fact.thalorien.knot-and-musical-magic.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.known-world-limit",
+      "version": 0,
+      "contentHash": "EA779237376C376D7692091F9075B7B4076D4A48920FC303F17C0EB7A13AAFE5",
+      "path": "world/entities/fact.thalorien.known-world-limit.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.larkspire-university",
+      "version": 0,
+      "contentHash": "1B3D74090B619E6D615A2AB1D1244952AF4B12D2EA7A480D95839099B081E412",
+      "path": "world/entities/fact.thalorien.larkspire-university.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.layered-history",
+      "version": 0,
+      "contentHash": "112E45F734E990A6FB71B385848EBEFCD6125B3450A464DEF0C5E814EE5604F3",
+      "path": "world/entities/fact.thalorien.layered-history.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.leaders-consider-merchant-proposal",
+      "version": 0,
+      "contentHash": "308E75EADEA887CFF36B111BF945CE4167E065BB01AE0BB5D691D15D20BC7837",
+      "path": "world/entities/fact.thalorien.leaders-consider-merchant-proposal.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.long-peace",
+      "version": 0,
+      "contentHash": "04B101819708AF519AA41B0B182B6A3900EF436FB7FE9072FE8CBE5DB6134B76",
+      "path": "world/entities/fact.thalorien.long-peace.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.lost-history",
+      "version": 0,
+      "contentHash": "6E68B92E8A121C6F154C0ACC95D96C0768A9EDCB76872EAD06251A00D084449A",
+      "path": "world/entities/fact.thalorien.lost-history.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.magic-cultural-traditions",
+      "version": 0,
+      "contentHash": "46F1CB8F9A4ACAF55D9160B8A8ECB73FC67ED1C4110725AC7522E4D8081540E1",
+      "path": "world/entities/fact.thalorien.magic-cultural-traditions.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.magic-known-uncommon",
+      "version": 0,
+      "contentHash": "17147EB5078098D8982BA6B6313590F723815CA97AD2A532D4A9906C7201A55D",
+      "path": "world/entities/fact.thalorien.magic-known-uncommon.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.magic-rare-settlements",
+      "version": 0,
+      "contentHash": "059B25EFC69A8C35F6C186693A78DBDC14EF86767A7D2E7A7444ADC9F170E8CD",
+      "path": "world/entities/fact.thalorien.magic-rare-settlements.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.magic.costly-education",
+      "version": 0,
+      "contentHash": "E8C2413AC3B13F711B4110D371B90001C5A63F118A42E30B23B6E3F17D243D6F",
+      "path": "world/entities/fact.thalorien.magic.costly-education.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.medieval-material-life",
+      "version": 0,
+      "contentHash": "8516974BB6EA2751E32A50CF877D44A1F82F70FE86F706796DB7C87D7E096E39",
+      "path": "world/entities/fact.thalorien.medieval-material-life.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.merceron-king-embarrassment",
+      "version": 0,
+      "contentHash": "7542C61A251DDC1F3576289A6A13E737F884A9C3913EE64D4C4FB4B4BC05DB2C",
+      "path": "world/entities/fact.thalorien.merceron-king-embarrassment.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.merceron-trade-monopoly-motive",
+      "version": 0,
+      "contentHash": "2E4BE65C6812CD1A2A203465D68FAC27014B10534B706003532E19C33789D4A3",
+      "path": "world/entities/fact.thalorien.merceron-trade-monopoly-motive.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.merceros-south-evandos-north",
+      "version": 0,
+      "contentHash": "744BE62CCE49A63B8718C50BDEDD307559C6A9C1359112444CFE2DC69AEB1B74",
+      "path": "world/entities/fact.thalorien.merceros-south-evandos-north.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.merceros-valeros-war-alliance",
+      "version": 0,
+      "contentHash": "7F2587ACD7390BB6CA10E875B5D93C0C150DE5480C3B32ED9205E9FC5216D924",
+      "path": "world/entities/fact.thalorien.merceros-valeros-war-alliance.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.merchant-coalition",
+      "version": 0,
+      "contentHash": "B3C63D87D0D8405622453636816027555AAEC6FB67F5743CEA59BF089D1CC40B",
+      "path": "world/entities/fact.thalorien.merchant-coalition.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.merchant-consumer-influence",
+      "version": 0,
+      "contentHash": "4341DB130A3835B580C4A0A04474733EDACBA602A6B946D3AE6E6F9C4713B2D9",
+      "path": "world/entities/fact.thalorien.merchant-consumer-influence.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.merchant-market-manipulation",
+      "version": 0,
+      "contentHash": "B8A2B91EBE657A9A7FDFBA9FE4C459702A8288E945BE77131A55413E33A8D821",
+      "path": "world/entities/fact.thalorien.merchant-market-manipulation.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.merchant-political-argument",
+      "version": 0,
+      "contentHash": "B17593DA61ECE49D0866D101F8B5EC6A9642A51681F0B3BFA2F43ACFB8C48010",
+      "path": "world/entities/fact.thalorien.merchant-political-argument.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.merchant-threat-to-peace",
+      "version": 0,
+      "contentHash": "32178506A1FE6D629D6F26BED7AEC184F15B10EF4A289071095C778056F77397",
+      "path": "world/entities/fact.thalorien.merchant-threat-to-peace.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.merrowgate-trade-city",
+      "version": 0,
+      "contentHash": "946875466A92D8816C38B1DB5387ABE48BEC152A93E30C0C0E8DD588EB704477",
+      "path": "world/entities/fact.thalorien.merrowgate-trade-city.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.military-school",
+      "version": 0,
+      "contentHash": "8CF753B40897813EC445DB747A063EDC0AFF2C4C1BAACD1ABC1F0034609FEADC",
+      "path": "world/entities/fact.thalorien.military-school.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.modern-national-balance",
+      "version": 0,
+      "contentHash": "78AE05412E0446317356F1568B7DF6B0C2D20E7B7A9D0794CF5C18F86068772E",
+      "path": "world/entities/fact.thalorien.modern-national-balance.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.monster-caves",
+      "version": 0,
+      "contentHash": "775B132330BFD07255F9BCE4316712AFFD93A37DEB771DE182494B55856ED025",
+      "path": "world/entities/fact.thalorien.monster-caves.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.monster-wards",
+      "version": 0,
+      "contentHash": "6FC6821AF39BE53A52099C6BE224AFC2F3E6B6FF337F586B10B483DB7F8B3216",
+      "path": "world/entities/fact.thalorien.monster-wards.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.mount-cinderwake",
+      "version": 0,
+      "contentHash": "94E6E0E385E796E45052F0206329AC185649136969E4C1749164EE0BA0785EB2",
+      "path": "world/entities/fact.thalorien.mount-cinderwake.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.nethravai-wardens",
+      "version": 0,
+      "contentHash": "E8A992E29E53E3622C50A47374FA21CB29A85D901B787F1ED573F9EDE8479F1A",
+      "path": "world/entities/fact.thalorien.nethravai-wardens.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.northeastern-forests-and-cold-mountains",
+      "version": 0,
+      "contentHash": "419A9F88D7165A2E85BB740F0C477FFC5DCCAD539209ED591D1F7D795E515D61",
+      "path": "world/entities/fact.thalorien.northeastern-forests-and-cold-mountains.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.oathshield-range",
+      "version": 0,
+      "contentHash": "78C167CD68647A4C1C9A8EE8CC14FE759EB10D1165CDFC62240C5087DB25407A",
+      "path": "world/entities/fact.thalorien.oathshield-range.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.oberon-slain",
+      "version": 0,
+      "contentHash": "13469BB28906860E92718D94E1E7C0F92F837C21A2D20BE6D7470D431208145C",
+      "path": "world/entities/fact.thalorien.oberon-slain.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.peace-as-value",
+      "version": 0,
+      "contentHash": "CCEAEDC8C4E14B0F9B73DCAD3B0CA99AB1E29810DDD5912E04EDEB072F0FF64B",
+      "path": "world/entities/fact.thalorien.peace-as-value.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.peace-generations",
+      "version": 0,
+      "contentHash": "24C669B7750A25F390E1D78751C932E2A166616BADAB00A353C7680A18922627",
+      "path": "world/entities/fact.thalorien.peace-generations.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.peace-not-guaranteed",
+      "version": 0,
+      "contentHash": "78E4BDAF99EC9AA22654547B7EFF4CF3B65720704AE6FEB81BEC3D6BFEBE187F",
+      "path": "world/entities/fact.thalorien.peace-not-guaranteed.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.postwar-guardrails",
+      "version": 0,
+      "contentHash": "CF049115580BFC2C6BAF22D8FB8F84111321403A818D51796DC547134C5A6743",
+      "path": "world/entities/fact.thalorien.postwar-guardrails.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.postwar-losses-and-humility",
+      "version": 0,
+      "contentHash": "8A8B1ADEDA335149658F3729FD15FA37F9739E8FD226A7A3B640C568013BE811",
+      "path": "world/entities/fact.thalorien.postwar-losses-and-humility.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.present-dangers",
+      "version": 0,
+      "contentHash": "4AA43273775DA0E41C9F4C1B01BC435690D9E8A5BD77CE521E3CBF346EAD2957",
+      "path": "world/entities/fact.thalorien.present-dangers.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.previous-age-extinction",
+      "version": 0,
+      "contentHash": "E9ED8F1591DBE9B33197677801C6E7ED518CE232BE458E1298235AE278641FDC",
+      "path": "world/entities/fact.thalorien.previous-age-extinction.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.previous-age.monster-outbreak",
+      "version": 0,
+      "contentHash": "EA87B00321913D954CA25F8C47712E9367A1058C79D4FFF6C019C5C4B4F276D9",
+      "path": "world/entities/fact.thalorien.previous-age.monster-outbreak.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.rebellion",
+      "version": 0,
+      "contentHash": "75C6C53DC596B342D8BA0F0C18E36DC9666BD67F79645211CE36556074EB7AEF",
+      "path": "world/entities/fact.thalorien.rebellion.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.rune-enchanted-items",
+      "version": 0,
+      "contentHash": "0352FD347E49501548E7D0C240127CD59B8150ADE7FF65D77C58453112074C37",
+      "path": "world/entities/fact.thalorien.rune-enchanted-items.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.school-arts",
+      "version": 0,
+      "contentHash": "1F9B013B739AA687CEC5C573769ECB2C41E38B2BA870122B48E402FD5DBA3271",
+      "path": "world/entities/fact.thalorien.school-arts.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.school-business",
+      "version": 0,
+      "contentHash": "82D7ACE83A942B92DEEEB83FF2D65F8970A12437C861E80A83D17B455CC2145B",
+      "path": "world/entities/fact.thalorien.school-business.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.school-engineering",
+      "version": 0,
+      "contentHash": "6EE90F2B348B22EA8E9EFDC2FF118B16973504A178517C39D1A1D633F8DC2B0E",
+      "path": "world/entities/fact.thalorien.school-engineering.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.sea-shore-monsters",
+      "version": 0,
+      "contentHash": "F2A240BCBC9A5D123A2CA31F3799797BFA9F70933B0D85608A8B4B5DA3B26AAB",
+      "path": "world/entities/fact.thalorien.sea-shore-monsters.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.secret-magic-schools",
+      "version": 0,
+      "contentHash": "83419A214D134CFD6FADD4667A9D628209A4767DD992E5BFF2B27BF23E5501CA",
+      "path": "world/entities/fact.thalorien.secret-magic-schools.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.settlement-hospitality",
+      "version": 0,
+      "contentHash": "3E5EB902F10BABB4D640A3DCE113C7108025813BCA8A3D22478AA4BD06111920",
+      "path": "world/entities/fact.thalorien.settlement-hospitality.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.settlement-patterns",
+      "version": 0,
+      "contentHash": "4280611F289168E4FE1CEFA7348CAC5499D21B6DDBA67C7E837ACD9D44556553",
+      "path": "world/entities/fact.thalorien.settlement-patterns.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.seven-kingdom-names",
+      "version": 0,
+      "contentHash": "C9CD1867B4C5F2D821A15EDE1F58BEB162EB33C9D2E8F77B53FFCC6B981C0728",
+      "path": "world/entities/fact.thalorien.seven-kingdom-names.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.seven-kingdoms",
+      "version": 0,
+      "contentHash": "B56B8E55C47E2050EF86AE08676416C3521CFA91D860D83F0E2C7F393BF4BA22",
+      "path": "world/entities/fact.thalorien.seven-kingdoms.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.seven-local-currencies",
+      "version": 0,
+      "contentHash": "466D8556A0723653FB7FC3AFA31C95BC4DC4C178434BCC0B7E8573B1E005DD8A",
+      "path": "world/entities/fact.thalorien.seven-local-currencies.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.seven-way-division",
+      "version": 0,
+      "contentHash": "349539159E6AD9F21ABA0BAD7AF310C0D540A83BEF8494E44D7FD46905E75F34",
+      "path": "world/entities/fact.thalorien.seven-way-division.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.sibling-conflict",
+      "version": 0,
+      "contentHash": "A0BB8278CC5F4F86DFF1D8F51B1F497B2199C4F8910019FC012D4383F8BBBDD5",
+      "path": "world/entities/fact.thalorien.sibling-conflict.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.southeastern-agricultural-belt",
+      "version": 0,
+      "contentHash": "E4690DA39BB2D00E966E600177ACB043187D59DAEED9E316F083D3E411FF8EA6",
+      "path": "world/entities/fact.thalorien.southeastern-agricultural-belt.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.southeastern-tropical-cliffs-and-jungles",
+      "version": 0,
+      "contentHash": "DB687AE42A9016AAB25503E5015998927494ADF479C843E923E450022F4F5304",
+      "path": "world/entities/fact.thalorien.southeastern-tropical-cliffs-and-jungles.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.southwestern-volcanic-region-waylos",
+      "version": 0,
+      "contentHash": "110D3698889E7095FE6C029A57B104A597C44EC73B380896FEB9E4E4B15742D8",
+      "path": "world/entities/fact.thalorien.southwestern-volcanic-region-waylos.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.southwestern-volcano-and-islands",
+      "version": 0,
+      "contentHash": "9E843BE291294E93B62D400382FDA2471B5247A39EB7E0C807ADB30AA31F82A5",
+      "path": "world/entities/fact.thalorien.southwestern-volcano-and-islands.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.standard-cosmology",
+      "version": 0,
+      "contentHash": "F2359B6D561363E83FC9101B4E749F5B68B5592D8DFB138BD2DD79165AB79D6B",
+      "path": "world/entities/fact.thalorien.standard-cosmology.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.starwell-tower",
+      "version": 0,
+      "contentHash": "FC21D992808FA772E87E940874200E7AECE56BDE03C596B2E6628EF1B56D6955",
+      "path": "world/entities/fact.thalorien.starwell-tower.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.sudden-calamity",
+      "version": 0,
+      "contentHash": "327204EA4F0BFDFDB125E4E3727D3FF14A4F99F5614F7AD23996B22634CA842D",
+      "path": "world/entities/fact.thalorien.sudden-calamity.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon-beloved",
+      "version": 0,
+      "contentHash": "62EE51227A2753ACEE5CA562182C582C9267B93F1CA14AED138B5323AD67992A",
+      "path": "world/entities/fact.thalorien.thalmon-beloved.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon-constitution",
+      "version": 0,
+      "contentHash": "00E8AC353C803653F00185B228C90441577D174DCB11C2B1A9724E5D42BEFD8C",
+      "path": "world/entities/fact.thalorien.thalmon-constitution.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon-eight-children",
+      "version": 0,
+      "contentHash": "F614BD027F2C838D676C0BCE98F8F041235C8C6E6A45B92CE2BC8571616F1832",
+      "path": "world/entities/fact.thalorien.thalmon-eight-children.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon-names",
+      "version": 0,
+      "contentHash": "57842C7039F6F93D5708497F243E764BE774E1AF9B973EFC497E01D9D6FDD014",
+      "path": "world/entities/fact.thalorien.thalmon-names.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon-peace-project",
+      "version": 0,
+      "contentHash": "990A257A2ACF0B4D5D7AFD58D0DA79A9CFB33C6A1884AD932ED16B2BA9649222",
+      "path": "world/entities/fact.thalorien.thalmon-peace-project.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon-university",
+      "version": 0,
+      "contentHash": "90BB598507E0A109F33C02C6B81D135791AA4096F1784B83405B6BBF82271B45",
+      "path": "world/entities/fact.thalorien.thalmon-university.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon-utopia-qualified",
+      "version": 0,
+      "contentHash": "59548495280A27DB0D5BD185B1D246F81F2E7DB98F01F056558C8E00F74CA0AA",
+      "path": "world/entities/fact.thalorien.thalmon-utopia-qualified.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon.aldren",
+      "version": 0,
+      "contentHash": "06F72AD53F9D7D86FF0B89856B66FC95202BF65E9711134893E9207B277F7BBD",
+      "path": "world/entities/fact.thalorien.thalmon.aldren.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon.aldron",
+      "version": 0,
+      "contentHash": "E52355862678679F78D446FBE764483306ED6FBB48004F26123039F559334393",
+      "path": "world/entities/fact.thalorien.thalmon.aldron.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon.evandon",
+      "version": 0,
+      "contentHash": "B3AD5B7128B6ECEE2CE31452CD3D69CECC90CF2B29DD4D256EF251E0A665DE95",
+      "path": "world/entities/fact.thalorien.thalmon.evandon.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon.evandor",
+      "version": 0,
+      "contentHash": "C7CCB27CBF9FD6D3292641211E6A559B72B4119C3B5F8F6316601CB49035B6A7",
+      "path": "world/entities/fact.thalorien.thalmon.evandor.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon.merceran",
+      "version": 0,
+      "contentHash": "7FA9E85802C20002F7E1F5BB428611D176D645B69656BCE7068487DB8213ACEB",
+      "path": "world/entities/fact.thalorien.thalmon.merceran.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon.merceron",
+      "version": 0,
+      "contentHash": "A3EBA1147EA148E60A3E08F4416186AD85C002A555D80FB6BB9AAF549A4875B1",
+      "path": "world/entities/fact.thalorien.thalmon.merceron.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon.minevra",
+      "version": 0,
+      "contentHash": "9AC430921E101133F63C6DE20428430D6A5BAD585B1961970BC5CFCC4D15B2BD",
+      "path": "world/entities/fact.thalorien.thalmon.minevra.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon.minevron",
+      "version": 0,
+      "contentHash": "5614F4CF5056C9F9F99FCB794D05C648307A66201B113DE2D1B325211733FBE4",
+      "path": "world/entities/fact.thalorien.thalmon.minevron.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon.monster-hunt",
+      "version": 0,
+      "contentHash": "C5660098A594FCC66880DF4402A104F63C31FF627C6153ABBC872D4AC357C6C4",
+      "path": "world/entities/fact.thalorien.thalmon.monster-hunt.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon.name-echoes",
+      "version": 0,
+      "contentHash": "A3AAA81F5C05AC541F27FEBF7F26F94EBD5BE82F2B67627476E521DCAAC03486",
+      "path": "world/entities/fact.thalorien.thalmon.name-echoes.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon.name-echoes.revised",
+      "version": 0,
+      "contentHash": "8C6467A39E8DE3515065D64A54D8362C2601E71FBAB4B2261D7C460E58267DD8",
+      "path": "world/entities/fact.thalorien.thalmon.name-echoes.revised.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon.oberon",
+      "version": 0,
+      "contentHash": "0B05BEF46777DF90DB9A26B8827A60F07E5C4A9E466989BCE63EB4FB985C4208",
+      "path": "world/entities/fact.thalorien.thalmon.oberon.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon.rhiannon",
+      "version": 0,
+      "contentHash": "EC7846BEFE5B36DE4D919EDD42C81A0D077438ECD46473C1A76F8E91D01DBE12",
+      "path": "world/entities/fact.thalorien.thalmon.rhiannon.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon.trade-roads",
+      "version": 0,
+      "contentHash": "FEE5AEE76F9AE1FDFD42D906621ED30B4E8973D7DC3C36AF063B3D9101C4D13D",
+      "path": "world/entities/fact.thalorien.thalmon.trade-roads.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon.valerian",
+      "version": 0,
+      "contentHash": "3D9BE00668F813B8F9F146969C906365ABC5379FF1FBA00067AEB5C7072B02FD",
+      "path": "world/entities/fact.thalorien.thalmon.valerian.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon.valeron",
+      "version": 0,
+      "contentHash": "F915EBE560E66344DA54F65BAD440A9E943ED6ED6C1FE234B5694CE4CA312559",
+      "path": "world/entities/fact.thalorien.thalmon.valeron.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon.wayland",
+      "version": 0,
+      "contentHash": "DDFD1E5C71A3BB2C476DD35AF459A8D0ADA6B0AD0BF2E6A18A444CD29A523C53",
+      "path": "world/entities/fact.thalorien.thalmon.wayland.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmon.waylon",
+      "version": 0,
+      "contentHash": "A357D74DF482BD0595E4168AD85AF783BB0EE3B6FFF2ECBA92248C84EE3C8AD3",
+      "path": "world/entities/fact.thalorien.thalmon.waylon.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.thalmos-defense",
+      "version": 0,
+      "contentHash": "A80024E82C1B9081E50B7220E1BBDF47098D2CB86DDFCF96FFBD41CA81883C59",
+      "path": "world/entities/fact.thalorien.thalmos-defense.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.towers-present-state",
+      "version": 0,
+      "contentHash": "0A1D9AC4AD4B05FCA8A080926D97145252D9323E32D5DB0A08FDB0140D0F3FF0",
+      "path": "world/entities/fact.thalorien.towers-present-state.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.traveling-troupes",
+      "version": 0,
+      "contentHash": "17F8B039057F4A0D97D1F62A896E8FFC9DF47AC677C5B5CDF3CEE7ED5AD098FF",
+      "path": "world/entities/fact.thalorien.traveling-troupes.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.university-civil-service",
+      "version": 0,
+      "contentHash": "A43A2726350720C3637CC25B9EE89163F2E7B628E6053636BB4C0CC623154D87",
+      "path": "world/entities/fact.thalorien.university-civil-service.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.university-specialist-competition",
+      "version": 0,
+      "contentHash": "7AB6BE4EA1CA1F3B64AB992455D0BE25442B39D755689A786EAE4363D6B97572",
+      "path": "world/entities/fact.thalorien.university-specialist-competition.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.valeros-southeastern-mountains",
+      "version": 0,
+      "contentHash": "E5795914BC9F2E41F457BB228D864F84E19988A60A937F59C7C38649DF2920C5",
+      "path": "world/entities/fact.thalorien.valeros-southeastern-mountains.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.valeros-tower-destroyed",
+      "version": 0,
+      "contentHash": "A068CFBA30FC8D0A2084D08DD65F789E8DDF0B45B5C07EA3B3B6AED4E842B692",
+      "path": "world/entities/fact.thalorien.valeros-tower-destroyed.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.veiled-age",
+      "version": 0,
+      "contentHash": "C4BD4CCD41B9A9C9F07F2918892A14FE18AA3C85B893FDE7F3FC596A1509335F",
+      "path": "world/entities/fact.thalorien.veiled-age.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.warm-high-fantasy",
+      "version": 0,
+      "contentHash": "8139B607E7FB74E01D3AC5A640BA33E1C95523CEE5A098D898F57FAC22F1B641",
+      "path": "world/entities/fact.thalorien.warm-high-fantasy.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.wilderness-danger",
+      "version": 0,
+      "contentHash": "FB4342AB25173C81FE1FC27205BEF66E6064266CF218738581A7D705B3827348",
+      "path": "world/entities/fact.thalorien.wilderness-danger.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.world-tree",
+      "version": 0,
+      "contentHash": "8D7201E5763E29FD22CBE7F895C6F2ED941345F72924AABAFC9BBD2DD39C10F1",
+      "path": "world/entities/fact.thalorien.world-tree.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.world-tree-elven-enclave",
+      "version": 0,
+      "contentHash": "4F9FDEDD82A3FA749673C1F576B1361AC402B7E2585EBD0C6976AC070A288004",
+      "path": "world/entities/fact.thalorien.world-tree-elven-enclave.json"
+    },
+    {
+      "kind": "entity",
+      "id": "fact.thalorien.world-tree-neutral-territory",
+      "version": 0,
+      "contentHash": "9020E7BF647B4E232D9661BD645ADDD3ECD286B9517A539D9E282C5B7F22467F",
+      "path": "world/entities/fact.thalorien.world-tree-neutral-territory.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.thalorien.gilded-concord",
+      "version": 0,
+      "contentHash": "1C63E10CC285C50BE3A6A766294DFF30F117C099E9D61CFC6F60A882951CF0F1",
+      "path": "world/entities/faction.thalorien.gilded-concord.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.aldros",
+      "version": 0,
+      "contentHash": "ED76EDB9A96D583A5F38C59928DF6193BA63666A180E7E3CCD7B1012C6326376",
+      "path": "world/entities/location.thalorien.aldros.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.bannerfall-tower",
+      "version": 0,
+      "contentHash": "5A7BD9615ADE0366BC308E978F42D8471510326AE1BA86F5827BDDEEDA5CE26B",
+      "path": "world/entities/location.thalorien.bannerfall-tower.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.brackenford",
+      "version": 0,
+      "contentHash": "FE9A08D6E780D9BB8F31D09C04D278E92BD19B62D879D3591BE464DAB2B82CF6",
+      "path": "world/entities/location.thalorien.brackenford.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.crownmere",
+      "version": 0,
+      "contentHash": "19E21DE00233D6928DAA20E677D5910EE6E9A988A9EDD0CD3AF1FBD7E49DD28F",
+      "path": "world/entities/location.thalorien.crownmere.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.dawnbell-tower",
+      "version": 0,
+      "contentHash": "4988CB910BFFD9EFFB62E21F26662D9C3664B3F94291B8E4F0C351C9432B7933",
+      "path": "world/entities/location.thalorien.dawnbell-tower.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.emberwright-tower",
+      "version": 0,
+      "contentHash": "1C64F28FD3FAD1E4A65FF8619FC79B1EF189A050E2A58A58B94E828BD33AD0EE",
+      "path": "world/entities/location.thalorien.emberwright-tower.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.evandos",
+      "version": 0,
+      "contentHash": "845107C3E95257C3DB6F921A7CECB1CECD58A62FF4FA53B6FC98E6CC84A5D66A",
+      "path": "world/entities/location.thalorien.evandos.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.greenmantle",
+      "version": 0,
+      "contentHash": "733AF8CBA1B270DE35D1BB932CFC5468876A8358A40FF119A67988EC0D578001",
+      "path": "world/entities/location.thalorien.greenmantle.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.harrowfall",
+      "version": 0,
+      "contentHash": "FB8D9AE8190220133D73FD2CB130131B61CE3A50769BDDD25FD1FD079CA5E395",
+      "path": "world/entities/location.thalorien.harrowfall.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.larkspire-university",
+      "version": 0,
+      "contentHash": "78A941C211539F95D9D23FF66D2574CC1D26C2FC3737B95DD445D6BEFC80695A",
+      "path": "world/entities/location.thalorien.larkspire-university.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.merceros",
+      "version": 0,
+      "contentHash": "94197CD90CD2D4154E9F5A2D941F76BF6A45C101751915C0F811792B3CD1B71A",
+      "path": "world/entities/location.thalorien.merceros.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.merrowgate",
+      "version": 0,
+      "contentHash": "09F0EB6D3C7B20F248134315D09AD20123ABD34DD5258668FA794C5EA7329B1D",
+      "path": "world/entities/location.thalorien.merrowgate.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.minevros",
+      "version": 0,
+      "contentHash": "D385AC0755E2A320DBE0D9F9EDA4B7D478FA5BA8F830FEA6ECD7A210B5D4BED3",
+      "path": "world/entities/location.thalorien.minevros.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.oathshield-range",
+      "version": 0,
+      "contentHash": "9BF8696A60E99A481B5A963C14D9841BC4FAF555E0BA0EB3FEE128E094041DB8",
+      "path": "world/entities/location.thalorien.oathshield-range.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.rhiannos",
+      "version": 0,
+      "contentHash": "E11F58128894E6EEDF64B84AF150AEA4A646358BA3FA3E42B6CBA27745EE05AC",
+      "path": "world/entities/location.thalorien.rhiannos.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.southwestern-volcanic-region",
+      "version": 0,
+      "contentHash": "17F4C9866DDA4CE1AF3757F1223C220D7C7E9AD750F74A479C2216B057112DA9",
+      "path": "world/entities/location.thalorien.southwestern-volcanic-region.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.southwestern-volcano",
+      "version": 0,
+      "contentHash": "1E753098BEC54E7C36AAC8B5592A542C4DB78B216817879E7DE1BB0E0CFCFB41",
+      "path": "world/entities/location.thalorien.southwestern-volcano.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.starwell-tower",
+      "version": 0,
+      "contentHash": "286F569E293ACBA99BAD1B74DC6996A80EA0B2A6471CCC1A27B64639F249C6E7",
+      "path": "world/entities/location.thalorien.starwell-tower.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.valeros",
+      "version": 0,
+      "contentHash": "A382B14B67D78DB916ADA89EFDCC64E28B8A2392393F9DD4EFD330CC45E56506",
+      "path": "world/entities/location.thalorien.valeros.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.volcanic-island-chain",
+      "version": 0,
+      "contentHash": "2743CA9867540872DF6E72A93117A9A52C4DD4E10497378CA0905EDE407B2136",
+      "path": "world/entities/location.thalorien.volcanic-island-chain.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.waylos",
+      "version": 0,
+      "contentHash": "53B5C91D49B35F6988B2A931907910C839A33F50E3C952E73C33EF5801F28E4F",
+      "path": "world/entities/location.thalorien.waylos.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.world-tree",
+      "version": 0,
+      "contentHash": "DDDE863769A1E53DA3256815B202B83A4836BC5A4A667EFA9CDDDFA56C6C693C",
+      "path": "world/entities/location.thalorien.world-tree.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.world-tree-elven-enclave",
+      "version": 0,
+      "contentHash": "458D336FAFA408ADA6E217F594C567A2973A81A844A1F3467B5B1DD702DD7003",
+      "path": "world/entities/location.thalorien.world-tree-elven-enclave.json"
+    },
+    {
+      "kind": "entity",
+      "id": "location.thalorien.world-tree-grounds",
+      "version": 0,
+      "contentHash": "930DD929AA7C4EE37F7980AD313B9B0C81B694CE84F01F2569B658492EAC00E4",
+      "path": "world/entities/location.thalorien.world-tree-grounds.json"
+    },
+    {
+      "kind": "entity",
+      "id": "secret.thalorien.brackenford-goblin-migration",
+      "version": 0,
+      "contentHash": "AB98B355F5EF71B9EF9600538284431AA22B02BC20EF6414688A8FCC635BC69E",
+      "path": "world/entities/secret.thalorien.brackenford-goblin-migration.json"
+    },
+    {
+      "kind": "entity",
+      "id": "secret.thalorien.brackenford-waystone-cellar",
+      "version": 0,
+      "contentHash": "659D455750A87FD521B638FB09F432BD8C254A175A17ABA5ABE053E4D622E36B",
+      "path": "world/entities/secret.thalorien.brackenford-waystone-cellar.json"
+    },
+    {
+      "kind": "entity",
+      "id": "secret.thalorien.gilded-concord-conspiracy",
+      "version": 0,
+      "contentHash": "71AB0C088D7672B26E8C3483DF93AB8B85A2DA93272C8BA843676DC3FCD40DDA",
+      "path": "world/entities/secret.thalorien.gilded-concord-conspiracy.json"
+    },
+    {
+      "kind": "entity",
+      "id": "secret.thalorien.gilded-concord-merrowgate-network",
+      "version": 0,
+      "contentHash": "AFCC5054E94C8B98E666F23BD659243F1867D4DAF5DD5958793394234322F8FE",
+      "path": "world/entities/secret.thalorien.gilded-concord-merrowgate-network.json"
+    },
+    {
+      "kind": "entity",
+      "id": "secret.thalorien.gilded-concord-ruler-pressure",
+      "version": 0,
+      "contentHash": "083D910D6007F74FA6A71D6E4021F49A3F3ADA3F7CE693F69F009A1AE59060FE",
+      "path": "world/entities/secret.thalorien.gilded-concord-ruler-pressure.json"
+    },
+    {
+      "kind": "entity",
+      "id": "source.dnd2024.srd-5.2.1",
+      "version": 0,
+      "contentHash": "6529080EDC48BA9090DE4C9FD1A9EAAC99D1F5BF60AFD3829AF1F2230CD09747",
+      "path": "world/entities/source.dnd2024.srd-5.2.1.json"
+    },
+    {
+      "kind": "entity",
+      "id": "weapon.dnd2024.battleaxe",
+      "version": 0,
+      "contentHash": "6D15A98C051647027DAC92F15214481FEC9A4AA43FA3B5566A0E277C269227A6",
+      "path": "world/entities/weapon.dnd2024.battleaxe.json"
+    },
+    {
+      "kind": "entity",
+      "id": "weapon.dnd2024.dagger",
+      "version": 0,
+      "contentHash": "05A8F2E56F3CE68F219A2FF38F6EDA7606DE2CA27FA58BAA82663349E9EE47D4",
+      "path": "world/entities/weapon.dnd2024.dagger.json"
+    },
+    {
+      "kind": "entity",
+      "id": "weapon.dnd2024.shortbow",
+      "version": 0,
+      "contentHash": "AFC013189E73ACD22D447EE827355BBAB539C92CB2FB51179C46B382B8DB41B8",
+      "path": "world/entities/weapon.dnd2024.shortbow.json"
+    },
+    {
+      "kind": "entity",
+      "id": "world.thalorien",
+      "version": 0,
+      "contentHash": "78B2DCE28EAA19910AE1AE20D6DCB64790044F0A52F36E5C331E036DE0A83B8F",
+      "path": "world/entities/world.thalorien.json"
+    },
+    {
+      "kind": "relationships",
+      "id": "world/relationships.json",
+      "version": 0,
+      "contentHash": "349C866895427AEEFDE4D1D651A8BD5695D3E9EB7C0B3C8762542F371CD39308",
+      "path": "world/relationships.json"
+    }
+  ]
+}

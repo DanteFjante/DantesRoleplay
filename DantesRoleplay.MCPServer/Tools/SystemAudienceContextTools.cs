@@ -24,6 +24,15 @@ internal sealed class SystemAudienceContextTools
         IAuthorizedKnowledgeAudiencePolicy? audiences,
         IKnowledgeApplicationBindingResolver? bindings,
         IKnowledgeActorParticipationVerifier? participation,
+        CancellationToken cancellationToken) => await ResolveAsync(
+            seats, audiences, bindings, participation, null, cancellationToken);
+
+    internal static async Task<ToolOutcome> ResolveAsync(
+        ILocalKnowledgeSeatProvider? seats,
+        IAuthorizedKnowledgeAudiencePolicy? audiences,
+        IKnowledgeApplicationBindingResolver? bindings,
+        IKnowledgeActorParticipationVerifier? participation,
+        string? requestedCampaignId,
         CancellationToken cancellationToken)
     {
         if (seats is null || audiences is null || bindings is null || participation is null)
@@ -32,10 +41,17 @@ internal sealed class SystemAudienceContextTools
         var configured = seats.Current();
         if (!Configured(configured)) return Denied();
 
-        var audience = await audiences.ResolveAsync(configured.CampaignId, cancellationToken);
+        if (requestedCampaignId is not null &&
+            (!Token(requestedCampaignId) ||
+             (configured.Role != KnowledgeAudienceRole.GameMaster &&
+              requestedCampaignId != configured.CampaignId)))
+            return Denied();
+        var campaignId = requestedCampaignId ?? configured.CampaignId;
+
+        var audience = await audiences.ResolveAsync(campaignId, cancellationToken);
         var grant = audience.Grant;
         if (!audience.Granted || grant is null || grant.PrincipalId != configured.PrincipalId ||
-            grant.CampaignId != configured.CampaignId || grant.Role != configured.Role ||
+            grant.CampaignId != campaignId || grant.Role != configured.Role ||
             (grant.Role == KnowledgeAudienceRole.Actor && grant.ActorId != configured.ActorId) ||
             (grant.Role == KnowledgeAudienceRole.GameMaster && grant.ActorId is not null))
             return Denied();

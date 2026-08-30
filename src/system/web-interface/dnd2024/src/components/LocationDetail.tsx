@@ -1,5 +1,6 @@
 import type { WorldLocation } from "../data/hub-types";
 import { Icon } from "./Icon";
+import { MediaImage } from "./MediaImage";
 
 export function LocationDetail({
   location,
@@ -18,6 +19,12 @@ export function LocationDetail({
           <Icon name="Landmark" size={25} />
         </span>
       </header>
+
+      {location.media?.setting ? (
+        <figure className="location-detail__setting">
+          <MediaImage fallback={null} media={location.media.setting} />
+        </figure>
+      ) : null}
 
       <p className="location-detail__description">{location.description}</p>
       <div className="atmosphere-line">

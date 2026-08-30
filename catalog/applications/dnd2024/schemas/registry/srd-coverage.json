@@ -1,6 +1,6 @@
 {
   "$schema": "urn:dantesroleplay:dnd2024:prototype:meta:srd-coverage",
-  "sourceId": "source.dnd2024.srd-5.2.1",
+  "sourceId": "dnd2024.source.srd-5.2.1",
   "sections": [
     {
       "key": "legal-information",

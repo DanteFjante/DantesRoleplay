@@ -1,13 +1,17 @@
 /** @typedef {import("./hub-types").RuleReadModel} RuleReadModel */
-/** @typedef {"All" | "Action" | "Reaction"} RuleCategoryFilter */
 
-/** @type {readonly RuleCategoryFilter[]} */
-export const RULE_CATEGORY_OPTIONS = ["All", "Action", "Reaction"];
+/**
+ * @param {RuleReadModel[]} rules
+ * @returns {string[]}
+ */
+export function ruleCategoryOptions(rules) {
+  return ["All", ...new Set(rules.map((rule) => rule.category).filter(Boolean))];
+}
 
 /**
  * @param {RuleReadModel[]} rules
  * @param {string} query
- * @param {RuleCategoryFilter} category
+ * @param {string} category
  * @returns {RuleReadModel[]}
  */
 export function filterRuleReferences(rules, query, category) {
@@ -15,7 +19,13 @@ export function filterRuleReferences(rules, query, category) {
   return rules.filter((rule) => {
     if (category !== "All" && rule.category !== category) return false;
     if (!normalizedQuery) return true;
-    return [rule.title, rule.category, rule.summary, rule.source.locator]
-      .some((value) => value.toLocaleLowerCase().includes(normalizedQuery));
+    return [
+      rule.title,
+      rule.category,
+      rule.subcategory,
+      rule.summary,
+      rule.id,
+      rule.source?.locator ?? "",
+    ].some((value) => value.toLocaleLowerCase().includes(normalizedQuery));
   });
 }

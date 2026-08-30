@@ -1,0 +1,82 @@
+{
+  "requestToken": "ca1d215e000000000000000000000021",
+  "applicationId": "dnd2024",
+  "stateSpaceId": "dnd2024-main",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.session.s01.rain-at-noon",
+      "name": "Session 1 — Rain at Noon",
+      "expectedRevision": 0,
+      "components": [
+        { "qualifiedTypeId": "dnd2024.game.core.world.secret", "expectedRevision": 0, "value": { "status": "active", "summary": "Opening: heavy rain, a thirteenth bell stroke, and a driverless tax wagon entering a crowded market. Offer immediate practical choices: calm Turnip, protect the crowd, preserve the wagon, follow a departing witness, or watch the tower. Introduce Pike's fair boundaries, Tibb's awkward competence, and Fara's contradictory orders. Leads: dry flour under wet canvas, blue quay clay, two whistles, red theatre fibre, and an alley missing from the new map. Close over onion broth at the Gilded Kettle when Tibb reveals the official map and his embarrassing gift map disagree.", "provenance": "The Thirteenth Bell Sessions 1–3", "visibility": "gm" } },
+        { "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification", "expectedRevision": 0, "value": { "subjectKind": "event", "sensitivity": "secret" } }
+      ],
+      "containment": { "containerEntityId": "location.caldris.atlas", "slot": "session-prep", "expectedRevision": 0 }
+    },
+    {
+      "entityId": "secret.caldris.session.s02.above-the-market",
+      "name": "Session 2 — Above the Market",
+      "expectedRevision": 0,
+      "components": [
+        { "qualifiedTypeId": "dnd2024.game.core.world.secret", "expectedRevision": 0, "value": { "status": "active", "summary": "Investigate the bell tower by repairing, climbing, crossing roofs, using theatre rigging, or reasoning from below. Evidence includes treated red fibres, a rehearsal knot, portable-frame scuffs, and wax used to delay a stroke; the old winter charm cannot ring the bell. The timing-board riddle distinguishes twelve civic strokes from one river loading signal. At Sera Lark's theatre, prevent a false arrest and learn a thunder frame is missing. Close with a comic spoon-and-laundry-line reconstruction that exposes six quiet minutes.", "provenance": "The Thirteenth Bell Sessions 1–3", "visibility": "gm" } },
+        { "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification", "expectedRevision": 0, "value": { "subjectKind": "event", "sensitivity": "secret" } }
+      ],
+      "containment": { "containerEntityId": "location.caldris.atlas", "slot": "session-prep", "expectedRevision": 0 }
+    },
+    {
+      "entityId": "secret.caldris.session.s03.six-quiet-minutes",
+      "name": "Session 3 — Six Quiet Minutes",
+      "expectedRevision": 0,
+      "components": [
+        { "qualifiedTypeId": "dnd2024.game.core.world.secret", "expectedRevision": 0, "value": { "status": "active", "summary": "Reconstruct the wagon, substitute driver, cargo carriers, and bell signal within six unwatched minutes. Narrow Molly Lane exists despite being removed from the new map. Rescue driver Edra Voss from a swollen lime shed through leverage, drainage, roof entry, reassurance, or safe bracing. Her ferry-debt coercion complicates Fara's culpability. Rusk offers restitution and supper in exchange for knowing which records were copied. Let the party choose disclosure, protection, bargaining, inquiry, or public reconstruction. Close with breakfast, Tibb's overlong poem, and foreign orchard fungus in Turnip's tack.", "provenance": "The Thirteenth Bell Sessions 1–3", "visibility": "gm" } },
+        { "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification", "expectedRevision": 0, "value": { "subjectKind": "event", "sensitivity": "secret" } }
+      ],
+      "containment": { "containerEntityId": "location.caldris.atlas", "slot": "session-prep", "expectedRevision": 0 }
+    },
+    {
+      "entityId": "clue.caldris.q01.dry-flour",
+      "name": "Dry Flour Beneath Wet Canvas",
+      "expectedRevision": 0,
+      "components": [
+        { "qualifiedTypeId": "dnd2024.game.core.world.clue", "expectedRevision": 0, "value": { "status": "unrevealed", "summary": "The wagon canvas is rain-soaked, but loose flour beneath it is dry. The cargo was placed or rearranged after the cover had already become wet.", "provenance": "Physical inspection of the driverless tax wagon", "visibility": "party" } },
+        { "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification", "expectedRevision": 0, "value": { "subjectKind": "state", "sensitivity": "open" } }
+      ],
+      "containment": { "containerEntityId": "location.caldris.atlas", "slot": "opening-clues", "expectedRevision": 0 }
+    },
+    {
+      "entityId": "clue.caldris.q01.theatre-fibres",
+      "name": "Treated Red Pulley Fibres",
+      "expectedRevision": 0,
+      "components": [
+        { "qualifiedTypeId": "dnd2024.game.core.world.clue", "expectedRevision": 0, "value": { "status": "unrevealed", "summary": "Treated red fibres caught at the bell rope match theatre pulley line, including a rehearsal knot designed to keep scenery from falling.", "provenance": "Inspection of the bell rope and Sera Lark's rigging inventory", "visibility": "party" } },
+        { "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification", "expectedRevision": 0, "value": { "subjectKind": "capability", "sensitivity": "open" } }
+      ],
+      "containment": { "containerEntityId": "location.caldris.atlas", "slot": "opening-clues", "expectedRevision": 0 }
+    },
+    {
+      "entityId": "clue.caldris.q01.barge-timing",
+      "name": "The River's Thirteenth Stroke",
+      "expectedRevision": 0,
+      "components": [
+        { "qualifiedTypeId": "dnd2024.game.core.world.clue", "expectedRevision": 0, "value": { "status": "unrevealed", "summary": "The first twelve strokes use civic spacing. The final intervals match a quay loading signal: twelve belonged to the town, while one belonged to the river.", "provenance": "Comparison of the bell keeper's timing board with dockworker testimony", "visibility": "party" } },
+        { "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification", "expectedRevision": 0, "value": { "subjectKind": "rule", "sensitivity": "open" } }
+      ],
+      "containment": { "containerEntityId": "location.caldris.atlas", "slot": "opening-clues", "expectedRevision": 0 }
+    }
+  ],
+  "relationships": [
+    { "fromEntityId": "secret.caldris.session.s01.rain-at-noon", "toEntityId": "world.caldris", "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world", "expectedRevision": 0, "value": {} },
+    { "fromEntityId": "secret.caldris.session.s02.above-the-market", "toEntityId": "world.caldris", "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world", "expectedRevision": 0, "value": {} },
+    { "fromEntityId": "secret.caldris.session.s03.six-quiet-minutes", "toEntityId": "world.caldris", "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world", "expectedRevision": 0, "value": {} },
+    { "fromEntityId": "clue.caldris.q01.dry-flour", "toEntityId": "world.caldris", "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world", "expectedRevision": 0, "value": {} },
+    { "fromEntityId": "clue.caldris.q01.theatre-fibres", "toEntityId": "world.caldris", "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world", "expectedRevision": 0, "value": {} },
+    { "fromEntityId": "clue.caldris.q01.barge-timing", "toEntityId": "world.caldris", "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world", "expectedRevision": 0, "value": {} },
+    { "fromEntityId": "clue.caldris.q01.dry-flour", "toEntityId": "secret.caldris.quest.q01.the-thirteenth-bell", "qualifiedKind": "dnd2024.game.core.world.clue.supports", "expectedRevision": 0, "value": {} },
+    { "fromEntityId": "clue.caldris.q01.theatre-fibres", "toEntityId": "secret.caldris.quest.q01.the-thirteenth-bell", "qualifiedKind": "dnd2024.game.core.world.clue.supports", "expectedRevision": 0, "value": {} },
+    { "fromEntityId": "clue.caldris.q01.barge-timing", "toEntityId": "secret.caldris.quest.q01.the-thirteenth-bell", "qualifiedKind": "dnd2024.game.core.world.clue.supports", "expectedRevision": 0, "value": {} },
+    { "fromEntityId": "clue.caldris.q01.dry-flour", "toEntityId": "location.caldris.bramblebridge", "qualifiedKind": "dnd2024.game.core.world.knowledge.about", "expectedRevision": 0, "value": {} },
+    { "fromEntityId": "clue.caldris.q01.theatre-fibres", "toEntityId": "location.caldris.bramblebridge", "qualifiedKind": "dnd2024.game.core.world.knowledge.about", "expectedRevision": 0, "value": {} },
+    { "fromEntityId": "clue.caldris.q01.barge-timing", "toEntityId": "location.caldris.bramblebridge", "qualifiedKind": "dnd2024.game.core.world.knowledge.about", "expectedRevision": 0, "value": {} }
+  ]
+}

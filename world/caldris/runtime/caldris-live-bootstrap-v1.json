@@ -1,0 +1,189 @@
+{
+  "applicationId": "dnd2024",
+  "stateSpaceId": "dnd2024-main",
+  "intent": "Create the confirmed Caldris world, The Measure of Mercy campaign, and its reviewed opening places so the world is selectable in the D&D 2024 website.",
+  "proceduresUsed": [
+    "procedure.system.use",
+    "procedure.campaign.create",
+    "procedure.game.core.world.location"
+  ],
+  "entities": [
+    {
+      "entityId": "world.caldris",
+      "name": "Caldris",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.root",
+          "value": {
+            "status": "active",
+            "summary": "A low-magic medieval world of wet roads, toll bridges, walled market towns, river kingdoms, warm ports, old grudges, rare wonders, and two continents facing one another across the Lantern Sea.",
+            "visibility": "public"
+          }
+        }
+      ]
+    },
+    {
+      "entityId": "campaign.caldris.measure-of-mercy",
+      "name": "The Measure of Mercy",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.campaign.root",
+          "value": {
+            "status": "active",
+            "title": "The Measure of Mercy",
+            "premise": "A bridge toll and a bell that rings thirteen times lead from local corruption to royal succession, transcontinental archives, and the old responsibility of a dragon—without losing sight of supper, friendship, weather, work, and ordinary lives worth protecting.",
+            "partyGoals": [
+              "Become part of Bramblebridge without taking over its life.",
+              "Learn who profits from the new toll orders and why an empty tax wagon reached the market.",
+              "Choose how powerful systems can be made humane without making every victory belong to one conspiracy."
+            ],
+            "toneAndBoundaries": [
+              "Cozy, lightly humorous, storybook medieval adventure grounded in believable work, law, travel, weather, and consequence.",
+              "Magic is rare and remarkable rather than ordinary infrastructure; grief and danger appear beside warmth, eccentricity, and recovery.",
+              "Mysteries reward secrets, riddles, conversation, and creative solutions; apparent bosses may reveal higher layers while completed adventures still matter."
+            ],
+            "rulesetScope": "dnd2024",
+            "creationMethod": "manual",
+            "reviewFingerprint": "5118269bd27dfc3805ef7af962221c5100bfa7c57dabd4528d554d0e7335670c"
+          }
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.eredane",
+      "name": "Eredane",
+      "containerEntityId": "world.caldris",
+      "slot": "region",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "The western continent: a green-and-grey patchwork of river kingdoms, cold moors, sea cliffs, orchards, monasteries, old imperial roads, and mountains hiding exhausted mines and older obligations.",
+            "visibility": "public"
+          }
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.solasca",
+      "name": "Solasca",
+      "containerEntityId": "world.caldris",
+      "slot": "region",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "The eastern and southeastern continent: deltas, dry plateaus, terraced highlands, island chains, caravan rivers, shaded courts, white-stone ports, and societies shaped by canals, cisterns, sailing seasons, and river law.",
+            "visibility": "public"
+          }
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.bramblebridge",
+      "name": "Bramblebridge",
+      "containerEntityId": "location.caldris.eredane",
+      "slot": "location",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "Alderwick's rain-polished market town where the old Lantern Road crosses the narrow Weir, serving twelve villages, three mills, Mallow Abbey, and a weekly market famous for onions, wool, second-hand books, and arguments about awnings.",
+            "visibility": "public"
+          }
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.candlefen",
+      "name": "Candlefen",
+      "containerEntityId": "location.caldris.eredane",
+      "slot": "location",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "A settlement of raised paths and low marsh islands where ferries, reed craft, smoked eel, practical flood knowledge, dry socks, and gossip are all taken seriously.",
+            "visibility": "public"
+          }
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.wrens-hollow",
+      "name": "Wren's Hollow",
+      "containerEntityId": "location.caldris.eredane",
+      "slot": "location",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "A quarry village beneath singing cliffs, supplying pale building stone and slate while warm air rises from a reopened face that intersects something built rather than natural.",
+            "visibility": "public"
+          }
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.gilded-kettle",
+      "name": "The Gilded Kettle",
+      "containerEntityId": "location.caldris.bramblebridge",
+      "slot": "location",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "value": {
+            "kind": "interior",
+            "status": "active",
+            "summary": "Bramblebridge's warm timber inn: copper pots, crowded common tables, excellent dumplings, wet cloaks, a permanently crooked stair, and letters addressed to an inn that burned ninety years ago.",
+            "visibility": "public"
+          }
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.north-bell-tower",
+      "name": "North Bell Tower",
+      "containerEntityId": "location.caldris.bramblebridge",
+      "slot": "location",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The civic bell, market clock, pigeon roost, and best view in town; its rope was cut before the noon bell rang thirteen times by itself, according to three mutually incompatible witnesses.",
+            "visibility": "public"
+          }
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "campaign.caldris.measure-of-mercy",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.campaign.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "campaign.caldris.measure-of-mercy",
+      "toEntityId": "location.caldris.bramblebridge",
+      "qualifiedKind": "dnd2024.game.core.campaign.references",
+      "value": {
+        "role": "start",
+        "audience": "party"
+      }
+    }
+  ]
+}

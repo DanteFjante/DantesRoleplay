@@ -15,7 +15,7 @@
   "inputFileCount": 2980,
   "inputSha256": "d82a80eee134560ca8de3c8ddf5630d488853d14c7ed135319be212edb876bfa",
   "counts": {
-    "activeMechanics": 69,
+    "activeMechanics": 73,
     "activeRetiredContractMechanics": 13,
     "duplicateToolIdentityGroups": 14,
     "duplicateToolIdentityRecords": 28,

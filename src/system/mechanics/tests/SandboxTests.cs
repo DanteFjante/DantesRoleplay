@@ -96,6 +96,46 @@ public sealed class SandboxTests
     }
 
     [Fact]
+    public async Task Host_execution_identity_is_separate_from_input_and_deeply_frozen()
+    {
+        var projection = new MechanicProjection
+        {
+            Seed = 1,
+            Input = """{"execution":{"operationId":"caller-forged"}}""",
+            Execution = new MechanicExecutionContext(
+                "0123456789abcdef0123456789abcdef",
+                "fedcba9876543210fedcba9876543210",
+                "11111111111111111111111111111111",
+                3)
+        };
+
+        var result = await Engine.RunAsync("""
+            var rejected = 0;
+            try { ctx.execution.operationId = 'caller-forged'; } catch (error) { rejected++; }
+            return { narration: [
+              Object.isFrozen(ctx.execution), rejected,
+              ctx.execution.rootOperationId, ctx.execution.operationId,
+              ctx.execution.parentOperationId, ctx.execution.invocationOrdinal,
+              ctx.input.execution.operationId
+            ].join('|') };
+            """, projection, ExecutionLimits.Default);
+
+        Assert.True(result.Ok, result.Error);
+        Assert.Equal(
+            "true|1|0123456789abcdef0123456789abcdef|fedcba9876543210fedcba9876543210|11111111111111111111111111111111|3|caller-forged",
+            result.Output.Narration);
+    }
+
+    [Fact]
+    public async Task Read_only_projection_exposes_no_execution_identity()
+    {
+        var result = await RunAsync("return { narration: String(ctx.execution) };");
+
+        Assert.True(result.Ok, result.Error);
+        Assert.Equal("null", result.Output.Narration);
+    }
+
+    [Fact]
     public async Task The_projection_reaches_javascript_with_javascript_naming()
     {
         // Found by the spike, and it would have been invisible: with .NET's default naming the

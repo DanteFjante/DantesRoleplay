@@ -4,7 +4,7 @@ Status: **implemented; focused acceptance passed, parent acceptance pending**
 Owner/roadmap: [D&D 2024 roadmap](ROADMAP.md)
 Dependency tree/leaf: [mechanic contract-owner repair](DND2024-MECHANIC-CONTRACT-REPAIR-DEPENDENCY-TREE.md), inventory, item state, and currency
 Ruleset alignment: **dnd2024-compatible**
-Source: `source.dnd2024.srd-5.2.1`, Equipment > Coins > Coin Values
+Source: `dnd2024.source.srd-5.2.1`, Equipment > Coins > Coin Values
 Outcome: derive carried coin value from canonical denomination definition IDs and item quantities.
 Exclusions: stored currency-value schema, wallets, exchange, spending, price resolution, transfers,
 schema/content changes, and live data.

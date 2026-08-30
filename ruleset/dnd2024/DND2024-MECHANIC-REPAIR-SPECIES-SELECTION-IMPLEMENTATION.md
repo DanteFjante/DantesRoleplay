@@ -4,7 +4,7 @@ Status: **implemented; focused acceptance passed, parent acceptance pending**
 Owner/roadmap: [D&D 2024 roadmap](ROADMAP.md)
 Dependency tree/leaf: [mechanic contract-owner repair](DND2024-MECHANIC-CONTRACT-REPAIR-DEPENDENCY-TREE.md), character creation, progression, and rest
 Ruleset alignment: **dnd2024-compatible**
-Outcome: adapt `mechanic.dnd2024.species-selection.resolve` to canonical species definition facets.
+Outcome: adapt `dnd2024.mechanic.species-selection.resolve` to canonical species definition facets.
 Exclusions: applying grants, Human Skillful/Versatile behavior, character creation, schema/content
 changes, and live data.
 Allowed areas: this document and repair tree; species-selection mechanic/contract/procedure; focused

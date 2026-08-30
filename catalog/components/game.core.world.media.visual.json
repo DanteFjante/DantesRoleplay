@@ -1,0 +1,1 @@
+{"id":"game.core.world.media.visual","name":"World Entity Visual Media","description":"Closed reviewed visual-media bindings owned by one existing entity. Portrait, setting, scene, and handout slots select exact Player and DM variants without storing URLs, owner IDs, rules, or map semantics. Governed by procedure.game.core.world.media."}

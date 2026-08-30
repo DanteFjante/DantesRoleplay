@@ -39,9 +39,9 @@ No replacement weapon-profile component is created. Existing owners are:
    references, unsupported properties, or noncanonical ability choices.
 3. Keep base damage rolling and attack arithmetic in JavaScript mechanics. Activity records declare
    dice, type, range, and delivery; they never store a final attack or damage total.
-4. Adapt `mechanic.dnd2024.weapon-profile.write` as an administrative normalized-facet writer rather
+4. Adapt `dnd2024.mechanic.weapon-profile.write` as an administrative normalized-facet writer rather
    than restoring the retired component.
-5. Preserve existing mechanic IDs and the existing `ruleset.dnd2024.*` category names so activation
+5. Preserve existing mechanic IDs and the existing `dnd2024.ruleset.*` category names so activation
    cannot create duplicate capabilities.
 
 ## Deliberate exclusions

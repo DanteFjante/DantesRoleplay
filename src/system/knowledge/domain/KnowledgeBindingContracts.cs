@@ -7,6 +7,63 @@ public sealed record KnowledgeKindBinding(
     IReadOnlyList<string> ArchivedStatuses);
 
 /// <summary>
+/// Application-owned vocabulary for projecting dated World records without teaching the generic
+/// host any ruleset or campaign identifiers.
+/// </summary>
+public sealed record WorldChronologyBinding
+{
+    public required string ComponentTypeId { get; init; }
+    public required string StatusProperty { get; init; }
+    public required string ActiveStatus { get; init; }
+    public required string ArchivedStatus { get; init; }
+    public required string TitleProperty { get; init; }
+    public required string SummaryProperty { get; init; }
+    public required string CalendarIdProperty { get; init; }
+    public required string OccurredAtMinuteProperty { get; init; }
+    public required string PrecisionProperty { get; init; }
+    public required IReadOnlyList<string> Precisions { get; init; }
+    public required string DateLabelProperty { get; init; }
+    public required string VisibilityProperty { get; init; }
+    public required string PublicVisibility { get; init; }
+    public required string PartyVisibility { get; init; }
+    public required string GameMasterVisibility { get; init; }
+    public required string InWorldRelationshipKind { get; init; }
+    public required string AboutRelationshipKind { get; init; }
+    public required string WorldClockCalendarIdProperty { get; init; }
+    public required IReadOnlyList<string> SubjectWorldRelationshipKinds { get; init; }
+
+    public void Validate()
+    {
+        var identities = new[]
+        {
+            ComponentTypeId, InWorldRelationshipKind, AboutRelationshipKind
+        };
+        var fieldsAndValues = new[]
+        {
+            StatusProperty, ActiveStatus, ArchivedStatus, TitleProperty, SummaryProperty, CalendarIdProperty,
+            OccurredAtMinuteProperty, PrecisionProperty, DateLabelProperty, VisibilityProperty,
+            PublicVisibility, PartyVisibility, GameMasterVisibility, WorldClockCalendarIdProperty
+        };
+        if (identities.Any(value => !Token(value, 200)) ||
+            fieldsAndValues.Any(value => !Token(value, 100)) ||
+            Precisions is null || Precisions.Count is < 1 or > 16 ||
+            Precisions.Any(value => !Token(value, 100)) ||
+            Precisions.Distinct(StringComparer.Ordinal).Count() != Precisions.Count ||
+            SubjectWorldRelationshipKinds is null || SubjectWorldRelationshipKinds.Count > 16 ||
+            SubjectWorldRelationshipKinds.Any(value => !Token(value, 200)) ||
+            SubjectWorldRelationshipKinds.Distinct(StringComparer.Ordinal).Count() != SubjectWorldRelationshipKinds.Count ||
+            ActiveStatus == ArchivedStatus ||
+            new[] { PublicVisibility, PartyVisibility, GameMasterVisibility }
+                .Distinct(StringComparer.Ordinal).Count() != 3)
+            throw new ArgumentException("Chronology vocabulary must be bounded, exact, and disjoint.");
+    }
+
+    private static bool Token(string? value, int maximum) =>
+        !string.IsNullOrWhiteSpace(value) && value == value.Trim() && value.Length <= maximum &&
+        !value.Any(char.IsWhiteSpace);
+}
+
+/// <summary>
 /// Exact application-owned vocabulary needed by the generic knowledge reader. Catalog/application
 /// adapters supply this object; the generic kernel never embeds a ruleset's component or edge IDs.
 /// </summary>
@@ -112,6 +169,7 @@ public sealed record KnowledgeApplicationBinding
             FamiliarState == UnknownState ||
             !ContentStates.Contains(BaselineState, StringComparer.Ordinal))
             throw new ArgumentException("Knowledge state meanings must be bounded and disjoint.");
+
     }
 
     private static bool Token(string? value, int maximum) =>
@@ -138,6 +196,28 @@ public interface IKnowledgeApplicationBindingResolver
 {
     Task<KnowledgeApplicationBinding?> ResolveAsync(
         string campaignId,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>Host selection for the independently activated World chronology vocabulary.</summary>
+public sealed record WorldChronologyApplicationSelection(string ApplicationId)
+{
+    public string BindingDocumentPath =>
+        $"catalog/applications/{ApplicationId}/metadata/world-chronology.json";
+
+    public void Validate()
+    {
+        if (string.IsNullOrWhiteSpace(ApplicationId) || ApplicationId != ApplicationId.Trim() ||
+            ApplicationId.Length > 100 || ApplicationId.Any(char.IsWhiteSpace))
+            throw new ArgumentException("A chronology application selection requires one bounded application ID.");
+    }
+}
+
+/// <summary>Resolves chronology vocabulary only from the active application document set.</summary>
+public interface IWorldChronologyBindingResolver
+{
+    Task<WorldChronologyBinding?> ResolveAsync(
+        KnowledgeApplicationBinding binding,
         CancellationToken cancellationToken = default);
 }
 

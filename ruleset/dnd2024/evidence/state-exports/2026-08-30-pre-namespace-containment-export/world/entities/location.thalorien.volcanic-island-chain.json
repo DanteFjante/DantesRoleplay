@@ -1,0 +1,16 @@
+{
+  "id": "location.thalorien.volcanic-island-chain",
+  "name": "Volcanic Island Chain",
+  "container": {
+    "id": "location.thalorien.southwestern-volcanic-region",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "site",
+      "status": "draft",
+      "summary": "The Ashen Crown Isles, Waylos's offshore volcanic island chain beyond Mount Cinderwake, with black beaches and fertile slopes.",
+      "visibility": "public"
+    }
+  }
+}

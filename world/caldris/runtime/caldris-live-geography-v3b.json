@@ -1,0 +1,405 @@
+{
+  "requestToken": "ca1d215e000000000000000000000004",
+  "applicationId": "dnd2024",
+  "stateSpaceId": "dnd2024-main",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.alderwick.merecross",
+      "name": "Merecross",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "Merecross grew where the Mere meets the Lark and Weir rivers. Barges, paper, apples, wool, court business, and bridge tolls feed a city of stone quays and timber upper stories. Its seven public bridges are maintained by different institutions, producing beautiful views and spectacularly petty jurisdiction disputes.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "settlement",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.alderwick.highmead",
+      "name": "Highmead",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "Highmead stands on a defensible chalk ridge above sheep country. It is known for wool halls, teacher-priests, legal schools, large skies, and citizens who regard climbing the hill as evidence of moral seriousness.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "settlement",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.alderwick.dunwarren",
+      "name": "Dunwarren",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "Dunwarren controls the eastern forest roads and supplies beams, charcoal, carts, and bow staves. Its walls incorporate living oaks protected by charter, making maintenance both impressive and botanically argumentative.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "settlement",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.dunmarrow.greyharrow",
+      "name": "Greyharrow",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "The capital crowns a black basalt ridge above two peat rivers. Its fortress, iron exchange, winter courts, and roofed market make it severe from a distance; inside, painted doors, heated benches, and competitive soup reveal a more domestic city.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "settlement",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.dunmarrow.stonewake",
+      "name": "Stonewake",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "Stonewake is a northern port built behind a long breakwater of fitted dark stone. Ore, smoked fish, timber, and soldiers pass through it; so do rumours from beyond the Greyward Ocean.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "settlement",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.dunmarrow.moorwatch",
+      "name": "Moorwatch",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "Moorwatch began as a frontier fort and became a borough of peat cutters, shepherds, horse breeders, and military pensioners. Its straight streets end abruptly in bog.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "settlement",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.carrowmere.saltmere",
+      "name": "Saltmere",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "Saltmere stands on tidal islands joined by stone causeways and movable timber bridges. Royal offices share space with fish markets, salt warehouses, rescue houses, and legal chambers specialising in things that floated away.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "settlement",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.carrowmere.gullstrand",
+      "name": "Gullstrand",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "Gullstrand's vast yards build and repair deep-water ships. The city smells of oak, tar, hot metal, salt, and communal kitchens run by craft fraternities.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "settlement",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.carrowmere.penross",
+      "name": "Penross",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "Penross clings to western cliffs around a natural harbour and a renowned school of navigation, weather, law, and rescue medicine.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "settlement",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.bellafont.bellafont",
+      "name": "Bellafont",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "The capital terraces down orchard hills toward a palace, cathedral gardens, cloth halls, fountains, and a river lined with laundry platforms. Manners are polished; civic debates are not.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "settlement",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.bellafont.vintners-reach",
+      "name": "Vintner's Reach",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "Vintner's Reach controls southern wine roads, barrel making, river barges, and hillside reservoirs. Its guild feasts are legendary and its hangovers legally irrelevant.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "settlement",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.bellafont.cresset",
+      "name": "Cresset",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "Cresset is a textile and dye city where canals turn fulling mills and entire streets change colour with the day's work.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "settlement",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.lornesse.lorn",
+      "name": "Lorn",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "Lorn fills a hanging valley beneath the royal monastery-fortress. Bells coordinate markets, avalanches, funerals, fire, court sessions, and lunch with patterns outsiders routinely confuse.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "settlement",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.lornesse.kestrelwatch",
+      "name": "Kestrelwatch",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "This pass city controls caravans, mountain rescue, and the safest eastern crossing. Houses cluster behind snow walls and connect through covered lanes.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "settlement",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.lornesse.copperdeep",
+      "name": "Copperdeep",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "Copperdeep descends through terraces around ancient mine mouths, smelters, baths, chapels, and workers' halls. Upper galleries are active; lower levels have been sealed for generations.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "settlement",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.veyr-marches.redgate",
+      "name": "Redgate",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "Redgate surrounds the rust-red stone arch where nine march roads meet. The High Warden's moot, escort market, banner court, and sprawling inns make it a capital only when everyone agrees.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "settlement",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.veyr-marches.vanners-rest",
+      "name": "Vanner's Rest",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "Vanner's Rest grew around caravan fields and is famous for wheelwrights, horse doctors, roadside theatre, and the loudest inn signs in Eredane.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "settlement",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.veyr-marches.oakshield",
+      "name": "Oakshield",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "Oakshield guards forest passes with layered timber walls designed to be repaired, not admired. It exports horses, charcoal, leather, and excellent preserved mushrooms.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "settlement",
+        "expectedRevision": 0
+      }
+    }
+  ],
+  "relationships": []
+}

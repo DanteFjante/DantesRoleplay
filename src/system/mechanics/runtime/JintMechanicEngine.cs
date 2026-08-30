@@ -84,6 +84,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
                 new
                 {
                     stateSpaceId = projection.StateSpaceId,
+                    execution = projection.Execution,
                     roles = projection.Roles,
                     references = projection.References,
                     input = projection.Input,
@@ -293,6 +294,8 @@ public sealed class JintMechanicEngine : IMechanicEngine
 
             var ctx = {
               stateSpaceId: payload.stateSpaceId || '',
+              execution: payload.execution === null || payload.execution === undefined
+                ? null : freezeDeep(payload.execution),
               roles: freezeDeep(payload.roles || {}),
               references: freezeDeep(payload.references || {}),
               input: freezeDeep(JSON.parse(payload.input || '{}')),

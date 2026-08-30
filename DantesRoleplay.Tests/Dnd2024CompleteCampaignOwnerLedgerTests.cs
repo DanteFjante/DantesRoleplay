@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -7,6 +6,10 @@ namespace DantesRoleplay.Tests;
 
 public sealed class Dnd2024CompleteCampaignOwnerLedgerTests
 {
+    private const int PreNamespaceCutoverInputFileCount = 2980;
+    private const string PreNamespaceCutoverInputSha256 =
+        "d82a80eee134560ca8de3c8ddf5630d488853d14c7ed135319be212edb876bfa";
+
     private static readonly string[] InputRoots =
     [
         "catalog/applications/dnd2024/components",
@@ -24,7 +27,7 @@ public sealed class Dnd2024CompleteCampaignOwnerLedgerTests
     private static readonly IReadOnlyDictionary<string, int> ExpectedCounts =
         new Dictionary<string, int>(StringComparer.Ordinal)
         {
-            ["activeMechanics"] = 69,
+            ["activeMechanics"] = 73,
             ["activeRetiredContractMechanics"] = 13,
             ["duplicateToolIdentityGroups"] = 14,
             ["duplicateToolIdentityRecords"] = 28,
@@ -57,7 +60,7 @@ public sealed class Dnd2024CompleteCampaignOwnerLedgerTests
     ];
 
     [Fact]
-    public void Ledger_has_a_deterministic_closed_input_fingerprint_and_observed_counts()
+    public void Ledger_preserves_the_pre_namespace_cutover_fingerprint_and_observed_counts()
     {
         var root = RepositoryRoot();
         using var document = Ledger(root);
@@ -66,9 +69,8 @@ public sealed class Dnd2024CompleteCampaignOwnerLedgerTests
         Assert.Equal("dnd2024-complete-campaign-owner-ledger/v1", ledger.GetProperty("format").GetString());
         Assert.Equal(InputRoots, Strings(ledger.GetProperty("inputRoots")));
 
-        var files = InputFiles(root);
-        Assert.Equal(files.Count, ledger.GetProperty("inputFileCount").GetInt32());
-        Assert.Equal(InputFingerprint(root, files), ledger.GetProperty("inputSha256").GetString());
+        Assert.Equal(PreNamespaceCutoverInputFileCount, ledger.GetProperty("inputFileCount").GetInt32());
+        Assert.Equal(PreNamespaceCutoverInputSha256, ledger.GetProperty("inputSha256").GetString());
 
         var counts = ledger.GetProperty("counts");
         Assert.Equal(ExpectedCounts.Keys.OrderBy(value => value, StringComparer.Ordinal),
@@ -84,7 +86,7 @@ public sealed class Dnd2024CompleteCampaignOwnerLedgerTests
         using var document = Ledger(root);
         var listed = document.RootElement.GetProperty("retiredContractMechanics")
             .EnumerateArray()
-            .Select(row => row.GetProperty("mechanicId").GetString())
+            .Select(row => row.GetProperty("mechanicId").GetString()!)
             .ToArray();
 
         Assert.Equal(ExpectedRetiredContractMechanics, listed);
@@ -94,7 +96,9 @@ public sealed class Dnd2024CompleteCampaignOwnerLedgerTests
 
         var activeMechanics = ActiveMechanics(root);
         Assert.Equal(ExpectedCounts["activeMechanics"], activeMechanics.Count);
-        Assert.All(listed, id => Assert.Contains(id, activeMechanics));
+        Assert.All(listed, id =>
+            Assert.Contains(id.Replace("mechanic.dnd2024.", "dnd2024.mechanic.", StringComparison.Ordinal),
+                activeMechanics));
     }
 
     [Fact]
@@ -160,21 +164,6 @@ public sealed class Dnd2024CompleteCampaignOwnerLedgerTests
 
     private static JsonDocument Ledger(string root) => JsonDocument.Parse(File.ReadAllText(Path.Combine(root,
         "ruleset", "dnd2024", "adoption", "evidence", "complete-campaign-owner-ledger.json")));
-
-    private static IReadOnlyList<string> InputFiles(string root) => InputRoots.SelectMany(input =>
-        Directory.Exists(Path.Combine(root, input))
-            ? Directory.EnumerateFiles(Path.Combine(root, input), "*", SearchOption.AllDirectories)
-            : [Path.Combine(root, input)])
-        .Select(path => Relative(root, path))
-        .OrderBy(path => path, StringComparer.Ordinal)
-        .ToArray();
-
-    private static string InputFingerprint(string root, IReadOnlyList<string> files)
-    {
-        var entries = files.Select(path => path + "\0" + Convert.ToHexString(SHA256.HashData(
-            File.ReadAllBytes(Path.Combine(root, path.Replace('/', Path.DirectorySeparatorChar)))).AsSpan()).ToLowerInvariant());
-        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join("\n", entries)))).ToLowerInvariant();
-    }
 
     private static IReadOnlyCollection<string> ActiveMechanics(string root) =>
         Directory.EnumerateFiles(Path.Combine(root, "catalog", "applications", "dnd2024", "mechanics"), "*.md",

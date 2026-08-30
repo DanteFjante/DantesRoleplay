@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.settlement-patterns",
+  "name": "Settlement Patterns of the Peaceful Era",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Most modern Thalorien settlements grow around dependable water, maintained roads, productive land, and a shared public heart such as a market square, shrine, hall, or inn. They are practical and welcoming rather than heavily militarized: walls and watch posts exist where danger requires them, but ordinary life is organized around work, neighbors, and seasonal gatherings.",
+      "provenance": "Authored by Codex at the user's request (2026-08-22); clearly distinguishable from user-confirmed canon and open to later revision.",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

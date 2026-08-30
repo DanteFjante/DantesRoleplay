@@ -25,7 +25,7 @@ public sealed class Dnd2024MechanicContractRepairTests
             {
                 ["dnd2024.creature.hit-points"] = "{\"current\":10,\"maximum\":10}",
                 ["dnd2024.creature.temporary-hit-points"] =
-                    "{\"amount\":3,\"sourceRef\":{\"entityId\":\"source.dnd2024.srd-5.2.1\"}}"
+                    "{\"amount\":3,\"sourceRef\":{\"entityId\":\"dnd2024.source.srd-5.2.1\"}}"
             });
         var damageOutput = new MechanicOutput
         {
@@ -39,7 +39,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                 "{\"test\":\"damage-mitigation-profile\",\"defenderId\":\"creature.target\",\"mitigationKnown\":true,\"conditionsKnown\":true,\"immunities\":[],\"resistances\":[\"bludgeoning\"],\"vulnerabilities\":[],\"petrified\":false}",
             HasData = true
         };
-        var result = await RunAsync("combat/mechanic.dnd2024.weapon-damage.apply", new MechanicProjection
+        var result = await RunAsync("combat/dnd2024.mechanic.weapon-damage.apply", new MechanicProjection
         {
             Input = "{\"ability\":\"str\",\"critical\":false}",
             Roles = new() { ["subject"] = subject, ["weapon"] = weapon, ["target"] = target },
@@ -48,7 +48,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                 ["damage"] =
                 [
                     new ChildMechanicResult(
-                        "mechanic.dnd2024.weapon-damage.roll", 1, 0,
+                        "dnd2024.mechanic.weapon-damage.roll", 1, 0,
                         new Dictionary<string, string>
                         {
                             ["subject"] = subject.Id,
@@ -59,7 +59,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                 ["mitigation"] =
                 [
                     new ChildMechanicResult(
-                        "mechanic.dnd2024.damage.resolve", 1, 0,
+                        "dnd2024.mechanic.damage.resolve", 1, 0,
                         new Dictionary<string, string> { ["defender"] = target.Id },
                         mitigationOutput, [], 0)
                 ]
@@ -92,7 +92,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                     "{\"definition\":{\"entityId\":\"" + definitionId + "\"}}",
                 ["dnd2024.item.quantity"] = "{\"current\":" + count + "}"
             });
-        var result = await RunAsync("data/mechanic.dnd2024.currency-value.read", new MechanicProjection
+        var result = await RunAsync("data/dnd2024.mechanic.currency-value.read", new MechanicProjection
         {
             Input = "{}",
             Roles = new()
@@ -139,7 +139,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                 "{\"test\":\"character-level-read\",\"subjectId\":\"character.hero\",\"present\":true,\"valid\":true,\"problem\":null,\"membershipCount\":1,\"totalLevel\":5,\"proficiencyBonus\":3}",
             HasData = true
         };
-        var result = await RunAsync("checks/mechanic.dnd2024.initiative.roll", new MechanicProjection
+        var result = await RunAsync("checks/dnd2024.mechanic.initiative.roll", new MechanicProjection
         {
             Input = "{\"useAlertInitiativeProficiency\":true}",
             Seed = 42,
@@ -149,7 +149,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                 ["level"] =
                 [
                     new ChildMechanicResult(
-                        "mechanic.dnd2024.character-level.read",
+                        "dnd2024.mechanic.character-level.read",
                         1,
                         0,
                         new Dictionary<string, string> { ["subject"] = subject.Id },
@@ -186,7 +186,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                 ["dnd2024.creature.movement-basis"] =
                     "{\"speeds\":{\"dnd2024.vocabulary.movement-mode.walk\":{\"distance\":{\"dimension\":\"distance\",\"value\":{\"numerator\":1143,\"denominator\":125},\"unit\":{\"entityId\":\"dnd2024.vocabulary.distance-unit.meter\"}}}}}"
             });
-        var result = await RunAsync("data/mechanic.dnd2024.species-selection.resolve", new MechanicProjection
+        var result = await RunAsync("data/dnd2024.mechanic.species-selection.resolve", new MechanicProjection
         {
             Input = "{\"sizeRef\":\"dnd2024.vocabulary.size.medium\"}",
             Roles = new() { ["species"] = species }
@@ -210,7 +210,7 @@ public sealed class Dnd2024MechanicContractRepairTests
     {
         var definition = ActiveDefinition("dnd2024.equipment.weapon.club");
         var destination = new EntityProjection("inventory.hero", "Hero inventory", new Dictionary<string, string>());
-        var created = await RunAsync("data/mechanic.dnd2024.item-instance.create-and-place", new MechanicProjection
+        var created = await RunAsync("data/dnd2024.mechanic.item-instance.create-and-place", new MechanicProjection
         {
             Input = "{\"itemId\":\"item.club\",\"name\":\"Club\",\"slot\":\"carried\"}",
             Roles = new() { ["definition"] = definition, ["destination"] = destination }
@@ -223,7 +223,7 @@ public sealed class Dnd2024MechanicContractRepairTests
         Assert.Equal("{\"current\":1}", quantityEffect.Data);
 
         var source = ItemRole("item.club-stack", "Clubs", definition.Id, 5, destination.Id, "carried");
-        var split = await RunAsync("data/mechanic.dnd2024.item-stack.split", new MechanicProjection
+        var split = await RunAsync("data/dnd2024.mechanic.item-stack.split", new MechanicProjection
         {
             Input = "{\"count\":2,\"itemId\":\"item.club-split\",\"name\":\"Clubs\"}",
             Roles = new() { ["source"] = source, ["definition"] = definition }
@@ -236,7 +236,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                       effect.DefinitionId == "dnd2024.item.quantity" &&
                       effect.Data == "{\"current\":2}");
 
-        var consume = await RunAsync("data/mechanic.dnd2024.item-stack.consume", new MechanicProjection
+        var consume = await RunAsync("data/dnd2024.mechanic.item-stack.consume", new MechanicProjection
         {
             Input = "{\"count\":5}",
             Roles = new() { ["item"] = source, ["definition"] = definition }
@@ -264,7 +264,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                     ["dnd2024.item.physical"] = "{}"
                 })
         };
-        var equipped = await RunAsync("data/mechanic.dnd2024.item.equip", new MechanicProjection
+        var equipped = await RunAsync("data/dnd2024.mechanic.item.equip", new MechanicProjection
         {
             Input = "{\"slotIds\":[\"dnd2024.equipment-slot.main-hand\"]}",
             Roles = new() { ["item"] = item, ["holder"] = holder },
@@ -291,7 +291,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                 ["dnd2024.item.quantity"] = "{\"current\":1}",
                 ["dnd2024.item.equipment"] = equipment
             });
-        var inventory = await RunAsync("data/mechanic.dnd2024.inventory.read", new MechanicProjection
+        var inventory = await RunAsync("data/dnd2024.mechanic.inventory.read", new MechanicProjection
         {
             Input = "{}",
             Roles = new()
@@ -316,7 +316,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                 ["dnd2024.item.equipment"] = equipment
             }
         };
-        var unequipped = await RunAsync("data/mechanic.dnd2024.item.unequip", new MechanicProjection
+        var unequipped = await RunAsync("data/dnd2024.mechanic.item.unequip", new MechanicProjection
         {
             Input = "{}",
             Roles = new() { ["item"] = equippedRole, ["holder"] = holder }
@@ -347,7 +347,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                 })
         };
 
-        var supported = await RunAsync("proficiency/mechanic.dnd2024.class-progression.read", new MechanicProjection
+        var supported = await RunAsync("proficiency/dnd2024.mechanic.class-progression.read", new MechanicProjection
         {
             Input = "{\"classLevel\":1}",
             Roles = new() { ["class"] = classRole },
@@ -366,7 +366,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                 result.RootElement.GetProperty("grantRefs")[0].GetProperty("entityId").GetString());
         }
 
-        var unsupported = await RunAsync("proficiency/mechanic.dnd2024.class-progression.read", new MechanicProjection
+        var unsupported = await RunAsync("proficiency/dnd2024.mechanic.class-progression.read", new MechanicProjection
         {
             Input = "{\"classLevel\":3}",
             Roles = new() { ["class"] = classRole },
@@ -381,7 +381,7 @@ public sealed class Dnd2024MechanicContractRepairTests
     [Fact]
     public async Task Class_progression_fails_closed_when_declared_reference_is_unavailable()
     {
-        var result = await RunAsync("proficiency/mechanic.dnd2024.class-progression.read", new MechanicProjection
+        var result = await RunAsync("proficiency/dnd2024.mechanic.class-progression.read", new MechanicProjection
         {
             Input = "{\"classLevel\":1}",
             Roles = new()
@@ -436,7 +436,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                 })
         };
 
-        var burden = await RunAsync("data/mechanic.dnd2024.item-burden.read", new MechanicProjection
+        var burden = await RunAsync("data/dnd2024.mechanic.item-burden.read", new MechanicProjection
         {
             Input = "{}",
             Roles = new() { ["root"] = creature },
@@ -455,7 +455,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                 mass.GetProperty("unit").GetProperty("entityId").GetString());
         }
 
-        var capacity = await RunAsync("data/mechanic.dnd2024.carrying-capacity.read", new MechanicProjection
+        var capacity = await RunAsync("data/dnd2024.mechanic.carrying-capacity.read", new MechanicProjection
         {
             Input = "{}",
             Roles = new() { ["creature"] = creature },
@@ -464,7 +464,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                 ["burden"] =
                 [
                     new ChildMechanicResult(
-                        "mechanic.dnd2024.item-burden.read",
+                        "dnd2024.mechanic.item-burden.read",
                         1,
                         0,
                         new Dictionary<string, string> { ["root"] = creature.Id },
@@ -500,7 +500,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                     "{\"definition\":{\"entityId\":\"definition.invalid\"}}",
                 ["dnd2024.item.quantity"] = quantity
             });
-        var result = await RunAsync("data/mechanic.dnd2024.item-burden.read", new MechanicProjection
+        var result = await RunAsync("data/dnd2024.mechanic.item-burden.read", new MechanicProjection
         {
             Input = "{}",
             Roles = new()

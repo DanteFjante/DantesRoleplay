@@ -1,0 +1,75 @@
+{
+  "requestToken": "ca1d215e000000000000000000000017",
+  "applicationId": "dnd2024",
+  "stateSpaceId": "dnd2024-main",
+  "rootEntityId": "campaign.caldris.measure-of-mercy",
+  "entities": [
+    {
+      "entityId": "campaign.caldris.measure-of-mercy.arc.thirteen-bells",
+      "name": "Volume I — Thirteen Bells",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.campaign.arc",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "Volume I — Thirteen Bells",
+            "partyStake": "Can Bramblebridge gain a fair road without losing the imperfect people and services that keep it alive?",
+            "gmContext": "Levels 1–2. Toll abuse leads from Fara Dint to Rusk Pettifer and then Provost Halwen Drail. Preserve the value of each victory; the orchard-fungus handoff opens an unrelated Bellafont story."
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "campaign.caldris.measure-of-mercy",
+        "slot": "arcs",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "campaign.caldris.measure-of-mercy.chapter.the-thirteenth-bell",
+      "name": "The Thirteenth Bell",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.campaign.chapter",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Thirteenth Bell",
+            "partyQuestion": "Why did Bramblebridge's noon bell ring thirteen times as an empty tax wagon entered the market?",
+            "gmContext": "Account for wagon, driver, horse, cargo, and bell access. Clues include dry flour under wet canvas, theatre-pulley fibers, a changed whistle, an altered alley map, and barge-signal timing. Failure advances the carriers but leaves clearer tracks."
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "campaign.caldris.measure-of-mercy",
+        "slot": "chapters",
+        "expectedRevision": 0
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "campaign.caldris.measure-of-mercy",
+      "toEntityId": "campaign.caldris.measure-of-mercy.arc.thirteen-bells",
+      "qualifiedKind": "dnd2024.game.core.campaign.has-arc",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "campaign.caldris.measure-of-mercy",
+      "toEntityId": "campaign.caldris.measure-of-mercy.chapter.the-thirteenth-bell",
+      "qualifiedKind": "dnd2024.game.core.campaign.has-chapter",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "campaign.caldris.measure-of-mercy.chapter.the-thirteenth-bell",
+      "toEntityId": "campaign.caldris.measure-of-mercy.arc.thirteen-bells",
+      "qualifiedKind": "dnd2024.game.core.campaign.chapter.in-arc",
+      "expectedRevision": 0,
+      "value": {}
+    }
+  ]
+}

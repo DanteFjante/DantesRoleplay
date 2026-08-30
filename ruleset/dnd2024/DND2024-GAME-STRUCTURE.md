@@ -17,7 +17,7 @@ until a later dependency tree and implementation slice confirm their owners and 
 
 ## Sources and authority
 
-- Rules authority: `source.dnd2024.srd-5.2.1`, *Playing the Game > Rhythm of Play* (PDF p. 5).
+- Rules authority: `dnd2024.source.srd-5.2.1`, *Playing the Game > Rhythm of Play* (PDF p. 5).
   The SRD defines social interaction, exploration, and combat as the three main pillars and gives
   the repeating describe-decide-resolve rhythm.
 - Role overview: [D&D Beyond Basic Rules — Playing the Game](https://www.dndbeyond.com/sources/dnd/br-2024/playing-the-game),

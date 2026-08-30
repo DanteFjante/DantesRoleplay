@@ -8,7 +8,7 @@ resolved history.
 ## D&D condition state-effects test uses the character-sheet schema
 
 `Dnd2024AbilityCheckTests.Condition_state_effects_distinguish_unknown_and_derive_stable_shared_branches`
-fails reproducibly by validating the `mechanic.dnd2024.d20-test.state-effects` result against
+fails reproducibly by validating the `dnd2024.mechanic.d20-test.state-effects` result against
 `character-sheet.result.schema.json`. The mechanic correctly returns a condition-derived report
 whose `test` is `d20-test-state-effects`; the selected schema instead requires a complete
 `character-sheet-core` document and rejects additional properties. This is a test/schema-owner
@@ -77,21 +77,21 @@ of that was touched here — it is pre-existing, already-authored "current struc
   `git show HEAD:` (a few files needed the `git show` form due to a sandbox permission quirk on
   `unlink`).
 - Two duplicate mechanic IDs, produced by the restore coexisting with the already-improved versions,
-  resolved by removing the stale old-path copies: `mechanic.dnd2024.character-experience.write` (kept
-  `advancement/`, removed the restored `proficiency/` copy) and `mechanic.dnd2024.heroic-inspiration.grant`
+  resolved by removing the stale old-path copies: `dnd2024.mechanic.character-experience.write` (kept
+  `advancement/`, removed the restored `proficiency/` copy) and `dnd2024.mechanic.heroic-inspiration.grant`
   (kept `combat/`, removed the restored `data/` copy — the kept version has extra `character.profile`
   validation the HEAD version lacks).
-- `mechanic.dnd2024.check.ability` — I had mistakenly overwritten the pre-existing (already
+- `dnd2024.mechanic.check.ability` — I had mistakenly overwritten the pre-existing (already
   improved-beyond-HEAD) file with a hand-authored version that explicitly blocked named-skill checks.
   That was a real mistake: I hadn't checked `git diff`/`git show HEAD` first. Restored from HEAD, which
   turns out to already fully support named-skill checks (see next point) — the immediately-prior
   working-tree version (possibly even better than HEAD, per the pattern above) is not recoverable.
 - **The "class-membership relationship read" blocker described in the earlier version of this entry was
-  wrong.** `mechanic.dnd2024.character-level.read.js` (present at HEAD, now restored) already derives
+  wrong.** `dnd2024.mechanic.character-level.read.js` (present at HEAD, now restored) already derives
   total level and Proficiency Bonus from `dnd2024.character.class-membership` relationships, using a
   `relationshipComponents` declaration in its Requirements JSON that composes a related entity's
   specific components — a capability `procedure.mechanic.projection.md` documents but that I had missed.
-  `check.ability`'s named-skill path and `mechanic.dnd2024.saving-throw` both already use this pattern
+  `check.ability`'s named-skill path and `dnd2024.mechanic.saving-throw` both already use this pattern
   at HEAD. No kernel change or design decision is needed for this part.
 - Verification: all 66 mechanic `.js` files parse cleanly (`new Function('ctx', source)`); 66 unique
   mechanic IDs, 0 duplicates; every `children.mechanicId` reference resolves to a real mechanic.

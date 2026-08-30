@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.book-of-wisdom",
+  "name": "The Book of Wisdom",
+  "components": {
+    "game.core.world.fact": {
+      "status": "archived",
+      "summary": "Superseded working name. After the great Thalos war, a shared Book of Wisdom was created to teach every citizen their rights and responsibilities and to preserve stories of history and the dangers of war.",
+      "provenance": "Archived during the world-creation interview when the canonical name was clarified as the Book of Truth (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "capability",
+      "sensitivity": "open"
+    }
+  }
+}

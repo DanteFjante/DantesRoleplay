@@ -107,7 +107,12 @@ public sealed class ApplicationActionRunner(
             mapping.Mapping!,
             request.RoleEntityIds,
             request.InputJson,
-            request.Seed), cancellationToken);
+            request.Seed,
+            new MechanicExecutionContext(
+                request.ExecutionIdentity.OperationId,
+                request.ExecutionIdentity.OperationId,
+                null,
+                0)), cancellationToken);
         if (!evaluation.Evaluated || evaluation.Run is null)
             return Failed(request, ApplicationActionExecutionDisposition.Failed,
                 "APPLICATION_ACTION_PROJECTION_FAILED", SafeProblem(evaluation.Problems));
@@ -282,7 +287,21 @@ public sealed class ApplicationActionRunner(
         IReadOnlyList<ApplicationIdentifier> owners,
         string localOrQualifiedId)
     {
-        if (string.IsNullOrWhiteSpace(localOrQualifiedId)) return null;
+        if (string.IsNullOrWhiteSpace(localOrQualifiedId) || owners.Count == 0) return null;
+        var application = owners[0];
+        if (localOrQualifiedId.StartsWith(application.Value + ".", StringComparison.Ordinal))
+        {
+            var installedId = localOrQualifiedId[(application.Value.Length + 1)..];
+            var installedBase = owners.Skip(1).FirstOrDefault(owner =>
+                installedId.StartsWith(owner.Value + ".", StringComparison.Ordinal));
+            if (installedBase is not null)
+            {
+                var installedValue = componentTypes.GetLatest(installedId);
+                return installedValue is not null && installedValue.Owner == installedBase
+                    ? new(installedValue.QualifiedId, installedValue.Version, installedValue.SchemaHash)
+                    : null;
+            }
+        }
         var explicitOwner = owners.FirstOrDefault(owner =>
             localOrQualifiedId.StartsWith(owner.Value + ".", StringComparison.Ordinal));
         if (explicitOwner is not null)

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import type { WorldPersonDirectoryEntry, WorldReadModel } from "../data/hub-types";
 import { filterWorldPeople } from "../state.js";
 import { Icon } from "./Icon";
+import { MediaImage } from "./MediaImage";
 import { WorldDirectoryControls } from "./WorldDirectoryControls";
 
 function WorldPersonCard({
@@ -25,7 +26,9 @@ function WorldPersonCard({
       tabIndex={-1}
     >
       <header>
-        <span className="world-person-card__portrait" aria-hidden="true">{person.initials}</span>
+        <span className="world-person-card__portrait">
+          <MediaImage fallback={<span aria-hidden="true">{person.initials}</span>} media={person.portrait} />
+        </span>
         <div>
           <small>{person.kind} · {person.role}</small>
           <h2 id={`${person.id}-directory-heading`}>{person.name}</h2>

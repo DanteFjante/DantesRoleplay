@@ -1,0 +1,537 @@
+{
+  "requestToken": "ca1d215e000000000000000000000006",
+  "applicationId": "dnd2024",
+  "stateSpaceId": "dnd2024-main",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.alderwick.sourapple-ford",
+      "name": "Sourapple Ford",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A shallow cattle crossing, cider hamlet, and eel-smoking stop where every fence leans in the same prevailing wind. Present pressure: A new upstream weir has deepened the ford and stranded the autumn drove.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.alderwick.the-button-hills",
+      "name": "The Button Hills",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Chalk sheep country dotted with round barrows and generations of lost coat buttons gathered by children after rain. Present pressure: Sinkholes are opening along the wool road.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.alderwick.mallow-quay",
+      "name": "Mallow Quay",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A small river landing for honey, medicinal herbs, and cheap pottery, perfumed by marsh mallow and woodsmoke. Present pressure: Barges refuse to stop after three crews report a singing light beneath the pilings.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.alderwick.kings-patience-wood",
+      "name": "King's Patience Wood",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Managed oak woodland supplying bridge beams, charcoal, pannage, and the kingdom's slowest official hunting lodge. Present pressure: Foresters and villagers dispute emergency cutting after storm damage.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.dunmarrow.blackcap-fell",
+      "name": "Blackcap Fell",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Peat-cutting upland of black stone shelters, hard rain, and tiny white flowers used in miners' funerals. Present pressure: A peat fire burns underground and vents beside isolated homes.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.dunmarrow.latchwater",
+      "name": "Latchwater",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Reservoir village maintaining sluices for mines and winter mills; every doorway displays a carved wooden latch. Present pressure: Someone opens the upper gate at night, wasting scarce water.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.dunmarrow.saint-veys-crutch",
+      "name": "Saint Vey's Crutch",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A narrow pass with an inn built around a bent pine said to have supported a wandering saint. Present pressure: An avalanche has closed the official road while an escort company monopolizes the safer goat path.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.dunmarrow.rook-anvil",
+      "name": "Rook Anvil",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A forge hamlet recycling worn tools and battlefield iron beneath a rook colony that mimics hammer rhythms. Present pressure: Finished blades crack despite good workmanship.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.carrowmere.brinewifes-steps",
+      "name": "Brinewife's Steps",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Salt terraces descending to tidal pans, worked by extended households in mirrored light. Present pressure: An unusual tide spoils the season's first harvest.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.carrowmere.mackerel-crown",
+      "name": "Mackerel Crown",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A crowded fishing island whose houses wear blue roof tiles salvaged from wrecks. Present pressure: Two elected harbour speakers both possess apparently valid seals.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.carrowmere.the-dry-admiral",
+      "name": "The Dry Admiral",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Inland ship-timber yard and tavern where retired captains command imaginary fleets over bowls of stew. Present pressure: Carefully seasoned masts disappear without wagon tracks.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.carrowmere.gannet-mercy",
+      "name": "Gannet Mercy",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Cliff hospice and signal station caring for wreck survivors regardless of flag. Present pressure: A rescued stranger refuses to identify a ship no lookout saw sink.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.bellafont.quince-ladder",
+      "name": "Quince Ladder",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Terraced orchard village reached by a stair-road wide enough for one mule and two strongly held opinions. Present pressure: Fruit trees flower twice and exhaust themselves before harvest.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.bellafont.blue-apron-fair",
+      "name": "Blue Apron Fair",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Seasonal cloth-and-food market held in roofed lanes; stallholders wear indigo aprons to show neutral trading status. Present pressure: A ceremonial apron has been stolen before treaty negotiations.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.bellafont.mothglass-house",
+      "name": "Mothglass House",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Rural workshop producing fine window glass and maintaining mulberry hedges for silk moths. Present pressure: Night moths gather in impossible numbers around one furnace.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.bellafont.the-rain-parlour",
+      "name": "The Rain Parlour",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A roadside pavilion where orchard workers wait out storms, exchange songs, and leave jars of preserved fruit. Present pressure: Someone replaces friendly messages with threatening prophecies.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.lornesse.seven-echo-quarry",
+      "name": "Seven Echo Quarry",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Slate quarry where each work call returns in a distinct echo used to measure the cliff. Present pressure: One echo has vanished, making blasting unsafe.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.lornesse.goatminster",
+      "name": "Goatminster",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "High pasture village whose elected goat judge settles grazing disputes beneath a painted canopy. Present pressure: Prize animals vanish and return wearing unfamiliar bells.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.lornesse.warmstone-baths",
+      "name": "Warmstone Baths",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Modest mineral baths used by miners, pilgrims, aching nobles, and relentless local gossips. Present pressure: The spring cools during the busiest healing season.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.lornesse.the-widows-incline",
+      "name": "The Widow's Incline",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A steep freight railway of ropes, brakes, and timber sledges run by a cooperative of miners' families. Present pressure: Brake ropes have been cut three times.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.veyr-marches.ninepost-field",
+      "name": "Ninepost Field",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Neutral meadow where nine carved posts mark grazing, court, market, and muster rights for different marches. Present pressure: A tenth post appears overnight with convincing weathering.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.veyr-marches.wheelwife-hollow",
+      "name": "Wheelwife Hollow",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Wagon-repair settlement built around a spring and a circular common where axle-makers test their work. Present pressure: Travelers arrive with wheels failing in the same peculiar way.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.veyr-marches.the-courteous-ruin",
+      "name": "The Courteous Ruin",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Roofless border manor where travelers still follow elaborate guest customs preserved by its caretaker family. Present pressure: Armed claimants demand the keys to a house with no doors.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.veyr-marches.foxglove-relay",
+      "name": "Foxglove Relay",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Hilltop courier station breeding small hardy horses and drying purple flowers for safe medicinal trade. Present pressure: Messages arrive resealed but apparently unread.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "site",
+        "expectedRevision": 0
+      }
+    }
+  ],
+  "relationships": []
+}

@@ -1,0 +1,538 @@
+{
+  "requestToken": "ca1d215e00000000000000000000000b",
+  "applicationId": "dnd2024",
+  "stateSpaceId": "dnd2024-main",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.custom.alderwick.the-last-button-home",
+      "name": "The Last Button Home",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Travelers leave one spare button at a hill cairn and collect a different one on returning. Disagreement: Some call it luck; historians think it once counted families using famine stores. Story use: A button links a missing traveler to a route they publicly denied taking.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.alderwick.thirteen-is-an-honest-bell",
+      "name": "Thirteen Is an Honest Bell",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "A thirteenth strike means “the count is wrong; come verify it,” never bad luck. Disagreement: Bridge chapters disagree whether any citizen may ring it. Story use: A comic civic rule becomes a reliable alarm and a source of jurisdictional conflict.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.dunmarrow.a-rook-owes-one-blow",
+      "name": "A Rook Owes One Blow",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Smiths pause after a rook perfectly copies a hammer rhythm. Disagreement: Miners say it remembers the dead; smiths say the pause prevents fatigue. Story use: A rook repeats a rhythm used only in a supposedly sealed workshop.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.dunmarrow.crutch-courtesy",
+      "name": "Crutch Courtesy",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "At mountain inns, the least mobile guest chooses the first seat and safest departure time. Disagreement: Escort captains treat it as quaint; locals treat it as survival law. Story use: Invoking courtesy can defeat a dangerous monopoly without drawing steel.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.carrowmere.blue-roof-reckoning",
+      "name": "Blue Roof Reckoning",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Families paint a rescued tile with the name of the wreck it came from. Disagreement: Some names belong to smuggling craft officially declared never to exist. Story use: A roof becomes an accidental archive of maritime secrets.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.carrowmere.the-dry-admirals-toast",
+      "name": "The Dry Admiral's Toast",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Retired captains toast a voyage that never occurred, adding one implausible detail each year. Disagreement: One “joke” detail consistently matches covert wartime charts. Story use: Players must separate affectionate nonsense from encoded testimony.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.bellafont.rain-letters",
+      "name": "Rain Letters",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Orchard workers leave anonymous encouragement in preserve jars at roadside shelters. Disagreement: Court poets claim to have invented it; workers insist the custom is older. Story use: A threatening message violates the form in ways that reveal its writer.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.bellafont.the-blunt-dessert",
+      "name": "The Blunt Dessert",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Difficult negotiations end with an intentionally ugly but delicious tart. Disagreement: Nobles debate its symbolism; cooks say it prevents people pretending appearance is substance. Story use: Refusing or praising it communicates more than formal speeches.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.lornesse.goat-judgment",
+      "name": "Goat Judgment",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Grazing disputes are argued before an elected “goat judge,” who announces a practical compromise. Disagreement: Outsiders think the goat decides; locals know the decorated animal keeps tempers down. Story use: An antagonist dismisses the ritual and loses community trust before a serious hearing.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.lornesse.the-missing-echo",
+      "name": "The Missing Echo",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Workers stop immediately if a familiar echo fails to return. Disagreement: Priests call it mountain displeasure; engineers call it changing voids. Story use: Both interpretations point toward real danger through different evidence.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.veyr-marches.tenth-plate-supper",
+      "name": "Tenth-Plate Supper",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Nine guests set a tenth plate for an absent enemy, exile, or relative. Disagreement: Some marches honor reconciliation; others say it commemorates betrayal. Story use: The named absence reveals how a household remembers a political conflict.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.veyr-marches.axle-truth",
+      "name": "Axle Truth",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "A host may ask one blunt question while helping repair a traveler's wheel. Disagreement: Free Axle companies argue whether answering is obligatory. Story use: The custom creates intimate conversation without magical truth enforcement.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.custom.alderwick.the-last-button-home",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.alderwick.the-last-button-home",
+      "toEntityId": "location.caldris.alderwick",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.alderwick.thirteen-is-an-honest-bell",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.alderwick.thirteen-is-an-honest-bell",
+      "toEntityId": "location.caldris.alderwick",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.dunmarrow.a-rook-owes-one-blow",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.dunmarrow.a-rook-owes-one-blow",
+      "toEntityId": "location.caldris.dunmarrow",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.dunmarrow.crutch-courtesy",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.dunmarrow.crutch-courtesy",
+      "toEntityId": "location.caldris.dunmarrow",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.carrowmere.blue-roof-reckoning",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.carrowmere.blue-roof-reckoning",
+      "toEntityId": "location.caldris.carrowmere",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.carrowmere.the-dry-admirals-toast",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.carrowmere.the-dry-admirals-toast",
+      "toEntityId": "location.caldris.carrowmere",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.bellafont.rain-letters",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.bellafont.rain-letters",
+      "toEntityId": "location.caldris.bellafont",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.bellafont.the-blunt-dessert",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.bellafont.the-blunt-dessert",
+      "toEntityId": "location.caldris.bellafont",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.lornesse.goat-judgment",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.lornesse.goat-judgment",
+      "toEntityId": "location.caldris.lornesse",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.lornesse.the-missing-echo",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.lornesse.the-missing-echo",
+      "toEntityId": "location.caldris.lornesse",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.veyr-marches.tenth-plate-supper",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.veyr-marches.tenth-plate-supper",
+      "toEntityId": "location.caldris.veyr-marches",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.veyr-marches.axle-truth",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.veyr-marches.axle-truth",
+      "toEntityId": "location.caldris.veyr-marches",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    }
+  ]
+}

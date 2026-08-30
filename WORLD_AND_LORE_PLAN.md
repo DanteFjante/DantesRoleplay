@@ -3,7 +3,7 @@
 > **D&D implementation reference:** When this work includes D&D 2024 mechanics, inspect [Foundry VTT dnd5e](https://github.com/foundryvtt/dnd5e) before designing or coding. Use it as a licensed engineering reference—not a direct dependency or rules authority—while retaining the exact `source.dnd2024.srd-5.2.1` locator and all applicable MIT, CC-BY, and asset-license notices for any reused material.
 
 Status: **Features W1–W15 and W17 verified; W16 awaits acceptance; W18 Slice 1 verified**
-Last reviewed: 2026-08-21
+Last reviewed: 2026-08-30
 
 ## Outcome and ownership
 
@@ -68,14 +68,31 @@ planes, and enforce uniqueness within each plane. Slice 1 changes only that gene
 focused tests; its [receipt](world/feature-18/WORLD-FEATURE-18-SLICE-1-RECEIPT.md) records the
 evidence. Live Thalorien coordinates and website consumption remain later leaves.
 
-### W19 — dedicated dated World chronology (awaiting confirmation)
+### W19 — dedicated dated World chronology (Slice 1 verified)
 
-[Slice 1](world/feature-19/WORLD-FEATURE-19-SLICE-1-IMPLEMENTATION.md) proposes the smallest owner
+[Slice 1](world/feature-19/WORLD-FEATURE-19-SLICE-1-IMPLEMENTATION.md) delivers the smallest owner
 needed by the World History screen: closed dated records scoped to one World, optionally linked to
-exact same-world subjects. The proposed permanent component/relationship IDs and signed-minute,
-authored-date-label schema require explicit confirmation before any catalog or runtime artifact is
-created. This feature does not reinterpret knowledge, campaign recaps, or the structural event
-ledger as World history.
+exact same-world subjects. The signed-minute, authored-date-label schema and stable trusted-GM read
+recipe are verified by focused tests and disposable catalog validation; the
+[receipt](world/feature-19/WORLD-FEATURE-19-SLICE-1-RECEIPT.md) records the evidence. This feature
+does not reinterpret knowledge, campaign recaps, or the structural event ledger as World history.
+
+### Prospective D&D 2024 two-continent setting (planning only)
+
+[The implementation map](world/DND2024-LOW-MAGIC-TWO-CONTINENT-WORLD-IMPLEMENTATION-MAP.md)
+turns the user's requested grounded medieval, low-magic, two-continent World and long-form campaign
+into reviewable content and runtime dependency leaves. It proposes no permanent setting IDs and
+creates no live state. The [Caldris creative charter](world/CALDRIS-CREATIVE-CHARTER.md) now records
+the delegated authorial defaults and lighthearted-but-realistic tone. The
+[expanded Caldris authoring pack](world/caldris/CALDRIS-AUTHORING-INDEX.md) now completes
+review-content Leaves 1–5 with twelve polities, thirty-six primary cities, seven eras, factions and
+NPCs, a six-volume campaign tapestry, robust quests, two maps, and character, location, and item
+concept art. The parallel Slice 2 supplement adds forty-eight second-ring locations, thirty-six
+recurring characters, twenty-four historical incidents, twenty-four living-lore entries, forty
+reusable story features, and eighteen further quests for forty-eight total. Content-only tabletop
+review is still the lowest ready leaf; permanent IDs, live import, player-safe secret projection,
+runtime relationships, durable parallel arcs, and D&D mechanical bindings retain their existing
+confirmation and owner gates.
 
 ## Next feature rule
 

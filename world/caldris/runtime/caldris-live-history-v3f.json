@@ -1,0 +1,970 @@
+{
+  "requestToken": "ca1d215e000000000000000000000008",
+  "applicationId": "dnd2024",
+  "stateSpaceId": "dnd2024-main",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "chronology.caldris.incident.alderwick.the-winter-sharing",
+      "name": "The Winter Sharing",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Winter Sharing",
+            "summary": "Camps along the Mere exchanged smoked fish, flint, and shelter during a severe winter. Present consequence: Competing museums claim the Button Hills storehouses; descendants want a shared memorial instead.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -1000000000,
+            "precision": "era",
+            "dateLabel": "First Footprints",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.alderwick.the-three-day-queen",
+      "name": "The Three-Day Queen",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Three-Day Queen",
+            "summary": "Mara Vale ruled for three days, signed emergency flood orders, then yielded to her elder cousin. Present consequence: River communities invoke “Mara's hearing” against modern toll reforms.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -250000000,
+            "precision": "era",
+            "dateLabel": "Crownmaking",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.dunmarrow.the-road-away",
+      "name": "The Road Away",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Road Away",
+            "summary": "Highland communities built a stone route leading south from defensive ridges. Present consequence: Peat fire at Blackcap Fell exposes markers pointing toward sealed mines.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -950000000,
+            "precision": "era",
+            "dateLabel": "Hearths and Standing Stones",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.dunmarrow.the-lanternless-watch",
+      "name": "The Lanternless Watch",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Lanternless Watch",
+            "summary": "Greyharrow held its walls for eleven nights after its signal oil ran out. Present consequence: Veterans and villagers argue over names on a new monument.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -400000000,
+            "precision": "era",
+            "dateLabel": "Sundering",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.carrowmere.the-forty-oars",
+      "name": "The Forty Oars",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Forty Oars",
+            "summary": "Forty crews rescued a coastal settlement after an earthquake-driven wave. Present consequence: Brinewife's Steps reveals the shared compact and possible mutual harbour rights.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -850000000,
+            "precision": "era",
+            "dateLabel": "River Thrones",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.carrowmere.the-grain-fleet-refusal",
+      "name": "The Grain Fleet Refusal",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Grain Fleet Refusal",
+            "summary": "Shipwrights refused to launch unsafe grain vessels despite royal pressure during famine. Present consequence: Current labour leaders seek the clerk's descendants while officials fear precedent.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -20000000,
+            "precision": "era",
+            "dateLabel": "Long Reprieve",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.bellafont.seeds-beneath-ash",
+      "name": "Seeds Beneath Ash",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "Seeds Beneath Ash",
+            "summary": "Charred pear and quince seeds show people replanted orchards after a volcanic haze darkened summers. Present consequence: Orchard blight revives debate over sharing protected old rootstock.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -1000000000,
+            "precision": "era",
+            "dateLabel": "First Footprints",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.bellafont.the-feast-without-knives",
+      "name": "The Feast Without Knives",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Feast Without Knives",
+            "summary": "Rival orchard lords negotiated irrigation rights at a feast where all knives were locked away. Present consequence: Their descendants possess an overlooked right to witness water treaties.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -700000000,
+            "precision": "era",
+            "dateLabel": "Lantern Concord",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.lornesse.the-woven-silence",
+      "name": "The Woven Silence",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Woven Silence",
+            "summary": "Copper curtains were hung in mountain chambers for unknown ceremonies. Present consequence: Seven Echo Quarry has reopened one such chamber, challenging sacred and industrial claims.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -950000000,
+            "precision": "era",
+            "dateLabel": "Hearths and Standing Stones",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.lornesse.the-widows-descent",
+      "name": "The Widows' Descent",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Widows' Descent",
+            "summary": "Miners' families used freight sledges to evacuate Copperdeep during a tunnel fire. Present consequence: The cooperative now challenges royal control of the Widow's Incline.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -250000000,
+            "precision": "era",
+            "dateLabel": "Crownmaking",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.veyr-marches.the-tenth-hearth",
+      "name": "The Tenth Hearth",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Tenth Hearth",
+            "summary": "Ten hill communities once shared the Ninepost market. Present consequence: The mysterious tenth post could restore land and voting claims to scattered families.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -850000000,
+            "precision": "era",
+            "dateLabel": "River Thrones",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.veyr-marches.supper-at-the-courteous-ruin",
+      "name": "Supper at the Courteous Ruin",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "Supper at the Courteous Ruin",
+            "summary": "Enemy patrols unknowingly shared shelter during a blizzard and left without fighting. Present consequence: The surviving guest book could cool a feud—or embarrass heroic family legends.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -45000000,
+            "precision": "era",
+            "dateLabel": "Three Banner War",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.ordelain.the-floating-court",
+      "name": "The Floating Court",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Floating Court",
+            "summary": "Judges heard river disputes from a movable platform so no bank controlled proceedings. Present consequence: Reed Judge's Rest drifting downstream creates a serious constitutional absurdity.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -850000000,
+            "precision": "era",
+            "dateLabel": "River Thrones",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.ordelain.the-blank-decree",
+      "name": "The Blank Decree",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Blank Decree",
+            "summary": "A peace decree survives only as seals around a blank centre. Present consequence: Modern factions invent convenient wording while Inkfish Wharf offers a way to recover impressions.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -400000000,
+            "precision": "era",
+            "dateLabel": "Sundering",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.namarra.the-door-above-water",
+      "name": "The Door Above Water",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Door Above Water",
+            "summary": "A stone granary was built on high ground before the delta took its present shape. Present consequence: Drowned Door Orchard becomes important to both food security and identity.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -1000000000,
+            "precision": "era",
+            "dateLabel": "First Footprints",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.namarra.the-villages-that-declined-counting",
+      "name": "The Villages That Declined Counting",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Villages That Declined Counting",
+            "summary": "Several delta villages stopped appearing in tax rolls after a disastrous census. Present consequence: Their descendants face legal nonexistence when seeking aid or land protection.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -20000000,
+            "precision": "era",
+            "dateLabel": "Long Reprieve",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.tessarane.the-other-horizon",
+      "name": "The Other Horizon",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Other Horizon",
+            "summary": "Plateau builders tracked sunrise from a rotating stone terrace. Present consequence: Cloud Apricot Farm's moving terrace may reveal routes into a buried valley.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -950000000,
+            "precision": "era",
+            "dateLabel": "Hearths and Standing Stones",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.tessarane.the-patient-stair-compact",
+      "name": "The Patient Stair Compact",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Patient Stair Compact",
+            "summary": "Polities jointly funded high-pass steps to keep trade open. Present consequence: Road keepers and pastoral families challenge present toll collection.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -700000000,
+            "precision": "era",
+            "dateLabel": "Lantern Concord",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.selucia.the-first-borrowed-bell",
+      "name": "The First Borrowed Bell",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The First Borrowed Bell",
+            "summary": "Islanders raised a wrecked foreign bell as a storm warning. Present consequence: A return order at Borrowed Bell Isle threatens to reopen the story.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -850000000,
+            "precision": "era",
+            "dateLabel": "River Thrones",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.selucia.the-palace-vote",
+      "name": "The Palace Vote",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Palace Vote",
+            "summary": "An unfinished palace became public land after architects failed to agree on a roof. Present consequence: A private ownership suit could unexpectedly change tax obligations across the kingdom.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -250000000,
+            "precision": "era",
+            "dateLabel": "Crownmaking",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.kethria.the-mountain-portion",
+      "name": "The Mountain Portion",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Mountain Portion",
+            "summary": "Copper, bread, and woven cloth were carried to a high cleft each winter. Present consequence: Modern tithe advocates and skeptics possess only half the moral history.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -950000000,
+            "precision": "era",
+            "dateLabel": "Hearths and Standing Stones",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.kethria.the-empty-saddles",
+      "name": "The Empty Saddles",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Empty Saddles",
+            "summary": "A winter ambush killed an entire caravan, memorialized by saddles at the pass. Present consequence: Returning saddles may expose families whose peace depends on an honorable lie.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -45000000,
+            "precision": "era",
+            "dateLabel": "Three Banner War",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.seven-lamps-league.the-fifth-store",
+      "name": "The Fifth Store",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Fifth Store",
+            "summary": "A mobile warehouse let neutral supplies pass blockades during the Concord's founding crisis. Present consequence: The Fifth Warehouse is both a peace relic and a current customs fraud.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -700000000,
+            "precision": "era",
+            "dateLabel": "Lantern Concord",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.seven-lamps-league.the-meal-between-minutes",
+      "name": "The Meal Between Minutes",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.chronology",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "title": "The Meal Between Minutes",
+            "summary": "A deadlocked council resumed after delegates shared lunch and rewrote a shipping compromise. Present consequence: Chairman's Nap can restore the forgotten procedural protection.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -20000000,
+            "precision": "era",
+            "dateLabel": "Long Reprieve",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "history",
+        "expectedRevision": 0
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "chronology.caldris.incident.alderwick.the-winter-sharing",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.alderwick.the-winter-sharing",
+      "toEntityId": "location.caldris.alderwick",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.alderwick.the-three-day-queen",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.alderwick.the-three-day-queen",
+      "toEntityId": "location.caldris.alderwick",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.dunmarrow.the-road-away",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.dunmarrow.the-road-away",
+      "toEntityId": "location.caldris.dunmarrow",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.dunmarrow.the-lanternless-watch",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.dunmarrow.the-lanternless-watch",
+      "toEntityId": "location.caldris.dunmarrow",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.carrowmere.the-forty-oars",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.carrowmere.the-forty-oars",
+      "toEntityId": "location.caldris.carrowmere",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.carrowmere.the-grain-fleet-refusal",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.carrowmere.the-grain-fleet-refusal",
+      "toEntityId": "location.caldris.carrowmere",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.bellafont.seeds-beneath-ash",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.bellafont.seeds-beneath-ash",
+      "toEntityId": "location.caldris.bellafont",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.bellafont.the-feast-without-knives",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.bellafont.the-feast-without-knives",
+      "toEntityId": "location.caldris.bellafont",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.lornesse.the-woven-silence",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.lornesse.the-woven-silence",
+      "toEntityId": "location.caldris.lornesse",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.lornesse.the-widows-descent",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.lornesse.the-widows-descent",
+      "toEntityId": "location.caldris.lornesse",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.veyr-marches.the-tenth-hearth",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.veyr-marches.the-tenth-hearth",
+      "toEntityId": "location.caldris.veyr-marches",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.veyr-marches.supper-at-the-courteous-ruin",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.veyr-marches.supper-at-the-courteous-ruin",
+      "toEntityId": "location.caldris.veyr-marches",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.ordelain.the-floating-court",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.ordelain.the-floating-court",
+      "toEntityId": "location.caldris.ordelain",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.ordelain.the-blank-decree",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.ordelain.the-blank-decree",
+      "toEntityId": "location.caldris.ordelain",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.namarra.the-door-above-water",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.namarra.the-door-above-water",
+      "toEntityId": "location.caldris.namarra",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.namarra.the-villages-that-declined-counting",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.namarra.the-villages-that-declined-counting",
+      "toEntityId": "location.caldris.namarra",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.tessarane.the-other-horizon",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.tessarane.the-other-horizon",
+      "toEntityId": "location.caldris.tessarane",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.tessarane.the-patient-stair-compact",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.tessarane.the-patient-stair-compact",
+      "toEntityId": "location.caldris.tessarane",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.selucia.the-first-borrowed-bell",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.selucia.the-first-borrowed-bell",
+      "toEntityId": "location.caldris.selucia",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.selucia.the-palace-vote",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.selucia.the-palace-vote",
+      "toEntityId": "location.caldris.selucia",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.kethria.the-mountain-portion",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.kethria.the-mountain-portion",
+      "toEntityId": "location.caldris.kethria",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.kethria.the-empty-saddles",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.kethria.the-empty-saddles",
+      "toEntityId": "location.caldris.kethria",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.seven-lamps-league.the-fifth-store",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.seven-lamps-league.the-fifth-store",
+      "toEntityId": "location.caldris.seven-lamps-league",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.seven-lamps-league.the-meal-between-minutes",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.seven-lamps-league.the-meal-between-minutes",
+      "toEntityId": "location.caldris.seven-lamps-league",
+      "qualifiedKind": "dnd2024.game.core.world.chronology.about",
+      "expectedRevision": 0,
+      "value": {}
+    }
+  ]
+}

@@ -28,10 +28,12 @@ function HistoryEventCard({
         <h2 id={`${event.id}-heading`}>{event.title}</h2>
         <p className="history-event__summary">{event.summary}</p>
 
-        <section className="history-event__consequence">
-          <span aria-hidden="true"><Icon name="Globe2" size={17} /></span>
-          <p><strong>Persistent consequence</strong>{event.consequence}</p>
-        </section>
+        {event.consequence ? (
+          <section className="history-event__consequence">
+            <span aria-hidden="true"><Icon name="Globe2" size={17} /></span>
+            <p><strong>Persistent consequence</strong>{event.consequence}</p>
+          </section>
+        ) : null}
 
         {event.linkedLocations.length || event.linkedPeople.length ? (
           <footer className="history-event__links">
@@ -78,17 +80,23 @@ function HistoryEventCard({
 
 export function HistoryTimeline({
   events,
+  totalEvents,
   onOpenLocation,
 }: {
   events: WorldHistoryEvent[];
+  totalEvents: number;
   onOpenLocation: (locationId: string) => void;
 }) {
   if (!events.length) {
     return (
       <div className="history-empty">
         <Icon name="ScrollText" size={26} />
-        <strong>No history matches these filters</strong>
-        <p>Try another search, region, or category.</p>
+        <strong>{totalEvents === 0
+          ? "No dated world history is available for this view"
+          : "No history matches these filters"}</strong>
+        <p>{totalEvents === 0
+          ? "Chronology records will appear here when they are available to this audience."
+          : "Try another search, region, or category."}</p>
       </div>
     );
   }

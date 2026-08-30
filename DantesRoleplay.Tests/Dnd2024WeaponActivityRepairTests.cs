@@ -80,9 +80,9 @@ public sealed class Dnd2024WeaponActivityRepairTests
     {
         var expected = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["weapon-profile.write"] = "ruleset.dnd2024.core.data.weapon-profile",
-            ["weapon-attack"] = "ruleset.dnd2024.core.gameplay.weapon-attacks",
-            ["weapon-damage.roll"] = "ruleset.dnd2024.core.gameplay.weapon-damage"
+            ["weapon-profile.write"] = "dnd2024.ruleset.core.data.weapon-profile",
+            ["weapon-attack"] = "dnd2024.ruleset.core.gameplay.weapon-attacks",
+            ["weapon-damage.roll"] = "dnd2024.ruleset.core.gameplay.weapon-damage"
         };
         foreach (var (name, category) in expected)
         {
@@ -269,13 +269,13 @@ public sealed class Dnd2024WeaponActivityRepairTests
             {
                 ["level"] =
                 [
-                    Child("mechanic.dnd2024.character-level.read", "subject", subject.Id,
+                    Child("dnd2024.mechanic.character-level.read", "subject", subject.Id,
                         "{\"test\":\"character-level-read\",\"subjectId\":\"hero\",\"present\":true,\"valid\":true,\"problem\":null,\"membershipCount\":1,\"totalLevel\":5,\"proficiencyBonus\":3}")
                 ],
                 ["armorClass"] =
                 [
-                    Child("mechanic.dnd2024.armor-class.read", "subject", target.Id,
-                        "{\"test\":\"armor-class-read\",\"subjectId\":\"target\",\"sourceEntityId\":\"target\",\"armorClass\":15,\"calculationMechanicId\":\"mechanic.dnd2024.armor-class.read\"}")
+                    Child("dnd2024.mechanic.armor-class.read", "subject", target.Id,
+                        "{\"test\":\"armor-class-read\",\"subjectId\":\"target\",\"sourceEntityId\":\"target\",\"armorClass\":15,\"calculationMechanicId\":\"dnd2024.mechanic.armor-class.read\"}")
                 ]
             }
         });
@@ -291,7 +291,7 @@ public sealed class Dnd2024WeaponActivityRepairTests
             {
                 ["dnd2024.creature.hit-points"] = "{\"current\":10,\"maximum\":10}",
                 ["dnd2024.creature.temporary-hit-points"] =
-                    "{\"amount\":3,\"sourceRef\":{\"entityId\":\"source.dnd2024.srd-5.2.1\"}}"
+                    "{\"amount\":3,\"sourceRef\":{\"entityId\":\"dnd2024.source.srd-5.2.1\"}}"
             });
         return await RunAsync("weapon-damage.apply", new MechanicProjection
         {
@@ -304,7 +304,7 @@ public sealed class Dnd2024WeaponActivityRepairTests
             {
                 ["damage"] =
                 [
-                    Child("mechanic.dnd2024.weapon-damage.roll",
+                    Child("dnd2024.mechanic.weapon-damage.roll",
                         new Dictionary<string, string>(StringComparer.Ordinal)
                         {
                             ["subject"] = subject.Id, ["weapon"] = weapon.Id,
@@ -314,7 +314,7 @@ public sealed class Dnd2024WeaponActivityRepairTests
                 ],
                 ["mitigation"] =
                 [
-                    Child("mechanic.dnd2024.damage.resolve", "defender", target.Id,
+                    Child("dnd2024.mechanic.damage.resolve", "defender", target.Id,
                         "{\"test\":\"damage-mitigation-profile\",\"defenderId\":\"target\",\"mitigationKnown\":true,\"conditionsKnown\":true,\"immunities\":[],\"resistances\":[\"bludgeoning\"],\"vulnerabilities\":[],\"petrified\":false}")
                 ]
             }
@@ -353,7 +353,7 @@ public sealed class Dnd2024WeaponActivityRepairTests
     {
         var entries = string.Join(",", ids.Select(id => JsonSerializer.Serialize(id) +
             ":{\"rankRef\":{\"entityId\":\"" + Proficiency +
-            "\"},\"sourceRefs\":[{\"entityId\":\"source.dnd2024.srd-5.2.1\"}]}"));
+            "\"},\"sourceRefs\":[{\"entityId\":\"dnd2024.source.srd-5.2.1\"}]}"));
         return "{\"entries\":{" + entries + "},\"recordedFamilies\":[\"weapon\"]}";
     }
 
@@ -441,7 +441,7 @@ public sealed class Dnd2024WeaponActivityRepairTests
         "dnd2024", "content", "entities", "equipment", "weapon-activities");
 
     private static string MechanicPath(string name) => Path.Combine(RepositoryRoot(), "catalog",
-        "applications", "dnd2024", "mechanics", "combat", "mechanic.dnd2024." + name);
+        "applications", "dnd2024", "mechanics", "combat", "dnd2024.mechanic." + name);
 
     private static string RepositoryRoot([CallerFilePath] string sourcePath = "")
     {

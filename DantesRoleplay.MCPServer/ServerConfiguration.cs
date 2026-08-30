@@ -93,8 +93,11 @@ public static class ServerConfiguration
         var configuredApplication = localKnowledgeSeat.Current().ApplicationId;
         services.AddSingleton(new KnowledgeApplicationSelection(
             ValidApplicationId(configuredApplication) ? configuredApplication : "disabled"));
+        services.AddSingleton(new WorldChronologyApplicationSelection(
+            ValidApplicationId(configuredApplication) ? configuredApplication : "disabled"));
         services.AddSingleton<IAuthorizedKnowledgeAudiencePolicy, LocalKnowledgeAudiencePolicy>();
         services.AddScoped<IKnowledgeApplicationBindingResolver, ActivatedKnowledgeApplicationBindingResolver>();
+        services.AddScoped<IWorldChronologyBindingResolver, ActivatedWorldChronologyBindingResolver>();
         services.AddScoped<IKnowledgeActorParticipationVerifier, ApplicationKnowledgeActorParticipationVerifier>();
         services.AddAuthorizedKnowledgeCore();
         // The sandbox that runs game rules. A singleton because it holds no state between runs:

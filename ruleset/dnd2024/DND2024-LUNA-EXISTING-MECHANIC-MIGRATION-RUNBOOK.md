@@ -2,7 +2,7 @@
 
 Status: **ready execution guide; not a second roadmap or implementation slice**
 Ruleset alignment: `dnd2024-compatible`
-Runtime rule authority: `source.dnd2024.srd-5.2.1`
+Runtime rule authority: `dnd2024.source.srd-5.2.1`
 Owning plan: [D&D 2024 component convergence](DND2024-COMPONENT-CONVERGENCE-DEPENDENCY-TREE.md)
 Machine mapping: [canonical component crosswalk](evidence/canonical-component-crosswalk.json)
 
@@ -131,14 +131,14 @@ Owner map: `dnd2024.abilities` -> `dnd2024.creature.ability-scores`
 Required transformation: move `str`, `dex`, `con`, `int`, `wis`, and `cha` into `scores` keyed by
 the existing ability vocabulary entity IDs. Do not store modifiers or provenance.
 
-1. `mechanic.dnd2024.check.ability`
-2. `mechanic.dnd2024.initiative.roll`
-3. `mechanic.dnd2024.saving-throw`
-4. `mechanic.dnd2024.weapon-attack`
-5. `mechanic.dnd2024.weapon-damage.roll`
-6. `mechanic.dnd2024.carrying-capacity.read`
-7. `mechanic.dnd2024.character.basic.create`
-8. `mechanic.dnd2024.character-sheet.read`
+1. `dnd2024.mechanic.check.ability`
+2. `dnd2024.mechanic.initiative.roll`
+3. `dnd2024.mechanic.saving-throw`
+4. `dnd2024.mechanic.weapon-attack`
+5. `dnd2024.mechanic.weapon-damage.roll`
+6. `dnd2024.mechanic.carrying-capacity.read`
+7. `dnd2024.mechanic.character.basic.create`
+8. `dnd2024.mechanic.character-sheet.read`
 
 ### L2 — creature body/Size
 
@@ -147,9 +147,9 @@ Owner map: `dnd2024.creature-size` -> `dnd2024.creature.body`
 Required transformation: replace the Size string with `sizeRef.entityId` using the existing Size
 vocabulary. Preserve optional active-form/body-state fields when a consumer rewrites existing state.
 
-1. `mechanic.dnd2024.carrying-capacity.read`
-2. `mechanic.dnd2024.character.basic.create`
-3. `mechanic.dnd2024.creature-size.record`
+1. `dnd2024.mechanic.carrying-capacity.read`
+2. `dnd2024.mechanic.character.basic.create`
+3. `dnd2024.mechanic.creature-size.record`
 
 ### L3 — damage responses
 
@@ -160,8 +160,8 @@ source-qualified `damageResponses`. Use existing damage-type and response entity
 flatten conditional mitigation; use `qualifyingRuleRef` when the existing state has a qualifier.
 Preserve `armorClassSource` if it is already present, but do not implement Armor Class derivation.
 
-1. `mechanic.dnd2024.damage-mitigation.write`
-2. `mechanic.dnd2024.damage.resolve`
+1. `dnd2024.mechanic.creature.defenses.write`
+2. `dnd2024.mechanic.damage.resolve`
 
 ### L4 — languages
 
@@ -170,8 +170,8 @@ Owner map: `dnd2024.language-proficiencies` -> `dnd2024.creature.languages`
 Required transformation: key each language by its existing vocabulary entity ID; explicitly record
 understanding, communication, reading, and writing capabilities; preserve all unique grant sources.
 
-1. `mechanic.dnd2024.character.basic.create`
-2. `mechanic.dnd2024.language-proficiencies.record`
+1. `dnd2024.mechanic.character.basic.create`
+2. `dnd2024.mechanic.language-proficiencies.record`
 
 ### L5 — movement and metric Speed
 
@@ -181,10 +181,10 @@ Required transformation: replace the five fixed imperial fields with `speeds` ke
 movement-mode entity IDs. Store exact metric `distance`, `enabled`, and all unique `sourceRefs`.
 This component owns current Speed, not per-turn movement expenditure.
 
-1. `mechanic.dnd2024.turn-budget.spend`
-2. `mechanic.dnd2024.character.basic.create`
-3. `mechanic.dnd2024.speed.read`
-4. `mechanic.dnd2024.speed.write`
+1. `dnd2024.mechanic.turn-budget.spend`
+2. `dnd2024.mechanic.character.basic.create`
+3. `dnd2024.mechanic.speed.read`
+4. `dnd2024.mechanic.speed.write`
 
 These lists contain 19 owner-specific edits across 15 unique mechanics. A mechanic appearing in
 several lists is edited again only if its earlier conversion did not already include the later
@@ -195,29 +195,29 @@ owner. Do not broaden any edit into its WAIT-TERRA or WAIT-SOL dependencies.
 These 23 mechanics depend on coordinated merges or decomposition across target owners. Luna must
 leave them unchanged except for an independently completed L1-L5 reference conversion:
 
-1. `mechanic.dnd2024.weapon-damage.roll`
-2. `mechanic.dnd2024.weapon-proficiencies.write`
-3. `mechanic.dnd2024.weapon-profile.write`
-4. `mechanic.dnd2024.armor-training.read`
-5. `mechanic.dnd2024.armor-training.write`
-6. `mechanic.dnd2024.currency-value.read`
-7. `mechanic.dnd2024.inventory.read`
-8. `mechanic.dnd2024.item-burden.read`
-9. `mechanic.dnd2024.item-instance.create-and-place`
-10. `mechanic.dnd2024.item-instance.move`
-11. `mechanic.dnd2024.item-instance.read`
-12. `mechanic.dnd2024.item-instance.record`
-13. `mechanic.dnd2024.item-stack.consume`
-14. `mechanic.dnd2024.item-stack.create-and-place`
-15. `mechanic.dnd2024.item-stack.merge`
-16. `mechanic.dnd2024.item-stack.record`
-17. `mechanic.dnd2024.item-stack.split`
-18. `mechanic.dnd2024.item.equip`
-19. `mechanic.dnd2024.item.equipment.read`
-20. `mechanic.dnd2024.item.transfer`
-21. `mechanic.dnd2024.tool-proficiencies.record`
-22. `mechanic.dnd2024.saving-throw-proficiencies.record`
-23. `mechanic.dnd2024.skill-proficiencies.record`
+1. `dnd2024.mechanic.weapon-damage.roll`
+2. `dnd2024.mechanic.weapon-proficiencies.write`
+3. `dnd2024.mechanic.weapon-profile.write`
+4. `dnd2024.mechanic.armor-training.read`
+5. `dnd2024.mechanic.armor-training.write`
+6. `dnd2024.mechanic.currency-value.read`
+7. `dnd2024.mechanic.inventory.read`
+8. `dnd2024.mechanic.item-burden.read`
+9. `dnd2024.mechanic.item-instance.create-and-place`
+10. `dnd2024.mechanic.item-instance.move`
+11. `dnd2024.mechanic.item-instance.read`
+12. `dnd2024.mechanic.item-instance.record`
+13. `dnd2024.mechanic.item-stack.consume`
+14. `dnd2024.mechanic.item-stack.create-and-place`
+15. `dnd2024.mechanic.item-stack.merge`
+16. `dnd2024.mechanic.item-stack.record`
+17. `dnd2024.mechanic.item-stack.split`
+18. `dnd2024.mechanic.item.equip`
+19. `dnd2024.mechanic.item.equipment.read`
+20. `dnd2024.mechanic.item.transfer`
+21. `dnd2024.mechanic.tool-proficiencies.record`
+22. `dnd2024.mechanic.saving-throw-proficiencies.record`
+23. `dnd2024.mechanic.skill-proficiencies.record`
 
 The associated component families are unified proficiencies, decomposed weapon/item definitions,
 definition-linked item instances and quantities, equipment configuration, background/class/species/
@@ -230,35 +230,35 @@ These 29 mechanics depend on replacement ownership, derived values, explicit lif
 missing target owners, or new transaction composition. Luna must leave them unchanged except for an
 independently completed L1-L5 reference conversion:
 
-1. `mechanic.dnd2024.check.ability`
-2. `mechanic.dnd2024.encounter-initiative-order`
-3. `mechanic.dnd2024.encounter-turn.advance`
-4. `mechanic.dnd2024.encounter-turn.end`
-5. `mechanic.dnd2024.encounter-turn.start`
-6. `mechanic.dnd2024.initiative.roll`
-7. `mechanic.dnd2024.saving-throw`
-8. `mechanic.dnd2024.armor-class.write`
-9. `mechanic.dnd2024.turn-budget.read`
-10. `mechanic.dnd2024.turn-budget.spend`
-11. `mechanic.dnd2024.turn-budget.write`
-12. `mechanic.dnd2024.weapon-attack`
-13. `mechanic.dnd2024.weapon-damage.apply`
-14. `mechanic.dnd2024.conditions.write`
-15. `mechanic.dnd2024.d20-test.state-effects`
-16. `mechanic.dnd2024.character-abilities.resolve`
-17. `mechanic.dnd2024.character-content-definition.record`
-18. `mechanic.dnd2024.character.basic.create`
-19. `mechanic.dnd2024.item-activity.use`
-20. `mechanic.dnd2024.rest.begin`
-21. `mechanic.dnd2024.rest.interrupt`
-22. `mechanic.dnd2024.rest.progress`
-23. `mechanic.dnd2024.species-selection.resolve`
-24. `mechanic.dnd2024.species-skillful.resolve`
-25. `mechanic.dnd2024.species-versatile-skilled.resolve`
-26. `mechanic.dnd2024.character-experience.read`
-27. `mechanic.dnd2024.character-level.record`
-28. `mechanic.dnd2024.character-sheet.read`
-29. `mechanic.dnd2024.class-progression.read`
+1. `dnd2024.mechanic.check.ability`
+2. `dnd2024.mechanic.encounter-initiative-order`
+3. `dnd2024.mechanic.encounter-turn.advance`
+4. `dnd2024.mechanic.encounter-turn.end`
+5. `dnd2024.mechanic.encounter-turn.start`
+6. `dnd2024.mechanic.initiative.roll`
+7. `dnd2024.mechanic.saving-throw`
+8. `dnd2024.mechanic.armor-class.write`
+9. `dnd2024.mechanic.turn-budget.read`
+10. `dnd2024.mechanic.turn-budget.spend`
+11. `dnd2024.mechanic.turn-budget.write`
+12. `dnd2024.mechanic.weapon-attack`
+13. `dnd2024.mechanic.weapon-damage.apply`
+14. `dnd2024.mechanic.conditions.write`
+15. `dnd2024.mechanic.d20-test.state-effects`
+16. `dnd2024.mechanic.character-abilities.resolve`
+17. `dnd2024.mechanic.character-content-definition.record`
+18. `dnd2024.mechanic.character.basic.create`
+19. `dnd2024.mechanic.item-activity.use`
+20. `dnd2024.mechanic.rest.begin`
+21. `dnd2024.mechanic.rest.interrupt`
+22. `dnd2024.mechanic.rest.progress`
+23. `dnd2024.mechanic.species-selection.resolve`
+24. `dnd2024.mechanic.species-skillful.resolve`
+25. `dnd2024.mechanic.species-versatile-skilled.resolve`
+26. `dnd2024.mechanic.character-experience.read`
+27. `dnd2024.mechanic.character-level.record`
+28. `dnd2024.mechanic.character-sheet.read`
+29. `dnd2024.mechanic.class-progression.read`
 
 The associated component families are derived Armor Class and character level, character creation
 and content-definition decomposition, Conditions as active-effect entities, encounter rounds/turns,
@@ -270,13 +270,13 @@ architecture pass first.
 
 These seven mechanics need no remaining-old-owner conversion today:
 
-1. `mechanic.dnd2024.dice` — independent of component state.
-2. `mechanic.dnd2024.healing.apply` — target Hit Points.
-3. `mechanic.dnd2024.hit-points.write` — target Hit Points.
-4. `mechanic.dnd2024.temporary-hit-points.write` — target Temporary Hit Points.
-5. `mechanic.dnd2024.character-profile.record` — target Identity.
-6. `mechanic.dnd2024.heroic-inspiration.grant` — target Identity and Heroic Inspiration.
-7. `mechanic.dnd2024.character-experience.write` — target Experience.
+1. `dnd2024.mechanic.dice` — independent of component state.
+2. `dnd2024.mechanic.healing.apply` — target Hit Points.
+3. `dnd2024.mechanic.hit-points.write` — target Hit Points.
+4. `dnd2024.mechanic.temporary-hit-points.write` — target Temporary Hit Points.
+5. `dnd2024.mechanic.character-profile.record` — target Identity.
+6. `dnd2024.mechanic.heroic-inspiration.grant` — target Identity and Heroic Inspiration.
+7. `dnd2024.mechanic.character-experience.write` — target Experience.
 
 Some converted mechanics still appear in a later-model list because they also consume another old
 owner. For example, Experience read uses migrated Experience but still derives its answer from the

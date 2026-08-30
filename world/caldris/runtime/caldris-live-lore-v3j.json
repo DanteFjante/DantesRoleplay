@@ -1,0 +1,538 @@
+{
+  "requestToken": "ca1d215e00000000000000000000000c",
+  "applicationId": "dnd2024",
+  "stateSpaceId": "dnd2024-main",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.custom.ordelain.curved-boundaries-are-wiser",
+      "name": "Curved Boundaries Are Wiser",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Farmers preserve bends in hedges and paths even after rivers move. Disagreement: Lawyers call it superstition; flood workers recognize lost channels. Story use: A “nonsensical” boundary becomes a life-saving drainage map.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.ordelain.black-pawed-testimony",
+      "name": "Black-Pawed Testimony",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "An ink-stained cat crossing a courtroom pauses proceedings for water. Disagreement: Judges insist it is hygiene, not luck; everyone still watches which party the cat approaches. Story use: A light comic beat exposes tampered ink on a litigant's sleeve.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.namarra.three-spoons-no-fourth",
+      "name": "Three Spoons, No Fourth",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Communal kitchens use three serving spoons for children, workers, and guests. Disagreement: Reformers want a fourth for officials; cooks consider officials guests. Story use: A seating dispute reveals who expects privilege during crisis.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.namarra.paper-boats-carry-small-truths",
+      "name": "Paper Boats Carry Small Truths",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Children float unsigned worries to a trusted downstream elder. Disagreement: Adults debate whether reading them violates privacy or fulfills the custom. Story use: A paper fleet contains unrelated fears plus one crucial warning.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.tessarane.the-patient-step",
+      "name": "The Patient Step",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "A traveler who needs rest places a blue cord on the stair; others pass without comment and may leave water. Disagreement: Court pilgrims romanticize what began as an accessibility practice. Story use: Respecting the custom earns trust; counterfeit cords hide a courier route.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.tessarane.kites-do-not-lie-knots-do",
+      "name": "Kites Do Not Lie, Knots Do",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Weather kites are trusted, but their cord knots are treated as human opinion. Disagreement: Scholars reverse the proverb when discussing measurements. Story use: Conflicting signals force players to inspect both nature and interpretation.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.selucia.every-bell-was-borrowed",
+      "name": "Every Bell Was Borrowed",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Bell owners recite where each bell came from before storms. Disagreement: Some accounts are gifts, some salvage, and some polite theft. Story use: Provenance becomes an emotional mystery rather than a simple ownership check.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.selucia.one-roofless-wedding-wish",
+      "name": "One Roofless Wedding Wish",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Couples at the Unfinished Palace make one promise that cannot depend on weather. Disagreement: Priests debate whether it is sacred; sailors say it is merely sensible. Story use: A disrupted wedding still matters because the central promise remains possible.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.kethria.the-shield-loaf",
+      "name": "The Shield Loaf",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "A household breaks its stamped winter loaf only after confirming neighbors also have bread. Disagreement: Wealthy homes treat it symbolically; mountain villages still conduct the check. Story use: Missing flour becomes a network of mutual aid rather than a solitary theft.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.kethria.the-unridden-saddle",
+      "name": "The Unridden Saddle",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "One saddle remains empty on dangerous crossings so the dead or lost are not forgotten. Disagreement: Some survivors consider it comforting; others see a lie that prevents searches. Story use: Removing a saddle can be grief, evidence, or protection.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.seven-lamps-league.a-fifth-price-exists",
+      "name": "A Fifth Price Exists",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "Bargainers name four prices—coin, time, risk, and reputation—then ask what cost was omitted. Disagreement: Merchants enjoy the saying; labourers answer “the person doing the work.” Story use: The custom exposes hidden costs in apparently generous contracts.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.seven-lamps-league.lunch-suspends-certainty",
+      "name": "Lunch Suspends Certainty",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.fact",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "summary": "During shared council meals, no statement may be entered as final minutes. Disagreement: Powerful delegates call it inefficient; smaller towns rely on the candid interval. Story use: Informal kindness produces evidence or compromise that formal debate could not.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.knowledge.classification",
+          "expectedRevision": 0,
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "knowledge",
+        "expectedRevision": 0
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.custom.ordelain.curved-boundaries-are-wiser",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.ordelain.curved-boundaries-are-wiser",
+      "toEntityId": "location.caldris.ordelain",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.ordelain.black-pawed-testimony",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.ordelain.black-pawed-testimony",
+      "toEntityId": "location.caldris.ordelain",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.namarra.three-spoons-no-fourth",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.namarra.three-spoons-no-fourth",
+      "toEntityId": "location.caldris.namarra",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.namarra.paper-boats-carry-small-truths",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.namarra.paper-boats-carry-small-truths",
+      "toEntityId": "location.caldris.namarra",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.tessarane.the-patient-step",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.tessarane.the-patient-step",
+      "toEntityId": "location.caldris.tessarane",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.tessarane.kites-do-not-lie-knots-do",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.tessarane.kites-do-not-lie-knots-do",
+      "toEntityId": "location.caldris.tessarane",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.selucia.every-bell-was-borrowed",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.selucia.every-bell-was-borrowed",
+      "toEntityId": "location.caldris.selucia",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.selucia.one-roofless-wedding-wish",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.selucia.one-roofless-wedding-wish",
+      "toEntityId": "location.caldris.selucia",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.kethria.the-shield-loaf",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.kethria.the-shield-loaf",
+      "toEntityId": "location.caldris.kethria",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.kethria.the-unridden-saddle",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.kethria.the-unridden-saddle",
+      "toEntityId": "location.caldris.kethria",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.seven-lamps-league.a-fifth-price-exists",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.seven-lamps-league.a-fifth-price-exists",
+      "toEntityId": "location.caldris.seven-lamps-league",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.seven-lamps-league.lunch-suspends-certainty",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.in-world",
+      "expectedRevision": 0,
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.seven-lamps-league.lunch-suspends-certainty",
+      "toEntityId": "location.caldris.seven-lamps-league",
+      "qualifiedKind": "dnd2024.game.core.world.knowledge.about",
+      "expectedRevision": 0,
+      "value": {}
+    }
+  ]
+}

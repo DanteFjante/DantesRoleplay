@@ -20,8 +20,8 @@ Stop point: after exact activation read-back, discovery smoke evidence, and a co
 - Reuse the existing `dnd2024-core` source registration and the current 12-source profile.
 - Treat current `catalog/applications/dnd2024` contracts as the only authored D&D application source.
 - Preserve historical receipts exactly and migrate no learned recipes because none exist.
-- Do not restore `procedure.character.playtest-bootstrap`, `mechanic.dnd2024.armor-class.write`, or
-  `mechanic.dnd2024.character-level.record`; their old shapes do not match the current derived ECS model.
+- Do not restore `procedure.character.playtest-bootstrap`, `dnd2024.mechanic.armor-class.write`, or
+  `dnd2024.mechanic.character-level.record`; their old shapes do not match the current derived ECS model.
 - Preserve the complete mechanic contract returned by discovery. Raise the generic retrieval
   document ceiling to 64,000 characters; do not truncate, special-case D&D, or exclude executable
   source from the exact catalog contract.

@@ -54,7 +54,9 @@ public sealed class ActivatedApplicationDocumentReader(
             var text = StrictUtf8.GetString(bytes);
             if (text.Length > 0 && text[0] == '\uFEFF') text = text[1..];
             return new(applicationId, activation.ActivationRevision, activation.ActivationFingerprint,
-                winner.SourceId, winner.RelativePath, winner.ContentFingerprint, text);
+                winner.SourceId, winner.RelativePath, winner.ContentFingerprint, text,
+                Array.AsReadOnly(activation.Sources.Select(value => value.SourceId)
+                    .Order(StringComparer.Ordinal).ToArray()));
         }
         catch (ActivatedApplicationDocumentReadException) { throw; }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException

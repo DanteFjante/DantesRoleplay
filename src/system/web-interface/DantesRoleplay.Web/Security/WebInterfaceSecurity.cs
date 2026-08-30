@@ -8,6 +8,9 @@ public static class WebInterfaceSecurity
     public const string ReadRateLimitPolicy = "dantes-web-read";
     public const string UploadRateLimitPolicy = "dantes-web-upload";
     public const string StreamRateLimitPolicy = "dantes-web-stream";
+    public const int ReadRequestsPerMinute = 2_000;
+    public const int UploadRequestsPerMinute = 10;
+    public const int ConcurrentStreams = 4;
 
     public const string ContentSecurityPolicy =
         "default-src 'self'; " +

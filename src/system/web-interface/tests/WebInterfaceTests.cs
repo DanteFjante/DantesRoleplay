@@ -43,6 +43,14 @@ namespace DantesRoleplay.Tests;
 public sealed class WebInterfaceTests
 {
     [Fact]
+    public void Web_quotas_keep_writes_and_streams_tight_while_allowing_catalog_reads()
+    {
+        Assert.Equal(2_000, WebInterfaceSecurity.ReadRequestsPerMinute);
+        Assert.Equal(10, WebInterfaceSecurity.UploadRequestsPerMinute);
+        Assert.Equal(4, WebInterfaceSecurity.ConcurrentStreams);
+    }
+
+    [Fact]
     public async Task System_task_body_is_closed_and_allows_bounded_large_semantic_agendas()
     {
         var invalid = new DefaultHttpContext();
@@ -331,13 +339,16 @@ public sealed class WebInterfaceTests
             .Where(endpoint => endpoint.RoutePattern.RawText!.StartsWith("/api/applications/", StringComparison.Ordinal)
                 || endpoint.RoutePattern.RawText == "/components/application-conversation.js"
                 || endpoint.RoutePattern.RawText == "/components/maps/{name}.png"
+                || endpoint.RoutePattern.RawText == "/components/media/{name}"
                 || endpoint.RoutePattern.RawText == "/components/{name}.js")
             .Select(endpoint => (endpoint.RoutePattern.RawText,
                 Method: endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods.Single())).ToArray();
         Assert.Equal([
             ("/components/application-conversation.js", HttpMethods.Get),
             ("/components/maps/{name}.png", HttpMethods.Get),
+            ("/components/media/{name}", HttpMethods.Get),
             ("/components/{name}.js", HttpMethods.Get),
+            ("/api/applications/{applicationId}/catalog/browse", HttpMethods.Get),
             ("/api/applications/{applicationId}/catalog/records/{qualifiedId}", HttpMethods.Get),
             ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}", HttpMethods.Get),
             ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}/prepare", HttpMethods.Post),
@@ -446,6 +457,8 @@ public sealed class WebInterfaceTests
 
         Assert.Null(await BrowserMapAssets.ReadAsync("../thalos-world"));
         Assert.Null(await BrowserMapAssets.ReadAsync("missing-map"));
+        Assert.NotNull(await BrowserMapAssets.ReadAsync("caldris-world"));
+        Assert.NotNull(await BrowserMapAssets.ReadAsync("caldris-eredane"));
         var expectedMap = await BrowserMapAssets.ReadAsync("thalos-world");
         Assert.NotNull(expectedMap);
 
@@ -473,6 +486,29 @@ public sealed class WebInterfaceTests
         await mapRoute.RequestDelegate!(missingMapContext);
 
         Assert.Equal(StatusCodes.Status404NotFound, missingMapContext.Response.StatusCode);
+
+        const string mediaName = "sha256.3ae0336e89155a4a00fb0d982ae903bf9ed1137cd292b097b252fd38c1501fa3.png";
+        Assert.Null(await BrowserMediaAssets.ReadAsync("../" + mediaName));
+        Assert.Null(await BrowserMediaAssets.ReadAsync("sha256.AAE0336e89155a4a00fb0d982ae903bf9ed1137cd292b097b252fd38c1501fa3.png"));
+        Assert.Null(await BrowserMediaAssets.ReadAsync("sha256.3ae0336e89155a4a00fb0d982ae903bf9ed1137cd292b097b252fd38c1501fa3.gif"));
+        var expectedMedia = await BrowserMediaAssets.ReadAsync(mediaName);
+        Assert.NotNull(expectedMedia);
+        Assert.Equal("image/png", expectedMedia!.ContentType);
+
+        var mediaRoute = Assert.Single(((IEndpointRouteBuilder)application).DataSources
+            .SelectMany(source => source.Endpoints).OfType<RouteEndpoint>(), endpoint =>
+                endpoint.RoutePattern.RawText == "/components/media/{name}");
+        var mediaContext = RequestContext("localhost:6217", IPAddress.Loopback);
+        mediaContext.RequestServices = application.Services;
+        mediaContext.Request.Method = HttpMethods.Get;
+        mediaContext.Request.RouteValues["name"] = mediaName;
+        mediaContext.Response.Body = new MemoryStream();
+
+        await mediaRoute.RequestDelegate!(mediaContext);
+
+        Assert.Equal(StatusCodes.Status200OK, mediaContext.Response.StatusCode);
+        Assert.Equal("image/png", mediaContext.Response.ContentType);
+        Assert.Equal(expectedMedia.Content, ((MemoryStream)mediaContext.Response.Body).ToArray());
     }
 
     [Fact]
@@ -2568,6 +2604,8 @@ public sealed class WebInterfaceTests
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/control/status"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/applications/quest/observations"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/catalog/browse"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath(
             "/api/applications/quest/catalog/records/quest.item.fixture.v1"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath(
             "/api/applications/quest/state-spaces/main/mechanics/quest.mechanic.fixture"));
@@ -2594,6 +2632,8 @@ public sealed class WebInterfaceTests
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/components-other/system-workspace.js"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/applications/quest/conversations"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/applications/quest/observations/extra"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/catalog/browse/extra"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath(
             "/api/applications/quest/catalog/records/quest.item.fixture.v1/extra"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath(

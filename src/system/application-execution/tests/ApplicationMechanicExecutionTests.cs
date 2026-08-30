@@ -184,6 +184,63 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
     }
 
     [Fact]
+    public async Task Host_derives_and_projects_immutable_child_operation_identity()
+    {
+        var app = ApplicationIdentifier.Parse("identity");
+        var childContent = JsonSerializer.Serialize(new
+        {
+            requirements = "{}",
+            source = "return {data:{execution:ctx.execution},effects:[],events:[],notifications:[]};"
+        });
+        var parentContent = JsonSerializer.Serialize(new
+        {
+            requirements = "{\"children\":{\"child\":{\"mechanicId\":\"mechanic.child\",\"roleBindings\":{},\"inheritInput\":false,\"input\":\"{}\"}}}",
+            source = "var rejected=0;try{ctx.execution.operationId='forged';}catch(error){rejected++;}return {data:{execution:ctx.execution,child:ctx.children.child[0].execution,childData:JSON.parse(ctx.children.child[0].output.data).execution,rejected:rejected,caller:ctx.input.execution.operationId},effects:[],events:[],notifications:[]};"
+        });
+        var child = new CatalogRecordDefinition(app.Value, "mechanic", app.Value + ".mechanic.child",
+            "Child", "Child.", [], [], "mechanics", "active", 1, childContent, Hash(childContent),
+            "source", "mechanics/child.md");
+        var parent = new CatalogRecordDefinition(app.Value, "mechanic", app.Value + ".mechanic.parent",
+            "Parent", "Parent.", [], [], "mechanics", "active", 1, parentContent, Hash(parentContent),
+            "source", "mechanics/parent.md");
+        var manifest = CatalogNavigationManifest.Create(app, Hash("identity-catalog"), "catalog-lexical-v1",
+            [new(app.Value, "Identity", "Identity catalog.")],
+            [new(app.Value, "", "Identity", "Identity catalog.", CatalogDescriptionStatus.Authored),
+             new(app.Value, "mechanics", "Mechanics", "Mechanics.", CatalogDescriptionStatus.Authored)],
+            [child, parent]);
+        var provider = new InMemoryPublicApplicationCatalogProvider(new Dictionary<ApplicationIdentifier, ICatalogNavigator>
+        {
+            [app] = new InMemoryCatalogNavigator(manifest,
+                new CatalogCursorCodec(Encoding.UTF8.GetBytes("identity-test-cursor-key-32-bytes")))
+        });
+        var rootId = "0123456789abcdef0123456789abcdef";
+        var execution = new MechanicExecutionContext(rootId, rootId, null, 0);
+        var result = await new ApplicationMechanicEvaluator(
+            provider, new PassThroughResolver(), new JintMechanicEngine()).EvaluateAsync(new(
+            "space", app, parent.QualifiedId, parent.ContentFingerprint,
+            new(new Dictionary<string, EcsComponentReference>(), new Dictionary<string, string>()),
+            new Dictionary<string, string>(),
+            "{\"execution\":{\"operationId\":\"caller-forged\"}}", 42, execution));
+
+        Assert.True(result.Ok, result.Run?.Error ?? string.Join("; ", result.Problems));
+        var childExecution = Assert.Single(result.Projection!.Children["child"]).Execution;
+        Assert.NotNull(childExecution);
+        var canonical = string.Join('\n', "mechanic-child-operation-v1", rootId, rootId, "0",
+            child.QualifiedId, child.ContentFingerprint);
+        var expectedChildId = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)))[..32]
+            .ToLowerInvariant();
+        Assert.Equal(new MechanicExecutionContext(rootId, expectedChildId, rootId, 0), childExecution);
+
+        using var data = JsonDocument.Parse(result.Run!.Output.Data);
+        var root = data.RootElement;
+        Assert.Equal(rootId, root.GetProperty("execution").GetProperty("operationId").GetString());
+        Assert.Equal(expectedChildId, root.GetProperty("child").GetProperty("operationId").GetString());
+        Assert.Equal(expectedChildId, root.GetProperty("childData").GetProperty("operationId").GetString());
+        Assert.Equal(1, root.GetProperty("rejected").GetInt32());
+        Assert.Equal("caller-forged", root.GetProperty("caller").GetString());
+    }
+
+    [Fact]
     public async Task Exact_application_action_applies_to_bound_state_once_and_replays_by_identity()
     {
         await using var db = _fixture.CreateContext();
@@ -254,6 +311,11 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
 
         Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, first.Disposition);
         Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replay.Disposition);
+        Assert.Equal(new MechanicExecutionContext(
+            request.ExecutionIdentity.OperationId,
+            request.ExecutionIdentity.OperationId,
+            null,
+            0), evaluator.LastRequest!.Execution);
         Assert.Equal("A fixture appears.", first.Narration);
         Assert.Equal(2, first.AppliedEffectCount);
         Assert.NotNull(await entities.GetEntityAsync("action-space", "created"));
@@ -323,6 +385,15 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
         }
     }
 
+    private sealed class PassThroughResolver : IApplicationMechanicProjectionResolver
+    {
+        public Task<ProjectionResult> ResolveAsync(string stateSpaceId, ApplicationIdentifier applicationId,
+            MechanicRequirements requirements, ApplicationMechanicProjectionMapping mapping,
+            IReadOnlyDictionary<string, string> roleAssignments, string inputJson, long seed,
+            CancellationToken cancellationToken = default) => Task.FromResult(new ProjectionResult(
+                new MechanicProjection { StateSpaceId = stateSpaceId, Input = inputJson, Seed = seed }, []));
+    }
+
     private sealed class StaticActivation(ActiveApplicationManifest value) : IApplicationActivationReader
     {
         public ActiveApplicationManifest? Current(ApplicationIdentifier applicationId) =>
@@ -331,7 +402,13 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
 
     private sealed class StaticEvaluator(ApplicationMechanicEvaluationResult value) : IApplicationMechanicEvaluator
     {
+        public ApplicationMechanicEvaluationRequest? LastRequest { get; private set; }
+
         public Task<ApplicationMechanicEvaluationResult> EvaluateAsync(ApplicationMechanicEvaluationRequest request,
-            CancellationToken cancellationToken = default) => Task.FromResult(value);
+            CancellationToken cancellationToken = default)
+        {
+            LastRequest = request;
+            return Task.FromResult(value);
+        }
     }
 }

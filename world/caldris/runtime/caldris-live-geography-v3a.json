@@ -1,0 +1,331 @@
+{
+  "requestToken": "ca1d215e000000000000000000000003",
+  "applicationId": "dnd2024",
+  "stateSpaceId": "dnd2024-main",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.alderwick",
+      "name": "Alderwick",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Alderwick is a kingdom of Eredane. Its present pressure: A childless queen, aggressive toll reform, and a suspiciously organized smuggling response.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.map.anchor",
+          "expectedRevision": 0,
+          "value": {
+            "x": 510,
+            "y": 500
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.map.visual",
+          "expectedRevision": 0,
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "assetKey": "caldris.region.eredane.player",
+                "alt": "A regional map of Alderwick and the Bramblebridge country."
+              },
+              "dm": {
+                "assetKey": "caldris.region.eredane.dm",
+                "alt": "The Game Master map of Alderwick and the Bramblebridge country."
+              }
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.eredane",
+        "slot": "region",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.dunmarrow",
+      "name": "Dunmarrow",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Dunmarrow is a kingdom of Eredane. Its present pressure: Iron wealth declines while border forts and old military families demand more funding.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.eredane",
+        "slot": "region",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.carrowmere",
+      "name": "Carrowmere",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Carrowmere is a kingdom of Eredane. Its present pressure: Shipwright labour disputes threaten the grain fleet before a dangerous sailing season.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.eredane",
+        "slot": "region",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.bellafont",
+      "name": "Bellafont",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Bellafont is a kingdom of Eredane. Its present pressure: An orchard blight and rival claims over irrigation monasteries strain a famously charming court.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.eredane",
+        "slot": "region",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.lornesse",
+      "name": "Lornesse",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Lornesse is a kingdom of Eredane. Its present pressure: Mine closures expose older tunnels, unpaid obligations, and possible dragon signs.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.eredane",
+        "slot": "region",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.veyr-marches",
+      "name": "Veyr Marches",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Veyr Marches is a elective march confederacy of Eredane. Its present pressure: The High Warden is dying and the marches disagree whether one successor should command them all.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.eredane",
+        "slot": "region",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain",
+      "name": "Ordelain",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Ordelain is a kingdom of Solasca. Its present pressure: River law and royal law conflict after the Aur changes course around a wealthy estate.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.solasca",
+        "slot": "region",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.namarra",
+      "name": "Namarra",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Namarra is a kingdom of Solasca. Its present pressure: Delta villages vanish from tax rolls while their grain still appears in foreign markets.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.solasca",
+        "slot": "region",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.tessarane",
+      "name": "Tessarane",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Tessarane is a kingdom of Solasca. Its present pressure: Astronomers predict an ordinary comet; the court insists it confirms three incompatible prophecies.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.solasca",
+        "slot": "region",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.selucia",
+      "name": "Selucia",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Selucia is a island kingdom of Solasca. Its present pressure: A royal wedding could settle maritime claims, if the families, sailors, weather, and missing cook cooperate.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.solasca",
+        "slot": "region",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.kethria",
+      "name": "Kethria",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Kethria is a kingdom of Solasca. Its present pressure: Copper tithe records suggest someone has paid a sleeping dragon for generations.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.solasca",
+        "slot": "region",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.seven-lamps-league",
+      "name": "Seven Lamps League",
+      "expectedRevision": 0,
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.game.core.world.location",
+          "expectedRevision": 0,
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Seven Lamps League is a merchant city league of Solasca. Its present pressure: The League's rotating chair has disappeared with the key to a sealed Concord archive.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.solasca",
+        "slot": "region",
+        "expectedRevision": 0
+      }
+    },
+    {
+      "entityId": "location.caldris.bramblebridge",
+      "name": "Bramblebridge",
+      "expectedRevision": 1,
+      "components": [],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "settlement",
+        "expectedRevision": 1
+      }
+    },
+    {
+      "entityId": "location.caldris.candlefen",
+      "name": "Candlefen",
+      "expectedRevision": 1,
+      "components": [],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "settlement",
+        "expectedRevision": 1
+      }
+    },
+    {
+      "entityId": "location.caldris.wrens-hollow",
+      "name": "Wren's Hollow",
+      "expectedRevision": 1,
+      "components": [],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "settlement",
+        "expectedRevision": 1
+      }
+    }
+  ],
+  "relationships": []
+}

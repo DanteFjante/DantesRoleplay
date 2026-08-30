@@ -35,6 +35,11 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <TargetPath>BrowserComponents\MapImages\%(Filename)%(Extension)</TargetPath>
     </Content>
+    <Content Include="BrowserComponents\Media\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>BrowserComponents\Media\%(Filename)%(Extension)</TargetPath>
+    </Content>
   </ItemGroup>
 
 </Project>

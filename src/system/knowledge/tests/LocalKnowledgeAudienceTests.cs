@@ -71,6 +71,29 @@ public sealed class LocalKnowledgeAudienceTests
         Assert.Equal("principal.fixture", granted.Grant.PrincipalId);
     }
 
+    [Fact]
+    public async Task Loopback_game_master_may_select_another_campaign_but_actor_may_not()
+    {
+        using var gameMasterApp = Host(gameMaster: true);
+        var gameMasterAccessor = gameMasterApp.Services.GetRequiredService<IHttpContextAccessor>();
+        gameMasterAccessor.HttpContext = Context(IPAddress.Loopback);
+        var gameMasterPolicy = gameMasterApp.Services.GetRequiredService<IAuthorizedKnowledgeAudiencePolicy>();
+
+        using var actorApp = Host();
+        var actorAccessor = actorApp.Services.GetRequiredService<IHttpContextAccessor>();
+        actorAccessor.HttpContext = Context(IPAddress.Loopback);
+        var actorPolicy = actorApp.Services.GetRequiredService<IAuthorizedKnowledgeAudiencePolicy>();
+
+        var gameMaster = await gameMasterPolicy.ResolveAsync("campaign.other");
+        var actor = await actorPolicy.ResolveAsync("campaign.other");
+
+        Assert.True(gameMaster.Granted);
+        Assert.Equal("campaign.other", gameMaster.Grant!.CampaignId);
+        Assert.Equal(KnowledgeAudienceRole.GameMaster, gameMaster.Grant.Role);
+        Assert.Null(gameMaster.Grant.ActorId);
+        Assert.False(actor.Granted);
+    }
+
     private static WebApplication Host(bool gameMaster = false)
     {
         var builder = WebApplication.CreateSlimBuilder();

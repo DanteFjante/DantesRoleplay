@@ -6,6 +6,14 @@
  * to the current audience; this file only translates a reviewed key into a local public asset.
  */
 const MAP_ASSET_URLS: Readonly<Record<string, string>> = Object.freeze({
+  "caldris.world.player": "/components/maps/caldris-world.png",
+  "caldris.world.dm": "/components/maps/caldris-world.png",
+  "caldris.region.eredane.player": "/components/maps/caldris-eredane-v2.png",
+  "caldris.region.eredane.dm": "/components/maps/caldris-eredane-v2.png",
+  "caldris.region.solasca.player": "/components/maps/caldris-solasca.png",
+  "caldris.region.solasca.dm": "/components/maps/caldris-solasca.png",
+  "caldris.town.bramblebridge.player": "/components/maps/caldris-eredane.png",
+  "caldris.town.bramblebridge.dm": "/components/maps/caldris-eredane.png",
   "thalos.player": "/components/maps/thalos-world.png",
   "thalos.dm": "/components/maps/thalos-world.png",
   "thalos.region.aldros.player": "/components/maps/region-aldros.png",

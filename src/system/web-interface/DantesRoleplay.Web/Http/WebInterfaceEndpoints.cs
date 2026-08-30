@@ -52,7 +52,9 @@ public static class WebInterfaceEndpoints
         Secure(endpoints.MapGet("/components/application-conversation.js", GetApplicationConversationElement), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/components/system-workspace.js", GetSystemWorkspaceElement), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/components/maps/{name}.png", GetBrowserMapAssetAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/components/media/{name}", GetBrowserMediaAssetAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/components/{name}.js", GetBrowserComponentAssetAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/api/applications/{applicationId}/catalog/browse", BrowseCatalog), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/api/applications/{applicationId}/catalog/records/{qualifiedId}", InspectCatalog), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}", GetApplicationMechanicAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapPost("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}/prepare", PrepareApplicationMechanicAsync), WebInterfaceSecurity.UploadRateLimitPolicy);
@@ -201,6 +203,15 @@ public static class WebInterfaceEndpoints
         return image is null
             ? Results.NotFound()
             : Results.File(image, "image/png");
+    }
+
+    private static async Task<IResult> GetBrowserMediaAssetAsync(
+        string name, CancellationToken cancellationToken)
+    {
+        var asset = await BrowserMediaAssets.ReadAsync(name, cancellationToken);
+        return asset is null
+            ? Results.NotFound()
+            : Results.File(asset.Content, asset.ContentType);
     }
 
     private static async Task<IResult> SubmitObservationAsync(
@@ -888,21 +899,11 @@ public static class WebInterfaceEndpoints
             "ready" or "empty" => Results.Json(new
             {
                 status = result.Status,
-                entries = result.Entries.Select(value => new
-                {
-                    text = value.Text,
-                    stance = value.Stance,
-                    presentationKind = value.PresentationKind
-                }).ToArray(),
+                entries = result.Entries.Select(KnowledgeNotebookEntry).ToArray(),
                 locations = result.Locations.Select(location => new
                 {
                     name = location.Name,
-                    entries = location.Entries.Select(value => new
-                    {
-                        text = value.Text,
-                        stance = value.Stance,
-                        presentationKind = value.PresentationKind
-                    }).ToArray()
+                    entries = location.Entries.Select(KnowledgeNotebookEntry).ToArray()
                 }).ToArray()
             }),
             "invalid" => Results.Json(new { error = "INVALID_KNOWLEDGE_REQUEST" },
@@ -912,6 +913,22 @@ public static class WebInterfaceEndpoints
             _ => Results.Json(new { error = "KNOWLEDGE_UNAVAILABLE" },
                 statusCode: StatusCodes.Status503ServiceUnavailable)
         };
+    }
+
+    private static IReadOnlyDictionary<string, object> KnowledgeNotebookEntry(
+        AuthorizedKnowledgeNotebookEntry value)
+    {
+        var entry = new Dictionary<string, object>(StringComparer.Ordinal)
+        {
+            ["text"] = value.Text,
+            ["stance"] = value.Stance,
+            ["presentationKind"] = value.PresentationKind
+        };
+        if (value.MediaOwnerId is not null)
+            entry["mediaOwnerId"] = value.MediaOwnerId;
+        if (value.Subject is not null)
+            entry["subject"] = new { id = value.Subject.Id, name = value.Subject.Name };
+        return entry;
     }
 
     private static Task<IResult> GetApplicationEntitiesAsync(

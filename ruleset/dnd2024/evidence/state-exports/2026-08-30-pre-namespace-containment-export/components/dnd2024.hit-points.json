@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.hit-points",
+  "name": "Hit Points (D&D 2024)",
+  "description": "One creature's authoritative current and maximum Hit Points plus a fixed SRD 5.2.1 source reference. Use mechanic.dnd2024.hit-points.write to record or correct the whole pair atomically. This component stores no damage, healing, temporary Hit Points, resistance, immunity, conditions, or death state."
+}

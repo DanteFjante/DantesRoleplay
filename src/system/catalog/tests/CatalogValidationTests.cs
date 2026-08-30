@@ -113,7 +113,7 @@ public sealed class CatalogValidationTests
                 File.ReadAllText(Path.ChangeExtension(path, ".js"))))
             .ToArray();
 
-        Assert.Equal(20, procedures.Length);
+        Assert.Equal(24, procedures.Length);
         Assert.Equal(14, mechanics.Length);
         var records = procedures.Select(value => (value.Id, value.Category, value.Name, value.Description))
             .Concat(mechanics.Select(value => (value.Id, value.Category, value.Name, value.Description)))
@@ -171,7 +171,7 @@ public sealed class CatalogValidationTests
                  string.Equals(name, "stats.schema.json", StringComparison.Ordinal)))
             .Select(name => name![..^".schema.json".Length])
             .ToHashSet(StringComparer.Ordinal);
-        Assert.Equal(34, adoptedComponentIds.Count);
+        Assert.Equal(39, adoptedComponentIds.Count);
 
         var requiredComponentIds = requirements
             .SelectMany(requirement => requirement.Parsed.AllComponentIds())

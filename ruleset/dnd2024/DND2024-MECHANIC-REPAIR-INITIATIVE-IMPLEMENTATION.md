@@ -4,7 +4,7 @@ Status: **implemented; focused acceptance passed, parent acceptance pending**
 Owner/roadmap: [D&D 2024 roadmap](ROADMAP.md)
 Dependency tree/leaf: [mechanic contract-owner repair](DND2024-MECHANIC-CONTRACT-REPAIR-DEPENDENCY-TREE.md), conditions, checks, and combat
 Ruleset alignment: **dnd2024-compatible**
-Outcome: adapt `mechanic.dnd2024.initiative.roll` to canonical feature entitlements and remove its
+Outcome: adapt `dnd2024.mechanic.initiative.roll` to canonical feature entitlements and remove its
 retired creature-attached rest dependency.
 Exclusions: rest lifecycle mutation, encounter creation, Alert Initiative swapping, condition
 derivation, schema/content changes, and live data.

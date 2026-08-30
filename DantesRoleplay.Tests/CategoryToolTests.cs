@@ -24,9 +24,9 @@ public sealed class CategoryToolTests : IDisposable
         var procedures = new ProcedureStore(db);
 
         await procedures.WriteAsync(Procedure("procedure.system.inspect", "system"));
-        await procedures.WriteAsync(Procedure("procedure.ruleset.ability", "ruleset.dnd2024.core.gameplay.ability"));
-        await procedures.WriteAsync(Procedure("procedure.ruleset.fixed-dc", "ruleset.dnd2024.core.gameplay.checks.fixed-dc"));
-        await procedures.WriteAsync(Procedure("procedure.ruleset.player", "ruleset.dnd2024.core.gameplay.player"));
+        await procedures.WriteAsync(Procedure("procedure.ruleset.ability", "dnd2024.ruleset.core.gameplay.ability"));
+        await procedures.WriteAsync(Procedure("procedure.ruleset.fixed-dc", "dnd2024.ruleset.core.gameplay.checks.fixed-dc"));
+        await procedures.WriteAsync(Procedure("procedure.ruleset.player", "dnd2024.ruleset.core.gameplay.player"));
 
         var root = await QueryAsync(db, catalog: "procedures");
         var rootData = Data(root);
@@ -39,7 +39,7 @@ public sealed class CategoryToolTests : IDisposable
         Assert.StartsWith("query(kind: \"categories\"", root.NextSteps[0], StringComparison.Ordinal);
         Assert.StartsWith("query(kind: \"procedures\"", root.NextSteps[1], StringComparison.Ordinal);
 
-        var branch = await QueryAsync(db, catalog: "procedures", category: "ruleset.dnd2024.core.gameplay");
+        var branch = await QueryAsync(db, catalog: "procedures", category: "dnd2024.ruleset.core.gameplay");
         var branchData = Data(branch).GetProperty("Branch");
         var children = branchData.GetProperty("Children").EnumerateArray().ToList();
 
@@ -60,15 +60,15 @@ public sealed class CategoryToolTests : IDisposable
         var mechanics = new MechanicStore(db);
 
         await mechanics.WriteAsync(Mechanic("mechanic.system.inspect", "system", MechanicStatus.Active));
-        await mechanics.WriteAsync(Mechanic("mechanic.ruleset.play", "ruleset.dnd2024.play", MechanicStatus.Archived));
-        await mechanics.WriteAsync(Mechanic("mechanic.ruleset.player", "ruleset.dnd2024.player", MechanicStatus.Archived));
+        await mechanics.WriteAsync(Mechanic("mechanic.ruleset.play", "dnd2024.ruleset.play", MechanicStatus.Archived));
+        await mechanics.WriteAsync(Mechanic("mechanic.ruleset.player", "dnd2024.ruleset.player", MechanicStatus.Archived));
 
         var visible = await QueryAsync(db, catalog: "mechanics");
         var all = await QueryAsync(db, catalog: "mechanics", includeInactive: true);
         var ruleset = await QueryAsync(
             db,
             catalog: "mechanics",
-            category: "ruleset.dnd2024.play",
+            category: "dnd2024.ruleset.play",
             includeInactive: true);
 
         Assert.True(visible.Ok, JsonSerializer.Serialize(visible));
@@ -134,10 +134,10 @@ public sealed class CategoryToolTests : IDisposable
         var mechanics = new MechanicStore(db);
 
         await procedures.WriteAsync(Procedure("procedure.system.inspect", "system"));
-        await procedures.WriteAsync(Procedure("procedure.ruleset.play", "ruleset.dnd2024.play"));
+        await procedures.WriteAsync(Procedure("procedure.ruleset.play", "dnd2024.ruleset.play"));
         await mechanics.WriteAsync(Mechanic(
             "mechanic.ruleset.play",
-            "ruleset.dnd2024.play",
+            "dnd2024.ruleset.play",
             MechanicStatus.Archived));
 
         var result = await new OrientTool().OrientAsync(

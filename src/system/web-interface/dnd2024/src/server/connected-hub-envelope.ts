@@ -8,6 +8,7 @@ import type {
   PartyDossierEntry,
   PartyMemberReadModel,
   ReadyHubEnvelope,
+  WorldHistoryEvent,
 } from "../data/hub-types";
 import { resolveMapAssetUrl } from "../data/map-assets.ts";
 import { classifyThalorienKnowledge } from "../data/thalorien-presentation.ts";
@@ -60,6 +61,143 @@ function partyEntries(
     }));
 }
 
+function referenceLabel(value: string): string {
+  const slug = value.split(".").filter(Boolean).at(-1) ?? value;
+  return normalizeSlugWords(slug) ?? slug;
+}
+
+function canonicalSheetEntries(member: ConnectedPartyMember): PartyDossierEntry[] {
+  const canonical = member.canonical;
+  if (!canonical) return [];
+  const entries: PartyDossierEntry[] = [];
+  for (const membership of canonical.classes) {
+    const className = referenceLabel(membership.classId);
+    entries.push({
+      id: `${member.id}:canonical:class:${membership.id}`,
+      kind: "class",
+      title: `${className} · Level ${membership.level}`,
+      detail: membership.subclassId
+        ? `${referenceLabel(membership.subclassId)} subclass. Stored canonical class membership.`
+        : "Stored canonical class membership.",
+    });
+  }
+  if (canonical.hitPoints) {
+    const reduction = canonical.hitPoints.maximumReduction
+      ? ` Maximum reduced by ${canonical.hitPoints.maximumReduction}.`
+      : "";
+    entries.push({
+      id: `${member.id}:canonical:hit-points`,
+      kind: "vital",
+      title: "Hit Points",
+      detail: `${canonical.hitPoints.current} of ${canonical.hitPoints.maximum}.${reduction}`,
+    });
+  }
+  if (canonical.temporaryHitPoints) {
+    entries.push({
+      id: `${member.id}:canonical:temporary-hit-points`,
+      kind: "vital",
+      title: "Temporary Hit Points",
+      detail: String(canonical.temporaryHitPoints.amount),
+    });
+  }
+  for (const ability of canonical.abilities ?? []) {
+    entries.push({
+      id: `${member.id}:canonical:ability:${ability.id}`,
+      kind: "ability score",
+      title: referenceLabel(ability.id),
+      detail: `Score ${ability.score}. Modifiers remain derived by the rules owner.`,
+    });
+  }
+  for (const speed of canonical.movement ?? []) {
+    const amount = speed.denominator === 1
+      ? String(speed.numerator)
+      : `${speed.numerator}/${speed.denominator}`;
+    entries.push({
+      id: `${member.id}:canonical:movement:${speed.id}`,
+      kind: "movement",
+      title: `${referenceLabel(speed.id)} speed`,
+      detail: `${amount} ${referenceLabel(speed.unitId)}.`,
+    });
+  }
+  if (canonical.body) {
+    entries.push({
+      id: `${member.id}:canonical:size`,
+      kind: "body",
+      title: "Size",
+      detail: referenceLabel(canonical.body.sizeId),
+    });
+  }
+  if (canonical.experience) {
+    entries.push({
+      id: `${member.id}:canonical:experience`,
+      kind: "advancement",
+      title: "Experience",
+      detail: `${canonical.experience.total} recorded XP.`,
+    });
+  }
+  for (const proficiency of canonical.proficiencies ?? []) {
+    entries.push({
+      id: `${member.id}:canonical:proficiency:${proficiency.id}`,
+      kind: "proficiency",
+      title: referenceLabel(proficiency.id),
+      detail: `${referenceLabel(proficiency.rankId)} rank. No bonus is calculated in the browser.`,
+    });
+  }
+  return entries;
+}
+
+function canonicalBackstoryEntries(member: ConnectedPartyMember): PartyDossierEntry[] {
+  const identity = member.canonical?.identity;
+  if (!identity) return [];
+  return ([
+    ["pronouns", "Pronouns", identity.pronouns],
+    ["appearance", "Appearance", identity.appearance],
+    ["biography", "Biography", identity.biography],
+    ["player-notes", "Player notes", identity.playerNotes],
+  ] as const).flatMap(([key, title, detail]) => detail ? [{
+    id: `${member.id}:canonical:identity:${key}`,
+    kind: "identity",
+    title,
+    detail,
+  }] : []);
+}
+
+function canonicalOriginEntries(member: ConnectedPartyMember): PartyDossierEntry[] {
+  const origin = member.canonical?.origin;
+  if (!origin) return [];
+  return [
+    {
+      id: `${member.id}:canonical:origin:species`,
+      kind: "species",
+      title: referenceLabel(origin.speciesId),
+      detail: "Stored canonical species selection.",
+    },
+    {
+      id: `${member.id}:canonical:origin:background`,
+      kind: "background",
+      title: referenceLabel(origin.backgroundId),
+      detail: "Stored canonical background selection.",
+    },
+  ];
+}
+
+function canonicalInventoryEntries(member: ConnectedPartyMember): PartyDossierEntry[] {
+  const canonical = member.canonical;
+  if (!canonical || canonical.inventoryStatus !== "ready") return [];
+  return canonical.inventory.map((item) => {
+    const placement = referenceLabel(item.slot);
+    const equipped = item.equipmentSlots.length > 0
+      ? ` Equipped in ${item.equipmentSlots.map(referenceLabel).join(", ")}.`
+      : "";
+    return {
+      id: `${member.id}:canonical:inventory:${item.id}`,
+      kind: item.equipmentSlots.length > 0 ? "equipped" : "inventory",
+      title: item.name,
+      detail: `Quantity ${item.quantity}. Placement: ${placement}.${equipped}`,
+    };
+  });
+}
+
 function projectParty(connection: ConnectedCampaignEnvelope): PartyMemberReadModel[] {
   const members: ConnectedPartyMember[] = connection.party ?? [{
     ...connection.actor,
@@ -69,10 +207,19 @@ function projectParty(connection: ConnectedCampaignEnvelope): PartyMemberReadMod
     connection.knowledge.status === "ready";
 
   return members.map((member) => {
-    const sheet = partyEntries(member, ["class", "feature"]);
-    const backstory = partyEntries(member, ["background", "note"]);
-    const origin = partyEntries(member, ["class", "background"]);
-    const inventory = partyEntries(member, ["equipment"]);
+    const provisionalSheet = partyEntries(member, ["class", "feature"]);
+    const provisionalBackstory = partyEntries(member, ["background", "note"]);
+    const provisionalOrigin = partyEntries(member, ["class", "background"]);
+    const provisionalInventory = partyEntries(member, ["equipment"]);
+    const projectedSheet = canonicalSheetEntries(member);
+    const projectedBackstory = canonicalBackstoryEntries(member);
+    const projectedOrigin = canonicalOriginEntries(member);
+    const projectedInventory = canonicalInventoryEntries(member);
+    const sheet = projectedSheet.length > 0 ? projectedSheet : provisionalSheet;
+    const backstory = projectedBackstory.length > 0 ? projectedBackstory : provisionalBackstory;
+    const origin = projectedOrigin.length > 0 ? projectedOrigin : provisionalOrigin;
+    const inventoryIsCanonical = member.canonical?.inventoryStatus === "ready";
+    const inventory = inventoryIsCanonical ? projectedInventory : provisionalInventory;
     const primaryDirection = origin[0]?.title ?? sheet[0]?.title ?? "Character details not yet recorded";
     return {
       id: member.id,
@@ -81,7 +228,17 @@ function projectParty(connection: ConnectedCampaignEnvelope): PartyMemberReadMod
       detail: primaryDirection,
       status: member.state ? displayStatus(member.state) : "Active participant",
       isCurrent: member.current,
-      recordStatus: member.entries.length > 0 ? "Provisional character record" : "Identity only",
+      recordStatus: member.canonical
+        ? "Canonical character state"
+        : (member.entries.length > 0 ? "Provisional character record" : "Identity only"),
+      sheetStatus: projectedSheet.length > 0
+        ? "canonical"
+        : (provisionalSheet.length > 0 ? "provisional" : "empty"),
+      inventoryStatus: inventoryIsCanonical
+        ? (projectedInventory.length > 0 ? "canonical" : "empty")
+        : (member.canonical
+          ? "unavailable"
+          : (provisionalInventory.length > 0 ? "provisional" : "empty")),
       sheet,
       knowledge: canAttachBoundKnowledge && member.current
         ? connection.knowledge.entries.map((entry, index) => ({
@@ -452,6 +609,62 @@ function splitKnowledgeText(value: string, fallbackTitle: string): { title: stri
   };
 }
 
+const QUEST_SEED_TITLE = /^Q(\d{2})\s+[—-]\s+(.+)$/u;
+const QUEST_SEED_LABEL = /(?:^|\s)(Hook|Layers|Objectives|Routes|Clues|Riddle|Creative constraints|Failure forward|Aftermath):\s*/gu;
+
+function questSeedSections(value: string): Map<string, string> {
+  const matches = [...value.matchAll(QUEST_SEED_LABEL)];
+  const sections = new Map<string, string>();
+  matches.forEach((match, index) => {
+    const label = match[1];
+    if (!label || match.index === undefined) return;
+    const start = match.index + match[0].length;
+    const end = matches[index + 1]?.index ?? value.length;
+    const section = value.slice(start, end).trim();
+    if (section) sections.set(label, section);
+  });
+  return sections;
+}
+
+function questSeedObjectives(value: string): Array<{ id: string; status: string; text: string }> {
+  return [...value.matchAll(/(?:^|\s)([1-3])\.\s*(.*?)(?=\s+[1-3]\.\s|$)/gu)]
+    .map((match) => ({
+      id: `objective-${match[1]}`,
+      status: "Prepared",
+      text: match[2]?.trim() ?? "",
+    }))
+    .filter((objective) => objective.text.length > 0)
+    .slice(0, 3);
+}
+
+function preparedQuestCards(
+  entries: ConnectedCampaignEnvelope["knowledge"]["entries"],
+  activeChapterTitle: string | null,
+) {
+  return entries.flatMap((entry, index) => {
+    const content = splitKnowledgeText(entry.text, `Prepared adventure ${index + 1}`);
+    const titleMatch = content.title.match(QUEST_SEED_TITLE);
+    if (!titleMatch) return [];
+    const sections = questSeedSections(content.detail);
+    const objectives = questSeedObjectives(sections.get("Objectives") ?? "");
+    const title = titleMatch[2]?.trim() || content.title;
+    const active = activeChapterTitle === title;
+    const hook = sections.get("Hook") ?? content.detail;
+    return [{
+      id: `live-quest-seed-${titleMatch[1]}`,
+      sortOrder: active ? 1_000 : 100 - Number.parseInt(titleMatch[1] ?? String(index + 1), 10),
+      kind: active ? "Opening adventure" : "Prepared adventure",
+      status: active ? "Active" : "Prepared",
+      title,
+      summary: hook,
+      nextStep: objectives[0]?.text ?? hook,
+      objectives,
+      links: { locations: [], people: [], factions: [] },
+      dmContext: content.detail,
+    }];
+  }).sort((left, right) => right.sortOrder - left.sortOrder || left.title.localeCompare(right.title));
+}
+
 
 export function connectedCampaignToHubEnvelope(
   connection: ConnectedCampaignEnvelope,
@@ -489,6 +702,7 @@ export function connectedCampaignToHubEnvelope(
         containmentSlot: entry.containmentSlot,
         mapAnchor: entry.mapAnchor,
         mapVisual: entry.mapVisual,
+        media: entry.media,
       };
     })
     : knownLocations.map((entry, index) => ({
@@ -591,6 +805,7 @@ export function connectedCampaignToHubEnvelope(
         routes: [],
         mapAnchor: { x, y },
         people: [],
+        ...(entry.media ? { media: entry.media } : {}),
       };
     })
     : [{
@@ -623,6 +838,7 @@ export function connectedCampaignToHubEnvelope(
       summary: person.motive?.summary ?? `${person.name} is recorded at ${location.name}.`,
       background: "No background has been recorded.",
       disposition: person.motive ? displayStatus(person.motive.status) : "Not recorded",
+      ...(person.media?.portrait ? { portrait: person.media.portrait } : {}),
       ...(person.motive ? { motive: person.motive.summary } : {}),
       location: { id: location.id, name: location.name, region: location.region },
     }];
@@ -656,8 +872,33 @@ export function connectedCampaignToHubEnvelope(
     });
     holdingsByLocation.set(holding.locationId, values);
   }
+  const routeOriginId = connection.currentSituation?.status === "ready" &&
+      connection.currentSituation.kind === "exploration"
+    ? connection.currentSituation.locationId
+    : null;
+  const seenRouteIds = new Set<string>();
+  const routesByLocation = new Map<string, Array<{ destination: string; detail: string }>>();
+  for (const route of connection.knownRoutes ?? []) {
+    if (seenRouteIds.has(route.id) || route.originId !== routeOriginId ||
+        route.originId === route.destinationId || route.mode !== "on-foot" ||
+        !Number.isInteger(route.durationMinutes) || route.durationMinutes < 1 ||
+        route.durationMinutes > 1_440) continue;
+    const origin = baseLocationById.get(route.originId);
+    const destination = baseLocationById.get(route.destinationId);
+    const detail = route.detail.trim();
+    if (!origin || !destination || destination.name !== route.destinationName || !detail) continue;
+    seenRouteIds.add(route.id);
+    const values = routesByLocation.get(origin.id) ?? [];
+    values.push({
+      destination: destination.name,
+      detail: `${detail} · On foot, ${route.durationMinutes} ${route.durationMinutes === 1 ? "minute" : "minutes"}.`,
+    });
+    routesByLocation.set(origin.id, values);
+  }
   const worldLocations = baseWorldLocations.map((location) => ({
     ...location,
+    routes: (routesByLocation.get(location.id) ?? []).sort((left, right) =>
+      left.destination.localeCompare(right.destination) || left.detail.localeCompare(right.detail)),
     people: (peopleByLocation.get(location.id) ?? []).map(({ location: _, ...person }) => person),
     ...(perspective === "dm" ? { holdings: holdingsByLocation.get(location.id) ?? [] } : {}),
   }));
@@ -718,9 +959,38 @@ export function connectedCampaignToHubEnvelope(
     dmAgenda: faction.agenda.summary,
   }));
   const worldFactions = [...sovereignPowers, ...organizations];
+  const projectedFactionById = new Map(worldFactions.map((faction) => [faction.id, faction]));
+  const campaignEntityLinks = (entityIds: readonly string[] = []) => {
+    const locations: Array<{ id: string; name: string }> = [];
+    const people: Array<{ id: string; name: string; kind: "NPC" | "Creature" }> = [];
+    const factions: Array<{ id: string; name: string }> = [];
+    for (const id of [...new Set(entityIds)]) {
+      const location = baseLocationById.get(id);
+      if (location) {
+        locations.push({ id: location.id, name: location.name });
+        continue;
+      }
+      const person = worldPersonById.get(id);
+      if (person) {
+        people.push({ id: person.id, name: person.name, kind: person.kind });
+        continue;
+      }
+      const faction = projectedFactionById.get(id);
+      if (faction) factions.push({ id: faction.id, name: faction.name });
+    }
+    return { locations, people, factions };
+  };
   const currentLocationId = connection.currentLocationId && baseLocationById.has(connection.currentLocationId)
     ? connection.currentLocationId
     : "";
+  const currentSituation = connection.currentSituation
+    ? (connection.currentSituation.locationId === undefined ||
+        baseLocationById.has(connection.currentSituation.locationId)
+      ? connection.currentSituation
+      : { status: "unavailable" as const, message: "The current scene location is unavailable." })
+    : (currentLocationId
+      ? { status: "ready" as const, kind: "exploration" as const, locationId: currentLocationId }
+      : { status: "unavailable" as const, message: "No authoritative current scene is available." });
   const worldName = deriveWorldName(connection);
   const contextSelection = connection.contextSelection ?? {
     selectedWorldId: `world.${connection.campaign.id.split(".")[1] ?? "live"}`,
@@ -735,13 +1005,59 @@ export function connectedCampaignToHubEnvelope(
   const classifiedKnowledge = classifyThalorienKnowledge(
     knowledgeEntries.filter((entry) => entry.presentationKind !== "evidence"),
   );
+  const knowledgeLore = [
+    ...classifiedKnowledge.lore,
+    ...classifiedKnowledge.history.map((entry) => ({
+      id: `lore-${entry.id}`,
+      title: entry.title,
+      category: "World lore",
+      status: entry.status,
+      summary: entry.summary,
+      body: [entry.summary, entry.consequence].filter(Boolean).join("\n\n"),
+      linkedLocations: entry.linkedLocations,
+      linkedPeople: entry.linkedPeople,
+      linkedFactions: [],
+      linkedHistory: [],
+    })),
+  ];
+  const chronologyHistory: WorldHistoryEvent[] = connection.chronology.status === "ready"
+    ? connection.chronology.entries.map((entry) => {
+      const subjects = entry.subjects ?? [];
+      const linkedLocations = subjects.flatMap((subject) => {
+        const location = baseLocationById.get(subject.id);
+        return location ? [{ id: location.id, name: location.name }] : [];
+      });
+      const linkedPeople = subjects.flatMap((subject) => {
+        const person = worldPersonById.get(subject.id);
+        return person ? [{ id: person.id, name: person.name, kind: person.kind }] : [];
+      });
+      const firstLocation = linkedLocations.length > 0
+        ? baseLocationById.get(linkedLocations[0]!.id)
+        : null;
+      return {
+        id: entry.id,
+        sortOrder: entry.occurredAtMinute,
+        date: entry.dateLabel,
+        era: displayStatus(entry.precision),
+        title: entry.title,
+        category: "World history",
+        region: firstLocation?.region ?? "World",
+        status: "Recorded",
+        summary: entry.summary,
+        linkedLocations,
+        linkedPeople,
+      };
+    })
+    : [];
   const campaignGoals = connection.campaign.partyGoals;
   const premise = connection.campaign.premise ?? "No campaign premise has been recorded yet.";
   const chapters = connection.campaign.chapters ?? [];
   const arcs = connection.campaign.arcs ?? [];
   const sessions = perspective === "dm" ? connection.campaign.sessions ?? [] : [];
+  const visits = perspective === "dm" ? connection.campaign.visits ?? [] : [];
   const activeChapter = chapters.find((chapter) => chapter.status === "active") ?? null;
   const activeArc = arcs.find((arc) => arc.status === "active") ?? null;
+  const preparedQuests = preparedQuestCards(knowledgeEntries, activeChapter?.title ?? null);
   const sessionAdventureLog = sessions
     .filter((session) => session.status === "ended" && session.recap)
     .map((session) => {
@@ -759,7 +1075,7 @@ export function connectedCampaignToHubEnvelope(
         result: orderedMilestones.length
           ? orderedMilestones.map((milestone) => milestone.closingSummary).join(" • ")
           : `The session ended with ${recap.arc.title} still active.`,
-        links: { locations: [], people: [], factions: [] },
+        links: campaignEntityLinks(session.worldEntityIds),
       };
     });
   const chapterAdventureLog = chapters
@@ -772,7 +1088,7 @@ export function connectedCampaignToHubEnvelope(
       title: chapter.title,
       summary: chapter.partyQuestion,
       result: chapter.closingSummary!,
-      links: { locations: [], people: [], factions: [] },
+      links: campaignEntityLinks(chapter.worldEntityIds),
       ...(chapter.gmContext ? { dmNote: chapter.gmContext } : {}),
     }));
   const campaignAdventureLog = sessionAdventureLog.length > 0
@@ -788,7 +1104,7 @@ export function connectedCampaignToHubEnvelope(
       situation: arc.partyStake,
       result: arc.closingSummary!,
       consequence: `This campaign arc is recorded as ${arc.status}.`,
-      links: { locations: [], people: [], factions: [] },
+      links: campaignEntityLinks(arc.worldEntityIds),
       ...(arc.gmContext ? { dmRamification: arc.gmContext } : {}),
     }));
   const chapterThreads = chapters
@@ -835,9 +1151,25 @@ export function connectedCampaignToHubEnvelope(
         detail: content.detail,
         partyConclusion: "No party conclusion has been recorded.",
         discoveredAt: "Current campaign knowledge",
-        links: { locations: [], people: [], factions: [] },
+        links: campaignEntityLinks(entry.subject ? [entry.subject.id] : []),
+        ...(entry.media?.handout ? { handout: entry.media.handout } : {}),
       };
     });
+  const campaignVisits = visits.flatMap((visit) => {
+    const location = baseLocationById.get(visit.locationId);
+    if (!location) return [];
+    return [{
+      id: visit.id,
+      location: { id: location.id, name: location.name, region: location.region },
+      firstVisited: `Campaign minute ${visit.firstVisitedMinute}`,
+      lastVisited: `Campaign minute ${visit.lastVisitedMinute}`,
+      visitCount: visit.visitCount,
+      status: displayStatus(visit.status),
+      summary: visit.summary,
+      memory: visit.memory,
+      ...(visit.gmContext ? { dmContext: visit.gmContext } : {}),
+    }];
+  });
   const regionCounts = hasSourceLocations
     ? worldLocations.reduce((acc, location) => {
       acc.set(location.region, (acc.get(location.region) ?? 0) + 1);
@@ -861,6 +1193,7 @@ export function connectedCampaignToHubEnvelope(
       perspective,
       allowedPerspectives: connection.audience.allowedPerspectives,
     },
+    currentSituation,
     contextSelection,
     world: {
       id: contextSelection.selectedWorldId,
@@ -888,11 +1221,11 @@ export function connectedCampaignToHubEnvelope(
           detail: "Player-safe campaign and world information",
         },
       ],
-      history: classifiedKnowledge.history,
+      history: chronologyHistory,
       locations: worldLocations,
       people: worldPeople,
       factions: worldFactions,
-      lore: classifiedKnowledge.lore,
+      lore: knowledgeLore,
     },
     campaign: {
       title: connection.campaign.name,
@@ -930,10 +1263,10 @@ export function connectedCampaignToHubEnvelope(
         { label: "Party goals", value: String(campaignGoals.length), detail: "Recorded in the campaign root" },
       ],
       adventureLog: campaignAdventureLog,
-      placesVisited: [],
+      placesVisited: campaignVisits,
       outcomes: campaignOutcomes,
       mapOverlays: liveKnowledgeOverlays,
-      quests: campaignGoals.map((goal, index) => ({
+      quests: preparedQuests.length > 0 ? preparedQuests : campaignGoals.map((goal, index) => ({
         id: `live-goal-${index}`,
         sortOrder: index,
         kind: "Party goal",

@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.amnesty-settlements",
+  "name": "Imperial Amnesty Settlements",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Settlements around the continent, including settlements inhabited by species other than humans, existed before recorded history and before the Thalmos Empire. During the monster outbreak they helped save humanity and were granted amnesty in return. The kingdoms later continued to respect that protection partly out of reverence and partly from superstition about whether violating peace with the other races would anger spirits or gods.",
+      "provenance": "Corrected during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "rule",
+      "sensitivity": "open"
+    }
+  }
+}

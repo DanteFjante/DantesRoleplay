@@ -154,10 +154,22 @@ The accepted legacy browser-component slices remain recorded in their completion
 superseded implementation prose and custom-element source have been removed. The active React
 information hub at `src/system/web-interface/dnd2024` owns new player/DM presentation work.
 The [Exploration Current View slice](DND2024-EXPLORATION-CURRENT-VIEW-SLICE-1-IMPLEMENTATION.md)
-has completed source implementation and awaits feature acceptance. It owns the bounded Current View
-tab: exact actor `presence`, authorized observations and people, known exits, optional authorized
-imagery, and an explicit unavailable state. Combat and Conversation remain outside that slice until
-their campaign-owned selectors exist.
+has completed source implementation and awaits feature acceptance. It owns exact actor `presence`,
+authorized observations and people, optional authorized imagery, and an explicit unavailable state.
+The [adaptive Current View slice](DND2024-ADAPTIVE-CURRENT-VIEW-SLICE-2-IMPLEMENTATION.md) now adds
+the confirmed `dnd2024.game.core.campaign.current-scene` runtime selector and deterministic Combat
+over Conversation over Exploration presentation. Its source implementation is complete and awaits
+feature acceptance. [Current View Slice 3](DND2024-ADAPTIVE-CURRENT-VIEW-SLICE-3-IMPLEMENTATION.md)
+adds exact known open on-foot routes from the current Exploration location, requiring admitted route
+and destination knowledge for Player output. Travel execution and live activation remain separate
+boundaries.
+[Current View Slice 4](DND2024-ADAPTIVE-CURRENT-VIEW-SLICE-4-IMPLEMENTATION.md) keeps the same exact
+audience-projected location description, observations, and optional DM-only context visible while
+the authoritative mode is Conversation or Combat. It adds no action-selection or write semantics.
+[Current View Slice 5](DND2024-ADAPTIVE-CURRENT-VIEW-SLICE-5-IMPLEMENTATION.md) adds the confirmed
+generic `game.core.campaign.scene-affordances` owner and reads it through the DND2024-qualified
+runtime ID. The Current tab displays audience-filtered, read-only narrative opportunities only when
+their full scene selector matches; it adds no mechanic discovery, eligibility, or execution.
 Scoped-map Slice 1 is accepted under its
 [receipt](evidence/dnd2024/DND2024-SCOPED-MAP-VIEWS-SLICE-1-RECEIPT.md):
 World → Region → City navigation over explicit scope links, componentized breadcrumbs, and
@@ -175,8 +187,33 @@ optional reviewed generated imagery — stay blocked in the
 on live state and on approved media provenance. Encounter/Initiative authoring, weapon attack/damage, and an interactive tactical
 battle map move to deferred Order 10 and do not block the player-information viewport.
 
-The Rules reference pilot is accepted 
-under its [receipt](evidence/dnd2024/DND2024-RULES-REFERENCE-PILOT-SLICE-1-RECEIPT.md). It reads the
-fourteen reviewed shared activity records through exact catalog-record requests and provides
-search, Action/Reaction filters, readable detail, and SRD 5.2.1 attribution. Broader curated rule
-families remain planned and require their own reviewed slice.
+The Rules reference pilot is accepted under its
+[receipt](evidence/dnd2024/DND2024-RULES-REFERENCE-PILOT-SLICE-1-RECEIPT.md), and the
+[dynamic catalog expansion](evidence/dnd2024/DND2024-RULES-REFERENCE-DYNAMIC-CATALOG-SLICE-2-RECEIPT.md)
+removes its fixed activity allowlist. The live tab now indexes every active, SRD-cited D&D entity,
+derives family filters, searches and refreshes the complete set, and shows readable selected detail
+with source attribution. A minimal source-built projection keeps the page useful when runtime
+activation rejects a drifted snapshot; mechanics, procedures, queries, raw JSON, and execution stay
+outside the player reference.
+
+Party Slice 2 is accepted under its
+[receipt](evidence/dnd2024/DND2024-LIVE-PARTY-CANONICAL-READ-SLICE-2-RECEIPT.md). The selected
+authorized character now consumes stored canonical identity, origin, class-membership, creature,
+experience, proficiency, and bounded direct-inventory state when present, while an actor such as
+Orban with only a review-required playtest record remains visibly provisional. Derived sheet
+calculations, nested inventory, and character authoring remain planned.
+
+Party Slice 3 is accepted under its
+[receipt](evidence/dnd2024/DND2024-PARTY-CINEMATIC-OVERVIEW-SLICE-3-RECEIPT.md). Overview now uses
+the dependency tree's original cinematic party-RPG direction with a dominant companion focus,
+recorded highlights, and carried-equipment hierarchy, without copying another game's assets or
+inventing a portrait. Shared owned locations and wagons/caravans are visible as explicitly
+unrecorded until a confirmed party/campaign ownership projection can supply exact property and
+cargo.
+
+Campaign record links and Places Visited now have accepted DM read/write support. Ended sessions
+and terminal arcs can receive explicit links only to World entities already relevant to the active
+campaign, while location visits are recorded as one clock-stamped aggregate per campaign/place.
+Adventure Log, Outcomes, and Clues continue to populate from ended-session recaps, terminal arcs,
+and evidence knowledge respectively. Player visit cards remain gated on A5's server-filtered
+campaign envelope; the Player browser does not enumerate raw campaign relationships.

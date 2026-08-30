@@ -71,7 +71,7 @@ dependency coverage remains explicit in the activation summary.
 ## Connecting a conversational game model
 
 The chat model should treat player text as intent, not as a rule result. For a D&D 2024 application,
-load `procedure.play.dnd2024.mini-game`, then resolve the message through the existing interaction
+load `dnd2024.procedure.play.mini-game`, then resolve the message through the existing interaction
 planner. The planner returns either a clarification/unsupported response or an inert proposal:
 
 ```text

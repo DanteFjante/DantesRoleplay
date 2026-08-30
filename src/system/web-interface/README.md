@@ -86,7 +86,7 @@ occasionally find unchanged data. The optional `page` query adds page-revision n
 HTML, bounded ZIP bundles, dynamic reads, and local SSE invalidation are supported. Pages are
 trusted operator-authored code: inline scripts and styles can call the same-origin read/SSE routes.
 The server rejects non-loopback web clients, applies restrictive browser headers, limits direct
-HTML to 1 MiB, limits uploads to 10 per minute, limits reads to 240 per minute, and permits four
+HTML to 1 MiB, limits uploads to 10 per minute, limits reads to 2,000 per minute, and permits four
 concurrent SSE streams.
 
 ## Reserved control API boundary

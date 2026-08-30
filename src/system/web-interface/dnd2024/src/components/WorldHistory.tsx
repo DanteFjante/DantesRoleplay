@@ -58,7 +58,7 @@ export function WorldHistory({
         region={region}
         regions={regions}
       />
-      <HistoryTimeline events={events} onOpenLocation={onOpenLocation} />
+      <HistoryTimeline events={events} totalEvents={world.history.length} onOpenLocation={onOpenLocation} />
     </div>
   );
 }
