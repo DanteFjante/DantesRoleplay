@@ -62,7 +62,13 @@ function partyEntries(
 }
 
 function referenceLabel(value: string): string {
-  const slug = value.split(".").filter(Boolean).at(-1) ?? value;
+  const parts = value.split(".").filter(Boolean);
+  const last = parts.at(-1) ?? value;
+  // Catalog content references carry a version suffix (for example `.v1`). The
+  // suffix is provenance, not the human-facing name; use the preceding slug.
+  const slug = /^v\d+$/u.test(last) && parts.length > 1
+    ? parts.at(-2) ?? last
+    : last;
   return normalizeSlugWords(slug) ?? slug;
 }
 
