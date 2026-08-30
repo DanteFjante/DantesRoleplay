@@ -12,7 +12,7 @@
         "Knowledge__LocalPlayer__Enabled": "true",
         "Knowledge__LocalPlayer__PrincipalId": "local.player",
         "Knowledge__LocalPlayer__ApplicationId": "dnd2024",
-        "Knowledge__LocalPlayer__CampaignId": "campaign.thalorien.brackenford",
+        "Knowledge__LocalPlayer__CampaignId": "campaign.caldris.measure-of-mercy",
         "Knowledge__LocalPlayer__Role": "GameMaster",
         "Knowledge__Completion__Enabled": "true"
       }
@@ -28,7 +28,7 @@
         "Knowledge__LocalPlayer__Enabled": "true",
         "Knowledge__LocalPlayer__PrincipalId": "local.player",
         "Knowledge__LocalPlayer__ApplicationId": "dnd2024",
-        "Knowledge__LocalPlayer__CampaignId": "campaign.thalorien.brackenford",
+        "Knowledge__LocalPlayer__CampaignId": "campaign.caldris.measure-of-mercy",
         "Knowledge__LocalPlayer__Role": "GameMaster",
         "Knowledge__Completion__Enabled": "true"
       }

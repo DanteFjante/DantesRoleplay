@@ -1,0 +1,15 @@
+{
+  "id": "dnd2024.item.scale-mail.v1",
+  "name": "Scale Mail (D&D 2024, definition v1)",
+  "components": {
+    "dnd2024.item-definition": {
+      "definitionVersion": 1,
+      "kind": "armor",
+      "stackPolicy": "separate",
+      "massPounds": { "numerator": 45, "denominator": 1 },
+      "armorProfile": { "category": "medium", "baseArmorClass": 14, "dexterityRule": "max-2", "stealthDisadvantage": true, "donDoff": { "donMinutes": 5, "doffMinutes": 1 } },
+      "equipmentModes": ["worn"],
+      "sourceRef": { "sourceId": "dnd2024.source.srd-5.2.1", "locator": "Equipment > Armor > Armor table (PDF p. 92)" }
+    }
+  }
+}

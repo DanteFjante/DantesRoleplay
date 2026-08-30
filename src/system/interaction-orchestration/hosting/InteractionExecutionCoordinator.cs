@@ -208,7 +208,9 @@ internal sealed class InteractionExecutionCoordinator(
                 _ => InteractionExecutionStepDisposition.Failed
             };
             stepReceipts.Add(new(index + 1, step.StepId, stepDisposition,
-                string.IsNullOrWhiteSpace(action.OperationId) ? null : action.OperationId));
+                action.Successful && !string.IsNullOrWhiteSpace(action.OperationId)
+                    ? action.OperationId
+                    : null));
             if (!action.Successful) stopped = true;
         }
 

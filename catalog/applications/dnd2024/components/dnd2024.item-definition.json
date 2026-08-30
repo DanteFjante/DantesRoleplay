@@ -1,0 +1,1 @@
+{"id":"dnd2024.item-definition","name":"Immutable item definition (D&D 2024)","description":"One immutable source-cited physical-item definition revision. Static mass, capacity, currency, equipment eligibility, and optional weapon/armor links live here; instances reference its entity ID exactly. Governed by procedure.mechanic.dnd2024.item-definition."}

@@ -1,0 +1,13 @@
+{
+  "id": "dnd2024.item.rations-one-day.v1",
+  "name": "Rations (D&D 2024, definition v1)",
+  "components": {
+    "dnd2024.item-definition": {
+      "definitionVersion": 1,
+      "kind": "adventuring-gear",
+      "stackPolicy": "fungible",
+      "massPounds": { "numerator": 2, "denominator": 1 },
+      "sourceRef": { "sourceId": "dnd2024.source.srd-5.2.1", "locator": "Equipment > Adventuring Gear > Rations (PDF pp. 95, 99)" }
+    }
+  }
+}

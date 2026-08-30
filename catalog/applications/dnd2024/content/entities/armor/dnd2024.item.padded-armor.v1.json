@@ -1,0 +1,21 @@
+{
+  "id": "dnd2024.item.padded-armor.v1",
+  "name": "Padded Armor (D&D 2024, definition v1)",
+  "components": {
+    "dnd2024.item-definition": {
+      "definitionVersion": 1,
+      "kind": "armor",
+      "stackPolicy": "separate",
+      "massPounds": { "numerator": 8, "denominator": 1 },
+      "armorProfile": {
+        "category": "light",
+        "baseArmorClass": 11,
+        "dexterityRule": "full",
+        "stealthDisadvantage": true,
+        "donDoff": { "donMinutes": 1, "doffMinutes": 1 }
+      },
+      "equipmentModes": ["worn"],
+      "sourceRef": { "sourceId": "dnd2024.source.srd-5.2.1", "locator": "Equipment > Armor > Armor table (PDF p. 92)" }
+    }
+  }
+}

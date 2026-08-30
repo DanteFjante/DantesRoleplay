@@ -1,0 +1,1 @@
+{"id":"dnd2024.weapon.greatsword","name":"Greatsword (D&D 2024)","components":{"dnd2024.weapon-profile":{"category":"martial","kind":"melee","attackAbilities":["str"],"damage":{"count":2,"faces":6,"type":"slashing"},"sourceRef":{"sourceId":"dnd2024.source.srd-5.2.1","locator":"Equipment > Weapons"}}}}

@@ -1,0 +1,15 @@
+{
+  "id": "dnd2024.item.chain-mail.v1",
+  "name": "Chain Mail (D&D 2024, definition v1)",
+  "components": {
+    "dnd2024.item-definition": {
+      "definitionVersion": 1,
+      "kind": "armor",
+      "stackPolicy": "separate",
+      "massPounds": { "numerator": 55, "denominator": 1 },
+      "armorProfile": { "category": "heavy", "baseArmorClass": 16, "dexterityRule": "none", "strengthMinimum": 13, "stealthDisadvantage": true, "donDoff": { "donMinutes": 10, "doffMinutes": 5 } },
+      "equipmentModes": ["worn"],
+      "sourceRef": { "sourceId": "dnd2024.source.srd-5.2.1", "locator": "Equipment > Armor > Armor table (PDF p. 92)" }
+    }
+  }
+}

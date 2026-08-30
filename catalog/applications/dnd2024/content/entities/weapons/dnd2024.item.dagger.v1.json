@@ -1,0 +1,1 @@
+{"id":"dnd2024.item.dagger.v1","name":"Dagger (D&D 2024, definition v1)","components":{"dnd2024.item-definition":{"definitionVersion":1,"kind":"weapon","stackPolicy":"separate","massPounds":{"numerator":1,"denominator":1},"weaponProfileId":"dnd2024.weapon.dagger","equipmentModes":["held"],"sourceRef":{"sourceId":"dnd2024.source.srd-5.2.1","locator":"Equipment > Weapons"}}}}

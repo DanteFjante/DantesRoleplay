@@ -80,7 +80,7 @@ public interface IStateSpaceAdministrationReader
     IReadOnlyList<StateSpaceBindingSummary> List(ApplicationIdentifier applicationId, int limit);
 }
 
-/// <summary>Creates empty state spaces against exact active application evidence; it cannot upgrade them.</summary>
+/// <summary>Creates state spaces and rebinds them only against exact active application evidence.</summary>
 public interface IStateSpaceAdministrationService : IStateSpaceAdministrationReader
 {
     Task<StateSpaceCreationPreview> PreviewCreateAsync(

@@ -104,10 +104,13 @@ reads anything, `commit` changes anything. Nothing else exists.
    `system.applications`, a new globally unique `stateSpaceId`, and `expectedFingerprint: null`.
    Creation binds one empty isolated runtime instance to that immutable application evidence; it
    does not create entities/components, upgrade an existing space, or migrate legacy state.
-   Upgrade only an empty state space using the exact current `activeFingerprint` and the space's
-   current `bindingFingerprint` from `system.applications`. The system records zero entity and
-   component counts as compatibility evidence. Any non-empty space returns `MIGRATION_REQUIRED`;
-   there is no caller-supplied migration or compatibility override.
+   Upgrade a state space using the exact current `activeFingerprint` and the space's current
+   `bindingFingerprint` from `system.applications`. An empty space is compatible directly. A
+   populated space may rebind only when every stored component still resolves to its exact
+   registered owner, version, schema hash, and valid schema value for the same immutable
+   application revision (including its declared base applications). The system records the counted
+   compatibility evidence. Any incompatible populated space returns `MIGRATION_REQUIRED`; there is
+   no caller-supplied mapping, compatibility override, or data transformation.
    Adopt legacy state only into a new state space, after registering every exact destination
    component contract and activating the application. Supply a complete explicit mapping for
    every used legacy component definition and relationship kind. Dry run fingerprints the entire

@@ -1,0 +1,1 @@
+{"id":"dnd2024.content.feature.druid.druidic.v1","name":"Druidic (Druid, D&D 2024, content v1)","components":{"dnd2024.character.content-definition":{"kind":"feature","contentKey":"druid-druidic","contentVersion":1,"status":"active","sourceRef":{"sourceId":"dnd2024.source.srd-5.2.1","locator":"Classes > Druid, PDF page 41"}}}}

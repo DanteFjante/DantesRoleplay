@@ -6,6 +6,7 @@ using DantesRoleplay.Authorization;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Operations;
+using DantesRoleplay.SchemaValidation;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.StateSpaceAdministration;
@@ -15,6 +16,8 @@ public sealed class StateSpaceAdministrationService(
     IApplicationRegistry applications,
     IApplicationActivationReader activations,
     IStateSpaceRegistry stateSpaces,
+    IApplicationComponentTypeRegistry componentTypes,
+    IBoundedJsonSchemaValidator schemas,
     IOperationLog operations) : IStateSpaceAdministrationService
 {
     private const string CreateKind = "system.state-space.create";
@@ -108,7 +111,7 @@ public sealed class StateSpaceAdministrationService(
         var evidenceFingerprint = UpgradeEvidenceFingerprint(candidate.Target, candidate.Compatibility);
         var audit = await RecordPreviewAsync(UpgradeKind, context.RequestToken, requestFingerprint,
             evidenceFingerprint, context.Intent, context.ProceduresUsed, context.AuthorizationEvidence,
-            "Validated empty state-space upgrade without changing runtime state.", cancellationToken);
+            "Validated state-space binding compatibility without changing runtime state.", cancellationToken);
         return new(candidate.Previous, candidate.Target, candidate.Compatibility, "would-upgrade", audit.Id);
     }
 
@@ -145,7 +148,7 @@ public sealed class StateSpaceAdministrationService(
             row.BindingRevision = candidate.Target.BindingRevision;
             row.UpdatedAtUtc = now;
             await operations.RecordAsync(
-                "commit", $"Upgraded empty state space '{request.StateSpaceId}' to binding revision {row.BindingRevision}.",
+                "commit", $"Upgraded state space '{request.StateSpaceId}' to binding revision {row.BindingRevision}.",
                 success: true, context.Intent, Subject(UpgradeKind, requestFingerprint), context.ProceduresUsed,
                 consumesReadEvidence: true, cancellationToken: cancellationToken,
                 guardEvidenceJson: JsonSerializer.Serialize(context.AuthorizationEvidence), id: context.RequestToken);
@@ -196,15 +199,42 @@ public sealed class StateSpaceAdministrationService(
             .Count(value => value.StateSpaceId == request.StateSpaceId);
         var componentCount = db.Set<ApplicationEcsComponentRecord>().AsNoTracking()
             .Count(value => value.StateSpaceId == request.StateSpaceId);
-        if (entityCount != 0 || componentCount != 0)
-            throw Invalid("MIGRATION_REQUIRED",
-                "The state space contains application state; an explicit reviewed migration is required.");
+        if (componentCount != 0)
+            RequireCompatibleComponents(request.StateSpaceId, application);
 
         var target = Summary(request.StateSpaceId, application, active.ActivationFingerprint,
             previous.BindingRevision + 1, previous.CreatedAtUtc, null);
-        var compatibility = new StateSpaceCompatibilityEvidence("empty-state-compatible", entityCount,
+        var compatibility = new StateSpaceCompatibilityEvidence(
+            entityCount == 0 && componentCount == 0
+                ? "empty-state-compatible"
+                : "populated-state-compatible-rebind", entityCount,
             componentCount, active.DependencyCoverageVersion, active.DependencyCoverageComplete);
         return new(previous, target, compatibility);
+    }
+
+    private void RequireCompatibleComponents(string stateSpaceId, ApplicationRevision application)
+    {
+        var baseApplications = db.Set<ApplicationRevisionBaseRecord>().AsNoTracking()
+            .Where(value => value.ApplicationId == application.ApplicationId.Value
+                && value.Revision == application.Revision)
+            .Select(value => value.BaseApplicationId)
+            .ToHashSet(StringComparer.Ordinal);
+        foreach (var component in db.Set<ApplicationEcsComponentRecord>().AsNoTracking()
+                     .Where(value => value.StateSpaceId == stateSpaceId)
+                     .OrderBy(value => value.EntityId).ThenBy(value => value.QualifiedTypeId))
+        {
+            var registered = componentTypes.Get(component.QualifiedTypeId, component.TypeVersion);
+            if (registered is null
+                || (registered.Owner != application.ApplicationId
+                    && !baseApplications.Contains(registered.Owner.Value))
+                || registered.SchemaHash != component.SchemaHash)
+                throw Invalid("MIGRATION_REQUIRED",
+                    "The state space contains a component whose exact registered contract is unavailable.");
+            var validation = schemas.Validate(registered.ProfileId, registered.SchemaJson, component.Data);
+            if (validation.Status != SchemaValueStatus.Valid)
+                throw Invalid("MIGRATION_REQUIRED",
+                    "The state space contains a component that no longer satisfies its exact registered contract.");
+        }
     }
 
     private ActiveApplicationManifest RequireActive(

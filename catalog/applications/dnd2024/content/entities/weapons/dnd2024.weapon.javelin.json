@@ -1,0 +1,1 @@
+{"id":"dnd2024.weapon.javelin","name":"Javelin (D&D 2024)","components":{"dnd2024.weapon-profile":{"category":"simple","kind":"melee","attackAbilities":["str"],"damage":{"count":1,"faces":6,"type":"piercing"},"sourceRef":{"sourceId":"dnd2024.source.srd-5.2.1","locator":"Equipment > Weapons"}}}}

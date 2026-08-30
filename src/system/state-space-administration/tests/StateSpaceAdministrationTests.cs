@@ -104,7 +104,8 @@ public sealed class StateSpaceAdministrationTests : IDisposable
         await setup.Service.PreviewCreateAsync(request, context);
         var failing = new StateSpaceAdministrationService(
             db, setup.Applications, setup.Activations,
-            new SqliteStateSpaceRegistry(db, setup.Applications), new FailingOperationLog());
+            new SqliteStateSpaceRegistry(db, setup.Applications), setup.Types, setup.Schemas,
+            new FailingOperationLog());
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => failing.CreateAsync(request, context));
 
@@ -164,7 +165,7 @@ public sealed class StateSpaceAdministrationTests : IDisposable
     }
 
     [Fact]
-    public async Task Nonempty_space_requires_an_explicit_migration_without_binding_change()
+    public async Task Compatible_populated_space_rebinds_without_changing_its_component()
     {
         await using var db = _fixture.CreateContext();
         var setup = await SetupAsync(db, "space-nonempty", 'D');
@@ -173,20 +174,52 @@ public sealed class StateSpaceAdministrationTests : IDisposable
         await setup.Service.PreviewCreateAsync(create, createContext);
         var created = await setup.Service.CreateAsync(create, createContext);
         var store = new SqliteEntityComponentStore(db,
-            new SqliteComponentTypeRegistry(db, new BoundedJsonSchemaValidator()),
-            new BoundedJsonSchemaValidator());
+            setup.Types, setup.Schemas);
         await store.CreateEntityAsync("nonempty-space", "entity-one", "Entity One");
+        var type = setup.Types.Define(new ComponentTypeDefinition(setup.App, "space-nonempty.note",
+            "{\"type\":\"object\",\"required\":[\"name\"],\"properties\":{\"name\":{\"type\":\"string\"}},\"additionalProperties\":false}"));
+        var reference = new EcsComponentReference(type.QualifiedId, type.Version, type.SchemaHash);
+        var component = await store.AddComponentAsync(new EcsComponentWrite("nonempty-space", "entity-one",
+            reference, "{\"name\":\"kept\"}", 0));
         var target = await NextActivationAsync(db, setup, 'E', "e123456789abcdef0123456789abcdef");
         var request = new StateSpaceUpgradeRequest("nonempty-space", setup.App,
             target.ActivationFingerprint, created.Binding.BindingFingerprint);
+        var context = UpgradeContext("f123456789abcdef0123456789abcdef");
+
+        var preview = await setup.Service.PreviewUpgradeAsync(request, context);
+        var rebound = await setup.Service.UpgradeAsync(request, context);
+
+        Assert.Equal("populated-state-compatible-rebind", preview.Compatibility.Code);
+        Assert.Equal(rebound, await setup.Service.UpgradeAsync(request, context));
+        Assert.NotEqual(created.Binding, rebound.Binding);
+        Assert.Equal(component, await store.GetComponentAsync("nonempty-space", "entity-one", type.QualifiedId));
+        Assert.Equal(2, await ScalarAsync(db,
+            "SELECT COUNT(*) FROM system_state_space_binding_revision WHERE StateSpaceId = 'nonempty-space'"));
+    }
+
+    [Fact]
+    public async Task Incompatible_populated_component_requires_migration_without_binding_change()
+    {
+        await using var db = _fixture.CreateContext();
+        var setup = await SetupAsync(db, "space-incompatible", 'D');
+        var create = Request("incompatible-space", setup.App, setup.Active.ActivationFingerprint);
+        var createContext = Context("de23456789abcdef0123456789abcdef");
+        await setup.Service.PreviewCreateAsync(create, createContext);
+        var created = await setup.Service.CreateAsync(create, createContext);
+        await db.Database.ExecuteSqlRawAsync("INSERT INTO system_ecs_entity (StateSpaceId, Id, Name, Revision, CreatedAtUtc) VALUES ('incompatible-space', 'entity-one', 'Entity One', 1, CURRENT_TIMESTAMP)");
+        var registered = setup.Types.Define(new ComponentTypeDefinition(setup.App, "space-incompatible.note",
+            "{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}"));
+        var staleHash = new string('A', 64);
+        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO system_ecs_component (StateSpaceId, EntityId, QualifiedTypeId, TypeVersion, SchemaHash, Data, Revision, CreatedAtUtc, UpdatedAtUtc) VALUES ('incompatible-space', 'entity-one', {registered.QualifiedId}, {registered.Version}, {staleHash}, '{{}}', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)");
+        var target = await NextActivationAsync(db, setup, 'E', "ef23456789abcdef0123456789abcdef");
+        var request = new StateSpaceUpgradeRequest("incompatible-space", setup.App,
+            target.ActivationFingerprint, created.Binding.BindingFingerprint);
 
         var failure = await Assert.ThrowsAsync<StateSpaceAdministrationException>(() =>
-            setup.Service.PreviewUpgradeAsync(request, UpgradeContext("f123456789abcdef0123456789abcdef")));
+            setup.Service.PreviewUpgradeAsync(request, UpgradeContext("ff23456789abcdef0123456789abcdef")));
 
         Assert.Equal("MIGRATION_REQUIRED", failure.Code);
-        Assert.Equal(created.Binding, setup.Service.Get("nonempty-space"));
-        Assert.Equal(1, await ScalarAsync(db,
-            "SELECT COUNT(*) FROM system_state_space_binding_revision WHERE StateSpaceId = 'nonempty-space'"));
+        Assert.Equal(created.Binding, setup.Service.Get("incompatible-space"));
     }
 
     [Fact]
@@ -228,7 +261,8 @@ public sealed class StateSpaceAdministrationTests : IDisposable
         var context = UpgradeContext("6123456789abcdef0123456789abcdea");
         await setup.Service.PreviewUpgradeAsync(request, context);
         var failing = new StateSpaceAdministrationService(db, setup.Applications, setup.Activations,
-            new SqliteStateSpaceRegistry(db, setup.Applications), new FailingOperationLog());
+            new SqliteStateSpaceRegistry(db, setup.Applications), setup.Types, setup.Schemas,
+            new FailingOperationLog());
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => failing.UpgradeAsync(request, context));
 
@@ -250,9 +284,12 @@ public sealed class StateSpaceAdministrationTests : IDisposable
         var activations = new ApplicationActivationService(db, preview, new StaticImpact(app), new OperationLog(db));
         var active = await ActivateAsync(db, app, preview, null,
             hash + "123456789abcdef0123456789abcdef");
+        var schemas = new BoundedJsonSchemaValidator();
+        var types = new SqliteComponentTypeRegistry(db, schemas);
         var service = new StateSpaceAdministrationService(
-            db, applications, activations, new SqliteStateSpaceRegistry(db, applications), new OperationLog(db));
-        return new(app, applications, preview, activations, active, service);
+            db, applications, activations, new SqliteStateSpaceRegistry(db, applications), types, schemas,
+            new OperationLog(db));
+        return new(app, applications, preview, activations, active, types, schemas, service);
     }
 
     private static async Task<ActiveApplicationManifest> ActivateAsync(
@@ -320,6 +357,8 @@ public sealed class StateSpaceAdministrationTests : IDisposable
         MutablePreview Preview,
         ApplicationActivationService Activations,
         ActiveApplicationManifest Active,
+        SqliteComponentTypeRegistry Types,
+        BoundedJsonSchemaValidator Schemas,
         StateSpaceAdministrationService Service);
 
     private sealed class MutablePreview(ApplicationPreviewResult result) : IApplicationPreviewService

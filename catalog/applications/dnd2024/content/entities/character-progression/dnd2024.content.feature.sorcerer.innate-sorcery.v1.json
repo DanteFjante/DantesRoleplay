@@ -1,0 +1,1 @@
+{"id":"dnd2024.content.feature.sorcerer.innate-sorcery.v1","name":"Innate Sorcery (Sorcerer, D&D 2024, content v1)","components":{"dnd2024.character.content-definition":{"kind":"feature","contentKey":"sorcerer-innate-sorcery","contentVersion":1,"status":"active","sourceRef":{"sourceId":"dnd2024.source.srd-5.2.1","locator":"Classes > Sorcerer, PDF pages 64–65"}}}}

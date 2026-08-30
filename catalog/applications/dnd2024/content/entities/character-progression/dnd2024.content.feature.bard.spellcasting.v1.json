@@ -1,0 +1,1 @@
+{"id":"dnd2024.content.feature.bard.spellcasting.v1","name":"Spellcasting (Bard, D&D 2024, content v1)","components":{"dnd2024.character.content-definition":{"kind":"feature","contentKey":"bard-spellcasting","contentVersion":1,"status":"active","sourceRef":{"sourceId":"dnd2024.source.srd-5.2.1","locator":"Classes > Bard, PDF pages 31–32"}}}}

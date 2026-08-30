@@ -1,0 +1,13 @@
+{
+  "id": "dnd2024.item.oil-flask.v1",
+  "name": "Oil (D&D 2024, definition v1)",
+  "components": {
+    "dnd2024.item-definition": {
+      "definitionVersion": 1,
+      "kind": "adventuring-gear",
+      "stackPolicy": "fungible",
+      "massPounds": { "numerator": 1, "denominator": 1 },
+      "sourceRef": { "sourceId": "dnd2024.source.srd-5.2.1", "locator": "Equipment > Adventuring Gear > Oil (PDF pp. 95, 98–99)" }
+    }
+  }
+}

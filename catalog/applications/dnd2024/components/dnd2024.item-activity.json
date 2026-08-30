@@ -1,0 +1,1 @@
+{"id":"dnd2024.item-activity","name":"Immutable item activities (D&D 2024)","description":"Closed immutable consume-and-grant descriptors attached to an item definition. It contains no campaign item ID, owner, arbitrary script/effects, target selector, cost, or derived outcome. Governed by procedure.mechanic.dnd2024.item-activity."}

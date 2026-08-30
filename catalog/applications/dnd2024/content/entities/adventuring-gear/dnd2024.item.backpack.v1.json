@@ -1,0 +1,18 @@
+{
+  "id": "dnd2024.item.backpack.v1",
+  "name": "Backpack (D&D 2024, definition v1)",
+  "components": {
+    "dnd2024.item-definition": {
+      "definitionVersion": 1,
+      "kind": "adventuring-gear",
+      "stackPolicy": "separate",
+      "massPounds": { "numerator": 5, "denominator": 1 },
+      "capacity": {
+        "weightPounds": { "numerator": 30, "denominator": 1 },
+        "volumeCubicFeet": { "numerator": 1, "denominator": 1 }
+      },
+      "equipmentModes": ["worn"],
+      "sourceRef": { "sourceId": "dnd2024.source.srd-5.2.1", "locator": "Equipment > Adventuring Gear > Backpack (PDF pp. 95–96)" }
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.weapon-profile",
+  "name": "D&D 2024 weapon profile",
+  "description": "Static weapon category, permitted attack abilities, and base damage expression. It is source data, not inventory or an attack result."
+}

@@ -1,0 +1,1 @@
+{"id":"dnd2024.content.feature.warlock.pact-magic.v1","name":"Pact Magic (Warlock, D&D 2024, content v1)","components":{"dnd2024.character.content-definition":{"kind":"feature","contentKey":"warlock-pact-magic","contentVersion":1,"status":"active","sourceRef":{"sourceId":"dnd2024.source.srd-5.2.1","locator":"Classes > Warlock, PDF pages 70–71"}}}}

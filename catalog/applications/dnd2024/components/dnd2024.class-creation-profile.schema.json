@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["classKey", "primaryAbilities", "savingThrows", "skills", "weapons", "armorTraining", "tools", "spellcasting", "sourceRef"],
+  "properties": {
+    "classKey": { "enum": ["barbarian", "bard", "cleric", "druid", "fighter", "monk", "paladin", "ranger", "rogue", "sorcerer", "warlock", "wizard"] },
+    "primaryAbilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "abilities"],
+      "properties": {
+        "mode": { "enum": ["all", "one-of"] },
+        "abilities": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": { "enum": ["str", "dex", "con", "int", "wis", "cha"] }
+        }
+      }
+    },
+    "savingThrows": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": { "enum": ["str", "dex", "con", "int", "wis", "cha"] }
+    },
+    "skills": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["choiceCount", "options", "fixedChoices"],
+      "properties": {
+        "choiceCount": { "type": "integer", "minimum": 2, "maximum": 4 },
+        "options": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 18,
+          "uniqueItems": true,
+          "items": { "enum": ["acrobatics", "animal-handling", "arcana", "athletics", "deception", "history", "insight", "intimidation", "investigation", "medicine", "nature", "perception", "performance", "persuasion", "religion", "sleight-of-hand", "stealth", "survival"] }
+        },
+        "fixedChoices": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": { "enum": ["acrobatics", "animal-handling", "arcana", "athletics", "deception", "history", "insight", "intimidation", "investigation", "medicine", "nature", "perception", "performance", "persuasion", "religion", "sleight-of-hand", "stealth", "survival"] }
+        }
+      }
+    },
+    "weapons": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["categories", "restrictedMartialProperties"],
+      "properties": {
+        "categories": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": { "enum": ["simple", "martial"] }
+        },
+        "restrictedMartialProperties": {
+          "type": "array",
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": { "enum": ["finesse", "light"] }
+        }
+      }
+    },
+    "armorTraining": {
+      "type": "array",
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": { "enum": ["light", "medium", "heavy", "shield"] }
+    },
+    "tools": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fixed", "choiceGroups"],
+      "properties": {
+        "fixed": {
+          "type": "array",
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": { "enum": ["herbalism-kit", "thieves-tools"] }
+        },
+        "choiceGroups": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["count", "optionFamilies"],
+            "properties": {
+              "count": { "type": "integer", "minimum": 1, "maximum": 3 },
+              "optionFamilies": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 2,
+                "uniqueItems": true,
+                "items": { "enum": ["artisan-tools", "musical-instrument"] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "spellcasting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "ability", "cantrips", "preparedSpells", "spellbookSpells", "level1Slots", "slotLevel"],
+      "properties": {
+        "kind": { "enum": ["none", "full", "half", "pact"] },
+        "ability": { "enum": ["none", "int", "wis", "cha"] },
+        "cantrips": { "type": "integer", "minimum": 0, "maximum": 8 },
+        "preparedSpells": { "type": "integer", "minimum": 0, "maximum": 12 },
+        "spellbookSpells": { "type": "integer", "minimum": 0, "maximum": 12 },
+        "level1Slots": { "type": "integer", "minimum": 0, "maximum": 4 },
+        "slotLevel": { "type": "integer", "minimum": 0, "maximum": 9 }
+      }
+    },
+    "startingEquipmentCashGp": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "startingEquipmentCurrencyDefinitionId": {
+      "const": "dnd2024.currency.gold-piece.v1"
+    },
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceId", "locator"],
+      "properties": {
+        "sourceId": { "const": "dnd2024.source.srd-5.2.1" },
+        "locator": { "type": "string", "minLength": 4, "maxLength": 200 }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "not": {
+        "anyOf": [
+          { "required": ["startingEquipmentCashGp"] },
+          { "required": ["startingEquipmentCurrencyDefinitionId"] }
+        ]
+      }
+    },
+    { "required": ["startingEquipmentCashGp", "startingEquipmentCurrencyDefinitionId"] }
+  ]
+}
