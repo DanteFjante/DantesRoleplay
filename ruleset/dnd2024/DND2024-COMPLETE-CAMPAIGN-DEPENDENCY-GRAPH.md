@@ -1,6 +1,6 @@
 # D&D 2024 complete-campaign dependency graph
 
-Status: **lowest leaf ready; no implementation leaf active**
+Status: **G1 accepted; no implementation leaf active**
 Ruleset alignment: **dnd2024-compatible** at the complete-campaign root; each generic host leaf is
 `ruleset-neutral`, and each rule leaf is `dnd2024-owned`
 Source: **not applicable to the compatible root**; every `dnd2024-owned` implementation leaf must
@@ -66,16 +66,16 @@ and `2b07ed18f7c55fe116171dd4a70a2746d2b1542b71f15a192598c15418b5666b` for cover
 | Conditions | Active-effect schemas plus current condition mechanics | Definitions, target relationships, timed lifecycle, and related-effect projection are absent; current mechanics still request `dnd2024.conditions`. | `planned` |
 | Rests | `dnd2024.exploration.rest` | Start/progress/interruption structure exists; completion, authoritative clock events, and reset-provider closure do not. | `planned` |
 | DM/Player table | Information-hub/audience contracts | Shared projections exist; authentication, membership, control, requested view, live transport, and two local-DM-seat expectations are not all closed. | `planned` |
-| Location map owner | `game.core.world.map.visual` and `procedure.game.core.world.spatial` | The owner is confirmed in the [live location/map tree](../../prototype/dnd2024/planning/DND2024-LIVE-LOCATION-MAP-MEDIA-DEPENDENCY-TREE.md); asset registration, guarded writes, safe projection, and component-driven rendering remain. | `verified` |
+| Location map owner | `game.core.world.map.visual` and `procedure.game.core.world.spatial` | The owner is confirmed in the [scoped-map tree](../../web/DND2024-SCOPED-MAP-VIEWS-DEPENDENCY-TREE.md); asset registration, guarded writes, safe projection, and component-driven rendering remain. | `verified` |
 | Live world authoring | No reviewed public application-ECS mutation owner | Reads exist; no reviewed action atomically creates, moves, archives, or corrects live graphs. | `missing` |
 | Durable restore/export | Operation history plus evidence-only session checkpoints | Checkpoints do not capture restorable domain state; no complete package listing/download/restore/migration owner exists. | `missing` |
 
-Primary evidence: [canonical component crosswalk](../../prototype/dnd2024/planning/evidence/canonical-component-crosswalk.json),
+Primary evidence: [canonical component crosswalk](evidence/modeling/canonical-component-crosswalk.json),
 [coverage matrix 1B](adoption/evidence/coverage-matrix-1b.json),
 [Slice 8 closure](adoption/evidence/slice-8-closure.json),
 [complex-family gate map](adoption/evidence/DND-CODE-ADOPTION-SLICE-11-REMAINING-COMPLEX-FAMILY-GATES.md),
-[information-hub tree](../../prototype/dnd2024/planning/DND2024-WEB-INFORMATION-HUB-DEPENDENCY-TREE.md),
-[live location/map tree](../../prototype/dnd2024/planning/DND2024-LIVE-LOCATION-MAP-MEDIA-DEPENDENCY-TREE.md),
+[information-hub tree](../../web/DND2024-WEB-INFORMATION-HUB-DEPENDENCY-TREE.md),
+[scoped map tree](../../web/DND2024-SCOPED-MAP-VIEWS-DEPENDENCY-TREE.md),
 and the linked focused implementation evidence.
 
 ## Conflicts and decisions
@@ -130,7 +130,7 @@ and the linked focused implementation evidence.
 ```text
 Run a complete persistent D&D 2024 campaign                                      [planned]
 ├── G. Integrity and generic host foundations                                     [planned]
-│   ├── G1. Owner/ID/category/reference/empty-behavior ledger                      [ready]
+│   ├── G1. Owner/ID/category/reference/empty-behavior ledger                      [verified]
 │   ├── G2. Related-endpoint and optional-component projection                    [missing]
 │   ├── G3. Bounded list/path reference projection                                [missing]
 │   ├── G4. Immutable parent/child operation identity reaches JavaScript          [missing]
@@ -574,42 +574,24 @@ authoring and live mutations, canonical world/campaign convergence, NPC/chronolo
 owners, public hosting or cloud sync,
 compatibility/homebrew sources, and completed feature/full-campaign acceptance.
 
-## Lowest ready leaf
+## Completed prerequisite and next gate
 
-G1, the **owner/ID/category/reference/empty-behavior ledger**, is independently ready under this
-closed boundary:
+G1 is accepted in the [owner-ledger receipt](adoption/evidence/DND2024-COMPLETE-CAMPAIGN-G1-OWNER-LEDGER-RECEIPT.md)
+and its [receipt](adoption/evidence/DND2024-COMPLETE-CAMPAIGN-G1-OWNER-LEDGER-RECEIPT.md). It records
+the complete deterministic input fingerprint, 13 active mechanics whose contracts retain retired
+owners, the 14 duplicate tool identity groups, two category anomalies, and the conflicting qualified
+world/campaign owner shapes.
 
-- **Owner/alignment:** D&D 2024 roadmap catalog-integrity evidence; `dnd2024-compatible` because it
-  classifies D&D identities but changes no rule meaning.
-- **Inputs:** exact files under `catalog/applications/dnd2024/{components,mechanics,procedures,content}`
-  and `old-dnd/catalog/{components,mechanics,procedures}`, plus the canonical crosswalk,
-  `coverage-matrix-1b.json`, and `slice-8-closure.json`. The ledger records a sorted whole-input
-  SHA-256 fingerprint so worktree changes are visible.
-- **Source/reference:** repository contracts and retained evidence are authoritative. No SRD rule is
-  implemented, and Foundry dnd5e review is not applicable.
-- **Only allowed outputs:**
-  `ruleset/dnd2024/adoption/evidence/complete-campaign-owner-ledger.json` and
-  `DantesRoleplay.Tests/Dnd2024CompleteCampaignOwnerLedgerTests.cs`.
-- **Deterministic result:** schema version, input fingerprint, stable counts, current owner/category,
-  duplicate normalized identities, retired references, empty executable facets, archived
-  dispositions, unresolved candidates, and evidence paths sorted by stable identity. No timestamps
-  or environment-dependent paths enter the fingerprint.
-- **Failure behavior:** missing/unreadable/malformed input, duplicate ledger keys, unknown
-  disposition, fingerprint mismatch, or a count/reference invariant fails the focused test and
-  produces no runtime/live change.
-- **Effects/transactions:** none. Replay and rollback are not applicable because the leaf performs
-  no application operation, database write, migration, public-surface change, C# host change, or
-  JavaScript mechanic change.
-- **Acceptance:**
-  `dotnet test DantesRoleplay.Tests/DantesRoleplay.Tests.csproj --filter FullyQualifiedName~Dnd2024CompleteCampaignOwnerLedgerTests`
-  and `git diff --check` both pass from the recorded inputs.
-
-The next leaf is not activated by this planning document.
+G7 is now the next gate, but it remains `conflicting`: it must select one qualified world/campaign
+owner and one migration transaction before G9 can author a live world, create Thalos, or move any
+country. No new world/location leaf is independently ready until that semantic decision is confirmed.
 
 ## Planning receipt
 
 - Runtime artifacts created by this graph: **none**.
 - Live database/campaign/world/source profile/deployment/browser state changed: **none**.
+- G1 added only catalog-integrity evidence and a focused regression test; it changed no runtime
+  owner or live state.
 - The weapon-activity implementation completed before the planning pivot remains implemented
   evidence; this graph does not authorize further runtime work.
 - Future work proceeds through one implementation document and one reviewable leaf at a time.

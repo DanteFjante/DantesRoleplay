@@ -1,1 +1,0 @@
-{"name":"authorization","classification":"system","status":"operational","owns":["trusted principal context","closed private-host and control capabilities","safe authorization evidence"],"mayDependOn":["building-blocks"]}

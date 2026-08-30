@@ -1,7 +1,7 @@
 # Orban: provisional character review
 
 Status: **review required before treating any listed invention as character canon**  
-Migration input: `prototype/dnd2024/migrations/thalorien/orban.provisional-character.json`  
+Migration input: `ruleset/dnd2024/evidence/migrations/orban.provisional-character.json`  
 Original narrative authority: `actor.thalorien.brackenford.orban` in the pre-migration export
 
 ## Preserved facts

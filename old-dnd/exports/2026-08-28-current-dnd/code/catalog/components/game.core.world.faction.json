@@ -1,5 +1,0 @@
-{
-  "id": "game.core.world.faction",
-  "name": "World Faction",
-  "description": "Closed shared-game state for a world faction: its lifecycle, public description, goals, methods, descriptive assets, and one current agenda. Membership, control, alliance, and opposition remain relationships. Governed by procedure.game.core.world.faction."
-}

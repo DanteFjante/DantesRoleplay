@@ -1,1 +1,0 @@
-{"name":"application-execution","classification":"system","status":"operational","owns":["exact application mechanic lookup","application ECS mechanic projection","read-only sandbox evaluation","exact application action execution","generic mechanic-effect to application-ECS translation"],"mayDependOn":["catalog-navigation","ecs","ecs-effects","state-space-edges","mechanics"]}

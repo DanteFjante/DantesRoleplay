@@ -1,1 +1,0 @@
-{"name":"legacy-state-adoption","classification":"system","status":"operational","owns":["explicit legacy state-space adoption","migration preflight and replay evidence","legacy/application state parity"],"mayDependOn":["application-registry","application-activation","ecs","state-space-edges","schema-validation","operations-and-audit"]}

@@ -1,1 +1,0 @@
-{"id":"dnd2024.encounter.definition","name":"Encounter definition","description":"Declares the rule-facing setup and objectives of an encounter while referencing, rather than owning, world state."}

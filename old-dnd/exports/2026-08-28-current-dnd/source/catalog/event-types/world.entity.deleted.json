@@ -1,8 +1,0 @@
-{
-  "id": "world.entity.deleted",
-  "category": "world",
-  "name": "Entity deleted",
-  "description": "A structural entity deletion.",
-  "scope": "",
-  "status": "Active"
-}

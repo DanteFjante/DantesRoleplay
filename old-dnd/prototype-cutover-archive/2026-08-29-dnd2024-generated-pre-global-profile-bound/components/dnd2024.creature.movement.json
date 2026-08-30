@@ -1,1 +1,0 @@
-{"id":"dnd2024.creature.movement","name":"Creature movement state component","description":"A creature instance's dimensioned current speeds keyed once by movement-mode entity ID, separate from per-turn movement expenditure."}

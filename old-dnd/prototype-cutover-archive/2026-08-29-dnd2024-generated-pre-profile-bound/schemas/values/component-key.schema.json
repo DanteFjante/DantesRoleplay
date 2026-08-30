@@ -1,8 +1,0 @@
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:dantesroleplay:dnd2024:prototype:value:component-key",
-  "title": "Component key",
-  "type": "string",
-  "pattern": "^dnd2024\\.[a-z][a-z0-9-]*(?:\\.[a-z][a-z0-9-]*)*$",
-  "maxLength": 160
-}

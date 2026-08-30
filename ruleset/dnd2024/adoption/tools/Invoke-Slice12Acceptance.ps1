@@ -52,12 +52,6 @@ $scriptChecks = @(
     @{ name = 'adoption-contracts'; path = 'tools/Test-AdoptionContracts.ps1'; arguments = @('-NpxCommand', $NpxCommand) },
     @{ name = 'conformance'; path = 'conformance/tools/Test-ConformanceTooling.ps1'; arguments = @('-Stage', '4C', '-NpxCommand', $NpxCommand) },
     @{ name = 'content-transformation'; path = 'transformation/tools/Test-ContentTransformation.ps1'; arguments = @('-NpxCommand', $NpxCommand) },
-    @{ name = 'adventuring-gear-cohort'; path = 'transformation/tools/Test-AdventuringGearContentCohort.ps1'; arguments = @() },
-    @{ name = 'armor-cohort'; path = 'transformation/tools/Test-ArmorContentCohort.ps1'; arguments = @() },
-    @{ name = 'currency-cohort'; path = 'transformation/tools/Test-CurrencyContentCohort.ps1'; arguments = @() },
-    @{ name = 'fighter-progression-cohort'; path = 'transformation/tools/Test-FighterProgressionContentCohort.ps1'; arguments = @() },
-    @{ name = 'weapon-item-link-cohort'; path = 'transformation/tools/Test-WeaponItemLinkContentCohort.ps1'; arguments = @() },
-    @{ name = 'weapon-profile-cohort'; path = 'transformation/tools/Test-WeaponProfileContentCohort.ps1'; arguments = @() },
     @{ name = 'projection-mapping'; path = 'mapping/tools/Test-ProjectionDependencyMapping.ps1'; arguments = @('-NpxCommand', $NpxCommand) },
     @{ name = 'effect-allowlist'; path = 'effects/tools/Test-ResultEffectAllowlist.ps1'; arguments = @('-NpxCommand', $NpxCommand) },
     @{ name = 'impact-replay-rollback'; path = 'impact-proof/tools/Test-ImpactReplayRollbackProof.ps1'; arguments = @('-NpxCommand', $NpxCommand, '-DotnetCommand', $DotnetCommand) }

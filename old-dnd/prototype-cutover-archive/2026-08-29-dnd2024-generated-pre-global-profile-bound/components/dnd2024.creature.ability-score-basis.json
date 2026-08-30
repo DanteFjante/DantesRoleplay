@@ -1,1 +1,0 @@
-{"id":"dnd2024.creature.ability-score-basis","name":"Creature ability score basis component","description":"Authored base ability scores keyed once by ability entity ID; ability modifiers are derived and never stored."}

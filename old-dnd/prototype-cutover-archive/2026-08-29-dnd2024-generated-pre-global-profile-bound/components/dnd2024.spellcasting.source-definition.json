@@ -1,1 +1,0 @@
-{"id":"dnd2024.spellcasting.source-definition","name":"Spellcasting source definition","description":"Authored optional ability choice-set reference, spell lists, progression, preparation, and casting rules for one class, feat, species, monster, or item spellcasting source; cardinality belongs to the choice-set entity when present."}

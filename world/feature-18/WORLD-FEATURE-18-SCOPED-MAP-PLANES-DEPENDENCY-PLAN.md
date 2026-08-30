@@ -1,9 +1,6 @@
 # World Feature 18 dependency tree — display placement on more than one scope plane
 
-Status: **on hold — recorded finding, not proposed work.** The owner confirmed on 2026-08-28 that
-implementation happens in the prototype and not by changing the canonical model, so nothing in this
-tree may be implemented to unblock the dnd2024 scoped map workspace. It stands as the written record
-of a real gap in the canonical model, for whenever that model is worked on for its own reasons.
+Status: **Slice 1 verified; live World/City coordinate authoring remains planned**
 Ruleset alignment: **ruleset-neutral**
 Source: **not applicable**. Display placement is engine infrastructure and defines no D&D rule.
 
@@ -12,10 +9,10 @@ Consumer: `prototype/dnd2024/planning/DND2024-SCOPED-MAP-VIEWS-DEPENDENCY-TREE.m
 
 ## Standing
 
-This tree changes canonical contracts, which prototype work may not do. Its leaves are therefore not
-available to the scoped map slices: Slice 3 stays blocked, and the prototype accounts for the gap in
-its own model instead. Read this for what the canonical model does and does not provide; do not treat
-its ordered leaves as a queue.
+The user's 2026-08-30 World-tab completion request explicitly asks for canonical coordinates and
+hierarchy at World and City scope. That supersedes the earlier prototype-only hold for this one
+generic owner. Slice 1 may relax the accepted anchor constraint without adding a second placement
+component. Live Thalorien values and web projection remain separate leaves.
 
 ## Why this exists
 
@@ -62,10 +59,10 @@ the authoritative world model; coordinates stay display-only, exactly as W9 esta
 ~~~text
 Live scoped maps at every scope                                              [planned]
 ├─ A. Region-plane placement                                                 [verified]
-├─ B. Placement on a declared container plane                                [awaiting confirmation]
-│  ├─ B1. Relax the direct-region constraint to any active plane container   [awaiting confirmation]
-│  ├─ B2. Uniqueness scoped per plane rather than per region                 [awaiting confirmation]
-│  └─ B3. Layout recipe generalized from "the region" to "the plane"         [planned]
+├─ B. Placement on a declared container plane                                [verified]
+│  ├─ B1. Relax the direct-region constraint to active root/region/settlement [verified]
+│  ├─ B2. Uniqueness scoped per plane rather than per region                 [verified]
+│  └─ B3. Layout recipe generalized from "the region" to "the plane"         [verified]
 ├─ C. Audience policy over topology and placement                            [missing]
 │  ├─ C1. An authorised audience owner for locations                         [missing]
 │  └─ C2. Player-safe layout projection                                      [blocked by C1]
@@ -110,27 +107,28 @@ Live scoped maps at every scope                                              [pl
 | B3 | Plane-scoped layout recipe | B1, B2 | The map-layout recipe takes any active plane container, not only a region, and still refuses to return partial display data when an anchor is missing, malformed, or non-unique on that plane. Output stays trusted-GM. |
 | C1 | Authorised audience owner for locations | Roadmap decision to undefer | Out of scope for this tree; named so no map slice absorbs it by accident. |
 
-## Lowest ready leaf
+## Completed lowest leaf
 
-**None, and none is being sought.** B1 would be the lowest useful leaf, but it changes the meaning of
-an accepted contract and a verified test asserts the narrower rule — and it may not be taken up as
-part of prototype work regardless. The gates below record what an owner of the canonical model would
-have to decide; they are not this consumer's to answer.
+**B1–B3 are verified as one contract-only slice.** The existing `game.core.world.map.anchor` remains the sole
+placement owner and its closed `x`/`y` schema is unchanged. A valid plane is an active
+`game.core.world.root` or an active `game.core.world.location` whose kind is `region` or
+`settlement`. The anchored child is one direct active location using its topology-required slot.
+Coordinates must be unique among anchored direct children of that plane. The trusted-GM layout
+recipe accepts any such plane and fails closed on missing, malformed, duplicate, or wrong-scope
+anchors. No live record or UI changes occurred. See
+`WORLD-FEATURE-18-SLICE-1-RECEIPT.md`.
 
-## Questions for a future canonical owner
+## Confirmed decisions
 
-1. **Feature number and framing.** Is this World Feature 18, or a second slice of W9? The roadmap's
-   next-feature rule asks for a player-visible capability not already owned, and placement is owned
-   by W9 — but the new planes do deliver capability W9 explicitly excluded.
-2. **Changed contract meaning.** May `procedure.game.core.world.spatial` be relaxed from "directly
-   contained by an active region" to "directly contained by an active plane container", with W9's
-   test updated rather than duplicated?
-3. **Plane container kinds.** Which container kinds are planes? This tree proposes root, region, and
-   settlement, leaving `site` and `interior` excluded so that scene-scale geometry stays with its own
-   future owner.
+1. This is World Feature 18 because it delivers World- and City-plane placement that W9 excluded.
+2. `procedure.game.core.world.spatial` may be relaxed from direct Region scope to the direct active
+   plane container without adding another placement component.
+3. Active World roots, Regions, and settlements are planes. Sites and interiors remain excluded so
+   scene-scale geometry is not silently introduced.
+4. Uniqueness is per plane. Equal coordinates on different planes are valid.
 
 ## Planning receipt
 
-- Runtime artifacts created: none.
-- Correction recorded: Region is an existing addressable entity; the real gap is single-plane
-  placement. The scoped-map consumer tree and its project-memory note are updated to match.
+- Runtime artifacts created by planning: none.
+- The user's 2026-08-30 request confirms the changed generic contract meaning and activates Slice 1.
+- Slice 1 evidence is recorded in `WORLD-FEATURE-18-SLICE-1-RECEIPT.md`.

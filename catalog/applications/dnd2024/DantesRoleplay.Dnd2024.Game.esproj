@@ -6,8 +6,8 @@
     <BaseIntermediateOutputPath>../../../artifacts/dnd2024-esproj/obj/</BaseIntermediateOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="../../../prototype/dnd2024/**/*"
-          Exclude="../../../prototype/dnd2024/node_modules/**"
-          Link="Prototype/%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="../../../src/system/web-interface/dnd2024/**/*"
+          Exclude="../../../src/system/web-interface/dnd2024/node_modules/**;../../../src/system/web-interface/dnd2024/server-dist/**"
+          Link="Web/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

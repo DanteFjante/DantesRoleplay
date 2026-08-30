@@ -1,1 +1,0 @@
-{"id":"game.core.world.interaction","name":"World Interaction","description":"A minimal accepted or void durable gameplay interaction that can own sourced consequences such as knowledge acquisition. It is not a dialogue, combat, quest, or generic execution engine. Governed by procedure.game.core.world.knowledge."}

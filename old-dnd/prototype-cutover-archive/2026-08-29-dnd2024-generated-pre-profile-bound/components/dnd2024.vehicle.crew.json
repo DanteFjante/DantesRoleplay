@@ -1,1 +1,0 @@
-{"id":"dnd2024.vehicle.crew","name":"Vehicle crew state","description":"Adds a mutable crew role to one generic creature-to-vehicle membership relationship; generic containment owns passengers."}

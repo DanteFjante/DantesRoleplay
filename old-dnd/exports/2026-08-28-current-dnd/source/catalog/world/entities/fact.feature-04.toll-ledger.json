@@ -1,1 +1,0 @@
-{"id":"fact.feature-04.toll-ledger","name":"The Old Toll Ledger","components":{"game.core.world.fact":{"status":"active","summary":"The market archive contains the old gate-toll ledger.","provenance":"A catalogued entry in the market archive.","visibility":"public"},"game.core.world.knowledge.classification":{"subjectKind":"state","sensitivity":"open"}}}

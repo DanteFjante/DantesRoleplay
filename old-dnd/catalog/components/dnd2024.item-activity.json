@@ -1,5 +1,0 @@
-{
-  "id": "dnd2024.item-activity",
-  "name": "D&D 2024 immutable item activities",
-  "description": "Closed immutable activity descriptors attached only to a catalog item definition. This first seam supports a fixed consume-and-grant-item activity: the descriptor names exactly what is consumed, what item definition is created, and its direct-container slot. It stores no campaign item id, owner, balance, arbitrary JavaScript, target selector, action cost, check result, magic state, or derived outcome. Governed by procedure.mechanic.dnd2024.item-activity."
-}

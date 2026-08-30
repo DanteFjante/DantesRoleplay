@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-hidden="true">
+  <rect width="800" height="800" fill="#f0ece2"/>
+  <g stroke="#c4b79c" stroke-width="14" fill="none" stroke-linecap="round">
+    <path d="M400 120 L400 700"/><path d="M180 430 L620 430"/>
+  </g>
+  <g fill="#ded4c1">
+    <rect x="440" y="180" width="140" height="110" rx="8"/>
+    <rect x="230" y="560" width="150" height="90" rx="8"/>
+    <rect x="320" y="390" width="130" height="90" rx="8"/>
+  </g>
+  <g fill="#7a2f2f" font-family="serif" font-size="22">
+    <text x="440" y="170">Watchfire Keep — signal relay</text>
+    <text x="230" y="550">Lower Barracks — muster</text>
+  </g>
+</svg>

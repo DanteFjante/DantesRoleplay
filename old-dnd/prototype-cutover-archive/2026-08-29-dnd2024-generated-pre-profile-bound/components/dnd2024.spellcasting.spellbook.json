@@ -1,1 +1,0 @@
-{"id":"dnd2024.spellcasting.spellbook","name":"Spellbook state component","description":"Spells currently recorded for the containing runtime spellcasting source, keyed once by spell entity ID with optional transcription provenance."}

@@ -1,1 +1,0 @@
-{"id":"dnd2024.core.definition-link","name":"Runtime definition link","description":"Pins a mutable runtime entity to the immutable authored definition revision from which it was materialized; character choice evidence has its own state component."}

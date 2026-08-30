@@ -1,0 +1,7 @@
+node_modules/
+.vite/
+.env*
+*.tgz
+server-dist/
+*.zip
+tsconfig.tsbuildinfo

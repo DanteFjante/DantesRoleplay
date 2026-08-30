@@ -76,18 +76,20 @@ public sealed class CatalogWorldMapVisualTests : IDisposable
     }
 
     [Theory]
-    [InlineData("region", "active", "region", true)]
-    [InlineData("settlement", "active", "location", true)]
-    [InlineData("site", "active", "location", true)]
-    [InlineData("interior", "active", "location", true)]
-    [InlineData("region", "active", "location", false)]
-    [InlineData("settlement", "active", "region", false)]
-    [InlineData("region", "draft", "region", false)]
-    public void Nested_region_anchor_scope_uses_the_kind_specific_containment_slot(
-        string childKind, string childStatus, string slot, bool expected)
+    [InlineData("root", "active", "region", "active", "region", true)]
+    [InlineData("region", "active", "region", "active", "region", true)]
+    [InlineData("region", "active", "settlement", "active", "location", true)]
+    [InlineData("settlement", "active", "site", "active", "location", true)]
+    [InlineData("settlement", "active", "interior", "active", "location", true)]
+    [InlineData("root", "active", "settlement", "active", "location", false)]
+    [InlineData("settlement", "active", "region", "active", "region", false)]
+    [InlineData("site", "active", "interior", "active", "location", false)]
+    [InlineData("region", "draft", "settlement", "active", "location", false)]
+    [InlineData("region", "active", "settlement", "draft", "location", false)]
+    public void Multi_plane_anchor_scope_uses_active_plane_and_topology_slot(
+        string planeKind, string planeStatus, string childKind, string childStatus, string slot, bool expected)
     {
-        Assert.Equal(expected, IsValidAnchorScope("region", "active", childKind, childStatus, slot));
-        Assert.False(IsValidAnchorScope("settlement", "active", childKind, childStatus, slot));
+        Assert.Equal(expected, IsValidAnchorScope(planeKind, planeStatus, childKind, childStatus, slot));
     }
 
     private static void AssertSchema(string schema, string value, SchemaValueStatus expected)
@@ -109,10 +111,20 @@ public sealed class CatalogWorldMapVisualTests : IDisposable
                 : null;
     }
 
-    private static bool IsValidAnchorScope(string parentKind, string parentStatus,
-        string childKind, string childStatus, string slot) =>
-        parentKind == "region" && parentStatus == "active" && childStatus == "active"
-        && (childKind == "region" ? slot == "region" : slot == "location");
+    private static bool IsValidAnchorScope(string planeKind, string planeStatus,
+        string childKind, string childStatus, string slot)
+    {
+        if (planeStatus != "active" || childStatus != "active" ||
+            planeKind is not ("root" or "region" or "settlement") ||
+            childKind is not ("region" or "settlement" or "site" or "interior")) return false;
+        return planeKind switch
+        {
+            "root" => childKind == "region" && slot == "region",
+            "region" => childKind == "region" ? slot == "region" : slot == "location",
+            "settlement" => childKind != "region" && slot == "location",
+            _ => false
+        };
+    }
 
     private static string Catalog()
     {

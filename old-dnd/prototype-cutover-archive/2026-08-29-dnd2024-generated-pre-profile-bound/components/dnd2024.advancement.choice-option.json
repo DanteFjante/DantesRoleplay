@@ -1,1 +1,0 @@
-{"id":"dnd2024.advancement.choice-option","name":"Choice option definition component","description":"One selectable authored option. The option entity itself is the selected value unless valueRef points to a separate definition; prerequisites and grants remain optional until authored."}

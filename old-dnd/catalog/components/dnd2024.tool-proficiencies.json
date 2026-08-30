@@ -1,5 +1,0 @@
-{
-  "id": "dnd2024.tool-proficiencies",
-  "name": "D&D 2024 Tool Proficiencies",
-  "description": "Closed character state containing only canonical known SRD 5.2.1 tool-proficiency ids and a fixed source reference. Creation and correction use mechanic.dnd2024.tool-proficiencies.record. An empty list means known no tool proficiencies; absence means unknown state. It stores no tool item, check, craft result, source grant, or derived bonus."
-}

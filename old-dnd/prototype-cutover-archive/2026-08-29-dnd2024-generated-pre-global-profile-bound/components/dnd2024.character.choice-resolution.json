@@ -1,1 +1,0 @@
-{"id":"dnd2024.character.choice-resolution","name":"Character choice resolution state","description":"One entity-addressable player selection that resolves an authored choice set without copying selected definitions; a generic relationship links it to the character."}

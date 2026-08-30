@@ -1,1 +1,0 @@
-{"id":"dnd2024.creature.temporary-hit-points","name":"Creature Temporary Hit Points (D&D 2024)","description":"A creature's current positive Temporary Hit Point buffer and its ECS source reference. Component absence represents no buffer. Governed by procedure.mechanic.dnd2024.temporary-hit-points."}

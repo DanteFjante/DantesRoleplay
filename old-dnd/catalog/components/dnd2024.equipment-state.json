@@ -1,1 +1,0 @@
-{"id":"dnd2024.equipment-state","name":"Equipment State (D&D 2024)","description":"The explicit current equipment state of one physical item instance. It records held, worn, or explicitly unequipped state only; the item's direct containment remains its sole custody. Definition-declared equipmentModes determine eligibility. Governed by procedure.mechanic.dnd2024.equipment-state."}

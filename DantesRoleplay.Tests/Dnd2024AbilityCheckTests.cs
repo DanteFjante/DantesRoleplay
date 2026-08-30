@@ -8290,9 +8290,10 @@ public sealed class Dnd2024AbilityCheckTests
 
         private static async Task<ComponentDefinitionFile> DefinitionAsync(string relative)
         {
+            var componentId = relative[(relative.LastIndexOf('/') + 1)..];
             var path = Path.Combine(RepositoryRoot(), "catalog", "applications", "dnd2024", "components",
-                relative.Replace('/', Path.DirectorySeparatorChar) + ".json");
-            var definition = ComponentDefinitionFile.Parse(await File.ReadAllTextAsync(path), relative + ".json",
+                componentId + ".json");
+            var definition = ComponentDefinitionFile.Parse(await File.ReadAllTextAsync(path), componentId + ".json",
                 await File.ReadAllTextAsync(Path.ChangeExtension(path, ".schema.json")));
             var compilation = new BoundedJsonSchemaValidator().Compile(definition.Schema);
             Assert.True(compilation.IsAccepted, string.Join("; ", compilation.Diagnostics));

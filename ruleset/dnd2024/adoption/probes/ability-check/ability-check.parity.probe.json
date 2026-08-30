@@ -2,7 +2,7 @@
   "format": "dnd-code-adoption-parity-probe/v1",
   "wrapperSourcePath": "ability-check.wrapper.js",
   "wrapperResultSchemaPath": "ability-check.result.schema.json",
-  "archiveRecordPath": "../../../../../old-dnd/ruleset/dnd2024/feature-01/04-mechanic-check-ability.json",
+  "archiveRecordPath": "retained-ability-check.record.json",
   "archiveSourceProperty": "source",
   "mutationSourcePath": "operation-view-mutation.probe.js",
   "roles": { "candidate": "subject", "archive": "subject" },

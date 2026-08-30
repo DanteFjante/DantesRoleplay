@@ -1,1 +1,0 @@
-{"name":"registry-administration","classification":"system","status":"operational","owns":["authenticated application and source registration transactions","registration dry-run receipts","registration idempotency binding"],"mayDependOn":["application-registry","source-registry","authorization","operations-and-audit"]}

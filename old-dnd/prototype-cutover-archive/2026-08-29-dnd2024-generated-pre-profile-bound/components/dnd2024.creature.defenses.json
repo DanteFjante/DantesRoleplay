@@ -1,1 +1,0 @@
-{"id":"dnd2024.creature.defenses","name":"Creature defenses state component","description":"A creature instance's selected Armor Class source and currently applicable damage responses; final AC and damage arithmetic remain mechanic outputs."}

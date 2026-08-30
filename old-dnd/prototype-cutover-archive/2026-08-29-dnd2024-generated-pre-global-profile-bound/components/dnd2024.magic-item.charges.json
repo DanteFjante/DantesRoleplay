@@ -1,1 +1,0 @@
-{"id":"dnd2024.magic-item.charges","name":"Magic item charge definition","description":"Links a magic item's charge pool to the generic resource definition and adds only last-charge behavior; activity costs live on activities."}

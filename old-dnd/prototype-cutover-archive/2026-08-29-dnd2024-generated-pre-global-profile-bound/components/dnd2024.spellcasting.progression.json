@@ -1,1 +1,0 @@
-{"id":"dnd2024.spellcasting.progression","name":"Spellcasting progression definition component","description":"Level-keyed access, preparation, and slot counts referenced by a spellcasting source; nested slot-level and slot-kind keys prevent duplicate pool authorities."}

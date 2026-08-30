@@ -1,5 +1,0 @@
-{
-  "id": "dnd2024.armor-training",
-  "name": "Armor Training (D&D 2024)",
-  "description": "Closed creature state containing canonical Light, Medium, Heavy, and Shield armor-training categories with fixed SRD 5.2.1 attribution. Use mechanic.dnd2024.armor-training.write to record or correct it. An empty list means known training with none of those categories; absence means unknown state. This component grants nothing and calculates no Armor Class, equipment eligibility, D20 circumstance, Speed, spellcasting, or action result."
-}

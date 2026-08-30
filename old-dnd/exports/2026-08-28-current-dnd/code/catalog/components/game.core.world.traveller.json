@@ -1,5 +1,0 @@
-{
-  "id": "game.core.world.traveller",
-  "name": "World Traveller",
-  "description": "Closed shared-game eligibility marker for an entity that may use governed adjacent world movement. Current location remains containment; this component stores no route, time, speed, destination, or position. Governed by procedure.game.core.world.travel."
-}

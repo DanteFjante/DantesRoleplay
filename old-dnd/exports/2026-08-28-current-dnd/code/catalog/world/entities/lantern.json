@@ -1,9 +1,0 @@
-{
-  "id": "lantern",
-  "name": "Lantern",
-  "container": {
-    "id": "orban",
-    "slot": "carried"
-  },
-  "components": {}
-}

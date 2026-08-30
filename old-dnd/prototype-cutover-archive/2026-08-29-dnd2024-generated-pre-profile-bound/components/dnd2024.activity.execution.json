@@ -1,1 +1,0 @@
-{"id":"dnd2024.activity.execution","name":"Activity execution state","description":"Tracks one declared activity through transactional resolution while referencing generic operation and resolution history."}

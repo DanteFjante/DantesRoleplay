@@ -1,1 +1,0 @@
-{"name":"system-conversations","classification":"system","status":"operational","owns":["operator-only read-only system conversations","bounded provenance-bearing system context","system conversation response validation"],"mayDependOn":["authorization","assistant-conversations","local-ai","system-capabilities","procedures","schema-validation","operations-and-audit"]}

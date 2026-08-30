@@ -1,5 +1,0 @@
-{
-  "id": "dnd2024.death-state",
-  "name": "Death State (D&D 2024)",
-  "description": "One creature's active D&D 2024 dying, Stable, or dead state: Death Saving Throw tallies and terminal flags. It stores no Hit Point change, damage instance, condition list, turn, or roll."
-}

@@ -1,1 +1,0 @@
-{"id":"dnd2024.crafting.job","name":"Crafting job state","description":"Mutable recipe, phase, and completed work for a crafting job; generic participation and containment relationships own crafters and committed materials."}

@@ -1,1 +1,0 @@
-{"name":"ecs-effects","classification":"system","status":"operational","owns":["application-scoped ECS effect batches","atomic ECS mutation audit","deterministic application-effect replay identity"],"mayDependOn":["ecs","operations-and-audit"]}

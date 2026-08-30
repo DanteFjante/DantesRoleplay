@@ -1,1 +1,0 @@
-{"name":"application-preview","classification":"system","status":"operational","owns":["disposable exact-source-profile candidate previews","application preview fingerprints"],"mayDependOn":["application-registry","source-registry"]}

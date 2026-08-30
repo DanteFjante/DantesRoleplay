@@ -1,1 +1,0 @@
-{"id":"dnd2024.creature.proficiency-basis","name":"Creature proficiency basis component","description":"Immutable proficiency and expertise grants keyed once by proficiency entity ID, with all grant provenance preserved."}

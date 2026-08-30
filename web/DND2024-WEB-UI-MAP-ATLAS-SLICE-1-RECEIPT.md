@@ -1,5 +1,10 @@
 # D&D 2024 web UI map atlas Slice 1 completion receipt
 
+Corrected 2026-08-30: this slice delivered the image route and superseded custom-element mapping,
+but the active React page still referenced its old SVG registry. The active-page correction and
+revision 9 publication are recorded in
+`DND2024-WEB-UI-MAP-ATLAS-REACT-CORRECTION-RECEIPT.md`.
+
 Completed: **2026-08-30**
 
 Implementation owner: `web/DND2024-WEB-UI-MAP-ATLAS-SLICE-1-IMPLEMENTATION.md`

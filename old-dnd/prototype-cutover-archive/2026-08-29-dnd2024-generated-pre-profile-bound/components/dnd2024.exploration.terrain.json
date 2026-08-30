@@ -1,1 +1,0 @@
-{"id":"dnd2024.exploration.terrain","name":"Travel terrain definition","description":"Owns one Travel Terrain row while referenced activities own encounter-distance rolls and the three ability-check difficulties."}

@@ -2,7 +2,7 @@
 
 > **D&D implementation reference:** When this work includes D&D 2024 mechanics, inspect [Foundry VTT dnd5e](https://github.com/foundryvtt/dnd5e) before designing or coding. Use it as a licensed engineering reference—not a direct dependency or rules authority—while retaining the exact `source.dnd2024.srd-5.2.1` locator and all applicable MIT, CC-BY, and asset-license notices for any reused material.
 
-Status: **Features W1–W15 and W17 verified; W16 has implemented slices awaiting acceptance**
+Status: **Features W1–W15 and W17 verified; W16 awaits acceptance; W18 Slice 1 verified**
 Last reviewed: 2026-08-21
 
 ## Outcome and ownership
@@ -57,15 +57,25 @@ individually validated/audited leg; it never batches an itinerary into one unche
 Slices 1–2 have receipts. Run its focused checks, disposable catalog validation, and full-suite
 acceptance against one stable worktree before changing this roadmap to verified.
 
-### W18 — display placement on more than one scope plane (recorded gap, on hold)
+### W18 — display placement on more than one scope plane (Slice 1 verified)
 
 [The dependency tree](world/feature-18/WORLD-FEATURE-18-SCOPED-MAP-PLANES-DEPENDENCY-PLAN.md)
 records that W9 places a location only on the plane of the region directly containing it, so regions
-on the world plane and sites inside a settlement have no placement owner. It proposes relaxing that
-one constraint rather than adding a second placement component, and it creates no runtime artifact.
-It is on hold by owner decision: the dnd2024 scoped map workspace that surfaced the gap implements
-in its prototype and may not change canonical contracts to unblock itself. The tree stands as the
-written record of the gap, for whenever this model is worked on for its own reasons.
+on the world plane and sites inside a settlement have no placement owner. The user's 2026-08-30
+World-tab completion request activates the smallest canonical repair: keep the one closed anchor
+schema, treat direct containment as the plane, allow active World roots, Regions, and settlements as
+planes, and enforce uniqueness within each plane. Slice 1 changes only that generic contract and its
+focused tests; its [receipt](world/feature-18/WORLD-FEATURE-18-SLICE-1-RECEIPT.md) records the
+evidence. Live Thalorien coordinates and website consumption remain later leaves.
+
+### W19 — dedicated dated World chronology (awaiting confirmation)
+
+[Slice 1](world/feature-19/WORLD-FEATURE-19-SLICE-1-IMPLEMENTATION.md) proposes the smallest owner
+needed by the World History screen: closed dated records scoped to one World, optionally linked to
+exact same-world subjects. The proposed permanent component/relationship IDs and signed-minute,
+authored-date-label schema require explicit confirmation before any catalog or runtime artifact is
+created. This feature does not reinterpret knowledge, campaign recaps, or the structural event
+ledger as World history.
 
 ## Next feature rule
 

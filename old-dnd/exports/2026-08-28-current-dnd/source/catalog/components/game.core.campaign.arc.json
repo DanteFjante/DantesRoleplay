@@ -1,1 +1,0 @@
-{"id":"game.core.campaign.arc","name":"Campaign Arc","description":"Closed lifecycle and narrative state for one campaign-owned long-running arc. Campaign and chapter context remain directed relationships. Governed by procedure.campaign.chapter."}

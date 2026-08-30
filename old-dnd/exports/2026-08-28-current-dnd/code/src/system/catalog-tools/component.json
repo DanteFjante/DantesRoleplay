@@ -1,1 +1,0 @@
-{"name":"catalog-tools","classification":"system","status":"migrated","owns":["catalog validation import export and reports"],"mayDependOn":["building-blocks","catalog","sqlite-hosting"]}

@@ -1,5 +1,0 @@
-{
-  "id": "dnd2024.encounter-turn-state",
-  "name": "Encounter turn state (D&D 2024)",
-  "description": "The authoritative lifecycle state for one D&D 2024 encounter after Initiative order is recorded: active or ended status, current round, current index, and the fixed SRD 5.2.1 source reference. Attach it only to the encounter. The active participant is derived from dnd2024.encounter-initiative-order.order[turnIndex], never stored here. Written first by mechanic.dnd2024.encounter-turn.start with component.add; advancing and ending are later lifecycle transitions. It stores no roster, Initiative counts, raw dice, action budget, conditions, outcome, timestamp, or end reason. Governed by procedure.mechanic.dnd2024.encounter-turn-lifecycle. Source: System Reference Document 5.2.1, 'Playing the Game > Combat > The Order of Combat', Wizards of the Coast, CC-BY-4.0, https://www.dndbeyond.com/srd"
-}

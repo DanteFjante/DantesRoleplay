@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" role="img" aria-hidden="true">
+  <rect width="1000" height="700" fill="#efe7db"/>
+  <path d="M0 210 L180 150 L360 190 L540 120 L760 160 L1000 90 L1000 0 L0 0 Z" fill="#d9cbb4"/>
+  <path d="M0 210 L180 150 L360 190 L540 120 L760 160 L1000 90" fill="none" stroke="#a08f74" stroke-width="6"/>
+  <path d="M120 700 C 220 520, 340 520, 420 420 S 620 330, 760 340 S 940 300, 1000 260" fill="none" stroke="#8fa6b8" stroke-width="14" stroke-linecap="round"/>
+  <g fill="#cbbda3"><circle cx="230" cy="300" r="46"/><circle cx="860" cy="470" r="54"/></g>
+  <g fill="#7a2f2f" font-family="serif" font-size="26">
+    <text x="700" y="80">The Cinder Vault — sealed</text>
+    <text x="420" y="250">vow-stones (waking)</text>
+  </g>
+  <path d="M840 60 L880 120" stroke="#7a2f2f" stroke-width="4"/>
+</svg>

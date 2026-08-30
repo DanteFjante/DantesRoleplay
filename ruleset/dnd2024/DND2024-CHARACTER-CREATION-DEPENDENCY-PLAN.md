@@ -12,10 +12,10 @@ Parent plan: [complete-campaign dependency graph](DND2024-COMPLETE-CAMPAIGN-DEPE
 Plan role: **subordinate character subgraph; remaining ordering does not select the next leaf independently**
 
 Token-constrained delivery may use the separate
-[basic character-creation MVP plan](DND2024-CHARACTER-CREATION-MVP-PLAN.md). It creates an explicitly
+[basic character-creation MVP receipt](evidence/DND2024-CHARACTER-CREATION-MVP-RECEIPT.md). It creates an explicitly
 `basic-playable` actor with a durable unresolved-entitlement ledger in one accepted vertical slice;
 it does not replace or falsely satisfy this source-complete dependency tree.
-The accepted [all-class expansion](DND2024-CHARACTER-CREATION-ALL-CLASS-IMPLEMENTATION.md) adds
+The accepted [all-class expansion](evidence/DND2024-CHARACTER-CREATION-ALL-CLASS-RECEIPT.md) adds
 source-bound level-1 models for all twelve SRD classes to that same incomplete-but-honest path.
 
 ## Outcome and non-goals
@@ -60,7 +60,7 @@ Complete level-1 character creation                                      [planne
 
 ## Conflicts and decisions
 
-- The retained `old-dnd/` character implementation is recovery evidence only. Its useful policy
+- The retired character implementation is represented by inventory/receipt evidence only. Its useful policy
   and background declaration shapes may be re-adopted, but its C# D&D validators and parallel
   world model are forbidden.
 - `dnd2024.abilities` remains the sole raw-score owner. Creation resolvers return canonical data;
@@ -146,9 +146,9 @@ row must be divided again in its active implementation document before code chan
 
 ## Lowest ready leaf
 
-CC1 and [CC2A](DND2024-CHARACTER-CREATION-CC2A-IMPLEMENTATION.md)–[CC2G](DND2024-CHARACTER-CREATION-CC2G-IMPLEMENTATION.md)
-and [CC2H1](DND2024-CHARACTER-CREATION-CC2H1-IMPLEMENTATION.md)–[CC2H2](DND2024-CHARACTER-CREATION-CC2H2-IMPLEMENTATION.md)
-are verified. [CC3A](DND2024-CHARACTER-CREATION-CC3A-IMPLEMENTATION.md) is also verified and makes
+CC1 and [CC2A](evidence/DND2024-CHARACTER-CREATION-CC2A-RECEIPT.md)–[CC2G](evidence/DND2024-CHARACTER-CREATION-CC2G-RECEIPT.md)
+and [CC2H1](evidence/DND2024-CHARACTER-CREATION-CC2H1-RECEIPT.md)–[CC2H2](evidence/DND2024-CHARACTER-CREATION-CC2H2-RECEIPT.md)
+are verified. [CC3A](evidence/DND2024-CHARACTER-CREATION-CC3A-RECEIPT.md) is also verified and makes
 all four SRD backgrounds selectable with fixed skills/tools/Common applied. CC3B is verified and
 optionally completes the two Standard languages and Soldier Gaming Set while preserving the
 incomplete request. CC3C is verified and persists exact source-bound background/class feature
@@ -158,7 +158,7 @@ Physical exertion, finish/recovery, Resourceful, remaining species grants, and s
 composition remain later leaves; no such leaf is active. The separate
 [basic-playable MVP](evidence/DND2024-CHARACTER-CREATION-MVP-RECEIPT.md) is accepted and creates an
 honest incomplete actor without satisfying those leaves. Its
-[all-class expansion](DND2024-CHARACTER-CREATION-ALL-CLASS-IMPLEMENTATION.md) supplies correctly
+[all-class expansion](evidence/DND2024-CHARACTER-CREATION-ALL-CLASS-RECEIPT.md) supplies correctly
 schematized level-1 class models while leaving absent mechanics pending. Magic Initiate remains
 blocked on spell owners, while CC3D1A verifies Alert Initiative Proficiency and keeps Initiative
 Swap separate. CC3E1 restores the canonical armor-training owner and applies all class grants.

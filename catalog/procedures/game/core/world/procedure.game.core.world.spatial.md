@@ -9,23 +9,26 @@ status: active
 ## Description
 
 Defines display placement and reviewed media selection for map consumers. An anchor is optional
-presentation metadata on one direct location within one region. A map visual is optional
+presentation metadata on one direct location within one active map plane. A map visual is optional
 presentation metadata owned by the world root or location whose plane it depicts. Containment,
 adjacency, routes, time, and audience knowledge remain the authoritative world model.
 
 ## Instructions
 
 1. Use `game.core.world.map.anchor` only on an active `game.core.world.location` directly
-   contained by an active `region` location. A child region uses containment slot `region`; a child
-   settlement, site, or interior uses slot `location`. The direct container is the anchor's only
-   map plane; never store a region or map ID in the component.
+   contained by an active map plane. A plane is an active `game.core.world.root` or an active
+   `game.core.world.location` whose kind is `region` or `settlement`. Existing topology still owns
+   the child slot: a child region uses `region`; a child settlement, site, or interior uses
+   `location`. The direct container is the anchor's only map plane; never store a plane, region,
+   settlement, or map ID in the component.
 2. Its complete closed data is exactly integer `x` and `y`, each 0–1,000. `(0, 0)` is the
    top-left and `(1000, 1000)` the bottom-right of a consumer's available region plane. A renderer
    may scale the plane proportionally, but must not derive distance, heading, time, terrain, or
    travel rules from it.
-3. For one reviewed regional layout, anchor every direct active child location presented by that layout and
-   keep each `(x, y)` pair unique. Correct an anchor as a complete replacement after reading its
-   location and direct containing region.
+3. For one reviewed plane layout, anchor every direct active child location presented by that
+   layout and keep each `(x, y)` pair unique within that plane. The same pair may be reused on a
+   different plane. Correct an anchor as a complete replacement after reading its location and
+   direct containing plane.
 4. The first fixture anchors are gate `(150, 650)`, market `(500, 500)`, and observatory
    `(850, 250)`. They are display choices only; they neither create nor alter an adjacency or
    route.
@@ -44,8 +47,9 @@ adjacency, routes, time, and audience knowledge remain the authoritative world m
 
 - Missing, null, non-object, fractional, negative, out-of-range, or extra coordinate data is
   invalid. Roots, actors, factions, routes, knowledge records, inactive locations, and locations
-  outside the direct active-region slot contract never carry an anchor.
-- An anchor contains no label, region/map ID, visibility, z-index, scale, image, route, distance,
+  outside the direct active-plane topology/slot contract never carry an anchor. Sites and interiors
+  are not planes; their direct children cannot carry anchors for that container.
+- An anchor contains no label, plane/region/settlement/map ID, visibility, z-index, scale, image, route, distance,
   terrain, path, position history, or player-discovery state. Entity identity/name and containment
   supply display identity and scope.
 - A map visual contains no URL, path, owner ID, child ID, coordinates, crop, scale, visibility,

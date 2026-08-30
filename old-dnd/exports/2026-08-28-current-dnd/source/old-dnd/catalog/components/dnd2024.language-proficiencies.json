@@ -1,5 +1,0 @@
-{
-  "id": "dnd2024.language-proficiencies",
-  "name": "D&D 2024 Language Proficiencies",
-  "description": "Closed character state containing only canonical known SRD 5.2.1 language ids and a fixed source reference. Creation and correction use mechanic.dnd2024.language-proficiencies.record. An empty list means known no languages; absence means unknown state. It stores no translation result, source grant, profile text, or derived ability."
-}

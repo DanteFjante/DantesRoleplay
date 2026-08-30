@@ -1,1 +1,0 @@
-{"id":"dnd2024.combat.initiative","name":"Combat initiative state","description":"Stores an authoritative initiative result and its roll evidence, not a derived initiative modifier."}

@@ -1,1 +1,0 @@
-{"id":"dnd2024.advancement.progression","name":"Advancement progression definition component","description":"Level-keyed entitlements for a class or subclass expressed through one normalized grant path; JSON object keys make duplicate level authorities impossible."}

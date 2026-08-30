@@ -1,1 +1,0 @@
-{"id":"game.core.world.teleport-gate","name":"World Fixed Teleport Gate","description":"Closed state for one fixed world portal. Containment supplies its origin and directed links supply its world and destination. Governed by procedure.game.core.world.travel."}

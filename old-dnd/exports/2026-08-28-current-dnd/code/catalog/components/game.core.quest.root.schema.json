@@ -1,1 +1,0 @@
-{"type":"object","additionalProperties":false,"required":["status","premise","summary","visibility"],"properties":{"status":{"enum":["draft","offered","active","completed","failed","archived"]},"premise":{"type":"string","minLength":1,"maxLength":1000},"summary":{"type":"string","minLength":1,"maxLength":1000},"visibility":{"enum":["party","gm"]}}}

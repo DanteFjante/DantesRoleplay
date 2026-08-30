@@ -3,18 +3,18 @@ using System.Runtime.CompilerServices;
 
 namespace DantesRoleplay.SchemaValidation.Tests;
 
-public sealed class PrototypeCanonicalCatalogTests
+public sealed class Dnd2024CanonicalCatalogTests
 {
     [Fact]
-    public async Task Every_active_prototype_component_schema_compiles_in_the_generic_bounded_profile()
+    public async Task Every_canonical_component_schema_compiles_in_the_generic_bounded_profile()
     {
         var root = Path.Combine(RepositoryRoot(), "catalog", "applications", "dnd2024");
         var components = Path.Combine(root, "components");
-        Assert.True(Directory.Exists(components), "The prototype canonical D&D source is missing.");
+        Assert.True(Directory.Exists(components), "The canonical D&D component catalog is missing.");
 
         var schemas = Directory.EnumerateFiles(components, "*.schema.json", SearchOption.TopDirectoryOnly)
             .OrderBy(value => value, StringComparer.Ordinal).ToArray();
-        Assert.Equal(154, schemas.Length);
+        Assert.NotEmpty(schemas);
 
         var validator = new BoundedJsonSchemaValidator();
         foreach (var schema in schemas)

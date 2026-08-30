@@ -1,6 +1,0 @@
-Test run for C:\Users\dante\source\repos\DantesRoleplay\DantesRoleplay.Tests\.codex-build\DantesRoleplay.Tests.dll (.NETCoreApp,Version=v10.0)
-A total of 1 test files matched the specified pattern.
-WARNING: Overwriting results file: C:\Users\dante\source\repos\DantesRoleplay\.codex-test-results\e8-slice2-full.trx
-Results File: C:\Users\dante\source\repos\DantesRoleplay\.codex-test-results\e8-slice2-full.trx
-
-Passed!  - Failed:     0, Passed:   803, Skipped:     0, Total:   803, Duration: 1 m 20 s - DantesRoleplay.Tests.dll (net10.0)

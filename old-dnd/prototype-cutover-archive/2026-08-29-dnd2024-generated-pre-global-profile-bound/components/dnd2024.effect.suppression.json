@@ -1,1 +1,0 @@
-{"id":"dnd2024.effect.suppression","name":"Effect suppression state","description":"Records explicit suppressing sources and release conditions; suppression is inferred from their presence."}

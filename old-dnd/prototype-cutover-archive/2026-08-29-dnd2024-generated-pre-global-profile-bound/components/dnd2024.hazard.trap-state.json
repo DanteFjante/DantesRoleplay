@@ -1,1 +1,0 @@
-{"id":"dnd2024.hazard.trap-state","name":"Trap instance state","description":"Trap phase, activation count, and operation provenance; definition linkage and observer-specific detection are external owners."}

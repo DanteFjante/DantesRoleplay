@@ -1,1 +1,0 @@
-{"id":"aerial-route.feature-13.gate-to-observatory","name":"Gate-to-Observatory Aerial Route","components":{"game.core.world.aerial-route":{"status":"active","summary":"A reviewed one-way aerial route from the fixture gate to the fixture observatory.","visibility":"party","travelMode":"air","distanceUnits":600}}}

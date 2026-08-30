@@ -1,1 +1,0 @@
-{"name":"procedures","classification":"system","status":"migrated","owns":["versioned procedure contracts","procedure retrieval"],"mayDependOn":["building-blocks","operations-and-audit"]}

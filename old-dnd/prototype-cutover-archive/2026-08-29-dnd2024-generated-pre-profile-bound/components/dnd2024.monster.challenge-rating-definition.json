@@ -1,1 +1,0 @@
-{"id":"dnd2024.monster.challenge-rating-definition","name":"Challenge rating definition","description":"Owns the SRD mapping from one Challenge Rating to its one or two XP awards, including both CR 0 alternatives; Proficiency Bonus is calculated from CR and never stored."}

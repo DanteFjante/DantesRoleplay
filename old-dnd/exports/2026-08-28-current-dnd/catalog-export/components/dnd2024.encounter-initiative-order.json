@@ -1,5 +1,0 @@
-{
-  "id": "dnd2024.encounter-initiative-order",
-  "name": "Encounter Initiative order (D&D 2024)",
-  "description": "The single authoritative Initiative order for one encounter: participants in acting order, highest count first, with the derived Initiative count each rolled and the fixed SRD 5.2.1 source reference. Attach it to the encounter entity only, never to a participant. Written by mechanic.dnd2024.encounter-initiative-order through component.add, so a second write fails rather than silently replacing the order. It stores no ability scores, modifiers, raw dice, rounds, turns, conditions, or duplicate roster; the roster is the encounter's containment and the replay seed is recorded exactly in the action audit. Governed by procedure.mechanic.dnd2024.encounter-initiative-order. Source: System Reference Document 5.2.1, 'Playing the Game - Combat > The Order of Combat > Initiative', Wizards of the Coast, CC-BY-4.0, https://www.dndbeyond.com/srd"
-}

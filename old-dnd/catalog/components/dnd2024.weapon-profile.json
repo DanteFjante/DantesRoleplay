@@ -1,5 +1,0 @@
-{
-  "id": "dnd2024.weapon-profile",
-  "name": "Weapon Profile (D&D 2024)",
-  "description": "One canonical SRD 5.2.1 weapon profile: category, kind, permitted attack abilities, base damage, static properties, normal and Thrown range facts, one mastery identity, and fixed source attribution. It stores no ownership, equipment, mastery permission, attack result, or damage dealt."
-}

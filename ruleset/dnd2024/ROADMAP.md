@@ -10,7 +10,7 @@ from scratch and without introducing a second state, transaction, or rules autho
 
 The preferred sequence is:
 
-1. recover compatible, already-tested DantesRoleplay D&D catalog work from `old-dnd/`;
+1. retain accepted canonical DantesRoleplay D&D catalog work and its recorded provenance;
 2. adapt licensed external implementations only where they close a verified gap or improve tests;
 3. implement from SRD 5.2.1 only when neither existing source is safe to reuse; and
 4. retain canonical component state, catalog JavaScript rules, typed effects, SQLite transactions,
@@ -18,17 +18,15 @@ The preferred sequence is:
 
 ## Current boundary
 
-- On 2026-08-29, the user confirmed a clean prototype-first source cutover. The active
-  `catalog/applications/dnd2024` source now contains 154 prototype ECS component schemas, 71
-  archetypes, and 2,329 records; it intentionally has no legacy mechanics or procedures. The
-  prior active source is recoverably preserved under
-  `old-dnd/prototype-cutover-archive/2026-08-29-dnd2024-pre-cutover`. Live SQLite, world, and
-  campaign state were not imported or changed. The next boundary is an explicit data-migration
-  plan, not restoration of the archived mechanics.
+- On 2026-08-29, the user confirmed a clean model-first source cutover. The active
+  `catalog/applications/dnd2024` source received the reviewed ECS schemas, archetypes, and authored
+  records. On 2026-08-30, the user confirmed retirement of the parallel prototype and old-source
+  trees after the live React application, unique receipts, database snapshots, and Thalorien
+  pre/post-migration exports received canonical owners. Live SQLite state was not changed.
 - The generic application kernel is accepted through its first delivery and supports registered
   applications, source overlays, application-owned schemas, ECS state, structural projections,
   exact JavaScript execution, typed effects, state adoption, and reverse dependency impact.
-- The archived pre-cutover authored `catalog/` contains the accepted D&D check, proficiency, combat, encounter,
+- The canonical application `catalog/` contains the accepted D&D check, proficiency, combat, encounter,
   and standalone base-Speed families, the accepted Slice 9 stateless character-sheet reader, and
   the accepted five-record Slice 10A currency cohort, the accepted nine-record Slice 10B1A
   adventuring-gear cohort, the accepted complete thirteen-record Slice 10B2 Armor-table cohort, and
@@ -55,11 +53,11 @@ The preferred sequence is:
   ledger, and campaign participation in one replayable transaction. Automatic event adapters,
   finish/recovery, Resourceful, executable background/class grants, equipment packages, and source-complete creation
   remain later independent leaves.
-- `old-dnd/` retains the previous D&D implementation and tests by explicit user decision. The
-  accepted [Slice 13 inventory](adoption/evidence/retained-archive-inventory-13a.json) fingerprints
-  all 737 files and proves zero runtime/build/catalog/production-source consumers. It remains
-  non-authoritative recovery/provenance material; 43 accepted transformation sources and other
-  development evidence still depend on its exact bytes.
+- The previous D&D implementation source has been removed after explicit user confirmation. The
+  accepted [Slice 13 inventory](adoption/evidence/retained-archive-inventory-13a.json) preserves
+  all 737 paths and hashes as historical provenance; 69 unique receipts remain under
+  `evidence/retired-implementation/`, and rollback material remains under `evidence/state-exports/`.
+  No runtime, build, catalog, or production source consumes the retired tree.
 - The official rule authority remains `source.dnd2024.srd-5.2.1`. Donor repositories are
   implementation evidence, never rule authority.
 - `dnd2024-core` remains SRD-faithful. Homebrew, compatibility content, and non-SRD additions must
@@ -75,7 +73,7 @@ The preferred sequence is:
   campaigns selecting the exact two-source profile can consume it through existing item mechanics.
 - The [pre-Slice 11 acceptance](adoption/evidence/DND-CODE-ADOPTION-PRE-SLICE-11-ACCEPTANCE.md)
   revalidated every delivered adoption/tooling/content/runtime boundary through Slice 10. The
-  [Slice 11 design](DND-CODE-ADOPTION-SLICE-11-DESIGN.md) is accepted selected scope: damage mitigation is
+  [Parent 11 receipt](adoption/evidence/DND-CODE-ADOPTION-SLICE-11-RECEIPT.md) records the accepted selected scope: damage mitigation is
   accepted through 11A–11D, and Temporary Hit Points/healing are accepted through 11E–11H. Weapon
   damage now composes mitigation, optional buffer absorption, and HP in one atomic root.
 - The accepted families add no C# rule logic, migration, live-state mutation, or automatic campaign
@@ -99,10 +97,10 @@ The preferred sequence is:
   a review-only pinned-upstream diff. The primary donor is unchanged; Foundry's reference-only
   branch has a 42-file review report and remains inactive. Slice 13 archive retirement is still
   separately gated.
-- The accepted [Parent 13 receipt](adoption/evidence/DND-CODE-ADOPTION-SLICE-13-RECEIPT.md) closes
-  archive maintenance in retained scope: retain all 737 files, remove none, keep zero runtime
-  consumers, and preserve reproducible transformation/recovery evidence. The numbered adoption
-  plan has no remaining implementation leaf.
+- The accepted [Parent 13 receipt](adoption/evidence/DND-CODE-ADOPTION-SLICE-13-RECEIPT.md) records
+  the former retained archive boundary. The later legacy-source cutover preserves its inventory,
+  receipts, and state exports while removing the retired implementation bytes. The numbered
+  adoption plan has no remaining implementation leaf.
 
 ## Active dependency plan
 
@@ -110,14 +108,13 @@ The master cross-owner planning root is the
 [D&D 2024 complete-campaign dependency graph](DND2024-COMPLETE-CAMPAIGN-DEPENDENCY-GRAPH.md).
 It covers the prerequisites for creating and running persistent worlds, nested locations,
 campaigns, characters, sessions, rules, encounters, content, shared DM/Player views, and
-export/recovery. It subsumes the remaining execution order in the narrower plans below. The graph
-is planning-only, activates no implementation leaf, and identifies its read-only owner/ID/category
-audit as the lowest independently ready leaf.
+export/recovery. It subsumes the remaining execution order in the narrower plans below. Its read-only
+owner/ID/category audit is accepted; G7 canonical world/campaign convergence is now the blocking next
+gate, and no implementation leaf is active.
 
-The subordinate
-[D&D code-adoption dependency plan](DND-CODE-ADOPTION-DEPENDENCY-PLAN.md) preserves the reuse
-ladder, donor boundaries, completed adoption evidence, acceleration tooling, and confirmation
-history. It does not independently select the next implementation leaf.
+The accepted [D&D code-adoption evidence](adoption/evidence/) preserves the reuse ladder, donor
+boundaries, completed adoption evidence, acceleration tooling, and confirmation history. The
+complete-campaign graph owns all remaining implementation order.
 
 The
 [D&D 2024 character-creation dependency tree](DND2024-CHARACTER-CREATION-DEPENDENCY-PLAN.md) is the
@@ -129,12 +126,12 @@ start, and clock-derived activity/interruption progress through no-benefit durat
 later leaf is active, and CC2 remains open on automatic interruption adapters, finish/recovery,
 Resourceful triggering, and final trait composition.
 For a token-constrained first delivery, the
-[basic character-creation MVP plan](DND2024-CHARACTER-CREATION-MVP-PLAN.md) provides one 5-8 EP
+[basic character-creation MVP receipt](evidence/DND2024-CHARACTER-CREATION-MVP-RECEIPT.md) records one 5-8 EP
 vertical slice to an explicitly `basic-playable` actor with unresolved entitlements recorded rather
 than silently granted. That slice is accepted; it does not close the full-resolution plan.
 
 Runtime-to-prototype ECS evidence and narrower work are preserved by the subordinate
-[component-convergence dependency tree](../../prototype/dnd2024/planning/DND2024-COMPONENT-CONVERGENCE-DEPENDENCY-TREE.md).
+[component-convergence dependency tree](DND2024-COMPONENT-CONVERGENCE-DEPENDENCY-TREE.md).
 Its encounter-lifecycle leaf is accepted through explicit participation, Initiative, rounds, turns,
 and counted metric budgets. Item/inventory runtime identity, quantity, custody, and conservation are
 also accepted; static item-definition decomposition and metric burden/capacity are next.
@@ -151,14 +148,15 @@ mechanics without waiting for source-complete character options.
 | Donor gap filling | Adapt pure derivations, planners, SRD content encodings, and golden tests only for uncovered behavior | Slice 9 accepted; all 17 candidate groups have closed dispositions |
 | Playable vertical | Ability/D20, proficiency, AC/HP, weapons, damage, turn flow, and one fresh-host replayable encounter | accepted through Slice 7D |
 | Breadth | Character progression, conditions, equipment, spells, monsters, and magic items in independent cohorts | Parents 10–11 accepted selected scope; every incomplete family has an explicit independent-feature gate |
-| Maintenance | Pinned upstream-diff reports, attribution, conformance regression, and retained archive recovery | Slices 12–13 accepted; archive removal remains a separately confirmed future proposal |
+| Maintenance | Pinned upstream-diff reports, attribution, conformance regression, and retained provenance | Slices 12–13 accepted; legacy source trees retired under the [cutover receipt](evidence/DND2024-LEGACY-SOURCE-CUTOVER-RECEIPT.md) |
 | Character creation | Stateless, source-bound creation choices composed into one actor transaction | Basic-playable Acolyte, Criminal, Sage, or Soldier creation with any of twelve SRD level-1 classes is accepted with fixed skills/tools/Common, optional exact Standard-language/Soldier-tool and Bard/Monk class-tool choices, durable background/class feature identities, exact armor-training and complete/restricted weapon membership, class-specific core state, campaign participation, replay/rollback, and an explicit no-behavior pending ledger; source-complete spell/exertion, finish/recovery, Resourceful, equipment consequences, and feature behavior stay planned |
 
 ## Historical evidence
 
-The [archived D&D roadmap](../../old-dnd/ruleset/dnd2024/ROADMAP.md) and its receipts preserve the
-previous implementation evidence. They are inputs to the coverage inventory, not an active plan and
-not permission to copy the archive wholesale.
+The [retired implementation receipts](evidence/retired-implementation/) and
+[archive inventory](adoption/evidence/retained-archive-inventory-13a.json) preserve the previous
+implementation evidence without retaining a second source tree. They are historical inputs, not an
+active implementation authority.
 
 ## Rules
 

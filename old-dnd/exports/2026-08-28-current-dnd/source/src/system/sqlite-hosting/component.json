@@ -1,1 +1,0 @@
-{"name":"sqlite-hosting","classification":"system","status":"scaffolded","owns":["EF model composition","SQLite transactions","migration hosting"],"mayDependOn":["building-blocks","state","procedures","mechanics","actions","effects-and-transactions","events-and-notifications","operations-and-audit","snapshots","feedback","information"]}

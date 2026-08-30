@@ -1,5 +1,0 @@
-{
-  "id": "currency.dnd2024.electrum-piece.v1",
-  "name": "Electrum Piece (D&D 2024, definition v1)",
-  "components": { "dnd2024.item-definition": { "definitionVersion": 1, "kind": "currency", "stackPolicy": "fungible", "massPounds": { "numerator": 1, "denominator": 50 }, "currency": { "denomination": "ep", "copperValue": 50, "coinsPerPound": 50 }, "sourceRef": { "sourceId": "source.dnd2024.srd-5.2.1", "locator": "Equipment > Currency" } } }
-}

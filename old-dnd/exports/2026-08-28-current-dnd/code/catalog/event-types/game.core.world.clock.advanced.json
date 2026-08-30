@@ -1,1 +1,0 @@
-{"id":"game.core.world.clock.advanced","category":"game.core.world.time","name":"World clock advanced","description":"One accepted monotonic root-clock advance scoped to its world.","scope":"world","status":"Active"}

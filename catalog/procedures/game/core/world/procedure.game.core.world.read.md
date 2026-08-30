@@ -43,17 +43,19 @@ player-safe views or a map.
    `relationshipKinds: ["game.core.world.knowledge.in-world", "game.core.world.knowledge.about", "game.core.world.clue.supports"]`,
    `relationshipDepth: 2`, `maxNodes: 100`, and `maxEdges: 150`. It returns scoped records and
    their target/support provenance; visibility is returned as authored descriptive data.
-6. **Map layout:** first query the selected active region with
-   `componentIds: ["game.core.world.location", "game.core.world.map.anchor"]`,
+6. **Map layout:** first query the selected active map plane with
+   `componentIds: ["game.core.world.root", "game.core.world.location", "game.core.world.map.anchor"]`,
    `containmentDepth: 1`, `relationshipKinds: ["game.core.world.location.connected-to"]`,
-   `relationshipDepth: 1`, `maxNodes: 50`, and `maxEdges: 100`. Then query its inspected world
-   root with `componentIds: ["game.core.world.route"]`, `containmentDepth: 0`,
+   `relationshipDepth: 1`, `maxNodes: 50`, and `maxEdges: 100`. The selected plane must be an active
+   world root or an active Region/settlement location. Then query its inspected world root with
+   `componentIds: ["game.core.world.route"]`, `containmentDepth: 0`,
    `relationshipKinds: ["game.core.world.route.in-world", "game.core.world.route.from", "game.core.world.route.to"]`,
    `relationshipDepth: 2`, `maxNodes: 100`, and `maxEdges: 150`. Construct the documented layout
-   only when every active direct region location has one valid unique anchor, every adjacency has
-   both displayed endpoints, and every included active route has exactly one valid scope/origin/
-   destination link with both endpoints displayed. The output is ordered by permanent IDs and is
-   trusted-GM display data, not a route path or player view.
+   only when every displayed active direct child location uses its topology-required slot and has
+   one valid anchor unique within the selected plane, every included adjacency has both displayed
+   endpoints, and every included active route has exactly one valid scope/origin/destination link
+   with both endpoints displayed. Equal coordinates on another plane are unrelated. The output is
+   ordered by permanent IDs and is trusted-GM display data, not a route path or player view.
 7. Read `truncated` before relying on a result. A `null` value means the recipe fit its declared
    cap; a non-null value names the exhausted cap. Read an individual entity through
    `query(kind: "entities", id: "...")` before changing it.
@@ -65,10 +67,10 @@ player-safe views or a map.
 - The graph reader returns only selected component data, direct containment context, and selected
   relationships in stable order. It does not copy parent/child/adjacency fields into components or
   make a second topology or knowledge model.
-- The map-layout recipe returns authored display anchors and route metadata only. It does not
+- The map-layout recipe returns authored plane-scoped display anchors and route metadata only. It does not
   provide geographic geometry, terrain, distance, route cost, paths, line of sight, travel rules,
   rendered-map data, or a player-facing map. World Feature 8 owns routes/travel and World Feature
-  9 owns authored display anchors.
+  9 owns authored display anchors and World Feature 18 extends their valid direct-container planes.
 - A query never changes authoritative world state. Its normal query audit entry is expected; it is
   not a world edit. Do not add caching, stored projections, writes, effects, events, subscriptions,
   notifications, or a game-specific C# query to this read contract.

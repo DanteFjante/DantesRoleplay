@@ -1,5 +1,0 @@
-{
-  "id": "dnd2024.creature.proficiencies",
-  "name": "Creature Proficiencies (D&D 2024)",
-  "description": "Current proficiency memberships keyed by canonical ability, skill, equipment category, tool, or weapon-property entity ID. Each entry stores one rank and all unique grant sources; recordedFamilies distinguishes known-none from unknown family state; Proficiency Bonus and final bonuses are derived."
-}

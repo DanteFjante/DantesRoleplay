@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-hidden="true">
+  <rect width="800" height="800" fill="#eee8da"/>
+  <circle cx="400" cy="400" r="300" fill="#ddd2bb" stroke="#9f8e70" stroke-width="12"/>
+  <circle cx="400" cy="400" r="205" fill="#e9dfca" stroke="#b29f7e" stroke-width="8"/>
+  <circle cx="400" cy="400" r="86" fill="#c9b58f"/>
+  <g fill="none" stroke="#aa987a" stroke-width="16" stroke-linecap="round">
+    <path d="M400 70 L400 730"/>
+    <path d="M70 400 L730 400"/>
+    <path d="M165 165 L635 635"/>
+    <path d="M635 165 L165 635"/>
+  </g>
+  <g fill="#d3c5aa">
+    <path d="M260 110 A300 300 0 0 1 340 84 L365 170 A210 210 0 0 0 310 188 Z"/>
+    <path d="M460 84 A300 300 0 0 1 540 110 L490 188 A210 210 0 0 0 435 170 Z"/>
+    <path d="M690 260 A300 300 0 0 1 716 340 L630 365 A210 210 0 0 0 612 310 Z"/>
+    <path d="M716 460 A300 300 0 0 1 690 540 L612 490 A210 210 0 0 0 630 435 Z"/>
+    <path d="M540 690 A300 300 0 0 1 460 716 L435 630 A210 210 0 0 0 490 612 Z"/>
+    <path d="M340 716 A300 300 0 0 1 260 690 L310 612 A210 210 0 0 0 365 630 Z"/>
+    <path d="M110 540 A300 300 0 0 1 84 460 L170 435 A210 210 0 0 0 188 490 Z"/>
+    <path d="M84 340 A300 300 0 0 1 110 260 L188 310 A210 210 0 0 0 170 365 Z"/>
+  </g>
+</svg>

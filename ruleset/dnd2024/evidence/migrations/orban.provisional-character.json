@@ -1,0 +1,145 @@
+{
+  "entityId": "actor.thalorien.brackenford.orban",
+  "archetype": "dnd2024.archetype.character-instance",
+  "migrationStatus": "provisional-user-review-required",
+  "preservedSource": {
+    "entityId": "actor.thalorien.brackenford.orban",
+    "componentId": "dnd2024.playtest-character-record",
+    "export": "old-dnd/prototype-cutover-archive/2026-08-29-thalorien-live-pre-migration-export"
+  },
+  "components": {
+    "dnd2024.core.presentation": {
+      "shortName": "Orban",
+      "summary": "A tall, flashy former troupe performer travelling toward Brackenford with a blue-tinged ocarina.",
+      "description": "The original narrative record remains the authority for story details. This sheet is a provisional playable baseline pending player review."
+    },
+    "dnd2024.character.identity": {
+      "appearance": "24 years old; about 1.90 m tall and slender; wears flashy but tasteful performer clothing and a dark Penumbra Mantle.",
+      "biography": "Raised in a travelling troupe. He performs music, acrobatics, sleight-of-hand tricks, knife throwing, animal care, and some cooking. He fears fire and heights after the Nara bear incident.",
+      "playerNotes": "The inherited blue-tinged metal ocarina is narrative-only. Do not grant it magic-item statistics, rarity, attunement, activation, or mechanical effects until reviewed."
+    },
+    "dnd2024.character.provenance": {
+      "rulesetRef": { "entityId": "dnd2024.ruleset" },
+      "sourceRefs": [
+        { "entityId": "source.dnd2024.srd-5.2.1" },
+        { "entityId": "actor.thalorien.brackenford.orban" }
+      ]
+    },
+    "dnd2024.character.origin-selections": {
+      "speciesRef": { "entityId": "dnd2024.species.human" },
+      "backgroundRef": { "entityId": "dnd2024.background.criminal" }
+    },
+    "dnd2024.character.feature-entitlements": {
+      "entitlements": [
+        {
+          "featureRef": { "entityId": "dnd2024.class-feature.bard.bardic-inspiration" },
+          "sourceRef": { "entityId": "dnd2024.class.bard" }
+        },
+        {
+          "featureRef": { "entityId": "dnd2024.class-feature.bard.spellcasting" },
+          "sourceRef": { "entityId": "dnd2024.class.bard" }
+        }
+      ]
+    },
+    "dnd2024.character.experience": { "total": 0 },
+    "dnd2024.character.hit-dice": {
+      "pools": {
+        "dnd2024.class.bard": {
+          "dieRef": { "entityId": "dnd2024.vocabulary.die.d8" },
+          "spent": 0
+        }
+      }
+    },
+    "dnd2024.creature.classification": {
+      "creatureTypeRef": { "entityId": "dnd2024.vocabulary.creature-type.humanoid" },
+      "descriptiveTagRefs": [],
+      "alignmentRef": { "entityId": "dnd2024.vocabulary.alignment.neutral-good" }
+    },
+    "dnd2024.creature.ability-scores": {
+      "scores": {
+        "dnd2024.vocabulary.ability.strength": 8,
+        "dnd2024.vocabulary.ability.dexterity": 15,
+        "dnd2024.vocabulary.ability.constitution": 13,
+        "dnd2024.vocabulary.ability.intelligence": 10,
+        "dnd2024.vocabulary.ability.wisdom": 12,
+        "dnd2024.vocabulary.ability.charisma": 17
+      }
+    },
+    "dnd2024.creature.body": {
+      "sizeRef": { "entityId": "dnd2024.vocabulary.size.medium" }
+    },
+    "dnd2024.creature.defenses": { "damageResponses": [] },
+    "dnd2024.creature.hit-points": { "current": 9, "maximum": 9 },
+    "dnd2024.creature.languages": {
+      "languages": {
+        "dnd2024.vocabulary.language.common": {
+          "understands": true,
+          "communicates": true,
+          "reads": true,
+          "writes": true,
+          "sourceRefs": [ { "entityId": "dnd2024.species.human" } ]
+        }
+      }
+    },
+    "dnd2024.creature.movement": {
+      "speeds": {
+        "dnd2024.vocabulary.movement-mode.walk": {
+          "distance": {
+            "dimension": "distance",
+            "value": { "numerator": 1143, "denominator": 125 },
+            "unit": { "entityId": "dnd2024.vocabulary.distance-unit.meter" }
+          },
+          "enabled": true,
+          "sourceRefs": [ { "entityId": "dnd2024.species.human" } ]
+        }
+      }
+    },
+    "dnd2024.creature.proficiencies": {
+      "entries": {
+        "dnd2024.vocabulary.ability.dexterity": {
+          "rankRef": { "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency" },
+          "sourceRefs": [ { "entityId": "dnd2024.class.bard" } ]
+        },
+        "dnd2024.vocabulary.ability.charisma": {
+          "rankRef": { "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency" },
+          "sourceRefs": [ { "entityId": "dnd2024.class.bard" } ]
+        },
+        "dnd2024.vocabulary.skill.acrobatics": {
+          "rankRef": { "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency" },
+          "sourceRefs": [ { "entityId": "dnd2024.class.bard" } ]
+        },
+        "dnd2024.vocabulary.skill.animal-handling": {
+          "rankRef": { "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency" },
+          "sourceRefs": [ { "entityId": "dnd2024.class.bard" } ]
+        },
+        "dnd2024.vocabulary.skill.performance": {
+          "rankRef": { "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency" },
+          "sourceRefs": [ { "entityId": "dnd2024.class.bard" } ]
+        },
+        "dnd2024.vocabulary.skill.persuasion": {
+          "rankRef": { "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency" },
+          "sourceRefs": [ { "entityId": "dnd2024.class.bard" } ]
+        },
+        "dnd2024.vocabulary.skill.sleight-of-hand": {
+          "rankRef": { "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency" },
+          "sourceRefs": [ { "entityId": "dnd2024.background.criminal" } ]
+        }
+      },
+      "recordedFamilies": [ "saving-throw", "skill" ]
+    },
+    "dnd2024.creature.senses": { "senses": {} }
+  },
+  "unmaterializedAssociations": {
+    "classLevels": [ { "classRef": "dnd2024.class.bard", "level": 1 } ],
+    "spells": {
+      "cantrips": [ "dnd2024.spell.vicious-mockery", "dnd2024.spell.prestidigitation" ],
+      "levelOne": [ "dnd2024.spell.healing-word", "dnd2024.spell.dissonant-whispers", "dnd2024.spell.charm-person", "dnd2024.spell.detect-magic" ],
+      "slots": { "1": 2 }
+    },
+    "inventory": {
+      "knownPresent": [ "blue-tinged metal ocarina", "Penumbra Mantle", "two days of rations" ],
+      "knownAbsent": [ "weapons" ],
+      "unresolved": [ "currency", "starting equipment package", "armor", "tools", "magic-item status of ocarina" ]
+    }
+  }
+}

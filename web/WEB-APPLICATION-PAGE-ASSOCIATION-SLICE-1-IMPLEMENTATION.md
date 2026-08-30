@@ -2,7 +2,7 @@
 
 Status: **implemented; acceptance confirmation pending 2026-08-27**
 Owner/roadmap: [Web interface roadmap](WEB-INTERFACE-ROADMAP.md), application-aware workspace follow-on
-Dependency owner: [Application-aware workspace dependency plan](WEB-APPLICATION-AWARE-WORKSPACE-DEPENDENCY-PLAN.md), confirmed application-to-page association boundary
+Dependency evidence: [Application-aware workspace Slice H receipt](WEB-APPLICATION-AWARE-WORKSPACE-SLICE-H-RECEIPT.md), confirmed application-to-page association boundary
 Ruleset alignment: **ruleset-neutral**
 Source ID and locator: **not applicable**
 Outcome: every registered application receives the deterministic direct page URL

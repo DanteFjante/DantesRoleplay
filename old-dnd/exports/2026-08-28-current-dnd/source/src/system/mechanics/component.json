@@ -1,1 +1,0 @@
-{"name":"mechanics","classification":"system","status":"migrated","owns":["mechanic declarations","declared context","sandbox invocation"],"mayDependOn":["building-blocks","state","procedures","operations-and-audit"]}

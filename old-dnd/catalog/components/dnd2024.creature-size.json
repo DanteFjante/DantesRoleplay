@@ -1,1 +1,0 @@
-{"id":"dnd2024.creature-size","name":"Creature Size (D&D 2024)","description":"One explicit D&D 2024 creature Size category. It is shared actor state: Feature 23 consumes it for carrying capacity and Feature 20 may later consume it for movement/reach. It stores no derived carrying totals or movement effects. Governed by procedure.mechanic.dnd2024.creature-size."}

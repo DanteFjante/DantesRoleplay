@@ -1,1 +1,0 @@
-{"name":"events-and-notifications","classification":"system","status":"migrated","owns":["event contracts","guards","reactions","notifications"],"mayDependOn":["building-blocks","state","mechanics","operations-and-audit"]}

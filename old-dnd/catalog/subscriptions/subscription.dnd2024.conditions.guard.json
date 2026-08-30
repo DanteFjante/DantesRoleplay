@@ -1,1 +1,0 @@
-{"id":"subscription.dnd2024.conditions.guard.added","category":"ruleset.dnd2024.core.state.conditions","eventTypeId":"world.component.added","eventMechanicId":"mechanic.dnd2024.conditions.guard","mode":"Guard","order":-100,"fixedRoleEntityIds":{},"trackedEntityIds":[],"payloadEquals":{"definitionId":"dnd2024.conditions"},"maxExecutionsPerChain":1,"scope":"","status":"Active"}

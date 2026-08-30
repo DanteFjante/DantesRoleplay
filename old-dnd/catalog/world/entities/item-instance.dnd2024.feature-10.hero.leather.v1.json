@@ -1,9 +1,0 @@
-{
-  "id": "item-instance.dnd2024.feature-10.hero.leather.v1",
-  "name": "Feature 10 Hero Leather Armor",
-  "container": { "id": "creature.dnd2024.feature-10.hero", "slot": "equipped" },
-  "components": {
-    "dnd2024.item-instance": { "definitionId": "item.dnd2024.leather-armor.v1" },
-    "dnd2024.equipment-state": { "state": "worn" }
-  }
-}

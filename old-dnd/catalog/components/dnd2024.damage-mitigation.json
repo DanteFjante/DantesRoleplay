@@ -1,5 +1,0 @@
-{
-  "id": "dnd2024.damage-mitigation",
-  "name": "Damage Mitigation (D&D 2024)",
-  "description": "Closed creature state containing canonical Resistance, Immunity, and Vulnerability damage-type lists with fixed SRD 5.2.1 attribution. Use mechanic.dnd2024.damage-mitigation.write to record or correct it. Empty lists mean known absence of stored mitigation; a missing component is unknown state. This component stores no damage instance, arithmetic, Hit Point result, source grant, or condition effect."
-}

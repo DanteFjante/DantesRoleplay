@@ -1,1 +1,0 @@
-{"id":"game.core.world.knowledge.validity","name":"Knowledge Validity","description":"An optional closed in-world minute interval for one fact, rumour, secret, or clue. Minutes use that record's scoped world clock; it preserves historical records rather than rewriting their content. Governed by procedure.game.core.world.knowledge."}

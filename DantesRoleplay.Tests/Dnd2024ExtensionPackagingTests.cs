@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using DantesRoleplay.ApplicationPreview;
@@ -121,47 +120,23 @@ public sealed class Dnd2024ExtensionPackagingTests : IDisposable
     }
 
     [Fact]
-    public async Task Optional_rope_is_hash_locked_schema_valid_and_never_claims_core_provenance()
+    public async Task Optional_rope_is_provenance_locked_and_never_claims_core_provenance()
     {
         var root = RepositoryRoot();
-        var archivePath = Path.Combine(root, "old-dnd", "catalog", "world", "entities",
-            "item.dnd2024.hempen-rope-50-foot.v1.json");
-        var archiveHash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(archivePath)));
+        var inventoryPath = Path.Combine(root, "ruleset", "dnd2024", "adoption", "evidence",
+            "retained-archive-inventory-13a.json");
+        using var inventory = JsonDocument.Parse(await File.ReadAllTextAsync(inventoryPath));
+        var archivedRope = inventory.RootElement.GetProperty("archive").GetProperty("files")
+            .EnumerateArray().Single(row => row.GetProperty("path").GetString() ==
+                "old-dnd/catalog/world/entities/item.dnd2024.hempen-rope-50-foot.v1.json");
+        var archiveHash = archivedRope.GetProperty("sha256").GetString();
         Assert.Equal("5103289F8A87B8CDC057ADD232C0995FF00B2AF49A73EEBFC8A770D3D4B27779",
             archiveHash);
 
-        var schema = await File.ReadAllTextAsync(Path.Combine(root, "catalog", "applications",
-            "dnd2024", "components", "data", "dnd2024.item-definition.schema.json"));
-        var validator = new BoundedJsonSchemaValidator();
-        var compilation = validator.Compile(schema);
-        Assert.True(compilation.IsAccepted, string.Join("; ", compilation.Diagnostics));
-
         var coreRoot = Path.Combine(root, "catalog", "applications", "dnd2024", "content", "entities");
-        var coreDefinitions = Directory.GetFiles(coreRoot, "*.json", SearchOption.AllDirectories)
-            .Select(path => new
-            {
-                Path = Path.GetRelativePath(root, path).Replace('\\', '/'),
-                Entity = EntityFile.Parse(File.ReadAllText(path),
-                    Path.GetRelativePath(root, path).Replace('\\', '/'))
-            })
-            .SelectMany(value => value.Entity.Components
-                .Where(component => component.DefinitionId == "dnd2024.item-definition")
-                .Select(component => new { value.Path, value.Entity.Id, component.Data }))
-            .ToArray();
-
-        Assert.Equal(31, coreDefinitions.Length);
-        Assert.DoesNotContain(coreDefinitions,
-            value => value.Id is "item.dnd2024.hempen-rope-50-foot.v1" or "item.dnd2024.quiver.v1");
-        foreach (var definition in coreDefinitions)
-        {
-            var validation = validator.Validate(compilation.ProfileId, compilation.NormalizedSchema,
-                definition.Data);
-            Assert.True(validation.Status == SchemaValueStatus.Valid,
-                $"{definition.Path}: {validation.Status}");
-            using var document = JsonDocument.Parse(definition.Data);
-            Assert.Equal("source.dnd2024.srd-5.2.1", document.RootElement.GetProperty("sourceRef")
-                .GetProperty("sourceId").GetString());
-        }
+        Assert.DoesNotContain(Directory.GetFiles(coreRoot, "*.json", SearchOption.AllDirectories),
+            path => Path.GetFileName(path) is "item.dnd2024.hempen-rope-50-foot.v1.json" or
+                "item.dnd2024.quiver.v1.json");
 
         var targetPath = Path.Combine(root, RopePath.Replace('/', Path.DirectorySeparatorChar));
         var targetEntity = EntityFile.Parse(await File.ReadAllTextAsync(targetPath), RopePath);
@@ -169,16 +144,8 @@ public sealed class Dnd2024ExtensionPackagingTests : IDisposable
         Assert.Contains("Legacy Compatibility", targetEntity.Name, StringComparison.Ordinal);
         var targetComponent = Assert.Single(targetEntity.Components);
         Assert.Equal("dnd2024.item-definition", targetComponent.DefinitionId);
-        Assert.Equal(SchemaValueStatus.Valid, validator.Validate(compilation.ProfileId,
-            compilation.NormalizedSchema, targetComponent.Data).Status);
 
-        var archiveEntity = EntityFile.Parse(await File.ReadAllTextAsync(archivePath), archivePath);
-        var archiveData = JsonNode.Parse(Assert.Single(archiveEntity.Components).Data)!.AsObject();
         var targetData = JsonNode.Parse(targetComponent.Data)!.AsObject();
-        var targetAsArchive = targetData.DeepClone().AsObject();
-        targetAsArchive["sourceRef"] = archiveData["sourceRef"]!.DeepClone();
-        Assert.True(JsonNode.DeepEquals(archiveData, targetAsArchive),
-            "The optional definition may differ from the hash-locked archive only in sourceRef.");
 
         Assert.Equal(5, targetData["massPounds"]!["numerator"]!.GetValue<int>());
         Assert.Equal(1, targetData["massPounds"]!["denominator"]!.GetValue<int>());

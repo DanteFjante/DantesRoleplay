@@ -1,1 +1,0 @@
-{"id":"game.core.world.aerial-route","name":"World Aerial Conveyance Route","description":"Closed directed aerial-route distance metadata for a generic aerial-conveyance journey. Scope and endpoints are relationships; it contains no conveyance type, speed, duration, altitude, path, or clock. Governed by procedure.game.core.world.travel."}

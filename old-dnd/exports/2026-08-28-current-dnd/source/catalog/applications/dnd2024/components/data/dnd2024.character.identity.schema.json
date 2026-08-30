@@ -1,1 +1,0 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,"minProperties":1,"properties":{"pronouns":{"type":"string","maxLength":200},"appearance":{"type":"string","maxLength":5000},"biography":{"type":"string","maxLength":20000},"playerNotes":{"type":"string","maxLength":20000}}}

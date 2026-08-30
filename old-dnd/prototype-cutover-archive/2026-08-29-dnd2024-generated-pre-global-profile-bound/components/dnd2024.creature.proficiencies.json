@@ -1,1 +1,0 @@
-{"id":"dnd2024.creature.proficiencies","name":"Creature proficiencies state component","description":"Current proficiency memberships keyed once by proficiency entity ID with a single rank and all unique sources. recordedFamilies distinguishes known-none from unknown family state; Proficiency Bonus and final bonuses are derived."}

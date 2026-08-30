@@ -1,8 +1,0 @@
-{
-  "id": "dnd2024.damage.dealt",
-  "category": "ruleset.dnd2024.core.gameplay.damage",
-  "name": "D&D 2024 damage dealt",
-  "description": "A D&D 2024 damage instance was mitigated, absorbed by Temporary Hit Points where present, then applied to Hit Points. It preserves the absorption and post-buffer overkill for later rules.",
-  "scope": "dnd2024-srd-5.2.1",
-  "status": "Active"
-}

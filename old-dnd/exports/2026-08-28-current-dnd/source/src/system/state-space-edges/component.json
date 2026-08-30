@@ -1,1 +1,0 @@
-{"name":"state-space-edges","classification":"system","status":"operational","owns":["application-scoped containment","application-scoped directed relationships","edge isolation and revisions"],"mayDependOn":["ecs"]}

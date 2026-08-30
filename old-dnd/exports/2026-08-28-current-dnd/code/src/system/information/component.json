@@ -1,1 +1,0 @@
-{"name":"information","classification":"system","status":"scaffolded","owns":["generic information namespaces","records","action contracts"],"mayDependOn":["building-blocks","operations-and-audit"]}

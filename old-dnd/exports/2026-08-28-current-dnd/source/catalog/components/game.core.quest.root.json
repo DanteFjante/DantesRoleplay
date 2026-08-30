@@ -1,1 +1,0 @@
-{"id":"game.core.quest.root","name":"Quest Root","description":"Closed campaign-scoped quest lifecycle and presentation state. Entity Name is the canonical title; context and objectives are directed relationships. Governed by procedure.quest.create and procedure.quest.modify."}

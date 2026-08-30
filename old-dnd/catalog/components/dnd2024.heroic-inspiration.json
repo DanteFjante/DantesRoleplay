@@ -1,5 +1,0 @@
-{
-  "id": "dnd2024.heroic-inspiration",
-  "name": "Heroic Inspiration (D&D 2024)",
-  "description": "Presence means this player character currently holds its one Heroic Inspiration instance. Absence means it has none. Use mechanic.dnd2024.heroic-inspiration.grant to record an available instance; a later Feature 39 slice owns lawful consumption. This is not a count, source record, rest outcome, or reroll result."
-}

@@ -1,1 +1,0 @@
-{"id":"dnd2024.spellcasting.concentration","name":"Concentration state component","description":"Tracks the creature's one active concentration commitment and unresolved checks; breaking concentration removes the component and records history in events."}

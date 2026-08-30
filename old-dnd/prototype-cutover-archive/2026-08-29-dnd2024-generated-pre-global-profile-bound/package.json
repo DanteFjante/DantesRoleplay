@@ -1,6 +1,0 @@
-{
-  "name": "dantes-roleplay-dnd2024-prototype-canonical",
-  "private": true,
-  "type": "module",
-  "description": "Canonical D&D 2024 prototype ECS schemas, archetypes, and authored records."
-}
