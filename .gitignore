@@ -386,3 +386,4 @@ _to_delete/
 out-*.txt
 verify.txt
 DantesRoleplay.MCPServer/data/dantesroleplay.db
+*.db.backup-*

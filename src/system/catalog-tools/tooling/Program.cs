@@ -6,6 +6,8 @@ using DantesRoleplay.Tools.Commands;
 // somebody will spend an afternoon failing to invoke.
 ITool[] tools =
 [
+    new SetupTool(),
+    new UpgradeTool(),
     new ExportTool(),
     new ImportTool(),
     new ValidateTool(),

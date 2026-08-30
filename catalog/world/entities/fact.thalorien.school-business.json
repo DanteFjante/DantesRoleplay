@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.school-business",
+  "name": "The School of Business",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Thalmon founded a School of Business alongside the University.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

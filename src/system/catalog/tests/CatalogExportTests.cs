@@ -45,6 +45,23 @@ public sealed class CatalogExportTests : IDisposable
 
     // ---- the round trip ------------------------------------------------------------------
 
+    [Fact]
+    public async Task Exported_markdown_ends_with_one_newline_and_no_blank_line()
+    {
+        await using var db = await SeededAsync();
+        await new CatalogExporter(db).ExportAsync(_root);
+
+        var mechanic = await ReadAsync(
+            CatalogLayout.MechanicMarkdown("check", "mechanic.check.threshold"));
+        var procedure = await ReadAsync(
+            CatalogLayout.ProcedureMarkdown("world", "procedure.world.model"));
+
+        Assert.EndsWith("\n", mechanic, StringComparison.Ordinal);
+        Assert.EndsWith("\n", procedure, StringComparison.Ordinal);
+        Assert.False(mechanic.EndsWith("\n\n", StringComparison.Ordinal));
+        Assert.False(procedure.EndsWith("\n\n", StringComparison.Ordinal));
+    }
+
     /// <summary>
     /// The gate. An exported rule, read back from its .md and its .js, fingerprints exactly as the
     /// row it came from.

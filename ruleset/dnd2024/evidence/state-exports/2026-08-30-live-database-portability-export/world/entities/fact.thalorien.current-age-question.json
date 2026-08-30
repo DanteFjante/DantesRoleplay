@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.current-age-question",
+  "name": "The Scholarly Age-End Question",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Some historians believe the present age may now be approaching its end, but this is a scholarly interpretation rather than an established certainty.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

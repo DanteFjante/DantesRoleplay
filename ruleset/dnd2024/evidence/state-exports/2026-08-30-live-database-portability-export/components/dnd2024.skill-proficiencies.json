@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.skill-proficiencies",
+  "name": "D&D 2024 Skill Proficiencies",
+  "description": "Closed character state containing only canonical trained skill ids and the fixed SRD 5.2.1 source reference. Creation and correction use mechanic.dnd2024.skill-proficiencies.record; default ability mappings, level, Proficiency Bonus, Expertise, and acquisition data are derived or owned elsewhere."
+}

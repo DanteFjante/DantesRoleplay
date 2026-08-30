@@ -1,0 +1,11 @@
+{
+  "id": "campaign.thalorien.brackenford.chapter.brackenford-arrivals",
+  "name": "Brackenford Arrivals",
+  "components": {
+    "game.core.campaign.chapter": {
+      "status": "active",
+      "title": "Brackenford Arrivals",
+      "partyQuestion": "Why have the goblins stopped raiding outward, and what is waiting beneath the old waystone cellar?"
+    }
+  }
+}

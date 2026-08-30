@@ -83,7 +83,7 @@ public sealed record ProcedureFile(
         MarkdownDocument.Section(builder, "Instructions", Instructions);
         MarkdownDocument.Section(builder, "Constraints", Constraints);
 
-        return builder.ToString();
+        return builder.ToString().TrimEnd() + "\n";
     }
 
     public static ProcedureFile Parse(string text, string sourceName)

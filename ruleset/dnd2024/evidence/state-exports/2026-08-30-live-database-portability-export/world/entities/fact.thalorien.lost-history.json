@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.lost-history",
+  "name": "History Lost With Each Age",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "With every transition into a new age, more of the past is lost. The oldest ages survive only in fragments: ruins, artifacts, partial records, traditions, and mysteries whose original meanings may no longer be known.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

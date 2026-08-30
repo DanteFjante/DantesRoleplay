@@ -80,7 +80,7 @@ public sealed record MechanicFile(
         // fingerprint of a rule that nobody edited, and every such rule would then read as drifted.
         MarkdownDocument.Section(builder, "Requirements", Requirements, fenceLanguage: "json");
 
-        return builder.ToString();
+        return builder.ToString().TrimEnd() + "\n";
     }
 
     /// <param name="sidecarSource">

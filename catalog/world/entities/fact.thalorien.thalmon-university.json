@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.thalmon-university",
+  "name": "Thalmon's Open University",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Thalmon founded one university intended to teach the population the accumulated fields of learning available in the empire. At its founding it was open to everyone.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

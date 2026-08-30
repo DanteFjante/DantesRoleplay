@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.thalmon.oberon",
+  "name": "Prince Oberon",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Prince Oberon, Thalmon's fifth child and fourth son, was trained to understand the value of arts, entertainment, and beauty. He was the gentlest sibling and became the slain Prince of the Arts.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "identity",
+      "sensitivity": "open"
+    }
+  }
+}

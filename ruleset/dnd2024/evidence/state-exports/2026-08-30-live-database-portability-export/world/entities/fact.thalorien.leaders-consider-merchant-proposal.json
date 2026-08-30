@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.leaders-consider-merchant-proposal",
+  "name": "The Kingdom Leaders Consider the Proposal",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "As the story begins, the leaders of the seven kingdoms are interested in what the merchants are proposing, making the coalition's campaign a quiet threat to the foundations of the current peace.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

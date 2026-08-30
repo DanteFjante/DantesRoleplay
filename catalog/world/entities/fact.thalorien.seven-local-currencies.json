@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.seven-local-currencies",
+  "name": "The Seven Local Currencies",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "For roughly the first 1,500 years after the Thalmos Empire was divided, the seven kingdoms used the same currency. They later adopted separate local currencies after realizing that Evandos, in the north, had access to metals from its Northern Cold Highlands that were scarce elsewhere. Rather than let the northern kingdom control the common currency or pay it for access to those metals, the kingdoms chose distinct local metal compositions for their currencies. Even after Evandos lost the trade hub of Harrowfall during the great war, it could rely on coin production from the northern mountains until roughly 500 years ago.",
+      "provenance": "Corrected during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

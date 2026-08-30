@@ -1,0 +1,16 @@
+{
+  "id": "location.thalorien.southwestern-volcanic-region",
+  "name": "Southwestern Volcanic Region",
+  "container": {
+    "id": "world.thalorien",
+    "slot": "region"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "region",
+      "status": "draft",
+      "summary": "A southwestern region of the continent containing a great volcano and a chain of volcanic islands beyond the coast.",
+      "visibility": "public"
+    }
+  }
+}

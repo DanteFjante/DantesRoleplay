@@ -21,6 +21,10 @@ mechanics, state, effects, source attribution, and player-facing intent.
 
 ## Active architecture refactor delivery
 
+The accepted ruleset-neutral catalog portability slice adds reconstructable setup and reviewed
+existing-database upgrade commands. Its boundary and evidence are owned by the
+[catalog setup/upgrade implementation](catalog-portability/CATALOG-SETUP-UPGRADE-IMPLEMENTATION.md).
+
 The accepted cross-component delivery separating system capabilities physically, extracting local AI behind a
 ruleset-neutral file/glob ingestion boundary, and unlinking compiled game adapters is tracked by the
 [system modularization dependency plan](modularization/SYSTEM-MODULARIZATION-DEPENDENCY-PLAN.md).

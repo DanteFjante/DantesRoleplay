@@ -65,4 +65,44 @@ public static class DatabaseLocator
             + $"'{Directory.GetCurrentDirectory()}'. Pass --database <path>, or set "
             + "DANTESROLEPLAY_DB.");
     }
+
+    /// <summary>
+    /// Resolves where a new database should be created. Unlike <see cref="Resolve"/>, the file is
+    /// allowed not to exist; an explicit option and DANTESROLEPLAY_DB still take precedence.
+    /// Without either, the repository root is found by its solution file and the normal MCP data
+    /// path is returned.
+    /// </summary>
+    public static string ResolveTarget(string? explicitPath)
+    {
+        if (!string.IsNullOrWhiteSpace(explicitPath))
+        {
+            return Path.GetFullPath(explicitPath);
+        }
+
+        var fromEnvironment = Environment.GetEnvironmentVariable("DANTESROLEPLAY_DB");
+
+        if (!string.IsNullOrWhiteSpace(fromEnvironment))
+        {
+            return Path.GetFullPath(fromEnvironment);
+        }
+
+        var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
+
+        while (directory is not null)
+        {
+            var existing = Path.Combine(directory.FullName, KnownRelativePaths[0]);
+
+            if (File.Exists(existing) || File.Exists(Path.Combine(directory.FullName, "DantesRoleplay.slnx")))
+            {
+                return existing;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new DirectoryNotFoundException(
+            "Could not find the DantesRoleplay repository root by walking up from "
+            + $"'{Directory.GetCurrentDirectory()}'. Pass --database <path>, or set "
+            + "DANTESROLEPLAY_DB.");
+    }
 }

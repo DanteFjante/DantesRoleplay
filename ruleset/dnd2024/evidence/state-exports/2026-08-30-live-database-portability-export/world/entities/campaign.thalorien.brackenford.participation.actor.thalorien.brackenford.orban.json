@@ -1,0 +1,9 @@
+{
+  "id": "campaign.thalorien.brackenford.participation.actor.thalorien.brackenford.orban",
+  "name": "Campaign character participation",
+  "components": {
+    "game.core.campaign.character-participation": {
+      "status": "active"
+    }
+  }
+}

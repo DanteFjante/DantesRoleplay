@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.elven-historical-memory",
+  "name": "Elven Historical Memory",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Elven society has the longest lifespan among the surviving peoples and guards historical memory better than any other culture.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "capability",
+      "sensitivity": "open"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "dnd2024.initiative.rolled",
+  "category": "ruleset.dnd2024.core.combat.initiative",
+  "name": "D&D 2024 Initiative rolled",
+  "description": "One creature completed an Initiative roll while an encounter's Initiative order was recorded.",
+  "scope": "dnd2024-srd-5.2.1",
+  "status": "Active",
+  "createdBy": "seed",
+  "changeNote": "Seeded from the embedded structural event types."
+}

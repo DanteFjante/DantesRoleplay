@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.great-thalos-war-ended",
+  "name": "The Great Thalos War Ended 1,530 Years Ago",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The great Thalos war ended more than 1,530 years ago. Its losses and lessons are now separated from living memory by many generations.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "quantity",
+      "sensitivity": "open"
+    }
+  }
+}

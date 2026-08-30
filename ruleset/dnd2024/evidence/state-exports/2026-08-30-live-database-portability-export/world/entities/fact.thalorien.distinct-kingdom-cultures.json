@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.distinct-kingdom-cultures",
+  "name": "Distinct Kingdom Cultures",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Over the following centuries, the seven kingdoms developed distinct cultures. Each kingdom also developed its own customs and rules for lineage, succession, and determining who would rule.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

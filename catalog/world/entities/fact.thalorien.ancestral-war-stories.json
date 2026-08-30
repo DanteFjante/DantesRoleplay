@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.ancestral-war-stories",
+  "name": "The Bad Age in Ancestral Stories",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Most people know the previous bad age through stories told by ancestors rather than personal experience.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "event",
+      "sensitivity": "open"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.rune-enchanted-items",
+  "name": "Rune-Enchanted Practical Magic",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Occasional rune-enchanted items perform specific magical functions and are the practical magic people are most likely to encounter. They are costly, specialized, and maintained like valuable tools; a wealthy inn might own a rune-worked cold or freezer box, but rune tools do not make magic an everyday industrial technology.",
+      "provenance": "User-established worldbuilding constraint; recorded and clarified by Codex (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "capability",
+      "sensitivity": "open"
+    }
+  }
+}
