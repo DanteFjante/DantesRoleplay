@@ -2,20 +2,25 @@
 id: procedure.mechanic.dnd2024.weapon-profile
 category: ruleset.dnd2024.core.data.weapon-profile
 name: Record canonical weapon profiles
-governs: dnd2024.weapon-profile; mechanic.dnd2024.weapon-profile.write
+governs: dnd2024.item.weapon; dnd2024.activity.membership; dnd2024.activity.activation; dnd2024.activity.attack; dnd2024.activity.damage; dnd2024.activity.range; mechanic.dnd2024.weapon-profile.write
 status: active
 ---
 
 ## Description
 
-Owns static Simple/Martial, Melee/Ranged, attack-ability, and base-damage profile state.
+Owns normalized Simple/Martial category, weapon-to-activity membership, Melee/Ranged ability
+eligibility, base damage, and exact-metre base range state.
 
 ## Instructions
 
-Use explicit record/correct with category, kind, canonical unique str/dex abilities, and one bounded
-damage expression. The writer fixes SRD Equipment > Weapons provenance and proposes one add/set.
+Bind the canonical weapon definition and one active activity definition. Use explicit
+`record`/`correct`, a full canonical category ID, Melee/Ranged mode, a unique canonical Strength
+and/or Dexterity ID list, one bounded fixed or dice damage amount, and the SRD table's integer feet.
+The writer converts those source feet by the exact `381/1250` metre-per-foot factor, reduces the
+rational values, records the weapon membership, and proposes only normalized component effects.
 
 ## Constraints
 
-Profiles contain no inventory custody, equipment state, selected ability, proficiency result, attack
-roll, damage result, or Hit Point effect. Corrupt existing state cannot be silently corrected.
+These facets contain no inventory custody, equipment state, selected ability, proficiency result,
+attack roll, damage result, or Hit Point effect. Corrupt existing state cannot be silently
+corrected. Do not store tactical feet or restore the retired `dnd2024.weapon-profile` component.

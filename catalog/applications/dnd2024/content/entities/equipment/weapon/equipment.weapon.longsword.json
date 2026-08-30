@@ -61,7 +61,16 @@
       ]
     },
     "dnd2024.activity.membership": {
-      "activities": []
+      "activities": [
+          {
+            "entityId": "dnd2024.equipment.weapon.longsword.attack.one-handed",
+            "expectedArchetype": "dnd2024.archetype.activity-definition"
+          },
+          {
+            "entityId": "dnd2024.equipment.weapon.longsword.attack.two-handed",
+            "expectedArchetype": "dnd2024.archetype.activity-definition"
+          }
+      ]
     }
   }
 }

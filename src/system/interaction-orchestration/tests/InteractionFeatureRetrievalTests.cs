@@ -162,6 +162,36 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
         Assert.Equal("sample-app.trusted", Assert.Single(result.Hits).Reference.QualifiedId);
     }
 
+    [Fact]
+    public async Task Complete_current_contract_below_document_ceiling_is_returned_without_truncation()
+    {
+        var description = "Character creation feature.";
+        var payload = new string('x', 49_000);
+        var content = $$"""{"id":"sample-app.character-create","description":"{{description}}","source":"{{payload}}"}""";
+        var record = Record("sample-app.character-create", "Character create", description, ["create character"], content);
+        var snapshot = Snapshot([record]);
+        var retriever = new InteractionFeatureRetriever(new MutableSnapshots(snapshot));
+
+        var result = await retriever.SearchAsync(
+            new(Application, InteractionRetrievalLane.TrustedFeature),
+            new("create character", 10));
+
+        var hit = Assert.Single(result.Hits);
+        Assert.Equal(content, hit.ContractJson);
+        Assert.Equal(content.Length, hit.ContractJson.Length);
+    }
+
+    [Fact]
+    public void Contract_above_document_ceiling_still_fails_closed()
+    {
+        var content = $$"""{"id":"sample-app.too-large","source":"{{new string('x', InteractionRetrievalLimits.MaximumDocumentText)}}"}""";
+        var record = Record("sample-app.too-large", "Too large", "Oversized feature.", ["too large"], content);
+
+        var exception = Assert.Throws<InteractionContractException>(() => InteractionRetrievalFingerprint.SearchText(record));
+
+        Assert.Equal("RETRIEVAL_DOCUMENT_TOO_LARGE", exception.Code);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_temporaryRoot)) Directory.Delete(_temporaryRoot, recursive: true);
@@ -186,9 +216,22 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
         ]);
     }
 
+    private static ActiveCatalogFeatureSnapshot Snapshot(IReadOnlyList<CatalogRecordDefinition> records)
+    {
+        var manifest = CatalogNavigationManifest.Create(Application, new string('A', 64), "catalog-lexical-v1",
+            [new("sample", "Sample", "Generic sample contracts.")],
+            [new("sample", "", "Sample", "Generic sample contracts.", CatalogDescriptionStatus.Authored)], records);
+        return new(manifest, records.Select(record => new ActiveCatalogFeatureDocument(record, SourceTrust.Trusted)).ToArray());
+    }
+
     private static CatalogRecordDefinition Record(string id, string name, string description, IReadOnlyList<string> phrases)
     {
         var content = $$"""{"id":"{{id}}","description":"{{description}}"}""";
+        return Record(id, name, description, phrases, content);
+    }
+
+    private static CatalogRecordDefinition Record(string id, string name, string description, IReadOnlyList<string> phrases, string content)
+    {
         return new("sample", "procedure", id, name, description, [], phrases, "", "active", 1, content,
             Hash(content), "source", "procedures/" + id + ".md");
     }

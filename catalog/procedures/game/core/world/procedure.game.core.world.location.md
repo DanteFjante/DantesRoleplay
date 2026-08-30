@@ -20,8 +20,10 @@ adjacency. It does not move actors, decide travel, reveal lore, or create a camp
    summary, and descriptive visibility. Do not store parent, world, coordinate, route, distance, or
    connection-list fields.
 3. Model hierarchy only with containment. A world root has no container. A region may be contained
-   by a root in slot `region`; a place may be contained by a region or other location in slot
-   `location`. Read the intended graph before correction; containment cycles are invalid.
+   by a root or another region in slot `region`; a settlement, site, or interior may be contained by
+   a region or other location in slot `location`. A child region may represent a continent, country,
+   province, or other reusable regional scope without adding a second hierarchy field. Read the
+   intended graph before correction; containment cycles are invalid.
 4. Model initial adjacency only with `game.core.world.location.connected-to`. Its data is `{}`;
    both endpoints carry game.core.world.location; it is stored once with lexically smaller entity ID
    as `from`. Readers inspect incoming and outgoing edges because the convention is undirected.
@@ -36,6 +38,8 @@ adjacency. It does not move actors, decide travel, reveal lore, or create a camp
 
 - Status is exactly draft, active, or archived. Visibility is exactly public, party, or gm.
 - Location kind is exactly region, settlement, site, or interior.
+- A direct child with kind `region` uses containment slot `region`; a direct child with any other
+  location kind uses slot `location`.
 - Summary is a trimmed, nonempty string of at most 1,000 Unicode scalar values.
 - Root/location components never contain child IDs, parent IDs, world IDs, campaign IDs, adjacency
   arrays, actor positions, facts, factions, clues, time, terrain, or coordinates.

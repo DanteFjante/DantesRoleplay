@@ -12,14 +12,16 @@ Owns a seeded effect-free weapon attack against authoritative Armor Class.
 
 ## Instructions
 
-Read abilities, total level, weapon proficiencies, selected profile, and target AC. Accept valid
-legacy category-only or current expanded proficiency envelopes and only a profile-permitted str/dex
-ability; derive modifier/PB from complete category membership, roll one d20, and report
-hit/critical. Property-qualified Martial membership remains denied until weapon profiles expose
-canonical properties and a later owner enforces it.
+Read abilities, total level, normalized weapon proficiencies, the selected weapon definition and
+active member activity, and target AC. Accept only an activity-permitted Strength or Dexterity
+choice. Apply proficiency for complete Simple/Martial category membership; for Martial weapons
+only, also apply a canonical Finesse or Light property-qualified entry when that exact property is
+present on the weapon. A property-only entry never qualifies a Simple weapon. Roll one d20 and
+report the bound weapon/activity identities, proficiency source, hit, and critical result.
 
 ## Constraints
 
-Natural 20 hits/criticals and natural 1 misses. Never infer a weapon property from its name or
-category. This current owner has no range, Conditions, Advantage, equipment, custody, damage, HP,
-or persisted attack state.
+Natural 20 hits/criticals and natural 1 misses, including when an activity declares a critical
+threshold override. Reject redundant full-Martial plus property-qualified proficiency state. Never
+infer a weapon property from its name or category. This current owner has no tactical range,
+Conditions, Advantage, equipment, custody, damage, HP, or persisted attack state.

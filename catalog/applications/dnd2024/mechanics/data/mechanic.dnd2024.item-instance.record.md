@@ -8,7 +8,7 @@ status: active
 
 ## Description
 
-Attaches one immutable definition reference to an existing campaign entity, once.
+Attaches the canonical definition link and quantity `1` to an existing campaign entity, once.
 
 ## Matches
 
@@ -17,5 +17,5 @@ record item instance
 ## Requirements
 
 ```json
-{"roles":{"item":{"components":["dnd2024.core.definition-link","dnd2024.item-definition"]},"definition":{"components":["dnd2024.item-definition"]}}}
+{"roles":{"item":{"components":[],"description":"The existing entity that will become a complete canonical item instance."},"definition":{"components":["dnd2024.core.version"],"description":"The active canonical item definition referenced by the new instance."}}}
 ```

@@ -1,0 +1,68 @@
+{
+  "atlas": "thalorien-atlas-v1",
+  "status": "candidate-awaiting-user-approval",
+  "generatedAt": "2026-08-30T01:10:40.0255548+02:00",
+  "generator": {
+    "mode": "Codex built-in image generation",
+    "modelVersion": "not exposed by the built-in tool",
+    "seed": null
+  },
+  "source": {
+    "authority": "live SQLite world state, read-only",
+    "database": "DantesRoleplay.MCPServer/data/dantesroleplay.db",
+    "world": {
+      "entityId": "world.thalorien",
+      "definitionId": "game.core.world.root",
+      "revision": 2,
+      "updatedAt": "2026-08-22 20:54:37.5391319"
+    },
+    "locationRevisions": {
+      "location.thalorien.aldros": 1,
+      "location.thalorien.evandos": 1,
+      "location.thalorien.minevros": 1,
+      "location.thalorien.rhiannos": 1,
+      "location.thalorien.valeros": 1,
+      "location.thalorien.merceros": 1,
+      "location.thalorien.waylos": 1,
+      "location.thalorien.southwestern-volcanic-region": 1,
+      "location.thalorien.world-tree-grounds": 1,
+      "location.thalorien.crownmere": 1,
+      "location.thalorien.larkspire-university": 1,
+      "location.thalorien.harrowfall": 1,
+      "location.thalorien.merrowgate": 1,
+      "location.thalorien.brackenford": 3,
+      "location.thalorien.greenmantle": 1,
+      "location.thalorien.oathshield-range": 1,
+      "location.thalorien.bannerfall-tower": 1,
+      "location.thalorien.dawnbell-tower": 1,
+      "location.thalorien.starwell-tower": 1,
+      "location.thalorien.emberwright-tower": 1,
+      "location.thalorien.southwestern-volcano": 2,
+      "location.thalorien.volcanic-island-chain": 2,
+      "location.thalorien.world-tree": 1,
+      "location.thalorien.world-tree-elven-enclave": 1
+    },
+    "layoutReference": "world/maps/thalorien-thalos.png"
+  },
+  "audienceVariant": "public-player-safe",
+  "canonicality": "illustrative-only",
+  "integration": "not linked to runtime or catalog state",
+  "constraints": [
+    "No GM-only secrets were included in any generation brief.",
+    "Painted terrain does not define topology, routes, travel, distance, discovery, or tactical geometry.",
+    "Names and markers remain presentation overlays rather than baked-in image text.",
+    "The prior approved SVG and PNG maps remain untouched for rollback."
+  ],
+  "assets": [
+    { "file": "thalos-world.png", "scope": "world.thalorien", "width": 1448, "height": 1086, "sha256": "585db4f25363657751cc97dda7e778baa5f90fb68c36e54b8304cc7f5960e254" },
+    { "file": "region-aldros.png", "scope": "location.thalorien.aldros", "width": 1448, "height": 1086, "sha256": "5ef8fe6de81cfe85bd42f0d9cbc0cd21ab0d4b0e84dd66fb5270856e75a3d10f" },
+    { "file": "region-evandos.png", "scope": "location.thalorien.evandos", "width": 1448, "height": 1086, "sha256": "27239b417c90e62719e8be65ad9a0ef8e16b306da7c73e772d30ea5106d60d2e" },
+    { "file": "region-minevros.png", "scope": "location.thalorien.minevros", "width": 1448, "height": 1086, "sha256": "d2b54fec27699cfb09e280119f5024ed6ac0fab0fc2c4bb93a9b3eccec1259ea" },
+    { "file": "region-rhiannos.png", "scope": "location.thalorien.rhiannos", "width": 1448, "height": 1086, "sha256": "acaeb2f584a2deb37a1b883a4890a0be5ac7d465c3eacfa3fc312721c649c544" },
+    { "file": "region-valeros.png", "scope": "location.thalorien.valeros", "width": 1448, "height": 1086, "sha256": "7de4a28b0553a3237ddfae78b877ba04149f4fc4c96499012b50cb8adbbb5181" },
+    { "file": "region-merceros.png", "scope": "location.thalorien.merceros", "width": 1448, "height": 1086, "sha256": "4ae9370cc2de3a59e80ea80d51e1f3a5c6d456dcf9b684924082ed7ad35232bf" },
+    { "file": "region-waylos.png", "scope": "location.thalorien.waylos", "width": 1448, "height": 1086, "sha256": "a309639b1da2662daca6a048a6762b0a0ad741408d3901a75e154f0ebdbf39bd" },
+    { "file": "region-southwestern-volcanic.png", "scope": "location.thalorien.southwestern-volcanic-region", "width": 1448, "height": 1086, "sha256": "1a426764714afd43a40f0e27aac2785ef015195268f1220c5dd00c0cc69c83b0" },
+    { "file": "region-world-tree-grounds.png", "scope": "location.thalorien.world-tree-grounds", "width": 1448, "height": 1086, "sha256": "0b38b4408636a2630606af3fb52daf6bb8926e3bf5e42be9bfee757d9429ecdd" }
+  ]
+}

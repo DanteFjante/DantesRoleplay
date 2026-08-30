@@ -1,6 +1,6 @@
 ---
 id: mechanic.dnd2024.temporary-hit-points.write
-category: dnd2024.core.data.temporary-hit-points
+category: ruleset.dnd2024.core.data.temporary-hit-points
 name: Grant Temporary Hit Points
 scope: dnd2024-srd-5.2.1
 status: active

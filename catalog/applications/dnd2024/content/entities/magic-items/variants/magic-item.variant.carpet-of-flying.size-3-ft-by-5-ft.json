@@ -1,6 +1,6 @@
 {
-  "id": "dnd2024.magic-item.variant.carpet-of-flying.4-ft-6-ft",
-  "name": "Carpet of Flying (4 ft. × 6 ft.)",
+  "id": "dnd2024.magic-item.variant.carpet-of-flying.size-3-ft-by-5-ft",
+  "name": "Carpet of Flying (3 ft. × 5 ft.)",
   "archetype": "dnd2024.archetype.magic-item-definition",
   "components": {
     "dnd2024.core.source": {
@@ -9,7 +9,7 @@
           "sourceRef": {
             "entityId": "source.dnd2024.srd-5.2.1"
           },
-          "locator": "Magic Items > Magic Items A–Z > Carpet of Flying > Carpet of Flying (4 ft. × 6 ft.) (SRD 5.2.1, pages 215-215)"
+          "locator": "Magic Items > Magic Items A–Z > Carpet of Flying > Carpet of Flying (3 ft. × 5 ft.) (SRD 5.2.1, pages 215-215)"
         }
       ]
     },

@@ -1,6 +1,6 @@
 ---
 id: mechanic.dnd2024.speed.read
-category: dnd2024.core.data.speed
+category: ruleset.dnd2024.core.data.speed
 name: Read creature Speed diagnostics
 scope: dnd2024-srd-5.2.1
 status: active
@@ -18,3 +18,8 @@ read creature speed diagnostics
 ```json
 {"roles":{"subject":{"components":["dnd2024.creature.movement"],"description":"The creature whose present, absent, or malformed movement state is reported."}}}
 ```
+
+## Input and result
+
+Pass exactly `{}`. The mechanic changes no state and reports whether the current metric movement
+component is absent, malformed, invalid, or valid; valid base speeds are returned in feet.

@@ -17,5 +17,5 @@ split item stack
 ## Requirements
 
 ```json
-{"roles":{"source":{"components":["dnd2024.core.definition-link","dnd2024.item.quantity"],"includeContents":true,"contentsDepth":1},"definition":{"components":["dnd2024.item-definition","dnd2024.core.definition-link","dnd2024.item.quantity"]}}}
+{"roles":{"source":{"components":["dnd2024.core.definition-link","dnd2024.item.quantity"],"includeContents":true,"contentsDepth":1},"definition":{"components":["dnd2024.core.version"]}}}
 ```

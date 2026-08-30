@@ -8,14 +8,15 @@ status: active
 
 ## Description
 
-Derives exact rational physical mass for a bounded containment subtree.
+Derives exact rational canonical kilogram mass for a bounded containment subtree.
 
 ## Instructions
 
-Resolve every item to its immutable definition, multiply mass by compatible quantity, and sum with
-overflow-checked rational arithmetic.
+Resolve every item to its immutable definition, read `dnd2024.item.physical.weight`, require its
+canonical kilogram unit, multiply by positive quantity, and sum with overflow-checked rational
+arithmetic.
 
 ## Constraints
 
-Burden is never stored. Missing item identity, definition, mass, or required quantity fails closed;
+Burden is never stored. Missing item identity, definition, weight, or positive quantity fails closed;
 unbounded traversal, capacity admission, and magic exceptions are separate.

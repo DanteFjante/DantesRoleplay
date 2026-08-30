@@ -64,7 +64,20 @@
       ]
     },
     "dnd2024.activity.membership": {
-      "activities": []
+      "activities": [
+          {
+            "entityId": "dnd2024.equipment.weapon.trident.attack.one-handed",
+            "expectedArchetype": "dnd2024.archetype.activity-definition"
+          },
+          {
+            "entityId": "dnd2024.equipment.weapon.trident.attack.two-handed",
+            "expectedArchetype": "dnd2024.archetype.activity-definition"
+          },
+          {
+            "entityId": "dnd2024.equipment.weapon.trident.attack.thrown",
+            "expectedArchetype": "dnd2024.archetype.activity-definition"
+          }
+      ]
     }
   }
 }

@@ -51,6 +51,7 @@ public static class WebInterfaceEndpoints
         Secure(endpoints.MapGet("/api/session", GetSession), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/components/application-conversation.js", GetApplicationConversationElement), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/components/system-workspace.js", GetSystemWorkspaceElement), WebInterfaceSecurity.ReadRateLimitPolicy);
+        Secure(endpoints.MapGet("/components/maps/{name}.png", GetBrowserMapAssetAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/components/{name}.js", GetBrowserComponentAssetAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/api/applications/{applicationId}/catalog/records/{qualifiedId}", InspectCatalog), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}", GetApplicationMechanicAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
@@ -191,6 +192,15 @@ public static class WebInterfaceEndpoints
         return script is null
             ? Results.NotFound()
             : Results.Text(script, "text/javascript; charset=utf-8", Encoding.UTF8);
+    }
+
+    private static async Task<IResult> GetBrowserMapAssetAsync(
+        string name, CancellationToken cancellationToken)
+    {
+        var image = await BrowserMapAssets.ReadAsync(name, cancellationToken);
+        return image is null
+            ? Results.NotFound()
+            : Results.File(image, "image/png");
     }
 
     private static async Task<IResult> SubmitObservationAsync(

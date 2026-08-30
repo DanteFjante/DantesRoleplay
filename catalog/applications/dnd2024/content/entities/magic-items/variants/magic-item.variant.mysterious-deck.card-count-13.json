@@ -1,6 +1,6 @@
 {
-  "id": "dnd2024.magic-item.variant.carpet-of-flying.5-ft-7-ft",
-  "name": "Carpet of Flying (5 ft. × 7 ft.)",
+  "id": "dnd2024.magic-item.variant.mysterious-deck.card-count-13",
+  "name": "Mysterious Deck (13-Card Deck)",
   "archetype": "dnd2024.archetype.magic-item-definition",
   "components": {
     "dnd2024.core.source": {
@@ -9,7 +9,7 @@
           "sourceRef": {
             "entityId": "source.dnd2024.srd-5.2.1"
           },
-          "locator": "Magic Items > Magic Items A–Z > Carpet of Flying > Carpet of Flying (5 ft. × 7 ft.) (SRD 5.2.1, pages 215-215)"
+          "locator": "Magic Items > Magic Items A–Z > Mysterious Deck > Mysterious Deck (13-Card Deck) (SRD 5.2.1, pages 231-231)"
         }
       ]
     },

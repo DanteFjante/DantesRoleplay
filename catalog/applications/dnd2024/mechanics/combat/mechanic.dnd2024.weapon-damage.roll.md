@@ -8,7 +8,8 @@ status: active
 
 ## Description
 
-Rolls profile-defined base damage for a confirmed hit and applies the selected ability modifier once.
+Rolls the selected weapon activity's base damage for a confirmed hit. Dice amounts apply the
+selected permitted ability modifier once; fixed amounts remain fixed.
 
 ## Matches
 
@@ -18,5 +19,5 @@ roll confirmed damage
 ## Requirements
 
 ```json
-{"roles":{"subject":{"components":["dnd2024.creature.ability-scores"],"description":"The attacker."},"weapon":{"components":["dnd2024.weapon-profile"],"description":"The static weapon profile."}}}
+{"roles":{"subject":{"components":["dnd2024.creature.ability-scores"],"description":"The attacker."},"weapon":{"components":["dnd2024.activity.membership"],"description":"The canonical weapon definition that owns the selected activity."},"activity":{"components":["dnd2024.core.version","dnd2024.activity.attack","dnd2024.activity.damage"],"description":"The selected active damage-bearing attack activity belonging to the weapon."}}}
 ```

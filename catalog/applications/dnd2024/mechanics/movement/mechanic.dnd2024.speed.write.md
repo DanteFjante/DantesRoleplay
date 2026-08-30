@@ -1,15 +1,15 @@
 ---
 id: mechanic.dnd2024.speed.write
-category: dnd2024.core.data.speed
+category: ruleset.dnd2024.core.data.speed
 name: Record creature Speed
 scope: dnd2024-srd-5.2.1
 status: active
 ---
 
 ## Description
-Records or corrects a complete current movement component. The input uses the prototype's keyed
-metric distances, enabled flags, and source references; it does not update per-turn expenditure,
-terrain, position, route, or travel pace.
+
+Records or corrects one complete canonical D&D 2024 base-Speed profile in the current keyed metric
+movement component. It does not move the creature, refresh a turn, or apply a temporary change.
 
 ## Matches
 record creature speed
@@ -20,3 +20,10 @@ set creature speed
 ```json
 {"roles":{"subject":{"components":["dnd2024.creature.movement"],"description":"The creature whose absent or valid existing movement state is recorded or corrected."}}}
 ```
+
+## Input and result
+
+Pass exactly `mode` (`record` or `correct`) and `walkFeet`, `burrowFeet`, `climbFeet`, `flyFeet`,
+and `swimFeet`. Walking Speed is a 5–1,000 multiple of five; other modes are 0–1,000 multiples of
+five. The mechanic converts those values to the current metric component and proposes one add or
+set effect.

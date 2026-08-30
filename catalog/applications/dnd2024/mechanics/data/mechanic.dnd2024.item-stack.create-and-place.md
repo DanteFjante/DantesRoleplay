@@ -8,7 +8,7 @@ status: active
 
 ## Description
 
-Administrative helper that atomically creates and directly places a positive fungible stack.
+Administrative helper that atomically creates and directly places a positive canonical item stack.
 
 ## Matches
 
@@ -17,5 +17,5 @@ administratively create item stack
 ## Requirements
 
 ```json
-{"roles":{"definition":{"components":["dnd2024.item-definition"]},"destination":{"components":["dnd2024.core.definition-link","dnd2024.item.quantity"]}}}
+{"roles":{"definition":{"components":["dnd2024.core.version"]},"destination":{"components":[]}}}
 ```

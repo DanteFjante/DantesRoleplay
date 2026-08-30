@@ -10,7 +10,7 @@ public sealed record AuthorizedKnowledgeNotebookRequest(
     string CampaignId,
     string? Query = null,
     IReadOnlyList<string>? Kinds = null,
-    int Limit = 100);
+    int Limit = 200);
 
 public sealed record AuthorizedKnowledgeNotebookEntry(
     string Text,

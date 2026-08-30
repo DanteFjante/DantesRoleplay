@@ -1,6 +1,6 @@
 ---
 id: mechanic.dnd2024.item.equip
-category: ruleset.dnd2024.core.data.equipment-state
+category: ruleset.dnd2024.core.data.item-equipment
 name: Equip physical item
 scope: dnd2024-srd-5.2.1
 status: active
@@ -8,16 +8,14 @@ status: active
 
 ## Description
 
-Sets one directly possessed eligible non-stack item to held or worn.
+Equips one directly possessed quantity-one item into canonical equipment slots.
 
 ## Matches
 
 equip item
-hold item
-wear item
 
 ## Requirements
 
 ```json
-{"roles":{"item":{"components":["dnd2024.core.definition-link","dnd2024.item.quantity","dnd2024.equipment-state"],"componentReferences":[{"sourceComponentId":"dnd2024.core.definition-link","field":"definition","targetComponentIds":["dnd2024.item-definition"]}]},"holder":{"components":[]}}}
+{"roles":{"item":{"components":["dnd2024.core.definition-link","dnd2024.item.quantity"],"componentReferences":[{"sourceComponentId":"dnd2024.core.definition-link","field":"definition","targetComponentIds":["dnd2024.item.equippable"]}]},"holder":{"components":[]}}}
 ```

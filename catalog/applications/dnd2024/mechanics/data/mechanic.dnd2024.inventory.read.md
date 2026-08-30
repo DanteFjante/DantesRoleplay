@@ -8,7 +8,8 @@ status: active
 
 ## Description
 
-Returns deterministic bounded physical items and visible non-item contents below one custody root.
+Returns deterministic bounded canonical item instances and visible non-item contents below one
+custody root.
 
 ## Matches
 
@@ -18,5 +19,5 @@ list carried items
 ## Requirements
 
 ```json
-{"roles":{"root":{"components":[],"includeContents":true,"contentsDepth":4,"contentComponentIds":["dnd2024.core.definition-link","dnd2024.item.quantity","dnd2024.equipment-state"],"componentReferences":[{"sourceComponentId":"dnd2024.core.definition-link","field":"definition","targetComponentIds":["dnd2024.item-definition"]}]}}}
+{"roles":{"root":{"components":[],"includeContents":true,"contentsDepth":4,"contentComponentIds":["dnd2024.core.definition-link","dnd2024.item.quantity","dnd2024.item.equipment"],"componentReferences":[{"sourceComponentId":"dnd2024.core.definition-link","field":"definition","targetComponentIds":["dnd2024.item.physical","dnd2024.item.weapon","dnd2024.item.armor","dnd2024.item.container","dnd2024.item.equippable","dnd2024.item.consumable","dnd2024.item.ammunition","dnd2024.item.tool"]}]}}}
 ```

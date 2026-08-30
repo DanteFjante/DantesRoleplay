@@ -9,9 +9,9 @@ status: active
 ## Description
 
 Resolves a fixed weapon attack against authoritative target Armor Class without applying damage.
-It accepts legacy category-only and current expanded weapon-proficiency state. This mechanic still
-uses complete category membership only; property-qualified Martial proficiency remains denied
-until weapon profiles expose canonical properties.
+It verifies the selected active activity is a member of the weapon, uses that activity's permitted
+ability choices, and accepts both complete category proficiency and canonical property-qualified
+Martial proficiency.
 
 ## Matches
 
@@ -21,5 +21,5 @@ attack with weapon
 ## Requirements
 
 ```json
-{"roles":{"subject":{"components":["dnd2024.creature.ability-scores","dnd2024.creature.proficiencies"],"description":"The attacker."},"weapon":{"components":["dnd2024.weapon-profile"],"description":"The selected static weapon profile."},"target":{"components":["dnd2024.creature.defenses"],"description":"The target whose Armor Class is derived."}},"children":{"level":{"mechanicId":"mechanic.dnd2024.character-level.read","roleBindings":{"subject":"subject"},"inheritInput":false,"input":"{}"},"armorClass":{"mechanicId":"mechanic.dnd2024.armor-class.read","roleBindings":{"subject":"target"},"inheritInput":false,"input":"{}"}}}
+{"roles":{"subject":{"components":["dnd2024.creature.ability-scores","dnd2024.creature.proficiencies"],"description":"The attacker."},"weapon":{"components":["dnd2024.item.weapon","dnd2024.activity.membership"],"description":"The selected canonical weapon definition."},"activity":{"components":["dnd2024.core.version","dnd2024.activity.attack"],"description":"The selected active attack activity belonging to the weapon."},"target":{"components":["dnd2024.creature.defenses"],"description":"The target whose Armor Class is derived."}},"children":{"level":{"mechanicId":"mechanic.dnd2024.character-level.read","roleBindings":{"subject":"subject"},"inheritInput":false,"input":"{}"},"armorClass":{"mechanicId":"mechanic.dnd2024.armor-class.read","roleBindings":{"subject":"target"},"inheritInput":false,"input":"{}"}}}
 ```

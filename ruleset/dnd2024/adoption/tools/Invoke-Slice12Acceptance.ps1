@@ -41,7 +41,11 @@ if ($mechanicFiles.Count -eq 0) {
     throw 'No active D&D JavaScript mechanics were found.'
 }
 foreach ($file in $mechanicFiles) {
-    Invoke-Checked "javascript:$($file.Name)" $NodeCommand @('--check', $file.FullName)
+    Invoke-Checked "javascript:$($file.Name)" $NodeCommand @(
+        '-e',
+        "const fs=require('fs'); new Function('ctx',fs.readFileSync(process.argv[1],'utf8'));",
+        $file.FullName
+    )
 }
 
 $scriptChecks = @(

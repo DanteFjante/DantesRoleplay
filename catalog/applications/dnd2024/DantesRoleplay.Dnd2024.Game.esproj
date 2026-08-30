@@ -3,6 +3,7 @@
     <ShouldRunNpmInstall>false</ShouldRunNpmInstall>
     <ShouldRunNpmAudit>false</ShouldRunNpmAudit>
     <ShouldRunBuildScript>false</ShouldRunBuildScript>
+    <BaseIntermediateOutputPath>../../../artifacts/dnd2024-esproj/obj/</BaseIntermediateOutputPath>
   </PropertyGroup>
   <ItemGroup>
     <None Include="../../../prototype/dnd2024/**/*"

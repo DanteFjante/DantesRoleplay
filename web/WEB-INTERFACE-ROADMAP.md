@@ -140,6 +140,12 @@ scene. Accepted inventory and encounter controls remain available but are second
 It deliberately leaves spells, monsters, tactical battle maps, rests, dying, Inspiration use, magic
 items, and complete character construction behind their independent D&D gameplay gates.
 
+The [React server-bundle slice](DND2024-WEB-UI-REACT-SERVER-BUNDLE-SLICE-RECEIPT.md) supersedes
+the interim custom-element host correction: `/ui/dnd2024-play` now serves the actual React
+information hub and its reviewed assets directly from the DantesRoleplay server. It projects live
+World and Campaign records through same-origin authorized reads, while the former iframe, hosted
+Site URL, `<dnd2024-workspace>` entry page, and separate `localhost:5173` runtime are absent.
+
 Order 0 is confirmed. [Slice 1](DND2024-WEB-UI-SLICE-1-IMPLEMENTATION.md) and its
 [receipt](DND2024-WEB-UI-SLICE-1-RECEIPT.md) accept the private exact application-state read seam,
 reviewed browser-component asset host, `<dnd2024-workspace>` game HUD, and authored

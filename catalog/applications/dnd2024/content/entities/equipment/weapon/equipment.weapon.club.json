@@ -61,7 +61,12 @@
       ]
     },
     "dnd2024.activity.membership": {
-      "activities": []
+      "activities": [
+          {
+            "entityId": "dnd2024.equipment.weapon.club.attack",
+            "expectedArchetype": "dnd2024.archetype.activity-definition"
+          }
+      ]
     }
   }
 }

@@ -338,6 +338,25 @@ public sealed class KnowledgeCoreTests
     }
 
     [Fact]
+    public async Task Notebook_accepts_complete_world_sized_pages_and_rejects_oversized_requests()
+    {
+        using var fixture = new KnowledgeFixture();
+        await fixture.AddCoreAsync();
+        var reader = new AuthorizedKnowledgeNotebookReader(
+            new Policy(new(new("principal", fixture.Campaign, KnowledgeAudienceRole.Actor,
+                fixture.Actor, "policy.1"))),
+            new Binding(fixture.Binding), new Participation(), fixture.Source, fixture.States,
+            new DeterministicKnowledgeLexicalRetriever());
+
+        var completePage = await reader.ReadAsync(new(fixture.Campaign, Limit: 200));
+        var oversizedPage = await reader.ReadAsync(new(fixture.Campaign, Limit: 201));
+
+        Assert.NotEqual("invalid", completePage.Status);
+        Assert.Equal("invalid", oversizedPage.Status);
+        Assert.Equal("INVALID_KNOWLEDGE_REQUEST", oversizedPage.ErrorCode);
+    }
+
+    [Fact]
     public async Task Notebook_groups_only_known_active_location_subjects_without_ids()
     {
         using var fixture = new KnowledgeFixture();

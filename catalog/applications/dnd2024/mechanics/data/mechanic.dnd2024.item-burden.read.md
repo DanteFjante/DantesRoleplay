@@ -8,7 +8,7 @@ status: active
 
 ## Description
 
-Returns exact rational pounds for every item in the declared containment subtree.
+Returns exact canonical kilogram mass for every item in the declared containment subtree.
 
 ## Matches
 
@@ -17,5 +17,12 @@ derive nested physical mass
 ## Requirements
 
 ```json
-{"roles":{"root":{"components":["dnd2024.core.definition-link","dnd2024.item.quantity"],"includeContents":true,"contentsDepth":4,"contentComponentIds":["dnd2024.core.definition-link","dnd2024.item.quantity"],"componentReferences":[{"sourceComponentId":"dnd2024.core.definition-link","field":"definition","targetComponentIds":["dnd2024.item-definition"]}]}}}
+{"roles":{"root":{"components":["dnd2024.core.definition-link","dnd2024.item.quantity"],"includeContents":true,"contentsDepth":4,"contentComponentIds":["dnd2024.core.definition-link","dnd2024.item.quantity"],"componentReferences":[{"sourceComponentId":"dnd2024.core.definition-link","field":"definition","targetComponentIds":["dnd2024.item.physical"]}]}}}
 ```
+
+## Input and result
+
+Pass exactly `{}`. The root may be a custody root or item. Every contained item must have one
+definition link, a positive quantity, and a referenced definition with canonical kilogram `weight`.
+The result returns total `mass` plus each item's exact self-mass; it never stores burden or proposes
+effects.

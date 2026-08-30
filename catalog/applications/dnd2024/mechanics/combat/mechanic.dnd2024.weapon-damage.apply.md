@@ -8,9 +8,9 @@ status: active
 
 ## Description
 
-Consumes one declared weapon-damage child result, atomically spends optional target Temporary Hit
-Points before current Hit Points, and automatically applies positive damage to an optional active
-standard-rest episode.
+Consumes one declared weapon-damage child result and atomically spends optional target Temporary
+Hit Points before current Hit Points. Canonical rest interruption remains a separate event-owned
+lifecycle.
 
 ## Matches
 
@@ -20,5 +20,5 @@ damage target with weapon
 ## Requirements
 
 ```json
-{"roles":{"subject":{"components":["dnd2024.creature.ability-scores"],"description":"The attacker."},"weapon":{"components":["dnd2024.weapon-profile"],"description":"The static weapon profile."},"target":{"components":["dnd2024.creature.hit-points","dnd2024.creature.temporary-hit-points","dnd2024.rest-episode"],"includeRelationships":true,"description":"The damaged target with authoritative HP, optional Temporary HP, and optional source-bound rest state."}},"children":{"damage":{"mechanicId":"mechanic.dnd2024.weapon-damage.roll","roleBindings":{"subject":"subject","weapon":"weapon"},"inheritInput":true},"mitigation":{"mechanicId":"mechanic.dnd2024.damage.resolve","roleBindings":{"defender":"target"},"inheritInput":false,"input":"{}"}}}
+{"roles":{"subject":{"components":["dnd2024.creature.ability-scores"],"description":"The attacker bound to the damage child."},"weapon":{"components":[],"description":"The weapon identity bound to the damage child."},"activity":{"components":[],"description":"The selected weapon activity identity bound to the damage child."},"target":{"components":["dnd2024.creature.hit-points","dnd2024.creature.temporary-hit-points"],"description":"The damaged target with authoritative Hit Points and Temporary Hit Points."}},"children":{"damage":{"mechanicId":"mechanic.dnd2024.weapon-damage.roll","roleBindings":{"subject":"subject","weapon":"weapon","activity":"activity"},"inheritInput":true},"mitigation":{"mechanicId":"mechanic.dnd2024.damage.resolve","roleBindings":{"defender":"target"},"inheritInput":false,"input":"{}"}}}
 ```

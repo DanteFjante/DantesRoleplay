@@ -1,6 +1,6 @@
 ---
 id: mechanic.dnd2024.healing.apply
-category: dnd2024.core.gameplay.healing
+category: ruleset.dnd2024.core.gameplay.healing
 name: Apply healing to Hit Points
 scope: dnd2024-srd-5.2.1
 status: active
@@ -23,5 +23,5 @@ apply healing
 
 ## Input and result
 Provide exactly `{"amount": <positive integer>}`. The result reports requested, applied, and
-overflow amounts and proposes one `component.set` effect for `dnd2024.creature.hit-points`.
-Malformed or invalid Hit Point state fails without an effect.
+overflow amounts. It proposes one `component.set` only when Hit Points increase; healing at the
+existing maximum is a successful no-change result. Malformed or invalid Hit Point state fails.

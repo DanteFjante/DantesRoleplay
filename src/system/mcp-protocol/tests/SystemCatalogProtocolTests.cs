@@ -40,7 +40,7 @@ public sealed class SystemCatalogProtocolTests : IDisposable
         Assert.Equal("query(kind: \"capabilities\")", result.Error?.Fix);
         Assert.Contains(data.GetProperty("Query").EnumerateArray(), item => item.GetProperty("Name").GetString() == "system.catalog.browse");
         Assert.Equal(
-            ["system.application.activate", "system.application.register", "system.component-type.register", "system.interaction-execute", "system.interaction-recipe-review", "system.knowledge-state.sync", "system.source.register", "system.state-space.adopt-legacy", "system.state-space.create", "system.state-space.upgrade", "system.trigger-scheduling"],
+            ["system.application.activate", "system.application.register", "system.component-type.register", "system.interaction-execute", "system.interaction-recipe-review", "system.knowledge-state.sync", "system.source.register", "system.state-space.adopt-legacy", "system.state-space.create", "system.state-space.upgrade", "system.trigger-scheduling", "system.world-state.sync"],
             data.GetProperty("Commit").EnumerateArray()
                 .Select(item => item.GetProperty("Name").GetString())
                 .Where(name => name!.StartsWith("system.", StringComparison.Ordinal))
@@ -890,7 +890,7 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
             })
             .Where(schema => new BoundedJsonSchemaValidator().Compile(schema.SchemaJson).IsAccepted)
             .ToArray();
-        Assert.Equal(33, compatibleComponentSchemas.Length);
+        Assert.Equal(34, compatibleComponentSchemas.Length);
         var componentOperations = new List<(string Token, JsonElement Data, string OperationId, string Payload)>();
         foreach (var (schema, index) in compatibleComponentSchemas.Select((value, index) => (value, index)))
         {
@@ -1007,7 +1007,7 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
             .Select(winner => winner.GetProperty("relativePath").GetString()!)
             .Order(StringComparer.Ordinal)
             .ToArray();
-        Assert.Equal(118, previewPaths.Length);
+        Assert.Equal(120, previewPaths.Length);
         Assert.All(previewPaths, path => Assert.True(IsRatifiedLegacyGameSource(path), path));
         Assert.Contains("catalog/components/game.core.world.clock.json", previewPaths);
         Assert.Contains("catalog/components/stats.json", previewPaths);
@@ -1099,7 +1099,7 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
         Assert.True(catalogRecord.Ok, catalogRecord.Ok ? "" : catalogRecord.Error.GetRawText());
         Assert.True(hiddenSystemSearch.Ok, hiddenSystemSearch.Ok ? "" : hiddenSystemSearch.Error.GetRawText());
         Assert.Equal(activationCommit.Data.GetRawText(), activationReplay.Data.GetRawText());
-        Assert.Equal(118, activationCommit.Data.GetProperty("activation").GetProperty("winnerCount").GetInt32());
+        Assert.Equal(120, activationCommit.Data.GetProperty("activation").GetProperty("winnerCount").GetInt32());
         Assert.Equal(activationCommit.Data.GetProperty("activation").GetProperty("activationFingerprint").GetString(),
             application.Data.GetProperty("application").GetProperty("active").GetProperty("activationFingerprint").GetString());
         var collection = Assert.Single(catalogs.Data.GetProperty("collections").EnumerateArray());
@@ -1145,7 +1145,7 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
             Assert.Equal(1, database.Operations.AsNoTracking().Count(value => value.Id == operation.Token)));
         var registeredTypes = scope.ServiceProvider.GetRequiredService<IApplicationComponentTypeRegistry>()
             .ListLatestPage(ApplicationIdentifier.Parse("dnd2024"), null, 100).ComponentTypes;
-        Assert.Equal(33, registeredTypes.Count);
+        Assert.Equal(34, registeredTypes.Count);
         Assert.Equal(compatibleComponentSchemas.Select(schema => "dnd2024." + schema.LegacyId).Order(StringComparer.Ordinal),
             registeredTypes.Select(type => type.QualifiedId).Order(StringComparer.Ordinal));
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IApplicationComponentTypeRegistry>()

@@ -81,11 +81,11 @@ public sealed class ComponentTypeAdministrationTests : IDisposable
             Compilation = validator.Compile(File.ReadAllText(path))
         }).ToArray();
 
-        Assert.Equal(33, sidecars.Length);
+        Assert.Equal(34, sidecars.Length);
         Assert.All(findings, finding => Assert.StartsWith("dnd2024.", "dnd2024." + finding.LegacyId, StringComparison.Ordinal));
         Assert.All(findings, finding => Assert.True(finding.Compilation.IsAccepted,
             $"{finding.LegacyId}: {string.Join(", ", finding.Compilation.Diagnostics.Select(value => value.Code))}"));
-        Assert.Equal(33, findings.Count(finding => finding.Compilation.IsAccepted));
+        Assert.Equal(34, findings.Count(finding => finding.Compilation.IsAccepted));
         Assert.Empty(setup.Types.ListLatestPage(setup.App, null, 100).ComponentTypes);
         Assert.Null(setup.Types.GetLatest("dnd2024.stats"));
     }

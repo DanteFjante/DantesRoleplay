@@ -8,7 +8,8 @@ status: active
 
 ## Description
 
-Reads immutable class progression for one exact level and reports unimplemented entitlement IDs.
+Reads a class definition's canonical progression entity for one exact level and reports its grant
+references without applying them.
 
 ## Matches
 
@@ -17,5 +18,5 @@ inspect class progression
 ## Requirements
 
 ```json
-{"roles":{"class":{"components":["dnd2024.character.content-definition","dnd2024.class-progression"]}}}
+{"roles":{"class":{"components":["dnd2024.advancement.class"],"componentReferences":[{"sourceComponentId":"dnd2024.advancement.class","field":"progressionRef","targetComponentIds":["dnd2024.advancement.progression"]}],"description":"The canonical class definition whose progression is inspected."}}}
 ```

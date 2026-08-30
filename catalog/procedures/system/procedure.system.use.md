@@ -76,8 +76,8 @@ reads anything, `commit` changes anything. Nothing else exists.
    separately which contracts you actually opened.
 5. Change with `commit(kind: ..., payload: ...)`. The generic-host kinds are `component`,
    `effects`, `mechanic`, `action`, `system.application.register`, `system.component-type.register`, `system.source.register`, and
-   `system.application.activate`, `system.state-space.create`, `system.state-space.upgrade`, and
-   `system.state-space.adopt-legacy`, `system.interaction-execute`,
+   `system.application.activate`, `system.state-space.create`, `system.state-space.upgrade`,
+   `system.state-space.adopt-legacy`, `system.world-state.sync`, `system.interaction-execute`,
    `system.interaction-recipe-review`, `system.trigger-scheduling`, and
    `system.knowledge-state.sync`. Every `system.*` kind
    authenticates from the transport. Registry, activation, component-type, and state-space
@@ -113,6 +113,12 @@ reads anything, `commit` changes anything. Nothing else exists.
    every used legacy component definition and relationship kind. Dry run fingerprints the entire
    source graph; commit copies it atomically and leaves all legacy rows unchanged. Never infer a
    mapping or retry after `DRY_RUN_STALE` without a new dry run.
+   Synchronize reviewed application World state only with `system.world-state.sync`. It accepts one
+   exact root-scoped additive/update-only manifest, resolves current application component types and
+   revisions, and delegates one atomic typed-effects transaction. New entities must terminate below
+   the selected existing root; existing entities and relationship endpoints must already be in that
+   root. It cannot delete, remove, rename, register schemas, or accept raw effects. Dry-run the exact
+   manifest first, then commit the identical payload and read back every affected record.
    Trigger scheduling accepts exactly `{requestToken, operation, applicationId, value}`. The closed
    operations are `structure.register`, `source.register`, `one-time.register`,
    `recurring.register`, `conditional.register`, `observation-trigger.register`, `phone.register`,

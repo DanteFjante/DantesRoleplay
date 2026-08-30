@@ -1,18 +1,21 @@
-var subject=ctx.roles&&ctx.roles.subject,input=ctx.input,definitionId='dnd2024.creature.temporary-hit-points',maxSafe=9007199254740991,source={entityId:'source.dnd2024.srd-5.2.1'};
-function object(v){return !!v&&typeof v==='object'&&!Array.isArray(v);}
-function exact(v,keys){if(!object(v))return false;var actual=Object.keys(v).sort(),expected=keys.slice().sort();if(actual.length!==expected.length)return false;for(var n=0;n<expected.length;n++)if(actual[n]!==expected[n])return false;return true;}
-function positive(v){return Number.isInteger(v)&&v>=1&&v<=maxSafe;}
-function valid(v){return exact(v,['amount','sourceRef'])&&positive(v.amount)&&object(v.sourceRef)&&typeof v.sourceRef.entityId==='string'&&v.sourceRef.entityId.length>0;}
-if(!subject)throw new Error('A subject role is required.');
-if(!object(input)||typeof input.mode!=='string')throw new Error('Input must be a closed Temporary Hit Point transition object with a mode.');
-var raw=subject.components&&subject.components[definitionId],previous=null;
-if(raw){try{previous=typeof raw==='string'?JSON.parse(raw):raw;}catch(error){throw new Error('The stored Temporary Hit Point state is malformed.');}if(!valid(previous))throw new Error('The stored Temporary Hit Point state is invalid.');}
-if(input.mode==='expire'){if(!exact(input,['mode']))throw new Error('Expiry requires exactly {"mode":"expire"}.');if(!previous)throw new Error('Temporary Hit Points are absent and cannot expire.');return {narration:subject.name+'\'s '+previous.amount+' Temporary Hit Points expire.',data:{mode:'expire',previousAmount:previous.amount,grantedAmount:null,resultingAmount:null,kept:false,replaced:false,discardedAmount:previous.amount,sourceRef:previous.sourceRef},effects:[{type:'component.remove',entityId:subject.id,definitionId:definitionId}]};}
-if(input.mode!=='grant')throw new Error('input.mode must be exactly "grant" or "expire".');
-var expected=previous?['amount','mode','onExisting']:['amount','mode'];if(!exact(input,expected))throw new Error(previous?'Granting over an existing buffer requires exactly amount, mode, and onExisting.':'Granting a first buffer requires exactly amount and mode.');
-if(!positive(input.amount))throw new Error('Temporary Hit Point amount must be a positive safe integer; zero is represented by component absence.');
-if(previous&&input.onExisting!=='keep'&&input.onExisting!=='replace')throw new Error('onExisting must be exactly "keep" or "replace" when a buffer exists.');
-var state={amount:input.amount,sourceRef:source};
-if(!previous)return {narration:subject.name+' gains '+input.amount+' Temporary Hit Points.',data:{mode:'grant',previousAmount:null,grantedAmount:input.amount,resultingAmount:input.amount,kept:false,replaced:false,discardedAmount:null,sourceRef:source},effects:[{type:'component.add',entityId:subject.id,definitionId:definitionId,data:JSON.stringify(state)}]};
-if(input.onExisting==='keep')return {narration:subject.name+' keeps '+previous.amount+' Temporary Hit Points and discards '+input.amount+'.',data:{mode:'grant',previousAmount:previous.amount,grantedAmount:input.amount,resultingAmount:previous.amount,kept:true,replaced:false,discardedAmount:input.amount,sourceRef:previous.sourceRef},effects:[]};
-return {narration:subject.name+' replaces '+previous.amount+' Temporary Hit Points with '+input.amount+'.',data:{mode:'grant',previousAmount:previous.amount,grantedAmount:input.amount,resultingAmount:input.amount,kept:false,replaced:true,discardedAmount:previous.amount,sourceRef:source},effects:[{type:'component.set',entityId:subject.id,definitionId:definitionId,data:JSON.stringify(state)}]};
+var s=ctx.roles.subject,i=ctx.input,DEF='dnd2024.creature.temporary-hit-points',SID='source.dnd2024.srd-5.2.1',LOC='Playing the Game > Damage and Healing > Temporary Hit Points (PDF p. 18)',RESULT_SOURCE={sourceId:'source.dnd2024.srd-5.2.1',locator:'Playing the Game > Damage and Healing > Temporary Hit Points (PDF p. 18)'},MAX=9007199254740991;
+function closed(v,k){if(!v||typeof v!=='object'||Array.isArray(v)||Object.keys(v).length!==k.length)return false;for(var n=0;n<k.length;n++)if(!Object.prototype.hasOwnProperty.call(v,k[n]))return false;return true;}
+function positive(v){return typeof v==='number'&&isFinite(v)&&Math.floor(v)===v&&v>=1&&v<=MAX;}
+function valid(v){return closed(v,['amount','sourceRef'])&&positive(v.amount)&&closed(v.sourceRef,['entityId'])&&v.sourceRef.entityId===SID;}
+function parse(raw){try{return typeof raw==='string'?JSON.parse(raw):raw;}catch(error){throw new Error('Stored Temporary Hit Points are malformed.');}}
+if(!s||!s.components)throw new Error('A subject role is required.');
+if(!i||typeof i!=='object'||Array.isArray(i)||typeof i.mode!=='string')throw new Error('Input must be a closed Temporary Hit Point transition.');
+var raw=s.components[DEF],previous=null;if(raw){previous=parse(raw);if(!valid(previous))throw new Error('Stored Temporary Hit Points are invalid.');}
+if(i.mode==='expire'){
+ if(!closed(i,['mode']))throw new Error('Expiry requires exactly mode.');
+ if(!previous)throw new Error('Temporary Hit Points are absent and cannot expire.');
+ return {narration:s.name+' loses '+previous.amount+' Temporary Hit Points.',data:{mode:'expire',previousAmount:previous.amount,grantedAmount:null,resultingAmount:null,kept:false,replaced:false,discardedAmount:previous.amount,sourceRef:RESULT_SOURCE},effects:[{type:'component.remove',entityId:s.id,definitionId:DEF}],events:[],notifications:[]};
+}
+if(i.mode!=='grant')throw new Error('mode must be exactly grant or expire.');
+var expected=previous?['mode','amount','onExisting']:['mode','amount'];
+if(!closed(i,expected)||!positive(i.amount))throw new Error(previous?'An existing buffer grant requires exactly mode, positive amount, and onExisting.':'A first grant requires exactly mode and a positive amount.');
+if(previous&&i.onExisting!=='keep'&&i.onExisting!=='replace')throw new Error('onExisting must be exactly keep or replace.');
+var source={entityId:SID},next={amount:i.amount,sourceRef:source};
+if(!previous)return {narration:s.name+' gains '+i.amount+' Temporary Hit Points.',data:{mode:'grant',previousAmount:null,grantedAmount:i.amount,resultingAmount:i.amount,kept:false,replaced:false,discardedAmount:null,sourceRef:RESULT_SOURCE},effects:[{type:'component.add',entityId:s.id,definitionId:DEF,data:JSON.stringify(next)}],events:[],notifications:[]};
+if(i.onExisting==='keep')return {narration:s.name+' keeps '+previous.amount+' Temporary Hit Points.',data:{mode:'grant',previousAmount:previous.amount,grantedAmount:i.amount,resultingAmount:previous.amount,kept:true,replaced:false,discardedAmount:i.amount,sourceRef:RESULT_SOURCE},effects:[],events:[],notifications:[]};
+return {narration:s.name+' replaces '+previous.amount+' Temporary Hit Points with '+i.amount+'.',data:{mode:'grant',previousAmount:previous.amount,grantedAmount:i.amount,resultingAmount:i.amount,kept:false,replaced:true,discardedAmount:previous.amount,sourceRef:RESULT_SOURCE},effects:[{type:'component.set',entityId:s.id,definitionId:DEF,data:JSON.stringify(next)}],events:[],notifications:[]};

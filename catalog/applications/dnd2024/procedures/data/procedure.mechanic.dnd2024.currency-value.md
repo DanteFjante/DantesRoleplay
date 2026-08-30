@@ -12,7 +12,9 @@ Derives physical coin count, copper-piece value, and denomination breakdown belo
 
 ## Instructions
 
-Read only compatible positive currency stacks and immutable definition conversion metadata.
+Read only positive canonical coin stacks. Denomination identity comes from each immutable definition
+link; copper conversion ratios are derived by the mechanic from the SRD coin table and are never
+stored on the runtime item.
 
 ## Constraints
 

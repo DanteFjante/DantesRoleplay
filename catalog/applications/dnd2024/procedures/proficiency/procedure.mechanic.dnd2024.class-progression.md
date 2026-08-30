@@ -2,20 +2,29 @@
 id: procedure.mechanic.dnd2024.class-progression
 category: ruleset.dnd2024.core.advancement.class-progression
 name: Govern D&D 2024 class progression declarations
-governs: dnd2024.class-progression; mechanic.dnd2024.class-progression.read
+governs: dnd2024.advancement.class; dnd2024.advancement.progression; mechanic.dnd2024.class-progression.read
 status: active
 ---
 
 ## Description
 
-Owns immutable source-backed class progression facts and diagnostic entitlement reads.
+Explains how canonical class definitions refer to immutable level progression and how to inspect one
+level's declared grants.
 
 ## Instructions
 
-Attach progression only to matching active class content. Keep valid Hit Die/fixed-gain pairs,
-ascending unique levels, and sorted unique feature/choice identities.
+Place `dnd2024.advancement.class` on a class-definition entity and set its `progressionRef` to one
+progression-definition entity carrying `dnd2024.advancement.progression`. Key progression entries by
+the exact class level, `1` through `20`, and use `grantRefs` for the content granted at that level.
+
+Invoke `mechanic.dnd2024.class-progression.read` with the class definition in role `class` and input
+`{"classLevel":N}`. Treat `supported` as a declaration that the level exists, including when its
+grant list is empty. Treat `unsupported-level` as absent authored progression rather than permission
+to advance. Resolve and apply returned grants through their own procedures and transaction owners.
 
 ## Constraints
 
-Entitlement identity does not implement feature behavior. Actor class/level, XP, Constitution, HP,
-resources, campaign authorization, and advancement effects remain separate owners.
+Grant identity does not implement feature behavior. The class Hit Die is returned as a reference;
+the removed fixed Hit Point gain is not inferred. Actor class/level, XP, Constitution, HP,
+resources, campaign authorization, grant application, and advancement effects remain separate
+owners.

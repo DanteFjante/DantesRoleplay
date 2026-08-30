@@ -14,9 +14,11 @@ damage interruption to optional active standard-rest state in the same transacti
 
 ## Instructions
 
-Inherit the closed ability/critical input into exactly one damage child. Compose exactly one
+Bind the same subject, weapon, and selected activity identities into the damage child. Inherit the
+closed ability/critical input into exactly one damage child. Compose exactly one
 `mechanic.dnd2024.damage.resolve` child with fixed `{}` input and `defender` bound to the target.
-Validate both envelopes. Immunity prevents matching damage; otherwise apply one Resistance halving
+Validate both envelopes, including the child's subject, weapon, and activity result identities.
+Immunity prevents matching damage; otherwise apply one Resistance halving
 with floor when the profile contains the type or Petrified, then apply one matching Vulnerability
 doubling. Preserve both Resistance reasons but halve once. Reject unsafe arithmetic before effects.
 Validate a present positive Temporary HP buffer after mitigation is calculated. Spend it before HP,

@@ -67,7 +67,16 @@
       ]
     },
     "dnd2024.activity.membership": {
-      "activities": []
+      "activities": [
+          {
+            "entityId": "dnd2024.equipment.weapon.dagger.attack.melee",
+            "expectedArchetype": "dnd2024.archetype.activity-definition"
+          },
+          {
+            "entityId": "dnd2024.equipment.weapon.dagger.attack.thrown",
+            "expectedArchetype": "dnd2024.archetype.activity-definition"
+          }
+      ]
     }
   }
 }

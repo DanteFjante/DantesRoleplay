@@ -1,7 +1,7 @@
 # D&D 2024 application roadmap
 
-Status: **Active; prototype-first canonical source cutover accepted; live-data migration pending**
-Last updated: 2026-08-29
+Status: **Active; complete-campaign dependency root established; no implementation leaf active**
+Last updated: 2026-08-30
 
 ## Outcome
 
@@ -106,13 +106,22 @@ The preferred sequence is:
 
 ## Active dependency plan
 
-The cross-owner import/recovery work is owned by the
-[D&D code-adoption dependency plan](DND-CODE-ADOPTION-DEPENDENCY-PLAN.md). It records the reuse
-ladder, donor boundaries, effort forecast, small-model assignments, acceleration tooling, and
-confirmation gates.
+The master cross-owner planning root is the
+[D&D 2024 complete-campaign dependency graph](DND2024-COMPLETE-CAMPAIGN-DEPENDENCY-GRAPH.md).
+It covers the prerequisites for creating and running persistent worlds, nested locations,
+campaigns, characters, sessions, rules, encounters, content, shared DM/Player views, and
+export/recovery. It subsumes the remaining execution order in the narrower plans below. The graph
+is planning-only, activates no implementation leaf, and identifies its read-only owner/ID/category
+audit as the lowest independently ready leaf.
 
-New playable-character work is owned by the
-[D&D 2024 character-creation dependency tree](DND2024-CHARACTER-CREATION-DEPENDENCY-PLAN.md). Its
+The subordinate
+[D&D code-adoption dependency plan](DND-CODE-ADOPTION-DEPENDENCY-PLAN.md) preserves the reuse
+ladder, donor boundaries, completed adoption evidence, acceleration tooling, and confirmation
+history. It does not independently select the next implementation leaf.
+
+The
+[D&D 2024 character-creation dependency tree](DND2024-CHARACTER-CREATION-DEPENDENCY-PLAN.md) is the
+subordinate character subgraph. Its
 first species subslices are accepted: source-bound ability generation/background increases,
 species-definition/selection planning, Human Skillful, recommended Versatile/Skilled, the Heroic
 Inspiration presence/grant foundation, immutable standard-rest policy content, authenticated rest
@@ -124,7 +133,7 @@ For a token-constrained first delivery, the
 vertical slice to an explicitly `basic-playable` actor with unresolved entitlements recorded rather
 than silently granted. That slice is accepted; it does not close the full-resolution plan.
 
-Runtime-to-prototype ECS convergence is owned by the
+Runtime-to-prototype ECS evidence and narrower work are preserved by the subordinate
 [component-convergence dependency tree](../../prototype/dnd2024/planning/DND2024-COMPONENT-CONVERGENCE-DEPENDENCY-TREE.md).
 Its encounter-lifecycle leaf is accepted through explicit participation, Initiative, rounds, turns,
 and counted metric budgets. Item/inventory runtime identity, quantity, custody, and conservation are

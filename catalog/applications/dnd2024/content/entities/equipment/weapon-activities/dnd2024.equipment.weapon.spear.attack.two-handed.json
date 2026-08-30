@@ -1,0 +1,68 @@
+{
+  "id": "dnd2024.equipment.weapon.spear.attack.two-handed",
+  "name": "Spear Two-Handed Attack",
+  "archetype": "dnd2024.archetype.activity-definition",
+  "components": {
+    "dnd2024.core.source": {
+      "citations": [
+        {
+          "sourceRef": {
+            "entityId": "source.dnd2024.srd-5.2.1"
+          },
+          "locator": "Equipment > Weapons > Weapons table > Spear (SRD 5.2.1, pages 91-91)"
+        }
+      ]
+    },
+    "dnd2024.core.version": {
+      "revision": 1,
+      "status": "active"
+    },
+    "dnd2024.core.presentation": {
+      "summary": "Make a two-handed attack with Spear."
+    },
+    "dnd2024.activity.activation": {
+      "economy": "none"
+    },
+    "dnd2024.activity.attack": {
+      "mode": "melee",
+      "abilityOptions": [
+        {
+          "entityId": "dnd2024.vocabulary.ability.strength"
+        }
+      ]
+    },
+    "dnd2024.activity.damage": {
+      "parts": [
+        {
+          "amount": {
+            "count": 1,
+            "dieRef": {
+              "entityId": "dnd2024.vocabulary.die.d8"
+            },
+            "modifier": 0
+          },
+          "damageType": {
+            "entityId": "dnd2024.vocabulary.damage-type.piercing"
+          }
+        }
+      ],
+      "delivery": "on-hit",
+      "criticalBehavior": "eligible"
+    },
+    "dnd2024.activity.range": {
+      "range": {
+        "kind": "distance",
+        "normal": {
+          "dimension": "distance",
+          "value": {
+            "numerator": 381,
+            "denominator": 250
+          },
+          "unit": {
+            "entityId": "dnd2024.vocabulary.distance-unit.meter"
+          }
+        }
+      }
+    }
+  }
+}

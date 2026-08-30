@@ -143,7 +143,7 @@ public sealed class AuthorizedKnowledgeNotebookReader(
     }
 
     private static bool Valid(AuthorizedKnowledgeNotebookRequest? request) => request is not null &&
-        Token(request.CampaignId, 200) && request.Limit is >= 1 and <= 100 &&
+        Token(request.CampaignId, 200) && request.Limit is >= 1 and <= 200 &&
         (request.Query is null || request.Query.Length is >= 1 and <= 500 &&
             request.Query == request.Query.Trim()) &&
         (request.Kinds is null || request.Kinds.Count <= 16 &&

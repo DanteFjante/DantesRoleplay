@@ -330,11 +330,13 @@ public sealed class WebInterfaceTests
             .OfType<RouteEndpoint>()
             .Where(endpoint => endpoint.RoutePattern.RawText!.StartsWith("/api/applications/", StringComparison.Ordinal)
                 || endpoint.RoutePattern.RawText == "/components/application-conversation.js"
+                || endpoint.RoutePattern.RawText == "/components/maps/{name}.png"
                 || endpoint.RoutePattern.RawText == "/components/{name}.js")
             .Select(endpoint => (endpoint.RoutePattern.RawText,
                 Method: endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods.Single())).ToArray();
         Assert.Equal([
             ("/components/application-conversation.js", HttpMethods.Get),
+            ("/components/maps/{name}.png", HttpMethods.Get),
             ("/components/{name}.js", HttpMethods.Get),
             ("/api/applications/{applicationId}/catalog/records/{qualifiedId}", HttpMethods.Get),
             ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}", HttpMethods.Get),
@@ -392,6 +394,12 @@ public sealed class WebInterfaceTests
             StringComparison.Ordinal);
         Assert.Contains("this._selectedView = 'party'", dndScript, StringComparison.Ordinal);
         Assert.Contains("['world', 'World', '⌘']", dndScript, StringComparison.Ordinal);
+        Assert.Contains("world: '/components/maps/thalos-world.png'", dndScript, StringComparison.Ordinal);
+        Assert.Contains("'location.thalorien.aldros': '/components/maps/region-aldros.png'", dndScript,
+            StringComparison.Ordinal);
+        Assert.Contains("'location.thalorien.world-tree-grounds': '/components/maps/region-world-tree-grounds.png'",
+            dndScript, StringComparison.Ordinal);
+        Assert.Contains("this._mapImageFailures.add(scope)", dndScript, StringComparison.Ordinal);
         Assert.Contains("Dante\\'s Roleplay · D&D 2024 table", dndScript, StringComparison.Ordinal);
         Assert.Contains("viewTabs.setAttribute('role', 'tablist')", dndScript,
             StringComparison.Ordinal);
@@ -734,6 +742,36 @@ public sealed class WebInterfaceTests
         using var applicationReader = new StreamReader(assetContext.Response.Body);
         Assert.Contains("customElements.define('application-form'", await applicationReader.ReadToEndAsync(),
             StringComparison.Ordinal);
+
+        Assert.Null(await BrowserMapAssets.ReadAsync("../thalos-world"));
+        Assert.Null(await BrowserMapAssets.ReadAsync("missing-map"));
+        var expectedMap = await BrowserMapAssets.ReadAsync("thalos-world");
+        Assert.NotNull(expectedMap);
+
+        var mapRoute = Assert.Single(((IEndpointRouteBuilder)application).DataSources
+            .SelectMany(source => source.Endpoints).OfType<RouteEndpoint>(), endpoint =>
+                endpoint.RoutePattern.RawText == "/components/maps/{name}.png");
+        var mapContext = RequestContext("localhost:6217", IPAddress.Loopback);
+        mapContext.RequestServices = application.Services;
+        mapContext.Request.Method = HttpMethods.Get;
+        mapContext.Request.RouteValues["name"] = "thalos-world";
+        mapContext.Response.Body = new MemoryStream();
+
+        await mapRoute.RequestDelegate!(mapContext);
+
+        Assert.Equal(StatusCodes.Status200OK, mapContext.Response.StatusCode);
+        Assert.Equal("image/png", mapContext.Response.ContentType);
+        Assert.Equal(expectedMap, ((MemoryStream)mapContext.Response.Body).ToArray());
+
+        var missingMapContext = RequestContext("localhost:6217", IPAddress.Loopback);
+        missingMapContext.RequestServices = application.Services;
+        missingMapContext.Request.Method = HttpMethods.Get;
+        missingMapContext.Request.RouteValues["name"] = "missing-map";
+        missingMapContext.Response.Body = new MemoryStream();
+
+        await mapRoute.RequestDelegate!(missingMapContext);
+
+        Assert.Equal(StatusCodes.Status404NotFound, missingMapContext.Response.StatusCode);
     }
 
     [Fact]
@@ -1273,7 +1311,8 @@ public sealed class WebInterfaceTests
 
         Assert.Equal(WebInterfaceSecurity.ContentSecurityPolicy, context.Response.Headers.ContentSecurityPolicy);
         Assert.Contains("connect-src 'self'", context.Response.Headers.ContentSecurityPolicy.ToString(), StringComparison.Ordinal);
-        Assert.Contains("frame-src 'self' http://localhost:5173", context.Response.Headers.ContentSecurityPolicy.ToString(), StringComparison.Ordinal);
+        Assert.Contains("frame-src 'self'", context.Response.Headers.ContentSecurityPolicy.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("localhost:5173", context.Response.Headers.ContentSecurityPolicy.ToString(), StringComparison.Ordinal);
         Assert.Contains("object-src 'none'", context.Response.Headers.ContentSecurityPolicy.ToString(), StringComparison.Ordinal);
         Assert.Contains("frame-ancestors 'none'", context.Response.Headers.ContentSecurityPolicy.ToString(), StringComparison.Ordinal);
         Assert.Equal("nosniff", context.Response.Headers.XContentTypeOptions);
@@ -2405,16 +2444,21 @@ public sealed class WebInterfaceTests
     }
 
     [Fact]
-    public void Dnd2024_play_page_mounts_the_actual_local_information_hub()
+    public void Dnd2024_play_page_mounts_the_same_origin_react_information_hub()
     {
         var html = File.ReadAllText(Path.Combine(
             RepositoryRoot(), "src", "system", "web-interface", "examples", "dnd2024-play", "index.html"));
 
-        Assert.Contains("<iframe", html, StringComparison.Ordinal);
-        Assert.Contains("class=\"prototype-frame\"", html, StringComparison.Ordinal);
-        Assert.Contains("src=\"http://localhost:5173/\"", html, StringComparison.Ordinal);
-        Assert.Contains("Dante's Roleplay D&D 2024 information hub", html, StringComparison.Ordinal);
+        Assert.Contains("<div id=\"root\">", html, StringComparison.Ordinal);
+        Assert.Contains("type=\"module\"", html, StringComparison.Ordinal);
+        Assert.Contains("src=\"/ui/dnd2024-play/assets/", html, StringComparison.Ordinal);
+        Assert.Contains("href=\"/ui/dnd2024-play/assets/", html, StringComparison.Ordinal);
+        Assert.Contains("Dante's Roleplay — World &amp; Campaign Reference", html, StringComparison.Ordinal);
         Assert.Contains("Dante's Roleplay", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("<iframe", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("<dnd2024-workspace", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("localhost:5173", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("chatgpt.site", html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("<system-form", html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("<form", html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("application/json", html, StringComparison.OrdinalIgnoreCase);

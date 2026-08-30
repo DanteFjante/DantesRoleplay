@@ -8,7 +8,7 @@ status: active
 
 ## Description
 
-Reduces a fungible stack; consuming the final unit deletes the physical stack entity.
+Reduces a canonical item stack; consuming the final unit deletes the item entity.
 
 ## Matches
 
@@ -17,5 +17,5 @@ consume item stack
 ## Requirements
 
 ```json
-{"roles":{"item":{"components":["dnd2024.core.definition-link","dnd2024.item.quantity"],"includeContents":true,"contentsDepth":1},"definition":{"components":["dnd2024.item-definition"]}}}
+{"roles":{"item":{"components":["dnd2024.core.definition-link","dnd2024.item.quantity"],"includeContents":true,"contentsDepth":1},"definition":{"components":["dnd2024.core.version"]}}}
 ```

@@ -8,6 +8,8 @@ Character Backgrounds > Parts of a Background / Acolyte / Criminal / Sage / Sold
 *Rules Glossary > Long Rest* (PDF p. 185) and
 *Rules Glossary > Short Rest* (PDF p. 187)
 Owning roadmap: [D&D 2024 application roadmap](ROADMAP.md)
+Parent plan: [complete-campaign dependency graph](DND2024-COMPLETE-CAMPAIGN-DEPENDENCY-GRAPH.md)
+Plan role: **subordinate character subgraph; remaining ordering does not select the next leaf independently**
 
 Token-constrained delivery may use the separate
 [basic character-creation MVP plan](DND2024-CHARACTER-CREATION-MVP-PLAN.md). It creates an explicitly

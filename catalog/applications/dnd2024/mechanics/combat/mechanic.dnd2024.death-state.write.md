@@ -1,6 +1,6 @@
 ---
 id: mechanic.dnd2024.death-state.write
-category: dnd2024.core.gameplay.dying
+category: ruleset.dnd2024.core.gameplay.dying
 name: Record death-save state
 scope: dnd2024-srd-5.2.1
 status: active
@@ -23,4 +23,5 @@ end death state
 ## Input and result
 Use `{"mode":"begin"}`, `{"mode":"end"}`, or correction with exactly
 `mode`, `successes`, `failures`, `stable`, and `dead`. Stable resets tallies; terminal dead state
-cannot be cleared. Effects are typed add, set, or remove operations on the death-saves component.
+cannot be cleared. A valid existing `lastChangeRef` is preserved. Effects are typed add, set, or
+remove operations on the death-saves component.

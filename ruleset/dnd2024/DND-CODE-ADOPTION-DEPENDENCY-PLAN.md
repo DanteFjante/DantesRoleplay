@@ -1,11 +1,13 @@
 # D&D code-adoption dependency tree — recover and import licensed rules work
 
-Status: **Slices 0–11 accepted selected scope; Slices 12–13 planned**
+Status: **Slices 0–13 accepted selected scope; no remaining implementation leaf**
 Ruleset alignment: **dnd2024-compatible adoption pipeline; every rule-bearing child slice is
 dnd2024-owned**
 Source: **not applicable to the pipeline itself**. Every rule-bearing child must cite
 `source.dnd2024.srd-5.2.1` with an exact section/page locator before it becomes ready.
 Owner/roadmap: [D&D 2024 application roadmap](ROADMAP.md)
+Parent plan: [complete-campaign dependency graph](DND2024-COMPLETE-CAMPAIGN-DEPENDENCY-GRAPH.md)
+Plan role: **subordinate adoption evidence; it does not select the next implementation leaf**
 
 ## Outcome and non-goals
 

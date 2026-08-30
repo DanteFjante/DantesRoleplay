@@ -31,7 +31,7 @@ public static class InteractionRetrievalLimits
     public const int MaximumQueryLength = 256;
     public const int MaximumResults = 50;
     public const int MaximumFilters = 16;
-    public const int MaximumDocumentText = 32_000;
+    public const int MaximumDocumentText = 64_000;
     public const int MaximumVectorDimensions = 8_192;
     public const int HybridCandidateMultiplier = 4;
     public const int ReciprocalRankConstant = 60;

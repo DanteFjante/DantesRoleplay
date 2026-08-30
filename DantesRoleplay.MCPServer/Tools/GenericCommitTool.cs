@@ -15,6 +15,7 @@ using DantesRoleplay.LegacyStateAdoption;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.TriggerScheduling;
 using DantesRoleplay.Knowledge;
+using DantesRoleplay.EcsEffects;
 using ModelContextProtocol.Server;
 
 namespace DantesRoleplay.MCPServer.Tools;
@@ -26,7 +27,7 @@ public sealed class CommitTool
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     [McpServerTool(Name = "commit")]
-    [Description("Change state with component, effects, mechanic, action, system.application.register, system.source.register, system.component-type.register, system.application.activate, system.state-space.create, system.state-space.upgrade, system.state-space.adopt-legacy, system.interaction-execute, system.interaction-recipe-review, system.trigger-scheduling, or system.knowledge-state.sync. Use query(kind: \"capabilities\") for each closed payload catalog.")]
+    [Description("Change state with component, effects, mechanic, action, system.application.register, system.source.register, system.component-type.register, system.application.activate, system.state-space.create, system.state-space.upgrade, system.state-space.adopt-legacy, system.world-state.sync, system.interaction-execute, system.interaction-recipe-review, system.trigger-scheduling, or system.knowledge-state.sync. Use query(kind: \"capabilities\") for each closed payload catalog.")]
     public async Task<ToolEnvelope> CommitAsync(
         IWorldStore world,
         IEffectApplier effects,
@@ -48,7 +49,8 @@ public sealed class CommitTool
         IInteractionGateway? interactionGateway = null,
         IInteractionRecipeReviewService? interactionRecipeReviews = null,
         ITriggerSchedulingAdministrationService? triggerSchedulingAdministration = null,
-        IReviewedKnowledgeStateSynchronizer? knowledgeStateSynchronization = null)
+        IReviewedKnowledgeStateSynchronizer? knowledgeStateSynchronization = null,
+        IApplicationWorldAuthoringSynchronizer? worldStateSynchronization = null)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
         var spec = VerbSurface.Commit(normalizedKind);
@@ -83,6 +85,9 @@ public sealed class CommitTool
                 stateSpaceAdministration, privateOperator, log, payload, intent, proceduresUsed, dryRun, cancellationToken),
             "system.state-space.adopt-legacy" => await new SystemLegacyStateAdoptionTools().AdoptAsync(
                 legacyStateAdoption, privateOperator, log, payload, intent, proceduresUsed, dryRun, cancellationToken),
+            "system.world-state.sync" => await new SystemWorldStateTools().SynchronizeAsync(
+                worldStateSynchronization, privateOperator, log, payload, intent, proceduresUsed, dryRun,
+                cancellationToken),
             "system.interaction-execute" => await new SystemInteractionTools().ExecuteAsync(
                 interactionGateway, privateOperator, log, payload, intent, proceduresUsed, cancellationToken),
             "system.interaction-recipe-review" => await new SystemInteractionTools().ReviewRecipeAsync(

@@ -16,7 +16,7 @@ public sealed partial class DeterministicKnowledgeLexicalRetriever : IKnowledgeL
         ArgumentNullException.ThrowIfNull(request);
         if (documents.Count > 10_000 || string.IsNullOrWhiteSpace(request.Query) ||
             request.Query != request.Query.Trim() || request.Query.Length > 500 ||
-            request.AsOfMinute is < 0 or > 1_000_000_000 || request.Limit is < 1 or > 100 ||
+            request.AsOfMinute is < 0 or > 1_000_000_000 || request.Limit is < 1 or > 200 ||
             request.Kinds is { Count: > 16 } || request.SubjectIds is { Count: > 100 })
             return [];
         var tokens = Token().Matches(request.Query).Select(value => value.Value)

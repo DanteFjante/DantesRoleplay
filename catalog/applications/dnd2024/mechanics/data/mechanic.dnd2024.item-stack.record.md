@@ -8,7 +8,7 @@ status: active
 
 ## Description
 
-Records an initial positive quantity on an existing fungible item instance.
+Records an initial positive quantity on an existing definition-linked item instance.
 
 ## Matches
 
@@ -17,5 +17,5 @@ record item stack
 ## Requirements
 
 ```json
-{"roles":{"item":{"components":["dnd2024.core.definition-link","dnd2024.item.quantity"]},"definition":{"components":["dnd2024.item-definition"]}}}
+{"roles":{"item":{"components":["dnd2024.core.definition-link"]},"definition":{"components":["dnd2024.core.version"]}}}
 ```

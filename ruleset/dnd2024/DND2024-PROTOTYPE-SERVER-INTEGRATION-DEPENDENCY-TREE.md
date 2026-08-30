@@ -1,6 +1,6 @@
 # DND2024 prototype-server integration dependency tree — one authoritative game system
 
-Status: **active; initial campaign/character projection verified**
+Status: **active; campaign/character/current continuity projection verified**
 Ruleset alignment: **dnd2024-compatible**
 Source: repository-owned server, catalog, and prototype contracts; no D&D rule meaning changes
 Owning roadmap: `ruleset/dnd2024/ROADMAP.md`, runtime-to-prototype ECS convergence lane
@@ -51,6 +51,10 @@ Prototype companion reads and requests authoritative server play [planning]
 ├── Server-served prototype route [ready]
 │   ├── Serve the prototype through the existing `/ui/{id}` page/bundle route [ready]
 │   └── Use same-origin generic application-state and mechanic APIs [ready]
+├── Existing World/Campaign context selection [verified]
+│   ├── Discover exact readable campaign roots inside the authorized state space [verified]
+│   ├── Group campaigns under their existing World identity without copying World state [verified]
+│   └── Revalidate every browser-requested campaign on the server-side adapter [verified]
 ├── Optional external hosted deployment [planned]
 │   └── Remote, authenticated relay/gateway for hosted prototype use [new public surface]
 └── Prototype adapter [partial]
@@ -112,6 +116,8 @@ generic UI document.
 | 3 | Complete the fixture-to-server read-model crosswalk | leaf 2 | every displayed value is server state, catalog content, or deliberately unavailable; no fixture fallback. **Partial:** campaign premise/goals and active character entries read from their server components. |
 | 4 | Implement the generic server projection seam | leaf 3 | **partial:** the prototype consumes the existing identity-free authorized notebook; no D&D-specific C# logic or new route. Locations/maps/factions remain separate projections. |
 | 5 | Serve/connect the prototype through the existing page/bundle route | leaf 4 | fixture is not used when connected; browser reads same-origin generic APIs |
+| 5A | Project current Campaign chapter and arc into the live companion | leaf 5 and existing chapter/arc owners | **verified:** overview and Open Threads use stored chapter/arc fields; closed chapter and terminal arc summaries feed their existing pages; unsupported visits/clues remain empty and Player receives no GM context |
+| 5B | Select an existing authorized World/Campaign context | leaf 5 and accepted Web UI Slice 5A discovery pattern | **verified:** the TopBar popup lists only exact readable campaign roots grouped under their existing World; a local DM can switch the complete hub context, an actor remains bound to its authorized campaign, injected IDs fail closed, and all reads are side-effect free. |
 | 6 | Optionally host the prototype separately | leaf 5 | remote identity and gateway are explicitly authorized |
 
 ## Lowest ready leaf
