@@ -9,6 +9,7 @@ using DantesRoleplay.SystemFeedback;
 using DantesRoleplay.Information;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Applications;
+using DantesRoleplay.Ecs;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.Sources;
 using DantesRoleplay.ApplicationPreview;
@@ -135,7 +136,10 @@ public sealed class QueryTool
         ILocalKnowledgeSeatProvider? localKnowledgeSeats = null,
         IAuthorizedKnowledgeAudiencePolicy? knowledgeAudiences = null,
         IKnowledgeApplicationBindingResolver? knowledgeBindings = null,
-        IKnowledgeActorParticipationVerifier? knowledgeParticipation = null)
+        IKnowledgeActorParticipationVerifier? knowledgeParticipation = null,
+        IApplicationRegistry? applicationEntityApplications = null,
+        IStateSpaceRegistry? applicationEntityStateSpaces = null,
+        IEntityComponentStore? applicationEntities = null)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
 
@@ -176,6 +180,27 @@ public sealed class QueryTool
             "world" =>
                 await new WorldTools().DescribeWorldAsync(
                     world, log, sample ?? 10, cancellationToken),
+            "entities" when !string.IsNullOrWhiteSpace(applicationId)
+                && !string.IsNullOrWhiteSpace(stateSpaceId)
+                && applicationEntityApplications is not null
+                && applicationEntityStateSpaces is not null
+                && applicationEntities is not null =>
+                await new ApplicationEntityTools().GetEntitiesAsync(
+                    applicationEntityApplications,
+                    applicationEntityStateSpaces,
+                    applicationEntities,
+                    log,
+                    applicationId,
+                    stateSpaceId,
+                    string.IsNullOrWhiteSpace(id) ? ids : [id!],
+                    limit ?? 50,
+                    cancellationToken),
+            "entities" when !string.IsNullOrWhiteSpace(applicationId) || !string.IsNullOrWhiteSpace(stateSpaceId) =>
+                await ToolRunner.RunAsync(log, "query", () => Task.FromResult(ToolOutcome.Fail(
+                    "APPLICATION_ENTITY_SCOPE_INVALID",
+                    "Application entity reads require applicationId, stateSpaceId, and an available application ECS reader.",
+                    "query(kind: \"entities\", applicationId: \"...\", stateSpaceId: \"...\", id: \"...\")",
+                    "Rejected an incomplete application entity query."))),
             "entities" =>
                 await new WorldTools().GetEntitiesAsync(
                     world, log,

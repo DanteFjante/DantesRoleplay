@@ -15,7 +15,7 @@ public static class VerbSurface
         new("procedures", "Versioned system procedure contracts.", ["id", "version", "query", "category", "includeInactive", "limit"], ["procedure.system.inspect"]),
         new("categories", "One category-tree branch for procedures or mechanics.", ["catalog", "category", "includeInactive"], ["procedure.system.hierarchical-catalogs"]),
         new("world", "Generic entity/component state and a bounded sample.", ["sample"], ["procedure.world.model"]),
-        new("entities", "Generic entities by id, name, or component definition.", ["id", "ids", "nameQuery", "withDefinitionId", "limit"], ["procedure.system.inspect"]),
+        new("entities", "Generic entities by id, name, or component definition; with applicationId and stateSpaceId, exact entities from an application's live state space.", ["id", "ids", "nameQuery", "withDefinitionId", "applicationId", "stateSpaceId", "limit"], ["procedure.system.inspect"]),
         new("graph", "A bounded graph over generic components, containment, and relationships.", ["id", "componentIds", "containmentDepth", "relationshipKinds", "relationshipDepth", "maxNodes", "maxEdges"], ["procedure.system.inspect"]),
         new("mechanics", "Versioned JavaScript mechanics and their declared contracts.", ["id", "version", "query", "category", "scope", "includeInactive", "limit"], ["procedure.mechanic.find"]),
         new("event-types", "Versioned structural event schemas.", ["id", "version", "query", "category", "scope", "includeInactive", "limit"], ["procedure.event.define"]),
