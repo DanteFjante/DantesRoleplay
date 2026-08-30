@@ -201,6 +201,20 @@ public sealed class QueryTool
                     "Application entity reads require applicationId, stateSpaceId, and an available application ECS reader.",
                     "query(kind: \"entities\", applicationId: \"...\", stateSpaceId: \"...\", id: \"...\")",
                     "Rejected an incomplete application entity query."))),
+            "entities" when string.IsNullOrWhiteSpace(nameQuery)
+                && string.IsNullOrWhiteSpace(withDefinitionId)
+                && (string.IsNullOrWhiteSpace(id) ? ids : [id!]) is { Length: > 0 } exactIds
+                && applicationEntityApplications is not null
+                && applicationEntityStateSpaces is not null
+                && applicationEntities is not null =>
+                await new ApplicationEntityTools().FindExactEntitiesAsync(
+                    applicationEntityApplications,
+                    applicationEntityStateSpaces,
+                    applicationEntities,
+                    log,
+                    exactIds,
+                    limit ?? 50,
+                    cancellationToken),
             "entities" =>
                 await new WorldTools().GetEntitiesAsync(
                     world, log,
