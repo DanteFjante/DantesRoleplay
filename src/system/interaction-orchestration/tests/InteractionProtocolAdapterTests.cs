@@ -1,7 +1,7 @@
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.Interactions;
-using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Operations;
 
 namespace DantesRoleplay.Interactions.Tests;
@@ -69,14 +69,14 @@ public sealed class InteractionProtocolAdapterTests
     }
 
     private static Task<ToolEnvelope> QueryAsync(Gateway gateway, string request) =>
-        new QueryTool().QueryAsync(
+        new QueryMcpTool().QueryAsync(
             procedures: null!, world: null!, graphs: null!, mechanics: null!, eventTypes: null!,
             subscriptions: null!, events: null!, log: new Log(), notifications: null!,
             kind: "system.interaction-plan", applicationId: "fixture-app", request: request,
             privateOperator: new Authorizer(), interactionGateway: gateway);
 
     private static Task<ToolEnvelope> CommitAsync(Gateway gateway, string payload) =>
-        new CommitTool().CommitAsync(world: null!, effects: null!, mechanics: null!, actions: null!,
+        new CommitMcpTool().CommitAsync(world: null!, effects: null!, mechanics: null!, actions: null!,
             log: new Log(), kind: "system.interaction-execute", payload: payload, intent: "fixture",
             proceduresUsed: ["procedure.system.use"], privateOperator: new Authorizer(),
             interactionGateway: gateway);

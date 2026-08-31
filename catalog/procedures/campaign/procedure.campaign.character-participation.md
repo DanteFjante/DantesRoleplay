@@ -4,10 +4,11 @@ category: campaign
 name: Resolve campaign-owned character participation
 governs: internal active-scope verification; campaign attachment; root-composable participation withdrawal
 status: active
+createdBy: "seed"
+changeNote: "Seeded from bootstrap file."
 ---
 
 ## Description
-
 C15 owns the single campaign-owned participation scope for a pre-existing actor. Its read-only
 verifier returns scope only when the campaign, participation state, and both canonical empty-data
 links are structurally valid and active. Its Slice 2 attach request creates that complete structure
@@ -15,7 +16,6 @@ in one campaign transaction and never changes the actor. Its internal withdrawal
 only a complete active-to-withdrawn component replacement for a lifecycle root to apply.
 
 ## Instructions
-
 1. Character and campaign consumers resolve an actor only through the internal active-scope
    verifier; they never read a campaign ID from a profile or accept one as a caller assertion.
 2. A valid result requires one active campaign root, one active participation component, and the
@@ -32,7 +32,6 @@ only a complete active-to-withdrawn component replacement for a lifecycle root t
    opens a transaction, applies effects, emits events, or writes an audit record.
 
 ## Constraints
-
 - The participation component is exactly `{ "status": "active" | "withdrawn" }`; it never
   carries a campaign ID, actor ID, profile, item, source, account, authorization, reason, or date.
 - `game.core.campaign.has-character-participation` points from a campaign root to one

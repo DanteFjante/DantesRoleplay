@@ -1,0 +1,16 @@
+{
+  "id": "fact.caldris.tensor-sect-doctrine",
+  "name": "The Doctrine of Invisible Tension",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The Tensor Sect teaches that every movement is joined to every other by invisible tension, and that a sufficiently disciplined mind could perceive the whole pattern at once.",
+      "provenance": "Tensor Sect teaching, widely known within Highmead",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "rule",
+      "sensitivity": "open"
+    }
+  }
+}

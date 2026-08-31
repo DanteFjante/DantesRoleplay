@@ -4,16 +4,16 @@ category: game.core.world.reactive
 name: Reconcile the gate-to-market closure from its root clock
 scope: ""
 status: active
+createdBy: "seed"
+changeNote: "Seeded from the embedded catalog mechanic."
 ---
 
 ## Description
-
 Reaction-only reconciliation for the fixed Feature 10 route closure. It reads an accepted root-clock
 replacement and returns either no effects or exactly the complete condition then availability
 replacements required by the resulting minute.
 
 ## Matches
-
 apply the automatic route-closure reaction
 
 ## Requirements

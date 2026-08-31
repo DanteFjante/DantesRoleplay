@@ -4,6 +4,8 @@ category: mcp
 name: Extend the MCP surface
 governs: adding or changing the MCP surface, adding a query kind or a commit kind
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
@@ -19,16 +21,18 @@ How to extend this system's MCP surface, and why the answer is almost always "do
 3. Check whether it can be a procedure instead. If the thing you want is "the agent should know
    how to X", that is a contract, not a change to the surface.
 4. Only if neither works, the unit of extension is a KIND, not a tool. Add it to
-   `VerbSurface.QueryKinds` or `VerbSurface.CommitKinds` in `DantesRoleplay.MCPServer/Tools`, with
-   the parameters it reads or its full payload shape and a complete example, and add the matching
-   case to that verb's dispatch switch. Both, in the same change: a guard test compares the two
-   lists in both directions and fails the build if either side is missing.
-5. Keep the handler a thin delegate to the kernel. No logic lives in the tool layer.
+   `McpVerbCatalog.QueryKinds` or `McpVerbCatalog.CommitKinds` in
+   `DantesRoleplay.MCPServer/Mcp/McpVerbCatalog.cs`, with the parameters it reads or its full
+   payload shape and a complete example, and add the matching case to `QueryMcpTool` or
+   `CommitMcpTool`. Both land in the same change: a guard test compares the two lists in both
+   directions and fails the build if either side is missing.
+5. Keep code under `DantesRoleplay.MCPServer/Handlers` as a thin delegate to the kernel. Handlers
+   are internal implementation helpers and must not carry MCP tool attributes.
 6. Write the kind's description for a reader with no context: what it returns or changes, when to
    reach for it, and what to call next. Name the contracts that govern it in `Contracts`.
 7. Return the standard envelope, and make every failure name the exact literal next call in its
    `fix` — beginning with the call, not with prose about it. Inside the MCP project, build that
-   call with `VerbSurface.CommitCall(...)` rather than by hand, so it stays a call that can
+   call with `McpVerbCatalog.CommitCall(...)` rather than by hand, so it stays a call that can
    actually be made. Kernel code cannot: `DantesRoleplay.DataAccess` does not reference the MCP
    project, and must not start to. Write those by hand and rely on the guard tests, which read
    the kernel's strings too.

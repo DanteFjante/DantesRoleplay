@@ -1,0 +1,16 @@
+{
+  "id": "location.caldris.button-hills",
+  "name": "The Button Hills",
+  "container": {
+    "id": "region.caldris.chalklands",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "region",
+      "status": "active",
+      "summary": "Chalk pasture and shepherd tracks west of Highmead, scattered with rain-washed buttons and collapsing ancient storehouses. Ganji's birthplace, and the site of a sinkhole that recently swallowed part of one old storehouse.",
+      "visibility": "public"
+    }
+  }
+}

@@ -4,6 +4,8 @@ category: system
 name: Use this system
 governs: orient(), query(kind: "capabilities"), any session operating this system
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
@@ -13,8 +15,15 @@ reads anything, `commit` changes anything. Nothing else exists.
 ## Instructions
 1. Call `orient()` first. It states what this system is, what exists in it right now, what is not
    built, and which call to make next. Call it again whenever you lose track — it is cheap.
-2. Read with `query(kind: ...)`. The kinds are `capabilities`, `procedures`, `categories`, `world`, `entities`,
-   `graph`, `journey-plan`, `itinerary-plan`, `campaign-resume`, `session-recap`, `quest-summary`, `knowledge-answer`, `information-answer`, `information-actions`, `story-plan`, `system.audience-context`, `mechanics`, `event-types`, `events`, `subscriptions`, `notifications`, `feedback`, `system.applications`, `system.sources`, `system.application-preview`, `system.dependencies`, `system.catalogs`, `system.catalog.browse`, `system.catalog.search`, `system.catalog.record`, `system.feature-search`, `system.interaction-plan`, `system.interaction-receipt`, `system.interaction-recipes`, `system.trigger-scheduling`, and `history`. No `id` returns a list or search; `id` returns one record in full; fixed planning/summary kinds state their required ID and reject unrelated filters in their own contract.
+2. Read with `query(kind: ...)`. The kinds are `capabilities`, `procedures`, `categories`, `world`,
+   `entities`, `graph`, `mechanics`, `event-types`, `events`, `subscriptions`, `notifications`,
+   `feedback`, `information-answer`, `information-actions`, `system.audience-context`,
+   `system.applications`, `system.sources`, `system.application-preview`, `system.dependencies`,
+   `system.catalogs`, `system.catalog.browse`, `system.catalog.search`, `system.catalog.record`,
+   `system.feature-search`, `system.interaction-plan`, `system.interaction-receipt`,
+   `system.interaction-recipes`, `system.trigger-scheduling`, `system.blobs`, and `history`. No `id`
+   returns a list or search; `id` returns one record in full; fixed query kinds state their required
+   scope and reject unrelated filters in their own contract.
    `version` with `id` returns an older revision. Read the full record before revising anything —
    a summary is not the thing itself.
    Use `query(kind: "categories", catalog: "procedures")` or
@@ -65,6 +74,9 @@ reads anything, `commit` changes anything. Nothing else exists.
    A local player chat begins with `query(kind: "system.audience-context")`. It accepts no
    caller-selected identity and returns only the current host-authorized application, state-space,
    campaign, and actor binding when one is available.
+   Private operators inspect one finalized image with
+   `query(kind: "system.blobs", id: "<lowercase-sha256>")`. It returns metadata plus an MCP
+   resource URI and private HTTP download path; it never lists blobs or grants player visibility.
 3. When you do not know a payload shape or which parameters a kind reads, call
    `query(kind: "capabilities")`. It is the exact catalog, and it is generated from the same
    structure the two dispatchers switch on, so it cannot describe a kind that does not work.
@@ -78,8 +90,8 @@ reads anything, `commit` changes anything. Nothing else exists.
    `effects`, `mechanic`, `action`, `system.application.register`, `system.component-type.register`, `system.source.register`, and
    `system.application.activate`, `system.state-space.create`, `system.state-space.upgrade`,
    `system.state-space.adopt-legacy`, `system.world-state.sync`, `system.interaction-execute`,
-   `system.interaction-recipe-review`, `system.trigger-scheduling`, and
-   `system.knowledge-state.sync`. Every `system.*` kind
+   `system.interaction-recipe-review`, `system.trigger-scheduling`, `system.knowledge-state.sync`,
+   `system.blob-upload.begin`, and `system.blob-upload.finalize`. Every `system.*` kind
    authenticates from the transport. Registry, activation, component-type, and state-space
    administration commits require a 32-character lowercase hexadecimal `requestToken`.
    `system.interaction-execute` instead requires a distinct bounded idempotency key and the exact
@@ -137,10 +149,15 @@ reads anything, `commit` changes anything. Nothing else exists.
    owner. It never accepts an actor, role, world, visibility, sensitivity, or baseline override,
    and it never infers knowledge from record visibility or presence. Dry-run the identical manifest
    first and confirm its reviewed/change counts before committing it.
+   Blob admission begins with exactly `{sha256, mediaType, byteLength}`. It returns a 15-minute
+   upload path and secret. PUT only the raw bytes to that path with the returned
+   `X-DantesRoleplay-Upload-Token` header, then finalize with exactly `{uploadId, uploadToken}`.
+   Finalization verifies the declared length, SHA-256, and PNG/JPEG/WebP signature before publishing
+   an immutable asset key. Attach that key to an entity only through its existing reviewed media
+   component and generic effects transaction; blob storage never decides player/DM visibility.
    Dry-run the identical administrative payload first, then confirm it through the matching query
    where a query exists; component-type registration returns its immutable receipt directly.
-   Retained application adapters may additionally expose `procedure`,
-   `effects`, `mechanic`, `event-type`, `subscription`, `action`, `itinerary-advance`, `campaign`, `quest`, `notification`, `feedback`, `information-source`, `information-record`, `information-action-contract`, `information-action`, `story-plan`. `campaign` validates or creates a closed existing-world campaign blueprint; `quest` creates one closed campaign-scoped draft quest. Neither accepts caller-supplied effects. `event-type` registers a schema only; a `subscription` registers middleware. `information-source` and `information-record` store neutral scoped material; `information-action-contract` declares a schema-validated host executor, and `information-action` runs that declared contract. Registered guards run before a world change commits and can veto it, an accepted change records structural events readable with `query(kind: "events")`, and registered reactions run on those events with their effects committing in the same transaction, and may declare an event or raise a notification. `notification` moves one notice between `unread`, `read` and `archived` and cannot change what it says. `feedback` records append-only testing feedback about the host system and never changes game state. `story-plan` starts/cancels one development-GM bounded semantic plan; its backend executes context, knowledge, and action steps serially. `payload` is a JSON object encoded as a string — the whole
+   `payload` is a JSON object encoded as a string — the whole
    object in one argument, not loose named arguments. Where `dryRun` is supported, ALWAYS call
    with `dryRun: true` first and read every named check or problem that comes back; then commit
    the identical payload. A dry run you did not read is worse than none.
@@ -151,7 +168,9 @@ reads anything, `commit` changes anything. Nothing else exists.
    reporting what you did.
 
 ## Constraints
-- `query` never changes state. `commit` is the only write path. Raw generic world changes use
+- `query` never changes state. `commit` is the only MCP write coordinator. The short-lived HTTP
+  upload capability may accept only the exact bytes declared by a prior blob begin commit and
+  cannot bind them to game state. Raw generic world changes use
   `commit(kind: "effects")` or `commit(kind: "action")`; the closed reviewed knowledge-state sync
   delegates its validated edge batch to the same generic application ECS transaction owner.
 - Never invent a kind, a parameter or a payload field. If it is not in

@@ -1,7 +1,7 @@
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Information;
 using DantesRoleplay.MCPServer;
-using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Operations;
 
 namespace DantesRoleplay.Tests;
@@ -63,10 +63,10 @@ public sealed class InformationTests : IDisposable
         var coordinator = new InformationActionCoordinator(new DevelopmentInformationScopePolicy("game.worldname.*"), store, [executor]);
         var log = new OperationLog(db);
 
-        var listed = await new QueryTool().QueryAsync(
+        var listed = await new QueryMcpTool().QueryAsync(
             procedures: null!, world: null!, graphs: null!, journeys: null!, itineraries: null!, campaignResumes: null!, questSummaries: null!, mechanics: null!, eventTypes: null!, subscriptions: null!, events: null!, log: log, notifications: null!,
             kind: "information-actions", scopeId: "game.worldname.*", informationActions: coordinator);
-        var executed = await new CommitTool().CommitAsync(
+        var executed = await new CommitMcpTool().CommitAsync(
             procedures: null!, world: null!, effects: null!, mechanics: null!, eventTypes: null!, subscriptions: null!, actions: null!, itineraries: null!, campaigns: null!, campaignBootstrapper: null!, campaignContinuity: null!, campaignSessions: null!, campaignSessionStarter: null!, quests: null!, questLifecycle: null!, log: log, notifications: null!,
             kind: "information-action", payload: """{"scopeId":"game.worldname.*","contractId":"action.world.move","input":"{\"intent\":\"move\"}"}""", informationActions: coordinator);
 

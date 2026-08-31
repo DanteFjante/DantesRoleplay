@@ -4,7 +4,7 @@ using DantesRoleplay.Authorization;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
-using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Operations;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.Tests;
@@ -172,7 +172,7 @@ public sealed class SystemCapabilityCatalogTests
         var authorization = Authorization();
 
         var web = await explorer.ListApplicationsThroughCapabilitiesAsync(authorization.Evidence, null, "2");
-        var mcp = await new QueryTool().QueryAsync(
+        var mcp = await new QueryMcpTool().QueryAsync(
             procedures: null!, world: null!, graphs: null!, mechanics: null!, eventTypes: null!,
             subscriptions: null!, events: null!, log: new OperationLog(db), notifications: null!,
             kind: SystemCapabilityIds.Applications,
@@ -181,7 +181,7 @@ public sealed class SystemCapabilityCatalogTests
             systemCapabilities: catalog);
         var exactWeb = await explorer.GetApplicationThroughCapabilitiesAsync(
             authorization.Evidence, "bravo-app");
-        var exactMcp = await new QueryTool().QueryAsync(
+        var exactMcp = await new QueryMcpTool().QueryAsync(
             procedures: null!, world: null!, graphs: null!, mechanics: null!, eventTypes: null!,
             subscriptions: null!, events: null!, log: new OperationLog(db), notifications: null!,
             kind: SystemCapabilityIds.Applications,
@@ -208,7 +208,7 @@ public sealed class SystemCapabilityCatalogTests
         await using var db = fixture.CreateContext();
         var registry = new ThrowingApplicationRegistry();
 
-        var result = await new QueryTool().QueryAsync(
+        var result = await new QueryMcpTool().QueryAsync(
             procedures: null!, world: null!, graphs: null!, mechanics: null!, eventTypes: null!,
             subscriptions: null!, events: null!, log: new OperationLog(db), notifications: null!,
             kind: SystemCapabilityIds.Applications,

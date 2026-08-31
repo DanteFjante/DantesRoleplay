@@ -1,12 +1,4 @@
 <Solution>
-  <Folder Name="/System/" />
-  <Folder Name="/System/Local AI/">
-    <Project Path="src/system/local-ai/DantesRoleplay.LocalAI.Tests/DantesRoleplay.LocalAI.Tests.csproj" />
-    <Project Path="src/system/local-ai/DantesRoleplay.LocalAI/DantesRoleplay.LocalAI.csproj" />
-  </Folder>
-  <Folder Name="/System/Web Interface/">
-    <Project Path="src/system/web-interface/DantesRoleplay.Web/DantesRoleplay.Web.csproj" />
-  </Folder>
   <Folder Name="/Game Rules/">
     <Project Path="catalog/applications/dnd2024/DantesRoleplay.Dnd2024.Game.esproj">
       <Build />
@@ -14,8 +6,10 @@
     </Project>
   </Folder>
   <Project Path="DantesRoleplay.DataAccess/DantesRoleplay.DataAccess.csproj" />
+  <Project Path="DantesRoleplay.LocalAI/DantesRoleplay.LocalAI.csproj" />
   <Project Path="DantesRoleplay.MCPServer/DantesRoleplay.MCPServer.csproj" />
   <Project Path="DantesRoleplay.Tests/DantesRoleplay.Tests.csproj" />
   <Project Path="DantesRoleplay.Tools/DantesRoleplay.Tools.csproj" />
   <Project Path="DantesRoleplay/DantesRoleplay.csproj" />
+  <Project Path="DantesRoleplay.Web/DantesRoleplay.Web.csproj" />
 </Solution>

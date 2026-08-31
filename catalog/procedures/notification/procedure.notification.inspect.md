@@ -4,6 +4,8 @@ category: notification
 name: Read and clear notifications
 governs: query(kind: "notifications"), commit(kind: "notification"), what a rule may tell a person
 status: active
+createdBy: "seed"
+changeNote: "Seeded from bootstrap file."
 ---
 
 ## Description
@@ -41,4 +43,3 @@ separate commit. Nothing delivers them — they wait until somebody asks.
   none is planned in this release. A notification is a row that waits.
 - A notice with no topic, no subject, or naming an entity that does not exist fails the whole root
   change. A notice nobody can find by the thing it concerns is a notice nobody will find.
-

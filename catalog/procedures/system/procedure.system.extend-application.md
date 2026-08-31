@@ -4,6 +4,8 @@ category: system
 name: Extend an application with non-core content
 governs: catalog/extensions/**, commit(kind: "system.component-type.register"), commit(kind: "system.source.register"), commit(kind: "system.application.activate"), adding homebrew or third-party content to an existing application
 status: active
+createdBy: "seed"
+changeNote: "Seeded from bootstrap file."
 ---
 
 ## Description
@@ -55,11 +57,18 @@ invisible from the surface and only appear once you read the registered schemas.
 8. Project the content into the live state space with `commit(kind: "system.world-state.sync")`,
    containing it where its peers are contained. Activation publishes to the catalog; it does not
    put entities in a state space, and the two are easy to confuse.
-9. To edit an entity that is NOT contained beneath the world root, pass that entity's own id as
+9. Know the difference between a DEFINITION and an INSTANCE, and create both when a character owns
+   something. A definition says what a kind of thing IS — `dnd2024.item-definition` on
+   `dnd2024.item.<name>.v1`, contained with its peers under the world root. An instance says a
+   particular one EXISTS and who holds it: its own entity carrying `dnd2024.core.definition-link`
+   (plus `dnd2024.item.quantity` for items), contained under its owner in the `carried` slot, with
+   an owner-scoped id such as `item.caldris.ganji.quarterstaff`. A definition on its own puts a
+   thing in the world's catalogue and gives it to nobody.
+10. To edit an entity that is NOT contained beneath the world root, pass that entity's own id as
    `rootEntityId`. The root only has to exist, and an entity is trivially inside itself, so this
    scopes the manifest to exactly that entity. It does not let you place the entity: a containment
    target must itself be inside the selected root.
-10. Verify by reading back through `query`, never from the database file. Confirm the entity, and
+11. Verify by reading back through `query`, never from the database file. Confirm the entity, and
     confirm the catalog record carries the extension `sourceId` and its path.
 
 ## Constraints
@@ -75,3 +84,5 @@ invisible from the surface and only appear once you read the registered schemas.
 - If extension content appears to require a change to a canonical contract, schema or procedure,
   that is a finding to report before it is work to start.
 - Activation and state-space projection are separate steps. Neither implies the other.
+- A definition is not ownership. Never report that a character has something until an instance of it
+  exists beneath them.

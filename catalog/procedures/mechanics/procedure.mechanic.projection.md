@@ -4,6 +4,8 @@ category: mechanics
 name: Materialise a mechanic projection
 governs: IProjectionResolver.ResolveAsync, implementing or modifying the projection layer inside the kernel
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description

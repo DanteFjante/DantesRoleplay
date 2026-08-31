@@ -1,0 +1,17 @@
+{
+  "id": "dnd2024.item.ganjis-quarterstaff.v1",
+  "name": "Ganji's Quarterstaff (Caldris Homebrew, definition v1)",
+  "components": {
+    "dnd2024.item-definition": {
+      "definitionVersion": 1,
+      "kind": "weapon",
+      "stackPolicy": "separate",
+      "massPounds": { "numerator": 4, "denominator": 1 },
+      "equipmentModes": ["held"],
+      "sourceRef": {
+        "sourceId": "dnd2024-extension.caldris-homebrew",
+        "locator": "Caldris Homebrew > Items > Ganji's Quarterstaff (self-carved staff and flute)"
+      }
+    }
+  }
+}

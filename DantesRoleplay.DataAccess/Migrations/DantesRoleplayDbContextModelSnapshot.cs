@@ -779,6 +779,96 @@ namespace DantesRoleplay.DataAccess.Migrations
                         });
                 });
 
+            modelBuilder.Entity("DantesRoleplay.Blobs.BlobAsset", b =>
+                {
+                    b.Property<string>("Sha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("ByteLength")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MediaType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Sha256");
+
+                    b.ToTable("blob_asset", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_blob_asset_byte_length", "\"ByteLength\" BETWEEN 1 AND 10485760");
+
+                            t.HasCheckConstraint("CK_blob_asset_media_type", "\"MediaType\" IN ('image/png', 'image/jpeg', 'image/webp')");
+
+                            t.HasCheckConstraint("CK_blob_asset_sha256", "length(\"Sha256\") = 64 AND \"Sha256\" NOT GLOB '*[^0-9a-f]*'");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Blobs.BlobUploadSession", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(44)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("ExpectedByteLength")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ExpectedSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset?>("FinalizedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MediaType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset?>("UploadedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAtUtc");
+
+                    b.HasIndex("ExpectedSha256", "State");
+
+                    b.ToTable("blob_upload_session", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_blob_upload_session_byte_length", "\"ExpectedByteLength\" BETWEEN 1 AND 10485760");
+
+                            t.HasCheckConstraint("CK_blob_upload_session_hashes", "length(\"TokenHash\") = 64 AND \"TokenHash\" NOT GLOB '*[^0-9a-f]*' AND length(\"ExpectedSha256\") = 64 AND \"ExpectedSha256\" NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_blob_upload_session_id", "length(\"Id\") = 44 AND substr(\"Id\", 1, 12) = 'blob-upload.' AND substr(\"Id\", 13) NOT GLOB '*[^0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_blob_upload_session_media_type", "\"MediaType\" IN ('image/png', 'image/jpeg', 'image/webp')");
+
+                            t.HasCheckConstraint("CK_blob_upload_session_state", "\"State\" IN ('pending', 'uploaded', 'finalized')");
+                        });
+                });
+
             modelBuilder.Entity("DantesRoleplay.Ecs.ApplicationEcsComponentRecord", b =>
                 {
                     b.Property<string>("StateSpaceId")

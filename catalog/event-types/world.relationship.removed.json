@@ -4,5 +4,7 @@
   "name": "Relationship removed",
   "description": "A structural relationship removal.",
   "scope": "",
-  "status": "Active"
+  "status": "Active",
+  "createdBy": "seed",
+  "changeNote": "Re-seeded: the embedded structural event type changed."
 }

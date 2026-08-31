@@ -1,7 +1,0 @@
-{
-  "format": "application-adoption-intentional-differences/v1",
-  "suite": { "id": "fixed-dc-check-sample" },
-  "differences": [
-    { "caseId": "equal-total", "field": "total", "reason": "deliberate-adaptation", "evidence": "Example only: a later D&D-owned slice must provide confirmed semantic evidence before any different result is accepted." }
-  ]
-}

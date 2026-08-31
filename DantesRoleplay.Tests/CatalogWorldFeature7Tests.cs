@@ -4,11 +4,10 @@ using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.Effects;
 using DantesRoleplay.Events;
-using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
-using DantesRoleplay.RuleAccess;
 using DantesRoleplay.World;
 using Microsoft.EntityFrameworkCore;
 
@@ -120,7 +119,7 @@ public sealed class CatalogWorldFeature7Tests : IDisposable
     }
 
     private static async Task<ToolEnvelope> GraphAsync(DantesRoleplayDbContext db, IProcedureStore procedures, IWorldStore world, IMechanicStore mechanics, string id, string[] components, int containmentDepth, string[] relationships, int relationshipDepth, int maxNodes, int maxEdges) =>
-        await new QueryTool().QueryAsync(procedures, world, new GraphProjectionReader(world), new JourneyPlanReader(world), new ModeAwareItineraryReader(world), null!, null!, mechanics, new EventTypeStore(db), new SubscriptionStore(db), new EventLedger(db), new OperationLog(db), new NotificationStore(db),
+        await new QueryMcpTool().QueryAsync(procedures, world, new GraphProjectionReader(world), new JourneyPlanReader(world), new ModeAwareItineraryReader(world), null!, null!, mechanics, new EventTypeStore(db), new SubscriptionStore(db), new EventLedger(db), new OperationLog(db), new NotificationStore(db),
             "graph", id: id, componentIds: components, containmentDepth: containmentDepth, relationshipKinds: relationships, relationshipDepth: relationshipDepth, maxNodes: maxNodes, maxEdges: maxEdges);
 
     private static GraphProjection Projection(ToolEnvelope envelope) => Assert.IsType<GraphProjection>(Assert.IsType<ToolEnvelope>(envelope).Data);

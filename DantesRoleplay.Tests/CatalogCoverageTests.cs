@@ -66,6 +66,11 @@ public sealed class CatalogCoverageTests : IDisposable
             + "from a file would be putting words in that rule's mouth.",
         ["notification_entity"] = "Join rows for the above.",
 
+        ["blob_asset"] = "Private runtime metadata for immutable bytes in the external blob store. "
+            + "Database/blob-store backups preserve it; authored catalog round trips do not.",
+        ["blob_upload_session"] = "Short-lived upload capability state, including a token verifier. "
+            + "It is deliberately transient and must never be authored or exported.",
+
         // Feedback is operational test evidence. It is intentionally durable and queryable in a
         // running system, but catalog import/export must not manufacture reports or their audit
         // references.
@@ -281,6 +286,21 @@ public sealed class CatalogCoverageTests : IDisposable
     /// <summary>Columns the catalog does not carry, and why each one is fine to lose.</summary>
     private static readonly Dictionary<string, string> NotCarried = new(StringComparer.Ordinal)
     {
+        ["blob_asset.Sha256"] = "Runtime content address; preserve it with a database and blob-store backup, not a catalog round trip.",
+        ["blob_asset.MediaType"] = "Verified runtime blob metadata, not authored catalog content.",
+        ["blob_asset.ByteLength"] = "Verified runtime blob metadata, not authored catalog content.",
+        ["blob_asset.CreatedAtUtc"] = "Runtime blob admission timestamp, not authored catalog content.",
+        ["blob_upload_session.Id"] = "Transient server-issued upload capability identity; never export it.",
+        ["blob_upload_session.TokenHash"] = "Sensitive transient upload verifier; never export it.",
+        ["blob_upload_session.ExpectedSha256"] = "Transient upload declaration; finalized metadata is preserved by runtime backup.",
+        ["blob_upload_session.MediaType"] = "Transient upload declaration, not authored catalog content.",
+        ["blob_upload_session.ExpectedByteLength"] = "Transient upload declaration, not authored catalog content.",
+        ["blob_upload_session.CreatedAtUtc"] = "Transient upload timestamp, not authored catalog content.",
+        ["blob_upload_session.ExpiresAtUtc"] = "Transient upload expiry, not authored catalog content.",
+        ["blob_upload_session.State"] = "Transient upload lifecycle state, not authored catalog content.",
+        ["blob_upload_session.UploadedAtUtc"] = "Transient upload timestamp, not authored catalog content.",
+        ["blob_upload_session.FinalizedAtUtc"] = "Transient upload timestamp retained only for bounded idempotency and cleanup.",
+
         ["assistant_conversation.Id"] = "Live assistant conversation identity, not carried by the game catalog.",
         ["assistant_conversation.OperatorId"] = "Private operator scope, not carried by the game catalog.",
         ["assistant_conversation.Provider"] = "Runtime assistant provider selection, not carried by the game catalog.",

@@ -4,14 +4,14 @@ category: game.core.world.reactive
 name: Reveal Oren's letter when the Compact advances
 scope: ""
 status: active
+createdBy: "seed"
+changeNote: "Seeded from the embedded catalog mechanic."
 ---
 
 ## Description
-
 Reaction-only fixture consequence of the Compact's ready-to-advanced agenda transition.
 
 ## Matches
-
 apply the automatic subscription reaction
 
 ## Requirements

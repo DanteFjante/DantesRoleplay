@@ -4,10 +4,11 @@ category: game.core.world.travel
 name: Travel a ground conveyance with its driver
 scope: ""
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the embedded catalog mechanic changed."
 ---
 
 ## Description
-
 Validates one active driver and one active ground conveyance co-located at the directed ground
 route's origin. It derives elapsed minutes with exact integer ceiling division of the route's
 stored distance by the conveyance's stored speed. On success it proposes exactly three ordered

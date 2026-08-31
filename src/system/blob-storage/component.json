@@ -1,0 +1,1 @@
+{"name":"blob-storage","classification":"system","status":"operational","owns":["immutable content-addressed blob metadata","bounded image-byte storage","short-lived upload capabilities","hash and media-signature verification"],"mayDependOn":[]}

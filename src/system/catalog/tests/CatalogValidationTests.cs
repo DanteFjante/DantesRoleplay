@@ -171,7 +171,7 @@ public sealed class CatalogValidationTests
                  string.Equals(name, "stats.schema.json", StringComparison.Ordinal)))
             .Select(name => name![..^".schema.json".Length])
             .ToHashSet(StringComparer.Ordinal);
-        Assert.Equal(39, adoptedComponentIds.Count);
+        Assert.Equal(40, adoptedComponentIds.Count);
 
         var requiredComponentIds = requirements
             .SelectMany(requirement => requirement.Parsed.AllComponentIds())

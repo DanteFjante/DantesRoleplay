@@ -4,10 +4,11 @@ category: quest
 name: Create a campaign-scoped quest
 governs: commit(kind: "quest") creating one closed draft quest
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
-
 Create one draft campaign-scoped quest with three dormant objectives from validated campaign,
 arc, chapter, and world references.
 

@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Jint" Version="4.15.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.11" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.11" />
     <PackageReference Include="JsonSchema.Net" Version="9.4.0" />
@@ -26,7 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DantesRoleplay\DantesRoleplay.csproj" />
-    <ProjectReference Include="..\src\system\local-ai\DantesRoleplay.LocalAI\DantesRoleplay.LocalAI.csproj" />
+    <ProjectReference Include="..\DantesRoleplay.LocalAI\DantesRoleplay.LocalAI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,0 +1,16 @@
+{
+  "id": "location.caldris.house-of-the-ninth-angle",
+  "name": "House of the Ninth Angle",
+  "container": {
+    "id": "location.caldris.highmead",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "site",
+      "status": "active",
+      "summary": "A severe chalk monastery overlooking Highmead, home to the Tensor Sect. Angled mirrors, uneven floors, and sparring courts are built to expose the smallest unconscious movement.",
+      "visibility": "party"
+    }
+  }
+}

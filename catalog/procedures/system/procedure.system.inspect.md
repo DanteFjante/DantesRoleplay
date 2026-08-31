@@ -4,6 +4,8 @@ category: system
 name: Inspect the system before changing it
 governs: orient(), query(kind: "procedures"), query(kind: "entities"), query(kind: "history"), any diagnosis
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description

@@ -1,1 +1,0 @@
-{"type":"object","additionalProperties":false,"required":["effectIndex","entityId","definitionId","before","after"],"properties":{"effectIndex":{"type":"integer","minimum":0},"entityId":{"type":"string"},"definitionId":{"type":"string"},"before":{},"after":{}}}

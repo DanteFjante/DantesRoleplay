@@ -1,7 +1,7 @@
 using System.Text.Json;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Knowledge;
-using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.MCPServer.Mcp;
 using Microsoft.AspNetCore.Http;
 
 namespace DantesRoleplay.MCPServer;
@@ -36,7 +36,7 @@ internal static class WorldChronologyWebEndpoint
         if (!Token(applicationId) || !Token(campaignId) || perspective is not ("player" or "dm"))
             return Error("INVALID_CHRONOLOGY_REQUEST", StatusCodes.Status400BadRequest);
 
-        var audience = await SystemAudienceContextTools.ResolveAsync(
+        var audience = await SystemAudienceContextHandler.ResolveAsync(
             seats, audiences, bindings, participation, campaignId, cancellationToken);
         if (audience.Error is not null || !BoundAudience(audience.Data))
             return Error("CHRONOLOGY_UNAVAILABLE", StatusCodes.Status403Forbidden);

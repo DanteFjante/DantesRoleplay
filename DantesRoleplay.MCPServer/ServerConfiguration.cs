@@ -1,9 +1,8 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using DantesRoleplay.DataAccess;
-using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Mechanics;
-using DantesRoleplay.RuleAccess;
 using DantesRoleplay.World;
 using DantesRoleplay.Information;
 using DantesRoleplay.CatalogNavigation;
@@ -13,6 +12,7 @@ using DantesRoleplay.Interactions;
 using DantesRoleplay.Sources;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.Applications;
+using DantesRoleplay.Blobs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using ModelContextProtocol;
@@ -57,7 +57,8 @@ public static class ServerConfiguration
         string? developmentInformationScope = null,
         IReadOnlyDictionary<string, string>? allowedSourceRoots = null,
         IReadOnlyCollection<string>? publishedApplicationCatalogs = null,
-        IConfiguration? hostConfiguration = null)
+        IConfiguration? hostConfiguration = null,
+        string? blobStorageRoot = null)
     {
         // The kernel. One call registers the DbContext and every store.
         //
@@ -65,6 +66,7 @@ public static class ServerConfiguration
         // ARCHITECTURE.md §8.3 explains why there is no Postgres and no vector store yet, and
         // names the conditions that would change that.
         services.AddDantesRoleplayDataAccess(connectionString, provider);
+        services.AddBlobStorageComponent(blobStorageRoot ?? DefaultBlobStorageRoot(connectionString));
         var configuredRoots = new ConfiguredAllowedSourceRootResolver(allowedSourceRoots);
         services.Replace(ServiceDescriptor.Singleton<IAllowedSourceRootResolver>(configuredRoots));
         services.Replace(ServiceDescriptor.Singleton<IAllowedSourceRootCatalog>(configuredRoots));
@@ -117,9 +119,10 @@ public static class ServerConfiguration
             })
             // The entire public surface. A guard test asserts these are exactly orient, query and
             // commit, and that the two dispatchers handle exactly the kinds the catalog offers.
-            .WithTools<OrientTool>(ResponseJson)
-            .WithTools<QueryTool>(ResponseJson)
-            .WithTools<CommitTool>(ResponseJson);
+            .WithTools<OrientMcpTool>(ResponseJson)
+            .WithTools<QueryMcpTool>(ResponseJson)
+            .WithTools<CommitMcpTool>(ResponseJson)
+            .WithResources<BlobMcpResource>();
 
         return services;
     }
@@ -128,6 +131,21 @@ public static class ServerConfiguration
     {
         try { return ApplicationIdentifier.Parse(value).Value == value; }
         catch (ArgumentException) { return false; }
+    }
+
+    private static string DefaultBlobStorageRoot(string connectionString)
+    {
+        var databasePath = connectionString;
+        if (connectionString.Contains('=', StringComparison.Ordinal))
+        {
+            var prefix = "Data Source=";
+            var start = connectionString.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
+            databasePath = start < 0
+                ? Path.Combine(AppContext.BaseDirectory, "data", "dantesroleplay.db")
+                : connectionString[(start + prefix.Length)..].Split(';', 2)[0].Trim();
+        }
+        var fullDatabasePath = Path.GetFullPath(databasePath);
+        return Path.Combine(Path.GetDirectoryName(fullDatabasePath)!, "blobs");
     }
 
     /// <summary>

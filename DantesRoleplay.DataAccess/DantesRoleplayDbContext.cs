@@ -20,6 +20,7 @@ using DantesRoleplay.LegacyStateAdoption;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.TriggerScheduling;
 using DantesRoleplay.SystemTasks;
+using DantesRoleplay.Blobs;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.DataAccess;
@@ -53,6 +54,8 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
     public DbSet<SystemTaskConfirmationRecord> SystemTaskConfirmations => Set<SystemTaskConfirmationRecord>();
     public DbSet<SystemTaskExecutionRecord> SystemTaskExecutions => Set<SystemTaskExecutionRecord>();
     public DbSet<SystemTaskExecutionStepRecord> SystemTaskExecutionSteps => Set<SystemTaskExecutionStepRecord>();
+    public DbSet<BlobAsset> BlobAssets => Set<BlobAsset>();
+    public DbSet<BlobUploadSession> BlobUploadSessions => Set<BlobUploadSession>();
 
     public DbSet<Entity> Entities => Set<Entity>();
 
@@ -163,6 +166,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         ConfigureHostSettings(modelBuilder);
         ConfigureAssistantConversations(modelBuilder);
         ConfigureSystemTasks(modelBuilder);
+        ConfigureBlobStorage(modelBuilder);
         ConfigureWorld(modelBuilder);
         ConfigureMechanics(modelBuilder);
         ConfigureEventTypes(modelBuilder);
@@ -180,6 +184,53 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         ConfigureProjectionMaterialization(modelBuilder);
         ConfigureApplicationActivation(modelBuilder);
         ConfigureLegacyStateAdoption(modelBuilder);
+    }
+
+    private static void ConfigureBlobStorage(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<BlobAsset>(entity =>
+        {
+            entity.ToTable("blob_asset", table =>
+            {
+                table.HasCheckConstraint("CK_blob_asset_sha256",
+                    "length(\"Sha256\") = 64 AND \"Sha256\" NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_blob_asset_media_type",
+                    "\"MediaType\" IN ('image/png', 'image/jpeg', 'image/webp')");
+                table.HasCheckConstraint("CK_blob_asset_byte_length",
+                    $"\"ByteLength\" BETWEEN 1 AND {BlobStorageOptions.MaximumByteLength}");
+            });
+            entity.HasKey(value => value.Sha256);
+            entity.Property(value => value.Sha256).HasMaxLength(64);
+            entity.Property(value => value.MediaType).HasMaxLength(20).IsRequired();
+            entity.Ignore(value => value.AssetKey);
+            entity.Ignore(value => value.ResourceUri);
+            entity.Ignore(value => value.DownloadPath);
+        });
+
+        modelBuilder.Entity<BlobUploadSession>(entity =>
+        {
+            entity.ToTable("blob_upload_session", table =>
+            {
+                table.HasCheckConstraint("CK_blob_upload_session_id",
+                    "length(\"Id\") = 44 AND substr(\"Id\", 1, 12) = 'blob-upload.' AND substr(\"Id\", 13) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_blob_upload_session_hashes",
+                    "length(\"TokenHash\") = 64 AND \"TokenHash\" NOT GLOB '*[^0-9a-f]*' AND length(\"ExpectedSha256\") = 64 AND \"ExpectedSha256\" NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_blob_upload_session_state",
+                    "\"State\" IN ('pending', 'uploaded', 'finalized')");
+                table.HasCheckConstraint("CK_blob_upload_session_media_type",
+                    "\"MediaType\" IN ('image/png', 'image/jpeg', 'image/webp')");
+                table.HasCheckConstraint("CK_blob_upload_session_byte_length",
+                    $"\"ExpectedByteLength\" BETWEEN 1 AND {BlobStorageOptions.MaximumByteLength}");
+            });
+            entity.HasKey(value => value.Id);
+            entity.Property(value => value.Id).HasMaxLength(44);
+            entity.Property(value => value.TokenHash).HasMaxLength(64).IsRequired();
+            entity.Property(value => value.ExpectedSha256).HasMaxLength(64).IsRequired();
+            entity.Property(value => value.MediaType).HasMaxLength(20).IsRequired();
+            entity.Property(value => value.State).HasMaxLength(10).IsRequired();
+            entity.HasIndex(value => value.ExpiresAtUtc);
+            entity.HasIndex(value => new { value.ExpectedSha256, value.State });
+        });
     }
 
     // The compiled Story adapter is no longer part of this host, but these two tables already

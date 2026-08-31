@@ -4,10 +4,11 @@ category: game.core.world.knowledge
 name: Confirm one scoped world rumour
 scope: ""
 status: active
+createdBy: "seed"
+changeNote: "Seeded from the embedded catalog mechanic."
 ---
 
 ## Description
-
 Confirms an unconfirmed rumour after proving its stored world-root scope. It changes only the
 rumour's explicit resolution state.
 

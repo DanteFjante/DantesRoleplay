@@ -4,6 +4,8 @@ category: world
 name: Change world state
 governs: commit(kind: "effects"), creating or deleting entities, writing component data, moving things, relating things
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
@@ -67,4 +69,3 @@ transaction.
 - Removing something that is not there is reported as a fault, not quietly ignored. If you get
   that error, your picture of the world is wrong — go back to step 1.
 - Never describe an outcome you did not apply. If the effects were rejected, nothing changed.
-

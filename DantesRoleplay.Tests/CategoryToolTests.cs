@@ -2,7 +2,7 @@ using System.Text.Json;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
-using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Notifications;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
@@ -140,7 +140,7 @@ public sealed class CategoryToolTests : IDisposable
             "dnd2024.ruleset.play",
             MechanicStatus.Archived));
 
-        var result = await new OrientTool().OrientAsync(
+        var result = await new OrientMcpTool().OrientAsync(
             procedures,
             new WorldStore(db),
             mechanics,
@@ -203,7 +203,7 @@ public sealed class CategoryToolTests : IDisposable
     {
         var world = new WorldStore(db);
 
-        return await new QueryTool().QueryAsync(
+        return await new QueryMcpTool().QueryAsync(
             procedures: new ProcedureStore(db),
             world: world,
             graphs: new GraphProjectionReader(world),

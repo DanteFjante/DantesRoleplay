@@ -4,15 +4,15 @@ category: campaign
 name: Declare current-scene narrative affordances
 governs: commit(kind: "component") declaring game.core.campaign.scene-affordances; commit(kind: "effects") adding, replacing, or removing one reviewed campaign scene-affordance record
 status: active
+createdBy: "seed"
+changeNote: "Seeded from bootstrap file."
 ---
 
 ## Description
-
 Declares a bounded set of narrative opportunities that the campaign author has chosen to present for
 one exact current scene. It is presentation state, not a rule or execution surface.
 
 ## Instructions
-
 1. Attach `game.core.campaign.scene-affordances` only to an existing active campaign root that has a
    valid `game.core.campaign.current-scene` record.
 2. Copy the current-scene record's exact location and optional conversation/encounter references into
@@ -30,7 +30,6 @@ one exact current scene. It is presentation state, not a rule or execution surfa
 7. Remove the component when no authored scene opportunities are intended or no current scene exists.
 
 ## Constraints
-
 - The component contains no mechanic or procedure ID, action type, role binding, target, input,
   eligibility result, resource cost, DC, roll, effect, outcome, route, dialogue response, generated
   text, or copied world/encounter state.

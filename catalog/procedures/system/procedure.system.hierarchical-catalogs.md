@@ -4,6 +4,8 @@ category: system
 name: Browse hierarchical catalogs
 governs: query(kind: "categories"), query(kind: "procedures", category: "..."), query(kind: "mechanics", category: "...")
 status: active
+createdBy: "seed"
+changeNote: "Seeded from bootstrap file."
 ---
 
 ## Description

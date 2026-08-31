@@ -4,6 +4,8 @@ category: world
 name: Name entities and component definitions
 governs: creating entities or component definitions
 status: active
+createdBy: "llm"
+changeNote: ""
 ---
 
 ## Description
@@ -14,4 +16,3 @@ Conventions for stable ids and human-readable names on entities and component de
 
 ## Constraints
 Never reuse ids; do not use spaces or uppercase letters in ids.
-

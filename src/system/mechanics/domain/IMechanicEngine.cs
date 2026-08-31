@@ -8,8 +8,8 @@ namespace DantesRoleplay.Mechanics;
 /// connection, so "a mechanic wrote to the database" is not a bug that can be introduced later —
 /// there is nothing here to write with.
 ///
-/// Implemented in <c>DantesRoleplay.RuleAccess</c> so the JavaScript engine stays out of the
-/// kernel, exactly as Entity Framework does.
+/// Implemented in the infrastructure assembly so the JavaScript engine stays out of the
+/// dependency-free kernel, exactly as Entity Framework does.
 /// </summary>
 public interface IMechanicEngine
 {

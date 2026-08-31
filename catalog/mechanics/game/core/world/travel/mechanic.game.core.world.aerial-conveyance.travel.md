@@ -4,10 +4,11 @@ category: game.core.world.travel
 name: Travel an aerial conveyance with its rider
 scope: ""
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the embedded catalog mechanic changed."
 ---
 
 ## Description
-
 Validates one active rider and one active aerial conveyance co-located at the directed aerial
 route's explicit launch location. It derives elapsed minutes with exact integer ceiling division
 of stored route distance by stored conveyance speed. On success it proposes exactly three ordered

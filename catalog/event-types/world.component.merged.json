@@ -4,5 +4,7 @@
   "name": "Component merged",
   "description": "A structural component merge.",
   "scope": "",
-  "status": "Active"
+  "status": "Active",
+  "createdBy": "seed",
+  "changeNote": "Re-seeded: the embedded structural event type changed."
 }

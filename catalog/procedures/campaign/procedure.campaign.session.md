@@ -4,17 +4,17 @@ category: campaign
 name: Validate, start, and end a campaign session
 governs: commit(kind: "campaign") operations validate-session, start-session, validate-session-end, end-session, validate-session-checkpoint, and checkpoint-session; query(kind: "campaign-resume") with includeSession and query(kind: "session-recap")
 status: active
+createdBy: "seed"
+changeNote: "Seeded from bootstrap file."
 ---
 
 ## Description
-
 Session S1 validates whether a C3-readable campaign can start its next session, then atomically
 creates its minimal scoped record. S3 validates then atomically ends one active session with an
 immutable C3-only factual recap. S4 validates and captures one evidence-only checkpoint for an ended
 S3 session. These operations create no gameplay or external owner state.
 
 ## Instructions
-
 1. Send exactly `{"operation":"validate-session","campaignId":"campaign.*","sessionId":"session.*"}`.
 2. The campaign must expose the trusted-host C3 resume; use that context rather than copying it
    into a session record.
@@ -40,7 +40,6 @@ S3 session. These operations create no gameplay or external owner state.
    all checks inside one root transaction and callers cannot supply checkpoint/package content or ids.
 
 ## Constraints
-
 - `validate-session` never creates a session, relationship, structural event, notification,
   recap, checkpoint, or quest effect. Its ordinary zero-effect `commit` operation record remains
   protocol history, not session state.

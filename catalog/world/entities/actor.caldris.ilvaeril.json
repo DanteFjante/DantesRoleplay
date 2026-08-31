@@ -1,0 +1,15 @@
+{
+  "id": "actor.caldris.ilvaeril",
+  "name": "Brother Ilvaeril",
+  "container": {
+    "id": "location.caldris.house-of-the-ninth-angle",
+    "slot": "presence"
+  },
+  "components": {
+    "game.core.world.motive": {
+      "status": "active",
+      "summary": "An elven monk of the Tensor Sect who quietly taught Ganji Elvish, feeling his ignorance of it improper. Now one of the three monks sent to bring Ganji home — genuinely fond of him, and uneasy about the errand.",
+      "visibility": "party"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "region.caldris.chalklands",
+  "name": "The Chalklands",
+  "container": {
+    "id": "world.caldris",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "region",
+      "status": "active",
+      "summary": "A country of pale hills and old chalk pits, threaded by the Lantern Road between the hill-city of Highmead and the frontier village of Bramblebridge.",
+      "visibility": "public"
+    }
+  }
+}

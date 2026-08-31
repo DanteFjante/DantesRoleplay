@@ -4,5 +4,7 @@
   "name": "Component removed",
   "description": "A structural component removal.",
   "scope": "",
-  "status": "Active"
+  "status": "Active",
+  "createdBy": "seed",
+  "changeNote": "Re-seeded: the embedded structural event type changed."
 }

@@ -1,0 +1,16 @@
+{
+  "id": "fact.caldris.ganji-escape",
+  "name": "Ganji's Departure",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Two weeks ago, Ganji left the Tensor Sect in the dark of night and has been travelling the Lantern Road toward Bramblebridge since.",
+      "provenance": "Witnessed by Ganji himself",
+      "visibility": "party"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "event",
+      "sensitivity": "discreet"
+    }
+  }
+}

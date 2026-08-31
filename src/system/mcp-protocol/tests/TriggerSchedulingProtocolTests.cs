@@ -2,7 +2,7 @@ using System.Text.Json;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.DataAccess;
-using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Tests;
 using DantesRoleplay.TriggerScheduling;
@@ -17,8 +17,8 @@ public sealed class TriggerSchedulingProtocolTests : IDisposable
     [Fact]
     public void Generic_surface_advertises_one_query_and_one_commit_kind_without_adding_tools()
     {
-        var query = Assert.Single(VerbSurface.QueryKinds, value => value.Name == "system.trigger-scheduling");
-        var commit = Assert.Single(VerbSurface.CommitKinds, value => value.Name == "system.trigger-scheduling");
+        var query = Assert.Single(McpVerbCatalog.QueryKinds, value => value.Name == "system.trigger-scheduling");
+        var commit = Assert.Single(McpVerbCatalog.CommitKinds, value => value.Name == "system.trigger-scheduling");
         Assert.True(commit.SupportsDryRun);
         Assert.Contains("resource", query.Reads);
         Assert.Equal(["procedure.system.use"], commit.Contracts);
@@ -31,7 +31,7 @@ public sealed class TriggerSchedulingProtocolTests : IDisposable
         var service = new RecordingAdministration();
         var authorization = new RecordingAuthorizer(allowed: true);
 
-        var result = await new QueryTool().QueryAsync(
+        var result = await new QueryMcpTool().QueryAsync(
             procedures: null!, world: null!, graphs: null!, mechanics: null!, eventTypes: null!,
             subscriptions: null!, events: null!, log: new OperationLog(db), notifications: null!,
             kind: "system.trigger-scheduling", applicationId: "quest", resource: "fires", limit: 12,
@@ -49,7 +49,7 @@ public sealed class TriggerSchedulingProtocolTests : IDisposable
         await using var db = fixture.CreateContext();
         var deniedService = new RecordingAdministration();
         var denied = new RecordingAuthorizer(allowed: false);
-        var deniedResult = await new CommitTool().CommitAsync(
+        var deniedResult = await new CommitMcpTool().CommitAsync(
             world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
             kind: "system.trigger-scheduling", payload: "not-json", intent: "test", proceduresUsed: [],
             dryRun: true, privateOperator: denied, triggerSchedulingAdministration: deniedService);
@@ -63,7 +63,7 @@ public sealed class TriggerSchedulingProtocolTests : IDisposable
         var payload = """
         {"requestToken":"0123456789abcdef0123456789abcdef","operation":"phone.revoke","applicationId":"quest","value":{"deviceId":"phone-device.0123456789abcdef0123456789abcdef"}}
         """;
-        var preview = await new CommitTool().CommitAsync(
+        var preview = await new CommitMcpTool().CommitAsync(
             world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
             kind: "system.trigger-scheduling", payload: payload, intent: "test",
             proceduresUsed: ["procedure.system.use"], dryRun: true, privateOperator: allowed,

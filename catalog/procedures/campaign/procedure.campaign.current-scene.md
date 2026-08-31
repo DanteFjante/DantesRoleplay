@@ -4,16 +4,16 @@ category: campaign
 name: Select the campaign current scene
 governs: commit(kind: "component") declaring game.core.campaign.current-scene; commit(kind: "effects") adding, replacing, or removing one reviewed campaign current-scene record
 status: active
+createdBy: "seed"
+changeNote: "Seeded from bootstrap file."
 ---
 
 ## Description
-
 Defines one exact present-tense scene selector for a campaign. It points at the current location and
 may retain a current conversation, a current encounter, or both without copying any referenced
 world, interaction, or ruleset state.
 
 ## Instructions
-
 1. Attach `game.core.campaign.current-scene` only to an existing active campaign root.
 2. Record exactly one location reference and optional conversation and encounter references. Every
    reference is an object containing only `entityId`.
@@ -28,7 +28,6 @@ world, interaction, or ruleset state.
    it when the campaign has no authoritative current scene.
 
 ## Constraints
-
 - The selector contains no names, summaries, participants, Initiative, turn state, observations,
   routes, actions, visibility decisions, or copied location state.
 - The selector does not start or end a conversation or encounter, move an actor, decide audience

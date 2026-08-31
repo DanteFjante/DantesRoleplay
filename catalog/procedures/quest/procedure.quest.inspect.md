@@ -4,15 +4,15 @@ category: quest
 name: Inspect an active campaign-scoped quest
 governs: query(kind: "quest-summary")
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
-
 Return a bounded trusted-host summary of one active campaign-scoped quest, including its
 objectives, evidence links, and recent status transitions.
 
 ## Instructions
-
 1. Supply one active quest id. The reader verifies the complete Q1–Q2 campaign, arc, chapter,
    objective, and dependency context before returning anything.
 2. Use the fixed result only to resume the quest: root status and summary, three ordered
@@ -24,7 +24,6 @@ objectives, evidence links, and recent status transitions.
    do not infer missing state from operation prose or an unbounded event query.
 
 ## Constraints
-
 - This is a read-only fixed projection, not a general graph, history, or audience-filter API.
 - It returns an active quest only, exactly three display-ordered owned objectives, no more than
   five evidence links per objective, and no more than twelve transition records.

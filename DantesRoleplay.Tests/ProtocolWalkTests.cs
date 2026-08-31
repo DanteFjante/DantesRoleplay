@@ -6,8 +6,12 @@ using DantesRoleplay.MCPServer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Data.Sqlite;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using ModelContextProtocol.AspNetCore;
+using DantesRoleplay.Blobs;
+using System.Security.Cryptography;
+using DantesRoleplay.Web.Security;
 
 namespace DantesRoleplay.Tests;
 
@@ -35,10 +39,29 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Services.AddDantesRoleplayMcpServer(_databasePath, DatabaseProvider.Sqlite,
             developmentInformationScope: "local.*");
+        builder.Services.Configure<WebRemoteAccessOptions>(_ => { });
+        builder.Services.AddSingleton<WebAccessPolicy>();
+        builder.Services.AddSingleton<WebPrivateOperatorGuard>();
 
         _app = builder.Build();
         await _app.Services.InitialiseDantesRoleplayAsync();
         _app.MapMcp(ServerConfiguration.McpEndpoint);
+        _app.MapPut("/api/blob-uploads/{uploadId}", async (HttpContext context) =>
+            await (await BlobTransferWebEndpoints.UploadAsync(
+                context.Request.RouteValues["uploadId"]?.ToString() ?? string.Empty,
+                context,
+                context.RequestServices.GetRequiredService<IBlobTransferService>(),
+                context.RequestServices.GetRequiredService<WebPrivateOperatorGuard>(),
+                context.RequestServices.GetRequiredService<DantesRoleplay.Operations.IOperationLog>(),
+                context.RequestAborted)).ExecuteAsync(context));
+        _app.MapGet("/api/blobs/sha256/{sha256}", async (HttpContext context) =>
+            await (await BlobTransferWebEndpoints.DownloadAsync(
+                context.Request.RouteValues["sha256"]?.ToString() ?? string.Empty,
+                context,
+                context.RequestServices.GetRequiredService<IBlobTransferService>(),
+                context.RequestServices.GetRequiredService<WebPrivateOperatorGuard>(),
+                context.RequestServices.GetRequiredService<DantesRoleplay.Operations.IOperationLog>(),
+                context.RequestAborted)).ExecuteAsync(context));
         await _app.StartAsync();
 
         var address = _app.Urls.First();
@@ -129,7 +152,7 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
 
         Assert.True(catalog.Ok, catalog.Raw);
         Assert.Equal(
-            DantesRoleplay.MCPServer.Tools.VerbSurface.QueryKindNames.Order(StringComparer.Ordinal),
+            DantesRoleplay.MCPServer.Mcp.McpVerbCatalog.QueryKindNames.Order(StringComparer.Ordinal),
             catalog.Data.GetProperty("query").EnumerateArray()
                 .Select(value => value.GetProperty("name").GetString()).Order(StringComparer.Ordinal));
 
@@ -290,6 +313,52 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
 
         Assert.All(tools, tool => Assert.Contains(tool,
             new[] { "orient", "query", "commit", "apply_effects", "define_component" }));
+    }
+
+    [Fact]
+    public async Task Binary_content_is_a_resource_template_not_a_fourth_tool()
+    {
+        var bytes = new byte[] { 137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82 };
+        var digest = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+        var begin = await ToolAsync("commit", new
+        {
+            kind = "system.blob-upload.begin",
+            payload = JsonSerializer.Serialize(new { sha256 = digest, mediaType = BlobMediaTypes.Png, byteLength = bytes.Length })
+        });
+        Assert.True(begin.Ok, begin.Raw);
+        var uploadId = begin.Data.GetProperty("uploadId").GetString()!;
+        var uploadToken = begin.Data.GetProperty("uploadToken").GetString()!;
+        var putUrl = begin.Data.GetProperty("putUrl").GetString()!;
+
+        using var body = new ByteArrayContent(bytes);
+        body.Headers.Add("X-DantesRoleplay-Upload-Token", uploadToken);
+        using var uploadResponse = await _client.PutAsync(putUrl, body);
+        Assert.Equal(System.Net.HttpStatusCode.NoContent, uploadResponse.StatusCode);
+
+        var finalized = await ToolAsync("commit", new
+        {
+            kind = "system.blob-upload.finalize",
+            payload = JsonSerializer.Serialize(new { uploadId, uploadToken })
+        });
+        Assert.True(finalized.Ok, finalized.Raw);
+
+        var metadata = await ToolAsync("query", new { kind = "system.blobs", id = digest });
+        Assert.True(metadata.Ok, metadata.Raw);
+        Assert.Equal($"media://blob/sha256/{digest}", metadata.Data.GetProperty("resourceUri").GetString());
+
+        var templates = await CallAsync("resources/templates/list", new { });
+        var template = Assert.Single(templates.GetProperty("resourceTemplates").EnumerateArray());
+        Assert.Equal("media://blob/sha256/{sha256}", template.GetProperty("uriTemplate").GetString());
+
+        var read = await CallAsync("resources/read", new { uri = $"media://blob/sha256/{digest}" });
+        var content = Assert.Single(read.GetProperty("contents").EnumerateArray());
+        Assert.Equal(BlobMediaTypes.Png, content.GetProperty("mimeType").GetString());
+        Assert.Equal(bytes, Convert.FromBase64String(content.GetProperty("blob").GetString()!));
+
+        Assert.Equal(bytes, await _client.GetByteArrayAsync($"/api/blobs/sha256/{digest}"));
+
+        var tools = await CallAsync("tools/list", new { });
+        Assert.Equal(3, tools.GetProperty("tools").GetArrayLength());
     }
 
     [Fact]

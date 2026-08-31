@@ -4,6 +4,8 @@ category: world
 name: Model something new in the world
 governs: commit(kind: "component"), representing a new game concept as data
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
@@ -38,4 +40,3 @@ without changing the database schema.
 - A thing is inside at most one container. Model "carried by two people" as a relationship.
 - Component data must be a JSON object, never an array or a bare value.
 - Component definition ids are permanent. There is no rename and no delete.
-

@@ -4,15 +4,15 @@ category: information
 name: Use scoped information action contracts
 governs: query(kind: "information-actions"), commit(kind: "information-action-contract"), commit(kind: "information-action")
 status: active
+createdBy: "seed"
+changeNote: "Seeded from bootstrap file."
 ---
 
 ## Description
-
 List, define, and execute explicit action contracts in a generic information namespace. A contract
 links rule records to one host-enabled executor; it does not grant access or allow arbitrary code.
 
 ## Instructions
-
 1. Store rule text as information records in a concrete namespace such as `game.worldname.rules`.
 2. Define an action contract in the same namespace family. Give it the explicit executor id,
    JSON Schema for its input object, and the record ids that define its rules.
@@ -21,7 +21,6 @@ links rule records to one host-enabled executor; it does not grant access or all
    the input against the stored schema before dispatching it.
 
 ## Constraints
-
 - A namespace selector is either one concrete scope, a terminal `.*` prefix selector, or `*` when
   the host policy explicitly grants all scopes.
 - Contracts are declarations, not executable model text. Only a host-registered executor can run.

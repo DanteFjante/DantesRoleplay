@@ -4,6 +4,8 @@ category: subscription
 name: Create an event subscription
 governs: registering a guard or reaction subscription
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description

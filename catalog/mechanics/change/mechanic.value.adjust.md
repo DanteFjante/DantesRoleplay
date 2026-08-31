@@ -3,6 +3,8 @@ id: mechanic.value.adjust
 category: change
 name: Adjust a number
 status: active
+createdBy: "seed"
+changeNote: "Seeded from bootstrap rule file."
 ---
 
 ## Description
@@ -29,4 +31,3 @@ increase
   }
 }
 ```
-

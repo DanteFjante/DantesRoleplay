@@ -2,7 +2,7 @@ using System.Text.Json;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
-using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.World;
@@ -182,7 +182,7 @@ public sealed class SubscriptionStoreTests : IDisposable
             status = "draft"
         });
 
-        var result = await new CommitTool().CommitAsync(
+        var result = await new CommitMcpTool().CommitAsync(
             procedures: new ProcedureStore(db),
             world: new WorldStore(db),
             effects: null!,

@@ -4,6 +4,8 @@ category: system
 name: Modify the application
 governs: changing this application's C# code or configuration
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
@@ -22,4 +24,3 @@ How to change this application's own code or configuration.
 - Never modify a core invariant without an explicit architecture decision recorded first.
 - Never put a game concept into the kernel. If C# would need to learn what a hit point, a spell
   or an initiative order is, the change belongs in JavaScript instead.
-

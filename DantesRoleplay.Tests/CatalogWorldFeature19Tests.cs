@@ -2,7 +2,7 @@ using System.Text.Json;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.Events;
-using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Notifications;
 using DantesRoleplay.Operations;
@@ -262,7 +262,7 @@ public sealed class CatalogWorldFeature19Tests : IDisposable
     }
 
     private static async Task<ToolEnvelope> GraphAsync(DantesRoleplayDbContext db, IProcedureStore procedures, IWorldStore world, IMechanicStore mechanics) =>
-        await new QueryTool().QueryAsync(procedures, world, new GraphProjectionReader(world), mechanics,
+        await new QueryMcpTool().QueryAsync(procedures, world, new GraphProjectionReader(world), mechanics,
             new EventTypeStore(db), new SubscriptionStore(db), new EventLedger(db), new OperationLog(db), new NotificationStore(db),
             "graph", id: Root, componentIds: [Component, "game.core.world.clock"], containmentDepth: 0,
             relationshipKinds: [InWorld, About], relationshipDepth: 2, maxNodes: 100, maxEdges: 200);

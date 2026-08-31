@@ -19,6 +19,8 @@ var developmentInformationScope = builder.Configuration["Information:Development
     ?? "local.*";
 var databasePath = builder.Configuration.GetConnectionString("Kernel")
     ?? Path.Combine(builder.Environment.ContentRootPath, "data", "dantesroleplay.db");
+var blobStorageRoot = builder.Configuration["BlobStorage:Root"]
+    ?? Path.Combine(Path.GetDirectoryName(Path.GetFullPath(databasePath))!, "blobs");
 var allowedSourceRoots = builder.Configuration.GetSection("Sources:AllowedRoots")
     .GetChildren()
     .ToDictionary(child => child.Key, child => child.Value ?? string.Empty, StringComparer.Ordinal);
@@ -77,7 +79,8 @@ builder.Services.AddDantesRoleplayMcpServer(
     developmentInformationScope,
     allowedSourceRoots,
     publishedApplicationCatalogs,
-    builder.Configuration);
+    builder.Configuration,
+    blobStorageRoot);
 builder.Services.AddCodexBridgeComponent(new CodexBridgeOptions(
     builder.Configuration["Codex:ExecutablePath"] ?? "codex",
     ResolveRepositoryRoot(
@@ -121,6 +124,12 @@ await using (var assistantScope = app.Services.CreateAsyncScope())
 app.UseDantesRoleplayRemoteWebBoundary();
 app.UseRateLimiter();
 app.MapMcp(ServerConfiguration.McpEndpoint);
+app.MapPut("/api/blob-uploads/{uploadId}", BlobTransferWebEndpoints.UploadAsync)
+    .AddEndpointFilter<WebInterfaceSecurityFilter>()
+    .RequireRateLimiting(WebInterfaceSecurity.UploadRateLimitPolicy);
+app.MapGet("/api/blobs/sha256/{sha256}", BlobTransferWebEndpoints.DownloadAsync)
+    .AddEndpointFilter<WebInterfaceSecurityFilter>()
+    .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
 app.MapGet("/api/audience-context", AudienceContextWebEndpoint.CurrentAsync)
     .AddEndpointFilter<WebInterfaceSecurityFilter>()
     .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);

@@ -4,6 +4,8 @@ category: system
 name: Verify a change before handing it over
 governs: finishing any change to this application's code
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description

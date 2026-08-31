@@ -4,15 +4,15 @@ category: quest
 name: Progress a campaign-scoped quest
 governs: commit(kind: "quest") with closed quest lifecycle payloads
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
-
 Apply one validated quest or objective lifecycle transition atomically and return the updated
 quest state.
 
 ## Instructions
-
 1. Read the quest entity and use its actual root status as `expectedQuestStatus`.
 2. Offer only a `draft` quest. Accept only an `offered` quest. To set or unblock an objective, use
    an `active` quest, its actual objective status, and a trimmed factual `reason`.
@@ -30,7 +30,6 @@ quest state.
    trusted-host current-and-transition summary when that is the appropriate follow-up.
 
 ## Constraints
-
 - Q2 derives every component replacement and structural effect inside one transaction. Callers
   never supply effects, child IDs, relationships, events, audit data, or target state.
 - A stale expected status, malformed quest graph/context, invalid reason, blocked effect, or failed

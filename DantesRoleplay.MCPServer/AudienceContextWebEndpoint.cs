@@ -1,5 +1,5 @@
 using DantesRoleplay.Knowledge;
-using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.MCPServer.Mcp;
 using Microsoft.AspNetCore.Http;
 
 namespace DantesRoleplay.MCPServer;
@@ -20,7 +20,7 @@ internal static class AudienceContextWebEndpoint
         CancellationToken cancellationToken)
     {
         context.Response.Headers.CacheControl = "private, no-store";
-        var outcome = await SystemAudienceContextTools.ResolveAsync(
+        var outcome = await SystemAudienceContextHandler.ResolveAsync(
             seats, audiences, bindings, participation, cancellationToken);
         if (outcome.Error is null)
         {

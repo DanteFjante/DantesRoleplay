@@ -4,6 +4,8 @@ category: mechanics
 name: Implement mechanic storage
 governs: IMechanicStore.WriteAsync, IMechanicStore.CheckAsync, implementing or modifying mechanic storage inside the kernel
 status: active
+createdBy: "seed"
+changeNote: "Seeded from bootstrap file."
 ---
 
 ## Description
@@ -37,4 +39,3 @@ revised. If you are authoring a rule through `commit(kind: "mechanic")`, this is
 - Never put game-specific verbs, role meanings or direct world writes into the kernel. Mechanics
   propose structural effects; the sandbox and effect applier enforce the execution boundary.
 - Do not bypass `IMechanicStore`, write arbitrary SQL, or execute JavaScript during authoring.
-

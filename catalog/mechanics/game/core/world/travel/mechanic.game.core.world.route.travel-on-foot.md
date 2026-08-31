@@ -4,10 +4,11 @@ category: game.core.world.travel
 name: Travel one declared on-foot route
 scope: ""
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the embedded catalog mechanic changed."
 ---
 
 ## Description
-
 Validates one active marked traveller, its derived origin containment, one active directed on-foot
 route, explicit open route availability, canonical adjacency, and the route's scoped root clock.
 Incoming links owned by another world feature do not alter the route's three route-owned scope

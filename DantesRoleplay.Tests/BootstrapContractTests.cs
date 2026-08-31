@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Bootstrap;
-using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Procedures;
 
 namespace DantesRoleplay.Tests;
@@ -99,8 +99,8 @@ public sealed class BootstrapContractTests : IDisposable
     {
         var ids = ProcedureSeeder.Load().Select(file => file.Id).ToHashSet(StringComparer.Ordinal);
 
-        var named = VerbSurface.QueryKinds.SelectMany(k => k.Contracts)
-            .Concat(VerbSurface.CommitKinds.SelectMany(k => k.Contracts))
+        var named = McpVerbCatalog.QueryKinds.SelectMany(k => k.Contracts)
+            .Concat(McpVerbCatalog.CommitKinds.SelectMany(k => k.Contracts))
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
@@ -125,8 +125,8 @@ public sealed class BootstrapContractTests : IDisposable
         var entry = ProcedureSeeder.Load().Single(f => f.Id == "procedure.system.use");
         var text = $"{entry.Description} {entry.Instructions} {entry.Constraints}";
 
-        var missing = VerbSurface.QueryKindNames
-            .Concat(VerbSurface.CommitKindNames)
+        var missing = McpVerbCatalog.QueryKindNames
+            .Concat(McpVerbCatalog.CommitKindNames)
             .Distinct(StringComparer.Ordinal)
             .Where(kind => !text.Contains(kind, StringComparison.Ordinal))
             .ToList();

@@ -4,6 +4,8 @@ category: mechanic
 name: Write a game rule
 governs: commit(kind: "mechanic"), adding or revising a game mechanic, authoring JavaScript
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description

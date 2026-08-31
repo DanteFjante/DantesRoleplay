@@ -4,6 +4,8 @@ category: event
 name: Author a pre-commit event guard
 governs: guard mechanics registered through event subscriptions
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description

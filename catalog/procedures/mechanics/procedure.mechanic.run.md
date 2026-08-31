@@ -4,6 +4,8 @@ category: mechanics
 name: Implement the action runner
 governs: IActionRunner.RunAsync, implementing or modifying the action runner inside the kernel
 status: active
+createdBy: "seed"
+changeNote: "Seeded from bootstrap file."
 ---
 
 ## Description
@@ -42,4 +44,3 @@ read `procedure.action.run` instead; the runner performs all of this for you.
   narration only — is a legitimate success that changes nothing.
 - The selected mechanic version, seed and frozen projection remain associated with the operation.
 - No game-specific verbs, role meanings, predicates or SQL belong in the action runner.
-

@@ -4,6 +4,8 @@ category: subscription
 name: Modify an event subscription
 governs: revising, disabling, archiving, and inspecting event subscriptions
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description

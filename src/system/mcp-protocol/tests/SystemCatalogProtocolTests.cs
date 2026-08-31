@@ -8,7 +8,7 @@ using DantesRoleplay.Sources;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.MCPServer;
-using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Projections;
@@ -40,7 +40,7 @@ public sealed class SystemCatalogProtocolTests : IDisposable
         Assert.Equal("query(kind: \"capabilities\")", result.Error?.Fix);
         Assert.Contains(data.GetProperty("Query").EnumerateArray(), item => item.GetProperty("Name").GetString() == "system.catalog.browse");
         Assert.Equal(
-            ["system.application.activate", "system.application.register", "system.component-type.register", "system.interaction-execute", "system.interaction-recipe-review", "system.knowledge-state.sync", "system.source.register", "system.state-space.adopt-legacy", "system.state-space.create", "system.state-space.upgrade", "system.trigger-scheduling", "system.world-state.sync"],
+            ["system.application.activate", "system.application.register", "system.blob-upload.begin", "system.blob-upload.finalize", "system.component-type.register", "system.interaction-execute", "system.interaction-recipe-review", "system.knowledge-state.sync", "system.source.register", "system.state-space.adopt-legacy", "system.state-space.create", "system.state-space.upgrade", "system.trigger-scheduling", "system.world-state.sync"],
             data.GetProperty("Commit").EnumerateArray()
                 .Select(item => item.GetProperty("Name").GetString())
                 .Where(name => name!.StartsWith("system.", StringComparison.Ordinal))
@@ -87,7 +87,7 @@ public sealed class SystemCatalogProtocolTests : IDisposable
         string? query = null,
         string? id = null,
         int? pageSize = null,
-        string? cursor = null) => new QueryTool().QueryAsync(
+        string? cursor = null) => new QueryMcpTool().QueryAsync(
             procedures: null!, world: null!, graphs: null!, mechanics: null!, eventTypes: null!,
             subscriptions: null!, events: null!, log: new OperationLog(db), notifications: null!,
             kind: kind, id: id, query: query, applicationId: applicationId, collection: collection,

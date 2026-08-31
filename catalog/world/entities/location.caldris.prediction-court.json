@@ -1,0 +1,16 @@
+{
+  "id": "location.caldris.prediction-court",
+  "name": "The Prediction Court",
+  "container": {
+    "id": "location.caldris.house-of-the-ninth-angle",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "site",
+      "status": "active",
+      "summary": "A garden of suspended bells within the House of the Ninth Angle. Sect doctrine holds that nobody can cross it unheard — until Ganji did, the night he left.",
+      "visibility": "party"
+    }
+  }
+}

@@ -4,5 +4,7 @@
   "name": "Relationship created",
   "description": "A structural relationship creation.",
   "scope": "",
-  "status": "Active"
+  "status": "Active",
+  "createdBy": "seed",
+  "changeNote": "Re-seeded: the embedded structural event type changed."
 }

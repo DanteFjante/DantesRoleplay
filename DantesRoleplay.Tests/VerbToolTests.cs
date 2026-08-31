@@ -1,6 +1,6 @@
 using System.Text.Json;
 using DantesRoleplay.DataAccess;
-using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.World;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,7 +19,7 @@ public sealed class VerbToolTests : IDisposable
         // Named, not positional. DI supplies these by type at runtime, so the order here is an
         // accident of the signature — and inserting a store anywhere but the end used to break
         // this call silently until compile. See KNOWN_ISSUES.
-        var result = await new QueryTool().QueryAsync(
+        var result = await new QueryMcpTool().QueryAsync(
             procedures: new ProcedureStore(db),
             world: new WorldStore(db),
             graphs: new GraphProjectionReader(new WorldStore(db)),
@@ -53,7 +53,7 @@ public sealed class VerbToolTests : IDisposable
             instructions = "1. Read the result."
         });
 
-        var result = await new CommitTool().CommitAsync(
+        var result = await new CommitMcpTool().CommitAsync(
             procedures: new ProcedureStore(db),
             world: new WorldStore(db),
             effects: null!,
@@ -89,9 +89,9 @@ public sealed class VerbToolTests : IDisposable
     [Fact]
     public void Every_suggested_commit_call_is_literally_callable()
     {
-        foreach (var kind in VerbSurface.CommitKindNames)
+        foreach (var kind in McpVerbCatalog.CommitKindNames)
         {
-            var call = VerbSurface.CommitCall(kind, dryRun: true);
+            var call = McpVerbCatalog.CommitCall(kind, dryRun: true);
             var prefix = $"commit(kind: \"{kind}\", payload: ";
 
             Assert.StartsWith(prefix, call, StringComparison.Ordinal);
@@ -108,7 +108,7 @@ public sealed class VerbToolTests : IDisposable
     public async Task Unknown_commit_kind_returns_a_recoverable_protocol_error()
     {
         await using var db = _fixture.CreateContext();
-        var result = await new CommitTool().CommitAsync(
+        var result = await new CommitMcpTool().CommitAsync(
             procedures: null!,
             world: null!,
             effects: null!,

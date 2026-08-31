@@ -2493,6 +2493,93 @@
       "data": {
         "inheritance": "current-scope"
       }
+    },
+    {
+      "from": "actor.caldris.ilvaeril",
+      "to": "faction.caldris.tensor-sect",
+      "kind": "member-of",
+      "data": {}
+    },
+    {
+      "from": "actor.caldris.ordrun-vess",
+      "to": "faction.caldris.tensor-sect",
+      "kind": "leads",
+      "data": {}
+    },
+    {
+      "from": "campaign.thalorien.brackenford",
+      "to": "actor.thalorien.brackenford.elian-voss",
+      "kind": "game.core.campaign.references",
+      "data": {
+        "role": "npc",
+        "audience": "party"
+      }
+    },
+    {
+      "from": "campaign.thalorien.brackenford",
+      "to": "actor.thalorien.brackenford.sella-bramble",
+      "kind": "game.core.campaign.references",
+      "data": {
+        "role": "npc",
+        "audience": "party"
+      }
+    },
+    {
+      "from": "campaign.thalorien.brackenford",
+      "to": "campaign.thalorien.brackenford.arc.the-waking-depths",
+      "kind": "game.core.campaign.has-arc",
+      "data": {}
+    },
+    {
+      "from": "campaign.thalorien.brackenford",
+      "to": "campaign.thalorien.brackenford.chapter.brackenford-arrivals",
+      "kind": "game.core.campaign.has-chapter",
+      "data": {}
+    },
+    {
+      "from": "campaign.thalorien.brackenford",
+      "to": "campaign.thalorien.brackenford.participation.actor.thalorien.brackenford.orban",
+      "kind": "game.core.campaign.has-character-participation",
+      "data": {}
+    },
+    {
+      "from": "campaign.thalorien.brackenford",
+      "to": "fact.thalorien.brackenford",
+      "kind": "game.core.campaign.references",
+      "data": {
+        "role": "knowledge",
+        "audience": "party"
+      }
+    },
+    {
+      "from": "campaign.thalorien.brackenford",
+      "to": "faction.thalorien.gilded-concord",
+      "kind": "game.core.campaign.references",
+      "data": {
+        "role": "faction-stake",
+        "audience": "gm"
+      }
+    },
+    {
+      "from": "campaign.thalorien.brackenford",
+      "to": "location.thalorien.brackenford",
+      "kind": "game.core.campaign.references",
+      "data": {
+        "role": "start",
+        "audience": "party"
+      }
+    },
+    {
+      "from": "campaign.thalorien.brackenford",
+      "to": "world.thalorien",
+      "kind": "game.core.campaign.in-world",
+      "data": {}
+    },
+    {
+      "from": "campaign.thalorien.brackenford.participation.actor.thalorien.brackenford.orban",
+      "to": "actor.thalorien.brackenford.orban",
+      "kind": "game.core.campaign.character-participation.for-actor",
+      "data": {}
     }
   ]
 }

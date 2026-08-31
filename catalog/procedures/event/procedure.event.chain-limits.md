@@ -4,6 +4,8 @@ category: event
 name: Chain limits
 governs: how far a reaction chain may run before it is stopped
 status: active
+createdBy: "seed"
+changeNote: "Seeded from bootstrap file."
 ---
 
 ## Description
@@ -37,4 +39,3 @@ What bounds a reactive chain, what happens when a bound is reached, and how to r
   chain terminates only if the rules somebody wrote happen to terminate, which is not a property
   anything can check in advance.
 - Raising a subscription's own limit cannot exceed 8, and never raises the chain-wide bounds.
-

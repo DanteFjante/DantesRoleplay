@@ -58,7 +58,7 @@
   <ItemGroup>
     <!-- Transitional consumers compiled in this assembly use provider-neutral model contracts.
          The local-AI assembly has no reverse reference to this project. -->
-    <ProjectReference Include="..\src\system\local-ai\DantesRoleplay.LocalAI\DantesRoleplay.LocalAI.csproj" />
+    <ProjectReference Include="..\DantesRoleplay.LocalAI\DantesRoleplay.LocalAI.csproj" />
   </ItemGroup>
 
 </Project>

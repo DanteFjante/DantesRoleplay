@@ -4,10 +4,11 @@ category: game.core.world.knowledge
 name: Reveal one scoped world clue
 scope: ""
 status: active
+createdBy: "seed"
+changeNote: "Seeded from the embedded catalog mechanic."
 ---
 
 ## Description
-
 Reveals an unrevealed GM-only clue after proving its stored world-root scope. It changes only the
 clue's status and descriptive visibility.
 

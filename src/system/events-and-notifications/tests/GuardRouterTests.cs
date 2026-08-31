@@ -2,8 +2,7 @@ using DantesRoleplay.DataAccess;
 using DantesRoleplay.Effects;
 using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
-using DantesRoleplay.RuleAccess;
-using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Operations;
 using Microsoft.EntityFrameworkCore;
 
@@ -134,7 +133,7 @@ public sealed class GuardRouterTests : IDisposable
         var world = new WorldStore(db);
         var router = new GuardRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine(), new WorldStore(db));
 
-        var envelope = await new WorldTools().ApplyEffectsAsync(
+        var envelope = await new WorldHandler().ApplyEffectsAsync(
             new EffectApplier(db, world, router), new OperationLog(db),
             [new Effect { Type = EffectType.EntityCreate, EntityId = "audited", Name = "Audited" }]);
 

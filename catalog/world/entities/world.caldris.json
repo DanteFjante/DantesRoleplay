@@ -1,0 +1,11 @@
+{
+  "id": "world.caldris",
+  "name": "Caldris",
+  "components": {
+    "game.core.world.root": {
+      "status": "active",
+      "summary": "A gentler, magic-rare fantasy world where storybook wonders sit beside real weather, real work, and real consequence — cozy, lightly humorous, and grounded.",
+      "visibility": "public"
+    }
+  }
+}

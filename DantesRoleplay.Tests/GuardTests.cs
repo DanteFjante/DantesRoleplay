@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using DantesRoleplay.Effects;
-using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.MCPServer.Mcp;
 
 namespace DantesRoleplay.Tests;
 
@@ -35,13 +35,9 @@ public sealed class GuardTests
     private static readonly string[] KernelProjects =
     [
         "DantesRoleplay",
-        "DantesRoleplay.DataAccess",
-
-        // The sandbox counts too, and it is the most tempting place to break the rule: the moment
-        // someone adds a rolling helper "because every game needs one", the kernel has a dice
-        // convention baked in and every game built on it inherits that convention forever. The
-        // engine offers a seeded random source and nothing above it.
-        "DantesRoleplay.RuleAccess"
+        // DataAccess now also owns the sandbox, and it is the most tempting place to break the
+        // rule: the moment someone adds a game-specific helper, every game inherits it.
+        "DantesRoleplay.DataAccess"
     ];
 
     [Fact]
@@ -270,8 +266,7 @@ public sealed class GuardTests
     public void Local_ai_has_no_game_system_dependency_or_vocabulary()
     {
         var root = RepositoryRoot();
-        var projectDirectory = Path.Combine(
-            root, "src", "system", "local-ai", "DantesRoleplay.LocalAI");
+        var projectDirectory = Path.Combine(root, "DantesRoleplay.LocalAI");
         var project = Path.Combine(projectDirectory, "DantesRoleplay.LocalAI.csproj");
         Assert.True(File.Exists(project), $"Expected the local-AI project at {project}.");
 
@@ -332,6 +327,21 @@ public sealed class GuardTests
             declared.Order(StringComparer.Ordinal).ToArray());
     }
 
+    [Fact]
+    public void Only_public_mcp_adapters_declare_mcp_tool_attributes()
+    {
+        var project = Path.Combine(RepositoryRoot(), "DantesRoleplay.MCPServer");
+        var attributed = EnumerateSource(project)
+            .Where(file => File.ReadAllText(file).Contains("[McpServerTool", StringComparison.Ordinal))
+            .Select(file => Path.GetRelativePath(project, file).Replace('\\', '/'))
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(
+            ["Mcp/CommitMcpTool.cs", "Mcp/OrientMcpTool.cs", "Mcp/QueryMcpTool.cs"],
+            attributed);
+    }
+
     /// <summary>
     /// The direction that actually failed in practice, at the level it can fail now. orient once
     /// advertised writing component definitions and world data when no such tool existed; a cold
@@ -340,7 +350,7 @@ public sealed class GuardTests
     [Fact]
     public void Orient_announces_exactly_the_registered_verbs()
     {
-        using var announcement = JsonSerializer.SerializeToDocument(VerbSurface.Announcement());
+        using var announcement = JsonSerializer.SerializeToDocument(McpVerbCatalog.Announcement());
 
         var announced = announcement.RootElement
             .EnumerateObject()
@@ -362,21 +372,21 @@ public sealed class GuardTests
     [Fact]
     public void Query_dispatch_handles_exactly_the_advertised_kinds()
     {
-        var advertised = VerbSurface.QueryKindNames
+        var advertised = McpVerbCatalog.QueryKindNames
             .Where(k => k != "capabilities")
             .Order(StringComparer.Ordinal)
             .ToArray();
 
-        Assert.Equal(advertised, DispatchedKinds("QueryTool.cs"));
+        Assert.Equal(advertised, DispatchedKinds("QueryMcpTool.cs"));
     }
 
     /// <summary>D9, the write side.</summary>
     [Fact]
     public void Commit_dispatch_handles_exactly_the_advertised_kinds()
     {
-        var advertised = VerbSurface.CommitKindNames.Order(StringComparer.Ordinal).ToArray();
+        var advertised = McpVerbCatalog.CommitKindNames.Order(StringComparer.Ordinal).ToArray();
 
-        Assert.Equal(advertised, DispatchedKinds("GenericCommitTool.cs"));
+        Assert.Equal(advertised, DispatchedKinds("CommitMcpTool.cs"));
     }
 
     /// <summary>
@@ -446,20 +456,20 @@ public sealed class GuardTests
 
     /// <summary>
     /// The kind lists a client reads FIRST are the tool descriptions, and an attribute cannot be
-    /// built from <see cref="VerbSurface"/> — it has to be a compile-time constant. So they are
+    /// built from <see cref="McpVerbCatalog"/> — it has to be a compile-time constant. So they are
     /// hand-maintained copies, and this is what stops one drifting: every kind the surface serves
     /// has to be named in the description a session chooses the tool by.
     /// </summary>
     [Fact]
     public void Both_dispatchers_name_every_kind_in_the_description_a_client_reads()
     {
-        AssertDescribed("QueryTool.cs", VerbSurface.QueryKindNames);
-        AssertDescribed("GenericCommitTool.cs", VerbSurface.CommitKindNames);
+        AssertDescribed("QueryMcpTool.cs", McpVerbCatalog.QueryKindNames);
+        AssertDescribed("CommitMcpTool.cs", McpVerbCatalog.CommitKindNames);
 
         static void AssertDescribed(string fileName, IReadOnlyList<string> kinds)
         {
             var source = File.ReadAllText(Path.Combine(
-                RepositoryRoot(), "DantesRoleplay.MCPServer", "Tools", fileName));
+                RepositoryRoot(), "DantesRoleplay.MCPServer", "Mcp", fileName));
 
             // Only the [Description] attributes — the prose that ships in tools/list.
             var described = string.Join(
@@ -490,7 +500,7 @@ public sealed class GuardTests
     {
         Assert.Equal(
             EffectType.All.Order(StringComparer.Ordinal).ToArray(),
-            VerbSurface.EffectVocabulary.Keys.Order(StringComparer.Ordinal).ToArray());
+            McpVerbCatalog.EffectVocabulary.Keys.Order(StringComparer.Ordinal).ToArray());
     }
 
     /// <summary>
@@ -500,7 +510,7 @@ public sealed class GuardTests
     [Fact]
     public void Every_commit_example_payload_is_a_valid_json_object()
     {
-        foreach (var kind in VerbSurface.CommitKinds)
+        foreach (var kind in McpVerbCatalog.CommitKinds)
         {
             var document = JsonDocument.Parse(kind.Example);
 
@@ -517,7 +527,7 @@ public sealed class GuardTests
     private static string[] DispatchedKinds(string fileName)
     {
         var file = Path.Combine(
-            RepositoryRoot(), "DantesRoleplay.MCPServer", "Tools", fileName);
+            RepositoryRoot(), "DantesRoleplay.MCPServer", "Mcp", fileName);
 
         Assert.True(File.Exists(file), $"Expected a dispatcher at {file}.");
 
@@ -538,7 +548,7 @@ public sealed class GuardTests
     private static List<string> DeclaredToolNames()
     {
         var root = RepositoryRoot();
-        var toolsDirectory = Path.Combine(root, "DantesRoleplay.MCPServer", "Tools");
+        var toolsDirectory = Path.Combine(root, "DantesRoleplay.MCPServer", "Mcp");
 
         Assert.True(Directory.Exists(toolsDirectory), $"Expected tools at {toolsDirectory}.");
 

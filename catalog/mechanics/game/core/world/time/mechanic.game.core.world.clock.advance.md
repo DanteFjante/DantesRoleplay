@@ -4,10 +4,11 @@ category: game.core.world.time
 name: Advance one world clock
 scope: ""
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the embedded catalog mechanic changed."
 ---
 
 ## Description
-
 Advances one active world root clock by a closed positive minute input. It changes only the clock.
 
 ## Matches

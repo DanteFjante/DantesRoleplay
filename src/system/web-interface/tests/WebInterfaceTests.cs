@@ -2075,7 +2075,7 @@ public sealed class WebInterfaceTests
         var controlCenter = File.ReadAllText(Path.Combine(
             root, "src", "system", "web-interface", "examples", "control-center", "index.html"));
         var endpoints = File.ReadAllText(Path.Combine(
-            root, "src", "system", "web-interface", "DantesRoleplay.Web", "Http", "WebInterfaceEndpoints.cs"));
+            root, "DantesRoleplay.Web", "Http", "WebInterfaceEndpoints.cs"));
 
         Assert.Contains("private const string HomePageId = \"home\"", endpoints, StringComparison.Ordinal);
         Assert.Contains("GetPageAsync(HomePageId", endpoints, StringComparison.Ordinal);
@@ -2601,6 +2601,8 @@ public sealed class WebInterfaceTests
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/data/entity/hero"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/changes"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/session"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/blob-uploads/blob-upload.example"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/blobs/sha256/example"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/control/status"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/applications/quest/observations"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath(
@@ -2628,6 +2630,7 @@ public sealed class WebInterfaceTests
             "/api/applications/quest/state-spaces/main/entities/hero/components/quest.stats"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/mcp"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/pages-other"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/blobs-other/sha256/example"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/control-other"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/components-other/system-workspace.js"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/applications/quest/conversations"));

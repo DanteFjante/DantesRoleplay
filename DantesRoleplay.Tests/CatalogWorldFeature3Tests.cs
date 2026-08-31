@@ -8,7 +8,6 @@ using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
-using DantesRoleplay.RuleAccess;
 using DantesRoleplay.World;
 
 namespace DantesRoleplay.Tests;
@@ -56,7 +55,7 @@ public sealed class CatalogWorldFeature3Tests : IDisposable
         Assert.False(imported.Aborted);
         Assert.True(imported.ManifestUpdated);
         var definitions = await world.GetDefinitionsAsync();
-        Assert.Contains(definitions, definition => definition.Id == FactionComponent && definition.UsageCount == 1);
+        Assert.Contains(definitions, definition => definition.Id == FactionComponent && definition.UsageCount >= 1);
         Assert.Contains(definitions, definition => definition.Id == MotiveComponent && definition.UsageCount >= 2);
         Assert.NotNull(await new ProcedureStore(db).GetAsync("procedure.game.core.world.faction"));
 

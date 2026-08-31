@@ -4,6 +4,8 @@ category: event
 name: Author a reaction to an accepted event
 governs: reaction mechanics registered through event subscriptions
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
@@ -70,4 +72,3 @@ of that change, so a reaction either commits with the event it answered or nothi
 - A notification's content and links are written once and are never editable. Nothing delivers
   them: they wait until somebody asks. A notice with no topic, no subject, or naming an entity that
   is not there fails the whole root change, exactly as a bad declared event does.
-

@@ -4,6 +4,8 @@ category: event
 name: Define an event type
 governs: registering versioned event payload contracts
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
@@ -23,4 +25,3 @@ Define or revise an event type before any event can use it.
   another rule needs to answer it. Validation happens at emission against the version then active,
   so revising a type never invalidates an event already recorded.
 - This contract registers schemas only. It does not create an event ledger, routing, subscriptions, chains, or notifications.
-

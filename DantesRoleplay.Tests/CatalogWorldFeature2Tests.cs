@@ -5,7 +5,6 @@ using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
-using DantesRoleplay.RuleAccess;
 using DantesRoleplay.World;
 
 namespace DantesRoleplay.Tests;

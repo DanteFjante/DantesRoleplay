@@ -4,5 +4,7 @@
   "name": "Component added",
   "description": "A structural component addition.",
   "scope": "",
-  "status": "Active"
+  "status": "Active",
+  "createdBy": "seed",
+  "changeNote": "Re-seeded: the embedded structural event type changed."
 }

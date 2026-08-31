@@ -1,5 +1,0 @@
-{
-  "id": "dnd2024.armor-class",
-  "name": "Armor Class (D&D 2024)",
-  "description": "One final authoritative Armor Class value for a creature plus its fixed SRD 5.2.1 source reference. Use mechanic.dnd2024.armor-class.write to record or correct it. This component stores no Dexterity, armor, shield, spell, item, or natural-armor inputs and derives no formula."
-}

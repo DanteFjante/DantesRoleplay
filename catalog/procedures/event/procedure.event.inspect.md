@@ -4,6 +4,8 @@ category: event
 name: Inspect the event ledger
 governs: query(kind: "events"), reading what a committed world change recorded
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
@@ -55,4 +57,3 @@ itself.
   does not show. Read the execution it names to see which rule, at which version, and on what seed.
 - `correlationId` and `rootOperationId` currently hold the same value. Filter by whichever names
   what you actually have; do not infer that one is derived from the other.
-

@@ -4,16 +4,16 @@ category: game.core.world.faction
 name: Advance the Lantern Compact observatory front
 scope: ""
 status: active
+createdBy: "seed"
+changeNote: "Seeded from the embedded catalog mechanic."
 ---
 
 ## Description
-
 Advances one active scoped front exactly one deterministic pressure phase. It preserves all front
 text/lifecycle fields and records the projected root clock minute; it never changes territory,
 agenda, locations, or time.
 
 ## Matches
-
 advance the observatory front
 increase lantern compact pressure
 

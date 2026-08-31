@@ -4,6 +4,8 @@ category: mechanic
 name: Resolve what a player is trying to do
 governs: commit(kind: "action"), resolving an action, deciding an outcome during play
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
@@ -52,4 +54,3 @@ rule being run and the world changing.
 - A rule may use declared child mechanics. They run first under derived replay seeds and are visible
   to the parent only as frozen `ctx.children` data; if any child fails, the parent does not run and
   no effects are applied.
-

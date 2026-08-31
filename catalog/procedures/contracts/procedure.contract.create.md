@@ -4,6 +4,8 @@ category: contracts
 name: Create or revise a procedure contract
 governs: commit(kind: "procedure")
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description

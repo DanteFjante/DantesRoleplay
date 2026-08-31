@@ -2,7 +2,7 @@ using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.MCPServer;
-using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Operations;
 using DantesRoleplay.RegistryAdministration;
 using DantesRoleplay.Tests;
@@ -29,7 +29,7 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
         var registry = new ThrowingRegistry();
         var authorizer = new DenyingAuthorizer();
 
-        var result = await new QueryTool().QueryAsync(
+        var result = await new QueryMcpTool().QueryAsync(
             procedures: null!, world: null!, graphs: null!, mechanics: null!, eventTypes: null!,
             subscriptions: null!, events: null!, log: new OperationLog(db), notifications: null!,
             kind: "system.applications", applicationId: "system", applications: registry,
@@ -73,7 +73,7 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
         var activations = new ThrowingActivation();
         var authorization = new DenyingAuthorizer();
 
-        var result = await new CommitTool().CommitAsync(
+        var result = await new CommitMcpTool().CommitAsync(
             world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
             kind: "system.application.activate", payload: "not-json", dryRun: true,
             applicationActivations: activations, privateOperator: authorization);
@@ -93,7 +93,7 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
         var stateSpaces = new ThrowingStateSpaceAdministration();
         var authorization = new DenyingAuthorizer();
 
-        var result = await new CommitTool().CommitAsync(
+        var result = await new CommitMcpTool().CommitAsync(
             world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
             kind: "system.state-space.create", payload: "not-json", dryRun: true,
             stateSpaceAdministration: stateSpaces, privateOperator: authorization);
@@ -113,7 +113,7 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
         var stateSpaces = new ThrowingStateSpaceAdministration();
         var authorization = new DenyingAuthorizer();
 
-        var result = await new CommitTool().CommitAsync(
+        var result = await new CommitMcpTool().CommitAsync(
             world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
             kind: "system.state-space.upgrade", payload: "not-json", dryRun: true,
             stateSpaceAdministration: stateSpaces, privateOperator: authorization);
@@ -131,7 +131,7 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
         var adoption = new ThrowingLegacyAdoption();
         var authorization = new DenyingAuthorizer();
 
-        var result = await new CommitTool().CommitAsync(
+        var result = await new CommitMcpTool().CommitAsync(
             world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
             kind: "system.state-space.adopt-legacy", payload: "not-json", dryRun: true,
             legacyStateAdoption: adoption, privateOperator: authorization);
@@ -148,7 +148,7 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
         await using var db = _fixture.CreateContext();
         var authorizer = new DenyingAuthorizer();
 
-        var result = await new CommitTool().CommitAsync(
+        var result = await new CommitMcpTool().CommitAsync(
             world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
             kind: "system.application.register", payload: "not-json", dryRun: true,
             registryAdministration: null, privateOperator: authorizer);
@@ -167,7 +167,7 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
     {
         await using var db = _fixture.CreateContext();
         var authorization = new DenyingAuthorizer();
-        var result = await new CommitTool().CommitAsync(
+        var result = await new CommitMcpTool().CommitAsync(
             world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
             kind: "system.component-type.register", payload: "not-json", dryRun: true,
             privateOperator: authorization);
@@ -191,11 +191,11 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
         var extra = """{"requestToken":"7123456789abcdef0123456789abcdef","applicationId":"extra-app","displayName":"Extra","description":"","baseApplications":[],"expectedFingerprint":null,"principal":"admin"}""";
         var unsafeSource = """{"requestToken":"8123456789abcdef0123456789abcdef","applicationId":"fixture-app","sourceId":"unsafe","allowedRootId":"workspace","relativePathOrGlob":"../outside/**/*.json","trust":"trusted","precedence":1,"logicalIdentity":"catalog","expectedFingerprint":null}""";
 
-        var extraResult = await new CommitTool().CommitAsync(
+        var extraResult = await new CommitMcpTool().CommitAsync(
             world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
             kind: "system.application.register", payload: extra, dryRun: true,
             registryAdministration: administration, privateOperator: authorization);
-        var unsafeResult = await new CommitTool().CommitAsync(
+        var unsafeResult = await new CommitMcpTool().CommitAsync(
             world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
             kind: "system.source.register", payload: unsafeSource, dryRun: true,
             registryAdministration: administration, privateOperator: authorization);
@@ -214,7 +214,7 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
         var impacts = new ThrowingImpact();
         var authorization = new DenyingAuthorizer();
 
-        var result = await new QueryTool().QueryAsync(
+        var result = await new QueryMcpTool().QueryAsync(
             procedures: null!, world: null!, graphs: null!, mechanics: null!, eventTypes: null!,
             subscriptions: null!, events: null!, log: new OperationLog(db), notifications: null!,
             kind: "system.dependencies", applicationId: "system", id: "invalid",
@@ -257,7 +257,7 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
         var preview = new ThrowingPreview();
         var authorization = new DenyingAuthorizer();
 
-        var result = await new QueryTool().QueryAsync(
+        var result = await new QueryMcpTool().QueryAsync(
             procedures: null!, world: null!, graphs: null!, mechanics: null!, eventTypes: null!,
             subscriptions: null!, events: null!, log: new OperationLog(db), notifications: null!,
             kind: "system.application-preview", applicationId: "system",
@@ -452,7 +452,7 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
         DantesRoleplayDbContext db,
         IProjectionImpactService impacts,
         IPrivateOperatorRequestAuthorizer authorization,
-        int limit) => new QueryTool().QueryAsync(
+        int limit) => new QueryMcpTool().QueryAsync(
             procedures: null!, world: null!, graphs: null!, mechanics: null!, eventTypes: null!,
             subscriptions: null!, events: null!, log: new OperationLog(db), notifications: null!,
             kind: "system.dependencies", applicationId: "fixture-app", limit: limit,
@@ -486,7 +486,7 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
         DantesRoleplayDbContext db,
         IApplicationPreviewService preview,
         IPrivateOperatorRequestAuthorizer authorization,
-        int limit) => new QueryTool().QueryAsync(
+        int limit) => new QueryMcpTool().QueryAsync(
             procedures: null!, world: null!, graphs: null!, mechanics: null!, eventTypes: null!,
             subscriptions: null!, events: null!, log: new OperationLog(db), notifications: null!,
             kind: "system.application-preview", applicationId: "fixture-app", limit: limit,

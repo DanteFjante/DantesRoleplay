@@ -4,16 +4,16 @@ category: play
 name: Execute a bounded story plan
 governs: commit(kind: "story-plan") start and cancel; query(kind: "story-plan")
 status: active
+createdBy: "seed"
+changeNote: "Seeded from bootstrap file."
 ---
 
 ## Description
-
 Accept one small remote-story-model plan, then let the trusted backend resolve each semantic step
 serially. The backend alone retrieves the current procedure contracts, answers authorized knowledge,
 selects and validates mechanics, commits action effects, and returns a bounded handoff for narration.
 
 ## Instructions
-
 1. Start only a linear plan of one to six ordered steps. Each step is exactly `campaign-context`,
    `knowledge`, or `action`; a context step is optional but, when present, is first and unique.
 2. Treat every supplied intent as a semantic request, not a command. The caller never supplies a
@@ -31,7 +31,6 @@ selects and validates mechanics, commits action effects, and returns a bounded h
    work. Do not turn orchestration summaries into new mechanics or fictionally invent results.
 
 ## Constraints
-
 - Version 1 is limited to the configured development GM audience. It has no production background
   authentication, actor execution, remote-model credentials, resume, plan generation, branching,
   loops, retries, output binding, parallelism, generic reads, raw effects, or arbitrary commits.

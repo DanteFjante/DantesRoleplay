@@ -4,10 +4,11 @@ category: game.core.world.travel
 name: Move an active traveller to an adjacent location
 scope: ""
 status: active
+createdBy: "seed"
+changeNote: "Seeded from the embedded catalog mechanic."
 ---
 
 ## Description
-
 Validates one active marked traveller, its derived containment, two active sibling locations, and
 their stored Feature 1 adjacency. On success it proposes exactly one containment move to the
 destination; it has no random outcome, route, time, or topology side effect.

@@ -1,7 +1,7 @@
 using DantesRoleplay.Authorization;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.EcsEffects;
-using DantesRoleplay.MCPServer.Tools;
+using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Tests;
 
@@ -15,7 +15,7 @@ public sealed class WorldStateProtocolTests : IDisposable
     [Fact]
     public void Generic_surface_advertises_the_closed_private_world_sync_kind()
     {
-        var commit = Assert.Single(VerbSurface.CommitKinds,
+        var commit = Assert.Single(McpVerbCatalog.CommitKinds,
             value => value.Name == "system.world-state.sync");
         Assert.True(commit.SupportsDryRun);
         Assert.Equal(["procedure.system.use"], commit.Contracts);
@@ -29,7 +29,7 @@ public sealed class WorldStateProtocolTests : IDisposable
         var service = new RecordingSynchronizer();
         var authorization = new RecordingAuthorizer(false);
 
-        var result = await new CommitTool().CommitAsync(
+        var result = await new CommitMcpTool().CommitAsync(
             world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
             kind: "system.world-state.sync", payload: "not-json", dryRun: true,
             privateOperator: authorization, worldStateSynchronization: service);
@@ -49,7 +49,7 @@ public sealed class WorldStateProtocolTests : IDisposable
         {"requestToken":"0123456789abcdef0123456789abcdef","applicationId":"dnd2024","stateSpaceId":"dnd2024-main","rootEntityId":"world.thalorien","entities":[{"entityId":"location.thalorien.thalos","name":"Thalos","expectedRevision":0,"components":[{"qualifiedTypeId":"dnd2024.game.core.world.location","expectedRevision":0,"value":{"kind":"region","status":"active","summary":"The central continent.","visibility":"public"}}],"containment":{"containerEntityId":"world.thalorien","slot":"region","expectedRevision":0}}],"relationships":[]}
         """;
 
-        var accepted = await new CommitTool().CommitAsync(
+        var accepted = await new CommitMcpTool().CommitAsync(
             world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
             kind: "system.world-state.sync", payload: payload, intent: "Author Thalos.",
             proceduresUsed: ["procedure.system.use", "procedure.game.core.world.location"], dryRun: true,
@@ -65,7 +65,7 @@ public sealed class WorldStateProtocolTests : IDisposable
         var updateWithoutContainment = """
         {"requestToken":"1123456789abcdef0123456789abcdef","applicationId":"dnd2024","stateSpaceId":"dnd2024-main","rootEntityId":"world.thalorien","entities":[{"entityId":"location.thalorien.thalos","name":"Thalos","expectedRevision":1,"components":[{"qualifiedTypeId":"dnd2024.game.core.world.location","expectedRevision":1,"value":{"kind":"region","status":"active","summary":"The central continent.","visibility":"public"}}]}],"relationships":[]}
         """;
-        var update = await new CommitTool().CommitAsync(
+        var update = await new CommitMcpTool().CommitAsync(
             world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
             kind: "system.world-state.sync", payload: updateWithoutContainment, dryRun: true,
             privateOperator: authorization, worldStateSynchronization: service);
@@ -74,7 +74,7 @@ public sealed class WorldStateProtocolTests : IDisposable
         Assert.Null(Assert.Single(service.Request!.Entities).Containment);
 
         var invalid = payload[..^1] + ",\"effects\":[]}\n";
-        var rejected = await new CommitTool().CommitAsync(
+        var rejected = await new CommitMcpTool().CommitAsync(
             world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
             kind: "system.world-state.sync", payload: invalid, dryRun: true,
             privateOperator: authorization, worldStateSynchronization: service);

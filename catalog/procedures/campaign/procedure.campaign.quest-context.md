@@ -4,15 +4,15 @@ category: campaign
 name: Attach quest context to campaign continuity
 governs: commit(kind: "campaign") operation attach-quest-context
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
-
 Attach an active quest to an existing campaign arc and chapter as continuity context without
 changing quest or campaign lifecycle state.
 
 ## Instructions
-
 1. Read the active quest with `query(kind: "quest-summary", id: "quest.*")` and the campaign with
    `query(kind: "campaign-resume", id: "campaign.*")`.
 2. Submit exactly `operation`, `campaignId`, `arcId`, `chapterId`, `questId`, and
@@ -23,7 +23,6 @@ changing quest or campaign lifecycle state.
    quest-id order and at most three objectives per quest in quest-owned display order.
 
 ## Constraints
-
 - The campaign, active arc, active-or-closed chapter, and Q3-valid active quest must already exist
   in the same quest-owned campaign/arc/chapter scope.
 - This operation writes context links only. It never creates or changes quest/objective state,

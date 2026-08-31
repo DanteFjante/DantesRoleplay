@@ -4,6 +4,8 @@ category: mechanics
 name: Find and read mechanics
 governs: query(kind: "mechanics"), discovering and inspecting stored JavaScript mechanics
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description

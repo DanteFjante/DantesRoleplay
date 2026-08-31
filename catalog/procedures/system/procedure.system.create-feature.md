@@ -4,6 +4,8 @@ category: system
 name: Add a feature
 governs: adding a capability that does not exist yet
 status: active
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description

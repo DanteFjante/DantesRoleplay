@@ -1,0 +1,16 @@
+{
+  "id": "location.caldris.gilded-kettle",
+  "name": "The Gilded Kettle",
+  "container": {
+    "id": "location.caldris.bramblebridge",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "site",
+      "status": "active",
+      "summary": "A welcoming Bramblebridge tavern that doesn't care whether its guests are prophesied for anything, so long as they help move benches and eat their dumplings before they cool.",
+      "visibility": "public"
+    }
+  }
+}

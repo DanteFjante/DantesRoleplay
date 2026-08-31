@@ -213,7 +213,7 @@ public sealed class ProjectionResolverTests : IDisposable
 
         // Existing direct-content mechanics receive the exact old node shape. In particular,
         // they cannot mistake an omitted descendant component request for an empty component.
-        var sandbox = await new RuleAccess.JintMechanicEngine().RunAsync("""
+        var sandbox = await new JintMechanicEngine().RunAsync("""
             return {
               data: JSON.stringify({
                 hasComponents: typeof ctx.roles.subject.contains[0].components !== 'undefined',
@@ -243,7 +243,7 @@ public sealed class ProjectionResolverTests : IDisposable
             new Dictionary<string, string> { ["subject"] = "orban" });
 
         Assert.True(resolved.Ok, string.Join("; ", resolved.Problems));
-        var run = await new RuleAccess.JintMechanicEngine().RunAsync("""
+        var run = await new JintMechanicEngine().RunAsync("""
             return {
               narration: 'direct contents',
               data: JSON.stringify({
@@ -384,7 +384,7 @@ public sealed class ProjectionResolverTests : IDisposable
                 Assert.Equal("""{"order":2}""", second.Data);
             });
 
-        var sandbox = await new RuleAccess.JintMechanicEngine().RunAsync("""
+        var sandbox = await new JintMechanicEngine().RunAsync("""
             return {
               narration: 'relationship projection',
               data: JSON.stringify({
@@ -568,7 +568,7 @@ public sealed class ProjectionResolverTests : IDisposable
         var world = await WorldAsync(db);
         var resolver = new ProjectionResolver(db);
         var applier = new EffectApplier(db, world);
-        var engine = new RuleAccess.JintMechanicEngine();
+        var engine = new JintMechanicEngine();
 
         var requirements = Requires("""{"roles":{"subject":{"components":["stats"]}}}""");
 

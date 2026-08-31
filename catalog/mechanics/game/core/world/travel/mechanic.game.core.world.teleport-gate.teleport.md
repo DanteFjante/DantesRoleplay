@@ -4,10 +4,11 @@ category: game.core.world.travel
 name: Cross one fixed teleport gate
 scope: ""
 status: active
+createdBy: "seed"
+changeNote: "Seeded from the embedded catalog mechanic."
 ---
 
 ## Description
-
 Validates one active traveller co-located with one active fixed portal, its explicit root and
 destination links, and an unchanged valid root clock. It proposes exactly one effect: move the
 traveller to the linked destination. Roads, routes, adjacency, plans, and duration are not read.

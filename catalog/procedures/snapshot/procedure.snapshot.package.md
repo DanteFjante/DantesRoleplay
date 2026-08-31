@@ -4,16 +4,16 @@ category: snapshot
 name: Stage and verify immutable snapshot packages
 governs: internal immutable snapshot package staging and byte-free verification
 status: active
+createdBy: "seed"
+changeNote: "Seeded from bootstrap file."
 ---
 
 ## Description
-
 Defines the generic storage boundary for one producer-owned immutable snapshot package. It has no
 public MCP operation: a named domain coordinator may call the typed in-process store only within
 its own approved root transaction.
 
 ## Instructions
-
 1. Ask the registered scope producer for one closed `SnapshotCaptureProposal`; never accept bytes,
    a digest, a storage id, a path, URI, credentials, domain list, raw effect, or restore option
    from an MCP caller.
@@ -27,7 +27,6 @@ its own approved root transaction.
    fail closed for missing, unavailable, mismatched, or corrupt content.
 
 ## Constraints
-
 - A package has exactly one producer-owned scope contract/version, producer/version, boundary
   fingerprint, canonical content digest, byte count, capture time, and availability state.
 - Generic storage never interprets, selects, copies by guessing, restores, forks, lists, downloads,
