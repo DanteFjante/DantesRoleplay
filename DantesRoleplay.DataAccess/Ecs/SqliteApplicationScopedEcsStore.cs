@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
@@ -25,11 +25,20 @@ public sealed class SqliteStateSpaceRegistry(
         if (existing is not null)
         {
             var stored = ToView(existing, application);
-            if (stored.ApplicationRevision != binding.ApplicationRevision || stored.ManifestFingerprint != binding.ManifestFingerprint)
+            if (stored.ApplicationRevision != binding.ApplicationRevision
+                || stored.ManifestFingerprint != binding.ManifestFingerprint
+                || stored.ResolutionFingerprint != binding.ResolutionFingerprint
+                || stored.Scope != binding.Scope)
                 throw new InvalidOperationException("A state-space binding is immutable.");
             transaction?.Commit();
             return stored;
         }
+
+        if (binding.Scope == EcsStateSpaceScope.ApplicationPublication
+            && db.Set<ApplicationStateSpaceRecord>().Any(value =>
+                value.ApplicationId == binding.ApplicationRevision.ApplicationId.Value
+                && value.Scope == "application-publication"))
+            throw new InvalidOperationException("An application may have only one publication state space.");
 
         var now = DateTime.UtcNow;
         var row = new ApplicationStateSpaceRecord
@@ -38,6 +47,8 @@ public sealed class SqliteStateSpaceRegistry(
             ApplicationId = binding.ApplicationRevision.ApplicationId.Value,
             ApplicationRevision = binding.ApplicationRevision.Revision,
             ManifestFingerprint = binding.ManifestFingerprint,
+            ResolutionFingerprint = binding.ResolutionFingerprint,
+            Scope = EcsComponentRolePolicyParser.ScopeName(binding.Scope),
             BindingRevision = 1,
             CreatedAtUtc = now,
             UpdatedAtUtc = now
@@ -53,7 +64,7 @@ public sealed class SqliteStateSpaceRegistry(
         ArgumentException.ThrowIfNullOrWhiteSpace(stateSpaceId);
         var row = db.Set<ApplicationStateSpaceRecord>().AsNoTracking().SingleOrDefault(x => x.Id == stateSpaceId);
         if (row is null) return null;
-        var application = applications.Get(ApplicationIdentifier.Parse(row.ApplicationId));
+        var application = applications.Get(ApplicationIdentifier.Parse(row.ApplicationId), row.ApplicationRevision);
         if (application is null || application.Revision != row.ApplicationRevision)
             throw new InvalidOperationException("The stored state space has no matching application revision.");
         return ToView(row, application);
@@ -80,7 +91,7 @@ public sealed class SqliteStateSpaceRegistry(
         return new(
             Array.AsReadOnly(page.Select(value => ToView(
                 value,
-                applications.Get(applicationId) ?? throw new InvalidOperationException(
+                applications.Get(applicationId, value.ApplicationRevision) ?? throw new InvalidOperationException(
                     "The stored state space has no matching application revision."))).ToArray()),
             hasMore ? page[^1].Id : null);
     }
@@ -97,7 +108,11 @@ public sealed class SqliteStateSpaceRegistry(
 
     private static StateSpaceView ToView(ApplicationStateSpaceRecord row, ApplicationRevision application) =>
         new(row.Id, application, row.ManifestFingerprint, row.BindingRevision, row.CreatedAtUtc,
-            row.UpdatedAtUtc ?? row.CreatedAtUtc);
+            row.UpdatedAtUtc ?? row.CreatedAtUtc)
+        {
+            ResolutionFingerprint = row.ResolutionFingerprint,
+            Scope = EcsComponentRolePolicyParser.ParseScope(row.Scope)
+        };
 
     private static bool SameRevision(ApplicationRevision left, ApplicationRevision right) =>
         left.ApplicationId == right.ApplicationId
@@ -120,26 +135,29 @@ public sealed class SqliteStateSpaceRegistry(
 public sealed class SqliteEntityComponentStore(
     DantesRoleplayDbContext db,
     IApplicationComponentTypeRegistry types,
-    IBoundedJsonSchemaValidator validator) : IEntityComponentStore
+    IBoundedJsonSchemaValidator validator,
+    IEcsRoleConstraintValidator? constraints = null) : IEntityComponentStore, IEntityComponentSearchStore
 {
     public async Task<EcsEntityView> CreateEntityAsync(string stateSpaceId, string entityId, string name, CancellationToken cancellationToken = default)
     {
         ValidateEntity(stateSpaceId, entityId, name);
-        await RequireStateSpaceAsync(stateSpaceId, cancellationToken);
-        if (await db.Set<ApplicationEcsEntityRecord>().AnyAsync(x => x.StateSpaceId == stateSpaceId && x.Id == entityId, cancellationToken))
-            throw new InvalidOperationException("An entity ID is immutable within its state space.");
-
-        var row = new ApplicationEcsEntityRecord
+        return await ConstrainedWriteAsync(stateSpaceId, async () =>
         {
-            StateSpaceId = stateSpaceId,
-            Id = entityId,
-            Name = name.Trim(),
-            Revision = 1,
-            CreatedAtUtc = DateTime.UtcNow
-        };
-        db.Add(row);
-        await db.SaveChangesAsync(cancellationToken);
-        return ToView(row);
+            await RequireStateSpaceAsync(stateSpaceId, cancellationToken);
+            if (await db.Set<ApplicationEcsEntityRecord>().AnyAsync(x => x.StateSpaceId == stateSpaceId && x.Id == entityId, cancellationToken))
+                throw new InvalidOperationException("An entity ID is immutable within its state space.");
+            var row = new ApplicationEcsEntityRecord
+            {
+                StateSpaceId = stateSpaceId,
+                Id = entityId,
+                Name = name.Trim(),
+                Revision = 1,
+                CreatedAtUtc = DateTime.UtcNow
+            };
+            db.Add(row);
+            await db.SaveChangesAsync(cancellationToken);
+            return ToView(row);
+        }, cancellationToken);
     }
 
     public async Task<EcsEntityView?> GetEntityAsync(string stateSpaceId, string entityId, CancellationToken cancellationToken = default)
@@ -173,18 +191,53 @@ public sealed class SqliteEntityComponentStore(
         return new(Array.AsReadOnly(page.Select(ToView).ToArray()), hasMore ? page[^1].Id : null);
     }
 
+    public async Task<EcsEntityDiscoveryPage> SearchEntitiesAsync(
+        string stateSpaceId,
+        EcsEntitySearch search,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(stateSpaceId);
+        ArgumentNullException.ThrowIfNull(search);
+        ValidateBoundedId(stateSpaceId, nameof(stateSpaceId));
+        search.Validate();
+        await RequireStateSpaceAsync(stateSpaceId, cancellationToken);
+        var after = await ValidateEntityCursorAsync(stateSpaceId, search.AfterEntityId, cancellationToken);
+        var name = search.NameQuery?.Trim();
+        var typeId = search.QualifiedTypeId?.Trim();
+
+        var query = db.Set<ApplicationEcsEntityRecord>().AsNoTracking()
+            .Where(value => value.StateSpaceId == stateSpaceId && value.DeletedAtUtc == null &&
+                (after == null || string.Compare(value.Id, after) > 0));
+        if (!string.IsNullOrEmpty(name))
+            query = query.Where(value => EF.Functions.Like(value.Name, "%" + name + "%")
+                || EF.Functions.Like(value.Id, "%" + name + "%"));
+        if (!string.IsNullOrEmpty(typeId))
+            query = query.Where(value => db.Set<ApplicationEcsComponentRecord>()
+                .Any(component => component.StateSpaceId == value.StateSpaceId
+                    && component.EntityId == value.Id
+                    && component.QualifiedTypeId == typeId));
+
+        var rows = await query.OrderBy(value => value.Id).Take(search.Limit + 1).ToArrayAsync(cancellationToken);
+        var hasMore = rows.Length > search.Limit;
+        var page = hasMore ? rows[..search.Limit] : rows;
+        return new(Array.AsReadOnly(page.Select(ToView).ToArray()), hasMore ? page[^1].Id : null);
+    }
+
     public async Task<bool> DeleteEntityAsync(string stateSpaceId, string entityId, int expectedRevision, CancellationToken cancellationToken = default)
     {
         ValidateEntityId(stateSpaceId, entityId);
         if (expectedRevision < 1) throw new ArgumentOutOfRangeException(nameof(expectedRevision));
-        var row = await db.Set<ApplicationEcsEntityRecord>()
-            .SingleOrDefaultAsync(x => x.StateSpaceId == stateSpaceId && x.Id == entityId && x.DeletedAtUtc == null, cancellationToken);
-        if (row is null) return false;
-        if (row.Revision != expectedRevision) throw new InvalidOperationException("The entity revision is stale.");
-        row.DeletedAtUtc = DateTime.UtcNow;
-        row.Revision++;
-        await db.SaveChangesAsync(cancellationToken);
-        return true;
+        return await ConstrainedWriteAsync(stateSpaceId, async () =>
+        {
+            var row = await db.Set<ApplicationEcsEntityRecord>()
+                .SingleOrDefaultAsync(x => x.StateSpaceId == stateSpaceId && x.Id == entityId && x.DeletedAtUtc == null, cancellationToken);
+            if (row is null) return false;
+            if (row.Revision != expectedRevision) throw new InvalidOperationException("The entity revision is stale.");
+            row.DeletedAtUtc = DateTime.UtcNow;
+            row.Revision++;
+            await db.SaveChangesAsync(cancellationToken);
+            return true;
+        }, cancellationToken);
     }
 
     public async Task<EcsComponentView?> GetComponentAsync(string stateSpaceId, string entityId, string qualifiedTypeId, CancellationToken cancellationToken = default)
@@ -236,11 +289,14 @@ public sealed class SqliteEntityComponentStore(
         var after = await ValidateComponentCursorAsync(
             stateSpaceId, entityId, afterQualifiedTypeId, cancellationToken);
         var rows = await db.Set<ApplicationEcsComponentRecord>().AsNoTracking()
-            .Where(value => value.StateSpaceId == stateSpaceId && value.EntityId == entityId &&
-                (after == null || string.Compare(value.QualifiedTypeId, after) > 0))
-            .OrderBy(value => value.QualifiedTypeId)
+            .Join(db.Set<ComponentTypeRecord>().AsNoTracking(), component => component.QualifiedTypeId,
+                type => type.QualifiedId, (component, type) => new { component, type })
+            .Where(value => value.component.StateSpaceId == stateSpaceId
+                && value.component.EntityId == entityId && value.type.DisabledAtUtc == null
+                && (after == null || string.Compare(value.component.QualifiedTypeId, after) > 0))
+            .OrderBy(value => value.component.QualifiedTypeId)
             .Take(limit + 1)
-            .ToArrayAsync(cancellationToken);
+            .Select(value => value.component).ToArrayAsync(cancellationToken);
         var hasMore = rows.Length > limit;
         var page = hasMore ? rows[..limit] : rows;
         return new(
@@ -263,21 +319,33 @@ public sealed class SqliteEntityComponentStore(
         ArgumentNullException.ThrowIfNull(type);
         type.Validate();
         if (expectedRevision < 1) throw new ArgumentOutOfRangeException(nameof(expectedRevision));
-        await RequireLiveEntityAsync(stateSpaceId, entityId, cancellationToken);
-        var row = await db.Set<ApplicationEcsComponentRecord>().SingleOrDefaultAsync(x =>
-            x.StateSpaceId == stateSpaceId && x.EntityId == entityId && x.QualifiedTypeId == type.QualifiedTypeId, cancellationToken);
-        if (row is null) return false;
-        if (row.TypeVersion != type.TypeVersion || row.SchemaHash != type.SchemaHash || row.Revision != expectedRevision)
-            throw new InvalidOperationException("The component contract or revision is stale.");
-        db.Remove(row);
-        await db.SaveChangesAsync(cancellationToken);
-        return true;
+        return await ConstrainedWriteAsync(stateSpaceId, async () =>
+        {
+            await RequireLiveEntityAsync(stateSpaceId, entityId, cancellationToken);
+            var row = await db.Set<ApplicationEcsComponentRecord>().SingleOrDefaultAsync(x =>
+                x.StateSpaceId == stateSpaceId && x.EntityId == entityId && x.QualifiedTypeId == type.QualifiedTypeId, cancellationToken);
+            if (row is null) return false;
+            if (row.TypeVersion != type.TypeVersion || row.SchemaHash != type.SchemaHash || row.Revision != expectedRevision)
+                throw new InvalidOperationException("The component contract or revision is stale.");
+            db.Remove(row);
+            await db.SaveChangesAsync(cancellationToken);
+            return true;
+        }, cancellationToken);
     }
 
     private async Task<EcsComponentView> WriteAsync(EcsComponentWrite write, WriteMode mode, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(write);
         write.Validate();
+        return await ConstrainedWriteAsync(write.StateSpaceId,
+            () => WriteWithinTransactionAsync(write, mode, cancellationToken), cancellationToken);
+    }
+
+    private async Task<EcsComponentView> WriteWithinTransactionAsync(
+        EcsComponentWrite write,
+        WriteMode mode,
+        CancellationToken cancellationToken)
+    {
         var stateSpace = await RequireStateSpaceAsync(write.StateSpaceId, cancellationToken);
         var type = types.Get(write.Type.QualifiedTypeId, write.Type.TypeVersion);
         var exactBaseOwner = type is not null && await db.Set<ApplicationRevisionBaseRecord>()
@@ -286,7 +354,7 @@ public sealed class SqliteEntityComponentStore(
                 && value.Revision == stateSpace.ApplicationRevision
                 && value.BaseApplicationId == type.Owner.Value, cancellationToken);
         if (type is null
-            || (type.Owner.Value != stateSpace.ApplicationId && !exactBaseOwner)
+            || (!type.Owner.IsSystem && type.Owner.Value != stateSpace.ApplicationId && !exactBaseOwner)
             || type.SchemaHash != write.Type.SchemaHash)
             throw new InvalidOperationException("The component type is unknown, stale, or outside this state space's application.");
 
@@ -343,6 +411,35 @@ public sealed class SqliteEntityComponentStore(
 
         await db.SaveChangesAsync(cancellationToken);
         return ToView(existing);
+    }
+
+    private async Task<T> ConstrainedWriteAsync<T>(
+        string stateSpaceId,
+        Func<Task<T>> write,
+        CancellationToken cancellationToken)
+    {
+        var transaction = await SqliteEcsConstraintTransaction.BeginIfNeededAsync(db, cancellationToken);
+        try
+        {
+            var result = await write();
+            if (transaction is not null && constraints is not null)
+                await constraints.ValidateStateSpaceAsync(stateSpaceId, cancellationToken);
+            if (transaction is not null) await transaction.CommitAsync(cancellationToken);
+            return result;
+        }
+        catch
+        {
+            if (transaction is not null)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                db.ChangeTracker.Clear();
+            }
+            throw;
+        }
+        finally
+        {
+            if (transaction is not null) await transaction.DisposeAsync();
+        }
     }
 
     private async Task<ApplicationStateSpaceRecord> RequireStateSpaceAsync(string stateSpaceId, CancellationToken cancellationToken) =>
@@ -410,7 +507,10 @@ public sealed class SqliteEntityComponentStore(
         ValidateBoundedId(afterQualifiedTypeId, nameof(afterQualifiedTypeId));
         if (!await db.Set<ApplicationEcsComponentRecord>().AsNoTracking().AnyAsync(value =>
                 value.StateSpaceId == stateSpaceId && value.EntityId == entityId &&
-                value.QualifiedTypeId == afterQualifiedTypeId, cancellationToken))
+                value.QualifiedTypeId == afterQualifiedTypeId
+                && db.Set<ComponentTypeRecord>().Any(type =>
+                    type.QualifiedId == value.QualifiedTypeId && type.DisabledAtUtc == null),
+                cancellationToken))
             throw new InvalidOperationException("CURSOR_STALE");
         return afterQualifiedTypeId;
     }
@@ -443,6 +543,8 @@ internal sealed class ApplicationStateSpaceRecord
     public required string ApplicationId { get; set; }
     public int ApplicationRevision { get; set; }
     public required string ManifestFingerprint { get; set; }
+    public string ResolutionFingerprint { get; set; } = new('0', 64);
+    public string Scope { get; set; } = "runtime-state-space";
     public int BindingRevision { get; set; } = 1;
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? UpdatedAtUtc { get; set; }

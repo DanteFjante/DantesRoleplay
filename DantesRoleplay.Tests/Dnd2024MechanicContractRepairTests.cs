@@ -17,6 +17,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                     "{\"scores\":{\"dnd2024.vocabulary.ability.strength\":16}}"
             });
         var weapon = new EntityProjection("item.club", "Club", new Dictionary<string, string>());
+        var activity = new EntityProjection("activity.club.hit", "Club hit", new Dictionary<string, string>());
         var target = new EntityProjection(
             "creature.target",
             "Target",
@@ -29,7 +30,7 @@ public sealed class Dnd2024MechanicContractRepairTests
         var damageOutput = new MechanicOutput
         {
             Data =
-                "{\"test\":\"weapon-damage\",\"subjectId\":\"character.hero\",\"weaponId\":\"item.club\",\"ability\":\"str\",\"critical\":false,\"type\":\"bludgeoning\",\"damage\":8}",
+                "{\"test\":\"weapon-damage\",\"subjectId\":\"character.hero\",\"weaponId\":\"item.club\",\"activityId\":\"activity.club.hit\",\"ability\":\"str\",\"critical\":false,\"type\":\"bludgeoning\",\"damage\":8}",
             HasData = true
         };
         var mitigationOutput = new MechanicOutput
@@ -41,7 +42,7 @@ public sealed class Dnd2024MechanicContractRepairTests
         var result = await RunAsync("combat/dnd2024.mechanic.weapon-damage.apply", new MechanicProjection
         {
             Input = "{\"ability\":\"str\",\"critical\":false}",
-            Roles = new() { ["subject"] = subject, ["weapon"] = weapon, ["target"] = target },
+            Roles = new() { ["subject"] = subject, ["weapon"] = weapon, ["activity"] = activity, ["target"] = target },
             Children = new()
             {
                 ["damage"] =
@@ -51,7 +52,8 @@ public sealed class Dnd2024MechanicContractRepairTests
                         new Dictionary<string, string>
                         {
                             ["subject"] = subject.Id,
-                            ["weapon"] = weapon.Id
+                            ["weapon"] = weapon.Id,
+                            ["activity"] = activity.Id
                         },
                         damageOutput, [], 0)
                 ],
@@ -130,7 +132,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                 ["dnd2024.creature.ability-scores"] =
                     "{\"scores\":{\"dnd2024.vocabulary.ability.dexterity\":16}}",
                 ["dnd2024.character.feature-entitlements"] =
-                    "{\"entitlements\":[{\"featureRef\":{\"entityId\":\"dnd2024.feat.alert\"},\"sourceRef\":{\"entityId\":\"dnd2024.background.guard\"}}]}"
+                    "{\"entitlements\":[{\"featureRef\":{\"entityId\":\"dnd2024.feat.alert\"},\"grantedByRef\":{\"entityId\":\"dnd2024.background.guard\"},\"grantKind\":\"origin-feat\",\"configurationKey\":\"default\",\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Feats > Origin Feats > Alert\"}}]}"
             });
         var levelOutput = new MechanicOutput
         {
@@ -171,37 +173,27 @@ public sealed class Dnd2024MechanicContractRepairTests
     public async Task Species_selection_preserves_canonical_size_movement_and_grants()
     {
         var species = new EntityProjection(
-            "dnd2024.species.human",
+            "dnd2024.content.species.human.v1",
             "Human",
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                ["dnd2024.core.version"] = "{\"revision\":1,\"status\":\"active\"}",
-                ["dnd2024.advancement.species"] =
-                    "{\"grantRefs\":[{\"entityId\":\"dnd2024.feature.human.resourceful\"}]}",
-                ["dnd2024.creature.classification"] =
-                    "{\"creatureTypeRef\":{\"entityId\":\"dnd2024.vocabulary.creature-type.humanoid\"},\"descriptiveTagRefs\":[]}",
-                ["dnd2024.creature.body-basis"] =
-                    "{\"allowedSizeRefs\":[{\"entityId\":\"dnd2024.vocabulary.size.small\"},{\"entityId\":\"dnd2024.vocabulary.size.medium\"}]}",
-                ["dnd2024.creature.movement-basis"] =
-                    "{\"speeds\":{\"dnd2024.vocabulary.movement-mode.walk\":{\"distance\":{\"dimension\":\"distance\",\"value\":{\"numerator\":1143,\"denominator\":125},\"unit\":{\"entityId\":\"dnd2024.vocabulary.distance-unit.meter\"}}}}}"
+                ["dnd2024.character.content-definition"] =
+                    "{\"kind\":\"species\",\"contentKey\":\"human\",\"contentVersion\":1,\"status\":\"active\",\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Character Origins > Character Species > Human\"}}",
+                ["dnd2024.species-profile"] =
+                    "{\"contentKey\":\"human\",\"contentVersion\":1,\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Character Origins > Character Species > Human\"},\"creatureType\":\"humanoid\",\"allowedSizes\":[\"small\",\"medium\"],\"baseSpeed\":{\"walkFeet\":30,\"burrowFeet\":0,\"climbFeet\":0,\"flyFeet\":0,\"swimFeet\":0},\"traitKeys\":[\"resourceful\"],\"choiceFamilies\":[]}"
             });
         var result = await RunAsync("data/dnd2024.mechanic.species-selection.resolve", new MechanicProjection
         {
-            Input = "{\"sizeRef\":\"dnd2024.vocabulary.size.medium\"}",
+            Input = "{\"size\":\"medium\"}",
             Roles = new() { ["species"] = species }
         });
 
         Assert.True(result.Ok, result.Error);
         Assert.Empty(result.Output.Effects);
         using var data = JsonDocument.Parse(result.Output.Data);
-        Assert.Equal("dnd2024.vocabulary.size.medium",
-            data.RootElement.GetProperty("selectedSizeRef").GetProperty("entityId").GetString());
-        Assert.Equal("dnd2024.feature.human.resourceful",
-            data.RootElement.GetProperty("grantRefs")[0].GetProperty("entityId").GetString());
-        Assert.Equal(1143,
-            data.RootElement.GetProperty("movementBasis").GetProperty("speeds")
-                .GetProperty("dnd2024.vocabulary.movement-mode.walk").GetProperty("distance")
-                .GetProperty("value").GetProperty("numerator").GetInt32());
+        Assert.Equal("medium", data.RootElement.GetProperty("size").GetProperty("size").GetString());
+        Assert.Equal("resourceful", data.RootElement.GetProperty("traitEntitlements")[0].GetString());
+        Assert.Equal(30, data.RootElement.GetProperty("speed").GetProperty("walkFeet").GetInt32());
     }
 
     [Fact]
@@ -328,53 +320,40 @@ public sealed class Dnd2024MechanicContractRepairTests
     public async Task Class_progression_resolves_canonical_level_grants()
     {
         var classRole = new EntityProjection(
-            "dnd2024.class.fighter",
+            "dnd2024.content.class.fighter.v1",
             "Fighter",
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                ["dnd2024.advancement.class"] =
-                    "{\"primaryAbilityRefs\":[{\"entityId\":\"dnd2024.vocabulary.ability.strength\"}],\"hitDieRef\":{\"entityId\":\"dnd2024.vocabulary.die.d10\"},\"progressionRef\":{\"entityId\":\"dnd2024.class-progression.fighter\"}}"
+                ["dnd2024.character.content-definition"] =
+                    "{\"kind\":\"class\",\"contentKey\":\"fighter\",\"contentVersion\":1,\"status\":\"active\",\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Classes > Fighter\"}}",
+                ["dnd2024.class-progression"] =
+                    "{\"fixedHitPointGainBeforeConstitution\":6,\"hitDieSides\":10,\"levels\":[{\"classLevel\":1,\"featureDefinitionIds\":[\"dnd2024.content.feature.fighter.second-wind.v1\"],\"choiceSetDefinitionIds\":[]}],\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Classes > Fighter\"}}"
             });
-        var references = new Dictionary<string, ReferencedEntityProjection>(StringComparer.Ordinal)
-        {
-            ["dnd2024.class-progression.fighter"] = new(
-                "dnd2024.class-progression.fighter",
-                new Dictionary<string, string>(StringComparer.Ordinal)
-                {
-                    ["dnd2024.advancement.progression"] =
-                        "{\"levels\":{\"1\":{\"grantRefs\":[{\"entityId\":\"dnd2024.feature.fighter.second-wind\"}]},\"2\":{}}}"
-                })
-        };
 
         var supported = await RunAsync("proficiency/dnd2024.mechanic.class-progression.read", new MechanicProjection
         {
             Input = "{\"classLevel\":1}",
             Roles = new() { ["class"] = classRole },
-            References = references
         });
         Assert.True(supported.Ok, supported.Error);
         Assert.Empty(supported.Output.Effects);
         using (var result = JsonDocument.Parse(supported.Output.Data))
         {
             Assert.Equal("supported", result.RootElement.GetProperty("status").GetString());
-            Assert.Equal("dnd2024.class-progression.fighter",
-                result.RootElement.GetProperty("progressionId").GetString());
-            Assert.Equal("dnd2024.vocabulary.die.d10",
-                result.RootElement.GetProperty("hitDieRef").GetProperty("entityId").GetString());
-            Assert.Equal("dnd2024.feature.fighter.second-wind",
-                result.RootElement.GetProperty("grantRefs")[0].GetProperty("entityId").GetString());
+            Assert.Equal(10, result.RootElement.GetProperty("hitDieSides").GetInt32());
+            Assert.Equal("dnd2024.content.feature.fighter.second-wind.v1",
+                result.RootElement.GetProperty("featureEntitlements")[0].GetProperty("definitionId").GetString());
         }
 
         var unsupported = await RunAsync("proficiency/dnd2024.mechanic.class-progression.read", new MechanicProjection
         {
             Input = "{\"classLevel\":3}",
             Roles = new() { ["class"] = classRole },
-            References = references
         });
         Assert.True(unsupported.Ok, unsupported.Error);
         using var unsupportedResult = JsonDocument.Parse(unsupported.Output.Data);
         Assert.Equal("unsupported-level", unsupportedResult.RootElement.GetProperty("status").GetString());
-        Assert.Empty(unsupportedResult.RootElement.GetProperty("grantRefs").EnumerateArray());
+        Assert.Empty(unsupportedResult.RootElement.GetProperty("featureEntitlements").EnumerateArray());
     }
 
     [Fact]
@@ -386,17 +365,21 @@ public sealed class Dnd2024MechanicContractRepairTests
             Roles = new()
             {
                 ["class"] = new EntityProjection(
-                    "dnd2024.class.fighter",
+                    "dnd2024.content.class.fighter.v1",
                     "Fighter",
                     new Dictionary<string, string>
                     {
-                        ["dnd2024.advancement.class"] =
-                            "{\"primaryAbilityRefs\":[{\"entityId\":\"dnd2024.vocabulary.ability.strength\"}],\"hitDieRef\":{\"entityId\":\"dnd2024.vocabulary.die.d10\"},\"progressionRef\":{\"entityId\":\"dnd2024.class-progression.fighter\"}}"
+                        ["dnd2024.character.content-definition"] =
+                            "{\"kind\":\"class\",\"contentKey\":\"fighter\",\"contentVersion\":1,\"status\":\"active\",\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Classes > Fighter\"}}",
+                        ["dnd2024.class-progression"] = "{}"
                     })
             }
         });
 
-        Assert.False(result.Ok);
+        Assert.True(result.Ok, result.Error);
+        using var data = JsonDocument.Parse(result.Output.Data);
+        Assert.Equal("unknown", data.RootElement.GetProperty("status").GetString());
+        Assert.Equal("invalid-progression", data.RootElement.GetProperty("problem").GetString());
         Assert.Empty(result.Output.Effects);
     }
 

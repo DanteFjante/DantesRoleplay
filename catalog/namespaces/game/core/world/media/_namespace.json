@@ -1,0 +1,13 @@
+{
+  "id": "game.core.world.media",
+  "owner": "game",
+  "description": "Namespace for game core world media catalog records.",
+  "allowedKinds": [
+    "component-definition",
+    "component-type"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

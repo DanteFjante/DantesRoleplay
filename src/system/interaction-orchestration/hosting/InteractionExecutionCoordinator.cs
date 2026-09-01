@@ -1,4 +1,4 @@
-using System.Buffers.Binary;
+﻿using System.Buffers.Binary;
 using System.Text.Json;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.ApplicationExecution;
@@ -143,7 +143,8 @@ internal sealed class InteractionExecutionCoordinator(
                 try
                 {
                     var query = await executor.ExecuteAsync(new(authority.StateSpaceId,
-                        authority.ApplicationId, step.QueryContract, bound.RoleBindings), cancellationToken);
+                        authority.ApplicationId, step.Contract.QualifiedKey,
+                        step.QueryContract, bound.RoleBindings), cancellationToken);
                     queryResults.Add(step.StepId, query);
                     queryProjections.Add(new(step.StepId, step.Contract.QualifiedKey,
                         query.OutputSchemaHash, query.ResultFingerprint, query.SourceRevisionFingerprint,
@@ -229,9 +230,23 @@ internal sealed class InteractionExecutionCoordinator(
             InteractionExecutionReceiptDisposition.Cancelled => "The interaction was cancelled before a step committed.",
             _ => "The interaction failed before any step committed."
         };
+        var evidence = new List<string>
+        {
+            "steps:" + verified.Proposal.Steps.Count,
+            "committed-or-replayed:" + successful,
+            "failed:" + failed
+        };
+        // Carry the problem's own safe message, not just its code. A refusing mechanic writes text
+        // aimed at the caller ("The destination is outside the campaign World."); a receipt holding
+        // only MECHANIC_FAILED makes every refusal look like the same opaque fault.
+        evidence.AddRange(actionResults
+            .Where(result => !result.Successful)
+            .SelectMany(result => result.Problems.Select(problem =>
+                "action-problem:" + result.QualifiedMechanicId + ":" + problem.Code
+                + (string.IsNullOrWhiteSpace(problem.SafeMessage) ? "" : ":" + problem.SafeMessage))));
         var draft = new InteractionExecutionReceiptDraft(consent, executionFingerprint, disposition,
             summary,
-            ["steps:" + verified.Proposal.Steps.Count, "committed-or-replayed:" + successful, "failed:" + failed],
+            evidence,
             stepReceipts,
             queryReceiptDrafts);
         var write = await receipts.AppendExecutionAsync(draft, CancellationToken.None);
@@ -302,6 +317,7 @@ internal sealed class InteractionExecutionCoordinator(
             || activation is null || activation.ActivationFingerprint != authority.EffectiveSetFingerprint
             || stateSpace is null || !SameRevision(stateSpace.ApplicationRevision, application)
             || stateSpace.ManifestFingerprint != authority.EffectiveSetFingerprint
+            || stateSpace.ResolutionFingerprint != activation.ResolutionFingerprint
             || InteractionStateRevision.From(stateSpace) != authority.StateRevision)
             return null;
         InteractionRoleProfile role;
@@ -316,7 +332,7 @@ internal sealed class InteractionExecutionCoordinator(
             authority.SessionContextId, authority.StateRevision, authority.EffectiveSetFingerprint,
             role, new(InteractionContractLimits.ProposalSteps, InteractionContractLimits.JsonBytes,
                 InteractionContractLimits.JsonBytes), planEvidence, authority.ConversationId,
-            authority.ParentDelegationId);
+            authority.ParentDelegationId, activation.ResolutionFingerprint);
         if (originalIntent is not null)
         {
             if (originalIntent.IdempotencyKey != authority.ResolutionIdempotencyKey) return null;

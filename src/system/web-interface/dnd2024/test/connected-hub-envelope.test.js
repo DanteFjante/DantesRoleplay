@@ -4,6 +4,13 @@ import test from "node:test";
 import { connectedCampaignToHubEnvelope } from "../src/server/connected-hub-envelope.ts";
 import { isReadyHubEnvelope } from "../src/state.js";
 
+function visual(id, alt) {
+  return {
+    imageUrl: `/api/applications/dnd2024/state-spaces/dnd2024-main/entities/${id}/media/map/content`,
+    alt,
+  };
+}
+
 function connectedFixture({
   knowledgeStatus = "ready",
   knowledgeEntries = [{ text: "A placeholder campaign fact.", stance: "known", presentationKind: "statement" }],
@@ -111,6 +118,8 @@ test("projects authorized entity media into locations, people, clues, and the ex
     }],
   }));
 
+  assert.equal(envelope.applicationId, "dnd2024");
+  assert.equal(envelope.stateSpaceId, "dnd2024-main");
   assert.deepEqual(envelope.world.locations[0].media?.setting, setting);
   assert.deepEqual(envelope.world.people[0].portrait, portrait);
   assert.deepEqual(envelope.world.locations[0].people[0].portrait, portrait);
@@ -122,6 +131,34 @@ test("projects authorized entity media into locations, people, clues, and the ex
       : null,
     portrait,
   );
+});
+
+test("projects authorized location imagery into its parent map marker preview", () => {
+  const setting = {
+    imageUrl: "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/location.child/media/visual-0/content",
+    alt: "A market beside an old bridge",
+    width: 1536,
+    height: 1024,
+  };
+  const envelope = connectedCampaignToHubEnvelope(connectedFixture({
+    audience: { seat: "player", perspective: "player", allowedPerspectives: ["player"] },
+    locationDirectoryAudience: "player",
+    locationDirectory: [
+      {
+        id: "location.root", name: "Known World", kind: "region", containerId: "world.root",
+        mapVisual: visual("location.root", "Known world map"),
+      },
+      {
+        id: "location.child", name: "Bridge Market", kind: "settlement",
+        containerId: "location.root", mapAnchor: { x: 420, y: 310 },
+        summary: "A busy market beside the old bridge.", media: { setting },
+      },
+    ],
+  }));
+
+  const root = envelope.world.maps.find((map) => map.subject.id === "location.root");
+  assert.deepEqual(root?.features[0].preview, setting);
+  assert.equal(isReadyHubEnvelope(envelope), true);
 });
 
 test("projects party records into distinct dossier sections without inventing sheet values", () => {
@@ -159,6 +196,18 @@ test("projects party records into distinct dossier sections without inventing sh
 });
 
 test("prefers canonical character state and direct inventory over provisional notes", () => {
+  const portrait = {
+    imageUrl: "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/actor.thalorien.brackenford.orban/media/visual-0/content",
+    alt: "Orban portrait",
+    width: 800,
+    height: 1200,
+  };
+  const itemIllustration = {
+    imageUrl: "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/item.orban.gold/media/visual-0/content",
+    alt: "A pouch of gold pieces",
+    width: 800,
+    height: 800,
+  };
   const envelope = connectedCampaignToHubEnvelope(connectedFixture({
     audience: { seat: "player", allowedPerspectives: ["player"] },
     party: [{
@@ -166,6 +215,7 @@ test("prefers canonical character state and direct inventory over provisional no
       name: "Orban",
       state: "active",
       current: true,
+      media: { portrait },
       entries: [
         { kind: "class", key: "bard", label: "Provisional Bard direction" },
         { kind: "equipment", key: "ocarina", label: "Narrative ocarina" },
@@ -205,12 +255,14 @@ test("prefers canonical character state and direct inventory over provisional no
           quantity: 45,
           slot: "inventory.currency",
           equipmentSlots: [],
+          media: { illustration: itemIllustration },
         }],
       },
     }],
   }));
 
   const member = envelope.party[0];
+  assert.deepEqual(member.portrait, portrait);
   assert.equal(member.recordStatus, "Canonical character state");
   assert.equal(member.sheetStatus, "canonical");
   assert.equal(member.inventoryStatus, "canonical");
@@ -222,6 +274,7 @@ test("prefers canonical character state and direct inventory over provisional no
   assert.deepEqual(member.origin.map((entry) => entry.title), ["Human", "Criminal"]);
   assert.deepEqual(member.backstory.map((entry) => entry.title), ["Appearance", "Biography"]);
   assert.deepEqual(member.inventory.map((entry) => entry.title), ["Starting Gold"]);
+  assert.deepEqual(member.inventory[0].media, itemIllustration);
   assert.equal(JSON.stringify(member).includes("Provisional Bard direction"), false);
   assert.equal(JSON.stringify(member).includes("Narrative ocarina"), false);
   assert.equal(JSON.stringify(member).includes("armor class"), false);
@@ -240,18 +293,19 @@ test("does not attach DM knowledge to character dossiers", () => {
 
 test("projects the same closed rules reference supplied by the catalog reader", () => {
   const rules = [{
-    id: "dnd2024.shared.action.search",
+    id: "dnd2024.rule.shared.search",
+    resolutionKey: "rule.shared.search",
     title: "Search",
-    category: "Shared Rules",
-    subcategory: "Activity",
-    path: "entities/shared-rules/activity",
-    contentFingerprint: "fixture-search",
-    summary: "Make a specified Wisdom check to find or discern something.",
-    revision: 1,
-    source: {
-      id: "dnd2024.source.srd-5.2.1",
-      locator: "Playing the Game > Actions > Search (SRD 5.2.1, pages 10-10)",
-    },
+    summary: "Resolve a search through the active mechanic.",
+    order: 10,
+    section: { id: "activity", label: "Activity", order: 10 },
+    blocks: [{ kind: "paragraph", heading: null, body: "Choose where and how to search.", items: [] }],
+    examples: [],
+    relatedRuleIds: [],
+    citations: [{ sourceId: "source.fixture", locator: "Fixture, page 1" }],
+    authority: { mechanicIds: ["dnd2024.mechanic.search"], procedureIds: [] },
+    visibility: "public",
+    source: { ownerId: "base", label: "Core", classification: "core" },
   }];
   const dm = connectedCampaignToHubEnvelope(connectedFixture({
     audience: { seat: "dm", perspective: "dm", allowedPerspectives: ["dm", "player"] },
@@ -911,12 +965,12 @@ test("uses exact live containment for cropped Region map membership", () => {
       {
         id: "location.thalorien.thalos", name: "Thalos", kind: "region",
         containerId: "world.thalorien",
-        mapVisual: { assetKey: "thalos.dm", alt: "DM Thalos" },
+        mapVisual: visual("thalos.dm", "DM Thalos"),
       },
       {
         id: "location.thalorien.aldros", name: "Aldros", kind: "region",
         containerId: "location.thalorien.thalos", mapAnchor: { x: 500, y: 407 },
-        mapVisual: { assetKey: "thalos.region.aldros.dm", alt: "DM Aldros" },
+        mapVisual: visual("thalos.region.aldros.dm", "DM Aldros"),
       },
       {
         id: "location.thalorien.world-tree-grounds", name: "World Tree Grounds", kind: "region",
@@ -947,7 +1001,7 @@ test("groups live map markers into deterministic location-kind layers", () => {
     locationDirectory: [
       {
         id: "location.thalorien.thalos", name: "Thalos", kind: "region",
-        containerId: "world.thalorien", mapVisual: { assetKey: "thalos.dm", alt: "DM Thalos" },
+        containerId: "world.thalorien", mapVisual: visual("thalos.dm", "DM Thalos"),
       },
       {
         id: "location.thalorien.aldros", name: "Aldros", kind: "region",
@@ -1004,17 +1058,17 @@ test("links illustrative Crownmere and Merrowgate city maps from their exact Reg
     locationDirectory: [
       {
         id: "location.thalorien.thalos", name: "Thalos", kind: "region",
-        containerId: "world.thalorien", mapVisual: { assetKey: "thalos.dm", alt: "DM Thalos" },
+        containerId: "world.thalorien", mapVisual: visual("thalos.dm", "DM Thalos"),
       },
       {
         id: "location.thalorien.aldros", name: "Aldros", kind: "region",
         containerId: "location.thalorien.thalos", mapAnchor: { x: 500, y: 407 },
-        mapVisual: { assetKey: "thalos.region.aldros.dm", alt: "DM Aldros" },
+        mapVisual: visual("thalos.region.aldros.dm", "DM Aldros"),
       },
       {
         id: "location.thalorien.merceros", name: "Merceros", kind: "region",
         containerId: "location.thalorien.thalos", mapAnchor: { x: 500, y: 827 },
-        mapVisual: { assetKey: "thalos.region.merceros.dm", alt: "DM Merceros" },
+        mapVisual: visual("thalos.region.merceros.dm", "DM Merceros"),
       },
       {
         id: "location.thalorien.crownmere",
@@ -1022,7 +1076,7 @@ test("links illustrative Crownmere and Merrowgate city maps from their exact Reg
         kind: "settlement",
         containerId: "location.thalorien.aldros",
         mapAnchor: { x: 692, y: 516 },
-        mapVisual: { assetKey: "thalos.city.crownmere.dm", alt: "DM Crownmere" },
+        mapVisual: visual("thalos.city.crownmere.dm", "DM Crownmere"),
       },
       {
         id: "location.thalorien.merrowgate",
@@ -1030,7 +1084,7 @@ test("links illustrative Crownmere and Merrowgate city maps from their exact Reg
         kind: "settlement",
         containerId: "location.thalorien.merceros",
         mapAnchor: { x: 515, y: 668 },
-        mapVisual: { assetKey: "thalos.city.merrowgate.dm", alt: "DM Merrowgate" },
+        mapVisual: visual("thalos.city.merrowgate.dm", "DM Merrowgate"),
       },
     ],
   }));
@@ -1041,10 +1095,10 @@ test("links illustrative Crownmere and Merrowgate city maps from their exact Reg
   const merceros = envelope.world.maps.find((map) => map.subject.id === "location.thalorien.merceros");
 
   assert.equal(crownmere?.parentMapId, "map.live.location.thalorien.aldros");
-  assert.equal(crownmere?.base.imageUrl, "/city-map-crownmere-v2.png");
+  assert.equal(crownmere?.base.imageUrl, visual("thalos.city.crownmere.dm", "").imageUrl);
   assert.deepEqual(crownmere?.features, []);
   assert.equal(merrowgate?.parentMapId, "map.live.location.thalorien.merceros");
-  assert.equal(merrowgate?.base.imageUrl, "/city-map-merrowgate-v2.png");
+  assert.equal(merrowgate?.base.imageUrl, visual("thalos.city.merrowgate.dm", "").imageUrl);
   assert.deepEqual(merrowgate?.features, []);
   assert.deepEqual(
     aldros?.scopeLinks.map(({ childMapId, viaFeatureId }) => ({ childMapId, viaFeatureId })),
@@ -1097,12 +1151,12 @@ test("projects exact actor-authorized location knowledge onto every visible map 
     locationDirectory: [
       {
         id: "location.thalorien.thalos", name: "Thalos", kind: "region",
-        containerId: "world.thalorien", mapVisual: { assetKey: "thalos.player", alt: "Player Thalos" },
+        containerId: "world.thalorien", mapVisual: visual("thalos.player", "Player Thalos"),
       },
       {
         id: "location.thalorien.valeros", name: "Valeros", kind: "region",
         containerId: "location.thalorien.thalos", mapAnchor: { x: 700, y: 667 },
-        mapVisual: { assetKey: "thalos.region.valeros.player", alt: "Player Valeros" },
+        mapVisual: visual("thalos.region.valeros.player", "Player Valeros"),
       },
       {
         id: "location.thalorien.brackenford", name: "Brackenford", kind: "settlement",
@@ -1140,12 +1194,12 @@ test("projects GM-authorized notes in DM perspective but fails closed in local P
     locationDirectory: [
       {
         id: "location.thalorien.thalos", name: "Thalos", kind: "region",
-        containerId: "world.thalorien", mapVisual: { assetKey: "thalos.dm", alt: "DM Thalos" },
+        containerId: "world.thalorien", mapVisual: visual("thalos.dm", "DM Thalos"),
       },
       {
         id: "location.thalorien.aldros", name: "Aldros", kind: "region",
         containerId: "location.thalorien.thalos", mapAnchor: { x: 500, y: 407 },
-        mapVisual: { assetKey: "thalos.region.aldros.dm", alt: "DM Aldros" },
+        mapVisual: visual("thalos.region.aldros.dm", "DM Aldros"),
       },
       {
         id: "location.thalorien.crownmere", name: "Crownmere", kind: "settlement",

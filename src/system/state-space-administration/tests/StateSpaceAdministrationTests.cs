@@ -198,6 +198,40 @@ public sealed class StateSpaceAdministrationTests : IDisposable
     }
 
     [Fact]
+    public async Task Compatible_system_owned_component_does_not_block_application_rebind()
+    {
+        await using var db = _fixture.CreateContext();
+        var setup = await SetupAsync(db, "space-system-component", 'D');
+        var create = Request("system-component-space", setup.App, setup.Active.ActivationFingerprint);
+        var createContext = Context("0d23456789abcdef0123456789abcdef");
+        await setup.Service.PreviewCreateAsync(create, createContext);
+        var created = await setup.Service.CreateAsync(create, createContext);
+        var store = new SqliteEntityComponentStore(db, setup.Types, setup.Schemas);
+        await store.CreateEntityAsync("system-component-space", "page", "Page");
+        await db.Database.ExecuteSqlRawAsync("""
+            PRAGMA ignore_check_constraints = ON;
+            INSERT INTO system_application (Id, DisplayName, Description, CreatedAtUtc)
+            VALUES ('system', 'System contracts', 'Reserved test owner.', CURRENT_TIMESTAMP);
+            PRAGMA ignore_check_constraints = OFF;
+            """);
+        var type = setup.Types.Define(new ComponentTypeDefinition(ApplicationIdentifier.System,
+            "system.web.page", "{\"type\":\"object\",\"additionalProperties\":false}"));
+        var reference = new EcsComponentReference(type.QualifiedId, type.Version, type.SchemaHash);
+        await store.AddComponentAsync(new EcsComponentWrite(
+            "system-component-space", "page", reference, "{}", 0));
+        var target = await NextActivationAsync(db, setup, 'E', "0e23456789abcdef0123456789abcdef");
+        var request = new StateSpaceUpgradeRequest("system-component-space", setup.App,
+            target.ActivationFingerprint, created.Binding.BindingFingerprint);
+        var context = UpgradeContext("0f23456789abcdef0123456789abcdef");
+
+        var preview = await setup.Service.PreviewUpgradeAsync(request, context);
+        var rebound = await setup.Service.UpgradeAsync(request, context);
+
+        Assert.Equal("populated-state-compatible-rebind", preview.Compatibility.Code);
+        Assert.Equal(2, rebound.Binding.BindingRevision);
+    }
+
+    [Fact]
     public async Task Incompatible_populated_component_requires_migration_without_binding_change()
     {
         await using var db = _fixture.CreateContext();

@@ -33,6 +33,22 @@ public sealed class ActivatedWorldChronologyBindingResolver(
                     document.Text, applicationId.Value, out var chronology))
                 return Task.FromResult<WorldChronologyBinding?>(null);
 
+            var legacyPrefix = applicationId.Value + ".";
+            if (binding.CampaignRootComponentTypeId.StartsWith(legacyPrefix, StringComparison.Ordinal))
+            {
+                string Prefix(string value) => value.StartsWith(legacyPrefix, StringComparison.Ordinal)
+                    ? value
+                    : legacyPrefix + value;
+                chronology = chronology with
+                {
+                    ComponentTypeId = Prefix(chronology.ComponentTypeId),
+                    InWorldRelationshipKind = Prefix(chronology.InWorldRelationshipKind),
+                    AboutRelationshipKind = Prefix(chronology.AboutRelationshipKind),
+                    SubjectWorldRelationshipKinds = chronology.SubjectWorldRelationshipKinds
+                        .Select(Prefix).ToArray()
+                };
+            }
+
             return Task.FromResult<WorldChronologyBinding?>(chronology);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

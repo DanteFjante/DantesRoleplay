@@ -1,1 +1,0 @@
-{"id":"game.core.quest.objective","name":"Quest Objective","description":"Closed lifecycle and display state for one quest objective. Entity Name is the canonical title; dependencies and evidence remain directed relationships. Governed by procedure.quest.create and procedure.quest.modify."}

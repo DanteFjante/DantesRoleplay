@@ -1,0 +1,16 @@
+{
+  "id": "item.caldris.ganjis-quarterstaff",
+  "name": "Ganji's Quarterstaff",
+  "components": {
+    "fixture.legacy.stats": {
+      "kind": "weapon-instrument",
+      "weaponCategory": "simple",
+      "weaponType": "quarterstaff",
+      "instrumentType": "Doubles as a flute when blown across the top",
+      "description": "A quarterstaff Ganji carved himself with his enchanted knife, hollowed through the core and pierced with fingerholes so that blowing across its top turns it into a full-sized flute.",
+      "bonus": "Carved and fitted by his own hand to his exact grip and reach; grants advantage on his first attack roll with it in each fight, and functions as a proper musical instrument.",
+      "origin": "Self-carved using Ganji's enchanted carving knife.",
+      "carriedBy": "actor.caldris.ganji"
+    }
+  }
+}

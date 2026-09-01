@@ -14,6 +14,7 @@ internal sealed class SystemApplicationPreviewHandler
         IOperationLog log,
         string? applicationId,
         string[]? sourceIds,
+        string[]? extensionIds,
         int? limit,
         CancellationToken cancellationToken) => ToolRunner.RunAsync(log, "query", async () =>
     {
@@ -29,7 +30,7 @@ internal sealed class SystemApplicationPreviewHandler
         var size = limit ?? 100;
         if (size is < 1 or > 250)
             return Fail(decision, "INVALID_PAYLOAD", "limit must be from 1 through 250.",
-                Call(applicationId, sourceIds, 100), "Rejected an invalid application-preview limit.");
+                Call(applicationId, sourceIds, extensionIds, 100), "Rejected an invalid application-preview limit.");
 
         ApplicationIdentifier app;
         try { app = ApplicationIdentifier.Parse(applicationId ?? string.Empty); }
@@ -42,9 +43,13 @@ internal sealed class SystemApplicationPreviewHandler
 
         try
         {
-            var preview = sourceIds is null
-                ? await previews.PreviewAsync(app, cancellationToken)
-                : await previews.PreviewAsync(app, sourceIds, cancellationToken);
+            var preview = extensionIds is not null && sourceIds is not null
+                ? await previews.PreviewAsync(app, sourceIds, extensionIds, cancellationToken)
+                : extensionIds is not null
+                    ? await previews.PreviewExtensionsAsync(app, extensionIds, cancellationToken)
+                : sourceIds is null
+                    ? await previews.PreviewAsync(app, cancellationToken)
+                    : await previews.PreviewAsync(app, sourceIds, cancellationToken);
             return Ok(decision, Describe(preview, size),
                 $"Previewed application '{app.Value}' from its registered sources.",
                 $"query(kind: \"system.sources\", applicationId: {JsonSerializer.Serialize(app.Value)})");
@@ -58,7 +63,7 @@ internal sealed class SystemApplicationPreviewHandler
         {
             return Fail(decision, "PREVIEW_FAILED",
                 "Application preview failed without changing application state.",
-                Call(app.Value, sourceIds, size), $"Application preview failed: {exception.GetType().Name}.");
+                Call(app.Value, sourceIds, extensionIds, size), $"Application preview failed: {exception.GetType().Name}.");
         }
     });
 
@@ -69,7 +74,9 @@ internal sealed class SystemApplicationPreviewHandler
         preview.ApplicationFingerprint,
         preview.ScannedDocumentsFingerprint,
         preview.CandidateManifestFingerprint,
+        preview.ResolutionFingerprint,
         preview.PreviewFingerprint,
+        preview.ExtensionIds,
         preview.IsValid,
         Counts = new
         {
@@ -111,6 +118,6 @@ internal sealed class SystemApplicationPreviewHandler
         new(null, summary, [fix], new(code, why, fix),
             GuardEvidenceJson: JsonSerializer.Serialize(decision.Evidence));
 
-    private static string Call(string? applicationId, string[]? sourceIds, int limit) =>
-        $"query(kind: \"system.application-preview\", applicationId: {JsonSerializer.Serialize(applicationId ?? "example")}, sourceIds: {JsonSerializer.Serialize(sourceIds)}, limit: {limit})";
+    private static string Call(string? applicationId, string[]? sourceIds, string[]? extensionIds, int limit) =>
+        $"query(kind: \"system.application-preview\", applicationId: {JsonSerializer.Serialize(applicationId ?? "example")}, sourceIds: {JsonSerializer.Serialize(sourceIds)}, extensionIds: {JsonSerializer.Serialize(extensionIds)}, limit: {limit})";
 }

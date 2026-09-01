@@ -1,1 +1,0 @@
-{"id":"mount.feature-13.dragon","name":"Fixture Dragon","container":{"id":"location.feature-01.gate","slot":"presence"},"components":{"game.core.world.aerial-conveyance":{"status":"active","summary":"A calm fixture dragon prepared for the reviewed aerial route.","visibility":"party","travelMode":"air","speedUnitsPerMinute":30}}}

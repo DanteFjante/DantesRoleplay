@@ -1,4 +1,5 @@
 using DantesRoleplay.Authorization;
+using DantesRoleplay.SystemCapabilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -10,6 +11,7 @@ internal static class SystemTaskOrchestrationComponentRegistration
     {
         services.AddScoped<ISystemTaskContextMaterializer, SystemTaskContextMaterializer>();
         services.AddScoped<ISystemTaskService, SystemTaskService>();
+        services.AddScoped<ISystemAiToolSource, SystemTaskAiToolSource>();
         services.TryAddSingleton<IPrivateOperatorAuthorizationPolicy, PrivateOperatorAuthorizationPolicy>();
         return services;
     }

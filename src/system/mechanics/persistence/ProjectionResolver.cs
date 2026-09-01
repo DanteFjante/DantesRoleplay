@@ -1,4 +1,4 @@
-using DantesRoleplay.Actions;
+﻿using DantesRoleplay.Actions;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.World;
 using Microsoft.EntityFrameworkCore;
@@ -200,6 +200,7 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
         // target. This lets rules follow durable definition references without copying static
         // facts onto campaign entities or granting general store access to JavaScript.
         var referenceTargets = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        var requiredReferenceTargets = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
         void CollectReference(IReadOnlyDictionary<string, string> components, ComponentReferenceRequirement reference, string role, string entityId)
         {
             if (!components.TryGetValue(reference.SourceComponentId, out var raw)) return;
@@ -228,7 +229,14 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
                     targetComponents = new HashSet<string>(StringComparer.Ordinal);
                     referenceTargets[targetId] = targetComponents;
                 }
+                if (!requiredReferenceTargets.TryGetValue(targetId, out var requiredComponents))
+                {
+                    requiredComponents = new HashSet<string>(StringComparer.Ordinal);
+                    requiredReferenceTargets[targetId] = requiredComponents;
+                }
+                requiredComponents.UnionWith(reference.TargetComponentIds);
                 targetComponents.UnionWith(reference.TargetComponentIds);
+                targetComponents.UnionWith(reference.OptionalTargetComponentIds ?? []);
             }
             catch (JsonException)
             {
@@ -272,7 +280,7 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
                     group.ToDictionary(component => component.DefinitionId, component => component.Data, StringComparer.Ordinal)),
                 StringComparer.Ordinal);
 
-        foreach (var (targetId, expectedComponents) in referenceTargets)
+        foreach (var (targetId, expectedComponents) in requiredReferenceTargets)
         {
             if (!referenced.TryGetValue(targetId, out var target) || expectedComponents.Any(component => !target.Components.ContainsKey(component)))
                 problems.Add($"COMPONENT_REFERENCE_TARGET_MISSING: Declared reference target '{targetId}' is missing or lacks its required components.");
@@ -348,7 +356,8 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
             // when the entity happens to carry a dozen others. Requirements that understate what a
             // rule reads would make the supervision view a lie, so they are also what is enforced.
             var declared = entity.Components
-                .Where(c => requirement.Components.Contains(c.DefinitionId, StringComparer.Ordinal))
+                .Where(c => requirement.Components.Concat(requirement.OptionalComponents ?? [])
+                    .Contains(c.DefinitionId, StringComparer.Ordinal))
                 .ToDictionary(c => c.DefinitionId, c => c.Data, StringComparer.Ordinal);
 
             containerOf.TryGetValue(entityId, out var containment);
@@ -362,6 +371,7 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
                 requirement.IncludeContents
                     ? BuildContainedProjection(entityId, requirement.ContentsDepth ?? 1,
                         requirement.ContentComponentIds ?? [], requirement.ContentsDepth is not null || (requirement.ContentComponentIds?.Count ?? 0) > 0,
+                        RelevantContentIds(requirement, needed),
                         contentsByContainer, contentComponentsByEntity, role, problems)
                     : null,
                 requirement.IncludeRelationships
@@ -424,11 +434,30 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
         }
     }
 
+    /// <summary>
+    /// The exact entity ids a role's contents projection is declared to be about. See the same
+    /// helper on the application-scoped resolver; null means the role declared no filter and the
+    /// projection is unchanged.
+    /// </summary>
+    private static IReadOnlySet<string>? RelevantContentIds(
+        RoleRequirement requirement,
+        IReadOnlyDictionary<string, string> assignments)
+    {
+        var roles = requirement.ContentsRelevantToRoles ?? [];
+        if (roles.Count == 0) return null;
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var role in roles)
+            if (assignments.TryGetValue(role, out var entityId) && !string.IsNullOrWhiteSpace(entityId))
+                ids.Add(entityId);
+        return ids;
+    }
+
     private static IReadOnlyList<ContainedProjection> BuildContainedProjection(
         string rootId,
         int depth,
         IReadOnlyList<string> allowedComponentIds,
         bool enforceNodeLimit,
+        IReadOnlySet<string>? relevant,
         IReadOnlyDictionary<string, List<ContainmentNode>> contentsByContainer,
         IReadOnlyDictionary<string, Dictionary<string, string>> componentsByEntity,
         string role,
@@ -452,10 +481,21 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
                     return [];
                 }
 
+                var nested = remainingDepth > 1 ? Build(child.Id, remainingDepth - 1) : null;
+                visited.Remove(child.Id);
+                if (problems.Count > 0) return [];
+
+                // A declared relevance filter keeps a node only when it is itself relevant or still
+                // leads to something relevant. Surviving nodes keep their exact depth and slot.
+                if (relevant is not null && !relevant.Contains(child.Id) && (nested is null || nested.Count == 0))
+                    continue;
+
                 count++;
                 if (enforceNodeLimit && count > ProjectionLimits.MaxContainedNodes)
                 {
-                    problems.Add($"CONTAINMENT_PROJECTION_LIMIT: Role '{role}' projects more than {ProjectionLimits.MaxContainedNodes} contained entities.");
+                    problems.Add($"CONTAINMENT_PROJECTION_LIMIT: Role '{role}' projects more than " +
+                        $"{ProjectionLimits.MaxContainedNodes} contained entities. Declare " +
+                        "'contentsRelevantToRoles' on this role to project only the paths it references.");
                     return [];
                 }
 
@@ -469,9 +509,6 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
                         : new Dictionary<string, string>(StringComparer.Ordinal);
                 }
 
-                var nested = remainingDepth > 1 ? Build(child.Id, remainingDepth - 1) : null;
-                visited.Remove(child.Id);
-                if (problems.Count > 0) return [];
                 projection.Add(new ContainedProjection(child.Id, child.Name, child.Slot, declaredComponents, nested));
             }
             return projection;

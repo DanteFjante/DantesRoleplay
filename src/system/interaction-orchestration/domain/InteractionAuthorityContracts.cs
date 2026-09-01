@@ -161,7 +161,8 @@ public sealed record InteractionHostContext
         InteractionBudgets budgets,
         InteractionAuthorizationDecision authorization,
         string? conversationId = null,
-        string? parentDelegationId = null)
+        string? parentDelegationId = null,
+        string? resolutionFingerprint = null)
     {
         ArgumentNullException.ThrowIfNull(principal);
         ArgumentNullException.ThrowIfNull(applicationRevision);
@@ -188,6 +189,8 @@ public sealed record InteractionHostContext
         SessionContextId = InteractionGuard.Identifier(sessionContextId, nameof(sessionContextId));
         StateRevision = InteractionGuard.Identifier(stateRevision, nameof(stateRevision));
         EffectiveSetFingerprint = InteractionGuard.UpperSha256(effectiveSetFingerprint, nameof(effectiveSetFingerprint));
+        ResolutionFingerprint = InteractionGuard.UpperSha256(
+            resolutionFingerprint ?? effectiveSetFingerprint, nameof(resolutionFingerprint));
         RoleProfile = roleProfile;
         Budgets = budgets;
         Authorization = authorization;
@@ -201,6 +204,7 @@ public sealed record InteractionHostContext
     public string SessionContextId { get; }
     public string StateRevision { get; }
     public string EffectiveSetFingerprint { get; }
+    public string ResolutionFingerprint { get; }
     public InteractionRoleProfile RoleProfile { get; }
     public InteractionBudgets Budgets { get; }
     public InteractionAuthorizationDecision Authorization { get; }

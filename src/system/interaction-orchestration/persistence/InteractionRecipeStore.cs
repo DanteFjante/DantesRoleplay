@@ -71,6 +71,9 @@ public sealed class InteractionRecipeStore(DantesRoleplayDbContext db) : IIntera
             ApplicationRevision = draft.CurrentApplicationRevision.Revision,
             ApplicationFingerprint = RequireHash(draft.CurrentApplicationRevision.Fingerprint, "applicationFingerprint"),
             EffectiveSetFingerprint = RequireHash(draft.CurrentEffectiveSetFingerprint, "effectiveSetFingerprint"),
+            ResolutionFingerprint = RequireHash(string.IsNullOrEmpty(draft.CurrentResolutionFingerprint)
+                ? draft.CurrentEffectiveSetFingerprint : draft.CurrentResolutionFingerprint,
+                "resolutionFingerprint"),
             ReviewerPrincipalReference = "",
             Reason = reason,
             RequestToken = "stale:" + fingerprint[..32].ToLowerInvariant(),
@@ -140,6 +143,8 @@ public sealed class InteractionRecipeStore(DantesRoleplayDbContext db) : IIntera
         ArgumentNullException.ThrowIfNull(draft);
         var intent = NormalizeIntent(draft.IntentText);
         var effective = RequireHash(draft.EffectiveSetFingerprint, nameof(draft.EffectiveSetFingerprint));
+        var resolution = RequireHash(string.IsNullOrEmpty(draft.ResolutionFingerprint)
+            ? effective : draft.ResolutionFingerprint, nameof(draft.ResolutionFingerprint));
         var intentFingerprint = RequireHash(draft.IntentFingerprint, nameof(draft.IntentFingerprint));
         var recipeId = InteractionRecipeIds.Create(draft.ApplicationRevision.ApplicationId, draft.Template.Fingerprint);
         var existingEvidence = await db.InteractionRecipeEvidence.AsNoTracking().SingleOrDefaultAsync(row =>
@@ -173,6 +178,7 @@ public sealed class InteractionRecipeStore(DantesRoleplayDbContext db) : IIntera
                     ApplicationRevision = draft.ApplicationRevision.Revision,
                     ApplicationFingerprint = draft.ApplicationRevision.Fingerprint,
                     EffectiveSetFingerprint = effective,
+                    ResolutionFingerprint = resolution,
                     ReviewerPrincipalReference = "",
                     Reason = "Learned from an explicitly opted-in successful execution.",
                     RequestToken = CandidateToken(draft.ExecutionReceiptId),
@@ -363,6 +369,7 @@ public sealed class InteractionRecipeStore(DantesRoleplayDbContext db) : IIntera
                 ApplicationRevision = current.ApplicationRevision,
                 ApplicationFingerprint = current.ApplicationFingerprint,
                 EffectiveSetFingerprint = current.EffectiveSetFingerprint,
+                ResolutionFingerprint = current.ResolutionFingerprint,
                 ReviewerPrincipalReference = reviewer,
                 Reason = reason,
                 RequestToken = token,
@@ -399,7 +406,8 @@ public sealed class InteractionRecipeStore(DantesRoleplayDbContext db) : IIntera
             revision.ApplicationRevision, revision.ApplicationFingerprint, revision.EffectiveSetFingerprint,
             row.Evidence.OrderBy(value => value.CreatedAtUtc).ThenBy(value => value.ExecutionReceiptId, StringComparer.Ordinal)
                 .Select(value => new InteractionRecipeEvidenceReference(value.ResolutionReceiptId,
-                    value.ExecutionReceiptId, value.Kind, value.IntentFingerprint, value.CreatedAtUtc)).ToArray());
+                    value.ExecutionReceiptId, value.Kind, value.IntentFingerprint, value.CreatedAtUtc)).ToArray(),
+            revision.ResolutionFingerprint);
     }
 
     private async Task<InteractionRecipeWriteResult> EvidenceReplayAsync(

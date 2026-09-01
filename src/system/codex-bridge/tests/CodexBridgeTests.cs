@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Channels;
+using DantesRoleplay.AI;
 using DantesRoleplay.Assistants;
 using DantesRoleplay.CodexBridge;
 using DantesRoleplay.DataAccess;
@@ -211,6 +212,29 @@ public sealed class CodexBridgeTests
         Assert.False(turn.GetProperty("sandboxPolicy").GetProperty("networkAccess").GetBoolean());
         Assert.False(turn.TryGetProperty("model", out _));
         Assert.False(turn.TryGetProperty("developerInstructions", out _));
+    }
+
+    [Fact]
+    public void Generic_ai_frames_select_model_reasoning_schema_and_in_process_dynamic_tools()
+    {
+        var options = Options();
+        var settings = new CodexTurnSettings(
+            "gpt-5.6-terra",
+            "high",
+            "{\"type\":\"object\"}",
+            [new("system_read", "Read system data.", "{\"type\":\"object\"}")]);
+
+        var thread = CodexAppServerProcessSession.BuildThreadParameters(options, null, settings);
+        var turn = CodexAppServerProcessSession.BuildTurnParameters(
+            options, "thread-one", "Inspect", settings);
+
+        Assert.Equal("gpt-5.6-terra", thread.GetProperty("model").GetString());
+        var tool = Assert.Single(thread.GetProperty("dynamicTools").EnumerateArray());
+        Assert.Equal("system_read", tool.GetProperty("name").GetString());
+        Assert.Equal(JsonValueKind.Object, tool.GetProperty("inputSchema").ValueKind);
+        Assert.Equal("gpt-5.6-terra", turn.GetProperty("model").GetString());
+        Assert.Equal("high", turn.GetProperty("effort").GetString());
+        Assert.Equal(JsonValueKind.Object, turn.GetProperty("outputSchema").ValueKind);
     }
 
     [Fact]

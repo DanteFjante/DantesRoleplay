@@ -4,11 +4,12 @@ namespace DantesRoleplay.Web.Interactions;
 public static class SystemWorkspaceElement
 {
     public const string Script = """
-    const APPLICATIONS_ENDPOINT = '/api/control/structure/applications';
+    import {systemWebClient, validSystemIdentifier} from '/components/system-client.js';
+    import '/components/system-publication.js';
+    import '/components/ai-workspace.js';
+    import '/components/page-administration.js';
+
     const CONTROL_CENTER_PATH = '/ui/control-center/index.html';
-    const MAXIMUM_PAGES = 10;
-    const MAXIMUM_APPLICATIONS = 1000;
-    const MAXIMUM_CURSOR_LENGTH = 1024;
 
     class SystemNavigation extends HTMLElement {
       static get observedAttributes() { return ['application-id']; }
@@ -18,6 +19,7 @@ public static class SystemWorkspaceElement
         this._applications = [];
         this._connected = false;
         this._request = null;
+        this._client = systemWebClient;
         this._routeChanged = () => this._updateCurrent();
         this.attachShadow({mode: 'open'});
         this._renderShell();
@@ -44,26 +46,48 @@ public static class SystemWorkspaceElement
         if (this.shadowRoot) this._updateCurrent();
       }
 
+      set client(value) {
+        if (!value || typeof value.discoverAllApplications !== 'function') throw new TypeError(
+          'system-navigation requires an application discovery client.');
+        this._client = value;
+        if (this._connected) this._loadApplications();
+      }
+
+      get client() { return this._client; }
+
       _renderShell() {
         const style = document.createElement('style');
         style.textContent = `
           :host { display: block; color: var(--system-navigation-color, inherit); font: inherit; }
-          nav { display: flex; flex-direction: var(--system-navigation-direction, row); flex-wrap: wrap; gap: var(--system-navigation-gap, .45rem); align-items: var(--system-navigation-align, center); }
+          nav, [part='system-pages'], [part='applications'] { display: flex; flex-direction: var(--system-navigation-direction, row); flex-wrap: wrap; gap: var(--system-navigation-gap, .45rem); align-items: var(--system-navigation-align, center); }
           a, button { box-sizing: border-box; border: 1px solid transparent; border-radius: var(--system-navigation-radius, 999px); color: var(--system-navigation-link-color, inherit); font: inherit; font-size: var(--system-navigation-font-size, .85rem); line-height: 1.25; padding: var(--system-navigation-padding, .5rem .75rem); text-decoration: none; }
-          a:hover, a:focus-visible, button:hover, button:focus-visible { border-color: var(--system-navigation-border-color, currentColor); outline: none; }
-          a[aria-current='page'] { background: var(--system-navigation-current-background, rgba(128, 170, 128, .16)); border-color: var(--system-navigation-current-border-color, currentColor); }
-          [part='applications'] { display: contents; }
+          a:hover, a:focus-visible, button:hover:not(:disabled), button:focus-visible { border-color: var(--system-navigation-border-color, currentColor); outline: 2px solid var(--system-navigation-focus-color, currentColor); outline-offset: 2px; }
+          a[aria-current='page'], button[data-current='true'] { background: var(--system-navigation-current-background, rgba(128, 170, 128, .16)); border-color: var(--system-navigation-current-border-color, currentColor); }
+          [part='application'] { display: inline-flex; align-items: center; gap: .15rem; position: relative; }
+          [part='application'][data-current='true'] { border-radius: var(--system-navigation-radius, 999px); box-shadow: 0 0 0 1px var(--system-navigation-current-border-color, currentColor); }
+          [part='application-link']:disabled { cursor: not-allowed; opacity: .58; }
+          [part='menu-trigger'] { cursor: pointer; padding-inline: .55rem; }
+          [part='menu'] { background: var(--system-navigation-menu-background, Canvas); border: 1px solid var(--system-navigation-border-color, currentColor); border-radius: .6rem; box-shadow: 0 .5rem 1.5rem rgba(0,0,0,.2); display: grid; gap: .15rem; left: 0; min-width: 12rem; padding: .3rem; position: absolute; top: calc(100% + .25rem); z-index: 100; }
+          [part='menu'] a { border-radius: .4rem; white-space: nowrap; }
+          [part='application-state'] { color: var(--system-navigation-muted-color, inherit); font-size: .72rem; max-width: 12rem; }
           [part='status'] { color: var(--system-navigation-muted-color, inherit); font-size: var(--system-navigation-status-font-size, .76rem); margin: 0; padding: .25rem .4rem; }
           [part='retry'] { background: var(--system-navigation-button-background, transparent); cursor: pointer; }
           [hidden] { display: none !important; }
         `;
         this._navigation = document.createElement('nav');
         this._navigation.setAttribute('part', 'navigation');
-        this._navigation.setAttribute('aria-label', 'System navigation');
+        this._navigation.setAttribute('aria-label', 'Site navigation');
         this._home = this._link('/', 'Home', 'home-link');
         this._control = this._link(CONTROL_CENTER_PATH, 'Control center', 'control-link');
+        this._systemPages = document.createElement('span');
+        this._systemPages.setAttribute('part', 'system-pages');
+        this._systemPages.setAttribute('role', 'group');
+        this._systemPages.setAttribute('aria-label', 'System pages');
+        this._systemPages.append(this._home, this._control);
         this._applicationList = document.createElement('span');
         this._applicationList.setAttribute('part', 'applications');
+        this._applicationList.setAttribute('role', 'group');
+        this._applicationList.setAttribute('aria-label', 'Applications');
         this._status = document.createElement('p');
         this._status.setAttribute('part', 'status');
         this._status.setAttribute('role', 'status');
@@ -74,7 +98,7 @@ public static class SystemWorkspaceElement
         this._retry.hidden = true;
         this._retry.setAttribute('part', 'retry');
         this._retry.addEventListener('click', () => this._loadApplications());
-        this._navigation.append(this._home, this._control, this._applicationList, this._status, this._retry);
+        this._navigation.append(this._systemPages, this._applicationList, this._status, this._retry);
         this.shadowRoot.append(style, this._navigation);
       }
 
@@ -96,46 +120,16 @@ public static class SystemWorkspaceElement
         this._status.textContent = 'Loading applications…';
         this._emit('system-progress', {phase: 'loading'});
         try {
-          const applications = [];
-          const applicationIds = new Set();
-          const cursors = new Set();
-          let cursor = null;
-          let pageCount = 0;
-          do {
-            if (pageCount >= MAXIMUM_PAGES) throw new Error('page-limit');
-            const url = new URL(APPLICATIONS_ENDPOINT, window.location.origin);
-            url.searchParams.set('limit', '100');
-            if (cursor) url.searchParams.set('cursor', cursor);
-            const response = await fetch(url, {headers: {accept: 'application/json'}, signal: request.signal});
-            if (!response.ok) throw new Error('request-failed');
-            const page = await response.json();
-            if (!page || !Array.isArray(page.items)) throw new Error('invalid-page');
-            pageCount += 1;
-            for (const item of page.items) {
-              if (!this._validApplication(item) || applicationIds.has(item.id)) throw new Error('invalid-application');
-              applicationIds.add(item.id);
-              applications.push(item);
-              if (applications.length > MAXIMUM_APPLICATIONS) throw new Error('application-limit');
-            }
-            cursor = page.nextCursor == null ? null : page.nextCursor;
-            if (cursor !== null) {
-              if (typeof cursor !== 'string' || cursor.length < 1 || cursor.length > MAXIMUM_CURSOR_LENGTH || cursors.has(cursor)) {
-                throw new Error('invalid-cursor');
-              }
-              cursors.add(cursor);
-            }
-          } while (cursor !== null);
+          const result = await this._client.discoverAllApplications({signal: request.signal});
           if (request.signal.aborted || !this._connected) return;
-          applications.sort((left, right) => {
-            const byName = this._label(left).localeCompare(this._label(right), undefined, {sensitivity: 'base'});
-            return byName || left.id.localeCompare(right.id);
-          });
+          const applications = result.applications;
           this._applications = applications;
           this._renderApplications();
           this._status.textContent = applications.length === 0
             ? 'No applications registered.'
             : `${applications.length} application${applications.length === 1 ? '' : 's'}`;
-          this._emit('system-progress', {phase: 'ready', applicationCount: applications.length, pageCount});
+          this._emit('system-progress', {phase: 'ready', applicationCount: applications.length,
+            pageCount: result.pageCount, resolutionFingerprints: result.resolutionFingerprints});
         } catch (error) {
           if (request.signal.aborted) return;
           this._applications = [];
@@ -149,33 +143,15 @@ public static class SystemWorkspaceElement
         }
       }
 
-      _validApplication(item) {
-        if (!item || typeof item.id !== 'string' || item.id.length < 1 || item.id.length > 200 ||
-            item.id.includes('/') || item.id.includes('\\')) return false;
-        return !Array.from(item.id).some(character => {
-          const code = character.charCodeAt(0);
-          return code < 32 || code === 127;
-        });
-      }
-
-      _label(application) {
-        return typeof application.displayName === 'string' && application.displayName.trim()
-          ? application.displayName.trim()
-          : application.id;
-      }
-
       _renderApplications() {
         const fragment = document.createDocumentFragment();
         for (const application of this._applications) {
-          const link = this._link(
-            `/ui/${encodeURIComponent(application.id)}-play`,
-            this._label(application),
-            'application-link');
-          link.dataset.applicationId = application.id;
-          if (typeof application.description === 'string' && application.description.trim()) {
-            link.title = application.description.trim();
-          }
-          fragment.append(link);
+          const item = document.createElement('application-navigation');
+          item.application = application;
+          item.setAttribute('current-path', window.location.pathname);
+          const selected = this._selectedApplication();
+          if (selected) item.setAttribute('selected', selected);
+          fragment.append(item);
         }
         this._applicationList.replaceChildren(fragment);
         this._updateCurrent();
@@ -183,31 +159,36 @@ public static class SystemWorkspaceElement
 
       _updateCurrent() {
         const selectedApplication = this._selectedApplication();
-        for (const link of this.shadowRoot.querySelectorAll('a[aria-current]')) link.removeAttribute('aria-current');
-        if (selectedApplication) {
-          const match = Array.from(this._applicationList.querySelectorAll('a')).find(
-            link => link.dataset.applicationId === selectedApplication);
-          if (match) match.setAttribute('aria-current', 'page');
-          return;
+        this._home.removeAttribute('aria-current');
+        this._control.removeAttribute('aria-current');
+        const path = this._routePath(window.location.pathname);
+        for (const navigation of this._applicationList.querySelectorAll('application-navigation')) {
+          navigation.setAttribute('current-path', window.location.pathname);
+          if (selectedApplication) navigation.setAttribute('selected', selectedApplication);
+          else navigation.removeAttribute('selected');
         }
-        const path = window.location.pathname.replace(/\/+$/, '') || '/';
         if (path === '/' || path === '/ui/home' || path === '/ui/home/index.html') {
           this._home.setAttribute('aria-current', 'page');
-        } else if (path === CONTROL_CENTER_PATH || path === '/ui/control-center') {
+        } else if (path === this._routePath(CONTROL_CENTER_PATH) || path === '/ui/control-center') {
           this._control.setAttribute('aria-current', 'page');
         }
       }
 
+      _routePath(path) {
+        const value = path.replace(/\/+$/, '') || '/';
+        return value.endsWith('/index.html') ? value.slice(0, -'/index.html'.length) || '/' : value;
+      }
+
       _selectedApplication() {
         const declared = this.getAttribute('application-id');
-        if (declared && this._validApplication({id: declared})) return declared;
+        if (declared && validSystemIdentifier(declared)) return declared;
         if (window.location.pathname.replace(/\/+$/, '') !== CONTROL_CENTER_PATH) return null;
         if (!window.location.hash.startsWith('#/applications/')) return null;
         const encoded = window.location.hash.slice('#/applications/'.length);
         if (!encoded || encoded.includes('/')) return null;
         try {
           const decoded = decodeURIComponent(encoded);
-          return this._validApplication({id: decoded}) ? decoded : null;
+          return validSystemIdentifier(decoded) ? decoded : null;
         } catch (_) { return null; }
       }
 
@@ -633,15 +614,11 @@ public static class SystemWorkspaceElement
         const request = new AbortController();
         this._request = request;
         try {
-          const response = await fetch(path, {
+          return await systemWebClient.requestJson(path, {
             method: body ? 'POST' : 'GET',
-            headers: body ? {accept: 'application/json', 'content-type': 'application/json'} : {accept: 'application/json'},
-            body: body ? JSON.stringify(body) : undefined,
+            body: body || undefined,
             signal: request.signal
           });
-          const document = await response.json().catch(() => ({}));
-          if (!response.ok) throw new Error(document.message || 'The system chat request was rejected.');
-          return document;
         } finally {
           if (this._request === request) this._request = null;
         }
@@ -741,20 +718,15 @@ public static class SystemWorkspaceElement
     }
 
     async function systemComponentRequest(path, body, signal) {
-      const response = await fetch(path, {
-        method: body === undefined ? 'GET' : 'POST',
-        headers: body === undefined
-          ? {accept: 'application/json'}
-          : {accept: 'application/json', 'content-type': 'application/json'},
-        body: body === undefined ? undefined : JSON.stringify(body),
-        signal
-      });
-      const document = await response.json().catch(() => ({}));
-      if (!response.ok) throw new SystemComponentError(
-        typeof document.error === 'string' ? document.error : 'SYSTEM_COMPONENT_REQUEST_FAILED',
-        typeof document.message === 'string' && document.message.length <= 500
-          ? document.message : 'The system request was rejected.');
-      return document;
+      try {
+        return await systemWebClient.requestJson(path, {
+          method: body === undefined ? 'GET' : 'POST',
+          body,
+          signal
+        });
+      } catch (error) {
+        throw new SystemComponentError(error?.code, error?.message);
+      }
     }
 
     function systemComponentDescriptor(value, capabilityId) {

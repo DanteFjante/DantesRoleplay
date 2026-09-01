@@ -1,4 +1,4 @@
-{
+﻿{
   "$schema": "https://json.schemastore.org/launchsettings.json",
   "profiles": {
     "http": {
@@ -13,7 +13,8 @@
         "Knowledge__LocalPlayer__PrincipalId": "local.player",
         "Knowledge__LocalPlayer__ApplicationId": "dnd2024",
         "Knowledge__LocalPlayer__CampaignId": "campaign.caldris.measure-of-mercy",
-        "Knowledge__LocalPlayer__Role": "GameMaster",
+        "Knowledge__LocalPlayer__ActorId": "actor.caldris.ganji",
+        "Knowledge__LocalPlayer__Role": "Actor",
         "Knowledge__Completion__Enabled": "true"
       }
     },
@@ -29,7 +30,8 @@
         "Knowledge__LocalPlayer__PrincipalId": "local.player",
         "Knowledge__LocalPlayer__ApplicationId": "dnd2024",
         "Knowledge__LocalPlayer__CampaignId": "campaign.caldris.measure-of-mercy",
-        "Knowledge__LocalPlayer__Role": "GameMaster",
+        "Knowledge__LocalPlayer__ActorId": "actor.caldris.ganji",
+        "Knowledge__LocalPlayer__Role": "Actor",
         "Knowledge__Completion__Enabled": "true"
       }
     }

@@ -10,6 +10,7 @@ using DantesRoleplay.RegistryAdministration;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.Sources;
 using DantesRoleplay.StateSpaceAdministration;
+using DantesRoleplay.DataAccess.Composition;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -27,6 +28,7 @@ internal static class SystemCapabilitiesComponentRegistration
         {
             SystemCapabilityIds.ApplicationRegister,
             SystemCapabilityIds.SourceRegister,
+            SystemCapabilityIds.ExtensionRegister,
             SystemCapabilityIds.ComponentTypeRegister,
             SystemCapabilityIds.ApplicationActivate,
             SystemCapabilityIds.StateSpaceCreate,
@@ -38,6 +40,9 @@ internal static class SystemCapabilitiesComponentRegistration
             services.AddScoped<ISystemWriteCapabilityHandler>(provider => Write(provider, capabilityId));
         }
         services.AddScoped<ISystemCapabilityCatalog, SystemCapabilityCatalog>();
+        services.AddScoped<ISystemAiToolSource, SystemCapabilityAiToolSource>();
+        services.AddScoped<ISystemAiToolSource, EcsLifecycleAiToolSource>();
+        services.AddScoped<ISystemAiAgentService, SystemAiAgentService>();
         services.TryAddSingleton<IPrivateOperatorAuthorizationPolicy, PrivateOperatorAuthorizationPolicy>();
         return services;
     }
@@ -57,5 +62,6 @@ internal static class SystemCapabilitiesComponentRegistration
             provider.GetRequiredService<IApplicationActivationService>(),
             provider.GetRequiredService<IProjectionImpactService>(),
             provider.GetRequiredService<IStateSpaceAdministrationService>(),
-            provider.GetRequiredService<ILegacyStateAdoptionService>());
+            provider.GetRequiredService<ILegacyStateAdoptionService>(),
+            provider.GetRequiredService<IApplicationExtensionRegistry>());
 }

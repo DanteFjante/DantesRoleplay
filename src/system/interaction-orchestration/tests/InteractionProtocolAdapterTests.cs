@@ -102,6 +102,7 @@ public sealed class InteractionProtocolAdapterTests
 
         public Task<InteractionFeatureSearchResult> SearchFeaturesAsync(
             ApplicationIdentifier applicationId, string? query, string? qualifiedId, int limit = 10,
+            string? namespaceId = null,
             CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
         public Task<InteractionReceiptProjection?> GetReceiptAsync(

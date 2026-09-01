@@ -1,4 +1,5 @@
 using DantesRoleplay.Categories;
+using DantesRoleplay.CatalogNamespaces;
 
 namespace DantesRoleplay.DataAccess.Catalog;
 
@@ -8,17 +9,10 @@ namespace DantesRoleplay.DataAccess.Catalog;
 /// Export writes these paths and import reads them, so the two cannot disagree about where
 /// anything is — the same argument that put the markdown writer next to its parser.
 ///
-/// A category is a dot-delimited path and becomes a directory path, one segment per directory:
-/// <c>ruleset.dnd2024.core.gameplay.ability-checks.fixed-dc</c> becomes six nested directories.
-/// That is safe without any escaping because <see cref="CategoryPath"/> already restricts a
-/// segment to lowercase letters, digits and hyphens — there is no '..', no separator, no drive
-/// letter and no colon that could turn a category into a path outside the export root. It is
-/// validated here anyway: a database row that predates that rule would otherwise be the one input
-/// that turns a category into an arbitrary write.
-///
-/// Only mechanics and contracts have a category. Component definitions have no such column, so
-/// they are grouped flat by kind rather than given an invented classification that nothing in the
-/// database could validate.
+/// The registered namespace portion of a qualified ID is a dot-delimited path and becomes one
+/// directory per segment. The final local-name segment becomes the filename. This gives every
+/// record kind the same physical organization without relying on the older, independently edited
+/// category field. Unqualified legacy IDs remain at the record-kind root.
 ///
 /// Paths are returned with forward slashes, on every platform. They go into the manifest, and a
 /// manifest full of backslashes is one that only reads back on the machine that wrote it.
@@ -35,6 +29,7 @@ public static class CatalogLayout
     public const string WorldRoot = "world";
     public const string EntitiesRoot = WorldRoot + "/entities";
     public const string HistoryRoot = "history";
+    public const string NamespacesRoot = "namespaces";
 
     public const string RelationshipsFileName = WorldRoot + "/relationships.json";
     public const string OperationsFileName = HistoryRoot + "/operations.jsonl";
@@ -45,18 +40,18 @@ public static class CatalogLayout
 
     /// <summary>The .md holding a mechanic's front matter, description, match phrases and requirements.</summary>
     public static string MechanicMarkdown(string category, string id) =>
-        Combine(MechanicsRoot, CategoryDirectory(category), id + MarkdownExtension);
+        Qualified(MechanicsRoot, id, MarkdownExtension);
 
     /// <summary>The .js holding a mechanic's JavaScript. Same basename as its .md, alongside it.</summary>
     public static string MechanicSource(string category, string id) =>
-        Combine(MechanicsRoot, CategoryDirectory(category), id + SourceExtension);
+        Qualified(MechanicsRoot, id, SourceExtension);
 
     public static string ProcedureMarkdown(string category, string id) =>
-        Combine(ProceduresRoot, CategoryDirectory(category), id + MarkdownExtension);
+        Qualified(ProceduresRoot, id, MarkdownExtension);
 
     /// <summary>The .json holding a component definition's id, name and description.</summary>
     public static string Component(string id) =>
-        Combine(ComponentsRoot, id + DefinitionExtension);
+        Qualified(ComponentsRoot, id, DefinitionExtension);
 
     /// <summary>
     /// The sidecar holding a component definition's JSON Schema, verbatim.
@@ -66,14 +61,58 @@ public static class CatalogLayout
     /// looking edited — the same reason a mechanic's JavaScript is not a JSON string.
     /// </summary>
     public static string ComponentSchema(string id) =>
-        Combine(ComponentsRoot, id + ".schema" + DefinitionExtension);
-    public static string EventType(string id) => Combine(EventTypesRoot, SafeFileName(id, "event type") + DefinitionExtension);
-    public static string EventTypeSchema(string id) => Combine(EventTypesRoot, SafeFileName(id, "event type") + ".schema" + DefinitionExtension);
-    public static string Subscription(string id) => Combine(SubscriptionsRoot, SafeFileName(id, "subscription") + DefinitionExtension);
+        Qualified(ComponentsRoot, id, ".schema" + DefinitionExtension);
+    public static string EventType(string id) => Qualified(EventTypesRoot, id, DefinitionExtension);
+    public static string EventTypeSchema(string id) => Qualified(EventTypesRoot, id, ".schema" + DefinitionExtension);
+    public static string Subscription(string id) => Qualified(SubscriptionsRoot, id, DefinitionExtension);
 
     /// <summary>One entity, with its components and its container folded in.</summary>
     public static string Entity(string id) =>
-        Combine(EntitiesRoot, SafeFileName(id, "entity") + DefinitionExtension);
+        Qualified(EntitiesRoot, id, DefinitionExtension);
+
+    /// <summary>The authoritative primary-file path for a manifest record.</summary>
+    public static string Record(CatalogRecordKind kind, string id) => kind switch
+    {
+        CatalogRecordKind.Mechanic => MechanicMarkdown(string.Empty, id),
+        CatalogRecordKind.Procedure => ProcedureMarkdown(string.Empty, id),
+        CatalogRecordKind.ComponentDefinition => Component(id),
+        CatalogRecordKind.EventType => EventType(id),
+        CatalogRecordKind.Subscription => Subscription(id),
+        CatalogRecordKind.Entity => Entity(id),
+        CatalogRecordKind.Relationships when id == RelationshipsFileName => RelationshipsFileName,
+        CatalogRecordKind.Relationships => throw new InvalidOperationException(
+            $"The relationship-set manifest id must be '{RelationshipsFileName}', not '{id}'."),
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown catalog record kind.")
+    };
+
+    public static string Namespace(string id)
+    {
+        if (!CatalogNamespaceIdentity.IsNamespaceId(id))
+            throw new InvalidOperationException($"The catalog namespace id '{id}' cannot become a directory path.");
+        _ = SafeFileName(id, "catalog namespace");
+        return id == CatalogNamespaceIdentity.RootNamespaceId
+            ? Combine(NamespacesRoot, "_root" + DefinitionExtension)
+            : Combine(NamespacesRoot, id.Replace('.', '/'), "_namespace" + DefinitionExtension);
+    }
+
+    public static string Qualified(string root, string id, string suffix)
+    {
+        _ = SafeFileName(id, "catalog record");
+        try
+        {
+            CatalogNamespaceIdentity.ValidateRecordId(id);
+        }
+        catch (ArgumentException exception)
+        {
+            throw new InvalidOperationException(
+                $"The catalog record id '{id}' cannot be represented as namespace directory segments.", exception);
+        }
+        var namespaceId = CatalogNamespaceIdentity.NamespaceOf(id);
+        var directory = namespaceId == CatalogNamespaceIdentity.RootNamespaceId
+            ? string.Empty
+            : namespaceId.Replace('.', '/');
+        return Combine(root, directory, CatalogNamespaceIdentity.LocalNameOf(id) + suffix);
+    }
 
     /// <summary>
     /// Refuses an id that cannot safely become a filename.
@@ -106,13 +145,13 @@ public static class CatalogLayout
                 + "forbids in a filename.");
         }
 
-        var stem = trimmed.Split('.')[0];
+        var reserved = trimmed.Split('.').FirstOrDefault(ReservedNames.Contains);
 
-        if (ReservedNames.Contains(stem))
+        if (reserved is not null)
         {
             throw new InvalidOperationException(
-                $"The {what} id '{id}' starts with '{stem}', which is a reserved device name on "
-                + "Windows — a file called that cannot be opened. Rename the record.");
+                $"The {what} id '{id}' contains segment '{reserved}', which is a reserved device "
+                + "name on Windows and cannot become a directory or filename. Rename the record.");
         }
 
         return trimmed;

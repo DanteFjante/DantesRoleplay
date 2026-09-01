@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  inheritMediaVisual,
   normalizeGameServerOrigin,
   projectMediaVisual,
   readCombatCurrentScene,
@@ -9,68 +10,101 @@ import {
   readGameServerContext,
   readKnownOpenRoutes,
   resolveCurrentSceneRecord,
+  resolveRecordedPlaySituation,
   resolveSceneAffordancesRecord,
   resolvePresenceLocation,
 } from "../src/server/game-server-context.js";
 
 const MEDIA_HASH = "3ae0336e89155a4a00fb0d982ae903bf9ed1137cd292b097b252fd38c1501fa3";
 
-function mediaRecord(variants) {
+function mediaAttachment(role = "portrait", alt = "A reviewed portrait", mediaId = "visual-0") {
   return {
-    status: "active",
-    slots: {
-      portrait: {
-        variants,
-        provenance: {
-          kind: "generated",
-          credit: "Reviewed original artwork",
-          source: "reviewed/portrait.png",
-          reviewedOn: "2026-08-30",
-          version: 1,
-        },
-      },
-    },
-  };
-}
-
-function mediaVariant(alt = "A reviewed portrait") {
-  return {
-    assetKey: `sha256.${MEDIA_HASH}`,
-    alt,
-    mimeType: "image/png",
+    mediaId,
+    role,
+    mediaType: "image/png",
     width: 1024,
     height: 1536,
-    sha256: MEDIA_HASH,
+    alt,
+    caption: "",
+    order: 0,
+    contentUrl: `/api/applications/dnd2024/state-spaces/dnd2024-main/entities/owner/media/${mediaId}/content`,
   };
 }
 
-test("visual media selects only the exact audience variant and returns no private registry metadata", () => {
-  const record = mediaRecord({
-    player: mediaVariant("Player portrait"),
-    dm: mediaVariant("DM portrait"),
-  });
-  assert.deepEqual(projectMediaVisual(record, "player", "/ui/dnd2024-play/assets/"), {
+function mediaRecord(...attachments) {
+  return {
+    applicationId: "dnd2024",
+    stateSpaceId: "dnd2024-main",
+    entityId: "owner",
+    resolutionFingerprint: "fixture",
+    attachments,
+  };
+}
+
+test("visual media consumes only owner-authorized discovery and returns no private blob metadata", () => {
+  const record = mediaRecord(mediaAttachment("portrait", "Player portrait"));
+  assert.deepEqual(projectMediaVisual(record), {
     portrait: {
-      imageUrl: `/components/media/sha256.${MEDIA_HASH}.png`,
+      imageUrl: "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/owner/media/visual-0/content",
       alt: "Player portrait",
       width: 1024,
       height: 1536,
     },
   });
-  const serialized = JSON.stringify(projectMediaVisual(record, "player"));
-  assert.equal(serialized.includes("DM portrait"), false);
-  assert.equal(serialized.includes("assetKey"), false);
-  assert.equal(serialized.includes("sha256"), true, "content-addressed URL is the only emitted digest use");
+  const serialized = JSON.stringify(projectMediaVisual(record));
+  assert.equal(serialized.includes(MEDIA_HASH), false);
   assert.equal(serialized.includes("provenance"), false);
 });
 
-test("visual media omits missing audience variants and fails closed on malformed or mismatched assets", () => {
-  assert.equal(projectMediaVisual(mediaRecord({ dm: mediaVariant("DM only") }), "player"), null);
-  assert.equal(projectMediaVisual({ ...mediaRecord({ player: mediaVariant() }), injected: true }, "player"), null);
-  assert.equal(projectMediaVisual(mediaRecord({
-    player: { ...mediaVariant(), assetKey: "sha256.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
-  }), "player"), null);
-  assert.equal(projectMediaVisual({ ...mediaRecord({ player: mediaVariant() }), status: "archived" }, "player"), null);
+test("item media inherits definition roles while explicit instance roles win", () => {
+  const definitionIcon = {
+    imageUrl: "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/definition/media/icon/content",
+    alt: "Definition icon", width: 64, height: 64,
+  };
+  const definitionIllustration = {
+    imageUrl: "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/definition/media/illustration/content",
+    alt: "Definition illustration", width: 600, height: 800,
+  };
+  const instanceIcon = {
+    imageUrl: "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/instance/media/icon/content",
+    alt: "Instance icon", width: 64, height: 64,
+  };
+  const inherited = inheritMediaVisual(
+    { icon: instanceIcon, gallery: [{ ...instanceIcon, mediaId: "visual-0", role: "icon", caption: "" }] },
+    {
+      icon: definitionIcon,
+      illustration: definitionIllustration,
+      gallery: [
+        { ...definitionIcon, mediaId: "visual-0", role: "icon", caption: "" },
+        { ...definitionIllustration, mediaId: "visual-1", role: "illustration", caption: "" },
+      ],
+    },
+  );
+
+  assert.deepEqual(inherited.icon, instanceIcon);
+  assert.deepEqual(inherited.illustration, definitionIllustration);
+  assert.deepEqual(inherited.gallery.map((entry) => [entry.role, entry.alt]), [
+    ["icon", "Instance icon"],
+    ["illustration", "Definition illustration"],
+  ]);
+});
+
+test("visual media fails closed on malformed or non-owner-bound discovery", () => {
+  assert.equal(projectMediaVisual(mediaRecord()), null);
+  assert.equal(projectMediaVisual(mediaRecord({ ...mediaAttachment(), contentUrl: "/components/media/file.png" })), null);
+  assert.equal(projectMediaVisual(mediaRecord({ ...mediaAttachment(), mediaType: "image/svg+xml" })), null);
+  assert.equal(projectMediaVisual({ attachments: [{ ...mediaAttachment(), injected: true }] }), null);
+});
+
+test("visual media preserves an ordered gallery when an entity has several authorized images", () => {
+  const second = { ...mediaAttachment("scene", "Night at the market", "visual-1"), order: 2 };
+  const first = { ...mediaAttachment("setting", "The market at dawn", "visual-0"), order: 1 };
+  const projected = projectMediaVisual(mediaRecord(second, first));
+
+  assert.deepEqual(projected.gallery.map((entry) => [entry.mediaId, entry.role, entry.alt]), [
+    ["visual-0", "setting", "The market at dawn"],
+    ["visual-1", "scene", "Night at the market"],
+  ]);
 });
 
 test("current scene records resolve encounter then conversation then exploration", () => {
@@ -112,6 +146,49 @@ test("current scene records reject unknown locations and open or malformed refer
     location: { entityId: locations[0] },
     guessedMode: "combat",
   }, locations), null);
+});
+
+test("recorded play situations preserve continuity without becoming authoritative ECS scenes", () => {
+  const locationId = "location.thalorien.brackenford";
+  assert.deepEqual(resolveRecordedPlaySituation({
+    recentMessages: [
+      { id: "play-message.1", ordinal: 1, role: "player", text: "I ask about the road." },
+      { id: "play-message.2", ordinal: 2, role: "assistant", text: "Tibb answers word for word." },
+    ],
+    currentSituation: {
+      id: "play-situation.1",
+      status: "active",
+      kind: "conversation",
+      summary: "Orban asks Tibb about the closed northern road.",
+      participants: [
+        { name: "Orban", entityId: "actor.thalorien.brackenford.orban" },
+        { name: "Tibb Fallow", entityId: null },
+      ],
+      location: { name: "Brackenford", entityId: locationId },
+    },
+  }, [locationId]), {
+    status: "ready",
+    kind: "recorded",
+    locationId,
+    recorded: {
+      id: "play-situation.1",
+      kind: "conversation",
+      summary: "Orban asks Tibb about the closed northern road.",
+      participants: [
+        { id: "actor.thalorien.brackenford.orban", name: "Orban", entityId: "actor.thalorien.brackenford.orban" },
+        { id: "play-situation.1.participant.2", name: "Tibb Fallow" },
+      ],
+      interactions: [
+        { id: "play-message.1", ordinal: 1, role: "player", text: "I ask about the road." },
+        { id: "play-message.2", ordinal: 2, role: "assistant", text: "Tibb answers word for word." },
+      ],
+      location: { id: locationId, name: "Brackenford" },
+    },
+  });
+  assert.equal(resolveRecordedPlaySituation({
+    recentMessages: [],
+    currentSituation: { id: "play-situation.2", status: "active", kind: "initiative", summary: "No.", participants: [] },
+  }, []), null);
 });
 
 test("scene affordances match the full current scene and filter GM-only context", () => {
@@ -181,11 +258,11 @@ test("known ways onward require admitted exact route and destination subjects", 
     fetchImpl: async (input) => {
       const requested = new URL(input);
       const path = requested.pathname;
-      if (path.endsWith(`/${routeId}/components/dnd2024.game.core.world.route`)) {
-        requestedKinds.push("dnd2024.game.core.world.route");
+      if (path.endsWith(`/${routeId}/components/game.core.world.route`)) {
+        requestedKinds.push("game.core.world.route");
         return response(200, {
           entityId: routeId,
-          qualifiedTypeId: "dnd2024.game.core.world.route",
+          qualifiedTypeId: "game.core.world.route",
           valueJson: JSON.stringify({
             status: "active",
             summary: "CANARY GM ROUTE SUMMARY",
@@ -195,18 +272,18 @@ test("known ways onward require admitted exact route and destination subjects", 
           }),
         });
       }
-      if (path.endsWith(`/${routeId}/components/dnd2024.game.core.world.route.availability`)) {
-        requestedKinds.push("dnd2024.game.core.world.route.availability");
+      if (path.endsWith(`/${routeId}/components/game.core.world.route.availability`)) {
+        requestedKinds.push("game.core.world.route.availability");
         return response(200, {
           entityId: routeId,
-          qualifiedTypeId: "dnd2024.game.core.world.route.availability",
+          qualifiedTypeId: "game.core.world.route.availability",
           valueJson: JSON.stringify({ status: "open" }),
         });
       }
-      if (path.endsWith(`/${destinationId}/components/dnd2024.game.core.world.location`)) {
+      if (path.endsWith(`/${destinationId}/components/game.core.world.location`)) {
         return response(200, {
           entityId: destinationId,
-          qualifiedTypeId: "dnd2024.game.core.world.location",
+          qualifiedTypeId: "game.core.world.location",
           valueJson: JSON.stringify({
             kind: "settlement", status: "active", summary: "A known port.", visibility: "public",
           }),
@@ -216,9 +293,9 @@ test("known ways onward require admitted exact route and destination subjects", 
         const kind = requested.searchParams.get("qualifiedKind");
         requestedKinds.push(kind);
         const targets = {
-          "dnd2024.game.core.world.route.in-world": "world.thalorien",
-          "dnd2024.game.core.world.route.from": originId,
-          "dnd2024.game.core.world.route.to": destinationId,
+          "game.core.world.route.in-world": "world.thalorien",
+          "game.core.world.route.from": originId,
+          "game.core.world.route.to": destinationId,
         };
         return response(200, { items: [{ fromEntityId: routeId, toEntityId: targets[kind], qualifiedKind: kind }] });
       }
@@ -252,7 +329,7 @@ test("known ways onward require admitted exact route and destination subjects", 
     durationMinutes: 45,
   }]);
   assert.equal(JSON.stringify(routes).includes("CANARY"), false);
-  assert.equal(requestedKinds.every((kind) => kind.startsWith("dnd2024.")), true);
+  assert.equal(requestedKinds.every((kind) => kind.startsWith("game.core.")), true);
 });
 
 test("known ways onward fail closed without destination knowledge", async () => {
@@ -263,28 +340,28 @@ test("known ways onward fail closed without destination knowledge", async () => 
     fetchImpl: async (input) => {
       const requested = new URL(input);
       const path = requested.pathname;
-      if (path.endsWith(`/${routeId}/components/dnd2024.game.core.world.route`)) {
+      if (path.endsWith(`/${routeId}/components/game.core.world.route`)) {
         return response(200, {
           entityId: routeId,
-          qualifiedTypeId: "dnd2024.game.core.world.route",
+          qualifiedTypeId: "game.core.world.route",
           valueJson: JSON.stringify({
             status: "active", summary: "A road.", visibility: "public", mode: "on-foot", durationMinutes: 45,
           }),
         });
       }
-      if (path.endsWith(`/${routeId}/components/dnd2024.game.core.world.route.availability`)) {
+      if (path.endsWith(`/${routeId}/components/game.core.world.route.availability`)) {
         return response(200, {
           entityId: routeId,
-          qualifiedTypeId: "dnd2024.game.core.world.route.availability",
+          qualifiedTypeId: "game.core.world.route.availability",
           valueJson: JSON.stringify({ status: "open" }),
         });
       }
       if (path.endsWith("/relationships")) {
         const kind = requested.searchParams.get("qualifiedKind");
         const targets = {
-          "dnd2024.game.core.world.route.in-world": "world.thalorien",
-          "dnd2024.game.core.world.route.from": originId,
-          "dnd2024.game.core.world.route.to": destinationId,
+          "game.core.world.route.in-world": "world.thalorien",
+          "game.core.world.route.from": originId,
+          "game.core.world.route.to": destinationId,
         };
         return response(200, { items: [{ fromEntityId: routeId, toEntityId: targets[kind], qualifiedKind: kind }] });
       }
@@ -316,10 +393,10 @@ test("conversation current scene excludes unapproved participants and summary fr
       if (requested.pathname.endsWith("/interaction.brackenford.parley")) {
         return response(200, { entityId: "interaction.brackenford.parley", name: "Gatehouse parley" });
       }
-      if (requested.pathname.endsWith("/components/dnd2024.game.core.world.interaction")) {
+      if (requested.pathname.endsWith("/components/game.core.world.interaction")) {
         return response(200, {
           entityId: "interaction.brackenford.parley",
-          qualifiedTypeId: "dnd2024.game.core.world.interaction",
+          qualifiedTypeId: "game.core.world.interaction",
           valueJson: JSON.stringify({
             kind: "conversation",
             status: "accepted",
@@ -332,12 +409,12 @@ test("conversation current scene excludes unapproved participants and summary fr
           {
             fromEntityId: "interaction.brackenford.parley",
             toEntityId: "actor.hero",
-            qualifiedKind: "dnd2024.game.core.world.interaction.participant",
+            qualifiedKind: "game.core.world.interaction.participant",
           },
           {
             fromEntityId: "interaction.brackenford.parley",
             toEntityId: "actor.secret-npc",
-            qualifiedKind: "dnd2024.game.core.world.interaction.participant",
+            qualifiedKind: "game.core.world.interaction.participant",
           },
         ] });
       }
@@ -467,11 +544,11 @@ function playerMapDirectoryResponse(path) {
       slot: "location",
     } });
   }
-  if (path.endsWith("/components/dnd2024.game.core.world.location")) {
+  if (path.endsWith("/components/game.core.world.location")) {
     const isPublic = id.endsWith("brackenford");
     return response(200, {
       entityId: id,
-      qualifiedTypeId: "dnd2024.game.core.world.location",
+      qualifiedTypeId: "game.core.world.location",
       valueJson: JSON.stringify({
         kind: "settlement",
         status: "draft",
@@ -480,28 +557,18 @@ function playerMapDirectoryResponse(path) {
       }),
     });
   }
-  if (path.endsWith("/components/dnd2024.game.core.world.map.anchor")) {
+  if (path.endsWith("/components/game.core.world.map.anchor")) {
     return response(200, {
       entityId: id,
-      qualifiedTypeId: "dnd2024.game.core.world.map.anchor",
+      qualifiedTypeId: "game.core.world.map.anchor",
       valueJson: JSON.stringify(id.endsWith("brackenford") ? { x: 232, y: 647 } : { x: 692, y: 516 }),
     });
   }
-  if (path.endsWith("/components/dnd2024.game.core.world.map.visual")) {
-    return response(200, {
-      entityId: id,
-      qualifiedTypeId: "dnd2024.game.core.world.map.visual",
-      valueJson: JSON.stringify(id.endsWith("brackenford") ? {
-        status: "active",
-        variants: {
-          player: { assetKey: "thalos.city.crownmere.player", alt: "Player-safe village map." },
-          dm: { assetKey: "thalos.city.crownmere.dm", alt: "CANARY DM MAP." },
-        },
-      } : {
-        status: "active",
-        variants: { dm: { assetKey: "thalos.city.crownmere.dm", alt: "Hidden." } },
-      }),
-    });
+  if (path.endsWith("/media")) {
+    return response(200, mediaRecord(...(id.endsWith("brackenford")
+      ? [{ ...mediaAttachment("map", "Player-safe village map.", "map-player"),
+          contentUrl: `/api/applications/dnd2024/state-spaces/dnd2024-main/entities/${id}/media/map-player/content` }]
+      : [])));
   }
   return null;
 }
@@ -556,10 +623,10 @@ test("reads the ambient actor's direct presence after the location is audience-a
         actorId,
         role: "actor",
       });
-      if (path.endsWith("/campaign.thalorien.brackenford/components/dnd2024.game.core.campaign.root")) {
+      if (path.endsWith("/campaign.thalorien.brackenford/components/game.core.campaign.root")) {
         return response(200, {
           entityId: "campaign.thalorien.brackenford",
-          qualifiedTypeId: "dnd2024.game.core.campaign.root",
+          qualifiedTypeId: "game.core.campaign.root",
           valueJson: JSON.stringify({ status: "active", premise: "A live campaign.", partyGoals: [], toneAndBoundaries: [] }),
         });
       }
@@ -619,10 +686,10 @@ test("reads only the server-selected campaign, actor, and authorized knowledge",
           }],
         });
       }
-      if (path.endsWith("/campaign.thalorien.brackenford/components/dnd2024.game.core.campaign.root")) {
+      if (path.endsWith("/campaign.thalorien.brackenford/components/game.core.campaign.root")) {
         return response(200, {
           entityId: "campaign.thalorien.brackenford",
-          qualifiedTypeId: "dnd2024.game.core.campaign.root",
+          qualifiedTypeId: "game.core.campaign.root",
           valueJson: JSON.stringify({
             premise: "A waystone stirs beneath the woods.",
             partyGoals: ["Keep Brackenford safe."],
@@ -660,26 +727,11 @@ test("reads only the server-selected campaign, actor, and authorized knowledge",
           }],
         });
       }
-      if (path.endsWith("/clue.thalorien.brackenford.waystone/components/dnd2024.game.core.world.media.visual")) {
-        return response(200, {
-          entityId: "clue.thalorien.brackenford.waystone",
-          qualifiedTypeId: "dnd2024.game.core.world.media.visual",
-          valueJson: JSON.stringify({
-            status: "active",
-            slots: {
-              handout: {
-                variants: { player: mediaVariant("The admitted waystone rubbing") },
-                provenance: {
-                  kind: "generated",
-                  credit: "Reviewed original artwork",
-                  source: "reviewed/waystone.png",
-                  reviewedOn: "2026-08-30",
-                  version: 1,
-                },
-              },
-            },
-          }),
-        });
+      if (path.endsWith("/clue.thalorien.brackenford.waystone/media")) {
+        return response(200, mediaRecord({
+          ...mediaAttachment("handout", "The admitted waystone rubbing"),
+          contentUrl: "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/clue.thalorien.brackenford.waystone/media/visual-0/content",
+        }));
       }
       if (path.endsWith("/campaign.thalorien.brackenford")) {
         return response(200, { entityId: "campaign.thalorien.brackenford", name: "The Waystone at Brackenford" });
@@ -746,7 +798,7 @@ test("reads only the server-selected campaign, actor, and authorized knowledge",
         presentationKind: "statement",
         media: {
           handout: {
-            imageUrl: `/components/media/sha256.${MEDIA_HASH}.png`,
+            imageUrl: "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/clue.thalorien.brackenford.waystone/media/visual-0/content",
             alt: "The admitted waystone rubbing",
             width: 1024,
             height: 1536,
@@ -761,7 +813,7 @@ test("reads only the server-selected campaign, actor, and authorized knowledge",
           presentationKind: "statement",
           media: {
             handout: {
-              imageUrl: `/components/media/sha256.${MEDIA_HASH}.png`,
+              imageUrl: "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/clue.thalorien.brackenford.waystone/media/visual-0/content",
               alt: "The admitted waystone rubbing",
               width: 1024,
               height: 1536,
@@ -787,15 +839,17 @@ test("reads only the server-selected campaign, actor, and authorized knowledge",
     "/api/audience-context",
     "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/campaign.thalorien.brackenford",
     "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/actor.thalorien.brackenford.orban",
-    "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/campaign.thalorien.brackenford/components/dnd2024.game.core.campaign.root",
-    "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/campaign.thalorien.brackenford/components/dnd2024.game.core.campaign.current-scene",
+    "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/campaign.thalorien.brackenford/components/game.core.campaign.root",
+    "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/campaign.thalorien.brackenford/components/game.core.campaign.current-scene",
     "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/actor.thalorien.brackenford.orban/components/dnd2024.playtest-character-record",
     "/api/applications/dnd2024/campaigns/campaign.thalorien.brackenford/knowledge",
     "/api/applications/dnd2024/campaigns/campaign.thalorien.brackenford/chronology",
-    "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/clue.thalorien.brackenford.waystone/components/dnd2024.game.core.world.media.visual",
+    "/api/applications/dnd2024/state-spaces/dnd2024-main/play/sessions/campaign.thalorien.brackenford",
+    "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/clue.thalorien.brackenford.waystone/media",
     "/api/applications/dnd2024/state-spaces/dnd2024-main/entities",
     "/api/applications/dnd2024/state-spaces/dnd2024-main/entities",
-    "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/actor.thalorien.brackenford.orban/components",
+    "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/actor.thalorien.brackenford.orban/read-models/dnd2024.query.character-sheet",
+    "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/actor.thalorien.brackenford.orban/media",
   ]);
 });
 
@@ -818,10 +872,10 @@ test("maps a server-authorized game master context to the local DM seat without 
       if (path.endsWith("/campaign.thalorien.brackenford")) {
         return response(200, { entityId: "campaign.thalorien.brackenford", name: "The Waystone at Brackenford" });
       }
-      if (path.endsWith("/campaign.thalorien.brackenford/components/dnd2024.game.core.campaign.root")) {
+      if (path.endsWith("/campaign.thalorien.brackenford/components/game.core.campaign.root")) {
         return response(200, {
           entityId: "campaign.thalorien.brackenford",
-          qualifiedTypeId: "dnd2024.game.core.campaign.root",
+          qualifiedTypeId: "game.core.campaign.root",
           valueJson: JSON.stringify({ premise: "The DM knows the waystone's secret.", partyGoals: [], toneAndBoundaries: [] }),
         });
       }
@@ -839,10 +893,10 @@ test("maps a server-authorized game master context to the local DM seat without 
           ],
         });
       }
-      if (path.endsWith("/entities/faction.thalorien.gilded-concord/components/dnd2024.game.core.world.faction")) {
+      if (path.endsWith("/entities/faction.thalorien.gilded-concord/components/game.core.world.faction")) {
         return response(200, {
           entityId: "faction.thalorien.gilded-concord",
-          qualifiedTypeId: "dnd2024.game.core.world.faction",
+          qualifiedTypeId: "game.core.world.faction",
           valueJson: JSON.stringify({
             status: "active",
             visibility: "gm",
@@ -854,10 +908,10 @@ test("maps a server-authorized game master context to the local DM seat without 
           }),
         });
       }
-      if (path.endsWith("/entities/faction.thalorien.archived/components/dnd2024.game.core.world.faction")) {
+      if (path.endsWith("/entities/faction.thalorien.archived/components/game.core.world.faction")) {
         return response(200, {
           entityId: "faction.thalorien.archived",
-          qualifiedTypeId: "dnd2024.game.core.world.faction",
+          qualifiedTypeId: "game.core.world.faction",
           valueJson: JSON.stringify({
             status: "archived",
             visibility: "gm",
@@ -910,10 +964,10 @@ test("reads location directory items that use `id` instead of `entityId`", async
       if (path.endsWith("/campaign.thalorien.brackenford")) {
         return response(200, { entityId: "campaign.thalorien.brackenford", name: "The Waystone at Brackenford" });
       }
-      if (path.endsWith("/campaign.thalorien.brackenford/components/dnd2024.game.core.campaign.root")) {
+      if (path.endsWith("/campaign.thalorien.brackenford/components/game.core.campaign.root")) {
         return response(200, {
           entityId: "campaign.thalorien.brackenford",
-          qualifiedTypeId: "dnd2024.game.core.campaign.root",
+          qualifiedTypeId: "game.core.campaign.root",
           valueJson: JSON.stringify({ premise: "The DM knows the waystone's secret.", partyGoals: [], toneAndBoundaries: [] }),
         });
       }
@@ -936,20 +990,20 @@ test("reads location directory items that use `id` instead of `entityId`", async
           },
         });
       }
-      if (path.endsWith("/entities/location.thalorien.brackenford/components/dnd2024.game.core.world.location")) {
+      if (path.endsWith("/entities/location.thalorien.brackenford/components/game.core.world.location")) {
         return response(200, {
           entityId: "location.thalorien.brackenford",
-          qualifiedTypeId: "dnd2024.game.core.world.location",
+          qualifiedTypeId: "game.core.world.location",
           valueJson: JSON.stringify({ summary: "A frontier village." }),
         });
       }
       if (path.endsWith("/entities/location.thalorien.crownmere/containment")) {
         return response(404, {});
       }
-      if (path.endsWith("/entities/location.thalorien.crownmere/components/dnd2024.game.core.world.location")) {
+      if (path.endsWith("/entities/location.thalorien.crownmere/components/game.core.world.location")) {
         return response(200, {
           entityId: "location.thalorien.crownmere",
-          qualifiedTypeId: "dnd2024.game.core.world.location",
+          qualifiedTypeId: "game.core.world.location",
           valueJson: JSON.stringify({ summary: "A quiet port town." }),
         });
       }
@@ -989,10 +1043,10 @@ test("keeps partial location-directory pages when a later page fetch fails", asy
       if (path.endsWith("/campaign.thalorien.brackenford")) {
         return response(200, { entityId: "campaign.thalorien.brackenford", name: "The Waystone at Brackenford" });
       }
-      if (path.endsWith("/campaign.thalorien.brackenford/components/dnd2024.game.core.campaign.root")) {
+      if (path.endsWith("/campaign.thalorien.brackenford/components/game.core.campaign.root")) {
         return response(200, {
           entityId: "campaign.thalorien.brackenford",
-          qualifiedTypeId: "dnd2024.game.core.campaign.root",
+          qualifiedTypeId: "game.core.campaign.root",
           valueJson: JSON.stringify({
             premise: "The DM knows the waystone's secret.",
             partyGoals: [],
@@ -1015,7 +1069,7 @@ test("keeps partial location-directory pages when a later page fetch fails", asy
       if (path.endsWith("/entities/location.thalorien.aldros")) {
         return response(200, { entityId: "location.thalorien.aldros", name: "Aldros" });
       }
-      if (path.endsWith("/entities/location.thalorien.aldros/components/dnd2024.game.core.world.location")) {
+      if (path.endsWith("/entities/location.thalorien.aldros/components/game.core.world.location")) {
         return response(503, { status: "UNAVAILABLE" });
       }
 
@@ -1053,10 +1107,10 @@ test("maps a server-authorized actor binding to local DM seat when localSeat ove
       if (path.endsWith("/campaign.thalorien.brackenford")) {
         return response(200, { entityId: "campaign.thalorien.brackenford", name: "The Waystone at Brackenford" });
       }
-      if (path.endsWith("/campaign.thalorien.brackenford/components/dnd2024.game.core.campaign.root")) {
+      if (path.endsWith("/campaign.thalorien.brackenford/components/game.core.campaign.root")) {
         return response(200, {
           entityId: "campaign.thalorien.brackenford",
-          qualifiedTypeId: "dnd2024.game.core.campaign.root",
+          qualifiedTypeId: "game.core.campaign.root",
           valueJson: JSON.stringify({ premise: "The DM knows the waystone's secret.", partyGoals: [], toneAndBoundaries: [] }),
         });
       }
@@ -1078,52 +1132,32 @@ test("maps a server-authorized actor binding to local DM seat when localSeat ove
       if (path.endsWith("/entities/location.thalorien.crownmere/containment")) {
         return response(200, { containment: { containerEntityId: "location.thalorien.aldros", slot: "location" } });
       }
-      if (path.endsWith("/entities/location.thalorien.brackenford/components/dnd2024.game.core.world.location")) {
+      if (path.endsWith("/entities/location.thalorien.brackenford/components/game.core.world.location")) {
         return response(200, {
           entityId: "location.thalorien.brackenford",
-          qualifiedTypeId: "dnd2024.game.core.world.location",
+          qualifiedTypeId: "game.core.world.location",
           valueJson: JSON.stringify({ kind: "settlement", status: "draft", summary: "A frontier village.", visibility: "public" }),
         });
       }
-      if (path.endsWith("/entities/location.thalorien.crownmere/components/dnd2024.game.core.world.location")) {
+      if (path.endsWith("/entities/location.thalorien.crownmere/components/game.core.world.location")) {
         return response(200, {
           entityId: "location.thalorien.crownmere",
-          qualifiedTypeId: "dnd2024.game.core.world.location",
+          qualifiedTypeId: "game.core.world.location",
           valueJson: JSON.stringify({ kind: "settlement", status: "draft", summary: "A hidden city.", visibility: "gm" }),
         });
       }
-      if (path.endsWith("/entities/location.thalorien.brackenford/components/dnd2024.game.core.world.map.anchor")) {
+      if (path.endsWith("/entities/location.thalorien.brackenford/components/game.core.world.map.anchor")) {
         return response(200, {
           entityId: "location.thalorien.brackenford",
-          qualifiedTypeId: "dnd2024.game.core.world.map.anchor",
+          qualifiedTypeId: "game.core.world.map.anchor",
           valueJson: JSON.stringify({ x: 232, y: 647 }),
         });
       }
-      if (path.endsWith("/entities/location.thalorien.crownmere/components/dnd2024.game.core.world.map.anchor")) {
+      if (path.endsWith("/entities/location.thalorien.crownmere/components/game.core.world.map.anchor")) {
         return response(200, {
           entityId: "location.thalorien.crownmere",
-          qualifiedTypeId: "dnd2024.game.core.world.map.anchor",
+          qualifiedTypeId: "game.core.world.map.anchor",
           valueJson: JSON.stringify({ x: 692, y: 516 }),
-        });
-      }
-      if (path.endsWith("/entities/location.thalorien.brackenford/components/dnd2024.game.core.world.map.visual")) {
-        return response(200, {
-          entityId: "location.thalorien.brackenford",
-          qualifiedTypeId: "dnd2024.game.core.world.map.visual",
-          valueJson: JSON.stringify({
-            status: "active",
-            variants: {
-              player: { assetKey: "thalos.city.crownmere.player", alt: "Player-safe village map." },
-              dm: { assetKey: "thalos.city.crownmere.dm", alt: "CANARY DM MAP." },
-            },
-          }),
-        });
-      }
-      if (path.endsWith("/entities/location.thalorien.crownmere/components/dnd2024.game.core.world.map.visual")) {
-        return response(200, {
-          entityId: "location.thalorien.crownmere",
-          qualifiedTypeId: "dnd2024.game.core.world.map.visual",
-          valueJson: JSON.stringify({ status: "active", variants: { dm: { assetKey: "thalos.city.crownmere.dm", alt: "Hidden." } } }),
         });
       }
       throw new Error(`Unexpected request ${path}`);
@@ -1161,10 +1195,10 @@ test("supports selecting player perspective for a local game master", async () =
       if (path.endsWith("/campaign.thalorien.brackenford")) {
         return response(200, { entityId: "campaign.thalorien.brackenford", name: "The Waystone at Brackenford" });
       }
-      if (path.endsWith("/campaign.thalorien.brackenford/components/dnd2024.game.core.campaign.root")) {
+      if (path.endsWith("/campaign.thalorien.brackenford/components/game.core.campaign.root")) {
         return response(200, {
           entityId: "campaign.thalorien.brackenford",
-          qualifiedTypeId: "dnd2024.game.core.campaign.root",
+          qualifiedTypeId: "game.core.campaign.root",
           valueJson: JSON.stringify({ premise: "The DM knows the waystone's secret.", partyGoals: [], toneAndBoundaries: [] }),
         });
       }
@@ -1200,7 +1234,10 @@ test("supports selecting player perspective for a local game master", async () =
     containerId: "location.thalorien.valeros",
     containmentSlot: "location",
     mapAnchor: { x: 232, y: 647 },
-    mapVisual: { assetKey: "thalos.city.crownmere.player", alt: "Player-safe village map." },
+    mapVisual: {
+      imageUrl: "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/location.thalorien.brackenford/media/map-player/content",
+      alt: "Player-safe village map.",
+    },
   }]);
   assert.equal(JSON.stringify(value).includes("CANARY DM MAP"), false);
   assert.equal(JSON.stringify(value).includes("A hidden city"), false);
@@ -1209,8 +1246,8 @@ test("supports selecting player perspective for a local game master", async () =
   assert.equal(calls.some((path) => path.endsWith("/campaign.thalorien.brackenford/knowledge")), false);
   assert.equal(calls.some((path) => path.endsWith("/campaign.thalorien.brackenford/chronology")), true);
   assert.equal(calls.some((path) => path.includes("has-character-participation")), false);
-  assert.equal(calls.some((path) => path.includes("clue.") && path.includes("media.visual")), false);
-  assert.equal(calls.length, 18);
+  assert.equal(calls.some((path) => path.includes("clue.") && path.endsWith("/media")), false);
+  assert.equal(calls.length, 17);
 });
 
 test("reads live campaign chapters and arcs while omitting GM context from player preview", async () => {
@@ -1232,10 +1269,10 @@ test("reads live campaign chapters and arcs while omitting GM context from playe
         name: "The Waystone at Brackenford",
       });
     }
-    if (path.endsWith("/campaign.thalorien.brackenford/components/dnd2024.game.core.campaign.root")) {
+    if (path.endsWith("/campaign.thalorien.brackenford/components/game.core.campaign.root")) {
       return response(200, {
         entityId: "campaign.thalorien.brackenford",
-        qualifiedTypeId: "dnd2024.game.core.campaign.root",
+        qualifiedTypeId: "game.core.campaign.root",
         valueJson: JSON.stringify({
           status: "active",
           premise: "A waystone stirs beneath the woods.",
@@ -1273,55 +1310,55 @@ test("reads live campaign chapters and arcs while omitting GM context from playe
       });
     }
     if (path === "/api/applications/dnd2024/state-spaces/dnd2024-main/relationships" &&
-        requested.searchParams.get("qualifiedKind") === "dnd2024.game.core.campaign.has-session") {
+        requested.searchParams.get("qualifiedKind") === "game.core.campaign.has-session") {
       return response(200, {
         items: [{
           fromEntityId: "campaign.thalorien.brackenford",
           toEntityId: "session.thalorien.brackenford.1",
-          qualifiedKind: "dnd2024.game.core.campaign.has-session",
+          qualifiedKind: "game.core.campaign.has-session",
         }],
       });
     }
     if (path === "/api/applications/dnd2024/state-spaces/dnd2024-main/relationships" &&
         requested.searchParams.get("fromEntityId") === "session.thalorien.brackenford.1" &&
         requested.searchParams.get("qualifiedKind") ===
-          "dnd2024.game.core.campaign.record.references-world-entity") {
+          "game.core.campaign.record.references-world-entity") {
       return response(200, {
         items: [{
           fromEntityId: "session.thalorien.brackenford.1",
           toEntityId: "location.thalorien.brackenford",
-          qualifiedKind: "dnd2024.game.core.campaign.record.references-world-entity",
+          qualifiedKind: "game.core.campaign.record.references-world-entity",
         }],
       });
     }
     if (path === "/api/applications/dnd2024/state-spaces/dnd2024-main/relationships" &&
         requested.searchParams.get("fromEntityId") === "campaign.thalorien.brackenford" &&
         requested.searchParams.get("qualifiedKind") ===
-          "dnd2024.game.core.campaign.has-location-visit") {
+          "game.core.campaign.has-location-visit") {
       return response(200, {
         items: [{
           fromEntityId: "campaign.thalorien.brackenford",
           toEntityId: "campaign-visit.thalorien.brackenford.village",
-          qualifiedKind: "dnd2024.game.core.campaign.has-location-visit",
+          qualifiedKind: "game.core.campaign.has-location-visit",
         }],
       });
     }
     if (path === "/api/applications/dnd2024/state-spaces/dnd2024-main/relationships" &&
         requested.searchParams.get("fromEntityId") === "campaign-visit.thalorien.brackenford.village" &&
         requested.searchParams.get("qualifiedKind") ===
-          "dnd2024.game.core.campaign.location-visit.at-location") {
+          "game.core.campaign.location-visit.at-location") {
       return response(200, {
         items: [{
           fromEntityId: "campaign-visit.thalorien.brackenford.village",
           toEntityId: "location.thalorien.brackenford",
-          qualifiedKind: "dnd2024.game.core.campaign.location-visit.at-location",
+          qualifiedKind: "game.core.campaign.location-visit.at-location",
         }],
       });
     }
-    if (path.endsWith("/campaign-visit.thalorien.brackenford.village/components/dnd2024.game.core.campaign.location-visit")) {
+    if (path.endsWith("/campaign-visit.thalorien.brackenford.village/components/game.core.campaign.location-visit")) {
       return response(200, {
         entityId: "campaign-visit.thalorien.brackenford.village",
-        qualifiedTypeId: "dnd2024.game.core.campaign.location-visit",
+        qualifiedTypeId: "game.core.campaign.location-visit",
         valueJson: JSON.stringify({
           firstVisitedMinute: 120,
           lastVisitedMinute: 360,
@@ -1333,18 +1370,18 @@ test("reads live campaign chapters and arcs while omitting GM context from playe
         }),
       });
     }
-    if (path.endsWith("/session.thalorien.brackenford.1/components/dnd2024.game.core.campaign.session")) {
+    if (path.endsWith("/session.thalorien.brackenford.1/components/game.core.campaign.session")) {
       return response(200, {
         entityId: "session.thalorien.brackenford.1",
-        qualifiedTypeId: "dnd2024.game.core.campaign.session",
+        qualifiedTypeId: "game.core.campaign.session",
         valueJson: JSON.stringify({ status: "ended", ordinal: 1 }),
         updatedAtUtc: "2026-08-23T10:02:00Z",
       });
     }
-    if (path.endsWith("/session.thalorien.brackenford.1/components/dnd2024.game.core.campaign.session-recap")) {
+    if (path.endsWith("/session.thalorien.brackenford.1/components/game.core.campaign.session-recap")) {
       return response(200, {
         entityId: "session.thalorien.brackenford.1",
-        qualifiedTypeId: "dnd2024.game.core.campaign.session-recap",
+        qualifiedTypeId: "game.core.campaign.session-recap",
         valueJson: JSON.stringify({
           protocolVersion: "session.s0.c3-only.v1",
           chapter: {
@@ -1363,10 +1400,10 @@ test("reads live campaign chapters and arcs while omitting GM context from playe
         }),
       });
     }
-    if (path.endsWith("/campaign.thalorien.brackenford.chapter.arrivals/components/dnd2024.game.core.campaign.chapter")) {
+    if (path.endsWith("/campaign.thalorien.brackenford.chapter.arrivals/components/game.core.campaign.chapter")) {
       return response(200, {
         entityId: "campaign.thalorien.brackenford.chapter.arrivals",
-        qualifiedTypeId: "dnd2024.game.core.campaign.chapter",
+        qualifiedTypeId: "game.core.campaign.chapter",
         valueJson: JSON.stringify({
           status: "active",
           title: "Brackenford Arrivals",
@@ -1376,10 +1413,10 @@ test("reads live campaign chapters and arcs while omitting GM context from playe
         updatedAtUtc: "2026-08-23T10:00:00Z",
       });
     }
-    if (path.endsWith("/campaign.thalorien.brackenford.arc.waking-depths/components/dnd2024.game.core.campaign.arc")) {
+    if (path.endsWith("/campaign.thalorien.brackenford.arc.waking-depths/components/game.core.campaign.arc")) {
       return response(200, {
         entityId: "campaign.thalorien.brackenford.arc.waking-depths",
-        qualifiedTypeId: "dnd2024.game.core.campaign.arc",
+        qualifiedTypeId: "game.core.campaign.arc",
         valueJson: JSON.stringify({
           status: "active",
           title: "The Waking Depths",
@@ -1567,17 +1604,17 @@ test("groups readable campaign roots by World and switches a local DM to an exac
         ],
       });
     }
-    if (path.endsWith("/campaign.thalorien.brackenford/components/dnd2024.game.core.campaign.root") ||
-        path.endsWith("/campaign.thalorien.second-age/components/dnd2024.game.core.campaign.root") ||
-        path.endsWith("/campaign.embersea.black-tide/components/dnd2024.game.core.campaign.root")) {
+    if (path.endsWith("/campaign.thalorien.brackenford/components/game.core.campaign.root") ||
+        path.endsWith("/campaign.thalorien.second-age/components/game.core.campaign.root") ||
+        path.endsWith("/campaign.embersea.black-tide/components/game.core.campaign.root")) {
       const entityId = decodeURIComponent(path.split("/components/")[0].split("/").at(-1));
       return response(200, {
         entityId,
-        qualifiedTypeId: "dnd2024.game.core.campaign.root",
+        qualifiedTypeId: "game.core.campaign.root",
         valueJson: JSON.stringify({ status: "active", premise: "A readable campaign.", partyGoals: [], toneAndBoundaries: [] }),
       });
     }
-    if (path.endsWith("/campaign.embersea.black-tide.chapter.opening/components/dnd2024.game.core.campaign.root")) {
+    if (path.endsWith("/campaign.embersea.black-tide.chapter.opening/components/game.core.campaign.root")) {
       return response(404, {});
     }
     if (path.endsWith("/campaign.embersea.black-tide")) {
@@ -1605,7 +1642,7 @@ test("groups readable campaign roots by World and switches a local DM to an exac
     ["Thalorien", ["The Second Age", "The Waystone at Brackenford"]],
     ["The Ember Sea", ["The Black Tide"]],
   ]);
-  assert.equal(calls.some((path) => path.includes("chapter.opening/components/dnd2024.game.core.campaign.root")), true);
+  assert.equal(calls.some((path) => path.includes("chapter.opening/components/game.core.campaign.root")), true);
 });
 
 test("rejects an actor's cross-campaign request before reading campaign detail", async () => {
@@ -1656,10 +1693,10 @@ test("projects only exact active campaign participation into the DM party roster
         role: "game-master",
       });
     }
-    if (path.endsWith(`/${campaignId}/components/dnd2024.game.core.campaign.root`)) {
+    if (path.endsWith(`/${campaignId}/components/game.core.campaign.root`)) {
       return response(200, {
         entityId: campaignId,
-        qualifiedTypeId: "dnd2024.game.core.campaign.root",
+        qualifiedTypeId: "game.core.campaign.root",
         valueJson: JSON.stringify({ status: "active", premise: "A live campaign.", partyGoals: [], toneAndBoundaries: [] }),
       });
     }
@@ -1678,34 +1715,34 @@ test("projects only exact active campaign participation into the DM party roster
     }
     if (path.endsWith("/relationships") &&
         fromEntityId === campaignId &&
-        qualifiedKind === "dnd2024.game.core.campaign.has-character-participation") {
+        qualifiedKind === "game.core.campaign.has-character-participation") {
       return response(200, { items: [
         { fromEntityId: campaignId, toEntityId: withdrawnParticipation, qualifiedKind },
         { fromEntityId: campaignId, toEntityId: activeParticipation, qualifiedKind },
       ] });
     }
     if (path.endsWith("/relationships") &&
-        qualifiedKind === "dnd2024.game.core.campaign.character-participation.for-actor") {
+        qualifiedKind === "game.core.campaign.character-participation.for-actor") {
       const actorId = fromEntityId === activeParticipation
         ? "actor.thalorien.brackenford.orban"
         : "actor.thalorien.brackenford.sol";
       return response(200, { items: [{ fromEntityId, toEntityId: actorId, qualifiedKind }] });
     }
     if (path.endsWith("/relationships") &&
-        qualifiedKind === "dnd2024.game.core.campaign.has-session") {
+        qualifiedKind === "game.core.campaign.has-session") {
       return response(200, { items: [] });
     }
-    if (path.endsWith(`/${activeParticipation}/components/dnd2024.game.core.campaign.character-participation`)) {
+    if (path.endsWith(`/${activeParticipation}/components/game.core.campaign.character-participation`)) {
       return response(200, {
         entityId: activeParticipation,
-        qualifiedTypeId: "dnd2024.game.core.campaign.character-participation",
+        qualifiedTypeId: "game.core.campaign.character-participation",
         valueJson: JSON.stringify({ status: "active" }),
       });
     }
-    if (path.endsWith(`/${withdrawnParticipation}/components/dnd2024.game.core.campaign.character-participation`)) {
+    if (path.endsWith(`/${withdrawnParticipation}/components/game.core.campaign.character-participation`)) {
       return response(200, {
         entityId: withdrawnParticipation,
-        qualifiedTypeId: "dnd2024.game.core.campaign.character-participation",
+        qualifiedTypeId: "game.core.campaign.character-participation",
         valueJson: JSON.stringify({ status: "withdrawn" }),
       });
     }
@@ -1751,11 +1788,12 @@ test("projects only exact active campaign participation into the DM party roster
   assert.equal(JSON.stringify(value).includes("actor.thalorien.brackenford.sol"), false);
 });
 
-test("reads canonical character components, class membership, and bounded direct inventory", async () => {
+test("reads the registered character projection and enriches its bounded inventory media", async () => {
   const campaignId = "campaign.thalorien.brackenford";
   const actorId = "actor.thalorien.brackenford.orban";
   const membershipId = `${actorId}.class-membership.bard`;
   const itemId = `${actorId}.item.gold`;
+  const definitionId = "dnd2024.content.item.currency.gold-piece";
   const component = (entityId, qualifiedTypeId, value) => response(200, {
     entityId,
     qualifiedTypeId,
@@ -1789,8 +1827,8 @@ test("reads canonical character components, class membership, and bounded direct
         actorId,
         role: "actor",
       });
-      if (path.endsWith(`/${campaignId}/components/dnd2024.game.core.campaign.root`)) {
-        return component(campaignId, "dnd2024.game.core.campaign.root", {
+      if (path.endsWith(`/${campaignId}/components/game.core.campaign.root`)) {
+        return component(campaignId, "game.core.campaign.root", {
           status: "active",
           premise: "A live campaign.",
           partyGoals: [],
@@ -1799,6 +1837,48 @@ test("reads canonical character components, class membership, and bounded direct
       }
       if (path.endsWith(`/${campaignId}`)) return response(200, { entityId: campaignId, name: "Brackenford" });
       if (path.endsWith(`/${actorId}/components/dnd2024.playtest-character-record`)) return response(404, {});
+      if (path.endsWith(`/${actorId}/read-models/dnd2024.query.character-sheet`)) {
+        return response(200, {
+          qualifiedQueryId: "dnd2024.query.character-sheet",
+          stateSpaceFingerprint: "A".repeat(64),
+          resolutionFingerprint: "B".repeat(64),
+          resultFingerprint: "C".repeat(64),
+          sourceRevisionFingerprint: "D".repeat(64),
+          data: {
+            version: 1,
+            subject: { id: actorId, name: "Orban" },
+            identity: { biography: "Raised by performers." },
+            origin: {
+              speciesId: "dnd2024.content.species.human",
+              backgroundId: "dnd2024.content.background.criminal",
+            },
+            classes: [{
+              id: membershipId,
+              name: "Bard membership",
+              classId: "dnd2024.content.class.bard",
+              level: 1,
+              subclassId: null,
+            }],
+            level: 1,
+            proficiencyBonus: 2,
+            abilities: [{ id: "cha", score: 17, modifier: 3 }],
+            hitPoints: { current: 9, maximum: 9, maximumReduction: 0 },
+            inventory: {
+              items: [{
+                id: itemId,
+                name: "Starting Gold",
+                definitionId,
+                quantity: 45,
+                slot: "inventory.currency",
+                depth: 1,
+                equipmentSlots: [],
+              }],
+              contentsDepth: 4,
+              mayOmitDeeperContents: true,
+            },
+          },
+        });
+      }
       if (path.endsWith(`/${actorId}/components`)) {
         return response(200, { items: Object.keys(canonicalComponents).map((qualifiedTypeId) => ({ qualifiedTypeId })) });
       }
@@ -1824,13 +1904,18 @@ test("reads canonical character components, class membership, and bounded direct
       }
       if (path.endsWith(`/${itemId}/components/dnd2024.core.definition-link`)) {
         return component(itemId, "dnd2024.core.definition-link", {
-          definition: { entityId: "dnd2024.content.item.currency.gold-piece" },
+          definition: { entityId: definitionId },
         });
       }
       if (path.endsWith(`/${itemId}/components/dnd2024.item.quantity`)) {
         return component(itemId, "dnd2024.item.quantity", { current: 45 });
       }
       if (path.endsWith(`/${itemId}/components/dnd2024.item.equipment`)) return response(404, {});
+      if (path.endsWith(`/${itemId}/media`)) return response(404, {});
+      if (path.endsWith(`/${definitionId}/media`)) return response(200, mediaRecord({
+        ...mediaAttachment("illustration", "Gold pieces", "visual-0"),
+        contentUrl: `/api/applications/dnd2024/state-spaces/dnd2024-main/entities/${definitionId}/media/visual-0/content`,
+      }));
       if (path.endsWith(`/${itemId}`)) return response(200, { entityId: itemId, name: "Starting Gold" });
       if (path === "/api/applications/dnd2024/campaigns/campaign.thalorien.brackenford/knowledge") {
         return response(200, { status: "empty", entries: [], locations: [] });
@@ -1852,10 +1937,19 @@ test("reads canonical character components, class membership, and bounded direct
   assert.deepEqual(value.party[0].canonical.inventory, [{
     id: itemId,
     name: "Starting Gold",
-    definitionId: "dnd2024.content.item.currency.gold-piece",
+    definitionId,
     quantity: 45,
     slot: "inventory.currency",
+    depth: 1,
     equipmentSlots: [],
+    media: {
+      illustration: {
+        imageUrl: `/api/applications/dnd2024/state-spaces/dnd2024-main/entities/${definitionId}/media/visual-0/content`,
+        alt: "Gold pieces",
+        width: 1024,
+        height: 1536,
+      },
+    },
   }]);
   assert.equal(value.party[0].entries.length, 0);
 });

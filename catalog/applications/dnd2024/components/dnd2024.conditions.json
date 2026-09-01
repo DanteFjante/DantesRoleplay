@@ -1,5 +1,5 @@
 {
   "id": "dnd2024.conditions",
   "name": "SRD creature Conditions (D&D 2024)",
-  "description": "Closed creature-owned D&D 2024 Condition instances in canonical order. Fourteen non-Exhaustion Conditions may retain optional source-entity identity; one source-free Exhaustion entry carries level 1–6. Derived effects, durations, causes, death state, and history are separate owners. Governed by procedure.mechanic.dnd2024.conditions."
+  "description": "Closed creature-owned D&D 2024 Condition instances in canonical order. Fourteen non-Exhaustion Conditions may retain optional source-entity identity; one source-free Exhaustion entry carries level 1–6. Derived effects, durations, causes, death state, and history are separate owners. Governed by dnd2024.procedure.mechanic.conditions."
 }

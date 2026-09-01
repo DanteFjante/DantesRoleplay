@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.weapon-proficiencies",
+  "name": "Weapon Proficiencies (D&D 2024)",
+  "description": "Closed creature state containing its canonical Simple and Martial weapon-category proficiencies with fixed SRD 5.2.1 attribution. Use dnd2024.mechanic.weapon-proficiencies.write to record or correct it. An empty list means known proficiency with neither category; absence means unknown state. This component stores no individual weapon, class grant, Proficiency Bonus, attack, or damage result."
+}

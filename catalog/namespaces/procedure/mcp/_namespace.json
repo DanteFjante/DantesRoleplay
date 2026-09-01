@@ -1,0 +1,12 @@
+{
+  "id": "procedure.mcp",
+  "owner": "procedure",
+  "description": "Namespace for procedure mcp catalog records.",
+  "allowedKinds": [
+    "procedure"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

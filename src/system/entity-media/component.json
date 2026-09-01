@@ -1,0 +1,1 @@
+{"name":"entity-media","classification":"system","status":"operational","owns":["entity-owned visual attachment discovery","attachment audience filtering","owner-bound blob delivery","direct AI image attachment delivery"],"mayDependOn":["blob-storage","ecs","application-registry","system-capabilities"]}

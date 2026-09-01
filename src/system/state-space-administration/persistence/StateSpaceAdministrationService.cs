@@ -78,7 +78,8 @@ public sealed class StateSpaceAdministrationService(
             var application = applications.Get(request.ApplicationId)
                 ?? throw Invalid("APPLICATION_UNKNOWN", "The requested application is not registered.");
             var active = RequireActive(request.ApplicationId, request.ActiveFingerprint, application);
-            var created = stateSpaces.Create(new(request.StateSpaceId, application, request.ActiveFingerprint));
+            var created = stateSpaces.Create(new(request.StateSpaceId, application,
+                request.ActiveFingerprint, active.ResolutionFingerprint, request.Scope));
             await operations.RecordAsync(
                 "commit", $"Created empty state space '{request.StateSpaceId}' for application '{request.ApplicationId.Value}'.",
                 success: true, context.Intent, Subject(CreateKind, requestFingerprint), context.ProceduresUsed,
@@ -145,6 +146,7 @@ public sealed class StateSpaceAdministrationService(
             var now = DateTime.UtcNow;
             row.ApplicationRevision = candidate.Target.ApplicationRevision;
             row.ManifestFingerprint = candidate.Target.ActiveFingerprint;
+            row.ResolutionFingerprint = candidate.Target.ResolutionFingerprint;
             row.BindingRevision = candidate.Target.BindingRevision;
             row.UpdatedAtUtc = now;
             await operations.RecordAsync(
@@ -177,7 +179,8 @@ public sealed class StateSpaceAdministrationService(
         var application = applications.Get(request.ApplicationId)
             ?? throw Invalid("APPLICATION_UNKNOWN", "The requested application is not registered.");
         var active = RequireActive(request.ApplicationId, request.ActiveFingerprint, application);
-        return Summary(request.StateSpaceId, application, active.ActivationFingerprint, 1, null, null);
+        return Summary(request.StateSpaceId, application, active.ActivationFingerprint,
+            active.ResolutionFingerprint, request.Scope, 1, null, null);
     }
 
     private UpgradeCandidate BuildUpgrade(StateSpaceUpgradeRequest request)
@@ -203,7 +206,8 @@ public sealed class StateSpaceAdministrationService(
             RequireCompatibleComponents(request.StateSpaceId, application);
 
         var target = Summary(request.StateSpaceId, application, active.ActivationFingerprint,
-            previous.BindingRevision + 1, previous.CreatedAtUtc, null);
+            active.ResolutionFingerprint,
+            previous.Scope, previous.BindingRevision + 1, previous.CreatedAtUtc, null);
         var compatibility = new StateSpaceCompatibilityEvidence(
             entityCount == 0 && componentCount == 0
                 ? "empty-state-compatible"
@@ -225,7 +229,8 @@ public sealed class StateSpaceAdministrationService(
         {
             var registered = componentTypes.Get(component.QualifiedTypeId, component.TypeVersion);
             if (registered is null
-                || (registered.Owner != application.ApplicationId
+                || (!registered.Owner.IsSystem
+                    && registered.Owner != application.ApplicationId
                     && !baseApplications.Contains(registered.Owner.Value))
                 || registered.SchemaHash != component.SchemaHash)
                 throw Invalid("MIGRATION_REQUIRED",
@@ -267,7 +272,7 @@ public sealed class StateSpaceAdministrationService(
             ? stateSpaces.Get(request.StateSpaceId) is { } current ? Summary(current) : null
             : Summary(retained);
         if (summary is null || summary.ApplicationId != request.ApplicationId
-            || summary.ActiveFingerprint != request.ActiveFingerprint)
+            || summary.ActiveFingerprint != request.ActiveFingerprint || summary.Scope != request.Scope)
             throw Invalid("REPLAY_EVIDENCE_MISSING", "The immutable state-space replay evidence is unavailable.");
         return new(summary, "created", token);
     }
@@ -343,6 +348,8 @@ public sealed class StateSpaceAdministrationService(
         ApplicationRevision = binding.ApplicationRevision,
         ApplicationFingerprint = binding.ApplicationFingerprint,
         ActiveFingerprint = binding.ActiveFingerprint,
+        ResolutionFingerprint = binding.ResolutionFingerprint,
+        Scope = EcsComponentRolePolicyParser.ScopeName(binding.Scope),
         BindingFingerprint = binding.BindingFingerprint,
         PreviousBindingFingerprint = previousBindingFingerprint,
         CompatibilityCode = compatibilityCode,
@@ -357,7 +364,8 @@ public sealed class StateSpaceAdministrationService(
     });
 
     private static StateSpaceBindingSummary Summary(StateSpaceView value) => Summary(
-        value.StateSpaceId, value.ApplicationRevision, value.ManifestFingerprint, value.BindingRevision,
+        value.StateSpaceId, value.ApplicationRevision, value.ManifestFingerprint,
+        value.ResolutionFingerprint, value.Scope, value.BindingRevision,
         DateTime.SpecifyKind(value.CreatedAtUtc, DateTimeKind.Utc),
         DateTime.SpecifyKind(value.UpdatedAtUtc, DateTimeKind.Utc));
 
@@ -365,17 +373,27 @@ public sealed class StateSpaceAdministrationService(
         value.StateSpaceId, ApplicationIdentifier.Parse(value.ApplicationId), value.ApplicationRevision,
         value.ApplicationFingerprint, value.ActiveFingerprint, value.BindingRevision,
         value.BindingFingerprint, DateTime.SpecifyKind(value.CreatedAtUtc, DateTimeKind.Utc),
-        DateTime.SpecifyKind(value.UpdatedAtUtc, DateTimeKind.Utc));
+        DateTime.SpecifyKind(value.UpdatedAtUtc, DateTimeKind.Utc))
+        {
+            ResolutionFingerprint = value.ResolutionFingerprint,
+            Scope = EcsComponentRolePolicyParser.ParseScope(value.Scope)
+        };
 
     private static StateSpaceBindingSummary Summary(
         string stateSpaceId, ApplicationRevision application, string activeFingerprint,
-        int bindingRevision, DateTime? createdAtUtc, DateTime? updatedAtUtc)
+        string resolutionFingerprint,
+        EcsStateSpaceScope scope, int bindingRevision, DateTime? createdAtUtc, DateTime? updatedAtUtc)
     {
         var fingerprint = BindingFingerprint(stateSpaceId, application.ApplicationId.Value,
-            application.Revision, application.Fingerprint, activeFingerprint, bindingRevision);
+            application.Revision, application.Fingerprint, activeFingerprint,
+            resolutionFingerprint, scope, bindingRevision);
         return new(stateSpaceId, application.ApplicationId, application.Revision,
             application.Fingerprint, activeFingerprint, bindingRevision, fingerprint,
-            createdAtUtc, updatedAtUtc);
+            createdAtUtc, updatedAtUtc)
+        {
+            ResolutionFingerprint = resolutionFingerprint,
+            Scope = scope
+        };
     }
 
     private static StateSpaceCompatibilityEvidence Compatibility(StateSpaceBindingRevisionRecord value) => new(
@@ -388,6 +406,8 @@ public sealed class StateSpaceAdministrationService(
         ArgumentNullException.ThrowIfNull(context);
         ValidateStateSpaceId(request.StateSpaceId);
         ValidateActiveFingerprint(request.ActiveFingerprint);
+        if (!Enum.IsDefined(request.Scope))
+            throw Invalid("INVALID_PAYLOAD", "scope must be runtime-state-space or application-publication.");
         if (request.ExpectedFingerprint is not null)
             throw Invalid("STATE_SPACE_EXPECTED_ABSENT", "expectedFingerprint must be null when creating a state space.");
         ValidateContext(context.RequestToken, context.AuthorizationEvidence);
@@ -428,7 +448,8 @@ public sealed class StateSpaceAdministrationService(
     private static string CreateRequestFingerprint(StateSpaceCreationRequest request) => Hash(new
     {
         kind = CreateKind, request.StateSpaceId, applicationId = request.ApplicationId.Value,
-        request.ActiveFingerprint, request.ExpectedFingerprint
+        request.ActiveFingerprint, request.ExpectedFingerprint,
+        scope = EcsComponentRolePolicyParser.ScopeName(request.Scope)
     });
 
     private static string UpgradeRequestFingerprint(StateSpaceUpgradeRequest request) => Hash(new
@@ -447,10 +468,11 @@ public sealed class StateSpaceAdministrationService(
 
     private static string BindingFingerprint(
         string stateSpaceId, string applicationId, int applicationRevision,
-        string applicationFingerprint, string activeFingerprint, int bindingRevision) => Hash(new
+        string applicationFingerprint, string activeFingerprint,
+        string resolutionFingerprint, EcsStateSpaceScope scope, int bindingRevision) => Hash(new
     {
         stateSpaceId, applicationId, applicationRevision, applicationFingerprint,
-        activeFingerprint, bindingRevision
+        activeFingerprint, resolutionFingerprint, scope = EcsComponentRolePolicyParser.ScopeName(scope), bindingRevision
     });
 
     private static string Hash<T>(T value) =>
@@ -478,6 +500,8 @@ internal sealed class StateSpaceBindingRevisionRecord
     public int ApplicationRevision { get; set; }
     public required string ApplicationFingerprint { get; set; }
     public required string ActiveFingerprint { get; set; }
+    public string ResolutionFingerprint { get; set; } = new('0', 64);
+    public string Scope { get; set; } = "runtime-state-space";
     public required string BindingFingerprint { get; set; }
     public string? PreviousBindingFingerprint { get; set; }
     public required string CompatibilityCode { get; set; }

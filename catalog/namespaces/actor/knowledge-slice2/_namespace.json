@@ -1,0 +1,12 @@
+{
+  "id": "actor.knowledge-slice2",
+  "owner": "actor",
+  "description": "Namespace for actor knowledge-slice2 catalog records.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

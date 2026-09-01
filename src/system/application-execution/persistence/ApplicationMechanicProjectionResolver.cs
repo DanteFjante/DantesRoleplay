@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using DantesRoleplay.Actions;
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
@@ -47,9 +47,11 @@ public sealed class ApplicationMechanicProjectionResolver(
                 problems.Add($"MISSING_REQUIRED_ROLE: Role '{role}' is required.");
         }
         var requiredLocalIds = requirements.Roles.Values
-            .SelectMany(value => value.Components.Concat(value.ContentComponentIds ?? [])
+            .SelectMany(value => value.Components.Concat(value.OptionalComponents ?? [])
+                .Concat(value.ContentComponentIds ?? [])
                 .Concat((value.ComponentReferences ?? []).SelectMany(reference =>
-                    new[] { reference.SourceComponentId }.Concat(reference.TargetComponentIds)))
+                    new[] { reference.SourceComponentId }.Concat(reference.TargetComponentIds)
+                        .Concat(reference.OptionalTargetComponentIds ?? [])))
                 .Concat((value.RelationshipComponents ?? []).SelectMany(reference =>
                     reference.TargetComponentIds)))
             .Distinct(StringComparer.Ordinal).ToArray();
@@ -112,6 +114,7 @@ public sealed class ApplicationMechanicProjectionResolver(
         var reverseRelationships = mapping.Relationships.ToDictionary(value => value.Value, value => value.Key, StringComparer.Ordinal);
 
         var references = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        var requiredReferences = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
         foreach (var (role, entityId) in needed)
         {
             var requirement = requirements.Roles[role];
@@ -126,7 +129,7 @@ public sealed class ApplicationMechanicProjectionResolver(
         foreach (var (entityId, localIds) in references)
         {
             if (!entities.ContainsKey(entityId) || !components.TryGetValue(entityId, out var values)
-                || localIds.Any(value => !values.ContainsKey(value)))
+                || requiredReferences[entityId].Any(value => !values.ContainsKey(value)))
             {
                 problems.Add($"COMPONENT_REFERENCE_TARGET_MISSING: Target '{entityId}' is unavailable or incomplete.");
                 continue;
@@ -206,22 +209,33 @@ public sealed class ApplicationMechanicProjectionResolver(
             projection.Roles[role] = new EntityProjection(
                 entityId,
                 entities[entityId].Name,
-                values.Where(value => requirement.Components.Contains(value.Key, StringComparer.Ordinal))
+                values.Where(value => requirement.Components.Concat(requirement.OptionalComponents ?? [])
+                        .Contains(value.Key, StringComparer.Ordinal))
                     .ToDictionary(StringComparer.Ordinal),
                 containment?.ContainerEntityId,
                 containment?.Slot ?? "",
                 requirement.IncludeContents ? BuildContents(entityId, requirement.ContentsDepth ?? 1,
                     requirement.ContentComponentIds ?? [], requirement.ContentsDepth is not null
                         || (requirement.ContentComponentIds?.Count ?? 0) > 0,
+                    RelevantContentIds(requirement, needed),
                     contents, components, role, problems) : null,
                 projectedRelationships,
                 projectedRelated);
-            RecordComponentRevisions(entityId, requirement.Components);
+            RecordComponentRevisions(entityId,
+                requirement.Components.Concat(requirement.OptionalComponents ?? []));
             if (requirement.IncludeContents)
+            {
+                // The optimistic-concurrency snapshot must cover exactly what the mechanic was
+                // shown. A filtered role never saw the pruned siblings, so it cannot depend on
+                // them: guarding them would both invent conflicts and, on a large world, blow the
+                // snapshot's own content limit.
+                var surviving = SurvivingContentIds(entityId, requirement.ContentsDepth ?? 1,
+                    RelevantContentIds(requirement, needed), contents);
                 foreach (var child in Descendants(entityId, requirement.ContentsDepth ?? 1, contents))
-                    RecordComponentRevisions(child.Id, requirement.ContentComponentIds ?? []);
-            if (requirement.IncludeContents)
-                RecordContainmentRevisions(entityId, requirement.ContentsDepth ?? 1);
+                    if (surviving is null || surviving.Contains(child.Id))
+                        RecordComponentRevisions(child.Id, requirement.ContentComponentIds ?? []);
+                RecordContainmentRevisions(entityId, requirement.ContentsDepth ?? 1, surviving);
+            }
         }
         foreach (var (entityId, localIds) in references)
             RecordComponentRevisions(entityId, localIds);
@@ -237,7 +251,7 @@ public sealed class ApplicationMechanicProjectionResolver(
                     ? revision : null;
         }
 
-        void RecordContainmentRevisions(string rootEntityId, int depth)
+        void RecordContainmentRevisions(string rootEntityId, int depth, IReadOnlySet<string>? surviving)
         {
             var visited = new HashSet<string>(StringComparer.Ordinal);
             Visit(rootEntityId, depth);
@@ -245,13 +259,25 @@ public sealed class ApplicationMechanicProjectionResolver(
             void Visit(string containerEntityId, int remainingDepth)
             {
                 if (remainingDepth < 1 || !visited.Add(containerEntityId)) return;
-                projection.ContainmentRevisions[containerEntityId] = containments
+                var roster = containments
                     .Where(value => value.ContainerEntityId == containerEntityId)
                     .OrderBy(value => value.ContainedEntityId, StringComparer.Ordinal)
+                    .ToArray();
+
+                // A containment expectation is an all-or-nothing roster assertion: the applier
+                // rejects the batch unless the container's children still match it exactly. Only a
+                // role that was shown a container's whole roster may assert one. A filtered role
+                // was shown a path, not a roster, so it records none -- asserting a partial roster
+                // would fail every time, and asserting the full one would guard reads it never had.
+                if (surviving is not null && roster.Any(value => !surviving.Contains(value.ContainedEntityId)))
+                    return;
+
+                projection.ContainmentRevisions[containerEntityId] = roster
                     .Select(value => new ContainmentRevision(value.ContainedEntityId, value.Slot, value.Revision))
                     .ToArray();
                 if (remainingDepth == 1 || !contents.TryGetValue(containerEntityId, out var children)) return;
-                foreach (var child in children.Where(value => entities.ContainsKey(value.Id))
+                foreach (var child in children.Where(value => entities.ContainsKey(value.Id)
+                                 && (surviving is null || surviving.Contains(value.Id)))
                              .OrderBy(value => value.Id, StringComparer.Ordinal))
                     Visit(child.Id, remainingDepth - 1);
             }
@@ -280,8 +306,13 @@ public sealed class ApplicationMechanicProjectionResolver(
                     return;
                 }
                 target = target.Trim();
-                if (!references.TryGetValue(target, out var ids)) references[target] = ids = new(StringComparer.Ordinal);
+                if (!references.TryGetValue(target, out var ids))
+                    references[target] = ids = new(StringComparer.Ordinal);
+                if (!requiredReferences.TryGetValue(target, out var requiredIds))
+                    requiredReferences[target] = requiredIds = new(StringComparer.Ordinal);
+                requiredIds.UnionWith(reference.TargetComponentIds);
                 ids.UnionWith(reference.TargetComponentIds);
+                ids.UnionWith(reference.OptionalTargetComponentIds ?? []);
             }
             catch (JsonException) { problems.Add($"COMPONENT_REFERENCE_INVALID: Role '{role}' contains invalid JSON."); }
         }
@@ -297,11 +328,66 @@ public sealed class ApplicationMechanicProjectionResolver(
         }
     }
 
+    /// <summary>
+    /// The exact entity ids a role's contents projection is declared to be about. A role that names
+    /// other roles in <c>contentsRelevantToRoles</c> is saying it only needs to see those entities'
+    /// positions inside its own containment tree, not the whole tree. Returns null when the role
+    /// declares no filter, which keeps the unfiltered projection byte-identical to before.
+    /// </summary>
+    private static IReadOnlySet<string>? RelevantContentIds(
+        RoleRequirement requirement,
+        IReadOnlyDictionary<string, string> assignments)
+    {
+        var roles = requirement.ContentsRelevantToRoles ?? [];
+        if (roles.Count == 0) return null;
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var role in roles)
+            if (assignments.TryGetValue(role, out var entityId) && !string.IsNullOrWhiteSpace(entityId))
+                ids.Add(entityId);
+        return ids;
+    }
+
+    /// <summary>
+    /// The contained ids a filtered role actually receives: every entity the filter names, plus the
+    /// ancestors that still lead to one, within the declared depth. Null when the role declares no
+    /// filter, meaning the whole declared subtree survives.
+    /// </summary>
+    private static IReadOnlySet<string>? SurvivingContentIds(
+        string root,
+        int depth,
+        IReadOnlySet<string>? relevant,
+        IReadOnlyDictionary<string, List<Node>> contents)
+    {
+        if (relevant is null) return null;
+        var surviving = new HashSet<string>(StringComparer.Ordinal);
+        var visited = new HashSet<string>(StringComparer.Ordinal) { root };
+
+        bool Walk(string container, int remaining)
+        {
+            if (remaining < 1 || !contents.TryGetValue(container, out var children)) return false;
+            var kept = false;
+            foreach (var child in children)
+            {
+                if (!visited.Add(child.Id)) continue;
+                var deeper = Walk(child.Id, remaining - 1);
+                visited.Remove(child.Id);
+                if (!relevant.Contains(child.Id) && !deeper) continue;
+                surviving.Add(child.Id);
+                kept = true;
+            }
+            return kept;
+        }
+
+        Walk(root, depth);
+        return surviving;
+    }
+
     private static IReadOnlyList<ContainedProjection> BuildContents(
         string root,
         int depth,
         IReadOnlyList<string> allowed,
         bool enforceNodeLimit,
+        IReadOnlySet<string>? relevant,
         IReadOnlyDictionary<string, List<Node>> contents,
         IReadOnlyDictionary<string, Dictionary<string, string>> components,
         string role,
@@ -309,6 +395,7 @@ public sealed class ApplicationMechanicProjectionResolver(
     {
         var visited = new HashSet<string>(StringComparer.Ordinal) { root };
         var count = 0;
+        var aborted = false;
         IReadOnlyList<ContainedProjection> Build(string container, int remaining)
         {
             if (!contents.TryGetValue(container, out var children)) return [];
@@ -316,15 +403,32 @@ public sealed class ApplicationMechanicProjectionResolver(
             foreach (var child in children.OrderBy(value => value.Name, StringComparer.Ordinal)
                          .ThenBy(value => value.Slot, StringComparer.Ordinal).ThenBy(value => value.Id, StringComparer.Ordinal))
             {
-                if (!visited.Add(child.Id)) { problems.Add($"CONTAINMENT_PROJECTION_CYCLE: Role '{role}' reaches '{child.Id}'."); return []; }
+                if (aborted) return [];
+                if (!visited.Add(child.Id)) { problems.Add($"CONTAINMENT_PROJECTION_CYCLE: Role '{role}' reaches '{child.Id}'."); aborted = true; return []; }
+                var nested = remaining > 1 ? Build(child.Id, remaining - 1) : null;
+                visited.Remove(child.Id);
+                if (aborted) return [];
+
+                // A declared relevance filter keeps a node only when it is itself relevant or when it
+                // still leads to something relevant. Dropping the rest preserves every surviving
+                // node's depth and slot, so a mechanic's containment test reads exactly as before --
+                // it just is not handed the parts of the world it never asked about.
+                if (relevant is not null && !relevant.Contains(child.Id) && (nested is null || nested.Count == 0))
+                    continue;
+
                 count++;
-                if (enforceNodeLimit && count > ProjectionLimits.MaxContainedNodes) { problems.Add($"CONTAINMENT_PROJECTION_LIMIT: Role '{role}' exceeds the node limit."); return []; }
+                if (enforceNodeLimit && count > ProjectionLimits.MaxContainedNodes)
+                {
+                    problems.Add($"CONTAINMENT_PROJECTION_LIMIT: Role '{role}' projects more than " +
+                        $"{ProjectionLimits.MaxContainedNodes} contained nodes. Declare " +
+                        "'contentsRelevantToRoles' on this role to project only the paths it references.");
+                    aborted = true;
+                    return [];
+                }
                 IReadOnlyDictionary<string, string>? selected = allowed.Count == 0 ? null
                     : components.TryGetValue(child.Id, out var values)
                         ? values.Where(value => allowed.Contains(value.Key, StringComparer.Ordinal)).ToDictionary(StringComparer.Ordinal)
                         : new Dictionary<string, string>(StringComparer.Ordinal);
-                var nested = remaining > 1 ? Build(child.Id, remaining - 1) : null;
-                visited.Remove(child.Id);
                 result.Add(new(child.Id, child.Name, child.Slot, selected, nested));
             }
             return result;

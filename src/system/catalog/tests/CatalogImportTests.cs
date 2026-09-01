@@ -325,7 +325,7 @@ public sealed class CatalogImportTests : IDisposable
         await new CatalogExporter(db).ExportAsync(_root);
 
         var added = new MechanicFile(
-            "mechanic.test.added",
+            "mechanic.check.added",
             "check",
             "Added in the catalog",
             "Written as a file, never seen by the database.",
@@ -373,8 +373,8 @@ public sealed class CatalogImportTests : IDisposable
         await using var db = await SeededAsync(_source);
         await new CatalogExporter(db).ExportAsync(_root);
 
-        File.Delete(Path.Combine(_root, "mechanics", "check", Threshold + ".md"));
-        File.Delete(Path.Combine(_root, "mechanics", "check", Threshold + ".js"));
+        File.Delete(CatalogLayout.ToFileSystemPath(_root, CatalogLayout.MechanicMarkdown("check", Threshold)));
+        File.Delete(CatalogLayout.ToFileSystemPath(_root, CatalogLayout.MechanicSource("check", Threshold)));
 
         var result = await Importer(db).ApplyAsync(_root, new CatalogImportOptions());
 
@@ -452,8 +452,8 @@ public sealed class CatalogImportTests : IDisposable
         await using var db = await SeededAsync(_source);
         await new CatalogExporter(db).ExportAsync(_root);
 
-        var original = Path.Combine(_root, "mechanics", "check", Threshold + ".md");
-        var duplicate = Path.Combine(_root, "mechanics", "check", "a-copy.md");
+        var original = CatalogLayout.ToFileSystemPath(_root, CatalogLayout.MechanicMarkdown("check", Threshold));
+        var duplicate = Path.Combine(Path.GetDirectoryName(original)!, "a-copy.md");
         File.Copy(original, duplicate);
         File.Copy(Path.ChangeExtension(original, ".js"), Path.ChangeExtension(duplicate, ".js"));
 
@@ -461,6 +461,65 @@ public sealed class CatalogImportTests : IDisposable
             () => Importer(db).PlanAsync(_root));
 
         Assert.Contains(Threshold, failure.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Version_two_import_rejects_a_primary_record_outside_its_namespace_directories()
+    {
+        await using var db = await SeededAsync(_source);
+        await new CatalogExporter(db).ExportAsync(_root);
+
+        var original = CatalogLayout.ToFileSystemPath(
+            _root, CatalogLayout.MechanicMarkdown("ignored", Threshold));
+        var misplaced = Path.Combine(_root, CatalogLayout.MechanicsRoot, "wrong", "threshold.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(misplaced)!);
+        File.Move(original, misplaced);
+        File.Move(Path.ChangeExtension(original, ".js"), Path.ChangeExtension(misplaced, ".js"));
+
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => Importer(db).PlanAsync(_root));
+
+        Assert.Contains("mechanics/wrong/threshold.md", failure.Message, StringComparison.Ordinal);
+        Assert.Contains("mechanics/mechanic/check/threshold.md", failure.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Version_two_import_rejects_orphan_or_misplaced_sidecars()
+    {
+        await using var db = await SeededAsync(_source);
+        await new CatalogExporter(db).ExportAsync(_root);
+
+        var source = CatalogLayout.ToFileSystemPath(
+            _root, CatalogLayout.MechanicSource("ignored", Threshold));
+        var orphan = Path.Combine(_root, CatalogLayout.MechanicsRoot, "legacy", "threshold.js");
+        Directory.CreateDirectory(Path.GetDirectoryName(orphan)!);
+        File.Copy(source, orphan);
+
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => Importer(db).PlanAsync(_root));
+
+        Assert.Contains("Misplaced or orphan files", failure.Message, StringComparison.Ordinal);
+        Assert.Contains("mechanics/legacy/threshold.js", failure.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Version_two_import_rejects_a_noncanonical_manifest_path()
+    {
+        await using var db = await SeededAsync(_source);
+        await new CatalogExporter(db).ExportAsync(_root);
+
+        var manifestPath = CatalogLayout.ToFileSystemPath(_root, CatalogLayout.ManifestFileName);
+        var manifest = CatalogManifest.FromJson(await File.ReadAllTextAsync(manifestPath), manifestPath);
+        var records = manifest.Records.Select(value => value.Id == Threshold
+            ? value with { Path = "mechanics/wrong/threshold.md" }
+            : value).ToArray();
+        await File.WriteAllTextAsync(manifestPath, (manifest with { Records = records }).ToJson());
+
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => Importer(db).PlanAsync(_root));
+
+        Assert.Contains("mechanics/wrong/threshold.md", failure.Message, StringComparison.Ordinal);
+        Assert.Contains("mechanics/mechanic/check/threshold.md", failure.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -504,9 +563,8 @@ public sealed class CatalogImportTests : IDisposable
     /// <summary>Edits a rule in the catalog the way a developer would: through the file.</summary>
     private async Task RewriteAsync(string id, Func<MechanicFile, MechanicFile> edit)
     {
-        var markdownPath = Directory
-            .EnumerateFiles(Path.Combine(_root, CatalogLayout.MechanicsRoot), id + ".md", SearchOption.AllDirectories)
-            .Single();
+        var markdownPath = CatalogLayout.ToFileSystemPath(
+            _root, CatalogLayout.MechanicMarkdown("ignored", id));
 
         var sourcePath = Path.ChangeExtension(markdownPath, CatalogLayout.SourceExtension);
 

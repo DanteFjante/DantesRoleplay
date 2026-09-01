@@ -11,6 +11,12 @@ using DantesRoleplay.Web.Interactions;
 using DantesRoleplay.TriggerScheduling;
 using DantesRoleplay.SystemConversations;
 using DantesRoleplay.SystemTasks;
+using DantesRoleplay.Applications;
+using DantesRoleplay.ApplicationActivation;
+using DantesRoleplay.AI;
+using DantesRoleplay.Ecs;
+using DantesRoleplay.SystemCapabilities;
+using DantesRoleplay.World;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
@@ -40,13 +46,28 @@ public static class WebInterfaceServiceCollectionExtensions
                 connectionString,
                 sqlite => sqlite.MigrationsHistoryTable(MigrationHistoryTable)));
         services.AddScoped<IWebPageStore, WebPageStore>();
-        services.AddSingleton<WebPageBundleReader>();
-        services.AddSingleton<WebHtmlReader>();
+        services.AddSingleton<WebPageIdentityMigrationState>();
+        services.AddScoped<WebPagePublicationService>();
+        services.AddScoped<IWebPagePublicationDirectory>(provider =>
+            HasPublicationDependencies(provider)
+                ? provider.GetRequiredService<WebPagePublicationService>()
+                : UnavailableWebPagePublicationDirectory.Instance);
+        services.AddScoped<IWebPageIdentityMigration>(provider =>
+            HasPublicationDependencies(provider)
+                ? provider.GetRequiredService<WebPagePublicationService>()
+                : UnavailableWebPagePublicationDirectory.Instance);
+        services.AddScoped<WebPublicationDiscovery>();
+        services.AddScoped<WebPageAdministration>();
+        services.AddScoped<IWebPublicationDiscovery>(provider =>
+            HasPublicationDiscoveryDependencies(provider)
+                ? provider.GetRequiredService<WebPublicationDiscovery>()
+                : UnavailableWebPagePublicationDirectory.Instance);
         services.AddScoped<DynamicDataReader>();
         services.AddScoped<SqliteWebChangeFeed>();
         services.AddScoped<CommittedEffectHistory>();
         services.AddScoped<ControlStructureExplorer>();
-        services.AddScoped<ControlPageEditor>();
+        services.TryAddSingleton<IWebReadableRulesAudienceProvider,
+            PublicWebReadableRulesAudienceProvider>();
         services.TryAddSingleton<IHostSettingDefinitionProvider>(
             _ => UnavailableHostSettingDefinitionProvider.Instance);
         services.AddScoped<ControlSettingsExplorer>();
@@ -58,6 +79,26 @@ public static class WebInterfaceServiceCollectionExtensions
         services.TryAddScoped<ISystemTaskService, UnavailableSystemTaskService>();
         services.AddScoped<ControlSystemTaskExplorer>();
         services.AddScoped<ControlSystemCapabilityExplorer>();
+        services.TryAddSingleton<IAiAgentProfileRegistry>(_ => new AiAgentProfileRegistry([
+            new(
+                "web.outer",
+                "Outer AI",
+                "You are the user-facing planning and conversation agent for DantesRoleplay.",
+                "Explain intent and outcomes clearly. Use direct registered tools when system evidence is needed."),
+            new(
+                "web.inner",
+                "Inner AI",
+                "You are the direct system-work agent for DantesRoleplay.",
+                "Complete bounded work through registered direct tools and report exact validation, confirmation, and task state.")
+        ]));
+        services.AddScoped<IWebAiGateway>(provider => new WebAiGateway(
+            provider.GetService<IAiService>(),
+            provider.GetService<ISystemAiAgentService>(),
+            provider.GetService<IAiAgentProfileRegistry>(),
+            provider.GetService<IAssistantConversationStore>(),
+            provider.GetService<IApplicationRegistry>(),
+            provider.GetService<IApplicationActivationReader>(),
+            provider.GetService<IStateSpaceRegistry>()));
         services.AddSingleton<ApplicationConversationStore>();
         services.AddScoped<ApplicationConversationService>();
         services.AddScoped<ApplicationMechanicWebService>();
@@ -128,7 +169,21 @@ public static class WebInterfaceServiceCollectionExtensions
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<WebContentDbContext>();
         await db.Database.MigrateAsync(cancellationToken);
+        await scope.ServiceProvider.GetRequiredService<IWebPageIdentityMigration>()
+            .InspectAsync(cancellationToken);
     }
+
+    private static bool HasPublicationDependencies(IServiceProvider provider) =>
+        provider.GetService<IApplicationRegistry>() is not null
+        && provider.GetService<IStateSpaceRegistry>() is not null
+        && provider.GetService<IApplicationComponentTypeRegistry>() is not null
+        && provider.GetService<IEntityComponentStore>() is not null
+        && provider.GetService<IWorldStore>() is not null;
+
+    private static bool HasPublicationDiscoveryDependencies(IServiceProvider provider) =>
+        provider.GetService<IApplicationRegistry>() is not null
+        && provider.GetService<IStateSpaceRegistry>() is not null
+        && provider.GetService<IEntityComponentStore>() is not null;
 
     private static string NormaliseSqlite(string connectionStringOrPath)
     {
@@ -146,6 +201,46 @@ public static class WebInterfaceServiceCollectionExtensions
 
         return $"Data Source={fullPath}";
     }
+}
+
+internal sealed class UnavailableWebPagePublicationDirectory
+    : IWebPagePublicationDirectory, IWebPageIdentityMigration, IWebPublicationDiscovery
+{
+    public static UnavailableWebPagePublicationDirectory Instance { get; } = new();
+
+    public Task<PublishedWebPage?> FindBySlugAsync(string slug, CancellationToken cancellationToken = default) =>
+        Task.FromResult<PublishedWebPage?>(null);
+
+    public Task<PublishedWebPage?> FindIndexAsync(
+        ApplicationIdentifier applicationId,
+        CancellationToken cancellationToken = default) => Task.FromResult<PublishedWebPage?>(null);
+
+    public Task<WebPageIdentityMigrationReport> InspectAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(new WebPageIdentityMigrationReport(0, 0, 0, 0, []));
+
+    public Task<WebPageIdentityMigrationReport> ApplyReviewedAsync(
+        WebPageIdentityMigrationRequest request, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new WebPageIdentityMigrationReport(0, 0, 0, 0, []));
+
+    public Task<WebPageIdentityMigrationReport?> GetLastReportAsync(
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<WebPageIdentityMigrationReport?>(null);
+
+    public Task<WebApplicationPublicationPage> ListApplicationsAsync(
+        string? cursor, int limit, bool diagnostics = false, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new WebApplicationPublicationPage([], [], null));
+
+    public Task<WebApplicationPublicationView?> GetApplicationAsync(
+        ApplicationIdentifier applicationId, bool diagnostics = false,
+        CancellationToken cancellationToken = default) => Task.FromResult<WebApplicationPublicationView?>(null);
+
+    public Task<WebPublishedPageView?> GetPageAsync(
+        ApplicationIdentifier applicationId, string slug, bool diagnostics = false,
+        CancellationToken cancellationToken = default) => Task.FromResult<WebPublishedPageView?>(null);
+
+    public Task<WebPageRouteResolution> ResolvePageRouteAsync(
+        string slug, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new WebPageRouteResolution("application-unavailable"));
 }
 
 internal sealed class UnavailableTriggerSchedulingAdministrationService

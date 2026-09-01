@@ -292,7 +292,8 @@ public sealed record InteractionRecipeCandidateDraft(
     string ExecutionReceiptId,
     string IntentText,
     string IntentFingerprint,
-    string RoleProfile);
+    string RoleProfile,
+    string ResolutionFingerprint = "");
 
 public enum InteractionRecipeWriteDisposition { Created, Replayed, Conflict }
 
@@ -322,7 +323,8 @@ public sealed record InteractionRecipeProjection(
     int ApplicationRevision = 0,
     string ApplicationFingerprint = "",
     string EffectiveSetFingerprint = "",
-    IReadOnlyList<InteractionRecipeEvidenceReference>? Provenance = null);
+    IReadOnlyList<InteractionRecipeEvidenceReference>? Provenance = null,
+    string ResolutionFingerprint = "");
 
 public sealed record InteractionRecipeEvidenceReference(
     string ResolutionReceiptId,
@@ -377,7 +379,8 @@ public sealed record InteractionRecipeStaleDraft(
     InteractionRecipeReference Recipe,
     ApplicationRevision CurrentApplicationRevision,
     string CurrentEffectiveSetFingerprint,
-    string Reason);
+    string Reason,
+    string CurrentResolutionFingerprint = "");
 
 public sealed record InteractionRecipeLearningRequest(
     AuthorizedInteractionEnvelope Envelope,
@@ -447,6 +450,7 @@ public sealed class InteractionRecipeRevision
     public int ApplicationRevision { get; set; }
     public string ApplicationFingerprint { get; set; } = "";
     public string EffectiveSetFingerprint { get; set; } = "";
+    public string ResolutionFingerprint { get; set; } = new('0', 64);
     public string ReviewerPrincipalReference { get; set; } = "";
     public string Reason { get; set; } = "";
     public string RequestToken { get; set; } = "";

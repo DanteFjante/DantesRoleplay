@@ -1,8 +1,9 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Applications;
+using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.Sources;
@@ -25,7 +26,8 @@ public sealed class ActivatedApplicationCatalogMaterializer(
     IApplicationRegistry applications,
     IApplicationActivationReader activations,
     ISourceRegistry sources,
-    IAllowedSourceRootResolver allowedRoots)
+    IAllowedSourceRootResolver allowedRoots,
+    IApplicationExtensionRegistry? extensions = null)
 {
     private const string MaterializerVersion = "activated-application-catalog-v2";
     private const string SearchSortVersion = "catalog-lexical-v1";
@@ -47,6 +49,8 @@ public sealed class ActivatedApplicationCatalogMaterializer(
             throw Failure("CATALOG_DOCUMENT_LIMIT", "The active source manifest is too large to materialize.");
 
         var registrations = sources.For(applicationId).ToDictionary(value => value.SourceId, StringComparer.Ordinal);
+        var extensionRegistrations = (extensions ?? new EmptyApplicationExtensionRegistry()).For(applicationId)
+            .ToDictionary(value => value.ExtensionId, StringComparer.Ordinal);
         foreach (var retained in activation.Sources)
         {
             if (!registrations.TryGetValue(retained.SourceId, out var current)
@@ -101,7 +105,21 @@ public sealed class ActivatedApplicationCatalogMaterializer(
                     throw Failure("CATALOG_PROVENANCE_MISSING", "An active catalog record has no exact source-winner provenance.");
                 return new ActiveCatalogFeatureDocument(record, winnerTrust);
             }).ToArray();
-            return new ActiveCatalogFeatureSnapshot(manifest, documents);
+            return new ActiveCatalogFeatureSnapshot(manifest, documents)
+            {
+                Resolution = CatalogExtensionResolutionContext.Create(applicationId,
+                    activation.ResolutionFingerprint,
+                    activation.Extensions.Select(value =>
+                    {
+                        if (!extensionRegistrations.TryGetValue(value.ExtensionId, out var registration))
+                            throw Failure("EXTENSION_REGISTRATION_DRIFT",
+                                "An active extension registration is no longer available.");
+                        return new CatalogExtensionContribution(value.ExtensionId,
+                            registration.DisplayName, registration.Description, registration.Classification,
+                            registration.SourceIds, value.NamespaceIds, value.HigherPriorityThan,
+                            value.OverridesBase);
+                    }).ToArray())
+            };
         }
         catch (ArgumentException exception)
         {
@@ -336,10 +354,19 @@ public sealed class ActivatedApplicationCatalogMaterializer(
 public sealed class ActivatedApplicationCatalogProvider(
     IPublicApplicationCatalogPolicy policy,
     ActivatedApplicationCatalogMaterializer materializer,
-    CatalogCursorCodec cursors) : IPublicApplicationCatalogProvider, IActiveCatalogFeatureSnapshotProvider
+    CatalogCursorCodec cursors)
+    : IPublicApplicationCatalogProvider, IActiveCatalogFeatureSnapshotProvider,
+      IPublicApplicationCatalogDiagnostics
 {
     private readonly Dictionary<ApplicationIdentifier, ICatalogNavigator> _cache = [];
     private readonly Dictionary<ApplicationIdentifier, ActiveCatalogFeatureSnapshot> _snapshots = [];
+    private readonly Dictionary<ApplicationIdentifier, PublicApplicationCatalogFailure> _failures = [];
+
+    public PublicApplicationCatalogFailure? LastFailure(ApplicationIdentifier applicationId)
+    {
+        ArgumentNullException.ThrowIfNull(applicationId);
+        return _failures.TryGetValue(applicationId, out var failure) ? failure : null;
+    }
 
     public bool TryGet(ApplicationIdentifier applicationId, out ICatalogNavigator navigator)
     {
@@ -353,13 +380,15 @@ public sealed class ActivatedApplicationCatalogProvider(
         try
         {
             var snapshot = materializer.BuildFeatureSnapshot(applicationId);
-            navigator = new InMemoryCatalogNavigator(snapshot.Manifest, cursors);
+            navigator = new InMemoryCatalogNavigator(snapshot.Manifest, cursors, snapshot.Resolution);
             _cache.Add(applicationId, navigator);
             _snapshots.Add(applicationId, snapshot);
+            _failures.Remove(applicationId);
             return true;
         }
-        catch (ApplicationCatalogMaterializationException)
+        catch (ApplicationCatalogMaterializationException exception)
         {
+            _failures[applicationId] = new(exception.Code, exception.Message);
             navigator = null!;
             return false;
         }

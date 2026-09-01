@@ -37,7 +37,8 @@ public sealed record CatalogManifest
 
     public IReadOnlyList<CatalogManifestEntry> Records { get; init; } = [];
 
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
+    public const int OldestReadableSchemaVersion = 1;
 
     private static readonly JsonSerializerOptions Json = new()
     {
@@ -74,11 +75,11 @@ public sealed record CatalogManifest
             throw new InvalidOperationException($"{sourceName} is empty.");
         }
 
-        if (manifest.SchemaVersion != CurrentSchemaVersion)
+        if (manifest.SchemaVersion is < OldestReadableSchemaVersion or > CurrentSchemaVersion)
         {
             throw new InvalidOperationException(
                 $"{sourceName} was written by schema version {manifest.SchemaVersion}; this build "
-                + $"reads version {CurrentSchemaVersion}. Re-export the catalog.");
+                + $"reads versions {OldestReadableSchemaVersion} through {CurrentSchemaVersion}. Re-export the catalog.");
         }
 
         return manifest;

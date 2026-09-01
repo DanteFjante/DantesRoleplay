@@ -21,7 +21,7 @@ public sealed class WorldChronologyWebEndpointTests
 
         Assert.True(WorldChronologyBindingDocument.TryParse(
             File.ReadAllText(path), "dnd2024", out var binding));
-        Assert.Equal("dnd2024.game.core.world.chronology", binding.ComponentTypeId);
+        Assert.Equal("game.core.world.chronology", binding.ComponentTypeId);
         Assert.Equal(["exact", "approximate", "era"], binding.Precisions);
     }
 
@@ -40,7 +40,7 @@ public sealed class WorldChronologyWebEndpointTests
         var resolved = await resolver.ResolveAsync(Binding());
 
         Assert.NotNull(resolved);
-        Assert.Equal("dnd2024.game.core.world.chronology", resolved.ComponentTypeId);
+        Assert.Equal("game.core.world.chronology", resolved.ComponentTypeId);
         Assert.Null(await unavailable.ResolveAsync(Binding()));
     }
 

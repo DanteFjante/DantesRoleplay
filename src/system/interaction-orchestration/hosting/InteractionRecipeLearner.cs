@@ -45,7 +45,8 @@ internal sealed class InteractionRecipeLearner(
                 receipt.Id,
                 request.Envelope.Intent.IntentText,
                 intentFingerprint,
-                request.Envelope.Host.RoleProfile.StableKey), cancellationToken);
+                request.Envelope.Host.RoleProfile.StableKey,
+                request.Envelope.Host.ResolutionFingerprint), cancellationToken);
             InteractionRecipeLearningResult learning = result.Disposition switch
             {
                 InteractionRecipeWriteDisposition.Created => new(InteractionRecipeLearningDisposition.Created,

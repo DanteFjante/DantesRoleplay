@@ -7,7 +7,8 @@ import { resolveHubSurface } from "../data/hub-availability.js";
 import type { HubEnvelope, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
 import { connectedCampaignToHubEnvelope } from "../server/connected-hub-envelope";
 import { readGameServerContext } from "../server/game-server-context.js";
-import { readRuleReferenceDetail, readRulesReference } from "../server/rules-reference";
+import { readInstalledContent } from "../server/effective-content";
+import { readRulesReference } from "../server/rules-reference";
 import "../styles.css";
 
 const PAGE_ASSET_BASE = "/ui/dnd2024-play/assets/";
@@ -39,12 +40,8 @@ async function loadRulesReference(): Promise<RuleReadModel[]> {
   });
 }
 
-async function loadRuleDetail(rule: RuleReadModel): Promise<RuleReadModel | null> {
-  return readRuleReferenceDetail({
-    serverOrigin: window.location.origin,
-    applicationId: "dnd2024",
-    rule,
-  });
+async function loadInstalledContent() {
+  return readInstalledContent({ serverOrigin: window.location.origin, applicationId: "dnd2024" });
 }
 
 async function loadReadyEnvelope(
@@ -71,13 +68,13 @@ try {
         <DndInformationHub
           initialEnvelope={initialEnvelope}
           loadEnvelope={loadReadyEnvelope}
-          loadRuleDetail={loadRuleDetail}
           loadRules={loadRulesReference}
+          loadContent={loadInstalledContent}
         />
       ) : (
         <RulesOnlyHub
-          loadRuleDetail={loadRuleDetail}
           loadRules={loadRulesReference}
+          loadContent={loadInstalledContent}
           message={initialEnvelope.message}
         />
       )}
@@ -87,8 +84,8 @@ try {
   root.render(
     <StrictMode>
       <RulesOnlyHub
-        loadRuleDetail={loadRuleDetail}
         loadRules={loadRulesReference}
+        loadContent={loadInstalledContent}
         message="The private campaign view could not be prepared."
       />
     </StrictMode>,

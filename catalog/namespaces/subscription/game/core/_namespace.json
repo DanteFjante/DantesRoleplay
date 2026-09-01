@@ -1,0 +1,12 @@
+{
+  "id": "subscription.game.core",
+  "owner": "subscription",
+  "description": "Namespace for subscription game core catalog records.",
+  "allowedKinds": [
+    "subscription"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

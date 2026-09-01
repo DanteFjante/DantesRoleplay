@@ -1,1 +1,0 @@
-{"id":"front.feature-11.observatory-claim","name":"Lantern Compact Observatory Claim","components":{"game.core.world.faction.front":{"status":"active","summary":"The Lantern Compact quietly seeks leverage over the sealed observatory.","visibility":"gm","phase":"quiet","phaseStartedMinute":0}}}

@@ -11,6 +11,7 @@ public static class InteractionQueryFingerprintDomains
 public sealed record InteractionQueryExecutionRequest(
     string StateSpaceId,
     ApplicationIdentifier ApplicationId,
+    string QualifiedQueryId,
     InteractionQueryContractReference Contract,
     IReadOnlyDictionary<string, string> RoleBindings);
 

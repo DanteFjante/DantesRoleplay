@@ -1,0 +1,13 @@
+{
+  "id": "dnd2024",
+  "owner": "dnd2024",
+  "description": "Namespace for dnd2024 catalog records.",
+  "allowedKinds": [
+    "component-definition",
+    "event-type"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

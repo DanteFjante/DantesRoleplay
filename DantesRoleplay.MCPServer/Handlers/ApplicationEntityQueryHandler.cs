@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Operations;
@@ -103,6 +103,8 @@ public sealed class ApplicationEntityQueryHandler
         string applicationId,
         string stateSpaceId,
         string[]? ids,
+        string? nameQuery,
+        string? withDefinitionId,
         int limit,
         CancellationToken cancellationToken = default) =>
         await ToolRunner.RunAsync(log, "get_application_entities", async () =>
@@ -132,12 +134,66 @@ public sealed class ApplicationEntityQueryHandler
                     "Rejected an application/state-space mismatch.");
             }
 
+            var search = Trim(nameQuery);
+            var componentFilter = Trim(withDefinitionId);
+            if (ids is not { Length: > 0 } && (search is not null || componentFilter is not null))
+            {
+                if (entities is not IEntityComponentSearchStore searchable)
+                {
+                    return ToolOutcome.Fail(
+                        "ENTITY_SEARCH_UNAVAILABLE",
+                        "This application entity reader cannot search; it resolves exact IDs only.",
+                        "query(kind: \"entities\", applicationId: \"...\", stateSpaceId: \"...\", id: \"...\")",
+                        "Rejected an application entity search against a reader without search support.");
+                }
+
+                if (search is { Length: > 200 } || componentFilter is { Length: > 200 })
+                {
+                    return ToolOutcome.Fail(
+                        "ENTITY_SEARCH_INVALID",
+                        "nameQuery and withDefinitionId may not exceed 200 characters.",
+                        "query(kind: \"entities\", applicationId: \"...\", stateSpaceId: \"...\", nameQuery: \"...\")",
+                        "Rejected an overlong application entity search term.");
+                }
+
+                var found = await searchable.SearchEntitiesAsync(
+                    stateSpaceId,
+                    new EcsEntitySearch(search, componentFilter, null, Math.Clamp(limit, 1, 100)),
+                    cancellationToken);
+                var summaries = new List<object>();
+                foreach (var match in found.Entities)
+                {
+                    var types = await entities.ListComponentsAsync(
+                        stateSpaceId, match.EntityId, null, 100, cancellationToken);
+                    summaries.Add(new
+                    {
+                        match.EntityId,
+                        match.Name,
+                        match.Revision,
+                        ComponentTypeIds = types.Components
+                            .Select(component => component.Type.QualifiedTypeId).ToArray()
+                    });
+                }
+
+                return ToolOutcome.Ok(
+                    new
+                    {
+                        ApplicationId = application.Value,
+                        StateSpaceId = stateSpaceId,
+                        Entities = summaries,
+                        NextEntityId = found.NextEntityId
+                    },
+                    summaries.Count == 0
+                        ? "No application entity matched this search."
+                        : $"Matched {summaries.Count} application entity(ies); read one in full with id.");
+            }
+
             if (ids is not { Length: > 0 })
             {
                 return ToolOutcome.Fail(
                     "ENTITY_ID_REQUIRED",
-                    "Application entity reads require id or ids.",
-                    "query(kind: \"entities\", applicationId: \"...\", stateSpaceId: \"...\", id: \"...\")",
+                    "Application entity reads require id, ids, nameQuery, or withDefinitionId.",
+                    "query(kind: \"entities\", applicationId: \"...\", stateSpaceId: \"...\", nameQuery: \"...\")",
                     "Rejected an unbounded application entity read.");
             }
 
@@ -184,4 +240,7 @@ public sealed class ApplicationEntityQueryHandler
                     ? $"Fetched {detailed.Count} application entity(ies) in full."
                     : $"Fetched {detailed.Count}; {missing.Length} id(s) were not found.");
         });
+
+    private static string? Trim(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

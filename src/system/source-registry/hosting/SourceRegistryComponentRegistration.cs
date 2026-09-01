@@ -10,6 +10,7 @@ internal static class SourceRegistryComponentRegistration
     internal static IServiceCollection AddSourceRegistryComponent(this IServiceCollection services)
     {
         services.AddScoped<ISourceRegistry, SqliteSourceRegistry>();
+        services.AddScoped<IApplicationExtensionRegistry, SqliteApplicationExtensionRegistry>();
         services.AddScoped<ISourceScanReceiptStore, SqliteSourceScanReceiptStore>();
         services.TryAddSingleton<IAllowedSourceRootResolver, EmptyAllowedSourceRootResolver>();
         services.TryAddSingleton<IAllowedSourceRootCatalog>(provider =>

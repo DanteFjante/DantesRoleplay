@@ -13,9 +13,11 @@ import {
   LocateFixed,
   Map,
   MapPin,
+  Maximize2,
   Mountain,
   PackageOpen,
   Route,
+  RotateCcw,
   ScrollText,
   Search,
   Shield,
@@ -23,6 +25,9 @@ import {
   Swords,
   TreePine,
   UsersRound,
+  ZoomIn,
+  ZoomOut,
+  Focus,
 } from "lucide";
 
 type IconNodeChild = readonly [tag: string, attrs: Record<string, string | number>];
@@ -46,9 +51,11 @@ const iconNodes: Record<string, IconNode> = {
   LocateFixed,
   Map,
   MapPin,
+  Maximize2,
   Mountain,
   PackageOpen,
   Route,
+  RotateCcw,
   ScrollText,
   Search,
   Shield,
@@ -56,6 +63,9 @@ const iconNodes: Record<string, IconNode> = {
   Swords,
   TreePine,
   UsersRound,
+  ZoomIn,
+  ZoomOut,
+  Focus,
 };
 
 function reactAttributes(attributes: Record<string, string | number>) {

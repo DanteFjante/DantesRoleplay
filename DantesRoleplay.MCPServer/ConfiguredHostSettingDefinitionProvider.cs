@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
-using DantesRoleplay.DataAccess.Retrieval;
+using DantesRoleplay.AI.Ollama;
 using DantesRoleplay.Web.Settings;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Interactions;

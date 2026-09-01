@@ -1,0 +1,12 @@
+{
+  "id": "mechanic.dnd2024",
+  "owner": "mechanic",
+  "description": "Namespace for mechanic dnd2024 catalog records.",
+  "allowedKinds": [
+    "mechanic"
+  ],
+  "aliases": [],
+  "enabled": false,
+  "reviewStatus": "needs-review",
+  "reviewNote": "Uses inverted D\u0026D ownership; migrate records to the dnd2024 namespace before approval."
+}

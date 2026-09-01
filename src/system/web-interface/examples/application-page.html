@@ -10,9 +10,7 @@
     system-navigation { --system-navigation-link-color: #b8d8b5; --system-navigation-muted-color: #83a580; --system-navigation-border-color: #476647; --system-navigation-current-background: #25452d; }
     main { border-top: 1px solid #476647; display: grid; gap: 1rem; margin-top: 1rem; padding-top: 2rem; }
     section { background: #16251b; border: 1px solid #476647; border-radius: .7rem; padding: 1rem; }
-    system-chat { --system-chat-color: #edf7e8; --system-chat-muted-color: #9eb99c; --system-chat-border-color: #476647; --system-chat-assistant-background: #25452d; --system-chat-input-background: #0b150e; }
-    application-conversation { display: grid; gap: .55rem; }
-    application-conversation textarea { background: #0b150e; border: 1px solid #476647; border-radius: .4rem; color: #edf7e8; min-height: 7rem; padding: .55rem; }
+    outer-ai, inner-ai { --ai-color: #edf7e8; --ai-muted-color: #9eb99c; --ai-border-color: #476647; --ai-error-color: #ffaaa0; }
   </style>
 </head>
 <body>
@@ -21,17 +19,16 @@
     <h1>Application workspace fixture</h1>
     <p>An application page can theme shared components without copying their behavior or crossing system and application scope.</p>
     <section aria-labelledby="application-chat-heading">
-      <h2 id="application-chat-heading">D&amp;D application chat</h2>
-      <p>This conversation is bound to the exact reviewed application and state space.</p>
-      <application-conversation application-id="dnd2024" state-space-id="dnd2024-main" session-context-id="application-page.dnd2024" aria-label="D&amp;D application chat"></application-conversation>
+      <h2 id="application-chat-heading">Outer AI</h2>
+      <p>This conversation is bound to the effective application and its separately selected runtime state.</p>
+      <outer-ai application-id="dnd2024" aria-label="Outer AI for D&amp;D"></outer-ai>
     </section>
     <section aria-labelledby="system-chat-heading">
-      <h2 id="system-chat-heading">General system chat</h2>
-      <p>This separate chat receives no application or state-space binding.</p>
-      <system-chat aria-label="General system chat"></system-chat>
+      <h2 id="system-chat-heading">Inner AI</h2>
+      <p>This separate workspace starts without an application or runtime-state binding.</p>
+      <inner-ai aria-label="Inner AI system workspace"></inner-ai>
     </section>
   </main>
   <script type="module" src="/components/system-workspace.js"></script>
-  <script src="/components/application-conversation.js"></script>
 </body>
 </html>

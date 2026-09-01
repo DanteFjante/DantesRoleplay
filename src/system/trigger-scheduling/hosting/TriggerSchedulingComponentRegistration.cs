@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using DantesRoleplay.EcsEffects;
+using DantesRoleplay.SystemCapabilities;
 
 namespace DantesRoleplay.TriggerScheduling;
 
@@ -40,6 +41,8 @@ internal static class TriggerSchedulingComponentRegistration
         services.AddScoped<IConditionalTriggerWorker, SqliteConditionalTriggerWorker>();
         services.AddScoped<IObservationTriggerWorker, SqliteObservationTriggerWorker>();
         services.AddHostedService<TriggerSchedulingBackgroundWorker>();
+        services.AddScoped<ISystemAiToolSource, ScheduledAiTaskToolSource>();
+        services.AddHostedService<ScheduledAiTaskWorker>();
         return services;
     }
 }

@@ -81,6 +81,30 @@ public sealed class KnowledgeCoreTests
     }
 
     [Fact]
+    public async Task Activated_binding_projects_retained_application_prefixed_identities_during_live_migration()
+    {
+        using var fixture = new KnowledgeFixture(retainApplicationPrefixedIdentities: true);
+        await fixture.AddCoreAsync();
+        var document = new ActivatedApplicationTextDocument(
+            ApplicationIdentifier.Parse(fixture.ApplicationId), 3, new('A', 64), "fixture-source",
+            new KnowledgeApplicationSelection(fixture.ApplicationId).BindingDocumentPath,
+            new('B', 64), fixture.BindingDocument());
+        var resolver = new ActivatedKnowledgeApplicationBindingResolver(
+            new(fixture.ApplicationId), new BindingDocumentReader(document),
+            fixture.StateSpaces, fixture.Entities);
+
+        var resolved = await resolver.ResolveAsync(fixture.Campaign);
+
+        Assert.NotNull(resolved);
+        Assert.Equal($"{fixture.ApplicationId}.game.core.campaign-root",
+            resolved.CampaignRootComponentTypeId);
+        Assert.Equal($"{fixture.ApplicationId}.game.core.world-root",
+            resolved.WorldRootComponentTypeId);
+        Assert.Equal($"{fixture.ApplicationId}.game.core.knowledge-world",
+            resolved.KnowledgeWorldRelationshipKind);
+    }
+
+    [Fact]
     public async Task Participation_requires_one_exact_active_campaign_actor_path()
     {
         using var fixture = new KnowledgeFixture();
@@ -537,6 +561,7 @@ public sealed class KnowledgeCoreTests
         private readonly SqliteFixture _database = new();
         private readonly DantesRoleplayDbContext _db;
         private readonly Dictionary<string, EcsComponentReference> _types = [];
+        private readonly bool _retainApplicationPrefixedIdentities;
 
         public string Campaign => "campaign-fixture";
         public string World => "world-fixture";
@@ -551,8 +576,9 @@ public sealed class KnowledgeCoreTests
         public IKnowledgeEffectiveStateResolver States { get; }
         public DantesRoleplayDbContext Db => _db;
 
-        public KnowledgeFixture()
+        public KnowledgeFixture(bool retainApplicationPrefixedIdentities = false)
         {
+            _retainApplicationPrefixedIdentities = retainApplicationPrefixedIdentities;
             _db = _database.CreateContext();
             var applications = new SqliteApplicationRegistry(_db);
             var application = ApplicationIdentifier.Parse(Application);
@@ -566,7 +592,10 @@ public sealed class KnowledgeCoreTests
             Binding = CreateBinding();
             foreach (var typeId in ComponentTypeIds(Binding))
             {
-                var type = registry.Define(new(application, typeId, "true"));
+                var storedTypeId = _retainApplicationPrefixedIdentities
+                    ? $"{Application}.{typeId}"
+                    : typeId;
+                var type = registry.Define(new(application, storedTypeId, "true"));
                 _types.Add(typeId, new(type.QualifiedId, type.Version, type.SchemaHash));
             }
             Source = new ApplicationKnowledgeCanonicalSource(StateSpaces, Entities, Edges);
@@ -697,8 +726,13 @@ public sealed class KnowledgeCoreTests
             _ = await Edges.MoveContainmentAsync(Campaign, Actor, id, "presence", 0);
         }
 
-        public async Task RelateAsync(string from, string to, string kind, string data) =>
-            _ = await Edges.SetRelationshipAsync(Campaign, from, to, kind, data, 0);
+        public async Task RelateAsync(string from, string to, string kind, string data)
+        {
+            var storedKind = _retainApplicationPrefixedIdentities
+                ? $"{Application}.{kind}"
+                : kind;
+            _ = await Edges.SetRelationshipAsync(Campaign, from, to, storedKind, data, 0);
+        }
 
         public IAuthorizedKnowledgeCandidateResolver CandidateResolver() =>
             new AuthorizedKnowledgeCandidateResolver(
@@ -730,55 +764,59 @@ public sealed class KnowledgeCoreTests
             }.Concat(value.KnowledgeKinds.Select(kind => kind.ComponentTypeId))
             .Distinct(StringComparer.Ordinal).ToArray();
 
-        private KnowledgeApplicationBinding CreateBinding() => new()
+        private KnowledgeApplicationBinding CreateBinding()
         {
-            ApplicationId = Application,
-            StateSpaceId = Campaign,
-            CampaignEntityId = Campaign,
-            BindingRevision = "binding-revision",
-            CampaignRootComponentTypeId = $"{Application}.campaign-root",
-            CampaignStatusProperty = "state",
-            ActiveCampaignStatus = "ready",
-            CampaignWorldRelationshipKind = $"{Application}.campaign-world",
-            ParticipationComponentTypeId = $"{Application}.campaign-participation",
-            ParticipationStatusProperty = "state",
-            ActiveParticipationStatus = "ready",
-            CampaignParticipationRelationshipKind = $"{Application}.campaign-participation-link",
-            ParticipationActorRelationshipKind = $"{Application}.participation-actor-link",
-            WorldRootComponentTypeId = $"{Application}.world-root",
-            WorldStatusProperty = "state",
-            ActiveWorldStatus = "ready",
-            WorldClockComponentTypeId = $"{Application}.world-clock",
-            CurrentMinuteProperty = "minute",
-            KnowledgeKinds = [new($"{Application}.knowledge-record", "statement", "statement", ["archived"])],
-            PrimaryStatusProperty = "state",
-            PrimarySummaryProperty = "text",
-            ClassificationComponentTypeId = $"{Application}.knowledge-classification",
-            ClassificationSensitivityProperty = "level",
-            ValidityComponentTypeId = $"{Application}.knowledge-validity",
-            ValidFromProperty = "from",
-            ValidUntilProperty = "until",
-            KnowledgeWorldRelationshipKind = $"{Application}.knowledge-world",
-            KnowledgeAboutRelationshipKind = $"{Application}.knowledge-about",
-            ExplicitStateRelationshipKind = $"{Application}.knowledge-state",
-            BaselineRelationshipKind = $"{Application}.knowledge-baseline",
-            StateProperty = "stance",
-            BaselineInheritanceProperty = "inheritance",
-            BaselineInheritanceValue = "current",
-            ContentStates = ["known", "suspected", "believed", "doubted", "disbelieved"],
-            FamiliarState = "familiar",
-            UnknownState = "unknown",
-            BaselineState = "known",
-            FactionComponentTypeId = $"{Application}.faction",
-            FactionStatusProperty = "state",
-            ActiveFactionStatus = "ready",
-            FactionWorldRelationshipKind = $"{Application}.faction-world",
-            FactionMemberRelationshipKind = $"{Application}.faction-member",
-            LocationComponentTypeId = $"{Application}.location",
-            LocationStatusProperty = "state",
-            ActiveLocationStatus = "ready",
-            LocationKindProperty = "kind",
-            RegionLocationKind = "region"
-        };
+            var prefix = _retainApplicationPrefixedIdentities ? "game.core" : Application;
+            return new()
+            {
+                ApplicationId = Application,
+                StateSpaceId = Campaign,
+                CampaignEntityId = Campaign,
+                BindingRevision = "binding-revision",
+                CampaignRootComponentTypeId = $"{prefix}.campaign-root",
+                CampaignStatusProperty = "state",
+                ActiveCampaignStatus = "ready",
+                CampaignWorldRelationshipKind = $"{prefix}.campaign-world",
+                ParticipationComponentTypeId = $"{prefix}.campaign-participation",
+                ParticipationStatusProperty = "state",
+                ActiveParticipationStatus = "ready",
+                CampaignParticipationRelationshipKind = $"{prefix}.campaign-participation-link",
+                ParticipationActorRelationshipKind = $"{prefix}.participation-actor-link",
+                WorldRootComponentTypeId = $"{prefix}.world-root",
+                WorldStatusProperty = "state",
+                ActiveWorldStatus = "ready",
+                WorldClockComponentTypeId = $"{prefix}.world-clock",
+                CurrentMinuteProperty = "minute",
+                KnowledgeKinds = [new($"{prefix}.knowledge-record", "statement", "statement", ["archived"])],
+                PrimaryStatusProperty = "state",
+                PrimarySummaryProperty = "text",
+                ClassificationComponentTypeId = $"{prefix}.knowledge-classification",
+                ClassificationSensitivityProperty = "level",
+                ValidityComponentTypeId = $"{prefix}.knowledge-validity",
+                ValidFromProperty = "from",
+                ValidUntilProperty = "until",
+                KnowledgeWorldRelationshipKind = $"{prefix}.knowledge-world",
+                KnowledgeAboutRelationshipKind = $"{prefix}.knowledge-about",
+                ExplicitStateRelationshipKind = $"{prefix}.knowledge-state",
+                BaselineRelationshipKind = $"{prefix}.knowledge-baseline",
+                StateProperty = "stance",
+                BaselineInheritanceProperty = "inheritance",
+                BaselineInheritanceValue = "current",
+                ContentStates = ["known", "suspected", "believed", "doubted", "disbelieved"],
+                FamiliarState = "familiar",
+                UnknownState = "unknown",
+                BaselineState = "known",
+                FactionComponentTypeId = $"{prefix}.faction",
+                FactionStatusProperty = "state",
+                ActiveFactionStatus = "ready",
+                FactionWorldRelationshipKind = $"{prefix}.faction-world",
+                FactionMemberRelationshipKind = $"{prefix}.faction-member",
+                LocationComponentTypeId = $"{prefix}.location",
+                LocationStatusProperty = "state",
+                ActiveLocationStatus = "ready",
+                LocationKindProperty = "kind",
+                RegionLocationKind = "region"
+            };
+        }
     }
 }

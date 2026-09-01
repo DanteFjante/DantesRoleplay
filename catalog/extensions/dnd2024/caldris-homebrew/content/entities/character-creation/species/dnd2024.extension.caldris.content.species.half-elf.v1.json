@@ -1,0 +1,79 @@
+{
+  "id": "dnd2024.extension.caldris.content.species.half-elf.v1",
+  "name": "Half-Elf (Caldris Homebrew, content v1)",
+  "components": {
+    "dnd2024.character.content-definition": {
+      "kind": "species",
+      "contentKey": "half-elf",
+      "contentVersion": 1,
+      "status": "active",
+      "sourceRef": {
+        "sourceId": "dnd2024-extension.caldris-homebrew",
+        "locator": "Caldris Homebrew > Species > Half-Elf (2014 PHB conversion; ability increases omitted per 2024 origin rules)"
+      }
+    },
+    "dnd2024.species-profile": {
+      "contentKey": "half-elf",
+      "contentVersion": 1,
+      "sourceRef": {
+        "sourceId": "dnd2024-extension.caldris-homebrew",
+        "locator": "Caldris Homebrew > Species > Half-Elf (2014 PHB conversion; ability increases omitted per 2024 origin rules)"
+      },
+      "creatureType": "humanoid",
+      "allowedSizes": [
+        "medium"
+      ],
+      "baseSpeed": {
+        "walkFeet": 30,
+        "burrowFeet": 0,
+        "climbFeet": 0,
+        "flyFeet": 0,
+        "swimFeet": 0
+      },
+      "traitKeys": [
+        "darkvision",
+        "fey-ancestry",
+        "skill-versatility"
+      ],
+      "choiceFamilies": []
+    },
+    "game.core.rules.readable": {
+      "section": { "id": "character-options", "label": "Character Options", "order": 15 },
+      "order": 10,
+      "title": "Half-Elf (Caldris Homebrew)",
+      "summary": "The installed Caldris extension contributes a Medium Humanoid Half-Elf option with its recorded speed and trait keys.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "Recorded profile",
+          "body": null,
+          "items": [
+            "Creature type: Humanoid.",
+            "Allowed size: Medium.",
+            "Trait keys: Darkvision, Fey Ancestry, and Skill Versatility."
+          ]
+        },
+        {
+          "kind": "callout",
+          "heading": "Homebrew source",
+          "body": "This option belongs to the active Caldris Homebrew extension and is not part of the core D&D 2024 catalog.",
+          "items": []
+        }
+      ],
+      "examples": [],
+      "relatedRuleRefs": [
+        { "entityId": "dnd2024.rule.characters.character-sheet" }
+      ],
+      "citations": [
+        {
+          "sourceId": "dnd2024-extension.caldris-homebrew",
+          "locator": "Caldris Homebrew > Species > Half-Elf (2014 PHB conversion; ability increases omitted per 2024 origin rules)"
+        }
+      ],
+      "mechanicIds": ["dnd2024.mechanic.species-selection.resolve"],
+      "procedureIds": ["dnd2024.procedure.mechanic.species-selection"],
+      "visibility": "public",
+      "presentationStatus": "published"
+    }
+  }
+}

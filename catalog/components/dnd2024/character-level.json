@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.character-level",
+  "name": "Total character level (D&D 2024)",
+  "description": "A character total level from 1 through 20 plus its fixed SRD 5.2.1 source reference. Proficiency Bonus is derived as 2 + floor((level - 1) / 4) and is never stored. Use dnd2024.mechanic.character-level.record for normal writes. Does not represent class levels, XP, advancement choices, or monster CR."
+}

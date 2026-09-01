@@ -487,6 +487,18 @@ public sealed class ProjectionResolverTests : IDisposable
         Assert.NotEmpty(requirements.ProjectionProblems());
     }
 
+    [Fact]
+    public void Component_references_may_originate_from_an_optional_root_component()
+    {
+        var requirements = Requires("""
+            {"roles":{"subject":{"components":[],"optionalComponents":["defenses"],
+              "componentReferences":[{"sourceComponentId":"defenses","field":"basis",
+                "targetComponentIds":["defense-basis"]}]}}}
+            """);
+
+        Assert.Empty(requirements.ProjectionProblems());
+    }
+
     [Theory]
     [InlineData("null")]
     [InlineData("\"true\"")]

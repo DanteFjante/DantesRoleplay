@@ -3,12 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type {
+  CharacterSheetProjection,
   PartyDossierEntry,
   PartyKnowledgeEntry,
   PartyMemberReadModel,
   PartySectionId,
 } from "../data/hub-types";
 import { Icon } from "./Icon";
+import { MediaImage } from "./MediaImage";
 
 const PARTY_SECTIONS: ReadonlyArray<{ id: PartySectionId; label: string; icon: string }> = [
   { id: "overview", label: "Overview", icon: "CircleUserRound" },
@@ -36,11 +38,174 @@ function DossierEntries({ entries }: { entries: PartyDossierEntry[] }) {
     <div className="party-entry-grid">
       {entries.map((entry) => (
         <article className="party-entry-card" key={entry.id}>
+          {entry.media ? (
+            <figure className="party-entry-card__media">
+              <MediaImage fallback={null} media={entry.media} />
+            </figure>
+          ) : null}
           <span>{entry.kind}</span>
           <h3>{entry.title}</h3>
           <p>{entry.detail}</p>
         </article>
       ))}
+    </div>
+  );
+}
+
+function signed(value: number) {
+  return value >= 0 ? `+${value}` : String(value);
+}
+
+function sheetLabel(value: string) {
+  const part = value.split(".").at(-1) ?? value;
+  return part.split("-").map((word) => word ? word[0].toUpperCase() + word.slice(1) : word).join(" ");
+}
+
+function ReferenceList({ emptyLabel, values }: { emptyLabel: string; values: string[] }) {
+  const visible = values.slice(0, 12);
+  return values.length ? (
+    <ul className="character-sheet__reference-list">
+      {visible.map((value) => <li key={value}>{sheetLabel(value)}</li>)}
+      {values.length > visible.length ? <li>+ {values.length - visible.length} more</li> : null}
+    </ul>
+  ) : <p>{emptyLabel}</p>;
+}
+
+function CharacterSheetView({ sheet }: { sheet: CharacterSheetProjection }) {
+  const saves = new Map((sheet.savingThrows ?? []).map((entry) => [entry.ability, entry]));
+  const generalProficiencies = (sheet.proficiencies ?? []).filter((entry) =>
+    !entry.id.includes(".skill.") && !entry.id.includes(".ability."));
+  const vitals = [
+    sheet.level === undefined ? null : { label: "Level", value: String(sheet.level) },
+    sheet.experience === undefined ? null : { label: "Experience", value: `${sheet.experience.total} XP` },
+    sheet.proficiencyBonus === undefined ? null : { label: "Proficiency", value: signed(sheet.proficiencyBonus) },
+    sheet.hitPoints ? { label: "Hit points", value: `${sheet.hitPoints.current} / ${sheet.hitPoints.maximum}` } : null,
+    sheet.hitPoints?.maximumReduction ? { label: "Maximum HP reduced", value: String(sheet.hitPoints.maximumReduction) } : null,
+    sheet.temporaryHitPoints ? { label: "Temporary HP", value: String(sheet.temporaryHitPoints.amount) } : null,
+    sheet.armorClass ? { label: "Armor class", value: String(sheet.armorClass.value) } : null,
+    sheet.initiative ? { label: "Initiative", value: signed(sheet.initiative.modifier) } : null,
+    sheet.body ? { label: "Size", value: sheetLabel(sheet.body.sizeId) } : null,
+  ].filter(Boolean) as Array<{ label: string; value: string }>;
+
+  return (
+    <div className="character-sheet">
+      {vitals.length ? (
+        <section aria-label="Character vitals" className="character-sheet__vitals">
+          {vitals.map((entry) => <div key={entry.label}><span>{entry.label}</span><strong>{entry.value}</strong></div>)}
+        </section>
+      ) : null}
+
+      {sheet.identity || sheet.classes?.length || sheet.origin ? (
+        <section className="character-sheet__section">
+          <div className="party-section-heading"><div><span className="eyebrow">Identity</span><h3>Origin and calling</h3></div></div>
+          <div className="party-entry-grid">
+            {sheet.identity?.pronouns ? <article className="party-entry-card"><span>Pronouns</span><h3>{sheet.identity.pronouns}</h3></article> : null}
+            {sheet.identity?.appearance ? <article className="party-entry-card"><span>Appearance</span><h3>Recorded appearance</h3><p>{sheet.identity.appearance}</p></article> : null}
+            {sheet.identity?.biography ? <article className="party-entry-card"><span>Biography</span><h3>Recorded history</h3><p>{sheet.identity.biography}</p></article> : null}
+            {sheet.identity?.playerNotes ? <article className="party-entry-card"><span>Player notes</span><h3>Private notes</h3><p>{sheet.identity.playerNotes}</p></article> : null}
+            {sheet.origin ? <article className="party-entry-card"><span>Species</span><h3>{sheetLabel(sheet.origin.speciesId)}</h3><p>{sheetLabel(sheet.origin.backgroundId)} background</p></article> : null}
+            {sheet.classes?.map((entry) => <article className="party-entry-card" key={entry.id}><span>Class</span><h3>{sheetLabel(entry.classId)} · {entry.level}</h3>{entry.subclassId ? <p>{sheetLabel(entry.subclassId)}</p> : null}</article>)}
+          </div>
+        </section>
+      ) : null}
+
+      {sheet.abilities?.length ? (
+        <section className="character-sheet__section">
+          <div className="party-section-heading"><div><span className="eyebrow">Core numbers</span><h3>Abilities and saves</h3></div><p>Calculated by the D&amp;D catalog</p></div>
+          <div className="character-sheet__abilities">
+            {sheet.abilities.map((ability) => {
+              const save = saves.get(ability.id);
+              return <article key={ability.id}><span>{ability.id.toUpperCase()}</span><strong>{ability.score}</strong><small>{signed(ability.modifier)} modifier{save ? ` · ${signed(save.modifier)} save${save.proficient ? " ★" : ""}` : ""}</small></article>;
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      {sheet.skills?.length ? (
+        <section className="character-sheet__section">
+          <div className="party-section-heading"><div><span className="eyebrow">Checks</span><h3>Skills</h3></div></div>
+          <div className="character-sheet__skills">
+            {sheet.skills.map((skill) => <div key={skill.id}><span>{skill.expertise ? "◆" : skill.proficient ? "●" : "○"}</span><strong>{sheetLabel(skill.id)}</strong><small>{skill.ability.toUpperCase()}</small><b>{signed(skill.modifier)}</b></div>)}
+          </div>
+        </section>
+      ) : null}
+
+      {generalProficiencies.length ? (
+        <section className="character-sheet__section">
+          <div className="party-section-heading"><div><span className="eyebrow">Training</span><h3>Proficiencies</h3></div></div>
+          <div className="party-entry-grid">
+            {generalProficiencies.map((entry) => (
+              <article className="party-entry-card" key={entry.id}>
+                <span>{sheetLabel(entry.rankId)}</span>
+                <h3>{sheetLabel(entry.id)}</h3>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {sheet.movement?.length || sheet.senses?.length || sheet.conditions?.length ? (
+        <section className="character-sheet__section">
+          <div className="party-section-heading"><div><span className="eyebrow">Creature state</span><h3>Movement, senses, and conditions</h3></div></div>
+          <div className="party-entry-grid">
+            {sheet.movement?.map((entry) => <article className="party-entry-card" key={`movement:${entry.id}`}><span>Speed</span><h3>{sheetLabel(entry.id)}</h3><p>{entry.numerator / entry.denominator} {sheetLabel(entry.unitId)}</p></article>)}
+            {sheet.senses?.map((entry) => <article className="party-entry-card" key={`sense:${entry.id}`}><span>Sense</span><h3>{sheetLabel(entry.id)}</h3>{entry.numerator !== undefined && entry.denominator ? <p>{entry.numerator / entry.denominator} {sheetLabel(entry.unitId ?? "")}</p> : null}</article>)}
+            {sheet.conditions?.map((entry) => <article className="party-entry-card" key={`condition:${entry.id}`}><span>Condition</span><h3>{sheetLabel(entry.id)}</h3>{entry.level ? <p>Level {entry.level}</p> : null}</article>)}
+          </div>
+        </section>
+      ) : null}
+
+      {sheet.features?.length ? (
+        <section className="character-sheet__section">
+          <div className="party-section-heading"><div><span className="eyebrow">Capabilities</span><h3>Features</h3></div></div>
+          <div className="party-entry-grid">
+            {sheet.features?.map((entry) => <article className="party-entry-card" key={`${entry.featureId}:${entry.grantedById}`}><span>{sheetLabel(entry.grantKind)}</span><h3>{sheetLabel(entry.featureId)}</h3>{entry.classLevel ? <p>Granted at class level {entry.classLevel}</p> : null}</article>)}
+          </div>
+        </section>
+      ) : null}
+
+      {sheet.resources?.length ? (
+        <section className="character-sheet__section">
+          <div className="party-section-heading"><div><span className="eyebrow">Tracking</span><h3>Resources</h3></div></div>
+          <div className="party-entry-grid">
+            {sheet.resources.map((entry) => <article className="party-entry-card" key={entry.id}><span>Resource</span><h3>{entry.name}</h3><p>{entry.expended} expended · {sheetLabel(entry.definitionId)}</p></article>)}
+          </div>
+        </section>
+      ) : null}
+
+      {sheet.spellcasting?.length ? (
+        <section className="character-sheet__section">
+          <div className="party-section-heading"><div><span className="eyebrow">Magic</span><h3>Spellcasting</h3></div></div>
+          <div className="party-entry-grid">
+            {sheet.spellcasting.map((entry) => (
+              <article className="party-entry-card" key={entry.id}>
+                <span>{sheetLabel(entry.abilityId)} spellcasting</span>
+                <h3>{entry.name}</h3>
+                <p>{sheetLabel(entry.sourceDefinitionId)}</p>
+                <strong>{entry.preparedSpellIds.length} prepared</strong>
+                <ReferenceList emptyLabel="No prepared spells recorded." values={entry.preparedSpellIds} />
+                <strong>{entry.availableSpellIds.length} available</strong>
+                <ReferenceList emptyLabel="No available spells recorded." values={entry.availableSpellIds} />
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {sheet.actions?.length ? (
+        <section className="character-sheet__section">
+          <div className="party-section-heading"><div><span className="eyebrow">On your turn</span><h3>Actions</h3></div></div>
+          <div className="party-entry-grid">
+            {sheet.actions.map((entry) => (
+              <article className="party-entry-card" key={entry.id}>
+                <span>Action source</span>
+                <h3>{entry.name}</h3>
+                <ReferenceList emptyLabel="No activities recorded." values={entry.activityIds} />
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -117,9 +282,10 @@ function Overview({
   return (
     <div className="party-cinematic-overview">
       <section className="party-cinematic-stage" aria-label={`${member.name} companion overview`}>
-        <div className="party-cinematic-stage__portrait" aria-hidden="true">
+        <div className="party-cinematic-stage__portrait">
+          <MediaImage fallback={null} loading="eager" media={member.portrait} />
           <span className="party-cinematic-stage__halo" />
-          <span className="party-cinematic-stage__sigil">{member.initials}</span>
+          {!member.portrait ? <span aria-hidden="true" className="party-cinematic-stage__sigil">{member.initials}</span> : null}
           <span className="party-cinematic-stage__ground" />
         </div>
         <div className="party-cinematic-stage__copy">
@@ -176,7 +342,9 @@ function Overview({
           <div className="party-cinematic-loadout__grid">
             {equipment.map((entry) => (
               <article key={entry.id}>
-                <span><Icon name="PackageOpen" size={20} /></span>
+                <span className="party-cinematic-loadout__media">
+                  <MediaImage fallback={<Icon name="PackageOpen" size={20} />} media={entry.media} />
+                </span>
                 <div><small>{entry.kind}</small><strong>{entry.title}</strong><p>{entry.detail}</p></div>
               </article>
             ))}
@@ -280,7 +448,9 @@ export function PartyView({ party }: { party: PartyMemberReadModel[] }) {
               }}
               type="button"
             >
-              <span className="party-roster-card__portrait">{member.initials}</span>
+              <span className="party-roster-card__portrait">
+                <MediaImage fallback={<span aria-hidden="true">{member.initials}</span>} media={member.portrait} />
+              </span>
               <span className="party-roster-card__copy">
                 <small>{member.isCurrent ? "Current character" : member.recordStatus}</small>
                 <strong>{member.name}</strong>
@@ -293,7 +463,9 @@ export function PartyView({ party }: { party: PartyMemberReadModel[] }) {
 
         <section className="party-dossier" aria-label={`${selectedMember.name} dossier`}>
           <header className="party-dossier__hero">
-            <span className="party-dossier__portrait">{selectedMember.initials}</span>
+            <span className="party-dossier__portrait">
+              <MediaImage fallback={<span aria-hidden="true">{selectedMember.initials}</span>} loading="eager" media={selectedMember.portrait} />
+            </span>
             <div>
               <span className="eyebrow">{selectedMember.isCurrent ? "Your character" : "Party character"}</span>
               <h2>{selectedMember.name}</h2>
@@ -353,7 +525,7 @@ export function PartyView({ party }: { party: PartyMemberReadModel[] }) {
                     } size={16} />
                     {section === "sheet"
                       ? (selectedMember.sheetStatus === "canonical"
-                        ? "These values come from canonical character state. Derived bonuses remain with the rules engine."
+                        ? "These values come from canonical character state and are derived by the registered D&D catalog projection."
                         : "These are recorded character directions, not derived mechanical sheet values.")
                       : (selectedMember.inventoryStatus === "canonical" || selectedMember.inventoryStatus === "empty"
                         ? "This is the canonical direct inventory projection. Nested containers are not expanded."
@@ -372,7 +544,9 @@ export function PartyView({ party }: { party: PartyMemberReadModel[] }) {
                     />
                   </label>
                 ) : null}
-                {filteredEntries.length ? (
+                {section === "sheet" && selectedMember.characterSheet ? (
+                  <CharacterSheetView sheet={selectedMember.characterSheet} />
+                ) : filteredEntries.length ? (
                   section === "knowledge"
                     ? <KnowledgeEntries entries={filteredEntries as PartyKnowledgeEntry[]} />
                     : <DossierEntries entries={filteredEntries as PartyDossierEntry[]} />

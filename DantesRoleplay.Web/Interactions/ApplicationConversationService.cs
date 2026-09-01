@@ -4,6 +4,7 @@ using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Interactions;
+using DantesRoleplay.Play;
 
 namespace DantesRoleplay.Web.Interactions;
 
@@ -18,7 +19,17 @@ public static class ApplicationConversationTasks
 }
 
 public sealed record ApplicationConversationMessage(
-    int Ordinal, string Role, string Text, DateTime CreatedAtUtc, string? Code = null);
+    int Ordinal,
+    string Role,
+    string Text,
+    DateTime CreatedAtUtc,
+    string? Code = null,
+    string Id = "",
+    string? SituationId = null);
+
+public sealed record ApplicationConversationHistoryPage(
+    IReadOnlyList<ApplicationConversationMessage> Messages,
+    int? NextBeforeOrdinal);
 
 public sealed record ApplicationConversationView(
     string Id,
@@ -31,7 +42,11 @@ public sealed record ApplicationConversationView(
     InteractionExecutionOutcome? LastExecution,
     InteractionTaskAgendaProgressProjection? ActiveAgenda,
     DateTime CreatedAtUtc,
-    DateTime UpdatedAtUtc);
+    DateTime UpdatedAtUtc,
+    PlaySituationDocument? CurrentSituation = null,
+    int TotalMessageCount = 0,
+    bool HasEarlierMessages = false,
+    int KnownTruthCount = 0);
 
 public sealed record ApplicationConversationCreateRequest(string StateSpaceId, string? SessionContextId = null);
 public sealed record ApplicationConversationTurnRequest(string Text, bool ReplaceActiveAgenda = false);
@@ -210,10 +225,13 @@ internal sealed class ApplicationConversationEntry(
     public ApplicationIdentifier ApplicationId { get; } = applicationId;
     public string StateSpaceId { get; } = stateSpaceId;
     public string SessionContextId { get; } = sessionContextId;
-    public DateTime CreatedAtUtc { get; } = DateTime.UtcNow;
+    public DateTime CreatedAtUtc { get; private set; } = DateTime.UtcNow;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
     public string Status { get; set; } = "ready";
     public List<ApplicationConversationMessage> Messages { get; } = [];
+    public List<PlayTruthDocument> KnownTruths { get; } = [];
+    public PlaySituationDocument? CurrentSituation { get; set; }
+    public int TotalMessageCount { get; set; }
     public InteractionPlanGatewayResult? PendingPlan { get; set; }
     public string? PendingProposalJson { get; set; }
     public string? PendingIntentJson { get; set; }
@@ -222,7 +240,27 @@ internal sealed class ApplicationConversationEntry(
     public SemaphoreSlim Gate { get; } = new(1, 1);
 
     public ApplicationConversationView View() => new(Id, ApplicationId, StateSpaceId, SessionContextId,
-        Status, Messages.ToArray(), PendingPlan, LastExecution, ActiveAgenda?.Projection(), CreatedAtUtc, UpdatedAtUtc);
+        Status, Messages.ToArray(), PendingPlan, LastExecution, ActiveAgenda?.Projection(), CreatedAtUtc, UpdatedAtUtc,
+        CurrentSituation, TotalMessageCount, TotalMessageCount > Messages.Count, KnownTruths.Count);
+
+    public void Apply(PlayConversationDocument document)
+    {
+        if (document.Id != Id || document.PrincipalId != PrincipalId
+            || document.ApplicationId != ApplicationId.Value
+            || document.StateSpaceId != StateSpaceId
+            || document.SessionContextId != SessionContextId)
+            throw new InvalidOperationException("The durable play conversation binding changed.");
+        Messages.Clear();
+        Messages.AddRange(document.RecentMessages.Select(value => new ApplicationConversationMessage(
+            value.Ordinal, value.Role, value.Text, value.CreatedAtUtc, value.Code, value.Id, value.SituationId)));
+        KnownTruths.Clear();
+        KnownTruths.AddRange(document.KnownTruths);
+        CurrentSituation = document.CurrentSituation;
+        TotalMessageCount = document.TotalMessageCount;
+        CreatedAtUtc = document.CreatedAtUtc;
+        UpdatedAtUtc = document.UpdatedAtUtc;
+        Status = document.Status;
+    }
 }
 
 public sealed class ApplicationConversationService(
@@ -230,7 +268,8 @@ public sealed class ApplicationConversationService(
     IStateSpaceRegistry stateSpaces,
     IInteractionGateway gateway,
     IInteractionOuterTurnProvider outer,
-    IInteractionNarrationProvider narrator)
+    IInteractionNarrationProvider narrator,
+    IApplicationPlayRecordStore? records = null)
 {
     private const int MaximumOuterTranscriptMessages = 12;
     private const int MaximumOuterTranscriptCharacters = 12_000;
@@ -249,10 +288,32 @@ public sealed class ApplicationConversationService(
             ?? throw new InteractionContractException("STATE_SPACE_UNKNOWN", "The state space is unavailable.");
         if (stateSpace.ApplicationRevision.ApplicationId != applicationId)
             throw new InteractionContractException("STATE_SPACE_APPLICATION_MISMATCH", "The state space belongs to another application.");
-        var id = "application-conversation." + Guid.NewGuid().ToString("n");
         var session = string.IsNullOrWhiteSpace(request.SessionContextId)
             ? "application-session." + Guid.NewGuid().ToString("n")
             : request.SessionContextId.Trim();
+        if (records is not null)
+        {
+            var document = records.ResumeOrCreate(new(
+                principal.PrincipalId, applicationId.Value, request.StateSpaceId, session));
+            var current = store.GetCurrent(document.Id, principal.PrincipalId, applicationId);
+            if (current is not null)
+            {
+                current.Apply(document);
+                return current.View();
+            }
+            var restored = new ApplicationConversationEntry(document.Id, principal.PrincipalId, applicationId,
+                request.StateSpaceId, session);
+            restored.Apply(document);
+            if (!store.TryAdd(restored))
+            {
+                current = store.GetCurrent(document.Id, principal.PrincipalId, applicationId);
+                if (current is not null) return current.View();
+                throw new InteractionContractException("CONVERSATION_CAPACITY_REACHED",
+                    "The active conversation cache is full.");
+            }
+            return restored.View();
+        }
+        var id = "application-conversation." + Guid.NewGuid().ToString("n");
         var entry = new ApplicationConversationEntry(id, principal.PrincipalId, applicationId,
             request.StateSpaceId, session);
         if (!store.TryAdd(entry))
@@ -266,6 +327,34 @@ public sealed class ApplicationConversationService(
         string conversationId) =>
         Current(principal, applicationId, conversationId)?.View();
 
+    public ApplicationConversationHistoryPage? History(
+        TrustedPrincipalContext principal,
+        ApplicationIdentifier applicationId,
+        string conversationId,
+        int? beforeOrdinal,
+        int limit)
+    {
+        if (limit is < 1 or > 100) throw new InteractionContractException(
+            "INVALID_HISTORY_LIMIT", "History pages contain between 1 and 100 messages.");
+        if (records is null)
+        {
+            var entry = Current(principal, applicationId, conversationId);
+            if (entry is null) return null;
+            var values = entry.Messages.Where(value => beforeOrdinal is null || value.Ordinal < beforeOrdinal)
+                .OrderByDescending(value => value.Ordinal).Take(limit).OrderBy(value => value.Ordinal).ToArray();
+            return new(values, null);
+        }
+        try
+        {
+            var page = records.GetMessages(principal.PrincipalId, applicationId.Value,
+                conversationId, beforeOrdinal, limit);
+            return new(page.Messages.Select(value => new ApplicationConversationMessage(
+                value.Ordinal, value.Role, value.Text, value.CreatedAtUtc,
+                value.Code, value.Id, value.SituationId)).ToArray(), page.NextBeforeOrdinal);
+        }
+        catch (KeyNotFoundException) { return null; }
+    }
+
     public async Task<ApplicationConversationView?> TurnAsync(
         TrustedPrincipalContext principal,
         ApplicationIdentifier applicationId,
@@ -275,8 +364,9 @@ public sealed class ApplicationConversationService(
     {
         var entry = Current(principal, applicationId, conversationId);
         if (entry is null) return null;
-        var text = request?.Text?.Trim() ?? string.Empty;
-        if (text.Length is 0 or > 4_000 || text.Any(char.IsControl))
+        var text = request?.Text ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(text) || text.Length > 4_000 ||
+            text.Any(character => char.IsControl(character) && character is not '\r' and not '\n' and not '\t'))
             throw new InteractionContractException("INVALID_CONVERSATION_TURN", "A turn requires bounded plain text.");
         await entry.Gate.WaitAsync(cancellationToken);
         try
@@ -295,11 +385,8 @@ public sealed class ApplicationConversationService(
                 throw new InteractionContractException("INTERACTION_CONFIRMATION_REQUIRED",
                     "Execute the pending proposal before sending another turn.");
             entry.ActiveAgenda = null;
-            var ordinal = entry.Messages.Count + 1;
-            if (entry.Messages.Count + 3 > ApplicationConversationStore.MaximumMessages
-                || ConversationBytes(entry) + JsonBytes(text) + 8_192 > ApplicationConversationStore.MaximumConversationBytes)
-                throw new InteractionContractException("CONVERSATION_LIMIT_REACHED", "The ephemeral conversation reached its closed limit.");
-            entry.Messages.Add(new(ordinal, "player", text, DateTime.UtcNow));
+            var ordinal = entry.TotalMessageCount + 1;
+            AppendMessage(entry, "player", text, null);
             var outerTurn = await outer.DecideAsync(OuterRequest(entry, text), cancellationToken);
             if (!outerTurn.Available || outerTurn.Decision is null)
             {
@@ -311,7 +398,8 @@ public sealed class ApplicationConversationService(
             if (outerTurn.Decision == InteractionOuterDecision.Respond)
             {
                 entry.Status = "ready";
-                AppendMessage(entry, "assistant", outerTurn.Text, outerTurn.Code);
+                AppendMessage(entry, "assistant", outerTurn.Text, outerTurn.Code,
+                    outerTurn.Situation, outerTurn.Truths ?? []);
                 entry.UpdatedAtUtc = DateTime.UtcNow;
                 return entry.View();
             }
@@ -341,9 +429,9 @@ public sealed class ApplicationConversationService(
                 agenda = agendaResult.Agenda;
             }
             var agendaBytes = JsonBytes(JsonSerializer.Serialize(agenda, CamelCase));
-            if (ConversationBytes(entry) + agendaBytes + 8_192 > ApplicationConversationStore.MaximumConversationBytes)
+            if (agendaBytes + 8_192 > ApplicationConversationStore.MaximumConversationBytes)
                 throw new InteractionContractException("CONVERSATION_LIMIT_REACHED",
-                    "The bounded task agenda does not fit the remaining ephemeral conversation capacity.");
+                    "The bounded task agenda exceeds the active conversation capacity.");
             entry.ActiveAgenda = ApplicationTaskAgendaProgress.Create(agenda, entry.Id, ordinal);
             await PlanNextBatchAsync(entry, principal, applicationId, cancellationToken);
             entry.UpdatedAtUtc = DateTime.UtcNow;
@@ -369,15 +457,11 @@ public sealed class ApplicationConversationService(
             if (plan?.Proposal is null || plan.ProposalFingerprint is null || receipt is null
                 || entry.PendingProposalJson is null || entry.PendingIntentJson is null)
                 throw new InteractionContractException("NO_PENDING_INTERACTION", "There is no resolved proposal awaiting confirmation.");
-            if (entry.Messages.Count + 3 > ApplicationConversationStore.MaximumMessages
-                || ConversationBytes(entry) + 12_000 > ApplicationConversationStore.MaximumConversationBytes)
-                throw new InteractionContractException("CONVERSATION_LIMIT_REACHED",
-                    "The ephemeral conversation lacks capacity to execute and report this batch safely.");
             var active = entry.ActiveAgenda?.Tasks
                 .SelectMany(task => task.Batches.Select(batch => (Task: task, Batch: batch)))
                 .SingleOrDefault(value => value.Batch.Status == InteractionTaskBatchStatus.AwaitingConfirmation);
             var idempotency = string.IsNullOrWhiteSpace(request?.IdempotencyKey)
-                ? active?.Batch is null ? $"{entry.Id}.execute.{entry.Messages.Count + 1}"
+                ? active?.Batch is null ? $"{entry.Id}.execute.{entry.TotalMessageCount + 1}"
                     : $"{active.Value.Batch.Id}.execute"
                 : request.IdempotencyKey!;
             using var proposal = JsonDocument.Parse(entry.PendingProposalJson);
@@ -407,9 +491,12 @@ public sealed class ApplicationConversationService(
                 result.ActionResults.Select(action => action.Narration).Where(value => !string.IsNullOrWhiteSpace(value)).ToArray(),
                 new[] { result.Receipt?.Receipt?.Id }.Concat(result.ActionResults.Select(action => action.OperationId))
                     .Where(value => !string.IsNullOrWhiteSpace(value)).Cast<string>().ToArray(),
-                (result.QueryResults ?? []).Where(value => value.Output is not null).ToArray()), cancellationToken);
+                (result.QueryResults ?? []).Where(value => value.Output is not null).ToArray(),
+                PlayContext(entry)), cancellationToken);
             AppendMessage(entry, "assistant", narration.Available ? narration.Narration : result.SafeSummary,
-                narration.Available ? narration.Code : result.Code);
+                narration.Available ? narration.Code : result.Code,
+                narration.Available ? narration.Situation : null,
+                narration.Available ? narration.Truths ?? [] : []);
 
             if (entry.ActiveAgenda is not null && active?.Batch is not null && active?.Task is not null)
             {
@@ -439,6 +526,7 @@ public sealed class ApplicationConversationService(
             }
             else entry.Status = result.Successful ? "ready"
                 : durableOutcome ? "needs-attention" : "awaiting-confirmation";
+            if (records is not null) entry.Apply(records.SetStatus(entry.Id, entry.Status));
             entry.UpdatedAtUtc = DateTime.UtcNow;
             return entry.View();
         }
@@ -476,7 +564,8 @@ public sealed class ApplicationConversationService(
         agenda.Status = InteractionTaskAgendaStatus.Planning;
         entry.Status = "planning";
         var keyBase = $"{agenda.IdempotencyBase}.task.{task.Definition.Ordinal}.batch.{batch.Definition.Ordinal}";
-        var innerIntent = IntentJson(keyBase, "inner", batch.Definition.IntentText, "local");
+        var innerIntent = IntentJson(keyBase, "inner", batch.Definition.IntentText, "local",
+            entry.KnownTruths.Select(value => value.Id).ToArray());
         var inner = await gateway.PlanAsync(principal, applicationId, entry.StateSpaceId,
             entry.SessionContextId, innerIntent, conversationId: entry.Id,
             role: InteractionAiRole.Inner, parentDelegationId: agenda.DelegationId,
@@ -523,7 +612,8 @@ public sealed class ApplicationConversationService(
             return;
         }
 
-        var outerIntent = IntentJson(keyBase, "outer", reconsidered.Text, OuterPlannerPreference());
+        var outerIntent = IntentJson(keyBase, "outer", reconsidered.Text, OuterPlannerPreference(),
+            entry.KnownTruths.Select(value => value.Id).ToArray());
         var fallback = await gateway.PlanAsync(principal, applicationId, entry.StateSpaceId,
             entry.SessionContextId, outerIntent, conversationId: entry.Id,
             role: InteractionAiRole.Outer, parentDelegationId: agenda.DelegationId,
@@ -558,6 +648,14 @@ public sealed class ApplicationConversationService(
         ApplicationIdentifier applicationId,
         string conversationId)
     {
+        var current = store.GetCurrent(conversationId, principal.PrincipalId, applicationId);
+        if (current is not null || records is null) return current;
+        var document = records.Get(principal.PrincipalId, applicationId.Value, conversationId);
+        if (document is null) return null;
+        var restored = new ApplicationConversationEntry(document.Id, document.PrincipalId, applicationId,
+            document.StateSpaceId, document.SessionContextId);
+        restored.Apply(document);
+        if (store.TryAdd(restored)) return restored;
         return store.GetCurrent(conversationId, principal.PrincipalId, applicationId);
     }
 
@@ -589,13 +687,18 @@ public sealed class ApplicationConversationService(
                 stateSpace.ApplicationRevision.Revision,
                 stateSpace.ApplicationRevision.Fingerprint,
                 stateSpace.ManifestFingerprint),
-            selected.ToArray());
+            selected.ToArray(),
+            PlayContext(entry));
     }
 
-    private static int ConversationBytes(ApplicationConversationEntry entry) =>
-        entry.Messages.Sum(message => JsonBytes(message.Text))
-        + (entry.ActiveAgenda is null ? 0 : JsonBytes(JsonSerializer.Serialize(
-            entry.ActiveAgenda.Projection(), CamelCase)));
+    private static InteractionOuterPlayContext PlayContext(ApplicationConversationEntry entry) => new(
+        entry.CurrentSituation is null ? null : new(
+            entry.CurrentSituation.Kind,
+            entry.CurrentSituation.Summary,
+            entry.CurrentSituation.Participants,
+            entry.CurrentSituation.Location),
+        entry.KnownTruths.TakeLast(64)
+            .Select(value => new InteractionOuterKnownTruth(value.Statement, value.SubjectEntityIds)).ToArray());
 
     private static bool IsSingleTaskRequest(string text)
     {
@@ -619,12 +722,13 @@ public sealed class ApplicationConversationService(
         string idempotencyBase,
         string attempt,
         string intentText,
-        string plannerPreference) => JsonSerializer.Serialize(new
+        string plannerPreference,
+        IReadOnlyList<string> conversationFactReferences) => JsonSerializer.Serialize(new
         {
             idempotencyKey = $"{idempotencyBase}.{attempt}",
             intentText,
             roleHints = new Dictionary<string, string>(),
-            conversationFactReferences = Array.Empty<string>(),
+            conversationFactReferences,
             maximumPlanSteps = InteractionContractLimits.ProposalSteps,
             plannerPreference
         });
@@ -647,7 +751,7 @@ public sealed class ApplicationConversationService(
         entry.PendingIntentJson = null;
     }
 
-    private static void AddResolutionMessage(
+    private void AddResolutionMessage(
         ApplicationConversationEntry entry,
         InteractionPlanGatewayResult plan)
     {
@@ -660,17 +764,109 @@ public sealed class ApplicationConversationService(
         return receipt is null ? plan.SafeSummary : $"{plan.SafeSummary} Receipt: {receipt}.";
     }
 
-    private static void AppendMessage(
+    private void AppendMessage(
         ApplicationConversationEntry entry,
         string role,
         string text,
-        string? code)
+        string? code,
+        PlaySituationUpdate? situation = null,
+        IReadOnlyList<PlayTruthAssertion>? truths = null)
     {
-        if (entry.Messages.Count >= ApplicationConversationStore.MaximumMessages
-            || ConversationBytes(entry) + JsonBytes(text) > ApplicationConversationStore.MaximumConversationBytes)
+        if (JsonBytes(text) > 8_000)
             throw new InteractionContractException("CONVERSATION_LIMIT_REACHED",
-                "The ephemeral conversation reached its closed limit.");
-        entry.Messages.Add(new(entry.Messages.Count + 1, role, text, DateTime.UtcNow, code));
+                "A single conversation message exceeded its durable limit.");
+        var now = DateTime.UtcNow;
+        if (records is not null)
+        {
+            var message = new PlayMessageAppend(role, text, code, now);
+            var document = role == "assistant" && (situation is not null || truths is { Count: > 0 })
+                ? records.AppendNarrative(entry.Id, new(message, situation, truths ?? []), entry.Status)
+                : records.AppendMessage(entry.Id, message, entry.Status);
+            entry.Apply(document);
+            return;
+        }
+
+        var ordinal = entry.TotalMessageCount + 1;
+        var situationId = ApplyLocalSituation(entry, situation, now);
+        var messageId = "play-message." + Guid.NewGuid().ToString("n");
+        entry.Messages.Add(new(ordinal, role, text, now, code, messageId, situationId));
+        entry.TotalMessageCount++;
+        if (entry.Messages.Count > ApplicationConversationStore.MaximumMessages)
+            entry.Messages.RemoveRange(0, entry.Messages.Count - ApplicationConversationStore.MaximumMessages);
+        AppendLocalTruths(entry, truths ?? [], messageId, situationId, now);
+        entry.UpdatedAtUtc = now;
+    }
+
+    private static string? ApplyLocalSituation(
+        ApplicationConversationEntry entry,
+        PlaySituationUpdate? update,
+        DateTime now)
+    {
+        if (update is null) return entry.CurrentSituation?.Id;
+        if (update.Transition == PlaySituationTransitions.Complete)
+        {
+            var completed = entry.CurrentSituation;
+            if (completed is not null)
+                entry.CurrentSituation = completed with
+                {
+                    Revision = completed.Revision + 1,
+                    Status = PlaySituationStatuses.Completed,
+                    UpdatedAtUtc = now,
+                    CompletedAtUtc = now
+                };
+            var completedId = entry.CurrentSituation?.Id;
+            entry.CurrentSituation = null;
+            return completedId;
+        }
+        var current = entry.CurrentSituation;
+        if (update.Transition == PlaySituationTransitions.Replace || current is null
+            || current.Status != PlaySituationStatuses.Active || current.Kind != update.Kind)
+        {
+            entry.CurrentSituation = new(
+                "play-situation." + Guid.NewGuid().ToString("n"),
+                1,
+                update.Kind,
+                PlaySituationStatuses.Active,
+                update.Summary,
+                update.Participants,
+                update.Location,
+                now,
+                now,
+                null);
+            return entry.CurrentSituation.Id;
+        }
+        entry.CurrentSituation = current with
+        {
+            Revision = current.Revision + 1,
+            Summary = update.Summary,
+            Participants = update.Participants,
+            Location = update.Location,
+            UpdatedAtUtc = now
+        };
+        return entry.CurrentSituation.Id;
+    }
+
+    private static void AppendLocalTruths(
+        ApplicationConversationEntry entry,
+        IReadOnlyList<PlayTruthAssertion> truths,
+        string messageId,
+        string? situationId,
+        DateTime now)
+    {
+        foreach (var truth in truths)
+        {
+            if (entry.KnownTruths.Any(value =>
+                    string.Equals(value.Statement, truth.Statement, StringComparison.OrdinalIgnoreCase)))
+                continue;
+            entry.KnownTruths.Add(new(
+                "play-truth." + Guid.NewGuid().ToString("n"),
+                entry.KnownTruths.Count + 1,
+                truth.Statement,
+                truth.SubjectEntityIds,
+                messageId,
+                situationId,
+                now));
+        }
     }
 
     private static string ProposalJson(InteractionProposalProjection proposal) =>

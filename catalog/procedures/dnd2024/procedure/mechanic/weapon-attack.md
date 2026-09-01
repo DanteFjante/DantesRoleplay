@@ -1,0 +1,40 @@
+---
+id: dnd2024.procedure.mechanic.weapon-attack
+category: ruleset.dnd2024.core.gameplay.weapon-attacks
+name: Resolve weapon attacks against Armor Class
+governs: commit(kind: "mechanic") validating D&D weapon attack resolution; commit(kind: "action") resolving a seeded weapon attack against final Armor Class
+status: active
+createdBy: "import"
+changeNote: "Imported from the catalog."
+---
+
+## Description
+Defines one effect-free D&D 2024 weapon attack resolver. It reads authoritative attacker, target, and canonical weapon state, then reports hit/miss and natural 20/1 classification without dealing damage or changing the world.
+
+## Instructions
+Source and scope
+
+- Rule source: `dnd2024.source.srd-5.2.1`, locators `Playing the Game > D20 Tests > Attack Rolls` (PDF pages 6–7) and `Equipment > Weapons > Weapon Proficiency` (PDF page 89).
+- A weapon attack adds a permitted ability modifier and Proficiency Bonus only if the creature has the selected weapon category proficiency; total is compared with final Armor Class.
+- A selected natural 20 always hits and is a Critical Hit; a selected natural 1 always misses. Critical damage remains Feature 9 work.
+- Weapon ownership, range, properties, damage, Hit Point changes, conditions, turns, and persisted attack state are out of scope.
+
+Required state and input
+
+1. Require subject `dnd2024.abilities`, `dnd2024.character-level`, and `dnd2024.weapon-proficiencies`; target `dnd2024.armor-class`; and weapon `dnd2024.weapon-profile`.
+2. Validate every required state field and fixed source reference before consuming randomness. Missing proficiency is invalid; explicit empty categories means known nonproficient.
+3. Input is exactly `{"ability":"str"|"dex","rollCircumstances":[{"kind":"advantage"|"disadvantage","source":"reason"}]}` with optional rollCircumstances. The selected ability must occur in the profile's canonical list.
+4. Derive modifier and level-band Proficiency Bonus from stored subject state; accept neither from input. Add PB once only when profile category occurs in the stored category list.
+5. Resolve Advantage/Disadvantage using the established closed, non-stacking, cancellation convention. Return every die and selected die.
+
+Result and verification
+
+- Return subject/target/weapon ids, category, chosen ability, target Armor Class, proficiency facts, modifiers, rolls, total, hit, critical, and explicit hit reason. Return `effects: []`.
+- Reject malformed roots/circumstances, derived-value or outcome input, wrong roles, missing/corrupt state, invalid profile/category/proficiency state, and a profile-disallowed ability before rolling or mutation.
+- Prove PB boundaries +2/+3/+5/+6, proficient/nonproficient delta, permitted and forbidden weapon/ability pairs, AC equality and adjacency, D20 modes/ties/cancellation/replay, natural 20/1 precedence, routing, zero effects, and exact unchanged entity state.
+- Run catalog dry-run/import/verify, fresh-database integration coverage, the full suite, and `git diff --check`.
+
+## Constraints
+- This resolver owns transient weapon-attack evidence only. It never creates components, writes outcomes, rolls damage, or changes Hit Points.
+- It reads final Armor Class only from `dnd2024.armor-class`, and weapon facts only from `dnd2024.weapon-profile`.
+- It never defaults absent/corrupt profile, proficiency, level, ability, or Armor Class state; a later feature must not revise this owner merely to add damage or equipment behavior.

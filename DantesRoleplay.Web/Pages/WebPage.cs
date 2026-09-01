@@ -45,6 +45,15 @@ public sealed class WebPageAsset
     public required byte[] Content { get; set; }
 }
 
+public sealed class WebPageMigrationReportRecord
+{
+    public required string Id { get; set; }
+
+    public required string ReportJson { get; set; }
+
+    public DateTime UpdatedAtUtc { get; set; }
+}
+
 public sealed record WebPageDocument(
     string Id,
     int Revision,

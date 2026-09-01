@@ -1,1 +1,0 @@
-{"id":"game.core.world.conveyance-route","name":"World Ground Conveyance Route","description":"Closed directed ground-route distance metadata for a generic conveyance journey. Scope and endpoints are relationships; it contains no vehicle type, speed, duration, terrain, path, or clock. Governed by procedure.game.core.world.travel."}

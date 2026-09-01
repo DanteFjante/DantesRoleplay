@@ -1,5 +1,6 @@
 import type { WorldLocation } from "../data/hub-types";
 import { Icon } from "./Icon";
+import { EntityMediaGallery } from "./EntityMediaGallery";
 import { MediaImage } from "./MediaImage";
 
 export function LocationDetail({
@@ -7,6 +8,8 @@ export function LocationDetail({
 }: {
   location: WorldLocation;
 }) {
+  const gallery = (location.media?.gallery ?? []).filter((attachment) =>
+    attachment.role === "setting" || attachment.role === "scene" || attachment.role === "illustration");
   return (
     <article className="location-detail" aria-labelledby="selected-location-heading">
       <header className="location-detail__header">
@@ -20,7 +23,9 @@ export function LocationDetail({
         </span>
       </header>
 
-      {location.media?.setting ? (
+      {gallery.length > 0 ? (
+        <EntityMediaGallery attachments={gallery} label={`${location.name} images`} />
+      ) : location.media?.setting ? (
         <figure className="location-detail__setting">
           <MediaImage fallback={null} media={location.media.setting} />
         </figure>

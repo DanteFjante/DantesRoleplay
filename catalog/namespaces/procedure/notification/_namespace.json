@@ -1,0 +1,12 @@
+{
+  "id": "procedure.notification",
+  "owner": "procedure",
+  "description": "Namespace for procedure notification catalog records.",
+  "allowedKinds": [
+    "procedure"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

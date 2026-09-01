@@ -18,13 +18,14 @@ internal sealed class SystemInteractionHandler
         string? query,
         string? qualifiedId,
         int? limit,
+        string? namespaceId,
         CancellationToken cancellationToken) =>
         RunAsync(log, "system.feature-search", PrivateOperatorCapability.Read, privateOperator,
             async _ =>
             {
                 if (gateway is null) return Unavailable("system.feature-search");
                 var result = await gateway.SearchFeaturesAsync(ApplicationIdentifier.Parse(applicationId ?? string.Empty),
-                    query, qualifiedId, limit ?? 10, cancellationToken);
+                    query, qualifiedId, limit ?? 10, namespaceId, cancellationToken);
                 return ToolOutcome.Ok(result, "Returned application-scoped interaction features.");
             });
 
@@ -206,11 +207,15 @@ internal sealed class SystemInteractionHandler
                     var result = await gateway.ExecuteAsync(authorization.Principal!,
                         ApplicationIdentifier.Parse(RequiredString(root, "applicationId")),
                         RequiredString(root, "stateSpaceId"), closedRequest, cancellationToken);
+                    var receiptId = result.Receipt?.Receipt?.Id;
+                    var receiptQuery = string.IsNullOrWhiteSpace(receiptId)
+                        ? "query(kind: \"system.interaction-receipt\", applicationId: \"...\", stateSpaceId: \"...\", id: \"...\")"
+                        : $"query(kind: \"system.interaction-receipt\", applicationId: \"{RequiredString(root, "applicationId")}\", stateSpaceId: \"{RequiredString(root, "stateSpaceId")}\", id: \"{receiptId}\")";
                     return result.Successful
                         ? ToolOutcome.Ok(result, result.SafeSummary,
-                            $"query(kind: \"system.interaction-receipt\", applicationId: \"{RequiredString(root, "applicationId")}\", stateSpaceId: \"{RequiredString(root, "stateSpaceId")}\", id: \"{result.Receipt!.Receipt!.Id}\")")
+                            receiptQuery)
                         : ToolOutcome.Fail(result.Code, result.SafeSummary,
-                            "query(kind: \"system.interaction-receipt\", applicationId: \"...\", stateSpaceId: \"...\", id: \"...\")",
+                            receiptQuery,
                             result.SafeSummary);
                 }
                 catch (Exception exception) when (IsRequestException(exception))

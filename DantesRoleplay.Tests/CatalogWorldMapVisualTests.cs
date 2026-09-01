@@ -10,6 +10,7 @@ namespace DantesRoleplay.Tests;
 public sealed class CatalogWorldMapVisualTests : IDisposable
 {
     private const string Visual = "game.core.world.map.visual";
+    private const string Hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     private readonly SqliteFixture _fixture = new();
     private readonly string _copy = Path.Combine(Path.GetTempPath(), $"world-map-visual-{Guid.NewGuid():n}");
 
@@ -27,7 +28,7 @@ public sealed class CatalogWorldMapVisualTests : IDisposable
         var component = Assert.Single(contents.Components, candidate => candidate.Id == Visual);
 
         AssertSchema(component.Schema,
-            """{"status":"active","variants":{"player":{"assetKey":"thalos.player","alt":"Map of Thalos"},"dm":{"assetKey":"thalos.dm","alt":"DM map of Thalos"}}}""",
+            VariantSet("player", "Map of Thalos"),
             SchemaValueStatus.Valid);
 
         await using var db = _fixture.CreateContext();
@@ -49,26 +50,24 @@ public sealed class CatalogWorldMapVisualTests : IDisposable
     public async Task Audience_variants_are_exact_and_missing_variants_fail_closed()
     {
         var component = (await CatalogReader.ReadAsync(Catalog())).Components.Single(candidate => candidate.Id == Visual);
-        var playerOnly = """{"status":"active","variants":{"player":{"assetKey":"thalos.player","alt":"Map of Thalos"}}}""";
-        var dmOnly = """{"status":"active","variants":{"dm":{"assetKey":"thalos.dm","alt":"DM map of Thalos"}}}""";
+        var playerOnly = VariantSet("player", "Map of Thalos");
+        var dmOnly = VariantSet("dm", "DM map of Thalos");
 
         AssertSchema(component.Schema, playerOnly, SchemaValueStatus.Valid);
         AssertSchema(component.Schema, dmOnly, SchemaValueStatus.Valid);
-        Assert.Equal("thalos.player", SelectAsset(playerOnly, "player"));
-        Assert.Null(SelectAsset(playerOnly, "dm"));
-        Assert.Equal("thalos.dm", SelectAsset(dmOnly, "dm"));
-        Assert.Null(SelectAsset(dmOnly, "player"));
-        Assert.Null(SelectAsset(dmOnly, "spectator"));
+        Assert.Equal(Hash, SelectBlob(playerOnly, "player"));
+        Assert.Null(SelectBlob(playerOnly, "dm"));
+        Assert.Equal(Hash, SelectBlob(dmOnly, "dm"));
+        Assert.Null(SelectBlob(dmOnly, "player"));
+        Assert.Null(SelectBlob(dmOnly, "spectator"));
     }
 
     [Theory]
     [InlineData("{}")] 
     [InlineData("{\"status\":\"active\",\"variants\":{}}")]
-    [InlineData("{\"status\":\"active\",\"variants\":{\"player\":{\"assetKey\":\"/thalos.svg\",\"alt\":\"Map\"}}}")]
-    [InlineData("{\"status\":\"active\",\"variants\":{\"player\":{\"assetKey\":\"https://maps.invalid/thalos\",\"alt\":\"Map\"}}}")]
-    [InlineData("{\"status\":\"active\",\"variants\":{\"player\":{\"assetKey\":\"thalos.player\",\"alt\":\"   \"}}}")]
-    [InlineData("{\"status\":\"active\",\"variants\":{\"player\":{\"assetKey\":\"thalos.player\",\"alt\":\"Map\",\"url\":\"/thalos.svg\"}}}")]
-    [InlineData("{\"status\":\"visible\",\"variants\":{\"player\":{\"assetKey\":\"thalos.player\",\"alt\":\"Map\"}}}")]
+    [InlineData("{\"status\":\"active\",\"variants\":{\"player\":{\"sha256\":\"bad\",\"mimeType\":\"image/png\",\"width\":1,\"height\":1,\"alt\":\"Map\",\"caption\":\"\",\"order\":0,\"provenance\":{\"kind\":\"original\",\"credit\":\"x\",\"source\":\"x\",\"reviewedOn\":\"2026-09-01\",\"version\":1}}}}")]
+    [InlineData("{\"status\":\"active\",\"variants\":{\"player\":{\"sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"mimeType\":\"image/svg+xml\",\"width\":1,\"height\":1,\"alt\":\"Map\",\"caption\":\"\",\"order\":0,\"provenance\":{\"kind\":\"original\",\"credit\":\"x\",\"source\":\"x\",\"reviewedOn\":\"2026-09-01\",\"version\":1}}}}")]
+    [InlineData("{\"status\":\"active\",\"variants\":{\"player\":{\"sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"mimeType\":\"image/png\",\"width\":1,\"height\":1,\"alt\":\"   \",\"caption\":\"\",\"order\":0,\"provenance\":{\"kind\":\"original\",\"credit\":\"x\",\"source\":\"x\",\"reviewedOn\":\"2026-09-01\",\"version\":1}}}}")]
     public async Task Closed_visual_schema_rejects_unsafe_or_malformed_values(string value)
     {
         var schema = (await CatalogReader.ReadAsync(Catalog())).Components.Single(candidate => candidate.Id == Visual).Schema;
@@ -101,15 +100,42 @@ public sealed class CatalogWorldMapVisualTests : IDisposable
             validator.Validate(compilation.ProfileId, compilation.NormalizedSchema, value).Status);
     }
 
-    private static string? SelectAsset(string value, string audience)
+    private static string? SelectBlob(string value, string audience)
     {
         if (audience is not ("player" or "dm")) return null;
         using var document = System.Text.Json.JsonDocument.Parse(value);
         return document.RootElement.GetProperty("status").GetString() == "active"
             && document.RootElement.GetProperty("variants").TryGetProperty(audience, out var variant)
-                ? variant.GetProperty("assetKey").GetString()
+                ? variant.GetProperty("sha256").GetString()
                 : null;
     }
+
+    private static string VariantSet(string audience, string alt) =>
+        System.Text.Json.JsonSerializer.Serialize(new
+        {
+            status = "active",
+            variants = new Dictionary<string, object>
+            {
+                [audience] = new
+                {
+                    sha256 = Hash,
+                    mimeType = "image/png",
+                    width = 1448,
+                    height = 1086,
+                    alt,
+                    caption = "",
+                    order = 0,
+                    provenance = new
+                    {
+                        kind = "original",
+                        credit = "DantesRoleplay",
+                        source = "reviewed map",
+                        reviewedOn = "2026-09-01",
+                        version = 1
+                    }
+                }
+            }
+        });
 
     private static bool IsValidAnchorScope(string planeKind, string planeStatus,
         string childKind, string childStatus, string slot)

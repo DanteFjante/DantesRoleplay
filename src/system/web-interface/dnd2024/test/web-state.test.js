@@ -232,6 +232,7 @@ test("shared navigation has the confirmed identity and order in every perspectiv
       ["party", "Party"],
       ["current", "Current View"],
       ["rules", "Rules"],
+      ["content", "Installed Content"],
     ],
   );
 });
@@ -627,6 +628,8 @@ test("client envelope validation accepts only the closed ready shape", () => {
   const ready = {
     version: 1,
     status: "ready",
+    applicationId: "dnd2024",
+    stateSpaceId: "dnd2024-main",
     audience: { seat: "player", perspective: "player", allowedPerspectives: ["player"] },
     world: {
       name: "Eldervale",
@@ -646,6 +649,8 @@ test("client envelope validation accepts only the closed ready shape", () => {
   };
 
   assert.equal(isReadyHubEnvelope(ready), true);
+  assert.equal(isReadyHubEnvelope({ ...ready, applicationId: undefined }), false);
+  assert.equal(isReadyHubEnvelope({ ...ready, stateSpaceId: "../another-space" }), false);
   assert.equal(isReadyHubEnvelope({
     ...ready,
     world: {

@@ -4,6 +4,7 @@ using DantesRoleplay.Mechanics;
 using DantesRoleplay.Events;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.World;
+using DantesRoleplay.CatalogNamespaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.DataAccess.Catalog;
@@ -47,6 +48,26 @@ public sealed class CatalogImporter(
     private readonly ISubscriptionStore? _subscriptions = subscriptions;
 
     // ---- planning ------------------------------------------------------------------------
+
+    public async Task<CatalogNamespaceImportResult> ApplyNamespacesOnlyAsync(
+        string root,
+        bool dryRun = false,
+        CancellationToken cancellationToken = default)
+    {
+        var contents = await CatalogReader.ReadAsync(root, cancellationToken);
+        var stored = await _db.Set<CatalogNamespaceRecord>().AsNoTracking()
+            .ToDictionaryAsync(value => value.Id, StringComparer.Ordinal, cancellationToken);
+        var created = contents.Namespaces.Count(value => !stored.ContainsKey(value.Id));
+        var updated = contents.Namespaces.Count(value => stored.TryGetValue(value.Id, out var row)
+            && !NamespaceMatches(row, value));
+        var unchanged = contents.Namespaces.Count - created - updated;
+        if (dryRun) return new(contents.Namespaces.Count, created, updated, unchanged, Applied: false);
+
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        await ApplyNamespacesAsync(contents.Namespaces, cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return new(contents.Namespaces.Count, created, updated, unchanged, Applied: true);
+    }
 
     /// <summary>What an import would do. Reads only.</summary>
     public async Task<CatalogImportPlan> PlanAsync(
@@ -252,8 +273,9 @@ public sealed class CatalogImporter(
 
         var created = 0;
         var updated = 0;
+        var namespaceChanges = await NamespacesNeedWriteAsync(contents.Namespaces, cancellationToken);
 
-        if (applying.Count == 0)
+        if (applying.Count == 0 && !namespaceChanges)
         {
             var unchangedVersions = await CurrentVersionsAsync(cancellationToken);
 
@@ -266,9 +288,16 @@ public sealed class CatalogImporter(
                 await UpdateManifestAsync(root, contents, plan, options, unchangedVersions, cancellationToken));
         }
 
+        // Import is the one migration boundary allowed to preserve already-authored records in a
+        // namespace that still needs review. Ordinary stores remain blocked, and validation emits
+        // one finding for every such record so this exception cannot make the debt invisible.
+        using var namespaceImport = _db.PermitUnreviewedNamespaceImport();
+
         // One transaction for the whole apply. Import is a synchronisation, and a partly
         // synchronised catalog is a state neither side's author can reason about.
         await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+
+        await ApplyNamespacesAsync(contents.Namespaces, cancellationToken);
 
         // A containment points from an entity to another entity. File names are stable ids, not
         // a topological sort of that graph ("lantern" may belong to "orban"), so materialise
@@ -445,6 +474,73 @@ public sealed class CatalogImporter(
         if (_subscriptions is null) throw new InvalidOperationException("Subscription import requires a subscription store.");
         var result = await _subscriptions.WriteAsync(new WriteSubscriptionRequest { Id = file.Id, Category = file.Category, EventTypeId = file.EventTypeId, EventMechanicId = file.EventMechanicId, Mode = file.Mode, Order = file.Order, FixedRoleEntityIdsJson = file.FixedRoleEntityIdsJson, RoleFromEventPayloadJson = file.RoleFromEventPayloadJson, FanoutSelectorJson = file.FanoutSelectorJson, TrackedEntityIdsJson = file.TrackedEntityIdsJson, PayloadEqualsJson = file.PayloadEqualsJson, MaxExecutionsPerChain = file.MaxExecutionsPerChain, Scope = file.Scope, Status = file.Status, CreatedBy = AuthorFor(file.CreatedBy), ChangeNote = ChangeNoteFor(file.ChangeNote) }, cancellationToken);
         return result.Created;
+    }
+
+    private async Task<bool> NamespacesNeedWriteAsync(
+        IReadOnlyList<CatalogNamespaceFile> files,
+        CancellationToken cancellationToken)
+    {
+        if (files.Count == 0) return false;
+        var stored = await _db.Set<CatalogNamespaceRecord>().AsNoTracking().ToDictionaryAsync(value => value.Id,
+            StringComparer.Ordinal, cancellationToken);
+        return files.Any(file => !stored.TryGetValue(file.Id, out var row) || !NamespaceMatches(row, file));
+    }
+
+    private static bool NamespaceMatches(CatalogNamespaceRecord row, CatalogNamespaceFile file) =>
+        row.Owner == file.Owner && row.Description == file.Description
+        && row.AllowedKindsJson == System.Text.Json.JsonSerializer.Serialize(file.AllowedKinds)
+        && row.AliasesJson == System.Text.Json.JsonSerializer.Serialize(file.Aliases)
+        && row.ReviewStatus == file.ReviewStatus
+        && row.ReviewNote == file.ReviewNote
+        && (row.DisabledAtUtc is null) == file.Enabled;
+
+    private async Task ApplyNamespacesAsync(
+        IReadOnlyList<CatalogNamespaceFile> files,
+        CancellationToken cancellationToken)
+    {
+        foreach (var file in files.OrderBy(value => value.Id.Count(character => character == '.'))
+                     .ThenBy(value => value.Id, StringComparer.Ordinal))
+        {
+            var row = await _db.Set<CatalogNamespaceRecord>().SingleOrDefaultAsync(
+                value => value.Id == file.Id, cancellationToken);
+            var parent = file.Id == CatalogNamespaceIdentity.RootNamespaceId ? null
+                : file.Id.Contains('.') ? file.Id[..file.Id.LastIndexOf('.')] : null;
+            if (row is null)
+            {
+                var now = DateTime.UtcNow;
+                row = new CatalogNamespaceRecord
+                {
+                    Id = file.Id,
+                    ParentId = parent,
+                    Owner = file.Owner,
+                    Description = file.Description,
+                    AllowedKindsJson = System.Text.Json.JsonSerializer.Serialize(file.AllowedKinds),
+                    AliasesJson = System.Text.Json.JsonSerializer.Serialize(file.Aliases),
+                    ReviewStatus = file.ReviewStatus,
+                    ReviewNote = file.ReviewNote,
+                    ReviewedAtUtc = file.ReviewStatus == CatalogNamespaceReviewStatuses.Reviewed ? now : null,
+                    CreatedAtUtc = now,
+                    UpdatedAtUtc = now,
+                    DisabledAtUtc = file.Enabled ? null : now
+                };
+                _db.Add(row);
+            }
+            else
+            {
+                row.Owner = file.Owner;
+                row.Description = file.Description;
+                row.AllowedKindsJson = System.Text.Json.JsonSerializer.Serialize(file.AllowedKinds);
+                row.AliasesJson = System.Text.Json.JsonSerializer.Serialize(file.Aliases);
+                row.ReviewStatus = file.ReviewStatus;
+                row.ReviewNote = file.ReviewNote;
+                row.ReviewedAtUtc = file.ReviewStatus == CatalogNamespaceReviewStatuses.Reviewed
+                    ? row.ReviewedAtUtc ?? DateTime.UtcNow
+                    : null;
+                row.DisabledAtUtc = file.Enabled ? null : row.DisabledAtUtc ?? DateTime.UtcNow;
+                row.UpdatedAtUtc = DateTime.UtcNow;
+            }
+            await _db.SaveChangesAsync(cancellationToken);
+        }
     }
 
     private static string AuthorFor(string createdBy) =>
@@ -658,7 +754,7 @@ public sealed class CatalogImporter(
                         mechanic.Id,
                         version,
                         mechanic.ContentHash,
-                        CatalogLayout.MechanicMarkdown(mechanic.Category, mechanic.Id));
+                        ManifestPath(contents, entry, CatalogLayout.MechanicMarkdown(mechanic.Category, mechanic.Id)));
 
                     return true;
                 }
@@ -675,7 +771,7 @@ public sealed class CatalogImporter(
                         procedure.Id,
                         version,
                         procedure.ContentHash,
-                        CatalogLayout.ProcedureMarkdown(procedure.Category, procedure.Id));
+                        ManifestPath(contents, entry, CatalogLayout.ProcedureMarkdown(procedure.Category, procedure.Id)));
 
                     return true;
                 }
@@ -684,12 +780,12 @@ public sealed class CatalogImporter(
 
             case CatalogRecordKind.EventType:
                 var eventType = contents.EventTypes.FirstOrDefault(f => f.Id == entry.Id);
-                if (eventType is not null) { described = new CatalogManifestEntry(entry.Kind, eventType.Id, version, eventType.ContentHash, CatalogLayout.EventType(eventType.Id)); return true; }
+                if (eventType is not null) { described = new CatalogManifestEntry(entry.Kind, eventType.Id, version, eventType.ContentHash, ManifestPath(contents, entry, CatalogLayout.EventType(eventType.Id))); return true; }
                 break;
 
             case CatalogRecordKind.Subscription:
                 var subscription = contents.Subscriptions.FirstOrDefault(f => f.Id == entry.Id);
-                if (subscription is not null) { described = new CatalogManifestEntry(entry.Kind, subscription.Id, version, subscription.ContentHash, CatalogLayout.Subscription(subscription.Id)); return true; }
+                if (subscription is not null) { described = new CatalogManifestEntry(entry.Kind, subscription.Id, version, subscription.ContentHash, ManifestPath(contents, entry, CatalogLayout.Subscription(subscription.Id))); return true; }
                 break;
 
             case CatalogRecordKind.Entity:
@@ -702,7 +798,7 @@ public sealed class CatalogImporter(
                         entity.Id,
                         0,
                         entity.ContentHash,
-                        CatalogLayout.Entity(entity.Id));
+                        ManifestPath(contents, entry, CatalogLayout.Entity(entity.Id)));
 
                     return true;
                 }
@@ -744,6 +840,16 @@ public sealed class CatalogImporter(
 
         described = null!;
         return false;
+    }
+
+    private static string ManifestPath(
+        CatalogContents contents,
+        CatalogImportPlanEntry entry,
+        string canonicalPath)
+    {
+        if (contents.Manifest?.SchemaVersion != 1) return canonicalPath;
+        return contents.Manifest.Records.FirstOrDefault(value => value.Kind == entry.Kind && value.Id == entry.Id)?.Path
+            ?? canonicalPath;
     }
 
     // ---- what the database currently holds ------------------------------------------------
@@ -927,3 +1033,10 @@ public sealed class CatalogImporter(
             HashCode.Combine(obj.Kind, StringComparer.Ordinal.GetHashCode(obj.Id));
     }
 }
+
+public sealed record CatalogNamespaceImportResult(
+    int Total,
+    int Created,
+    int Updated,
+    int Unchanged,
+    bool Applied);

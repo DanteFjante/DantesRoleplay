@@ -184,13 +184,13 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
         AssertIsCall(rejected.Error.GetProperty("fix").GetString()!);
 
         // 6. Dry run first, exactly as every contract insists.
-        // "stats" is the convention the seeded rules read, and nothing seeds the definition — a
-        // fresh database cannot resolve an action until someone declares it, which is worth
-        // proving here rather than discovering mid-session.
+        // The seeded threshold mechanic advertises fixture.legacy.stats. Nothing seeds that
+        // definition, so a fresh database cannot resolve the action until someone declares the
+        // exact component contract it read from the mechanic.
         var stats = await ToolAsync("commit", new
         {
             kind = "component",
-            payload = """{"id":"stats","name":"Stats","description":"Numbers about an entity, e.g. vigour."}"""
+            payload = """{"id":"fixture.legacy.stats","name":"Stats","description":"Numbers about an entity, e.g. vigour."}"""
         });
 
         Assert.True(stats.Ok, stats.Raw);
@@ -200,7 +200,7 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
             {"effects":[
               {"type":"entity.create","entityId":"walk.orban","name":"Orban"},
               {"type":"component.set","entityId":"walk.orban","definitionId":"walk.note","data":"{\"text\":\"carries a lantern\"}"},
-              {"type":"component.set","entityId":"walk.orban","definitionId":"stats","data":"{\"vigour\":6}"}
+              {"type":"component.set","entityId":"walk.orban","definitionId":"fixture.legacy.stats","data":"{\"vigour\":6}"}
             ]}
             """;
 
@@ -224,10 +224,12 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
 
         // 8. Confirm by reading back, which is what the contracts ask for and what makes the
         //    reported outcome something other than a claim.
-        var entities = await ToolAsync("query", new { kind = "entities", id = "walk.orban" });
+        // Exact unscoped IDs are now reserved for application-state inspection. The generic world
+        // search remains the correct read-back route for an entity created through generic effects.
+        var entities = await ToolAsync("query", new { kind = "entities", nameQuery = "Orban" });
 
         Assert.True(entities.Ok, entities.Raw);
-        Assert.Contains("carries a lantern", entities.Raw);
+        Assert.Contains("walk.orban", entities.Raw);
 
         var graph = await ToolAsync("query", new
         {
@@ -240,6 +242,7 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
         });
 
         Assert.True(graph.Ok, graph.Raw);
+        Assert.Contains("carries a lantern", graph.Raw);
         Assert.Equal("walk.orban", graph.Data.GetProperty("rootId").GetString());
         Assert.Single(graph.Data.GetProperty("nodes").EnumerateArray());
 
@@ -362,7 +365,7 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Removed_feedback_commit_is_rejected_by_the_current_closed_surface()
+    public async Task A_session_can_submit_and_read_system_feedback()
     {
         var token = "feedback-request." + Guid.NewGuid().ToString("n");
         var submitted = await ToolAsync("commit", new
@@ -372,8 +375,13 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
             intent = "exercise the system feedback path"
         });
 
-        Assert.False(submitted.Ok);
-        Assert.Equal("UNKNOWN_KIND", submitted.Error.GetProperty("code").GetString());
+        Assert.True(submitted.Ok, submitted.Raw);
+        Assert.False(submitted.Data.GetProperty("duplicate").GetBoolean());
+        var id = submitted.Data.GetProperty("report").GetProperty("id").GetString();
+
+        var read = await ToolAsync("query", new { kind = "feedback", id });
+        Assert.True(read.Ok, read.Raw);
+        Assert.Single(read.Data.GetProperty("reports").EnumerateArray());
     }
 
     [Fact]

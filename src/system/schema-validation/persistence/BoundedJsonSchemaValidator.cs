@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Json.Schema;
 
 namespace DantesRoleplay.SchemaValidation;
@@ -11,11 +12,11 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
 {
     private static readonly HashSet<string> AllowedKeywords = new(StringComparer.Ordinal)
     {
-        "$schema", "$defs", "$ref", "type", "enum", "const", "allOf", "anyOf", "oneOf", "not",
+        "$schema", "$comment", "$defs", "$ref", "title", "description", "type", "enum", "const", "allOf", "anyOf", "oneOf", "not",
         "properties", "required", "additionalProperties", "minProperties", "maxProperties", "items",
         "prefixItems", "minItems", "maxItems", "uniqueItems", "minLength", "maxLength", "minimum",
         "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf", "pattern", "format",
-        "propertyNames", "if", "then", "else"
+        "propertyNames", "if", "then", "else", "x-dantes-entity-roles", "x-dantes-role-constraints"
     };
 
     public SchemaCompilationResult Compile(string schemaJson) => Compile(schemaJson, null);
@@ -65,7 +66,7 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
             var normalized = JsonSerializer.Serialize(document.RootElement);
             try
             {
-                _ = JsonSchema.FromText(normalized);
+                _ = JsonSchema.FromText(AssertionSchema(normalized));
             }
             catch (Exception exception) when (exception is JsonException or JsonSchemaException)
             {
@@ -118,7 +119,7 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
 
             try
             {
-                var schema = JsonSchema.FromText(compilation.NormalizedSchema);
+                var schema = JsonSchema.FromText(AssertionSchema(compilation.NormalizedSchema));
                 var evaluation = schema.Evaluate(value.RootElement,
                     new EvaluationOptions
                     {
@@ -163,6 +164,15 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
             foreach (var item in element.EnumerateArray()) CountNodes(item, ref count);
     }
 
+    private static string AssertionSchema(string normalizedSchema)
+    {
+        var node = JsonNode.Parse(normalizedSchema) ?? throw new JsonException("The schema is absent.");
+        if (node is not JsonObject root) return normalizedSchema;
+        root.Remove("x-dantes-entity-roles");
+        root.Remove("x-dantes-role-constraints");
+        return root.ToJsonString();
+    }
+
     private static SchemaCompilationResult RejectedCompilation(string code, string message) =>
         RejectedCompilation([new(code, "", message)]);
 
@@ -202,6 +212,14 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
                 if (!AllowedKeywords.Contains(property.Name))
                 {
                     Add("SCHEMA_KEYWORD", childPointer, "The schema contains an unsupported keyword.");
+                    continue;
+                }
+
+                if (property.Name is "x-dantes-entity-roles" or "x-dantes-role-constraints")
+                {
+                    if (pointer != "#")
+                        Add("SCHEMA_ANNOTATION_LOCATION", childPointer,
+                            "ECS role-policy annotations are allowed only on the component schema root.");
                     continue;
                 }
 

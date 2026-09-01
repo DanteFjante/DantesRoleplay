@@ -1,0 +1,270 @@
+{
+  "id": "dnd2024.query.character-sheet",
+  "category": "dnd2024.presentation.character-sheet",
+  "name": "D&D 2024 character sheet",
+  "description": "Returns the audience-authorized, closed D&D 2024 character read model for one character entity.",
+  "matches": [
+    "show character sheet",
+    "inspect character",
+    "list character abilities inventory and features"
+  ],
+  "roles": {
+    "subject": "The exact audience-authorized character entity."
+  },
+  "executor": "mechanic-projection",
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.character-sheet.project",
+    "version": 1,
+    "contentHash": "F46B8C0A4903195E473A6AA8B2CC077389B8B45BF546424C5925745ACE8A6DB6",
+    "outputSchemaHash": "D8BC2B100A4E1A0673F488DCA1A9D0C7BEEF5FF0C28CA2CE0403C241FBB373DC"
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["version", "subject", "inventory"],
+    "properties": {
+      "version": { "const": 1 },
+      "subject": { "$ref": "#/$defs/namedEntity" },
+      "identity": {
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "pronouns": { "$ref": "#/$defs/text" },
+          "appearance": { "$ref": "#/$defs/longText" },
+          "biography": { "$ref": "#/$defs/longText" },
+          "playerNotes": { "$ref": "#/$defs/longText" }
+        }
+      },
+      "origin": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["speciesId", "backgroundId"],
+        "properties": {
+          "speciesId": { "$ref": "#/$defs/id" },
+          "backgroundId": { "$ref": "#/$defs/id" }
+        }
+      },
+      "experience": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["total"],
+        "properties": { "total": { "$ref": "#/$defs/nonnegative" } }
+      },
+      "classes": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 20,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "name", "classId", "level", "subclassId"],
+          "properties": {
+            "id": { "$ref": "#/$defs/id" },
+            "name": { "$ref": "#/$defs/text" },
+            "classId": { "$ref": "#/$defs/id" },
+            "level": { "type": "integer", "minimum": 1, "maximum": 20 },
+            "subclassId": { "$ref": "#/$defs/nullableId" }
+          }
+        }
+      },
+      "level": { "type": "integer", "minimum": 1, "maximum": 20 },
+      "proficiencyBonus": { "type": "integer", "minimum": 2, "maximum": 6 },
+      "abilities": { "type": "array", "minItems": 6, "maxItems": 6, "items": { "$ref": "#/$defs/ability" } },
+      "savingThrows": { "type": "array", "minItems": 6, "maxItems": 6, "items": { "$ref": "#/$defs/save" } },
+      "skills": { "type": "array", "minItems": 18, "maxItems": 18, "items": { "$ref": "#/$defs/skill" } },
+      "initiative": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ability", "modifier"],
+        "properties": {
+          "ability": { "const": "dex" },
+          "modifier": { "$ref": "#/$defs/modifier" }
+        }
+      },
+      "hitPoints": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["current", "maximum", "maximumReduction"],
+        "properties": {
+          "current": { "$ref": "#/$defs/nonnegative" },
+          "maximum": { "type": "integer", "minimum": 1 },
+          "maximumReduction": { "$ref": "#/$defs/nonnegative" }
+        }
+      },
+      "temporaryHitPoints": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["amount"],
+        "properties": { "amount": { "type": "integer", "minimum": 1 } }
+      },
+      "armorClass": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["value"],
+        "properties": { "value": { "type": "integer", "minimum": 1 } }
+      },
+      "body": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sizeId"],
+        "properties": { "sizeId": { "$ref": "#/$defs/id" } }
+      },
+      "movement": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/measured" } },
+      "senses": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/sense" } },
+      "conditions": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/condition" } },
+      "proficiencies": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/proficiency" } },
+      "features": { "type": "array", "maxItems": 1024, "items": { "$ref": "#/$defs/feature" } },
+      "resources": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/resource" } },
+      "spellcasting": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/spellcasting" } },
+      "actions": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/action" } },
+      "inventory": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["items", "contentsDepth", "mayOmitDeeperContents"],
+        "properties": {
+          "items": { "type": "array", "maxItems": 512, "items": { "$ref": "#/$defs/item" } },
+          "contentsDepth": { "const": 4 },
+          "mayOmitDeeperContents": { "const": true }
+        }
+      }
+    },
+    "$defs": {
+      "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "nullableId": { "anyOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+      "text": { "type": "string", "minLength": 1, "maxLength": 5000 },
+      "longText": { "type": "string", "minLength": 1, "maxLength": 20000 },
+      "nonnegative": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+      "modifier": { "type": "integer", "minimum": -1000, "maximum": 1000 },
+      "namedEntity": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name"],
+        "properties": { "id": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/text" } }
+      },
+      "ability": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "score", "modifier"],
+        "properties": {
+          "id": { "enum": ["str", "dex", "con", "int", "wis", "cha"] },
+          "score": { "type": "integer", "minimum": 1, "maximum": 30 },
+          "modifier": { "$ref": "#/$defs/modifier" }
+        }
+      },
+      "save": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ability", "proficient", "modifier"],
+        "properties": {
+          "ability": { "enum": ["str", "dex", "con", "int", "wis", "cha"] },
+          "proficient": { "type": "boolean" },
+          "modifier": { "$ref": "#/$defs/modifier" }
+        }
+      },
+      "skill": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "ability", "proficient", "expertise", "modifier"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "ability": { "enum": ["str", "dex", "con", "int", "wis", "cha"] },
+          "proficient": { "type": "boolean" },
+          "expertise": { "type": "boolean" },
+          "modifier": { "$ref": "#/$defs/modifier" }
+        }
+      },
+      "measured": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "numerator", "denominator", "unitId"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "numerator": { "$ref": "#/$defs/nonnegative" },
+          "denominator": { "type": "integer", "minimum": 1 },
+          "unitId": { "$ref": "#/$defs/id" }
+        }
+      },
+      "sense": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "numerator": { "$ref": "#/$defs/nonnegative" },
+          "denominator": { "type": "integer", "minimum": 1 },
+          "unitId": { "$ref": "#/$defs/id" }
+        }
+      },
+      "condition": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "level"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "level": { "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 6 }, { "type": "null" }] }
+        }
+      },
+      "proficiency": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "rankId"],
+        "properties": { "id": { "$ref": "#/$defs/id" }, "rankId": { "$ref": "#/$defs/id" } }
+      },
+      "feature": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["featureId", "grantedById", "grantKind", "classLevel"],
+        "properties": {
+          "featureId": { "$ref": "#/$defs/id" },
+          "grantedById": { "$ref": "#/$defs/id" },
+          "grantKind": { "$ref": "#/$defs/id" },
+          "classLevel": { "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 20 }, { "type": "null" }] }
+        }
+      },
+      "resource": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "definitionId", "expended"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/text" },
+          "definitionId": { "$ref": "#/$defs/id" }, "expended": { "$ref": "#/$defs/nonnegative" }
+        }
+      },
+      "spellcasting": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "sourceDefinitionId", "abilityId", "preparedSpellIds", "availableSpellIds"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/text" },
+          "sourceDefinitionId": { "$ref": "#/$defs/id" }, "abilityId": { "$ref": "#/$defs/id" },
+          "preparedSpellIds": { "type": "array", "maxItems": 2048, "items": { "$ref": "#/$defs/id" } },
+          "availableSpellIds": { "type": "array", "maxItems": 2048, "items": { "$ref": "#/$defs/id" } }
+        }
+      },
+      "action": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "activityIds"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/text" },
+          "activityIds": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/id" } }
+        }
+      },
+      "item": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "definitionId", "quantity", "slot", "depth", "equipmentSlots"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/text" },
+          "definitionId": { "$ref": "#/$defs/id" }, "quantity": { "type": "integer", "minimum": 1 },
+          "slot": { "type": "string", "maxLength": 200 }, "depth": { "type": "integer", "minimum": 1, "maximum": 4 },
+          "equipmentSlots": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/id" } }
+        }
+      }
+    }
+  },
+  "exposure": "model-visible",
+  "status": "active"
+}

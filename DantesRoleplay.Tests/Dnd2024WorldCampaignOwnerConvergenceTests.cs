@@ -1,35 +1,29 @@
 using System.Text.Json;
+using DantesRoleplay.SchemaValidation;
 
 namespace DantesRoleplay.Tests;
 
 public sealed class Dnd2024WorldCampaignOwnerConvergenceTests
 {
     [Fact]
-    public void Historical_g7_evidence_records_the_installed_runtime_owner_decision()
+    public void Canonical_shared_game_components_are_registerable_runtime_contracts()
     {
-        var root = RepositoryRoot();
-        using var evidence = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "ruleset", "dnd2024",
-            "adoption", "evidence", "complete-campaign-world-campaign-owner-convergence.json")));
+        var root = Path.Combine(RepositoryRoot(), "catalog", "components", "game");
+        var validator = new BoundedJsonSchemaValidator();
+        var failures = Directory.EnumerateFiles(root, "*.schema.json", SearchOption.AllDirectories)
+            .Order(StringComparer.Ordinal)
+            .Select(path => (Path: path, Result: validator.Compile(File.ReadAllText(path))))
+            .Where(value => !value.Result.IsAccepted)
+            .Select(value => Path.GetRelativePath(root, value.Path) + ": "
+                + string.Join("; ", value.Result.Diagnostics.Select(problem =>
+                    $"{problem.Code} {problem.Pointer}: {problem.Message}")))
+            .ToArray();
 
-        var decision = evidence.RootElement.GetProperty("decision");
-        Assert.Equal("dnd2024", decision.GetProperty("applicationId").GetString());
-        Assert.Equal("dnd2024.game.core", decision.GetProperty("runtimeOwnerPrefix").GetString());
-        Assert.Equal("game.core", decision.GetProperty("catalogLocalPrefix").GetString());
-
-        var owners = evidence.RootElement.GetProperty("owners").EnumerateArray().ToArray();
-        Assert.Equal(
-            ["campaign-root", "world-location", "world-root"],
-            owners.Select(value => value.GetProperty("capability").GetString()).OrderBy(value => value));
-        AssertOwner(owners, "world-root", "game.core.world.root", "dnd2024.game.core.world.root",
-            "dnd2024.world.root", "migration-input-only");
-        AssertOwner(owners, "world-location", "game.core.world.location", "dnd2024.game.core.world.location",
-            null, "not-applicable");
-        AssertOwner(owners, "campaign-root", "game.core.campaign.root", "dnd2024.game.core.campaign.root",
-            "dnd2024.campaign.root", "migration-input-only");
+        Assert.True(failures.Length == 0, string.Join(Environment.NewLine, failures));
     }
 
     [Fact]
-    public void Runtime_bindings_use_application_qualified_world_and_campaign_types()
+    public void Runtime_bindings_use_registered_game_core_world_and_campaign_types_without_aliases()
     {
         var root = RepositoryRoot();
         var binding = File.ReadAllText(Path.Combine(root, "catalog", "applications", "dnd2024", "metadata",
@@ -38,19 +32,23 @@ public sealed class Dnd2024WorldCampaignOwnerConvergenceTests
             "server", "game-server-context.js"));
         var resolver = File.ReadAllText(Path.Combine(root, "src", "system", "application-execution", "persistence",
             "ApplicationMechanicProjectionResolver.cs"));
-        var prototypeWorld = File.ReadAllText(Path.Combine(root, "catalog", "applications", "dnd2024", "components",
-            "dnd2024.world.root.json"));
-        var prototypeCampaign = File.ReadAllText(Path.Combine(root, "catalog", "applications", "dnd2024", "components",
-            "dnd2024.campaign.root.json"));
+        var worldDefinition = File.ReadAllText(Path.Combine(root, "catalog", "components", "game", "core", "world",
+            "root.json"));
+        var campaignDefinition = File.ReadAllText(Path.Combine(root, "catalog", "components", "game", "core",
+            "campaign", "root.json"));
 
-        Assert.Contains("dnd2024.game.core.world.root", binding);
-        Assert.Contains("dnd2024.game.core.world.location", binding);
-        Assert.Contains("dnd2024.game.core.campaign.root", binding);
-        Assert.Contains("dnd2024.game.core.world.location", server);
-        Assert.Contains("dnd2024.game.core.campaign.root", server);
+        Assert.Contains("game.core.world.root", binding);
+        Assert.Contains("game.core.world.location", binding);
+        Assert.Contains("game.core.campaign.root", binding);
+        Assert.Contains("game.core.world.location", server);
+        Assert.Contains("game.core.campaign.root", server);
         Assert.Contains("mapping.Components.TryGetValue(localId", resolver);
-        Assert.Contains("dnd2024.world.root", prototypeWorld);
-        Assert.Contains("dnd2024.campaign.root", prototypeCampaign);
+        Assert.Contains("game.core.world.root", worldDefinition);
+        Assert.Contains("game.core.campaign.root", campaignDefinition);
+        Assert.False(File.Exists(Path.Combine(root, "catalog", "applications", "dnd2024", "components",
+            "dnd2024.world.root.json")));
+        Assert.False(File.Exists(Path.Combine(root, "catalog", "applications", "dnd2024", "components",
+            "dnd2024.campaign.root.json")));
     }
 
     private static void AssertOwner(IReadOnlyList<JsonElement> owners, string capability, string local,

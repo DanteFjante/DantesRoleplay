@@ -1,1 +1,0 @@
-{"id":"game.core.world.conveyance","name":"World Ground Conveyance","description":"Closed state for one generic ground conveyance. Entity identity and summary describe a cart, sled, car, rover, or similar vehicle; containment supplies its current location. Governed by procedure.game.core.world.travel."}

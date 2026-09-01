@@ -34,12 +34,10 @@ published page is an authoring decision, not a safety one.
 
 ## Publish
 
-```powershell
-Invoke-RestMethod -Uri 'http://localhost:6217/api/pages/thalorien-map' -Method Put `
-  -ContentType 'text/html; charset=utf-8' -InFile '.\index.html'
-```
-
-Then open `http://localhost:6217/ui/thalorien-map`.
+Use **Control center → Page administration** to create or select the owning application's page
+entity, append `index.html` as a content revision, and activate that revision. The public URL is
+the URL returned by publication discovery; this workspace does not infer a page from a raw file
+name.
 
 ## Not built
 

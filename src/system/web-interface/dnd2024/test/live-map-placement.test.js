@@ -13,7 +13,10 @@ const CAMPAIGN = {
 };
 
 function visual(assetKey, alt) {
-  return { assetKey, alt };
+  return {
+    imageUrl: `/api/applications/dnd2024/state-spaces/space.test/entities/${assetKey}/media/map/content`,
+    alt,
+  };
 }
 
 function directory(perspective) {
@@ -117,8 +120,8 @@ test("Thalos is the main map and uses the reviewed public atlas for both perspec
   const player = connectedCampaignToHubEnvelope(connected("player"));
   assert.equal(dm.world.rootMapId, "map.live.location.thalorien.thalos");
   assert.equal(player.world.rootMapId, "map.live.location.thalorien.thalos");
-  assert.equal(mapFor(dm, "location.thalorien.thalos")?.base?.imageUrl, "/components/maps/thalos-world.png");
-  assert.equal(mapFor(player, "location.thalorien.thalos")?.base?.imageUrl, "/components/maps/thalos-world.png");
+  assert.equal(mapFor(dm, "location.thalorien.thalos")?.base?.imageUrl, visual("thalos.dm", "").imageUrl);
+  assert.equal(mapFor(player, "location.thalorien.thalos")?.base?.imageUrl, visual("thalos.player", "").imageUrl);
   assert.equal(JSON.stringify(player).includes("thalos-map-dm.svg"), false);
 });
 
@@ -158,24 +161,24 @@ test("Caldris map keys resolve only to the reviewed world and Eredane atlas byte
   });
 
   assert.equal(mapFor(envelope, "location.caldris.eredane")?.base?.imageUrl,
-    "/components/maps/caldris-world.png");
+    visual("caldris.world.player", "").imageUrl);
   assert.equal(mapFor(envelope, "location.caldris.bramblebridge")?.base?.imageUrl,
-    "/components/maps/caldris-eredane-v2.png");
+    visual("caldris.region.eredane.player", "").imageUrl);
   assert.equal(mapFor(envelope, "location.caldris.gilded-kettle")?.base?.imageUrl,
-    "/components/maps/caldris-eredane.png");
+    visual("caldris.town.bramblebridge.player", "").imageUrl);
 });
 
-test("server page bundles keep host-served atlas routes while relocating page-owned city maps", () => {
+test("server page bundles keep owner-bound media routes independent of page asset roots", () => {
   const envelope = connectedCampaignToHubEnvelope(connected("player"), {
     assetBaseUrl: "/ui/dnd2024-play/assets/",
   });
   assert.equal(
     mapFor(envelope, "location.thalorien.thalos")?.base?.imageUrl,
-    "/components/maps/thalos-world.png",
+    visual("thalos.player", "").imageUrl,
   );
   assert.equal(
     mapFor(envelope, "location.thalorien.crownmere")?.base?.imageUrl,
-    "/ui/dnd2024-play/assets/city-map-crownmere-v2.png",
+    visual("thalos.city.crownmere.player", "").imageUrl,
   );
 });
 
@@ -186,11 +189,11 @@ test("containment builds Thalos, region, and city scopes without an entity-id ma
   const crownmere = mapFor(envelope, "location.thalorien.crownmere");
   assert.equal(thalos?.scope, "world");
   assert.equal(aldros?.scope, "region");
-  assert.equal(aldros?.base?.imageUrl, "/components/maps/region-aldros.png");
+  assert.equal(aldros?.base?.imageUrl, visual("thalos.region.aldros.dm", "").imageUrl);
   assert.equal(aldros?.parentMapId, thalos?.id);
   assert.equal(crownmere?.scope, "city");
   assert.equal(crownmere?.parentMapId, aldros?.id);
-  assert.equal(crownmere?.base?.imageUrl, "/city-map-crownmere-v2.png");
+  assert.equal(crownmere?.base?.imageUrl, visual("thalos.city.crownmere.dm", "").imageUrl);
   assert.equal(thalos?.scopeLinks.some((link) => link.childMapId === aldros?.id), true);
   assert.equal(aldros?.scopeLinks.some((link) => link.childMapId === crownmere?.id), true);
   assert.equal(isReadyHubEnvelope(envelope), true);
@@ -210,13 +213,13 @@ test("a new live city can reuse reviewed bytes without adding its entity id to c
   const envelope = connectedCampaignToHubEnvelope(connected("dm", entries));
   const city = mapFor(envelope, "location.thalorien.new-port");
   assert.equal(city?.parentMapId, mapFor(envelope, "location.thalorien.valeros")?.id);
-  assert.equal(city?.base?.imageUrl, "/city-map-merrowgate-v2.png");
+  assert.equal(city?.base?.imageUrl, visual("thalos.city.merrowgate.dm", "").imageUrl);
 });
 
 test("unknown media keys fail closed while the location information remains", () => {
   const entries = directory("player");
   const crownmere = entries.find((entry) => entry.id === "location.thalorien.crownmere");
-  crownmere.mapVisual = visual("unknown.secret.player", "CANARY UNKNOWN MAP");
+  crownmere.mapVisual = { imageUrl: "/components/maps/unknown.png", alt: "CANARY UNKNOWN MAP" };
   const envelope = connectedCampaignToHubEnvelope(connected("player", entries));
   assert.equal(mapFor(envelope, "location.thalorien.crownmere"), null);
   assert.equal(envelope.world.locations.some((location) => location.id === crownmere.id), true);

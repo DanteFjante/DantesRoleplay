@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.Retrieval;
 using DantesRoleplay.Sources;
 
@@ -57,7 +58,9 @@ public sealed record InteractionFeatureSearchInput
         string query,
         int limit = InteractionRetrievalLimits.MaximumResults,
         IReadOnlyList<string>? kinds = null,
-        IReadOnlyList<string>? statuses = null)
+        IReadOnlyList<string>? statuses = null,
+        string? namespaceId = null,
+        bool includeShadowed = false)
     {
         Query = NormalizeQuery(query);
         if (limit is < 1 or > InteractionRetrievalLimits.MaximumResults)
@@ -65,12 +68,18 @@ public sealed record InteractionFeatureSearchInput
         Limit = limit;
         Kinds = CopyFilters(kinds, nameof(kinds));
         Statuses = CopyFilters(statuses, nameof(statuses));
+        if (namespaceId is not null && !CatalogNamespaceIdentity.IsNamespaceId(namespaceId))
+            throw new InteractionContractException("INVALID_RETRIEVAL_NAMESPACE", "The retrieval namespace is invalid.", nameof(namespaceId));
+        NamespaceId = namespaceId;
+        IncludeShadowed = includeShadowed;
     }
 
     public string Query { get; }
     public int Limit { get; }
     public IReadOnlyList<string> Kinds { get; }
     public IReadOnlyList<string> Statuses { get; }
+    public string? NamespaceId { get; }
+    public bool IncludeShadowed { get; }
 
     private static string NormalizeQuery(string value)
     {
@@ -154,13 +163,15 @@ public sealed record InteractionFeatureSearchResult(
     InteractionRetrievalMode Mode,
     IReadOnlyList<InteractionFeatureHit> Hits,
     string AvailabilityCode = "",
-    string AvailabilityMessage = "")
+    string AvailabilityMessage = "",
+    IReadOnlyList<CatalogResolutionDiagnosticView>? ResolutionDiagnostics = null)
 {
     public static InteractionFeatureSearchResult Create(
         InteractionRetrievalMode mode,
         IEnumerable<InteractionFeatureHit> hits,
         string availabilityCode = "",
-        string availabilityMessage = "")
+        string availabilityMessage = "",
+        IReadOnlyList<CatalogResolutionDiagnosticView>? resolutionDiagnostics = null)
     {
         if (!Enum.IsDefined(mode)) throw new InteractionContractException("INVALID_RETRIEVAL_MODE", "The retrieval mode is not supported.");
         ArgumentNullException.ThrowIfNull(hits);
@@ -173,7 +184,11 @@ public sealed record InteractionFeatureSearchResult(
             throw new InteractionContractException("INVALID_RETRIEVAL_AVAILABILITY", "Fallback and unavailable results require safe availability evidence.");
         if (availabilityCode.Length > 100 || availabilityMessage.Length > 500 || availabilityCode.Any(char.IsControl) || availabilityMessage.Any(char.IsControl))
             throw new InteractionContractException("INVALID_RETRIEVAL_AVAILABILITY", "Availability evidence is invalid or unbounded.");
-        return new(mode, Array.AsReadOnly(copied), availabilityCode, availabilityMessage);
+        var resolutions = resolutionDiagnostics?.ToArray() ?? [];
+        if (resolutions.Select(value => value.WinnerQualifiedId).Distinct(StringComparer.Ordinal).Count() != resolutions.Length)
+            throw new InteractionContractException("INVALID_RETRIEVAL_RESULT", "Overlay resolution evidence is duplicated.");
+        return new(mode, Array.AsReadOnly(copied), availabilityCode, availabilityMessage,
+            Array.AsReadOnly(resolutions));
     }
 }
 
@@ -183,7 +198,10 @@ public sealed record InteractionRetrievalGeneration(
     InteractionRetrievalLane Lane,
     string CatalogFingerprint,
     string RetrievalFormatVersion,
-    EmbeddingProviderIdentity Embedding);
+    EmbeddingProviderIdentity Embedding)
+{
+    public string ResolutionFingerprint { get; init; } = CatalogFingerprint;
+}
 
 public sealed record InteractionVectorDocument(
     InteractionFeatureReference Reference,
@@ -237,7 +255,8 @@ public static class InteractionRetrievalFingerprint
         ApplicationIdentifier applicationId,
         InteractionRetrievalLane lane,
         string catalogFingerprint,
-        EmbeddingProviderIdentity identity)
+        EmbeddingProviderIdentity identity,
+        string? resolutionFingerprint = null)
     {
         ArgumentNullException.ThrowIfNull(applicationId);
         ArgumentNullException.ThrowIfNull(identity);
@@ -246,6 +265,7 @@ public static class InteractionRetrievalFingerprint
             applicationId = applicationId.Value,
             lane = lane.ToString().ToLowerInvariant(),
             catalogFingerprint,
+            resolutionFingerprint = resolutionFingerprint ?? catalogFingerprint,
             format = FormatVersion,
             embedding = identity
         });

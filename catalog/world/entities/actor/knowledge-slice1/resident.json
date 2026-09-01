@@ -1,0 +1,15 @@
+{
+  "id": "actor.knowledge-slice1.resident",
+  "name": "Knowledge Fixture Resident",
+  "container": {
+    "id": "location.feature-01.market",
+    "slot": "presence"
+  },
+  "components": {
+    "game.core.world.motive": {
+      "status": "active",
+      "summary": "The resident is present to prove region-scoped knowledge inheritance.",
+      "visibility": "gm"
+    }
+  }
+}

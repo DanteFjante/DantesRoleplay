@@ -1,0 +1,5 @@
+{
+  "id": "system.web.page",
+  "name": "Web Page",
+  "description": "Generic discoverable page identity. The active content reference points to separately versioned web content and does not copy HTML or assets into ECS."
+}

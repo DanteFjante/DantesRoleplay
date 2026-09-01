@@ -21,9 +21,9 @@ public sealed class BootstrapRuleTests : IDisposable
         SetUpAsync(DantesRoleplayDbContext db)
     {
         var world = new WorldStore(db);
-        await world.DefineComponentAsync("stats", "Stats", "Numeric attributes.");
+        await world.DefineComponentAsync("fixture.legacy.stats", "Stats", "Numeric attributes.");
         await world.CreateEntityAsync("Orban", "orban");
-        await world.SetComponentAsync("orban", "stats", """{"vigour":10,"resolve":4}""");
+        await world.SetComponentAsync("orban", "fixture.legacy.stats", """{"vigour":10,"resolve":4}""");
 
         var store = new MechanicStore(db);
         await new MechanicSeeder(store).SeedAsync();
@@ -174,7 +174,7 @@ public sealed class BootstrapRuleTests : IDisposable
         Assert.True(applied.Valid, string.Join("; ", applied.Problems.Select(p => p.Problem)));
 
         var after = await world.GetEntityAsync("orban");
-        var stats = after!.Components.Single(c => c.DefinitionId == "stats").Data;
+        var stats = after!.Components.Single(c => c.DefinitionId == "fixture.legacy.stats").Data;
 
         Assert.Contains("\"vigour\":7", stats);
 

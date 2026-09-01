@@ -69,6 +69,7 @@ public sealed class ApplicationClockBridgeTests : IDisposable
         var evaluator = new ApplicationMechanicEvaluator(catalogs,
             new ApplicationMechanicProjectionResolver(db, stateSpaces), new JintMechanicEngine());
         var runner = new ApplicationActionRunner(catalogs, activation, stateSpaces, types, entities, edges,
+            new ApplicationMechanicProjectionMappingResolver(catalogs, stateSpaces, types, edges),
             evaluator, new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges), operations);
         ApplicationActionExecutionRequest Request(string input, string operationId) => new(
             "clock-space", app, record.QualifiedId, record.ContentFingerprint,

@@ -1,19 +1,22 @@
 import type { RuleReadModel } from "../data/hub-types";
 import { MainNavigation } from "./MainNavigation";
 import { RulesView } from "./RulesView";
+import { InstalledContentView } from "./InstalledContentView";
+import type { InstalledContentModel } from "../server/effective-content";
+import { useState } from "react";
 
 type RulesLoader = () => Promise<RuleReadModel[]>;
-type RuleDetailLoader = (rule: RuleReadModel) => Promise<RuleReadModel | null>;
 
 export function RulesOnlyHub({
   message,
   loadRules,
-  loadRuleDetail,
+  loadContent,
 }: {
   message: string;
   loadRules: RulesLoader;
-  loadRuleDetail: RuleDetailLoader;
+  loadContent: () => Promise<InstalledContentModel>;
 }) {
+  const [activeTab, setActiveTab] = useState<"rules" | "content">("rules");
   return (
     <div className="information-hub rules-only-hub" data-perspective="player">
       <a className="skip-link" href="#information-content">Skip to information</a>
@@ -36,14 +39,18 @@ export function RulesOnlyHub({
       </p>
       <div className="information-hub__body">
         <MainNavigation
-          activeTab="rules"
-          availableTabs={["rules"]}
+          activeTab={activeTab}
+          availableTabs={["rules", "content"]}
           chapter="Rules library"
-          onSelect={() => undefined}
+          onSelect={(tab) => {
+            if (tab === "rules" || tab === "content") setActiveTab(tab);
+          }}
           progress="Private campaign views require authorization"
         />
         <main className="information-content" id="information-content">
-          <RulesView loadRuleDetail={loadRuleDetail} loadRules={loadRules} rules={[]} />
+          {activeTab === "content"
+            ? <InstalledContentView loadContent={loadContent} />
+            : <RulesView loadRules={loadRules} rules={[]} />}
         </main>
       </div>
     </div>

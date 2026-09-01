@@ -1,0 +1,16 @@
+{
+  "id": "chronology.feature-19.gate-dedication",
+  "name": "Gate Dedication Chronology Record",
+  "components": {
+    "game.core.world.chronology": {
+      "status": "active",
+      "title": "The Gate Was Dedicated",
+      "summary": "The region formally dedicated the gate at the opening of the Compact Epoch.",
+      "calendarId": "lantern-compact-epoch",
+      "occurredAtMinute": 0,
+      "precision": "exact",
+      "dateLabel": "Compact Epoch, minute zero",
+      "visibility": "party"
+    }
+  }
+}

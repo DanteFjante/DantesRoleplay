@@ -116,7 +116,7 @@ internal sealed class SystemBlobHandler
                         Describe(asset),
                         $"Finalized immutable blob {asset.Sha256}.",
                         [$"query(kind: \"system.blobs\", id: \"{asset.Sha256}\")",
-                         "Attach assetKey through the existing world-media component using commit(kind: \"effects\", ...)."],
+                         "Attach the verified SHA-256 through the owning entity's game.core.media.visual component."],
                         GuardEvidenceJson: JsonSerializer.Serialize(decision.Evidence));
                 }
                 catch (JsonException exception)

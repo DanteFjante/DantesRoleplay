@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { CampaignMapOverlay, MapDocument, WorldReadModel } from "../data/hub-types";
 import {
   buildMapBreadcrumbs,
@@ -11,7 +11,7 @@ import {
   resolveSelectedMapFeature,
 } from "../state.js";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
-import { MapCanvas } from "./MapCanvas";
+import { DEFAULT_MAP_VIEWPORT, MapCanvas, type MapViewportState } from "./MapCanvas";
 import { MapFeatureDetail } from "./MapFeatureDetail";
 import { MapLayerControls } from "./MapLayerControls";
 import { MapLegend } from "./MapLegend";
@@ -21,6 +21,26 @@ import { MapFeatureList } from "./MapFeatureList";
 import { MapViewModeToggle, type MapViewMode } from "./MapViewModeToggle";
 import { MapOverlayNotes } from "./MapOverlayNotes";
 import { MapScopeLinks } from "./MapScopeLinks";
+
+const MAP_VIEW_SESSION_KEY = "dantesroleplay.dnd2024.map-views.v1";
+
+function restoredMapViews(): Record<string, MapViewportState> {
+  if (typeof window === "undefined") return {};
+  try {
+    const parsed = JSON.parse(window.sessionStorage.getItem(MAP_VIEW_SESSION_KEY) ?? "{}");
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return Object.fromEntries(Object.entries(parsed).flatMap(([mapId, value]) => {
+      const view = value as Partial<MapViewportState>;
+      return typeof mapId === "string" && mapId.length <= 200 &&
+        Number.isFinite(view.zoom) && Number.isFinite(view.x) && Number.isFinite(view.y) &&
+        view.zoom! >= 0.5 && view.zoom! <= 4
+        ? [[mapId, { zoom: view.zoom!, x: view.x!, y: view.y! }]]
+        : [];
+    }));
+  } catch {
+    return {};
+  }
+}
 
 export function ScopedMapWorkspace({
   world,
@@ -48,7 +68,13 @@ export function ScopedMapWorkspace({
   const [hiddenLayerIdsByMap, setHiddenLayerIdsByMap] = useState<Record<string, string[]>>({});
   const [selectedFactionOverlayId, setSelectedFactionOverlayId] = useState("");
   const [viewMode, setViewMode] = useState<MapViewMode>("map");
+  const [mapViews, setMapViews] = useState<Record<string, MapViewportState>>(restoredMapViews);
   const map = resolveMapDocument(world.maps, activeMapId) as MapDocument | null;
+
+  useEffect(() => {
+    try { window.sessionStorage.setItem(MAP_VIEW_SESSION_KEY, JSON.stringify(mapViews)); }
+    catch { /* View persistence is optional and never game-state authority. */ }
+  }, [mapViews]);
 
   if (map === null) {
     return (
@@ -163,12 +189,18 @@ export function ScopedMapWorkspace({
           <MapCanvas
             annotatedFeatureIds={annotatedFeatureIds}
             currentLocationId={currentLocationId}
+            fitOnLoad={mapViews[map.id] === undefined}
             influencedFeatureIds={influencedFeatureIds}
             map={visibleMap}
             onFeatureSelect={selectFeature}
             onOpenScope={onMapChange}
+            onViewportChange={(viewport) => setMapViews((current) => ({
+              ...current,
+              [map.id]: viewport,
+            }))}
             scopeLinkFeatureIds={scopeLinkFeatureIds}
             selectedFeatureId={selectedFeatureId}
+            viewport={mapViews[map.id] ?? DEFAULT_MAP_VIEWPORT}
           />
         ) : (
           <MapFeatureList

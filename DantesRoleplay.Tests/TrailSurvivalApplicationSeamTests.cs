@@ -23,7 +23,7 @@ public sealed class TrailSurvivalApplicationSeamTests
     private const string ProcedurePath =
         "catalog/applications/trail-survival/procedures/application/procedure.trail-survival.about.md";
     private const string DndProcedurePath =
-        "catalog/procedures/game/core/world/procedure.game.core.world.time.md";
+        "catalog/procedures/procedure/game/core/world/time.md";
 
     [Fact]
     public async Task Real_source_previews_activates_materializes_replays_and_binds_isolated_state()

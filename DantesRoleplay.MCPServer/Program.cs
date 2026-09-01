@@ -11,6 +11,8 @@ using DantesRoleplay.Assistants;
 using DantesRoleplay.CodexBridge;
 using DantesRoleplay.DataAccess.Composition;
 using DantesRoleplay.Interactions;
+using DantesRoleplay.AI;
+using DantesRoleplay.AI.Ollama;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,10 +34,14 @@ var outerHostOptions = new InteractionOuterHostOptions(builder.Configuration);
 builder.Services.AddSingleton<IHostSettingDefinitionProvider>(hostSettings);
 builder.Services.AddSingleton(outerHostOptions.Selection);
 builder.Services.AddHttpClient("local-assistant", client => client.Timeout = Timeout.InfiniteTimeSpan);
-builder.Services.AddSingleton<ILocalStructuredCompletionProvider>(services =>
-    new OllamaStructuredCompletionProvider(
+builder.Services.AddSingleton<OllamaAiProvider>(services =>
+    new OllamaAiProvider(
         services.GetRequiredService<IHttpClientFactory>().CreateClient("local-assistant"),
         hostSettings.CreateCompletionOptions()));
+builder.Services.AddSingleton<ILocalStructuredCompletionProvider>(services =>
+    services.GetRequiredService<OllamaAiProvider>());
+builder.Services.AddSingleton<IAiProvider>(services =>
+    services.GetRequiredService<OllamaAiProvider>());
 var remotePlannerOptions = new OpenAiInteractionPlanningOptions
 {
     Enabled = builder.Configuration.GetValue<bool>("InteractionPlanning:Remote:Enabled"),
@@ -53,7 +59,7 @@ builder.Services.AddHttpClient<OpenAiResponsesOuterInteractionProvider>(client =
 builder.Services.AddHttpClient("local-interaction-outer", client => client.Timeout = Timeout.InfiniteTimeSpan);
 builder.Services.AddSingleton<IInteractionOuterLocalCompletionProvider>(services =>
     new InteractionOuterLocalCompletionProvider(
-        new OllamaStructuredCompletionProvider(
+        new OllamaAiProvider(
             services.GetRequiredService<IHttpClientFactory>().CreateClient("local-interaction-outer"),
             outerHostOptions.LocalCompletion),
         outerHostOptions.LocalAdapter));
@@ -88,6 +94,7 @@ builder.Services.AddCodexBridgeComponent(new CodexBridgeOptions(
         builder.Environment.ContentRootPath),
     builder.Configuration["Codex:PinnedVersion"] ?? CodexBridgeVersions.CurrentPinnedVersion,
     Model: builder.Configuration["Codex:Model"] ?? CodexBridgeModels.Luna));
+builder.Services.AddScoped<IAiService, AiService>();
 builder.Services.AddDantesRoleplayWeb(databasePath, builder.Configuration);
 
 var app = builder.Build();
@@ -131,6 +138,21 @@ app.MapGet("/api/blobs/sha256/{sha256}", BlobTransferWebEndpoints.DownloadAsync)
     .AddEndpointFilter<WebInterfaceSecurityFilter>()
     .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
 app.MapGet("/api/audience-context", AudienceContextWebEndpoint.CurrentAsync)
+    .AddEndpointFilter<WebInterfaceSecurityFilter>()
+    .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
+app.MapGet(
+        "/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/media",
+        EntityMediaWebEndpoints.DiscoverAsync)
+    .AddEndpointFilter<WebInterfaceSecurityFilter>()
+    .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
+app.MapGet(
+        "/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/media/{mediaId}/content",
+        EntityMediaWebEndpoints.ReadAsync)
+    .AddEndpointFilter<WebInterfaceSecurityFilter>()
+    .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
+app.MapGet(
+        "/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/read-models/{qualifiedQueryId}",
+        ApplicationReadModelWebEndpoint.ReadAsync)
     .AddEndpointFilter<WebInterfaceSecurityFilter>()
     .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
 app.MapGet(

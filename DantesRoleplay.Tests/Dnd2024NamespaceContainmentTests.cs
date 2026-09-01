@@ -14,7 +14,8 @@ public sealed partial class Dnd2024NamespaceContainmentTests
         "source.dnd2024",
         "content.dnd2024",
         "currency.dnd2024",
-        "item.dnd2024"
+        "item.dnd2024",
+        "dnd2024.game.core"
     ];
 
     [Fact]
@@ -40,7 +41,9 @@ public sealed partial class Dnd2024NamespaceContainmentTests
             var category = FrontMatterValue(text, "category");
             if (id is not null && !id.StartsWith("dnd2024.", StringComparison.Ordinal))
                 problems.Add($"Markdown ID '{id}' in {Relative(path)} is outside dnd2024.");
-            if (category is not null && !category.StartsWith("dnd2024.", StringComparison.Ordinal))
+            if (category is not null
+                && !category.StartsWith("dnd2024.", StringComparison.Ordinal)
+                && !category.StartsWith("game.core.", StringComparison.Ordinal))
                 problems.Add($"Markdown category '{category}' in {Relative(path)} is outside dnd2024.");
 
             if (id is not null && (path.Contains($"{Path.DirectorySeparatorChar}mechanics{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
@@ -76,8 +79,6 @@ public sealed partial class Dnd2024NamespaceContainmentTests
             foreach (var prefix in LegacyPrefixes)
                 if (text.Contains(prefix, StringComparison.Ordinal))
                     problems.Add($"Legacy prefix '{prefix}' remains in {Relative(path)}.");
-            if (UnqualifiedGameCore().IsMatch(text))
-                problems.Add($"Unqualified D&D game.core reference remains in {Relative(path)}.");
             if (text.Contains("dnd2024.dnd2024.", StringComparison.Ordinal))
                 problems.Add($"Double-qualified ID remains in {Relative(path)}.");
         }
@@ -113,9 +114,6 @@ public sealed partial class Dnd2024NamespaceContainmentTests
     }
 
     private static string Relative(string path) => Path.GetRelativePath(RepositoryRoot(), path);
-
-    [GeneratedRegex("(?<!dnd2024\\.)game\\.core\\.", RegexOptions.CultureInvariant)]
-    private static partial Regex UnqualifiedGameCore();
 
     private static string RepositoryRoot()
     {

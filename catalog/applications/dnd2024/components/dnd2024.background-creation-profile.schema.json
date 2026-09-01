@@ -42,7 +42,7 @@
           "additionalProperties": false,
           "required": ["definitionId", "configurationKey"],
           "properties": {
-            "definitionId": { "const": "dnd2024.content.feature.alert.v1" },
+            "definitionId": { "const": "dnd2024.feat.alert" },
             "configurationKey": { "const": "default" }
           }
         },
@@ -51,7 +51,7 @@
           "additionalProperties": false,
           "required": ["definitionId", "configurationKey"],
           "properties": {
-            "definitionId": { "const": "dnd2024.content.feature.magic-initiate.v1" },
+            "definitionId": { "const": "dnd2024.feat.magic-initiate" },
             "configurationKey": { "enum": ["cleric", "wizard"] }
           }
         },
@@ -60,7 +60,7 @@
           "additionalProperties": false,
           "required": ["definitionId", "configurationKey"],
           "properties": {
-            "definitionId": { "const": "dnd2024.content.feature.savage-attacker.v1" },
+            "definitionId": { "const": "dnd2024.feat.savage-attacker" },
             "configurationKey": { "const": "default" }
           }
         }

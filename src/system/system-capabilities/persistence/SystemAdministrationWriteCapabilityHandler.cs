@@ -35,6 +35,7 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
     private readonly IProjectionImpactService _impacts;
     private readonly IStateSpaceAdministrationService _stateSpaces;
     private readonly ILegacyStateAdoptionService _legacy;
+    private readonly IApplicationExtensionRegistry _extensions;
 
     public SystemAdministrationWriteCapabilityHandler(
         string id,
@@ -49,7 +50,8 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
         IApplicationActivationService activations,
         IProjectionImpactService impacts,
         IStateSpaceAdministrationService stateSpaces,
-        ILegacyStateAdoptionService legacy)
+        ILegacyStateAdoptionService legacy,
+        IApplicationExtensionRegistry? extensions = null)
     {
         _id = id;
         _applications = applications;
@@ -64,6 +66,7 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
         _impacts = impacts;
         _stateSpaces = stateSpaces;
         _legacy = legacy;
+        _extensions = extensions ?? new EmptyApplicationExtensionRegistry();
         Registration = BuildRegistration(id, roots.ListIds(128));
     }
 
@@ -80,6 +83,7 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
             {
                 SystemCapabilityIds.ApplicationRegister => PreflightApplication(input),
                 SystemCapabilityIds.SourceRegister => PreflightSource(input, earlierSteps),
+                SystemCapabilityIds.ExtensionRegister => PreflightExtension(input, earlierSteps),
                 SystemCapabilityIds.ComponentTypeRegister => PreflightComponentType(input, earlierSteps),
                 SystemCapabilityIds.ApplicationActivate => await PreflightActivationAsync(
                     input, earlierSteps, cancellationToken),
@@ -114,6 +118,7 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
             {
                 SystemCapabilityIds.ApplicationRegister => await ExecuteApplicationAsync(input, context, cancellationToken),
                 SystemCapabilityIds.SourceRegister => await ExecuteSourceAsync(input, context, cancellationToken),
+                SystemCapabilityIds.ExtensionRegister => await ExecuteExtensionAsync(input, context, cancellationToken),
                 SystemCapabilityIds.ComponentTypeRegister => await ExecuteComponentTypeAsync(input, context, cancellationToken),
                 SystemCapabilityIds.ApplicationActivate => await ExecuteActivationAsync(input, context, cancellationToken),
                 SystemCapabilityIds.StateSpaceCreate => await ExecuteStateSpaceCreateAsync(input, context, cancellationToken),
@@ -141,8 +146,10 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
     {
         var registration = Application(input);
         var existing = _applications.Get(registration.Id);
-        if (existing is not null && existing.Fingerprint != ApplicationRegistrationFingerprint.Compute(registration))
-            return Fail("REGISTRATION_CONFLICT", "The application ID already has different immutable metadata.");
+        var described = _applications.Describe(registration.Id);
+        if (described is not null && (described.DisplayName != registration.DisplayName
+            || described.Description != registration.Description))
+            return Fail("REGISTRATION_CONFLICT", "Application display metadata is immutable.");
         if (registration.BaseApplications.Any(id => _applications.Get(id) is null))
             return Fail("APPLICATION_UNKNOWN", "Every base application must already be registered.");
         return Ready(new
@@ -181,6 +188,47 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
             [$"application:{registration.ApplicationId.Value}", $"source:{registration.ApplicationId.Value}/{registration.SourceId}"]);
     }
 
+    private SystemCapabilityWritePreflight PreflightExtension(
+        JsonElement input,
+        IReadOnlyList<SystemCapabilityEarlierStep> earlier)
+    {
+        var registration = Extension(input);
+        var dependencies = Earlier(earlier, SystemCapabilityIds.SourceRegister,
+            registration.ApplicationId.Value);
+        if (dependencies.Count > 0)
+            return Deferred(new { applicationId = registration.ApplicationId.Value, registration.ExtensionId },
+                $"Register extension '{registration.ExtensionId}' after its sources exist.",
+                [$"application:{registration.ApplicationId.Value}",
+                 $"extension:{registration.ApplicationId.Value}/{registration.ExtensionId}"], dependencies);
+        if (_applications.Get(registration.ApplicationId) is null)
+            return Fail("APPLICATION_UNKNOWN", "The extension application is not registered.");
+        ApplicationExtensionRegistration normalized;
+        try
+        {
+            normalized = ApplicationExtensionValidation.Normalize(registration, _sources,
+                _extensions.For(registration.ApplicationId)
+                    .Where(value => value.ExtensionId != registration.ExtensionId).ToArray());
+        }
+        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
+        {
+            return Fail("INVALID_EXTENSION", SafeMessage(exception.Message));
+        }
+        var fingerprint = ApplicationExtensionRegistrationFingerprint.Compute(normalized);
+        var current = _extensions.Get(registration.ApplicationId, registration.ExtensionId);
+        if (current is not null
+            && ApplicationExtensionRegistrationFingerprint.Compute(current) != fingerprint)
+            return Fail("REGISTRATION_CONFLICT", "The extension ID already has different immutable metadata.");
+        return Ready(new
+        {
+            current = current is null ? null : fingerprint,
+            registrationFingerprint = fingerprint,
+            sourceIds = normalized.SourceIds,
+            namespaceIds = normalized.NamespaceIds
+        }, $"Register immutable extension '{registration.ExtensionId}'.",
+            [$"application:{registration.ApplicationId.Value}",
+             $"extension:{registration.ApplicationId.Value}/{registration.ExtensionId}"]);
+    }
+
     private SystemCapabilityWritePreflight PreflightComponentType(
         JsonElement input,
         IReadOnlyList<SystemCapabilityEarlierStep> earlier)
@@ -217,6 +265,7 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
         var appId = App(input);
         var dependencies = Earlier(earlier,
             [SystemCapabilityIds.ApplicationRegister, SystemCapabilityIds.SourceRegister,
+             SystemCapabilityIds.ExtensionRegister,
              SystemCapabilityIds.ComponentTypeRegister], appId.Value);
         if (dependencies.Count > 0)
             return Deferred(new { applicationId = appId.Value, dependencies },
@@ -224,10 +273,15 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
                 [$"application:{appId.Value}", $"activation:{appId.Value}"], dependencies);
         var app = _applications.Get(appId);
         if (app is null) return Fail("APPLICATION_UNKNOWN", "The activation application is not registered.");
-        var selected = OptionalSourceIds(input);
-        var preview = selected is null
-            ? await _previews.PreviewAsync(appId, cancellationToken)
-            : await _previews.PreviewAsync(appId, selected, cancellationToken);
+        var selectedExtensions = OptionalExtensionIds(input);
+        var selectedSources = OptionalSourceIds(input);
+        var preview = selectedExtensions is not null && selectedSources is not null
+            ? await _previews.PreviewAsync(appId, selectedSources, selectedExtensions, cancellationToken)
+            : selectedExtensions is not null
+                ? await _previews.PreviewExtensionsAsync(appId, selectedExtensions, cancellationToken)
+            : selectedSources is null
+                ? await _previews.PreviewAsync(appId, cancellationToken)
+                : await _previews.PreviewAsync(appId, selectedSources, cancellationToken);
         if (!preview.IsValid) return Fail("PREVIEW_INVALID", "The current source overlay preview is invalid.");
         var current = _activations.Current(appId);
         return Ready(new
@@ -235,6 +289,9 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
             applicationFingerprint = app.Fingerprint,
             preview.PreviewFingerprint,
             currentActiveFingerprint = current?.ActivationFingerprint,
+            preview.ResolutionFingerprint,
+            extensionIds = preview.ExtensionIds,
+            baseSourceIds = selectedSources,
             sourceIds = preview.Sources.Select(value => value.SourceId).ToArray()
         }, $"Activate the exact current source preview for '{appId.Value}'.",
             [$"application:{appId.Value}", $"activation:{appId.Value}"]);
@@ -245,16 +302,19 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
         IReadOnlyList<SystemCapabilityEarlierStep> earlier)
     {
         var (app, stateSpaceId) = StateSpace(input);
+        var scope = StateSpaceScope(input);
         if (_stateSpaces.Get(stateSpaceId) is not null)
             return Fail("STATE_SPACE_EXISTS", "The state-space ID already exists.");
         var dependencies = Earlier(earlier, SystemCapabilityIds.ApplicationActivate, app.Value);
         if (dependencies.Count > 0)
-            return Deferred(new { applicationId = app.Value, stateSpaceId, dependencies },
+            return Deferred(new { applicationId = app.Value, stateSpaceId,
+                    scope = EcsComponentRolePolicyParser.ScopeName(scope), dependencies },
                 $"Create state space '{stateSpaceId}' after activation.",
                 [$"application:{app.Value}", $"state-space:{stateSpaceId}"], dependencies);
         var active = _activations.Current(app);
         if (active is null) return Fail("ACTIVATION_REQUIRED", "The application must be active first.");
-        return Ready(new { active.ActivationFingerprint, stateSpaceId },
+        return Ready(new { active.ActivationFingerprint, stateSpaceId,
+                scope = EcsComponentRolePolicyParser.ScopeName(scope) },
             $"Create empty state space '{stateSpaceId}' for '{app.Value}'.",
             [$"application:{app.Value}", $"state-space:{stateSpaceId}"]);
     }
@@ -351,6 +411,29 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
         return Success(data, receipt.OperationId);
     }
 
+    private async Task<SystemCapabilityWriteHandlerResult> ExecuteExtensionAsync(
+        JsonElement input, SystemCapabilityWriteExecutionContext context, CancellationToken cancellationToken)
+    {
+        var registration = Extension(input);
+        var expected = OptionalText(ExecutionEvidence(context), "current");
+        var owner = new RegistryAdministrationContext(context.RequestToken, expected, context.Intent,
+            context.ProceduresUsed, context.AuthorizationEvidence);
+        _ = await _registrations.PreviewExtensionAsync(registration, owner, cancellationToken);
+        var receipt = await _registrations.RegisterExtensionAsync(registration, owner, cancellationToken);
+        var current = _extensions.Get(registration.ApplicationId, registration.ExtensionId)
+            ?? throw new InvalidOperationException("Extension read-back was unavailable.");
+        return Success(SystemCapabilityJson.Element(new
+        {
+            receipt.Outcome,
+            extension = new
+            {
+                applicationId = current.ApplicationId.Value,
+                current.ExtensionId,
+                fingerprint = ApplicationExtensionRegistrationFingerprint.Compute(current)
+            }
+        }), receipt.OperationId);
+    }
+
     private async Task<SystemCapabilityWriteHandlerResult> ExecuteComponentTypeAsync(
         JsonElement input, SystemCapabilityWriteExecutionContext context, CancellationToken cancellationToken)
     {
@@ -382,9 +465,19 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
     {
         var app = App(input);
         var evidence = ExecutionEvidence(context);
+        var hasBaseSources = evidence.TryGetProperty("baseSourceIds", out var baseSources)
+            && baseSources.ValueKind == JsonValueKind.Array;
         var request = new ApplicationActivationRequest(
             app, Text(evidence, "previewFingerprint"), OptionalText(evidence, "currentActiveFingerprint"),
-            evidence.GetProperty("sourceIds").EnumerateArray().Select(value => value.GetString()!).ToArray());
+            hasBaseSources
+                ? baseSources.EnumerateArray().Select(value => value.GetString()!).ToArray()
+                : evidence.GetProperty("sourceIds").EnumerateArray().Select(value => value.GetString()!).ToArray())
+        {
+            ExtensionIds = evidence.GetProperty("extensionIds").EnumerateArray()
+                .Select(value => value.GetString()!).ToArray()
+        };
+        if (request.ExtensionIds.Count != 0 && !hasBaseSources)
+            request = request with { SourceIds = null };
         var owner = new ApplicationActivationContext(context.RequestToken, context.Intent,
             context.ProceduresUsed, context.AuthorizationEvidence);
         _ = await _activations.PreviewAsync(request, owner, cancellationToken);
@@ -401,12 +494,14 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
                 current.ApplicationRevision,
                 current.ApplicationFingerprint,
                 current.PreviewFingerprint,
+                current.ResolutionFingerprint,
                 current.ActivationFingerprint,
                 current.DependencyGraphFingerprint,
                 current.DependencyCoverageVersion,
                 current.DependencyCoverageComplete,
                 sourceCount = current.Sources.Count,
                 sourceIds = current.Sources.Select(value => value.SourceId).ToArray(),
+                extensionIds = current.Extensions.Select(value => value.ExtensionId).ToArray(),
                 winnerCount = current.Winners.Count
             }
         });
@@ -419,7 +514,10 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
         var (app, stateSpaceId) = StateSpace(input);
         var evidence = ExecutionEvidence(context);
         var request = new StateSpaceCreationRequest(
-            stateSpaceId, app, Text(evidence, "activationFingerprint"), null);
+            stateSpaceId, app, Text(evidence, "activationFingerprint"), null)
+        {
+            Scope = EcsComponentRolePolicyParser.ParseScope(Text(evidence, "scope"))
+        };
         var owner = new StateSpaceCreationContext(context.RequestToken, context.Intent,
             context.ProceduresUsed, context.AuthorizationEvidence);
         _ = await _stateSpaces.PreviewCreateAsync(request, owner, cancellationToken);
@@ -483,6 +581,8 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
         value.ApplicationRevision,
         value.ApplicationFingerprint,
         value.ActiveFingerprint,
+        value.ResolutionFingerprint,
+        scope = EcsComponentRolePolicyParser.ScopeName(value.Scope),
         value.BindingRevision,
         value.BindingFingerprint
     };
@@ -501,6 +601,13 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
         Text(input, "trust") == "trusted" ? SourceTrust.Trusted : SourceTrust.Untrusted,
         input.GetProperty("precedence").GetInt32(), Text(input, "logicalIdentity"));
 
+    private static ApplicationExtensionRegistration Extension(JsonElement input) => new(
+        App(input), Text(input, "extensionId"), Text(input, "displayName"), Text(input, "description"),
+        Text(input, "classification"),
+        Strings(input, "sourceIds"), Strings(input, "namespaceIds"),
+        Strings(input, "dependencies"), Strings(input, "conflictsWith"),
+        Strings(input, "higherPriorityThan"), input.GetProperty("overridesBase").GetBoolean());
+
     private static ComponentTypeRegistrationRequest ComponentType(JsonElement input) => new(
         ApplicationIdentifier.Parse(Text(input, "applicationId")),
         Text(input, "qualifiedTypeId"), input.GetProperty("schemaJson").GetString()!);
@@ -510,6 +617,11 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
 
     private static (ApplicationIdentifier ApplicationId, string StateSpaceId) StateSpace(JsonElement input) =>
         (App(input), Text(input, "stateSpaceId"));
+
+    private static EcsStateSpaceScope StateSpaceScope(JsonElement input) =>
+        input.TryGetProperty("scope", out var scope)
+            ? EcsComponentRolePolicyParser.ParseScope(scope.GetString()!)
+            : EcsStateSpaceScope.Runtime;
 
     private static LegacyStateAdoptionRequest Legacy(JsonElement input, string activeFingerprint) => new(
         Text(input, "stateSpaceId"), App(input), activeFingerprint,
@@ -530,6 +642,15 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
         input.TryGetProperty("sourceIds", out var value)
             ? Array.AsReadOnly(value.EnumerateArray().Select(item => item.GetString()!).ToArray())
             : null;
+
+    private static IReadOnlyList<string>? OptionalExtensionIds(JsonElement input) =>
+        input.TryGetProperty("extensionIds", out var value)
+            ? Array.AsReadOnly(value.EnumerateArray().Select(item => item.GetString()!).ToArray())
+            : null;
+
+    private static IReadOnlyList<string> Strings(JsonElement input, string name) =>
+        Array.AsReadOnly(input.GetProperty(name).EnumerateArray()
+            .Select(value => value.GetString()!).ToArray());
 
     private static JsonElement ExecutionEvidence(SystemCapabilityWriteExecutionContext context)
     {
@@ -623,12 +744,15 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
             SystemCapabilityIds.SourceRegister => ("registry-administration",
                 $"Register an immutable allowed-root-relative source. Configured root IDs: {RootDescription(rootIds)}.",
                 SourceInput, SourceOutput),
+            SystemCapabilityIds.ExtensionRegister => ("registry-administration",
+                "Register immutable application-extension sources, namespaces, compatibility, and precedence.",
+                ExtensionInput, ExtensionOutput),
             SystemCapabilityIds.ComponentTypeRegister => ("component-type-administration",
                 "Compile and register one versioned application-owned component-type schema.", ComponentTypeInput, ComponentTypeOutput),
             SystemCapabilityIds.ApplicationActivate => ("application-activation",
-                "Activate one exact valid registered-source profile for an application.", ActivationInput, ActivationOutput),
+                "Activate one exact valid deterministic application-extension set.", ActivationInput, ActivationOutput),
             SystemCapabilityIds.StateSpaceCreate => ("state-space-administration",
-                "Create one empty state space bound to the current active application.", StateSpaceInput, StateSpaceOutput),
+                "Create one empty runtime or application-publication state space bound to the current active application.", StateSpaceInput, StateSpaceOutput),
             SystemCapabilityIds.StateSpaceUpgrade => ("state-space-administration",
                 "Upgrade one empty state space to the current active application binding.", StateSpaceInput, StateSpaceUpgradeOutput),
             SystemCapabilityIds.StateSpaceAdoptLegacy => ("legacy-state-adoption",
@@ -658,6 +782,18 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
       "trust":{"enum":["trusted","untrusted"]},"precedence":{"type":"integer","minimum":-1000000,"maximum":1000000},
       "logicalIdentity":{"type":"string","minLength":1,"maxLength":200}}}
     """;
+    private const string ExtensionInput = """
+    {"type":"object","additionalProperties":false,"required":["applicationId","extensionId","displayName","description","classification","sourceIds","namespaceIds","dependencies","conflictsWith","higherPriorityThan","overridesBase"],"properties":{
+      "applicationId":{"type":"string","minLength":1,"maxLength":63},"extensionId":{"type":"string","pattern":"^[a-z][a-z0-9-]{0,62}$"},
+      "displayName":{"type":"string","minLength":1,"maxLength":120},"description":{"type":"string","minLength":1,"maxLength":2000},
+      "classification":{"enum":["homebrew","compatibility","third-party"]},
+      "sourceIds":{"type":"array","minItems":1,"maxItems":100,"uniqueItems":true,"items":{"type":"string","minLength":1,"maxLength":200}},
+      "namespaceIds":{"type":"array","minItems":1,"maxItems":100,"uniqueItems":true,"items":{"type":"string","minLength":3,"maxLength":200}},
+      "dependencies":{"type":"array","maxItems":100,"uniqueItems":true,"items":{"type":"string","maxLength":63}},
+      "conflictsWith":{"type":"array","maxItems":100,"uniqueItems":true,"items":{"type":"string","maxLength":63}},
+      "higherPriorityThan":{"type":"array","maxItems":100,"uniqueItems":true,"items":{"type":"string","maxLength":63}},
+      "overridesBase":{"type":"boolean"}}}
+    """;
     private const string ComponentTypeInput = """
     {"type":"object","additionalProperties":false,"required":["applicationId","qualifiedTypeId","schemaJson"],"properties":{
       "applicationId":{"type":"string","minLength":1,"maxLength":63},"qualifiedTypeId":{"type":"string","minLength":3,"maxLength":200},
@@ -667,11 +803,12 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
     {"type":"object","additionalProperties":false,"required":["applicationId"],"properties":{"applicationId":{"type":"string","minLength":1,"maxLength":63}}}
     """;
     private const string ActivationInput = """
-    {"type":"object","additionalProperties":false,"required":["applicationId"],"properties":{"applicationId":{"type":"string","minLength":1,"maxLength":63},"sourceIds":{"type":"array","minItems":1,"maxItems":100,"uniqueItems":true,"items":{"type":"string","minLength":1,"maxLength":200}}}}
+    {"type":"object","additionalProperties":false,"required":["applicationId"],"properties":{"applicationId":{"type":"string","minLength":1,"maxLength":63},"extensionIds":{"type":"array","maxItems":100,"uniqueItems":true,"items":{"type":"string","minLength":1,"maxLength":63}},"sourceIds":{"type":"array","minItems":1,"maxItems":100,"uniqueItems":true,"items":{"type":"string","minLength":1,"maxLength":200}}}}
     """;
     private const string StateSpaceInput = """
     {"type":"object","additionalProperties":false,"required":["applicationId","stateSpaceId"],"properties":{
-      "applicationId":{"type":"string","minLength":1,"maxLength":63},"stateSpaceId":{"type":"string","minLength":1,"maxLength":200}}}
+      "applicationId":{"type":"string","minLength":1,"maxLength":63},"stateSpaceId":{"type":"string","minLength":1,"maxLength":200},
+      "scope":{"enum":["runtime-state-space","application-publication"]}}}
     """;
     private const string LegacyInput = """
     {"type":"object","additionalProperties":false,"required":["applicationId","stateSpaceId","componentMappings","relationshipMappings"],"properties":{
@@ -689,14 +826,17 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
     private const string SourceOutput = """
     {"type":"object","additionalProperties":false,"required":["outcome","source"],"properties":{"outcome":{"type":"string","minLength":1,"maxLength":80},"source":{"type":"object","additionalProperties":false,"required":["applicationId","sourceId","fingerprint"],"properties":{"applicationId":{"type":"string","minLength":1,"maxLength":63},"sourceId":{"type":"string","minLength":1,"maxLength":200},"fingerprint":{"type":"string","minLength":64,"maxLength":64}}}}}
     """;
+    private const string ExtensionOutput = """
+    {"type":"object","additionalProperties":false,"required":["outcome","extension"],"properties":{"outcome":{"type":"string","minLength":1,"maxLength":80},"extension":{"type":"object","additionalProperties":false,"required":["applicationId","extensionId","fingerprint"],"properties":{"applicationId":{"type":"string","minLength":1,"maxLength":63},"extensionId":{"type":"string","minLength":1,"maxLength":63},"fingerprint":{"type":"string","minLength":64,"maxLength":64}}}}}
+    """;
     private const string ComponentTypeOutput = """
     {"type":"object","additionalProperties":false,"required":["outcome","componentType"],"properties":{"outcome":{"type":"string","minLength":1,"maxLength":80},"componentType":{"type":"object","additionalProperties":false,"required":["applicationId","qualifiedId","version","profileId","schemaHash"],"properties":{"applicationId":{"type":"string","minLength":1,"maxLength":63},"qualifiedId":{"type":"string","minLength":3,"maxLength":200},"version":{"type":"integer","minimum":1},"profileId":{"type":"string","minLength":1,"maxLength":120},"schemaHash":{"type":"string","minLength":64,"maxLength":64}}}}}
     """;
     private const string ActivationOutput = """
-    {"type":"object","additionalProperties":false,"required":["outcome","activation"],"properties":{"outcome":{"type":"string","minLength":1,"maxLength":80},"activation":{"type":"object","additionalProperties":false,"required":["applicationId","activationRevision","applicationRevision","applicationFingerprint","previewFingerprint","activationFingerprint","dependencyGraphFingerprint","dependencyCoverageVersion","dependencyCoverageComplete","sourceCount","sourceIds","winnerCount"],"properties":{"applicationId":{"type":"string","minLength":1,"maxLength":63},"activationRevision":{"type":"integer","minimum":1},"applicationRevision":{"type":"integer","minimum":1},"applicationFingerprint":{"type":"string","minLength":64,"maxLength":64},"previewFingerprint":{"type":"string","minLength":64,"maxLength":64},"activationFingerprint":{"type":"string","minLength":64,"maxLength":64},"dependencyGraphFingerprint":{"type":"string","minLength":64,"maxLength":64},"dependencyCoverageVersion":{"type":"string","minLength":1,"maxLength":120},"dependencyCoverageComplete":{"type":"boolean"},"sourceCount":{"type":"integer","minimum":0},"sourceIds":{"type":"array","minItems":1,"maxItems":100,"uniqueItems":true,"items":{"type":"string","minLength":1,"maxLength":200}},"winnerCount":{"type":"integer","minimum":0}}}}}
+    {"type":"object","additionalProperties":false,"required":["outcome","activation"],"properties":{"outcome":{"type":"string","minLength":1,"maxLength":80},"activation":{"type":"object","additionalProperties":false,"required":["applicationId","activationRevision","applicationRevision","applicationFingerprint","previewFingerprint","resolutionFingerprint","activationFingerprint","dependencyGraphFingerprint","dependencyCoverageVersion","dependencyCoverageComplete","sourceCount","sourceIds","extensionIds","winnerCount"],"properties":{"applicationId":{"type":"string","minLength":1,"maxLength":63},"activationRevision":{"type":"integer","minimum":1},"applicationRevision":{"type":"integer","minimum":1},"applicationFingerprint":{"type":"string","minLength":64,"maxLength":64},"previewFingerprint":{"type":"string","minLength":64,"maxLength":64},"resolutionFingerprint":{"type":"string","minLength":64,"maxLength":64},"activationFingerprint":{"type":"string","minLength":64,"maxLength":64},"dependencyGraphFingerprint":{"type":"string","minLength":64,"maxLength":64},"dependencyCoverageVersion":{"type":"string","minLength":1,"maxLength":120},"dependencyCoverageComplete":{"type":"boolean"},"sourceCount":{"type":"integer","minimum":0},"sourceIds":{"type":"array","maxItems":100,"uniqueItems":true,"items":{"type":"string","minLength":1,"maxLength":200}},"extensionIds":{"type":"array","maxItems":100,"uniqueItems":true,"items":{"type":"string","minLength":1,"maxLength":63}},"winnerCount":{"type":"integer","minimum":0}}}}}
     """;
     private const string BindingDefinition = """
-    {"type":"object","additionalProperties":false,"required":["stateSpaceId","applicationId","applicationRevision","applicationFingerprint","activeFingerprint","bindingRevision","bindingFingerprint"],"properties":{"stateSpaceId":{"type":"string","minLength":1,"maxLength":200},"applicationId":{"type":"string","minLength":1,"maxLength":63},"applicationRevision":{"type":"integer","minimum":1},"applicationFingerprint":{"type":"string","minLength":64,"maxLength":64},"activeFingerprint":{"type":"string","minLength":64,"maxLength":64},"bindingRevision":{"type":"integer","minimum":1},"bindingFingerprint":{"type":"string","minLength":64,"maxLength":64}}}
+    {"type":"object","additionalProperties":false,"required":["stateSpaceId","applicationId","applicationRevision","applicationFingerprint","activeFingerprint","resolutionFingerprint","scope","bindingRevision","bindingFingerprint"],"properties":{"stateSpaceId":{"type":"string","minLength":1,"maxLength":200},"applicationId":{"type":"string","minLength":1,"maxLength":63},"applicationRevision":{"type":"integer","minimum":1},"applicationFingerprint":{"type":"string","minLength":64,"maxLength":64},"activeFingerprint":{"type":"string","minLength":64,"maxLength":64},"resolutionFingerprint":{"type":"string","minLength":64,"maxLength":64},"scope":{"enum":["runtime-state-space","application-publication"]},"bindingRevision":{"type":"integer","minimum":1},"bindingFingerprint":{"type":"string","minLength":64,"maxLength":64}}}
     """;
     private static readonly string StateSpaceOutput = """
     {"$defs":{"binding":__BINDING_SCHEMA__},"type":"object","additionalProperties":false,"required":["outcome","binding"],"properties":{"outcome":{"type":"string","minLength":1,"maxLength":80},"binding":{"$ref":"#/$defs/binding"}}}

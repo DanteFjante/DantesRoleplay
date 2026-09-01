@@ -139,6 +139,29 @@ public sealed class ApplicationScopedEcsTests : IDisposable
     }
 
     [Fact]
+    public void State_space_discovery_preserves_the_exact_application_revision_it_was_bound_to()
+    {
+        using var fixture = new SqliteFixture();
+        using var db = fixture.CreateContext();
+        var applications = new SqliteApplicationRegistry(db);
+        var baseApplication = ApplicationIdentifier.Parse("base-app");
+        var application = ApplicationIdentifier.Parse("fixture-app");
+        applications.Register(new(baseApplication, "Base", "", []));
+        var originalRevision = applications.Register(new(application, "Fixture", "", []));
+        var stateSpaces = new SqliteStateSpaceRegistry(db, applications);
+        stateSpaces.Create(new("fixture-space", originalRevision, Manifest));
+
+        var revised = applications.ReviseBaseApplications(
+            application, [baseApplication], originalRevision.Revision, originalRevision.Fingerprint);
+        var discovered = Assert.Single(stateSpaces.ListPage(application, null, 100).StateSpaces);
+
+        Assert.Equal(2, revised.Revision);
+        Assert.Equal(1, discovered.ApplicationRevision.Revision);
+        Assert.Empty(discovered.ApplicationRevision.BaseApplications);
+        Assert.Equal(originalRevision.Fingerprint, discovered.ApplicationRevision.Fingerprint);
+    }
+
+    [Fact]
     public async Task Ecs_discovery_pages_are_scoped_stable_and_hide_deleted_entities()
     {
         var setup = Setup("fixture-app", "space-one");

@@ -1,0 +1,45 @@
+{
+  "id": "dnd2024.rule.characters.character-sheet",
+  "name": "Reading a Character Sheet",
+  "components": {
+    "game.core.rules.readable": {
+      "section": { "id": "characters", "label": "Characters", "order": 10 },
+      "order": 10,
+      "title": "Reading a Character Sheet",
+      "summary": "A character sheet gathers the character's available identity, abilities, defenses, features, resources, actions, and equipment into one readable view.",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "heading": "Available state",
+          "body": "Only sections supported by the character's current recorded state are shown. Missing sections are not replaced with assumed values.",
+          "items": []
+        },
+        {
+          "kind": "callout",
+          "heading": "Authority",
+          "body": "The readable sheet explains current results. Catalog mechanics remain authoritative for calculations and state changes.",
+          "items": []
+        }
+      ],
+      "examples": [
+        {
+          "title": "Incomplete character",
+          "body": "A character without spellcasting state has no spellcasting section; the rest of the available sheet remains readable."
+        }
+      ],
+      "relatedRuleRefs": [
+        { "entityId": "dnd2024.rule.combat.weapon-attacks" }
+      ],
+      "citations": [
+        {
+          "sourceId": "dnd2024.source.srd-5.2.1",
+          "locator": "Character Creation > Step 3: Ability Scores > Generate Your Scores > Standard Array, PDF p. 21"
+        }
+      ],
+      "mechanicIds": ["dnd2024.mechanic.character-sheet.project"],
+      "procedureIds": ["dnd2024.procedure.mechanic.character-sheet"],
+      "visibility": "public",
+      "presentationStatus": "published"
+    }
+  }
+}

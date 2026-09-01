@@ -16,6 +16,28 @@ http://127.0.0.1:6217/mcp
 
 The default development database is `DantesRoleplay.MCPServer/data/dantesroleplay.db`. It is runtime state and is not the authored catalog.
 
+## Page identity upgrade
+
+Application navigation is registered ECS publication state. Versioned HTML and assets remain in
+the web-content tables and are linked by `system.web.page`; the application landing entity also has
+`system.web.index-page`. There is no page-name convention or raw page-ID upload route.
+
+When upgrading a database that predates publication identity:
+
+1. Start the service so the database and web-content migrations complete.
+2. Open **Control center → Site editor** and inspect the legacy page review.
+3. Classify every unlinked content identity explicitly as an application page or retained
+   unclassified content. Keep home and control center system-owned.
+4. Apply the reviewed migration and require `contentVerified: true` in its report.
+5. Confirm navigation through `/api/web/applications`; do not infer routes from content IDs.
+
+The reviewed migration is transactional for ECS identities and compares every page revision and
+asset fingerprint before and after the change. Unclassified content is retained, never deleted.
+Page administration can then create or edit metadata, transfer the index marker, append and
+activate revisions, change visibility or order, disable and re-enable identities, and permanently
+remove only a disabled unreferenced identity. Permanent identity removal still preserves its
+versioned content history.
+
 ## Protocol model
 
 The MCP surface is intentionally small:

@@ -88,6 +88,7 @@ public static class DataAccessServiceCollectionExtensions
             .AddOperationsAndAuditComponent()
             .AddHostSettingsComponent()
             .AddAssistantConversationsComponent()
+            .AddPlayRecordingComponent()
             .AddStateComponent()
             .AddProceduresComponent()
             .AddMechanicsComponent()

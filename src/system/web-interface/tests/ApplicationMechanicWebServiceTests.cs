@@ -265,7 +265,8 @@ public sealed class ApplicationMechanicWebServiceTests
 
         public Task<InteractionFeatureSearchResult> SearchFeaturesAsync(
             ApplicationIdentifier applicationId, string? query, string? qualifiedId,
-            int limit = 10, CancellationToken cancellationToken = default)
+            int limit = 10, string? namespaceId = null,
+            CancellationToken cancellationToken = default)
         {
             SearchCalls++;
             var reference = InteractionFeatureReference.Create(App,

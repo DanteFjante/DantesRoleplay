@@ -1,5 +1,5 @@
 export type Perspective = "player" | "dm";
-export type MainTabId = "world" | "campaign" | "party" | "current" | "rules";
+export type MainTabId = "world" | "campaign" | "party" | "current" | "rules" | "content";
 export type PartySectionId = "overview" | "sheet" | "knowledge" | "backstory" | "origin" | "inventory";
 export type CampaignSectionId =
   | "overview"
@@ -26,11 +26,21 @@ export type VisualMedia = {
   height: number;
 };
 
+export type VisualMediaAttachment = VisualMedia & {
+  mediaId: string;
+  role: "portrait" | "setting" | "map" | "illustration" | "icon" | "scene" | "handout";
+  caption: string;
+};
+
 export type EntityVisualMedia = {
   portrait?: VisualMedia;
   setting?: VisualMedia;
+  map?: VisualMedia;
+  illustration?: VisualMedia;
+  icon?: VisualMedia;
   scene?: VisualMedia;
   handout?: VisualMedia;
+  gallery?: VisualMediaAttachment[];
 };
 
 export type LocationPerson = {
@@ -155,6 +165,7 @@ export type MapFeature = {
   name: string;
   detail: string;
   locationId: string | null;
+  preview?: VisualMedia;
 };
 
 export type MapScopeLink = {
@@ -356,6 +367,7 @@ export type PartyDossierEntry = {
   kind: string;
   title: string;
   detail: string;
+  media?: VisualMedia;
 };
 
 export type PartyKnowledgeEntry = {
@@ -365,6 +377,40 @@ export type PartyKnowledgeEntry = {
   text: string;
 };
 
+export type CharacterSheetProjection = {
+  version: 1;
+  subject: { id: string; name: string };
+  identity?: { pronouns?: string; appearance?: string; biography?: string; playerNotes?: string };
+  origin?: { speciesId: string; backgroundId: string };
+  experience?: { total: number };
+  classes?: Array<{ id: string; name: string; classId: string; level: number; subclassId: string | null }>;
+  level?: number;
+  proficiencyBonus?: number;
+  abilities?: Array<{ id: string; score: number; modifier: number }>;
+  savingThrows?: Array<{ ability: string; proficient: boolean; modifier: number }>;
+  skills?: Array<{ id: string; ability: string; proficient: boolean; expertise: boolean; modifier: number }>;
+  initiative?: { ability: "dex"; modifier: number };
+  hitPoints?: { current: number; maximum: number; maximumReduction: number };
+  temporaryHitPoints?: { amount: number };
+  armorClass?: { value: number };
+  body?: { sizeId: string };
+  movement?: Array<{ id: string; numerator: number; denominator: number; unitId: string }>;
+  senses?: Array<{ id: string; numerator?: number; denominator?: number; unitId?: string }>;
+  conditions?: Array<{ id: string; level: number | null }>;
+  proficiencies?: Array<{ id: string; rankId: string }>;
+  features?: Array<{ featureId: string; grantedById: string; grantKind: string; classLevel: number | null }>;
+  resources?: Array<{ id: string; name: string; definitionId: string; expended: number }>;
+  spellcasting?: Array<{
+    id: string;
+    name: string;
+    sourceDefinitionId: string;
+    abilityId: string;
+    preparedSpellIds: string[];
+    availableSpellIds: string[];
+  }>;
+  actions?: Array<{ id: string; name: string; activityIds: string[] }>;
+};
+
 export type PartyMemberReadModel = {
   id: string;
   initials: string;
@@ -372,6 +418,7 @@ export type PartyMemberReadModel = {
   detail: string;
   status: string;
   isCurrent: boolean;
+  portrait?: VisualMedia;
   recordStatus: string;
   sheetStatus: "canonical" | "provisional" | "empty";
   inventoryStatus: "canonical" | "provisional" | "unavailable" | "empty";
@@ -380,20 +427,44 @@ export type PartyMemberReadModel = {
   backstory: PartyDossierEntry[];
   origin: PartyDossierEntry[];
   inventory: PartyDossierEntry[];
+  characterSheet?: CharacterSheetProjection;
 };
 
 export type RuleReadModel = {
   id: string;
+  resolutionKey: string;
   title: string;
-  category: string;
-  subcategory: string;
-  path: string;
-  contentFingerprint: string;
   summary: string;
-  revision: number | null;
-  source: null | {
-    id: "dnd2024.source.srd-5.2.1";
+  order: number;
+  section: {
+    id: string;
+    label: string;
+    order: number;
+  };
+  blocks: Array<{
+    kind: "paragraph" | "steps" | "list" | "callout";
+    heading: string | null;
+    body: string | null;
+    items: string[];
+  }>;
+  examples: Array<{
+    title: string;
+    body: string;
+  }>;
+  relatedRuleIds: string[];
+  citations: Array<{
+    sourceId: string;
     locator: string;
+  }>;
+  authority: {
+    mechanicIds: string[];
+    procedureIds: string[];
+  };
+  visibility: "public" | "dm";
+  source: {
+    ownerId: string;
+    label: string;
+    classification: "core" | "homebrew" | "compatibility" | "third-party";
   };
 };
 
@@ -424,6 +495,20 @@ export type CurrentSituationReadModel =
       status: "unavailable";
       locationId?: string;
       message: string;
+    }
+  | {
+      status: "ready";
+      kind: "recorded";
+      locationId?: string;
+      recorded: {
+        id: string;
+        kind: "out-of-character" | "conversation" | "combat" | "exploration" | "investigation" |
+          "travel" | "rest" | "downtime" | "other";
+        summary: string;
+        participants: Array<{ id: string; name: string; entityId?: string }>;
+        interactions: Array<{ id: string; ordinal: number; role: "player" | "assistant"; text: string }>;
+        location?: { id?: string; name: string };
+      };
     }
   | {
       status: "ready";
@@ -486,6 +571,8 @@ export type KnownRouteReadModel = {
 export type ReadyHubEnvelope = {
   version: 1;
   status: "ready";
+  applicationId: string;
+  stateSpaceId: string;
   revision: string;
   audience: HubAudience;
   contextSelection?: HubContextSelection;
@@ -586,23 +673,9 @@ export type ConnectedCampaignEnvelope = {
     name: string;
     state: string | null;
     current: boolean;
+    media?: EntityVisualMedia;
     entries: Array<{ kind: string; key: string; label: string; details?: string }>;
-    canonical?: {
-      identity: {
-        pronouns?: string;
-        appearance?: string;
-        biography?: string;
-        playerNotes?: string;
-      } | null;
-      origin: { speciesId: string; backgroundId: string } | null;
-      abilities: Array<{ id: string; score: number }> | null;
-      hitPoints: { current: number; maximum: number; maximumReduction?: number } | null;
-      temporaryHitPoints: { amount: number } | null;
-      body: { sizeId: string } | null;
-      movement: Array<{ id: string; numerator: number; denominator: number; unitId: string }> | null;
-      proficiencies: Array<{ id: string; rankId: string }> | null;
-      experience: { total: number } | null;
-      classes: Array<{ id: string; name: string; classId: string; level: number; subclassId?: string }>;
+    canonical?: CharacterSheetProjection & {
       inventoryStatus: "ready" | "unavailable";
       inventory: Array<{
         id: string;
@@ -611,6 +684,7 @@ export type ConnectedCampaignEnvelope = {
         quantity: number;
         slot: string;
         equipmentSlots: string[];
+        media?: EntityVisualMedia;
       }>;
     };
   }>;
@@ -655,7 +729,7 @@ export type ConnectedCampaignEnvelope = {
     containerId?: string;
     containmentSlot?: string;
     mapAnchor?: { x: number; y: number };
-    mapVisual?: { assetKey: string; alt: string };
+    mapVisual?: { imageUrl: string; alt: string };
     media?: EntityVisualMedia;
   }>;
   worldDirectory?: {

@@ -18,10 +18,21 @@ public sealed class RegistryAdministrationService(
     DantesRoleplayDbContext db,
     IApplicationRegistry applications,
     ISourceRegistry sources,
+    IApplicationExtensionRegistry extensions,
     IOperationLog operations) : IRegistryAdministrationService
 {
     private const string ApplicationKind = "system.application.register";
     private const string SourceKind = "system.source.register";
+    private const string ExtensionKind = "system.extension.register";
+
+    public RegistryAdministrationService(
+        DantesRoleplayDbContext db,
+        IApplicationRegistry applications,
+        ISourceRegistry sources,
+        IOperationLog operations)
+        : this(db, applications, sources, new EmptyApplicationExtensionRegistry(), operations)
+    {
+    }
 
     public async Task<RegistryRegistrationPreview<ApplicationRevision>> PreviewApplicationAsync(
         ApplicationRegistration registration,
@@ -59,8 +70,11 @@ public sealed class RegistryAdministrationService(
 
             RequirePreview(ApplicationKind, context.RequestToken, requestFingerprint);
 
-            var (_, outcome) = ValidateApplication(registration, context.ExpectedFingerprint);
-            var revision = applications.Register(registration);
+            var (validated, outcome) = ValidateApplication(registration, context.ExpectedFingerprint);
+            var revision = outcome == "revised"
+                ? applications.ReviseBaseApplications(registration.Id, registration.BaseApplications,
+                    validated.Revision - 1, context.ExpectedFingerprint!)
+                : applications.Register(registration);
             await RecordSuccessAsync(
                 ApplicationKind,
                 context,
@@ -133,6 +147,55 @@ public sealed class RegistryAdministrationService(
         }
     }
 
+    public async Task<RegistryRegistrationPreview<ApplicationExtensionRegistration>> PreviewExtensionAsync(
+        ApplicationExtensionRegistration registration,
+        RegistryAdministrationContext context,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateContext(context);
+        var requestFingerprint = ExtensionRequestFingerprint(registration, context.ExpectedFingerprint);
+        var replay = ReplayExtension(registration, context, requestFingerprint);
+        if (replay is not null)
+            return await RecordPreviewAsync(ExtensionKind, context, requestFingerprint,
+                replay.Registration, replay.Fingerprint, replay.Outcome, cancellationToken);
+        var (validated, fingerprint, outcome) = ValidateExtension(registration, context.ExpectedFingerprint);
+        return await RecordPreviewAsync(ExtensionKind, context, requestFingerprint,
+            validated, fingerprint, PreviewOutcome(outcome), cancellationToken);
+    }
+
+    public async Task<RegistryRegistrationReceipt<ApplicationExtensionRegistration>> RegisterExtensionAsync(
+        ApplicationExtensionRegistration registration,
+        RegistryAdministrationContext context,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateContext(context);
+        var requestFingerprint = ExtensionRequestFingerprint(registration, context.ExpectedFingerprint);
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var replay = ReplayExtension(registration, context, requestFingerprint);
+            if (replay is not null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+                return replay;
+            }
+            RequirePreview(ExtensionKind, context.RequestToken, requestFingerprint);
+            var (_, fingerprint, outcome) = ValidateExtension(registration, context.ExpectedFingerprint);
+            var persisted = extensions.Register(registration);
+            await RecordSuccessAsync(ExtensionKind, context, requestFingerprint,
+                $"Registered extension '{registration.ExtensionId}' for application '{registration.ApplicationId.Value}'.",
+                cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return new(persisted, fingerprint, outcome, context.RequestToken);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            db.ChangeTracker.Clear();
+            throw;
+        }
+    }
+
     private RegistryRegistrationReceipt<ApplicationRevision>? ReplayApplication(
         ApplicationRegistration registration,
         RegistryAdministrationContext context,
@@ -164,6 +227,23 @@ public sealed class RegistryAdministrationService(
         return new(persisted, fingerprint, Outcome(registration.ApplicationId, registration.SourceId, context.ExpectedFingerprint), operation.Id);
     }
 
+    private RegistryRegistrationReceipt<ApplicationExtensionRegistration>? ReplayExtension(
+        ApplicationExtensionRegistration registration,
+        RegistryAdministrationContext context,
+        string requestFingerprint)
+    {
+        var operation = ExistingOperation(context.RequestToken);
+        if (operation is null) return null;
+        RequireMatchingReplay(operation, ExtensionKind, requestFingerprint);
+        var persisted = extensions.Get(registration.ApplicationId, registration.ExtensionId)
+            ?? throw Invalid("REGISTRY_INCONSISTENT", "The prior extension receipt has no matching immutable registration.");
+        var fingerprint = ApplicationExtensionRegistrationFingerprint.Compute(persisted);
+        if (fingerprint != ApplicationExtensionRegistrationFingerprint.Compute(registration))
+            throw Invalid("REGISTRY_INCONSISTENT", "The prior extension receipt no longer matches registry state.");
+        return new(persisted, fingerprint,
+            Outcome(registration.ApplicationId, registration.ExtensionId, context.ExpectedFingerprint), operation.Id);
+    }
+
     private (ApplicationRevision Revision, string Outcome) ValidateApplication(
         ApplicationRegistration registration,
         string? expectedFingerprint)
@@ -187,9 +267,15 @@ public sealed class RegistryAdministrationService(
         }
 
         RequireExpectation(expectedFingerprint, existing.Fingerprint);
-        if (existing.Fingerprint != ApplicationRegistrationFingerprint.Compute(registration))
-            throw Invalid("REGISTRATION_CONFLICT", "The application ID already has different immutable metadata.");
-        return (existing, "unchanged");
+        var existingRegistration = applications.Describe(registration.Id)
+            ?? throw Invalid("REGISTRY_INCONSISTENT", "The application registration is unavailable.");
+        if (existingRegistration.DisplayName != registration.DisplayName
+            || existingRegistration.Description != registration.Description)
+            throw Invalid("REGISTRATION_CONFLICT", "Application display metadata is immutable.");
+        var candidateFingerprint = ApplicationRegistrationFingerprint.Compute(registration);
+        if (existing.Fingerprint == candidateFingerprint) return (existing, "unchanged");
+        return (new(registration.Id, existing.Revision + 1, candidateFingerprint,
+            Array.AsReadOnly(registration.BaseApplications.ToArray())), "revised");
     }
 
     private (SourceRegistration Registration, string Fingerprint, string Outcome) ValidateSource(
@@ -229,6 +315,35 @@ public sealed class RegistryAdministrationService(
         if (currentFingerprint != fingerprint)
             throw Invalid("REGISTRATION_CONFLICT", "The source ID already has different immutable metadata.");
         return (existing, currentFingerprint, "unchanged");
+    }
+
+    private (ApplicationExtensionRegistration Registration, string Fingerprint, string Outcome) ValidateExtension(
+        ApplicationExtensionRegistration registration,
+        string? expectedFingerprint)
+    {
+        if (applications.Get(registration.ApplicationId) is null)
+            throw Invalid("APPLICATION_UNKNOWN", "An extension can only target a registered application.");
+        ApplicationExtensionRegistration normalized;
+        try
+        {
+            normalized = ApplicationExtensionValidation.Normalize(registration, sources,
+                extensions.For(registration.ApplicationId)
+                    .Where(value => value.ExtensionId != registration.ExtensionId).ToArray());
+        }
+        catch (ArgumentException exception) { throw Invalid("INVALID_EXTENSION", exception.Message); }
+        catch (InvalidOperationException exception) { throw Invalid("REGISTRATION_CONFLICT", exception.Message); }
+        var fingerprint = ApplicationExtensionRegistrationFingerprint.Compute(normalized);
+        var existing = extensions.Get(registration.ApplicationId, registration.ExtensionId);
+        if (existing is null)
+        {
+            RequireExpectation(expectedFingerprint, null);
+            return (normalized, fingerprint, "registered");
+        }
+        var current = ApplicationExtensionRegistrationFingerprint.Compute(existing);
+        RequireExpectation(expectedFingerprint, current);
+        if (current != fingerprint)
+            throw Invalid("REGISTRATION_CONFLICT", "The extension ID already has different immutable metadata.");
+        return (existing, current, "unchanged");
     }
 
     private async Task RecordSuccessAsync(
@@ -339,6 +454,14 @@ public sealed class RegistryAdministrationService(
         expectedFingerprint = expected
     });
 
+    private static string ExtensionRequestFingerprint(
+        ApplicationExtensionRegistration registration, string? expected) => Hash(new
+    {
+        kind = ExtensionKind,
+        registrationFingerprint = ApplicationExtensionRegistrationFingerprint.Compute(registration),
+        expectedFingerprint = expected
+    });
+
     private static string Hash<T>(T value) =>
         Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(value)));
 
@@ -347,7 +470,12 @@ public sealed class RegistryAdministrationService(
         $"preview|{kind}|{token}|{fingerprint}";
     private static string Outcome(ApplicationIdentifier _, string? expected) => expected is null ? "registered" : "unchanged";
     private static string Outcome(ApplicationIdentifier _, string __, string? expected) => expected is null ? "registered" : "unchanged";
-    private static string PreviewOutcome(string outcome) => outcome == "registered" ? "would-register" : outcome;
+    private static string PreviewOutcome(string outcome) => outcome switch
+    {
+        "registered" => "would-register",
+        "revised" => "would-revise",
+        _ => outcome
+    };
     private static bool UpperSha256(string value) => value.Length == 64
         && value.All(character => char.IsAsciiDigit(character) || character is >= 'A' and <= 'F');
     private static RegistryAdministrationException Invalid(string code, string message) => new(code, message);

@@ -1,0 +1,26 @@
+{
+  "id": "subscription.game.core.world.condition.sync-route-closure",
+  "category": "game.core.world.reactive",
+  "eventTypeId": "world.component.replaced",
+  "eventMechanicId": "mechanic.game.core.world.condition.sync-route-closure",
+  "mode": "Reaction",
+  "order": 0,
+  "fixedRoleEntityIds": {
+    "condition": "condition.feature-10.gate-market-closure",
+    "route": "route.feature-08.gate-to-market-on-foot"
+  },
+  "roleFromEventPayload": {},
+  "fanoutSelector": {},
+  "trackedEntityIds": [
+    "world.feature-01.fixture"
+  ],
+  "payloadEquals": {
+    "definitionId": "game.core.world.clock",
+    "entityId": "world.feature-01.fixture"
+  },
+  "maxExecutionsPerChain": 1,
+  "scope": "",
+  "status": "Active",
+  "createdBy": "import",
+  "changeNote": "Imported from the catalog."
+}

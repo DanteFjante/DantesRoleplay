@@ -23,16 +23,17 @@ public sealed class ExportTool : ITool
         Writes the latest version of every record, plus a manifest.json recording what was exported
         and each record's fingerprint.
 
-        Layout — a category becomes a directory path, one segment per directory:
+        Layout — the registered namespace becomes a directory path, one segment per dot:
 
-          mechanics/<category>/<id>.md     front matter, description, match phrases, requirements
-          mechanics/<category>/<id>.js     the JavaScript, as a real file
-          procedures/<category>/<id>.md    the contract, as prose
-          components/<id>.json             id, name, description
-          components/<id>.schema.json      the JSON Schema, verbatim, when there is one
-          world/entities/<id>.json         an entity, its components and its container
-          world/relationships.json         every relationship, as one set
-          manifest.json                    what was exported, and each record's fingerprint
+          mechanics/<namespace>/<local-name>.md       front matter and requirements
+          mechanics/<namespace>/<local-name>.js       the JavaScript, as a real file
+          procedures/<namespace>/<local-name>.md      the contract, as prose
+          components/<namespace>/<local-name>.json    id, name, description
+          components/<namespace>/<local-name>.schema.json  its JSON Schema, when present
+          world/entities/<namespace>/<local-name>.json     entity, components, container
+          namespaces/<namespace>/_namespace.json      ownership and allowed record kinds
+          world/relationships.json                    every relationship, as one set
+          manifest.json                               hashes and canonical paths
 
         Options:
           --rules-only     Rules and component definitions only; skip world state entirely.

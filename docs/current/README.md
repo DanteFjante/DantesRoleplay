@@ -18,8 +18,8 @@ Do not preload every guide. `docs/world/` contains world-specific working materi
 Last checked: 2026-08-31.
 
 - The solution builds with no warnings or errors.
-- Catalog validation succeeds for 436 records: 29 mechanics, 74 procedures, 52 components, 14 event types, 2 subscriptions, and 265 entities.
-- Catalog validation reports one non-blocking proximity warning for `procedure.system.extend-application` and `procedure.game.core.world.media`.
+- Catalog validation succeeds for 438 records: 29 mechanics, 74 procedures, 54 components, 14 event types, 2 subscriptions, and 265 entities.
+- Catalog validation reports no warnings.
 - Focused catalog and world-feature tests pass.
 - Full-suite acceptance is not currently claimed. Some D&D application-layout/source-registration tests still expect an older catalog shape.
 

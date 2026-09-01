@@ -1,0 +1,5 @@
+{
+  "id": "fixture.legacy.lock",
+  "name": "Lock",
+  "description": "Reusable lock difficulty for anything that can be opened by a lock-picking attempt."
+}

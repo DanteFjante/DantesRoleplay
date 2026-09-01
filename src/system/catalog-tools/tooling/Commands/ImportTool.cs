@@ -18,6 +18,7 @@ public sealed class ImportTool : ITool
 
     public string Usage => """
         roleplay import <directory> [--database <path>] [--dry-run] [--force-files|--force-db]
+        roleplay import <directory> --namespaces-only [--database <path>] [--dry-run]
 
         Compares three fingerprints per record — the file's, the database row's, and the manifest's
         record of the last state at which they agreed — and acts on which side moved:
@@ -42,6 +43,10 @@ public sealed class ImportTool : ITool
           --force-files   The catalog wins, including where the database moved on its own.
           --force-db      The database wins; conflicting files are skipped and left on disk.
 
+        --namespaces-only registers namespace metadata without importing any catalog record. It is
+        the safe synchronization boundary for namespace review when the catalog and live records
+        have unrelated drift.
+
         There is no --delete. A rule absent from the catalog is reported, never removed: something
         else may compose it, and that is not a decision to make as a side effect of a sync.
         """;
@@ -62,6 +67,13 @@ public sealed class ImportTool : ITool
             return 2;
         }
 
+        if (context.HasFlag("namespaces-only")
+            && (context.HasFlag("force-files") || context.HasFlag("force-db")))
+        {
+            context.Error.WriteLine("--namespaces-only does not accept record conflict options.");
+            return 2;
+        }
+
         var options = new CatalogImportOptions(
             DryRun: context.HasFlag("dry-run"),
             Force: context.HasFlag("force-files") ? CatalogForce.Files
@@ -79,6 +91,16 @@ public sealed class ImportTool : ITool
             new WorldStore(db),
             new EventTypeStore(db),
             new SubscriptionStore(db));
+
+        if (context.HasFlag("namespaces-only"))
+        {
+            var namespaces = await importer.ApplyNamespacesOnlyAsync(
+                target, options.DryRun, cancellationToken);
+            context.Out.WriteLine(options.DryRun
+                ? $"Dry run: {namespaces.Total} namespaces; would create {namespaces.Created}, update {namespaces.Updated}, and leave {namespaces.Unchanged} unchanged. Nothing was written."
+                : $"Registered {namespaces.Total} namespaces: created {namespaces.Created}, updated {namespaces.Updated}, unchanged {namespaces.Unchanged}. No catalog records were imported.");
+            return 0;
+        }
 
         var result = await importer.ApplyAsync(target, options, cancellationToken);
 

@@ -1,0 +1,12 @@
+{
+  "id": "location.caldris",
+  "owner": "location",
+  "description": "Namespace for location caldris catalog records.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

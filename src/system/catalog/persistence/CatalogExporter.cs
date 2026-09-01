@@ -3,6 +3,8 @@ using DantesRoleplay.Content;
 using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Procedures;
+using DantesRoleplay.CatalogNamespaces;
+using DantesRoleplay.Ecs;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.DataAccess.Catalog;
@@ -41,6 +43,8 @@ public sealed class CatalogExporter(DantesRoleplayDbContext db)
 
         var written = new List<string>();
         var entries = new List<CatalogManifestEntry>();
+
+        await ExportNamespacesAsync(fullRoot, written, cancellationToken);
 
         var mechanics = await ExportMechanicsAsync(fullRoot, written, entries, cancellationToken);
         var procedures = await ExportProceduresAsync(fullRoot, written, entries, cancellationToken);
@@ -84,6 +88,102 @@ public sealed class CatalogExporter(DantesRoleplayDbContext db)
             entities,
             operations,
             FindOrphans(fullRoot, written));
+    }
+
+    private async Task ExportNamespacesAsync(
+        string root,
+        List<string> written,
+        CancellationToken cancellationToken)
+    {
+        var identities = await StoredIdentitiesAsync(cancellationToken);
+        var stored = await _db.Set<CatalogNamespaceRecord>().AsNoTracking()
+            .OrderBy(value => value.Id).ToArrayAsync(cancellationToken);
+        IReadOnlyList<CatalogNamespaceFile> files;
+        if (stored.Length == 0)
+        {
+            files = InferNamespaces(identities);
+        }
+        else
+        {
+            files = stored.Select(value => new CatalogNamespaceFile(
+                value.Id, value.Owner, value.Description,
+                JsonSerializer.Deserialize<string[]>(value.AllowedKindsJson) ?? [],
+                JsonSerializer.Deserialize<string[]>(value.AliasesJson) ?? [],
+                value.DisabledAtUtc is null,
+                value.ReviewStatus,
+                value.ReviewNote)).ToArray();
+            ValidateRegisteredNamespaces(files, identities);
+        }
+
+        foreach (var file in files)
+            await WriteAsync(root, CatalogLayout.Namespace(file.Id), file.ToJson(), written, cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<(string Id, string Kind)>> StoredIdentitiesAsync(CancellationToken cancellationToken)
+    {
+        var values = new List<(string, string)>();
+        values.AddRange((await _db.Mechanics.AsNoTracking().Select(value => value.Id).ToArrayAsync(cancellationToken))
+            .Select(value => (value, CatalogNamespaceKinds.Mechanic)));
+        values.AddRange((await _db.ProcedureContracts.AsNoTracking().Select(value => value.Id).ToArrayAsync(cancellationToken))
+            .Select(value => (value, CatalogNamespaceKinds.Procedure)));
+        values.AddRange((await _db.ComponentDefinitions.AsNoTracking().Select(value => value.Id).ToArrayAsync(cancellationToken))
+            .Select(value => (value, CatalogNamespaceKinds.ComponentDefinition)));
+        values.AddRange((await _db.Set<ComponentTypeRecord>().AsNoTracking().Select(value => value.QualifiedId)
+                .ToArrayAsync(cancellationToken))
+            .Select(value => (value, CatalogNamespaceKinds.ComponentType)));
+        values.AddRange((await _db.EventTypes.AsNoTracking().Select(value => value.Id).ToArrayAsync(cancellationToken))
+            .Select(value => (value, CatalogNamespaceKinds.EventType)));
+        values.AddRange((await _db.Subscriptions.AsNoTracking().Select(value => value.Id).ToArrayAsync(cancellationToken))
+            .Select(value => (value, CatalogNamespaceKinds.Subscription)));
+        values.AddRange((await _db.Entities.AsNoTracking().Where(value => value.DeletedAt == null)
+                .Select(value => value.Id).ToArrayAsync(cancellationToken))
+            .Select(value => (value, CatalogNamespaceKinds.Entity)));
+        foreach (var value in values) CatalogNamespaceIdentity.ValidateRecordId(value.Item1);
+        return values;
+    }
+
+    private static IReadOnlyList<CatalogNamespaceFile> InferNamespaces(
+        IReadOnlyList<(string Id, string Kind)> identities)
+    {
+        var direct = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        foreach (var identity in identities)
+        {
+            var leaf = CatalogNamespaceIdentity.NamespaceOf(identity.Id);
+            if (!direct.TryGetValue(leaf, out var kinds)) direct[leaf] = kinds = new(StringComparer.Ordinal);
+            kinds.Add(identity.Kind);
+            foreach (var ancestor in CatalogNamespaceIdentity.NamespaceChain(identity.Id))
+                direct.TryAdd(ancestor, new(StringComparer.Ordinal));
+        }
+        foreach (var namespaceId in direct.Keys.OrderByDescending(value => value.Length).ToArray())
+        {
+            var parent = namespaceId == CatalogNamespaceIdentity.RootNamespaceId ? null
+                : namespaceId.Contains('.') ? namespaceId[..namespaceId.LastIndexOf('.')] : null;
+            if (parent is not null && direct.TryGetValue(parent, out var parentKinds))
+                parentKinds.UnionWith(direct[namespaceId]);
+        }
+        return direct.OrderBy(value => value.Key, StringComparer.Ordinal).Select(value => new CatalogNamespaceFile(
+            value.Key,
+            value.Key == CatalogNamespaceIdentity.RootNamespaceId ? "legacy" : value.Key.Split('.')[0],
+            $"Namespace for {value.Key.Replace('.', ' ')} catalog records.",
+            value.Value.Count == 0 ? [CatalogNamespaceKinds.Document] : value.Value.Order(StringComparer.Ordinal).ToArray(),
+            [], true,
+            CatalogNamespaceReviewStatuses.NeedsReview,
+            "Inferred during export; an owner must review this namespace before normal writes can use it.")).ToArray();
+    }
+
+    private static void ValidateRegisteredNamespaces(
+        IReadOnlyList<CatalogNamespaceFile> namespaces,
+        IReadOnlyList<(string Id, string Kind)> identities)
+    {
+        var byId = namespaces.ToDictionary(value => value.Id, StringComparer.Ordinal);
+        foreach (var identity in identities)
+        {
+            var namespaceId = CatalogNamespaceIdentity.NamespaceOf(identity.Id);
+            if (!byId.TryGetValue(namespaceId, out var definition))
+                throw new InvalidOperationException($"Cannot export '{identity.Id}': namespace '{namespaceId}' is not registered.");
+            if (!definition.AllowedKinds.Contains(identity.Kind, StringComparer.Ordinal))
+                throw new InvalidOperationException($"Cannot export '{identity.Id}': namespace '{namespaceId}' does not allow '{identity.Kind}'.");
+        }
     }
 
     /// <summary>
@@ -438,6 +538,9 @@ public sealed class CatalogExporter(DantesRoleplayDbContext db)
             CatalogLayout.MechanicsRoot,
             CatalogLayout.ProceduresRoot,
             CatalogLayout.ComponentsRoot,
+            CatalogLayout.EventTypesRoot,
+            CatalogLayout.SubscriptionsRoot,
+            CatalogLayout.NamespacesRoot,
             CatalogLayout.WorldRoot
         })
         {

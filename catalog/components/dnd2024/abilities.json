@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.abilities",
+  "name": "Ability scores (D&D 2024)",
+  "description": "The six ability scores of a creature, as integers 1-30: str, dex, con, int, wis, cha. The modifier for a score is floor((score - 10) / 2) and is ALWAYS derived, never stored here. Change one score with component.merge; component.set would discard the other five. Governed by dnd2024.procedure.mechanic.abilities. Source: System Reference Document 5.2.1, 'Playing the Game - Ability Scores', Wizards of the Coast, CC-BY-4.0, https://www.dndbeyond.com/srd"
+}

@@ -1,9 +1,12 @@
 using System.IO.Compression;
 using System.Net;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using DantesRoleplay.AI;
+using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.DataAccess;
@@ -82,7 +85,7 @@ public sealed class WebInterfaceTests
     }
 
     [Fact]
-    public void System_workspace_surface_is_read_only_bounded_and_generic()
+    public async Task System_workspace_surface_is_read_only_bounded_and_generic()
     {
         var builder = WebApplication.CreateBuilder();
         builder.Services.AddDantesRoleplayWeb("Data Source=:memory:", new ConfigurationBuilder().Build());
@@ -97,17 +100,18 @@ public sealed class WebInterfaceTests
         Assert.Equal([HttpMethods.Get], route.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods);
         Assert.Contains("customElements.define('system-navigation'", SystemWorkspaceElement.Script,
             StringComparison.Ordinal);
-        Assert.Contains("/api/control/structure/applications", SystemWorkspaceElement.Script,
+        Assert.Contains("/components/system-client.js", SystemWorkspaceElement.Script,
             StringComparison.Ordinal);
-        Assert.Contains("url.searchParams.set('limit', '100')", SystemWorkspaceElement.Script,
+        Assert.Contains("/components/system-publication.js", SystemWorkspaceElement.Script,
             StringComparison.Ordinal);
-        Assert.Contains("page.nextCursor", SystemWorkspaceElement.Script, StringComparison.Ordinal);
-        Assert.Contains("MAXIMUM_PAGES = 10", SystemWorkspaceElement.Script, StringComparison.Ordinal);
-        Assert.Contains("MAXIMUM_APPLICATIONS = 1000", SystemWorkspaceElement.Script, StringComparison.Ordinal);
-        Assert.Contains("encodeURIComponent(application.id)", SystemWorkspaceElement.Script,
+        Assert.DoesNotContain("/api/control/structure/applications", SystemWorkspaceElement.Script,
             StringComparison.Ordinal);
-        Assert.Contains("`/ui/${encodeURIComponent(application.id)}-play`", SystemWorkspaceElement.Script,
+        Assert.Contains("this._client.discoverAllApplications", SystemWorkspaceElement.Script,
             StringComparison.Ordinal);
+        Assert.Contains("document.createElement('application-navigation')", SystemWorkspaceElement.Script,
+            StringComparison.Ordinal);
+        Assert.Contains("set client(value)", SystemWorkspaceElement.Script, StringComparison.Ordinal);
+        Assert.DoesNotContain("-play", SystemWorkspaceElement.Script, StringComparison.Ordinal);
         Assert.DoesNotContain("#/applications/${encodeURIComponent(application.id)}", SystemWorkspaceElement.Script,
             StringComparison.Ordinal);
         Assert.Contains("No applications registered.", SystemWorkspaceElement.Script, StringComparison.Ordinal);
@@ -121,13 +125,39 @@ public sealed class WebInterfaceTests
             StringComparison.Ordinal);
         Assert.Contains("window.removeEventListener('hashchange'", SystemWorkspaceElement.Script,
             StringComparison.Ordinal);
+        var client = await BrowserComponentAssets.ReadAsync("system-client");
+        var publication = await BrowserComponentAssets.ReadAsync("system-publication");
+        Assert.NotNull(client);
+        Assert.NotNull(publication);
+        Assert.Contains("MAXIMUM_PAGES = 10", client, StringComparison.Ordinal);
+        Assert.Contains("MAXIMUM_APPLICATIONS = 1000", client, StringComparison.Ordinal);
+        Assert.Contains("WEB_RESOLUTION_FINGERPRINT_STALE", client, StringComparison.Ordinal);
+        Assert.Contains("class SystemRequestScope", client, StringComparison.Ordinal);
+        Assert.Contains("customElements.define('application-navigation'", publication, StringComparison.Ordinal);
+        Assert.Contains("customElements.define('application-page-host'", publication, StringComparison.Ordinal);
+        Assert.Contains("application-page-host requires a publication client", publication, StringComparison.Ordinal);
+        Assert.Contains("customElements.define('system-progress'", publication, StringComparison.Ordinal);
+        Assert.Contains("customElements.define('system-error'", publication, StringComparison.Ordinal);
+        Assert.Contains("customElements.define('system-empty-state'", publication, StringComparison.Ordinal);
+        Assert.Contains("customElements.define('system-data-view'", publication, StringComparison.Ordinal);
+        Assert.Contains("aria-haspopup', 'menu'", publication, StringComparison.Ordinal);
+        Assert.Contains("event.key === 'Escape'", publication, StringComparison.Ordinal);
+        Assert.Contains("bubbles: true", publication, StringComparison.Ordinal);
+        Assert.Contains("composed: true", publication, StringComparison.Ordinal);
+        Assert.Contains("window.location.assign(result.page.url)", publication, StringComparison.Ordinal);
+        Assert.DoesNotContain("innerHTML", publication, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("state-space", publication, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("overlay", client, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("overlay", publication, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("/mcp", SystemWorkspaceElement.Script, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("sql", SystemWorkspaceElement.Script, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("dnd", SystemWorkspaceElement.Script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("dnd", client, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("dnd", publication, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public async Task Registered_applications_have_direct_pages_and_authored_pages_take_precedence()
+    public async Task Application_pages_are_not_generated_or_served_without_ecs_publication_identity()
     {
         var connectionString = SharedMemoryConnectionString();
         await using var keeper = new SqliteConnection(connectionString);
@@ -172,18 +202,362 @@ public sealed class WebInterfaceTests
         var authored = await GetAsync("dnd2024-play");
         var unknown = await GetAsync("missing-play");
 
-        Assert.Equal(StatusCodes.Status200OK, generated.Status);
-        Assert.Contains("<system-navigation application-id=\"quest\">", generated.Html, StringComparison.Ordinal);
-        Assert.Contains("<h1>Quest</h1>", generated.Html, StringComparison.Ordinal);
-        Assert.DoesNotContain("control-center", generated.Html, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(StatusCodes.Status200OK, authored.Status);
-        Assert.Equal("<h1>Authored D&D page</h1>", authored.Html);
+        Assert.Equal(StatusCodes.Status404NotFound, generated.Status);
+        Assert.Contains("Application unavailable", generated.Html, StringComparison.Ordinal);
+        Assert.Equal(StatusCodes.Status404NotFound, authored.Status);
+        Assert.Contains("Application unavailable", authored.Html, StringComparison.Ordinal);
         Assert.Equal(StatusCodes.Status404NotFound, unknown.Status);
-        Assert.Empty(unknown.Html);
-        Assert.Equal("quest-play", ApplicationPageId.For(quest.Id));
-        Assert.True(ApplicationPageId.TryGetApplicationId("quest-play", out var parsed));
-        Assert.Equal(quest.Id, parsed);
-        Assert.False(ApplicationPageId.TryGetApplicationId("quest-admin", out _));
+        Assert.Contains("Application unavailable", unknown.Html, StringComparison.Ordinal);
+        Assert.DoesNotContain("-play", SystemWorkspaceElement.Script, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Legacy_application_pages_migrate_to_system_web_ecs_without_changing_content_history()
+    {
+        var connectionString = SharedMemoryConnectionString();
+        await using var keeper = new SqliteConnection(connectionString);
+        await keeper.OpenAsync();
+        var dataOptions = new DbContextOptionsBuilder<DantesRoleplayDbContext>()
+            .UseSqlite(connectionString).Options;
+        await using var data = new DantesRoleplayDbContext(dataOptions);
+        await data.Database.MigrateAsync();
+        var webOptions = new DbContextOptionsBuilder<WebContentDbContext>()
+            .UseSqlite(connectionString, sqlite => sqlite.MigrationsHistoryTable("__web_migrations_history"))
+            .Options;
+        await using var web = new WebContentDbContext(webOptions);
+        await web.Database.MigrateAsync();
+
+        var applications = new SqliteApplicationRegistry(data);
+        var questId = ApplicationIdentifier.Parse("quest");
+        var dndId = ApplicationIdentifier.Parse("dnd2024");
+        applications.Register(new(questId, "Quest", "A new game.", []));
+        applications.Register(new(dndId, "D&D 2024", "An authored game.", []));
+
+        var root = RepositoryRoot();
+        var pageSchema = await File.ReadAllTextAsync(Path.Combine(
+            root, "catalog", "components", "system", "web", "page.schema.json"));
+        var indexSchema = await File.ReadAllTextAsync(Path.Combine(
+            root, "catalog", "components", "system", "web", "index-page.schema.json"));
+        var now = DateTime.UtcNow;
+        const string pageName = "Web Page";
+        const string pageDescription = "Generic page identity.";
+        const string indexName = "Web Index Page";
+        const string indexDescription = "Landing-page marker.";
+        await data.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO component_definition (Id, Name, Description, Schema, CreatedAt, UpdatedAt)
+            VALUES ({WebPageComponentTypes.Page}, {pageName}, {pageDescription}, {pageSchema}, {now}, {now});
+            """);
+        await data.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO component_definition (Id, Name, Description, Schema, CreatedAt, UpdatedAt)
+            VALUES ({WebPageComponentTypes.IndexPage}, {indexName}, {indexDescription}, {indexSchema}, {now}, {now});
+            """);
+
+        var pageStore = new WebPageStore(web);
+        await pageStore.SaveBundleAndActivateAsync("dnd2024-play", new(
+            "<h1>First revision</h1>",
+            [new("assets/icon.txt", Encoding.UTF8.GetBytes("unchanged"))]));
+        await pageStore.SaveAndActivateAsync("dnd2024-play", "<h1>Second revision</h1>");
+        await pageStore.SaveAndActivateAsync("home", "<h1>System home</h1>");
+        await pageStore.SaveAndActivateAsync("notes", "<h1>Unclassifiable</h1>");
+        var revisionCount = await web.PageRevisions.CountAsync();
+        var assetCount = await web.PageAssets.CountAsync();
+        var assetHash = await web.PageAssets.Select(value => value.ContentHash).SingleAsync();
+
+        var schemas = new BoundedJsonSchemaValidator();
+        var types = new SqliteComponentTypeRegistry(data, schemas);
+        var spaces = new SqliteStateSpaceRegistry(data, applications);
+        var constraints = new SqliteEcsRoleConstraintValidator(data);
+        var ecs = new SqliteEntityComponentStore(data, types, schemas, constraints);
+        var state = new WebPageIdentityMigrationState();
+        var service = new WebPagePublicationService(
+            applications,
+            spaces,
+            types,
+            ecs,
+            new WorldStore(data),
+            pageStore,
+            web,
+            new SqliteEcsWriteTransactionFactory(data),
+            state,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<WebPagePublicationService>.Instance);
+
+        var report = await service.ApplyReviewedAsync(new([
+            new("dnd2024-play", "application-page", "dnd2024", "web-page:dnd2024", "D&D 2024", "Play", "dnd2024-play", IsIndexPage: true),
+            new("notes", "retain-unclassified")
+        ]));
+
+        Assert.Equal(2, report.PublicationStateSpaces);
+        Assert.Equal(1, report.LinkedApplicationPages);
+        Assert.Equal(1, report.SystemOwnedPages);
+        Assert.Equal(1, report.UnclassifiablePages);
+        Assert.Contains(report.Items, value => value.PageId == "home" && value.Classification == "system-owned");
+        Assert.Contains(report.Items, value => value.PageId == "notes" && value.Classification == "reviewed-unclassifiable" && value.Reviewed);
+        Assert.True(report.Applied);
+        Assert.True(report.ContentVerified);
+        Assert.All(report.Items, value => Assert.Equal(value.ContentFingerprintBefore, value.ContentFingerprintAfter));
+        Assert.Same(report, state.LastReport);
+        Assert.NotNull(await service.GetLastReportAsync());
+        Assert.Equal(revisionCount, await web.PageRevisions.CountAsync());
+        Assert.Equal(assetCount, await web.PageAssets.CountAsync());
+        Assert.Equal(assetHash, await web.PageAssets.Select(value => value.ContentHash).SingleAsync());
+
+        var page = await service.FindBySlugAsync("dnd2024-play");
+        Assert.NotNull(page);
+        Assert.Equal(dndId, page.ApplicationId);
+        Assert.Equal("dnd2024-play", page.ContentPageId);
+        Assert.True(page.IsIndexPage);
+        Assert.Equal(page, await service.FindIndexAsync(dndId));
+        Assert.Null(await service.FindIndexAsync(questId));
+        Assert.Equal(ApplicationIdentifier.System, types.GetLatest(WebPageComponentTypes.Page)!.Owner);
+        Assert.Single(spaces.ListPage(questId, null, 100).StateSpaces,
+            value => value.Scope == EcsStateSpaceScope.ApplicationPublication);
+
+        var lifecycle = new SqliteEcsLifecycleStore(data, constraints);
+        var administration = new WebPageAdministration(
+            applications, spaces, types, ecs, lifecycle,
+            new SqliteEcsWriteTransactionFactory(data), pageStore, service);
+        var administered = Assert.Single(await administration.ListAsync(dndId));
+        Assert.Equal("web-page:dnd2024", administered.EntityId);
+        administered = await administration.UpdateMetadataAsync(dndId, administered.EntityId,
+            new(administered.PageComponentRevision, "D&D 2024", "Play now", "dnd2024-play", 2, "public"));
+        Assert.Equal("Play now", administered.NavigationLabel);
+        var draft = await administration.AppendDraftAsync(dndId, administered.EntityId,
+            new(administered.Content!.LatestRevision, administered.Content.LatestRevision,
+                "<h1>Third revision</h1>"));
+        var activation = await administration.ActivateRevisionAsync(dndId, administered.EntityId,
+            new(administered.Content.ActiveRevision, draft.Summary.Revision));
+        Assert.Equal(draft.Summary.Revision, activation.ActiveRevision);
+        var publishedBundle = await administration.PublishBundleAsync(
+            dndId,
+            administered.EntityId,
+            new WebPageBundle(
+                "<h1>Published bundle</h1>",
+                [new WebPageAssetUpload(
+                    "assets/application.js", Encoding.UTF8.GetBytes("window.ready = true;"))]));
+        Assert.Equal(draft.Summary.Revision + 1, publishedBundle.Revision);
+        Assert.Equal(
+            "window.ready = true;",
+            Encoding.UTF8.GetString((await pageStore.GetActiveAssetAsync(
+                "dnd2024-play", "assets/application.js"))!.Content));
+
+        var secondary = await administration.CreateAsync(dndId,
+            new("web-page:rules", "Rules", "Rules", "rules", 10, "hidden", "<h1>Rules</h1>"));
+        Assert.False(secondary.IsIndexPage);
+        secondary = await administration.SetIndexAsync(dndId, secondary.EntityId, new(true));
+        Assert.True(secondary.IsIndexPage);
+        Assert.False((await administration.GetAsync(dndId, administered.EntityId))!.IsIndexPage);
+        secondary = await administration.SetEnabledAsync(dndId, secondary.EntityId,
+            new(secondary.EntityRevision, false));
+        Assert.False(secondary.Enabled);
+        Assert.True(await administration.DeleteAsync(dndId, secondary.EntityId));
+        Assert.Null(await administration.GetAsync(dndId, secondary.EntityId));
+        Assert.Equal(revisionCount + 3, await web.PageRevisions.CountAsync());
+        Assert.Contains(assetHash, await web.PageAssets.Select(value => value.ContentHash).ToArrayAsync());
+    }
+
+    [Fact]
+    public async Task Publication_discovery_orders_visible_pages_reports_diagnostics_and_stales_cursors()
+    {
+        var connectionString = SharedMemoryConnectionString();
+        await using var keeper = new SqliteConnection(connectionString);
+        await keeper.OpenAsync();
+        var dataOptions = new DbContextOptionsBuilder<DantesRoleplayDbContext>()
+            .UseSqlite(connectionString).Options;
+        await using var data = new DantesRoleplayDbContext(dataOptions);
+        await data.Database.MigrateAsync();
+        var webOptions = new DbContextOptionsBuilder<WebContentDbContext>()
+            .UseSqlite(connectionString, sqlite => sqlite.MigrationsHistoryTable("__web_migrations_history"))
+            .Options;
+        await using var web = new WebContentDbContext(webOptions);
+        await web.Database.MigrateAsync();
+
+        var applications = new SqliteApplicationRegistry(data);
+        var dndId = ApplicationIdentifier.Parse("dnd2024");
+        var emptyId = ApplicationIdentifier.Parse("empty");
+        var questId = ApplicationIdentifier.Parse("quest");
+        applications.Register(new(dndId, "D&D 2024", "Published.", []));
+        applications.Register(new(emptyId, "Empty", "Installed only.", []));
+        applications.Register(new(questId, "Quest", "No landing page.", []));
+
+        var root = RepositoryRoot();
+        var schemas = new BoundedJsonSchemaValidator();
+        var types = new SqliteComponentTypeRegistry(data, schemas);
+        var pageType = types.Define(new(ApplicationIdentifier.System, WebPageComponentTypes.Page,
+            await File.ReadAllTextAsync(Path.Combine(root, "catalog", "components", "system", "web", "page.schema.json"))));
+        var indexType = types.Define(new(ApplicationIdentifier.System, WebPageComponentTypes.IndexPage,
+            await File.ReadAllTextAsync(Path.Combine(root, "catalog", "components", "system", "web", "index-page.schema.json"))));
+        var spaces = new SqliteStateSpaceRegistry(data, applications);
+        var dndRevision = applications.Get(dndId)!;
+        var questRevision = applications.Get(questId)!;
+        const string dndSpace = "application-publication:dnd2024";
+        spaces.Create(new(dndSpace, dndRevision, dndRevision.Fingerprint, dndRevision.Fingerprint,
+            EcsStateSpaceScope.ApplicationPublication));
+        spaces.Create(new("application-publication:quest", questRevision, questRevision.Fingerprint,
+            questRevision.Fingerprint, EcsStateSpaceScope.ApplicationPublication));
+
+        var constraints = new SqliteEcsRoleConstraintValidator(data);
+        var ecs = new SqliteEntityComponentStore(data, types, schemas, constraints);
+        var lifecycle = new SqliteEcsLifecycleStore(data, constraints);
+        var pageStore = new WebPageStore(web);
+        foreach (var pageId in new[] { "dnd-home", "alpha", "beta", "hidden", "disabled", "home" })
+            await pageStore.SaveAndActivateAsync(pageId, $"<h1>{pageId}</h1>");
+
+        static EcsComponentReference Reference(RegisteredComponentTypeVersion type) =>
+            new(type.QualifiedId, type.Version, type.SchemaHash);
+        static string PageJson(string slug, string label, int order, string visibility, string contentPageId) =>
+            JsonSerializer.Serialize(new
+            {
+                title = label,
+                navigationLabel = label,
+                slug,
+                order,
+                visibility,
+                activeContentReference = new { pageId = contentPageId }
+            });
+        async Task AddPageAsync(string entityId, string slug, string label, int order,
+            string visibility, string contentPageId, bool index = false)
+        {
+            await ecs.CreateEntityAsync(dndSpace, entityId, label);
+            await ecs.AddComponentAsync(new(dndSpace, entityId, Reference(pageType),
+                PageJson(slug, label, order, visibility, contentPageId), 0));
+            if (index)
+                await ecs.AddComponentAsync(new(dndSpace, entityId, Reference(indexType), "{}", 0));
+        }
+
+        await AddPageAsync("web-page:index", "dnd-home", "Play", 0, "public", "dnd-home", index: true);
+        await AddPageAsync("web-page:beta", "beta", "Zeta", 5, "public", "beta");
+        await AddPageAsync("web-page:alpha", "alpha", "Alpha", 5, "public", "alpha");
+        await AddPageAsync("web-page:hidden", "hidden", "Hidden", 1, "hidden", "hidden");
+        await AddPageAsync("web-page:missing", "missing", "Missing", 2, "public", "missing-content");
+        await AddPageAsync("web-page:disabled", "disabled", "Disabled", 3, "public", "disabled");
+        await AddPageAsync("web-page:malformed", "malformed", "Malformed", 4, "hidden", "alpha");
+        var disabled = await lifecycle.GetEntityAsync(dndSpace, "web-page:disabled");
+        await lifecycle.SetEntityEnabledAsync(dndSpace, "web-page:disabled", false,
+            disabled!.Entity.Revision);
+
+        var discovery = new WebPublicationDiscovery(applications, spaces, ecs, pageStore, lifecycle);
+        var dnd = await discovery.GetApplicationAsync(dndId);
+        Assert.NotNull(dnd);
+        Assert.Equal("ready", dnd.PublicationStatus);
+        Assert.True(dnd.IsPublishable);
+        Assert.True(dnd.IsClickable);
+        Assert.Equal("dnd-home", dnd.IndexPage!.Slug);
+        Assert.Equal(["alpha", "beta"], dnd.Pages.Select(value => value.Slug));
+        Assert.DoesNotContain(dnd.Pages, value => value.Slug is "hidden" or "disabled" or "missing");
+
+        var quest = await discovery.GetApplicationAsync(questId);
+        Assert.Equal("missing-index-page", quest!.PublicationStatus);
+        Assert.True(quest.IsPublishable);
+        Assert.False(quest.IsClickable);
+        var empty = await discovery.GetApplicationAsync(emptyId);
+        Assert.Equal("missing-publication", empty!.PublicationStatus);
+        Assert.False(empty.IsPublishable);
+
+        var indexComponent = await ecs.GetComponentAsync(dndSpace, "web-page:index", WebPageComponentTypes.Page);
+        await ecs.SetComponentAsync(new(dndSpace, "web-page:index", Reference(pageType),
+            PageJson("dnd-home", "Play", 0, "hidden", "dnd-home"), indexComponent!.Revision));
+        Assert.Equal("index-page-hidden", (await discovery.GetApplicationAsync(dndId))!.PublicationStatus);
+        var hiddenIndex = await ecs.GetComponentAsync(dndSpace, "web-page:index", WebPageComponentTypes.Page);
+        await ecs.SetComponentAsync(new(dndSpace, "web-page:index", Reference(pageType),
+            PageJson("dnd-home", "Play", 0, "public", "dnd-home"), hiddenIndex!.Revision));
+        var indexEntity = await lifecycle.GetEntityAsync(dndSpace, "web-page:index");
+        var disabledIndex = await lifecycle.SetEntityEnabledAsync(dndSpace, "web-page:index", false,
+            indexEntity!.Entity.Revision);
+        Assert.Equal("index-page-disabled", (await discovery.GetApplicationAsync(dndId))!.PublicationStatus);
+        await lifecycle.SetEntityEnabledAsync(dndSpace, "web-page:index", true, disabledIndex.Entity.Revision);
+        var restoredIndex = await ecs.GetComponentAsync(dndSpace, "web-page:index", WebPageComponentTypes.Page);
+        await ecs.SetComponentAsync(new(dndSpace, "web-page:index", Reference(pageType),
+            PageJson("dnd-home", "Play", 0, "public", "missing-index-content"), restoredIndex!.Revision));
+        Assert.Equal("index-content-missing", (await discovery.GetApplicationAsync(dndId))!.PublicationStatus);
+        var missingIndex = await ecs.GetComponentAsync(dndSpace, "web-page:index", WebPageComponentTypes.Page);
+        await ecs.SetComponentAsync(new(dndSpace, "web-page:index", Reference(pageType),
+            PageJson("dnd-home", "Play", 0, "public", "dnd-home"), missingIndex!.Revision));
+        await data.Database.ExecuteSqlRawAsync(
+            "UPDATE system_ecs_component SET Data = '{{}}' WHERE StateSpaceId = {0} AND EntityId = {1} AND QualifiedTypeId = {2}",
+            dndSpace, "web-page:malformed", WebPageComponentTypes.Page);
+
+        var diagnostic = await discovery.GetApplicationAsync(dndId, diagnostics: true);
+        Assert.Contains(diagnostic!.Pages, value => value.Slug == "hidden");
+        Assert.Contains(diagnostic.Pages, value => value.Slug == "disabled" && !value.Enabled);
+        Assert.Contains(diagnostic.Evidence!, value => value.Code == "PAGE_CONTENT_MISSING" && value.Slug == "missing");
+        Assert.Contains(diagnostic.Evidence!, value => value.Code == "PAGE_HIDDEN" && value.Slug == "hidden");
+        Assert.Contains(diagnostic.Evidence!, value => value.Code == "PAGE_ENTITY_DISABLED" && value.Slug == "disabled");
+        Assert.Contains(diagnostic.Evidence!, value => value.Code == "PAGE_COMPONENT_MALFORMED"
+            && value.EntityId == "web-page:malformed");
+        Assert.Null(await discovery.GetPageAsync(dndId, "hidden"));
+        Assert.Equal("hidden", (await discovery.GetPageAsync(dndId, "hidden", diagnostics: true))!.Slug);
+        Assert.Equal("ready", (await discovery.ResolvePageRouteAsync("alpha")).Status);
+        Assert.Equal("page-hidden", (await discovery.ResolvePageRouteAsync("hidden")).Status);
+        Assert.Equal("page-disabled", (await discovery.ResolvePageRouteAsync("disabled")).Status);
+        Assert.Equal("content-missing", (await discovery.ResolvePageRouteAsync("missing")).Status);
+        Assert.Equal("application-unavailable", (await discovery.ResolvePageRouteAsync("unknown")).Status);
+
+        var first = await discovery.ListApplicationsAsync(null, 1);
+        Assert.NotNull(first.NextCursor);
+        await data.Database.ExecuteSqlRawAsync(
+            "UPDATE system_state_space SET ResolutionFingerprint = {0} WHERE Id = {1}",
+            new string('A', 64), dndSpace);
+        var stale = await Assert.ThrowsAsync<WebPublicationException>(() =>
+            discovery.ListApplicationsAsync(first.NextCursor, 1));
+        Assert.Equal("WEB_PUBLICATION_CURSOR_STALE", stale.Code);
+
+        var uncheckedEcs = new SqliteEntityComponentStore(data, types, schemas);
+        await uncheckedEcs.CreateEntityAsync(dndSpace, "web-page:duplicate", "Duplicate");
+        await uncheckedEcs.AddComponentAsync(new(dndSpace, "web-page:duplicate", Reference(pageType),
+            JsonSerializer.Serialize(new
+            {
+                title = "Duplicate",
+                navigationLabel = "Duplicate",
+                slug = "alpha",
+                order = 6,
+                visibility = "public",
+                activeContentReference = new { pageId = "alpha" }
+            }), 0));
+        await uncheckedEcs.CreateEntityAsync(dndSpace, "web-page:second-index", "Second index");
+        await uncheckedEcs.AddComponentAsync(new(dndSpace, "web-page:second-index", Reference(pageType),
+            JsonSerializer.Serialize(new
+            {
+                title = "Second index",
+                navigationLabel = "Second index",
+                slug = "second-index",
+                order = 7,
+                visibility = "public",
+                activeContentReference = new { pageId = "beta" }
+            }), 0));
+        await uncheckedEcs.AddComponentAsync(new(dndSpace, "web-page:second-index", Reference(indexType), "{}", 0));
+
+        var corrupt = await discovery.GetApplicationAsync(dndId, diagnostics: true);
+        Assert.Equal("invalid", corrupt!.PublicationStatus);
+        Assert.False(corrupt.IsPublishable);
+        Assert.False(corrupt.IsClickable);
+        Assert.Null(corrupt.IndexPage);
+        Assert.Contains(corrupt.Evidence!, value => value.Code == "DUPLICATE_PAGE_SLUG" && value.Slug == "alpha");
+        Assert.Contains(corrupt.Evidence!, value => value.Code == "MULTIPLE_INDEX_PAGES");
+        Assert.Equal("publication-invalid", (await discovery.ResolvePageRouteAsync("alpha")).Status);
+        var ambiguous = await Assert.ThrowsAsync<WebPublicationException>(() =>
+            discovery.GetPageAsync(dndId, "alpha", diagnostics: true));
+        Assert.Equal("WEB_PAGE_SLUG_AMBIGUOUS", ambiguous.Code);
+    }
+
+    [Fact]
+    public void Publication_api_has_public_discovery_and_separate_operator_diagnostics()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddDantesRoleplayWeb("Data Source=:memory:", new ConfigurationBuilder().Build());
+        var application = builder.Build();
+        application.MapDantesRoleplayWeb();
+
+        var routes = ((IEndpointRouteBuilder)application).DataSources.SelectMany(source => source.Endpoints)
+            .OfType<RouteEndpoint>()
+            .Where(endpoint => endpoint.RoutePattern.RawText!.Contains("/web/applications", StringComparison.Ordinal))
+            .Select(endpoint => endpoint.RoutePattern.RawText!)
+            .OrderBy(value => value, StringComparer.Ordinal)
+            .ToArray();
+        Assert.Contains("/api/web/applications", routes);
+        Assert.Contains("/api/web/applications/{applicationId}", routes);
+        Assert.Contains("/api/web/applications/{applicationId}/pages/{slug}", routes);
+        Assert.Contains("/api/control/web/applications/{applicationId}/pages/{entityId}/metadata", routes);
+        Assert.DoesNotContain(routes, route => route.Contains("state-space", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -338,18 +712,16 @@ public sealed class WebInterfaceTests
             .OfType<RouteEndpoint>()
             .Where(endpoint => endpoint.RoutePattern.RawText!.StartsWith("/api/applications/", StringComparison.Ordinal)
                 || endpoint.RoutePattern.RawText == "/components/application-conversation.js"
-                || endpoint.RoutePattern.RawText == "/components/maps/{name}.png"
-                || endpoint.RoutePattern.RawText == "/components/media/{name}"
                 || endpoint.RoutePattern.RawText == "/components/{name}.js")
             .Select(endpoint => (endpoint.RoutePattern.RawText,
                 Method: endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods.Single())).ToArray();
         Assert.Equal([
             ("/components/application-conversation.js", HttpMethods.Get),
-            ("/components/maps/{name}.png", HttpMethods.Get),
-            ("/components/media/{name}", HttpMethods.Get),
             ("/components/{name}.js", HttpMethods.Get),
             ("/api/applications/{applicationId}/catalog/browse", HttpMethods.Get),
             ("/api/applications/{applicationId}/catalog/records/{qualifiedId}", HttpMethods.Get),
+            ("/api/applications/{applicationId}/content", HttpMethods.Get),
+            ("/api/applications/{applicationId}/rules", HttpMethods.Get),
             ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}", HttpMethods.Get),
             ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}/prepare", HttpMethods.Post),
             ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}/execute", HttpMethods.Post),
@@ -362,7 +734,9 @@ public sealed class WebInterfaceTests
             ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/containment", HttpMethods.Get),
             ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/components", HttpMethods.Get),
             ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/components/{qualifiedTypeId}", HttpMethods.Get),
+            ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/play/sessions/{sessionContextId}", HttpMethods.Get),
             ("/api/applications/{applicationId}/conversations/{conversationId}", HttpMethods.Get),
+            ("/api/applications/{applicationId}/conversations/{conversationId}/history", HttpMethods.Get),
             ("/api/applications/{applicationId}/conversations", HttpMethods.Post),
             ("/api/applications/{applicationId}/conversations/{conversationId}/turns", HttpMethods.Post),
             ("/api/applications/{applicationId}/conversations/{conversationId}/execute", HttpMethods.Post),
@@ -375,7 +749,7 @@ public sealed class WebInterfaceTests
             .Where(endpoint => endpoint.RoutePattern.RawText!.StartsWith("/api/applications/", StringComparison.Ordinal))
             .Where(endpoint => endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods.Single() == HttpMethods.Get)
             .ToArray();
-        Assert.Equal(9, applicationStateReads.Length);
+        Assert.Equal(10, applicationStateReads.Length);
         Assert.All(applicationStateReads, endpoint => Assert.Equal(
             WebInterfaceSecurity.ReadRateLimitPolicy,
             endpoint.Metadata.GetMetadata<EnableRateLimitingAttribute>()!.PolicyName));
@@ -391,6 +765,14 @@ public sealed class WebInterfaceTests
         Assert.Contains("customElements.define('application-conversation'", ApplicationConversationElement.Script, StringComparison.Ordinal);
         Assert.Contains("session-context-id", ApplicationConversationElement.Script, StringComparison.Ordinal);
         Assert.Contains("new CustomEvent", ApplicationConversationElement.Script, StringComparison.Ordinal);
+        Assert.Contains("conversation-change", ApplicationConversationElement.Script, StringComparison.Ordinal);
+        Assert.Contains("location-media", ApplicationConversationElement.Script, StringComparison.Ordinal);
+        Assert.Contains("/entities/${encodedLocation}/media", ApplicationConversationElement.Script, StringComparison.Ordinal);
+        Assert.Contains("application-conversation__location-media", ApplicationConversationElement.Script, StringComparison.Ordinal);
+        Assert.Contains("allowedRoles = ['setting', 'scene', 'illustration', 'portrait', 'map', 'icon']",
+            ApplicationConversationElement.Script, StringComparison.Ordinal);
+        Assert.DoesNotContain("sha256", ApplicationConversationElement.Script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("base64", ApplicationConversationElement.Script, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Remember this route", ApplicationConversationElement.Script, StringComparison.Ordinal);
         Assert.Contains("remember.checked = false", ApplicationConversationElement.Script, StringComparison.Ordinal);
         Assert.DoesNotContain("/api/control", ApplicationConversationElement.Script, StringComparison.Ordinal);
@@ -455,60 +837,9 @@ public sealed class WebInterfaceTests
         Assert.Contains("customElements.define('application-form'", await applicationReader.ReadToEndAsync(),
             StringComparison.Ordinal);
 
-        Assert.Null(await BrowserMapAssets.ReadAsync("../thalos-world"));
-        Assert.Null(await BrowserMapAssets.ReadAsync("missing-map"));
-        Assert.NotNull(await BrowserMapAssets.ReadAsync("caldris-world"));
-        Assert.NotNull(await BrowserMapAssets.ReadAsync("caldris-eredane"));
-        var expectedMap = await BrowserMapAssets.ReadAsync("thalos-world");
-        Assert.NotNull(expectedMap);
-
-        var mapRoute = Assert.Single(((IEndpointRouteBuilder)application).DataSources
+        Assert.DoesNotContain(((IEndpointRouteBuilder)application).DataSources
             .SelectMany(source => source.Endpoints).OfType<RouteEndpoint>(), endpoint =>
-                endpoint.RoutePattern.RawText == "/components/maps/{name}.png");
-        var mapContext = RequestContext("localhost:6217", IPAddress.Loopback);
-        mapContext.RequestServices = application.Services;
-        mapContext.Request.Method = HttpMethods.Get;
-        mapContext.Request.RouteValues["name"] = "thalos-world";
-        mapContext.Response.Body = new MemoryStream();
-
-        await mapRoute.RequestDelegate!(mapContext);
-
-        Assert.Equal(StatusCodes.Status200OK, mapContext.Response.StatusCode);
-        Assert.Equal("image/png", mapContext.Response.ContentType);
-        Assert.Equal(expectedMap, ((MemoryStream)mapContext.Response.Body).ToArray());
-
-        var missingMapContext = RequestContext("localhost:6217", IPAddress.Loopback);
-        missingMapContext.RequestServices = application.Services;
-        missingMapContext.Request.Method = HttpMethods.Get;
-        missingMapContext.Request.RouteValues["name"] = "missing-map";
-        missingMapContext.Response.Body = new MemoryStream();
-
-        await mapRoute.RequestDelegate!(missingMapContext);
-
-        Assert.Equal(StatusCodes.Status404NotFound, missingMapContext.Response.StatusCode);
-
-        const string mediaName = "sha256.3ae0336e89155a4a00fb0d982ae903bf9ed1137cd292b097b252fd38c1501fa3.png";
-        Assert.Null(await BrowserMediaAssets.ReadAsync("../" + mediaName));
-        Assert.Null(await BrowserMediaAssets.ReadAsync("sha256.AAE0336e89155a4a00fb0d982ae903bf9ed1137cd292b097b252fd38c1501fa3.png"));
-        Assert.Null(await BrowserMediaAssets.ReadAsync("sha256.3ae0336e89155a4a00fb0d982ae903bf9ed1137cd292b097b252fd38c1501fa3.gif"));
-        var expectedMedia = await BrowserMediaAssets.ReadAsync(mediaName);
-        Assert.NotNull(expectedMedia);
-        Assert.Equal("image/png", expectedMedia!.ContentType);
-
-        var mediaRoute = Assert.Single(((IEndpointRouteBuilder)application).DataSources
-            .SelectMany(source => source.Endpoints).OfType<RouteEndpoint>(), endpoint =>
-                endpoint.RoutePattern.RawText == "/components/media/{name}");
-        var mediaContext = RequestContext("localhost:6217", IPAddress.Loopback);
-        mediaContext.RequestServices = application.Services;
-        mediaContext.Request.Method = HttpMethods.Get;
-        mediaContext.Request.RouteValues["name"] = mediaName;
-        mediaContext.Response.Body = new MemoryStream();
-
-        await mediaRoute.RequestDelegate!(mediaContext);
-
-        Assert.Equal(StatusCodes.Status200OK, mediaContext.Response.StatusCode);
-        Assert.Equal("image/png", mediaContext.Response.ContentType);
-        Assert.Equal(expectedMedia.Content, ((MemoryStream)mediaContext.Response.Body).ToArray());
+                endpoint.RoutePattern.RawText is "/components/maps/{name}.png" or "/components/media/{name}");
     }
 
     [Fact]
@@ -861,54 +1192,6 @@ public sealed class WebInterfaceTests
     }
 
     [Fact]
-    public async Task Control_page_editor_projects_bounded_metadata_export_and_isolated_preview()
-    {
-        await using var connection = new SqliteConnection("Filename=:memory:");
-        await connection.OpenAsync();
-        await using var db = CreateWebContext(connection);
-        await db.Database.EnsureCreatedAsync();
-        var store = new WebPageStore(db);
-        await store.SaveBundleAndActivateAsync(
-            "control-center",
-            new WebPageBundle(
-                "<script>fetch('/api/control/status')</script><h1>Editor</h1>",
-                [new WebPageAssetUpload("assets/site.css", Encoding.UTF8.GetBytes("body{}"))]));
-        await store.SaveAndActivateAsync("home", "<h1>Home</h1>");
-        var editor = new ControlPageEditor(store);
-
-        var pages = await editor.ListPagesAsync(null, "1");
-        var revisions = await editor.ListRevisionsAsync("control-center", null, null);
-        var detail = await editor.GetRevisionAsync("control-center", 1);
-        var bundle = await editor.ExportAsync("control-center", 1);
-        var preview = await editor.PreviewHtmlAsync("control-center", 1);
-        var asset = await editor.PreviewAssetAsync("control-center", 1, "site.css");
-
-        Assert.Equal("control-center", Assert.Single(pages.Items).Id);
-        Assert.Equal(1, Assert.Single(revisions.Items).Revision);
-        Assert.Equal("assets/site.css", Assert.Single(detail!.Assets).Path);
-        Assert.DoesNotContain("\"content\":", JsonSerializer.Serialize(detail.Assets), StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("fetch", preview, StringComparison.Ordinal);
-        Assert.Equal("text/css", asset!.ContentType);
-        using var archive = new ZipArchive(new MemoryStream(bundle!.Content), ZipArchiveMode.Read);
-        Assert.Equal(["assets/site.css", "index.html"], archive.Entries.Select(entry => entry.FullName).Order());
-
-        var response = new DefaultHttpContext().Response;
-        WebInterfaceSecurity.ApplyHeaders(response);
-        ControlPageEditor.ApplyPreviewHeaders(response, asset: false);
-        Assert.Contains("connect-src 'none'", response.Headers.ContentSecurityPolicy.ToString(), StringComparison.Ordinal);
-        Assert.Contains("frame-ancestors 'self'", response.Headers.ContentSecurityPolicy.ToString(), StringComparison.Ordinal);
-        Assert.Equal("SAMEORIGIN", response.Headers.XFrameOptions);
-        Assert.Equal("no-store", response.Headers.CacheControl);
-        Assert.Equal("CURSOR_STALE", (await Assert.ThrowsAsync<ControlPageEditorException>(
-            () => editor.ListRevisionsAsync("control-center", pages.NextCursor, "1"))).Code);
-
-        var oversized = new DefaultHttpContext().Request;
-        oversized.ContentLength = ControlPageEditor.MaximumJsonBodyBytes + 1;
-        Assert.Equal("BODY_TOO_LARGE", (await Assert.ThrowsAsync<ControlPageEditorException>(
-            () => ControlPageEditor.ReadBodyAsync<ControlPageDraftRequest>(oversized))).Code);
-    }
-
-    [Fact]
     public async Task Web_migrations_create_asset_storage_from_a_blank_database()
     {
         await using var connection = new SqliteConnection("Filename=:memory:");
@@ -917,7 +1200,7 @@ public sealed class WebInterfaceTests
 
         await db.Database.MigrateAsync();
 
-        Assert.Equal(2, (await db.Database.GetAppliedMigrationsAsync()).Count());
+        Assert.Equal(3, (await db.Database.GetAppliedMigrationsAsync()).Count());
         var schemaRows = await db.Database.SqlQueryRaw<string>(
                 "SELECT name AS Value FROM sqlite_schema WHERE type IN ('table', 'index')")
             .ToListAsync();
@@ -1147,6 +1430,11 @@ public sealed class WebInterfaceTests
         write.Request.ContentType = "application/json; charset=utf-8";
         write.Request.Headers.Origin = "http://localhost:6217";
         write.Request.Headers["X-Control-Capability"] = "control.codex.approve";
+        var delete = RequestContext("localhost:6217", IPAddress.Loopback);
+        delete.Request.Method = HttpMethods.Delete;
+        delete.Request.Scheme = Uri.UriSchemeHttp;
+        delete.Request.ContentType = "application/json";
+        delete.Request.Headers.Origin = "http://localhost:6217";
 
         var readDecision = guard.Evaluate(
             read,
@@ -1156,11 +1444,43 @@ public sealed class WebInterfaceTests
             write,
             PrivateOperatorCapability.ControlPagesWrite,
             mutation: true);
+        var deleteDecision = guard.Evaluate(
+            delete,
+            PrivateOperatorCapability.ControlAiMessage,
+            mutation: true);
 
         Assert.True(readDecision.Allowed);
         Assert.Equal("control.read", readDecision.Evidence.Capability);
         Assert.True(writeDecision.Allowed);
         Assert.Equal("control.pages.write", writeDecision.Evidence.Capability);
+        Assert.True(deleteDecision.Allowed);
+        Assert.Equal("control.ai.message", deleteDecision.Evidence.Capability);
+    }
+
+    [Fact]
+    public void Page_bundle_upload_allows_zip_only_for_the_page_administration_capability()
+    {
+        var pageBundle = RequestContext("localhost:6217", IPAddress.Loopback);
+        pageBundle.Request.Method = HttpMethods.Put;
+        pageBundle.Request.Scheme = Uri.UriSchemeHttp;
+        pageBundle.Request.ContentType = "application/zip";
+        pageBundle.Request.Headers.Origin = "http://localhost:6217";
+        var wrongOwner = RequestContext("localhost:6217", IPAddress.Loopback);
+        wrongOwner.Request.Method = HttpMethods.Put;
+        wrongOwner.Request.Scheme = Uri.UriSchemeHttp;
+        wrongOwner.Request.ContentType = "application/zip";
+        wrongOwner.Request.Headers.Origin = "http://localhost:6217";
+
+        var accepted = ControlGuard(new WebRemoteAccessOptions()).Evaluate(
+            pageBundle, PrivateOperatorCapability.ControlPagesWrite, mutation: true);
+        var rejected = ControlGuard(new WebRemoteAccessOptions()).Evaluate(
+            wrongOwner, PrivateOperatorCapability.ControlSettingsWrite, mutation: true);
+
+        Assert.True(accepted.Allowed);
+        Assert.Equal("control.pages.write", accepted.Evidence.Capability);
+        Assert.False(rejected.Allowed);
+        Assert.Equal(StatusCodes.Status415UnsupportedMediaType, rejected.StatusCode);
+        Assert.Equal("CONTROL_JSON_REQUIRED", rejected.ErrorCode);
     }
 
     [Fact]
@@ -1707,21 +2027,18 @@ public sealed class WebInterfaceTests
     }
 
     [Fact]
-    public void Site_editor_saves_changed_html_as_a_draft_before_previewing_it()
+    public async Task Page_administration_component_uses_ecs_identity_and_immutable_content_revisions()
     {
-        var html = File.ReadAllText(Path.Combine(
-            RepositoryRoot(), "src", "system", "web-interface", "examples", "control-center", "index.html"));
+        var script = await BrowserComponentAssets.ReadAsync("page-administration");
 
-        Assert.Contains("Save & preview draft", html, StringComparison.Ordinal);
-        Assert.Contains("saveDraft(page, revision, textarea.value, body, state, true)", html,
-            StringComparison.Ordinal);
-        Assert.Contains("async saveDraft(page, baseRevision, html, body, state, previewAfterSave = false)", html,
-            StringComparison.Ordinal);
-        Assert.Contains("await this.selectRevision(current, detail.summary.revision, body)", html,
-            StringComparison.Ordinal);
-        Assert.Contains("this.preview(page.id, detail.summary.revision, body)", html, StringComparison.Ordinal);
-        Assert.Contains("Preview saved revision", html, StringComparison.Ordinal);
-        Assert.Contains("frame.setAttribute(\"sandbox\", \"allow-scripts\")", html, StringComparison.Ordinal);
+        Assert.NotNull(script);
+        Assert.Contains("expectedComponentRevision", script, StringComparison.Ordinal);
+        Assert.Contains("expectedEntityRevision", script, StringComparison.Ordinal);
+        Assert.Contains("Save inactive draft", script, StringComparison.Ordinal);
+        Assert.Contains("Make selected revision active", script, StringComparison.Ordinal);
+        Assert.Contains("Permanently remove disabled identity", script, StringComparison.Ordinal);
+        Assert.Contains("/page-migration", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("/api/control/pages", script, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1972,6 +2289,12 @@ public sealed class WebInterfaceTests
             "/api/control/conversations/{conversationId}/turns/{turnId}/approvals/{approvalId}",
             "/api/control/system/conversations",
             "/api/control/system/conversations/{conversationId}",
+            "/api/control/ai/providers",
+            "/api/control/ai/providers/{providerId}/models",
+            "/api/control/ai/conversations",
+            "/api/control/ai/conversations/{conversationId}",
+            "/api/control/ai/conversations/{conversationId}",
+            "/api/control/ai/requests",
             "/api/control/system/conversations",
             "/api/control/system/conversations/{conversationId}/turns",
             "/api/control/system/conversations/{conversationId}/tasks",
@@ -2000,15 +2323,24 @@ public sealed class WebInterfaceTests
             "/api/control/structure/applications/{applicationId}/catalog/browse",
             "/api/control/structure/applications/{applicationId}/catalog/search",
             "/api/control/structure/applications/{applicationId}/catalog/records/{qualifiedId}",
-            "/api/control/pages",
-            "/api/control/pages/{pageId}",
-            "/api/control/pages/{pageId}/revisions",
-            "/api/control/pages/{pageId}/revisions/{revision:int}",
-            "/api/control/pages/{pageId}/revisions/{revision:int}/bundle",
-            "/api/control/pages/{pageId}/revisions/{revision:int}/preview/index.html",
-            "/api/control/pages/{pageId}/revisions/{revision:int}/preview/assets/{**path}",
-            "/api/control/pages/{pageId}/drafts",
-            "/api/control/pages/{pageId}/active"
+            "/api/control/structure/applications/{applicationId}/content",
+            "/api/control/web/applications",
+            "/api/control/web/applications/{applicationId}",
+            "/api/control/web/applications/{applicationId}/pages/{slug}",
+            "/api/control/web/page-migration",
+            "/api/control/web/page-migration/reviews",
+            "/api/control/web/applications/{applicationId}/pages",
+            "/api/control/web/applications/{applicationId}/pages",
+            "/api/control/web/applications/{applicationId}/pages/{entityId}",
+            "/api/control/web/applications/{applicationId}/pages/{entityId}/metadata",
+            "/api/control/web/applications/{applicationId}/pages/{entityId}/index",
+            "/api/control/web/applications/{applicationId}/pages/{entityId}/enabled",
+            "/api/control/web/applications/{applicationId}/pages/{entityId}",
+            "/api/control/web/applications/{applicationId}/pages/{entityId}/revisions",
+            "/api/control/web/applications/{applicationId}/pages/{entityId}/revisions/{revision:int}",
+            "/api/control/web/applications/{applicationId}/pages/{entityId}/drafts",
+            "/api/control/web/applications/{applicationId}/pages/{entityId}/bundle",
+            "/api/control/web/applications/{applicationId}/pages/{entityId}/active"
         ], patterns);
         Assert.All(endpoints.Where(endpoint => endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods
                 .Single() == HttpMethods.Get),
@@ -2035,14 +2367,12 @@ public sealed class WebInterfaceTests
             endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods.Single() == HttpMethods.Post),
             endpoint => Assert.Equal(
                 [HttpMethods.Post], endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods));
-        Assert.Equal(
-            [HttpMethods.Post],
-            endpoints.Single(endpoint => endpoint.RoutePattern.RawText == "/api/control/pages/{pageId}/drafts")
-                .Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods);
-        Assert.Equal(
-            [HttpMethods.Put],
-            endpoints.Single(endpoint => endpoint.RoutePattern.RawText == "/api/control/pages/{pageId}/active")
-                .Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods);
+        Assert.Contains(endpoints, endpoint =>
+            endpoint.RoutePattern.RawText == "/api/control/ai/conversations/{conversationId}" &&
+            endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods.Single() == HttpMethods.Delete);
+        Assert.Contains(endpoints, endpoint =>
+            endpoint.RoutePattern.RawText == "/api/control/web/applications/{applicationId}/pages/{entityId}" &&
+            endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods.Single() == HttpMethods.Delete);
     }
 
     [Fact]
@@ -2067,7 +2397,7 @@ public sealed class WebInterfaceTests
     }
 
     [Fact]
-    public void Home_and_site_editor_expose_direct_page_navigation()
+    public void Home_and_site_editor_use_publication_discovery_instead_of_page_id_conventions()
     {
         var root = RepositoryRoot();
         var home = File.ReadAllText(Path.Combine(
@@ -2081,11 +2411,10 @@ public sealed class WebInterfaceTests
         Assert.Contains("GetPageAsync(HomePageId", endpoints, StringComparison.Ordinal);
         Assert.Contains("href=\"/ui/control-center/index.html\"", home, StringComparison.Ordinal);
         Assert.Contains("Open control center", home, StringComparison.Ordinal);
-        Assert.Contains("href=\"/ui/dnd2024-play\"", home, StringComparison.Ordinal);
-        Assert.Contains("Enter D&amp;D 2024 game table", home, StringComparison.Ordinal);
-        Assert.Contains("livePageLink(item.id)", controlCenter, StringComparison.Ordinal);
-        Assert.Contains("encodeURIComponent(pageId)", controlCenter, StringComparison.Ordinal);
-        Assert.Contains("Open live page", controlCenter, StringComparison.Ordinal);
+        Assert.Contains("<system-navigation>", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("href=\"/ui/dnd2024-play\"", home, StringComparison.Ordinal);
+        Assert.Contains("document.createElement(\"page-administration\")", controlCenter, StringComparison.Ordinal);
+        Assert.DoesNotContain("/api/control/pages", controlCenter, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -2126,17 +2455,17 @@ public sealed class WebInterfaceTests
     }
 
     [Fact]
-    public void Authored_pages_compose_system_and_application_chat_without_crossing_scope()
+    public void Authored_pages_compose_provider_neutral_ai_surfaces_without_crossing_scope()
     {
         var examples = Path.Combine(RepositoryRoot(), "src", "system", "web-interface", "examples");
         var home = File.ReadAllText(Path.Combine(examples, "home.html"));
         var controlCenter = File.ReadAllText(Path.Combine(examples, "control-center", "index.html"));
         var applicationPage = File.ReadAllText(Path.Combine(examples, "application-page.html"));
 
-        Assert.Contains("General system chat", home, StringComparison.Ordinal);
-        Assert.Contains("<system-chat aria-label=\"General system chat\"></system-chat>", home,
+        Assert.Contains("Inner AI", home, StringComparison.Ordinal);
+        Assert.Contains("<inner-ai aria-label=\"Inner AI system workspace\"></inner-ai>", home,
             StringComparison.Ordinal);
-        Assert.Contains("document.createElement(\"application-conversation\")", home,
+        Assert.Contains("document.createElement(\"outer-ai\")", home,
             StringComparison.Ordinal);
         Assert.Contains("conversation.setAttribute(\"application-id\", application.value)", home,
             StringComparison.Ordinal);
@@ -2147,7 +2476,7 @@ public sealed class WebInterfaceTests
         var assistantEnd = controlCenter.IndexOf("class EcsExplorerPanel", assistantStart,
             StringComparison.Ordinal);
         var assistant = controlCenter[assistantStart..assistantEnd];
-        Assert.Contains("document.createElement(\"system-chat\")", assistant, StringComparison.Ordinal);
+        Assert.Contains("document.createElement(\"inner-ai\")", assistant, StringComparison.Ordinal);
         Assert.DoesNotContain("application-id", assistant, StringComparison.Ordinal);
         Assert.DoesNotContain("state-space-id", assistant, StringComparison.Ordinal);
         Assert.DoesNotContain("/api/applications/", assistant, StringComparison.Ordinal);
@@ -2158,26 +2487,23 @@ public sealed class WebInterfaceTests
         var explorer = controlCenter[explorerStart..explorerEnd];
         Assert.Contains("this.renderApplicationChat(applicationId, spaces.items || [], body)", explorer,
             StringComparison.Ordinal);
-        Assert.Contains("document.createElement(\"application-conversation\")", explorer,
+        Assert.Contains("document.createElement(\"outer-ai\")", explorer,
             StringComparison.Ordinal);
         Assert.Contains("conversation.setAttribute(\"application-id\", applicationId)", explorer,
             StringComparison.Ordinal);
         Assert.Contains("conversation.setAttribute(\"state-space-id\", stateSpaceId)", explorer,
             StringComparison.Ordinal);
-        Assert.Contains("conversation.setAttribute(\"session-context-id\"", explorer,
-            StringComparison.Ordinal);
         Assert.Contains("select.addEventListener(\"change\", mount)", explorer, StringComparison.Ordinal);
         Assert.Contains("host.replaceChildren()", explorer, StringComparison.Ordinal);
-        Assert.Contains("/components/application-conversation.js", controlCenter, StringComparison.Ordinal);
 
-        Assert.Contains("application-id=\"dnd2024\" state-space-id=\"dnd2024-main\"", applicationPage,
+        Assert.Contains("<outer-ai application-id=\"dnd2024\"", applicationPage,
             StringComparison.Ordinal);
-        Assert.Contains("session-context-id=\"application-page.dnd2024\"", applicationPage,
+        Assert.DoesNotContain("state-space-id=\"dnd2024-main\"", applicationPage,
             StringComparison.Ordinal);
-        Assert.Contains("<system-chat aria-label=\"General system chat\"></system-chat>", applicationPage,
+        Assert.Contains("<inner-ai aria-label=\"Inner AI system workspace\"></inner-ai>", applicationPage,
             StringComparison.Ordinal);
-        Assert.DoesNotContain("<system-chat application-id", applicationPage, StringComparison.Ordinal);
-        Assert.Contains("/components/application-conversation.js", applicationPage, StringComparison.Ordinal);
+        Assert.DoesNotContain("application-conversation", applicationPage, StringComparison.Ordinal);
+        Assert.DoesNotContain("<system-chat", applicationPage, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -2202,58 +2528,163 @@ public sealed class WebInterfaceTests
     }
 
     [Fact]
-    public void Home_dashboard_uses_existing_local_conversation_structure_and_browser_local_notes()
+    public void Home_dashboard_uses_provider_neutral_ai_and_browser_local_notes()
     {
         var home = File.ReadAllText(Path.Combine(
             RepositoryRoot(), "src", "system", "web-interface", "examples", "home.html"));
 
-        Assert.Contains("Local outer chat", home, StringComparison.Ordinal);
-        Assert.Contains("/components/application-conversation.js", home, StringComparison.Ordinal);
-        Assert.Contains("document.createElement(\"application-conversation\")", home, StringComparison.Ordinal);
+        Assert.Contains("Outer AI", home, StringComparison.Ordinal);
+        Assert.Contains("document.createElement(\"outer-ai\")", home, StringComparison.Ordinal);
         Assert.Contains("/api/control/structure/applications", home, StringComparison.Ordinal);
         Assert.Contains("/state-spaces", home, StringComparison.Ordinal);
         Assert.Contains("dantes.personal-dashboard.notes.v1", home, StringComparison.Ordinal);
         Assert.Contains("localStorage.setItem(storageKeys.notes", home, StringComparison.Ordinal);
         Assert.Contains("id=\"local-date-time\"", home, StringComparison.Ordinal);
         Assert.Contains("window.setInterval(updateClock, 1000)", home, StringComparison.Ordinal);
-        Assert.Contains("href=\"/ui/dnd2024-play\"", home, StringComparison.Ordinal);
-        Assert.Contains("Enter D&amp;D 2024 game table", home, StringComparison.Ordinal);
+        Assert.Contains("<system-navigation>", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("href=\"/ui/dnd2024-play\"", home, StringComparison.Ordinal);
         Assert.Contains("radial-gradient", home, StringComparison.Ordinal);
         Assert.DoesNotContain("api.openai.com", home, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("InteractionOuter:Provider", home, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task Assistant_panel_keeps_codex_approvals_one_request_turn_scoped_and_closed()
+    public async Task Provider_neutral_ai_component_discovers_models_and_keeps_tools_host_owned()
+    {
+        var script = await BrowserComponentAssets.ReadAsync("ai-workspace");
+
+        Assert.NotNull(script);
+        Assert.Contains("customElements.define('outer-ai'", script, StringComparison.Ordinal);
+        Assert.Contains("customElements.define('inner-ai'", script, StringComparison.Ordinal);
+        Assert.Contains("/api/control/ai/providers", script, StringComparison.Ordinal);
+        Assert.Contains("/api/control/ai/requests", script, StringComparison.Ordinal);
+        Assert.Contains("model.capabilities.includes('reasoning')", script, StringComparison.Ordinal);
+        Assert.Contains("'structured-request'", script, StringComparison.Ordinal);
+        Assert.Contains("'recipe-execution'", script, StringComparison.Ordinal);
+        Assert.Contains("'scheduled-task'", script, StringComparison.Ordinal);
+        Assert.Contains("'continued-subtask'", script, StringComparison.Ordinal);
+        Assert.Contains("resolutionFingerprint", script, StringComparison.Ordinal);
+        Assert.Contains("mediaAttachments", script, StringComparison.Ordinal);
+        Assert.Contains("document.createElement('img')", script, StringComparison.Ordinal);
+        Assert.Contains("contentUrl", script, StringComparison.Ordinal);
+        Assert.Contains("item.isCurrent === true", script, StringComparison.Ordinal);
+        Assert.Contains("Remove conversation", script, StringComparison.Ordinal);
+        Assert.Contains("method: 'DELETE'", script, StringComparison.Ordinal);
+        Assert.Contains("surface=${encodeURIComponent", script, StringComparison.Ordinal);
+        Assert.Contains("ConversationProvider(normalized.Provider)",
+            File.ReadAllText(Path.Combine(RepositoryRoot(), "DantesRoleplay.Web", "Interactions", "WebAiGateway.cs")),
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("data:image", script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("base64Data", script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("overlayProfile", script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("allowedTools", script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("/mcp", script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("llama3", script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("gpt-5", script, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Provider_neutral_ai_rejects_a_stale_application_fingerprint_before_execution()
+    {
+        var applications = new InMemoryApplicationRegistry();
+        var application = ApplicationIdentifier.Parse("fixture-app");
+        var current = applications.Register(new(
+            application,
+            "Fixture",
+            "Fixture application.",
+            []));
+        var ai = new AiService([new WebAiFixtureProvider()]);
+        var gateway = new WebAiGateway(
+            ai,
+            new DantesRoleplay.DataAccess.Composition.SystemAiAgentService([], ai),
+            new AiAgentProfileRegistry([
+                new("web.outer", "Outer AI", "Fixture outer identity.", "Use direct tools.")
+            ]),
+            DispatchProxy.Create<IAssistantConversationStore, UnusedConversationStoreProxy>(),
+            applications,
+            null,
+            null);
+        var authorization = new PrivateOperatorAuthorizationPolicy().Evaluate(new(
+            PrivateOperatorPrincipal.Create("test", "operator"),
+            PrivateOperatorCapability.ControlAiMessage,
+            PrivateOperatorAuthorizationPolicy.PrivateHostScope,
+            "web-ai-stale-test")).Evidence;
+
+        Assert.Equal(["fixture"], gateway.ListProviders().Select(value => value.Id));
+        Assert.Equal(["fixture-model"], (await gateway.ListModelsAsync("fixture"))
+            .Select(value => value.Id));
+        var exception = await Assert.ThrowsAsync<WebAiException>(() => gateway.ExecuteAsync(
+            authorization,
+            new(
+                "outer",
+                "fixture",
+                "fixture-model",
+                "task",
+                "Inspect the application.",
+                "web-ai-stale-1",
+                application.Value,
+                new string(current.Fingerprint[0] == 'A' ? 'B' : 'A', 64))));
+
+        Assert.Equal("AI_APPLICATION_CONTEXT_STALE", exception.Code);
+        Assert.Equal(StatusCodes.Status409Conflict, exception.StatusCode);
+    }
+
+    [Fact]
+    public async Task Provider_neutral_ai_rejects_runtime_state_from_an_older_activation()
+    {
+        using var fixture = new SqliteFixture();
+        await using var db = fixture.CreateContext();
+        var applications = new SqliteApplicationRegistry(db);
+        var application = ApplicationIdentifier.Parse("fixture-app");
+        var revision = applications.Register(new(application, "Fixture", "Fixture application.", []));
+        var staleActivation = new string('A', 64);
+        var currentActivation = new string('B', 64);
+        var resolution = new string('C', 64);
+        var spaces = new SqliteStateSpaceRegistry(db, applications);
+        spaces.Create(new("fixture-state", revision, staleActivation, staleActivation));
+        var active = ActiveManifest(application, revision, currentActivation, resolution);
+        var ai = new AiService([new WebAiFixtureProvider()]);
+        var gateway = new WebAiGateway(
+            ai,
+            new DantesRoleplay.DataAccess.Composition.SystemAiAgentService([], ai),
+            new AiAgentProfileRegistry([
+                new("web.outer", "Outer AI", "Fixture outer identity.", "Use direct tools.")
+            ]),
+            DispatchProxy.Create<IAssistantConversationStore, UnusedConversationStoreProxy>(),
+            applications,
+            new StaticActivationReader(active),
+            spaces);
+        var authorization = new PrivateOperatorAuthorizationPolicy().Evaluate(new(
+            PrivateOperatorPrincipal.Create("test", "operator"),
+            PrivateOperatorCapability.ControlAiMessage,
+            PrivateOperatorAuthorizationPolicy.PrivateHostScope,
+            "web-ai-state-test")).Evidence;
+
+        var exception = await Assert.ThrowsAsync<WebAiException>(() => gateway.ExecuteAsync(
+            authorization,
+            new(
+                "outer", "fixture", "fixture-model", "message", "Hello", "web-ai-state-1",
+                application.Value, resolution, "fixture-state")));
+
+        Assert.Equal("AI_STATE_SPACE_CONTEXT_STALE", exception.Code);
+        Assert.Equal(StatusCodes.Status409Conflict, exception.StatusCode);
+    }
+
+    [Fact]
+    public async Task Assistant_panel_mounts_the_shared_inner_ai_contract_and_request_bodies_remain_closed()
     {
         var html = File.ReadAllText(Path.Combine(
             RepositoryRoot(), "src", "system", "web-interface", "examples", "control-center", "index.html"));
         var start = html.IndexOf("class AssistantPanel", StringComparison.Ordinal);
-        var end = html.IndexOf("class EcsExplorerPanel", start, StringComparison.Ordinal);
-        var panel = html[start..end];
+        var refreshEnd = html.IndexOf("async read(path)", start, StringComparison.Ordinal);
+        var panelRefresh = html[start..refreshEnd];
 
-        Assert.Contains("/api/control/assistants/\" + providerName + \"/status", panel, StringComparison.Ordinal);
-        Assert.Contains("/api/control/conversations", panel, StringComparison.Ordinal);
-        Assert.Contains("providerName === \"codex\"", panel, StringComparison.Ordinal);
-        Assert.Contains("response.body.getReader()", panel, StringComparison.Ordinal);
-        Assert.Contains("new TextDecoder()", panel, StringComparison.Ordinal);
-        Assert.Contains("Cancel active Codex turn", panel, StringComparison.Ordinal);
-        Assert.Contains("read-only/no-network baseline", panel, StringComparison.Ordinal);
-        Assert.Contains("model \" + provider.model", panel, StringComparison.Ordinal);
-        Assert.Contains("New conversations use the host-selected model", panel, StringComparison.Ordinal);
-        Assert.Contains("Accept once", panel, StringComparison.Ordinal);
-        Assert.Contains("Decline", panel, StringComparison.Ordinal);
-        Assert.Contains("Cancel turn", panel, StringComparison.Ordinal);
-        Assert.Contains("/approvals/", panel, StringComparison.Ordinal);
-        Assert.Contains("There is no session-wide approval", panel, StringComparison.Ordinal);
-        Assert.Contains("expectedRevision", panel, StringComparison.Ordinal);
-        Assert.Contains("decision", panel, StringComparison.Ordinal);
-        Assert.Contains("crypto.randomUUID", panel, StringComparison.Ordinal);
-        Assert.DoesNotContain("systemPrompt", panel, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("responseSchema", panel, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("acceptForSession", panel, StringComparison.Ordinal);
-        Assert.DoesNotContain("workspaceWrite", panel, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("dangerFullAccess", panel, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("document.createElement(\"inner-ai\")", panelRefresh, StringComparison.Ordinal);
+        Assert.Contains("Provider-neutral inner AI workspace", panelRefresh, StringComparison.Ordinal);
+        Assert.Contains("Direct capabilities are supplied by the host", panelRefresh, StringComparison.Ordinal);
+        Assert.DoesNotContain("systemPrompt", panelRefresh, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("allowedTools", panelRefresh, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("overlay", panelRefresh, StringComparison.OrdinalIgnoreCase);
 
         var unknownField = new DefaultHttpContext();
         unknownField.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(
@@ -2292,6 +2723,8 @@ public sealed class WebInterfaceTests
         var validator = new BoundedJsonSchemaValidator();
         var types = new SqliteComponentTypeRegistry(db, validator);
         var stats = types.Define(new(applicationId, "fixture-app.stats", "{\"type\":\"object\"}"));
+        var retainedLegacyStats = types.Define(new(
+            applicationId, "fixture-app.game.core.legacy-stats", "{\"type\":\"object\"}"));
         var entities = new SqliteEntityComponentStore(db, types, validator);
         await entities.CreateEntityAsync("fixture-space", "hero", "Hero");
         await entities.AddComponentAsync(new(
@@ -2299,8 +2732,14 @@ public sealed class WebInterfaceTests
             new(stats.QualifiedId, stats.Version, stats.SchemaHash),
             "{\"health\":12}", 0));
         await entities.CreateEntityAsync("fixture-space", "item-lantern", "Lantern");
+        await entities.AddComponentAsync(new(
+            "fixture-space", "item-lantern",
+            new(retainedLegacyStats.QualifiedId, retainedLegacyStats.Version, retainedLegacyStats.SchemaHash),
+            "{\"light\":true}", 0));
         var edges = new SqliteStateSpaceEdgeStore(db, stateSpaces);
         await edges.MoveContainmentAsync("fixture-space", "item-lantern", "hero", "pack", 0);
+        await edges.SetRelationshipAsync(
+            "fixture-space", "hero", "item-lantern", "fixture-app.game.core.owns", "{}", 0);
         var changesBeforeReads = await SqliteTotalChangesAsync(db);
         var capabilities = ApplicationCapabilities(applications);
         var explorer = new ControlStructureExplorer(
@@ -2324,6 +2763,12 @@ public sealed class WebInterfaceTests
             "fixture-app", "fixture-space", "hero", null, null);
         var applicationComponent = await explorer.GetApplicationComponentAsync(
             "fixture-app", "fixture-space", "hero", "fixture-app.stats");
+        var resolvedLegacyComponent = await explorer.GetApplicationComponentAsync(
+            "fixture-app", "fixture-space", "item-lantern", "game.core.legacy-stats");
+        var exactCanonicalComponent = await explorer.GetComponentAsync(
+            "fixture-space", "item-lantern", "game.core.legacy-stats");
+        var resolvedLegacyRelationship = await explorer.ListApplicationRelationshipsAsync(
+            "fixture-app", "fixture-space", "hero", "game.core.owns", null, null);
         var containments = await explorer.ListApplicationContainmentsAsync(
             "fixture-app", "fixture-space", "hero", null, "1");
         var directContainment = await explorer.GetApplicationContainmentAsync(
@@ -2336,7 +2781,8 @@ public sealed class WebInterfaceTests
         Assert.Equal("Explorer fixture", app!.Description);
         Assert.Equal("fixture-space", Assert.Single(spaces.Items).StateSpaceId);
         Assert.Equal("fixture-space", Assert.Single(applicationSpaces.Items).StateSpaceId);
-        Assert.Equal(stats.SchemaHash, Assert.Single(typePage.Items).SchemaHash);
+        Assert.Equal(stats.SchemaHash,
+            Assert.Single(typePage.Items, value => value.QualifiedId == "fixture-app.stats").SchemaHash);
         Assert.Equal("{\"type\":\"object\"}", schema!.SchemaJson);
         Assert.Equal(["hero", "item-lantern"], entityPage.Items.Select(value => value.EntityId));
         Assert.Equal("fixture-app.stats", Assert.Single(componentPage.Items).QualifiedTypeId);
@@ -2346,6 +2792,10 @@ public sealed class WebInterfaceTests
         Assert.Equal("hero", applicationEntity!.EntityId);
         Assert.Equal("fixture-app.stats", Assert.Single(applicationComponents.Items).QualifiedTypeId);
         Assert.Equal("{\"health\":12}", applicationComponent!.ValueJson);
+        Assert.Equal("game.core.legacy-stats", resolvedLegacyComponent!.QualifiedTypeId);
+        Assert.Equal("{\"light\":true}", resolvedLegacyComponent.ValueJson);
+        Assert.Null(exactCanonicalComponent);
+        Assert.Equal("game.core.owns", Assert.Single(resolvedLegacyRelationship.Items).QualifiedKind);
         var containment = Assert.Single(containments.Items);
         Assert.Equal("item-lantern", containment.ContainedEntityId);
         Assert.Equal("hero", containment.ContainerEntityId);
@@ -2434,13 +2884,17 @@ public sealed class WebInterfaceTests
 
         var overview = explorer.GetCatalog("fixture-app");
         var browse = explorer.BrowseCatalog("fixture-app", "contracts", null, null, null);
-        var search = explorer.SearchCatalog("fixture-app", "hero", null, null, [], [], null, null);
+        var search = explorer.SearchCatalog("fixture-app", "Hero contract", null, null, [], [], null, null,
+            "fixture-app.contract");
+        var outsideNamespace = explorer.SearchCatalog("fixture-app", "Hero contract", null, null, [], [], null, null,
+            "fixture-app.other");
         var record = explorer.InspectCatalog("fixture-app", "contracts", "fixture-app.contract.hero");
 
         Assert.Equal("available", overview.Status);
         Assert.Equal("contracts", Assert.Single(overview.Collections).Id);
         Assert.Equal("fixture-app.contract.hero", Assert.Single(browse.Entries).Record!.QualifiedId);
         Assert.Equal("fixture-app.contract.hero", Assert.Single(search.Records).Record.QualifiedId);
+        Assert.Empty(outsideNamespace.Records);
         Assert.Equal(content, record.ContentJson);
         Assert.Equal("CURSOR_INVALID", Assert.Throws<ControlStructureException>(() => explorer.BrowseCatalog(
             "fixture-app", "contracts", null, new string('x', ControlStructureExplorer.MaximumCursorLength + 1), null)).Code);
@@ -2597,7 +3051,7 @@ public sealed class WebInterfaceTests
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/components/system-workspace.js"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/components/application-conversation.js"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/components/application-workspace.js"));
-        Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/pages/home"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/pages/home"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/data/entity/hero"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/changes"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/session"));
@@ -2609,6 +3063,8 @@ public sealed class WebInterfaceTests
             "/api/applications/quest/catalog/browse"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath(
             "/api/applications/quest/catalog/records/quest.item.fixture.v1"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/applications/quest/content"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath("/api/applications/quest/rules"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath(
             "/api/applications/quest/state-spaces/main/mechanics/quest.mechanic.fixture"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath(
@@ -2628,6 +3084,10 @@ public sealed class WebInterfaceTests
             "/api/applications/quest/state-spaces/main/entities/hero/components"));
         Assert.True(WebAccessPolicy.IsAllowedRemotePath(
             "/api/applications/quest/state-spaces/main/entities/hero/components/quest.stats"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/state-spaces/main/entities/hero/media"));
+        Assert.True(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/state-spaces/main/entities/hero/media/visual-0/content"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/mcp"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/pages-other"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/blobs-other/sha256/example"));
@@ -2641,6 +3101,8 @@ public sealed class WebInterfaceTests
             "/api/applications/quest/catalog/records/quest.item.fixture.v1/extra"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath(
             "/api/applications/quest/catalog/records/quest.item.fixture.v1/"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/applications/quest/rules/"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath("/api/applications/quest/rules/extra"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath(
             "/api/applications/quest/catalog//records/quest.item.fixture.v1"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath(
@@ -2654,6 +3116,8 @@ public sealed class WebInterfaceTests
             "/api/applications/quest/state-spaces/main//entities"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath(
             "/api/applications/quest/state-spaces/main/entities/hero/components/quest.stats/extra"));
+        Assert.False(WebAccessPolicy.IsAllowedRemotePath(
+            "/api/applications/quest/state-spaces/main/entities/hero/media/visual-0/content/extra"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath(
             "/api/applications/quest/state-spaces/main/entities/hero/containment/extra"));
         Assert.False(WebAccessPolicy.IsAllowedRemotePath(
@@ -2743,6 +3207,64 @@ public sealed class WebInterfaceTests
 
     private static WebControlRequestGuard ControlGuard(WebRemoteAccessOptions options) =>
         new(OperatorGuard(options));
+
+    public class UnusedConversationStoreProxy : DispatchProxy
+    {
+        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args) =>
+            throw new InvalidOperationException("The stale-context test must reject before conversation persistence.");
+    }
+
+    private static ActiveApplicationManifest ActiveManifest(
+        ApplicationIdentifier application,
+        ApplicationRevision revision,
+        string activationFingerprint,
+        string resolutionFingerprint) => new(
+            application,
+            1,
+            revision.Revision,
+            revision.Fingerprint,
+            new string('D', 64),
+            new string('E', 64),
+            new string('F', 64),
+            new string('9', 64),
+            activationFingerprint,
+            "coverage-v1",
+            true,
+            [],
+            [],
+            "operation.fixture",
+            DateTime.UnixEpoch)
+        {
+            ResolutionFingerprint = resolutionFingerprint
+        };
+
+    private sealed class StaticActivationReader(ActiveApplicationManifest active)
+        : IApplicationActivationReader
+    {
+        public ActiveApplicationManifest? Current(ApplicationIdentifier applicationId) =>
+            applicationId == active.ApplicationId ? active : null;
+    }
+
+    private sealed class WebAiFixtureProvider : IAiProvider
+    {
+        public AiProviderInfo Info { get; } = new("fixture", "Fixture provider");
+
+        public Task<IReadOnlyList<AiModel>> ListModelsAsync(
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<AiModel>>([new(
+                "fixture",
+                "fixture-model",
+                "Fixture model",
+                AiModelCapabilities.Messages | AiModelCapabilities.Tasks,
+                [],
+                "fixture-revision",
+                true)]);
+
+        public Task<AiProviderResponse> SendAsync(
+            AiProviderRequest request,
+            CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("The stale-context test must reject before provider execution.");
+    }
 
     private sealed class SecretFixtureCapabilityHandler : ISystemReadCapabilityHandler
     {
@@ -2858,6 +3380,10 @@ public sealed class WebInterfaceTests
         public CatalogBrowseResult Browse(CatalogBrowseRequest request) => throw new NotSupportedException();
         public CatalogSearchResult Search(CatalogSearchRequest request) => throw new NotSupportedException();
         public CatalogRecordView Inspect(CatalogRecordRequest request) => throw new NotSupportedException();
+        public EffectiveApplicationContentResult EffectiveContent(EffectiveApplicationContentRequest request) =>
+            throw new NotSupportedException();
+        public ReadableRulesResult ReadableRules(ReadableRulesRequest request) =>
+            throw new NotSupportedException();
     }
 
     private sealed class StaticHostSettingProvider(HostSettingCatalog catalog)

@@ -2,30 +2,40 @@
 
 /**
  * @param {RuleReadModel[]} rules
- * @returns {string[]}
+ * @returns {RuleReadModel["section"][]}
  */
-export function ruleCategoryOptions(rules) {
-  return ["All", ...new Set(rules.map((rule) => rule.category).filter(Boolean))];
+export function ruleSectionOptions(rules) {
+  const sections = new Map();
+  for (const rule of rules) sections.set(rule.section.id, rule.section);
+  return [...sections.values()].sort((left, right) => left.order - right.order
+    || left.label.localeCompare(right.label)
+    || left.id.localeCompare(right.id));
 }
 
 /**
  * @param {RuleReadModel[]} rules
  * @param {string} query
- * @param {string} category
+ * @param {string} sectionId
  * @returns {RuleReadModel[]}
  */
-export function filterRuleReferences(rules, query, category) {
+export function filterRuleReferences(rules, query, sectionId) {
   const normalizedQuery = query.trim().toLocaleLowerCase();
   return rules.filter((rule) => {
-    if (category !== "All" && rule.category !== category) return false;
+    if (sectionId && rule.section.id !== sectionId) return false;
     if (!normalizedQuery) return true;
     return [
       rule.title,
-      rule.category,
-      rule.subcategory,
+      rule.section.label,
       rule.summary,
       rule.id,
-      rule.source?.locator ?? "",
+      rule.resolutionKey,
+      rule.source.label,
+      rule.source.classification,
+      ...rule.blocks.flatMap((block) => [block.heading ?? "", block.body ?? "", ...block.items]),
+      ...rule.examples.flatMap((example) => [example.title, example.body]),
+      ...rule.citations.flatMap((citation) => [citation.sourceId, citation.locator]),
+      ...rule.authority.mechanicIds,
+      ...rule.authority.procedureIds,
     ].some((value) => value.toLocaleLowerCase().includes(normalizedQuery));
   });
 }

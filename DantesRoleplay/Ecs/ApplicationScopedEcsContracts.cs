@@ -1,4 +1,4 @@
-using DantesRoleplay.Applications;
+﻿using DantesRoleplay.Applications;
 
 namespace DantesRoleplay.Ecs;
 
@@ -8,7 +8,11 @@ public sealed record StateSpaceView(
     string ManifestFingerprint,
     int BindingRevision,
     DateTime CreatedAtUtc,
-    DateTime UpdatedAtUtc);
+    DateTime UpdatedAtUtc)
+{
+    public string ResolutionFingerprint { get; init; } = ManifestFingerprint;
+    public EcsStateSpaceScope Scope { get; init; } = EcsStateSpaceScope.Runtime;
+}
 
 public sealed record StateSpaceDiscoveryPage(
     IReadOnlyList<StateSpaceView> StateSpaces,
@@ -87,6 +91,40 @@ public interface IStateSpaceRegistry
         ApplicationIdentifier applicationId,
         string? afterStateSpaceId,
         int limit);
+}
+
+/// <summary>
+/// A bounded discovery request over one state space. At least one of <see cref="NameQuery"/> or
+/// <see cref="QualifiedTypeId"/> must be supplied; the search never returns component values.
+/// </summary>
+public sealed record EcsEntitySearch(
+    string? NameQuery,
+    string? QualifiedTypeId,
+    string? AfterEntityId,
+    int Limit)
+{
+    public void Validate()
+    {
+        if (string.IsNullOrWhiteSpace(NameQuery) && string.IsNullOrWhiteSpace(QualifiedTypeId))
+            throw new ArgumentException("An entity search requires a name query or a component type filter.");
+        if (NameQuery is { Length: > 200 } || QualifiedTypeId is { Length: > 200 }
+            || AfterEntityId is { Length: > 200 })
+            throw new ArgumentException("Entity search terms may not exceed 200 characters.");
+        if (Limit is < 1 or > 100) throw new ArgumentOutOfRangeException(nameof(Limit));
+    }
+}
+
+/// <summary>
+/// Optional bounded name/component discovery over one application state space. It is separate from
+/// <see cref="IEntityComponentStore"/> so that a reader which cannot search stays honest about it:
+/// a caller that does not find this interface must keep requiring exact IDs.
+/// </summary>
+public interface IEntityComponentSearchStore
+{
+    Task<EcsEntityDiscoveryPage> SearchEntitiesAsync(
+        string stateSpaceId,
+        EcsEntitySearch search,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IEntityComponentStore

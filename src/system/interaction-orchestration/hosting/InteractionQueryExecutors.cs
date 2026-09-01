@@ -86,3 +86,42 @@ internal sealed class ProjectionInteractionQueryExecutor(IProjectionMaterializer
         return new(output, request.Contract.OutputSchemaHash, resultFingerprint, revisionFingerprint);
     }
 }
+
+/// <summary>
+/// Read-only adapter over application-owned JavaScript projections. The application read-model
+/// service resolves the exact activated query and mechanic, validates the closed output schema,
+/// and binds the result to the current application resolution.
+/// </summary>
+internal sealed class MechanicProjectionInteractionQueryExecutor(IApplicationReadModelService readModels)
+    : IInteractionQueryExecutor
+{
+    public string Kind => ApplicationQueryContract.MechanicProjectionExecutor;
+
+    public async Task<InteractionQueryExecutionResult> ExecuteAsync(
+        InteractionQueryExecutionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(request.ApplicationId);
+        ArgumentNullException.ThrowIfNull(request.Contract);
+        if (request.Contract.Executor != Kind
+            || !request.QualifiedQueryId.StartsWith(request.ApplicationId.Value + ".", StringComparison.Ordinal)
+            || !request.Contract.Roles.Order(StringComparer.Ordinal)
+                .SequenceEqual(request.RoleBindings.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal))
+            throw new InteractionContractException("QUERY_EXECUTION_SCOPE_INVALID",
+                "The query request does not match its application, executor, or exact roles.");
+
+        var result = await readModels.ReadAsync(new(
+            request.StateSpaceId,
+            request.ApplicationId,
+            request.QualifiedQueryId,
+            request.RoleBindings), cancellationToken);
+        if (result.QualifiedQueryId != request.QualifiedQueryId
+            || result.OutputSchemaHash != request.Contract.OutputSchemaHash)
+            throw new InteractionContractException("QUERY_READ_MODEL_STALE",
+                "The query read model returned a different contract authority.");
+
+        return new(result.DataJson, result.OutputSchemaHash,
+            result.ResultFingerprint, result.SourceRevisionFingerprint);
+    }
+}

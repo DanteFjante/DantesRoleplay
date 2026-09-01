@@ -1,4 +1,4 @@
-using DantesRoleplay.Applications;
+﻿using DantesRoleplay.Applications;
 
 namespace DantesRoleplay.CatalogNavigation;
 
@@ -10,6 +10,19 @@ namespace DantesRoleplay.CatalogNavigation;
 public interface IPublicApplicationCatalogProvider
 {
     bool TryGet(ApplicationIdentifier applicationId, out ICatalogNavigator navigator);
+}
+
+/// <summary>One recorded reason a published catalog could not be materialized.</summary>
+public sealed record PublicApplicationCatalogFailure(string Code, string Message);
+
+/// <summary>
+/// Reports why the most recent materialization attempt for a published application failed. A
+/// provider that cannot fail, or that has not yet failed, reports nothing. This exists so an
+/// unavailable catalog names its own cause instead of being an undiagnosable dead end.
+/// </summary>
+public interface IPublicApplicationCatalogDiagnostics
+{
+    PublicApplicationCatalogFailure? LastFailure(ApplicationIdentifier applicationId);
 }
 
 /// <summary>

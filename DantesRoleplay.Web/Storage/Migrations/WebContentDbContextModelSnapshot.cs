@@ -73,6 +73,24 @@ namespace DantesRoleplay.Web.Persistence.Migrations
                     b.ToTable("web_page_asset", (string)null);
                 });
 
+            modelBuilder.Entity("DantesRoleplay.Web.Pages.WebPageMigrationReportRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReportJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("web_page_migration_report", (string)null);
+                });
+
             modelBuilder.Entity("DantesRoleplay.Web.Pages.WebPageRevision", b =>
                 {
                     b.Property<long>("Id")

@@ -3,8 +3,11 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Knowledge;
+using DantesRoleplay.Media;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.Web.Hosting;
 
 namespace DantesRoleplay.MCPServer;
 
@@ -20,6 +23,39 @@ public sealed record LocalKnowledgeSeatSnapshot(
 public interface ILocalKnowledgeSeatProvider
 {
     LocalKnowledgeSeatSnapshot Current();
+}
+
+internal sealed class LocalReadableRulesAudienceProvider(ILocalKnowledgeSeatProvider seats)
+    : IWebReadableRulesAudienceProvider
+{
+    public ReadableRuleAudience Current()
+    {
+        var seat = seats.Current();
+        return seat.Enabled && seat.Role == KnowledgeAudienceRole.GameMaster
+            ? ReadableRuleAudience.Dm
+            : ReadableRuleAudience.Public;
+    }
+}
+
+internal sealed class LocalEntityMediaAudienceResolver(
+    ILocalKnowledgeSeatProvider seats) : IEntityMediaAudienceResolver
+{
+    public EntityMediaAudienceContext? Resolve(ApplicationIdentifier applicationId)
+    {
+        var seat = seats.Current();
+        if (!seat.Enabled || seat.ApplicationId != applicationId.Value ||
+            seat.Role is not (KnowledgeAudienceRole.Actor or KnowledgeAudienceRole.GameMaster)) return null;
+        if (seat.Role == KnowledgeAudienceRole.Actor && !Token(seat.ActorId)) return null;
+        if (seat.Role == KnowledgeAudienceRole.GameMaster && seat.ActorId is not null) return null;
+        return new(
+            seat.Role == KnowledgeAudienceRole.GameMaster
+                ? EntityMediaAudience.GameMaster
+                : EntityMediaAudience.Player,
+            seat.ActorId);
+    }
+
+    private static bool Token(string? value) => !string.IsNullOrWhiteSpace(value) &&
+        value == value.Trim() && value.Length <= 200 && !value.Any(char.IsWhiteSpace);
 }
 
 internal sealed class ConfigurationLocalKnowledgeSeatProvider(IConfiguration? configuration)

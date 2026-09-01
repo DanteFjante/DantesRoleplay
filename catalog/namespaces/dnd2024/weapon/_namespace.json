@@ -1,0 +1,12 @@
+{
+  "id": "dnd2024.weapon",
+  "owner": "dnd2024",
+  "description": "D\u0026D 2024 weapon identities.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed as application-owned weapon identity."
+}

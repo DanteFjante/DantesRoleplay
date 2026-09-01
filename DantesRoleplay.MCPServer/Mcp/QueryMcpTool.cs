@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Events;
 using DantesRoleplay.Notifications;
@@ -104,13 +104,16 @@ public sealed class QueryMcpTool
         [Description("Feedback filter: blocked, degraded, minor, or none.")] string? impact = null,
         [Description("Knowledge answer: bounded natural-language question.")] string? question = null,
         [Description("Generic information answer: required authorized information scope.")] string? scopeId = null,
-        [Description("Optional exact source IDs for information answers or application source-profile previews.")] string[]? sourceIds = null,
+        [Description("Optional exact source IDs for information answers or reviewed application base-source previews; may be combined with extensionIds for operator installation.")] string[]? sourceIds = null,
+        [Description("Application preview: optional exact registered extension IDs; omit to preview every compatible installed extension.")] string[]? extensionIds = null,
         [Description("System catalog queries: required non-system application ID.")] string? applicationId = null,
         [Description("System catalog queries: application-declared collection ID.")] string? collection = null,
         [Description("System catalog browse/search: slash-separated logical branch; empty means root.")] string? branch = null,
         [Description("System catalog browse/search: authenticated continuation cursor.")] string? cursor = null,
         [Description("System catalog search: optional record-kind filters.")] string[]? kinds = null,
         [Description("System catalog search: optional record-status filters.")] string[]? statuses = null,
+        [Description("System catalog and feature search: optional namespace ID; includes descendant namespaces.")] string? namespaceId = null,
+        [Description("Operator catalog diagnostics: include shadowed extension records and resolution evidence.")] bool includeShadowed = false,
         [Description("System catalog browse/search page size, 1–100; default 25.")] int? pageSize = null,
         [Description("System dependency impact: include indirect declared dependents; default true.")] bool? transitive = null,
         [Description("Interaction queries: application-bound state-space ID.")] string? stateSpaceId = null,
@@ -195,6 +198,8 @@ public sealed class QueryMcpTool
                     applicationId,
                     stateSpaceId,
                     string.IsNullOrWhiteSpace(id) ? ids : [id!],
+                    nameQuery,
+                    withDefinitionId,
                     limit ?? 50,
                     cancellationToken),
             "entities" when !string.IsNullOrWhiteSpace(applicationId) || !string.IsNullOrWhiteSpace(stateSpaceId) =>
@@ -256,7 +261,7 @@ public sealed class QueryMcpTool
             "system.sources" => await new SystemRegistryQueryHandler().SourcesAsync(
                 applications, sources, sourceScans, privateOperator, log, applicationId, id, limit),
             "system.application-preview" => await new SystemApplicationPreviewHandler().PreviewAsync(
-                applicationPreviews, privateOperator, log, applicationId, sourceIds, limit, cancellationToken),
+                applicationPreviews, privateOperator, log, applicationId, sourceIds, extensionIds, limit, cancellationToken),
             "system.dependencies" => await new SystemDependencyHandler().InspectAsync(
                 projectionImpacts, privateOperator, log, applicationId, id, transitive, limit),
             "system.catalogs" => await new SystemCatalogHandler().ListAsync(
@@ -264,11 +269,11 @@ public sealed class QueryMcpTool
             "system.catalog.browse" => await new SystemCatalogHandler().BrowseAsync(
                 publicCatalogs ?? new EmptyPublicApplicationCatalogProvider(), log, applicationId, collection, branch, pageSize, cursor),
             "system.catalog.search" => await new SystemCatalogHandler().SearchAsync(
-                publicCatalogs ?? new EmptyPublicApplicationCatalogProvider(), log, applicationId, query, collection, branch, kinds, statuses, pageSize, cursor),
+                publicCatalogs ?? new EmptyPublicApplicationCatalogProvider(), log, applicationId, query, collection, branch, kinds, statuses, pageSize, cursor, namespaceId, includeShadowed),
             "system.catalog.record" => await new SystemCatalogHandler().RecordAsync(
                 publicCatalogs ?? new EmptyPublicApplicationCatalogProvider(), log, applicationId, collection, id),
             "system.feature-search" => await new SystemInteractionHandler().SearchAsync(
-                interactionGateway, privateOperator, log, applicationId, query, id, limit, cancellationToken),
+                interactionGateway, privateOperator, log, applicationId, query, id, limit, namespaceId, cancellationToken),
             "system.interaction-plan" => await new SystemInteractionHandler().PlanAsync(
                 interactionGateway, privateOperator, log, applicationId, request, cancellationToken),
             "system.interaction-receipt" => await new SystemInteractionHandler().ReceiptAsync(

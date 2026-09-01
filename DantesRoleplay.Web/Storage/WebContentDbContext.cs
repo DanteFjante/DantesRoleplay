@@ -12,6 +12,8 @@ public sealed class WebContentDbContext(DbContextOptions<WebContentDbContext> op
 
     public DbSet<WebPageAsset> PageAssets => Set<WebPageAsset>();
 
+    public DbSet<WebPageMigrationReportRecord> PageMigrationReports => Set<WebPageMigrationReportRecord>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<WebPage>(entity =>
@@ -66,6 +68,15 @@ public sealed class WebContentDbContext(DbContextOptions<WebContentDbContext> op
                 .HasForeignKey(asset => asset.PageRevisionId)
                 .OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(asset => new { asset.PageRevisionId, asset.Path }).IsUnique();
+        });
+
+        modelBuilder.Entity<WebPageMigrationReportRecord>(entity =>
+        {
+            entity.ToTable("web_page_migration_report");
+            entity.HasKey(report => report.Id);
+            entity.Property(report => report.Id).HasMaxLength(100);
+            entity.Property(report => report.ReportJson).IsRequired();
+            entity.Property(report => report.UpdatedAtUtc).IsRequired();
         });
     }
 }

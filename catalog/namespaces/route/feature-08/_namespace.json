@@ -1,0 +1,12 @@
+{
+  "id": "route.feature-08",
+  "owner": "route",
+  "description": "Namespace for route feature-08 catalog records.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

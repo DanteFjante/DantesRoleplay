@@ -1,6 +1,7 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.Operations;
 
 namespace DantesRoleplay.MCPServer.Mcp;
@@ -54,19 +55,21 @@ internal sealed class SystemCatalogHandler
         string[]? kinds,
         string[]? statuses,
         int? pageSize,
-        string? cursor) => RunAsync(catalogs, log, applicationId, "system.catalog.search", (app, navigator) =>
+        string? cursor,
+        string? namespaceId,
+        bool includeShadowed) => RunAsync(catalogs, log, applicationId, "system.catalog.search", (app, navigator) =>
     {
         if (string.IsNullOrWhiteSpace(query)) return Invalid("system.catalog.search", "query is required.");
         var size = pageSize ?? CatalogNavigationLimits.DefaultPageSize;
-        var value = navigator.Search(new(app, query, collection, branch ?? "", kinds, statuses, size, cursor));
+        var value = navigator.Search(new(app, query, collection, branch ?? "", kinds, statuses, size, cursor, namespaceId, includeShadowed));
         var next = new List<string>();
-        if (value.NextCursor is not null) next.Add(SearchCall(app.Value, query, collection, branch ?? "", kinds, statuses, size, value.NextCursor));
+        if (value.NextCursor is not null) next.Add(SearchCall(app.Value, query, collection, branch ?? "", kinds, statuses, size, value.NextCursor, namespaceId, includeShadowed));
         if (value.Records.Count > 0) next.Add(RecordCall(app.Value, value.Records[0].Record.Collection, value.Records[0].Record.QualifiedId));
         if (next.Count == 0) next.Add(CatalogsCall(app.Value));
         return ToolOutcome.Ok(new { ApplicationId = app.Value, Result = value },
             $"Searched the public catalog for '{query}'.", [.. next]);
     }, () => SearchCall(applicationId ?? "application-id", query ?? "query", collection, branch ?? "", kinds, statuses,
-        pageSize ?? CatalogNavigationLimits.DefaultPageSize, null));
+        pageSize ?? CatalogNavigationLimits.DefaultPageSize, null, namespaceId, includeShadowed));
 
     public Task<ToolEnvelope> RecordAsync(
         IPublicApplicationCatalogProvider catalogs,
@@ -105,8 +108,20 @@ internal sealed class SystemCatalogHandler
                     Capabilities, $"Rejected {kind} with an invalid application.");
             }
             if (!catalogs.TryGet(app, out var navigator))
-                return ToolOutcome.Fail("PUBLIC_CATALOG_UNAVAILABLE", "No public catalog is published for this application.",
-                    Capabilities, $"No public catalog was available for '{app.Value}'.");
+            {
+                // An unavailable catalog used to be an undiagnosable dead end: the provider caught
+                // its own materialization failure and returned a bare false. When the provider can
+                // say why, say why.
+                var failure = (catalogs as IPublicApplicationCatalogDiagnostics)?.LastFailure(app);
+                return failure is null
+                    ? ToolOutcome.Fail("PUBLIC_CATALOG_UNAVAILABLE",
+                        "No public catalog is published for this application.",
+                        Capabilities, $"No public catalog was available for '{app.Value}'.")
+                    : ToolOutcome.Fail("PUBLIC_CATALOG_UNAVAILABLE",
+                        $"The published catalog for this application could not be materialized: {failure.Code} — {failure.Message}",
+                        "query(kind: \"system.application-preview\", applicationId: \"" + app.Value + "\")",
+                        $"Catalog materialization for '{app.Value}' failed with {failure.Code}.");
+            }
             try { return body(app, navigator); }
             catch (ArgumentException exception) when (exception.Message.StartsWith("CURSOR_INVALID", StringComparison.Ordinal))
             {
@@ -117,6 +132,11 @@ internal sealed class SystemCatalogHandler
             {
                 return ToolOutcome.Fail("CURSOR_STALE", "The cursor belongs to a different catalog snapshot or query scope.",
                     restart?.Invoke() ?? CatalogsCall(app.Value), $"Rejected a stale cursor for {kind}.");
+            }
+            catch (CatalogNamespaceException exception)
+            {
+                return ToolOutcome.Fail(exception.Code, exception.Message,
+                    restart?.Invoke() ?? CatalogsCall(app.Value), $"Could not resolve catalog overlay priority for {kind}.");
             }
             catch (KeyNotFoundException exception)
             {
@@ -142,8 +162,8 @@ internal sealed class SystemCatalogHandler
     private static string CatalogsCall(string app) => $"query(kind: \"system.catalogs\", applicationId: {Quote(app)})";
     private static string BrowseCall(string app, string collection, string branch, int size, string? cursor) =>
         $"query(kind: \"system.catalog.browse\", applicationId: {Quote(app)}, collection: {Quote(collection)}, branch: {Quote(branch)}, pageSize: {size}{Cursor(cursor)})";
-    private static string SearchCall(string app, string query, string? collection, string branch, string[]? kinds, string[]? statuses, int size, string? cursor) =>
-        $"query(kind: \"system.catalog.search\", applicationId: {Quote(app)}, query: {Quote(query)}{Optional("collection", collection)}, branch: {Quote(branch)}{Array("kinds", kinds)}{Array("statuses", statuses)}, pageSize: {size}{Cursor(cursor)})";
+    private static string SearchCall(string app, string query, string? collection, string branch, string[]? kinds, string[]? statuses, int size, string? cursor, string? namespaceId, bool includeShadowed) =>
+        $"query(kind: \"system.catalog.search\", applicationId: {Quote(app)}, query: {Quote(query)}{Optional("collection", collection)}, branch: {Quote(branch)}{Array("kinds", kinds)}{Array("statuses", statuses)}{Optional("namespaceId", namespaceId)}{(includeShadowed ? ", includeShadowed: true" : "")}, pageSize: {size}{Cursor(cursor)})";
     private static string RecordCall(string app, string collection, string id) =>
         $"query(kind: \"system.catalog.record\", applicationId: {Quote(app)}, collection: {Quote(collection)}, id: {Quote(id)})";
     private static string Cursor(string? value) => value is null ? "" : $", cursor: {Quote(value)}";

@@ -1,0 +1,5 @@
+{
+  "id": "system.web.index-page",
+  "name": "Web Index Page",
+  "description": "Marker for the single enabled landing page in one application publication state space."
+}

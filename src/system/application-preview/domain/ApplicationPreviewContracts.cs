@@ -20,7 +20,11 @@ public sealed record ApplicationPreviewResult(
     IReadOnlyList<ApplicationPreviewSource> Sources,
     IReadOnlyList<EffectiveSourceDocument> Winners,
     IReadOnlyList<ShadowedSourceDocument> Shadows,
-    IReadOnlyList<SourceOverlayProblem> Problems);
+    IReadOnlyList<SourceOverlayProblem> Problems)
+{
+    public string ResolutionFingerprint { get; init; } = CandidateManifestFingerprint;
+    public IReadOnlyList<string> ExtensionIds { get; init; } = [];
+}
 
 public sealed class ApplicationPreviewException(string code, string message) : Exception(message)
 {
@@ -38,4 +42,17 @@ public interface IApplicationPreviewService
         ApplicationIdentifier applicationId,
         IReadOnlyList<string> sourceIds,
         CancellationToken cancellationToken = default);
+
+    Task<ApplicationPreviewResult> PreviewExtensionsAsync(
+        ApplicationIdentifier applicationId,
+        IReadOnlyList<string> extensionIds,
+        CancellationToken cancellationToken = default) =>
+        throw new NotSupportedException("This preview service does not support extension selection.");
+
+    Task<ApplicationPreviewResult> PreviewAsync(
+        ApplicationIdentifier applicationId,
+        IReadOnlyList<string> baseSourceIds,
+        IReadOnlyList<string> extensionIds,
+        CancellationToken cancellationToken = default) =>
+        throw new NotSupportedException("This preview service does not support reviewed base-source and extension selection.");
 }

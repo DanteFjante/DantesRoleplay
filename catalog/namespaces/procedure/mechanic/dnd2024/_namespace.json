@@ -1,0 +1,12 @@
+{
+  "id": "procedure.mechanic.dnd2024",
+  "owner": "procedure",
+  "description": "Namespace for procedure mechanic dnd2024 catalog records.",
+  "allowedKinds": [
+    "procedure"
+  ],
+  "aliases": [],
+  "enabled": false,
+  "reviewStatus": "needs-review",
+  "reviewNote": "Uses inverted D\u0026D ownership; migrate records to the dnd2024 namespace before approval."
+}

@@ -1,5 +1,6 @@
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
+using DantesRoleplay.Ecs;
 
 namespace DantesRoleplay.StateSpaceAdministration;
 
@@ -7,7 +8,10 @@ public sealed record StateSpaceCreationRequest(
     string StateSpaceId,
     ApplicationIdentifier ApplicationId,
     string ActiveFingerprint,
-    string? ExpectedFingerprint);
+    string? ExpectedFingerprint)
+{
+    public EcsStateSpaceScope Scope { get; init; } = EcsStateSpaceScope.Runtime;
+}
 
 public sealed record StateSpaceCreationContext(
     string RequestToken,
@@ -24,7 +28,11 @@ public sealed record StateSpaceBindingSummary(
     int BindingRevision,
     string BindingFingerprint,
     DateTime? CreatedAtUtc,
-    DateTime? UpdatedAtUtc);
+    DateTime? UpdatedAtUtc)
+{
+    public string ResolutionFingerprint { get; init; } = ActiveFingerprint;
+    public EcsStateSpaceScope Scope { get; init; } = EcsStateSpaceScope.Runtime;
+}
 
 public sealed record StateSpaceCreationPreview(
     StateSpaceBindingSummary Binding,

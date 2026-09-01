@@ -1,1 +1,85 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,"required":["entitlements"],"properties":{"entitlements":{"type":"array","maxItems":1024,"items":{"type":"object","additionalProperties":false,"required":["featureRef","sourceRef"],"properties":{"featureRef":{"$ref":"#/$defs/prototype-2"},"sourceRef":{"$ref":"#/$defs/prototype-2"}}}}},"$defs":{"prototype-0":{"type":"string","pattern":"^dnd2024\\.[a-z][a-z0-9-]*(?:\\.[a-z][a-z0-9-]*)*$","maxLength":200},"prototype-1":{"type":"string","minLength":1,"pattern":"\\S","maxLength":200},"prototype-2":{"type":"object","additionalProperties":false,"required":["entityId"],"properties":{"entityId":{"$ref":"#/$defs/prototype-1"},"expectedArchetype":{"$ref":"#/$defs/prototype-0"}}}}}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["entitlements"],
+  "properties": {
+    "entitlements": {
+      "type": "array",
+      "maxItems": 1024,
+      "uniqueItems": true,
+      "items": {
+        "oneOf": [
+          { "$ref": "#/$defs/originFeatEntitlement" },
+          { "$ref": "#/$defs/classFeatureEntitlement" }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "entityRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entityId"],
+      "properties": {
+        "entityId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceId", "locator"],
+      "properties": {
+        "sourceId": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 200,
+          "pattern": "^[a-z0-9][a-z0-9.-]+$"
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 200
+        }
+      }
+    },
+    "originFeatEntitlement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["featureRef", "grantedByRef", "grantKind", "configurationKey", "sourceRef"],
+      "properties": {
+        "featureRef": { "$ref": "#/$defs/entityRef" },
+        "grantedByRef": { "$ref": "#/$defs/entityRef" },
+        "grantKind": { "const": "origin-feat" },
+        "configurationKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "sourceRef": { "$ref": "#/$defs/sourceRef" }
+      }
+    },
+    "classFeatureEntitlement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["featureRef", "grantedByRef", "grantKind", "classLevel", "sourceRef"],
+      "properties": {
+        "featureRef": { "$ref": "#/$defs/entityRef" },
+        "grantedByRef": { "$ref": "#/$defs/entityRef" },
+        "grantKind": { "const": "class-feature" },
+        "classLevel": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "sourceRef": { "$ref": "#/$defs/sourceRef" }
+      }
+    }
+  }
+}

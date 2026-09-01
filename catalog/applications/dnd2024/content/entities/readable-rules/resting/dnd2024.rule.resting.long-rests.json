@@ -1,0 +1,53 @@
+{
+  "id": "dnd2024.rule.resting.long-rests",
+  "name": "Long Rests",
+  "components": {
+    "game.core.rules.readable": {
+      "section": { "id": "resting", "label": "Resting", "order": 30 },
+      "order": 10,
+      "title": "Long Rests",
+      "summary": "A long rest is tracked as a recorded episode whose progress, interruptions, and completion benefits are resolved by the active rest policy.",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "heading": "Rest episode",
+          "body": "Beginning a rest records the selected policy and starting state. Progress and interruptions update that same episode rather than inventing an outcome in the interface.",
+          "items": []
+        },
+        {
+          "kind": "list",
+          "heading": "What the mechanic checks",
+          "body": null,
+          "items": [
+            "The active rest policy and its source-bound timing.",
+            "Recorded interruptions and elapsed time.",
+            "Benefits that are eligible when the episode completes."
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "title": "Interrupted rest",
+          "body": "When an interruption is recorded, the rest-progress mechanic applies the active policy before reporting whether more time is required."
+        }
+      ],
+      "relatedRuleRefs": [
+        { "entityId": "dnd2024.rule.combat.weapon-attacks" }
+      ],
+      "citations": [
+        {
+          "sourceId": "dnd2024.source.srd-5.2.1",
+          "locator": "Rules Glossary > Long Rest and Short Rest, PDF pages 185 and 187"
+        }
+      ],
+      "mechanicIds": [
+        "dnd2024.mechanic.rest.begin",
+        "dnd2024.mechanic.rest.interrupt",
+        "dnd2024.mechanic.rest.progress"
+      ],
+      "procedureIds": ["dnd2024.procedure.mechanic.rest-episode"],
+      "visibility": "public",
+      "presentationStatus": "published"
+    }
+  }
+}

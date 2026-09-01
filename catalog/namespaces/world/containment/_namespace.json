@@ -1,0 +1,12 @@
+{
+  "id": "world.containment",
+  "owner": "world",
+  "description": "Namespace for world containment catalog records.",
+  "allowedKinds": [
+    "event-type"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

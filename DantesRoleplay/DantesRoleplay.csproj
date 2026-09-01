@@ -22,9 +22,9 @@
          install the operating manual into a fresh database without maintaining a second folder.
          Ruleset procedures are intentionally excluded: the kernel can start without a game. -->
     <EmbeddedResource Include="..\catalog\procedures\**\*.md"
-                      Exclude="..\catalog\procedures\ruleset\**\*.md">
+                      Exclude="..\catalog\procedures\dnd2024\**\*.md">
       <Link>Bootstrap\%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <LogicalName>DantesRoleplay.Bootstrap.%(Filename)%(Extension)</LogicalName>
+      <LogicalName>DantesRoleplay.Bootstrap.%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
       <!-- `.run.md` otherwise looks like the `run` culture and is moved to a satellite
            assembly, silently dropping action.run and mechanic.run from startup seeding. -->
       <WithCulture>false</WithCulture>
@@ -33,17 +33,18 @@
     <!-- The two generic example mechanics also come directly from their canonical catalog
          metadata/source pairs. Ruleset mechanics remain installable content, not kernel seed. -->
     <EmbeddedResource Include="..\catalog\mechanics\**\*.md;..\catalog\mechanics\**\*.js"
-                      Exclude="..\catalog\mechanics\ruleset\**\*">
+                      Exclude="..\catalog\mechanics\dnd2024\**\*">
       <Link>Rules\%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <LogicalName>DantesRoleplay.Rules.%(Filename)%(Extension)</LogicalName>
+      <LogicalName>DantesRoleplay.Rules.%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
       <WithCulture>false</WithCulture>
     </EmbeddedResource>
 
     <!-- Structural event types are kernel contracts and must exist in a fresh database. Embed the
          canonical catalog definitions and schema sidecars rather than maintaining a mirror. -->
-    <EmbeddedResource Include="..\catalog\event-types\**\*.json">
+    <EmbeddedResource Include="..\catalog\event-types\**\*.json"
+                      Exclude="..\catalog\event-types\dnd2024\**\*.json">
       <Link>EventTypes\%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <LogicalName>DantesRoleplay.EventTypes.%(Filename)%(Extension)</LogicalName>
+      <LogicalName>DantesRoleplay.EventTypes.%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
       <WithCulture>false</WithCulture>
     </EmbeddedResource>
   </ItemGroup>

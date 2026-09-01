@@ -1,0 +1,12 @@
+{
+  "id": "procedure.mechanic",
+  "owner": "procedure",
+  "description": "Namespace for procedure mechanic catalog records.",
+  "allowedKinds": [
+    "procedure"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

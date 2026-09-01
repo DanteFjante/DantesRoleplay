@@ -103,7 +103,7 @@ public sealed class ApplicationMechanicWebService(
     {
         var stateSpace = CurrentScope(applicationId, stateSpaceId, qualifiedMechanicId);
         var result = await interactions.SearchFeaturesAsync(applicationId, null,
-            qualifiedMechanicId, 1, cancellationToken);
+            qualifiedMechanicId, 1, cancellationToken: cancellationToken);
         var hit = result.Hits.SingleOrDefault(value => value.Exact
             && value.Reference.Kind == "mechanic"
             && value.Reference.QualifiedId == qualifiedMechanicId);

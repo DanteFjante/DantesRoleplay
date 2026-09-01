@@ -21,6 +21,14 @@ public sealed record ActivatedApplicationDocument(
     long Length,
     bool IsText);
 
+public sealed record ActivatedApplicationExtension(
+    string ExtensionId,
+    string RegistrationFingerprint,
+    IReadOnlyList<string> SourceIds,
+    IReadOnlyList<string> NamespaceIds,
+    IReadOnlyList<string> HigherPriorityThan,
+    bool OverridesBase);
+
 public sealed record ActiveApplicationManifest(
     ApplicationIdentifier ApplicationId,
     int ActivationRevision,
@@ -36,13 +44,20 @@ public sealed record ActiveApplicationManifest(
     IReadOnlyList<ActivatedApplicationSource> Sources,
     IReadOnlyList<ActivatedApplicationDocument> Winners,
     string ActivatedByOperationId,
-    DateTime ActivatedAtUtc);
+    DateTime ActivatedAtUtc)
+{
+    public string ResolutionFingerprint { get; init; } = ActivationFingerprint;
+    public IReadOnlyList<ActivatedApplicationExtension> Extensions { get; init; } = [];
+}
 
 public sealed record ApplicationActivationRequest(
     ApplicationIdentifier ApplicationId,
     string PreviewFingerprint,
     string? ExpectedActiveFingerprint,
-    IReadOnlyList<string>? SourceIds = null);
+    IReadOnlyList<string>? SourceIds = null)
+{
+    public IReadOnlyList<string>? ExtensionIds { get; init; }
+}
 
 public sealed record ApplicationActivationContext(
     string RequestToken,

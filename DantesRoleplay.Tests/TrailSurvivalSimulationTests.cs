@@ -846,7 +846,9 @@ public sealed class TrailSurvivalSimulationTests
                 new JintMechanicEngine());
             var applier = new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges);
             var runner = new ApplicationActionRunner(
-                catalogs, activations, stateSpaces, types, entities, edges, evaluator, applier, operations);
+                catalogs, activations, stateSpaces, types, entities, edges,
+                new ApplicationMechanicProjectionMappingResolver(catalogs, stateSpaces, types, edges),
+                evaluator, applier, operations);
             return new(fixture, db, catalogs, entities, edges, runner);
         }
 

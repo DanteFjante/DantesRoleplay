@@ -10,7 +10,6 @@ import type {
   ReadyHubEnvelope,
   WorldHistoryEvent,
 } from "../data/hub-types";
-import { resolveMapAssetUrl } from "../data/map-assets.ts";
 import { classifyThalorienKnowledge } from "../data/thalorien-presentation.ts";
 
 function normalizeSlugWords(value: string | null): string | null {
@@ -76,7 +75,7 @@ function canonicalSheetEntries(member: ConnectedPartyMember): PartyDossierEntry[
   const canonical = member.canonical;
   if (!canonical) return [];
   const entries: PartyDossierEntry[] = [];
-  for (const membership of canonical.classes) {
+  for (const membership of canonical.classes ?? []) {
     const className = referenceLabel(membership.classId);
     entries.push({
       id: `${member.id}:canonical:class:${membership.id}`,
@@ -200,6 +199,9 @@ function canonicalInventoryEntries(member: ConnectedPartyMember): PartyDossierEn
       kind: item.equipmentSlots.length > 0 ? "equipped" : "inventory",
       title: item.name,
       detail: `Quantity ${item.quantity}. Placement: ${placement}.${equipped}`,
+      ...(item.media?.illustration || item.media?.icon
+        ? { media: item.media.illustration ?? item.media.icon }
+        : {}),
     };
   });
 }
@@ -234,10 +236,11 @@ function projectParty(connection: ConnectedCampaignEnvelope): PartyMemberReadMod
       detail: primaryDirection,
       status: member.state ? displayStatus(member.state) : "Active participant",
       isCurrent: member.current,
+      ...(member.media?.portrait ? { portrait: member.media.portrait } : {}),
       recordStatus: member.canonical
         ? "Canonical character state"
         : (member.entries.length > 0 ? "Provisional character record" : "Identity only"),
-      sheetStatus: projectedSheet.length > 0
+      sheetStatus: member.canonical
         ? "canonical"
         : (provisionalSheet.length > 0 ? "provisional" : "empty"),
       inventoryStatus: inventoryIsCanonical
@@ -257,6 +260,7 @@ function projectParty(connection: ConnectedCampaignEnvelope): PartyMemberReadMod
       backstory,
       origin,
       inventory,
+      ...(member.canonical ? { characterSheet: member.canonical } : {}),
     };
   });
 }
@@ -480,11 +484,12 @@ function validAnchor(value: LiveDirectoryEntry["mapAnchor"]): value is { x: numb
 
 function resolvedMapBase(
   value: LiveDirectoryEntry,
-  assetBaseUrl = "/",
 ): { imageUrl: string; alt: string } | null {
-  if (!value.mapVisual) return null;
-  const imageUrl = resolveMapAssetUrl(value.mapVisual.assetKey, assetBaseUrl);
-  return imageUrl ? { imageUrl, alt: value.mapVisual.alt } : null;
+  if (!value.mapVisual || typeof value.mapVisual.imageUrl !== "string") return null;
+  return value.mapVisual.imageUrl.startsWith("/api/applications/") &&
+    value.mapVisual.imageUrl.endsWith("/content")
+    ? { imageUrl: value.mapVisual.imageUrl, alt: value.mapVisual.alt }
+    : null;
 }
 
 function mapIdForLocation(locationId: string): string {
@@ -500,13 +505,13 @@ function scopeForMap(value: LiveDirectoryEntry, isRoot: boolean): MapScope {
   }
 }
 
-function buildLiveMapTree(entries: readonly LiveDirectoryEntry[], assetBaseUrl = "/"): {
+function buildLiveMapTree(entries: readonly LiveDirectoryEntry[]): {
   rootMapId: string;
   maps: MapDocument[];
 } {
   const byId = new Map(entries.map((entry) => [entry.id, entry]));
   const mapOwners = new Map(entries
-    .filter((entry) => resolvedMapBase(entry, assetBaseUrl) !== null)
+    .filter((entry) => resolvedMapBase(entry) !== null)
     .map((entry) => [entry.id, entry]));
   const rootOwner = [...mapOwners.values()]
     .filter((entry) => !entry.containerId || !byId.has(entry.containerId) || !mapOwners.has(entry.containerId))
@@ -539,7 +544,7 @@ function buildLiveMapTree(entries: readonly LiveDirectoryEntry[], assetBaseUrl =
   const visited = new Set<string>();
   const visit = (owner: LiveDirectoryEntry, parentMapId: string | null, isRoot: boolean) => {
     if (visiting.has(owner.id) || visited.has(owner.id)) return;
-    const base = resolvedMapBase(owner, assetBaseUrl);
+    const base = resolvedMapBase(owner);
     if (!base) return;
     visiting.add(owner.id);
     const scope = scopeForMap(owner, isRoot);
@@ -548,16 +553,20 @@ function buildLiveMapTree(entries: readonly LiveDirectoryEntry[], assetBaseUrl =
     const children = entries
       .filter((entry) => entry.containerId === owner.id && validAnchor(entry.mapAnchor))
       .sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id));
-    const features: MapFeature[] = children.map((child) => ({
-      id: `feature.live.${owner.id}.${child.id}`,
-      kind: "point",
-      layerId: liveLayerId(scope, liveLayerCategory(child.kind)),
-      coordinateSpaceId,
-      geometry: { x: child.mapAnchor!.x, y: child.mapAnchor!.y },
-      name: child.name,
-      detail: child.summary ?? `Known information about ${child.name}.`,
-      locationId: child.id,
-    }));
+    const features: MapFeature[] = children.map((child) => {
+      const preview = child.media?.setting ?? child.media?.scene ?? child.media?.portrait;
+      return {
+        id: `feature.live.${owner.id}.${child.id}`,
+        kind: "point",
+        layerId: liveLayerId(scope, liveLayerCategory(child.kind)),
+        coordinateSpaceId,
+        geometry: { x: child.mapAnchor!.x, y: child.mapAnchor!.y },
+        name: child.name,
+        detail: child.summary ?? `Known information about ${child.name}.`,
+        locationId: child.id,
+        ...(preview ? { preview } : {}),
+      };
+    });
     const document: MapDocument = {
       id: mapId,
       scope,
@@ -727,7 +736,7 @@ export function connectedCampaignToHubEnvelope(
   const directoryRegionMaps = hasLocationDirectory
     ? buildDirectoryRegionMaps(sourceLocations)
     : null;
-  const liveMapTree = buildLiveMapTree(sourceLocations, options.assetBaseUrl);
+  const liveMapTree = buildLiveMapTree(sourceLocations);
   const rootMapId = liveMapTree.rootMapId;
   const liveMapFeatures = liveMapTree.maps.find((map) => map.id === rootMapId)?.features ?? [];
   const liveKnowledgeOverlays: CampaignMapOverlay[] = (() => {
@@ -1193,6 +1202,8 @@ export function connectedCampaignToHubEnvelope(
   return {
     version: 1,
     status: "ready",
+    applicationId: connection.applicationId,
+    stateSpaceId: connection.stateSpaceId,
     revision: `live:${connection.applicationId}:${connection.stateSpaceId}:${connection.campaign.id}`,
     audience: {
       seat: connection.audience.seat,

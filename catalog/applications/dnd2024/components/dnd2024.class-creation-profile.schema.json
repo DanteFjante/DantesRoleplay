@@ -127,7 +127,7 @@
       "maximum": 1000
     },
     "startingEquipmentCurrencyDefinitionId": {
-      "const": "dnd2024.currency.gold-piece.v1"
+      "const": "dnd2024.equipment.currency.gold-piece"
     },
     "sourceRef": {
       "type": "object",

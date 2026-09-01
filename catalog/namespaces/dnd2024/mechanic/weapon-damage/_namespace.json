@@ -1,0 +1,12 @@
+{
+  "id": "dnd2024.mechanic.weapon-damage",
+  "owner": "dnd2024",
+  "description": "D\u0026D 2024 weapon-damage mechanics.",
+  "allowedKinds": [
+    "mechanic"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed as application-owned weapon-damage behavior."
+}

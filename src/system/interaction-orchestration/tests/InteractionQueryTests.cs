@@ -8,7 +8,9 @@ using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.ApplicationExecution;
 using DantesRoleplay.DataAccess.Composition;
 using DantesRoleplay.Ecs;
+using DantesRoleplay.Mechanics;
 using DantesRoleplay.Projections;
+using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.Sources;
 
 namespace DantesRoleplay.Interactions.Tests;
@@ -28,6 +30,12 @@ public sealed class InteractionQueryTests
         Assert.Equal("sample-app.query.find-target", parsed.Id);
         Assert.Equal(ApplicationQueryExposure.ModelVisible, parsed.Exposure);
         Assert.Equal(["subject"], parsed.Roles.Keys);
+        var mechanicProjection = ApplicationQueryContract.Parse(
+            QueryJson("model-visible").Replace(
+                "\"executor\":\"projection\"",
+                "\"executor\":\"mechanic-projection\""), App);
+        Assert.Equal(ApplicationQueryContract.MechanicProjectionExecutor,
+            mechanicProjection.Executor);
         Assert.Throws<ArgumentException>(() => ApplicationQueryContract.Parse(
             QueryJson("model-visible").Replace("\"status\":\"active\"",
                 "\"unknown\":true,\"status\":\"active\""), App));
@@ -35,6 +43,93 @@ public sealed class InteractionQueryTests
             QueryJson("field-redaction"), App));
         Assert.Throws<ArgumentException>(() => ApplicationQueryContract.Parse(
             QueryJson("binding-only").Replace("sample-app.query.find-target", "other-app.query.find-target"), App));
+    }
+
+    [Fact]
+    public async Task Mechanic_projection_read_model_is_schema_validated_and_fingerprint_bound()
+    {
+        var applications = new InMemoryApplicationRegistry();
+        var revision = applications.Register(new(App, "Sample", "Read-model fixture.", []));
+        var activationFingerprint = Hash("read-model-activation");
+        var mechanicContent = JsonSerializer.Serialize(new
+        {
+            id = "sample-app.mechanic.character.project",
+            requirements = "{\"roles\":{\"subject\":{\"components\":[]}}}",
+            source = "return { data: { entityId: ctx.roles.subject.id, score: 16 } };"
+        });
+        var mechanic = Record("mechanic", "sample-app.mechanic.character.project",
+            "mechanics/character", mechanicContent);
+        var validator = new BoundedJsonSchemaValidator();
+        var compiled = validator.Compile(Schema);
+        Assert.True(compiled.IsAccepted);
+        var queryContent = JsonSerializer.Serialize(new
+        {
+            id = "sample-app.query.character",
+            category = "character.sheet",
+            name = "Character read model",
+            description = "Projects one character.",
+            matches = new[] { "show character" },
+            roles = new Dictionary<string, string> { ["subject"] = "The character." },
+            executor = ApplicationQueryContract.MechanicProjectionExecutor,
+            projection = new
+            {
+                qualifiedId = mechanic.QualifiedId,
+                version = mechanic.Version,
+                contentHash = mechanic.ContentFingerprint,
+                outputSchemaHash = compiled.SchemaHash
+            },
+            outputSchema = JsonSerializer.Deserialize<JsonElement>(Schema),
+            exposure = "model-visible",
+            status = "active"
+        });
+        var query = Record("query", "sample-app.query.character", "queries/character", queryContent);
+        var manifest = CatalogNavigationManifest.Create(App, Hash("read-model-catalog"),
+            "catalog-lexical-v1", [new(App.Value, "Sample", "Read-model fixture.")],
+            [
+                new(App.Value, "", "Sample", "Read-model fixture.", CatalogDescriptionStatus.Authored),
+                new(App.Value, "queries", "Queries", "", CatalogDescriptionStatus.Missing),
+                new(App.Value, "queries/character", "Character", "", CatalogDescriptionStatus.Missing),
+                new(App.Value, "mechanics", "Mechanics", "", CatalogDescriptionStatus.Missing),
+                new(App.Value, "mechanics/character", "Character", "", CatalogDescriptionStatus.Missing)
+            ], [query, mechanic]);
+        var catalogs = new InMemoryPublicApplicationCatalogProvider(
+            new Dictionary<ApplicationIdentifier, ICatalogNavigator>
+            {
+                [App] = new InMemoryCatalogNavigator(manifest,
+                    new CatalogCursorCodec(Encoding.UTF8.GetBytes("read-model-test-cursor-key-32bytes")))
+            });
+        var activation = new ActiveApplicationManifest(App, 1, revision.Revision, revision.Fingerprint,
+            Hash("preview"), Hash("scan"), Hash("candidate"), Hash("dependencies"), activationFingerprint,
+            "coverage-v1", true, [], [], "operation.activation", DateTime.UtcNow);
+        var state = new StateSpaceView("space.1", revision, activationFingerprint, 1,
+            DateTime.UtcNow, DateTime.UtcNow);
+        var projection = new MechanicProjection
+        {
+            StateSpaceId = state.StateSpaceId,
+            ComponentRevisions = new() { ["orban"] = new() { ["stats"] = 3 } }
+        };
+        var evaluation = new ApplicationMechanicEvaluationResult(mechanic.QualifiedId,
+            mechanic.ContentFingerprint, projection, new MechanicRunResult
+            {
+                Ok = true,
+                Output = new MechanicOutput
+                {
+                    HasData = true,
+                    Data = "{\"score\":16,\"entityId\":\"orban\"}"
+                }
+            }, []);
+        var service = new ApplicationReadModelService(catalogs, new Activation(activation),
+            new Spaces(state), new MappingResolver(), new Evaluation(evaluation), validator);
+
+        var result = await service.ReadAsync(new(state.StateSpaceId, App, query.QualifiedId,
+            new Dictionary<string, string> { ["subject"] = "orban" }));
+
+        Assert.Equal(activationFingerprint, result.StateSpaceFingerprint);
+        Assert.Equal(activationFingerprint, result.ResolutionFingerprint);
+        Assert.Equal(compiled.SchemaHash, result.OutputSchemaHash);
+        Assert.Equal("{\"entityId\":\"orban\",\"score\":16}", result.DataJson);
+        Assert.Matches("^[0-9A-F]{64}$", result.ResultFingerprint);
+        Assert.Matches("^[0-9A-F]{64}$", result.SourceRevisionFingerprint);
     }
 
     [Fact]
@@ -118,9 +213,9 @@ public sealed class InteractionQueryTests
             projection.QualifiedId, projection.Version, projection.ContentHash, projection.OutputSchemaHash,
             projection.OutputSchemaJson, ApplicationQueryExposure.BindingOnly, ["subject"]);
 
-        var first = await executor.ExecuteAsync(new("space.1", App, contract,
+        var first = await executor.ExecuteAsync(new("space.1", App, "sample-app.query.find-target", contract,
             new Dictionary<string, string> { ["subject"] = "orban" }));
-        var second = await executor.ExecuteAsync(new("space.1", App, contract,
+        var second = await executor.ExecuteAsync(new("space.1", App, "sample-app.query.find-target", contract,
             new Dictionary<string, string> { ["subject"] = "orban" }));
         Assert.Equal(first, second);
 
@@ -298,6 +393,27 @@ public sealed class InteractionQueryTests
     private sealed class Materializer(ProjectionMaterializationResult value) : IProjectionMaterializer
     {
         public Task<ProjectionMaterializationResult> MaterializeAsync(ProjectionMaterializationRequest request,
+            CancellationToken cancellationToken = default) => Task.FromResult(value);
+    }
+
+    private sealed class MappingResolver : IApplicationMechanicProjectionMappingResolver
+    {
+        public Task<ApplicationMechanicProjectionMappingResult> ResolveAsync(
+            string stateSpaceId,
+            ApplicationIdentifier applicationId,
+            string qualifiedMechanicId,
+            MechanicRequirements requirements,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new ApplicationMechanicProjectionMappingResult(
+                new(new Dictionary<string, EcsComponentReference>(),
+                    new Dictionary<string, string>()), []));
+    }
+
+    private sealed class Evaluation(ApplicationMechanicEvaluationResult value)
+        : IApplicationMechanicEvaluator
+    {
+        public Task<ApplicationMechanicEvaluationResult> EvaluateAsync(
+            ApplicationMechanicEvaluationRequest request,
             CancellationToken cancellationToken = default) => Task.FromResult(value);
     }
 

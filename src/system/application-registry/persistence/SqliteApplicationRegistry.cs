@@ -18,7 +18,7 @@ public sealed class SqliteApplicationRegistry(DantesRoleplayDbContext db) : IApp
         var existing = db.Set<ApplicationRegistryRecord>().SingleOrDefault(x => x.Id == normalized.Id.Value);
         if (existing is not null)
         {
-            var existingRevision = ReadRevision(normalized.Id.Value, 1);
+            var existingRevision = Get(normalized.Id)!;
             if (!SameRegistration(normalized, existing, existingRevision.BaseApplications))
                 throw new InvalidOperationException($"Application '{normalized.Id}' already has a different immutable registration.");
 
@@ -68,7 +68,63 @@ public sealed class SqliteApplicationRegistry(DantesRoleplayDbContext db) : IApp
     {
         ArgumentNullException.ThrowIfNull(applicationId);
         if (!db.Set<ApplicationRegistryRecord>().AsNoTracking().Any(x => x.Id == applicationId.Value)) return null;
-        return ReadRevision(applicationId.Value, 1);
+        var revision = db.Set<ApplicationRevisionRecord>().AsNoTracking()
+            .Where(value => value.ApplicationId == applicationId.Value)
+            .Max(value => value.Revision);
+        return ReadRevision(applicationId.Value, revision);
+    }
+
+    public ApplicationRevision? Get(ApplicationIdentifier applicationId, int revision)
+    {
+        ArgumentNullException.ThrowIfNull(applicationId);
+        if (revision < 1) throw new ArgumentOutOfRangeException(nameof(revision));
+        return db.Set<ApplicationRevisionRecord>().AsNoTracking().Any(value =>
+            value.ApplicationId == applicationId.Value && value.Revision == revision)
+            ? ReadRevision(applicationId.Value, revision) : null;
+    }
+
+    public ApplicationRevision ReviseBaseApplications(
+        ApplicationIdentifier applicationId,
+        IReadOnlyList<ApplicationIdentifier> baseApplications,
+        int expectedRevision,
+        string expectedFingerprint)
+    {
+        ArgumentNullException.ThrowIfNull(applicationId);
+        ArgumentNullException.ThrowIfNull(baseApplications);
+        var existing = db.Set<ApplicationRegistryRecord>().SingleOrDefault(value => value.Id == applicationId.Value)
+            ?? throw new KeyNotFoundException("Application is not registered.");
+        var current = Get(applicationId)!;
+        if (current.Revision != expectedRevision || current.Fingerprint != expectedFingerprint)
+            throw new InvalidOperationException("The application revision is stale.");
+        var registration = new ApplicationRegistration(applicationId, existing.DisplayName,
+            existing.Description, ReadOnly(baseApplications));
+        Validate(registration);
+        var missingBase = registration.BaseApplications.Select(value => value.Value)
+            .Except(db.Set<ApplicationRegistryRecord>().Select(value => value.Id), StringComparer.Ordinal)
+            .FirstOrDefault();
+        if (missingBase is not null)
+            throw new ArgumentException("Every base application must already be registered.", nameof(baseApplications));
+        if (registration.BaseApplications.SequenceEqual(current.BaseApplications)) return current;
+
+        var revision = new ApplicationRevision(applicationId, current.Revision + 1,
+            ApplicationRegistrationFingerprint.Compute(registration), ReadOnly(registration.BaseApplications));
+        db.Add(new ApplicationRevisionRecord
+        {
+            ApplicationId = applicationId.Value,
+            Revision = revision.Revision,
+            Fingerprint = revision.Fingerprint,
+            CreatedAtUtc = DateTime.UtcNow
+        });
+        foreach (var (baseApplication, ordinal) in registration.BaseApplications.Select((value, index) => (value, index)))
+            db.Add(new ApplicationRevisionBaseRecord
+            {
+                ApplicationId = applicationId.Value,
+                Revision = revision.Revision,
+                Ordinal = ordinal,
+                BaseApplicationId = baseApplication.Value
+            });
+        db.SaveChanges();
+        return revision;
     }
 
     public ApplicationRegistration? Describe(ApplicationIdentifier applicationId)
@@ -83,6 +139,7 @@ public sealed class SqliteApplicationRegistry(DantesRoleplayDbContext db) : IApp
     {
         ValidateLimit(limit);
         return db.Set<ApplicationRegistryRecord>().AsNoTracking()
+            .Where(x => x.Id != ApplicationIdentifier.System.Value)
             .OrderBy(x => x.Id).Take(limit).AsEnumerable().Select(ToRegistration).ToArray();
     }
 
@@ -91,7 +148,8 @@ public sealed class SqliteApplicationRegistry(DantesRoleplayDbContext db) : IApp
         ValidateLimit(limit);
         var after = ValidateAfter(afterApplicationId);
         var rows = db.Set<ApplicationRegistryRecord>().AsNoTracking()
-            .Where(value => after == null || string.Compare(value.Id, after) > 0)
+            .Where(value => value.Id != ApplicationIdentifier.System.Value
+                && (after == null || string.Compare(value.Id, after) > 0))
             .OrderBy(value => value.Id)
             .Take(limit + 1)
             .AsEnumerable()
@@ -116,7 +174,7 @@ public sealed class SqliteApplicationRegistry(DantesRoleplayDbContext db) : IApp
 
     private ApplicationRegistration ToRegistration(ApplicationRegistryRecord row)
     {
-        var revision = ReadRevision(row.Id, 1);
+        var revision = Get(ApplicationIdentifier.Parse(row.Id))!;
         return new(ApplicationIdentifier.Parse(row.Id), row.DisplayName, row.Description, revision.BaseApplications);
     }
 

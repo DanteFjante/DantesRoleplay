@@ -1,0 +1,10 @@
+{
+  "id": "dnd2024.extension.caldris",
+  "owner": "dnd2024",
+  "description": "Caldris homebrew additions and overrides for the D&D 2024 application.",
+  "allowedKinds": ["entity"],
+  "aliases": ["Caldris homebrew"],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for the Caldris homebrew extension package."
+}

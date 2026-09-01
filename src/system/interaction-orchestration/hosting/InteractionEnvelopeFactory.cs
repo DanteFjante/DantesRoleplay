@@ -30,7 +30,8 @@ internal sealed class InteractionEnvelopeFactory(
         var stateSpace = stateSpaces.Get(stateSpaceId)
             ?? throw new InteractionContractException("STATE_SPACE_UNKNOWN", "The requested state space is unavailable.");
         if (!SameRevision(stateSpace.ApplicationRevision, application)
-            || stateSpace.ManifestFingerprint != activation.ActivationFingerprint)
+            || stateSpace.ManifestFingerprint != activation.ActivationFingerprint
+            || stateSpace.ResolutionFingerprint != activation.ResolutionFingerprint)
             throw new InteractionContractException("STATE_SPACE_APPLICATION_MISMATCH",
                 "The requested state space is not bound to the current application activation.");
         var request = new InteractionAuthorizationRequest(principal, applicationId, stateSpaceId,
@@ -45,7 +46,7 @@ internal sealed class InteractionEnvelopeFactory(
             InteractionRoleProfile.For(role),
             new(InteractionContractLimits.ProposalSteps, InteractionContractLimits.JsonBytes,
                 InteractionContractLimits.JsonBytes),
-            decision, conversationId, parentDelegationId);
+            decision, conversationId, parentDelegationId, activation.ResolutionFingerprint);
         return AuthorizedInteractionEnvelope.Create(InteractionIntent.Parse(intentJson), host);
     }
 

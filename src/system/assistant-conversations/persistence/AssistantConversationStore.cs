@@ -147,13 +147,22 @@ public sealed class AssistantConversationStore(
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<AssistantTurnActivityDocument> AppendCodexActivityAsync(
-        CodexTurnActivityAppend activity, CancellationToken cancellationToken = default)
+    public Task<AssistantTurnActivityDocument> AppendCodexActivityAsync(
+        CodexTurnActivityAppend activity, CancellationToken cancellationToken = default) =>
+        AppendActivityCoreAsync(activity, codexOnly: true, cancellationToken);
+
+    public Task<AssistantTurnActivityDocument> AppendActivityAsync(
+        CodexTurnActivityAppend activity, CancellationToken cancellationToken = default) =>
+        AppendActivityCoreAsync(activity, codexOnly: false, cancellationToken);
+
+    private async Task<AssistantTurnActivityDocument> AppendActivityCoreAsync(
+        CodexTurnActivityAppend activity, bool codexOnly, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(activity);
         if (string.IsNullOrWhiteSpace(activity.ExternalItemId) || activity.ExternalItemId.Length > 200 ||
             activity.Sequence < 1 || activity.Kind is not ("command" or "file-change" or "mcp-tool" or
-                "dynamic-tool" or "web-search" or "warning" or "error") ||
+                "dynamic-tool" or "web-search" or "warning" or "error" or "tool-call" or
+                "validation" or "request" or "result" or "reasoning" or "task" or "recipe") ||
             string.IsNullOrWhiteSpace(activity.Status) || activity.Status.Length > 30 ||
             string.IsNullOrWhiteSpace(activity.Summary) || activity.Summary.Length > 500)
             throw new ArgumentException("The Codex activity is invalid.", nameof(activity));
@@ -164,7 +173,9 @@ public sealed class AssistantConversationStore(
         if (existing is not null) return Activity(existing);
 
         var turn = await db.AssistantTurns.AsNoTracking().SingleAsync(
-            item => item.Id == activity.TurnId && item.Provider == "codex", cancellationToken);
+            item => item.Id == activity.TurnId, cancellationToken);
+        if (codexOnly && turn.Provider != "codex") throw Conflict(
+            "ASSISTANT_PROVIDER_INVALID", "Only Codex turns can append app-server activity.");
         var row = new AssistantTurnActivity
         {
             Id = NewId("activity."), ConversationId = turn.ConversationId, TurnId = turn.Id,
@@ -452,6 +463,8 @@ public sealed class AssistantConversationStore(
                 completion.Status == AssistantConversationStatuses.Completed,
                 intent: turn.Provider == "codex"
                     ? "Send a repository Codex message with explicit one-request side-effect approvals."
+                    : turn.ContextProfile == AssistantTurnContextProfiles.ApplicationAiV1
+                        ? "Send a provider-neutral AI request bound to registered direct capabilities and application context."
                     : turn.Conversation.Scope == AssistantConversationScopes.System
                         ? "Send a read-only message to the local system assistant."
                         : "Send a message to the local advisory assistant.",
@@ -549,6 +562,60 @@ public sealed class AssistantConversationStore(
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<bool> DeleteAsync(
+        string operatorId, string conversationId, int expectedRevision,
+        CancellationToken cancellationToken = default,
+        string scope = AssistantConversationScopes.Advisory)
+    {
+        if (!AssistantConversationScopes.IsKnown(scope))
+            throw new ArgumentException("The assistant conversation scope is invalid.", nameof(scope));
+        if (expectedRevision < 1)
+            throw new ArgumentOutOfRangeException(nameof(expectedRevision));
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var conversation = await db.AssistantConversations.SingleOrDefaultAsync(item =>
+                item.Id == conversationId && item.OperatorId == operatorId && item.Scope == scope,
+                cancellationToken);
+            if (conversation is null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+                return false;
+            }
+            if (conversation.Revision != expectedRevision)
+                throw Conflict("ASSISTANT_REVISION_STALE",
+                    $"The current conversation revision is {conversation.Revision}.");
+            if (conversation.Status is AssistantConversationStatuses.Pending or
+                AssistantConversationStatuses.Running or AssistantConversationStatuses.AwaitingApproval)
+                throw Conflict("ASSISTANT_TURN_ACTIVE",
+                    "An active conversation cannot be removed. Cancel or finish its current turn first.");
+
+            db.AssistantConversations.Remove(conversation);
+            try { await db.SaveChangesAsync(cancellationToken); }
+            catch (DbUpdateException)
+            {
+                throw Conflict("ASSISTANT_CONVERSATION_IN_USE",
+                    "This conversation is retained by system work and cannot be removed yet.");
+            }
+            await operations.RecordAsync(
+                "control.assistant.remove-conversation",
+                "Removed an assistant conversation and its retained chat history.",
+                true,
+                intent: "Remove a selected assistant conversation.",
+                subject: conversationId,
+                consumesReadEvidence: false,
+                cancellationToken: cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return true;
+        }
+        catch
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            throw;
+        }
+    }
+
     private static AssistantConversationDocument Document(AssistantConversation item) => new(
         new(item.Id, item.Provider, item.Scope, item.Title, item.Revision, item.Status,
             item.CreatedAtUtc, item.UpdatedAtUtc),
@@ -592,7 +659,8 @@ public sealed class AssistantConversationStore(
                 throw new ArgumentException("Failed system turns cannot claim completed context evidence.", nameof(context));
             return;
         }
-        if (context is null || context.Profile != AssistantTurnContextProfiles.SystemReadV1 ||
+        if (context is null || context.Profile is not (
+                AssistantTurnContextProfiles.SystemReadV1 or AssistantTurnContextProfiles.ApplicationAiV1) ||
             context.Fingerprint.Length != 64 || context.Fingerprint.Any(character =>
                 character is not (>= '0' and <= '9') and not (>= 'A' and <= 'F')) ||
             !AssistantTurnResponseDispositions.IsKnown(context.Disposition) ||

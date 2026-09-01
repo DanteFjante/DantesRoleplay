@@ -34,6 +34,7 @@ public sealed class SystemCapabilityCatalogTests
             SystemCapabilityIds.Applications,
             SystemCapabilityIds.ComponentTypeRegister,
             SystemCapabilityIds.Dependencies,
+            SystemCapabilityIds.ExtensionRegister,
             SystemCapabilityIds.SourceRegister,
             SystemCapabilityIds.Sources,
             SystemCapabilityIds.StateSpaceAdoptLegacy,
@@ -41,7 +42,7 @@ public sealed class SystemCapabilityCatalogTests
             SystemCapabilityIds.StateSpaceUpgrade
         ], descriptors.Select(value => value.Id).ToArray());
         Assert.Equal(4, descriptors.Count(value => value.Mode == SystemCapabilityMode.Read));
-        Assert.Equal(7, descriptors.Count(value => value.Mode == SystemCapabilityMode.Write));
+        Assert.Equal(8, descriptors.Count(value => value.Mode == SystemCapabilityMode.Write));
     }
 
     [Fact]

@@ -1,8 +1,10 @@
 using System.Text.Json;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
+using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Interactions;
+using DantesRoleplay.Play;
 using DantesRoleplay.Web.Interactions;
 
 namespace DantesRoleplay.Tests;
@@ -11,6 +13,65 @@ public sealed class ApplicationConversationTests
 {
     private static readonly ApplicationIdentifier Application = ApplicationIdentifier.Parse("fixture-chat");
     private static readonly TrustedPrincipalContext Principal = PrivateOperatorPrincipal.Create("local-loopback", "fixture");
+
+    [Fact]
+    public async Task Durable_play_conversation_resumes_word_for_word_and_supplies_recorded_truths_to_the_next_model()
+    {
+        using var fixture = new SqliteFixture();
+        string conversationId;
+        var firstOuter = new Outer(new(
+            true,
+            InteractionOuterDecision.Respond,
+            "Tibb answers, \"The north road closed at dusk.\"",
+            "OUTER_TURN_COMPLETED",
+            new(PlaySituationTransitions.Replace, PlaySituationKinds.Conversation,
+                "Orban is speaking with Tibb about the north road.",
+                [new("Orban", "actor.thalorien.brackenford.orban"), new("Tibb", null)],
+                new("Brackenford", "location.thalorien.brackenford")),
+            [new("The north road closed at dusk.", ["location.thalorien.brackenford"])]));
+        using (var db = fixture.CreateContext())
+        {
+            RegisterDurablePlayState(db);
+            var service = new ApplicationConversationService(new(), new Spaces(), new Gateway(), firstOuter,
+                new Narrator(), new ApplicationPlayRecordStore(db));
+            var created = service.Create(Principal, Application, new("chat-space", "campaign.fixture"));
+            conversationId = created.Id;
+
+            var result = await service.TurnAsync(Principal, Application, created.Id,
+                new("I ask Tibb, \"When did the north road close?\"\nI wait for the exact answer."),
+                CancellationToken.None);
+
+            Assert.Equal(2, result!.TotalMessageCount);
+            Assert.Equal("I ask Tibb, \"When did the north road close?\"\nI wait for the exact answer.",
+                result.Messages[0].Text);
+            Assert.Equal("Tibb answers, \"The north road closed at dusk.\"", result.Messages[1].Text);
+            Assert.Equal(PlaySituationKinds.Conversation, result.CurrentSituation!.Kind);
+            Assert.Equal(1, result.KnownTruthCount);
+        }
+
+        var nextOuter = new Outer(new(true, InteractionOuterDecision.Respond,
+            "The conversation continues.", "OUTER_TURN_COMPLETED"));
+        using (var db = fixture.CreateContext())
+        {
+            var records = new ApplicationPlayRecordStore(db);
+            var service = new ApplicationConversationService(new(), new Spaces(), new Gateway(), nextOuter,
+                new Narrator(), records);
+            var resumed = service.Create(Principal, Application, new("chat-space", "campaign.fixture"));
+
+            Assert.Equal(conversationId, resumed.Id);
+            Assert.Equal(2, resumed.TotalMessageCount);
+            Assert.Equal("Tibb answers, \"The north road closed at dusk.\"", resumed.Messages[1].Text);
+            var durable = records.GetSession(new(Principal.PrincipalId, Application.Value,
+                "chat-space", "campaign.fixture"))!;
+            Assert.Equal("The north road closed at dusk.", Assert.Single(durable.KnownTruths).Statement);
+
+            await service.TurnAsync(Principal, Application, resumed.Id, new("What happens next?"),
+                CancellationToken.None);
+            var context = Assert.Single(nextOuter.Requests).BoundPlayContext!;
+            Assert.Equal("The north road closed at dusk.", Assert.Single(context.KnownTruths).Statement);
+            Assert.Equal("Orban is speaking with Tibb about the north road.", context.CurrentSituation!.Summary);
+        }
+    }
 
     [Fact]
     public async Task Outer_turn_receives_exact_application_binding_and_bounded_visible_transcript()
@@ -567,7 +628,8 @@ public sealed class ApplicationConversationTests
         }
 
         public Task<InteractionFeatureSearchResult> SearchFeaturesAsync(ApplicationIdentifier applicationId,
-            string? query, string? qualifiedId, int limit = 10, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+            string? query, string? qualifiedId, int limit = 10, string? namespaceId = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<InteractionReceiptProjection?> GetReceiptAsync(TrustedPrincipalContext principal,
             ApplicationIdentifier applicationId, string stateSpaceId, string receiptId,
             CancellationToken cancellationToken = default) => throw new NotSupportedException();
@@ -589,5 +651,13 @@ public sealed class ApplicationConversationTests
             ["safe.evidence"], DateTime.UtcNow);
         return new(status, code, receipt.SafeSummary, receipt.Evidence, null, null,
             InteractionReceiptWriteResult.Appended(receipt), new string('E', 64));
+    }
+
+    private static void RegisterDurablePlayState(DantesRoleplayDbContext db)
+    {
+        var applications = new SqliteApplicationRegistry(db);
+        var revision = applications.Register(new(Application, "Fixture chat", "", []));
+        new SqliteStateSpaceRegistry(db, applications).Create(
+            new("chat-space", revision, new string('B', 64)));
     }
 }

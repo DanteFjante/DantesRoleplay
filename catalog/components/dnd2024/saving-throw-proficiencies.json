@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.saving-throw-proficiencies",
+  "name": "D&D 2024 Saving Throw Proficiencies",
+  "description": "Closed character state containing only canonical saving-throw proficiency ability ids and the fixed SRD 5.2.1 source reference. Creation and correction use dnd2024.mechanic.saving-throw-proficiencies.record; it does not store ability scores, modifiers, level, Proficiency Bonus, DCs, rolls, results, or acquisition data."
+}

@@ -1,0 +1,12 @@
+{
+  "id": "procedure.game.core.world",
+  "owner": "procedure",
+  "description": "Namespace for procedure game core world catalog records.",
+  "allowedKinds": [
+    "procedure"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

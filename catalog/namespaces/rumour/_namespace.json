@@ -1,0 +1,12 @@
+{
+  "id": "rumour",
+  "owner": "rumour",
+  "description": "Namespace for rumour catalog records.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

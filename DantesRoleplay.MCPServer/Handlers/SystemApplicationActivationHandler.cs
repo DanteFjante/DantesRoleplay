@@ -38,14 +38,19 @@ internal sealed class SystemApplicationActivationHandler
             var root = document.RootElement;
             RequireProperties(root,
                 ["requestToken", "applicationId", "previewFingerprint", "expectedActiveFingerprint"],
-                ["sourceIds"]);
+                ["sourceIds", "extensionIds"]);
             var token = String(root, "requestToken", 32);
             var app = ApplicationIdentifier.Parse(String(root, "applicationId", 63));
             var previewFingerprint = String(root, "previewFingerprint", 64);
             var expected = NullableString(root, "expectedActiveFingerprint", 64);
             var sourceIds = root.TryGetProperty("sourceIds", out var selected)
                 ? SourceIds(selected) : null;
-            var request = new ApplicationActivationRequest(app, previewFingerprint, expected, sourceIds);
+            var extensionIds = root.TryGetProperty("extensionIds", out var selectedExtensions)
+                ? ExtensionIds(selectedExtensions) : null;
+            var request = new ApplicationActivationRequest(app, previewFingerprint, expected, sourceIds)
+            {
+                ExtensionIds = extensionIds
+            };
             var context = new ApplicationActivationContext(token, intent,
                 Array.AsReadOnly((procedures ?? []).ToArray()), decision.Evidence);
 
@@ -113,11 +118,13 @@ internal sealed class SystemApplicationActivationHandler
         activation.ScannedDocumentsFingerprint,
         activation.CandidateManifestFingerprint,
         activation.DependencyGraphFingerprint,
+        activation.ResolutionFingerprint,
         activation.ActivationFingerprint,
         activation.DependencyCoverageVersion,
         activation.DependencyCoverageComplete,
         SourceCount = activation.Sources.Count,
         SourceIds = activation.Sources.Select(value => value.SourceId).ToArray(),
+        ExtensionIds = activation.Extensions.Select(value => value.ExtensionId).ToArray(),
         WinnerCount = activation.Winners.Count,
         activation.ActivatedAtUtc
     };
@@ -148,6 +155,18 @@ internal sealed class SystemApplicationActivationHandler
         if (values.Length is < 1 or > 100
             || values.Distinct(StringComparer.Ordinal).Count() != values.Length)
             throw Invalid("sourceIds must contain 1 through 100 unique source IDs.");
+        return Array.AsReadOnly(values);
+    }
+
+    private static IReadOnlyList<string> ExtensionIds(JsonElement element)
+    {
+        if (element.ValueKind != JsonValueKind.Array)
+            throw Invalid("extensionIds must be an array.");
+        var values = element.EnumerateArray().Select(value => value.ValueKind == JsonValueKind.String
+                ? value.GetString()! : throw Invalid("Every extensionIds entry must be a string."))
+            .ToArray();
+        if (values.Length > 100 || values.Distinct(StringComparer.Ordinal).Count() != values.Length)
+            throw Invalid("extensionIds must contain at most 100 unique extension IDs.");
         return Array.AsReadOnly(values);
     }
 

@@ -1,5 +1,5 @@
 using System.Globalization;
-using DantesRoleplay.DataAccess.Retrieval;
+using DantesRoleplay.AI.Ollama;
 using DantesRoleplay.Interactions;
 using Microsoft.Extensions.Configuration;
 

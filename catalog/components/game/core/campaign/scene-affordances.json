@@ -1,0 +1,5 @@
+{
+  "id": "game.core.campaign.scene-affordances",
+  "name": "Campaign Scene Affordances",
+  "description": "Closed audience-labelled narrative opportunities for the exact campaign current-scene selector. It contains no mechanic, eligibility, input, target, cost, or execution meaning. Governed by procedure.campaign.scene-affordances."
+}

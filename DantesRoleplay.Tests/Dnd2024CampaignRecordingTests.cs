@@ -13,6 +13,177 @@ public sealed class Dnd2024CampaignRecordingTests
     private const string Visit = "campaign.fixture.visit.location.fixture";
 
     [Fact]
+    public async Task Chapter_advance_closes_the_exact_active_chapter_and_opens_its_successor()
+    {
+        const string chapter = "campaign.fixture.chapter.opening";
+        const string next = "campaign.fixture.chapter.crossing";
+        var campaign = CampaignRole(
+            Edge(Campaign, Arc, "game.core.campaign.has-arc"),
+            Edge(Campaign, chapter, "game.core.campaign.has-chapter"));
+        var arc = Role(Arc, "The Old Road", new()
+        {
+            ["game.core.campaign.arc"] =
+                "{\"status\":\"active\",\"title\":\"The Old Road\",\"partyStake\":\"Reach the coast.\"}"
+        }, Edge(Campaign, Arc, "game.core.campaign.has-arc"));
+        var active = Role(chapter, "Opening", new()
+        {
+            ["game.core.campaign.chapter"] =
+                "{\"status\":\"active\",\"title\":\"Opening\",\"partyQuestion\":\"What lit the beacon?\",\"gmContext\":\"The lens remembers.\"}"
+        }, Edge(Campaign, chapter, "game.core.campaign.has-chapter"),
+            Edge(chapter, Arc, "game.core.campaign.chapter.in-arc"));
+
+        var run = await RunAsync("dnd2024.mechanic.campaign.chapter.advance.js",
+            "{\"nextChapterId\":\"campaign.fixture.chapter.crossing\",\"nextTitle\":\"The Crossing\",\"nextPartyQuestion\":\"Can the party cross the reef?\",\"nextGmContext\":\"The tide is changing.\",\"closingSummary\":\"The signal was traced.\"}",
+            new() { ["campaign"] = campaign, ["arc"] = arc, ["chapter"] = active });
+
+        Assert.True(run.Ok, run.Error);
+        Assert.Equal(5, run.Output.Effects.Count);
+        Assert.Contains(run.Output.Effects, effect => effect.Type == "component.set" &&
+            effect.EntityId == chapter && effect.Data.Contains("\"status\":\"closed\"", StringComparison.Ordinal));
+        Assert.Contains(run.Output.Effects, effect => effect.Type == "entity.create" && effect.EntityId == next);
+        Assert.Contains(run.Output.Effects, effect => effect.Type == "relationship.create" &&
+            effect.EntityId == next && effect.ToEntityId == Arc &&
+            effect.Kind == "game.core.campaign.chapter.in-arc");
+    }
+
+    [Fact]
+    public async Task Chapter_advance_rejects_a_chapter_outside_the_selected_arc()
+    {
+        const string chapter = "campaign.fixture.chapter.opening";
+        var run = await RunAsync("dnd2024.mechanic.campaign.chapter.advance.js",
+            "{\"nextChapterId\":\"campaign.fixture.chapter.crossing\",\"nextTitle\":\"The Crossing\",\"nextPartyQuestion\":\"Can the party cross?\",\"nextGmContext\":\"The tide changes.\",\"closingSummary\":\"The signal was traced.\"}",
+            new()
+            {
+                ["campaign"] = CampaignRole(
+                    Edge(Campaign, Arc, "game.core.campaign.has-arc"),
+                    Edge(Campaign, chapter, "game.core.campaign.has-chapter")),
+                ["arc"] = Role(Arc, "Arc", new()
+                {
+                    ["game.core.campaign.arc"] =
+                        "{\"status\":\"active\",\"title\":\"Arc\",\"partyStake\":\"Travel.\"}"
+                }, Edge(Campaign, Arc, "game.core.campaign.has-arc")),
+                ["chapter"] = Role(chapter, "Opening", new()
+                {
+                    ["game.core.campaign.chapter"] =
+                        "{\"status\":\"active\",\"title\":\"Opening\",\"partyQuestion\":\"Why?\"}"
+                })
+            });
+
+        Assert.False(run.Ok);
+        Assert.Empty(run.Output.Effects);
+    }
+
+    [Fact]
+    public async Task Current_scene_move_requires_the_campaign_world_and_adds_destination_relevance()
+    {
+        var campaign = Role(Campaign, "Campaign", new()
+        {
+            ["game.core.campaign.root"] = "{}",
+            ["game.core.campaign.current-scene"] = "{\"location\":{\"entityId\":\"location.old\"}}"
+        }, Edge(Campaign, World, "game.core.campaign.in-world"));
+        var location = LocationRole();
+        var world = new EntityProjection(World, "World", new Dictionary<string, string>
+        {
+            ["game.core.world.root"] = "{}"
+        }, Contains: [new ContainedProjection(Location, "Brackenford", "location", location.Components)]);
+
+        var run = await RunAsync("dnd2024.mechanic.campaign.current-scene.set.js", "{\"mode\":\"move\"}",
+            new() { ["campaign"] = campaign, ["world"] = world, ["location"] = location });
+
+        Assert.True(run.Ok, run.Error);
+        Assert.Collection(run.Output.Effects,
+            effect =>
+            {
+                Assert.Equal("relationship.create", effect.Type);
+                Assert.Equal("game.core.campaign.references", effect.Kind);
+                Assert.Equal(Location, effect.ToEntityId);
+            },
+            effect =>
+            {
+                Assert.Equal("component.set", effect.Type);
+                Assert.Equal("game.core.campaign.current-scene", effect.DefinitionId);
+            });
+    }
+
+    [Fact]
+    public async Task Current_scene_move_rejects_a_destination_outside_the_campaign_world()
+    {
+        var campaign = Role(Campaign, "Campaign", new()
+        {
+            ["game.core.campaign.root"] = "{}",
+            ["game.core.campaign.current-scene"] = "{\"location\":{\"entityId\":\"location.old\"}}"
+        }, Edge(Campaign, World, "game.core.campaign.in-world"));
+        var world = new EntityProjection(World, "World", new Dictionary<string, string>
+        {
+            ["game.core.world.root"] = "{}"
+        });
+
+        var run = await RunAsync("dnd2024.mechanic.campaign.current-scene.set.js", "{\"mode\":\"move\"}",
+            new() { ["campaign"] = campaign, ["world"] = world, ["location"] = LocationRole() });
+
+        Assert.False(run.Ok);
+        Assert.Empty(run.Output.Effects);
+    }
+
+    [Fact]
+    public async Task Companion_creation_atomically_establishes_presence_and_campaign_participation()
+    {
+        var campaign = Role(Campaign, "Campaign", new()
+        {
+            ["game.core.campaign.root"] = "{}",
+            ["game.core.campaign.current-scene"] = "{\"location\":{\"entityId\":\"location.fixture\"}}"
+        }, Edge(Campaign, World, "game.core.campaign.in-world"));
+        var location = LocationRole();
+        var world = new EntityProjection(World, "World", new Dictionary<string, string>
+        {
+            ["game.core.world.root"] = "{}"
+        }, Contains:
+        [
+            new ContainedProjection(Location, "Brackenford", "location", location.Components)
+        ]);
+
+        var run = await RunAsync("dnd2024.mechanic.campaign.companion.create-and-attach.js",
+            "{\"actorId\":\"actor.fixture.mira\",\"name\":\"Mira\",\"motiveSummary\":\"Mira keeps the harbor safe.\"}",
+            new() { ["campaign"] = campaign, ["world"] = world, ["location"] = location });
+
+        Assert.True(run.Ok, run.Error);
+        Assert.Equal(9, run.Output.Effects.Count);
+        Assert.Contains(run.Output.Effects, effect => effect.Type == "containment.move" &&
+            effect.EntityId == "actor.fixture.mira" && effect.ToEntityId == Location && effect.Slot == "presence");
+        Assert.Contains(run.Output.Effects, effect => effect.Type == "component.add" &&
+            effect.DefinitionId == "game.core.campaign.character-participation");
+        Assert.Contains(run.Output.Effects, effect => effect.Type == "relationship.create" &&
+            effect.Kind == "game.core.campaign.character-participation.for-actor" &&
+            effect.ToEntityId == "actor.fixture.mira");
+        Assert.Contains("\"characterSheetStatus\":\"not-created\"", run.Output.Data);
+    }
+
+    [Fact]
+    public async Task Companion_creation_rejects_a_location_other_than_the_current_scene()
+    {
+        var campaign = Role(Campaign, "Campaign", new()
+        {
+            ["game.core.campaign.root"] = "{}",
+            ["game.core.campaign.current-scene"] = "{\"location\":{\"entityId\":\"location.other\"}}"
+        }, Edge(Campaign, World, "game.core.campaign.in-world"));
+        var location = LocationRole();
+        var world = new EntityProjection(World, "World", new Dictionary<string, string>
+        {
+            ["game.core.world.root"] = "{}"
+        }, Contains:
+        [
+            new ContainedProjection(Location, "Brackenford", "location", location.Components)
+        ]);
+
+        var run = await RunAsync("dnd2024.mechanic.campaign.companion.create-and-attach.js",
+            "{\"actorId\":\"actor.fixture.mira\",\"name\":\"Mira\",\"motiveSummary\":\"Mira keeps the harbor safe.\"}",
+            new() { ["campaign"] = campaign, ["world"] = world, ["location"] = location });
+
+        Assert.False(run.Ok);
+        Assert.Empty(run.Output.Effects);
+    }
+
+    [Fact]
     public async Task Ended_session_and_terminal_arc_create_only_explicit_reference_edges()
     {
         var campaign = CampaignRole(
@@ -22,13 +193,13 @@ public sealed class Dnd2024CampaignRecordingTests
         var target = Role(Location, "Brackenford", []);
         var session = Role(Session, "First session", new()
         {
-            ["dnd2024.game.core.campaign.session"] = "{\"status\":\"ended\",\"ordinal\":1}",
-            ["dnd2024.game.core.campaign.session-recap"] =
+            ["game.core.campaign.session"] = "{\"status\":\"ended\",\"ordinal\":1}",
+            ["game.core.campaign.session-recap"] =
                 "{\"protocolVersion\":\"session.s0.c3-only.v1\",\"chapter\":{},\"arc\":{},\"milestones\":[]}"
         }, Edge(Campaign, Session, "game.core.campaign.has-session"));
         var arc = Role(Arc, "The Old Road", new()
         {
-            ["dnd2024.game.core.campaign.arc"] =
+            ["game.core.campaign.arc"] =
                 "{\"status\":\"resolved\",\"title\":\"The Old Road\",\"partyStake\":\"Travel.\",\"closingSummary\":\"Open.\"}"
         }, Edge(Campaign, Arc, "game.core.campaign.has-arc"));
 
@@ -51,8 +222,8 @@ public sealed class Dnd2024CampaignRecordingTests
         var campaign = CampaignRole(Edge(Campaign, Session, "game.core.campaign.has-session"));
         var session = Role(Session, "Session", new()
         {
-            ["dnd2024.game.core.campaign.session"] = "{\"status\":\"active\",\"ordinal\":1}",
-            ["dnd2024.game.core.campaign.session-recap"] =
+            ["game.core.campaign.session"] = "{\"status\":\"active\",\"ordinal\":1}",
+            ["game.core.campaign.session-recap"] =
                 "{\"protocolVersion\":\"session.s0.c3-only.v1\"}"
         }, Edge(Campaign, Session, "game.core.campaign.has-session"));
 
@@ -93,7 +264,7 @@ public sealed class Dnd2024CampaignRecordingTests
         roles["world"] = WorldRole(360);
         roles["visit"] = Role(Visit, "Brackenford visit", new()
         {
-            ["dnd2024.game.core.campaign.location-visit"] =
+            ["game.core.campaign.location-visit"] =
                 "{\"firstVisitedMinute\":120,\"lastVisitedMinute\":120,\"visitCount\":1,\"status\":\"current\",\"summary\":\"Frontier village.\",\"memory\":\"Trust.\"}"
         }, Edge(Visit, Location, "game.core.campaign.location-visit.at-location"));
         var updated = await RunAsync("dnd2024.mechanic.campaign.location-visit.record.js",
@@ -126,7 +297,7 @@ public sealed class Dnd2024CampaignRecordingTests
                 ["location"] = LocationRole(),
                 ["visit"] = Role(Visit, "Visit", new()
                 {
-                    ["dnd2024.game.core.campaign.location-visit"] =
+                    ["game.core.campaign.location-visit"] =
                         "{\"firstVisitedMinute\":120,\"lastVisitedMinute\":120,\"visitCount\":1,\"status\":\"current\",\"summary\":\"Place.\",\"memory\":\"Memory.\"}"
                 }, Edge(Visit, Location, "game.core.campaign.location-visit.at-location"))
             });
@@ -140,21 +311,21 @@ public sealed class Dnd2024CampaignRecordingTests
     private static EntityProjection CampaignRole(params RelationshipProjection[] relationships) =>
         Role(Campaign, "Campaign", new()
         {
-            ["dnd2024.game.core.campaign.root"] =
+            ["game.core.campaign.root"] =
                 "{\"status\":\"active\",\"summary\":\"Fixture.\",\"visibility\":\"party\"}"
         }, relationships);
 
     private static EntityProjection WorldRole(int minute) => Role(World, "World", new()
     {
-        ["dnd2024.game.core.world.root"] =
+        ["game.core.world.root"] =
             "{\"status\":\"active\",\"summary\":\"Fixture.\",\"visibility\":\"party\"}",
-        ["dnd2024.game.core.world.clock"] =
+        ["game.core.world.clock"] =
             $"{{\"calendarId\":\"fixture\",\"currentMinute\":{minute},\"revision\":1}}"
     });
 
     private static EntityProjection LocationRole() => Role(Location, "Brackenford", new()
     {
-        ["dnd2024.game.core.world.location"] =
+        ["game.core.world.location"] =
             "{\"kind\":\"settlement\",\"status\":\"active\",\"summary\":\"Fixture.\",\"visibility\":\"party\"}"
     });
 
@@ -170,7 +341,7 @@ public sealed class Dnd2024CampaignRecordingTests
         Assert.Equal("relationship.create", effect.Type);
         Assert.Equal(recordId, effect.EntityId);
         Assert.Equal(Location, effect.ToEntityId);
-        Assert.Equal("dnd2024.game.core.campaign.record.references-world-entity", effect.Kind);
+        Assert.Equal("game.core.campaign.record.references-world-entity", effect.Kind);
         Assert.Equal("{}", effect.Data);
     }
 

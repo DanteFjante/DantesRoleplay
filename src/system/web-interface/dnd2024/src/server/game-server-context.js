@@ -1,42 +1,38 @@
-import { resolveMediaAssetUrl } from "../data/media-assets.js";
-
 const TOKEN_MAXIMUM = 200;
-const LOCATION_COMPONENT_TYPE_ID = "dnd2024.game.core.world.location";
-const WORLD_MAP_ANCHOR_COMPONENT_TYPE_ID = "dnd2024.game.core.world.map.anchor";
-const WORLD_MAP_VISUAL_COMPONENT_TYPE_ID = "dnd2024.game.core.world.map.visual";
-const WORLD_MEDIA_VISUAL_COMPONENT_TYPE_ID = "dnd2024.game.core.world.media.visual";
-const WORLD_ROUTE_COMPONENT_TYPE_ID = "dnd2024.game.core.world.route";
-const WORLD_ROUTE_AVAILABILITY_COMPONENT_TYPE_ID = "dnd2024.game.core.world.route.availability";
+const LOCATION_COMPONENT_TYPE_ID = "game.core.world.location";
+const WORLD_MAP_ANCHOR_COMPONENT_TYPE_ID = "game.core.world.map.anchor";
+const WORLD_ROUTE_COMPONENT_TYPE_ID = "game.core.world.route";
+const WORLD_ROUTE_AVAILABILITY_COMPONENT_TYPE_ID = "game.core.world.route.availability";
 const WORLD_ROUTE_RELATIONSHIP_KINDS = {
-  world: "dnd2024.game.core.world.route.in-world",
-  origin: "dnd2024.game.core.world.route.from",
-  destination: "dnd2024.game.core.world.route.to",
+  world: "game.core.world.route.in-world",
+  origin: "game.core.world.route.from",
+  destination: "game.core.world.route.to",
 };
-const CAMPAIGN_ROOT_COMPONENT_TYPE_ID = "dnd2024.game.core.campaign.root";
-const CAMPAIGN_CURRENT_SCENE_COMPONENT_TYPE_ID = "dnd2024.game.core.campaign.current-scene";
+const CAMPAIGN_ROOT_COMPONENT_TYPE_ID = "game.core.campaign.root";
+const CAMPAIGN_CURRENT_SCENE_COMPONENT_TYPE_ID = "game.core.campaign.current-scene";
 const CAMPAIGN_SCENE_AFFORDANCES_COMPONENT_TYPE_ID =
-  "dnd2024.game.core.campaign.scene-affordances";
-const CAMPAIGN_CHAPTER_COMPONENT_TYPE_ID = "dnd2024.game.core.campaign.chapter";
-const CAMPAIGN_ARC_COMPONENT_TYPE_ID = "dnd2024.game.core.campaign.arc";
-const CAMPAIGN_SESSION_COMPONENT_TYPE_ID = "dnd2024.game.core.campaign.session";
-const CAMPAIGN_SESSION_RECAP_COMPONENT_TYPE_ID = "dnd2024.game.core.campaign.session-recap";
-const CAMPAIGN_LOCATION_VISIT_COMPONENT_TYPE_ID = "dnd2024.game.core.campaign.location-visit";
-const CAMPAIGN_HAS_SESSION_RELATIONSHIP_KIND = "dnd2024.game.core.campaign.has-session";
+  "game.core.campaign.scene-affordances";
+const CAMPAIGN_CHAPTER_COMPONENT_TYPE_ID = "game.core.campaign.chapter";
+const CAMPAIGN_ARC_COMPONENT_TYPE_ID = "game.core.campaign.arc";
+const CAMPAIGN_SESSION_COMPONENT_TYPE_ID = "game.core.campaign.session";
+const CAMPAIGN_SESSION_RECAP_COMPONENT_TYPE_ID = "game.core.campaign.session-recap";
+const CAMPAIGN_LOCATION_VISIT_COMPONENT_TYPE_ID = "game.core.campaign.location-visit";
+const CAMPAIGN_HAS_SESSION_RELATIONSHIP_KIND = "game.core.campaign.has-session";
 const CAMPAIGN_HAS_LOCATION_VISIT_RELATIONSHIP_KIND =
-  "dnd2024.game.core.campaign.has-location-visit";
+  "game.core.campaign.has-location-visit";
 const CAMPAIGN_LOCATION_VISIT_AT_LOCATION_RELATIONSHIP_KIND =
-  "dnd2024.game.core.campaign.location-visit.at-location";
+  "game.core.campaign.location-visit.at-location";
 const CAMPAIGN_RECORD_WORLD_REFERENCE_RELATIONSHIP_KIND =
-  "dnd2024.game.core.campaign.record.references-world-entity";
-const CAMPAIGN_PARTICIPATION_COMPONENT_TYPE_ID = "dnd2024.game.core.campaign.character-participation";
+  "game.core.campaign.record.references-world-entity";
+const CAMPAIGN_PARTICIPATION_COMPONENT_TYPE_ID = "game.core.campaign.character-participation";
 const CAMPAIGN_HAS_PARTICIPATION_RELATIONSHIP_KIND =
-  "dnd2024.game.core.campaign.has-character-participation";
+  "game.core.campaign.has-character-participation";
 const CAMPAIGN_PARTICIPATION_ACTOR_RELATIONSHIP_KIND =
-  "dnd2024.game.core.campaign.character-participation.for-actor";
+  "game.core.campaign.character-participation.for-actor";
 const PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID = "dnd2024.playtest-character-record";
-const WORLD_INTERACTION_COMPONENT_TYPE_ID = "dnd2024.game.core.world.interaction";
+const WORLD_INTERACTION_COMPONENT_TYPE_ID = "game.core.world.interaction";
 const WORLD_INTERACTION_PARTICIPANT_RELATIONSHIP_KIND =
-  "dnd2024.game.core.world.interaction.participant";
+  "game.core.world.interaction.participant";
 const ENCOUNTER_DEFINITION_COMPONENT_TYPE_ID = "dnd2024.encounter.definition";
 const ENCOUNTER_PARTICIPATION_COMPONENT_TYPE_ID = "dnd2024.encounter.participation";
 const COMBAT_INITIATIVE_COMPONENT_TYPE_ID = "dnd2024.combat.initiative";
@@ -49,41 +45,20 @@ const ENCOUNTER_RELATIONSHIP_KINDS = {
   activeRound: "dnd2024.encounter.active-round",
   activeTurn: "dnd2024.encounter.active-turn",
 };
-const CHARACTER_IDENTITY_COMPONENT_TYPE_ID = "dnd2024.character.identity";
-const CHARACTER_ORIGIN_COMPONENT_TYPE_ID = "dnd2024.character.origin-selections";
-const CHARACTER_EXPERIENCE_COMPONENT_TYPE_ID = "dnd2024.character.experience";
-const CHARACTER_CLASS_MEMBERSHIP_COMPONENT_TYPE_ID = "dnd2024.character.class-membership";
-const CHARACTER_CLASS_MEMBERSHIP_RELATIONSHIP_KIND = "dnd2024.character.has-class-membership";
-const CREATURE_ABILITY_SCORES_COMPONENT_TYPE_ID = "dnd2024.creature.ability-scores";
-const CREATURE_HIT_POINTS_COMPONENT_TYPE_ID = "dnd2024.creature.hit-points";
-const CREATURE_TEMPORARY_HIT_POINTS_COMPONENT_TYPE_ID = "dnd2024.creature.temporary-hit-points";
-const CREATURE_BODY_COMPONENT_TYPE_ID = "dnd2024.creature.body";
-const CREATURE_MOVEMENT_COMPONENT_TYPE_ID = "dnd2024.creature.movement";
-const CREATURE_PROFICIENCIES_COMPONENT_TYPE_ID = "dnd2024.creature.proficiencies";
-const ITEM_DEFINITION_LINK_COMPONENT_TYPE_ID = "dnd2024.core.definition-link";
-const ITEM_QUANTITY_COMPONENT_TYPE_ID = "dnd2024.item.quantity";
-const ITEM_EQUIPMENT_COMPONENT_TYPE_ID = "dnd2024.item.equipment";
-const CANONICAL_CHARACTER_COMPONENT_IDS = [
-  CHARACTER_IDENTITY_COMPONENT_TYPE_ID,
-  CHARACTER_ORIGIN_COMPONENT_TYPE_ID,
-  CHARACTER_EXPERIENCE_COMPONENT_TYPE_ID,
-  CREATURE_ABILITY_SCORES_COMPONENT_TYPE_ID,
-  CREATURE_HIT_POINTS_COMPONENT_TYPE_ID,
-  CREATURE_TEMPORARY_HIT_POINTS_COMPONENT_TYPE_ID,
-  CREATURE_BODY_COMPONENT_TYPE_ID,
-  CREATURE_MOVEMENT_COMPONENT_TYPE_ID,
-  CREATURE_PROFICIENCIES_COMPONENT_TYPE_ID,
-];
-const WORLD_MOTIVE_COMPONENT_TYPE_ID = "dnd2024.game.core.world.motive";
-const WORLD_FACTION_COMPONENT_TYPE_ID = "dnd2024.game.core.world.faction";
+const WORLD_MOTIVE_COMPONENT_TYPE_ID = "game.core.world.motive";
+const WORLD_FACTION_COMPONENT_TYPE_ID = "game.core.world.faction";
 const WORLD_FACTION_RELATIONSHIP_KINDS = {
-  members: "dnd2024.game.core.world.faction.member",
-  controls: "dnd2024.game.core.world.faction.controls",
-  territories: "dnd2024.game.core.world.faction.territory-controls",
-  allies: "dnd2024.game.core.world.faction.allied-with",
-  opponents: "dnd2024.game.core.world.faction.opposed-to",
+  members: "game.core.world.faction.member",
+  controls: "game.core.world.faction.controls",
+  territories: "game.core.world.faction.territory-controls",
+  allies: "game.core.world.faction.allied-with",
+  opponents: "game.core.world.faction.opposed-to",
 };
 const DEVELOPMENT_SEAT = new Set(["player", "dm"]);
+const RECORDED_SITUATION_KINDS = new Set([
+  "out-of-character", "conversation", "combat", "exploration", "investigation",
+  "travel", "rest", "downtime", "other",
+]);
 
 function token(value) {
   return typeof value === "string" && value.length > 0 && value.length <= TOKEN_MAXIMUM &&
@@ -245,6 +220,62 @@ export function resolveCurrentSceneRecord(value, authorizedLocationIds) {
   };
 }
 
+/**
+ * Projects only the audience-bound active play situation written by the play recorder. This is
+ * deliberately a distinct read-model branch: it can describe continuity between clients without
+ * pretending that model narration created an authoritative encounter, initiative, or ECS scene.
+ */
+export function resolveRecordedPlaySituation(value, authorizedLocationIds) {
+  const situation = value?.currentSituation;
+  const id = token(situation?.id);
+  const kind = RECORDED_SITUATION_KINDS.has(situation?.kind) ? situation.kind : null;
+  const summary = text(situation?.summary, 4_000);
+  if (!id || situation?.status !== "active" || !kind || !summary ||
+      !Array.isArray(situation.participants) || situation.participants.length > 32) return null;
+  const participants = [];
+  for (let index = 0; index < situation.participants.length; index++) {
+    const participant = situation.participants[index];
+    const name = text(participant?.name, 200);
+    if (!name) return null;
+    const entityId = participant.entityId === null || participant.entityId === undefined
+      ? null
+      : token(participant.entityId);
+    if (participant.entityId !== null && participant.entityId !== undefined && !entityId) return null;
+    participants.push({ id: entityId ?? `${id}.participant.${index + 1}`, name, ...(entityId ? { entityId } : {}) });
+  }
+  let location;
+  let locationId;
+  if (situation.location !== null && situation.location !== undefined) {
+    const name = text(situation.location.name, 200);
+    const entityId = situation.location.entityId === null || situation.location.entityId === undefined
+      ? null
+      : token(situation.location.entityId);
+    if (!name || (situation.location.entityId !== null && situation.location.entityId !== undefined && !entityId)) {
+      return null;
+    }
+    locationId = entityId && authorizedLocationIds.includes(entityId) ? entityId : undefined;
+    location = { name, ...(locationId ? { id: locationId } : {}) };
+  }
+  if (!Array.isArray(value.recentMessages) || value.recentMessages.length > 64) return null;
+  const interactions = [];
+  for (const message of value.recentMessages.slice(-12)) {
+    const messageId = token(message?.id);
+    const role = message?.role === "player" || message?.role === "assistant" ? message.role : null;
+    const messageText = typeof message?.text === "string" && message.text.length > 0 && message.text.length <= 8_000 &&
+      ![...message.text].some(character => /[\p{Cc}]/u.test(character) && character !== "\r" && character !== "\n" && character !== "\t")
+      ? message.text
+      : null;
+    if (!messageId || !role || !messageText || !Number.isInteger(message.ordinal) || message.ordinal < 1) return null;
+    interactions.push({ id: messageId, ordinal: message.ordinal, role, text: messageText });
+  }
+  return {
+    status: "ready",
+    kind: "recorded",
+    ...(locationId ? { locationId } : {}),
+    recorded: { id, kind, summary, participants, interactions, ...(location ? { location } : {}) },
+  };
+}
+
 export function resolveSceneAffordancesRecord(value, currentScene, perspective) {
   if (!hasExactKeys(value, ["scene", "items"]) || !currentScene ||
       !["player", "dm"].includes(perspective)) return null;
@@ -278,76 +309,61 @@ function mapAnchor(value, expectedEntityId) {
     : null;
 }
 
-function mapVisual(value, expectedEntityId, perspective) {
-  const parsed = componentValue(value, expectedEntityId, WORLD_MAP_VISUAL_COMPONENT_TYPE_ID);
-  if (!hasExactKeys(parsed, ["status", "variants"]) || parsed.status !== "active") return null;
-  if (!parsed.variants || typeof parsed.variants !== "object" || Array.isArray(parsed.variants)) return null;
-  const allowedVariantKeys = new Set(["player", "dm"]);
-  if (Object.keys(parsed.variants).some((key) => !allowedVariantKeys.has(key))) return null;
-  const variant = parsed.variants[perspective];
-  if (!hasExactKeys(variant, ["assetKey", "alt"])) return null;
-  const assetKey = text(variant.assetKey, 200);
-  const alt = text(variant.alt, 1000);
-  return assetKey && /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/u.test(assetKey) && alt
-    ? { assetKey, alt }
-    : null;
-}
-
-function validMediaVariant(value) {
-  if (!hasExactKeys(value, ["assetKey", "alt", "mimeType", "width", "height", "sha256"])) return false;
-  return text(value.assetKey, 128) && /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/u.test(value.assetKey) &&
-    text(value.alt, 500) && /\S/u.test(value.alt) &&
-    ["image/png", "image/jpeg", "image/webp"].includes(value.mimeType) &&
-    Number.isInteger(value.width) && value.width >= 1 && value.width <= 10_000 &&
-    Number.isInteger(value.height) && value.height >= 1 && value.height <= 10_000 &&
-    typeof value.sha256 === "string" && /^[a-f0-9]{64}$/u.test(value.sha256);
-}
-
-function validMediaProvenance(value) {
-  return hasExactKeys(value, ["kind", "credit", "source", "reviewedOn", "version"]) &&
-    ["generated", "original", "commissioned", "licensed"].includes(value.kind) &&
-    text(value.credit, 500) && /\S/u.test(value.credit) &&
-    text(value.source, 500) && /\S/u.test(value.source) &&
-    typeof value.reviewedOn === "string" && /^\d{4}-\d{2}-\d{2}$/u.test(value.reviewedOn) &&
-    Number.isInteger(value.version) && value.version >= 1 && value.version <= 1_000_000;
-}
-
-export function projectMediaVisual(value, perspective, assetBaseUrl = "/") {
-  if (!hasExactKeys(value, ["status", "slots"]) || value.status !== "active" ||
-      !["player", "dm"].includes(perspective) || !value.slots ||
-      typeof value.slots !== "object" || Array.isArray(value.slots)) return null;
-  const allowedSlots = new Set(["portrait", "setting", "scene", "handout"]);
-  const slotEntries = Object.entries(value.slots);
-  if (slotEntries.length === 0 || slotEntries.some(([slot]) => !allowedSlots.has(slot))) return null;
+export function projectMediaVisual(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value) || !Array.isArray(value.attachments) ||
+      value.attachments.length > 64) return null;
+  const roles = new Set(["portrait", "setting", "map", "illustration", "icon", "scene", "handout"]);
   const projected = {};
-  for (const [slotName, slot] of slotEntries) {
-    if (!hasExactKeys(slot, ["variants", "provenance"]) || !validMediaProvenance(slot.provenance) ||
-        !slot.variants || typeof slot.variants !== "object" || Array.isArray(slot.variants)) return null;
-    const variantEntries = Object.entries(slot.variants);
-    if (variantEntries.length === 0 || variantEntries.some(([name, variant]) =>
-      !["player", "dm"].includes(name) || !validMediaVariant(variant))) return null;
-    const selected = slot.variants[perspective];
-    if (!selected) continue;
-    const imageUrl = resolveMediaAssetUrl(
-      selected.assetKey,
-      selected.sha256,
-      selected.mimeType,
-      assetBaseUrl,
-    );
-    if (!imageUrl) return null;
-    projected[slotName] = {
-      imageUrl,
-      alt: selected.alt,
-      width: selected.width,
-      height: selected.height,
+  const gallery = [];
+  const ordered = [...value.attachments].sort((left, right) =>
+    (left?.order ?? Number.MAX_SAFE_INTEGER) - (right?.order ?? Number.MAX_SAFE_INTEGER) ||
+    String(left?.mediaId ?? "").localeCompare(String(right?.mediaId ?? "")));
+  for (const attachment of ordered) {
+    if (!hasExactKeys(attachment, ["mediaId", "role", "mediaType", "width", "height", "alt", "caption", "order", "contentUrl"]) ||
+        !token(attachment.mediaId) || !roles.has(attachment.role) ||
+        !["image/png", "image/jpeg", "image/webp"].includes(attachment.mediaType) ||
+        !Number.isInteger(attachment.width) || attachment.width < 1 || attachment.width > 10_000 ||
+        !Number.isInteger(attachment.height) || attachment.height < 1 || attachment.height > 10_000 ||
+        !text(attachment.alt, 500) || typeof attachment.caption !== "string" || attachment.caption.length > 1_000 ||
+        !Number.isInteger(attachment.order) || attachment.order < 0 || attachment.order > 10_000 ||
+        typeof attachment.contentUrl !== "string" ||
+        !attachment.contentUrl.startsWith("/api/applications/") || !attachment.contentUrl.endsWith("/content")) return null;
+    const visual = {
+      imageUrl: attachment.contentUrl,
+      alt: attachment.alt,
+      width: attachment.width,
+      height: attachment.height,
     };
+    gallery.push({
+      ...visual,
+      mediaId: attachment.mediaId,
+      role: attachment.role,
+      caption: attachment.caption,
+    });
+    if (!projected[attachment.role]) projected[attachment.role] = visual;
   }
+  if (gallery.length > 1) projected.gallery = gallery;
   return Object.keys(projected).length > 0 ? projected : null;
 }
 
-function mediaVisual(value, expectedEntityId, perspective, assetBaseUrl) {
-  const parsed = componentValue(value, expectedEntityId, WORLD_MEDIA_VISUAL_COMPONENT_TYPE_ID);
-  return parsed ? projectMediaVisual(parsed, perspective, assetBaseUrl) : null;
+export function inheritMediaVisual(instanceMedia, definitionMedia) {
+  if (!instanceMedia && !definitionMedia) return null;
+  const roles = ["portrait", "setting", "map", "illustration", "icon", "scene", "handout"];
+  const result = {};
+  for (const role of roles) {
+    const visual = instanceMedia?.[role] ?? definitionMedia?.[role];
+    if (visual) result[role] = visual;
+  }
+  const instanceGallery = Array.isArray(instanceMedia?.gallery) ? instanceMedia.gallery : [];
+  const definitionGallery = Array.isArray(definitionMedia?.gallery) ? definitionMedia.gallery : [];
+  const inherited = definitionGallery.filter(value => !instanceGallery.some(item => item.role === value.role));
+  const gallery = [...instanceGallery, ...inherited];
+  if (gallery.length > 0) result.gallery = gallery;
+  return Object.keys(result).length > 0 ? result : null;
+}
+
+function mediaVisual(value) {
+  return projectMediaVisual(value);
 }
 
 function textList(value, maximumItems, maximumLength) {
@@ -521,278 +537,52 @@ function referenceId(value) {
   return token(value.entityId);
 }
 
-function canonicalIdentity(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const allowed = new Set(["pronouns", "appearance", "biography", "playerNotes"]);
-  if (Object.keys(value).length === 0 || Object.keys(value).some((key) => !allowed.has(key))) return null;
-  const result = {};
-  for (const [key, maximum] of [["pronouns", 200], ["appearance", 5_000], ["biography", 20_000], ["playerNotes", 20_000]]) {
-    if (value[key] === undefined) continue;
-    const normalized = text(value[key], maximum);
-    if (!normalized) return null;
-    result[key] = normalized;
-  }
-  return Object.keys(result).length > 0 ? result : null;
-}
-
-function canonicalOrigin(value) {
-  if (!hasExactKeys(value, ["backgroundRef", "speciesRef"])) return null;
-  const speciesId = referenceId(value.speciesRef);
-  const backgroundId = referenceId(value.backgroundRef);
-  return speciesId && backgroundId ? { speciesId, backgroundId } : null;
-}
-
-function canonicalAbilityScores(value) {
-  if (!hasExactKeys(value, ["scores"]) || !value.scores || typeof value.scores !== "object" || Array.isArray(value.scores)) return null;
-  const entries = Object.entries(value.scores).flatMap(([id, score]) => {
-    const abilityId = token(id);
-    return abilityId && Number.isInteger(score) && score >= 0 && score <= 100
-      ? [{ id: abilityId, score }]
-      : [];
-  });
-  return entries.length === Object.keys(value.scores).length && entries.length > 0
-    ? entries.sort((left, right) => left.id.localeCompare(right.id))
-    : null;
-}
-
-function canonicalHitPoints(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const allowed = new Set(["current", "maximum", "maximumReduction"]);
-  if (Object.keys(value).some((key) => !allowed.has(key)) ||
-      !Number.isSafeInteger(value.current) || value.current < 0 ||
-      !Number.isSafeInteger(value.maximum) || value.maximum < 1 || value.current > value.maximum) return null;
-  if (value.maximumReduction !== undefined &&
-      (!Number.isSafeInteger(value.maximumReduction) || value.maximumReduction < 0)) return null;
-  return {
-    current: value.current,
-    maximum: value.maximum,
-    ...(value.maximumReduction !== undefined ? { maximumReduction: value.maximumReduction } : {}),
-  };
-}
-
-function canonicalTemporaryHitPoints(value) {
-  if (!hasExactKeys(value, ["amount", "sourceRef"]) ||
-      !Number.isSafeInteger(value.amount) || value.amount < 1 || !referenceId(value.sourceRef)) return null;
-  return { amount: value.amount };
-}
-
-function canonicalBody(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const allowed = new Set(["sizeRef", "activeFormRef", "bodyStateRef"]);
-  if (Object.keys(value).some((key) => !allowed.has(key))) return null;
-  const sizeId = referenceId(value.sizeRef);
-  return sizeId ? { sizeId } : null;
-}
-
-function canonicalMovement(value) {
-  if (!hasExactKeys(value, ["speeds"]) || !value.speeds || typeof value.speeds !== "object" || Array.isArray(value.speeds)) return null;
-  const parsed = Object.entries(value.speeds).map(([modeId, speed]) => {
-    const id = token(modeId);
-    const distance = speed?.distance;
-    const numerator = distance?.value?.numerator;
-    const denominator = distance?.value?.denominator;
-    const unitId = referenceId(distance?.unit);
-    if (!id || typeof speed?.enabled !== "boolean" || distance?.dimension !== "distance" ||
-        !Number.isSafeInteger(numerator) || numerator < 0 ||
-        !Number.isSafeInteger(denominator) || denominator < 1 || !unitId ||
-        !Array.isArray(speed.sourceRefs) || speed.sourceRefs.length === 0 ||
-        speed.sourceRefs.some((entry) => !referenceId(entry))) return null;
-    return speed.enabled
-      ? { id, numerator, denominator, unitId }
-      : false;
-  });
-  if (parsed.some((entry) => entry === null)) return null;
-  return parsed.filter(Boolean).sort((left, right) => left.id.localeCompare(right.id));
-}
-
-function canonicalProficiencies(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value) ||
-      !value.entries || typeof value.entries !== "object" || Array.isArray(value.entries) ||
-      !Array.isArray(value.recordedFamilies)) return null;
-  const entries = Object.entries(value.entries).flatMap(([id, entry]) => {
-    const proficiencyId = token(id);
-    const rankId = referenceId(entry?.rankRef);
-    return proficiencyId && rankId ? [{ id: proficiencyId, rankId }] : [];
-  });
-  return entries.length === Object.keys(value.entries).length
-    ? entries.sort((left, right) => left.id.localeCompare(right.id))
-    : null;
-}
-
-function canonicalExperience(value) {
-  return hasExactKeys(value, ["total"]) && Number.isSafeInteger(value.total) && value.total >= 0
-    ? { total: value.total }
-    : null;
-}
-
-function canonicalClassMembership(value, id, name) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const allowed = new Set(["classRef", "level", "subclassRef"]);
-  if (Object.keys(value).some((key) => !allowed.has(key))) return null;
-  const classId = referenceId(value.classRef);
-  const subclassId = value.subclassRef === undefined ? null : referenceId(value.subclassRef);
-  if (!classId || (value.subclassRef !== undefined && !subclassId) ||
-      !Number.isInteger(value.level) || value.level < 1 || value.level > 20) return null;
-  return { id, name, classId, level: value.level, ...(subclassId ? { subclassId } : {}) };
-}
-
-function canonicalItem(linkValue, quantityValue, equipmentValue, containment, item) {
-  if (!linkValue || typeof linkValue !== "object" || Array.isArray(linkValue)) return null;
-  const linkKeys = Object.keys(linkValue).sort().join(",");
-  const definitionId = (linkKeys === "definition" || linkKeys === "definition,definitionRevision")
-    ? referenceId(linkValue.definition)
-    : null;
-  if (!definitionId || !hasExactKeys(quantityValue, ["current"]) ||
-      !Number.isSafeInteger(quantityValue.current) || quantityValue.current < 1) return null;
-  let equipmentSlots = [];
-  if (equipmentValue !== null) {
-    if (!equipmentValue || typeof equipmentValue !== "object" || Array.isArray(equipmentValue) ||
-        Object.keys(equipmentValue).some((key) => !["equippedBy", "slots", "configuration"].includes(key)) ||
-        !referenceId(equipmentValue.equippedBy) || !Array.isArray(equipmentValue.slots) ||
-        equipmentValue.slots.length === 0) return null;
-    equipmentSlots = equipmentValue.slots.map(referenceId);
-    if (equipmentSlots.some((entry) => !entry) || new Set(equipmentSlots).size !== equipmentSlots.length) return null;
-  }
-  return {
-    id: item.id,
-    name: item.name,
-    definitionId,
-    quantity: quantityValue.current,
-    slot: containment.slot,
-    equipmentSlots,
-  };
-}
-
 async function readCanonicalCharacter({ fetchImpl, origin, applicationId, stateSpaceId, actorId }) {
   const applicationRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
     `/state-spaces/${encodeURIComponent(stateSpaceId)}`;
   const entityRoot = `${applicationRoot}/entities`;
   const headers = { Accept: "application/json" };
-  let summaries;
   try {
-    const response = await fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(actorId)}/components?limit=100`), {
+    const response = await fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(actorId)}` +
+      `/read-models/${encodeURIComponent("dnd2024.query.character-sheet")}`), {
       headers,
       cache: "no-store",
     });
     if (!response?.ok) return null;
-    summaries = await json(response);
+    const payload = await json(response);
+    const projected = payload?.data;
+    if (!projected || projected.version !== 1 || projected.subject?.id !== actorId ||
+        token(payload?.qualifiedQueryId) !== "dnd2024.query.character-sheet" ||
+        !token(payload?.stateSpaceFingerprint) || !token(payload?.resolutionFingerprint) ||
+        !Array.isArray(projected.inventory?.items)) return null;
+    const inventory = (await Promise.all(projected.inventory.items.map(async (item) => {
+      const itemId = token(item?.id);
+      const definitionId = token(item?.definitionId);
+      if (!itemId || !definitionId) return null;
+      const [instanceMediaValue, definitionMediaValue] = await Promise.all([
+        readEntityMedia(fetchImpl, origin, entityRoot, itemId),
+        readEntityMedia(fetchImpl, origin, entityRoot, definitionId),
+      ]);
+      const inheritedMedia = inheritMediaVisual(
+        instanceMediaValue ? projectMediaVisual(instanceMediaValue) : null,
+        definitionMediaValue ? projectMediaVisual(definitionMediaValue) : null,
+      );
+      return inheritedMedia ? { ...item, media: inheritedMedia } : item;
+    }))).filter(Boolean);
+    return {
+      ...projected,
+      inventoryStatus: "ready",
+      inventory,
+      projection: {
+        stateSpaceFingerprint: payload.stateSpaceFingerprint,
+        resolutionFingerprint: payload.resolutionFingerprint,
+        resultFingerprint: payload.resultFingerprint,
+        sourceRevisionFingerprint: payload.sourceRevisionFingerprint,
+      },
+    };
   } catch {
     return null;
   }
-  if (!Array.isArray(summaries?.items) || summaries.items.length > 100) return null;
-  const present = new Set(summaries.items.flatMap((item) => {
-    const id = token(item?.qualifiedTypeId);
-    return id ? [id] : [];
-  }));
-  const componentIds = CANONICAL_CHARACTER_COMPONENT_IDS.filter((id) => present.has(id));
-  if (componentIds.length === 0) return null;
-
-  const componentPairs = await Promise.all(componentIds.map(async (componentId) => {
-    try {
-      const response = await fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(actorId)}` +
-        `/components/${encodeURIComponent(componentId)}`), { headers, cache: "no-store" });
-      const payload = response?.ok ? await json(response) : null;
-      return [componentId, payload ? componentValue(payload, actorId, componentId) : null];
-    } catch {
-      return [componentId, null];
-    }
-  }));
-  const components = new Map(componentPairs);
-
-  let classes = [];
-  try {
-    const relationshipResponse = await fetchImpl(url(origin, `${applicationRoot}/relationships` +
-      `?fromEntityId=${encodeURIComponent(actorId)}` +
-      `&qualifiedKind=${encodeURIComponent(CHARACTER_CLASS_MEMBERSHIP_RELATIONSHIP_KIND)}` +
-      "&limit=100"), { headers, cache: "no-store" });
-    const relationshipPayload = relationshipResponse?.ok ? await json(relationshipResponse) : null;
-    const membershipIds = relationshipTargetIds(
-      relationshipPayload,
-      actorId,
-      CHARACTER_CLASS_MEMBERSHIP_RELATIONSHIP_KIND,
-    );
-    const uniqueIds = [...new Set(membershipIds)];
-    if (uniqueIds.length === membershipIds.length) {
-      classes = (await Promise.all(uniqueIds.map(async (membershipId) => {
-        try {
-          const [entityResponse, componentResponse] = await Promise.all([
-            fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(membershipId)}`), { headers, cache: "no-store" }),
-            fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(membershipId)}` +
-              `/components/${CHARACTER_CLASS_MEMBERSHIP_COMPONENT_TYPE_ID}`), { headers, cache: "no-store" }),
-          ]);
-          if (!entityResponse?.ok || !componentResponse?.ok) return null;
-          const [entityPayload, componentPayload] = await Promise.all([json(entityResponse), json(componentResponse)]);
-          const membershipEntity = entity(entityPayload, membershipId);
-          const value = componentValue(componentPayload, membershipId, CHARACTER_CLASS_MEMBERSHIP_COMPONENT_TYPE_ID);
-          return membershipEntity ? canonicalClassMembership(value, membershipId, membershipEntity.name) : null;
-        } catch {
-          return null;
-        }
-      }))).filter(Boolean).sort((left, right) => left.classId.localeCompare(right.classId));
-    }
-  } catch {
-    classes = [];
-  }
-
-  let inventoryStatus = "unavailable";
-  let inventory = [];
-  try {
-    const containmentResponse = await fetchImpl(url(origin, `${applicationRoot}/containments` +
-      `?containerEntityId=${encodeURIComponent(actorId)}&limit=24`), { headers, cache: "no-store" });
-    const containmentPayload = containmentResponse?.ok ? await json(containmentResponse) : null;
-    if (Array.isArray(containmentPayload?.items) && containmentPayload.items.length <= 24) {
-      inventoryStatus = "ready";
-      inventory = (await Promise.all(containmentPayload.items.map(async (edge) => {
-        const containedId = token(edge?.containedEntityId);
-        const container = token(edge?.containerEntityId);
-        const slot = text(edge?.slot, 100);
-        if (!containedId || container !== actorId || !slot) return null;
-        try {
-          const [itemResponse, linkResponse, quantityResponse, equipmentResponse] = await Promise.all([
-            fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(containedId)}`), { headers, cache: "no-store" }),
-            fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(containedId)}/components/${ITEM_DEFINITION_LINK_COMPONENT_TYPE_ID}`), { headers, cache: "no-store" }),
-            fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(containedId)}/components/${ITEM_QUANTITY_COMPONENT_TYPE_ID}`), { headers, cache: "no-store" }),
-            fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(containedId)}/components/${ITEM_EQUIPMENT_COMPONENT_TYPE_ID}`), { headers, cache: "no-store" }).catch(() => null),
-          ]);
-          if (!itemResponse?.ok || !linkResponse?.ok || !quantityResponse?.ok) return null;
-          const [itemPayload, linkPayload, quantityPayload, equipmentPayload] = await Promise.all([
-            json(itemResponse),
-            json(linkResponse),
-            json(quantityResponse),
-            equipmentResponse?.ok ? json(equipmentResponse) : Promise.resolve(null),
-          ]);
-          const itemEntity = entity(itemPayload, containedId);
-          if (!itemEntity) return null;
-          return canonicalItem(
-            componentValue(linkPayload, containedId, ITEM_DEFINITION_LINK_COMPONENT_TYPE_ID),
-            componentValue(quantityPayload, containedId, ITEM_QUANTITY_COMPONENT_TYPE_ID),
-            equipmentPayload ? componentValue(equipmentPayload, containedId, ITEM_EQUIPMENT_COMPONENT_TYPE_ID) : null,
-            { slot },
-            itemEntity,
-          );
-        } catch {
-          return null;
-        }
-      }))).filter(Boolean).sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id));
-    }
-  } catch {
-    inventoryStatus = "unavailable";
-  }
-
-  return {
-    identity: canonicalIdentity(components.get(CHARACTER_IDENTITY_COMPONENT_TYPE_ID)),
-    origin: canonicalOrigin(components.get(CHARACTER_ORIGIN_COMPONENT_TYPE_ID)),
-    abilities: canonicalAbilityScores(components.get(CREATURE_ABILITY_SCORES_COMPONENT_TYPE_ID)),
-    hitPoints: canonicalHitPoints(components.get(CREATURE_HIT_POINTS_COMPONENT_TYPE_ID)),
-    temporaryHitPoints: canonicalTemporaryHitPoints(components.get(CREATURE_TEMPORARY_HIT_POINTS_COMPONENT_TYPE_ID)),
-    body: canonicalBody(components.get(CREATURE_BODY_COMPONENT_TYPE_ID)),
-    movement: canonicalMovement(components.get(CREATURE_MOVEMENT_COMPONENT_TYPE_ID)),
-    proficiencies: canonicalProficiencies(components.get(CREATURE_PROFICIENCIES_COMPONENT_TYPE_ID)),
-    experience: canonicalExperience(components.get(CHARACTER_EXPERIENCE_COMPONENT_TYPE_ID)),
-    classes,
-    inventoryStatus,
-    inventory,
-  };
 }
 
 function activeCharacterParticipation(value, expectedEntityId) {
@@ -858,16 +648,15 @@ async function attachAuthorizedKnowledgeMedia({
   origin,
   entityRoot,
   projectedKnowledge,
-  perspective,
-  mediaAssetBaseUrl,
+  perspective: _,
+  mediaAssetBaseUrl: __,
 }) {
   if (projectedKnowledge.status !== "ready") return projectedKnowledge;
   const cache = new Map();
   async function mediaFor(ownerId) {
     if (!cache.has(ownerId)) {
-      cache.set(ownerId, readExactComponent(
-        fetchImpl, origin, entityRoot, ownerId, WORLD_MEDIA_VISUAL_COMPONENT_TYPE_ID,
-      ).then((value) => value ? projectMediaVisual(value, perspective, mediaAssetBaseUrl) : null));
+      cache.set(ownerId, readEntityMedia(fetchImpl, origin, entityRoot, ownerId)
+        .then((value) => value ? projectMediaVisual(value) : null));
     }
     return cache.get(ownerId);
   }
@@ -1159,13 +948,10 @@ async function readRawLocationDirectory({
     const anchorPath = `/api/applications/${encodeURIComponent(applicationId)}` +
       `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities/${encodeURIComponent(id)}` +
       `/components/${WORLD_MAP_ANCHOR_COMPONENT_TYPE_ID}`;
-    const visualPath = `/api/applications/${encodeURIComponent(applicationId)}` +
-      `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities/${encodeURIComponent(id)}` +
-      `/components/${WORLD_MAP_VISUAL_COMPONENT_TYPE_ID}`;
     const mediaPath = `/api/applications/${encodeURIComponent(applicationId)}` +
       `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities/${encodeURIComponent(id)}` +
-      `/components/${WORLD_MEDIA_VISUAL_COMPONENT_TYPE_ID}`;
-    const [containmentResult, componentResult, anchorResult, visualResult, mediaResult] = await Promise.allSettled([
+      "/media";
+    const [containmentResult, componentResult, anchorResult, mediaResult] = await Promise.allSettled([
       fetchImpl(url(origin, containmentPath), {
         headers: { Accept: "application/json" },
         cache: "no-store",
@@ -1175,10 +961,6 @@ async function readRawLocationDirectory({
         cache: "no-store",
       }),
       fetchImpl(url(origin, anchorPath), {
-        headers: { Accept: "application/json" },
-        cache: "no-store",
-      }),
-      fetchImpl(url(origin, visualPath), {
         headers: { Accept: "application/json" },
         cache: "no-store",
       }),
@@ -1195,13 +977,11 @@ async function readRawLocationDirectory({
         ? componentResult.value
         : null;
       const anchorResponse = anchorResult.status === "fulfilled" ? anchorResult.value : null;
-      const visualResponse = visualResult.status === "fulfilled" ? visualResult.value : null;
       const mediaResponse = mediaResult.status === "fulfilled" ? mediaResult.value : null;
-      const [containmentPayload, componentPayload, anchorPayload, visualPayload, mediaPayload] = await Promise.all([
+      const [containmentPayload, componentPayload, anchorPayload, mediaPayload] = await Promise.all([
         containmentResponse?.ok ? json(containmentResponse) : Promise.resolve(null),
         componentResponse?.ok ? json(componentResponse) : Promise.resolve(null),
         anchorResponse?.ok ? json(anchorResponse) : Promise.resolve(null),
-        visualResponse?.ok ? json(visualResponse) : Promise.resolve(null),
         mediaResponse?.ok ? json(mediaResponse) : Promise.resolve(null),
       ]);
       const componentValueJson = componentValue(componentPayload, id, LOCATION_COMPONENT_TYPE_ID);
@@ -1219,11 +999,10 @@ async function readRawLocationDirectory({
         ...(discoveredContainerId ? { containerId: discoveredContainerId } : {}),
         ...(discoveredContainmentSlot ? { containmentSlot: discoveredContainmentSlot } : {}),
         ...(discoveredMapAnchor ? { mapAnchor: discoveredMapAnchor } : {}),
-        visualPayload,
         mediaPayload,
       };
     } catch {
-      return { id, name, visibility: null, visualPayload: null, mediaPayload: null };
+      return { id, name, visibility: null, mediaPayload: null };
     }
   }));
   return locationDirectory
@@ -1253,17 +1032,14 @@ async function readLocationDirectory(options) {
   const rawDirectory = await cached.value;
   return rawDirectory.flatMap((entry) => {
     if (options.perspective === "player" && entry.visibility !== "public") return [];
-    const selectedVisual = entry.visualPayload
-      ? mapVisual(entry.visualPayload, entry.id, options.perspective)
-      : null;
-    const selectedMedia = entry.mediaPayload
-      ? mediaVisual(entry.mediaPayload, entry.id, options.perspective, options.mediaAssetBaseUrl)
-      : null;
-    const { visibility: _, visualPayload: __, mediaPayload: ___, ...safeEntry } = entry;
+    const selectedMedia = entry.mediaPayload ? mediaVisual(entry.mediaPayload) : null;
+    const selectedVisual = selectedMedia?.map ?? null;
+    const { visibility: _, mediaPayload: __, ...safeEntry } = entry;
+    const { map: ___, ...entityMedia } = selectedMedia ?? {};
     return [{
       ...safeEntry,
-      ...(selectedVisual ? { mapVisual: selectedVisual } : {}),
-      ...(selectedMedia ? { media: selectedMedia } : {}),
+      ...(selectedVisual ? { mapVisual: { imageUrl: selectedVisual.imageUrl, alt: selectedVisual.alt } } : {}),
+      ...(Object.keys(entityMedia).length > 0 ? { media: entityMedia } : {}),
     }];
   });
 }
@@ -1305,6 +1081,18 @@ async function readExactComponent(fetchImpl, origin, entityRoot, entityId, compo
     return response?.ok
       ? componentValue(await json(response), entityId, componentTypeId)
       : null;
+  } catch {
+    return null;
+  }
+}
+
+async function readEntityMedia(fetchImpl, origin, entityRoot, entityId) {
+  try {
+    const response = await fetchImpl(url(origin,
+      `${entityRoot}/${encodeURIComponent(entityId)}/media`), {
+      headers: { Accept: "application/json" }, cache: "no-store",
+    });
+    return response?.ok ? await json(response) : null;
   } catch {
     return null;
   }
@@ -1459,7 +1247,7 @@ export async function readConversationCurrentScene({
     readExactRelationshipTargets(
       fetchImpl, origin, entityRoot, conversationId, WORLD_INTERACTION_PARTICIPANT_RELATIONSHIP_KIND,
     ),
-    readExactComponent(fetchImpl, origin, entityRoot, conversationId, WORLD_MEDIA_VISUAL_COMPONENT_TYPE_ID),
+    readEntityMedia(fetchImpl, origin, entityRoot, conversationId),
   ]);
   if (!conversation || !validInteraction(interaction) || participantIds === null) return null;
   const visibleIds = perspective === "dm"
@@ -1468,10 +1256,10 @@ export async function readConversationCurrentScene({
   const participants = (await Promise.all(visibleIds.map(async (id) => {
     const [participant, mediaValue] = await Promise.all([
       readNamedEntity(fetchImpl, origin, entityRoot, id),
-      readExactComponent(fetchImpl, origin, entityRoot, id, WORLD_MEDIA_VISUAL_COMPONENT_TYPE_ID),
+      readEntityMedia(fetchImpl, origin, entityRoot, id),
     ]);
     if (!participant) return null;
-    const media = mediaValue ? projectMediaVisual(mediaValue, perspective, mediaAssetBaseUrl) : null;
+    const media = mediaValue ? projectMediaVisual(mediaValue) : null;
     return { ...participant, ...(media?.portrait ? { portrait: media.portrait } : {}) };
   }))).filter(Boolean);
   if (participants.length !== visibleIds.length) return null;
@@ -1480,7 +1268,7 @@ export async function readConversationCurrentScene({
     kind: "conversation",
     ...(() => {
       const media = sceneMediaValue
-        ? projectMediaVisual(sceneMediaValue, perspective, mediaAssetBaseUrl)
+        ? projectMediaVisual(sceneMediaValue)
         : null;
       return media?.scene ? { scene: media.scene } : {};
     })(),
@@ -1565,7 +1353,7 @@ export async function readCombatCurrentScene({
     readExactRelationshipTargets(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_RELATIONSHIP_KINDS.participants),
     readExactRelationshipTargets(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_RELATIONSHIP_KINDS.activeRound),
     readExactRelationshipTargets(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_RELATIONSHIP_KINDS.activeTurn),
-    readExactComponent(fetchImpl, origin, entityRoot, encounterId, WORLD_MEDIA_VISUAL_COMPONENT_TYPE_ID),
+    readEntityMedia(fetchImpl, origin, entityRoot, encounterId),
   ]);
   if (!encounter || !definition || participantIds === null || activeRoundIds === null || activeTurnIds === null ||
       activeRoundIds.length > 1 || activeTurnIds.length > 1) return null;
@@ -1608,10 +1396,8 @@ export async function readCombatCurrentScene({
     ? orderedRows
     : orderedRows.filter((row) => authorizedActorIds.has(row.actor.id));
   const visibleParticipants = await Promise.all(visibleRows.map(async (row) => {
-    const mediaValue = await readExactComponent(
-      fetchImpl, origin, entityRoot, row.actor.id, WORLD_MEDIA_VISUAL_COMPONENT_TYPE_ID,
-    );
-    const media = mediaValue ? projectMediaVisual(mediaValue, perspective, mediaAssetBaseUrl) : null;
+    const mediaValue = await readEntityMedia(fetchImpl, origin, entityRoot, row.actor.id);
+    const media = mediaValue ? projectMediaVisual(mediaValue) : null;
     return {
       id: row.actor.id,
       name: row.actor.name,
@@ -1621,7 +1407,7 @@ export async function readCombatCurrentScene({
     };
   }));
   const sceneMedia = sceneMediaValue
-    ? projectMediaVisual(sceneMediaValue, perspective, mediaAssetBaseUrl)
+    ? projectMediaVisual(sceneMediaValue)
     : null;
   return {
     status: "ready",
@@ -1730,9 +1516,18 @@ async function readPartyRoster({
   boundCanonical,
 }) {
   if (serverRole.role === "actor") {
-    return boundActor
-      ? [{ ...boundActor, ...boundActorDetails, ...(boundCanonical ? { canonical: boundCanonical } : {}), current: true }]
-      : [];
+    if (!boundActor) return [];
+    const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
+      `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
+    const mediaValue = await readEntityMedia(fetchImpl, origin, entityRoot, boundActor.id);
+    const media = mediaValue ? projectMediaVisual(mediaValue) : null;
+    return [{
+      ...boundActor,
+      ...boundActorDetails,
+      ...(boundCanonical ? { canonical: boundCanonical } : {}),
+      ...(media ? { media } : {}),
+      current: true,
+    }];
   }
   if (perspective !== "dm") return [];
 
@@ -1808,19 +1603,18 @@ async function readPartyRoster({
       ]);
       const actor = entity(actorPayload, actorId);
       if (!actor) return null;
-      const canonical = await readCanonicalCharacter({
-        fetchImpl,
-        origin,
-        applicationId,
-        stateSpaceId,
-        actorId,
-      });
+      const [canonical, mediaValue] = await Promise.all([
+        readCanonicalCharacter({ fetchImpl, origin, applicationId, stateSpaceId, actorId }),
+        readEntityMedia(fetchImpl, origin, entityRoot, actorId),
+      ]);
+      const media = mediaValue ? projectMediaVisual(mediaValue) : null;
       return {
         ...actor,
         ...characterDetails(recordPayload
           ? componentValue(recordPayload, actorId, PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID)
           : null),
         ...(canonical ? { canonical } : {}),
+        ...(media ? { media } : {}),
         current: false,
       };
     } catch {
@@ -1918,7 +1712,7 @@ async function readWorldDirectory({
             `${listRoot}/${encodeURIComponent(entry.entityId)}/components/${WORLD_MOTIVE_COMPONENT_TYPE_ID}`),
           { headers, cache: "no-store" }),
           fetchImpl(url(origin,
-            `${listRoot}/${encodeURIComponent(entry.entityId)}/components/${WORLD_MEDIA_VISUAL_COMPONENT_TYPE_ID}`),
+            `${listRoot}/${encodeURIComponent(entry.entityId)}/media`),
           { headers, cache: "no-store" }),
         ]);
         const [motivePayload, mediaPayload] = await Promise.all([
@@ -1926,9 +1720,7 @@ async function readWorldDirectory({
           mediaResponse?.ok ? json(mediaResponse) : Promise.resolve(null),
         ]);
         motive = worldMotive(componentValue(motivePayload, entry.entityId, WORLD_MOTIVE_COMPONENT_TYPE_ID));
-        media = mediaPayload
-          ? mediaVisual(mediaPayload, entry.entityId, perspective, mediaAssetBaseUrl)
-          : null;
+        media = mediaPayload ? mediaVisual(mediaPayload) : null;
       } catch {
         motive = null;
         media = null;
@@ -2248,9 +2040,10 @@ export async function readGameServerContext({
   let actorComponentResponse;
   let knowledgeResponse;
   let chronologyResponse;
+  let playSessionResponse;
   try {
     [campaignResponse, actorResponse, campaignComponentResponse, currentSceneComponentResponse,
-      actorComponentResponse, knowledgeResponse, chronologyResponse] = await Promise.all([
+      actorComponentResponse, knowledgeResponse, chronologyResponse, playSessionResponse] = await Promise.all([
       fetchImpl(url(origin, `${root}/${encodeURIComponent(selectedCampaignId)}`), {
         headers: { Accept: "application/json" }, cache: "no-store",
       }),
@@ -2284,13 +2077,18 @@ export async function readGameServerContext({
         `?perspective=${encodeURIComponent(contextAudience.perspective ?? "player")}`), {
         headers: { Accept: "application/json" }, cache: "no-store",
       }).catch(() => null),
+      fetchImpl(url(origin, `/api/applications/${encodeURIComponent(binding.applicationId)}` +
+        `/state-spaces/${encodeURIComponent(binding.stateSpaceId)}/play/sessions/` +
+        encodeURIComponent(selectedCampaignId)), {
+        headers: { Accept: "application/json" }, cache: "no-store",
+      }).catch(() => null),
     ]);
   } catch {
     return unavailable("The campaign binding was found, but the game state could not be read.");
   }
 
   const [campaign, actor, campaignComponent, currentSceneComponent, actorComponent, knowledgeEnvelope,
-    chronologyEnvelope] = await Promise.all([
+    chronologyEnvelope, playSessionEnvelope] = await Promise.all([
     json(campaignResponse),
     json(actorResponse),
     json(campaignComponentResponse),
@@ -2298,6 +2096,7 @@ export async function readGameServerContext({
     json(actorComponentResponse),
     json(knowledgeResponse),
     json(chronologyResponse),
+    json(playSessionResponse),
   ]);
   const campaignEntity = campaignResponse?.ok ? entity(campaign, selectedCampaignId) : null;
   const actorEntity = isGameMaster
@@ -2403,6 +2202,9 @@ export async function readGameServerContext({
       authorizedLocationIds,
     )
     : null;
+  const recordedSituation = playSessionResponse?.ok === true
+    ? resolveRecordedPlaySituation(playSessionEnvelope, authorizedLocationIds)
+    : null;
   let currentSituation;
   if (sceneComponentWasReturned && (!sceneRecord ||
       (serverRole.role === "actor" && currentLocationId !== sceneRecord.locationId))) {
@@ -2448,6 +2250,8 @@ export async function readGameServerContext({
     } else {
       currentSituation = { status: "ready", kind: "exploration", locationId: sceneRecord.locationId };
     }
+  } else if (recordedSituation) {
+    currentSituation = recordedSituation;
   } else if (serverRole.role === "actor" && currentLocationId) {
     currentSituation = { status: "ready", kind: "exploration", locationId: currentLocationId };
   } else {

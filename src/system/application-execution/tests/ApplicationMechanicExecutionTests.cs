@@ -5,6 +5,7 @@ using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Bootstrap;
+using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.SchemaValidation;
@@ -52,6 +53,7 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
         var schemas = new BoundedJsonSchemaValidator();
         var types = new SqliteComponentTypeRegistry(db, schemas);
         var alpha = types.Define(new(app, "fixture.alpha", "{}"));
+        var beta = types.Define(new(app, "fixture.beta", "{}"));
         var link = types.Define(new(app, "fixture.link", "{}"));
         var child = types.Define(new(app, "fixture.child", "{}"));
         var store = new SqliteEntityComponentStore(db, types, schemas);
@@ -74,7 +76,7 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
             {
                 ["subject"] = new(["alpha", "link"], IncludeContents: true,
                     IncludeRelationships: true, ContentsDepth: 2, ContentComponentIds: ["child"],
-                    ComponentReferences: [new("link", "targetRef", ["alpha"])],
+                    ComponentReferences: [new("link", "targetRef", ["alpha"], ["beta"])],
                     RelationshipComponents: [new("knows", "outgoing", ["alpha"])])
             }
         };
@@ -82,7 +84,8 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
         var legacy = await new ProjectionResolver(db).ResolveAsync(requirements, roles, "{\"x\":1}", 42);
         var mapping = new ApplicationMechanicProjectionMapping(new Dictionary<string, EcsComponentReference>
         {
-            ["alpha"] = Reference(alpha), ["link"] = Reference(link), ["child"] = Reference(child)
+            ["alpha"] = Reference(alpha), ["beta"] = Reference(beta),
+            ["link"] = Reference(link), ["child"] = Reference(child)
         }, new Dictionary<string, string> { ["knows"] = "fixture.knows" });
         var application = await new ApplicationMechanicProjectionResolver(db, stateSpaces)
             .ResolveAsync("space", app, requirements, mapping, roles, "{\"x\":1}", 42);
@@ -94,6 +97,7 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
         Assert.Equal(1, application.Projection.ComponentRevisions["actor"]["alpha"]);
         Assert.Equal(1, application.Projection.ComponentRevisions["child"]["child"]);
         Assert.Equal(1, application.Projection.ComponentRevisions["reference"]["alpha"]);
+        Assert.DoesNotContain("beta", application.Projection.References["reference"].Components.Keys);
         Assert.Equal(1, application.Projection.ComponentRevisions["target"]["alpha"]);
         var related = Assert.Single(application.Projection.Roles["subject"].Related!);
         Assert.Equal("target", related.Id);
@@ -300,6 +304,7 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
                 }
             }, []));
         var runner = new ApplicationActionRunner(catalogs, activation, stateSpaces, types, entities, edges,
+            new ApplicationMechanicProjectionMappingResolver(catalogs, stateSpaces, types, edges),
             evaluator, effectApplier, operations);
         var request = new ApplicationActionExecutionRequest("action-space", app, record.QualifiedId,
             record.ContentFingerprint, new Dictionary<string, string>(), "{}", 42,
@@ -330,10 +335,10 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
     private static MechanicFile[] RatifiedMechanics()
     {
         var root = RepositoryRoot();
-        return new[] { "mechanics/game/core", "mechanics/check", "mechanics/change" }
-            .SelectMany(relative => Directory.EnumerateFiles(Path.Combine(root, "catalog", relative.Replace('/', Path.DirectorySeparatorChar)), "*.md", SearchOption.AllDirectories))
-            .OrderBy(value => value, StringComparer.Ordinal)
-            .Select(path => MechanicFile.Parse(File.ReadAllText(path), Path.GetRelativePath(Path.Combine(root, "catalog"), path).Replace('\\', '/'), File.ReadAllText(Path.ChangeExtension(path, ".js"))))
+        return CatalogReader.ReadAsync(Path.Combine(root, "catalog")).GetAwaiter().GetResult().Mechanics
+            .Where(value => new[] { "game.core", "check", "change" }.Any(category =>
+                value.Category == category || value.Category.StartsWith(category + ".", StringComparison.Ordinal)))
+            .OrderBy(value => value.Id, StringComparer.Ordinal)
             .ToArray();
     }
 

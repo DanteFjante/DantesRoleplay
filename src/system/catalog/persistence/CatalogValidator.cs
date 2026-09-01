@@ -1,6 +1,7 @@
 using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Procedures;
+using DantesRoleplay.CatalogNamespaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.DataAccess.Catalog;
@@ -78,8 +79,11 @@ public static class CatalogValidator
             subscriptions);
 
         var contents = await CatalogReader.ReadAsync(root, cancellationToken);
-        var imported = await importer.ApplyAsync(root, new CatalogImportOptions(), cancellationToken);
         var issues = new List<CatalogValidationIssue>();
+        issues.AddRange(CatalogNamespaceConformance.FindUnreviewedRecords(contents).Select(issue =>
+            new CatalogValidationIssue(issue.Kind, issue.Id, "namespace-review", issue.Detail, Warning: true)));
+
+        var imported = await importer.ApplyAsync(root, new CatalogImportOptions(), cancellationToken);
 
         if (imported.Aborted)
         {
@@ -272,6 +276,34 @@ public static class CatalogValidator
         }
     }
 }
+
+public static class CatalogNamespaceConformance
+{
+    public static IReadOnlyList<CatalogNamespaceConformanceIssue> FindUnreviewedRecords(CatalogContents contents)
+    {
+        ArgumentNullException.ThrowIfNull(contents);
+        var namespaces = contents.Namespaces.ToDictionary(value => value.Id, StringComparer.Ordinal);
+        return CatalogReader.RecordIdentities(contents)
+            .Select(value => (value.Id, value.Kind, NamespaceId: CatalogNamespaceIdentity.NamespaceOf(value.Id)))
+            .Where(value => namespaces.TryGetValue(value.NamespaceId, out var definition)
+                && definition.ReviewStatus != CatalogNamespaceReviewStatuses.Reviewed)
+            .Select(value => new CatalogNamespaceConformanceIssue(
+                value.Kind,
+                value.Id,
+                value.NamespaceId,
+                $"Record '{value.Id}' uses namespace '{value.NamespaceId}', which is registered but still needs review. "
+                + namespaces[value.NamespaceId].ReviewNote))
+            .OrderBy(value => value.Kind, StringComparer.Ordinal)
+            .ThenBy(value => value.Id, StringComparer.Ordinal)
+            .ToArray();
+    }
+}
+
+public sealed record CatalogNamespaceConformanceIssue(
+    string Kind,
+    string Id,
+    string NamespaceId,
+    string Detail);
 
 public sealed record CatalogValidationIssue(
     string Kind,

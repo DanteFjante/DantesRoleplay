@@ -14,7 +14,7 @@ public sealed class Dnd2024ClockBridgeTests
         var effect = Assert.Single(result.Output.Effects);
         Assert.Equal("component.set", effect.Type);
         Assert.Equal("world.fixture", effect.EntityId);
-        Assert.Equal("dnd2024.game.core.world.clock", effect.DefinitionId);
+        Assert.Equal("game.core.world.clock", effect.DefinitionId);
         Assert.Equal(
             "{\"calendarId\":\"calendar.fixture\",\"currentMinute\":160,\"revision\":8}",
             effect.Data);
@@ -50,9 +50,9 @@ public sealed class Dnd2024ClockBridgeTests
                 ["world"] = new EntityProjection("world.fixture", "Fixture World",
                     new Dictionary<string, string>
                     {
-                        ["dnd2024.game.core.world.root"] =
+                        ["game.core.world.root"] =
                             "{\"status\":\"active\",\"summary\":\"Fixture.\",\"visibility\":\"party\"}",
-                        ["dnd2024.game.core.world.clock"] = clock
+                        ["game.core.world.clock"] = clock
                     })
             }
         }, ExecutionLimits.Default);

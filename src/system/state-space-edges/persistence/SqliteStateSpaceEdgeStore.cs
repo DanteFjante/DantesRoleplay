@@ -18,9 +18,13 @@ public sealed class SqliteStateSpaceEdgeStore(
     {
         ValidateId(stateSpaceId, nameof(stateSpaceId));
         ValidateId(containedEntityId, nameof(containedEntityId));
-        var row = await db.Set<ApplicationEcsContainmentRecord>().AsNoTracking().SingleOrDefaultAsync(
-            value => value.StateSpaceId == stateSpaceId && value.ContainedEntityId == containedEntityId,
-            cancellationToken);
+        var row = await db.Set<ApplicationEcsContainmentRecord>().AsNoTracking()
+            .Where(value => value.StateSpaceId == stateSpaceId && value.ContainedEntityId == containedEntityId)
+            .Where(value => db.Set<ApplicationEcsEntityRecord>().Any(entity =>
+                    entity.StateSpaceId == stateSpaceId && entity.Id == value.ContainedEntityId && entity.DeletedAtUtc == null)
+                && db.Set<ApplicationEcsEntityRecord>().Any(entity =>
+                    entity.StateSpaceId == stateSpaceId && entity.Id == value.ContainerEntityId && entity.DeletedAtUtc == null))
+            .SingleOrDefaultAsync(cancellationToken);
         return row is null ? null : View(row);
     }
 
@@ -32,6 +36,10 @@ public sealed class SqliteStateSpaceEdgeStore(
         RequireStateSpace(stateSpaceId);
         var rows = await db.Set<ApplicationEcsContainmentRecord>().AsNoTracking()
             .Where(value => value.StateSpaceId == stateSpaceId)
+            .Where(value => db.Set<ApplicationEcsEntityRecord>().Any(entity =>
+                    entity.StateSpaceId == stateSpaceId && entity.Id == value.ContainedEntityId && entity.DeletedAtUtc == null)
+                && db.Set<ApplicationEcsEntityRecord>().Any(entity =>
+                    entity.StateSpaceId == stateSpaceId && entity.Id == value.ContainerEntityId && entity.DeletedAtUtc == null))
             .OrderBy(value => value.ContainedEntityId)
             .ToArrayAsync(cancellationToken);
         return Array.AsReadOnly(rows.Select(View).ToArray());
@@ -56,7 +64,10 @@ public sealed class SqliteStateSpaceEdgeStore(
             var cursorExists = await db.Set<ApplicationEcsContainmentRecord>().AsNoTracking().AnyAsync(
                 value => value.StateSpaceId == stateSpaceId
                     && value.ContainerEntityId == containerEntityId
-                    && value.ContainedEntityId == afterContainedEntityId,
+                    && value.ContainedEntityId == afterContainedEntityId
+                    && db.Set<ApplicationEcsEntityRecord>().Any(entity =>
+                        entity.StateSpaceId == stateSpaceId && entity.Id == value.ContainedEntityId
+                        && entity.DeletedAtUtc == null),
                 cancellationToken);
             if (!cursorExists) throw new InvalidOperationException("CURSOR_STALE");
             after = afterContainedEntityId;
@@ -65,6 +76,8 @@ public sealed class SqliteStateSpaceEdgeStore(
         var rows = await db.Set<ApplicationEcsContainmentRecord>().AsNoTracking()
             .Where(value => value.StateSpaceId == stateSpaceId
                 && value.ContainerEntityId == containerEntityId
+                && db.Set<ApplicationEcsEntityRecord>().Any(entity =>
+                    entity.StateSpaceId == stateSpaceId && entity.Id == value.ContainedEntityId && entity.DeletedAtUtc == null)
                 && (after == null || string.Compare(value.ContainedEntityId, after) > 0))
             .OrderBy(value => value.ContainedEntityId)
             .Take(limit + 1)
@@ -158,10 +171,14 @@ public sealed class SqliteStateSpaceEdgeStore(
         ValidateId(fromEntityId, nameof(fromEntityId));
         ValidateId(toEntityId, nameof(toEntityId));
         ValidateKind(stateSpaceId, qualifiedKind);
-        var row = await db.Set<ApplicationEcsRelationshipRecord>().AsNoTracking().SingleOrDefaultAsync(
-            value => value.StateSpaceId == stateSpaceId && value.FromEntityId == fromEntityId
-                && value.ToEntityId == toEntityId && value.QualifiedKind == qualifiedKind,
-            cancellationToken);
+        var row = await db.Set<ApplicationEcsRelationshipRecord>().AsNoTracking()
+            .Where(value => value.StateSpaceId == stateSpaceId && value.FromEntityId == fromEntityId
+                && value.ToEntityId == toEntityId && value.QualifiedKind == qualifiedKind)
+            .Where(value => db.Set<ApplicationEcsEntityRecord>().Any(entity =>
+                    entity.StateSpaceId == stateSpaceId && entity.Id == value.FromEntityId && entity.DeletedAtUtc == null)
+                && db.Set<ApplicationEcsEntityRecord>().Any(entity =>
+                    entity.StateSpaceId == stateSpaceId && entity.Id == value.ToEntityId && entity.DeletedAtUtc == null))
+            .SingleOrDefaultAsync(cancellationToken);
         return row is null ? null : View(row);
     }
 
@@ -173,6 +190,10 @@ public sealed class SqliteStateSpaceEdgeStore(
         RequireStateSpace(stateSpaceId);
         var rows = await db.Set<ApplicationEcsRelationshipRecord>().AsNoTracking()
             .Where(value => value.StateSpaceId == stateSpaceId)
+            .Where(value => db.Set<ApplicationEcsEntityRecord>().Any(entity =>
+                    entity.StateSpaceId == stateSpaceId && entity.Id == value.FromEntityId && entity.DeletedAtUtc == null)
+                && db.Set<ApplicationEcsEntityRecord>().Any(entity =>
+                    entity.StateSpaceId == stateSpaceId && entity.Id == value.ToEntityId && entity.DeletedAtUtc == null))
             .OrderBy(value => value.FromEntityId).ThenBy(value => value.ToEntityId)
             .ThenBy(value => value.QualifiedKind)
             .ToArrayAsync(cancellationToken);
@@ -256,7 +277,19 @@ public sealed class SqliteStateSpaceEdgeStore(
     private void ValidateKind(string stateSpaceId, string qualifiedKind)
     {
         var stateSpace = RequireStateSpace(stateSpaceId);
-        ComponentTypeIdentifier.Validate(stateSpace.ApplicationRevision.ApplicationId, qualifiedKind);
+        var separator = qualifiedKind.IndexOf('.');
+        if (separator <= 0)
+            throw new ArgumentException("A relationship kind must be a qualified ID.", nameof(qualifiedKind));
+        var ownerText = qualifiedKind[..separator];
+        var owner = ownerText == ApplicationIdentifier.System.Value
+            ? ApplicationIdentifier.System
+            : ApplicationIdentifier.Parse(ownerText);
+        ComponentTypeIdentifier.Validate(owner, qualifiedKind);
+        if (!owner.IsSystem && owner != stateSpace.ApplicationRevision.ApplicationId
+            && !stateSpace.ApplicationRevision.BaseApplications.Contains(owner))
+            throw new ArgumentException(
+                "The relationship kind is outside this state space's exact application revision or bases.",
+                nameof(qualifiedKind));
     }
 
     private StateSpaceView RequireStateSpace(string stateSpaceId) =>

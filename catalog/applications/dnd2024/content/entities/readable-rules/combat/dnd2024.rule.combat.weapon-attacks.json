@@ -1,0 +1,54 @@
+{
+  "id": "dnd2024.rule.combat.weapon-attacks",
+  "name": "Weapon Attacks",
+  "components": {
+    "game.core.rules.readable": {
+      "section": { "id": "combat", "label": "Combat", "order": 20 },
+      "order": 10,
+      "title": "Weapon Attacks",
+      "summary": "A weapon attack resolves its attack roll and, on a hit, applies the weapon activity's recorded damage through the active combat mechanics.",
+      "blocks": [
+        {
+          "kind": "steps",
+          "heading": "Resolution",
+          "body": null,
+          "items": [
+            "Choose the acting character, target, and recorded weapon activity.",
+            "Resolve the attack roll against the target's current defense.",
+            "If the attack hits, resolve the activity's damage and the target's recorded damage responses."
+          ]
+        },
+        {
+          "kind": "callout",
+          "heading": "Recorded state wins",
+          "body": "The readable rule never substitutes browser calculations for the active weapon-attack mechanic.",
+          "items": []
+        }
+      ],
+      "examples": [
+        {
+          "title": "Different weapon activities",
+          "body": "A weapon definition can expose distinct melee, thrown, one-handed, or two-handed activities. The selected activity determines the authoritative mechanic input."
+        }
+      ],
+      "relatedRuleRefs": [
+        { "entityId": "dnd2024.rule.characters.character-sheet" },
+        { "entityId": "dnd2024.rule.resting.long-rests" }
+      ],
+      "citations": [
+        {
+          "sourceId": "dnd2024.source.srd-5.2.1",
+          "locator": "Rules Glossary > Weapon Attack (SRD 5.2.1, pages 191-191)"
+        },
+        {
+          "sourceId": "dnd2024.source.srd-5.2.1",
+          "locator": "Playing the Game > Actions > Attack (SRD 5.2.1, pages 9-9)"
+        }
+      ],
+      "mechanicIds": ["dnd2024.mechanic.weapon-attack"],
+      "procedureIds": ["dnd2024.procedure.mechanic.weapon-attack"],
+      "visibility": "public",
+      "presentationStatus": "published"
+    }
+  }
+}

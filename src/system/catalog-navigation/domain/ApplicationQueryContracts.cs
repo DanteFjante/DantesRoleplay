@@ -34,6 +34,7 @@ public sealed record ApplicationQueryContract(
 {
     public const string CatalogKind = "query";
     public const string ProjectionExecutor = "projection";
+    public const string MechanicProjectionExecutor = "mechanic-projection";
 
     public static ApplicationQueryContract Parse(string json, ApplicationIdentifier owner)
     {
@@ -64,7 +65,8 @@ public sealed record ApplicationQueryContract(
         var matches = Strings(root, "matches", CatalogNavigationLimits.MaximumAliasesPerRecord, 200);
         var roles = StringMap(root, "roles", 32, 1_000);
         var executor = String(root, "executor", 63);
-        if (executor != ProjectionExecutor) throw Invalid("The query executor kind is not supported.");
+        if (executor is not (ProjectionExecutor or MechanicProjectionExecutor))
+            throw Invalid("The query executor kind is not supported.");
 
         if (!root.TryGetProperty("projection", out var projection) || projection.ValueKind != JsonValueKind.Object)
             throw Invalid("A query requires an exact projection reference.");

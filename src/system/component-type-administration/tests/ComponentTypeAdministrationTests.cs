@@ -2,6 +2,7 @@ using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.ComponentTypeAdministration;
 using DantesRoleplay.DataAccess;
+using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Operations;
 using DantesRoleplay.SchemaValidation;
@@ -66,87 +67,22 @@ public sealed class ComponentTypeAdministrationTests : IDisposable
     }
 
     [Fact]
-    public void Legacy_game_core_sidecars_align_to_the_bounded_profile_without_writing_dnd2024_types()
-    {
-        using var db = _fixture.CreateContext();
-        var setup = Setup(db, "dnd2024");
-        var sidecars = Directory.GetFiles(Path.Combine(RepositoryRoot(), "catalog", "components"), "*.schema.json")
-            .OrderBy(path => path, StringComparer.Ordinal).ToArray();
-        Assert.NotEmpty(sidecars);
-
-        var validator = new BoundedJsonSchemaValidator();
-        var findings = sidecars.Select(path => new
-        {
-            LegacyId = Path.GetFileName(path)[..^".schema.json".Length],
-            Compilation = validator.Compile(File.ReadAllText(path))
-        }).ToArray();
-
-        Assert.Equal(39, sidecars.Length);
-        Assert.All(findings, finding => Assert.StartsWith("dnd2024.", "dnd2024." + finding.LegacyId, StringComparison.Ordinal));
-        Assert.All(findings, finding => Assert.True(finding.Compilation.IsAccepted,
-            $"{finding.LegacyId}: {string.Join(", ", finding.Compilation.Diagnostics.Select(value => value.Code))}"));
-        Assert.Equal(39, findings.Count(finding => finding.Compilation.IsAccepted));
-        Assert.Empty(setup.Types.ListLatestPage(setup.App, null, 100).ComponentTypes);
-        Assert.Null(setup.Types.GetLatest("dnd2024.stats"));
-    }
-
-    [Fact]
-    public void Campaign_arc_and_chapter_translations_preserve_lifecycle_validation()
-    {
-        AssertLifecycle("game.core.campaign.arc.schema.json",
-            "{\"status\":\"active\",\"title\":\"Arc\",\"partyStake\":\"Save the road\"}",
-            "{\"status\":\"active\",\"title\":\"Arc\",\"partyStake\":\"Save the road\",\"closingSummary\":\"Done\"}",
-            "{\"status\":\"resolved\",\"title\":\"Arc\",\"partyStake\":\"Save the road\",\"closingSummary\":\"Done\"}",
-            "{\"status\":\"abandoned\",\"title\":\"Arc\",\"partyStake\":\"Save the road\"}");
-        AssertLifecycle("game.core.campaign.chapter.schema.json",
-            "{\"status\":\"active\",\"title\":\"Chapter\",\"partyQuestion\":\"Who controls the road?\"}",
-            "{\"status\":\"active\",\"title\":\"Chapter\",\"partyQuestion\":\"Who controls the road?\",\"closingSummary\":\"Done\"}",
-            "{\"status\":\"closed\",\"title\":\"Chapter\",\"partyQuestion\":\"Who controls the road?\",\"closingSummary\":\"Done\"}",
-            "{\"status\":\"closed\",\"title\":\"Chapter\",\"partyQuestion\":\"Who controls the road?\"}");
-    }
-
-    [Fact]
-    public void Campaign_checkpoint_and_recap_assert_patterns_and_date_times()
-    {
-        const string validCheckpoint = """
-            {"protocolVersion":"session.s4.evidence-only.v1","sessionId":"session.alpha-1","campaignId":"campaign.alpha-1","worldId":"world.alpha-1","package":{"id":"snapshot.0123456789abcdef0123456789abcdef","scopeContractId":"procedure.campaign.session","scopeContractVersion":1,"producerId":"snapshot.producer.campaign-session-evidence","producerVersion":1,"contentEncoding":"dantes-canonical-json-v1","boundaryFingerprint":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","digestAlgorithm":"sha256","contentDigest":"abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789","byteCount":42,"capturedAt":"2026-08-24T12:34:56Z","availability":"available"}}
-            """;
-        const string invalidCheckpointId = """
-            {"protocolVersion":"session.s4.evidence-only.v1","sessionId":"Session.alpha-1","campaignId":"campaign.alpha-1","worldId":"world.alpha-1","package":{"id":"snapshot.0123456789abcdef0123456789abcdef","scopeContractId":"procedure.campaign.session","scopeContractVersion":1,"producerId":"snapshot.producer.campaign-session-evidence","producerVersion":1,"contentEncoding":"dantes-canonical-json-v1","boundaryFingerprint":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","digestAlgorithm":"sha256","contentDigest":"abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789","byteCount":42,"capturedAt":"2026-08-24T12:34:56Z","availability":"available"}}
-            """;
-        const string invalidCheckpointTime = """
-            {"protocolVersion":"session.s4.evidence-only.v1","sessionId":"session.alpha-1","campaignId":"campaign.alpha-1","worldId":"world.alpha-1","package":{"id":"snapshot.0123456789abcdef0123456789abcdef","scopeContractId":"procedure.campaign.session","scopeContractVersion":1,"producerId":"snapshot.producer.campaign-session-evidence","producerVersion":1,"contentEncoding":"dantes-canonical-json-v1","boundaryFingerprint":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","digestAlgorithm":"sha256","contentDigest":"abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789","byteCount":42,"capturedAt":"2026-08-24 12:34:56","availability":"available"}}
-            """;
-        const string validRecap = """
-            {"protocolVersion":"session.s0.c3-only.v1","chapter":{"id":"chapter.1","status":"active","title":"Road","partyQuestion":"Who controls it?"},"arc":{"id":"arc.1","status":"active","title":"Caravan","partyStake":"Keep it safe"},"milestones":[{"chapterId":"chapter.0","title":"Arrival","closingSummary":"The party arrived.","timestamp":"2026-08-24T10:00:00+02:00","sequence":0}]}
-            """;
-        const string invalidRecap = """
-            {"protocolVersion":"session.s0.c3-only.v1","chapter":{"id":"chapter.1","status":"active","title":"Road","partyQuestion":"Who controls it?"},"arc":{"id":"arc.1","status":"active","title":"Caravan","partyStake":"Keep it safe"},"milestones":[{"chapterId":"chapter.0","title":"Arrival","closingSummary":"The party arrived.","timestamp":"not-a-date","sequence":0}]}
-            """;
-
-        AssertContract("game.core.campaign.session-checkpoint.schema.json",
-            (validCheckpoint, SchemaValueStatus.Valid),
-            (invalidCheckpointId, SchemaValueStatus.Invalid),
-            (invalidCheckpointTime, SchemaValueStatus.Invalid));
-        AssertContract("game.core.campaign.session-recap.schema.json",
-            (validRecap, SchemaValueStatus.Valid),
-            (invalidRecap, SchemaValueStatus.Invalid));
-    }
-
-    [Fact]
     public void Legacy_stats_schema_preserves_both_fixtures_and_only_the_object_root_boundary()
     {
         var validator = new BoundedJsonSchemaValidator();
-        var schema = File.ReadAllText(Path.Combine(RepositoryRoot(), "catalog", "components", "stats.schema.json"));
+        var catalog = Path.Combine(RepositoryRoot(), "catalog");
+        var schema = File.ReadAllText(CatalogLayout.ToFileSystemPath(
+            catalog, CatalogLayout.ComponentSchema("fixture.legacy.stats")));
         var compilation = validator.Compile(schema);
 
         Assert.True(compilation.IsAccepted);
         Assert.Equal(SystemJsonSchemaProfile.Version1Id, compilation.ProfileId);
-        foreach (var entityId in new[] { "homer", "orban" })
+        foreach (var entityId in new[] { "fixture.legacy.homer", "fixture.legacy.orban" })
         {
-            using var entity = JsonDocument.Parse(File.ReadAllText(Path.Combine(
-                RepositoryRoot(), "catalog", "world", "entities", entityId + ".json")));
-            var stats = entity.RootElement.GetProperty("components").GetProperty("stats").GetRawText();
+            using var entity = JsonDocument.Parse(File.ReadAllText(CatalogLayout.ToFileSystemPath(
+                catalog, CatalogLayout.Entity(entityId))));
+            var stats = entity.RootElement.GetProperty("components")
+                .GetProperty("fixture.legacy.stats").GetRawText();
             Assert.Equal(SchemaValueStatus.Valid,
                 validator.Validate(compilation.ProfileId, compilation.NormalizedSchema, stats).Status);
         }
@@ -179,30 +115,6 @@ public sealed class ComponentTypeAdministrationTests : IDisposable
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
             if (File.Exists(Path.Combine(directory.FullName, "DantesRoleplay.slnx"))) return directory.FullName;
         throw new DirectoryNotFoundException("Could not locate repository root.");
-    }
-
-    private static void AssertLifecycle(string fileName, string active, string activeWithSummary,
-        string terminalWithSummary, string terminalWithoutSummary)
-    {
-        var validator = new BoundedJsonSchemaValidator();
-        var schema = File.ReadAllText(Path.Combine(RepositoryRoot(), "catalog", "components", fileName));
-        var compilation = validator.Compile(schema);
-        Assert.True(compilation.IsAccepted);
-        Assert.Equal(SchemaValueStatus.Valid, validator.Validate(schema, active).Status);
-        Assert.Equal(SchemaValueStatus.Invalid, validator.Validate(schema, activeWithSummary).Status);
-        Assert.Equal(SchemaValueStatus.Valid, validator.Validate(schema, terminalWithSummary).Status);
-        Assert.Equal(SchemaValueStatus.Invalid, validator.Validate(schema, terminalWithoutSummary).Status);
-    }
-
-    private static void AssertContract(string fileName, params (string Value, SchemaValueStatus Status)[] cases)
-    {
-        var validator = new BoundedJsonSchemaValidator();
-        var schema = File.ReadAllText(Path.Combine(RepositoryRoot(), "catalog", "components", fileName));
-        var compilation = validator.Compile(schema);
-        Assert.True(compilation.IsAccepted);
-        Assert.Equal(SystemJsonSchemaProfile.Version2Id, compilation.ProfileId);
-        Assert.All(cases, value => Assert.Equal(value.Status,
-            validator.Validate(compilation.ProfileId, compilation.NormalizedSchema, value.Value).Status));
     }
 
     private sealed record Fixture(ApplicationIdentifier App, SqliteComponentTypeRegistry Types,

@@ -8,9 +8,19 @@ namespace DantesRoleplay.ApplicationPreview;
 public sealed class ApplicationPreviewService(
     IApplicationRegistry applications,
     ISourceRegistry sources,
+    IApplicationExtensionRegistry extensions,
     IRegisteredSourceScanner scanner,
     ISourceOverlayResolver overlays) : IApplicationPreviewService
 {
+    public ApplicationPreviewService(
+        IApplicationRegistry applications,
+        ISourceRegistry sources,
+        IRegisteredSourceScanner scanner,
+        ISourceOverlayResolver overlays)
+        : this(applications, sources, new InMemoryApplicationExtensionRegistry(sources), scanner, overlays)
+    {
+    }
+
     public async Task<ApplicationPreviewResult> PreviewAsync(
         ApplicationIdentifier applicationId,
         CancellationToken cancellationToken = default) =>
@@ -22,16 +32,46 @@ public sealed class ApplicationPreviewService(
         CancellationToken cancellationToken = default) =>
         await PreviewCoreAsync(applicationId, sourceIds, cancellationToken);
 
+    public async Task<ApplicationPreviewResult> PreviewExtensionsAsync(
+        ApplicationIdentifier applicationId,
+        IReadOnlyList<string> extensionIds,
+        CancellationToken cancellationToken = default) =>
+        await PreviewCoreAsync(applicationId, null, cancellationToken, extensionIds);
+
+    public async Task<ApplicationPreviewResult> PreviewAsync(
+        ApplicationIdentifier applicationId,
+        IReadOnlyList<string> baseSourceIds,
+        IReadOnlyList<string> extensionIds,
+        CancellationToken cancellationToken = default) =>
+        await PreviewCoreAsync(applicationId, baseSourceIds, cancellationToken, extensionIds);
+
     private async Task<ApplicationPreviewResult> PreviewCoreAsync(
         ApplicationIdentifier applicationId,
         IReadOnlyList<string>? sourceIds,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IReadOnlyList<string>? extensionIds = null)
     {
         ArgumentNullException.ThrowIfNull(applicationId);
         var revision = applications.Get(applicationId)
             ?? throw new ApplicationPreviewException(
                 "APPLICATION_UNKNOWN", "The requested application is not registered.");
-        var registrations = SelectSources(sources.For(applicationId), sourceIds);
+        var availableExtensions = extensions.For(applicationId);
+        CompiledApplicationExtensionSet extensionSet;
+        try
+        {
+            extensionSet = sourceIds is null || extensionIds is not null
+                ? ApplicationExtensionSetCompiler.Compile(applicationId, availableExtensions, extensionIds)
+                : InferLegacyExtensionSet(applicationId, availableExtensions, sourceIds);
+        }
+        catch (ApplicationExtensionSetException exception)
+        {
+            throw new ApplicationPreviewException(exception.Code, exception.Message);
+        }
+        var registrations = extensionIds is not null
+            ? SelectExtensionSources(sources.For(applicationId), availableExtensions, extensionSet, sourceIds)
+            : sourceIds is null
+                ? SelectExtensionSources(sources.For(applicationId), availableExtensions, extensionSet, null)
+                : SelectSources(sources.For(applicationId), sourceIds);
         var selectedIds = registrations.Select(value => value.SourceId)
             .ToHashSet(StringComparer.Ordinal);
         var scan = await scanner.ScanAsync(applicationId, cancellationToken);
@@ -46,9 +86,10 @@ public sealed class ApplicationPreviewService(
             .ToArray();
         var scannedDocumentsFingerprint = ScannedDocumentsFingerprint(documents);
         var previewFingerprint = Fingerprint(
-            revision.Fingerprint, sourceSummaries, scannedDocumentsFingerprint, candidate.Fingerprint);
+            revision.Fingerprint, sourceSummaries, scannedDocumentsFingerprint, candidate.Fingerprint,
+            extensionSet.Fingerprint);
 
-        return new(
+        return new ApplicationPreviewResult(
             applicationId,
             revision.Revision,
             revision.Fingerprint,
@@ -59,7 +100,52 @@ public sealed class ApplicationPreviewService(
             Array.AsReadOnly(sourceSummaries),
             candidate.Winners,
             candidate.Shadows,
-            candidate.Problems);
+            candidate.Problems)
+        {
+            ResolutionFingerprint = extensionSet.Fingerprint,
+            ExtensionIds = extensionSet.Extensions.Select(value => value.ExtensionId).ToArray()
+        };
+    }
+
+    private static IReadOnlyList<SourceRegistration> SelectExtensionSources(
+        IReadOnlyList<SourceRegistration> registrations,
+        IReadOnlyList<ApplicationExtensionRegistration> availableExtensions,
+        CompiledApplicationExtensionSet extensionSet,
+        IReadOnlyList<string>? baseSourceIds)
+    {
+        var selectedExtensionSources = extensionSet.Extensions.SelectMany(value => value.SourceIds)
+            .ToHashSet(StringComparer.Ordinal);
+        var everyKnownExtensionSource = availableExtensions.SelectMany(value => value.SourceIds)
+            .ToHashSet(StringComparer.Ordinal);
+        var selectedBaseSources = baseSourceIds is null
+            ? registrations.Where(value => !everyKnownExtensionSource.Contains(value.SourceId)).ToArray()
+            : SelectSources(registrations, baseSourceIds).ToArray();
+        if (selectedBaseSources.Any(value => everyKnownExtensionSource.Contains(value.SourceId)))
+            throw new ApplicationPreviewException("BASE_SOURCE_SELECTION_INCLUDES_EXTENSION",
+                "sourceIds used with extensionIds may contain only reviewed base sources; extension membership is selected by extensionIds.");
+        var selectedBaseIds = selectedBaseSources.Select(value => value.SourceId).ToHashSet(StringComparer.Ordinal);
+        var selected = registrations.Where(value => selectedBaseIds.Contains(value.SourceId)
+                || selectedExtensionSources.Contains(value.SourceId))
+            .OrderBy(value => value.SourceId, StringComparer.Ordinal).ToArray();
+        return Array.AsReadOnly(selected);
+    }
+
+    private static CompiledApplicationExtensionSet InferLegacyExtensionSet(
+        ApplicationIdentifier applicationId,
+        IReadOnlyList<ApplicationExtensionRegistration> available,
+        IReadOnlyList<string> sourceIds)
+    {
+        var selected = sourceIds.ToHashSet(StringComparer.Ordinal);
+        foreach (var extension in available)
+        {
+            var count = extension.SourceIds.Count(selected.Contains);
+            if (count != 0 && count != extension.SourceIds.Count)
+                throw new ApplicationExtensionSetException("EXTENSION_SOURCE_SELECTION_PARTIAL",
+                    $"Legacy source selection includes only part of extension '{extension.ExtensionId}'.");
+        }
+        var extensionIds = available.Where(value => value.SourceIds.All(selected.Contains))
+            .Select(value => value.ExtensionId).ToArray();
+        return ApplicationExtensionSetCompiler.Compile(applicationId, available, extensionIds);
     }
 
     private static IReadOnlyList<SourceRegistration> SelectSources(
@@ -86,7 +172,8 @@ public sealed class ApplicationPreviewService(
         string applicationFingerprint,
         IReadOnlyList<ApplicationPreviewSource> sources,
         string scannedDocumentsFingerprint,
-        string candidateFingerprint)
+        string candidateFingerprint,
+        string resolutionFingerprint)
     {
         var canonical = JsonSerializer.SerializeToUtf8Bytes(new
         {
@@ -97,7 +184,8 @@ public sealed class ApplicationPreviewService(
                 source.RegistrationFingerprint
             }).ToArray(),
             scannedDocumentsFingerprint,
-            candidateFingerprint
+            candidateFingerprint,
+            resolutionFingerprint
         });
         return Convert.ToHexString(SHA256.HashData(canonical));
     }

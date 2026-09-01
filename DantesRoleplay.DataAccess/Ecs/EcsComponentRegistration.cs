@@ -9,6 +9,9 @@ internal static class EcsComponentRegistration
         services.AddScoped<IApplicationComponentTypeRegistry, SqliteComponentTypeRegistry>();
         services.AddScoped<IStateSpaceRegistry, SqliteStateSpaceRegistry>();
         services.AddScoped<IEntityComponentStore, SqliteEntityComponentStore>();
+        services.AddScoped<IEcsLifecycleStore, SqliteEcsLifecycleStore>();
+        services.AddScoped<IEcsWriteTransactionFactory, SqliteEcsWriteTransactionFactory>();
+        services.AddScoped<IEcsRoleConstraintValidator, SqliteEcsRoleConstraintValidator>();
         return services;
     }
 }

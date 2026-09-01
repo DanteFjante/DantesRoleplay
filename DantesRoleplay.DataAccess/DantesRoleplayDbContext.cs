@@ -21,6 +21,10 @@ using DantesRoleplay.Interactions;
 using DantesRoleplay.TriggerScheduling;
 using DantesRoleplay.SystemTasks;
 using DantesRoleplay.Blobs;
+using DantesRoleplay.Play;
+using DantesRoleplay.DataAccess.Catalog;
+using DantesRoleplay.CatalogNamespaces;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.DataAccess;
@@ -48,6 +52,10 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
     public DbSet<AssistantMessage> AssistantMessages => Set<AssistantMessage>();
     public DbSet<AssistantTurnActivity> AssistantTurnActivities => Set<AssistantTurnActivity>();
     public DbSet<AssistantTurnApproval> AssistantTurnApprovals => Set<AssistantTurnApproval>();
+    public DbSet<ApplicationPlayConversationRecord> ApplicationPlayConversations => Set<ApplicationPlayConversationRecord>();
+    public DbSet<ApplicationPlayMessageRecord> ApplicationPlayMessages => Set<ApplicationPlayMessageRecord>();
+    public DbSet<ApplicationPlaySituationRecord> ApplicationPlaySituations => Set<ApplicationPlaySituationRecord>();
+    public DbSet<ApplicationPlayTruthRecord> ApplicationPlayTruths => Set<ApplicationPlayTruthRecord>();
     public DbSet<SystemTaskRecord> SystemTasks => Set<SystemTaskRecord>();
     public DbSet<SystemTaskRoundRecord> SystemTaskRounds => Set<SystemTaskRoundRecord>();
     public DbSet<SystemTaskStepRecord> SystemTaskSteps => Set<SystemTaskStepRecord>();
@@ -142,6 +150,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
+        GuardCatalogNamespaceAssignments();
         GuardImmutableTriggerSchedulingRows();
         GuardImmutableNotificationContent();
         return base.SaveChanges(acceptAllChangesOnSuccess);
@@ -149,6 +158,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
+        GuardCatalogNamespaceAssignments();
         GuardImmutableTriggerSchedulingRows();
         GuardImmutableNotificationContent();
         return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
@@ -165,6 +175,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         ConfigureTriggerScheduling(modelBuilder);
         ConfigureHostSettings(modelBuilder);
         ConfigureAssistantConversations(modelBuilder);
+        ConfigurePlayRecording(modelBuilder);
         ConfigureSystemTasks(modelBuilder);
         ConfigureBlobStorage(modelBuilder);
         ConfigureWorld(modelBuilder);
@@ -179,11 +190,251 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         ConfigureInformation(modelBuilder);
         ConfigureApplicationRegistry(modelBuilder);
         ConfigureSourceRegistry(modelBuilder);
+        ConfigureCatalogNamespaces(modelBuilder);
         ConfigureComponentTypes(modelBuilder);
         ConfigureApplicationScopedEcs(modelBuilder);
         ConfigureProjectionMaterialization(modelBuilder);
         ConfigureApplicationActivation(modelBuilder);
         ConfigureLegacyStateAdoption(modelBuilder);
+    }
+
+    private static void ConfigurePlayRecording(ModelBuilder modelBuilder)
+    {
+        const string conversationStatuses = "'ready', 'planning', 'awaiting-confirmation', 'needs-attention', 'unavailable'";
+        const string situationKinds = "'out-of-character', 'conversation', 'combat', 'exploration', 'investigation', 'travel', 'rest', 'downtime', 'other'";
+        modelBuilder.Entity<ApplicationPlayConversationRecord>(entity =>
+        {
+            entity.ToTable("application_play_conversation", table =>
+            {
+                table.HasCheckConstraint("CK_application_play_conversation_revision", "\"Revision\" > 0");
+                table.HasCheckConstraint("CK_application_play_conversation_status", $"\"Status\" IN ({conversationStatuses})");
+            });
+            entity.HasKey(value => value.Id);
+            entity.Property(value => value.Id).HasMaxLength(80);
+            entity.Property(value => value.PrincipalId).HasMaxLength(100).IsRequired();
+            entity.Property(value => value.ApplicationId).HasMaxLength(63).IsRequired();
+            entity.Property(value => value.StateSpaceId).HasMaxLength(200).IsRequired();
+            entity.Property(value => value.SessionContextId).HasMaxLength(200).IsRequired();
+            entity.Property(value => value.Status).HasMaxLength(30).IsRequired();
+            entity.Property(value => value.Revision).IsConcurrencyToken();
+            entity.Property(value => value.CurrentSituationId).HasMaxLength(80);
+            entity.HasIndex(value => new
+            {
+                value.PrincipalId,
+                value.ApplicationId,
+                value.StateSpaceId,
+                value.SessionContextId
+            }).IsUnique();
+            entity.HasIndex(value => new { value.PrincipalId, value.ApplicationId, value.UpdatedAtUtc, value.Id });
+            entity.HasOne<ApplicationStateSpaceRecord>().WithMany().HasForeignKey(value => value.StateSpaceId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ApplicationPlayMessageRecord>(entity =>
+        {
+            entity.ToTable("application_play_message", table =>
+            {
+                table.HasCheckConstraint("CK_application_play_message_ordinal", "\"Ordinal\" > 0");
+                table.HasCheckConstraint("CK_application_play_message_role", "\"Role\" IN ('player', 'assistant')");
+                table.HasCheckConstraint("CK_application_play_message_text", "length(\"Text\") BETWEEN 1 AND 8000");
+            });
+            entity.HasKey(value => value.Id);
+            entity.Property(value => value.Id).HasMaxLength(80);
+            entity.Property(value => value.ConversationId).HasMaxLength(80).IsRequired();
+            entity.Property(value => value.Role).HasMaxLength(20).IsRequired();
+            entity.Property(value => value.Text).HasMaxLength(8_000).IsRequired();
+            entity.Property(value => value.Code).HasMaxLength(100).IsRequired();
+            entity.Property(value => value.SituationId).HasMaxLength(80);
+            entity.HasIndex(value => new { value.ConversationId, value.Ordinal }).IsUnique();
+            entity.HasIndex(value => new { value.ConversationId, value.CreatedAtUtc, value.Id });
+            entity.HasOne(value => value.Conversation).WithMany(value => value.Messages)
+                .HasForeignKey(value => value.ConversationId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ApplicationPlaySituationRecord>(entity =>
+        {
+            entity.ToTable("application_play_situation", table =>
+            {
+                table.HasCheckConstraint("CK_application_play_situation_revision", "\"Revision\" > 0");
+                table.HasCheckConstraint("CK_application_play_situation_kind", $"\"Kind\" IN ({situationKinds})");
+                table.HasCheckConstraint("CK_application_play_situation_status", "\"Status\" IN ('active', 'completed')");
+                table.HasCheckConstraint("CK_application_play_situation_json", "json_valid(\"ParticipantsJson\") AND (\"LocationJson\" = '' OR json_valid(\"LocationJson\"))");
+                table.HasCheckConstraint("CK_application_play_situation_summary", "length(\"Summary\") BETWEEN 1 AND 1000");
+            });
+            entity.HasKey(value => value.Id);
+            entity.Property(value => value.Id).HasMaxLength(80);
+            entity.Property(value => value.ConversationId).HasMaxLength(80).IsRequired();
+            entity.Property(value => value.Kind).HasMaxLength(30).IsRequired();
+            entity.Property(value => value.Status).HasMaxLength(20).IsRequired();
+            entity.Property(value => value.Summary).HasMaxLength(1_000).IsRequired();
+            entity.Property(value => value.ParticipantsJson).HasMaxLength(16_000).IsRequired();
+            entity.Property(value => value.LocationJson).HasMaxLength(1_000).IsRequired();
+            entity.HasIndex(value => new { value.ConversationId, value.StartedAtUtc, value.Id });
+            entity.HasOne(value => value.Conversation).WithMany(value => value.Situations)
+                .HasForeignKey(value => value.ConversationId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ApplicationPlayTruthRecord>(entity =>
+        {
+            entity.ToTable("application_play_truth", table =>
+            {
+                table.HasCheckConstraint("CK_application_play_truth_ordinal", "\"Ordinal\" > 0");
+                table.HasCheckConstraint("CK_application_play_truth_statement", "length(\"Statement\") BETWEEN 1 AND 1000");
+                table.HasCheckConstraint("CK_application_play_truth_hash", "length(\"NormalizedHash\") = 64 AND \"NormalizedHash\" NOT GLOB '*[^0-9A-F]*'");
+                table.HasCheckConstraint("CK_application_play_truth_subjects", "json_valid(\"SubjectEntityIdsJson\") AND json_type(\"SubjectEntityIdsJson\") = 'array'");
+            });
+            entity.HasKey(value => value.Id);
+            entity.Property(value => value.Id).HasMaxLength(80);
+            entity.Property(value => value.ConversationId).HasMaxLength(80).IsRequired();
+            entity.Property(value => value.Statement).HasMaxLength(1_000).IsRequired();
+            entity.Property(value => value.NormalizedHash).HasMaxLength(64).IsRequired();
+            entity.Property(value => value.SubjectEntityIdsJson).HasMaxLength(8_000).IsRequired();
+            entity.Property(value => value.SourceMessageId).HasMaxLength(80).IsRequired();
+            entity.Property(value => value.SituationId).HasMaxLength(80);
+            entity.HasIndex(value => new { value.ConversationId, value.Ordinal }).IsUnique();
+            entity.HasIndex(value => new { value.ConversationId, value.NormalizedHash }).IsUnique();
+            entity.HasOne(value => value.Conversation).WithMany(value => value.Truths)
+                .HasForeignKey(value => value.ConversationId).OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private void GuardCatalogNamespaceAssignments()
+    {
+        var assignments = ChangeTracker.Entries()
+            .Where(entry => entry.State == EntityState.Added)
+            .Select(entry => entry.Entity switch
+            {
+                Mechanic value => (value.Id, CatalogNamespaceKinds.Mechanic),
+                ProcedureContract value => (value.Id, CatalogNamespaceKinds.Procedure),
+                ComponentDefinition value => (value.Id, CatalogNamespaceKinds.ComponentDefinition),
+                ComponentTypeRecord value => (value.QualifiedId, CatalogNamespaceKinds.ComponentType),
+                EventType value => (value.Id, CatalogNamespaceKinds.EventType),
+                Subscription value => (value.Id, CatalogNamespaceKinds.Subscription),
+                Entity value => (value.Id, CatalogNamespaceKinds.Entity),
+                _ => default
+            })
+            .Where(value => value.Item1 is not null)
+            .ToArray();
+        if (assignments.Length == 0) return;
+
+        var definitions = Set<CatalogNamespaceRecord>().AsNoTracking().ToArray()
+            .ToDictionary(value => value.Id, StringComparer.Ordinal);
+        foreach (var entry in ChangeTracker.Entries<CatalogNamespaceRecord>()
+                     .Where(value => value.State is EntityState.Added or EntityState.Modified))
+            definitions[entry.Entity.Id] = entry.Entity;
+
+        // An empty registry is the explicit adoption boundary for an existing database. Once its
+        // first namespace is registered, every new authored identity is checked here regardless of
+        // which store or service attempted the write.
+        if (definitions.Count == 0) return;
+
+        foreach (var (id, kind) in assignments)
+        {
+            var namespaceId = CatalogNamespaceIdentity.NamespaceOf(id!);
+            if (!definitions.TryGetValue(namespaceId, out var definition))
+                throw new CatalogNamespaceException("NAMESPACE_UNKNOWN",
+                    $"Record '{id}' uses unregistered namespace '{namespaceId}'.");
+            if (!AllowUnreviewedNamespaceWrites
+                && definition.ReviewStatus != CatalogNamespaceReviewStatuses.Reviewed)
+                throw new CatalogNamespaceException("NAMESPACE_UNREVIEWED",
+                    $"Record '{id}' uses namespace '{namespaceId}', which still needs review.");
+            var current = definition;
+            while (true)
+            {
+                if (current.DisabledAtUtc is not null)
+                    throw new CatalogNamespaceException("NAMESPACE_DISABLED",
+                        $"Record '{id}' uses disabled namespace '{current.Id}'.");
+                if (current.ParentId is null) break;
+                var parentId = current.ParentId;
+                if (!definitions.TryGetValue(parentId, out current!))
+                    throw new CatalogNamespaceException("NAMESPACE_PARENT_UNKNOWN",
+                        $"Namespace '{namespaceId}' has missing parent '{parentId}'.");
+            }
+            var allowed = JsonSerializer.Deserialize<string[]>(definition.AllowedKindsJson) ?? [];
+            if (!allowed.Contains(kind, StringComparer.Ordinal))
+                throw new CatalogNamespaceException("NAMESPACE_KIND_FORBIDDEN",
+                    $"Namespace '{namespaceId}' does not allow '{kind}' records such as '{id}'.");
+        }
+    }
+
+    private static void ConfigureCatalogNamespaces(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CatalogNamespaceRecord>(entity =>
+        {
+            entity.ToTable("system_catalog_namespace", table =>
+            {
+                table.HasCheckConstraint("CK_system_catalog_namespace_kinds", "json_valid(\"AllowedKindsJson\") AND json_type(\"AllowedKindsJson\") = 'array'");
+                table.HasCheckConstraint("CK_system_catalog_namespace_aliases", "json_valid(\"AliasesJson\") AND json_type(\"AliasesJson\") = 'array'");
+            });
+            entity.HasKey(value => value.Id);
+            entity.Property(value => value.Id).HasMaxLength(200);
+            entity.Property(value => value.ParentId).HasMaxLength(200);
+            entity.Property(value => value.Owner).HasMaxLength(100).IsRequired();
+            entity.Property(value => value.Description).HasMaxLength(2_000).IsRequired();
+            entity.Property(value => value.AllowedKindsJson).HasMaxLength(1_000).IsRequired();
+            entity.Property(value => value.AliasesJson).HasMaxLength(4_000).IsRequired();
+            entity.Property(value => value.ReviewStatus).HasMaxLength(20).IsRequired();
+            entity.Property(value => value.ReviewNote).HasMaxLength(2_000).IsRequired();
+            entity.HasIndex(value => new { value.DisabledAtUtc, value.Id });
+            entity.HasOne<CatalogNamespaceRecord>().WithMany().HasForeignKey(value => value.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<CatalogNamespaceOverlayProfileRecord>(entity =>
+        {
+            entity.ToTable("system_catalog_namespace_overlay_profile");
+            entity.HasKey(value => new { value.ApplicationId, value.ProfileId });
+            entity.Property(value => value.ApplicationId).HasMaxLength(63);
+            entity.Property(value => value.ProfileId).HasMaxLength(63);
+            entity.Property(value => value.Description).HasMaxLength(2_000).IsRequired();
+        });
+
+        modelBuilder.Entity<CatalogResolutionKeyRecord>(entity =>
+        {
+            entity.ToTable("system_catalog_namespace_resolution_key");
+            entity.HasKey(value => new { value.ApplicationId, value.ProfileId, value.ResolutionKey });
+            entity.Property(value => value.ApplicationId).HasMaxLength(63);
+            entity.Property(value => value.ProfileId).HasMaxLength(63);
+            entity.Property(value => value.ResolutionKey).HasMaxLength(200);
+            entity.Property(value => value.RecordKind).HasMaxLength(40).IsRequired();
+            entity.Property(value => value.Description).HasMaxLength(2_000).IsRequired();
+            entity.HasOne<CatalogNamespaceOverlayProfileRecord>().WithMany()
+                .HasForeignKey(value => new { value.ApplicationId, value.ProfileId })
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<CatalogNamespaceOverlayRecord>(entity =>
+        {
+            entity.ToTable("system_catalog_namespace_overlay");
+            entity.HasKey(value => new
+                { value.ApplicationId, value.ProfileId, value.HigherNamespaceId, value.LowerNamespaceId, value.RecordKind });
+            entity.Property(value => value.ApplicationId).HasMaxLength(63);
+            entity.Property(value => value.ProfileId).HasMaxLength(63);
+            entity.Property(value => value.HigherNamespaceId).HasMaxLength(200);
+            entity.Property(value => value.LowerNamespaceId).HasMaxLength(200);
+            entity.Property(value => value.RecordKind).HasMaxLength(40);
+            entity.HasOne<CatalogNamespaceOverlayProfileRecord>().WithMany()
+                .HasForeignKey(value => new { value.ApplicationId, value.ProfileId })
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<CatalogNamespaceRecord>().WithMany().HasForeignKey(value => value.HigherNamespaceId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<CatalogNamespaceRecord>().WithMany().HasForeignKey(value => value.LowerNamespaceId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    internal bool AllowUnreviewedNamespaceWrites { get; set; }
+
+    internal IDisposable PermitUnreviewedNamespaceImport()
+    {
+        var previous = AllowUnreviewedNamespaceWrites;
+        AllowUnreviewedNamespaceWrites = true;
+        return new NamespaceImportScope(this, previous);
+    }
+
+    private sealed class NamespaceImportScope(DantesRoleplayDbContext db, bool previous) : IDisposable
+    {
+        public void Dispose() => db.AllowUnreviewedNamespaceWrites = previous;
     }
 
     private static void ConfigureBlobStorage(ModelBuilder modelBuilder)
@@ -364,7 +615,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.ToTable("system_application_activation_revision", table =>
             {
                 table.HasCheckConstraint("CK_system_application_activation_revision_number", "\"ActivationRevision\" > 0 AND \"ApplicationRevision\" > 0");
-                table.HasCheckConstraint("CK_system_application_activation_revision_hashes", "length(\"ApplicationFingerprint\") = 64 AND \"ApplicationFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"PreviewFingerprint\") = 64 AND \"PreviewFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"ScannedDocumentsFingerprint\") = 64 AND \"ScannedDocumentsFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"CandidateManifestFingerprint\") = 64 AND \"CandidateManifestFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"DependencyGraphFingerprint\") = 64 AND \"DependencyGraphFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"ActivationFingerprint\") = 64 AND \"ActivationFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+                table.HasCheckConstraint("CK_system_application_activation_revision_hashes", "length(\"ApplicationFingerprint\") = 64 AND \"ApplicationFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"PreviewFingerprint\") = 64 AND \"PreviewFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"ScannedDocumentsFingerprint\") = 64 AND \"ScannedDocumentsFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"CandidateManifestFingerprint\") = 64 AND \"CandidateManifestFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"DependencyGraphFingerprint\") = 64 AND \"DependencyGraphFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"ResolutionFingerprint\") = 64 AND \"ResolutionFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"ActivationFingerprint\") = 64 AND \"ActivationFingerprint\" NOT GLOB '*[^0-9A-F]*'");
             });
             entity.HasKey(x => new { x.ApplicationId, x.ActivationRevision });
             entity.Property(x => x.ApplicationId).HasMaxLength(63);
@@ -373,6 +624,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.Property(x => x.ScannedDocumentsFingerprint).HasMaxLength(64).IsRequired();
             entity.Property(x => x.CandidateManifestFingerprint).HasMaxLength(64).IsRequired();
             entity.Property(x => x.DependencyGraphFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.ResolutionFingerprint).HasMaxLength(64).IsRequired();
             entity.Property(x => x.ActivationFingerprint).HasMaxLength(64).IsRequired();
             entity.Property(x => x.DependencyCoverageVersion).HasMaxLength(100).IsRequired();
             entity.Property(x => x.ActivatedByOperationId).HasMaxLength(200).IsRequired();
@@ -411,6 +663,27 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.Property(x => x.SourceId).HasMaxLength(200).IsRequired();
             entity.Property(x => x.RegistrationFingerprint).HasMaxLength(64).IsRequired();
             entity.HasIndex(x => new { x.ApplicationId, x.ActivationRevision, x.SourceId }).IsUnique();
+            entity.HasOne<ApplicationActivationRevisionRecord>()
+                .WithMany()
+                .HasForeignKey(x => new { x.ApplicationId, x.ActivationRevision })
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ApplicationActivationExtensionRecord>(entity =>
+        {
+            entity.ToTable("system_application_activation_extension", table =>
+            {
+                table.HasCheckConstraint("CK_system_application_activation_extension_values", "\"Ordinal\" >= 0 AND length(\"SourceIdsJson\") >= 2 AND json_valid(\"SourceIdsJson\") AND length(\"NamespaceIdsJson\") >= 2 AND json_valid(\"NamespaceIdsJson\") AND length(\"HigherPriorityThanJson\") >= 2 AND json_valid(\"HigherPriorityThanJson\")");
+                table.HasCheckConstraint("CK_system_application_activation_extension_hash", "length(\"RegistrationFingerprint\") = 64 AND \"RegistrationFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+            });
+            entity.HasKey(x => new { x.ApplicationId, x.ActivationRevision, x.Ordinal });
+            entity.Property(x => x.ApplicationId).HasMaxLength(63);
+            entity.Property(x => x.ExtensionId).HasMaxLength(63).IsRequired();
+            entity.Property(x => x.RegistrationFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.SourceIdsJson).IsRequired();
+            entity.Property(x => x.NamespaceIdsJson).IsRequired();
+            entity.Property(x => x.HigherPriorityThanJson).IsRequired();
+            entity.HasIndex(x => new { x.ApplicationId, x.ActivationRevision, x.ExtensionId }).IsUnique();
             entity.HasOne<ApplicationActivationRevisionRecord>()
                 .WithMany()
                 .HasForeignKey(x => new { x.ApplicationId, x.ActivationRevision })
@@ -499,6 +772,33 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
                 .HasForeignKey(x => new { x.ApplicationId, x.SourceId })
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
+        modelBuilder.Entity<ApplicationExtensionRecord>(entity =>
+        {
+            entity.ToTable("system_application_extension", table =>
+            {
+                table.HasCheckConstraint("CK_system_application_extension_id",
+                    "length(\"ExtensionId\") BETWEEN 1 AND 63 AND \"ExtensionId\" <> 'base'");
+                table.HasCheckConstraint("CK_system_application_extension_json",
+                    "json_valid(\"SourceIdsJson\") AND json_valid(\"NamespaceIdsJson\") AND json_valid(\"DependenciesJson\") AND json_valid(\"ConflictsWithJson\") AND json_valid(\"HigherPriorityThanJson\")");
+                table.HasCheckConstraint("CK_system_application_extension_fingerprint",
+                    "length(\"RegistrationFingerprint\") = 64 AND \"RegistrationFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+            });
+            entity.HasKey(value => new { value.ApplicationId, value.ExtensionId });
+            entity.Property(value => value.ApplicationId).HasMaxLength(63);
+            entity.Property(value => value.ExtensionId).HasMaxLength(63);
+            entity.Property(value => value.DisplayName).HasMaxLength(120).IsRequired();
+            entity.Property(value => value.Description).HasMaxLength(2_000).IsRequired();
+            entity.Property(value => value.Classification).HasMaxLength(20).IsRequired();
+            entity.Property(value => value.SourceIdsJson).HasMaxLength(20_000).IsRequired();
+            entity.Property(value => value.NamespaceIdsJson).HasMaxLength(20_000).IsRequired();
+            entity.Property(value => value.DependenciesJson).HasMaxLength(10_000).IsRequired();
+            entity.Property(value => value.ConflictsWithJson).HasMaxLength(10_000).IsRequired();
+            entity.Property(value => value.HigherPriorityThanJson).HasMaxLength(10_000).IsRequired();
+            entity.Property(value => value.RegistrationFingerprint).HasMaxLength(64).IsRequired();
+            entity.HasOne<ApplicationRegistryRecord>().WithMany()
+                .HasForeignKey(value => value.ApplicationId).OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     private static void ConfigureComponentTypes(ModelBuilder modelBuilder)
@@ -509,6 +809,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.HasKey(x => x.QualifiedId);
             entity.Property(x => x.QualifiedId).HasMaxLength(200);
             entity.Property(x => x.ApplicationId).HasMaxLength(63).IsRequired();
+            entity.HasIndex(x => new { x.ApplicationId, x.DisabledAtUtc, x.QualifiedId });
             entity.HasOne<ApplicationRegistryRecord>()
                 .WithMany()
                 .HasForeignKey(x => x.ApplicationId)
@@ -543,13 +844,18 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.ToTable("system_state_space", table =>
             {
                 table.HasCheckConstraint("CK_system_state_space_revision", "\"ApplicationRevision\" > 0");
-                table.HasCheckConstraint("CK_system_state_space_manifest", "length(\"ManifestFingerprint\") = 64 AND \"ManifestFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+                table.HasCheckConstraint("CK_system_state_space_manifest", "length(\"ManifestFingerprint\") = 64 AND \"ManifestFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"ResolutionFingerprint\") = 64 AND \"ResolutionFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+                table.HasCheckConstraint("CK_system_state_space_scope", "\"Scope\" IN ('runtime-state-space', 'application-publication')");
             });
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Id).HasMaxLength(200);
             entity.Property(x => x.ApplicationId).HasMaxLength(63).IsRequired();
             entity.Property(x => x.ManifestFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.ResolutionFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.Scope).HasMaxLength(32).IsRequired();
             entity.Property(x => x.BindingRevision).HasDefaultValue(1);
+            entity.HasIndex(x => x.ApplicationId).IsUnique()
+                .HasFilter("\"Scope\" = 'application-publication'");
             entity.HasOne<ApplicationRevisionRecord>()
                 .WithMany()
                 .HasForeignKey(x => new { x.ApplicationId, Revision = x.ApplicationRevision })
@@ -565,15 +871,19 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
                 table.HasCheckConstraint("CK_system_state_space_binding_application_revision", "\"ApplicationRevision\" > 0");
                 table.HasCheckConstraint("CK_system_state_space_binding_application_fingerprint", "length(\"ApplicationFingerprint\") = 64 AND \"ApplicationFingerprint\" NOT GLOB '*[^0-9A-F]*'");
                 table.HasCheckConstraint("CK_system_state_space_binding_active_fingerprint", "length(\"ActiveFingerprint\") = 64 AND \"ActiveFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+                table.HasCheckConstraint("CK_system_state_space_binding_resolution_fingerprint", "length(\"ResolutionFingerprint\") = 64 AND \"ResolutionFingerprint\" NOT GLOB '*[^0-9A-F]*'");
                 table.HasCheckConstraint("CK_system_state_space_binding_fingerprint", "length(\"BindingFingerprint\") = 64 AND \"BindingFingerprint\" NOT GLOB '*[^0-9A-F]*'");
                 table.HasCheckConstraint("CK_system_state_space_binding_previous", "\"PreviousBindingFingerprint\" IS NULL OR (length(\"PreviousBindingFingerprint\") = 64 AND \"PreviousBindingFingerprint\" NOT GLOB '*[^0-9A-F]*')");
                 table.HasCheckConstraint("CK_system_state_space_binding_counts", "\"EntityCount\" >= 0 AND \"ComponentCount\" >= 0");
+                table.HasCheckConstraint("CK_system_state_space_binding_scope", "\"Scope\" IN ('runtime-state-space', 'application-publication')");
             });
             entity.HasKey(x => new { x.StateSpaceId, x.BindingRevision });
             entity.Property(x => x.StateSpaceId).HasMaxLength(200);
             entity.Property(x => x.ApplicationId).HasMaxLength(63).IsRequired();
             entity.Property(x => x.ApplicationFingerprint).HasMaxLength(64).IsRequired();
             entity.Property(x => x.ActiveFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.ResolutionFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.Scope).HasMaxLength(32).IsRequired();
             entity.Property(x => x.BindingFingerprint).HasMaxLength(64).IsRequired();
             entity.Property(x => x.PreviousBindingFingerprint).HasMaxLength(64);
             entity.Property(x => x.CompatibilityCode).HasMaxLength(80).IsRequired();
@@ -1284,7 +1594,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             {
                 table.HasCheckConstraint("CK_interaction_recipe_revision_status", "\"Status\" IN ('candidate', 'verified', 'stale', 'retired')");
                 table.HasCheckConstraint("CK_interaction_recipe_revision_version", "\"Version\" > 0 AND \"ApplicationRevision\" > 0");
-                table.HasCheckConstraint("CK_interaction_recipe_revision_hashes", string.Join(" AND ", string.Format(hash, "ApplicationFingerprint"), string.Format(hash, "EffectiveSetFingerprint"), string.Format(hash, "RequestFingerprint")));
+                table.HasCheckConstraint("CK_interaction_recipe_revision_hashes", string.Join(" AND ", string.Format(hash, "ApplicationFingerprint"), string.Format(hash, "EffectiveSetFingerprint"), string.Format(hash, "ResolutionFingerprint"), string.Format(hash, "RequestFingerprint")));
                 table.HasCheckConstraint("CK_interaction_recipe_revision_bounds", "length(\"RecipeId\") BETWEEN 41 AND 102 AND length(\"ReviewerPrincipalReference\") <= 74 AND length(\"Reason\") <= 1000 AND length(\"RequestToken\") BETWEEN 1 AND 128");
             });
             entity.HasKey(row => new { row.RecipeId, row.Version });
@@ -1292,6 +1602,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.Property(row => row.Status).HasMaxLength(20).IsRequired();
             entity.Property(row => row.ApplicationFingerprint).HasMaxLength(64).IsRequired();
             entity.Property(row => row.EffectiveSetFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(row => row.ResolutionFingerprint).HasMaxLength(64).IsRequired();
             entity.Property(row => row.ReviewerPrincipalReference).HasMaxLength(74).IsRequired();
             entity.Property(row => row.Reason).HasMaxLength(1000).IsRequired();
             entity.Property(row => row.RequestToken).HasMaxLength(128).IsRequired();

@@ -103,13 +103,13 @@ public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
         path == "/" ||
         path.StartsWithSegments("/ui") ||
         path.StartsWithSegments("/components") ||
-        path.StartsWithSegments("/api/pages") ||
         path.StartsWithSegments("/api/data") ||
         path.StartsWithSegments("/api/changes") ||
         path.StartsWithSegments("/api/session") ||
         path.StartsWithSegments("/api/blob-uploads") ||
         path.StartsWithSegments("/api/blobs") ||
         IsApplicationCatalogReadPath(path) ||
+        IsApplicationResolvedReadPath(path) ||
         IsApplicationMechanicPath(path) ||
         IsApplicationStateReadPath(path) ||
         IsObservationPath(path) ||
@@ -145,6 +145,17 @@ public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
                 : segments[4] == "records" && IsRouteIdentifier(segments[5], 400));
     }
 
+    private static bool IsApplicationResolvedReadPath(PathString path)
+    {
+        var value = path.Value;
+        if (string.IsNullOrEmpty(value) || value.EndsWith("/", StringComparison.Ordinal) ||
+            value.Contains("//", StringComparison.Ordinal)) return false;
+        var segments = value.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return segments.Length == 4 &&
+            segments[0] == "api" && segments[1] == "applications" &&
+            IsRouteIdentifier(segments[2], 63) && segments[3] is "content" or "rules";
+    }
+
     private static bool IsApplicationStateReadPath(PathString path)
     {
         var value = path.Value;
@@ -164,6 +175,9 @@ public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
         if (!IsRouteIdentifier(segments[6], 200)) return false;
         if (segments.Length == 7) return true;
         if (segments.Length == 8 && segments[7] == "containment") return true;
+        if (segments.Length == 8 && segments[7] == "media") return true;
+        if (segments.Length == 10 && segments[7] == "media" &&
+            IsRouteIdentifier(segments[8], 200) && segments[9] == "content") return true;
         if (segments.Length < 8 || segments[7] != "components") return false;
         if (segments.Length == 8) return true;
         return segments.Length == 9 && IsRouteIdentifier(segments[8], 200);

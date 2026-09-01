@@ -1,6 +1,7 @@
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace DantesRoleplay.Sources;
 
@@ -178,4 +179,104 @@ internal sealed class ApplicationSourceScanRecord
     public SourceScanStatus Status { get; set; }
     public required string ContentFingerprint { get; set; }
     public DateTime RecordedAtUtc { get; set; }
+}
+
+/// <summary>SQLite persistence for immutable application-extension registrations.</summary>
+public sealed class SqliteApplicationExtensionRegistry(
+    DantesRoleplayDbContext db,
+    ISourceRegistry sources) : IApplicationExtensionRegistry
+{
+    public ApplicationExtensionRegistration Register(ApplicationExtensionRegistration registration)
+    {
+        if (!db.Set<ApplicationRegistryRecord>().Any(value => value.Id == registration.ApplicationId.Value))
+            throw new ArgumentException("An extension can only target a registered application.", nameof(registration));
+        var current = For(registration.ApplicationId);
+        var normalized = ApplicationExtensionValidation.Normalize(registration, sources,
+            current.Where(value => value.ExtensionId != registration.ExtensionId).ToArray());
+        var existing = db.Set<ApplicationExtensionRecord>().SingleOrDefault(value =>
+            value.ApplicationId == normalized.ApplicationId.Value
+            && value.ExtensionId == normalized.ExtensionId);
+        if (existing is not null)
+        {
+            var persisted = ToContract(existing);
+            if (ApplicationExtensionRegistrationFingerprint.Compute(persisted)
+                != ApplicationExtensionRegistrationFingerprint.Compute(normalized))
+                throw new InvalidOperationException("Extension registrations are immutable.");
+            return persisted;
+        }
+        db.Add(new ApplicationExtensionRecord
+        {
+            ApplicationId = normalized.ApplicationId.Value,
+            ExtensionId = normalized.ExtensionId,
+            DisplayName = normalized.DisplayName,
+            Description = normalized.Description,
+            Classification = normalized.Classification,
+            SourceIdsJson = JsonSerializer.Serialize(normalized.SourceIds),
+            NamespaceIdsJson = JsonSerializer.Serialize(normalized.NamespaceIds),
+            DependenciesJson = JsonSerializer.Serialize(normalized.Dependencies),
+            ConflictsWithJson = JsonSerializer.Serialize(normalized.ConflictsWith),
+            HigherPriorityThanJson = JsonSerializer.Serialize(normalized.HigherPriorityThan),
+            OverridesBase = normalized.OverridesBase,
+            RegistrationFingerprint = ApplicationExtensionRegistrationFingerprint.Compute(normalized),
+            RegistrationSchemaVersion = 2,
+            CreatedAtUtc = DateTime.UtcNow
+        });
+        db.SaveChanges();
+        return normalized;
+    }
+
+    public ApplicationExtensionRegistration? Get(
+        ApplicationIdentifier applicationId, string extensionId)
+    {
+        ArgumentNullException.ThrowIfNull(applicationId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(extensionId);
+        var row = db.Set<ApplicationExtensionRecord>().AsNoTracking().SingleOrDefault(value =>
+            value.ApplicationId == applicationId.Value && value.ExtensionId == extensionId);
+        return row is null ? null : ToContract(row);
+    }
+
+    public IReadOnlyList<ApplicationExtensionRegistration> For(ApplicationIdentifier applicationId)
+    {
+        ArgumentNullException.ThrowIfNull(applicationId);
+        return db.Set<ApplicationExtensionRecord>().AsNoTracking()
+            .Where(value => value.ApplicationId == applicationId.Value)
+            .OrderBy(value => value.ExtensionId).AsEnumerable().Select(ToContract).ToArray();
+    }
+
+    private static ApplicationExtensionRegistration ToContract(ApplicationExtensionRecord row)
+    {
+        var result = new ApplicationExtensionRegistration(
+            ApplicationIdentifier.Parse(row.ApplicationId), row.ExtensionId,
+            row.RegistrationSchemaVersion >= 2 ? row.DisplayName : row.ExtensionId,
+            row.Description,
+            row.RegistrationSchemaVersion >= 2 ? row.Classification : ApplicationExtensionClassifications.ThirdParty,
+            Strings(row.SourceIdsJson), Strings(row.NamespaceIdsJson), Strings(row.DependenciesJson),
+            Strings(row.ConflictsWithJson), Strings(row.HigherPriorityThanJson), row.OverridesBase);
+        if (row.RegistrationSchemaVersion >= 2
+            && ApplicationExtensionRegistrationFingerprint.Compute(result) != row.RegistrationFingerprint)
+            throw new InvalidOperationException("The stored extension registration fingerprint is inconsistent.");
+        return result;
+    }
+
+    private static IReadOnlyList<string> Strings(string json) =>
+        Array.AsReadOnly(JsonSerializer.Deserialize<string[]>(json)
+            ?? throw new InvalidOperationException("Stored extension metadata is invalid."));
+}
+
+internal sealed class ApplicationExtensionRecord
+{
+    public required string ApplicationId { get; set; }
+    public required string ExtensionId { get; set; }
+    public required string DisplayName { get; set; }
+    public required string Description { get; set; }
+    public required string Classification { get; set; }
+    public required string SourceIdsJson { get; set; }
+    public required string NamespaceIdsJson { get; set; }
+    public required string DependenciesJson { get; set; }
+    public required string ConflictsWithJson { get; set; }
+    public required string HigherPriorityThanJson { get; set; }
+    public bool OverridesBase { get; set; }
+    public required string RegistrationFingerprint { get; set; }
+    public int RegistrationSchemaVersion { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
 }

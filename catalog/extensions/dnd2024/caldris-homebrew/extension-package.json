@@ -1,13 +1,14 @@
 {
-  "schemaVersion": 1,
-  "extensionId": "dnd2024.caldris-homebrew",
+  "schemaVersion": 2,
   "applicationId": "dnd2024",
-  "sourceId": "dnd2024-extension.caldris-homebrew",
+  "extensionId": "caldris-homebrew",
   "displayName": "Caldris Homebrew",
   "description": "GM-authored homebrew content for the Caldris setting, kept separate from the SRD-faithful D&D 2024 core.",
   "classification": "homebrew",
-  "requiredSourceIds": [
-    "dnd2024-core"
-  ],
-  "enabledByDefault": false
+  "sourceIds": ["dnd2024-extension.caldris-homebrew"],
+  "namespaceIds": ["dnd2024.extension.caldris"],
+  "dependencies": [],
+  "conflictsWith": [],
+  "higherPriorityThan": [],
+  "overridesBase": true
 }

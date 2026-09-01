@@ -1,0 +1,14 @@
+var c=ctx.roles.campaign,a=ctx.roles.arc,h=ctx.roles.chapter,i=ctx.input,ROOT='game.core.campaign.root',ARC='game.core.campaign.arc',CHAPTER='game.core.campaign.chapter',HASARC='game.core.campaign.has-arc',HASCHAPTER='game.core.campaign.has-chapter',INARC='game.core.campaign.chapter.in-arc';
+function object(v){return v!==null&&!Array.isArray(v)&&typeof v==='object';}
+function exact(v,keys){if(!object(v))return false;var a=Object.keys(v).sort(),b=keys.slice().sort();return JSON.stringify(a)===JSON.stringify(b);}
+function text(v,max){return typeof v==='string'&&v===v.trim()&&v.length>0&&v.length<=max;}
+function parse(v,label){try{var x=JSON.parse(v);if(!object(x))throw 0;return x;}catch(e){throw new Error(label+' is malformed.');}}
+function edge(e,from,to,kind){return (e.relationships||[]).some(function(x){return x.fromEntityId===from&&x.toEntityId===to&&(x.kind===kind||x.kind==='dnd2024.'+kind)&&x.data==='{}';});}
+if(!c||!a||!h||!c.components||!a.components||!h.components||!c.components[ROOT]||!a.components[ARC]||!h.components[CHAPTER])throw new Error('Chapter advance requires an active campaign, arc, and chapter.');
+if(!exact(i,['nextChapterId','nextTitle','nextPartyQuestion','nextGmContext','closingSummary'])||i.nextChapterId.indexOf(c.id+'.chapter.')!==0||i.nextChapterId===h.id||i.nextChapterId.length>200||!text(i.nextTitle,160)||!text(i.nextPartyQuestion,500)||!text(i.nextGmContext,1000)||!text(i.closingSummary,1000))throw new Error('Chapter advance input is invalid.');
+var campaign=parse(c.components[ROOT],'Campaign'),arc=parse(a.components[ARC],'Arc'),prior=parse(h.components[CHAPTER],'Chapter');
+if(campaign.status!=='active'||arc.status!=='active'||prior.status!=='active'||!text(prior.title,160)||!text(prior.partyQuestion,500))throw new Error('Campaign continuity is not active.');
+if(!edge(c,c.id,a.id,HASARC)||!edge(c,c.id,h.id,HASCHAPTER)||!edge(h,h.id,a.id,INARC))throw new Error('Campaign chapter or arc ownership is invalid.');
+var closed={status:'closed',title:prior.title,partyQuestion:prior.partyQuestion};if(prior.gmContext!==undefined)closed.gmContext=prior.gmContext;closed.closingSummary=i.closingSummary;
+var next={status:'active',title:i.nextTitle,partyQuestion:i.nextPartyQuestion,gmContext:i.nextGmContext};
+return {narration:prior.title+' closes and '+i.nextTitle+' begins.',effects:[{type:'component.set',entityId:h.id,definitionId:CHAPTER,data:JSON.stringify(closed)},{type:'entity.create',entityId:i.nextChapterId,name:i.nextTitle},{type:'component.add',entityId:i.nextChapterId,definitionId:CHAPTER,data:JSON.stringify(next)},{type:'relationship.create',entityId:c.id,toEntityId:i.nextChapterId,kind:HASCHAPTER,data:'{}'},{type:'relationship.create',entityId:i.nextChapterId,toEntityId:a.id,kind:INARC,data:'{}'}],events:[],notifications:[],data:{campaignId:c.id,arcId:a.id,closedChapterId:h.id,activeChapterId:i.nextChapterId,closingSummary:i.closingSummary}};

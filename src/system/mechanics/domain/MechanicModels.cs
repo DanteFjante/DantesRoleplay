@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using DantesRoleplay.Effects;
 using DantesRoleplay.Events;
@@ -36,12 +36,20 @@ public sealed record MechanicRequirements
     public Dictionary<string, ChildMechanicRequirement> Children { get; init; } = [];
 
     /// <summary>
+    /// Component identities that effects from this mechanic may write even when the affected
+    /// entity is created by the same effect bundle and therefore cannot be a projected role.
+    /// Existing entities still require a required or optional role snapshot for stale-write safety.
+    /// </summary>
+    public IReadOnlyList<string> EffectComponentIds { get; init; } = [];
+
+    /// <summary>
     /// Everything the mechanic may read, flattened. Used by the resolver to build one query, and
     /// by the supervision view to answer "what can this rule see?" without reading its source.
     /// </summary>
     public IReadOnlyList<string> AllComponentIds() =>
         Roles.Values
-            .SelectMany(r => r.Components.Concat(r.ContentComponentIds ?? []))
+            .SelectMany(r => r.Components.Concat(r.OptionalComponents ?? [])
+                .Concat(r.ContentComponentIds ?? []))
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
@@ -182,28 +190,59 @@ public sealed record MechanicRequirements
     public IReadOnlyList<string> ProjectionProblems()
     {
         var problems = new List<string>();
+        if (EffectComponentIds.Count > ProjectionLimits.MaxContentComponentIds ||
+            EffectComponentIds.Any(string.IsNullOrWhiteSpace) ||
+            EffectComponentIds.Distinct(StringComparer.Ordinal).Count() != EffectComponentIds.Count)
+            problems.Add("effectComponentIds must be a bounded distinct list of component identities.");
         foreach (var (role, requirement) in Roles)
         {
+            var optionalComponents = requirement.OptionalComponents ?? [];
+            if (requirement.Components.Concat(optionalComponents).Distinct(StringComparer.Ordinal).Count() !=
+                requirement.Components.Count + optionalComponents.Count)
+                problems.Add($"Role '{role}' required and optional components must be distinct.");
             var descendantComponents = requirement.ContentComponentIds ?? [];
             var references = requirement.ComponentReferences ?? [];
             if (references.Count > ProjectionLimits.MaxContentComponentIds)
                 problems.Add($"Role '{role}' may declare at most {ProjectionLimits.MaxContentComponentIds} componentReferences.");
             foreach (var reference in references)
             {
+                var optionalTargetComponentIds = reference?.OptionalTargetComponentIds ?? [];
                 if (reference is null || string.IsNullOrWhiteSpace(reference.SourceComponentId) ||
                     string.IsNullOrWhiteSpace(reference.Field) || reference.Field.Trim() != reference.Field ||
                     reference.TargetComponentIds.Count == 0 ||
-                    reference.TargetComponentIds.Count > ProjectionLimits.MaxContentComponentIds ||
+                    reference.TargetComponentIds.Count + optionalTargetComponentIds.Count >
+                        ProjectionLimits.MaxContentComponentIds ||
                     reference.TargetComponentIds.Any(string.IsNullOrWhiteSpace) ||
-                    reference.TargetComponentIds.Distinct(StringComparer.Ordinal).Count() != reference.TargetComponentIds.Count)
+                    optionalTargetComponentIds.Any(string.IsNullOrWhiteSpace) ||
+                    reference.TargetComponentIds.Concat(optionalTargetComponentIds)
+                        .Distinct(StringComparer.Ordinal).Count() !=
+                    reference.TargetComponentIds.Count + optionalTargetComponentIds.Count)
                 {
                     problems.Add($"Role '{role}' has an invalid component reference declaration.");
                     continue;
                 }
 
                 if (!requirement.Components.Contains(reference.SourceComponentId, StringComparer.Ordinal) &&
+                    !optionalComponents.Contains(reference.SourceComponentId, StringComparer.Ordinal) &&
                     !descendantComponents.Contains(reference.SourceComponentId, StringComparer.Ordinal))
                     problems.Add($"Role '{role}' component reference source '{reference.SourceComponentId}' is not declared on the role or its contents.");
+            }
+            var relevantRoles = requirement.ContentsRelevantToRoles ?? [];
+            if (relevantRoles.Count > 0)
+            {
+                if (!requirement.IncludeContents)
+                    problems.Add($"Role '{role}' sets contentsRelevantToRoles without includeContents.");
+                if (relevantRoles.Count > ProjectionLimits.MaxContentsRelevantToRoles)
+                    problems.Add($"Role '{role}' may declare at most {ProjectionLimits.MaxContentsRelevantToRoles} contentsRelevantToRoles.");
+                if (relevantRoles.Distinct(StringComparer.Ordinal).Count() != relevantRoles.Count)
+                    problems.Add($"Role '{role}' contentsRelevantToRoles must be distinct.");
+                foreach (var relevant in relevantRoles)
+                {
+                    if (string.IsNullOrWhiteSpace(relevant) || !Roles.ContainsKey(relevant))
+                        problems.Add($"Role '{role}' contentsRelevantToRoles names undeclared role '{relevant}'.");
+                    else if (StringComparer.Ordinal.Equals(relevant, role))
+                        problems.Add($"Role '{role}' cannot declare itself in contentsRelevantToRoles.");
+                }
             }
             var relationshipComponents = requirement.RelationshipComponents ?? [];
             if (relationshipComponents.Count > ProjectionLimits.MaxRelationshipComponentDeclarations)
@@ -322,13 +361,16 @@ public sealed record RoleRequirement(
     int? ContentsDepth = null,
     IReadOnlyList<string>? ContentComponentIds = null,
     IReadOnlyList<ComponentReferenceRequirement>? ComponentReferences = null,
-    IReadOnlyList<RelationshipComponentRequirement>? RelationshipComponents = null);
+    IReadOnlyList<RelationshipComponentRequirement>? RelationshipComponents = null,
+    IReadOnlyList<string>? OptionalComponents = null,
+    IReadOnlyList<string>? ContentsRelevantToRoles = null);
 
 /// <summary>A declared entity-id field inside a declared component, and the target components it may reveal.</summary>
 public sealed record ComponentReferenceRequirement(
     string SourceComponentId,
     string Field,
-    IReadOnlyList<string> TargetComponentIds);
+    IReadOnlyList<string> TargetComponentIds,
+    IReadOnlyList<string>? OptionalTargetComponentIds = null);
 
 /// <summary>A bounded declaration of components visible on matching relationship endpoints.</summary>
 public sealed record RelationshipComponentRequirement(
@@ -341,6 +383,7 @@ public static class ProjectionLimits
 {
     public const int MaxContentsDepth = 4;
     public const int MaxContainedNodes = 100;
+    public const int MaxContentsRelevantToRoles = 12;
     public const int MaxContentComponentIds = 12;
     public const int MaxRelationshipComponentDeclarations = 12;
     public const int MaxRelatedNodes = 100;

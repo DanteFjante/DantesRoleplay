@@ -1,5 +1,6 @@
 import type { CampaignMapOverlay, MapDocument, MapFeature } from "../data/hub-types";
 import { Icon } from "./Icon";
+import { MediaImage } from "./MediaImage";
 
 export function MapFeatureDetail({
   map,
@@ -25,6 +26,11 @@ export function MapFeatureDetail({
         <p>Select a marker to read what is known about it.</p>
       ) : (
         <>
+          {feature.preview ? (
+            <figure className="world-map-selection__media">
+              <MediaImage fallback={null} media={feature.preview} />
+            </figure>
+          ) : null}
           <div className="world-map-selection__title">
             <span aria-hidden="true"><Icon name="Landmark" size={22} /></span>
             <div>

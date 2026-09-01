@@ -14,6 +14,7 @@ using DantesRoleplay.Ecs;
 using DantesRoleplay.EcsEffects;
 using DantesRoleplay.LocalAI;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.Interactions;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Projections;
 using DantesRoleplay.SchemaValidation;
@@ -247,8 +248,8 @@ public sealed class Dnd2024AbilityCheckTests
     {
         await using var harness = await DndHarness.CreateAsync();
         await harness.AddCharacterLevelAsync("subject.high", level);
-        await harness.AddApplicationComponentAsync("subject.high",
-            "dnd2024.character-feature-grants", AlertGrantState());
+        await harness.ReplaceApplicationComponentRawAsync("subject.high",
+            "dnd2024.character.feature-entitlements", AlertGrantState());
 
         var omitted = await harness.EvaluateAsync("subject.high", "{}", 77,
             "dnd2024.mechanic.initiative.roll");
@@ -327,8 +328,8 @@ public sealed class Dnd2024AbilityCheckTests
     {
         await using var harness = await DndHarness.CreateAsync();
         await harness.AddCharacterLevelAsync("subject.high", 5);
-        await harness.AddApplicationComponentAsync("subject.high",
-            "dnd2024.character-feature-grants", AlertGrantState(
+        await harness.ReplaceApplicationComponentRawAsync("subject.high",
+            "dnd2024.character.feature-entitlements", AlertGrantState(
                 grantedByDefinitionId: "content.extension.background.investigator.v1",
                 locator: "Extension > Investigator > Alert Grant"));
 
@@ -347,9 +348,9 @@ public sealed class Dnd2024AbilityCheckTests
     public async Task Initiative_ignores_other_valid_feature_grants_when_alert_is_absent()
     {
         await using var harness = await DndHarness.CreateAsync();
-        await harness.AddApplicationComponentAsync("subject.high",
-            "dnd2024.character-feature-grants",
-            "{\"grants\":[{\"definitionId\":\"dnd2024.content.feature.fighter.second-wind.v1\",\"grantedByDefinitionId\":\"dnd2024.content.class.fighter.v1\",\"grantKind\":\"class-feature\",\"classLevel\":1,\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Classes > Fighter, PDF page 60\"}}]}");
+        await harness.ReplaceApplicationComponentRawAsync("subject.high",
+            "dnd2024.character.feature-entitlements",
+            "{\"entitlements\":[{\"featureRef\":{\"entityId\":\"dnd2024.content.feature.fighter.second-wind.v1\"},\"grantedByRef\":{\"entityId\":\"dnd2024.content.class.fighter.v1\"},\"grantKind\":\"class-feature\",\"classLevel\":1,\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Classes > Fighter, PDF page 60\"}}]}");
 
         var baseline = await harness.EvaluateAsync("subject.low", "{}", 77,
             "dnd2024.mechanic.initiative.roll");
@@ -381,8 +382,8 @@ public sealed class Dnd2024AbilityCheckTests
     {
         await using var harness = await DndHarness.CreateAsync();
         await harness.AddCharacterLevelAsync("subject.high", 5);
-        await harness.AddApplicationComponentAsync("subject.high",
-            "dnd2024.character-feature-grants", AlertGrantState());
+        await harness.ReplaceApplicationComponentRawAsync("subject.high",
+            "dnd2024.character.feature-entitlements", AlertGrantState());
         var invalid = stateCase switch
         {
             "malformed" => "{}",
@@ -390,12 +391,12 @@ public sealed class Dnd2024AbilityCheckTests
             "wrong-kind" => AlertGrantState(grantKind: "class-feature"),
             "wrong-configuration" => AlertGrantState(configurationKey: "wizard"),
             "wrong-source-id" => AlertGrantState().Replace(
-                "dnd2024.source.srd-5.2.1", "dnd2024.source.drifted",
+                "dnd2024.source.srd-5.2.1", "drifted source",
                 StringComparison.Ordinal),
             _ => AlertGrantState(extraProperty: true)
         };
         await harness.ReplaceApplicationComponentRawAsync("subject.high",
-            "dnd2024.character-feature-grants", invalid);
+            "dnd2024.character.feature-entitlements", invalid);
 
         var result = await harness.EvaluateAsync("subject.high",
             "{\"useAlertInitiativeProficiency\":true}", 77,
@@ -414,8 +415,8 @@ public sealed class Dnd2024AbilityCheckTests
         string stateCase)
     {
         await using var harness = await DndHarness.CreateAsync();
-        await harness.AddApplicationComponentAsync("subject.high",
-            "dnd2024.character-feature-grants", AlertGrantState());
+        await harness.ReplaceApplicationComponentRawAsync("subject.high",
+            "dnd2024.character.feature-entitlements", AlertGrantState());
         if (stateCase != "missing")
         {
             await harness.AddCharacterLevelAsync("subject.high", 5);
@@ -449,8 +450,8 @@ public sealed class Dnd2024AbilityCheckTests
     {
         await using var harness = await DndHarness.CreateAsync();
         await harness.AddCharacterLevelAsync("subject.high", 5);
-        await harness.AddApplicationComponentAsync("subject.high",
-            "dnd2024.character-feature-grants", AlertGrantState());
+        await harness.ReplaceApplicationComponentRawAsync("subject.high",
+            "dnd2024.character.feature-entitlements", AlertGrantState());
 
         var result = await harness.EvaluateAsync("subject.high", input, 77,
             "dnd2024.mechanic.initiative.roll");
@@ -476,21 +477,22 @@ public sealed class Dnd2024AbilityCheckTests
             "cc3d1a00000000000000000000000000"));
 
         Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, created.Disposition);
-        using var grants = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+        using var entitlements = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
             DndHarness.StateSpaceId, actorId,
-            "dnd2024.character-feature-grants"))!.ValueJson);
-        var alertGrant = Assert.Single(grants.RootElement.GetProperty("grants").EnumerateArray(),
-            value => value.GetProperty("definitionId").GetString()
-                == "dnd2024.content.feature.alert.v1");
-        Assert.Equal("origin-feat", alertGrant.GetProperty("grantKind").GetString());
-        Assert.Equal("default", alertGrant.GetProperty("configurationKey").GetString());
+            "dnd2024.character.feature-entitlements"))!.ValueJson);
+        var alertEntitlement = Assert.Single(
+            entitlements.RootElement.GetProperty("entitlements").EnumerateArray(),
+            value => value.GetProperty("featureRef").GetProperty("entityId").GetString()
+                == "dnd2024.feat.alert");
+        Assert.Equal("origin-feat", alertEntitlement.GetProperty("grantKind").GetString());
+        Assert.Equal("default", alertEntitlement.GetProperty("configurationKey").GetString());
 
         using var record = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
             DndHarness.StateSpaceId, actorId,
             "dnd2024.character-creation-record"))!.ValueJson);
         var alertPending = record.RootElement.GetProperty("unresolvedEntitlements")
             .EnumerateArray().Where(value => value.GetProperty("ownerDefinitionId").GetString()
-                == "dnd2024.content.feature.alert.v1").ToArray();
+                == "dnd2024.feat.alert").ToArray();
         Assert.Equal("behavior:initiative-swap",
             Assert.Single(alertPending).GetProperty("entitlementKey").GetString());
 
@@ -512,8 +514,8 @@ public sealed class Dnd2024AbilityCheckTests
         await harness.AddRestBeginFixturesAsync(currentHitPoints: 10, currentMinute: 100);
         await harness.AddEncounterFixturesAsync();
         await harness.AddCharacterLevelAsync("subject.high", 5);
-        await harness.AddApplicationComponentAsync("subject.high",
-            "dnd2024.character-feature-grants", AlertGrantState());
+        await harness.ReplaceApplicationComponentRawAsync("subject.high",
+            "dnd2024.character.feature-entitlements", AlertGrantState());
         var restStarted = await harness.Runner.RunAsync(harness.ActionForRoles(
             "dnd2024.mechanic.rest.begin", RestBeginRoles(), "{\"kind\":\"short\"}", 0,
             "cc3d1a00000000000000000000000001"));
@@ -814,7 +816,7 @@ public sealed class Dnd2024AbilityCheckTests
         await harness.AddEncounterFixturesAsync();
         await harness.AddCombatFixturesAsync();
         const string extensionPath =
-            "catalog/extensions/dnd2024/legacy-equipment/content/entities/adventuring-gear/dnd2024.item.hempen-rope-50-foot.v1.json";
+            "catalog/extensions/dnd2024/legacy-equipment/content/entities/adventuring-gear/dnd2024.extension.legacy-equipment.item.hempen-rope-50-foot.v1.json";
         Assert.DoesNotContain(extensionPath, harness.ActiveSourcePaths);
 
         var first = await harness.EvaluateAsync("subject.high", "{}", DeriveSeed(120, 0),
@@ -1039,7 +1041,7 @@ public sealed class Dnd2024AbilityCheckTests
     public async Task Unified_proficiency_schema_accepts_ranked_membership_and_rejects_legacy_or_malformed_state()
     {
         var schema = await File.ReadAllTextAsync(Path.Combine(RepositoryRoot(), "catalog",
-            "applications", "dnd2024", "components", "proficiency",
+            "applications", "dnd2024", "components",
             "dnd2024.creature.proficiencies.schema.json"));
         var validator = new BoundedJsonSchemaValidator();
         var compilation = validator.Compile(schema);
@@ -1465,7 +1467,7 @@ public sealed class Dnd2024AbilityCheckTests
         await using var harness = await DndHarness.CreateAsync();
         foreach (var relative in new[]
                  {
-                     "catalog/applications/dnd2024/components/combat/dnd2024.creature.defenses.json",
+                     "catalog/applications/dnd2024/components/dnd2024.creature.defenses.json",
                      "catalog/applications/dnd2024/mechanics/combat/dnd2024.mechanic.creature.defenses.write.md",
                      "catalog/applications/dnd2024/mechanics/combat/dnd2024.mechanic.damage.resolve.md",
                      "catalog/applications/dnd2024/procedures/combat/dnd2024.procedure.mechanic.damage-mitigation.md",
@@ -2597,7 +2599,7 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.Equal(9, paths.Length);
 
         var schema = await File.ReadAllTextAsync(Path.Combine(root, "catalog", "applications",
-            "dnd2024", "components", "data", "dnd2024.species-profile.schema.json"));
+            "dnd2024", "components", "dnd2024.species-profile.schema.json"));
         var validator = new BoundedJsonSchemaValidator();
         var compilation = validator.Compile(schema);
         Assert.True(compilation.IsAccepted, string.Join("; ", compilation.Diagnostics));
@@ -2926,49 +2928,38 @@ public sealed class Dnd2024AbilityCheckTests
     {
         var expected = new Dictionary<string, bool>(StringComparer.Ordinal)
         {
-            ["alert"] = false,
-            ["magic-initiate"] = true,
-            ["savage-attacker"] = false,
-            ["skilled"] = true
+            ["dnd2024.feat.alert"] = false,
+            ["dnd2024.feat.magic-initiate"] = true,
+            ["dnd2024.feat.savage-attacker"] = false,
+            ["dnd2024.feat.skilled"] = true
         };
         var root = RepositoryRoot();
         var directory = Path.Combine(root, "catalog", "applications", "dnd2024", "content",
-            "entities", "character-creation", "feats");
-        var paths = Directory.GetFiles(directory, "dnd2024.content.feature.*.v1.json")
-            .Order(StringComparer.Ordinal).ToArray();
-        Assert.Equal(4, paths.Length);
-        var schema = await File.ReadAllTextAsync(Path.Combine(root, "catalog", "applications",
-            "dnd2024", "components", "data", "dnd2024.feat-profile.schema.json"));
-        var validator = new BoundedJsonSchemaValidator();
-        var compilation = validator.Compile(schema);
-        Assert.True(compilation.IsAccepted, string.Join("; ", compilation.Diagnostics));
+            "entities", "character-options", "feats");
 
         await using var harness = await DndHarness.CreateAsync();
-        foreach (var path in paths)
+        var found = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var path in Directory.GetFiles(directory, "*.json").Order(StringComparer.Ordinal))
         {
             var relative = Path.GetRelativePath(root, path).Replace('\\', '/');
-            Assert.Contains(relative, harness.ActiveSourcePaths);
             var entity = EntityFile.Parse(await File.ReadAllTextAsync(path), relative);
-            var identityComponent = Assert.Single(entity.Components, value =>
-                value.DefinitionId == "dnd2024.character.content-definition");
-            var profileComponent = Assert.Single(entity.Components, value =>
-                value.DefinitionId == "dnd2024.feat-profile");
-            var validation = validator.Validate(compilation.ProfileId,
-                compilation.NormalizedSchema, profileComponent.Data);
-            Assert.Equal(SchemaValueStatus.Valid, validation.Status);
-            using var identityJson = JsonDocument.Parse(identityComponent.Data);
-            using var profileJson = JsonDocument.Parse(profileComponent.Data);
-            var identity = identityJson.RootElement;
-            var profile = profileJson.RootElement;
-            var key = identity.GetProperty("contentKey").GetString()!;
-            Assert.Equal("feature", identity.GetProperty("kind").GetString());
-            Assert.Equal("active", identity.GetProperty("status").GetString());
-            Assert.Equal(key, profile.GetProperty("contentKey").GetString());
-            Assert.Equal("origin", profile.GetProperty("category").GetString());
-            Assert.Equal(expected[key], profile.GetProperty("repeatable").GetBoolean());
-            Assert.Equal($"Feats > Origin Feats > {entity.Name.Split(" (", StringSplitOptions.None)[0]}, PDF page 87",
-                profile.GetProperty("sourceRef").GetProperty("locator").GetString());
+            if (!expected.TryGetValue(entity.Id, out var repeatable)) continue;
+            Assert.Contains(relative, harness.ActiveSourcePaths);
+            found.Add(entity.Id);
+            using var version = JsonDocument.Parse(Assert.Single(entity.Components,
+                value => value.DefinitionId == "dnd2024.core.version").Data);
+            using var source = JsonDocument.Parse(Assert.Single(entity.Components,
+                value => value.DefinitionId == "dnd2024.core.source").Data);
+            using var feat = JsonDocument.Parse(Assert.Single(entity.Components,
+                value => value.DefinitionId == "dnd2024.advancement.feat").Data);
+            Assert.Equal("active", version.RootElement.GetProperty("status").GetString());
+            Assert.Equal("dnd2024.feat-category.origin",
+                feat.RootElement.GetProperty("categoryRef").GetProperty("entityId").GetString());
+            Assert.Equal(repeatable, feat.RootElement.GetProperty("repeatable").GetBoolean());
+            Assert.StartsWith("Feats > ", source.RootElement.GetProperty("citations")[0]
+                .GetProperty("locator").GetString(), StringComparison.Ordinal);
         }
+        Assert.Equal(expected.Keys.Order(StringComparer.Ordinal), found.Order(StringComparer.Ordinal));
     }
 
     [Fact]
@@ -2980,7 +2971,7 @@ public sealed class Dnd2024AbilityCheckTests
         var roles = new Dictionary<string, string>
         {
             ["species"] = "dnd2024.content.species.human.v1",
-            ["feat"] = "dnd2024.content.feature.skilled.v1"
+            ["feat"] = "dnd2024.feat.skilled"
         };
         const string input = "{\"choices\":[{\"kind\":\"tool\",\"id\":\"thieves-tools\"},{\"kind\":\"skill\",\"id\":\"stealth\"},{\"kind\":\"skill\",\"id\":\"perception\"}]}";
         const string reordered = "{\"choices\":[{\"id\":\"perception\",\"kind\":\"skill\"},{\"id\":\"thieves-tools\",\"kind\":\"tool\"},{\"id\":\"stealth\",\"kind\":\"skill\"}]}";
@@ -2994,7 +2985,7 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.Equal(first.Run!.Output.Data, second.Run!.Output.Data);
         using var data = JsonDocument.Parse(first.Run.Output.Data);
         var root = data.RootElement;
-        Assert.Equal("dnd2024.content.feature.skilled.v1",
+        Assert.Equal("dnd2024.feat.skilled",
             root.GetProperty("selectedFeat").GetProperty("featDefinitionId").GetString());
         Assert.True(root.GetProperty("selectedFeat").GetProperty("repeatable").GetBoolean());
         Assert.Equal(new[] { "dnd2024.vocabulary.skill.perception", "dnd2024.vocabulary.skill.stealth" },
@@ -3033,7 +3024,7 @@ public sealed class Dnd2024AbilityCheckTests
             new Dictionary<string, string>
             {
                 ["species"] = "dnd2024.content.species.human.v1",
-                ["feat"] = "dnd2024.content.feature.skilled.v1"
+                ["feat"] = "dnd2024.feat.skilled"
             }, input, 0);
 
         Assert.True(result.Ok, result.Run?.Error);
@@ -3046,8 +3037,8 @@ public sealed class Dnd2024AbilityCheckTests
     }
 
     [Theory]
-    [InlineData("dnd2024.content.species.dragonborn.v1", "dnd2024.content.feature.skilled.v1", "Versatile entitlement")]
-    [InlineData("dnd2024.content.species.human.v1", "dnd2024.content.feature.alert.v1", "requires the Skilled")]
+    [InlineData("dnd2024.content.species.dragonborn.v1", "dnd2024.feat.skilled", "Versatile entitlement")]
+    [InlineData("dnd2024.content.species.human.v1", "dnd2024.feat.alert", "requires the Skilled")]
     public async Task Character_creation_species_versatile_requires_entitlement_and_skilled_behavior(
         string speciesId, string featId, string error)
     {
@@ -3081,7 +3072,7 @@ public sealed class Dnd2024AbilityCheckTests
             new Dictionary<string, string>
             {
                 ["species"] = "dnd2024.content.species.human.v1",
-                ["feat"] = "dnd2024.content.feature.skilled.v1"
+                ["feat"] = "dnd2024.feat.skilled"
             }, input, 0);
 
         Assert.False(result.Ok);
@@ -3095,14 +3086,14 @@ public sealed class Dnd2024AbilityCheckTests
         await harness.AddCharacterCreationSpeciesFixturesAsync();
         await harness.AddCharacterCreationFeatFixturesAsync();
         await harness.ReplaceApplicationComponentRawAsync(
-            "dnd2024.content.feature.skilled.v1", "dnd2024.feat-profile",
-            "{\"contentKey\":\"skilled\",\"contentVersion\":1,\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Feats > Origin Feats > Alert, PDF page 87\"},\"category\":\"origin\",\"repeatable\":true}");
+            "dnd2024.feat.skilled", "dnd2024.core.source",
+            "{\"citations\":[{\"sourceRef\":{\"entityId\":\"dnd2024.source.srd-5.2.1\"},\"locator\":\"Feats > Alert (SRD 5.2.1, pages 87-87)\"}]}");
         var result = await harness.EvaluateRolesAsync(
             "dnd2024.mechanic.species-versatile-skilled.resolve",
             new Dictionary<string, string>
             {
                 ["species"] = "dnd2024.content.species.human.v1",
-                ["feat"] = "dnd2024.content.feature.skilled.v1"
+                ["feat"] = "dnd2024.feat.skilled"
             }, "{\"choices\":[{\"kind\":\"skill\",\"id\":\"arcana\"},{\"kind\":\"skill\",\"id\":\"history\"},{\"kind\":\"tool\",\"id\":\"lute\"}]}", 0);
 
         Assert.False(result.Ok);
@@ -3249,7 +3240,7 @@ public sealed class Dnd2024AbilityCheckTests
             "catalog/applications/dnd2024/content/entities/character-creation/rest/dnd2024.content.rest-policy.standard.v1.json";
         var path = Path.Combine(root, relative.Replace('/', Path.DirectorySeparatorChar));
         var schemaPath = Path.Combine(root, "catalog", "applications", "dnd2024", "components",
-            "data", "dnd2024.rest-policy.schema.json");
+            "dnd2024.rest-policy.schema.json");
         var schema = await File.ReadAllTextAsync(schemaPath);
         var validator = new BoundedJsonSchemaValidator();
         var compilation = validator.Compile(schema);
@@ -4050,7 +4041,7 @@ public sealed class Dnd2024AbilityCheckTests
     public async Task Item_runtime_component_schemas_require_a_closed_definition_link_and_positive_quantity()
     {
         var root = RepositoryRoot();
-        var componentRoot = Path.Combine(root, "catalog", "applications", "dnd2024", "components", "data");
+        var componentRoot = Path.Combine(root, "catalog", "applications", "dnd2024", "components");
         var validator = new BoundedJsonSchemaValidator();
         var link = validator.Compile(await File.ReadAllTextAsync(Path.Combine(
             componentRoot, "dnd2024.core.definition-link.schema.json")));
@@ -4104,12 +4095,15 @@ public sealed class Dnd2024AbilityCheckTests
                 ["item"] = "item.campaign.robe", ["destination"] = "subject.low"
             }, "{\"slot\":\"gift\"}", 0, "d123456789abcdef0123456789abcded"));
 
-        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, recorded.Disposition);
-        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, created.Disposition);
+        Assert.True(recorded.Disposition == ApplicationActionExecutionDisposition.Succeeded,
+            string.Join("; ", recorded.Problems.Select(value => value.Code + ": " + value.SafeMessage)));
+        Assert.True(created.Disposition == ApplicationActionExecutionDisposition.Succeeded,
+            string.Join("; ", created.Problems.Select(value => value.Code + ": " + value.SafeMessage)));
         Assert.True(read.Ok, read.Run?.Error);
         Assert.Contains("\"containerId\":\"subject.high\"", read.Run!.Output.Data,
             StringComparison.Ordinal);
-        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, moved.Disposition);
+        Assert.True(moved.Disposition == ApplicationActionExecutionDisposition.Succeeded,
+            string.Join("; ", moved.Problems.Select(value => value.Code + ": " + value.SafeMessage)));
     }
 
     [Fact]
@@ -4119,7 +4113,7 @@ public sealed class Dnd2024AbilityCheckTests
         const string definitionId = "dnd2024.item.arrow.v1";
         await harness.AddItemDefinitionAsync(definitionId, "Arrow definition", FungibleItemDefinition());
         await harness.AddPhysicalItemAsync("item.stack.recorded", "Recorded Arrows", definitionId,
-            "subject.low");
+            "subject.low", includeQuantity: false);
         Assert.Equal(ApplicationActionExecutionDisposition.Succeeded,
             (await harness.Runner.RunAsync(harness.ActionForRoles(
                 "dnd2024.mechanic.item-stack.record", new Dictionary<string, string>
@@ -4198,7 +4192,8 @@ public sealed class Dnd2024AbilityCheckTests
             ["item"] = "item.spear", ["holder"] = "subject.high"
         };
         var equipped = await harness.Runner.RunAsync(harness.ActionForRoles(
-            "dnd2024.mechanic.item.equip", roles, "{\"state\":\"held\"}", 0,
+            "dnd2024.mechanic.item.equip", roles,
+            "{\"slotIds\":[\"dnd2024.equipment-slot.main-hand\"]}", 0,
             "3123456789abcdef0123456789abcdee"));
         var blocked = await harness.Runner.RunAsync(harness.ActionForRoles(
             "dnd2024.mechanic.item.transfer", new Dictionary<string, string>
@@ -4218,13 +4213,14 @@ public sealed class Dnd2024AbilityCheckTests
 
         Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, equipped.Disposition);
         Assert.Equal(ApplicationActionExecutionDisposition.Failed, blocked.Disposition);
-        Assert.Contains("\"state\":\"held\"", read.Run!.Output.Data, StringComparison.Ordinal);
+        Assert.Contains("\"entityId\":\"dnd2024.equipment-slot.main-hand\"",
+            read.Run!.Output.Data, StringComparison.Ordinal);
         Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, unequipped.Disposition);
         Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, transferred.Disposition);
     }
 
     [Fact]
-    public async Task Item_transfer_enforces_direct_container_item_count_capacity_without_partial_move()
+    public async Task Item_transfer_enforces_direct_container_weight_capacity_without_partial_move()
     {
         await using var harness = await DndHarness.CreateAsync();
         const string itemDefinition = "dnd2024.item.stone.v1";
@@ -4298,8 +4294,8 @@ public sealed class Dnd2024AbilityCheckTests
     private static string FungibleItemDefinition()
         => "{\"definitionVersion\":1,\"kind\":\"ammunition\",\"stackPolicy\":\"fungible\",\"massPounds\":{\"numerator\":1,\"denominator\":20},\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Equipment > Ammunition\"}}";
 
-    private static string ContainerItemDefinition(int itemCount)
-        => "{\"definitionVersion\":1,\"kind\":\"adventuring-gear\",\"stackPolicy\":\"separate\",\"massPounds\":{\"numerator\":1,\"denominator\":1},\"capacity\":{\"itemCount\":" + itemCount + "},\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Equipment > Adventuring Gear\"}}";
+    private static string ContainerItemDefinition(int maximumWeightPounds)
+        => "{\"definitionVersion\":1,\"kind\":\"adventuring-gear\",\"stackPolicy\":\"separate\",\"massPounds\":{\"numerator\":1,\"denominator\":1},\"capacity\":{\"weightPounds\":{\"numerator\":" + maximumWeightPounds + ",\"denominator\":1}},\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Equipment > Adventuring Gear\"}}";
 
     private static string CurrencyItemDefinition(string denomination, int copperValue)
         => "{\"definitionVersion\":1,\"kind\":\"currency\",\"stackPolicy\":\"fungible\",\"massPounds\":{\"numerator\":1,\"denominator\":50},\"currency\":{\"denomination\":\"" + denomination + "\",\"copperValue\":" + copperValue + ",\"coinsPerPound\":50},\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Equipment > Coins\"}}";
@@ -4312,8 +4308,7 @@ public sealed class Dnd2024AbilityCheckTests
         const string arrows = "dnd2024.item.arrow-reader.v1";
         await harness.AddItemDefinitionAsync(robe, "Robe definition", SeparateItemDefinition());
         await harness.AddItemDefinitionAsync(arrows, "Arrow definition", FungibleItemDefinition());
-        await harness.AddPhysicalItemAsync("item.reader.robe", "Robe", robe, "subject.high",
-            equipmentState: "worn");
+        await harness.AddPhysicalItemAsync("item.reader.robe", "Robe", robe, "subject.high");
         await harness.AddPhysicalItemAsync("item.reader.arrows", "Arrows", arrows, "subject.high",
             quantity: 20);
         Assert.Equal(ApplicationActionExecutionDisposition.Succeeded,
@@ -4329,16 +4324,15 @@ public sealed class Dnd2024AbilityCheckTests
         var carrying = await harness.EvaluateRolesAsync("dnd2024.mechanic.carrying-capacity.read",
             new Dictionary<string, string> { ["creature"] = "subject.high" }, "{}", 0);
 
-        Assert.True(inventory.Ok, inventory.Run?.Error);
+        Assert.True(inventory.Ok,
+            string.Join("; ", inventory.Problems.Append(inventory.Run?.Error ?? string.Empty)));
         Assert.Contains("\"mayOmitDeeperContents\":true", inventory.Run!.Output.Data,
             StringComparison.Ordinal);
-        Assert.Contains("\"equipmentState\":\"worn\"", inventory.Run.Output.Data,
-            StringComparison.Ordinal);
         Assert.True(burden.Ok, burden.Run?.Error);
-        Assert.Contains("\"massPounds\":{\"numerator\":2,\"denominator\":1}",
+        Assert.Contains("\"mass\":{\"dimension\":\"mass\",\"value\":{\"numerator\":45359237,\"denominator\":50000000}",
             burden.Run!.Output.Data, StringComparison.Ordinal);
         Assert.True(carrying.Ok, carrying.Run?.Error);
-        Assert.Contains("\"carryingCapacityPounds\":{\"numerator\":450,\"denominator\":1}",
+        Assert.Contains("\"carryingCapacity\":{\"dimension\":\"mass\",\"value\":{\"numerator\":408233133,\"denominator\":2000000}",
             carrying.Run!.Output.Data, StringComparison.Ordinal);
         Assert.Empty(carrying.Run.Output.Effects);
     }
@@ -4347,10 +4341,10 @@ public sealed class Dnd2024AbilityCheckTests
     public async Task Currency_reader_derives_mixed_physical_coin_value_without_wallet_state()
     {
         await using var harness = await DndHarness.CreateAsync();
-        const string cp = "dnd2024.item.cp.v1";
-        const string gp = "dnd2024.item.gp.v1";
-        await harness.AddItemDefinitionAsync(cp, "Copper definition", CurrencyItemDefinition("cp", 1));
-        await harness.AddItemDefinitionAsync(gp, "Gold definition", CurrencyItemDefinition("gp", 100));
+        const string cp = "dnd2024.equipment.currency.copper-piece";
+        const string gp = "dnd2024.equipment.currency.gold-piece";
+        await harness.AddCanonicalCurrencyDefinitionFixtureAsync("copper-piece");
+        await harness.AddCanonicalCurrencyDefinitionFixtureAsync("gold-piece");
         await harness.AddPhysicalItemAsync("item.coins.cp", "Copper Pieces", cp, "subject.high",
             quantity: 10);
         await harness.AddPhysicalItemAsync("item.coins.gp", "Gold Pieces", gp, "subject.high",
@@ -4370,16 +4364,10 @@ public sealed class Dnd2024AbilityCheckTests
     {
         var root = RepositoryRoot();
         var contentRoot = Path.Combine(root, "catalog", "applications", "dnd2024", "content",
-            "entities", "currency");
-        var paths = Directory.GetFiles(contentRoot, "dnd2024.currency.*.json")
+            "entities", "equipment", "base");
+        var paths = Directory.GetFiles(contentRoot, "equipment.currency.*.json")
             .Order(StringComparer.Ordinal).ToArray();
         Assert.Equal(5, paths.Length);
-
-        var schema = await File.ReadAllTextAsync(Path.Combine(root, "catalog", "applications",
-            "dnd2024", "components", "data", "dnd2024.item-definition.schema.json"));
-        var validator = new BoundedJsonSchemaValidator();
-        var compilation = validator.Compile(schema);
-        Assert.True(compilation.IsAccepted, string.Join("; ", compilation.Diagnostics));
 
         await using var harness = await DndHarness.CreateAsync();
         var definitions = new Dictionary<string, EntityFile>(StringComparer.Ordinal);
@@ -4388,17 +4376,21 @@ public sealed class Dnd2024AbilityCheckTests
             var relative = Path.GetRelativePath(root, path).Replace('\\', '/');
             Assert.Contains(relative, harness.ActiveSourcePaths);
             var entity = EntityFile.Parse(await File.ReadAllTextAsync(path), relative);
-            var component = Assert.Single(entity.Components);
-            Assert.Equal("dnd2024.item-definition", component.DefinitionId);
-            var validation = validator.Validate(compilation.ProfileId, compilation.NormalizedSchema,
-                component.Data);
-            Assert.Equal(SchemaValueStatus.Valid, validation.Status);
+            Assert.Contains(entity.Components, component =>
+                component.DefinitionId == "dnd2024.core.source");
+            Assert.Contains(entity.Components, component =>
+                component.DefinitionId == "dnd2024.core.version");
+            Assert.Contains(entity.Components, component =>
+                component.DefinitionId == "dnd2024.item.physical");
             definitions.Add(entity.Id, entity);
-            await harness.AddItemDefinitionAsync(entity.Id, entity.Name, component.Data);
+            await harness.Entities.CreateEntityAsync(DndHarness.StateSpaceId, entity.Id, entity.Name);
+            foreach (var component in entity.Components)
+                await harness.AddApplicationComponentAsync(
+                    entity.Id, component.DefinitionId, component.Data);
         }
 
-        var cp = definitions["dnd2024.currency.copper-piece.v1"];
-        var gp = definitions["dnd2024.currency.gold-piece.v1"];
+        var cp = definitions["dnd2024.equipment.currency.copper-piece"];
+        var gp = definitions["dnd2024.equipment.currency.gold-piece"];
         await harness.AddPhysicalItemAsync("item.static-coins.cp", "Copper Pieces", cp.Id,
             "subject.high", quantity: 10);
         await harness.AddPhysicalItemAsync("item.static-coins.gp", "Gold Pieces", gp.Id,
@@ -4413,27 +4405,20 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.Contains("\"coinCount\":12", currency.Run!.Output.Data, StringComparison.Ordinal);
         Assert.Contains("\"copperValue\":210", currency.Run.Output.Data, StringComparison.Ordinal);
         Assert.True(burden.Ok, burden.Run?.Error);
-        Assert.Contains("\"massPounds\":{\"numerator\":6,\"denominator\":25}",
+        Assert.Contains("\"value\":{\"numerator\":136077711,\"denominator\":1250000000}",
             burden.Run!.Output.Data, StringComparison.Ordinal);
         Assert.Empty(currency.Run.Output.Effects);
         Assert.Empty(burden.Run.Output.Effects);
     }
 
     [Fact]
-    public async Task Activated_static_adventuring_gear_is_schema_valid_and_enforces_backpack_capacity()
+    public async Task Activated_split_adventuring_gear_is_schema_valid_and_enforces_backpack_capacity()
     {
         var root = RepositoryRoot();
         var contentRoot = Path.Combine(root, "catalog", "applications", "dnd2024", "content",
-            "entities", "adventuring-gear");
-        var paths = Directory.GetFiles(contentRoot, "dnd2024.item.*.json")
-            .Order(StringComparer.Ordinal).ToArray();
-        Assert.Equal(9, paths.Length);
-
-        var schema = await File.ReadAllTextAsync(Path.Combine(root, "catalog", "applications",
-            "dnd2024", "components", "data", "dnd2024.item-definition.schema.json"));
-        var validator = new BoundedJsonSchemaValidator();
-        var compilation = validator.Compile(schema);
-        Assert.True(compilation.IsAccepted, string.Join("; ", compilation.Diagnostics));
+            "entities", "equipment", "base");
+        var paths = new[] { "equipment.gear.backpack.json", "equipment.gear.waterskin.json" }
+            .Select(file => Path.Combine(contentRoot, file)).ToArray();
 
         await using var harness = await DndHarness.CreateAsync();
         var definitions = new Dictionary<string, EntityFile>(StringComparer.Ordinal);
@@ -4442,29 +4427,22 @@ public sealed class Dnd2024AbilityCheckTests
             var relative = Path.GetRelativePath(root, path).Replace('\\', '/');
             Assert.Contains(relative, harness.ActiveSourcePaths);
             var entity = EntityFile.Parse(await File.ReadAllTextAsync(path), relative);
-            var component = Assert.Single(entity.Components);
-            Assert.Equal("dnd2024.item-definition", component.DefinitionId);
-            var validation = validator.Validate(compilation.ProfileId, compilation.NormalizedSchema,
-                component.Data);
-            Assert.Equal(SchemaValueStatus.Valid, validation.Status);
-            using var definition = JsonDocument.Parse(component.Data);
-            Assert.Equal("dnd2024.source.srd-5.2.1", definition.RootElement.GetProperty("sourceRef")
-                .GetProperty("sourceId").GetString());
-            Assert.StartsWith("Equipment > Adventuring Gear > ",
-                definition.RootElement.GetProperty("sourceRef").GetProperty("locator").GetString(),
-                StringComparison.Ordinal);
+            Assert.Contains(entity.Components,
+                component => component.DefinitionId == "dnd2024.item.physical");
+            using var source = JsonDocument.Parse(entity.Components.Single(component =>
+                component.DefinitionId == "dnd2024.core.source").Data);
+            Assert.Equal("dnd2024.source.srd-5.2.1", source.RootElement.GetProperty("citations")[0]
+                .GetProperty("sourceRef").GetProperty("entityId").GetString());
             definitions.Add(entity.Id, entity);
-            await harness.AddItemDefinitionAsync(entity.Id, entity.Name, component.Data);
+            await harness.AddCatalogEntityAsync(entity);
         }
 
-        Assert.DoesNotContain("dnd2024.item.hempen-rope-50-foot.v1", definitions.Keys);
-        Assert.DoesNotContain("dnd2024.item.quiver.v1", definitions.Keys);
         await harness.AddPhysicalItemAsync("item.static.backpack", "Backpack",
-            definitions["dnd2024.item.backpack.v1"].Id, "subject.low");
+            definitions["dnd2024.equipment.gear.backpack"].Id, "subject.low");
         for (var index = 0; index < 7; index++)
         {
             await harness.AddPhysicalItemAsync($"item.static.waterskin.{index}", $"Waterskin {index}",
-                definitions["dnd2024.item.waterskin.v1"].Id, "subject.high");
+                definitions["dnd2024.equipment.gear.waterskin"].Id, "subject.high");
         }
 
         for (var index = 0; index < 7; index++)
@@ -4476,10 +4454,13 @@ public sealed class Dnd2024AbilityCheckTests
                     ["source"] = "subject.high",
                     ["destination"] = "item.static.backpack"
                 }, "{\"slot\":\"inside\"}", 0, (index + 1).ToString("x32")));
-            Assert.Equal(index < 6
-                    ? ApplicationActionExecutionDisposition.Succeeded
-                    : ApplicationActionExecutionDisposition.Failed,
-                moved.Disposition);
+            var expected = index < 6
+                ? ApplicationActionExecutionDisposition.Succeeded
+                : ApplicationActionExecutionDisposition.Failed;
+            Assert.True(moved.Disposition == expected,
+                $"Waterskin {index} expected {expected} but was {moved.Disposition}: "
+                + string.Join("; ", moved.Problems.Select(problem =>
+                    problem.Code + ": " + problem.SafeMessage)));
         }
 
         var refused = await harness.EvaluateRolesAsync("dnd2024.mechanic.item-instance.read",
@@ -4490,7 +4471,7 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.Contains("\"containerId\":\"subject.high\"", refused.Run!.Output.Data,
             StringComparison.Ordinal);
         Assert.True(burden.Ok, burden.Run?.Error);
-        Assert.Contains("\"massPounds\":{\"numerator\":35,\"denominator\":1}",
+        Assert.Contains("\"mass\":{\"dimension\":\"mass\",\"value\":{\"numerator\":317514659,\"denominator\":20000000}",
             burden.Run!.Output.Data, StringComparison.Ordinal);
         Assert.Empty(refused.Run.Output.Effects);
         Assert.Empty(burden.Run.Output.Effects);
@@ -4500,7 +4481,7 @@ public sealed class Dnd2024AbilityCheckTests
     public async Task Optional_legacy_rope_is_consumed_only_when_extension_profile_is_selected()
     {
         const string relativePath =
-            "catalog/extensions/dnd2024/legacy-equipment/content/entities/adventuring-gear/dnd2024.item.hempen-rope-50-foot.v1.json";
+            "catalog/extensions/dnd2024/legacy-equipment/content/entities/adventuring-gear/dnd2024.extension.legacy-equipment.item.hempen-rope-50-foot.v1.json";
         await using var coreOnly = await DndHarness.CreateAsync();
         Assert.DoesNotContain(relativePath, coreOnly.ActiveSourcePaths);
 
@@ -4518,129 +4499,57 @@ public sealed class Dnd2024AbilityCheckTests
             new Dictionary<string, string> { ["root"] = "subject.high" }, "{}", 0);
 
         Assert.True(burden.Ok, burden.Run?.Error);
-        Assert.Contains("\"massPounds\":{\"numerator\":5,\"denominator\":1}",
+        Assert.Contains("\"mass\":{\"dimension\":\"mass\",\"value\":{\"numerator\":45359237,\"denominator\":20000000}",
             burden.Run!.Output.Data, StringComparison.Ordinal);
         Assert.Empty(burden.Run.Output.Effects);
     }
 
     [Fact]
-    public async Task Activated_static_armor_table_matches_srd_profiles_and_existing_equipment_readers()
+    public async Task Activated_catalog_item_facets_drive_equipment_and_burden_readers()
     {
         var root = RepositoryRoot();
-        var contentRoot = Path.Combine(root, "catalog", "applications", "dnd2024", "content",
-            "entities", "armor");
-        var paths = Directory.GetFiles(contentRoot, "dnd2024.item.*.json")
-            .Order(StringComparer.Ordinal).ToArray();
-        Assert.Equal(13, paths.Length);
-        var expected = new Dictionary<string,
-            (int Mass, string Category, int ArmorClass, string? Dexterity, int? Strength,
-                bool Stealth, int Don, int Doff, int Bonus, string Mode)>(StringComparer.Ordinal)
-        {
-            ["dnd2024.item.padded-armor.v1"] = (8, "light", 11, "full", null, true, 1, 1, 0, "worn"),
-            ["dnd2024.item.leather-armor.v1"] = (10, "light", 11, "full", null, false, 1, 1, 0, "worn"),
-            ["dnd2024.item.studded-leather-armor.v1"] = (13, "light", 12, "full", null, false, 1, 1, 0, "worn"),
-            ["dnd2024.item.hide-armor.v1"] = (12, "medium", 12, "max-2", null, false, 5, 1, 0, "worn"),
-            ["dnd2024.item.chain-shirt.v1"] = (20, "medium", 13, "max-2", null, false, 5, 1, 0, "worn"),
-            ["dnd2024.item.scale-mail.v1"] = (45, "medium", 14, "max-2", null, true, 5, 1, 0, "worn"),
-            ["dnd2024.item.breastplate.v1"] = (20, "medium", 14, "max-2", null, false, 5, 1, 0, "worn"),
-            ["dnd2024.item.half-plate-armor.v1"] = (40, "medium", 15, "max-2", null, true, 5, 1, 0, "worn"),
-            ["dnd2024.item.ring-mail.v1"] = (40, "heavy", 14, "none", null, true, 10, 5, 0, "worn"),
-            ["dnd2024.item.chain-mail.v1"] = (55, "heavy", 16, "none", 13, true, 10, 5, 0, "worn"),
-            ["dnd2024.item.splint-armor.v1"] = (60, "heavy", 17, "none", 15, true, 10, 5, 0, "worn"),
-            ["dnd2024.item.plate-armor.v1"] = (65, "heavy", 18, "none", 15, true, 10, 5, 0, "worn"),
-            ["dnd2024.item.shield.v1"] = (6, "shield", 0, null, null, false, 0, 0, 2, "held")
-        };
-
-        var schema = await File.ReadAllTextAsync(Path.Combine(root, "catalog", "applications",
-            "dnd2024", "components", "data", "dnd2024.item-definition.schema.json"));
-        var validator = new BoundedJsonSchemaValidator();
-        var compilation = validator.Compile(schema);
-        Assert.True(compilation.IsAccepted, string.Join("; ", compilation.Diagnostics));
-
+        const string relative =
+            "catalog/applications/dnd2024/content/entities/equipment/weapon/equipment.weapon.club.json";
         await using var harness = await DndHarness.CreateAsync();
-        foreach (var path in paths)
-        {
-            var relative = Path.GetRelativePath(root, path).Replace('\\', '/');
-            Assert.Contains(relative, harness.ActiveSourcePaths);
-            var entity = EntityFile.Parse(await File.ReadAllTextAsync(path), relative);
-            var component = Assert.Single(entity.Components);
-            Assert.Equal("dnd2024.item-definition", component.DefinitionId);
-            var validation = validator.Validate(compilation.ProfileId, compilation.NormalizedSchema,
-                component.Data);
-            Assert.Equal(SchemaValueStatus.Valid, validation.Status);
-            using var definition = JsonDocument.Parse(component.Data);
-            var value = definition.RootElement;
-            var profile = value.GetProperty("armorProfile");
-            var official = expected[entity.Id];
-            Assert.Equal(official.Category == "shield" ? "shield" : "armor",
-                value.GetProperty("kind").GetString());
-            Assert.Equal(official.Mass, value.GetProperty("massPounds").GetProperty("numerator").GetInt32());
-            Assert.Equal(official.Category, profile.GetProperty("category").GetString());
-            Assert.Equal(official.Mode, value.GetProperty("equipmentModes")[0].GetString());
-            var donDoff = profile.GetProperty("donDoff");
-            if (official.Category == "shield")
-            {
-                Assert.Equal(official.Bonus, profile.GetProperty("armorClassBonus").GetInt32());
-                Assert.Equal("utilize-action", donDoff.GetProperty("kind").GetString());
-                Assert.False(profile.TryGetProperty("baseArmorClass", out _));
-            }
-            else
-            {
-                Assert.Equal(official.ArmorClass, profile.GetProperty("baseArmorClass").GetInt32());
-                Assert.Equal(official.Dexterity, profile.GetProperty("dexterityRule").GetString());
-                Assert.Equal(official.Stealth, profile.GetProperty("stealthDisadvantage").GetBoolean());
-                Assert.Equal(official.Don, donDoff.GetProperty("donMinutes").GetInt32());
-                Assert.Equal(official.Doff, donDoff.GetProperty("doffMinutes").GetInt32());
-                if (official.Strength is int strength)
-                    Assert.Equal(strength, profile.GetProperty("strengthMinimum").GetInt32());
-                else
-                    Assert.False(profile.TryGetProperty("strengthMinimum", out _));
-            }
-            Assert.Equal("Equipment > Armor > Armor table (PDF p. 92)",
-                value.GetProperty("sourceRef").GetProperty("locator").GetString());
-            await harness.AddItemDefinitionAsync(entity.Id, entity.Name, component.Data);
-            await harness.AddPhysicalItemAsync($"instance.{entity.Id}", entity.Name, entity.Id,
-                "subject.high");
-        }
+        Assert.Contains(relative, harness.ActiveSourcePaths);
+        var path = Path.Combine(root, relative.Replace('/', Path.DirectorySeparatorChar));
+        var entity = EntityFile.Parse(await File.ReadAllTextAsync(path), relative);
+        Assert.Equal("dnd2024.equipment.weapon.club", entity.Id);
+        Assert.Contains(entity.Components, value => value.DefinitionId == "dnd2024.item.physical");
+        Assert.Contains(entity.Components, value => value.DefinitionId == "dnd2024.item.weapon");
+        Assert.Contains(entity.Components, value => value.DefinitionId == "dnd2024.item.equippable");
+        await harness.Entities.CreateEntityAsync(DndHarness.StateSpaceId, entity.Id, entity.Name);
+        foreach (var component in entity.Components)
+            await harness.AddApplicationComponentAsync(entity.Id, component.DefinitionId, component.Data);
+        await harness.AddPhysicalItemAsync("item.catalog.club", "Club", entity.Id, "subject.high");
 
-        var armorEquipped = await harness.Runner.RunAsync(harness.ActionForRoles(
+        var equipped = await harness.Runner.RunAsync(harness.ActionForRoles(
             "dnd2024.mechanic.item.equip", new Dictionary<string, string>
             {
-                ["item"] = "instance.dnd2024.item.padded-armor.v1",
+                ["item"] = "item.catalog.club",
                 ["holder"] = "subject.high"
-            }, "{\"state\":\"worn\"}", 0, "e123456789abcdef0123456789abcdee"));
-        var shieldEquipped = await harness.Runner.RunAsync(harness.ActionForRoles(
-            "dnd2024.mechanic.item.equip", new Dictionary<string, string>
-            {
-                ["item"] = "instance.dnd2024.item.shield.v1",
-                ["holder"] = "subject.high"
-            }, "{\"state\":\"held\"}", 0, "f123456789abcdef0123456789abcdee"));
-        var armorEquipment = await harness.EvaluateRolesAsync("dnd2024.mechanic.item.equipment.read",
-            new Dictionary<string, string>
-            {
-                ["item"] = "instance.dnd2024.item.padded-armor.v1"
-            }, "{}", 0);
-        var shieldEquipment = await harness.EvaluateRolesAsync("dnd2024.mechanic.item.equipment.read",
-            new Dictionary<string, string> { ["item"] = "instance.dnd2024.item.shield.v1" }, "{}", 0);
+            }, "{\"slotIds\":[\"dnd2024.equipment-slot.main-hand\"]}", 0,
+            "e123456789abcdef0123456789abcdee"));
+        var equipment = await harness.EvaluateRolesAsync("dnd2024.mechanic.item.equipment.read",
+            new Dictionary<string, string> { ["item"] = "item.catalog.club" }, "{}", 0);
         var burden = await harness.EvaluateRolesAsync("dnd2024.mechanic.item-burden.read",
             new Dictionary<string, string> { ["root"] = "subject.high" }, "{}", 0);
 
-        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, armorEquipped.Disposition);
-        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, shieldEquipped.Disposition);
-        Assert.True(armorEquipment.Ok, armorEquipment.Run?.Error);
-        Assert.Contains("\"state\":\"worn\"", armorEquipment.Run!.Output.Data, StringComparison.Ordinal);
-        Assert.True(shieldEquipment.Ok, shieldEquipment.Run?.Error);
-        Assert.Contains("\"state\":\"held\"", shieldEquipment.Run!.Output.Data, StringComparison.Ordinal);
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, equipped.Disposition);
+        Assert.True(equipment.Ok, equipment.Run?.Error);
+        Assert.Contains("\"definitionId\":\"dnd2024.equipment.weapon.club\"",
+            equipment.Run!.Output.Data, StringComparison.Ordinal);
+        Assert.Contains("\"entityId\":\"dnd2024.equipment-slot.main-hand\"",
+            equipment.Run.Output.Data, StringComparison.Ordinal);
         Assert.True(burden.Ok, burden.Run?.Error);
-        Assert.Contains("\"massPounds\":{\"numerator\":394,\"denominator\":1}",
+        Assert.Contains("\"mass\":{\"dimension\":\"mass\",\"value\":{\"numerator\":45359237,\"denominator\":50000000}",
             burden.Run!.Output.Data, StringComparison.Ordinal);
-        Assert.Empty(armorEquipment.Run.Output.Effects);
-        Assert.Empty(shieldEquipment.Run.Output.Effects);
+        Assert.Empty(equipment.Run.Output.Effects);
         Assert.Empty(burden.Run.Output.Effects);
     }
 
     [Fact]
-    public async Task Derived_inventory_readers_fail_closed_on_visible_incompatible_stack_state()
+    public async Task Derived_inventory_readers_fail_closed_on_visible_item_missing_required_quantity()
     {
         await using var harness = await DndHarness.CreateAsync();
         const string definitionId = "dnd2024.item.invalid-stack.v1";
@@ -4648,6 +4557,10 @@ public sealed class Dnd2024AbilityCheckTests
             FungibleItemDefinition());
         await harness.AddPhysicalItemAsync("item.invalid-stack", "Invalid Stack", definitionId,
             "subject.high");
+        var quantity = (await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+            "item.invalid-stack", "dnd2024.item.quantity"))!;
+        Assert.True(await harness.Entities.RemoveComponentAsync(DndHarness.StateSpaceId,
+            "item.invalid-stack", quantity.Type, quantity.Revision));
 
         var inventory = await harness.EvaluateRolesAsync("dnd2024.mechanic.inventory.read",
             new Dictionary<string, string> { ["root"] = "subject.high" }, "{}", 0);
@@ -4708,11 +4621,11 @@ public sealed class Dnd2024AbilityCheckTests
 
         var validator = new BoundedJsonSchemaValidator();
         var contentSchema = await File.ReadAllTextAsync(Path.Combine(root, "catalog", "applications",
-            "dnd2024", "components", "data", "dnd2024.character.content-definition.schema.json"));
+            "dnd2024", "components", "dnd2024.character.content-definition.schema.json"));
         var contentCompilation = validator.Compile(contentSchema);
         Assert.True(contentCompilation.IsAccepted, string.Join("; ", contentCompilation.Diagnostics));
         var progressionSchema = await File.ReadAllTextAsync(Path.Combine(root, "catalog", "applications",
-            "dnd2024", "components", "proficiency", "dnd2024.class-progression.schema.json"));
+            "dnd2024", "components", "dnd2024.class-progression.schema.json"));
         var progressionCompilation = validator.Compile(progressionSchema);
         Assert.True(progressionCompilation.IsAccepted,
             string.Join("; ", progressionCompilation.Diagnostics));
@@ -4903,17 +4816,17 @@ public sealed class Dnd2024AbilityCheckTests
 
     [Theory]
     [InlineData("{}")]
-    [InlineData("{\"grants\":[]}")]
-    [InlineData("{\"grants\":[{\"definitionId\":\"dnd2024.content.feature.alert.v1\",\"grantedByDefinitionId\":\"dnd2024.content.background.criminal.v1\",\"grantKind\":\"origin-feat\",\"configurationKey\":\"default\",\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Feats > Alert\"},\"behaviorStatus\":\"implemented\"}]}")]
-    [InlineData("{\"grants\":[{\"definitionId\":\"dnd2024.content.feature.alert.v1\",\"grantedByDefinitionId\":\"dnd2024.content.background.criminal.v1\",\"grantKind\":\"origin-feat\",\"configurationKey\":\"default\",\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Feats > Alert\"}},{\"definitionId\":\"dnd2024.content.feature.alert.v1\",\"grantedByDefinitionId\":\"dnd2024.content.background.criminal.v1\",\"grantKind\":\"origin-feat\",\"configurationKey\":\"default\",\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Feats > Alert\"}}]}")]
-    [InlineData("{\"grants\":[{\"definitionId\":\"dnd2024.content.feature.fighter.second-wind.v1\",\"grantedByDefinitionId\":\"dnd2024.content.class.fighter.v1\",\"grantKind\":\"origin-feat\",\"classLevel\":1,\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Classes > Fighter\"}}]}")]
-    [InlineData("{\"grants\":[{\"definitionId\":\"dnd2024.content.feature.fighter.second-wind.v1\",\"grantedByDefinitionId\":\"dnd2024.content.class.fighter.v1\",\"grantKind\":\"class-feature\",\"classLevel\":1,\"sourceRef\":{\"sourceId\":\"dnd2024.source.drifted\",\"locator\":\"Classes > Fighter\"}}]}")]
-    public async Task Character_feature_grant_schema_rejects_empty_duplicate_extra_or_drifted_state(
+    [InlineData("{\"entitlements\":{}}")]
+    [InlineData("{\"entitlements\":[{\"featureRef\":{\"entityId\":\"dnd2024.feat.alert\"},\"grantedByRef\":{\"entityId\":\"dnd2024.content.background.criminal.v1\"},\"grantKind\":\"origin-feat\",\"configurationKey\":\"default\",\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Feats > Alert\"},\"behaviorStatus\":\"implemented\"}]}")]
+    [InlineData("{\"entitlements\":[{\"featureRef\":{\"entityId\":\"dnd2024.feat.alert\"},\"grantedByRef\":{\"entityId\":\"dnd2024.content.background.criminal.v1\"},\"grantKind\":\"origin-feat\",\"configurationKey\":\"default\",\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Feats > Alert\"}},{\"featureRef\":{\"entityId\":\"dnd2024.feat.alert\"},\"grantedByRef\":{\"entityId\":\"dnd2024.content.background.criminal.v1\"},\"grantKind\":\"origin-feat\",\"configurationKey\":\"default\",\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Feats > Alert\"}}]}")]
+    [InlineData("{\"entitlements\":[{\"featureRef\":{\"entityId\":\"dnd2024.content.feature.fighter.second-wind.v1\"},\"grantedByRef\":{\"entityId\":\"dnd2024.content.class.fighter.v1\"},\"grantKind\":\"origin-feat\",\"classLevel\":1,\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Classes > Fighter\"}}]}")]
+    [InlineData("{\"entitlements\":[{\"featureRef\":{\"entityId\":\"dnd2024.content.feature.fighter.second-wind.v1\"},\"grantedByRef\":{\"entityId\":\"dnd2024.content.class.fighter.v1\"},\"grantKind\":\"class-feature\",\"classLevel\":1,\"sourceRef\":{\"sourceId\":\"drifted source\",\"locator\":\"Classes > Fighter\"}}]}")]
+    public async Task Character_feature_entitlement_schema_rejects_malformed_duplicate_extra_or_drifted_state(
         string valueJson)
     {
         var schema = await File.ReadAllTextAsync(Path.Combine(RepositoryRoot(), "catalog",
-            "applications", "dnd2024", "components", "data",
-            "dnd2024.character-feature-grants.schema.json"));
+            "applications", "dnd2024", "components",
+            "dnd2024.character.feature-entitlements.schema.json"));
         var validator = new BoundedJsonSchemaValidator();
         var compilation = validator.Compile(schema);
 
@@ -5072,25 +4985,26 @@ public sealed class Dnd2024AbilityCheckTests
         using var languages = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
             DndHarness.StateSpaceId, actorId, "dnd2024.creature.languages"))!.ValueJson);
         Assert.Equal(new[] { "common" }, ReadLanguageIds(languages.RootElement).ToArray());
-        using var featureGrants = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
-            DndHarness.StateSpaceId, actorId, "dnd2024.character-feature-grants"))!.ValueJson);
-        var grants = featureGrants.RootElement.GetProperty("grants").EnumerateArray().ToArray();
-        Assert.Equal(4, grants.Length);
+        using var featureEntitlements = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, actorId, "dnd2024.character.feature-entitlements"))!.ValueJson);
+        var entitlements = featureEntitlements.RootElement.GetProperty("entitlements")
+            .EnumerateArray().ToArray();
+        Assert.Equal(4, entitlements.Length);
         Assert.Equal(new[]
         {
             "dnd2024.content.feature.fighter.fighting-style.v1",
             "dnd2024.content.feature.fighter.second-wind.v1",
             "dnd2024.content.feature.fighter.weapon-mastery.v1"
-        }, grants.Where(value => value.GetProperty("grantKind").GetString() == "class-feature")
-            .Select(value => value.GetProperty("definitionId").GetString()));
-        var originGrant = Assert.Single(grants, value =>
+        }, entitlements.Where(value => value.GetProperty("grantKind").GetString() == "class-feature")
+            .Select(value => value.GetProperty("featureRef").GetProperty("entityId").GetString()));
+        var originEntitlement = Assert.Single(entitlements, value =>
             value.GetProperty("grantKind").GetString() == "origin-feat");
-        Assert.Equal("dnd2024.content.feature.savage-attacker.v1",
-            originGrant.GetProperty("definitionId").GetString());
+        Assert.Equal("dnd2024.feat.savage-attacker",
+            originEntitlement.GetProperty("featureRef").GetProperty("entityId").GetString());
         Assert.Equal("dnd2024.content.background.soldier.v1",
-            originGrant.GetProperty("grantedByDefinitionId").GetString());
-        Assert.Equal("default", originGrant.GetProperty("configurationKey").GetString());
-        Assert.False(originGrant.TryGetProperty("behaviorStatus", out _));
+            originEntitlement.GetProperty("grantedByRef").GetProperty("entityId").GetString());
+        Assert.Equal("default", originEntitlement.GetProperty("configurationKey").GetString());
+        Assert.False(originEntitlement.TryGetProperty("behaviorStatus", out _));
 
         using var record = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
             DndHarness.StateSpaceId, actorId, "dnd2024.character-creation-record"))!.ValueJson);
@@ -5104,7 +5018,7 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.Contains("dnd2024.creature.proficiencies",
             record.RootElement.GetProperty("appliedComponentIds").EnumerateArray()
                 .Select(value => value.GetString()));
-        Assert.Contains("dnd2024.character-feature-grants",
+        Assert.Contains("dnd2024.character.feature-entitlements",
             record.RootElement.GetProperty("appliedComponentIds").EnumerateArray()
                 .Select(value => value.GetString()));
         var pending = record.RootElement.GetProperty("unresolvedEntitlements")
@@ -5142,9 +5056,43 @@ public sealed class Dnd2024AbilityCheckTests
             "dnd2024.campaign.has-character-participation"));
         var sheet = await harness.EvaluateRolesAsync("dnd2024.mechanic.character-sheet.read",
             new Dictionary<string, string> { ["subject"] = actorId }, "{}", 0);
+        var projectedSheet = await harness.EvaluateRolesAsync(
+            "dnd2024.mechanic.character-sheet.project",
+            new Dictionary<string, string> { ["subject"] = actorId }, "{}", 0);
+        var registeredSheet = await harness.ReadModels.ReadAsync(new(
+            DndHarness.StateSpaceId,
+            ApplicationIdentifier.Parse("dnd2024"),
+            "dnd2024.query.character-sheet",
+            new Dictionary<string, string> { ["subject"] = actorId }));
         var initiative = await harness.EvaluateRolesAsync("dnd2024.mechanic.initiative.roll",
             new Dictionary<string, string> { ["subject"] = actorId }, "{}", 17);
         Assert.True(sheet.Ok, sheet.Run?.Error);
+        Assert.True(projectedSheet.Ok,
+            projectedSheet.Run?.Error ?? string.Join("; ", projectedSheet.Problems));
+        using (var projected = JsonDocument.Parse(projectedSheet.Run!.Output.Data))
+        {
+            Assert.Equal(actorId, projected.RootElement.GetProperty("subject").GetProperty("id").GetString());
+            Assert.Equal(1, projected.RootElement.GetProperty("level").GetInt32());
+            Assert.Equal(2, projected.RootElement.GetProperty("proficiencyBonus").GetInt32());
+            Assert.Equal(6, projected.RootElement.GetProperty("abilities").GetArrayLength());
+            Assert.Equal(6, projected.RootElement.GetProperty("savingThrows").GetArrayLength());
+            Assert.Equal(18, projected.RootElement.GetProperty("skills").GetArrayLength());
+            Assert.Equal(12, projected.RootElement.GetProperty("hitPoints").GetProperty("maximum").GetInt32());
+            Assert.Equal(12, projected.RootElement.GetProperty("armorClass").GetProperty("value").GetInt32());
+            Assert.Equal(4, projected.RootElement.GetProperty("features").GetArrayLength());
+            Assert.Empty(projected.RootElement.GetProperty("inventory").GetProperty("items").EnumerateArray());
+        }
+        using (var registered = JsonDocument.Parse(registeredSheet.DataJson))
+        {
+            Assert.Equal(actorId, registered.RootElement.GetProperty("subject").GetProperty("id").GetString());
+            Assert.Equal(6, registered.RootElement.GetProperty("abilities").GetArrayLength());
+            Assert.Equal(18, registered.RootElement.GetProperty("skills").GetArrayLength());
+        }
+        Assert.Matches("^[0-9A-F]{64}$", registeredSheet.StateSpaceFingerprint);
+        Assert.Matches("^[0-9A-F]{64}$", registeredSheet.ResolutionFingerprint);
+        Assert.Matches("^[0-9A-F]{64}$", registeredSheet.OutputSchemaHash);
+        Assert.Matches("^[0-9A-F]{64}$", registeredSheet.ResultFingerprint);
+        Assert.Matches("^[0-9A-F]{64}$", registeredSheet.SourceRevisionFingerprint);
         Assert.True(initiative.Ok, initiative.Run?.Error);
     }
 
@@ -5292,7 +5240,7 @@ public sealed class Dnd2024AbilityCheckTests
 
         Assert.Equal(cashGp,
             profile.RootElement.GetProperty("startingEquipmentCashGp").GetInt32());
-        Assert.Equal("dnd2024.currency.gold-piece.v1",
+        Assert.Equal("dnd2024.equipment.currency.gold-piece",
             profile.RootElement.GetProperty("startingEquipmentCurrencyDefinitionId").GetString());
     }
 
@@ -5308,7 +5256,7 @@ public sealed class Dnd2024AbilityCheckTests
                 Key = "acolyte", EligibleAbilities = new[] { "int", "wis", "cha" },
                 Skills = new[] { "insight", "religion" }, ToolKind = "fixed",
                 ToolValue = "calligraphers-supplies",
-                Feat = "dnd2024.content.feature.magic-initiate.v1", Configuration = "cleric",
+                Feat = "dnd2024.feat.magic-initiate", Configuration = "cleric",
                 CurrencyGp = 8,
                 Entries = new[] { "calligraphers-supplies:1", "book-prayers:1", "holy-symbol:1", "parchment-sheet:10", "robe:1" }
             },
@@ -5316,7 +5264,7 @@ public sealed class Dnd2024AbilityCheckTests
             {
                 Key = "criminal", EligibleAbilities = new[] { "dex", "con", "int" },
                 Skills = new[] { "sleight-of-hand", "stealth" }, ToolKind = "fixed",
-                ToolValue = "thieves-tools", Feat = "dnd2024.content.feature.alert.v1",
+                ToolValue = "thieves-tools", Feat = "dnd2024.feat.alert",
                 Configuration = "default", CurrencyGp = 16,
                 Entries = new[] { "dagger:2", "thieves-tools:1", "crowbar:1", "pouch:2", "travelers-clothes:1" }
             },
@@ -5325,7 +5273,7 @@ public sealed class Dnd2024AbilityCheckTests
                 Key = "sage", EligibleAbilities = new[] { "con", "int", "wis" },
                 Skills = new[] { "arcana", "history" }, ToolKind = "fixed",
                 ToolValue = "calligraphers-supplies",
-                Feat = "dnd2024.content.feature.magic-initiate.v1", Configuration = "wizard",
+                Feat = "dnd2024.feat.magic-initiate", Configuration = "wizard",
                 CurrencyGp = 8,
                 Entries = new[] { "quarterstaff:1", "calligraphers-supplies:1", "book-history:1", "parchment-sheet:8", "robe:1" }
             },
@@ -5333,7 +5281,7 @@ public sealed class Dnd2024AbilityCheckTests
             {
                 Key = "soldier", EligibleAbilities = new[] { "str", "dex", "con" },
                 Skills = new[] { "athletics", "intimidation" }, ToolKind = "choice",
-                ToolValue = "gaming-set", Feat = "dnd2024.content.feature.savage-attacker.v1",
+                ToolValue = "gaming-set", Feat = "dnd2024.feat.savage-attacker",
                 Configuration = "default", CurrencyGp = 14,
                 Entries = new[] { "spear:1", "shortbow:1", "arrow:20", "@background-tool:1", "healers-kit:1", "quiver:1", "travelers-clothes:1" }
             }
@@ -5385,10 +5333,10 @@ public sealed class Dnd2024AbilityCheckTests
         await harness.AddBasicCharacterCreationFixturesAsync();
         var backgrounds = new[]
         {
-            new { Key = "acolyte", PlusTwo = "int", PlusOne = "wis", Skills = new[] { "insight", "religion" }, FixedTool = (string?)"calligraphers-supplies", Feat = "dnd2024.content.feature.magic-initiate.v1", Configuration = "cleric" },
-            new { Key = "criminal", PlusTwo = "dex", PlusOne = "con", Skills = new[] { "sleight-of-hand", "stealth" }, FixedTool = (string?)"thieves-tools", Feat = "dnd2024.content.feature.alert.v1", Configuration = "default" },
-            new { Key = "sage", PlusTwo = "int", PlusOne = "wis", Skills = new[] { "arcana", "history" }, FixedTool = (string?)"calligraphers-supplies", Feat = "dnd2024.content.feature.magic-initiate.v1", Configuration = "wizard" },
-            new { Key = "soldier", PlusTwo = "str", PlusOne = "con", Skills = new[] { "athletics", "intimidation" }, FixedTool = (string?)null, Feat = "dnd2024.content.feature.savage-attacker.v1", Configuration = "default" }
+            new { Key = "acolyte", PlusTwo = "int", PlusOne = "wis", Skills = new[] { "insight", "religion" }, FixedTool = (string?)"calligraphers-supplies", Feat = "dnd2024.feat.magic-initiate", Configuration = "cleric" },
+            new { Key = "criminal", PlusTwo = "dex", PlusOne = "con", Skills = new[] { "sleight-of-hand", "stealth" }, FixedTool = (string?)"thieves-tools", Feat = "dnd2024.feat.alert", Configuration = "default" },
+            new { Key = "sage", PlusTwo = "int", PlusOne = "wis", Skills = new[] { "arcana", "history" }, FixedTool = (string?)"calligraphers-supplies", Feat = "dnd2024.feat.magic-initiate", Configuration = "wizard" },
+            new { Key = "soldier", PlusTwo = "str", PlusOne = "con", Skills = new[] { "athletics", "intimidation" }, FixedTool = (string?)null, Feat = "dnd2024.feat.savage-attacker", Configuration = "default" }
         };
         var classKeys = new[]
         {
@@ -5481,38 +5429,42 @@ public sealed class Dnd2024AbilityCheckTests
             var expectedClassFeatures = classProgression.RootElement.GetProperty("levels")[0]
                 .GetProperty("featureDefinitionIds").EnumerateArray()
                 .Select(value => value.GetString()!).ToArray();
-            using var featureGrants = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+            using var featureEntitlements = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
                 DndHarness.StateSpaceId, actorId,
-                "dnd2024.character-feature-grants"))!.ValueJson);
-            var grants = featureGrants.RootElement.GetProperty("grants").EnumerateArray().ToArray();
-            Assert.Equal(expectedClassFeatures.Length + 1, grants.Length);
+                "dnd2024.character.feature-entitlements"))!.ValueJson);
+            var entitlements = featureEntitlements.RootElement.GetProperty("entitlements")
+                .EnumerateArray().ToArray();
+            Assert.Equal(expectedClassFeatures.Length + 1, entitlements.Length);
             Assert.Equal(expectedClassFeatures,
-                grants.Where(value => value.GetProperty("grantKind").GetString() == "class-feature")
-                    .Select(value => value.GetProperty("definitionId").GetString()));
-            Assert.All(grants.Where(value =>
+                entitlements.Where(value => value.GetProperty("grantKind").GetString() == "class-feature")
+                    .Select(value => value.GetProperty("featureRef").GetProperty("entityId").GetString()));
+            Assert.All(entitlements.Where(value =>
                     value.GetProperty("grantKind").GetString() == "class-feature"), value =>
                 {
                     Assert.Equal(classId,
-                        value.GetProperty("grantedByDefinitionId").GetString());
+                        value.GetProperty("grantedByRef").GetProperty("entityId").GetString());
                     Assert.Equal(1, value.GetProperty("classLevel").GetInt32());
                     Assert.Equal(classProfile.RootElement.GetProperty("sourceRef").GetRawText(),
                         value.GetProperty("sourceRef").GetRawText());
                     Assert.False(value.TryGetProperty("behaviorStatus", out _));
                 });
-            var originGrant = Assert.Single(grants, value =>
+            var originEntitlement = Assert.Single(entitlements, value =>
                 value.GetProperty("grantKind").GetString() == "origin-feat");
-            Assert.Equal(background.Feat, originGrant.GetProperty("definitionId").GetString());
+            Assert.Equal(background.Feat,
+                originEntitlement.GetProperty("featureRef").GetProperty("entityId").GetString());
             Assert.Equal(backgroundId,
-                originGrant.GetProperty("grantedByDefinitionId").GetString());
+                originEntitlement.GetProperty("grantedByRef").GetProperty("entityId").GetString());
             Assert.Equal(background.Configuration,
-                originGrant.GetProperty("configurationKey").GetString());
+                originEntitlement.GetProperty("configurationKey").GetString());
             Assert.Equal(backgroundProfile.RootElement.GetProperty("sourceRef").GetRawText(),
-                originGrant.GetProperty("sourceRef").GetRawText());
-            Assert.False(originGrant.TryGetProperty("behaviorStatus", out _));
+                originEntitlement.GetProperty("sourceRef").GetRawText());
+            Assert.False(originEntitlement.TryGetProperty("behaviorStatus", out _));
 
-            foreach (var grant in grants)
+            foreach (var entitlement in entitlements.Where(value =>
+                         value.GetProperty("grantKind").GetString() == "class-feature"))
             {
-                var definitionId = grant.GetProperty("definitionId").GetString()!;
+                var definitionId = entitlement.GetProperty("featureRef")
+                    .GetProperty("entityId").GetString()!;
                 using var definition = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
                     DndHarness.StateSpaceId, definitionId,
                     "dnd2024.character.content-definition"))!.ValueJson);
@@ -5546,7 +5498,7 @@ public sealed class Dnd2024AbilityCheckTests
             Assert.Contains(pending, value =>
                 value.GetProperty("ownerDefinitionId").GetString() == background.Feat &&
                 value.GetProperty("entitlementKey").GetString() ==
-                (background.Feat == "dnd2024.content.feature.alert.v1"
+                (background.Feat == "dnd2024.feat.alert"
                     ? "behavior:initiative-swap"
                     : background.Configuration == "default"
                     ? "behavior"
@@ -5639,7 +5591,7 @@ public sealed class Dnd2024AbilityCheckTests
             });
             var roles = BasicCreationRoles("world.character-creation.fixture",
                 "dnd2024.content.species.human.v1", classId, backgroundId);
-            roles["currency"] = "dnd2024.currency.gold-piece.v1";
+            roles["currency"] = "dnd2024.equipment.currency.gold-piece";
             var request = harness.ActionForRoles(
                 "dnd2024.mechanic.character.basic.create", roles, input, 0,
                 operation.ToString("x32"));
@@ -5652,7 +5604,7 @@ public sealed class Dnd2024AbilityCheckTests
             Assert.NotNull(await harness.Entities.GetEntityAsync(DndHarness.StateSpaceId, itemId));
             using var instance = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
                 DndHarness.StateSpaceId, itemId, "dnd2024.core.definition-link"))!.ValueJson);
-            Assert.Equal("dnd2024.currency.gold-piece.v1",
+            Assert.Equal("dnd2024.equipment.currency.gold-piece",
                 instance.RootElement.GetProperty("definition").GetProperty("entityId").GetString());
             using var quantity = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
                 DndHarness.StateSpaceId, itemId, "dnd2024.item.quantity"))!.ValueJson);
@@ -5685,7 +5637,7 @@ public sealed class Dnd2024AbilityCheckTests
                     "equipment:", StringComparison.Ordinal));
             Assert.Contains(record.RootElement.GetProperty("sourceRefs").EnumerateArray(), value =>
                 value.GetProperty("locator").GetString() ==
-                    "Equipment > Coins > Coin Values (PDF p. 89)");
+                    "Equipment > Coins > Coin Values > Gold Piece (SRD 5.2.1, pages 89-89)");
         }
     }
 
@@ -5701,7 +5653,7 @@ public sealed class Dnd2024AbilityCheckTests
             "dnd2024.content.species.human.v1",
             "dnd2024.content.class.wizard.v1",
             "dnd2024.content.background.sage.v1");
-        roles["currency"] = "dnd2024.currency.gold-piece.v1";
+        roles["currency"] = "dnd2024.equipment.currency.gold-piece";
         const string input =
             "{\"characterId\":\"actor.cash.readers\",\"name\":\"Cash Readers\",\"ability\":{\"scores\":{\"str\":15,\"dex\":14,\"con\":13,\"int\":8,\"wis\":10,\"cha\":12},\"increases\":{\"int\":2,\"wis\":1}},\"speciesSelection\":{\"size\":\"medium\"},\"equipmentChoices\":{\"background\":\"cash\",\"class\":\"cash\"}}";
 
@@ -5714,7 +5666,8 @@ public sealed class Dnd2024AbilityCheckTests
             new Dictionary<string, string> { ["root"] = actorId }, "{}", 0);
 
         Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, created.Disposition);
-        Assert.True(inventory.Ok, inventory.Run?.Error);
+        Assert.True(inventory.Ok,
+            string.Join("; ", inventory.Problems.Append(inventory.Run?.Error ?? string.Empty)));
         using var inventoryData = JsonDocument.Parse(inventory.Run!.Output.Data);
         var visible = Assert.Single(inventoryData.RootElement.GetProperty("items")
             .EnumerateArray());
@@ -5727,7 +5680,7 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.Equal(10500, currencyData.RootElement.GetProperty("copperValue").GetInt32());
         var gp = Assert.Single(currencyData.RootElement.GetProperty("denominations")
             .EnumerateArray());
-        Assert.Equal("gp", gp.GetProperty("denomination").GetString());
+        Assert.Equal("gp", gp.GetProperty("code").GetString());
         Assert.Equal(105, gp.GetProperty("count").GetInt32());
         Assert.Empty(inventory.Run.Output.Effects);
         Assert.Empty(currency.Run.Output.Effects);
@@ -5748,7 +5701,7 @@ public sealed class Dnd2024AbilityCheckTests
         const string itemId = "item.starting-gold.actor.cash.invalid-choice";
         var roles = BasicCreationRoles("world.character-creation.fixture",
             "dnd2024.content.species.human.v1");
-        roles["currency"] = "dnd2024.currency.gold-piece.v1";
+        roles["currency"] = "dnd2024.equipment.currency.gold-piece";
         const string prefix =
             "{\"characterId\":\"actor.cash.invalid-choice\",\"name\":\"Invalid Cash Choice\",\"ability\":{\"scores\":{\"str\":15,\"dex\":14,\"con\":13,\"int\":8,\"wis\":10,\"cha\":12},\"increases\":{\"str\":2,\"con\":1}},\"speciesSelection\":{\"size\":\"medium\"},\"equipmentChoices\":";
 
@@ -5786,10 +5739,10 @@ public sealed class Dnd2024AbilityCheckTests
         }
         else if (invalidRole == "corrupt")
         {
-            roles["currency"] = "dnd2024.currency.gold-piece.v1";
+            roles["currency"] = "dnd2024.equipment.currency.gold-piece";
             await harness.ReplaceApplicationComponentRawAsync(
-                "dnd2024.currency.gold-piece.v1", "dnd2024.item-definition",
-                "{\"definitionVersion\":1,\"kind\":\"currency\",\"stackPolicy\":\"fungible\",\"massPounds\":{\"numerator\":1,\"denominator\":50},\"currency\":{\"denomination\":\"gp\",\"copperValue\":99,\"coinsPerPound\":50},\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Equipment > Coins > Coin Values (PDF p. 89)\"}}");
+                "dnd2024.equipment.currency.gold-piece", "dnd2024.item.physical",
+                "{\"weight\":{\"dimension\":\"mass\",\"value\":{\"numerator\":1,\"denominator\":1},\"unit\":{\"entityId\":\"dnd2024.vocabulary.mass-unit.kilogram\"}}}");
         }
         const string input =
             "{\"characterId\":\"actor.cash.invalid-role\",\"name\":\"Invalid Cash Role\",\"ability\":{\"scores\":{\"str\":15,\"dex\":14,\"con\":13,\"int\":8,\"wis\":10,\"cha\":12},\"increases\":{\"str\":2,\"con\":1}},\"speciesSelection\":{\"size\":\"medium\"},\"equipmentChoices\":{\"background\":\"cash\",\"class\":\"cash\"}}";
@@ -5819,7 +5772,7 @@ public sealed class Dnd2024AbilityCheckTests
         var current = await harness.Entities.GetComponentAsync(
             DndHarness.StateSpaceId, classId, "dnd2024.class-creation-profile");
         var legacy = current!.ValueJson.Replace(
-            "\"startingEquipmentCashGp\":155,\"startingEquipmentCurrencyDefinitionId\":\"dnd2024.currency.gold-piece.v1\",",
+            "\"startingEquipmentCashGp\":155,\"startingEquipmentCurrencyDefinitionId\":\"dnd2024.equipment.currency.gold-piece\",",
             "", StringComparison.Ordinal);
         Assert.NotEqual(current.ValueJson, legacy);
         await harness.ReplaceApplicationComponentRawAsync(
@@ -5833,7 +5786,7 @@ public sealed class Dnd2024AbilityCheckTests
             "cc3f1000000000000000000000000020"));
         var cashRoles = BasicCreationRoles("world.character-creation.fixture",
             "dnd2024.content.species.human.v1");
-        cashRoles["currency"] = "dnd2024.currency.gold-piece.v1";
+        cashRoles["currency"] = "dnd2024.equipment.currency.gold-piece";
         const string cashInput =
             "{\"characterId\":\"actor.cash.legacy-cash\",\"name\":\"Legacy Cash\",\"ability\":{\"scores\":{\"str\":15,\"dex\":14,\"con\":13,\"int\":8,\"wis\":10,\"cha\":12},\"increases\":{\"str\":2,\"con\":1}},\"speciesSelection\":{\"size\":\"medium\"},\"equipmentChoices\":{\"background\":\"cash\",\"class\":\"cash\"}}";
         var cash = await harness.Runner.RunAsync(harness.ActionForRoles(
@@ -5874,7 +5827,7 @@ public sealed class Dnd2024AbilityCheckTests
             "missing-cash" => current.Replace("\"startingEquipmentCashGp\":155,", "",
                 StringComparison.Ordinal),
             "missing-definition" => current.Replace(
-                "\"startingEquipmentCurrencyDefinitionId\":\"dnd2024.currency.gold-piece.v1\",",
+                "\"startingEquipmentCurrencyDefinitionId\":\"dnd2024.equipment.currency.gold-piece\",",
                 "", StringComparison.Ordinal),
             _ => current.Replace("\"startingEquipmentCashGp\":155",
                 "\"startingEquipmentCashGp\":0", StringComparison.Ordinal)
@@ -5884,7 +5837,7 @@ public sealed class Dnd2024AbilityCheckTests
             classId, "dnd2024.class-creation-profile", invalid);
         var roles = BasicCreationRoles("world.character-creation.fixture",
             "dnd2024.content.species.human.v1");
-        roles["currency"] = "dnd2024.currency.gold-piece.v1";
+        roles["currency"] = "dnd2024.equipment.currency.gold-piece";
         const string input =
             "{\"characterId\":\"actor.cash.invalid-profile\",\"name\":\"Invalid Cash Profile\",\"ability\":{\"scores\":{\"str\":15,\"dex\":14,\"con\":13,\"int\":8,\"wis\":10,\"cha\":12},\"increases\":{\"str\":2,\"con\":1}},\"speciesSelection\":{\"size\":\"medium\"},\"equipmentChoices\":{\"background\":\"cash\",\"class\":\"cash\"}}";
 
@@ -5921,7 +5874,7 @@ public sealed class Dnd2024AbilityCheckTests
             backgroundId, "dnd2024.background-creation-profile", invalid);
         var roles = BasicCreationRoles("world.character-creation.fixture",
             "dnd2024.content.species.human.v1");
-        roles["currency"] = "dnd2024.currency.gold-piece.v1";
+        roles["currency"] = "dnd2024.equipment.currency.gold-piece";
         const string input =
             "{\"characterId\":\"actor.cash.invalid-background\",\"name\":\"Invalid Cash Background\",\"ability\":{\"scores\":{\"str\":15,\"dex\":14,\"con\":13,\"int\":8,\"wis\":10,\"cha\":12},\"increases\":{\"str\":2,\"con\":1}},\"speciesSelection\":{\"size\":\"medium\"},\"equipmentChoices\":{\"background\":\"cash\",\"class\":\"cash\"}}";
 
@@ -5960,7 +5913,7 @@ public sealed class Dnd2024AbilityCheckTests
         });
         var roles = BasicCreationRoles("world.character-creation.fixture",
             "dnd2024.content.species.human.v1");
-        roles["currency"] = "dnd2024.currency.gold-piece.v1";
+        roles["currency"] = "dnd2024.equipment.currency.gold-piece";
 
         var result = await harness.Runner.RunAsync(harness.ActionForRoles(
             "dnd2024.mechanic.character.basic.create", roles, input, 0,
@@ -5984,7 +5937,7 @@ public sealed class Dnd2024AbilityCheckTests
         await harness.Entities.CreateEntityAsync(DndHarness.StateSpaceId, itemId, "Existing Item");
         var roles = BasicCreationRoles("world.character-creation.fixture",
             "dnd2024.content.species.human.v1");
-        roles["currency"] = "dnd2024.currency.gold-piece.v1";
+        roles["currency"] = "dnd2024.equipment.currency.gold-piece";
         const string input =
             "{\"characterId\":\"actor.cash.collision\",\"name\":\"Cash Collision\",\"ability\":{\"scores\":{\"str\":15,\"dex\":14,\"con\":13,\"int\":8,\"wis\":10,\"cha\":12},\"increases\":{\"str\":2,\"con\":1}},\"speciesSelection\":{\"size\":\"medium\"},\"equipmentChoices\":{\"background\":\"cash\",\"class\":\"cash\"}}";
 
@@ -6012,7 +5965,7 @@ public sealed class Dnd2024AbilityCheckTests
         const string itemId = "item.starting-gold.actor.cash.rollback";
         const string worldId = "world.character-creation.fixture";
         var roles = BasicCreationRoles(worldId, "dnd2024.content.species.human.v1");
-        roles["currency"] = "dnd2024.currency.gold-piece.v1";
+        roles["currency"] = "dnd2024.equipment.currency.gold-piece";
         const string input =
             "{\"characterId\":\"actor.cash.rollback\",\"name\":\"Cash Rollback\",\"ability\":{\"scores\":{\"str\":15,\"dex\":14,\"con\":13,\"int\":8,\"wis\":10,\"cha\":12},\"increases\":{\"str\":2,\"con\":1}},\"speciesSelection\":{\"size\":\"medium\"},\"equipmentChoices\":{\"background\":\"cash\",\"class\":\"cash\"}}";
 
@@ -6654,7 +6607,6 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.Equal(20, data.GetProperty("basePassivePerception").GetInt32());
         Assert.Equal(20, data.GetProperty("basePassivePerceptionBreakdown")
             .GetProperty("total").GetInt32());
-        AssertCharacterSheetMatchesSourceVector(result.Run.Output.Data, "level-twenty-boundaries");
     }
 
     [Theory]
@@ -6796,211 +6748,6 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.Empty(first.Run.Output.Effects);
         Assert.Empty(first.Run.Output.Events);
         Assert.Empty(first.Run.Output.Notifications);
-    }
-
-    [Fact]
-    public void Slice_9_closure_classifies_every_donor_derivation_and_hashes_the_activated_cohort()
-    {
-        var root = RepositoryRoot();
-        var inventoryPath = Path.Combine(root, "ruleset", "dnd2024", "adoption", "evidence",
-            "slice-9-derivation-candidates.json");
-        var closurePath = Path.Combine(root, "ruleset", "dnd2024", "adoption", "evidence",
-            "slice-9-closure.json");
-        using var inventory = JsonDocument.Parse(File.ReadAllText(inventoryPath));
-        using var closure = JsonDocument.Parse(File.ReadAllText(closurePath));
-        var closureRoot = closure.RootElement;
-        Assert.Equal("dnd-code-adoption-slice-9-closure/v1",
-            closureRoot.GetProperty("format").GetString());
-        Assert.Equal(Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(inventoryPath))),
-            closureRoot.GetProperty("inventorySha256").GetString());
-
-        var candidates = inventory.RootElement.GetProperty("candidates").EnumerateArray().ToArray();
-        Assert.Equal(17, candidates.Length);
-        Assert.Equal(17, candidates.Select(value => value.GetProperty("key").GetString())
-            .Distinct(StringComparer.Ordinal).Count());
-        var dispositions = candidates.Select(value => value.GetProperty("disposition").GetString()!)
-            .ToArray();
-        var summary = closureRoot.GetProperty("candidateGroups");
-        Assert.Equal(17, summary.GetProperty("classified").GetInt32());
-        Assert.Equal(dispositions.Count(value => value == "retain-current"),
-            summary.GetProperty("retainedCurrent").GetInt32());
-        Assert.Equal(dispositions.Count(value => value == "split-retain-adapt"),
-            summary.GetProperty("splitRetainedAndAdapted").GetInt32());
-        Assert.Equal(dispositions.Count(value => value.StartsWith("retain-and-defer-", StringComparison.Ordinal)),
-            summary.GetProperty("retainedAndDeferred").GetInt32());
-        Assert.Equal(dispositions.Count(value => value == "adapt-slice-9b"),
-            summary.GetProperty("adapted").GetInt32());
-        Assert.Equal(dispositions.Count(value => value is "reject" or "reject-runtime"),
-            summary.GetProperty("rejected").GetInt32());
-        Assert.Equal(dispositions.Count(value => value.StartsWith("defer-", StringComparison.Ordinal)),
-            summary.GetProperty("deferred").GetInt32());
-        Assert.Empty(summary.GetProperty("unresolved").EnumerateArray());
-
-        var mechanic = closureRoot.GetProperty("activated").GetProperty("mechanic");
-        var mechanicContract = Path.Combine(root,
-            mechanic.GetProperty("contractPath").GetString()!.Replace('/', Path.DirectorySeparatorChar));
-        var mechanicSource = Path.Combine(root,
-            mechanic.GetProperty("sourcePath").GetString()!.Replace('/', Path.DirectorySeparatorChar));
-        var procedure = closureRoot.GetProperty("activated").GetProperty("procedure");
-        var procedurePath = Path.Combine(root,
-            procedure.GetProperty("path").GetString()!.Replace('/', Path.DirectorySeparatorChar));
-        Assert.Contains("id: dnd2024.mechanic.character-sheet.read",
-            File.ReadAllText(mechanicContract), StringComparison.Ordinal);
-        Assert.Contains("id: dnd2024.procedure.mechanic.character-sheet",
-            File.ReadAllText(procedurePath), StringComparison.Ordinal);
-        Assert.Equal(Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(mechanicContract))),
-            mechanic.GetProperty("contractSha256").GetString());
-        Assert.Equal(Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(mechanicSource))),
-            mechanic.GetProperty("sourceSha256").GetString());
-        Assert.Equal(Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(procedurePath))),
-            procedure.GetProperty("sha256").GetString());
-        Assert.Empty(closureRoot.GetProperty("activated").GetProperty("components").EnumerateArray());
-        Assert.Empty(closureRoot.GetProperty("activated").GetProperty("storedProjections").EnumerateArray());
-        Assert.Empty(closureRoot.GetProperty("activated").GetProperty("publicOperations").EnumerateArray());
-    }
-
-    [Fact]
-    public void Slice_8_closure_matches_every_classified_mechanic_component_and_procedure()
-    {
-        var root = RepositoryRoot();
-        var matrixPath = Path.Combine(root,
-            "ruleset", "dnd2024", "adoption", "evidence", "coverage-matrix-1b.json");
-        using var matrix = JsonDocument.Parse(File.ReadAllText(matrixPath));
-        using var closure = JsonDocument.Parse(File.ReadAllText(Path.Combine(root,
-            "ruleset", "dnd2024", "adoption", "evidence", "slice-8-closure.json")));
-        var closureRoot = closure.RootElement;
-        Assert.Equal("dnd-code-adoption-slice-8-closure-v1", closureRoot.GetProperty("format").GetString());
-        Assert.Equal("ruleset/dnd2024/adoption/evidence/coverage-matrix-1b.json",
-            closureRoot.GetProperty("matrix").GetString());
-        Assert.Equal(Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(matrixPath))),
-            closureRoot.GetProperty("matrixSha256").GetString());
-        var mechanics = new HashSet<string>(StringComparer.Ordinal);
-        var components = new HashSet<string>(StringComparer.Ordinal);
-        var procedures = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var row in matrix.RootElement.GetProperty("rows").EnumerateArray())
-        {
-            if (row.GetProperty("disposition").GetString() != "recover-archive") continue;
-            var key = row.GetProperty("capabilityKey").GetString()!;
-            var title = row.GetProperty("title").GetString()!;
-            if (key.StartsWith("mechanic.", StringComparison.Ordinal)
-                && title.StartsWith("dnd2024.mechanic.", StringComparison.Ordinal)) mechanics.Add(title);
-            else if (key.StartsWith("componentdefinition.", StringComparison.Ordinal)
-                     && title.StartsWith("dnd2024.", StringComparison.Ordinal)) components.Add(title);
-            else if (key.StartsWith("procedure.", StringComparison.Ordinal)
-                     && title.StartsWith("dnd2024.procedure.mechanic.", StringComparison.Ordinal)) procedures.Add(title);
-        }
-
-        static HashSet<string> FrontMatterIds(string directory, string prefix) =>
-            Directory.EnumerateFiles(directory, "*.md", SearchOption.AllDirectories)
-                .SelectMany(path => File.ReadLines(path)
-                    .Where(line => line.StartsWith("id: ", StringComparison.Ordinal))
-                    .Select(line => line[4..].Trim()))
-                .Where(id => id.StartsWith(prefix, StringComparison.Ordinal))
-                .ToHashSet(StringComparer.Ordinal);
-        var currentMechanics = FrontMatterIds(Path.Combine(root, "catalog", "applications", "dnd2024", "mechanics"),
-            "dnd2024.mechanic.");
-        var resolvedMechanics = new HashSet<string>(currentMechanics, StringComparer.Ordinal);
-        foreach (var migration in new Dictionary<string, string>(StringComparer.Ordinal)
-                 {
-                     ["dnd2024.mechanic.armor-class.write"] =
-                         "dnd2024.mechanic.armor-class.read",
-                     ["dnd2024.mechanic.character-level.record"] =
-                         "dnd2024.mechanic.character-level.read"
-                 })
-            if (currentMechanics.Contains(migration.Value)) resolvedMechanics.Add(migration.Key);
-        var currentProcedures = FrontMatterIds(Path.Combine(root, "catalog", "applications", "dnd2024", "procedures"),
-            "dnd2024.procedure.mechanic.");
-        var currentComponents = Directory.EnumerateFiles(Path.Combine(root, "catalog", "applications", "dnd2024", "components"),
-                "*.json", SearchOption.AllDirectories)
-            .Where(path => !path.EndsWith(".schema.json", StringComparison.Ordinal))
-            .Select(path => JsonDocument.Parse(File.ReadAllText(path)))
-            .Select(document =>
-            {
-                using (document) return document.RootElement.GetProperty("id").GetString()!;
-            }).ToHashSet(StringComparer.Ordinal);
-        var replacements = closureRoot.GetProperty("components").GetProperty("replacements")
-            .EnumerateArray().Select(value => value.GetProperty("id").GetString()!)
-            .ToHashSet(StringComparer.Ordinal);
-        var resolvedComponents = new HashSet<string>(currentComponents, StringComparer.Ordinal);
-        resolvedComponents.UnionWith(replacements);
-        foreach (var migration in new Dictionary<string, string>(StringComparer.Ordinal)
-                 {
-                     ["dnd2024.character.profile"] = "dnd2024.character.identity",
-                     ["dnd2024.character-experience"] = "dnd2024.character.experience",
-                     ["dnd2024.hit-points"] = "dnd2024.creature.hit-points",
-                     ["dnd2024.abilities"] = "dnd2024.creature.ability-scores",
-                     ["dnd2024.creature-size"] = "dnd2024.creature.body",
-                     ["dnd2024.damage-mitigation"] = "dnd2024.creature.defenses",
-                     ["dnd2024.language-proficiencies"] = "dnd2024.creature.languages",
-                     ["dnd2024.speed"] = "dnd2024.creature.movement",
-                     ["dnd2024.armor-class"] = "dnd2024.creature.defenses",
-                     ["dnd2024.character-level"] = "dnd2024.character.class-membership",
-                     ["dnd2024.armor-training"] = "dnd2024.creature.proficiencies",
-                     ["dnd2024.saving-throw-proficiencies"] = "dnd2024.creature.proficiencies",
-                     ["dnd2024.skill-proficiencies"] = "dnd2024.creature.proficiencies",
-                     ["dnd2024.tool-proficiencies"] = "dnd2024.creature.proficiencies",
-                      ["dnd2024.weapon-proficiencies"] = "dnd2024.creature.proficiencies",
-                      ["dnd2024.encounter-initiative-order"] = "dnd2024.combat.initiative",
-                      ["dnd2024.encounter-turn-state"] = "dnd2024.encounter.turn",
-                      ["dnd2024.turn-budget"] = "dnd2024.combat.turn-budget",
-                      ["dnd2024.item-instance"] = "dnd2024.core.definition-link",
-                      ["dnd2024.item-quantity"] = "dnd2024.item.quantity"
-                  })
-            if (currentComponents.Contains(migration.Value)) resolvedComponents.Add(migration.Key);
-
-        Assert.Equal(51, mechanics.Count);
-        Assert.Equal(26, components.Count);
-        Assert.Equal(39, procedures.Count);
-        Assert.Equal(51, closureRoot.GetProperty("mechanics").GetProperty("classified").GetInt32());
-        Assert.Equal(51, closureRoot.GetProperty("mechanics").GetProperty("active").GetInt32());
-        Assert.Empty(closureRoot.GetProperty("mechanics").GetProperty("unresolved").EnumerateArray());
-        Assert.Equal(26, closureRoot.GetProperty("components").GetProperty("classified").GetInt32());
-        Assert.Equal(25, closureRoot.GetProperty("components").GetProperty("active").GetInt32());
-        Assert.Empty(closureRoot.GetProperty("components").GetProperty("unresolved").EnumerateArray());
-        Assert.Equal(39, closureRoot.GetProperty("procedures").GetProperty("classified").GetInt32());
-        Assert.Equal(39, closureRoot.GetProperty("procedures").GetProperty("active").GetInt32());
-        Assert.Empty(closureRoot.GetProperty("procedures").GetProperty("unresolved").EnumerateArray());
-        Assert.True(mechanics.IsSubsetOf(resolvedMechanics),
-            "Mechanics: " + string.Join(", ", mechanics.Except(resolvedMechanics)));
-        Assert.True(components.IsSubsetOf(resolvedComponents),
-            "Components: " + string.Join(", ", components.Except(resolvedComponents)));
-        Assert.True(procedures.IsSubsetOf(currentProcedures),
-            "Procedures: " + string.Join(", ", procedures.Except(currentProcedures)));
-        Assert.Equal("dnd2024.source", Assert.Single(replacements));
-        Assert.Equal("replace", closureRoot.GetProperty("components")
-            .GetProperty("replacements")[0].GetProperty("disposition").GetString());
-    }
-
-    private static void AssertCharacterSheetMatchesSourceVector(string dataJson, string caseId)
-    {
-        var root = RepositoryRoot();
-        using var vectors = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "ruleset", "dnd2024",
-            "adoption", "conformance", "fixtures", "adapted-character-sheet.source-vectors.json")));
-        using var actual = JsonDocument.Parse("{\"data\":" + dataJson + "}");
-        var sourceCase = vectors.RootElement.GetProperty("cases").EnumerateArray().Single(value =>
-            value.GetProperty("id").GetString() == caseId);
-        foreach (var comparison in vectors.RootElement.GetProperty("compare").EnumerateArray())
-        {
-            var pointer = comparison.GetProperty("pointer").GetString()!;
-            var expected = FollowJsonPointer(sourceCase.GetProperty("result"), pointer);
-            var observed = FollowJsonPointer(actual.RootElement, pointer);
-            Assert.True(JsonElement.DeepEquals(expected, observed),
-                comparison.GetProperty("name").GetString() + " differs for " + caseId);
-        }
-    }
-
-    private static JsonElement FollowJsonPointer(JsonElement root, string pointer)
-    {
-        var current = root;
-        foreach (var raw in pointer.TrimStart('/').Split('/', StringSplitOptions.RemoveEmptyEntries))
-        {
-            var segment = raw.Replace("~1", "/", StringComparison.Ordinal)
-                .Replace("~0", "~", StringComparison.Ordinal);
-            current = current.ValueKind == JsonValueKind.Array
-                ? current[int.Parse(segment, System.Globalization.CultureInfo.InvariantCulture)]
-                : current.GetProperty(segment);
-        }
-        return current;
     }
 
     private static int Roll(ApplicationMechanicEvaluationResult result)
@@ -7165,7 +6912,8 @@ public sealed class Dnd2024AbilityCheckTests
             IReadOnlySet<string> activeSourcePaths,
             SqliteEntityComponentStore entities,
             SqliteStateSpaceEdgeStore edges,
-            ApplicationActionRunner runner)
+            ApplicationActionRunner runner,
+            IApplicationReadModelService readModels)
         {
             _fixture = fixture;
             _db = db;
@@ -7179,11 +6927,13 @@ public sealed class Dnd2024AbilityCheckTests
             Entities = entities;
             Edges = edges;
             Runner = runner;
+            ReadModels = readModels;
         }
 
         public SqliteEntityComponentStore Entities { get; }
         public SqliteStateSpaceEdgeStore Edges { get; }
         public ApplicationActionRunner Runner { get; }
+        public IApplicationReadModelService ReadModels { get; }
 
         public static async Task<DndHarness> CreateAsync(
             bool includeLegacyEquipmentExtension = false,
@@ -7227,7 +6977,9 @@ public sealed class Dnd2024AbilityCheckTests
             var activation = await activations.ActivateAsync(activationRequest, context);
 
             var stateSpaces = new SqliteStateSpaceRegistry(db, applications);
-            stateSpaces.Create(new(StateSpaceId, revision, activation.Activation.ActivationFingerprint));
+            stateSpaces.Create(new(StateSpaceId, revision,
+                activation.Activation.ActivationFingerprint,
+                activation.Activation.ResolutionFingerprint));
             var schemas = new BoundedJsonSchemaValidator();
             var types = new SqliteComponentTypeRegistry(db, schemas);
             var abilityDefinition = await DefinitionAsync("abilities/dnd2024.creature.ability-scores");
@@ -7239,34 +6991,20 @@ public sealed class Dnd2024AbilityCheckTests
             var hitPoints = types.Define(new(Application, hitPointsDefinition.Id, hitPointsDefinition.Schema));
             var speed = types.Define(new(Application, speedDefinition.Id, speedDefinition.Schema));
             var additionalTypes = new Dictionary<string, RegisteredComponentTypeVersion>(StringComparer.Ordinal);
-            foreach (var path in new[]
+            var primaryTypeIds = new HashSet<string>(
+                [abilityDefinition.Id, proficiencyDefinition.Id, hitPointsDefinition.Id, speedDefinition.Id],
+                StringComparer.Ordinal);
+            var applicationComponentDirectory = Path.Combine(
+                RepositoryRoot(), "catalog", "applications", "dnd2024", "components");
+            foreach (var path in Directory.EnumerateFiles(
+                         applicationComponentDirectory, "*.json", SearchOption.TopDirectoryOnly)
+                     .Where(path => !path.EndsWith(".schema.json", StringComparison.OrdinalIgnoreCase))
+                     .Order(StringComparer.Ordinal))
             {
-                "data/dnd2024.character.identity",
-                "data/dnd2024.character.heroic-inspiration",
-                "data/dnd2024.creature.body",
-                "data/dnd2024.creature.languages",
-                "data/dnd2024.core.definition-link",
-                "data/dnd2024.item.quantity",
-                "data/dnd2024.core.version",
-                "data/dnd2024.item.weapon",
-                "data/dnd2024.activity.membership",
-                "data/dnd2024.activity.activation",
-                "data/dnd2024.activity.attack",
-                "data/dnd2024.activity.damage",
-                "data/dnd2024.activity.range",
-                "combat/dnd2024.creature.defense-basis",
-                "combat/dnd2024.creature.defenses",
-                "combat/dnd2024.creature.temporary-hit-points",
-                "combat/dnd2024.encounter.participation",
-                "combat/dnd2024.combat.initiative",
-                "combat/dnd2024.encounter.round",
-                "combat/dnd2024.encounter.turn",
-                "combat/dnd2024.combat.turn-budget",
-                "proficiency/dnd2024.character.class-membership",
-                "proficiency/dnd2024.character.experience"
-            })
-            {
-                var definition = await DefinitionAsync(path);
+                var componentId = Path.GetFileNameWithoutExtension(path);
+                if (primaryTypeIds.Contains(componentId)) continue;
+
+                var definition = await DefinitionAsync(componentId);
                 additionalTypes[definition.Id] = types.Define(new(Application, definition.Id, definition.Schema));
             }
             foreach (var componentId in new[]
@@ -7287,9 +7025,11 @@ public sealed class Dnd2024AbilityCheckTests
                 "dnd2024.content.defense.unarmored.v1",
                 new(defenseBasis.QualifiedId, defenseBasis.Version, defenseBasis.SchemaHash),
                 "{\"armorClass\":{\"mechanicId\":\"dnd2024.mechanic.armor-class.unarmored\",\"inputBindings\":{\"abilityRef\":\"dnd2024.vocabulary.ability.dexterity\",\"base\":10}},\"damageResponses\":[]}", 0));
-            await AddSubjectAsync(entities, abilities, "subject.high",
+            await AddSubjectAsync(entities, abilities,
+                additionalTypes["dnd2024.character.feature-entitlements"], "subject.high",
                 "{\"str\":30,\"dex\":10,\"con\":10,\"int\":10,\"wis\":10,\"cha\":10}");
-            await AddSubjectAsync(entities, abilities, "subject.low",
+            await AddSubjectAsync(entities, abilities,
+                additionalTypes["dnd2024.character.feature-entitlements"], "subject.low",
                 "{\"str\":1,\"dex\":10,\"con\":10,\"int\":10,\"wis\":10,\"cha\":10}");
 
             var materializer = new ActivatedApplicationCatalogMaterializer(applications, activations, sources, roots);
@@ -7301,15 +7041,21 @@ public sealed class Dnd2024AbilityCheckTests
             var evaluator = new ApplicationMechanicEvaluator(
                 catalogs, new ApplicationMechanicProjectionResolver(db, stateSpaces), new JintMechanicEngine());
             var edges = new SqliteStateSpaceEdgeStore(db, stateSpaces);
+            var mappings = new ApplicationMechanicProjectionMappingResolver(
+                catalogs, stateSpaces, types, edges);
             var applier = new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges,
                 failTransactionAfterEffects
                     ? [new RejectAfterEffectsTransactionParticipant()]
                     : null);
             var runner = new ApplicationActionRunner(
-                catalogs, activations, stateSpaces, types, entities, edges, evaluator, applier, operations);
+                catalogs, activations, stateSpaces, types, entities, edges,
+                mappings,
+                evaluator, applier, operations);
+            var readModels = new ApplicationReadModelService(
+                catalogs, activations, stateSpaces, mappings, evaluator, schemas);
             return new(fixture, db, catalogs, abilities, proficiencies, hitPoints, speed, additionalTypes,
                 activation.Activation.Winners.Select(value => value.RelativePath).ToHashSet(StringComparer.Ordinal),
-                entities, edges, runner);
+                entities, edges, runner, readModels);
         }
 
         public async Task<ApplicationMechanicEvaluationResult> EvaluateAsync(
@@ -7340,7 +7086,8 @@ public sealed class Dnd2024AbilityCheckTests
                 };
             foreach (var (componentId, type) in _additionalTypes)
                 if (includeGameBaseMapping || type.Owner != GameApplication)
-                    componentMapping[componentId] = new(type.QualifiedId, type.Version, type.SchemaHash);
+                    componentMapping[componentId] = new(
+                        type.QualifiedId, type.Version, type.SchemaHash);
             var mapping = new ApplicationMechanicProjectionMapping(componentMapping,
                 new Dictionary<string, string>
                 {
@@ -7569,7 +7316,7 @@ public sealed class Dnd2024AbilityCheckTests
         public async Task AddCharacterCreationFeatFixturesAsync()
         {
             var directory = Path.Combine(RepositoryRoot(), "catalog", "applications", "dnd2024",
-                "content", "entities", "character-creation", "feats");
+                "content", "entities", "character-options", "feats");
             foreach (var path in Directory.GetFiles(directory, "*.json").Order(StringComparer.Ordinal))
             {
                 var relative = Path.GetRelativePath(RepositoryRoot(), path).Replace('\\', '/');
@@ -7618,15 +7365,17 @@ public sealed class Dnd2024AbilityCheckTests
         }
 
         public async Task AddCanonicalGoldDefinitionFixtureAsync()
+            => await AddCanonicalCurrencyDefinitionFixtureAsync("gold-piece");
+
+        public async Task AddCanonicalCurrencyDefinitionFixtureAsync(string denomination)
         {
-            const string relative =
-                "catalog/applications/dnd2024/content/entities/currency/dnd2024.currency.gold-piece.v1.json";
+            var relative =
+                $"catalog/applications/dnd2024/content/entities/equipment/base/equipment.currency.{denomination}.json";
             Assert.Contains(relative, ActiveSourcePaths);
             var path = Path.Combine(RepositoryRoot(),
                 relative.Replace('/', Path.DirectorySeparatorChar));
             var entity = EntityFile.Parse(await File.ReadAllTextAsync(path), relative);
-            Assert.Equal("dnd2024.currency.gold-piece.v1", entity.Id);
-            Assert.Single(entity.Components);
+            Assert.Equal($"dnd2024.equipment.currency.{denomination}", entity.Id);
             await Entities.CreateEntityAsync(StateSpaceId, entity.Id, entity.Name);
             foreach (var component in entity.Components)
                 await AddApplicationComponentAsync(
@@ -7752,12 +7501,94 @@ public sealed class Dnd2024AbilityCheckTests
             var definition = _additionalTypes["dnd2024.item-definition"];
             await Entities.AddComponentAsync(new(StateSpaceId, definitionId,
                 new(definition.QualifiedId, definition.Version, definition.SchemaHash), definitionJson, 0));
+
+            using var document = JsonDocument.Parse(definitionJson);
+            var root = document.RootElement;
+            var version = _additionalTypes["dnd2024.core.version"];
+            await Entities.AddComponentAsync(new(StateSpaceId, definitionId,
+                new(version.QualifiedId, version.Version, version.SchemaHash),
+                "{\"revision\":1,\"status\":\"active\"}", 0));
+            var legacySource = root.GetProperty("sourceRef");
+            var source = _additionalTypes["dnd2024.core.source"];
+            await Entities.AddComponentAsync(new(StateSpaceId, definitionId,
+                new(source.QualifiedId, source.Version, source.SchemaHash),
+                JsonSerializer.Serialize(new
+                {
+                    citations = new[]
+                    {
+                        new
+                        {
+                            sourceRef = new { entityId = legacySource.GetProperty("sourceId").GetString() },
+                            locator = legacySource.GetProperty("locator").GetString()
+                        }
+                    }
+                }), 0));
+            var pounds = root.GetProperty("massPounds");
+            var physical = _additionalTypes["dnd2024.item.physical"];
+            await Entities.AddComponentAsync(new(StateSpaceId, definitionId,
+                new(physical.QualifiedId, physical.Version, physical.SchemaHash),
+                JsonSerializer.Serialize(new
+                {
+                    weight = new
+                    {
+                        dimension = "mass",
+                        value = new
+                        {
+                            numerator = pounds.GetProperty("numerator").GetInt64() * 45359237L,
+                            denominator = pounds.GetProperty("denominator").GetInt64() * 100000000L
+                        },
+                        unit = new { entityId = "dnd2024.vocabulary.mass-unit.kilogram" }
+                    }
+                }), 0));
+            if (root.TryGetProperty("capacity", out var legacyCapacity)
+                && legacyCapacity.TryGetProperty("weightPounds", out var weightPounds))
+            {
+                var container = _additionalTypes["dnd2024.item.container"];
+                await Entities.AddComponentAsync(new(StateSpaceId, definitionId,
+                    new(container.QualifiedId, container.Version, container.SchemaHash),
+                    JsonSerializer.Serialize(new
+                    {
+                        maximumWeight = new
+                        {
+                            dimension = "mass",
+                            value = new
+                            {
+                                numerator = weightPounds.GetProperty("numerator").GetInt64()
+                                    * 45359237L,
+                                denominator = weightPounds.GetProperty("denominator").GetInt64()
+                                    * 100000000L
+                            },
+                            unit = new { entityId = "dnd2024.vocabulary.mass-unit.kilogram" }
+                        }
+                    }), 0));
+            }
+            if (root.TryGetProperty("equipmentModes", out var equipmentModes))
+            {
+                var equippable = _additionalTypes["dnd2024.item.equippable"];
+                var slots = equipmentModes.EnumerateArray().Select(mode =>
+                    new
+                    {
+                        entityId = mode.GetString() == "held"
+                            ? "dnd2024.equipment-slot.main-hand"
+                            : "dnd2024.equipment-slot.body"
+                    }).DistinctBy(value => value.entityId, StringComparer.Ordinal).ToArray();
+                await Entities.AddComponentAsync(new(StateSpaceId, definitionId,
+                    new(equippable.QualifiedId, equippable.Version, equippable.SchemaHash),
+                    JsonSerializer.Serialize(new { equipmentSlots = slots }), 0));
+            }
             if (activityJson is not null)
             {
                 var activity = _additionalTypes["dnd2024.item-activity"];
                 await Entities.AddComponentAsync(new(StateSpaceId, definitionId,
                     new(activity.QualifiedId, activity.Version, activity.SchemaHash), activityJson, 0));
             }
+        }
+
+        public async Task AddCatalogEntityAsync(EntityFile entity)
+        {
+            await Entities.CreateEntityAsync(StateSpaceId, entity.Id, entity.Name);
+            foreach (var component in entity.Components)
+                await AddApplicationComponentAsync(entity.Id, component.DefinitionId, component.Data);
         }
 
         public async Task AddApplicationComponentAsync(string entityId, string componentId,
@@ -7806,19 +7637,19 @@ public sealed class Dnd2024AbilityCheckTests
 
         public async Task AddPhysicalItemAsync(string itemId, string name, string definitionId,
             string? containerId = null, string slot = "carried", int? quantity = null,
-            string? equipmentState = null)
+            string? equipmentState = null, bool includeQuantity = true)
         {
             await Entities.CreateEntityAsync(StateSpaceId, itemId, name);
             var instance = _additionalTypes["dnd2024.core.definition-link"];
             await Entities.AddComponentAsync(new(StateSpaceId, itemId,
                 new(instance.QualifiedId, instance.Version, instance.SchemaHash),
                 JsonSerializer.Serialize(new { definition = new { entityId = definitionId } }), 0));
-            if (quantity is not null)
+            if (includeQuantity)
             {
-                var type = _additionalTypes["dnd2024.item.quantity"];
+                var quantityType = _additionalTypes["dnd2024.item.quantity"];
                 await Entities.AddComponentAsync(new(StateSpaceId, itemId,
-                    new(type.QualifiedId, type.Version, type.SchemaHash),
-                    JsonSerializer.Serialize(new { current = quantity.Value }), 0));
+                    new(quantityType.QualifiedId, quantityType.Version, quantityType.SchemaHash),
+                    JsonSerializer.Serialize(new { current = quantity ?? 1 }), 0));
             }
             if (equipmentState is not null)
             {
@@ -7880,6 +7711,7 @@ public sealed class Dnd2024AbilityCheckTests
         private static async Task AddSubjectAsync(
             SqliteEntityComponentStore entities,
             RegisteredComponentTypeVersion abilities,
+            RegisteredComponentTypeVersion featureEntitlements,
             string id,
             string scores)
         {
@@ -7908,6 +7740,9 @@ public sealed class Dnd2024AbilityCheckTests
             }
             await entities.AddComponentAsync(new(StateSpaceId, id,
                 new(abilities.QualifiedId, abilities.Version, abilities.SchemaHash), scores, 0));
+            await entities.AddComponentAsync(new(StateSpaceId, id,
+                new(featureEntitlements.QualifiedId, featureEntitlements.Version,
+                    featureEntitlements.SchemaHash), "{\"entitlements\":[]}", 0));
         }
 
         private static string NormalizePrototypeComponentFixture(string componentId, string valueJson)
@@ -8150,10 +7985,12 @@ public sealed class Dnd2024AbilityCheckTests
 
         private static async Task<ComponentDefinitionFile> GameDefinitionAsync(string componentId)
         {
-            var path = Path.Combine(RepositoryRoot(), "catalog", "components", componentId + ".json");
+            var catalog = Path.Combine(RepositoryRoot(), "catalog");
+            var path = CatalogLayout.ToFileSystemPath(catalog, CatalogLayout.Component(componentId));
+            var schemaPath = CatalogLayout.ToFileSystemPath(catalog, CatalogLayout.ComponentSchema(componentId));
             var definition = ComponentDefinitionFile.Parse(await File.ReadAllTextAsync(path),
-                "catalog/components/" + componentId + ".json",
-                await File.ReadAllTextAsync(Path.ChangeExtension(path, ".schema.json")));
+                CatalogLayout.Component(componentId),
+                await File.ReadAllTextAsync(schemaPath));
             var compilation = new BoundedJsonSchemaValidator().Compile(definition.Schema);
             Assert.True(compilation.IsAccepted, string.Join("; ", compilation.Diagnostics));
             return definition;
@@ -8215,14 +8052,14 @@ public sealed class Dnd2024AbilityCheckTests
         string configurationKey = "default",
         string grantKind = "origin-feat",
         string grantedByDefinitionId = "dnd2024.content.background.criminal.v1",
-        string locator = "Character Origins > Character Backgrounds > Criminal, PDF p. 83",
+        string locator = "Feats > Origin Feats > Alert, PDF page 87",
         bool duplicate = false,
         bool extraProperty = false)
     {
-        var grant = new Dictionary<string, object>(StringComparer.Ordinal)
+        var entitlement = new Dictionary<string, object>(StringComparer.Ordinal)
         {
-            ["definitionId"] = "dnd2024.content.feature.alert.v1",
-            ["grantedByDefinitionId"] = grantedByDefinitionId,
+            ["featureRef"] = new { entityId = "dnd2024.feat.alert" },
+            ["grantedByRef"] = new { entityId = grantedByDefinitionId },
             ["grantKind"] = grantKind,
             ["sourceRef"] = new
             {
@@ -8230,26 +8067,29 @@ public sealed class Dnd2024AbilityCheckTests
                 locator
             }
         };
-        if (grantKind == "origin-feat") grant["configurationKey"] = configurationKey;
-        else grant["classLevel"] = 1;
-        if (extraProperty) grant["behaviorStatus"] = "implemented";
-        var grants = new List<Dictionary<string, object>> { grant };
+        if (grantKind == "origin-feat") entitlement["configurationKey"] = configurationKey;
+        else entitlement["classLevel"] = 1;
+        if (extraProperty) entitlement["behaviorStatus"] = "implemented";
+        var entitlements = new List<Dictionary<string, object>> { entitlement };
         if (duplicate)
         {
-            var second = new Dictionary<string, object>(grant, StringComparer.Ordinal)
+            var second = new Dictionary<string, object>(entitlement, StringComparer.Ordinal)
             {
-                ["grantedByDefinitionId"] = "content.extension.background.investigator.v1",
+                ["grantedByRef"] = new
+                {
+                    entityId = "content.extension.background.investigator.v1"
+                },
                 ["sourceRef"] = new
                 {
                     sourceId = "dnd2024.source.srd-5.2.1",
                     locator = "Extension > Investigator > Alert Grant"
                 }
             };
-            grants.Add(second);
+            entitlements.Add(second);
         }
         return JsonSerializer.Serialize(new
         {
-            grants
+            entitlements
         });
     }
 

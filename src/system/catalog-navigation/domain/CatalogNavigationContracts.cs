@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using DantesRoleplay.Applications;
+using DantesRoleplay.CatalogNamespaces;
 
 namespace DantesRoleplay.CatalogNavigation;
 
@@ -77,9 +78,40 @@ public sealed record CatalogSearchRequest(
     IReadOnlyList<string>? Kinds = null,
     IReadOnlyList<string>? Statuses = null,
     int PageSize = CatalogNavigationLimits.DefaultPageSize,
-    string? Cursor = null);
+    string? Cursor = null,
+    string? NamespaceId = null,
+    bool IncludeShadowed = false);
 
 public sealed record CatalogRecordRequest(ApplicationIdentifier ApplicationId, string Collection, string QualifiedId);
+
+public sealed record EffectiveApplicationContentRequest(
+    ApplicationIdentifier ApplicationId,
+    int PageSize = CatalogNavigationLimits.DefaultPageSize,
+    string? Cursor = null);
+
+public sealed record EffectiveApplicationExtensionView(
+    string ExtensionId,
+    string DisplayName,
+    string Description,
+    string Classification,
+    IReadOnlyList<string> SourceIds,
+    IReadOnlyList<string> NamespaceIds);
+
+public sealed record EffectiveApplicationContentRecord(
+    CatalogRecordSummary Record,
+    string OwnerId,
+    string SourceLabel,
+    string Classification,
+    IReadOnlyList<string> PresentationRoles,
+    bool IsAdditive);
+
+public sealed record EffectiveApplicationContentResult(
+    string ApplicationId,
+    string ResolutionFingerprint,
+    IReadOnlyList<EffectiveApplicationExtensionView> ActiveExtensions,
+    IReadOnlyList<EffectiveApplicationContentRecord> ResolvedWinners,
+    IReadOnlyList<EffectiveApplicationContentRecord> AdditiveExtensionContent,
+    string? NextCursor);
 
 public sealed record CatalogBrowseResult(
     CatalogNodeView Node,
@@ -91,7 +123,16 @@ public sealed record CatalogBrowseResult(
 
 public sealed record CatalogSearchHit(CatalogRecordSummary Record, int Rank);
 
-public sealed record CatalogSearchResult(IReadOnlyList<CatalogSearchHit> Records, string? NextCursor);
+public sealed record CatalogResolutionDiagnosticView(
+    string ResolutionKey,
+    string RecordKind,
+    string WinnerQualifiedId,
+    IReadOnlyList<string> ShadowedQualifiedIds);
+
+public sealed record CatalogSearchResult(
+    IReadOnlyList<CatalogSearchHit> Records,
+    string? NextCursor,
+    IReadOnlyList<CatalogResolutionDiagnosticView>? ResolutionDiagnostics = null);
 
 public interface ICatalogNavigator
 {
@@ -99,6 +140,8 @@ public interface ICatalogNavigator
     CatalogBrowseResult Browse(CatalogBrowseRequest request);
     CatalogSearchResult Search(CatalogSearchRequest request);
     CatalogRecordView Inspect(CatalogRecordRequest request);
+    EffectiveApplicationContentResult EffectiveContent(EffectiveApplicationContentRequest request);
+    ReadableRulesResult ReadableRules(ReadableRulesRequest request);
 }
 
 public static class CatalogNavigationLimits
@@ -255,7 +298,10 @@ public sealed class CatalogNavigationManifest
 }
 
 /// <summary>Pure, vector-free navigation over one validated immutable effective manifest.</summary>
-public sealed class InMemoryCatalogNavigator(CatalogNavigationManifest manifest, CatalogCursorCodec cursors) : ICatalogNavigator
+public sealed class InMemoryCatalogNavigator(
+    CatalogNavigationManifest manifest,
+    CatalogCursorCodec cursors,
+    CatalogExtensionResolutionContext? resolution = null) : ICatalogNavigator
 {
     private const string BrowseSortVersion = "catalog-browse-v1";
 
@@ -271,13 +317,19 @@ public sealed class InMemoryCatalogNavigator(CatalogNavigationManifest manifest,
         ArgumentNullException.ThrowIfNull(request); RequireApplication(request.ApplicationId);
         ValidatePageSize(request.PageSize); ValidateCollection(request.Collection); ValidatePath(request.Branch);
         var node = FindNode(request.Collection, request.Branch);
-        var scope = Scope(request.Collection, request.Branch, Fingerprint("browse", request.Collection, request.Branch), BrowseSortVersion, request.PageSize);
+        var resolutionFingerprint = resolution?.Fingerprint ?? "none";
+        var scope = Scope(request.Collection, request.Branch,
+            Fingerprint("browse", request.Collection, request.Branch, resolutionFingerprint),
+            BrowseSortVersion, request.PageSize);
         var lastKey = DecodeLastKey(request.Cursor, scope);
-        var entries = DirectChildren(request.Collection, request.Branch).Concat(DirectRecords(request.Collection, request.Branch))
+        var effectiveRecords = ResolvedRecords();
+        var entries = DirectChildren(request.Collection, request.Branch).Concat(DirectRecords(
+                request.Collection, request.Branch, effectiveRecords))
             .OrderBy(entry => entry.StableKey, StringComparer.Ordinal).ToArray();
         var page = Page(entries, lastKey, request.PageSize, scope, entry => entry.StableKey);
-        return new(ToNodeView(node), Breadcrumbs(request.Collection, request.Branch), Counts(request.Collection, request.Branch, direct: true),
-            Counts(request.Collection, request.Branch, direct: false), page.Values, page.NextCursor);
+        return new(ToNodeView(node), Breadcrumbs(request.Collection, request.Branch), Counts(
+                request.Collection, request.Branch, direct: true, effectiveRecords),
+            Counts(request.Collection, request.Branch, direct: false, effectiveRecords), page.Values, page.NextCursor);
     }
 
     public CatalogSearchResult Search(CatalogSearchRequest request)
@@ -287,24 +339,37 @@ public sealed class InMemoryCatalogNavigator(CatalogNavigationManifest manifest,
             throw new ArgumentException("A bounded search query is required.", nameof(request));
         if (request.Collection is not null) ValidateCollection(request.Collection);
         if (request.Collection is null && !string.IsNullOrEmpty(request.Branch)) throw new ArgumentException("A branch filter requires a collection.", nameof(request));
+        if (request.NamespaceId is not null && !CatalogNamespaceIdentity.IsNamespaceId(request.NamespaceId))
+            throw new ArgumentException("A namespace filter must be a registered namespace identifier shape.", nameof(request));
         ValidatePath(request.Branch); ValidatePageSize(request.PageSize);
         var kinds = Set(request.Kinds); var statuses = Set(request.Statuses);
         var normalizedQuery = Normalize(request.Query);
         var collection = request.Collection ?? "*";
-        var filter = Fingerprint("search", normalizedQuery, collection, request.Branch, Join(kinds), Join(statuses));
+        var resolved = CatalogExtensionSearch.Apply(
+            resolution,
+            values: manifest.Records
+                .Where(record => request.Collection is null || record.Collection == request.Collection)
+                .Where(record => request.Collection is null || InBranch(record.Path, request.Branch))
+                .Where(record => kinds.Count == 0 || kinds.Contains(record.Kind))
+                .Where(record => statuses.Count == 0 || statuses.Contains(record.Status))
+                .Where(record => request.NamespaceId is null || InNamespace(record.QualifiedId, request.NamespaceId))
+                .Select(record => new CatalogSearchHit(ToSummary(record), Rank(record, normalizedQuery) ?? int.MaxValue))
+                .OrderBy(value => value.Rank).ThenBy(value => value.Record.Kind, StringComparer.Ordinal)
+                .ThenBy(value => value.Record.QualifiedId, StringComparer.Ordinal).ToArray(),
+            qualifiedId: hit => hit.Record.QualifiedId,
+            recordKind: hit => hit.Record.Kind,
+            includeShadowed: request.IncludeShadowed);
+        var filter = Fingerprint("search", normalizedQuery, collection, request.Branch, Join(kinds), Join(statuses),
+            request.NamespaceId ?? "*", request.IncludeShadowed.ToString(), resolved.ResolutionFingerprint);
         var scope = Scope(collection, request.Branch, filter, manifest.SortVersion, request.PageSize);
         var lastKey = DecodeLastKey(request.Cursor, scope);
-        var hits = manifest.Records
-            .Where(record => request.Collection is null || record.Collection == request.Collection)
-            .Where(record => request.Collection is null || InBranch(record.Path, request.Branch))
-            .Where(record => kinds.Count == 0 || kinds.Contains(record.Kind))
-            .Where(record => statuses.Count == 0 || statuses.Contains(record.Status))
-            .Select(record => new { Record = record, Rank = Rank(record, normalizedQuery) })
-            .Where(value => value.Rank is not null)
-            .OrderBy(value => value.Rank).ThenBy(value => value.Record.Kind, StringComparer.Ordinal).ThenBy(value => value.Record.QualifiedId, StringComparer.Ordinal)
-            .Select(value => new CatalogSearchHit(ToSummary(value.Record), value.Rank!.Value)).ToArray();
-        var page = Page(hits, lastKey, request.PageSize, scope, hit => $"{hit.Rank:D1}/{hit.Record.Kind}/{hit.Record.QualifiedId}");
-        return new(page.Values, page.NextCursor);
+        var searchable = resolved.Records.Where(value => value.Rank != int.MaxValue).ToArray();
+        var page = Page(searchable, lastKey, request.PageSize, scope,
+            hit => $"{hit.Rank:D1}/{hit.Record.Kind}/{hit.Record.QualifiedId}");
+        var pageIds = page.Values.Select(value => value.Record.QualifiedId).ToHashSet(StringComparer.Ordinal);
+        var resolutions = resolved.Diagnostics.Where(value => pageIds.Contains(value.WinnerQualifiedId)
+            || value.ShadowedQualifiedIds.Any(pageIds.Contains)).ToArray();
+        return new(page.Values, page.NextCursor, Array.AsReadOnly(resolutions));
     }
 
     public CatalogRecordView Inspect(CatalogRecordRequest request)
@@ -316,17 +381,68 @@ public sealed class InMemoryCatalogNavigator(CatalogNavigationManifest manifest,
         return new(ToSummary(record), record.ContentJson);
     }
 
+    public EffectiveApplicationContentResult EffectiveContent(EffectiveApplicationContentRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request); RequireApplication(request.ApplicationId);
+        ValidatePageSize(request.PageSize);
+        var resolved = CatalogExtensionSearch.Apply(resolution, manifest.Records,
+            record => record.QualifiedId, record => record.Kind);
+        var extensionById = (resolution?.Extensions ?? []).ToDictionary(
+            value => value.ExtensionId, StringComparer.Ordinal);
+        var baseKeys = manifest.Records.Select(record =>
+        {
+            var identity = resolution is null
+                ? (Owner: "base", Key: record.QualifiedId)
+                : CatalogExtensionSearch.OwnerAndKey(resolution, record.QualifiedId);
+            return (record.Kind, identity.Owner, identity.Key);
+        }).Where(value => value.Owner == "base")
+            .Select(value => (value.Kind, value.Key)).ToHashSet();
+        var projected = resolved.Records.Select(record =>
+        {
+            var identity = resolution is null
+                ? (Owner: "base", Key: record.QualifiedId)
+                : CatalogExtensionSearch.OwnerAndKey(resolution, record.QualifiedId);
+            var extension = identity.Owner == "base" ? null : extensionById[identity.Owner];
+            var roles = new[] { record.Kind }.Concat(record.Path.Split('/', StringSplitOptions.RemoveEmptyEntries))
+                .Distinct(StringComparer.Ordinal).Take(8).ToArray();
+            return new EffectiveApplicationContentRecord(ToSummary(record), identity.Owner,
+                extension?.DisplayName ?? "Core", extension?.Classification ?? "core",
+                Array.AsReadOnly(roles), identity.Owner != "base" && !baseKeys.Contains((record.Kind, identity.Key)));
+        }).OrderBy(value => value.Record.Kind, StringComparer.Ordinal)
+            .ThenBy(value => value.Record.Name, StringComparer.Ordinal)
+            .ThenBy(value => value.Record.QualifiedId, StringComparer.Ordinal).ToArray();
+        var fingerprint = resolution?.Fingerprint ?? "none";
+        var scope = Scope("*", "", Fingerprint("effective-content", fingerprint),
+            "effective-content-v1", request.PageSize);
+        var lastKey = DecodeLastKey(request.Cursor, scope);
+        var page = Page(projected, lastKey, request.PageSize, scope,
+            value => $"{value.Record.Kind}/{value.Record.Name}/{value.Record.QualifiedId}");
+        var activeExtensions = (resolution?.Extensions ?? []).Select(value =>
+            new EffectiveApplicationExtensionView(value.ExtensionId, value.DisplayName,
+                value.Description, value.Classification, value.SourceIds, value.NamespaceIds)).ToArray();
+        return new(manifest.ApplicationId.Value, fingerprint, Array.AsReadOnly(activeExtensions),
+            page.Values, Array.AsReadOnly(page.Values.Where(value => value.IsAdditive).ToArray()), page.NextCursor);
+    }
+
+    public ReadableRulesResult ReadableRules(ReadableRulesRequest request) =>
+        ReadableRuleCatalogProjection.Project(manifest, resolution, request);
+
     private IReadOnlyList<CatalogBrowseEntry> DirectChildren(string collection, string branch) => manifest.Nodes
         .Where(node => node.Collection == collection && node.Path != branch && Parent(node.Path) == branch)
         .OrderBy(node => node.Path, StringComparer.Ordinal)
         .Select(node => new CatalogBrowseEntry(CatalogBrowseEntryKind.Node, ToNodeView(node), null)).ToArray();
 
-    private IReadOnlyList<CatalogBrowseEntry> DirectRecords(string collection, string branch) => manifest.Records
+    private IReadOnlyList<CatalogRecordDefinition> ResolvedRecords() => CatalogExtensionSearch.Apply(
+        resolution, manifest.Records, record => record.QualifiedId, record => record.Kind).Records;
+
+    private static IReadOnlyList<CatalogBrowseEntry> DirectRecords(
+        string collection, string branch, IReadOnlyList<CatalogRecordDefinition> records) => records
         .Where(record => record.Collection == collection && record.Path == branch)
         .OrderBy(record => record.Kind, StringComparer.Ordinal).ThenBy(record => record.QualifiedId, StringComparer.Ordinal)
         .Select(record => new CatalogBrowseEntry(CatalogBrowseEntryKind.Record, null, ToSummary(record))).ToArray();
 
-    private IReadOnlyDictionary<string, int> Counts(string collection, string branch, bool direct) => new ReadOnlyDictionary<string, int>(manifest.Records
+    private static IReadOnlyDictionary<string, int> Counts(
+        string collection, string branch, bool direct, IReadOnlyList<CatalogRecordDefinition> records) => new ReadOnlyDictionary<string, int>(records
         .Where(record => record.Collection == collection && (direct ? record.Path == branch : InBranch(record.Path, branch)))
         .GroupBy(record => record.Kind, StringComparer.Ordinal).OrderBy(group => group.Key, StringComparer.Ordinal)
         .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal));
@@ -363,6 +479,13 @@ public sealed class InMemoryCatalogNavigator(CatalogNavigationManifest manifest,
     private static CatalogRecordSummary ToSummary(CatalogRecordDefinition record) => new(record.Collection, record.Kind, record.QualifiedId, record.Name, record.Description, record.Path, record.Status, record.Version, record.ContentFingerprint, record.SourceId, record.SourceLogicalPath);
     private static string Parent(string path) => path.Contains('/') ? path[..path.LastIndexOf('/')] : "";
     private static bool InBranch(string path, string branch) => branch.Length == 0 || path == branch || path.StartsWith(branch + "/", StringComparison.Ordinal);
+    private static bool InNamespace(string qualifiedId, string namespaceId)
+    {
+        var recordNamespace = CatalogNamespaceIdentity.NamespaceOf(qualifiedId);
+        return namespaceId == CatalogNamespaceIdentity.RootNamespaceId
+            ? recordNamespace == namespaceId
+            : recordNamespace == namespaceId || recordNamespace.StartsWith(namespaceId + ".", StringComparison.Ordinal);
+    }
     private static IReadOnlyList<string> AncestorPaths(string path) => ["", .. path.Split('/', StringSplitOptions.RemoveEmptyEntries).Select((_, index) => string.Join('/', path.Split('/').Take(index + 1)))];
     private static HashSet<string> Set(IReadOnlyList<string>? values)
     {

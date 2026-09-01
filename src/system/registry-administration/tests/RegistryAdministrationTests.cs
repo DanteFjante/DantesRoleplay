@@ -81,6 +81,31 @@ public sealed class RegistryAdministrationTests : IDisposable
     }
 
     [Fact]
+    public async Task Existing_application_can_append_a_reviewed_base_revision_without_losing_revision_one()
+    {
+        await using var db = _fixture.CreateContext();
+        var applications = new SqliteApplicationRegistry(db);
+        var service = new RegistryAdministrationService(
+            db, applications, new SqliteSourceRegistry(db), new OperationLog(db));
+        var shared = ApplicationIdentifier.Parse("shared");
+        var app = ApplicationIdentifier.Parse("fixture-app");
+        applications.Register(new(shared, "Shared", "", []));
+        var first = applications.Register(new(app, "Fixture", "Neutral fixture.", []));
+        var revised = new ApplicationRegistration(app, "Fixture", "Neutral fixture.", [shared]);
+        var context = Context("7123456789abcdef0123456789abcdef", first.Fingerprint);
+
+        var preview = await service.PreviewApplicationAsync(revised, context);
+        var receipt = await service.RegisterApplicationAsync(revised, context);
+
+        Assert.Equal("would-revise", preview.Outcome);
+        Assert.Equal("revised", receipt.Outcome);
+        Assert.Equal(2, receipt.Registration.Revision);
+        Assert.Equal([shared], receipt.Registration.BaseApplications);
+        Assert.Empty(applications.Get(app, 1)!.BaseApplications);
+        Assert.Equal([shared], applications.Get(app)!.BaseApplications);
+    }
+
+    [Fact]
     public async Task Audit_failure_rolls_back_registration_and_clears_pending_entities()
     {
         await using var db = _fixture.CreateContext();

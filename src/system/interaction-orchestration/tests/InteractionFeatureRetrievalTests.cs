@@ -2,6 +2,9 @@ using System.Security.Cryptography;
 using System.Text;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.CatalogNamespaces;
+using DantesRoleplay.DataAccess;
+using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Retrieval;
 using DantesRoleplay.Sources;
@@ -45,6 +48,57 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
         Assert.Equal(InteractionRetrievalMode.Unavailable, result.Mode);
         Assert.Equal("CATALOG_UNAVAILABLE", result.AvailabilityCode);
         Assert.Empty(result.Hits);
+    }
+
+    [Fact]
+    public async Task Namespace_filters_and_disabled_namespaces_are_applied_before_exact_or_lexical_search()
+    {
+        using var database = new SqliteFixture();
+        using var db = database.CreateContext();
+        var registry = new SqliteCatalogNamespaceRegistry(db);
+        registry.Register(new CatalogNamespaceRegistration("sample-app", "sample-app", "Sample application features.",
+            [CatalogNamespaceKinds.Mechanic, CatalogNamespaceKinds.Procedure]));
+        var retriever = new InteractionFeatureRetriever(new MutableSnapshots(Snapshot()), namespaces: registry);
+        var scope = new InteractionFeatureRetrievalScope(Application, InteractionRetrievalLane.TrustedFeature);
+
+        var visible = await retriever.SearchAsync(scope, new("find feature", namespaceId: "sample-app"));
+        Assert.NotEmpty(visible.Hits);
+
+        registry.SetEnabled("sample-app", enabled: false);
+        var hidden = await retriever.SearchAsync(scope, new("sample-app.trusted"));
+        Assert.Empty(hidden.Hits);
+    }
+
+    [Fact]
+    public async Task Feature_search_automatically_returns_the_active_extension_winner()
+    {
+        using var database = new SqliteFixture();
+        using var db = database.CreateContext();
+        var registry = new SqliteCatalogNamespaceRegistry(db);
+        new SqliteApplicationRegistry(db).Register(new(Application, "Sample", "Overlay retrieval fixture.", []));
+        foreach (var id in new[] { "sample-app", "sample-app.rules", "sample-app.homebrew", "sample-app.homebrew.rules" })
+            registry.Register(new CatalogNamespaceRegistration(id, "sample-app", $"{id} features.", [CatalogNamespaceKinds.Procedure],
+                ReviewStatus: CatalogNamespaceReviewStatuses.Reviewed, ReviewNote: "Reviewed retrieval fixture."));
+        registry.RegisterProfile(new("sample-app", "homebrew", "Homebrew features override base features."));
+        registry.RegisterResolutionKey(new("sample-app", "homebrew", "rules.fireball",
+            CatalogNamespaceKinds.Procedure, "The logical Fireball procedure."));
+        registry.Register(new CatalogNamespaceOverlayRule("sample-app", "homebrew", "sample-app.homebrew.rules", "sample-app.rules",
+            CatalogNamespaceKinds.Procedure));
+        var records = new[]
+        {
+            Record("sample-app.rules.fireball", "Fireball", "Base fireball feature.", ["fireball"]),
+            Record("sample-app.homebrew.rules.fireball", "Fireball", "Homebrew fireball feature.", ["fireball"])
+        };
+        var snapshot = WithResolution(Snapshot(records),
+            CatalogExtensionResolutionContext.Create(Application, new string('B', 64),
+                [new("homebrew", "Homebrew", "Fixture homebrew.", "homebrew", ["fixture-homebrew"],
+                    ["sample-app.homebrew"], [], true)]));
+        var retriever = new InteractionFeatureRetriever(new MutableSnapshots(snapshot), namespaces: registry);
+
+        var result = await retriever.SearchAsync(
+            new(Application, InteractionRetrievalLane.TrustedFeature), new("fireball"));
+
+        Assert.Equal("sample-app.homebrew.rules.fireball", Assert.Single(result.Hits).Reference.QualifiedId);
     }
 
     [Fact]
@@ -223,6 +277,13 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
             [new("sample", "", "Sample", "Generic sample contracts.", CatalogDescriptionStatus.Authored)], records);
         return new(manifest, records.Select(record => new ActiveCatalogFeatureDocument(record, SourceTrust.Trusted)).ToArray());
     }
+
+    private static ActiveCatalogFeatureSnapshot WithResolution(
+        ActiveCatalogFeatureSnapshot snapshot,
+        CatalogExtensionResolutionContext resolution) => new(snapshot.Manifest, snapshot.Documents)
+        {
+            Resolution = resolution
+        };
 
     private static CatalogRecordDefinition Record(string id, string name, string description, IReadOnlyList<string> phrases)
     {

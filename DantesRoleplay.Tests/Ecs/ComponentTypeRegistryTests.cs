@@ -130,13 +130,24 @@ public sealed class ComponentTypeRegistryTests : IDisposable
 
             var application = ApplicationIdentifier.Parse("fixture-app");
             new SqliteApplicationRegistry(db).Register(new(application, "Fixture", "", []));
-            var registry = new SqliteComponentTypeRegistry(db, new BoundedJsonSchemaValidator());
-            var version1 = registry.Define(new(application, "fixture-app.note", "{\"type\":\"string\"}"));
-            Assert.Equal(SystemJsonSchemaProfile.Version1Id, version1.ProfileId);
+            var compiled = new BoundedJsonSchemaValidator().Compile("{\"type\":\"string\"}");
+            await db.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO system_component_type (QualifiedId, ApplicationId, CreatedAtUtc)
+                VALUES ({"fixture-app.note"}, {application.Value}, {DateTime.UtcNow});
+                """);
+            await db.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO system_component_type_version
+                    (QualifiedId, Version, ProfileId, SchemaJson, SchemaHash, CreatedAtUtc)
+                VALUES ({"fixture-app.note"}, {1}, {compiled.ProfileId}, {compiled.NormalizedSchema},
+                    {compiled.SchemaHash}, {DateTime.UtcNow});
+                """);
 
             await db.GetService<IMigrator>().MigrateAsync(target);
+            await db.GetService<IMigrator>().MigrateAsync();
+            var registry = new SqliteComponentTypeRegistry(db, new BoundedJsonSchemaValidator());
             var reloaded = Assert.IsType<RegisteredComponentTypeVersion>(registry.Get("fixture-app.note", 1));
-            Assert.Equal(version1, reloaded);
+            Assert.Equal(SystemJsonSchemaProfile.Version1Id, reloaded.ProfileId);
+            Assert.Equal(compiled.SchemaHash, reloaded.SchemaHash);
             var version2 = registry.Define(new(application, "fixture-app.digest",
                 "{\"type\":\"string\",\"pattern\":\"^[0-9a-f]{64}$\"}"));
             Assert.Equal(SystemJsonSchemaProfile.Version2Id, version2.ProfileId);

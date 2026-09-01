@@ -14,6 +14,18 @@ namespace DantesRoleplay.Interactions.Tests;
 public sealed class InteractionOrchestrationAcceptanceTests
 {
     [Fact]
+    public async Task Gateway_feature_search_carries_the_namespace_filter_to_retrieval()
+    {
+        var fixture = new Fixture();
+        var gateway = fixture.Gateway(new DisabledPlanner(), new RecipeStore(), out _, out _);
+
+        await gateway.SearchFeaturesAsync(fixture.Application, "neutral fixture", null,
+            namespaceId: "sample-app.mechanic");
+
+        Assert.Equal("sample-app.mechanic", fixture.Features.LastInput?.NamespaceId);
+    }
+
+    [Fact]
     public async Task Direct_role_requires_an_exact_submitted_proposal_and_never_calls_a_planner()
     {
         var fixture = new Fixture();
@@ -348,9 +360,14 @@ public sealed class InteractionOrchestrationAcceptanceTests
 
     private sealed class LexicalFeatures(InteractionFeatureHit hit) : IInteractionFeatureRetriever
     {
+        public InteractionFeatureSearchInput? LastInput { get; private set; }
+
         public Task<InteractionFeatureSearchResult> SearchAsync(InteractionFeatureRetrievalScope scope,
-            InteractionFeatureSearchInput input, CancellationToken cancellationToken = default) =>
-            Task.FromResult(InteractionFeatureSearchResult.Create(InteractionRetrievalMode.Lexical, [hit]));
+            InteractionFeatureSearchInput input, CancellationToken cancellationToken = default)
+        {
+            LastInput = input;
+            return Task.FromResult(InteractionFeatureSearchResult.Create(InteractionRetrievalMode.Lexical, [hit]));
+        }
         public Task<InteractionFeatureRebuildResult> RebuildAsync(InteractionFeatureRetrievalScope scope,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(new InteractionFeatureRebuildResult(false, 0));

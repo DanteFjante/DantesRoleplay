@@ -98,6 +98,26 @@ public sealed class ApplicationActivationTests : IDisposable
     }
 
     [Fact]
+    public async Task Reviewed_base_sources_can_be_activated_with_an_explicit_extension_set()
+    {
+        await using var db = _fixture.CreateContext();
+        var app = Register(db, "mixed-profile-activation");
+        var preview = new MutablePreview(Result(app, 'F'));
+        var service = Service(db, preview);
+        var request = new ApplicationActivationRequest(
+            app, preview.Result.PreviewFingerprint, null, ["reviewed-core"])
+        {
+            ExtensionIds = []
+        };
+
+        var dryRun = await service.PreviewAsync(
+            request, Context("b123456789abcdef0123456789abcdef"));
+
+        Assert.Equal("would-activate", dryRun.Outcome);
+        Assert.Equal(1, preview.MixedPreviewCount);
+    }
+
+    [Fact]
     public async Task Preview_drift_or_stale_active_expectation_changes_nothing()
     {
         await using var db = _fixture.CreateContext();
@@ -234,6 +254,7 @@ public sealed class ApplicationActivationTests : IDisposable
     private sealed class MutablePreview(ApplicationPreviewResult result) : IApplicationPreviewService
     {
         public ApplicationPreviewResult Result { get; set; } = result;
+        public int MixedPreviewCount { get; private set; }
         public Task<ApplicationPreviewResult> PreviewAsync(
             ApplicationIdentifier applicationId,
             CancellationToken cancellationToken = default) => Task.FromResult(Result);
@@ -241,6 +262,15 @@ public sealed class ApplicationActivationTests : IDisposable
             ApplicationIdentifier applicationId,
             IReadOnlyList<string> sourceIds,
             CancellationToken cancellationToken = default) => Task.FromResult(Result);
+        public Task<ApplicationPreviewResult> PreviewAsync(
+            ApplicationIdentifier applicationId,
+            IReadOnlyList<string> baseSourceIds,
+            IReadOnlyList<string> extensionIds,
+            CancellationToken cancellationToken = default)
+        {
+            MixedPreviewCount++;
+            return Task.FromResult(Result);
+        }
     }
 
     private sealed class StaticImpact(ApplicationIdentifier app) : IProjectionImpactService

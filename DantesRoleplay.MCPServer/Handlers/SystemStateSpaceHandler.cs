@@ -1,6 +1,7 @@
 using System.Text.Json;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
+using DantesRoleplay.Ecs;
 using DantesRoleplay.Operations;
 using DantesRoleplay.StateSpaceAdministration;
 
@@ -36,14 +37,21 @@ internal sealed class SystemStateSpaceHandler
             if (document.RootElement.ValueKind != JsonValueKind.Object)
                 throw Invalid("payload must be a JSON object.");
             var root = document.RootElement;
-            RequireProperties(root, "requestToken", "stateSpaceId", "applicationId", "activeFingerprint", "expectedFingerprint");
+            var hasScope = root.TryGetProperty("scope", out _);
+            if (hasScope)
+                RequireProperties(root, "requestToken", "stateSpaceId", "applicationId", "scope", "activeFingerprint", "expectedFingerprint");
+            else
+                RequireProperties(root, "requestToken", "stateSpaceId", "applicationId", "activeFingerprint", "expectedFingerprint");
             var token = String(root, "requestToken", 32);
             var stateSpaceId = String(root, "stateSpaceId", 200);
             var application = ApplicationIdentifier.Parse(String(root, "applicationId", 63));
+            var scope = hasScope
+                ? EcsComponentRolePolicyParser.ParseScope(String(root, "scope", 32))
+                : EcsStateSpaceScope.Runtime;
             var activeFingerprint = String(root, "activeFingerprint", 64);
             var expected = NullableString(root, "expectedFingerprint", 64);
             var request = new StateSpaceCreationRequest(
-                stateSpaceId, application, activeFingerprint, expected);
+                stateSpaceId, application, activeFingerprint, expected) { Scope = scope };
             var context = new StateSpaceCreationContext(token, intent,
                 Array.AsReadOnly((procedures ?? []).ToArray()), decision.Evidence);
 
@@ -84,6 +92,12 @@ internal sealed class SystemStateSpaceHandler
             return await FailureAsync(log, decision, kind, "INVALID_PAYLOAD", exception.Message,
                 McpVerbCatalog.CommitCall(kind, dryRun: true), intent, procedures,
                 "Rejected invalid state-space creation input.");
+        }
+        catch (EcsRoleConstraintException exception)
+        {
+            return await FailureAsync(log, decision, kind, "INVALID_PAYLOAD", exception.Message,
+                McpVerbCatalog.CommitCall(kind, dryRun: true), intent, procedures,
+                "Rejected invalid state-space scope.");
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -216,6 +230,7 @@ internal sealed class SystemStateSpaceHandler
         binding.ApplicationRevision,
         binding.ApplicationFingerprint,
         binding.ActiveFingerprint,
+        Scope = EcsComponentRolePolicyParser.ScopeName(binding.Scope),
         binding.BindingRevision,
         binding.BindingFingerprint,
         binding.CreatedAtUtc,

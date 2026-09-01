@@ -1,5 +1,7 @@
 using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.Interactions;
+using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.Retrieval;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -21,6 +23,7 @@ internal static class InteractionOrchestrationComponentRegistration
         services.TryAddScoped<IInteractionExecutionAuthorityStore>(provider =>
             provider.GetRequiredService<InteractionReceiptStore>());
         services.TryAddScoped<IInteractionRecipeStore, InteractionRecipeStore>();
+        services.TryAddScoped<ISystemAiToolSource, InteractionRecipeAiToolSource>();
         services.TryAddScoped<IInteractionRecipeAutoVerificationEvidenceReader, InteractionRecipeAutoVerificationEvidenceReader>();
         services.TryAddScoped<IInteractionRecipeAutoVerifier, InteractionRecipeAutoVerifier>();
         services.TryAddScoped<IInteractionRecipeLearner, InteractionRecipeLearner>();
@@ -29,7 +32,8 @@ internal static class InteractionOrchestrationComponentRegistration
         services.TryAddScoped<IInteractionFeatureRetriever>(provider => new InteractionFeatureRetriever(
             provider.GetRequiredService<IActiveCatalogFeatureSnapshotProvider>(),
             provider.GetService<ITextEmbeddingProvider>(),
-            provider.GetService<IInteractionDerivedVectorIndex>()));
+            provider.GetService<IInteractionDerivedVectorIndex>(),
+            provider.GetService<ICatalogNamespaceRegistry>()));
         services.TryAddScoped<IVerifiedInteractionRecipeResolver>(provider => new VerifiedInteractionRecipeResolver(
             provider.GetRequiredService<IInteractionRecipeStore>(),
             provider.GetRequiredService<IActiveCatalogFeatureSnapshotProvider>(),
@@ -38,7 +42,9 @@ internal static class InteractionOrchestrationComponentRegistration
             provider.GetService<IInteractionDerivedVectorIndex>()));
         services.TryAddScoped<IInteractionProposalVerifier, InteractionProposalVerifier>();
         services.TryAddScoped<IInteractionQueryExecutor, ProjectionInteractionQueryExecutor>();
+        services.TryAddScoped<IInteractionQueryExecutor, MechanicProjectionInteractionQueryExecutor>();
         services.TryAddScoped<IInteractionQueryExecutorRegistry, InteractionQueryExecutorRegistry>();
+        services.TryAddScoped<IApplicationReadModelService, ApplicationReadModelService>();
         services.TryAddScoped<IInteractionEnvelopeFactory, InteractionEnvelopeFactory>();
         services.TryAddScoped<IInteractionExecutionCoordinator, InteractionExecutionCoordinator>();
         services.TryAddScoped<IInteractionGateway, InteractionGateway>();

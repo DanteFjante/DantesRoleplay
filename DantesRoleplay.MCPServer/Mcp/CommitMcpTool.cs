@@ -17,6 +17,7 @@ using DantesRoleplay.TriggerScheduling;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.EcsEffects;
 using DantesRoleplay.Blobs;
+using DantesRoleplay.SystemFeedback;
 using ModelContextProtocol.Server;
 
 namespace DantesRoleplay.MCPServer.Mcp;
@@ -28,7 +29,7 @@ public sealed class CommitMcpTool
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     [McpServerTool(Name = "commit")]
-    [Description("Change state with component, effects, mechanic, action, system.application.register, system.source.register, system.component-type.register, system.application.activate, system.state-space.create, system.state-space.upgrade, system.state-space.adopt-legacy, system.world-state.sync, system.interaction-execute, system.interaction-recipe-review, system.trigger-scheduling, system.knowledge-state.sync, system.blob-upload.begin, or system.blob-upload.finalize. Use query(kind: \"capabilities\") for each closed payload catalog.")]
+    [Description("Change state with component, effects, mechanic, action, feedback, system.application.register, system.source.register, system.extension.register, system.component-type.register, system.application.activate, system.state-space.create, system.state-space.upgrade, system.state-space.adopt-legacy, system.world-state.sync, system.interaction-execute, system.interaction-recipe-review, system.trigger-scheduling, system.knowledge-state.sync, system.blob-upload.begin, or system.blob-upload.finalize. Use query(kind: \"capabilities\") for each closed payload catalog.")]
     public async Task<ToolEnvelope> CommitAsync(
         IWorldStore world,
         IEffectApplier effects,
@@ -52,7 +53,8 @@ public sealed class CommitMcpTool
         ITriggerSchedulingAdministrationService? triggerSchedulingAdministration = null,
         IReviewedKnowledgeStateSynchronizer? knowledgeStateSynchronization = null,
         IApplicationWorldAuthoringSynchronizer? worldStateSynchronization = null,
-        IBlobTransferService? blobTransfers = null)
+        IBlobTransferService? blobTransfers = null,
+        ISystemFeedbackService? feedback = null)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
         var spec = McpVerbCatalog.Commit(normalizedKind);
@@ -74,9 +76,12 @@ public sealed class CommitMcpTool
             "effects" => await CommitGenericPayloadAsync(normalizedKind, payload, world, effects, mechanics, actions, log, intent, proceduresUsed, dryRun, cancellationToken),
             "mechanic" => await CommitGenericPayloadAsync(normalizedKind, payload, world, effects, mechanics, actions, log, intent, proceduresUsed, dryRun, cancellationToken),
             "action" => await CommitGenericPayloadAsync(normalizedKind, payload, world, effects, mechanics, actions, log, intent, proceduresUsed, dryRun, cancellationToken),
+            "feedback" => await CommitFeedbackAsync(feedback, log, payload, intent, proceduresUsed, cancellationToken),
             "system.application.register" => await new SystemRegistryCommitHandler().RegisterApplicationAsync(
                 registryAdministration, privateOperator, log, payload, intent, proceduresUsed, dryRun, cancellationToken),
             "system.source.register" => await new SystemRegistryCommitHandler().RegisterSourceAsync(
+                registryAdministration, privateOperator, log, payload, intent, proceduresUsed, dryRun, cancellationToken),
+            "system.extension.register" => await new SystemRegistryCommitHandler().RegisterExtensionAsync(
                 registryAdministration, privateOperator, log, payload, intent, proceduresUsed, dryRun, cancellationToken),
             "system.component-type.register" => await new SystemComponentTypeHandler().RegisterAsync(componentTypeAdministration, privateOperator, log, payload, intent, proceduresUsed, dryRun, cancellationToken),
             "system.application.activate" => await new SystemApplicationActivationHandler().ActivateAsync(
@@ -173,6 +178,49 @@ public sealed class CommitMcpTool
         return value is null || string.IsNullOrWhiteSpace(value.Id) || string.IsNullOrWhiteSpace(value.Category) || string.IsNullOrWhiteSpace(value.Name) || string.IsNullOrWhiteSpace(value.Source)
             ? await InvalidAsync(log, "mechanic", "mechanic requires id, category, name, and source.", intent, procedures)
             : await new MechanicHandler().WriteMechanicAsync(mechanics, log, value.Id, value.Category, value.Name, value.Description ?? string.Empty, value.Matches ?? string.Empty, value.Requirements ?? "{}", value.Source, value.Scope ?? string.Empty, value.Status, value.ChangeNote ?? string.Empty, intent, procedures, dryRun, cancellationToken);
+    }
+
+    private static async Task<ToolEnvelope> CommitFeedbackAsync(
+        ISystemFeedbackService? feedback,
+        IOperationLog log,
+        string payload,
+        string intent,
+        string[]? procedures,
+        CancellationToken cancellationToken)
+    {
+        if (feedback is null)
+            return await InvalidAsync(log, "feedback", "Feedback reporting is unavailable because its store is not registered.", intent, procedures);
+
+        try
+        {
+            using var document = JsonDocument.Parse(payload);
+            var root = document.RootElement;
+            var allowed = new HashSet<string>(StringComparer.Ordinal)
+            {
+                "operation", "requestToken", "category", "impact", "summary", "observed",
+                "expected", "reproductionSteps", "relatedOperationIds", "relatedProcedureIds"
+            };
+            var required = new HashSet<string>(StringComparer.Ordinal)
+            {
+                "operation", "requestToken", "category", "impact", "summary", "observed"
+            };
+            if (root.ValueKind != JsonValueKind.Object
+                || root.EnumerateObject().Any(property => !allowed.Contains(property.Name))
+                || required.Any(name => !root.TryGetProperty(name, out _))
+                || !root.TryGetProperty("operation", out var operation)
+                || operation.ValueKind != JsonValueKind.String
+                || operation.GetString() != "submit")
+                return await InvalidAsync(log, "feedback", "Feedback payload requires operation submit and its exact closed shape.", intent, procedures);
+
+            var request = root.Deserialize<SystemFeedbackSubmitRequest>(JsonOptions);
+            return request is null
+                ? await InvalidAsync(log, "feedback", "Feedback payload could not be read.", intent, procedures)
+                : await new SystemFeedbackHandler().SubmitAsync(feedback, request, intent, procedures, cancellationToken);
+        }
+        catch (JsonException exception)
+        {
+            return await InvalidAsync(log, "feedback", exception.Message, intent, procedures);
+        }
     }
 
     private static Task<ToolEnvelope> InvalidAsync(IOperationLog log, string kind, string message, string intent, string[]? procedures) =>

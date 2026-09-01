@@ -1,0 +1,12 @@
+{
+  "id": "source.dnd2024.srd-5.2",
+  "owner": "source",
+  "description": "Namespace for source dnd2024 srd-5 2 catalog records.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "needs-review",
+  "reviewNote": "Uses inverted D\u0026D ownership; migrate records to the dnd2024 namespace before approval."
+}

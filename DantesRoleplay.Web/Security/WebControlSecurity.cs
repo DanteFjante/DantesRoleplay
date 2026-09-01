@@ -49,7 +49,8 @@ public sealed class WebControlRequestGuard(WebPrivateOperatorGuard operators)
         }
 
         var expectedMethod = mutation
-            ? HttpMethods.IsPost(context.Request.Method) || HttpMethods.IsPut(context.Request.Method)
+            ? HttpMethods.IsPost(context.Request.Method) || HttpMethods.IsPut(context.Request.Method) ||
+                HttpMethods.IsDelete(context.Request.Method)
             : HttpMethods.IsGet(context.Request.Method);
         if (!expectedMethod)
         {
@@ -57,7 +58,7 @@ public sealed class WebControlRequestGuard(WebPrivateOperatorGuard operators)
                 StatusCodes.Status405MethodNotAllowed,
                 operatorDecision.Evidence,
                 "CONTROL_METHOD_DENIED",
-                "Control reads use GET and control changes use POST or PUT.");
+                "Control reads use GET and control changes use POST, PUT, or DELETE.");
         }
 
         if (!mutation)
@@ -65,7 +66,8 @@ public sealed class WebControlRequestGuard(WebPrivateOperatorGuard operators)
             return Allowed(operatorDecision);
         }
 
-        if (!IsJson(context.Request.ContentType))
+        if (!IsJson(context.Request.ContentType) &&
+            !(capability == PrivateOperatorCapability.ControlPagesWrite && IsZip(context.Request.ContentType)))
         {
             return Denied(
                 StatusCodes.Status415UnsupportedMediaType,
@@ -155,6 +157,12 @@ public sealed class WebControlRequestGuard(WebPrivateOperatorGuard operators)
     {
         var mediaType = contentType?.Split(';', 2)[0].Trim();
         return string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsZip(string? contentType)
+    {
+        var mediaType = contentType?.Split(';', 2)[0].Trim();
+        return string.Equals(mediaType, "application/zip", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryReadSerializedOrigin(string value, out Uri? origin)
@@ -266,6 +274,13 @@ public static class WebControlEndpointConventions
         PrivateOperatorCapability capability,
         Delegate handler) =>
         Map(endpoints, HttpMethods.Put, relativePattern, capability, mutation: true, handler);
+
+    public static RouteHandlerBuilder MapDantesRoleplayControlDelete(
+        this IEndpointRouteBuilder endpoints,
+        string relativePattern,
+        PrivateOperatorCapability capability,
+        Delegate handler) =>
+        Map(endpoints, HttpMethods.Delete, relativePattern, capability, mutation: true, handler);
 
     private static RouteHandlerBuilder Map(
         IEndpointRouteBuilder endpoints,

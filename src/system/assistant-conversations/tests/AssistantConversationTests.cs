@@ -165,6 +165,79 @@ public sealed class AssistantConversationTests
         Assert.Single(await db.Operations.ToListAsync());
     }
 
+    [Fact]
+    public async Task Conversation_removal_is_owner_and_revision_checked_and_cascades_chat_history()
+    {
+        using var fixture = new SqliteFixture();
+        await using var db = fixture.CreateContext();
+        var store = new AssistantConversationStore(db, new OperationLog(db));
+        var service = new AssistantConversationService(store, new FakeProvider(new(
+            new("ollama", "model", "digest"), "{\"reply\":\"retained\"}", 1)));
+        var conversation = await service.CreateAsync(
+            Operator, new("local", "remove me", "key:remove"));
+
+        Assert.False(await store.DeleteAsync(
+            "principal.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            conversation.Summary.Id,
+            conversation.Summary.Revision));
+        var stale = await Assert.ThrowsAsync<AssistantConversationException>(() => store.DeleteAsync(
+            Operator, conversation.Summary.Id, conversation.Summary.Revision + 1));
+        Assert.Equal("ASSISTANT_REVISION_STALE", stale.Code);
+
+        Assert.True(await store.DeleteAsync(
+            Operator, conversation.Summary.Id, conversation.Summary.Revision));
+        Assert.Null(await store.GetAsync(Operator, conversation.Summary.Id));
+        Assert.Empty(await db.AssistantTurns.ToListAsync());
+        Assert.Empty(await db.AssistantMessages.ToListAsync());
+        Assert.Contains(await db.Operations.ToListAsync(), value =>
+            value.Tool == "control.assistant.remove-conversation" && value.Subject == conversation.Summary.Id);
+    }
+
+    [Fact]
+    public async Task Direct_ai_activity_uses_the_existing_durable_activity_envelope()
+    {
+        using var fixture = new SqliteFixture();
+        await using var db = fixture.CreateContext();
+        var store = new AssistantConversationStore(db, new OperationLog(db));
+        var begin = await store.BeginTurnAsync(new(
+            Operator,
+            "local",
+            null,
+            null,
+            "hello",
+            "key:direct-ai",
+            new string('A', 64),
+            AssistantConversationScopes.System));
+        await store.MarkRunningAsync(begin.TurnId);
+        await store.AppendActivityAsync(new(
+            begin.TurnId,
+            "fixture-request",
+            1,
+            "dynamic-tool",
+            "completed",
+            "Provider-neutral request completed."));
+        await store.CompleteTurnAsync(new(
+            begin.TurnId,
+            AssistantConversationStatuses.Failed,
+            null,
+            "AI_FIXTURE",
+            "Fixture completion.",
+            "ollama",
+            "fixture-model",
+            "fixture-revision",
+            "outer",
+            0,
+            0,
+            0));
+
+        var rows = await store.ListAsync(
+            Operator, "local", null, null, 10, scope: AssistantConversationScopes.System);
+
+        Assert.Equal(begin.ConversationId, Assert.Single(rows).Id);
+        Assert.Equal("dynamic-tool", Assert.Single((await store.GetAsync(
+            Operator, begin.ConversationId, scope: AssistantConversationScopes.System))!.Activities).Kind);
+    }
+
     private sealed class FakeProvider(StructuredCompletionResult result) : ILocalStructuredCompletionProvider
     {
         public int Calls { get; private set; }

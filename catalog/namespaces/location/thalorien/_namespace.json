@@ -1,0 +1,12 @@
+{
+  "id": "location.thalorien",
+  "owner": "location",
+  "description": "Namespace for location thalorien catalog records.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

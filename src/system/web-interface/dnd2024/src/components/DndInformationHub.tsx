@@ -29,9 +29,12 @@ import {
   resolveSelectedMapFeature,
 } from "../state.js";
 import { MainNavigation } from "./MainNavigation";
+import { InstalledContentView } from "./InstalledContentView";
+import type { InstalledContentModel } from "../server/effective-content";
 import { CampaignView } from "./CampaignView";
 import { CurrentViewPreview } from "./PreviewViews";
 import { PartyView } from "./PartyView";
+import { PlayConversationPanel } from "./PlayConversationPanel";
 import { RulesView } from "./RulesView";
 import { TopBar } from "./TopBar";
 import { WorldView } from "./WorldView";
@@ -81,18 +84,18 @@ type HubEnvelopeLoader = (
 ) => Promise<ReadyHubEnvelope>;
 
 type RulesLoader = () => Promise<RuleReadModel[]>;
-type RuleDetailLoader = (rule: RuleReadModel) => Promise<RuleReadModel | null>;
+type ContentLoader = () => Promise<InstalledContentModel>;
 
 export function DndInformationHub({
   initialEnvelope,
   loadEnvelope,
   loadRules,
-  loadRuleDetail,
+  loadContent,
 }: {
   initialEnvelope: ReadyHubEnvelope;
   loadEnvelope?: HubEnvelopeLoader;
   loadRules?: RulesLoader;
-  loadRuleDetail?: RuleDetailLoader;
+  loadContent: ContentLoader;
 }) {
   const [envelope, setEnvelope] = useState(initialEnvelope);
   const [activeTab, setActiveTab] = useState<MainTabId>("world");
@@ -130,7 +133,9 @@ export function DndInformationHub({
   ) as WorldLocation;
   const currentSceneLocation = resolveCurrentSceneLocation(
     allLocations,
-    envelope.world.currentLocationId,
+    envelope.currentSituation?.status === "ready" && envelope.currentSituation.locationId
+      ? envelope.currentSituation.locationId
+      : envelope.world.currentLocationId,
   ) as WorldLocation | null;
   const currentSituation = envelope.currentSituation ?? (currentSceneLocation
     ? { status: "ready" as const, kind: "exploration" as const, locationId: currentSceneLocation.id }
@@ -148,11 +153,12 @@ export function DndInformationHub({
     nextPerspective: Perspective,
     nextCampaignId: string,
     announce = true,
+    force = false,
   ) {
     const requested = normalizePerspective(nextPerspective) as Perspective;
     if (
       hubBusy ||
-      (requested === perspective && nextCampaignId === contextSelection.selectedCampaignId) ||
+      (!force && requested === perspective && nextCampaignId === contextSelection.selectedCampaignId) ||
       !envelope.audience.allowedPerspectives.includes(requested)
     ) return;
 
@@ -337,13 +343,27 @@ export function DndInformationHub({
       case "party":
         return <PartyView party={envelope.party} />;
       case "current":
-        return <CurrentViewPreview
-          image={currentSceneImage}
-          location={currentSceneLocation}
-          situation={currentSituation}
-        />;
+        return (
+          <div className="current-play-workspace">
+            <CurrentViewPreview
+              image={currentSceneImage}
+              location={currentSceneLocation}
+              situation={currentSituation}
+            />
+            <PlayConversationPanel
+              applicationId={envelope.applicationId}
+              stateSpaceId={envelope.stateSpaceId}
+              sessionContextId={contextSelection.selectedCampaignId}
+              onConversationChange={() => {
+                void requestHub(perspective, contextSelection.selectedCampaignId, false, true);
+              }}
+            />
+          </div>
+        );
       case "rules":
-        return <RulesView loadRuleDetail={loadRuleDetail} loadRules={loadRules} rules={envelope.rules} />;
+        return <RulesView loadRules={loadRules} rules={envelope.rules} />;
+      case "content":
+        return <InstalledContentView loadContent={loadContent} />;
       case "world":
       default:
         return (

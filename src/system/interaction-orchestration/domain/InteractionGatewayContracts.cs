@@ -12,6 +12,7 @@ public interface IInteractionGateway
         string? query,
         string? qualifiedId,
         int limit = 10,
+        string? namespaceId = null,
         CancellationToken cancellationToken = default);
 
     Task<InteractionPlanGatewayResult> PlanAsync(

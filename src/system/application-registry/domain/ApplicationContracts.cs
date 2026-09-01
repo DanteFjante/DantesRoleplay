@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using DantesRoleplay.Ecs;
 
 namespace DantesRoleplay.Applications;
 
@@ -9,6 +10,15 @@ public sealed record ApplicationIdentifier
     private ApplicationIdentifier(string value) => Value = value;
 
     public string Value { get; }
+
+    /// <summary>
+    /// Kernel-owned contracts use the reserved system namespace without pretending that the
+    /// kernel is an installed application. User and catalog input must still go through
+    /// <see cref="Parse"/>, which deliberately rejects this value.
+    /// </summary>
+    public static ApplicationIdentifier System { get; } = new("system");
+
+    public bool IsSystem => Value == System.Value;
 
     public static ApplicationIdentifier Parse(string value)
     {
@@ -47,6 +57,14 @@ public interface IApplicationRegistry
 {
     ApplicationRevision Register(ApplicationRegistration registration);
     ApplicationRevision? Get(ApplicationIdentifier applicationId);
+    ApplicationRevision? Get(ApplicationIdentifier applicationId, int revision) =>
+        Get(applicationId) is { } current && current.Revision == revision ? current : null;
+    ApplicationRevision ReviseBaseApplications(
+        ApplicationIdentifier applicationId,
+        IReadOnlyList<ApplicationIdentifier> baseApplications,
+        int expectedRevision,
+        string expectedFingerprint) =>
+        throw new NotSupportedException("This application registry does not support revision updates.");
     ApplicationRegistration? Describe(ApplicationIdentifier applicationId);
     IReadOnlyList<ApplicationRegistration> List(int limit);
     ApplicationDiscoveryPage ListPage(string? afterApplicationId, int limit);
@@ -56,7 +74,7 @@ public interface IApplicationRegistry
 public sealed class InMemoryApplicationRegistry : IApplicationRegistry
 {
     private readonly Dictionary<ApplicationIdentifier, ApplicationRegistration> _registrations = [];
-    private readonly Dictionary<ApplicationIdentifier, ApplicationRevision> _revisions = [];
+    private readonly Dictionary<(ApplicationIdentifier ApplicationId, int Revision), ApplicationRevision> _revisions = [];
 
     public ApplicationRevision Register(ApplicationRegistration registration)
     {
@@ -68,25 +86,59 @@ public sealed class InMemoryApplicationRegistry : IApplicationRegistry
             throw new ArgumentException("An application may list each base only once.", nameof(registration));
         if (registration.BaseApplications.Contains(registration.Id))
             throw new ArgumentException("An application cannot be its own base.", nameof(registration));
-        if (registration.BaseApplications.Any(baseId => !_revisions.ContainsKey(baseId)))
+        if (registration.BaseApplications.Any(baseId => !_registrations.ContainsKey(baseId)))
             throw new ArgumentException("Every base application must already be registered.", nameof(registration));
 
         if (_registrations.TryGetValue(registration.Id, out var existing))
         {
             if (!SameRegistration(existing, registration))
                 throw new InvalidOperationException($"Application '{registration.Id}' already has a different immutable registration.");
-            return Copy(_revisions[registration.Id]);
+            return Copy(Current(registration.Id)!);
         }
 
         var fingerprint = ApplicationRegistrationFingerprint.Compute(registration);
         var revision = new ApplicationRevision(registration.Id, 1, fingerprint, ReadOnly(registration.BaseApplications));
         _registrations.Add(registration.Id, registration);
-        _revisions.Add(registration.Id, revision);
+        _revisions.Add((registration.Id, revision.Revision), revision);
         return Copy(revision);
     }
 
     public ApplicationRevision? Get(ApplicationIdentifier applicationId) =>
-        _revisions.TryGetValue(applicationId, out var value) ? Copy(value) : null;
+        Current(applicationId) is { } value ? Copy(value) : null;
+
+    public ApplicationRevision? Get(ApplicationIdentifier applicationId, int revision) =>
+        _revisions.TryGetValue((applicationId, revision), out var value)
+            ? Copy(value) : null;
+
+    public ApplicationRevision ReviseBaseApplications(
+        ApplicationIdentifier applicationId,
+        IReadOnlyList<ApplicationIdentifier> baseApplications,
+        int expectedRevision,
+        string expectedFingerprint)
+    {
+        if (!_registrations.TryGetValue(applicationId, out var current)
+            || Current(applicationId) is not { } revision)
+            throw new KeyNotFoundException("Application is not registered.");
+        if (revision.Revision != expectedRevision || revision.Fingerprint != expectedFingerprint)
+            throw new InvalidOperationException("The application revision is stale.");
+        var candidate = Copy(current with { BaseApplications = ReadOnly(baseApplications) });
+        if (candidate.BaseApplications.Distinct().Count() != candidate.BaseApplications.Count
+            || candidate.BaseApplications.Contains(candidate.Id)
+            || candidate.BaseApplications.Any(value => !_registrations.ContainsKey(value)))
+            throw new ArgumentException("Application bases must be distinct, registered, and may not include the application itself.");
+        if (candidate.BaseApplications.SequenceEqual(current.BaseApplications)) return Copy(revision);
+        var next = new ApplicationRevision(applicationId, revision.Revision + 1,
+            ApplicationRegistrationFingerprint.Compute(candidate), ReadOnly(candidate.BaseApplications));
+        _registrations[applicationId] = candidate;
+        _revisions.Add((applicationId, next.Revision), next);
+        return Copy(next);
+    }
+
+    private ApplicationRevision? Current(ApplicationIdentifier applicationId) =>
+        _revisions.Where(value => value.Key.ApplicationId == applicationId)
+            .OrderByDescending(value => value.Key.Revision)
+            .Select(value => value.Value)
+            .FirstOrDefault();
 
     public ApplicationRegistration? Describe(ApplicationIdentifier applicationId) =>
         _registrations.TryGetValue(applicationId, out var value) ? Copy(value) : null;
@@ -161,14 +213,17 @@ public static class ApplicationRegistrationFingerprint
 
 public sealed record StateSpaceBinding
 {
-    public StateSpaceBinding(string stateSpaceId, ApplicationRevision applicationRevision, string manifestFingerprint)
+    public StateSpaceBinding(string stateSpaceId, ApplicationRevision applicationRevision,
+        string manifestFingerprint, string? resolutionFingerprint = null,
+        EcsStateSpaceScope scope = EcsStateSpaceScope.Runtime)
     {
         ArgumentNullException.ThrowIfNull(applicationRevision);
         if (string.IsNullOrWhiteSpace(stateSpaceId) || stateSpaceId.Length > 200
             || applicationRevision.Revision < 1
             || applicationRevision.BaseApplications is null
             || !UpperSha256(applicationRevision.Fingerprint)
-            || !UpperSha256(manifestFingerprint))
+            || !UpperSha256(manifestFingerprint)
+            || resolutionFingerprint is not null && !UpperSha256(resolutionFingerprint))
             throw new ArgumentException("A state space requires an identity and exact immutable application/manifest fingerprints.");
         StateSpaceId = stateSpaceId;
         ApplicationRevision = applicationRevision with
@@ -176,11 +231,15 @@ public sealed record StateSpaceBinding
             BaseApplications = Array.AsReadOnly(applicationRevision.BaseApplications.ToArray())
         };
         ManifestFingerprint = manifestFingerprint;
+        ResolutionFingerprint = resolutionFingerprint ?? manifestFingerprint;
+        Scope = scope;
     }
 
     public string StateSpaceId { get; }
     public ApplicationRevision ApplicationRevision { get; }
     public string ManifestFingerprint { get; }
+    public string ResolutionFingerprint { get; }
+    public EcsStateSpaceScope Scope { get; }
 
     private static bool UpperSha256(string value) => value is { Length: 64 }
         && value.All(c => char.IsAsciiDigit(c) || c is >= 'A' and <= 'F');

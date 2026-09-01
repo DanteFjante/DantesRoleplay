@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
@@ -17,6 +17,7 @@ public sealed class ApplicationActionRunner(
     IApplicationComponentTypeRegistry componentTypes,
     IEntityComponentStore entities,
     IStateSpaceEdgeStore edges,
+    IApplicationMechanicProjectionMappingResolver mappings,
     IApplicationMechanicEvaluator evaluator,
     IApplicationEcsEffectApplier effects,
     IOperationLog operations) : IApplicationActionRunner
@@ -93,7 +94,7 @@ public sealed class ApplicationActionRunner(
             return Failed(request, ApplicationActionExecutionDisposition.Unsupported,
                 "MECHANIC_EXECUTION_UNSUPPORTED", "This mechanic requires an execution feature not enabled by this action owner.");
 
-        var mapping = await BuildMappingAsync(stateSpace, catalog, request.ApplicationId,
+        var mapping = await mappings.ResolveAsync(request.StateSpaceId, request.ApplicationId,
             request.QualifiedMechanicId, requirements, cancellationToken);
         if (mapping.Problems.Count > 0)
             return Failed(request, ApplicationActionExecutionDisposition.Unsupported,
@@ -119,7 +120,7 @@ public sealed class ApplicationActionRunner(
         if (!evaluation.Run.Ok)
             return Failed(request, ApplicationActionExecutionDisposition.Failed,
                 string.IsNullOrWhiteSpace(evaluation.Run.LimitHit) ? "MECHANIC_FAILED" : "MECHANIC_LIMIT",
-                "The exact mechanic could not produce an accepted result.");
+                SafeMechanicError(evaluation.Run.Error, evaluation.Run.LimitHit));
         if (evaluation.Run.Output.Events.Count > 0 || evaluation.Run.Output.Notifications.Count > 0)
             return Failed(request, ApplicationActionExecutionDisposition.Unsupported,
                 "MECHANIC_OUTPUT_UNSUPPORTED", "Application event or notification output is not enabled for direct execution.");
@@ -185,104 +186,6 @@ public sealed class ApplicationActionRunner(
                     "The same exact application action previously failed.")]);
     }
 
-    private async Task<MappingResult> BuildMappingAsync(
-        StateSpaceView stateSpace,
-        ICatalogNavigator catalog,
-        ApplicationIdentifier applicationId,
-        string mechanicId,
-        MechanicRequirements requirements,
-        CancellationToken cancellationToken)
-    {
-        var owners = stateSpace.ApplicationRevision.BaseApplications
-            .Prepend(stateSpace.ApplicationRevision.ApplicationId).ToArray();
-        var localIds = new HashSet<string>(StringComparer.Ordinal);
-        var localRelationshipKinds = new HashSet<string>(StringComparer.Ordinal);
-        var dependencyVisits = 0;
-        var dependencyProblem = await CollectComponentIdsAsync(
-            requirements, mechanicId, depth: 0, new HashSet<string>(StringComparer.Ordinal));
-        if (dependencyProblem is not null)
-            return MappingResult.Failed("CHILD_DEPENDENCY_INVALID", dependencyProblem);
-        var components = new Dictionary<string, EcsComponentReference>(StringComparer.Ordinal);
-        foreach (var localId in localIds)
-        {
-            var resolved = ResolveComponent(owners, localId);
-            if (resolved is null)
-                return MappingResult.Failed("COMPONENT_MAPPING_MISSING",
-                    "A declared component has no exact current application mapping.");
-            components[localId] = resolved;
-        }
-
-        var relationships = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var relationship in await edges.ListRelationshipsAsync(stateSpace.StateSpaceId, cancellationToken))
-        {
-            var owner = owners.FirstOrDefault(value => relationship.QualifiedKind.StartsWith(value.Value + ".", StringComparison.Ordinal));
-            if (owner is null)
-                return MappingResult.Failed("RELATIONSHIP_OWNER_INVALID",
-                    "A projected relationship belongs to an unrelated application.");
-            var local = relationship.QualifiedKind[(owner.Value.Length + 1)..];
-            if (!relationships.TryAdd(local, relationship.QualifiedKind)
-                && relationships[local] != relationship.QualifiedKind)
-                return MappingResult.Failed("RELATIONSHIP_MAPPING_AMBIGUOUS",
-                    "An application relationship mapping is ambiguous.");
-        }
-        foreach (var local in localRelationshipKinds)
-            relationships.TryAdd(local, applicationId.Value + "." + local);
-        return new(new(components, relationships), []);
-
-        async Task<string?> CollectComponentIdsAsync(
-            MechanicRequirements declared,
-            string currentMechanicId,
-            int depth,
-            HashSet<string> lineage)
-        {
-            foreach (var localId in declared.Roles.Values.SelectMany(value =>
-                         value.Components.Concat(value.ContentComponentIds ?? [])
-                             .Concat((value.ComponentReferences ?? []).SelectMany(reference =>
-                                 new[] { reference.SourceComponentId }.Concat(reference.TargetComponentIds)))
-                             .Concat((value.RelationshipComponents ?? []).SelectMany(reference =>
-                                 reference.TargetComponentIds))))
-                localIds.Add(localId);
-            foreach (var kind in declared.Roles.Values
-                         .SelectMany(value => value.RelationshipComponents ?? [])
-                         .Select(value => value.Kind))
-                localRelationshipKinds.Add(kind);
-
-            if (declared.Children.Count == 0) return null;
-            if (declared.Children.Count > 64) return "The declared child-mechanic count exceeds the supported limit.";
-            if (depth >= 8) return "The declared child-mechanic depth exceeds the supported limit.";
-            if (!lineage.Add(currentMechanicId))
-                return "The declared child-mechanic graph contains a cycle.";
-
-            foreach (var child in declared.Children.OrderBy(pair => pair.Key, StringComparer.Ordinal))
-            {
-                if (++dependencyVisits > 256) return "The declared child-mechanic graph exceeds the supported traversal limit.";
-                var childMechanicId = QualifyMechanicId(applicationId, child.Value.MechanicId);
-                if (lineage.Contains(childMechanicId))
-                    return "The declared child-mechanic graph contains a cycle.";
-                CatalogRecordView childRecord;
-                try { childRecord = catalog.Inspect(new(applicationId, applicationId.Value, childMechanicId)); }
-                catch (Exception) { return $"Declared child '{child.Key}' is unavailable."; }
-                if (childRecord.Summary.Kind != "mechanic" || childRecord.Summary.Status != "active")
-                    return $"Declared child '{child.Key}' is inactive.";
-                try
-                {
-                    using var document = JsonDocument.Parse(childRecord.ContentJson);
-                    if (!document.RootElement.TryGetProperty("requirements", out var value)
-                        || value.ValueKind != JsonValueKind.String)
-                        return $"Declared child '{child.Key}' has invalid requirements.";
-                    var childRequirements = MechanicRequirements.Parse(value.GetString()!);
-                    if (childRequirements.ProjectionProblems().Count > 0 || childRequirements.CompositionProblems().Count > 0)
-                        return $"Declared child '{child.Key}' has invalid requirements.";
-                    var nested = await CollectComponentIdsAsync(childRequirements, childRecord.Summary.QualifiedId, depth + 1,
-                        new HashSet<string>(lineage, StringComparer.Ordinal));
-                    if (nested is not null) return nested;
-                }
-                catch (JsonException) { return $"Declared child '{child.Key}' has invalid requirements."; }
-            }
-            return null;
-        }
-    }
-
     private EcsComponentReference? ResolveComponent(
         IReadOnlyList<ApplicationIdentifier> owners,
         string localOrQualifiedId)
@@ -319,10 +222,6 @@ public sealed class ApplicationActionRunner(
         }
         return null;
     }
-
-    private static string QualifyMechanicId(ApplicationIdentifier applicationId, string mechanicId) =>
-        mechanicId.StartsWith(applicationId.Value + ".", StringComparison.Ordinal)
-            ? mechanicId : applicationId.Value + "." + mechanicId;
 
     private async Task<TranslationResult> TranslateAsync(
         StateSpaceView stateSpace,
@@ -461,19 +360,28 @@ public sealed class ApplicationActionRunner(
             disposition, operationId, request.QualifiedMechanicId, request.ContentFingerprint,
             request.Seed, narration, applied, problems);
 
+    /// <summary>
+    /// The message a refusing mechanic wrote for its caller. A mechanic's own `throw` is authored
+    /// text about the caller's request -- "The destination is outside the campaign World." -- and
+    /// withholding it leaves the caller with nothing to act on. It is bounded and passed through as
+    /// written; it is never combined with host state.
+    /// </summary>
+    private static string SafeMechanicError(string? error, string? limitHit)
+    {
+        if (!string.IsNullOrWhiteSpace(limitHit))
+            return $"The exact mechanic hit the '{limitHit}' execution limit.";
+        var text = (error ?? string.Empty).Trim();
+        if (text.Length == 0) return "The exact mechanic could not produce an accepted result.";
+        if (text.Length > 300) text = text[..300];
+        return $"The exact mechanic refused the request: {text}";
+    }
+
     private static string SafeProblem(IReadOnlyList<string> problems) => problems.Count == 0
         ? "The exact application mechanic could not be evaluated."
         : problems[0].Split(':', 2)[0] + ": The exact application mechanic could not be evaluated.";
     private static bool ValidId(string value) => !string.IsNullOrWhiteSpace(value) && value.Length <= 200;
     private static bool UpperSha256(string value) => value is { Length: 64 }
         && value.All(character => char.IsAsciiDigit(character) || character is >= 'A' and <= 'F');
-
-    private sealed record MappingResult(
-        ApplicationMechanicProjectionMapping? Mapping,
-        IReadOnlyList<ApplicationActionExecutionProblem> Problems)
-    {
-        public static MappingResult Failed(string code, string message) => new(null, [new(code, message)]);
-    }
 
     private sealed record TranslationResult(
         IReadOnlyList<ApplicationEcsEffect> Effects,

@@ -55,4 +55,14 @@ public interface IRegistryAdministrationService
         SourceRegistration registration,
         RegistryAdministrationContext context,
         CancellationToken cancellationToken = default);
+
+    Task<RegistryRegistrationPreview<ApplicationExtensionRegistration>> PreviewExtensionAsync(
+        ApplicationExtensionRegistration registration,
+        RegistryAdministrationContext context,
+        CancellationToken cancellationToken = default);
+
+    Task<RegistryRegistrationReceipt<ApplicationExtensionRegistration>> RegisterExtensionAsync(
+        ApplicationExtensionRegistration registration,
+        RegistryAdministrationContext context,
+        CancellationToken cancellationToken = default);
 }

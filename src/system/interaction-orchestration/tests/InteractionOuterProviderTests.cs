@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using DantesRoleplay.DataAccess.Composition;
+using DantesRoleplay.Play;
 
 namespace DantesRoleplay.Interactions.Tests;
 
@@ -46,7 +47,7 @@ public sealed class InteractionOuterProviderTests
             Assert.Equal(InteractionOuterProtocol.NarrationTask,
                 request.Headers.GetValues("X-Dantes-Task-Class").Single());
             return Task.FromResult(calls == 1
-                ? Response("{\"narration\":\"The blow lands.\"}")
+                ? Response("{\"narration\":\"The blow lands.\",\"situation\":{\"transition\":\"replace\",\"kind\":\"combat\",\"summary\":\"Combat with the driver.\",\"participants\":[{\"name\":\"Driver\",\"entityId\":null}],\"location\":null},\"truths\":[{\"statement\":\"The blow landed.\",\"subjectEntityIds\":[]}]}")
                 : new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     Content = new StringContent("{\"status\":\"completed\",\"model\":\"gpt-5.6-luna\",\"output\":[{\"type\":\"function_call\"}]}")
@@ -58,7 +59,21 @@ public sealed class InteractionOuterProviderTests
 
         Assert.True(result.Available);
         Assert.Equal("The blow lands.", result.Narration);
+        Assert.Equal(PlaySituationKinds.Combat, result.Situation!.Kind);
+        Assert.Equal("The blow landed.", Assert.Single(result.Truths!).Statement);
         Assert.False(rejected.Available);
+    }
+
+    [Fact]
+    public async Task Outer_turn_rejects_entity_references_not_present_in_trusted_play_context()
+    {
+        var provider = Provider(new Handler(_ => Task.FromResult(Response(
+            "{\"decision\":\"respond\",\"text\":\"The investigation continues.\",\"situation\":null,\"truths\":[{\"statement\":\"The player is investigating.\",\"subjectEntityIds\":[\"player\"]}]}"))));
+
+        var result = await provider.DecideAsync(new("Continue the investigation."));
+
+        Assert.False(result.Available);
+        Assert.Equal("OUTER_RESPONSE_INVALID", result.Code);
     }
 
     [Fact]

@@ -1,4 +1,4 @@
-namespace DantesRoleplay.DataAccess.Retrieval;
+namespace DantesRoleplay.AI.Ollama;
 
 public sealed class OllamaCompletionOptions
 {

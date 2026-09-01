@@ -1,6 +1,7 @@
 using System.Text.Json;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
+using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.ComponentTypeAdministration;
 using DantesRoleplay.Operations;
 
@@ -31,6 +32,7 @@ internal sealed class SystemComponentTypeHandler
         catch (JsonException) { return await Fail(log,decision,"INVALID_PAYLOAD","payload must be valid JSON with the documented closed component-type shape.",intent,procedures); }
         catch (ComponentTypeAdministrationException e) { return await Fail(log,decision,e.Code,e.Message,intent,procedures,e.Code is "DRY_RUN_REQUIRED" or "REGISTRATION_STALE" ? Call(payload,true) : McpVerbCatalog.CommitCall(Kind,true)); }
         catch (ArgumentException e) { return await Fail(log,decision,"INVALID_PAYLOAD",e.Message,intent,procedures); }
+        catch (CatalogNamespaceException e) { return await Fail(log, decision, e.Code, e.Message, intent, procedures); }
         catch (Exception) when (!cancellationToken.IsCancellationRequested) { return await Fail(log, decision, "COMPONENT_TYPE_REGISTER_FAILED", "Component-type registration could not be completed.", intent, procedures); }
     }
     private static object Data(bool dryRun,string token,string outcome,DantesRoleplay.Ecs.RegisteredComponentTypeVersion type)=>new { DryRun=dryRun, RequestToken=token, Outcome=outcome, ComponentType=new { ApplicationId=type.Owner.Value,type.QualifiedId,type.Version,type.ProfileId,type.SchemaHash } };

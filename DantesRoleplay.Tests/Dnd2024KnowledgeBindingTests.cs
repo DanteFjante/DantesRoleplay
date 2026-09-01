@@ -17,12 +17,12 @@ public sealed class Dnd2024KnowledgeBindingTests
             "campaign.thalorien.brackenford", new('A', 64));
         binding.Validate();
 
-        Assert.Equal("dnd2024.game.core.campaign.character-participation",
+        Assert.Equal("game.core.campaign.character-participation",
             binding.ParticipationComponentTypeId);
-        Assert.Equal("dnd2024.game.core.campaign.has-character-participation",
+        Assert.Equal("game.core.campaign.has-character-participation",
             binding.CampaignParticipationRelationshipKind);
         var secret = Assert.Single(binding.KnowledgeKinds,
-            value => value.ComponentTypeId == "dnd2024.game.core.world.secret");
+            value => value.ComponentTypeId == "game.core.world.secret");
         Assert.Equal("statement", secret.PresentationKind);
     }
 

@@ -13,9 +13,19 @@ namespace DantesRoleplay.ApplicationActivation;
 public sealed class ApplicationActivationService(
     DantesRoleplayDbContext db,
     IApplicationPreviewService previews,
+    IApplicationExtensionRegistry extensions,
     IProjectionImpactService impacts,
     IOperationLog operations) : IApplicationActivationService
 {
+    public ApplicationActivationService(
+        DantesRoleplayDbContext db,
+        IApplicationPreviewService previews,
+        IProjectionImpactService impacts,
+        IOperationLog operations)
+        : this(db, previews, new EmptyApplicationExtensionRegistry(), impacts, operations)
+    {
+    }
+
     private const string Kind = "system.application.activate";
     private const string CoverageVersion = "declared-component-field-projection-v1";
 
@@ -125,9 +135,16 @@ public sealed class ApplicationActivationService(
         ApplicationPreviewResult preview;
         try
         {
-            preview = request.SourceIds is null
-                ? await previews.PreviewAsync(request.ApplicationId, cancellationToken)
-                : await previews.PreviewAsync(request.ApplicationId, CanonicalSourceIds(request.SourceIds), cancellationToken);
+            preview = request.ExtensionIds is not null && request.SourceIds is not null
+                ? await previews.PreviewAsync(request.ApplicationId,
+                    CanonicalSourceIds(request.SourceIds), CanonicalExtensionIds(request.ExtensionIds), cancellationToken)
+                : request.ExtensionIds is not null
+                    ? await previews.PreviewExtensionsAsync(request.ApplicationId,
+                        CanonicalExtensionIds(request.ExtensionIds), cancellationToken)
+                : request.SourceIds is null
+                    ? await previews.PreviewAsync(request.ApplicationId, cancellationToken)
+                    : await previews.PreviewAsync(request.ApplicationId,
+                        CanonicalSourceIds(request.SourceIds), cancellationToken);
         }
         catch (ApplicationPreviewException exception)
         {
@@ -145,12 +162,27 @@ public sealed class ApplicationActivationService(
             document.LogicalIdentity, document.SourceId, document.Trust, document.Precedence,
             document.RelativePath, document.MediaType, document.ContentFingerprint, document.Length,
             document.IsText)).ToArray();
-        var activationFingerprint = Fingerprint(preview, impact.GraphFingerprint, sources, winners);
-        return new(request.ApplicationId, 0, preview.ApplicationRevision, preview.ApplicationFingerprint,
+        var activatedExtensions = preview.ExtensionIds.Select(extensionId =>
+        {
+            var registration = extensions.Get(request.ApplicationId, extensionId)
+                ?? throw Invalid("EXTENSION_REGISTRATION_DRIFT",
+                    "A previewed extension registration is no longer available.");
+            return new ActivatedApplicationExtension(extensionId,
+                ApplicationExtensionRegistrationFingerprint.Compute(registration),
+                registration.SourceIds, registration.NamespaceIds,
+                registration.HigherPriorityThan, registration.OverridesBase);
+        }).ToArray();
+        var activationFingerprint = Fingerprint(preview, impact.GraphFingerprint, sources, winners,
+            activatedExtensions);
+        return new ActiveApplicationManifest(request.ApplicationId, 0, preview.ApplicationRevision, preview.ApplicationFingerprint,
             preview.PreviewFingerprint, preview.ScannedDocumentsFingerprint,
             preview.CandidateManifestFingerprint, impact.GraphFingerprint, activationFingerprint,
             CoverageVersion, false, Array.AsReadOnly(sources), Array.AsReadOnly(winners), operationId,
-            DateTime.UtcNow);
+            DateTime.UtcNow)
+        {
+            ResolutionFingerprint = preview.ResolutionFingerprint,
+            Extensions = Array.AsReadOnly(activatedExtensions)
+        };
     }
 
     private void Persist(ActiveApplicationManifest activation)
@@ -165,6 +197,7 @@ public sealed class ApplicationActivationService(
             ScannedDocumentsFingerprint = activation.ScannedDocumentsFingerprint,
             CandidateManifestFingerprint = activation.CandidateManifestFingerprint,
             DependencyGraphFingerprint = activation.DependencyGraphFingerprint,
+            ResolutionFingerprint = activation.ResolutionFingerprint,
             ActivationFingerprint = activation.ActivationFingerprint,
             DependencyCoverageVersion = activation.DependencyCoverageVersion,
             DependencyCoverageComplete = activation.DependencyCoverageComplete,
@@ -181,6 +214,19 @@ public sealed class ApplicationActivationService(
                 RegistrationFingerprint = source.RegistrationFingerprint,
                 DocumentCount = source.DocumentCount,
                 ProblemCount = source.ProblemCount
+            });
+        foreach (var (extension, ordinal) in activation.Extensions.Select((value, index) => (value, index)))
+            db.Add(new ApplicationActivationExtensionRecord
+            {
+                ApplicationId = activation.ApplicationId.Value,
+                ActivationRevision = activation.ActivationRevision,
+                Ordinal = ordinal,
+                ExtensionId = extension.ExtensionId,
+                RegistrationFingerprint = extension.RegistrationFingerprint,
+                SourceIdsJson = JsonSerializer.Serialize(extension.SourceIds),
+                NamespaceIdsJson = JsonSerializer.Serialize(extension.NamespaceIds),
+                HigherPriorityThanJson = JsonSerializer.Serialize(extension.HigherPriorityThan),
+                OverridesBase = extension.OverridesBase
             });
         foreach (var (document, ordinal) in activation.Winners.Select((value, index) => (value, index)))
             db.Add(new ApplicationActivationDocumentRecord
@@ -241,12 +287,22 @@ public sealed class ApplicationActivationService(
             .Select(value => new ActivatedApplicationDocument(value.LogicalIdentity, value.SourceId,
                 (SourceTrust)value.Trust, value.Precedence, value.RelativePath, value.MediaType,
                 value.ContentFingerprint, value.Length, value.IsText)).ToArray();
-        return new(ApplicationIdentifier.Parse(row.ApplicationId), row.ActivationRevision,
+        var activatedExtensions = db.Set<ApplicationActivationExtensionRecord>().AsNoTracking()
+            .Where(value => value.ApplicationId == applicationId && value.ActivationRevision == activationRevision)
+            .OrderBy(value => value.Ordinal).AsEnumerable()
+            .Select(value => new ActivatedApplicationExtension(value.ExtensionId,
+                value.RegistrationFingerprint, Strings(value.SourceIdsJson), Strings(value.NamespaceIdsJson),
+                Strings(value.HigherPriorityThanJson), value.OverridesBase)).ToArray();
+        return new ActiveApplicationManifest(ApplicationIdentifier.Parse(row.ApplicationId), row.ActivationRevision,
             row.ApplicationRevision, row.ApplicationFingerprint, row.PreviewFingerprint,
             row.ScannedDocumentsFingerprint, row.CandidateManifestFingerprint,
             row.DependencyGraphFingerprint, row.ActivationFingerprint, row.DependencyCoverageVersion,
             row.DependencyCoverageComplete, Array.AsReadOnly(sources), Array.AsReadOnly(winners),
-            row.ActivatedByOperationId, DateTime.SpecifyKind(row.ActivatedAtUtc, DateTimeKind.Utc));
+            row.ActivatedByOperationId, DateTime.SpecifyKind(row.ActivatedAtUtc, DateTimeKind.Utc))
+        {
+            ResolutionFingerprint = row.ResolutionFingerprint,
+            Extensions = Array.AsReadOnly(activatedExtensions)
+        };
     }
 
     private int NextRevision(ApplicationIdentifier applicationId) =>
@@ -301,6 +357,7 @@ public sealed class ApplicationActivationService(
             || request.ExpectedActiveFingerprint is not null && !UpperSha256(request.ExpectedActiveFingerprint))
             throw Invalid("INVALID_PAYLOAD", "Activation fingerprints must be uppercase SHA-256 values or null where allowed.");
         if (request.SourceIds is not null) _ = CanonicalSourceIds(request.SourceIds);
+        if (request.ExtensionIds is not null) _ = CanonicalExtensionIds(request.ExtensionIds);
         if (context.RequestToken.Length != 32
             || context.RequestToken.Any(character => !(char.IsAsciiDigit(character) || character is >= 'a' and <= 'f')))
             throw Invalid("INVALID_PAYLOAD", "requestToken must contain exactly 32 lowercase hexadecimal characters.");
@@ -314,7 +371,8 @@ public sealed class ApplicationActivationService(
         applicationId = request.ApplicationId.Value,
         request.PreviewFingerprint,
         request.ExpectedActiveFingerprint,
-        sourceIds = request.SourceIds is null ? null : CanonicalSourceIds(request.SourceIds)
+        sourceIds = request.SourceIds is null ? null : CanonicalSourceIds(request.SourceIds),
+        extensionIds = request.ExtensionIds is null ? null : CanonicalExtensionIds(request.ExtensionIds)
     });
 
     private static IReadOnlyList<string> CanonicalSourceIds(IReadOnlyList<string> values)
@@ -326,11 +384,20 @@ public sealed class ApplicationActivationService(
         return Array.AsReadOnly(values.OrderBy(value => value, StringComparer.Ordinal).ToArray());
     }
 
+    private static IReadOnlyList<string> CanonicalExtensionIds(IReadOnlyList<string> values)
+    {
+        if (values.Count > 100 || values.Any(value => !ApplicationExtensionIdentity.IsValid(value))
+            || values.Distinct(StringComparer.Ordinal).Count() != values.Count)
+            throw Invalid("INVALID_PAYLOAD", "extensionIds must contain at most 100 unique registered extension IDs.");
+        return Array.AsReadOnly(values.OrderBy(value => value, StringComparer.Ordinal).ToArray());
+    }
+
     private static string Fingerprint(
         ApplicationPreviewResult preview,
         string dependencyGraphFingerprint,
         IReadOnlyList<ActivatedApplicationSource> sources,
-        IReadOnlyList<ActivatedApplicationDocument> winners) => Hash(new
+        IReadOnlyList<ActivatedApplicationDocument> winners,
+        IReadOnlyList<ActivatedApplicationExtension> activatedExtensions) => Hash(new
     {
         applicationId = preview.ApplicationId.Value,
         preview.ApplicationRevision,
@@ -339,11 +406,17 @@ public sealed class ApplicationActivationService(
         preview.ScannedDocumentsFingerprint,
         preview.CandidateManifestFingerprint,
         dependencyGraphFingerprint,
+        preview.ResolutionFingerprint,
         dependencyCoverageVersion = CoverageVersion,
         dependencyCoverageComplete = false,
         sources,
-        winners
+        winners,
+        extensions = activatedExtensions
     });
+
+    private static IReadOnlyList<string> Strings(string json) =>
+        Array.AsReadOnly(JsonSerializer.Deserialize<string[]>(json)
+            ?? throw Invalid("ACTIVATION_INCONSISTENT", "Stored activation extension metadata is invalid."));
 
     private static string Hash<T>(T value) =>
         Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(value)));
@@ -370,6 +443,7 @@ internal sealed class ApplicationActivationRevisionRecord
     public required string ScannedDocumentsFingerprint { get; set; }
     public required string CandidateManifestFingerprint { get; set; }
     public required string DependencyGraphFingerprint { get; set; }
+    public required string ResolutionFingerprint { get; set; }
     public required string ActivationFingerprint { get; set; }
     public required string DependencyCoverageVersion { get; set; }
     public bool DependencyCoverageComplete { get; set; }
@@ -408,6 +482,19 @@ internal sealed class ApplicationActivationDocumentRecord
     public required string ContentFingerprint { get; set; }
     public long Length { get; set; }
     public bool IsText { get; set; }
+}
+
+internal sealed class ApplicationActivationExtensionRecord
+{
+    public required string ApplicationId { get; set; }
+    public int ActivationRevision { get; set; }
+    public int Ordinal { get; set; }
+    public required string ExtensionId { get; set; }
+    public required string RegistrationFingerprint { get; set; }
+    public required string SourceIdsJson { get; set; }
+    public required string NamespaceIdsJson { get; set; }
+    public required string HigherPriorityThanJson { get; set; }
+    public bool OverridesBase { get; set; }
 }
 
 internal sealed class ApplicationActivationReceiptRecord

@@ -1,3 +1,5 @@
+using DantesRoleplay.AI;
+using DantesRoleplay.AI.Codex;
 using DantesRoleplay.CodexBridge;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,6 +25,9 @@ public static class CodexBridgeComponentExtensions
 
         services.AddSingleton(options);
         services.AddSingleton<ICodexAppServerFactory, CodexAppServerProcessFactory>();
+        services.AddSingleton<ICodexAiClient, CodexAiClient>();
+        services.AddSingleton<CodexAiProvider>();
+        services.AddSingleton<IAiProvider>(provider => provider.GetRequiredService<CodexAiProvider>());
         services.AddSingleton<CodexTurnRegistry>();
         services.AddScoped<ICodexConversationService, CodexConversationService>();
         return services;

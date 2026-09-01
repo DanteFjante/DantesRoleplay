@@ -98,10 +98,16 @@ public sealed class LocalInteractionOuterProvider(
                 _ => throw new JsonException()
             };
             Exact(root, decision == InteractionOuterDecision.Respond
-                ? ["decision", "text"] : ["decision", "intentText"]);
+                ? ["decision", "text", "situation", "truths"] : ["decision", "intentText"]);
             var text = RequiredString(root, decision == InteractionOuterDecision.Respond ? "text" : "intentText");
+            var situation = decision == InteractionOuterDecision.Respond
+                ? InteractionNarrativeOutput.Situation(root) : null;
+            IReadOnlyList<DantesRoleplay.Play.PlayTruthAssertion> truths = decision == InteractionOuterDecision.Respond
+                ? InteractionNarrativeOutput.Truths(root) : [];
+            InteractionNarrativeOutput.ValidateReferences(situation, truths, request.BoundPlayContext);
             return text.Length <= 4_000
-                ? new(true, decision, text, "OUTER_TURN_COMPLETED")
+                ? new(true, decision, text, "OUTER_TURN_COMPLETED",
+                    situation, truths)
                 : InteractionOuterTurnResult.Unavailable("OUTER_RESPONSE_INVALID");
         }
         catch (JsonException) { return InteractionOuterTurnResult.Unavailable("OUTER_RESPONSE_INVALID"); }
@@ -119,10 +125,14 @@ public sealed class LocalInteractionOuterProvider(
         try
         {
             using var document = JsonDocument.Parse(output.Json);
-            Exact(document.RootElement, ["narration"]);
+            Exact(document.RootElement, ["narration", "situation", "truths"]);
             var narration = RequiredString(document.RootElement, "narration");
+            var situation = InteractionNarrativeOutput.Situation(document.RootElement);
+            var truths = InteractionNarrativeOutput.Truths(document.RootElement);
+            InteractionNarrativeOutput.ValidateReferences(situation, truths, request.BoundPlayContext);
             return narration.Length <= 4_000
-                ? new(true, narration, "NARRATION_COMPLETED")
+                ? new(true, narration, "NARRATION_COMPLETED",
+                    situation, truths)
                 : InteractionNarrationResult.Unavailable("NARRATION_RESPONSE_INVALID");
         }
         catch (JsonException) { return InteractionNarrationResult.Unavailable("NARRATION_RESPONSE_INVALID"); }

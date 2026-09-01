@@ -1,0 +1,12 @@
+{
+  "id": "location.shardwake",
+  "owner": "location",
+  "description": "World regions, settlements, sites, and interiors belonging to the Shardwake Isles. Every entity here must carry the governed world-location component and belong to world.shardwake through containment.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for the autonomous Shardwake machine-simulation world and restricted to governed location entities."
+}

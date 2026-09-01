@@ -1,278 +1,144 @@
 import assert from "node:assert/strict";
-import { resolve } from "node:path";
 import test from "node:test";
 
-import { filterRuleReferences, ruleCategoryOptions } from "../src/data/rules-reference.js";
-import {
-  projectCatalogRuleRecord,
-  projectCatalogRuleSummary,
-  readRuleReferenceDetail,
-  readRulesReference,
-} from "../src/server/rules-reference.ts";
-import { buildBundledRulesCatalog } from "../src/server/bundled-rules-catalog.ts";
+import { filterRuleReferences, ruleSectionOptions } from "../src/data/rules-reference.js";
+import { projectResolvedRules, readRulesReference } from "../src/server/rules-reference.ts";
 
-const SOURCE_ID = "dnd2024.source.srd-5.2.1";
-
-function summary(id, path, name, overrides = {}) {
-  return {
-    collection: "dnd2024",
-    kind: "entity",
-    qualifiedId: id,
-    name,
-    description: name,
-    path,
-    status: "active",
-    version: 1,
-    contentFingerprint: `HASH-${id}`,
-    sourceId: "dnd2024",
-    sourceLogicalPath: `content/${path}/${id}.json`,
-    ...overrides,
-  };
-}
-
-function detail(indexEntry, {
-  revision = 1,
-  sourceId = SOURCE_ID,
-  presentation = `${indexEntry.title} authored summary.`,
-  status = "active",
+function rule({
+  id = "dnd2024.rule.combat.attack",
+  resolutionKey = "rule.combat.attack",
+  title = "Attack",
+  classification = "core",
+  ownerId = "base",
+  sourceLabel = "Core",
 } = {}) {
-  const presentationComponent = presentation === null
-    ? {}
-    : { "dnd2024.core.presentation": { summary: presentation } };
   return {
-    summary: summary(indexEntry.id, indexEntry.path, indexEntry.title, {
-      contentFingerprint: indexEntry.contentFingerprint,
-    }),
-    contentJson: JSON.stringify({
-      id: indexEntry.id,
-      name: indexEntry.title,
-      archetype: "dnd2024.archetype.fixture-definition",
-      components: {
-        "dnd2024.core.source": {
-          citations: [{
-            sourceRef: { entityId: sourceId },
-            locator: `Rules > ${indexEntry.title} (SRD 5.2.1, page 1)`,
-          }],
-        },
-        "dnd2024.core.version": { revision, status },
-        ...presentationComponent,
-      },
-    }),
+    id,
+    resolutionKey,
+    title,
+    summary: "Resolve an attack through the active mechanic.",
+    order: 10,
+    blocks: [
+      { kind: "steps", heading: "Resolution", body: null, items: ["Choose a target.", "Resolve the attack."] },
+      { kind: "callout", heading: "Authority", body: "The mechanic owns the outcome.", items: [] },
+    ],
+    examples: [{ title: "A nearby target", body: "The recorded attack activity supplies the input." }],
+    relatedRuleIds: ["dnd2024.rule.characters.sheet"],
+    citations: [{ sourceId: "source.fixture", locator: "Fixture rules, page 1" }],
+    authority: {
+      mechanicIds: ["dnd2024.mechanic.weapon-attack"],
+      procedureIds: ["dnd2024.procedure.mechanic.weapon-attack"],
+    },
+    visibility: "public",
+    source: { ownerId, label: sourceLabel, classification },
   };
 }
 
-function node(path) {
-  return { kind: 0, node: { path }, record: null };
-}
-
-function record(value) {
-  return { kind: 1, node: null, record: value };
-}
-
-function response(status, body) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
-}
-
-function browseFixture(requested) {
-  const branch = requested.searchParams.get("branch");
-  const cursor = requested.searchParams.get("cursor");
-  const pages = {
-    entities: [node("entities/character-options"), node("entities/shared-rules"), node("entities/spells")],
-    "entities/character-options": [node("entities/character-options/classes")],
-    "entities/character-options/classes": [
-      record(summary("dnd2024.class.fighter", "entities/character-options/classes", "Fighter")),
-    ],
-    "entities/shared-rules": [node("entities/shared-rules/activity")],
-    "entities/shared-rules/activity": cursor === "page-2"
-      ? [record(summary("dnd2024.shared.action.search", "entities/shared-rules/activity", "Search"))]
-      : [
-          record(summary("dnd2024.shared.action.attack", "entities/shared-rules/activity", "Attack")),
-          record(summary("dnd2024.internal.mechanic", "entities/shared-rules/activity", "Internal", { kind: "mechanic" })),
-        ],
-    "entities/spells": [node("entities/spells/definition")],
-    "entities/spells/definition": [
-      record(summary("dnd2024.spell.fireball", "entities/spells/definition", "Fireball")),
-    ],
-  };
+function payload(sections = [{ id: "combat", label: "Combat", order: 20, rules: [rule()] }]) {
   return {
-    entries: pages[branch] ?? [],
-    nextCursor: branch === "entities/shared-rules/activity" && cursor === null ? "page-2" : null,
+    applicationId: "dnd2024",
+    resolutionFingerprint: "A".repeat(64),
+    rulesFingerprint: "B".repeat(64),
+    audience: "public",
+    sections,
   };
 }
 
-test("discovers every active entity summary recursively without a maintained ID list", async () => {
-  const calls = [];
-  const rules = await readRulesReference({
-    serverOrigin: "http://localhost:6217",
-    applicationId: "dnd2024",
-    fetchImpl: async (input) => {
-      const requested = new URL(input);
-      calls.push(requested);
-      return response(200, browseFixture(requested));
+test("projects catalog-defined sections and source ownership from the resolved rules response", () => {
+  const projected = projectResolvedRules(payload([
+    { id: "characters", label: "Characters", order: 10, rules: [] },
+    {
+      id: "combat",
+      label: "Combat",
+      order: 20,
+      rules: [
+        rule(),
+        rule({
+          id: "dnd2024.extension.caldris.rule.combat.flourish",
+          resolutionKey: "rule.combat.flourish",
+          title: "Caldris Flourish",
+          classification: "homebrew",
+          ownerId: "caldris-homebrew",
+          sourceLabel: "Caldris Homebrew",
+        }),
+      ],
     },
-  });
+  ]));
 
-  assert.deepEqual(rules.map(({ id }) => id), [
-    "dnd2024.class.fighter",
-    "dnd2024.shared.action.attack",
-    "dnd2024.shared.action.search",
-    "dnd2024.spell.fireball",
+  assert.equal(projected.length, 2);
+  assert.deepEqual(projected.map(({ section }) => section), [
+    { id: "combat", label: "Combat", order: 20 },
+    { id: "combat", label: "Combat", order: 20 },
   ]);
-  assert.deepEqual(ruleCategoryOptions(rules), ["All", "Character Options", "Shared Rules", "Spells"]);
-  assert.equal(rules.find(({ id }) => id.endsWith("fighter")).subcategory, "Classes");
-  assert.equal(rules.find(({ id }) => id.endsWith("fireball")).category, "Spells");
-  assert.equal(calls.every((request) => request.pathname.endsWith("/catalog/browse")), true);
-  assert.equal(calls.every((request) => request.searchParams.get("collection") === "dnd2024"), true);
-  assert.equal(calls.some((request) => request.searchParams.get("cursor") === "page-2"), true);
+  assert.equal(projected[1].source.classification, "homebrew");
+  assert.equal(projected[1].source.label, "Caldris Homebrew");
 });
 
-test("build snapshot includes the current source-cited implementation without a rule allowlist", () => {
-  const entitiesRoot = resolve(import.meta.dirname, "../../../../../catalog/applications/dnd2024/content/entities");
-  const rules = buildBundledRulesCatalog(entitiesRoot);
-
-  assert.ok(rules.length > 2_000);
-  assert.ok(rules.some(({ id }) => id === "dnd2024.class.fighter"));
-  assert.ok(rules.some(({ id }) => id === "dnd2024.spell.fireball"));
-  assert.ok(rules.some(({ category }) => category === "Creatures"));
-  assert.equal(rules.every(({ source }) => source?.id === SOURCE_ID), true);
-  assert.equal(new Set(rules.map(({ id }) => id)).size, rules.length);
+test("rejects malformed resolved rules instead of falling back to catalog folders", () => {
+  assert.equal(projectResolvedRules({ ...payload(), applicationId: "other" }), null);
+  assert.equal(projectResolvedRules({ ...payload(), rulesFingerprint: "" }), null);
+  assert.equal(projectResolvedRules(payload([{ id: "combat", label: "Combat", order: 20, rules: [
+    { ...rule(), authority: { mechanicIds: [], procedureIds: [] } },
+  ] }])), null);
+  assert.equal(projectResolvedRules(payload([{ id: "combat", label: "Combat", order: 20, rules: [
+    { ...rule(), source: { ownerId: "base", label: "Core", classification: "unknown" } },
+  ] }])), null);
 });
 
-test("falls back to the bundled implementation index when the activated catalog is unavailable", async () => {
-  const bundled = projectCatalogRuleRecord(
-    detail(projectCatalogRuleSummary(summary(
-      "dnd2024.spell.fireball",
-      "entities/spells/definition",
-      "Fireball",
-    ))),
-    projectCatalogRuleSummary(summary(
-      "dnd2024.spell.fireball",
-      "entities/spells/definition",
-      "Fireball",
-    )),
-  );
-  const calls = [];
-  const rules = await readRulesReference({
-    serverOrigin: "http://localhost:6217",
+test("loads only the resolved rules endpoint and has no static fallback", async () => {
+  const requested = [];
+  const projected = await readRulesReference({
+    serverOrigin: "https://localhost:5144",
     applicationId: "dnd2024",
-    fetchImpl: async (input) => {
-      const requested = new URL(input);
-      calls.push(requested.pathname);
-      return requested.pathname.endsWith("/catalog/browse")
-        ? response(503, { error: "unavailable" })
-        : response(200, [bundled]);
+    fetchImpl: async (url) => {
+      requested.push(String(url));
+      return new Response(JSON.stringify(payload()), { status: 200, headers: { "Content-Type": "application/json" } });
     },
   });
 
-  assert.deepEqual(rules.map(({ id }) => id), ["dnd2024.spell.fireball"]);
-  assert.deepEqual(calls, [
-    "/api/applications/dnd2024/catalog/browse",
-    "/ui/dnd2024-play/assets/rules-catalog.json",
-  ]);
-});
+  assert.equal(projected.length, 1);
+  assert.deepEqual(requested, ["https://localhost:5144/api/applications/dnd2024/rules"]);
 
-test("selected detail reflects revised content and supports a neutral missing-summary fallback", async () => {
-  const indexEntry = projectCatalogRuleSummary(
-    summary("dnd2024.spell.fireball", "entities/spells/definition", "Fireball"),
-  );
-  const revised = projectCatalogRuleRecord(detail(indexEntry, {
-    revision: 3,
-    presentation: "A revised Fireball catalog summary.",
-  }), indexEntry);
-  assert.equal(revised.revision, 3);
-  assert.equal(revised.summary, "A revised Fireball catalog summary.");
-  assert.equal(revised.source.id, SOURCE_ID);
-
-  const noPresentation = projectCatalogRuleRecord(detail(indexEntry, {
-    revision: 4,
-    presentation: null,
-  }), indexEntry);
-  assert.equal(noPresentation.summary, "Definition reference registered in the D&D 2024 catalog.");
-  assert.equal(noPresentation.revision, 4);
-
-  const fetched = await readRuleReferenceDetail({
-    serverOrigin: "http://localhost:6217",
+  const unavailableRequests = [];
+  const unavailable = await readRulesReference({
+    serverOrigin: "https://localhost:5144",
     applicationId: "dnd2024",
-    rule: indexEntry,
-    fetchImpl: async (input) => {
-      const requested = new URL(input);
-      assert.match(requested.pathname, /\/catalog\/records\/dnd2024\.spell\.fireball$/u);
-      assert.equal(requested.searchParams.get("collection"), "dnd2024");
-      return response(200, detail(indexEntry, { revision: 5 }));
+    fetchImpl: async (url) => {
+      unavailableRequests.push(String(url));
+      return new Response("unavailable", { status: 503 });
     },
   });
-  assert.equal(fetched.revision, 5);
+  assert.deepEqual(unavailable, []);
+  assert.equal(unavailableRequests.length, 1);
 });
 
-test("index and detail gates reject inactive, mismatched, non-entity, and wrong-source records", () => {
-  const validSummary = summary("dnd2024.shared.action.search", "entities/shared-rules/activity", "Search");
-  const indexEntry = projectCatalogRuleSummary(validSummary);
-  assert.equal(indexEntry.id, validSummary.qualifiedId);
-  assert.equal(projectCatalogRuleSummary({ ...validSummary, kind: "procedure" }), null);
-  assert.equal(projectCatalogRuleSummary({ ...validSummary, status: "draft" }), null);
-  assert.equal(projectCatalogRuleSummary({ ...validSummary, path: "mechanics/activity" }), null);
-  assert.equal(projectCatalogRuleRecord(detail(indexEntry, { sourceId: "source.other" }), indexEntry), null);
-  assert.equal(projectCatalogRuleRecord(detail(indexEntry, { status: "retired" }), indexEntry), null);
-  assert.equal(projectCatalogRuleRecord({
-    ...detail(indexEntry),
-    summary: { ...validSummary, qualifiedId: "dnd2024.shared.action.attack" },
-  }, indexEntry), null);
-});
-
-test("malformed or unavailable browse fails closed instead of returning a partial index", async () => {
-  assert.deepEqual(await readRulesReference({
-    serverOrigin: "http://localhost:6217",
-    applicationId: "dnd2024",
-    fetchImpl: async () => response(503, { error: "unavailable" }),
-  }), []);
-
-  assert.deepEqual(await readRulesReference({
-    serverOrigin: "http://localhost:6217",
-    applicationId: "dnd2024",
-    fetchImpl: async () => response(200, {
-      entries: [node("entities/shared-rules"), node("entities/shared-rules")],
-      nextCursor: null,
-    }),
-  }), []);
-});
-
-test("filters dynamic families, names, IDs, summaries, and loaded sources without mutating input", () => {
-  const fireball = projectCatalogRuleSummary(
-    summary("dnd2024.spell.fireball", "entities/spells/definition", "Fireball"),
-  );
-  const searchIndex = projectCatalogRuleSummary(
-    summary("dnd2024.shared.action.search", "entities/shared-rules/activity", "Search"),
-  );
-  const search = projectCatalogRuleRecord(detail(searchIndex), searchIndex);
-  const rules = [fireball, search];
-  const before = JSON.stringify(rules);
-
-  assert.deepEqual(filterRuleReferences(rules, "fireball", "All").map(({ title }) => title), ["Fireball"]);
-  assert.deepEqual(filterRuleReferences(rules, "shared.action.search", "Shared Rules").map(({ title }) => title), ["Search"]);
-  assert.deepEqual(filterRuleReferences(rules, "page 1", "All").map(({ title }) => title), ["Search"]);
-  assert.deepEqual(filterRuleReferences(rules, "", "Spells").map(({ title }) => title), ["Fireball"]);
-  assert.deepEqual(filterRuleReferences(rules, "missing", "All"), []);
-  assert.equal(JSON.stringify(rules), before);
-});
-
-test("returns no rules for an untrusted origin or another application", async () => {
-  let calls = 0;
+test("does not request rules for a credential-bearing origin or another application", async () => {
+  let requests = 0;
   const fetchImpl = async () => {
-    calls += 1;
-    return response(200, {});
+    requests += 1;
+    return new Response(JSON.stringify(payload()), { status: 200 });
   };
   assert.deepEqual(await readRulesReference({
-    serverOrigin: "file:///table",
+    serverOrigin: "https://user@example.com",
     applicationId: "dnd2024",
     fetchImpl,
   }), []);
   assert.deepEqual(await readRulesReference({
-    serverOrigin: "http://localhost:6217",
-    applicationId: "another-game",
+    serverOrigin: "https://localhost:5144",
+    applicationId: "other",
     fetchImpl,
   }), []);
-  assert.equal(calls, 0);
+  assert.equal(requests, 0);
+});
+
+test("section navigation and search use readable content rather than directory names", () => {
+  const projected = projectResolvedRules(payload([
+    { id: "resting", label: "Resting", order: 30, rules: [rule({ id: "dnd2024.rule.resting.long-rest", resolutionKey: "rule.resting.long-rest", title: "Long Rest" })] },
+    { id: "combat", label: "Combat", order: 20, rules: [rule()] },
+  ]));
+
+  assert.deepEqual(ruleSectionOptions(projected).map(({ id }) => id), ["combat", "resting"]);
+  assert.deepEqual(filterRuleReferences(projected, "nearby target", "").map(({ title }) => title), ["Attack", "Long Rest"]);
+  assert.deepEqual(filterRuleReferences(projected, "weapon-attack", "combat").map(({ title }) => title), ["Attack"]);
+  assert.deepEqual(filterRuleReferences(projected, "", "resting").map(({ title }) => title), ["Long Rest"]);
 });

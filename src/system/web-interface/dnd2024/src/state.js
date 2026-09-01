@@ -6,6 +6,7 @@ export const MAIN_TABS = [
   { id: "party", label: "Party", icon: "UsersRound" },
   { id: "current", label: "Current View", icon: "Compass" },
   { id: "rules", label: "Rules", icon: "BookOpen" },
+  { id: "content", label: "Installed Content", icon: "PackageOpen" },
 ];
 
 export const CAMPAIGN_SECTIONS = [
@@ -487,6 +488,7 @@ export function groupMapFeaturesByLayers(map) {
 }
 
 function isMapFeature(value, space, layerIds) {
+  const preview = value?.preview;
   return (
     value &&
     typeof value.id === "string" &&
@@ -495,6 +497,13 @@ function isMapFeature(value, space, layerIds) {
     layerIds.has(value.layerId) &&
     typeof value.name === "string" &&
     (value.locationId === null || typeof value.locationId === "string") &&
+    (preview === undefined || (
+      preview &&
+      typeof preview.imageUrl === "string" &&
+      typeof preview.alt === "string" &&
+      Number.isInteger(preview.width) && preview.width > 0 &&
+      Number.isInteger(preview.height) && preview.height > 0
+    )) &&
     isGeometryInCoordinateSpace(value.geometry, space)
   );
 }
@@ -878,12 +887,21 @@ function isCampaign(value) {
   );
 }
 
+function isVisualMedia(value) {
+  return value &&
+    typeof value.imageUrl === "string" &&
+    typeof value.alt === "string" &&
+    Number.isInteger(value.width) && value.width > 0 && value.width <= 10_000 &&
+    Number.isInteger(value.height) && value.height > 0 && value.height <= 10_000;
+}
+
 function isPartyDossierEntry(value) {
   return value &&
     typeof value.id === "string" &&
     typeof value.kind === "string" &&
     typeof value.title === "string" &&
-    typeof value.detail === "string";
+    typeof value.detail === "string" &&
+    (value.media === undefined || isVisualMedia(value.media));
 }
 
 function isPartyKnowledgeEntry(value) {
@@ -902,6 +920,7 @@ function isPartyMember(value) {
     typeof value.detail === "string" &&
     typeof value.status === "string" &&
     typeof value.isCurrent === "boolean" &&
+    (value.portrait === undefined || isVisualMedia(value.portrait)) &&
     typeof value.recordStatus === "string" &&
     ["canonical", "provisional", "empty"].includes(value.sheetStatus) &&
     ["canonical", "provisional", "unavailable", "empty"].includes(value.inventoryStatus) &&
@@ -913,21 +932,36 @@ function isPartyMember(value) {
 }
 
 function isRuleReference(value) {
+  const section = value?.section;
+  const source = value?.source;
+  const authority = value?.authority;
   return Boolean(
     value &&
-    typeof value.id === "string" &&
-    typeof value.title === "string" &&
-    typeof value.category === "string" && value.category.length > 0 &&
-    typeof value.subcategory === "string" &&
-    typeof value.path === "string" && value.path.startsWith("entities/") &&
-    typeof value.contentFingerprint === "string" && value.contentFingerprint.length > 0 &&
-    typeof value.summary === "string" &&
-    (value.revision === null || (Number.isInteger(value.revision) && value.revision > 0)) &&
-    (value.source === null || (
-      value.source &&
-      value.source.id === "dnd2024.source.srd-5.2.1" &&
-      typeof value.source.locator === "string"
-    )),
+    typeof value.id === "string" && value.id.length > 0 &&
+    typeof value.resolutionKey === "string" && value.resolutionKey.length > 0 &&
+    typeof value.title === "string" && value.title.length > 0 &&
+    typeof value.summary === "string" && value.summary.length > 0 &&
+    Number.isInteger(value.order) && value.order >= 0 &&
+    section && typeof section.id === "string" && section.id.length > 0 &&
+    typeof section.label === "string" && section.label.length > 0 &&
+    Number.isInteger(section.order) && section.order >= 0 &&
+    Array.isArray(value.blocks) && value.blocks.length > 0 && value.blocks.every((block) =>
+      block && ["paragraph", "steps", "list", "callout"].includes(block.kind) &&
+      (block.heading === null || typeof block.heading === "string") &&
+      (block.body === null || typeof block.body === "string") &&
+      Array.isArray(block.items) && block.items.every((item) => typeof item === "string") &&
+      (typeof block.body === "string" || block.items.length > 0)) &&
+    Array.isArray(value.examples) && value.examples.every((example) =>
+      example && typeof example.title === "string" && typeof example.body === "string") &&
+    Array.isArray(value.relatedRuleIds) && value.relatedRuleIds.every((id) => typeof id === "string") &&
+    Array.isArray(value.citations) && value.citations.length > 0 && value.citations.every((citation) =>
+      citation && typeof citation.sourceId === "string" && typeof citation.locator === "string") &&
+    authority && Array.isArray(authority.mechanicIds) && Array.isArray(authority.procedureIds) &&
+    [...authority.mechanicIds, ...authority.procedureIds].every((id) => typeof id === "string") &&
+    authority.mechanicIds.length + authority.procedureIds.length > 0 &&
+    ["public", "dm"].includes(value.visibility) &&
+    source && typeof source.ownerId === "string" && typeof source.label === "string" &&
+    ["core", "homebrew", "compatibility", "third-party"].includes(source.classification),
   );
 }
 
@@ -936,6 +970,25 @@ function isCurrentSituation(value, locations) {
   if (value.status === "unavailable") {
     return typeof value.message === "string" &&
       (value.locationId === undefined || locations.some((location) => location.id === value.locationId));
+  }
+  if (value.kind === "recorded") {
+    if (value.locationId !== undefined && (typeof value.locationId !== "string" ||
+        !locations.some((location) => location.id === value.locationId))) return false;
+    const recorded = value.recorded;
+    const knownKinds = ["out-of-character", "conversation", "combat", "exploration", "investigation",
+      "travel", "rest", "downtime", "other"];
+    return recorded && typeof recorded.id === "string" && recorded.id.length > 0 &&
+      knownKinds.includes(recorded.kind) && typeof recorded.summary === "string" && recorded.summary.length > 0 &&
+      Array.isArray(recorded.participants) && recorded.participants.length <= 32 &&
+      recorded.participants.every((participant) => participant && typeof participant.id === "string" &&
+        typeof participant.name === "string" &&
+        (participant.entityId === undefined || typeof participant.entityId === "string")) &&
+      Array.isArray(recorded.interactions) && recorded.interactions.length <= 12 &&
+      recorded.interactions.every((message) => message && typeof message.id === "string" &&
+        Number.isInteger(message.ordinal) && message.ordinal > 0 && ["player", "assistant"].includes(message.role) &&
+        typeof message.text === "string" && message.text.length > 0) &&
+      (recorded.location === undefined || (recorded.location && typeof recorded.location.name === "string" &&
+        (recorded.location.id === undefined || recorded.location.id === value.locationId)));
   }
   if (typeof value.locationId !== "string" ||
       !locations.some((location) => location.id === value.locationId) ||
@@ -1005,6 +1058,10 @@ export function isReadyHubEnvelope(value) {
   );
   return (
     validContextSelection &&
+    typeof value.applicationId === "string" &&
+    /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u.test(value.applicationId) &&
+    typeof value.stateSpaceId === "string" &&
+    /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,199}$/u.test(value.stateSpaceId) &&
     audience &&
     VALID_PERSPECTIVES.includes(audience.seat) &&
     VALID_PERSPECTIVES.includes(audience.perspective) &&

@@ -2,6 +2,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using DantesRoleplay.Authorization;
+using DantesRoleplay.AI;
+using DantesRoleplay.Applications;
 using DantesRoleplay.SchemaValidation;
 
 namespace DantesRoleplay.SystemCapabilities;
@@ -14,6 +16,7 @@ public static class SystemCapabilityIds
     public const string Dependencies = "system.dependencies";
     public const string ApplicationRegister = "system.application.register";
     public const string SourceRegister = "system.source.register";
+    public const string ExtensionRegister = "system.extension.register";
     public const string ComponentTypeRegister = "system.component-type.register";
     public const string ApplicationActivate = "system.application.activate";
     public const string StateSpaceCreate = "system.state-space.create";
@@ -75,6 +78,10 @@ public sealed record SystemCapabilityInvocationContext(
     string Scope,
     string CorrelationId)
 {
+    public ApplicationIdentifier? ApplicationId { get; init; }
+    public string ResolutionFingerprint { get; init; } = "";
+    public string StateSpaceId { get; init; } = "";
+
     public static SystemCapabilityInvocationContext FromAuthorization(
         AuthorizationAuditEvidence evidence)
     {
@@ -272,6 +279,59 @@ public interface ISystemCapabilityCatalog
         string inputJson,
         SystemCapabilityWriteExecutionContext context,
         CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Evidence shown to a trusted host before an AI-originated write is allowed to commit.
+/// The model cannot implement this gate or approve its own request.
+/// </summary>
+public sealed record SystemCapabilityAiApprovalRequest(
+    SystemCapabilityDescriptor Capability,
+    JsonElement Arguments,
+    SystemCapabilityWritePreflight Preflight,
+    SystemCapabilityInvocationContext Invocation);
+
+public sealed record SystemCapabilityAiApprovalDecision(
+    bool Approved,
+    string RequestToken,
+    string Intent)
+{
+    public static SystemCapabilityAiApprovalDecision Denied() => new(false, "", "");
+}
+
+public interface ISystemCapabilityAiWriteApprovalGate
+{
+    Task<SystemCapabilityAiApprovalDecision> ConfirmAsync(
+        SystemCapabilityAiApprovalRequest request,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Runs an identified AI agent with the system capabilities authorized for one trusted context.
+/// </summary>
+public interface ISystemAiAgentService
+{
+    Task<AiResponse> SendAsync(
+        AiAgentProfile profile,
+        AiRequest request,
+        SystemCapabilityInvocationContext context,
+        ISystemCapabilityAiWriteApprovalGate? writeApprovalGate = null,
+        IAiToolApprovalGate? toolApprovalGate = null,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed record SystemAiToolSourceContext(
+    AiAgentProfile Profile,
+    AiRequest Request,
+    SystemCapabilityInvocationContext Invocation,
+    ISystemCapabilityAiWriteApprovalGate? CapabilityWriteApproval,
+    IAiToolApprovalGate? ToolApproval,
+    Func<IReadOnlyList<IAiTool>> AuthorizedTools);
+
+/// <summary>Contributes context-bound direct tools to a local AI request.</summary>
+public interface ISystemAiToolSource
+{
+    IReadOnlyList<IAiTool> CreateTools(SystemAiToolSourceContext context);
 }
 
 public sealed class SystemCapabilityConfigurationException(string code, string message)

@@ -68,6 +68,59 @@ export function CurrentViewPreview({
   location: WorldLocation | null;
   situation: CurrentSituationReadModel;
 }) {
+  if (situation.status === "ready" && situation.kind === "recorded") {
+    const label = situation.recorded.kind.split("-").map(value =>
+      value.length ? value[0].toUpperCase() + value.slice(1) : value).join(" ");
+    return (
+      <div className="supporting-view current-scene-view current-scene-view--recorded">
+        <ViewIntro
+          copy="The latest durable play situation shared across AI clients and browser refreshes."
+          eyebrow={label}
+          title="Current view"
+        />
+        <section className="current-scene-card current-situation-focus">
+          <div className={`current-scene-card__visual${image ? " has-image" : ""}`}>
+            <MediaImage fallback={<Icon name={situation.recorded.kind === "combat" ? "Swords" : "UsersRound"} size={30} />} loading="eager" media={image} />
+          </div>
+          <div className="current-scene-card__copy">
+            <span className="eyebrow">{situation.recorded.location?.name ?? location?.name ?? "Current play session"}</span>
+            <h2>{label}</h2>
+            <p>{situation.recorded.summary}</p>
+          </div>
+        </section>
+        <div className="current-scene-grid">
+          <section className="current-scene-panel" aria-labelledby="current-recorded-participants">
+            <header><Icon name="UsersRound" size={18} /><h2 id="current-recorded-participants">Participants</h2></header>
+            {situation.recorded.participants.length ? (
+              <div className="current-scene-people">
+                {situation.recorded.participants.map((participant) => (
+                  <article key={participant.id}>
+                    <span aria-hidden="true">{participant.name.slice(0, 2).toUpperCase()}</span>
+                    <div><strong>{participant.name}</strong><small>{label} participant</small></div>
+                  </article>
+                ))}
+              </div>
+            ) : <p className="current-scene-empty">No participant identities were recorded for this situation.</p>}
+          </section>
+          {location ? <LocationContextPanel headingId="current-recorded-location" location={location} /> : null}
+          <section className="current-scene-panel" aria-labelledby="current-recorded-interactions">
+            <header><Icon name="Clock3" size={18} /><h2 id="current-recorded-interactions">Recent interactions</h2></header>
+            {situation.recorded.interactions.length ? (
+              <ol className="current-recorded-interactions">
+                {situation.recorded.interactions.map((message) => (
+                  <li key={message.id}>
+                    <strong>{message.role === "player" ? "You" : "Game AI"}</strong>
+                    <p className="message">{message.text}</p>
+                  </li>
+                ))}
+              </ol>
+            ) : <p className="current-scene-empty">No recorded dialogue is available yet.</p>}
+          </section>
+        </div>
+      </div>
+    );
+  }
+
   if (situation.status === "unavailable" || !location) {
     return (
       <div className="supporting-view current-scene-view">

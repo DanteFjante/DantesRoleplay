@@ -547,10 +547,11 @@ public sealed class EventLedgerTests : IDisposable
         var schemas = new Dictionary<string, string>(StringComparer.Ordinal);
 
         var structuralIds = EventTypeSeeder.Load().Select(file => file.Id).ToHashSet(StringComparer.Ordinal);
-        foreach (var path in Directory.EnumerateFiles(directory, "*.schema.json"))
+        foreach (var path in Directory.EnumerateFiles(
+                     directory, "*.schema.json", SearchOption.AllDirectories))
         {
-            var name = Path.GetFileName(path);
-            var id = name[..^".schema.json".Length];
+            var relative = Path.GetRelativePath(directory, path).Replace('\\', '/');
+            var id = relative[..^".schema.json".Length].Replace('/', '.');
             if (structuralIds.Contains(id)) schemas[id] = File.ReadAllText(path);
         }
 

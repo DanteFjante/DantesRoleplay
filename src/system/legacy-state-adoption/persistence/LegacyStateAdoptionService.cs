@@ -138,6 +138,7 @@ public sealed class LegacyStateAdoptionService(
                 ApplicationRevision = candidate.Application.Revision,
                 ApplicationFingerprint = candidate.Application.Fingerprint,
                 ActiveFingerprint = candidate.Active.ActivationFingerprint,
+                ResolutionFingerprint = candidate.Active.ResolutionFingerprint,
                 BindingFingerprint = bindingFingerprint,
                 PreviousBindingFingerprint = null,
                 CompatibilityCode = "adopted-legacy-complete",

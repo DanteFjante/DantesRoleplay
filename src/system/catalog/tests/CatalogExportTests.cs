@@ -159,6 +159,7 @@ public sealed class CatalogExportTests : IDisposable
         // Every manifest path resolves, and every mechanic has its JavaScript beside it.
         foreach (var entry in manifest.Records)
         {
+            Assert.Equal(CatalogLayout.Record(entry.Kind, entry.Id), entry.Path);
             Assert.True(
                 File.Exists(CatalogLayout.ToFileSystemPath(_root, entry.Path)),
                 $"{entry.Id} is in the manifest but {entry.Path} does not exist.");
@@ -176,23 +177,23 @@ public sealed class CatalogExportTests : IDisposable
     }
 
     /// <summary>
-    /// A category becomes a directory path, so a rule is findable by browsing rather than by
+    /// A namespace becomes a directory path, so a rule is findable by browsing rather than by
     /// grepping a flat folder of dotted filenames.
     /// </summary>
     [Fact]
-    public async Task A_category_becomes_a_directory_path()
+    public async Task A_namespace_becomes_a_directory_path()
     {
         await using var db = await SeededAsync();
         await new CatalogExporter(db).ExportAsync(_root);
 
         Assert.True(File.Exists(Path.Combine(
-            _root, "mechanics", "check", "mechanic.check.threshold.md")));
+            _root, "mechanics", "mechanic", "check", "threshold.md")));
 
         Assert.True(File.Exists(Path.Combine(
-            _root, "mechanics", "check", "mechanic.check.threshold.js")));
+            _root, "mechanics", "mechanic", "check", "threshold.js")));
 
         Assert.True(File.Exists(Path.Combine(
-            _root, "procedures", "world", "procedure.world.model.md")));
+            _root, "procedures", "procedure", "world", "model.md")));
     }
 
     /// <summary>
@@ -299,12 +300,12 @@ public sealed class CatalogExportTests : IDisposable
         await using var db = await SeededAsync();
         await new CatalogExporter(db).ExportAsync(_root);
 
-        var stray = Path.Combine(_root, CatalogLayout.MechanicsRoot, "check", "mechanic.removed.md");
+        var stray = Path.Combine(_root, CatalogLayout.MechanicsRoot, "mechanic", "check", "removed.md");
         await File.WriteAllTextAsync(stray, "a rule that is no longer in the database");
 
         var result = await new CatalogExporter(db).ExportAsync(_root);
 
-        Assert.Contains("mechanics/check/mechanic.removed.md", result.Orphans);
+        Assert.Contains("mechanics/mechanic/check/removed.md", result.Orphans);
         Assert.True(File.Exists(stray), "the orphan was deleted; export must never delete.");
     }
 

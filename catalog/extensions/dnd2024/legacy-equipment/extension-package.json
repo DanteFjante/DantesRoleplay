@@ -1,11 +1,14 @@
 {
-  "schemaVersion": 1,
-  "extensionId": "dnd2024.legacy-equipment",
+  "schemaVersion": 2,
   "applicationId": "dnd2024",
-  "sourceId": "dnd2024-extension.legacy-equipment",
+  "extensionId": "legacy-equipment",
   "displayName": "D&D 2024 Legacy Equipment Compatibility",
   "description": "Optional compatibility package for separately reviewed legacy equipment that is not part of the SRD-faithful D&D 2024 core.",
   "classification": "compatibility",
-  "requiredSourceIds": ["dnd2024-core"],
-  "enabledByDefault": false
+  "sourceIds": ["dnd2024-extension.legacy-equipment"],
+  "namespaceIds": ["dnd2024.extension.legacy-equipment"],
+  "dependencies": [],
+  "conflictsWith": [],
+  "higherPriorityThan": [],
+  "overridesBase": false
 }

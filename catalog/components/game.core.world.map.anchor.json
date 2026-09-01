@@ -1,1 +1,0 @@
-{"id":"game.core.world.map.anchor","name":"World Map Anchor","description":"Closed display-only normalized coordinates for one direct location inside its containing region. It never defines topology, distance, travel, geometry, or discovery. Governed by procedure.game.core.world.spatial."}

@@ -19,7 +19,7 @@
     },
     "dnd2024.advancement.feat": {
       "categoryRef": {
-        "entityId": "dnd2024.feat-category.general"
+        "entityId": "dnd2024.feat-category.origin"
       },
       "repeatable": false,
       "grantRefs": []

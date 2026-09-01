@@ -1,0 +1,5 @@
+{
+  "id": "game.core.campaign.session-recap",
+  "name": "Campaign Session Factual Recap",
+  "description": "Append-only C3-only factual closure record for one ended campaign session. Campaign scope remains the session relationship. Governed by procedure.campaign.session."
+}

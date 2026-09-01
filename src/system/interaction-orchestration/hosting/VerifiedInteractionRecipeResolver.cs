@@ -170,6 +170,7 @@ internal sealed class VerifiedInteractionRecipeResolver(
         IReadOnlyList<InteractionRecipeProjection> recipes)
     {
         var value = string.Join('\n', envelope.Host.EffectiveSetFingerprint,
+            envelope.Host.ResolutionFingerprint,
             recipes.OrderBy(item => item.Reference.Id, StringComparer.Ordinal)
                 .Select(item => $"{item.Reference.Id}:{item.Reference.Version}:{item.Reference.TemplateFingerprint}"));
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
@@ -184,7 +185,8 @@ internal sealed class VerifiedInteractionRecipeResolver(
         try
         {
             await recipes.MarkStaleAsync(new(recipe.Reference, envelope.Host.ApplicationRevision,
-                envelope.Host.EffectiveSetFingerprint, reason), cancellationToken);
+                envelope.Host.EffectiveSetFingerprint, reason,
+                envelope.Host.ResolutionFingerprint), cancellationToken);
         }
         catch
         {

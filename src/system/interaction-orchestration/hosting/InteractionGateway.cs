@@ -20,6 +20,7 @@ internal sealed class InteractionGateway(
         string? query,
         string? qualifiedId,
         int limit = 10,
+        string? namespaceId = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(applicationId);
@@ -30,7 +31,7 @@ internal sealed class InteractionGateway(
                 "Specify exactly one of query or qualifiedId.");
         return features.SearchAsync(
             new(applicationId, InteractionRetrievalLane.TrustedFeature),
-            new(hasId ? qualifiedId! : query!, limit),
+            new(hasId ? qualifiedId! : query!, limit, namespaceId: namespaceId),
             cancellationToken);
     }
 

@@ -1,6 +1,8 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
+using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.Retrieval;
 using DantesRoleplay.Sources;
 
@@ -13,13 +15,15 @@ namespace DantesRoleplay.Interactions;
 public sealed class InteractionFeatureRetriever(
     IActiveCatalogFeatureSnapshotProvider snapshots,
     ITextEmbeddingProvider? embeddings = null,
-    IInteractionDerivedVectorIndex? vectors = null) : IInteractionFeatureRetriever
+    IInteractionDerivedVectorIndex? vectors = null,
+    ICatalogNamespaceRegistry? namespaces = null) : IInteractionFeatureRetriever
 {
     private static readonly byte[] CursorKey = SHA256.HashData(Encoding.UTF8.GetBytes(
         "dantes-roleplay/interaction-feature-retrieval-cursors/v1"));
     private readonly IActiveCatalogFeatureSnapshotProvider _snapshots = snapshots;
     private readonly ITextEmbeddingProvider? _embeddings = embeddings;
     private readonly IInteractionDerivedVectorIndex? _vectors = vectors;
+    private readonly ICatalogNamespaceRegistry? _namespaces = namespaces;
 
     public async Task<InteractionFeatureSearchResult> SearchAsync(
         InteractionFeatureRetrievalScope scope,
@@ -29,18 +33,31 @@ public sealed class InteractionFeatureRetriever(
         ArgumentNullException.ThrowIfNull(scope);
         ArgumentNullException.ThrowIfNull(input);
         if (!_snapshots.TryGetSnapshot(scope.ApplicationId, out var snapshot))
-            return Unavailable("CATALOG_UNAVAILABLE", "The host-bound application catalog is unavailable.");
+        {
+            // Name the materialization failure when the provider recorded one; "unavailable" on its
+            // own gives a caller nothing to act on.
+            var failure = (_snapshots as IPublicApplicationCatalogDiagnostics)?.LastFailure(scope.ApplicationId);
+            return failure is null
+                ? Unavailable("CATALOG_UNAVAILABLE", "The host-bound application catalog is unavailable.")
+                : Unavailable("CATALOG_UNAVAILABLE",
+                    $"The host-bound application catalog could not be materialized: {failure.Code} — {failure.Message}");
+        }
 
         var current = Current(snapshot, scope);
         if (current.ErrorCode.Length != 0)
             return Unavailable(current.ErrorCode, current.ErrorMessage);
+        current = (FilterNamespaces(current.Documents, input.NamespaceId), "", "");
+        var resolved = Resolve(snapshot, current.Documents, input.IncludeShadowed);
+        current = (resolved.Records, "", "");
         if (current.Documents.Count == 0)
             return InteractionFeatureSearchResult.Create(InteractionRetrievalMode.Lexical, []);
 
         var exact = current.Documents.SingleOrDefault(document => document.Record.QualifiedId == input.Query);
         if (exact is not null)
             return InteractionFeatureSearchResult.Create(InteractionRetrievalMode.Exact,
-                [Hit(snapshot, scope, exact, null, null, true)]);
+                [Hit(snapshot, scope, exact, null, null, true)],
+                resolutionDiagnostics: DiagnosticsForHits(resolved.Diagnostics,
+                    [Hit(snapshot, scope, exact, null, null, true)]));
 
         IReadOnlyList<(ActiveCatalogFeatureDocument Document, int Rank)> lexical;
         try
@@ -53,31 +70,31 @@ public sealed class InteractionFeatureRetriever(
         }
 
         if (_embeddings is null || _vectors is null)
-            return LexicalFallback(snapshot, scope, lexical, input.Limit, "VECTOR_INDEX_DISABLED",
+            return LexicalFallback(snapshot, scope, lexical, input, "VECTOR_INDEX_DISABLED",
                 "Vector retrieval is not configured; lexical retrieval remains available.");
 
         EmbeddingProviderStatus status;
         try { status = await _embeddings.CheckAsync(cancellationToken); }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
-        catch { return LexicalFallback(snapshot, scope, lexical, input.Limit, "EMBEDDING_UNAVAILABLE", "Embedding retrieval is unavailable; lexical retrieval remains available."); }
+        catch { return LexicalFallback(snapshot, scope, lexical, input, "EMBEDDING_UNAVAILABLE", "Embedding retrieval is unavailable; lexical retrieval remains available."); }
         if (!status.Ready || status.Identity is null)
-            return LexicalFallback(snapshot, scope, lexical, input.Limit,
+            return LexicalFallback(snapshot, scope, lexical, input,
                 SafeCode(status.ErrorCode, "EMBEDDING_UNAVAILABLE"), SafeMessage(status.ErrorMessage, "Embedding retrieval is unavailable; lexical retrieval remains available."));
 
         EmbeddingBatchResult embedded;
         try { embedded = await _embeddings.EmbedAsync([input.Query], cancellationToken); }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
-        catch { return LexicalFallback(snapshot, scope, lexical, input.Limit, "EMBEDDING_UNAVAILABLE", "Embedding retrieval is unavailable; lexical retrieval remains available."); }
+        catch { return LexicalFallback(snapshot, scope, lexical, input, "EMBEDDING_UNAVAILABLE", "Embedding retrieval is unavailable; lexical retrieval remains available."); }
         if (!embedded.Ok || embedded.Identity is null || embedded.Identity != status.Identity || embedded.Vectors.Count != 1)
-            return LexicalFallback(snapshot, scope, lexical, input.Limit,
+            return LexicalFallback(snapshot, scope, lexical, input,
                 SafeCode(embedded.ErrorCode, "EMBEDDING_UNAVAILABLE"), SafeMessage(embedded.ErrorMessage, "Embedding retrieval is unavailable; lexical retrieval remains available."));
 
-        var generation = Generation(scope, snapshot.Manifest.Fingerprint, status.Identity);
+        var generation = Generation(scope, snapshot, status.Identity);
         IReadOnlyList<InteractionVectorCandidate> vector;
         try { vector = await _vectors.SearchAsync(generation, embedded.Vectors[0], CandidateLimit(input.Limit), cancellationToken); }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
-        catch (InteractionContractException exception) { return LexicalFallback(snapshot, scope, lexical, input.Limit, SafeCode(exception.Code, "VECTOR_INDEX_UNAVAILABLE"), "Vector retrieval is unavailable; lexical retrieval remains available."); }
-        catch { return LexicalFallback(snapshot, scope, lexical, input.Limit, "VECTOR_INDEX_UNAVAILABLE", "Vector retrieval is unavailable; lexical retrieval remains available."); }
+        catch (InteractionContractException exception) { return LexicalFallback(snapshot, scope, lexical, input, SafeCode(exception.Code, "VECTOR_INDEX_UNAVAILABLE"), "Vector retrieval is unavailable; lexical retrieval remains available."); }
+        catch { return LexicalFallback(snapshot, scope, lexical, input, "VECTOR_INDEX_UNAVAILABLE", "Vector retrieval is unavailable; lexical retrieval remains available."); }
 
         var documents = current.Documents.ToDictionary(value => value.Record.QualifiedId, StringComparer.Ordinal);
         var fused = new Dictionary<string, Fusion>(StringComparer.Ordinal);
@@ -95,11 +112,13 @@ public sealed class InteractionFeatureRetriever(
             item.VectorRank = index + 1;
         }
 
-        var hits = fused.OrderByDescending(pair => pair.Value.Score).ThenBy(pair => pair.Key, StringComparer.Ordinal)
-            .Take(input.Limit)
-            .Select(pair => Hit(snapshot, scope, documents[pair.Key], pair.Value.LexicalRank, pair.Value.VectorRank, false))
+        var ranked = fused.OrderByDescending(pair => pair.Value.Score).ThenBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => (Document: documents[pair.Key], Fusion: pair.Value)).ToArray();
+        var hits = ranked.Take(input.Limit)
+            .Select(value => Hit(snapshot, scope, value.Document, value.Fusion.LexicalRank, value.Fusion.VectorRank, false))
             .ToArray();
-        return InteractionFeatureSearchResult.Create(InteractionRetrievalMode.Hybrid, hits);
+        return InteractionFeatureSearchResult.Create(InteractionRetrievalMode.Hybrid, hits,
+            resolutionDiagnostics: DiagnosticsForHits(resolved.Diagnostics, hits));
     }
 
     public async Task<InteractionFeatureRebuildResult> RebuildAsync(
@@ -112,6 +131,8 @@ public sealed class InteractionFeatureRetriever(
         var current = Current(snapshot, scope);
         if (current.ErrorCode.Length != 0)
             return new(false, 0, AvailabilityCode: current.ErrorCode, AvailabilityMessage: current.ErrorMessage);
+        var resolved = Resolve(snapshot, current.Documents, includeShadowed: false);
+        current = (resolved.Records, "", "");
         if (_embeddings is null || _vectors is null)
             return new(false, current.Documents.Count, AvailabilityCode: "VECTOR_INDEX_DISABLED", AvailabilityMessage: "Vector retrieval is not configured.");
 
@@ -136,7 +157,7 @@ public sealed class InteractionFeatureRetriever(
                 built.Add(InteractionVectorDocument.Create(Reference(snapshot, scope, batch[index].Record), texts[index], embedded.Vectors[index]));
         }
 
-        var generation = Generation(scope, snapshot.Manifest.Fingerprint, status.Identity);
+        var generation = Generation(scope, snapshot, status.Identity);
         try { await _vectors.ReplaceAsync(generation, built, cancellationToken); }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
         catch { return new(false, current.Documents.Count, AvailabilityCode: "VECTOR_INDEX_UNAVAILABLE", AvailabilityMessage: "The disposable vector index could not be rebuilt."); }
@@ -180,23 +201,55 @@ public sealed class InteractionFeatureRetriever(
             documents.Select(value => value.Record).ToArray());
         var navigator = new InMemoryCatalogNavigator(manifest, new CatalogCursorCodec(CursorKey));
         var result = navigator.Search(new(scope.ApplicationId, input.Query, null, "", input.Kinds, input.Statuses,
-            CandidateLimit(input.Limit)));
+            CandidateLimit(input.Limit), NamespaceId: input.NamespaceId));
         var map = documents.ToDictionary(value => value.Record.QualifiedId, StringComparer.Ordinal);
         return result.Records.Select(hit => (map[hit.Record.QualifiedId], hit.Rank)).ToArray();
     }
 
-    private static InteractionFeatureSearchResult LexicalFallback(
+    private InteractionFeatureSearchResult LexicalFallback(
         ActiveCatalogFeatureSnapshot snapshot,
         InteractionFeatureRetrievalScope scope,
         IReadOnlyList<(ActiveCatalogFeatureDocument Document, int Rank)> lexical,
-        int limit,
+        InteractionFeatureSearchInput input,
         string code,
-        string message) =>
-        InteractionFeatureSearchResult.Create(InteractionRetrievalMode.LexicalFallback,
-            lexical.Take(limit).Select(value => Hit(snapshot, scope, value.Document, value.Rank, null, false)), code, message);
+        string message)
+    {
+        var hits = lexical.Take(input.Limit)
+            .Select(value => Hit(snapshot, scope, value.Document, value.Rank, null, false)).ToArray();
+        return InteractionFeatureSearchResult.Create(InteractionRetrievalMode.LexicalFallback,
+            hits, code, message);
+    }
 
     private static InteractionFeatureSearchResult Unavailable(string code, string message) =>
         InteractionFeatureSearchResult.Create(InteractionRetrievalMode.Unavailable, [], code, message);
+
+    private static CatalogExtensionSearchSelection<ActiveCatalogFeatureDocument> Resolve(
+        ActiveCatalogFeatureSnapshot snapshot,
+        IReadOnlyList<ActiveCatalogFeatureDocument> documents,
+        bool includeShadowed) => CatalogExtensionSearch.Apply(snapshot.Resolution, documents,
+            value => value.Record.QualifiedId, value => value.Record.Kind, includeShadowed);
+
+    private static IReadOnlyList<CatalogResolutionDiagnosticView> DiagnosticsForHits(
+        IReadOnlyList<CatalogResolutionDiagnosticView> resolutions,
+        IReadOnlyList<InteractionFeatureHit> hits)
+    {
+        var ids = hits.Select(value => value.Reference.QualifiedId).ToHashSet(StringComparer.Ordinal);
+        return Array.AsReadOnly(resolutions.Where(value => ids.Contains(value.WinnerQualifiedId)).ToArray());
+    }
+
+    private IReadOnlyList<ActiveCatalogFeatureDocument> FilterNamespaces(
+        IReadOnlyList<ActiveCatalogFeatureDocument> documents,
+        string? requestedNamespace)
+    {
+        var registryActive = _namespaces is not null && _namespaces.List(includeDisabled: true).Count != 0;
+        return documents.Where(document =>
+        {
+            var namespaceId = CatalogNamespaceIdentity.NamespaceOf(document.Record.QualifiedId);
+            if (requestedNamespace is not null && namespaceId != requestedNamespace
+                && !namespaceId.StartsWith(requestedNamespace + ".", StringComparison.Ordinal)) return false;
+            return !registryActive || _namespaces!.Get(namespaceId) is not null;
+        }).ToArray();
+    }
 
     private static InteractionFeatureHit Hit(
         ActiveCatalogFeatureSnapshot snapshot,
@@ -209,9 +262,17 @@ public sealed class InteractionFeatureRetriever(
     private static InteractionFeatureReference Reference(ActiveCatalogFeatureSnapshot snapshot, InteractionFeatureRetrievalScope scope, CatalogRecordDefinition record) =>
         InteractionFeatureReference.Create(scope.ApplicationId, scope.Lane, snapshot.Manifest.Fingerprint, record);
 
-    private static InteractionRetrievalGeneration Generation(InteractionFeatureRetrievalScope scope, string catalogFingerprint, EmbeddingProviderIdentity identity) =>
-        new(InteractionRetrievalFingerprint.GenerationKey(scope.ApplicationId, scope.Lane, catalogFingerprint, identity),
-            scope.ApplicationId, scope.Lane, catalogFingerprint, InteractionRetrievalFingerprint.FormatVersion, identity);
+    private static InteractionRetrievalGeneration Generation(
+        InteractionFeatureRetrievalScope scope,
+        ActiveCatalogFeatureSnapshot snapshot,
+        EmbeddingProviderIdentity identity) =>
+        new(InteractionRetrievalFingerprint.GenerationKey(scope.ApplicationId, scope.Lane,
+                snapshot.Manifest.Fingerprint, identity, snapshot.Resolution?.Fingerprint),
+            scope.ApplicationId, scope.Lane, snapshot.Manifest.Fingerprint,
+            InteractionRetrievalFingerprint.FormatVersion, identity)
+        {
+            ResolutionFingerprint = snapshot.Resolution?.Fingerprint ?? snapshot.Manifest.Fingerprint
+        };
 
     private static int CandidateLimit(int limit) => Math.Min(CatalogNavigationLimits.MaximumPageSize,
         Math.Max(limit, limit * InteractionRetrievalLimits.HybridCandidateMultiplier));

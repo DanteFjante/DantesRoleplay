@@ -13,6 +13,9 @@ using DantesRoleplay.Sources;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Blobs;
+using DantesRoleplay.Media;
+using DantesRoleplay.SystemCapabilities;
+using DantesRoleplay.Web.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using ModelContextProtocol;
@@ -75,6 +78,7 @@ public static class ServerConfiguration
         services.AddHttpContextAccessor();
         services.TryAddSingleton<IPrivateOperatorAuthorizationPolicy, PrivateOperatorAuthorizationPolicy>();
         services.AddScoped<IPrivateOperatorRequestAuthorizer, McpPrivateOperatorAuthorizer>();
+        services.AddScoped<ISystemAiToolSource, DirectCapabilityAiToolSource>();
         services.Replace(ServiceDescriptor.Scoped<IInteractionAuthorizationPolicy, PrivateHostInteractionAuthorizationPolicy>());
         services.AddSingleton<IInformationScopePolicy>(new DevelopmentInformationScopePolicy(
             developmentInformationScope ?? "local.*"));
@@ -92,6 +96,9 @@ public static class ServerConfiguration
         services.AddScoped<IInformationActionExecutor, MechanicActionInformationExecutor>();
         var localKnowledgeSeat = new ConfigurationLocalKnowledgeSeatProvider(hostConfiguration);
         services.AddSingleton<ILocalKnowledgeSeatProvider>(localKnowledgeSeat);
+        services.AddSingleton<IWebReadableRulesAudienceProvider,
+            LocalReadableRulesAudienceProvider>();
+        services.AddSingleton<IEntityMediaAudienceResolver, LocalEntityMediaAudienceResolver>();
         var configuredApplication = localKnowledgeSeat.Current().ApplicationId;
         services.AddSingleton(new KnowledgeApplicationSelection(
             ValidApplicationId(configuredApplication) ? configuredApplication : "disabled"));

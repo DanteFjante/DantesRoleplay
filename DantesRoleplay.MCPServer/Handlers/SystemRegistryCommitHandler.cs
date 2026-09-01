@@ -34,6 +34,74 @@ internal sealed class SystemRegistryCommitHandler
             "system.source.register", administration, authorization, log, payload, intent,
             procedures, dryRun, cancellationToken, application: false);
 
+    public async Task<ToolEnvelope> RegisterExtensionAsync(
+        IRegistryAdministrationService? administration,
+        IPrivateOperatorRequestAuthorizer? authorization,
+        IOperationLog log,
+        string payload,
+        string intent,
+        string[]? procedures,
+        bool dryRun,
+        CancellationToken cancellationToken)
+    {
+        const string kind = "system.extension.register";
+        var decision = Authorize(authorization);
+        if (!decision.Allowed)
+            return await RecordedFailureAsync(log, decision, kind, decision.Code,
+                "Private-operator authentication is required before extension registration.",
+                "query(kind: \"capabilities\")", intent, procedures,
+                "Denied unauthorized extension registration before payload parsing.");
+        if (administration is null)
+            return await RecordedFailureAsync(log, decision, kind, "REGISTRY_UNAVAILABLE",
+                "Registry administration is not configured.", "query(kind: \"capabilities\")",
+                intent, procedures, "Registry administration was unavailable.");
+        try
+        {
+            using var document = JsonDocument.Parse(payload);
+            var value = document.RootElement;
+            RequireProperties(value, "requestToken", "applicationId", "extensionId", "displayName", "description", "classification",
+                "sourceIds", "namespaceIds", "dependencies", "conflictsWith", "higherPriorityThan",
+                "overridesBase", "expectedFingerprint");
+            var registration = new ApplicationExtensionRegistration(
+                ApplicationIdentifier.Parse(String(value, "applicationId", 63, false)),
+                String(value, "extensionId", 63, false), String(value, "displayName", 120, false),
+                String(value, "description", 2000, false), String(value, "classification", 20, false),
+                StringArray(value, "sourceIds", 100, 200),
+                StringArray(value, "namespaceIds", 100, 200),
+                StringArray(value, "dependencies", 100, 63),
+                StringArray(value, "conflictsWith", 100, 63),
+                StringArray(value, "higherPriorityThan", 100, 63),
+                value.GetProperty("overridesBase").GetBoolean());
+            var token = String(value, "requestToken", 32, false);
+            var context = Context(token, NullableFingerprint(value, "expectedFingerprint"),
+                intent, procedures, decision);
+            if (dryRun)
+            {
+                var preview = await administration.PreviewExtensionAsync(registration, context, cancellationToken);
+                return ToolEnvelope.Success(Data(true, token, preview.Outcome,
+                    preview.Registration, preview.Fingerprint), preview.OperationId,
+                    CommitCall(kind, payload));
+            }
+            var receipt = await administration.RegisterExtensionAsync(registration, context, cancellationToken);
+            return ToolEnvelope.Success(Data(false, token, receipt.Outcome,
+                receipt.Registration, receipt.Fingerprint), receipt.OperationId,
+                $"query(kind: \"system.application-preview\", applicationId: {JsonSerializer.Serialize(registration.ApplicationId.Value)})");
+        }
+        catch (JsonException exception)
+        {
+            return await RecordedFailureAsync(log, decision, kind, "INVALID_PAYLOAD", exception.Message,
+                McpVerbCatalog.CommitCall(kind, dryRun: true), intent, procedures,
+                "Rejected malformed extension registration payload.");
+        }
+        catch (Exception exception) when (exception is RegistryAdministrationException or ArgumentException or InvalidOperationException)
+        {
+            var code = exception is RegistryAdministrationException owned ? owned.Code : "INVALID_EXTENSION";
+            return await RecordedFailureAsync(log, decision, kind, code, exception.Message,
+                McpVerbCatalog.CommitCall(kind, dryRun: true), intent, procedures,
+                $"Rejected extension registration: {code}.");
+        }
+    }
+
     private static async Task<ToolEnvelope> ExecuteAsync(
         string kind,
         IRegistryAdministrationService? administration,
@@ -208,6 +276,31 @@ internal sealed class SystemRegistryCommitHandler
                 Revision = revision.Revision,
                 revision.Fingerprint,
                 BaseApplications = registration.BaseApplications.Select(value => value.Value).ToArray()
+            }
+        };
+
+    private static object Data(
+        bool dryRun,
+        string requestToken,
+        string outcome,
+        ApplicationExtensionRegistration registration,
+        string fingerprint) => new
+        {
+            DryRun = dryRun,
+            RequestToken = requestToken,
+            Outcome = outcome,
+            Extension = new
+            {
+                ApplicationId = registration.ApplicationId.Value,
+                registration.ExtensionId,
+                registration.Description,
+                registration.SourceIds,
+                registration.NamespaceIds,
+                registration.Dependencies,
+                registration.ConflictsWith,
+                registration.HigherPriorityThan,
+                registration.OverridesBase,
+                Fingerprint = fingerprint
             }
         };
 

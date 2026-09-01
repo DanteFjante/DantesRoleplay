@@ -67,7 +67,8 @@ public sealed class CatalogWorldFeature6Tests : IDisposable
         try
         {
             Copy(Catalog(), invalidCopy);
-            var path = Path.Combine(invalidCopy, "subscriptions", "subscription.game.core.world.clue.reveal-on-faction-agenda.json");
+            var path = CatalogLayout.ToFileSystemPath(invalidCopy,
+                CatalogLayout.Subscription("subscription.game.core.world.clue.reveal-on-faction-agenda"));
             await File.WriteAllTextAsync(path, (await File.ReadAllTextAsync(path)).Replace("clue.feature-04.oren-letter", "clue.feature-04.missing", StringComparison.Ordinal));
             using var invalidFixture = new SqliteFixture();
             await using var invalidDb = invalidFixture.CreateContext();

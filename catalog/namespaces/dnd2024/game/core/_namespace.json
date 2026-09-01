@@ -1,0 +1,14 @@
+{
+  "id": "dnd2024.game.core",
+  "owner": "dnd2024",
+  "description": "Retired duplicate owner prefix retained only to identify pre-convergence D&D records for migration diagnostics.",
+  "allowedKinds": [
+    "component-type"
+  ],
+  "aliases": [
+    "legacy installed game core contracts"
+  ],
+  "enabled": false,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Disabled after live component and relationship identities converged on the registered game.core base application."
+}

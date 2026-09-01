@@ -6,7 +6,9 @@ using DantesRoleplay.Applications;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Sources;
 using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.DataAccess;
+using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Operations;
@@ -40,7 +42,7 @@ public sealed class SystemCatalogProtocolTests : IDisposable
         Assert.Equal("query(kind: \"capabilities\")", result.Error?.Fix);
         Assert.Contains(data.GetProperty("Query").EnumerateArray(), item => item.GetProperty("Name").GetString() == "system.catalog.browse");
         Assert.Equal(
-            ["system.application.activate", "system.application.register", "system.blob-upload.begin", "system.blob-upload.finalize", "system.component-type.register", "system.interaction-execute", "system.interaction-recipe-review", "system.knowledge-state.sync", "system.source.register", "system.state-space.adopt-legacy", "system.state-space.create", "system.state-space.upgrade", "system.trigger-scheduling", "system.world-state.sync"],
+            ["system.application.activate", "system.application.register", "system.blob-upload.begin", "system.blob-upload.finalize", "system.component-type.register", "system.extension.register", "system.interaction-execute", "system.interaction-recipe-review", "system.knowledge-state.sync", "system.source.register", "system.state-space.adopt-legacy", "system.state-space.create", "system.state-space.upgrade", "system.trigger-scheduling", "system.world-state.sync"],
             data.GetProperty("Commit").EnumerateArray()
                 .Select(item => item.GetProperty("Name").GetString())
                 .Where(name => name!.StartsWith("system.", StringComparison.Ordinal))
@@ -59,6 +61,12 @@ public sealed class SystemCatalogProtocolTests : IDisposable
         var cursor = firstData.GetProperty("NextCursor").GetString();
         var second = await QueryAsync(db, provider, "system.catalog.browse", applicationId: "fixture", collection: "actions", pageSize: 1, cursor: cursor);
         var searched = await QueryAsync(db, provider, "system.catalog.search", applicationId: "fixture", query: "strike");
+        var describedInNamespace = await QueryAsync(db, provider, "system.catalog.search",
+            applicationId: "fixture", query: "yielding ground", namespaceId: "fixture.combat");
+        var describedOutsideNamespace = await QueryAsync(db, provider, "system.catalog.search",
+            applicationId: "fixture", query: "yielding ground", namespaceId: "fixture.social");
+        var pagedDescriptionSearch = await QueryAsync(db, provider, "system.catalog.search",
+            applicationId: "fixture", query: "incoming steel", pageSize: 1, namespaceId: "fixture.combat");
         var record = await QueryAsync(db, provider, "system.catalog.record", applicationId: "fixture", collection: "actions", id: "fixture.attack");
         var tampered = cursor![..^1] + (cursor[^1] == 'A' ? "B" : "A");
         var invalid = await QueryAsync(db, provider, "system.catalog.browse", applicationId: "fixture", collection: "actions", pageSize: 1, cursor: tampered);
@@ -70,10 +78,60 @@ public sealed class SystemCatalogProtocolTests : IDisposable
             firstData.GetProperty("Entries")[0].GetProperty("StableKey").GetString(),
             Json(second.Data).GetProperty("Result").GetProperty("Entries")[0].GetProperty("StableKey").GetString());
         Assert.Equal("fixture.attack", Json(searched.Data).GetProperty("Result").GetProperty("Records")[0].GetProperty("Record").GetProperty("QualifiedId").GetString());
+        Assert.Equal("fixture.combat.parry", Assert.Single(
+            Json(describedInNamespace.Data).GetProperty("Result").GetProperty("Records").EnumerateArray()).GetProperty("Record").GetProperty("QualifiedId").GetString());
+        Assert.Empty(Json(describedOutsideNamespace.Data).GetProperty("Result").GetProperty("Records").EnumerateArray());
+        Assert.Contains(pagedDescriptionSearch.NextSteps,
+            step => step.Contains("namespaceId: \"fixture.combat\"", StringComparison.Ordinal));
         Assert.Equal("{\"id\":\"fixture.attack\"}", Json(record.Data).GetProperty("Record").GetProperty("ContentJson").GetString());
         Assert.Equal("CURSOR_INVALID", invalid.Error?.Code);
         Assert.Equal("CURSOR_STALE", stale.Error?.Code);
         Assert.All(await db.Operations.AsNoTracking().ToListAsync(), operation => Assert.Equal("query", operation.Tool));
+    }
+
+    [Fact]
+    public async Task Direct_catalog_search_automatically_resolves_extensions_and_can_expose_shadow_evidence()
+    {
+        await using var db = _fixture.CreateContext();
+        var application = ApplicationIdentifier.Parse("fixture");
+        new SqliteApplicationRegistry(db).Register(new(application, "Fixture", "Overlay protocol fixture.", []));
+        var registry = new SqliteCatalogNamespaceRegistry(db);
+        foreach (var id in new[] { "fixture", "fixture.rules", "fixture.homebrew", "fixture.homebrew.rules" })
+            registry.Register(new CatalogNamespaceRegistration(id, "fixture", $"{id} records.",
+                [CatalogNamespaceKinds.Document], ReviewStatus: CatalogNamespaceReviewStatuses.Reviewed,
+                ReviewNote: "Reviewed protocol fixture."));
+        registry.RegisterProfile(new("fixture", "homebrew", "Homebrew records override base records."));
+        registry.RegisterResolutionKey(new("fixture", "homebrew", "rules.fireball",
+            CatalogNamespaceKinds.Document, "The logical Fireball record."));
+        registry.Register(new CatalogNamespaceOverlayRule("fixture", "homebrew",
+            "fixture.homebrew.rules", "fixture.rules", CatalogNamespaceKinds.Document));
+        var records = new[]
+        {
+            Record("document", "fixture.rules.fireball", "Fireball", "", [], ["fireball"]),
+            Record("document", "fixture.homebrew.rules.fireball", "Fireball", "", [], ["fireball"])
+        };
+        var manifest = CatalogNavigationManifest.Create(application, new string('C', 64), "catalog-lexical-v1",
+            [new("actions", "Actions", "Overlay protocol records.")],
+            [new("actions", "", "Actions", "Overlay protocol records.", CatalogDescriptionStatus.Authored)], records);
+        var resolution = CatalogExtensionResolutionContext.Create(application, new string('D', 64),
+            [new("homebrew", "Homebrew", "Fixture homebrew.", "homebrew", ["fixture-homebrew"],
+                ["fixture.homebrew"], [], true)]);
+        var provider = new InMemoryPublicApplicationCatalogProvider(new Dictionary<ApplicationIdentifier, ICatalogNavigator>
+        {
+            [application] = new InMemoryCatalogNavigator(manifest,
+                new CatalogCursorCodec(Encoding.UTF8.GetBytes("overlay-protocol-fixture-signing-key")), resolution)
+        });
+
+        var all = await QueryAsync(db, provider, "system.catalog.search", applicationId: "fixture", query: "fireball");
+        var resolved = await QueryAsync(db, provider, "system.catalog.search", applicationId: "fixture",
+            query: "fireball", includeShadowed: true);
+
+        Assert.Single(Json(all.Data).GetProperty("Result").GetProperty("Records").EnumerateArray());
+        var result = Json(resolved.Data).GetProperty("Result");
+        Assert.Equal("fixture.homebrew.rules.fireball",
+            result.GetProperty("Records")[0].GetProperty("Record").GetProperty("QualifiedId").GetString());
+        Assert.Equal("fixture.rules.fireball",
+            result.GetProperty("ResolutionDiagnostics")[0].GetProperty("ShadowedQualifiedIds")[0].GetString());
     }
 
     public void Dispose() => _fixture.Dispose();
@@ -87,11 +145,14 @@ public sealed class SystemCatalogProtocolTests : IDisposable
         string? query = null,
         string? id = null,
         int? pageSize = null,
-        string? cursor = null) => new QueryMcpTool().QueryAsync(
+        string? cursor = null,
+        string? namespaceId = null,
+        bool includeShadowed = false) => new QueryMcpTool().QueryAsync(
             procedures: null!, world: null!, graphs: null!, mechanics: null!, eventTypes: null!,
             subscriptions: null!, events: null!, log: new OperationLog(db), notifications: null!,
             kind: kind, id: id, query: query, applicationId: applicationId, collection: collection,
-            pageSize: pageSize, cursor: cursor, publicCatalogs: catalogs);
+            pageSize: pageSize, cursor: cursor, namespaceId: namespaceId,
+            includeShadowed: includeShadowed, publicCatalogs: catalogs);
 
     private static JsonElement Json(object? value)
     {
@@ -105,7 +166,11 @@ public sealed class SystemCatalogProtocolTests : IDisposable
         var records = new[]
         {
             Record("document", "fixture.guide", "Guide", "", [], []),
-            Record("action", "fixture.attack", "Attack", "combat", ["strike"], ["attack target"])
+            Record("action", "fixture.attack", "Attack", "combat", ["strike"], ["attack target"]),
+            Record("action", "fixture.combat.parry", "Parry", "combat", [], [],
+                "Deflect incoming steel without yielding ground."),
+            Record("action", "fixture.combat.dodge", "Dodge", "combat", [], [],
+                "Turn incoming steel aside while retreating.")
         };
         var manifest = CatalogNavigationManifest.Create(app, new string('A', 64), "catalog-lexical-v1",
             [new("actions", "Actions", "Public application actions.")],
@@ -130,10 +195,12 @@ public sealed class SystemCatalogProtocolTests : IDisposable
         });
     }
 
-    private static CatalogRecordDefinition Record(string kind, string id, string name, string path, IReadOnlyList<string> aliases, IReadOnlyList<string> phrases)
+    private static CatalogRecordDefinition Record(string kind, string id, string name, string path,
+        IReadOnlyList<string> aliases, IReadOnlyList<string> phrases,
+        string description = "A public protocol fixture.")
     {
         var content = $$"""{"id":"{{id}}"}""";
-        return new("actions", kind, id, name, "A public protocol fixture.", aliases, phrases, path,
+        return new("actions", kind, id, name, description, aliases, phrases, path,
             "active", 1, content, Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(content))),
             "public", "catalog/actions.json");
     }
@@ -855,344 +922,19 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
         }
     }
 
-    [Fact]
-    public async Task Dnd2024_legacy_sources_register_preview_and_activate_without_claiming_system_or_fixture_files()
-    {
-        var applicationToken = "b123456789abcdef0123456789abcdef";
-        var applicationPayload = JsonSerializer.Serialize(new
-        {
-            requestToken = applicationToken,
-            applicationId = "dnd2024",
-            displayName = "D&D 2024",
-            description = "Legacy gameplay catalog adoption proof.",
-            baseApplications = Array.Empty<string>(),
-            expectedFingerprint = (string?)null
-        });
-        var applicationDryRun = await ToolAsync("commit", new
-        {
-            kind = "system.application.register", payload = applicationPayload, dryRun = true,
-            intent = "Validate the dnd2024 application registration.",
-            proceduresUsed = new[] { "procedure.system.use" }
-        });
-        var applicationCommit = await ToolAsync("commit", new
-        {
-            kind = "system.application.register", payload = applicationPayload,
-            intent = "Register the dnd2024 application.",
-            proceduresUsed = new[] { "procedure.system.use" }
-        });
-        var componentDirectory = Path.Combine(RepositoryRoot(), "catalog", "components");
-        var compatibleComponentSchemas = Directory.GetFiles(componentDirectory, "*.schema.json")
-            .OrderBy(path => path, StringComparer.Ordinal)
-            .Select(path => new
-            {
-                LegacyId = Path.GetFileName(path)[..^".schema.json".Length],
-                SchemaJson = File.ReadAllText(path)
-            })
-            .Where(schema => new BoundedJsonSchemaValidator().Compile(schema.SchemaJson).IsAccepted)
-            .ToArray();
-        Assert.Equal(39, compatibleComponentSchemas.Length);
-        var componentOperations = new List<(string Token, JsonElement Data, string OperationId, string Payload)>();
-        foreach (var (schema, index) in compatibleComponentSchemas.Select((value, index) => (value, index)))
-        {
-            var token = $"c{index + 1:x31}";
-            var payload = JsonSerializer.Serialize(new
-            {
-                requestToken = token,
-                applicationId = "dnd2024",
-                qualifiedTypeId = "dnd2024." + schema.LegacyId,
-                schemaJson = schema.SchemaJson,
-                expectedSchemaHash = (string?)null
-            });
-            var dryRun = await ToolAsync("commit", new
-            {
-                kind = "system.component-type.register", payload, dryRun = true,
-                intent = $"Validate legacy component type {schema.LegacyId}.",
-                proceduresUsed = new[] { "procedure.system.use" }
-            });
-            var commit = await ToolAsync("commit", new
-            {
-                kind = "system.component-type.register", payload,
-                intent = $"Register legacy component type {schema.LegacyId}.",
-                proceduresUsed = new[] { "procedure.system.use" }
-            });
-            Assert.True(dryRun.Ok, dryRun.Ok ? "" : dryRun.Error.GetRawText());
-            Assert.True(commit.Ok, commit.Ok ? "" : commit.Error.GetRawText());
-            Assert.Equal(token, commit.OperationId);
-            Assert.Equal(1, commit.Data.GetProperty("componentType").GetProperty("version").GetInt32());
-            componentOperations.Add((token, commit.Data, commit.OperationId, payload));
-        }
-        var representativeComponentReplay = await ToolAsync("commit", new
-        {
-            kind = "system.component-type.register", payload = componentOperations[0].Payload,
-            intent = "Replay one immutable legacy component-type registration.",
-            proceduresUsed = new[] { "procedure.system.use" }
-        });
-
-        var sourceSpecifications = new (string Id, string Specification)[]
-        {
-            ("components-game-core", "catalog/components/game.core.*"),
-            ("component-stats", "catalog/components/stats*"),
-            ("mechanics-game-core", "catalog/mechanics/game/core/**/*"),
-            ("mechanics-check", "catalog/mechanics/check/*"),
-            ("mechanics-change", "catalog/mechanics/change/*"),
-            ("procedures-game-core", "catalog/procedures/game/core/**/*.md"),
-            ("procedures-campaign", "catalog/procedures/campaign/*.md"),
-            ("procedures-quest", "catalog/procedures/quest/*.md"),
-            ("procedures-play", "catalog/procedures/play/*.md"),
-            ("event-types-game-core", "catalog/event-types/game.core.*"),
-            ("subscriptions-game-core", "catalog/subscriptions/subscription.game.core.*.json")
-        };
-        var sourceOperationIds = new List<string>();
-        foreach (var (source, index) in sourceSpecifications.Select((value, index) => (value, index)))
-        {
-            var token = $"e{index + 1:x31}";
-            var payload = JsonSerializer.Serialize(new
-            {
-                requestToken = token,
-                applicationId = "dnd2024",
-                sourceId = source.Id,
-                allowedRootId = "repository",
-                relativePathOrGlob = source.Specification,
-                trust = "trusted",
-                precedence = 0,
-                logicalIdentity = $"legacy-{source.Id}",
-                expectedFingerprint = (string?)null
-            });
-            var dryRun = await ToolAsync("commit", new
-            {
-                kind = "system.source.register", payload, dryRun = true,
-                intent = $"Validate the {source.Id} dnd2024 legacy source.",
-                proceduresUsed = new[] { "procedure.system.use" }
-            });
-            var commit = await ToolAsync("commit", new
-            {
-                kind = "system.source.register", payload,
-                intent = $"Register the {source.Id} dnd2024 legacy source.",
-                proceduresUsed = new[] { "procedure.system.use" }
-            });
-            Assert.True(dryRun.Ok, dryRun.Ok ? "" : dryRun.Error.GetRawText());
-            Assert.True(commit.Ok, commit.Ok ? "" : commit.Error.GetRawText());
-            Assert.Equal(token, commit.OperationId);
-            sourceOperationIds.Add(token);
-        }
-
-        var sources = await ToolAsync("query", new
-        {
-            kind = "system.sources", applicationId = "dnd2024", limit = 100
-        });
-        var preview = await ToolAsync("query", new
-        {
-            kind = "system.application-preview", applicationId = "dnd2024", limit = 250
-        });
-        Assert.True(applicationDryRun.Ok, applicationDryRun.Ok ? "" : applicationDryRun.Error.GetRawText());
-        Assert.True(applicationCommit.Ok, applicationCommit.Ok ? "" : applicationCommit.Error.GetRawText());
-        Assert.True(representativeComponentReplay.Ok, representativeComponentReplay.Ok ? "" : representativeComponentReplay.Error.GetRawText());
-        Assert.Equal(componentOperations[0].OperationId, representativeComponentReplay.OperationId);
-        Assert.Equal(componentOperations[0].Data.GetRawText(), representativeComponentReplay.Data.GetRawText());
-        Assert.True(sources.Ok, sources.Ok ? "" : sources.Error.GetRawText());
-        Assert.True(preview.Ok, preview.Ok ? "" : preview.Error.GetRawText());
-        Assert.True(preview.Data.GetProperty("isValid").GetBoolean());
-        Assert.Equal(sourceSpecifications.Length,
-            preview.Data.GetProperty("counts").GetProperty("sources").GetInt32());
-        Assert.Equal(0, preview.Data.GetProperty("counts").GetProperty("problems").GetInt32());
-        Assert.False(preview.Data.GetProperty("truncated").GetBoolean());
-        Assert.Equal(sourceSpecifications.Length, sources.Data.GetProperty("sources").GetArrayLength());
-        Assert.All(preview.Data.GetProperty("sources").EnumerateArray(), source =>
-        {
-            Assert.True(source.GetProperty("documentCount").GetInt32() > 0, source.GetRawText());
-            Assert.Equal(0, source.GetProperty("problemCount").GetInt32());
-        });
-
-        var previewPaths = preview.Data.GetProperty("winners").EnumerateArray()
-            .Select(winner => winner.GetProperty("relativePath").GetString()!)
-            .Order(StringComparer.Ordinal)
-            .ToArray();
-        Assert.Equal(134, previewPaths.Length);
-        Assert.All(previewPaths, path => Assert.True(IsRatifiedLegacyGameSource(path), path));
-        Assert.Contains("catalog/components/game.core.world.clock.json", previewPaths);
-        Assert.Contains("catalog/components/stats.json", previewPaths);
-        Assert.Contains("catalog/components/stats.schema.json", previewPaths);
-        Assert.Contains("catalog/mechanics/game/core/world/time/mechanic.game.core.world.clock.advance.js", previewPaths);
-        Assert.Contains("catalog/procedures/game/core/world/procedure.game.core.world.time.md", previewPaths);
-        Assert.Contains("catalog/event-types/game.core.world.clock.advanced.json", previewPaths);
-        Assert.Contains("catalog/subscriptions/subscription.game.core.world.condition.sync-route-closure.json", previewPaths);
-        Assert.DoesNotContain("catalog/procedures/system/procedure.system.use.md", previewPaths);
-        Assert.DoesNotContain("catalog/event-types/world.component.added.json", previewPaths);
-        Assert.DoesNotContain("catalog/manifest.json", previewPaths);
-        Assert.DoesNotContain("catalog/world/entities/orban.json", previewPaths);
-        Assert.DoesNotContain("catalog/world/relationships.json", previewPaths);
-
-        var activationToken = "f123456789abcdef0123456789abcdef";
-        var activationPayload = JsonSerializer.Serialize(new
-        {
-            requestToken = activationToken,
-            applicationId = "dnd2024",
-            previewFingerprint = preview.Data.GetProperty("previewFingerprint").GetString(),
-            expectedActiveFingerprint = (string?)null
-        });
-        var activationDryRun = await ToolAsync("commit", new
-        {
-            kind = "system.application.activate", payload = activationPayload, dryRun = true,
-            intent = "Validate the exact dnd2024 legacy source activation.",
-            proceduresUsed = new[] { "procedure.system.use" }
-        });
-        var activationCommit = await ToolAsync("commit", new
-        {
-            kind = "system.application.activate", payload = activationPayload,
-            intent = "Activate the exact dnd2024 legacy source manifest.",
-            proceduresUsed = new[] { "procedure.system.use" }
-        });
-        var activationReplay = await ToolAsync("commit", new
-        {
-            kind = "system.application.activate", payload = activationPayload,
-            intent = "Replay the exact dnd2024 legacy source activation.",
-            proceduresUsed = new[] { "procedure.system.use" }
-        });
-        var application = await ToolAsync("query", new
-        {
-            kind = "system.applications", applicationId = "dnd2024"
-        });
-        using (var materializationScope = _app.Services.CreateScope())
-        {
-            var materializer = materializationScope.ServiceProvider
-                .GetRequiredService<ActivatedApplicationCatalogMaterializer>();
-            Assert.Equal(38, materializer.Build(ApplicationIdentifier.Parse("dnd2024")).Records.Count);
-        }
-        var catalogs = await ToolAsync("query", new
-        {
-            kind = "system.catalogs", applicationId = "dnd2024"
-        });
-        var catalogRoot = await ToolAsync("query", new
-        {
-            kind = "system.catalog.browse", applicationId = "dnd2024", collection = "dnd2024",
-            branch = "", pageSize = 1
-        });
-        var timeCatalog = await ToolAsync("query", new
-        {
-            kind = "system.catalog.browse", applicationId = "dnd2024", collection = "dnd2024",
-            branch = "mechanics/game/core/world/time", pageSize = 100
-        });
-        var catalogSearch = await ToolAsync("query", new
-        {
-            kind = "system.catalog.search", applicationId = "dnd2024", collection = "dnd2024",
-            query = "advance the clock", pageSize = 25
-        });
-        var catalogRecord = await ToolAsync("query", new
-        {
-            kind = "system.catalog.record", applicationId = "dnd2024", collection = "dnd2024",
-            id = "dnd2024.mechanic.game.core.world.clock.advance"
-        });
-        var hiddenSystemSearch = await ToolAsync("query", new
-        {
-            kind = "system.catalog.search", applicationId = "dnd2024", collection = "dnd2024",
-            query = "procedure.system.use", pageSize = 25
-        });
-
-        Assert.True(activationDryRun.Ok, activationDryRun.Ok ? "" : activationDryRun.Error.GetRawText());
-        Assert.True(activationCommit.Ok, activationCommit.Ok ? "" : activationCommit.Error.GetRawText());
-        Assert.True(activationReplay.Ok, activationReplay.Ok ? "" : activationReplay.Error.GetRawText());
-        Assert.True(application.Ok, application.Ok ? "" : application.Error.GetRawText());
-        Assert.True(catalogs.Ok, catalogs.Ok ? "" : catalogs.Error.GetRawText());
-        Assert.True(catalogRoot.Ok, catalogRoot.Ok ? "" : catalogRoot.Error.GetRawText());
-        Assert.True(timeCatalog.Ok, timeCatalog.Ok ? "" : timeCatalog.Error.GetRawText());
-        Assert.True(catalogSearch.Ok, catalogSearch.Ok ? "" : catalogSearch.Error.GetRawText());
-        Assert.True(catalogRecord.Ok, catalogRecord.Ok ? "" : catalogRecord.Error.GetRawText());
-        Assert.True(hiddenSystemSearch.Ok, hiddenSystemSearch.Ok ? "" : hiddenSystemSearch.Error.GetRawText());
-        Assert.Equal(activationCommit.Data.GetRawText(), activationReplay.Data.GetRawText());
-        Assert.Equal(134, activationCommit.Data.GetProperty("activation").GetProperty("winnerCount").GetInt32());
-        Assert.Equal(activationCommit.Data.GetProperty("activation").GetProperty("activationFingerprint").GetString(),
-            application.Data.GetProperty("application").GetProperty("active").GetProperty("activationFingerprint").GetString());
-        var collection = Assert.Single(catalogs.Data.GetProperty("collections").EnumerateArray());
-        Assert.Equal("dnd2024", collection.GetProperty("id").GetString());
-        Assert.Equal(38, collection.GetProperty("recordCount").GetInt32());
-        Assert.NotNull(catalogRoot.Data.GetProperty("result").GetProperty("nextCursor").GetString());
-        Assert.Equal("mechanics", catalogRoot.Data.GetProperty("result").GetProperty("entries")[0]
-            .GetProperty("node").GetProperty("path").GetString());
-        Assert.Contains(timeCatalog.Data.GetProperty("result").GetProperty("entries").EnumerateArray(), entry =>
-            entry.GetProperty("record").GetProperty("qualifiedId").GetString()
-                == "dnd2024.mechanic.game.core.world.clock.advance");
-        Assert.Equal("dnd2024.mechanic.game.core.world.clock.advance",
-            catalogSearch.Data.GetProperty("result").GetProperty("records")[0]
-                .GetProperty("record").GetProperty("qualifiedId").GetString());
-        Assert.Empty(hiddenSystemSearch.Data.GetProperty("result").GetProperty("records").EnumerateArray());
-        Assert.Equal("dnd2024.mechanic.game.core.world.clock.advance",
-            catalogRecord.Data.GetProperty("record").GetProperty("summary").GetProperty("qualifiedId").GetString());
-        using (var recordContent = JsonDocument.Parse(
-                   catalogRecord.Data.GetProperty("record").GetProperty("contentJson").GetString()!))
-        {
-            Assert.Equal("mechanic.game.core.world.clock.advance",
-                recordContent.RootElement.GetProperty("id").GetString());
-            Assert.Equal("advance the clock",
-                recordContent.RootElement.GetProperty("matches").GetString()!.Split('\n')[1].Trim());
-        }
-
-        using var scope = _app.Services.CreateScope();
-        var active = scope.ServiceProvider.GetRequiredService<IApplicationActivationReader>()
-            .Current(ApplicationIdentifier.Parse("dnd2024"));
-        Assert.NotNull(active);
-        Assert.Equal(previewPaths, active.Winners.Select(winner => winner.RelativePath).Order(StringComparer.Ordinal));
-        var publicCatalogs = scope.ServiceProvider.GetRequiredService<IPublicApplicationCatalogProvider>();
-        Assert.True(publicCatalogs.TryGet(ApplicationIdentifier.Parse("dnd2024"), out var navigator));
-        Assert.Equal(38, Assert.Single(navigator.ListCollections(ApplicationIdentifier.Parse("dnd2024"))).RecordCount);
-        var rootNode = navigator.Browse(new(ApplicationIdentifier.Parse("dnd2024"), "dnd2024"));
-        Assert.Equal(CatalogDescriptionStatus.Authored, rootNode.Node.DescriptionStatus);
-        Assert.All(rootNode.Entries.Where(entry => entry.Node is not null),
-            entry => Assert.Equal(CatalogDescriptionStatus.Missing, entry.Node!.DescriptionStatus));
-        var database = scope.ServiceProvider.GetRequiredService<DantesRoleplayDbContext>();
-        Assert.Equal(1, await database.Operations.AsNoTracking().CountAsync(operation => operation.Id == applicationToken));
-        Assert.Equal(1, await database.Operations.AsNoTracking().CountAsync(operation => operation.Id == activationToken));
-        Assert.All(componentOperations, operation =>
-            Assert.Equal(1, database.Operations.AsNoTracking().Count(value => value.Id == operation.Token)));
-        var registeredTypes = scope.ServiceProvider.GetRequiredService<IApplicationComponentTypeRegistry>()
-            .ListLatestPage(ApplicationIdentifier.Parse("dnd2024"), null, 100).ComponentTypes;
-        Assert.Equal(39, registeredTypes.Count);
-        Assert.Equal(compatibleComponentSchemas.Select(schema => "dnd2024." + schema.LegacyId).Order(StringComparer.Ordinal),
-            registeredTypes.Select(type => type.QualifiedId).Order(StringComparer.Ordinal));
-        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IApplicationComponentTypeRegistry>()
-            .GetLatest("dnd2024.game.core.campaign.session-checkpoint"));
-        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IApplicationComponentTypeRegistry>()
-            .GetLatest("dnd2024.game.core.campaign.session-recap"));
-        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IApplicationComponentTypeRegistry>()
-            .GetLatest("dnd2024.stats"));
-        Assert.All(sourceOperationIds, token =>
-            Assert.Equal(1, database.Operations.AsNoTracking().Count(operation => operation.Id == token)));
-        Assert.Empty(scope.ServiceProvider.GetRequiredService<IStateSpaceRegistry>()
-            .ListPage(ApplicationIdentifier.Parse("dnd2024"), null, 100).StateSpaces);
-        var projectionGraph = scope.ServiceProvider.GetRequiredService<IProjectionDefinitionRegistry>()
-            .GetImpactGraph(ApplicationIdentifier.Parse("dnd2024"));
-        Assert.Empty(projectionGraph.Forward);
-        Assert.Empty(projectionGraph.Reverse);
-        Assert.Equal(0, await ScalarAsync(database,
-            "SELECT COUNT(*) FROM system_projection_definition WHERE ApplicationId = 'dnd2024'"));
-        foreach (var table in new[]
-                 {
-                     "system_projection_definition_version",
-                     "system_projection_component_input",
-                     "system_projection_dependency_input",
-                     "system_projection_mapping"
-                 })
-        {
-            Assert.Equal(0, await ScalarAsync(database,
-                $"SELECT COUNT(*) FROM {table} WHERE QualifiedId LIKE 'dnd2024.%'"));
-        }
-        Assert.Equal(0, await ScalarAsync(database, "SELECT COUNT(*) FROM system_ecs_entity"));
-        Assert.Equal(0, await ScalarAsync(database, "SELECT COUNT(*) FROM system_ecs_component"));
-        Assert.Equal(0, await ScalarAsync(database, "SELECT COUNT(*) FROM entity"));
-        Assert.Equal(0, await ScalarAsync(database, "SELECT COUNT(*) FROM component"));
-    }
-
     private static bool IsRatifiedLegacyGameSource(string path) =>
-        path.StartsWith("catalog/components/game.core.", StringComparison.Ordinal)
-        || path is "catalog/components/stats.json" or "catalog/components/stats.schema.json"
-        || path.StartsWith("catalog/mechanics/game/core/", StringComparison.Ordinal)
-        || path.StartsWith("catalog/mechanics/check/", StringComparison.Ordinal)
-        || path.StartsWith("catalog/mechanics/change/", StringComparison.Ordinal)
-        || path.StartsWith("catalog/procedures/game/core/", StringComparison.Ordinal)
-        || path.StartsWith("catalog/procedures/campaign/", StringComparison.Ordinal)
-        || path.StartsWith("catalog/procedures/quest/", StringComparison.Ordinal)
-        || path.StartsWith("catalog/procedures/play/", StringComparison.Ordinal)
-        || path.StartsWith("catalog/event-types/game.core.", StringComparison.Ordinal)
-        || path.StartsWith("catalog/subscriptions/subscription.game.core.", StringComparison.Ordinal);
+        path.StartsWith("catalog/components/game/core/", StringComparison.Ordinal)
+        || path is "catalog/components/fixture/legacy/stats.json"
+            or "catalog/components/fixture/legacy/stats.schema.json"
+        || path.StartsWith("catalog/mechanics/mechanic/game/core/", StringComparison.Ordinal)
+        || path.StartsWith("catalog/mechanics/mechanic/check/", StringComparison.Ordinal)
+        || path.StartsWith("catalog/mechanics/mechanic/change/", StringComparison.Ordinal)
+        || path.StartsWith("catalog/procedures/procedure/game/core/", StringComparison.Ordinal)
+        || path.StartsWith("catalog/procedures/procedure/campaign/", StringComparison.Ordinal)
+        || path.StartsWith("catalog/procedures/procedure/quest/", StringComparison.Ordinal)
+        || path.StartsWith("catalog/procedures/procedure/play/", StringComparison.Ordinal)
+        || path.StartsWith("catalog/event-types/game/core/", StringComparison.Ordinal)
+        || path.StartsWith("catalog/subscriptions/subscription/game/core/", StringComparison.Ordinal);
 
     private sealed class CombinedPublicApplicationCatalogProvider(
         IPublicApplicationCatalogProvider fixtures,

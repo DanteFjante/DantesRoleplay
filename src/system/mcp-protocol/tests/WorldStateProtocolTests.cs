@@ -46,7 +46,7 @@ public sealed class WorldStateProtocolTests : IDisposable
         var service = new RecordingSynchronizer();
         var authorization = new RecordingAuthorizer(true);
         var payload = """
-        {"requestToken":"0123456789abcdef0123456789abcdef","applicationId":"dnd2024","stateSpaceId":"dnd2024-main","rootEntityId":"world.thalorien","entities":[{"entityId":"location.thalorien.thalos","name":"Thalos","expectedRevision":0,"components":[{"qualifiedTypeId":"dnd2024.game.core.world.location","expectedRevision":0,"value":{"kind":"region","status":"active","summary":"The central continent.","visibility":"public"}}],"containment":{"containerEntityId":"world.thalorien","slot":"region","expectedRevision":0}}],"relationships":[]}
+        {"requestToken":"0123456789abcdef0123456789abcdef","applicationId":"dnd2024","stateSpaceId":"dnd2024-main","rootEntityId":"world.thalorien","entities":[{"entityId":"location.thalorien.thalos","name":"Thalos","expectedRevision":0,"components":[{"qualifiedTypeId":"game.core.world.location","expectedRevision":0,"value":{"kind":"region","status":"active","summary":"The central continent.","visibility":"public"}}],"containment":{"containerEntityId":"world.thalorien","slot":"region","expectedRevision":0}}],"relationships":[]}
         """;
 
         var accepted = await new CommitMcpTool().CommitAsync(
@@ -63,7 +63,7 @@ public sealed class WorldStateProtocolTests : IDisposable
             Assert.Single(Assert.Single(service.Request.Entities).Components).ValueJson);
 
         var updateWithoutContainment = """
-        {"requestToken":"1123456789abcdef0123456789abcdef","applicationId":"dnd2024","stateSpaceId":"dnd2024-main","rootEntityId":"world.thalorien","entities":[{"entityId":"location.thalorien.thalos","name":"Thalos","expectedRevision":1,"components":[{"qualifiedTypeId":"dnd2024.game.core.world.location","expectedRevision":1,"value":{"kind":"region","status":"active","summary":"The central continent.","visibility":"public"}}]}],"relationships":[]}
+        {"requestToken":"1123456789abcdef0123456789abcdef","applicationId":"dnd2024","stateSpaceId":"dnd2024-main","rootEntityId":"world.thalorien","entities":[{"entityId":"location.thalorien.thalos","name":"Thalos","expectedRevision":1,"components":[{"qualifiedTypeId":"game.core.world.location","expectedRevision":1,"value":{"kind":"region","status":"active","summary":"The central continent.","visibility":"public"}}]}],"relationships":[]}
         """;
         var update = await new CommitMcpTool().CommitAsync(
             world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),

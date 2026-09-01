@@ -4,7 +4,7 @@
   "components": {
     "dnd2024.creature.defense-basis": {
       "armorClass": {
-        "mechanicId": "mechanic.dnd2024.armor-class.unarmored",
+        "mechanicId": "dnd2024.mechanic.armor-class.unarmored",
         "inputBindings": {
           "abilityRef": "dnd2024.vocabulary.ability.dexterity",
           "base": 10

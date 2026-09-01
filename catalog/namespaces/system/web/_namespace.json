@@ -1,0 +1,16 @@
+{
+  "id": "system.web",
+  "owner": "system",
+  "description": "Generic application-publication entities used to discover, order, and route web pages.",
+  "allowedKinds": [
+    "component-definition",
+    "component-type"
+  ],
+  "aliases": [
+    "web pages",
+    "application pages"
+  ],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed as ruleset-neutral web publication structure."
+}

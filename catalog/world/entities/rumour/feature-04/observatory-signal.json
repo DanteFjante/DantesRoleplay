@@ -1,0 +1,16 @@
+{
+  "id": "rumour.feature-04.observatory-signal",
+  "name": "The Observatory Signal",
+  "components": {
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "event",
+      "sensitivity": "open"
+    },
+    "game.core.world.rumour": {
+      "status": "unconfirmed",
+      "summary": "A light still answers from the sealed observatory after midnight.",
+      "provenance": "Repeated market-stallholder gossip.",
+      "visibility": "party"
+    }
+  }
+}

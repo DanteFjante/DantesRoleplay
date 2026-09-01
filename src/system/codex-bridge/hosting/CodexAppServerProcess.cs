@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using DantesRoleplay.AI;
 using DantesRoleplay.Assistants;
 using DantesRoleplay.CodexBridge;
 
@@ -36,6 +37,15 @@ public sealed class CodexAppServerProcessFactory(CodexBridgeOptions options) : I
         var status = await GetStatusAsync(cancellationToken);
         if (!status.Ready) throw new CodexBridgeException(status.ErrorCode, status.ErrorMessage);
         return await CodexAppServerProcessSession.StartAsync(options, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<CodexModelDescriptor>> ListModelsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var status = await GetStatusAsync(cancellationToken);
+        if (!status.Ready) return [];
+        await using var session = await CodexAppServerProcessSession.StartAsync(options, cancellationToken);
+        return await session.ListModelsAsync(cancellationToken);
     }
 
     private async Task<CodexBridgeStatus> ProbeAsync(CancellationToken cancellationToken)
@@ -113,6 +123,7 @@ internal sealed class CodexAppServerProcessSession : ICodexAppServerSession
     private long diagnosticId;
     private string? threadId;
     private string? turnId;
+    private AiToolExecutor? toolExecutor;
     private bool disposed;
 
     private CodexAppServerProcessSession(CodexBridgeOptions options, Process process)
@@ -150,7 +161,8 @@ internal sealed class CodexAppServerProcessSession : ICodexAppServerSession
             timeout.CancelAfter(options.EffectiveInitializationTimeout);
             await session.CallAsync("initialize", new
             {
-                clientInfo = new { name = "dantes-roleplay-web", title = "DantesRoleplay web control center", version = "slice-9" }
+                clientInfo = new { name = "dantes-roleplay", title = "DantesRoleplay", version = "ai-v1" },
+                capabilities = new { experimentalApi = true }
             }, timeout.Token);
             await session.NotifyAsync("initialized", timeout.Token);
             return session;
@@ -186,6 +198,70 @@ internal sealed class CodexAppServerProcessSession : ICodexAppServerSession
         return new(threadId, turnId, model, modelProvider, string.IsNullOrWhiteSpace(status) ? "inProgress" : status);
     }
 
+    public async Task<IReadOnlyList<CodexModelDescriptor>> ListModelsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+        var models = new List<CodexModelDescriptor>();
+        string? cursor = null;
+        for (var page = 0; page < 10; page++)
+        {
+            var result = await CallAsync("model/list", new { cursor, limit = 100, includeHidden = false }, cancellationToken);
+            if (!result.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array)
+                throw Failure("CODEX_PROTOCOL_INVALID", "Codex returned an invalid model list.");
+            foreach (var value in data.EnumerateArray())
+            {
+                var id = OptionalString(value, "model");
+                if (string.IsNullOrWhiteSpace(id)) id = RequiredString(value, "id");
+                var efforts = value.TryGetProperty("supportedReasoningEfforts", out var supported) &&
+                    supported.ValueKind == JsonValueKind.Array
+                    ? supported.EnumerateArray().Select(item => OptionalString(item, "reasoningEffort"))
+                        .Where(item => !string.IsNullOrWhiteSpace(item)).Distinct(StringComparer.Ordinal).ToArray()
+                    : [];
+                models.Add(new(
+                    id,
+                    OptionalString(value, "displayName") is { Length: > 0 } display ? display : id,
+                    OptionalString(value, "description"),
+                    efforts,
+                    OptionalString(value, "defaultReasoningEffort"),
+                    value.TryGetProperty("isDefault", out var isDefault) && isDefault.ValueKind == JsonValueKind.True));
+            }
+            cursor = result.TryGetProperty("nextCursor", out var next) && next.ValueKind == JsonValueKind.String
+                ? next.GetString() : null;
+            if (string.IsNullOrWhiteSpace(cursor)) break;
+        }
+        return models.OrderBy(value => value.Id, StringComparer.Ordinal).ToArray();
+    }
+
+    public async Task<CodexTurnStartResult> StartTurnAsync(
+        string? externalThreadId,
+        string message,
+        CodexTurnSettings settings,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        ThrowIfDisposed();
+        toolExecutor = settings.ToolExecutor;
+        var threadResult = externalThreadId is null
+            ? await CallAsync("thread/start", BuildThreadParameters(options, null, settings), cancellationToken)
+            : await CallAsync("thread/resume", BuildThreadParameters(options, externalThreadId, settings), cancellationToken);
+        var thread = RequiredObject(threadResult, "thread");
+        threadId = RequiredString(thread, "id");
+        if (externalThreadId is not null && threadId != externalThreadId)
+            throw Failure("CODEX_THREAD_MISMATCH", "Codex resumed a different thread identifier.");
+        var turnResult = await CallAsync(
+            "turn/start", BuildTurnParameters(options, threadId, message, settings), cancellationToken);
+        var turn = RequiredObject(turnResult, "turn");
+        turnId = RequiredString(turn, "id");
+        var status = OptionalString(turn, "status");
+        return new(
+            threadId,
+            turnId,
+            settings.Model,
+            OptionalString(thread, "modelProvider"),
+            string.IsNullOrWhiteSpace(status) ? "inProgress" : status);
+    }
+
     public async IAsyncEnumerable<CodexProtocolEvent> ReadEventsAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
@@ -218,14 +294,23 @@ internal sealed class CodexAppServerProcessSession : ICodexAppServerSession
                     var method = methodProperty.GetString() ?? string.Empty;
                     if (message.TryGetProperty("id", out var serverRequestId))
                     {
-                        next = TryCreateApproval(serverRequestId, method,
-                            message.TryGetProperty("params", out var requestParameters) ? requestParameters : default);
-                        if (next is null)
+                        var requestParameters = message.TryGetProperty("params", out var parameters)
+                            ? parameters : default;
+                        if (method == "item/tool/call" && toolExecutor is not null)
                         {
-                            await DenyServerRequestAsync(serverRequestId, method, cancellationToken);
-                            next = new("activity", Activity: new(
-                                $"server-request-{Interlocked.Increment(ref diagnosticId)}", "error", "denied",
-                                Bound($"Denied unsupported app-server request {method}.", 500)));
+                            next = await ExecuteDynamicToolAsync(
+                                serverRequestId, requestParameters, toolExecutor, cancellationToken);
+                        }
+                        else
+                        {
+                            next = TryCreateApproval(serverRequestId, method, requestParameters);
+                            if (next is null)
+                            {
+                                await DenyServerRequestAsync(serverRequestId, method, cancellationToken);
+                                next = new("activity", Activity: new(
+                                    $"server-request-{Interlocked.Increment(ref diagnosticId)}", "error", "denied",
+                                    Bound($"Denied unsupported app-server request {method}.", 500)));
+                            }
                         }
                     }
                     else
@@ -287,6 +372,32 @@ internal sealed class CodexAppServerProcessSession : ICodexAppServerSession
     {
         if (threadId is null || turnId is null || disposed) return Task.CompletedTask;
         return SendRequestWithoutWaitingAsync("turn/interrupt", new { threadId, turnId }, cancellationToken);
+    }
+
+    private async Task<CodexProtocolEvent> ExecuteDynamicToolAsync(
+        JsonElement requestId,
+        JsonElement parameters,
+        AiToolExecutor executor,
+        CancellationToken cancellationToken)
+    {
+        var callId = RequiredString(parameters, "callId");
+        var name = RequiredString(parameters, "tool");
+        if (!parameters.TryGetProperty("arguments", out var arguments))
+            arguments = JsonSerializer.SerializeToElement(new { });
+        var result = await executor(new(callId, name, arguments.GetRawText()), cancellationToken);
+        var content = result.Ok
+            ? result.Content
+            : JsonSerializer.Serialize(new { error = result.ErrorCode, message = result.ErrorMessage });
+        await WriteAsync(BuildResultResponse(requestId, new
+        {
+            contentItems = new[] { new { type = "inputText", text = Bound(content, 32_000) } },
+            success = result.Ok
+        }), cancellationToken);
+        return new("activity", Activity: new(
+            callId,
+            "dynamic-tool",
+            result.Ok ? "completed" : "failed",
+            $"{name} ({(result.Ok ? "completed" : "failed")})"));
     }
 
     private async Task<JsonElement> CallAsync(string method, object parameters, CancellationToken cancellationToken)
@@ -667,6 +778,31 @@ internal sealed class CodexAppServerProcessSession : ICodexAppServerSession
         return value;
     }
 
+    internal static JsonElement BuildThreadParameters(
+        CodexBridgeOptions options,
+        string? externalThreadId,
+        CodexTurnSettings settings)
+    {
+        var values = new Dictionary<string, object?>
+        {
+            [externalThreadId is null ? "cwd" : "threadId"] = externalThreadId ?? options.RepositoryRoot,
+            ["approvalPolicy"] = "on-request",
+            ["sandbox"] = "read-only"
+        };
+        if (externalThreadId is not null) values["cwd"] = options.RepositoryRoot;
+        if (!string.IsNullOrWhiteSpace(settings.Model)) values["model"] = settings.Model;
+        if (externalThreadId is null) values["serviceName"] = "dantes-roleplay";
+        if (settings.Tools is { Count: > 0 })
+            values["dynamicTools"] = settings.Tools.Select(tool => new
+            {
+                type = "function",
+                name = tool.Name,
+                description = tool.Description,
+                inputSchema = ParseJson(tool.InputSchemaJson)
+            }).ToArray();
+        return JsonSerializer.SerializeToElement(values);
+    }
+
     internal static JsonElement BuildTurnParameters(
         CodexBridgeOptions options, string externalThreadId, string message) =>
         JsonSerializer.SerializeToElement(new
@@ -677,6 +813,33 @@ internal sealed class CodexAppServerProcessSession : ICodexAppServerSession
             approvalPolicy = "on-request",
             sandboxPolicy = new { type = "readOnly", networkAccess = false }
         });
+
+    internal static JsonElement BuildTurnParameters(
+        CodexBridgeOptions options,
+        string externalThreadId,
+        string message,
+        CodexTurnSettings settings)
+    {
+        var values = new Dictionary<string, object?>
+        {
+            ["threadId"] = externalThreadId,
+            ["input"] = new[] { new { type = "text", text = message } },
+            ["cwd"] = options.RepositoryRoot,
+            ["approvalPolicy"] = "on-request",
+            ["sandboxPolicy"] = new { type = "readOnly", networkAccess = false },
+            ["model"] = settings.Model
+        };
+        if (!string.IsNullOrWhiteSpace(settings.ReasoningEffort)) values["effort"] = settings.ReasoningEffort;
+        if (!string.IsNullOrWhiteSpace(settings.ResponseSchemaJson))
+            values["outputSchema"] = ParseJson(settings.ResponseSchemaJson);
+        return JsonSerializer.SerializeToElement(values);
+    }
+
+    private static JsonElement ParseJson(string value)
+    {
+        using var document = JsonDocument.Parse(value);
+        return document.RootElement.Clone();
+    }
 
     internal static string BuildRequest(long id, string method, object parameters) =>
         JsonSerializer.Serialize(new { id, method, @params = parameters });

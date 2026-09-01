@@ -1837,50 +1837,7 @@ export const hubSource = {
       inventory: [],
     },
   ],
-  rules: [
-    {
-      id: "dnd2024.shared.action.search",
-      title: "Search",
-      category: "Shared Rules",
-      subcategory: "Activity",
-      path: "entities/shared-rules/activity",
-      contentFingerprint: "fixture-search",
-      summary: "Make a specified Wisdom check to find or discern something.",
-      revision: 1,
-      source: {
-        id: "dnd2024.source.srd-5.2.1",
-        locator: "Playing the Game > Actions > Search (SRD 5.2.1, pages 10-10)",
-      },
-    },
-    {
-      id: "dnd2024.shared.action.help",
-      title: "Help",
-      category: "Shared Rules",
-      subcategory: "Activity",
-      path: "entities/shared-rules/activity",
-      contentFingerprint: "fixture-help",
-      summary: "Help another creature’s ability check or attack roll, or administer first aid.",
-      revision: 1,
-      source: {
-        id: "dnd2024.source.srd-5.2.1",
-        locator: "Playing the Game > Actions > Help (SRD 5.2.1, pages 10-10)",
-      },
-    },
-    {
-      id: "dnd2024.shared.action.opportunity-attack",
-      title: "Opportunity Attack",
-      category: "Shared Rules",
-      subcategory: "Activity",
-      path: "entities/shared-rules/activity",
-      contentFingerprint: "fixture-opportunity-attack",
-      summary: "A reusable Reaction activity referenced by Disengage, movement, and many monster or character features.",
-      revision: 1,
-      source: {
-        id: "dnd2024.source.srd-5.2.1",
-        locator: "Rules Glossary > Opportunity Attacks (SRD 5.2.1, pages 185-185)",
-      },
-    },
-  ],
+  rules: [],
 };
 
 export const SECRET_CANARIES = hubSource.world.locations.map((location) => location.dm.secret);

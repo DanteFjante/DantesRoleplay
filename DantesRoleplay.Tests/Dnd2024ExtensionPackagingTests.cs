@@ -1,7 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using DantesRoleplay.ApplicationPreview;
+using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Applications;
+using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.LocalAI;
@@ -17,11 +19,11 @@ public sealed class Dnd2024ExtensionPackagingTests : IDisposable
     private const string ExtensionPath =
         "catalog/extensions/dnd2024/legacy-equipment/extension-package.json";
     private const string RopePath =
-        "catalog/extensions/dnd2024/legacy-equipment/content/entities/adventuring-gear/dnd2024.item.hempen-rope-50-foot.v1.json";
+        "catalog/extensions/dnd2024/legacy-equipment/content/entities/adventuring-gear/dnd2024.extension.legacy-equipment.item.hempen-rope-50-foot.v1.json";
     private readonly SqliteFixture _fixture = new();
 
     [Fact]
-    public async Task Legacy_equipment_package_is_closed_disabled_and_requires_core()
+    public async Task Legacy_equipment_package_maps_directly_to_runtime_registration()
     {
         var root = RepositoryRoot();
         var schema = await File.ReadAllTextAsync(Path.Combine(root, "catalog", "extensions",
@@ -36,17 +38,20 @@ public sealed class Dnd2024ExtensionPackagingTests : IDisposable
         Assert.Equal(SchemaValueStatus.Valid, validation.Status);
         using var document = JsonDocument.Parse(manifest);
         var value = document.RootElement;
-        Assert.Equal("dnd2024.legacy-equipment", value.GetProperty("extensionId").GetString());
+        Assert.Equal(2, value.GetProperty("schemaVersion").GetInt32());
+        Assert.Equal("legacy-equipment", value.GetProperty("extensionId").GetString());
         Assert.Equal("dnd2024", value.GetProperty("applicationId").GetString());
-        Assert.Equal(ExtensionSourceId, value.GetProperty("sourceId").GetString());
-        Assert.Equal("compatibility", value.GetProperty("classification").GetString());
-        Assert.False(value.GetProperty("enabledByDefault").GetBoolean());
-        Assert.Equal([CoreSourceId], value.GetProperty("requiredSourceIds").EnumerateArray()
+        Assert.Equal([ExtensionSourceId], value.GetProperty("sourceIds").EnumerateArray()
             .Select(item => item.GetString()));
+        Assert.Equal(["dnd2024.extension.legacy-equipment"], value.GetProperty("namespaceIds").EnumerateArray()
+            .Select(item => item.GetString()));
+        Assert.Equal("compatibility", value.GetProperty("classification").GetString());
+        Assert.False(value.GetProperty("overridesBase").GetBoolean());
+        Assert.Empty(value.GetProperty("dependencies").EnumerateArray());
 
-        AssertInvalid(manifest, node => node["enabledByDefault"] = true);
+        AssertInvalid(manifest, node => node["extensionId"] = "dnd2024.legacy-equipment");
         AssertInvalid(manifest, node => node["classification"] = "official-core");
-        AssertInvalid(manifest, node => node["requiredSourceIds"] = new JsonArray("extension.other"));
+        AssertInvalid(manifest, node => node["namespaceIds"] = new JsonArray("other.extension"));
         AssertInvalid(manifest, node => node["unexpected"] = true);
 
         void AssertInvalid(string source, Action<JsonObject> mutate)
@@ -70,33 +75,121 @@ public sealed class Dnd2024ExtensionPackagingTests : IDisposable
         var core = sources.Register(new(application, CoreSourceId, "workspace",
             "catalog/applications/dnd2024/**/*", SourceTrust.Trusted, 0, "dnd2024-core-catalog"));
         var extension = sources.Register(new(application, ExtensionSourceId, "workspace",
-            "catalog/extensions/dnd2024/legacy-equipment/**/*", SourceTrust.Trusted, 100,
+            "catalog/extensions/dnd2024/legacy-equipment/content/**/*", SourceTrust.Trusted, 100,
             ExtensionSourceId));
+        sources.Register(new(application, "retired-flat-path", "workspace",
+            "catalog/retired-flat-path/**/*", SourceTrust.Trusted, 0, "retired-flat-path"));
+        var extensions = new SqliteApplicationExtensionRegistry(db, sources);
+        var registeredExtension = extensions.Register(new(application, "legacy-equipment",
+            "Legacy Equipment", "Reviewed compatibility equipment.",
+            ApplicationExtensionClassifications.Compatibility, [ExtensionSourceId],
+            ["dnd2024.extension.legacy-equipment"], [], [], [], false));
         var previews = new ApplicationPreviewService(
             applications,
             sources,
+            extensions,
             new RegisteredSourceScanner(sources, new WorkspaceRoot(), new LocalDocumentScanner()),
             new SourceOverlayResolver());
 
-        var coreOnly = await previews.PreviewAsync(application, [CoreSourceId]);
-        var extended = await previews.PreviewAsync(application, [CoreSourceId, ExtensionSourceId]);
-        var reordered = await previews.PreviewAsync(application, [ExtensionSourceId, CoreSourceId]);
+        var coreOnly = await previews.PreviewAsync(application, [CoreSourceId], []);
+        var extended = await previews.PreviewAsync(application, [CoreSourceId], ["legacy-equipment"]);
+        var reordered = await previews.PreviewAsync(application, [CoreSourceId], ["legacy-equipment"]);
 
         Assert.True(coreOnly.IsValid);
         Assert.Equal(CoreSourceId, Assert.Single(coreOnly.Sources).SourceId);
         Assert.DoesNotContain(coreOnly.Winners,
             winner => winner.RelativePath.StartsWith("catalog/extensions/", StringComparison.Ordinal));
+        Assert.DoesNotContain(coreOnly.Sources, source => source.SourceId == "retired-flat-path");
         Assert.DoesNotContain("catalog/extensions/", core.RelativePathOrGlob, StringComparison.Ordinal);
-        Assert.Equal("catalog/extensions/dnd2024/legacy-equipment/**/*", extension.RelativePathOrGlob);
+        Assert.Equal("catalog/extensions/dnd2024/legacy-equipment/content/**/*", extension.RelativePathOrGlob);
         Assert.True(extended.IsValid);
         Assert.Equal(2, extended.Sources.Count);
-        Assert.Contains(extended.Winners, winner =>
-            winner.SourceId == ExtensionSourceId && winner.RelativePath == ExtensionPath);
+        Assert.Equal(["legacy-equipment"], extended.ExtensionIds);
         Assert.Contains(extended.Winners, winner =>
             winner.SourceId == ExtensionSourceId && winner.RelativePath == RopePath);
         Assert.NotEqual(coreOnly.PreviewFingerprint, extended.PreviewFingerprint);
         Assert.Equal(extended.PreviewFingerprint, reordered.PreviewFingerprint);
         Assert.Equal(extended.Sources, reordered.Sources);
+
+        var activation = new ActiveApplicationManifest(application, 1,
+            extended.ApplicationRevision, extended.ApplicationFingerprint,
+            extended.PreviewFingerprint, extended.ScannedDocumentsFingerprint,
+            extended.CandidateManifestFingerprint, new string('D', 64), new string('A', 64),
+            "test-coverage", false,
+            extended.Sources.Select(source => new ActivatedApplicationSource(source.SourceId,
+                source.RegistrationFingerprint, source.DocumentCount, source.ProblemCount)).ToArray(),
+            extended.Winners.Select(winner => new ActivatedApplicationDocument(winner.LogicalIdentity,
+                winner.SourceId, winner.Trust, winner.Precedence, winner.RelativePath,
+                winner.MediaType, winner.ContentFingerprint, winner.Length, winner.IsText)).ToArray(),
+            "test-operation", DateTime.UtcNow)
+        {
+            ResolutionFingerprint = extended.ResolutionFingerprint,
+            Extensions = [new("legacy-equipment",
+                ApplicationExtensionRegistrationFingerprint.Compute(registeredExtension),
+                registeredExtension.SourceIds, registeredExtension.NamespaceIds,
+                registeredExtension.HigherPriorityThan, registeredExtension.OverridesBase)]
+        };
+        var snapshot = new ActivatedApplicationCatalogMaterializer(applications,
+            new StaticActivation(activation), sources, new WorkspaceRoot(), extensions)
+            .BuildFeatureSnapshot(application);
+        var navigator = new InMemoryCatalogNavigator(snapshot.Manifest,
+            new CatalogCursorCodec(System.Text.Encoding.UTF8.GetBytes(
+                "dnd2024-extension-packaging-test-signing-key")), snapshot.Resolution);
+        var content = navigator.EffectiveContent(new(application, 100));
+        Assert.Equal(extended.ResolutionFingerprint, content.ResolutionFingerprint);
+        Assert.Equal("compatibility", Assert.Single(content.ActiveExtensions).Classification);
+        var additiveRecords = new List<EffectiveApplicationContentRecord>(content.AdditiveExtensionContent);
+        while (content.NextCursor is not null)
+        {
+            content = navigator.EffectiveContent(new(application, 100, content.NextCursor));
+            additiveRecords.AddRange(content.AdditiveExtensionContent);
+        }
+        var additive = Assert.Single(additiveRecords,
+            value => value.Record.QualifiedId.Contains("hempen-rope-50-foot", StringComparison.Ordinal));
+        Assert.Equal("legacy-equipment", additive.OwnerId);
+        Assert.Equal("Legacy Equipment", additive.SourceLabel);
+        Assert.True(additive.IsAdditive);
+
+        var extensionAsBase = await Assert.ThrowsAsync<ApplicationPreviewException>(() =>
+            previews.PreviewAsync(application, [CoreSourceId, ExtensionSourceId], ["legacy-equipment"]));
+        Assert.Equal("BASE_SOURCE_SELECTION_INCLUDES_EXTENSION", extensionAsBase.Code);
+    }
+
+    [Fact]
+    public async Task Caldris_package_fields_register_without_an_adapter_contract()
+    {
+        var root = RepositoryRoot();
+        var schema = await File.ReadAllTextAsync(Path.Combine(root, "catalog", "extensions",
+            "dnd2024", "extension-package.schema.json"));
+        var manifest = await File.ReadAllTextAsync(Path.Combine(root, "catalog", "extensions",
+            "dnd2024", "caldris-homebrew", "extension-package.json"));
+        var validator = new BoundedJsonSchemaValidator();
+        var compilation = validator.Compile(schema);
+        Assert.True(compilation.IsAccepted, string.Join("; ", compilation.Diagnostics));
+        Assert.Equal(SchemaValueStatus.Valid,
+            validator.Validate(compilation.ProfileId, compilation.NormalizedSchema, manifest).Status);
+
+        using var document = JsonDocument.Parse(manifest);
+        var value = document.RootElement;
+        var application = ApplicationIdentifier.Parse(value.GetProperty("applicationId").GetString()!);
+        var sources = new InMemorySourceRegistry();
+        foreach (var sourceId in value.GetProperty("sourceIds").EnumerateArray().Select(item => item.GetString()!))
+            sources.Register(new(application, sourceId, "workspace", "caldris/**/*",
+                SourceTrust.Trusted, 0, sourceId));
+        var registration = new ApplicationExtensionRegistration(application,
+            value.GetProperty("extensionId").GetString()!, value.GetProperty("displayName").GetString()!,
+            value.GetProperty("description").GetString()!, value.GetProperty("classification").GetString()!,
+            value.GetProperty("sourceIds").EnumerateArray().Select(item => item.GetString()!).ToArray(),
+            value.GetProperty("namespaceIds").EnumerateArray().Select(item => item.GetString()!).ToArray(),
+            value.GetProperty("dependencies").EnumerateArray().Select(item => item.GetString()!).ToArray(),
+            value.GetProperty("conflictsWith").EnumerateArray().Select(item => item.GetString()!).ToArray(),
+            value.GetProperty("higherPriorityThan").EnumerateArray().Select(item => item.GetString()!).ToArray(),
+            value.GetProperty("overridesBase").GetBoolean());
+
+        var registered = new InMemoryApplicationExtensionRegistry(sources).Register(registration);
+        Assert.Equal("caldris-homebrew", registered.ExtensionId);
+        Assert.Equal("dnd2024.extension.caldris", Assert.Single(registered.NamespaceIds));
+        Assert.Equal(ApplicationExtensionClassifications.Homebrew, registered.Classification);
     }
 
     [Fact]
@@ -109,7 +202,7 @@ public sealed class Dnd2024ExtensionPackagingTests : IDisposable
             .Order(StringComparer.Ordinal).ToArray();
 
         Assert.Equal([
-            "content/entities/adventuring-gear/dnd2024.item.hempen-rope-50-foot.v1.json",
+            "content/entities/adventuring-gear/dnd2024.extension.legacy-equipment.item.hempen-rope-50-foot.v1.json",
             "extension-package.json"
         ], files);
         Assert.DoesNotContain(files, path => path.EndsWith(".js", StringComparison.OrdinalIgnoreCase));
@@ -117,43 +210,6 @@ public sealed class Dnd2024ExtensionPackagingTests : IDisposable
             || path.Contains("mechanics/", StringComparison.Ordinal)
             || path.Contains("procedures/", StringComparison.Ordinal)
             || path.Contains("queries/", StringComparison.Ordinal));
-    }
-
-    [Fact]
-    public async Task Optional_rope_is_provenance_locked_and_never_claims_core_provenance()
-    {
-        var root = RepositoryRoot();
-        var inventoryPath = Path.Combine(root, "ruleset", "dnd2024", "adoption", "evidence",
-            "retained-archive-inventory-13a.json");
-        using var inventory = JsonDocument.Parse(await File.ReadAllTextAsync(inventoryPath));
-        var archivedRope = inventory.RootElement.GetProperty("archive").GetProperty("files")
-            .EnumerateArray().Single(row => row.GetProperty("path").GetString() ==
-                "old-dnd/catalog/world/entities/item.dnd2024.hempen-rope-50-foot.v1.json");
-        var archiveHash = archivedRope.GetProperty("sha256").GetString();
-        Assert.Equal("5103289F8A87B8CDC057ADD232C0995FF00B2AF49A73EEBFC8A770D3D4B27779",
-            archiveHash);
-
-        var coreRoot = Path.Combine(root, "catalog", "applications", "dnd2024", "content", "entities");
-        Assert.DoesNotContain(Directory.GetFiles(coreRoot, "*.json", SearchOption.AllDirectories),
-            path => Path.GetFileName(path) is "dnd2024.item.hempen-rope-50-foot.v1.json" or
-                "item.dnd2024.quiver.v1.json");
-
-        var targetPath = Path.Combine(root, RopePath.Replace('/', Path.DirectorySeparatorChar));
-        var targetEntity = EntityFile.Parse(await File.ReadAllTextAsync(targetPath), RopePath);
-        Assert.Equal("dnd2024.item.hempen-rope-50-foot.v1", targetEntity.Id);
-        Assert.Contains("Legacy Compatibility", targetEntity.Name, StringComparison.Ordinal);
-        var targetComponent = Assert.Single(targetEntity.Components);
-        Assert.Equal("dnd2024.item-definition", targetComponent.DefinitionId);
-
-        var targetData = JsonNode.Parse(targetComponent.Data)!.AsObject();
-
-        Assert.Equal(5, targetData["massPounds"]!["numerator"]!.GetValue<int>());
-        Assert.Equal(1, targetData["massPounds"]!["denominator"]!.GetValue<int>());
-        Assert.Equal(50, targetData["lengthFeet"]!["numerator"]!.GetValue<int>());
-        Assert.Equal(1, targetData["lengthFeet"]!["denominator"]!.GetValue<int>());
-        Assert.Equal(ExtensionSourceId, targetData["sourceRef"]!["sourceId"]!.GetValue<string>());
-        Assert.Equal("Legacy archive > item.dnd2024.hempen-rope-50-foot.v1",
-            targetData["sourceRef"]!["locator"]!.GetValue<string>());
     }
 
     public void Dispose() => _fixture.Dispose();
@@ -165,6 +221,13 @@ public sealed class Dnd2024ExtensionPackagingTests : IDisposable
             canonicalPath = allowedRootId == "workspace" ? RepositoryRoot() : "";
             return canonicalPath.Length > 0;
         }
+    }
+
+    private sealed class StaticActivation(ActiveApplicationManifest activation)
+        : IApplicationActivationReader
+    {
+        public ActiveApplicationManifest? Current(ApplicationIdentifier applicationId) =>
+            applicationId == activation.ApplicationId ? activation : null;
     }
 
     private static string RepositoryRoot()

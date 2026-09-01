@@ -1,0 +1,12 @@
+{
+  "id": "region.feature-01",
+  "owner": "region",
+  "description": "Namespace for region feature-01 catalog records.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

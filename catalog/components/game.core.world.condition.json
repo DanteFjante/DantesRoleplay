@@ -1,1 +1,0 @@
-{"id":"game.core.world.condition","name":"World Condition","description":"Closed state for one scheduled route-closure condition. Scope is supplied by directed relationships and current status is reconciled from the root clock. It contains no route, clock, location, campaign, or history reference. Governed by procedure.game.core.world.condition."}

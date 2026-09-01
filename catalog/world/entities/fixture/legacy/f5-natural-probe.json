@@ -1,0 +1,14 @@
+{
+  "id": "fixture.legacy.f5-natural-probe",
+  "name": "fixture.legacy.f5-natural-probe",
+  "components": {
+    "dnd2024.abilities": {
+      "str": 12,
+      "dex": 16,
+      "con": 14,
+      "int": 10,
+      "wis": 13,
+      "cha": 8
+    }
+  }
+}

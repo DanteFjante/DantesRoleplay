@@ -1,4 +1,4 @@
-var world=ctx.roles.world,ROOT='dnd2024.game.core.world.root',CLOCK='dnd2024.game.core.world.clock',MAX_MINUTE=1000000000,MAX_REVISION=2147483647;
+var world=ctx.roles.world,ROOT='game.core.world.root',CLOCK='game.core.world.clock',MAX_MINUTE=1000000000,MAX_REVISION=2147483647;
 function closed(v,k){if(v===null||Array.isArray(v)||typeof v!=='object')return false;var a=Object.keys(v).sort();if(a.length!==k.length)return false;for(var i=0;i<k.length;i++)if(a[i]!==k[i])return false;return true;}
 function parse(v,n){if(typeof v!=='string')throw new Error(n+' is corrupt.');try{return JSON.parse(v);}catch(e){throw new Error(n+' is corrupt.');}}
 function text(v,n){return typeof v==='string'&&v.length>0&&v===v.trim()&&Array.from(v).length<=n;}

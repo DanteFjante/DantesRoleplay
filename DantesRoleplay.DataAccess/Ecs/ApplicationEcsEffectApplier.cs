@@ -13,7 +13,8 @@ public sealed class ApplicationEcsEffectApplier(
     IStateSpaceRegistry stateSpaces,
     IOperationLog operations,
     IStateSpaceEdgeStore? edges = null,
-    IEnumerable<IApplicationEcsTransactionParticipant>? transactionParticipants = null) : IApplicationEcsEffectApplier
+    IEnumerable<IApplicationEcsTransactionParticipant>? transactionParticipants = null,
+    IEcsRoleConstraintValidator? roleConstraints = null) : IApplicationEcsEffectApplier
 {
     private const string AuditIdentity = ApplicationEcsExecutionIdentity.AuditTool;
 
@@ -47,13 +48,17 @@ public sealed class ApplicationEcsEffectApplier(
         var currentIndex = -1;
         try
         {
-            transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            transaction = await SqliteEcsConstraintTransaction.BeginIfNeededAsync(db, cancellationToken)
+                ?? throw new InvalidOperationException("Application ECS effects require their own write transaction.");
             await VerifyContainmentsAsync(batch, cancellationToken);
             for (var index = 0; index < batch.Effects.Count; index++)
             {
                 currentIndex = index;
                 receipts.Add(await ApplyOneAsync(batch.StateSpaceId, batch.Effects[index], index, cancellationToken));
             }
+
+            if (roleConstraints is not null)
+                await roleConstraints.ValidateStateSpaceAsync(batch.StateSpaceId, cancellationToken);
 
             if (dryRun)
             {
@@ -299,6 +304,7 @@ public sealed class ApplicationEcsEffectApplier(
 
     private static string Code(Exception exception) => exception switch
     {
+        EcsRoleConstraintException constraint => constraint.Code,
         ArgumentException => "VALIDATION_FAILED",
         DbUpdateException => "PERSISTENCE_REJECTED",
         _ when exception.Message.Contains("unknown", StringComparison.OrdinalIgnoreCase) => "REFERENCE_UNKNOWN",

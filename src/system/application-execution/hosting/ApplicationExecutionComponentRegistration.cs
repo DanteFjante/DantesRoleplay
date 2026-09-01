@@ -6,6 +6,7 @@ public static class ApplicationExecutionComponentRegistration
 {
     public static IServiceCollection AddApplicationExecutionComponent(this IServiceCollection services) => services
         .AddScoped<IApplicationMechanicProjectionResolver, ApplicationMechanicProjectionResolver>()
+        .AddScoped<IApplicationMechanicProjectionMappingResolver, ApplicationMechanicProjectionMappingResolver>()
         .AddScoped<IApplicationMechanicEvaluator, ApplicationMechanicEvaluator>()
         .AddScoped<IApplicationActionRunner, ApplicationActionRunner>();
 }

@@ -33,6 +33,7 @@ public sealed class ActiveCatalogFeatureSnapshot
 
     public CatalogNavigationManifest Manifest { get; }
     public IReadOnlyList<ActiveCatalogFeatureDocument> Documents { get; }
+    public CatalogExtensionResolutionContext? Resolution { get; init; }
 }
 
 public interface IActiveCatalogFeatureSnapshotProvider

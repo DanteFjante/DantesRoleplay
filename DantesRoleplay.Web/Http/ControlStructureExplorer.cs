@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using DantesRoleplay.Applications;
+using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Authorization;
@@ -17,7 +18,8 @@ public sealed class ControlStructureExplorer(
     IEntityComponentStore entities,
     IPublicApplicationCatalogProvider catalogs,
     ISystemCapabilityCatalog? systemCapabilities = null,
-    IStateSpaceEdgeStore? edges = null)
+    IStateSpaceEdgeStore? edges = null,
+    IApplicationActivationReader? activations = null)
 {
     public const int DefaultPageSize = 25;
     public const int MaximumPageSize = 100;
@@ -30,6 +32,7 @@ public sealed class ControlStructureExplorer(
     private readonly IPublicApplicationCatalogProvider _catalogs = catalogs;
     private readonly ISystemCapabilityCatalog? _systemCapabilities = systemCapabilities;
     private readonly IStateSpaceEdgeStore? _edges = edges;
+    private readonly IApplicationActivationReader? _activations = activations;
 
     public async Task<StructurePage<ApplicationSummary>> ListApplicationsThroughCapabilitiesAsync(
         AuthorizationAuditEvidence authorization,
@@ -198,8 +201,15 @@ public sealed class ControlStructureExplorer(
         CancellationToken cancellationToken = default)
     {
         RequireApplicationStateSpace(applicationId, stateSpaceId);
-        return await GetComponentAsync(
+        var exact = await GetComponentAsync(
             stateSpaceId, entityId, qualifiedTypeId, cancellationToken);
+        if (exact is not null) return exact;
+
+        var legacyTypeId = LegacyApplicationIdentity(applicationId, qualifiedTypeId);
+        if (legacyTypeId == qualifiedTypeId) return null;
+        var legacy = await GetComponentAsync(
+            stateSpaceId, entityId, legacyTypeId, cancellationToken);
+        return legacy is null ? null : legacy with { QualifiedTypeId = qualifiedTypeId };
     }
 
     public async Task<StructurePage<ContainmentSummary>> ListApplicationContainmentsAsync(
@@ -259,17 +269,36 @@ public sealed class ControlStructureExplorer(
         var pageSize = PageSize(limit);
         var scope = stateSpaceId + "\n" + fromEntityId + "\n" + qualifiedKind;
         var afterToEntityId = Decode(cursor, "relationships", scope, pageSize);
-        var matches = (await RequireEdges().ListRelationshipsAsync(stateSpaceId, cancellationToken))
+        var relationships = await RequireEdges().ListRelationshipsAsync(stateSpaceId, cancellationToken);
+        var matches = relationships
             .Where(value => value.FromEntityId == fromEntityId && value.QualifiedKind == qualifiedKind)
             .OrderBy(value => value.ToEntityId, StringComparer.Ordinal)
             .TakeWhile(value => afterToEntityId is null ||
                 string.CompareOrdinal(value.ToEntityId, afterToEntityId) > 0)
             .Take(pageSize + 1)
             .ToArray();
-        var items = matches.Take(pageSize).Select(Summary).ToArray();
+        if (matches.Length == 0)
+        {
+            var legacyKind = LegacyApplicationIdentity(applicationId, qualifiedKind);
+            if (legacyKind != qualifiedKind)
+                matches = relationships
+                    .Where(value => value.FromEntityId == fromEntityId && value.QualifiedKind == legacyKind)
+                    .OrderBy(value => value.ToEntityId, StringComparer.Ordinal)
+                    .TakeWhile(value => afterToEntityId is null ||
+                        string.CompareOrdinal(value.ToEntityId, afterToEntityId) > 0)
+                    .Take(pageSize + 1)
+                    .ToArray();
+        }
+        var items = matches.Take(pageSize).Select(value =>
+            Summary(value) with { QualifiedKind = qualifiedKind }).ToArray();
         var next = matches.Length > pageSize ? matches[pageSize - 1].ToEntityId : null;
         return Page(items, next, "relationships", scope, pageSize);
     }
+
+    private static string LegacyApplicationIdentity(string applicationId, string qualifiedId) =>
+        qualifiedId.StartsWith(applicationId + ".", StringComparison.Ordinal)
+            ? qualifiedId
+            : $"{applicationId}.{qualifiedId}";
 
     public CatalogOverview GetCatalog(string applicationId)
     {
@@ -297,7 +326,8 @@ public sealed class ControlStructureExplorer(
     public CatalogSearchResult SearchCatalog(
         string applicationId, string? query, string? collection, string? branch,
         IReadOnlyList<string>? kinds, IReadOnlyList<string>? statuses,
-        string? cursor, string? pageSize)
+        string? cursor, string? pageSize, string? namespaceId = null,
+        bool includeShadowed = false)
     {
         var id = Application(applicationId);
         var navigator = Catalog(id);
@@ -309,7 +339,9 @@ public sealed class ControlStructureExplorer(
             kinds,
             statuses,
             CatalogPageSize(pageSize),
-            CatalogCursor(cursor)));
+            CatalogCursor(cursor),
+            namespaceId,
+            includeShadowed));
     }
 
     public CatalogRecordView InspectCatalog(
@@ -321,6 +353,20 @@ public sealed class ControlStructureExplorer(
             id,
             BoundedId(collection, 63, "collection"),
             BoundedId(qualifiedId, 400, "qualifiedId")));
+    }
+
+    public EffectiveApplicationContentResult GetEffectiveApplicationContent(
+        string applicationId, string? cursor, string? pageSize)
+    {
+        var id = Application(applicationId);
+        return Catalog(id).EffectiveContent(new(id, CatalogPageSize(pageSize), CatalogCursor(cursor)));
+    }
+
+    public ReadableRulesResult GetReadableRules(
+        string applicationId, ReadableRuleAudience audience)
+    {
+        var id = Application(applicationId);
+        return Catalog(id).ReadableRules(new(id, audience));
     }
 
     private ICatalogNavigator Catalog(ApplicationIdentifier applicationId)
@@ -491,9 +537,25 @@ public sealed class ControlStructureExplorer(
                 .Select(item => item.GetString()!).ToArray(),
             value.GetProperty("revision").GetInt32(),
             value.GetProperty("fingerprint").GetString()!);
-    private static StateSpaceSummary Summary(StateSpaceView value) =>
-        new(value.StateSpaceId, value.ApplicationRevision.ApplicationId.Value,
-            value.ApplicationRevision.Revision, value.ManifestFingerprint, value.CreatedAtUtc);
+    private StateSpaceSummary Summary(StateSpaceView value)
+    {
+        var active = _activations?.Current(value.ApplicationRevision.ApplicationId);
+        var current = active is not null &&
+            value.ApplicationRevision.Revision == active.ApplicationRevision &&
+            string.Equals(value.ApplicationRevision.Fingerprint, active.ApplicationFingerprint,
+                StringComparison.Ordinal) &&
+            string.Equals(value.ManifestFingerprint, active.ActivationFingerprint, StringComparison.Ordinal) &&
+            string.Equals(value.ResolutionFingerprint, active.ResolutionFingerprint, StringComparison.Ordinal);
+        return new(
+            value.StateSpaceId,
+            value.ApplicationRevision.ApplicationId.Value,
+            value.ApplicationRevision.Revision,
+            value.ManifestFingerprint,
+            value.ResolutionFingerprint,
+            value.Scope == EcsStateSpaceScope.Runtime ? "runtime" : "application-publication",
+            current,
+            value.CreatedAtUtc);
+    }
     private static ComponentTypeSummary Summary(RegisteredComponentTypeVersion value) =>
         new(value.Owner.Value, value.QualifiedId, value.Version, value.ProfileId,
             value.SchemaHash, value.CreatedAtUtc);
@@ -521,7 +583,15 @@ public sealed class ControlStructureException(string code, string message, int s
 public sealed record StructurePage<T>(IReadOnlyList<T> Items, string? NextCursor);
 public sealed record ApplicationSummary(string Id, string DisplayName, string Description, IReadOnlyList<string> BaseApplications);
 public sealed record ApplicationDetail(string Id, string DisplayName, string Description, IReadOnlyList<string> BaseApplications, int Revision, string Fingerprint);
-public sealed record StateSpaceSummary(string StateSpaceId, string ApplicationId, int ApplicationRevision, string ManifestFingerprint, DateTime CreatedAtUtc);
+public sealed record StateSpaceSummary(
+    string StateSpaceId,
+    string ApplicationId,
+    int ApplicationRevision,
+    string ManifestFingerprint,
+    string ResolutionFingerprint,
+    string Scope,
+    bool IsCurrent,
+    DateTime CreatedAtUtc);
 public sealed record ComponentTypeSummary(string Owner, string QualifiedId, int Version, string ProfileId, string SchemaHash, DateTime CreatedAtUtc);
 public sealed record ComponentTypeDetail(string Owner, string QualifiedId, int Version, string ProfileId, string SchemaJson, string SchemaHash, DateTime CreatedAtUtc);
 public sealed record EntitySummary(string StateSpaceId, string EntityId, string Name, int Revision, DateTime CreatedAtUtc);

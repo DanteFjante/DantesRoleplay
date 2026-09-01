@@ -35,7 +35,8 @@ public sealed class ActivatedKnowledgeApplicationBindingResolver(
                 !KnowledgeApplicationBindingDocument.TryParse(document.Text, applicationId.Value, out var vocabulary))
                 return null;
 
-            var matches = new List<(StateSpaceView Space, EcsEntityView Campaign, EcsComponentView Root)>();
+            var matches = new List<(StateSpaceView Space, EcsEntityView Campaign, EcsComponentView Root,
+                KnowledgeApplicationBindingDocument.BindingDto Vocabulary)>();
             string? cursor = null;
             var seen = 0;
             do
@@ -49,11 +50,24 @@ public sealed class ActivatedKnowledgeApplicationBindingResolver(
                     var campaign = await entities.GetEntityAsync(
                         stateSpace.StateSpaceId, campaignId, cancellationToken);
                     if (campaign is null) continue;
+                    var effectiveVocabulary = vocabulary;
                     var root = await entities.GetComponentAsync(stateSpace.StateSpaceId, campaignId,
                         vocabulary.CampaignRootComponentTypeId, cancellationToken);
+                    if (root is null)
+                    {
+                        var legacyRootTypeId = LegacyApplicationIdentity(
+                            applicationId.Value, vocabulary.CampaignRootComponentTypeId);
+                        if (legacyRootTypeId != vocabulary.CampaignRootComponentTypeId)
+                        {
+                            root = await entities.GetComponentAsync(stateSpace.StateSpaceId, campaignId,
+                                legacyRootTypeId, cancellationToken);
+                            if (root is not null)
+                                effectiveVocabulary = vocabulary.WithApplicationPrefix(applicationId.Value);
+                        }
+                    }
                     if (root is not null && ExactText(root.ValueJson, vocabulary.CampaignStatusProperty,
                             vocabulary.ActiveCampaignStatus))
-                        matches.Add((stateSpace, campaign, root));
+                        matches.Add((stateSpace, campaign, root, effectiveVocabulary));
                 }
                 cursor = page.NextStateSpaceId;
             } while (cursor is not null);
@@ -73,7 +87,8 @@ public sealed class ActivatedKnowledgeApplicationBindingResolver(
                 RootType = match.Root.Type,
                 RootRevision = match.Root.Revision
             }));
-            var binding = vocabulary.Bind(applicationId.Value, match.Space.StateSpaceId, campaignId, revision);
+            var binding = match.Vocabulary.Bind(
+                applicationId.Value, match.Space.StateSpaceId, campaignId, revision);
             binding.Validate();
             return binding;
         }
@@ -102,6 +117,10 @@ public sealed class ActivatedKnowledgeApplicationBindingResolver(
     private static bool Token(string? value, int maximum) =>
         !string.IsNullOrWhiteSpace(value) && value == value.Trim() && value.Length <= maximum &&
         !value.Any(char.IsWhiteSpace);
+    private static string LegacyApplicationIdentity(string applicationId, string qualifiedId) =>
+        qualifiedId.StartsWith(applicationId + ".", StringComparison.Ordinal)
+            ? qualifiedId
+            : $"{applicationId}.{qualifiedId}";
     private static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes));
 }
 
@@ -189,6 +208,37 @@ internal static class KnowledgeApplicationBindingDocument
         public string ActiveLocationStatus { get; init; } = "";
         public string LocationKindProperty { get; init; } = "";
         public string RegionLocationKind { get; init; } = "";
+
+        internal BindingDto WithApplicationPrefix(string applicationId)
+        {
+            string Prefix(string value) => value.StartsWith(applicationId + ".", StringComparison.Ordinal)
+                ? value
+                : $"{applicationId}.{value}";
+            return this with
+            {
+                CampaignRootComponentTypeId = Prefix(CampaignRootComponentTypeId),
+                CampaignWorldRelationshipKind = Prefix(CampaignWorldRelationshipKind),
+                ParticipationComponentTypeId = Prefix(ParticipationComponentTypeId),
+                CampaignParticipationRelationshipKind = Prefix(CampaignParticipationRelationshipKind),
+                ParticipationActorRelationshipKind = Prefix(ParticipationActorRelationshipKind),
+                WorldRootComponentTypeId = Prefix(WorldRootComponentTypeId),
+                WorldClockComponentTypeId = Prefix(WorldClockComponentTypeId),
+                KnowledgeKinds = KnowledgeKinds.Select(value => value with
+                {
+                    ComponentTypeId = Prefix(value.ComponentTypeId)
+                }).ToArray(),
+                ClassificationComponentTypeId = Prefix(ClassificationComponentTypeId),
+                ValidityComponentTypeId = Prefix(ValidityComponentTypeId),
+                KnowledgeWorldRelationshipKind = Prefix(KnowledgeWorldRelationshipKind),
+                KnowledgeAboutRelationshipKind = Prefix(KnowledgeAboutRelationshipKind),
+                ExplicitStateRelationshipKind = Prefix(ExplicitStateRelationshipKind),
+                BaselineRelationshipKind = Prefix(BaselineRelationshipKind),
+                FactionComponentTypeId = Prefix(FactionComponentTypeId),
+                FactionWorldRelationshipKind = Prefix(FactionWorldRelationshipKind),
+                FactionMemberRelationshipKind = Prefix(FactionMemberRelationshipKind),
+                LocationComponentTypeId = Prefix(LocationComponentTypeId)
+            };
+        }
 
         internal KnowledgeApplicationBinding Bind(
             string applicationId,

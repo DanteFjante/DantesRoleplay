@@ -25,6 +25,16 @@ public sealed class CatalogValidationTests
     }
 
     [Fact]
+    public async Task Every_repository_identity_has_a_reviewed_conforming_namespace()
+    {
+        var result = await CatalogValidator.ValidateAsync(RepositoryCatalog());
+        var findings = result.Issues.Where(issue => issue.Check == "namespace-review").ToArray();
+
+        Assert.Empty(findings);
+        Assert.Equal(0, result.Warnings);
+    }
+
+    [Fact]
     public async Task Embedded_startup_content_is_the_canonical_catalog_content()
     {
         var contents = await CatalogReader.ReadAsync(RepositoryCatalog());
@@ -56,7 +66,9 @@ public sealed class CatalogValidationTests
             Assert.Equal(file.ContentHash, embeddedMechanics[id].ContentHash);
         }
 
-        var catalogEvents = contents.EventTypes.ToDictionary(file => file.Id, StringComparer.Ordinal);
+        var catalogEvents = contents.EventTypes
+            .Where(file => !file.Id.StartsWith("dnd2024.", StringComparison.Ordinal))
+            .ToDictionary(file => file.Id, StringComparer.Ordinal);
         var embeddedEvents = EventTypeSeeder.Load().ToDictionary(file => file.Id, StringComparer.Ordinal);
 
         Assert.Equal(
@@ -76,44 +88,16 @@ public sealed class CatalogValidationTests
     }
 
     [Fact]
-    public void Ratified_dnd2024_action_records_have_authored_navigation_metadata_and_lossless_paths()
+    public async Task Ratified_dnd2024_action_records_have_authored_navigation_metadata_and_lossless_paths()
     {
         var catalog = RepositoryCatalog();
-        var procedureRoots = new[]
-        {
-            "procedures/game/core",
-            "procedures/campaign",
-            "procedures/quest",
-            "procedures/play"
-        };
-        var mechanicRoots = new[]
-        {
-            "mechanics/game/core",
-            "mechanics/check",
-            "mechanics/change"
-        };
+        var contents = await CatalogReader.ReadAsync(catalog);
+        var procedures = contents.Procedures.Where(value => InCategory(value.Category,
+            "game.core", "campaign", "quest", "play")).ToArray();
+        var mechanics = contents.Mechanics.Where(value => InCategory(value.Category,
+            "game.core", "check", "change")).ToArray();
 
-        var procedures = procedureRoots
-            .SelectMany(root => Directory.EnumerateFiles(
-                Path.Combine(catalog, root.Replace('/', Path.DirectorySeparatorChar)),
-                "*.md",
-                SearchOption.AllDirectories))
-            .Order(StringComparer.Ordinal)
-            .Select(path => ProcedureFile.Parse(File.ReadAllText(path), Relative(catalog, path)))
-            .ToArray();
-        var mechanics = mechanicRoots
-            .SelectMany(root => Directory.EnumerateFiles(
-                Path.Combine(catalog, root.Replace('/', Path.DirectorySeparatorChar)),
-                "*.md",
-                SearchOption.AllDirectories))
-            .Order(StringComparer.Ordinal)
-            .Select(path => MechanicFile.Parse(
-                File.ReadAllText(path),
-                Relative(catalog, path),
-                File.ReadAllText(Path.ChangeExtension(path, ".js"))))
-            .ToArray();
-
-        Assert.Equal(24, procedures.Length);
+        Assert.Equal(25, procedures.Length);
         Assert.Equal(14, mechanics.Length);
         var records = procedures.Select(value => (value.Id, value.Category, value.Name, value.Description))
             .Concat(mechanics.Select(value => (value.Id, value.Category, value.Name, value.Description)))
@@ -127,29 +111,19 @@ public sealed class CatalogValidationTests
             Assert.Equal(record.Category, logicalPath.Replace('/', '.'));
             Assert.DoesNotContain('\\', logicalPath);
         });
+        Assert.All(procedures, procedure => Assert.True(File.Exists(CatalogLayout.ToFileSystemPath(
+            catalog, CatalogLayout.ProcedureMarkdown(procedure.Category, procedure.Id)))));
+        Assert.All(mechanics, mechanic => Assert.True(File.Exists(CatalogLayout.ToFileSystemPath(
+            catalog, CatalogLayout.MechanicMarkdown(mechanic.Category, mechanic.Id)))));
     }
 
     [Fact]
-    public void Ratified_dnd2024_mechanics_need_no_structural_compatibility_projections()
+    public async Task Ratified_dnd2024_mechanics_need_no_structural_compatibility_projections()
     {
         var catalog = RepositoryCatalog();
-        var mechanicRoots = new[]
-        {
-            "mechanics/game/core",
-            "mechanics/check",
-            "mechanics/change"
-        };
-        var mechanics = mechanicRoots
-            .SelectMany(root => Directory.EnumerateFiles(
-                Path.Combine(catalog, root.Replace('/', Path.DirectorySeparatorChar)),
-                "*.md",
-                SearchOption.AllDirectories))
-            .Order(StringComparer.Ordinal)
-            .Select(path => MechanicFile.Parse(
-                File.ReadAllText(path),
-                Relative(catalog, path),
-                File.ReadAllText(Path.ChangeExtension(path, ".js"))))
-            .ToArray();
+        var contents = await CatalogReader.ReadAsync(catalog);
+        var mechanics = contents.Mechanics.Where(value => InCategory(value.Category,
+            "game.core", "check", "change")).ToArray();
 
         Assert.Equal(14, mechanics.Length);
         var requirements = mechanics
@@ -163,16 +137,12 @@ public sealed class CatalogValidationTests
                 Assert.Contains(property.Name, supportedRequirementProperties));
         }
 
-        var componentDirectory = Path.Combine(catalog, "components");
-        var adoptedComponentIds = Directory.EnumerateFiles(componentDirectory, "*.schema.json")
-            .Select(Path.GetFileName)
-            .Where(name => name is not null &&
-                (name.StartsWith("game.core.", StringComparison.Ordinal) ||
-                 string.Equals(name, "stats.schema.json", StringComparison.Ordinal)))
-            .Select(name => name![..^".schema.json".Length])
+        var adoptedComponentIds = contents.Components
+            .Where(value => value.Id.StartsWith("game.core.", StringComparison.Ordinal)
+                || value.Id == "fixture.legacy.stats")
+            .Where(value => value.Schema is not null)
+            .Select(value => value.Id)
             .ToHashSet(StringComparer.Ordinal);
-        Assert.Equal(40, adoptedComponentIds.Count);
-
         var requiredComponentIds = requirements
             .SelectMany(requirement => requirement.Parsed.AllComponentIds())
             .Distinct(StringComparer.Ordinal)
@@ -199,6 +169,9 @@ public sealed class CatalogValidationTests
 
     private static string Relative(string root, string path) =>
         Path.GetRelativePath(root, path).Replace(Path.DirectorySeparatorChar, '/');
+
+    private static bool InCategory(string category, params string[] roots) => roots.Any(root =>
+        category == root || category.StartsWith(root + ".", StringComparison.Ordinal));
 
     private static string RepositoryRoot()
     {

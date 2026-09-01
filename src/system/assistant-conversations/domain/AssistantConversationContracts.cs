@@ -11,6 +11,7 @@ public static class AssistantConversationScopes
 public static class AssistantTurnContextProfiles
 {
     public const string SystemReadV1 = "system-read-v1";
+    public const string ApplicationAiV1 = "application-ai-v1";
 }
 
 public static class AssistantTurnResponseDispositions
@@ -240,6 +241,8 @@ public sealed record AssistantConversationCreate(
 public sealed record AssistantConversationTurnCreate(
     int ExpectedRevision, string Message, string IdempotencyKey);
 
+public sealed record AssistantConversationDelete(int ExpectedRevision);
+
 public sealed record AssistantTurnBegin(
     string OperatorId, string Provider, string? ConversationId, int? ExpectedRevision,
     string Message, string IdempotencyKey, string RequestHash,
@@ -305,6 +308,8 @@ public interface IAssistantConversationStore
     Task BindCodexTurnAsync(CodexTurnBinding binding, CancellationToken cancellationToken = default);
     Task<AssistantTurnActivityDocument> AppendCodexActivityAsync(
         CodexTurnActivityAppend activity, CancellationToken cancellationToken = default);
+    Task<AssistantTurnActivityDocument> AppendActivityAsync(
+        CodexTurnActivityAppend activity, CancellationToken cancellationToken = default);
     Task<AssistantTurnApprovalDocument> AppendCodexApprovalAsync(
         CodexApprovalAppend approval, CancellationToken cancellationToken = default);
     Task<CodexApprovalDispatch> DecideCodexApprovalAsync(
@@ -324,6 +329,10 @@ public interface IAssistantConversationStore
         string scope = AssistantConversationScopes.Advisory);
     Task<IReadOnlyList<AssistantConversationSummary>> ListAsync(
         string operatorId, string provider, DateTime? beforeUpdatedAtUtc, string? beforeId, int limit,
+        CancellationToken cancellationToken = default,
+        string scope = AssistantConversationScopes.Advisory);
+    Task<bool> DeleteAsync(
+        string operatorId, string conversationId, int expectedRevision,
         CancellationToken cancellationToken = default,
         string scope = AssistantConversationScopes.Advisory);
 }

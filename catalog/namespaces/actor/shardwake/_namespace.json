@@ -1,0 +1,12 @@
+{
+  "id": "actor.shardwake",
+  "owner": "actor",
+  "description": "Recurring people and other acting characters belonging to the Shardwake setting. World motives belong on these entities; faction membership and location remain relationships rather than embedded fields.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for recurring Shardwake actors used by grounded play narration."
+}

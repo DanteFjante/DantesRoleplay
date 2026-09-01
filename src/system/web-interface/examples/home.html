@@ -25,7 +25,7 @@
     .game-link::after { content: "→"; color: var(--leaf); font-size: 1.1rem; }
     .game-link:hover, .game-link:focus-visible { border-color: var(--leaf); background: linear-gradient(135deg, rgba(112,195,93,.56), rgba(24,74,42,.82)); outline: none; transform: translateY(-1px); }
     system-navigation { --system-navigation-link-color: var(--muted); --system-navigation-muted-color: var(--faint); --system-navigation-border-color: var(--line); --system-navigation-current-border-color: var(--line); --system-navigation-current-background: rgba(96,171,82,.15); }
-    system-chat { --system-chat-color: var(--ink); --system-chat-muted-color: var(--muted); --system-chat-border-color: var(--line); --system-chat-assistant-background: rgba(96,171,82,.12); --system-chat-button-background: rgba(96,171,82,.15); --system-chat-input-background: rgba(4,21,12,.64); }
+    outer-ai, inner-ai { --ai-color: var(--ink); --ai-muted-color: var(--muted); --ai-border-color: var(--line); --ai-error-color: #ff9b8f; }
     .hero { display: grid; grid-template-columns: minmax(0,1fr) minmax(240px,.46fr); gap: clamp(26px,7vw,92px); align-items: end; padding: 32px 0 46px; }
     .eyebrow { margin: 0 0 15px; color: var(--leaf); font-size: .74rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
     h1, h2, p { margin-top: 0; }
@@ -55,10 +55,6 @@
     .chat-state { min-height: 54px; margin: 0; padding: 15px 26px 0; color: var(--muted); font-size: .88rem; }
     .chat-state.error, .notes-status.error { color: var(--danger); }
     #local-outer-chat { min-height: 258px; padding: 12px 26px 26px; }
-    application-conversation { display: grid; gap: 11px; }
-    application-conversation textarea { min-height: 94px; padding: 11px; resize: vertical; }
-    application-conversation button { justify-self: start; }
-    application-conversation [role="log"] p, application-conversation [aria-label="Task progress"] p { margin: 0 0 8px; color: var(--muted); font-size: .9rem; line-height: 1.45; }
     .notes-body { padding: 19px 22px 22px; }
     .system-chat-card { grid-column: 1 / -1; }
     .system-chat-body { padding: 20px 26px 26px; }
@@ -79,20 +75,20 @@
       <div>
         <p class="eyebrow">Private local workspace</p>
         <h1 id="home-heading">A quieter place to <em>think and act.</em></h1>
-        <p class="lead">Talk through an intent with your local outer model, keep a private scratchpad, and stay grounded in the moment.</p>
-        <a class="game-link" href="/ui/dnd2024-play">Enter D&amp;D 2024 game table</a>
+        <p class="lead">Talk through an intent with the provider-neutral outer AI, keep a private scratchpad, and stay grounded in the moment.</p>
+        <p class="lead">Installed application pages appear automatically in the navigation above.</p>
       </div>
       <section class="clock" aria-label="Local date and time"><small>Here and now</small><time id="local-date-time" aria-live="polite"></time></section>
     </section>
     <section class="dashboard" aria-label="Personal dashboard">
       <section class="card" aria-labelledby="chat-heading">
         <header class="card-head">
-          <div><span class="card-kicker">Conversation</span><h2 id="chat-heading">Local outer chat</h2><p>Choose an application and its state space. The existing local outer model plans and narrates; actions still require their normal confirmation.</p></div>
-          <span class="local-badge">Local model</span>
+          <div><span class="card-kicker">Conversation</span><h2 id="chat-heading">Outer AI</h2><p>Choose a discovered provider, model, application, and optional runtime state. Plans and actions retain their normal confirmation.</p></div>
+          <span class="local-badge">Provider neutral</span>
         </header>
         <div class="chat-setup">
           <div class="field"><label for="chat-application">Application</label><select id="chat-application" aria-describedby="chat-state"></select></div>
-          <div class="field"><label for="chat-state-space">State space</label><select id="chat-state-space" aria-describedby="chat-state"></select></div>
+          <div class="field"><label for="chat-state-space">Runtime state (optional)</label><select id="chat-state-space" aria-describedby="chat-state"></select></div>
           <button class="refresh-button" id="refresh-chat-context" type="button">Refresh</button>
         </div>
         <p class="chat-state" id="chat-state" aria-live="polite">Loading available applications…</p>
@@ -104,16 +100,15 @@
       </section>
       <section class="card system-chat-card" aria-labelledby="system-chat-heading">
         <header class="card-head">
-          <div><span class="card-kicker">System scope</span><h2 id="system-chat-heading">General system chat</h2><p>Ask about registered applications and system contracts without entering any application's world state.</p></div>
-          <span class="local-badge">Local model</span>
+          <div><span class="card-kicker">System scope</span><h2 id="system-chat-heading">Inner AI</h2><p>Run messages, structured requests, tasks, plans, recipes, and schedules through registered direct system capabilities.</p></div>
+          <span class="local-badge">Direct capabilities</span>
         </header>
-        <div class="system-chat-body"><system-chat aria-label="General system chat"></system-chat></div>
+        <div class="system-chat-body"><inner-ai aria-label="Inner AI system workspace"></inner-ai></div>
       </section>
     </section>
     <footer class="footer"><span>Local-first personal dashboard</span><a class="quiet-link" href="/ui/control-center/index.html">Open control center</a></footer>
   </main>
   <script type="module" src="/components/system-workspace.js"></script>
-  <script src="/components/application-conversation.js"></script>
   <script>
     (() => {
       const storageKeys = { notes: "dantes.personal-dashboard.notes.v1", chat: "dantes.personal-dashboard.chat.v1" };
@@ -156,24 +151,33 @@
         try {
           const path = "/api/control/structure/applications/" + encodeURIComponent(application.value) + "/state-spaces";
           const spaces = await readAll(path);
-          fillSelect(stateSpace, spaces, "stateSpaceId", item => item.stateSpaceId, chatPreferences.stateSpaceId);
+          const currentRuntimeSpaces = spaces.filter(item => item.scope === "runtime" && item.isCurrent === true);
+          stateSpace.replaceChildren();
+          const applicationOnly = document.createElement("option");
+          applicationOnly.value = ""; applicationOnly.textContent = "Application context only";
+          stateSpace.append(applicationOnly);
+          for (const value of currentRuntimeSpaces) {
+            const option = document.createElement("option"); option.value = value.stateSpaceId;
+            option.textContent = value.stateSpaceId; stateSpace.append(option);
+          }
+          const preferred = currentRuntimeSpaces.find(value => value.stateSpaceId === chatPreferences.stateSpaceId);
+          stateSpace.value = preferred?.stateSpaceId || currentRuntimeSpaces[0]?.stateSpaceId || "";
           rememberChatPreferences({ applicationId: application.value, stateSpaceId: stateSpace.value || null });
-          if (!stateSpace.value) { chat.replaceChildren(); setChatState("This application has no state spaces yet. Create one from the system workflow, then refresh here.", true); return; }
           mountConversation();
+          if (!currentRuntimeSpaces.length) setChatState("Ready for an application-aware outer chat. No currently bound runtime state is available, so campaign tools stay out of scope.");
         } catch (_) { chat.replaceChildren(); setChatState("State spaces are unavailable for this application. Refresh or inspect it in the control center.", true); }
         finally { stateSpace.disabled = false; }
       }
       function mountConversation() {
-        if (!application.value || !stateSpace.value) return;
+        if (!application.value) return;
         chat.replaceChildren();
-        const conversation = document.createElement("application-conversation");
+        const conversation = document.createElement("outer-ai");
         conversation.setAttribute("application-id", application.value);
-        conversation.setAttribute("state-space-id", stateSpace.value);
-        conversation.setAttribute("session-context-id", chatPreferences.sessionContextId || createSessionContext());
-        conversation.addEventListener("error", event => setChatState(event.detail.message, true));
-        conversation.addEventListener("progress", () => setChatState("Local outer chat is working…"));
-        conversation.addEventListener("receipt", () => setChatState("Action receipt received. Review the conversation for the outcome."));
-        chat.append(conversation); setChatState("Ready for a local outer conversation.");
+        if (stateSpace.value) conversation.setAttribute("state-space-id", stateSpace.value);
+        conversation.addEventListener("ai-error", event => setChatState(event.detail.message, true));
+        conversation.addEventListener("ai-progress", () => setChatState("Outer AI is working…"));
+        conversation.addEventListener("ai-result", () => setChatState("The AI result is ready for review."));
+        chat.append(conversation); setChatState("Ready for a provider-neutral outer AI conversation.");
       }
       async function readAll(path) {
         const values = []; let next = path + (path.includes("?") ? "&" : "?") + "limit=100";

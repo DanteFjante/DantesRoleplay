@@ -1,3 +1,5 @@
+using DantesRoleplay.AI;
+
 namespace DantesRoleplay.CodexBridge;
 
 public static class CodexBridgeVersions
@@ -45,6 +47,21 @@ public sealed record CodexTurnStartResult(
     string ModelProvider,
     string Status);
 
+public sealed record CodexModelDescriptor(
+    string Id,
+    string DisplayName,
+    string Description,
+    IReadOnlyList<string> SupportedReasoningEfforts,
+    string DefaultReasoningEffort,
+    bool IsDefault);
+
+public sealed record CodexTurnSettings(
+    string Model,
+    string ReasoningEffort = "",
+    string ResponseSchemaJson = "",
+    IReadOnlyList<AiToolDefinition>? Tools = null,
+    AiToolExecutor? ToolExecutor = null);
+
 public sealed record CodexProtocolActivity(
     string ExternalItemId,
     string Kind,
@@ -74,8 +91,20 @@ public sealed record CodexProtocolEvent(
 
 public interface ICodexAppServerSession : IAsyncDisposable
 {
+    Task<IReadOnlyList<CodexModelDescriptor>> ListModelsAsync(
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<CodexModelDescriptor>>([]);
+
     Task<CodexTurnStartResult> StartTurnAsync(
         string? externalThreadId, string message, CancellationToken cancellationToken = default);
+
+    Task<CodexTurnStartResult> StartTurnAsync(
+        string? externalThreadId,
+        string message,
+        CodexTurnSettings settings,
+        CancellationToken cancellationToken = default) =>
+        StartTurnAsync(externalThreadId, message, cancellationToken);
+
     IAsyncEnumerable<CodexProtocolEvent> ReadEventsAsync(CancellationToken cancellationToken = default);
     Task RespondApprovalAsync(
         string externalRequestId, string decision, CancellationToken cancellationToken = default);
@@ -85,6 +114,16 @@ public interface ICodexAppServerSession : IAsyncDisposable
 public interface ICodexAppServerFactory
 {
     Task<CodexBridgeStatus> GetStatusAsync(CancellationToken cancellationToken = default);
+
+    async Task<IReadOnlyList<CodexModelDescriptor>> ListModelsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var status = await GetStatusAsync(cancellationToken);
+        return status.Ready
+            ? [new(status.Model, status.Model, "Configured Codex model.", ["medium"], "medium", true)]
+            : [];
+    }
+
     Task<ICodexAppServerSession> CreateAsync(CancellationToken cancellationToken = default);
 }
 
