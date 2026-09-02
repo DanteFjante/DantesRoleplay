@@ -43,6 +43,13 @@ builder.Services.AddSingleton<ILocalStructuredCompletionProvider>(services =>
 builder.Services.AddSingleton<IAiProvider>(services =>
     services.GetRequiredService<OllamaAiProvider>());
 
+// Say at startup whether each published catalog materializes. A drifted file otherwise degrades
+// the whole application silently until someone tries to run a mechanic.
+builder.Services.AddHostedService(services => new CatalogHealthCheck(
+    services.GetRequiredService<IServiceScopeFactory>(),
+    publishedApplicationCatalogs,
+    services.GetRequiredService<ILoggerFactory>().CreateLogger<CatalogHealthCheck>()));
+
 // Intent retrieval over the active catalog. Without an embedding provider and a derived index,
 // system.feature-search runs lexically and answers a phrased question ("what does a location need
 // to be playable") with nothing, while the same record is found by a keyword ("furnish place").

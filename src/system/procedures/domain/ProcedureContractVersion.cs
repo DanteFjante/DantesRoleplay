@@ -1,4 +1,4 @@
-namespace DantesRoleplay.Procedures;
+﻿namespace DantesRoleplay.Procedures;
 
 /// <summary>
 /// One immutable revision of a contract's content. Never updated in place — every edit appends
@@ -32,6 +32,13 @@ public sealed class ProcedureContractVersion
     /// reading all of them. This turns that guess into a lookup.
     /// </summary>
     public string Governs { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Newline-separated phrases a caller might use to mean this contract, the same shape a
+    /// mechanic's Matches carries. Retrieval treats an exact phrase as the top-ranked hit, which is
+    /// what lets a contract be found by what it is for rather than by the words it happens to use.
+    /// </summary>
+    public string Matches { get; set; } = string.Empty;
 
     /// <summary>The procedure itself — usually numbered steps. Markdown.</summary>
     public required string Instructions { get; set; }

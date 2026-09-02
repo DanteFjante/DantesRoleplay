@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using DantesRoleplay.Content;
 using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.Mechanics;
@@ -395,7 +395,8 @@ public sealed class CatalogExporter(DantesRoleplayDbContext db)
                 row.version.Constraints,
                 row.contract.Status,
                 row.version.CreatedBy,
-                row.version.ChangeNote);
+                row.version.ChangeNote,
+                row.version.Matches);
 
             GuardFingerprint(row.version.SourceHash, file.ContentHash, "procedure", file.Id, row.version.Version);
 

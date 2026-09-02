@@ -1,4 +1,4 @@
-namespace DantesRoleplay.Procedures;
+﻿namespace DantesRoleplay.Procedures;
 
 /// <summary>
 /// What the LLM sees in a list. Deliberately small: an agent browsing forty contracts should
@@ -14,6 +14,7 @@ public sealed record ProcedureSummary(
     string Name,
     string Description,
     string Governs,
+    string Matches,
     ProcedureStatus Status,
     int Version);
 
@@ -24,6 +25,7 @@ public sealed record ProcedureDetail(
     string Name,
     string Description,
     string Governs,
+    string Matches,
     string Instructions,
     string Constraints,
     ProcedureStatus Status,
@@ -62,6 +64,9 @@ public sealed record WriteProcedureRequest
 
     /// <summary>Which operations this contract governs. See <see cref="ProcedureContractVersion.Governs"/>.</summary>
     public string Governs { get; init; } = string.Empty;
+
+    /// <summary>Phrases that should find this contract. See <see cref="ProcedureContractVersion.Matches"/>.</summary>
+    public string Matches { get; init; } = string.Empty;
 
     public string Constraints { get; init; } = string.Empty;
 

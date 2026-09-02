@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
@@ -23,8 +23,10 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
         var provider = new MutableSnapshots(Snapshot());
         var retriever = new InteractionFeatureRetriever(provider);
 
+        // "find", not the authored phrase "find feature": an exact phrase is a key and short-circuits
+        // to Exact, which would say nothing about lane binding.
         var trusted = await retriever.SearchAsync(new(Application, InteractionRetrievalLane.TrustedFeature),
-            new("find feature", 10));
+            new("find", 10));
         var untrusted = await retriever.SearchAsync(new(Application, InteractionRetrievalLane.UntrustedReference),
             new("sample-app.untrusted", 10));
 
@@ -67,6 +69,36 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
         registry.SetEnabled("sample-app", enabled: false);
         var hidden = await retriever.SearchAsync(scope, new("sample-app.trusted"));
         Assert.Empty(hidden.Hits);
+    }
+
+    [Fact]
+    public async Task An_application_neutral_record_is_visible_through_its_unprefixed_namespace()
+    {
+        // Most catalog records carry an application-neutral id and reach retrieval qualified with
+        // the application prefix. Their namespace is registered under the unprefixed id, so a gate
+        // that only tested the qualified form hid nearly the whole catalog from retrieval while
+        // catalog browsing still returned it.
+        using var database = new SqliteFixture();
+        using var db = database.CreateContext();
+        var registry = new SqliteCatalogNamespaceRegistry(db);
+        foreach (var id in new[] { "procedure", "procedure.campaign" })
+            registry.Register(new CatalogNamespaceRegistration(id, "sample-app", $"{id} contracts.", [CatalogNamespaceKinds.Procedure],
+                ReviewStatus: CatalogNamespaceReviewStatuses.Reviewed, ReviewNote: "Reviewed retrieval fixture."));
+        var snapshot = Snapshot([Record("sample-app.procedure.campaign.create", "Create a campaign",
+            "Creates a campaign.", ["start a new campaign"])]);
+        var retriever = new InteractionFeatureRetriever(new MutableSnapshots(snapshot), namespaces: registry);
+        var scope = new InteractionFeatureRetrievalScope(Application, InteractionRetrievalLane.TrustedFeature);
+
+        var result = await retriever.SearchAsync(scope, new("start a new campaign"));
+        var unprefixed = await retriever.SearchAsync(scope, new("campaign", namespaceId: "procedure.campaign"));
+        var qualified = await retriever.SearchAsync(scope, new("campaign", namespaceId: "sample-app.procedure.campaign"));
+
+        Assert.Equal(InteractionRetrievalMode.Exact, result.Mode);
+        Assert.Equal("sample-app.procedure.campaign.create", Assert.Single(result.Hits).Reference.QualifiedId);
+        // Either spelling of the namespace filter selects it: the registry lists the unprefixed
+        // form, while a result reference shows the qualified one.
+        Assert.NotEmpty(unprefixed.Hits);
+        Assert.NotEmpty(qualified.Hits);
     }
 
     [Fact]
@@ -133,7 +165,7 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
         var scope = new InteractionFeatureRetrievalScope(Application, InteractionRetrievalLane.TrustedFeature);
 
         var rebuild = await retriever.RebuildAsync(scope);
-        var result = await retriever.SearchAsync(scope, new("alpha feature", 10));
+        var result = await retriever.SearchAsync(scope, new("alpha", 10));
 
         Assert.True(rebuild.Rebuilt);
         Assert.Equal(3, rebuild.DocumentCount);
@@ -192,10 +224,10 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
         await retriever.RebuildAsync(scope);
         File.Delete(location.DatabasePath);
 
-        var deleted = await retriever.SearchAsync(scope, new("find feature", 10));
+        var deleted = await retriever.SearchAsync(scope, new("find", 10));
         await retriever.RebuildAsync(scope);
         provider.Snapshot = Snapshot(fingerprintMarker: 'B');
-        var stale = await retriever.SearchAsync(scope, new("find feature", 10));
+        var stale = await retriever.SearchAsync(scope, new("find", 10));
 
         Assert.Equal(InteractionRetrievalMode.LexicalFallback, deleted.Mode);
         Assert.Equal("VECTOR_INDEX_UNAVAILABLE", deleted.AvailabilityCode);
@@ -209,7 +241,7 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
     {
         var retriever = new InteractionFeatureRetriever(new MutableSnapshots(Snapshot()), new DeterministicEmbeddings(), new ThrowingVectors());
 
-        var result = await retriever.SearchAsync(new(Application, InteractionRetrievalLane.TrustedFeature), new("find feature", 10));
+        var result = await retriever.SearchAsync(new(Application, InteractionRetrievalLane.TrustedFeature), new("find", 10));
 
         Assert.Equal(InteractionRetrievalMode.LexicalFallback, result.Mode);
         Assert.Equal("VECTOR_INDEX_UNAVAILABLE", result.AvailabilityCode);

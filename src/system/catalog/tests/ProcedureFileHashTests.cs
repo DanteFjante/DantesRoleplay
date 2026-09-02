@@ -1,4 +1,4 @@
-using DantesRoleplay.DataAccess.Bootstrap;
+﻿using DantesRoleplay.DataAccess.Bootstrap;
 
 namespace DantesRoleplay.Tests;
 
@@ -44,6 +44,27 @@ public sealed class ProcedureFileHashTests
             Sample().ContentHash != edited.ContentHash,
             $"Editing '{field}' did not change ContentHash, so an edit to it in a bootstrap file "
             + "would be silently ignored by the seeder forever. Add it to the hash.");
+    }
+
+    /// <summary>
+    /// Matches is the single authored field held out of the fingerprint, so this pins the choice
+    /// rather than leaving it to look like the omission bug the theory above exists to catch.
+    ///
+    /// Phrases decide how a contract is found, never what it says. Retrieval reads them from the
+    /// file when the application activates, not from this hash, so editing them still takes effect.
+    /// Including them would move all 78 procedure fingerprints at once and re-open 63 previously
+    /// reviewed near-duplicate warnings, with no way to re-record that baseline while
+    /// `roleplay export` is blocked by unrelated stored state.
+    ///
+    /// The consequence to accept knowingly: a phrase-only edit does not create a new stored
+    /// revision, so the database copy lags until another field changes.
+    /// </summary>
+    [Fact]
+    public void Match_phrases_are_deliberately_outside_the_fingerprint()
+    {
+        Assert.Equal(
+            Sample().ContentHash,
+            (Sample() with { Matches = "an entirely different phrase" }).ContentHash);
     }
 
     [Fact]

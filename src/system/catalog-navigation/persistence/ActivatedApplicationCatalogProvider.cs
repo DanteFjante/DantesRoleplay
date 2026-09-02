@@ -170,13 +170,18 @@ public sealed class ActivatedApplicationCatalogMaterializer(
             category = file.Category,
             name = file.Name,
             description = file.Description,
+            matches = file.Matches,
             governs = file.Governs,
             instructions = file.Instructions,
             constraints = file.Constraints,
             status = file.Status.ToString().ToLowerInvariant()
         });
+        // A procedure's match phrases reach retrieval the same way a mechanic's do. This passed an
+        // empty list, so a contract could only ever be found by the words it happened to use --
+        // and an exact phrase is the top-ranked hit, which is what pins the right document when a
+        // semantically similar neighbour would otherwise win.
         return Record(applicationId, collection, "procedure", file.Id, file.Category, file.Name,
-            file.Description, [], file.Status.ToString(), content, winner);
+            file.Description, SplitTerms(file.Matches), file.Status.ToString(), content, winner);
     }
 
     private static CatalogRecordDefinition QueryRecord(
@@ -270,7 +275,12 @@ public sealed class ActivatedApplicationCatalogMaterializer(
                 throw Failure("SOURCE_PATH_OUTSIDE_ROOT", "An active document path escapes its allowed root.");
             var bytes = File.ReadAllBytes(path);
             if (bytes.LongLength != winner.Length || Hash(bytes) != winner.ContentFingerprint)
-                throw Failure("SOURCE_FILE_DRIFT", "An active document no longer matches its retained length and hash.");
+                // Name the file. One drifted document takes the whole application catalog down --
+                // feature search, catalog search and every mechanic at once -- and an unnamed
+                // failure leaves the operator diffing hundreds of files against an activation.
+                throw Failure("SOURCE_FILE_DRIFT",
+                    $"'{winner.RelativePath}' no longer matches the length and hash retained at "
+                    + "activation. Re-activate the application, or restore the file.");
             var text = StrictUtf8.GetString(bytes);
             return text.Length > 0 && text[0] == '\uFEFF' ? text[1..] : text;
         }
@@ -307,7 +317,7 @@ public sealed class ActivatedApplicationCatalogMaterializer(
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Distinct(StringComparer.Ordinal).ToArray();
         if (terms.Length > CatalogNavigationLimits.MaximumAliasesPerRecord || terms.Any(term => term.Length > 200))
-            throw Failure("CATALOG_MATCH_TERMS_INVALID", "A mechanic has unbounded match phrases.");
+            throw Failure("CATALOG_MATCH_TERMS_INVALID", "A catalog record has unbounded match phrases.");
         return terms;
     }
 

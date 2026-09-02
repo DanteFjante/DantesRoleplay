@@ -1,4 +1,4 @@
-using DantesRoleplay.Content;
+﻿using DantesRoleplay.Content;
 using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Events;
@@ -451,6 +451,7 @@ public sealed class CatalogImporter(
                 Name = file.Name,
                 Description = file.Description,
                 Governs = file.Governs,
+                Matches = file.Matches,
                 Instructions = file.Instructions,
                 Constraints = file.Constraints,
                 Status = file.Status,

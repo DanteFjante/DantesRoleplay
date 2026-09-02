@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Text.Json;
 using DantesRoleplay.Actions;
 using DantesRoleplay.Applications;
@@ -7,12 +7,13 @@ using DantesRoleplay.RegistryAdministration;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Effects;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.Interactions;
 using DantesRoleplay.Operations;
+using Microsoft.Extensions.DependencyInjection;
 using DantesRoleplay.StateSpaceAdministration;
 using DantesRoleplay.ComponentTypeAdministration;
 using DantesRoleplay.World;
 using DantesRoleplay.LegacyStateAdoption;
-using DantesRoleplay.Interactions;
 using DantesRoleplay.TriggerScheduling;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.EcsEffects;
@@ -54,7 +55,8 @@ public sealed class CommitMcpTool
         IReviewedKnowledgeStateSynchronizer? knowledgeStateSynchronization = null,
         IApplicationWorldAuthoringSynchronizer? worldStateSynchronization = null,
         IBlobTransferService? blobTransfers = null,
-        ISystemFeedbackService? feedback = null)
+        ISystemFeedbackService? feedback = null,
+        IServiceScopeFactory? serviceScopes = null)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
         var spec = McpVerbCatalog.Commit(normalizedKind);
@@ -85,7 +87,8 @@ public sealed class CommitMcpTool
                 registryAdministration, privateOperator, log, payload, intent, proceduresUsed, dryRun, cancellationToken),
             "system.component-type.register" => await new SystemComponentTypeHandler().RegisterAsync(componentTypeAdministration, privateOperator, log, payload, intent, proceduresUsed, dryRun, cancellationToken),
             "system.application.activate" => await new SystemApplicationActivationHandler().ActivateAsync(
-                applicationActivations, privateOperator, log, payload, intent, proceduresUsed, dryRun, cancellationToken),
+                applicationActivations, privateOperator, log, payload, intent, proceduresUsed, dryRun,
+                serviceScopes, cancellationToken),
             "system.state-space.create" => await new SystemStateSpaceHandler().CreateAsync(
                 stateSpaceAdministration, privateOperator, log, payload, intent, proceduresUsed, dryRun, cancellationToken),
             "system.state-space.upgrade" => await new SystemStateSpaceHandler().UpgradeAsync(

@@ -13,6 +13,14 @@ A root record holds a premise. A premise is not a table. Between the two sits a 
 world, arc, chapter, party, scene, session — and it has an order, because each link is only
 checkable once the one before it exists.
 
+## Matches
+how do I design a campaign
+what does a campaign need to be playable
+create a new campaign
+set up a campaign from scratch
+what comes before the first session
+how do I start playing a campaign
+
 ## Instructions
 1. Write the root through its owning contract: premise, party goals, and the tone and boundaries
    the table has agreed to. Boundaries are load-bearing — they are what a later session reads to

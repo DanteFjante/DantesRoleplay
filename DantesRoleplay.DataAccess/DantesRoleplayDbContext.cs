@@ -1,4 +1,4 @@
-using DantesRoleplay.Mechanics;
+﻿using DantesRoleplay.Mechanics;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Sources;
 using DantesRoleplay.Events;
@@ -1421,6 +1421,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.Property(e => e.CreatedBy).HasMaxLength(200).IsRequired();
             entity.Property(e => e.SourceHash).HasMaxLength(64);
             entity.Property(e => e.Governs).HasMaxLength(500);
+            entity.Property(e => e.Matches).HasMaxLength(2000);
 
             entity.HasOne(e => e.Contract)
                   .WithMany(c => c.Versions)

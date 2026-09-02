@@ -13,6 +13,15 @@ Creation gives a quest a title and three sleeping objectives. Players meet none 
 the evidence, and later they live with the consequences. Both have to exist before the quest is
 offered, and the consequences have to be written down before anyone finds out which one they get.
 
+## Matches
+what does a quest need
+create a quest with clues and rewards
+register a quest
+what rewards and xp does a quest need
+how do I record quest outcomes
+plant clues before offering a quest
+what happens when the party fails a quest
+
 ## Instructions
 1. Create the quest and its objectives through the owning creation contract, then attach it to the
    campaign's active arc and chapter as continuity context. A quest floating outside continuity

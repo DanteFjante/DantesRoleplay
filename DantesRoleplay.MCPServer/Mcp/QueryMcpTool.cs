@@ -38,7 +38,7 @@ public sealed class QueryMcpTool
 {
     [McpServerTool(Name = "query")]
     [Description(
-        "Read anything in this system. kind is one of: capabilities, procedures, categories, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, session-recap, quest-summary, knowledge-answer, information-answer, information-actions, story-plan, system.audience-context, " +
+        "Read anything in this system. kind is one of: capabilities, procedures, categories, world, entities, graph, information-answer, information-actions, system.audience-context, " +
         "mechanics, event-types, events, subscriptions, notifications, feedback, system.applications, system.sources, system.application-preview, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, system.trigger-scheduling, system.blobs, history. Omit id for a list or search; " +
         "pass id for one record in full. When you are unsure what a kind takes or what a commit payload looks like, call " +
         "query(kind: \"capabilities\") — it is the exact catalog. Irrelevant filters are ignored unless a fixed query kind explicitly rejects them. Never changes state.")]
@@ -53,8 +53,8 @@ public sealed class QueryMcpTool
         IOperationLog log,
         INotificationStore notifications,
         [Description(
-            "Closed kind: capabilities, procedures, categories, world, entities, graph, journey-plan, itinerary-plan, campaign-resume, session-recap, quest-summary, knowledge-answer, mechanics, event-types, events, "
-            + "subscriptions, notifications, feedback, information-answer, information-actions, story-plan, system.audience-context, system.applications, system.sources, system.application-preview, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, system.trigger-scheduling, system.blobs, or history.")]
+            "Closed kind: capabilities, procedures, categories, world, entities, graph, mechanics, event-types, events, "
+            + "subscriptions, notifications, feedback, information-answer, information-actions, system.audience-context, system.applications, system.sources, system.application-preview, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, system.trigger-scheduling, system.blobs, or history.")]
         string kind,
         [Description("Full-record id for procedures, mechanics, or one entity.")] string? id = null,
         [Description("Entity ids for a full batch read.")] string[]? ids = null,

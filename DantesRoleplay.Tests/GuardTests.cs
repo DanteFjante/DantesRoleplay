@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.RegularExpressions;
 using DantesRoleplay.Effects;
 using DantesRoleplay.MCPServer.Mcp;
@@ -300,6 +300,75 @@ public sealed class GuardTests
                 $"{fileName} serves these kinds but its tool description never names them, so a "
                 + "session reading tools/list does not know they exist:\n  "
                 + string.Join("\n  ", missing));
+        }
+    }
+
+    /// <summary>
+    /// The other direction, and the one that actually bit: a description may not advertise a kind
+    /// the dispatcher does not serve. Seven — campaign-resume, story-plan, session-recap,
+    /// quest-summary, journey-plan, itinerary-plan and knowledge-answer — were named in the query
+    /// tool's own description while being absent from both the catalog and the switch. The guard
+    /// above only checked catalog ⊆ description, so the drift passed CI, and two separate sessions
+    /// spent hours concluding that a capability was "blocked" when it had simply never existed.
+    ///
+    /// Only the enumerated list is checked, not the surrounding prose: that list is what a client
+    /// reads as the closed set, and it is the part that must be true.
+    /// </summary>
+    [Fact]
+    public void Neither_dispatcher_advertises_a_kind_it_does_not_serve()
+    {
+        AssertOnlyRealKinds("QueryMcpTool.cs", McpVerbCatalog.QueryKindNames,
+            ["kind is one of:", "Closed kind:"]);
+        AssertOnlyRealKinds("CommitMcpTool.cs", McpVerbCatalog.CommitKindNames,
+            ["Change state with", "Closed kind:"]);
+
+        static void AssertOnlyRealKinds(
+            string fileName,
+            IReadOnlyList<string> kinds,
+            IReadOnlyList<string> listMarkers)
+        {
+            var source = File.ReadAllText(Path.Combine(
+                RepositoryRoot(), "DantesRoleplay.MCPServer", "Mcp", fileName));
+            var described = string.Join(
+                " ",
+                Regex.Matches(source, @"\[Description\((?<text>.*?)\)\]", RegexOptions.Singleline)
+                    .Select(m => m.Groups["text"].Value));
+
+            // Strings are concatenated with + across lines in the attribute; join the fragments.
+            described = Regex.Replace(described, "\"\\s*\\+\\s*\"", " ");
+
+            // Then drop the quotes themselves. A list ends at "… or history.\"", where the period
+            // is followed by a quote rather than whitespace, and the scan would otherwise run on
+            // into the next attribute and treat its prose as advertised kinds.
+            described = described.Replace("\"", " ", StringComparison.Ordinal);
+            var known = kinds.ToHashSet(StringComparer.Ordinal);
+            var advertised = new List<string>();
+
+            foreach (var marker in listMarkers)
+            {
+                var start = described.IndexOf(marker, StringComparison.Ordinal);
+                if (start < 0) continue;
+                start += marker.Length;
+
+                // A kind never contains a space, so a period followed by whitespace ends the list
+                // without truncating a dotted kind such as system.catalog.browse.
+                var end = Regex.Match(described[start..], @"\.\s").Index;
+                var list = end > 0 ? described[start..(start + end)] : described[start..];
+
+                advertised.AddRange(Regex.Split(list, @",|\bor\b")
+                    .Select(value => value.Trim().Trim('"', '\\', ' '))
+                    .Where(value => value.Length > 0));
+            }
+
+            Assert.True(advertised.Count > 0, $"{fileName}: no enumerated kind list was found to check.");
+
+            var phantom = advertised.Where(value => !known.Contains(value)).Distinct(StringComparer.Ordinal).ToList();
+            Assert.True(
+                phantom.Count == 0,
+                $"{fileName} advertises these in its tool description but does not serve them, so a "
+                + "session that trusts the description gets UNKNOWN_KIND and reasonably concludes the "
+                + "capability is missing:\n  "
+                + string.Join("\n  ", phantom));
         }
     }
 

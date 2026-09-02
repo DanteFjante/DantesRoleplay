@@ -1,4 +1,4 @@
-using DantesRoleplay.Events;
+﻿using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.CatalogNamespaces;
@@ -137,6 +137,7 @@ public static class CatalogValidator
                     Name = file.Name,
                     Description = file.Description,
                     Governs = file.Governs,
+                    Matches = file.Matches,
                     Instructions = file.Instructions,
                     Constraints = file.Constraints,
                     Status = file.Status,

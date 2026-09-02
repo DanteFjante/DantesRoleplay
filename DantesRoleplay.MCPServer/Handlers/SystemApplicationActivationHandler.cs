@@ -1,13 +1,47 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
+using DantesRoleplay.Interactions;
+using Microsoft.Extensions.DependencyInjection;
 using DantesRoleplay.Operations;
 
 namespace DantesRoleplay.MCPServer.Mcp;
 
 internal sealed class SystemApplicationActivationHandler
 {
+    /// <summary>
+    /// Rebuilds the feature-retrieval vector index after a successful activation.
+    ///
+    /// The index generation is derived from the catalog snapshot, so activating leaves the previous
+    /// generation unreachable: intent search silently drops to lexical until the host restarts.
+    /// Fire-and-forget and fail-soft — a slow or absent embedding model must not make activation,
+    /// which is the operation that actually matters, wait or fail on it.
+    /// </summary>
+    private static void RebuildRetrievalIndex(
+        IServiceScopeFactory? scopes,
+        ApplicationIdentifier applicationId)
+    {
+        if (scopes is null) return;
+
+        // A fresh scope, not the request's: IInteractionFeatureRetriever is scoped, and this work
+        // outlives the commit that triggered it. Capturing the request's instance meant every
+        // rebuild threw into the catch below and the index stayed stale, which looks exactly like
+        // no rebuild at all.
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                using var scope = scopes.CreateScope();
+                var retrieval = scope.ServiceProvider.GetService<IInteractionFeatureRetriever>();
+                if (retrieval is null) return;
+                await retrieval.RebuildAsync(
+                    new InteractionFeatureRetrievalScope(applicationId, InteractionRetrievalLane.TrustedFeature));
+            }
+            catch { /* Retrieval degrades to lexical; activation already succeeded. */ }
+        });
+    }
+
     public async Task<ToolEnvelope> ActivateAsync(
         IApplicationActivationService? activations,
         IPrivateOperatorRequestAuthorizer? authorization,
@@ -16,6 +50,7 @@ internal sealed class SystemApplicationActivationHandler
         string intent,
         string[]? procedures,
         bool dryRun,
+        IServiceScopeFactory? scopes,
         CancellationToken cancellationToken)
     {
         const string kind = "system.application.activate";
@@ -62,6 +97,7 @@ internal sealed class SystemApplicationActivationHandler
             }
 
             var receipt = await activations.ActivateAsync(request, context, cancellationToken);
+            RebuildRetrievalIndex(scopes, app);
             return ToolEnvelope.Success(Data(false, token, receipt.Outcome, receipt.Activation),
                 receipt.OperationId,
                 $"query(kind: \"system.applications\", applicationId: {JsonSerializer.Serialize(app.Value)})");

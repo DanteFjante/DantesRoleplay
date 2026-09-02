@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using DantesRoleplay.DataAccess;
 using Microsoft.EntityFrameworkCore;
 
@@ -275,6 +275,7 @@ public sealed class CatalogCoverageTests : IDisposable
         "procedure_contract_version.ContractId", "procedure_contract_version.Name",
         "procedure_contract_version.Description", "procedure_contract_version.Instructions",
         "procedure_contract_version.Constraints", "procedure_contract_version.Governs",
+        "procedure_contract_version.Matches",
         "procedure_contract_version.CreatedBy", "procedure_contract_version.ChangeNote",
 
         "event_type.Id", "event_type.Category", "event_type.Status", "event_type.Scope",

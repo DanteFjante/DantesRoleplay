@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using DantesRoleplay.Procedures;
 
 namespace DantesRoleplay.DataAccess.Bootstrap;
@@ -38,7 +38,8 @@ public sealed record ProcedureFile(
     string Constraints,
     ProcedureStatus Status,
     string CreatedBy = "",
-    string ChangeNote = "")
+    string ChangeNote = "",
+    string Matches = "")
 {
     /// <summary>
     /// Content fingerprint. The seeder appends a new version only when this changes, so
@@ -54,6 +55,22 @@ public sealed record ProcedureFile(
     /// disagree the moment either was touched — silently, in both directions. Fully qualified
     /// because this property shadows the class name.
     /// </summary>
+    /// <remarks>
+    /// <c>Matches</c> is deliberately absent, and it is the one exception to the rule above.
+    /// Phrases change how a contract is <em>found</em>, never what it says or governs, and their
+    /// consumer — the catalog navigation record that feeds retrieval — reads them from the file at
+    /// activation rather than from this fingerprint. So a phrase-only edit still takes effect on
+    /// re-activation, which is where it matters.
+    ///
+    /// The cost of including them would be paid by every procedure at once: the field list is
+    /// joined positionally, so adding one moves all 78 fingerprints, marks every record changed,
+    /// and un-suppresses the near-duplicate review warning for each — 63 of them, measured. That
+    /// baseline cannot currently be re-recorded, because `roleplay export` fails on unrelated
+    /// stored state (`mechanic.lock.pick` sits in an unregistered namespace).
+    ///
+    /// The residue: the database copy of Matches refreshes only when some other field also
+    /// changes. Retrieval is unaffected; a stale row is.
+    /// </remarks>
     public string ContentHash => DantesRoleplay.Content.ContentHash.ForProcedure(
         Category, Name, Description, Governs, Instructions, Constraints, Status);
 
@@ -80,6 +97,7 @@ public sealed record ProcedureFile(
         MarkdownDocument.CloseFrontMatter(builder);
 
         MarkdownDocument.Section(builder, "Description", Description);
+        MarkdownDocument.Section(builder, "Matches", Matches);
         MarkdownDocument.Section(builder, "Instructions", Instructions);
         MarkdownDocument.Section(builder, "Constraints", Constraints);
 
@@ -146,6 +164,7 @@ public sealed record ProcedureFile(
         }
 
         sections.TryGetValue("Description", out var description);
+        sections.TryGetValue("Matches", out var matches);
         sections.TryGetValue("Constraints", out var constraints);
         fields.TryGetValue("governs", out var governs);
 
@@ -159,7 +178,8 @@ public sealed record ProcedureFile(
             constraints ?? string.Empty,
             status,
             MarkdownDocument.ReadTextField(fields, "createdBy"),
-            MarkdownDocument.ReadTextField(fields, "changeNote"));
+            MarkdownDocument.ReadTextField(fields, "changeNote"),
+            matches ?? string.Empty);
     }
 
     private static Dictionary<string, string> ParseSections(string body)

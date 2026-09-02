@@ -1,4 +1,4 @@
-using DantesRoleplay.Categories;
+﻿using DantesRoleplay.Categories;
 using DantesRoleplay.Content;
 using DantesRoleplay.Procedures;
 using Microsoft.EntityFrameworkCore;
@@ -67,6 +67,7 @@ public sealed class ProcedureStore(DantesRoleplayDbContext db) : IProcedureStore
                 r.version.Name,
                 r.version.Description,
                 r.version.Governs,
+                r.version.Matches,
                 r.contract.Status,
                 r.contract.CurrentVersion))
             .ToListAsync(cancellationToken);
@@ -111,7 +112,7 @@ public sealed class ProcedureStore(DantesRoleplayDbContext db) : IProcedureStore
 
     /// <summary>Everything a query is matched against, in one string.</summary>
     private static string Haystack(ProcedureSummary p) =>
-        $"{p.Id} {p.Name} {p.Description} {p.Governs}";
+        $"{p.Id} {p.Name} {p.Description} {p.Governs} {p.Matches}";
 
     /// <summary>
     /// Splits a query into searchable tokens. Punctuation splits, so "create contract" and
@@ -327,6 +328,7 @@ public sealed class ProcedureStore(DantesRoleplayDbContext db) : IProcedureStore
             Name = request.Name,
             Description = request.Description,
             Governs = request.Governs,
+            Matches = request.Matches,
             Instructions = request.Instructions,
             Constraints = request.Constraints,
 
@@ -379,6 +381,7 @@ public sealed class ProcedureStore(DantesRoleplayDbContext db) : IProcedureStore
                 v.Name,
                 v.Description,
                 v.Governs,
+                v.Matches,
                 contract.Status,
                 v.Version))
             .ToListAsync(cancellationToken);
@@ -452,6 +455,7 @@ public sealed class ProcedureStore(DantesRoleplayDbContext db) : IProcedureStore
             revision.Name,
             revision.Description,
             revision.Governs,
+            revision.Matches,
             revision.Instructions,
             revision.Constraints,
             contract.Status,

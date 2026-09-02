@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Text;
 using DantesRoleplay.Procedures;
 
@@ -46,6 +46,7 @@ public sealed class ProcedureSeeder(IProcedureStore store)
                     Name = file.Name,
                     Description = file.Description,
                     Governs = file.Governs,
+                    Matches = file.Matches,
                     Instructions = file.Instructions,
                     Constraints = file.Constraints,
                     Status = file.Status,

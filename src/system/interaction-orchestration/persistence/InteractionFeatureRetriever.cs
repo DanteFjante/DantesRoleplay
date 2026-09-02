@@ -46,13 +46,19 @@ public sealed class InteractionFeatureRetriever(
         var current = Current(snapshot, scope);
         if (current.ErrorCode.Length != 0)
             return Unavailable(current.ErrorCode, current.ErrorMessage);
-        current = (FilterNamespaces(current.Documents, input.NamespaceId), "", "");
+        current = (FilterNamespaces(current.Documents, scope.ApplicationId, input.NamespaceId), "", "");
         var resolved = Resolve(snapshot, current.Documents, input.IncludeShadowed);
         current = (resolved.Records, "", "");
         if (current.Documents.Count == 0)
             return InteractionFeatureSearchResult.Create(InteractionRetrievalMode.Lexical, []);
 
-        var exact = current.Documents.SingleOrDefault(document => document.Record.QualifiedId == input.Query);
+        // An exact qualified id, or an exact authored phrase. Phrases are the alternative keys a
+        // record declares for itself -- "what does a location need to be playable" naming the
+        // contract that answers it -- and they exist precisely because similarity alone drifts:
+        // without this, that question retrieves whichever document merely shares vocabulary.
+        // Ambiguity is not resolved here; two records claiming one phrase fall through to ranking.
+        var exact = current.Documents.SingleOrDefault(document => document.Record.QualifiedId == input.Query)
+            ?? SinglePhraseMatch(current.Documents, input.Query);
         if (exact is not null)
             return InteractionFeatureSearchResult.Create(InteractionRetrievalMode.Exact,
                 [Hit(snapshot, scope, exact, null, null, true)],
@@ -164,6 +170,33 @@ public sealed class InteractionFeatureRetriever(
         return new(true, built.Count, generation.GenerationKey);
     }
 
+    /// <summary>
+    /// The one record claiming this phrase as an alias or match phrase, or null when none or
+    /// several do. Comparison is trimmed, case-insensitive and whitespace-collapsed, so a phrase
+    /// keeps working when a caller types it with different spacing or capitals.
+    /// </summary>
+    private static ActiveCatalogFeatureDocument? SinglePhraseMatch(
+        IReadOnlyList<ActiveCatalogFeatureDocument> documents,
+        string query)
+    {
+        var wanted = NormalizePhrase(query);
+        if (wanted.Length == 0) return null;
+        ActiveCatalogFeatureDocument? found = null;
+        foreach (var document in documents)
+        {
+            var claims = document.Record.Aliases.Concat(document.Record.MatchPhrases)
+                .Any(value => NormalizePhrase(value) == wanted);
+            if (!claims) continue;
+            if (found is not null) return null;
+            found = document;
+        }
+        return found;
+    }
+
+    private static string NormalizePhrase(string value) =>
+        string.Join(' ', (value ?? string.Empty)
+            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).ToLowerInvariant();
+
     private static (IReadOnlyList<ActiveCatalogFeatureDocument> Documents, string ErrorCode, string ErrorMessage) Current(
         ActiveCatalogFeatureSnapshot snapshot,
         InteractionFeatureRetrievalScope scope)
@@ -200,8 +233,10 @@ public sealed class InteractionFeatureRetriever(
             snapshot.Manifest.SortVersion, snapshot.Manifest.Collections, snapshot.Manifest.Nodes,
             documents.Select(value => value.Record).ToArray());
         var navigator = new InMemoryCatalogNavigator(manifest, new CatalogCursorCodec(CursorKey));
+        // The namespace filter is not passed on: these documents have already been narrowed by it,
+        // and the navigator recognises only the application-qualified spelling of a namespace.
         var result = navigator.Search(new(scope.ApplicationId, input.Query, null, "", input.Kinds, input.Statuses,
-            CandidateLimit(input.Limit), NamespaceId: input.NamespaceId));
+            CandidateLimit(input.Limit)));
         var map = documents.ToDictionary(value => value.Record.QualifiedId, StringComparer.Ordinal);
         return result.Records.Select(hit => (map[hit.Record.QualifiedId], hit.Rank)).ToArray();
     }
@@ -239,17 +274,42 @@ public sealed class InteractionFeatureRetriever(
 
     private IReadOnlyList<ActiveCatalogFeatureDocument> FilterNamespaces(
         IReadOnlyList<ActiveCatalogFeatureDocument> documents,
+        ApplicationIdentifier application,
         string? requestedNamespace)
     {
         var registryActive = _namespaces is not null && _namespaces.List(includeDisabled: true).Count != 0;
+        var prefix = application.Value + ".";
         return documents.Where(document =>
         {
             var namespaceId = CatalogNamespaceIdentity.NamespaceOf(document.Record.QualifiedId);
-            if (requestedNamespace is not null && namespaceId != requestedNamespace
-                && !namespaceId.StartsWith(requestedNamespace + ".", StringComparison.Ordinal)) return false;
-            return !registryActive || _namespaces!.Get(namespaceId) is not null;
+            // A caller may name the namespace either way round: qualified, as it appears in a
+            // result reference, or unprefixed, as the namespace registry lists it.
+            var unprefixed = namespaceId.Length > prefix.Length && namespaceId.StartsWith(prefix, StringComparison.Ordinal)
+                ? namespaceId[prefix.Length..]
+                : null;
+            if (requestedNamespace is not null
+                && !Within(namespaceId, requestedNamespace)
+                && !(unprefixed is not null && Within(unprefixed, requestedNamespace))) return false;
+            return !registryActive || IsRegistered(namespaceId, unprefixed);
         }).ToArray();
     }
+
+    private static bool Within(string namespaceId, string requested) =>
+        namespaceId == requested || namespaceId.StartsWith(requested + ".", StringComparison.Ordinal);
+
+    /// <summary>
+    /// Whether a document's namespace is registered. The namespace registry is keyed by a record's
+    /// OWN id, but a record reaches this layer under its application-qualified id: for the many
+    /// records whose id is application-neutral, that id is "&lt;application&gt;.&lt;record id&gt;",
+    /// so the registered namespace is the qualified one with the application prefix removed.
+    /// Testing only the qualified form hid every application-neutral record -- procedure.campaign.*,
+    /// procedure.quest.*, procedure.world.* and most of the catalog -- from retrieval, while catalog
+    /// browsing, which does not apply this gate, still returned them. Both forms are tested because
+    /// records whose id already carries the application prefix register under the qualified form.
+    /// </summary>
+    private bool IsRegistered(string namespaceId, string? unprefixed) =>
+        _namespaces!.Get(namespaceId) is not null
+        || (unprefixed is not null && _namespaces.Get(unprefixed) is not null);
 
     private static InteractionFeatureHit Hit(
         ActiveCatalogFeatureSnapshot snapshot,
