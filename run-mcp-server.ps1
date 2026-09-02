@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Starts the local DantesRoleplay MCP server the way the http launch profile does.
@@ -67,7 +67,9 @@ Start-Process -FilePath 'cmd.exe' `
     -WindowStyle Hidden
 Write-Host "Starting as seat Role=$Role ..." -ForegroundColor Cyan
 
-for ($i = 0; $i -lt 40; $i++) {
+# Keep this loop well under a remote shell's ~60s call budget: if the caller times out, the
+# teardown can take the freshly started server with it.
+for ($i = 0; $i -lt 12; $i++) {
     Start-Sleep -Seconds 2
     if (Get-NetTCPConnection -LocalPort 6217 -State Listen -ErrorAction SilentlyContinue) {
         Write-Host '    OK   listening on http://localhost:6217' -ForegroundColor Green

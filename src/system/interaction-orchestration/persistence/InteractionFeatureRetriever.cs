@@ -146,7 +146,7 @@ public sealed class InteractionFeatureRetriever(
         var built = new List<InteractionVectorDocument>(current.Documents.Count);
         foreach (var batch in current.Documents.Chunk(32))
         {
-            var texts = batch.Select(value => InteractionRetrievalFingerprint.SearchText(value.Record)).ToArray();
+            var texts = batch.Select(value => InteractionRetrievalFingerprint.EmbeddingText(value.Record)).ToArray();
             EmbeddingBatchResult embedded;
             try { embedded = await _embeddings.EmbedAsync(texts, cancellationToken); }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }

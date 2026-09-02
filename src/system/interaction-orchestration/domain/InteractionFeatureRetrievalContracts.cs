@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -33,6 +33,16 @@ public static class InteractionRetrievalLimits
     public const int MaximumResults = 50;
     public const int MaximumFilters = 16;
     public const int MaximumDocumentText = 64_000;
+
+    /// <summary>
+    /// How much of a document is offered to an embedding model. A retrieval document may be far
+    /// larger than this — a mechanic's carries its whole JavaScript source — and an embedding
+    /// provider rejects an oversized input outright, which took the entire vector index down rather
+    /// than one record. `SearchText` puts identity, name, description, aliases and match phrases
+    /// first and the implementation last, so trimming to this bound keeps precisely the part that
+    /// says what a record is *for*. Keep at or below the provider's configured input limit.
+    /// </summary>
+    public const int MaximumEmbeddingInputText = 8_000;
     public const int MaximumVectorDimensions = 8_192;
     public const int HybridCandidateMultiplier = 4;
     public const int ReciprocalRankConstant = 60;
@@ -270,6 +280,15 @@ public static class InteractionRetrievalFingerprint
             embedding = identity
         });
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)));
+    }
+
+    /// <summary>The leading, meaning-bearing part of a document, bounded for an embedding model.</summary>
+    public static string EmbeddingText(CatalogRecordDefinition record)
+    {
+        var text = SearchText(record);
+        return text.Length <= InteractionRetrievalLimits.MaximumEmbeddingInputText
+            ? text
+            : text[..InteractionRetrievalLimits.MaximumEmbeddingInputText];
     }
 
     public static string SearchText(CatalogRecordDefinition record)

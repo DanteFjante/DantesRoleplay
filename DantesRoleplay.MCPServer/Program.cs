@@ -1,4 +1,4 @@
-using DantesRoleplay.DataAccess;
+﻿using DantesRoleplay.DataAccess;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.Web.Hosting;
 using DantesRoleplay.Web.Security;
@@ -42,6 +42,35 @@ builder.Services.AddSingleton<ILocalStructuredCompletionProvider>(services =>
     services.GetRequiredService<OllamaAiProvider>());
 builder.Services.AddSingleton<IAiProvider>(services =>
     services.GetRequiredService<OllamaAiProvider>());
+
+// Intent retrieval over the active catalog. Without an embedding provider and a derived index,
+// system.feature-search runs lexically and answers a phrased question ("what does a location need
+// to be playable") with nothing, while the same record is found by a keyword ("furnish place").
+// Both halves are opt-in and fail soft: an unreachable model or a missing index degrades to the
+// lexical path rather than failing a search.
+var embeddingOptions = new OllamaEmbeddingOptions
+{
+    Enabled = builder.Configuration.GetValue("Retrieval:Embedding:Enabled", false),
+    Endpoint = new Uri(
+        builder.Configuration["Retrieval:Embedding:Endpoint"] ?? "http://localhost:11434",
+        UriKind.Absolute),
+    Model = builder.Configuration["Retrieval:Embedding:Model"] ?? "qwen3-embedding:4b",
+    ExpectedDimensions = builder.Configuration.GetValue("Retrieval:Embedding:ExpectedDimensions", 2560)
+};
+if (embeddingOptions.Enabled)
+{
+    builder.Services.AddSingleton<ITextEmbeddingProvider>(services =>
+        new OllamaEmbeddingProvider(
+            services.GetRequiredService<IHttpClientFactory>().CreateClient("local-assistant"),
+            embeddingOptions));
+    builder.Services.AddInteractionRetrievalDerivedIndex(
+        builder.Configuration["Retrieval:DerivedDataDirectory"]
+            ?? Path.Combine(Path.GetDirectoryName(Path.GetFullPath(databasePath))!, "derived"));
+    builder.Services.AddHostedService(services => new InteractionRetrievalWarmup(
+        services.GetRequiredService<IServiceScopeFactory>(),
+        publishedApplicationCatalogs,
+        services.GetRequiredService<ILoggerFactory>().CreateLogger<InteractionRetrievalWarmup>()));
+}
 var remotePlannerOptions = new OpenAiInteractionPlanningOptions
 {
     Enabled = builder.Configuration.GetValue<bool>("InteractionPlanning:Remote:Enabled"),
