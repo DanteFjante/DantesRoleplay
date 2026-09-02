@@ -1,8 +1,8 @@
----
+﻿---
 id: procedure.notification.inspect
 category: notification
 name: Read and clear notifications
-governs: query(kind: "notifications"), commit(kind: "notification"), what a rule may tell a person
+governs: query(kind: "notifications"), notification state, what a rule may tell a person
 status: active
 createdBy: "seed"
 changeNote: "Seeded from bootstrap file."
@@ -19,8 +19,8 @@ separate commit. Nothing delivers them — they wait until somebody asks.
    creature, and by `correlationId` for everything one committed change produced.
 3. Bound a search with `from` and `to` as ISO-8601 UTC instants. `from` is inclusive and `to` is
    exclusive, so adjacent windows neither overlap nor skip.
-4. Move one notice with `commit(kind: "notification", payload: {id, state})`. The state is exactly
-   `unread`, `read`, or `archived`. Dry-run it first to see which way it would go.
+4. A notice carries exactly one of the states `unread`, `read`, or `archived`. There is no
+   `notification` commit kind: moving a notice between states has no protocol verb today.
 5. Raise one from a rule by returning `notifications: [{ topic, subject, body, entityIds }]` from a
    reaction — see `procedure.event.react`. Give it a topic somebody would filter by and a subject
    readable in a list without opening it.

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using DantesRoleplay.CatalogNamespaces;
+using System.ComponentModel;
 using System.Text.Json;
 using DantesRoleplay.Actions;
 using DantesRoleplay.Applications;
@@ -30,7 +31,7 @@ public sealed class CommitMcpTool
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     [McpServerTool(Name = "commit")]
-    [Description("Change state with component, effects, mechanic, action, feedback, system.application.register, system.source.register, system.extension.register, system.component-type.register, system.application.activate, system.state-space.create, system.state-space.upgrade, system.state-space.adopt-legacy, system.world-state.sync, system.interaction-execute, system.interaction-recipe-review, system.trigger-scheduling, system.knowledge-state.sync, system.blob-upload.begin, or system.blob-upload.finalize. Use query(kind: \"capabilities\") for each closed payload catalog.")]
+    [Description("Change state with component, effects, mechanic, action, feedback, system.application.register, system.source.register, system.extension.register, system.component-type.register, system.namespace.register, system.application.activate, system.state-space.create, system.state-space.upgrade, system.state-space.adopt-legacy, system.world-state.sync, system.interaction-execute, system.interaction-recipe-review, system.trigger-scheduling, system.knowledge-state.sync, system.blob-upload.begin, or system.blob-upload.finalize. Use query(kind: \"capabilities\") for each closed payload catalog.")]
     public async Task<ToolEnvelope> CommitAsync(
         IWorldStore world,
         IEffectApplier effects,
@@ -44,6 +45,7 @@ public sealed class CommitMcpTool
         bool dryRun = false,
         CancellationToken cancellationToken = default,
         IRegistryAdministrationService? registryAdministration = null,
+        ICatalogNamespaceRegistry? catalogNamespaces = null,
         IPrivateOperatorRequestAuthorizer? privateOperator = null,
         IApplicationActivationService? applicationActivations = null,
         IStateSpaceAdministrationService? stateSpaceAdministration = null,
@@ -83,6 +85,8 @@ public sealed class CommitMcpTool
                 registryAdministration, privateOperator, log, payload, intent, proceduresUsed, dryRun, cancellationToken),
             "system.source.register" => await new SystemRegistryCommitHandler().RegisterSourceAsync(
                 registryAdministration, privateOperator, log, payload, intent, proceduresUsed, dryRun, cancellationToken),
+            "system.namespace.register" => await new CatalogNamespaceHandler().RegisterAsync(
+                catalogNamespaces, log, payload, intent, proceduresUsed, dryRun, cancellationToken),
             "system.extension.register" => await new SystemRegistryCommitHandler().RegisterExtensionAsync(
                 registryAdministration, privateOperator, log, payload, intent, proceduresUsed, dryRun, cancellationToken),
             "system.component-type.register" => await new SystemComponentTypeHandler().RegisterAsync(componentTypeAdministration, privateOperator, log, payload, intent, proceduresUsed, dryRun, cancellationToken),

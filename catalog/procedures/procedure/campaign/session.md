@@ -1,8 +1,8 @@
----
+﻿---
 id: procedure.campaign.session
 category: campaign
 name: Validate, start, and end a campaign session
-governs: commit(kind: "campaign") operations validate-session, start-session, validate-session-end, end-session, validate-session-checkpoint, and checkpoint-session; query(kind: "campaign-resume") with includeSession and query(kind: "session-recap")
+governs: commit(kind: "system.interaction-execute") operations validate-session, start-session, validate-session-end, end-session, validate-session-checkpoint, and checkpoint-session, and the reads of an active or ended session
 status: active
 createdBy: "seed"
 changeNote: "Seeded from bootstrap file."
@@ -22,24 +22,28 @@ S3 session. These operations create no gameplay or external owner state.
    readiness checks inside its transaction; a prior preview never authorizes it.
 4. Read the returned session entity after a successful start. Resume/context remains a later
    session feature.
-5. To resume the current trusted-host context, call
-   `query(kind: "campaign-resume", id: "campaign....", includeSession: true)`. It reads the
-   active-session header and current C3 projection without changing either.
+5. To resume the current trusted-host context, read the campaign and its one active session with
+   `query(kind: "entities")` against the owning application state space. Reading changes
+   neither the session header nor the current C3 projection.
 6. To validate closing one session, send exactly
    `{"operation":"validate-session-end","sessionId":"session.*","expectedStatus":"active"}`.
    Campaign scope, current C3 chapter/arc, and up to five C3 milestones are derived at validation;
    the caller cannot provide a campaign id, recap, source, prose, or any other field.
 7. To end, send the same closed session-end shape with `"operation":"end-session"`. It repeats
    all resolution inside one root transaction; a closing validation is never an authorization token.
-8. Read one retained factual record only with
-   `query(kind: "session-recap", id: "session....")`. It is trusted-host-only, requires an ended
-   session, and returns only the derived session/campaign identity and immutable bounded recap.
+8. Read one retained factual record only from the ended session entity itself. That read is
+   trusted-host-only, requires an ended session, and exposes only the derived session/campaign
+   identity and the immutable bounded recap.
 9. To validate checkpoint capture, send exactly
    `{"operation":"validate-session-checkpoint","sessionId":"session.*","expectedStatus":"ended"}`.
    To capture, send the same closed shape with `"operation":"checkpoint-session"`. Capture repeats
    all checks inside one root transaction and callers cannot supply checkpoint/package content or ids.
 
 ## Constraints
+- There is no `campaign` commit kind, no `campaign-resume` query kind, and no `session-recap`
+  query kind. An application supplies these operations as mechanics: resolve one with
+  `query(kind: "system.interaction-plan")` and run it with
+  `commit(kind: "system.interaction-execute")`.
 - `validate-session` never creates a session, relationship, structural event, notification,
   recap, checkpoint, or quest effect. Its ordinary zero-effect `commit` operation record remains
   protocol history, not session state.

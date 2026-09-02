@@ -373,6 +373,45 @@ public sealed class GuardTests
     }
 
     /// <summary>
+    /// A contract that names a call the protocol does not serve is worse than a contract that
+    /// names none: a session reads it, makes the call, gets UNKNOWN_KIND, and concludes the
+    /// capability is missing. `procedure.contract.create` already forbids this in prose — "Never
+    /// name a call in `governs` or in the body that `query(kind: \"capabilities\")` does not
+    /// list" — and the catalog broke it in twenty-one places, so the rule gets a test.
+    ///
+    /// A literal `"..."` is a placeholder, not a claim, and is skipped.
+    /// </summary>
+    [Fact]
+    public void No_catalog_contract_names_a_verb_kind_the_protocol_does_not_serve()
+    {
+        var catalog = Path.Combine(RepositoryRoot(), "catalog");
+        var commit = McpVerbCatalog.CommitKindNames.ToHashSet(StringComparer.Ordinal);
+        var query = McpVerbCatalog.QueryKindNames.ToHashSet(StringComparer.Ordinal);
+        var citation = new Regex(@"(?<verb>commit|query)\(\s*kind\s*:\s*""(?<kind>[^""]+)""");
+        var phantom = new List<string>();
+        var scanned = 0;
+
+        foreach (var file in Directory.EnumerateFiles(catalog, "*.md", SearchOption.AllDirectories))
+        {
+            scanned++;
+            foreach (Match match in citation.Matches(File.ReadAllText(file)))
+            {
+                var kind = match.Groups["kind"].Value;
+                if (kind == "...") continue;
+                var served = match.Groups["verb"].Value == "commit" ? commit : query;
+                if (served.Contains(kind)) continue;
+                phantom.Add($"{Path.GetRelativePath(catalog, file)}: {match.Groups["verb"].Value}(kind: \"{kind}\")");
+            }
+        }
+
+        Assert.True(scanned > 0, "No catalog contracts were found to check.");
+        Assert.True(
+            phantom.Count == 0,
+            "These contracts instruct a caller to make a call the protocol does not serve:\n  "
+            + string.Join("\n  ", phantom.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)));
+    }
+
+    /// <summary>
     /// The effect vocabulary is the one part of the surface that lives in the kernel. It reached
     /// clients through the old `apply_effects` description and briefly reached nobody at all after
     /// that class stopped being registered — five of the nine verbs were then discoverable only by

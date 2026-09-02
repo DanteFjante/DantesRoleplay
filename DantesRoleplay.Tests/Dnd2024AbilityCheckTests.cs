@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using DantesRoleplay.ApplicationActivation;
@@ -6935,12 +6935,95 @@ public sealed class Dnd2024AbilityCheckTests
         public ApplicationActionRunner Runner { get; }
         public IApplicationReadModelService ReadModels { get; }
 
+        /// <summary>
+        /// One prepared database per source set, kept for the process.
+        ///
+        /// Building this scans and fingerprints every file under the D&D application catalog,
+        /// previews and activates it, registers its component types from disk, and seeds the
+        /// subjects — about ten seconds of work that is byte-for-byte identical every time. This
+        /// class has 345 test cases and xunit runs a class on one thread, so paying it per test
+        /// was most of a forty-minute suite, on one core of twenty-four. Tests still get their own
+        /// database: the template is cloned, never shared.
+        /// </summary>
+        private sealed record Template(
+            SqliteFixture Fixture,
+            RegisteredComponentTypeVersion Abilities,
+            RegisteredComponentTypeVersion Proficiencies,
+            RegisteredComponentTypeVersion HitPoints,
+            RegisteredComponentTypeVersion Speed,
+            IReadOnlyDictionary<string, RegisteredComponentTypeVersion> AdditionalTypes,
+            IReadOnlySet<string> ActiveSourcePaths);
+
+        private static readonly SemaphoreSlim TemplateGate = new(1, 1);
+        private static readonly Dictionary<bool, Template> Templates = [];
+
+        private static async Task<Template> TemplateAsync(bool includeLegacyEquipmentExtension)
+        {
+            await TemplateGate.WaitAsync();
+            try
+            {
+                if (Templates.TryGetValue(includeLegacyEquipmentExtension, out var cached)) return cached;
+                var built = await BuildTemplateAsync(includeLegacyEquipmentExtension);
+                Templates[includeLegacyEquipmentExtension] = built;
+                return built;
+            }
+            finally
+            {
+                TemplateGate.Release();
+            }
+        }
+
         public static async Task<DndHarness> CreateAsync(
             bool includeLegacyEquipmentExtension = false,
             bool failTransactionAfterEffects = false)
         {
-            var fixture = new SqliteFixture();
+            var template = await TemplateAsync(includeLegacyEquipmentExtension);
+            var fixture = SqliteFixture.CloneOf(template.Fixture.Connection);
             var db = fixture.CreateContext();
+            var applications = new SqliteApplicationRegistry(db);
+            var sources = new SqliteSourceRegistry(db);
+            var roots = new WorkspaceRoot();
+            var operations = new OperationLog(db);
+            var activations = new ApplicationActivationService(
+                db,
+                new ApplicationPreviewService(applications, sources,
+                    new RegisteredSourceScanner(sources, roots, new LocalDocumentScanner()),
+                    new SourceOverlayResolver()),
+                new EmptyImpact(), operations);
+            var stateSpaces = new SqliteStateSpaceRegistry(db, applications);
+            var schemas = new BoundedJsonSchemaValidator();
+            var types = new SqliteComponentTypeRegistry(db, schemas);
+            var entities = new SqliteEntityComponentStore(db, types, schemas);
+            var materializer = new ActivatedApplicationCatalogMaterializer(applications, activations, sources, roots);
+            _ = materializer.BuildFeatureSnapshot(Application);
+            var catalogs = new ActivatedApplicationCatalogProvider(
+                new ConfiguredPublicApplicationCatalogPolicy([Application.Value]),
+                materializer,
+                new CatalogCursorCodec(Encoding.UTF8.GetBytes("dnd2024-ability-check-cursor-key")));
+            var evaluator = new ApplicationMechanicEvaluator(
+                catalogs, new ApplicationMechanicProjectionResolver(db, stateSpaces), new JintMechanicEngine());
+            var edges = new SqliteStateSpaceEdgeStore(db, stateSpaces);
+            var mappings = new ApplicationMechanicProjectionMappingResolver(
+                catalogs, stateSpaces, types, edges);
+            var applier = new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges,
+                failTransactionAfterEffects
+                    ? [new RejectAfterEffectsTransactionParticipant()]
+                    : null);
+            var runner = new ApplicationActionRunner(
+                catalogs, activations, stateSpaces, types, entities, edges,
+                mappings,
+                evaluator, applier, operations);
+            var readModels = new ApplicationReadModelService(
+                catalogs, activations, stateSpaces, mappings, evaluator, schemas);
+            return new(fixture, db, catalogs, template.Abilities, template.Proficiencies,
+                template.HitPoints, template.Speed, template.AdditionalTypes,
+                template.ActiveSourcePaths, entities, edges, runner, readModels);
+        }
+
+        private static async Task<Template> BuildTemplateAsync(bool includeLegacyEquipmentExtension)
+        {
+            var fixture = new SqliteFixture();
+            await using var db = fixture.CreateContext();
             var applications = new SqliteApplicationRegistry(db);
             applications.Register(new(
                 GameApplication, "Game Core", "Generic world, clock, and campaign state owners.", []));
@@ -7032,30 +7115,8 @@ public sealed class Dnd2024AbilityCheckTests
                 additionalTypes["dnd2024.character.feature-entitlements"], "subject.low",
                 "{\"str\":1,\"dex\":10,\"con\":10,\"int\":10,\"wis\":10,\"cha\":10}");
 
-            var materializer = new ActivatedApplicationCatalogMaterializer(applications, activations, sources, roots);
-            _ = materializer.BuildFeatureSnapshot(Application);
-            var catalogs = new ActivatedApplicationCatalogProvider(
-                new ConfiguredPublicApplicationCatalogPolicy([Application.Value]),
-                materializer,
-                new CatalogCursorCodec(Encoding.UTF8.GetBytes("dnd2024-ability-check-cursor-key")));
-            var evaluator = new ApplicationMechanicEvaluator(
-                catalogs, new ApplicationMechanicProjectionResolver(db, stateSpaces), new JintMechanicEngine());
-            var edges = new SqliteStateSpaceEdgeStore(db, stateSpaces);
-            var mappings = new ApplicationMechanicProjectionMappingResolver(
-                catalogs, stateSpaces, types, edges);
-            var applier = new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges,
-                failTransactionAfterEffects
-                    ? [new RejectAfterEffectsTransactionParticipant()]
-                    : null);
-            var runner = new ApplicationActionRunner(
-                catalogs, activations, stateSpaces, types, entities, edges,
-                mappings,
-                evaluator, applier, operations);
-            var readModels = new ApplicationReadModelService(
-                catalogs, activations, stateSpaces, mappings, evaluator, schemas);
-            return new(fixture, db, catalogs, abilities, proficiencies, hitPoints, speed, additionalTypes,
-                activation.Activation.Winners.Select(value => value.RelativePath).ToHashSet(StringComparer.Ordinal),
-                entities, edges, runner, readModels);
+            return new(fixture, abilities, proficiencies, hitPoints, speed, additionalTypes,
+                activation.Activation.Winners.Select(value => value.RelativePath).ToHashSet(StringComparer.Ordinal));
         }
 
         public async Task<ApplicationMechanicEvaluationResult> EvaluateAsync(

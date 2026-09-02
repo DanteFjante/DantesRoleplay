@@ -1,17 +1,17 @@
----
+﻿---
 id: procedure.contract.create
 category: contracts
 name: Create or revise a procedure contract
-governs: commit(kind: "procedure")
+governs: one contract file and its revisions
 status: active
 createdBy: "seed"
 changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
-How to author the instructions that govern this system—including this one. `commit(kind:
-"procedure")` is the live MCP route; a repository agent edits the canonical markdown under
-`catalog/procedures/` and validates the catalog instead.
+How to author the instructions that govern this system—including this one. A contract is a
+catalog file: edit the canonical markdown under `catalog/procedures/` and validate the catalog.
+There is no MCP route that writes one.
 
 ## Instructions
 1. Search for an overlapping contract first with `query(kind: "procedures", query: "...")`. Revise
@@ -28,9 +28,8 @@ How to author the instructions that govern this system—including this one. `co
    constraints are what must not happen.
 5. Add an example whenever the wording could be read two ways.
 6. Write it for a reader with no prior context. Assume nothing about what came earlier.
-7. In repository mode, edit the canonical file and run `.\roleplay validate catalog`; do not mirror
-   the edit through MCP. In MCP-only mode, call `commit(kind: "procedure", payload: {...}, dryRun:
-   true)` first, read every named check, then send the identical payload without `dryRun`.
+7. Edit the canonical file and run `.\roleplay validate catalog`, then import it. There is no
+   `procedure` commit kind: a contract is authored as a catalog file, never through MCP.
 8. Writing an existing id appends a revision — it never overwrites. Say why in `changeNote`.
 
 ## Constraints

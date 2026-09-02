@@ -1,8 +1,8 @@
----
+﻿---
 id: procedure.quest.inspect
 category: quest
 name: Inspect an active campaign-scoped quest
-governs: query(kind: "quest-summary")
+governs: commit(kind: "system.interaction-execute") reading one active quest through its owning application
 status: active
 createdBy: "seed"
 changeNote: "Re-seeded: the bootstrap file changed."
@@ -24,6 +24,8 @@ objectives, evidence links, and recent status transitions.
    do not infer missing state from operation prose or an unbounded event query.
 
 ## Constraints
+- There is no `quest-summary` query kind. Read the quest and its objectives with
+  `query(kind: "entities")` or `query(kind: "graph")` against the owning application state space.
 - This is a read-only fixed projection, not a general graph, history, or audience-filter API.
 - It returns an active quest only, exactly three display-ordered owned objectives, no more than
   five evidence links per objective, and no more than twelve transition records.

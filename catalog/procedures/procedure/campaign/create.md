@@ -1,8 +1,8 @@
----
+﻿---
 id: procedure.campaign.create
 category: campaign
 name: Validate and create an existing-world campaign
-governs: commit(kind: "campaign") validating or creating one existing-world campaign blueprint
+governs: commit(kind: "system.interaction-execute") validating or creating one existing-world campaign blueprint
 status: active
 createdBy: "seed"
 changeNote: "Seeded from bootstrap file."
@@ -23,6 +23,9 @@ campaign root with directed world and reference links.
    `game.core.campaign.references` links. Existing world records are never copied or changed.
 
 ## Constraints
+- There is no `campaign` commit kind. An application supplies this operation as a mechanic: resolve it with
+  `query(kind: "system.interaction-plan")` and run it with
+  `commit(kind: "system.interaction-execute")`.
 - No caller supplies effects, component data, relationships, audit data, child ids, SQL, or script.
 - This feature creates no chapter, arc, quest, character, item, session, clock, world, or access
   policy. Those are separately owned later features.

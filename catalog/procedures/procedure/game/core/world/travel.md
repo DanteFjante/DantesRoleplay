@@ -1,8 +1,8 @@
----
+﻿---
 id: procedure.game.core.world.travel
 category: game.core.world.travel
 name: Govern adjacent movement and named conveyance journeys
-governs: commit(kind: "component") declaring game.core.world.traveller, game.core.world.route, game.core.world.conveyance, game.core.world.conveyance-route, game.core.world.aerial-conveyance, game.core.world.aerial-route, or game.core.world.teleport-gate; commit(kind: "effects") recording or removing a traveller marker or reviewed route/conveyance fixture; commit(kind: "action") moving one active traveller between adjacent locations or over one declared route; query(kind: "journey-plan") planning a bounded on-foot itinerary
+governs: commit(kind: "component") declaring game.core.world.traveller, game.core.world.route, game.core.world.conveyance, game.core.world.conveyance-route, game.core.world.aerial-conveyance, game.core.world.aerial-route, or game.core.world.teleport-gate; commit(kind: "effects") recording or removing a traveller marker or reviewed route/conveyance fixture; commit(kind: "action") moving one active traveller between adjacent locations or over one declared route; planning a bounded on-foot itinerary
 status: active
 createdBy: "seed"
 changeNote: "Seeded from bootstrap file."
@@ -69,7 +69,8 @@ canonical adjacency; containment remains the only current-location state.
    replaces the same root clock in that order in one transaction. It never reads ground adjacency,
    roads, ground routes, or map connectors. Missing, malformed, archived, mismatched, stale, or
    overflow state rejects with no effects.
-12. `query(kind: "journey-plan")` is a trusted-GM, read-only on-foot planning path. Supply only
+12. On-foot journey planning is a trusted-GM, read-only path with no query kind of its own; an
+   application supplies it as a mechanic. Supply only
    `worldId`, `travellerId`, and `destinationId`; origin is derived from traveller containment. It
    selects only active/open, correctly scoped Feature 8 on-foot routes with valid canonical
    adjacency and active sibling endpoints. It returns a shortest-total-duration sequence of at

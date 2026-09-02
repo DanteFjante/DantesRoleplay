@@ -1,8 +1,8 @@
----
+﻿---
 id: procedure.quest.modify
 category: quest
 name: Progress a campaign-scoped quest
-governs: commit(kind: "quest") with closed quest lifecycle payloads
+governs: commit(kind: "system.interaction-execute") with closed quest lifecycle payloads
 status: active
 createdBy: "seed"
 changeNote: "Re-seeded: the bootstrap file changed."
@@ -30,6 +30,9 @@ quest state.
    trusted-host current-and-transition summary when that is the appropriate follow-up.
 
 ## Constraints
+- There is no `quest` commit kind. An application supplies this operation as a mechanic: resolve it with
+  `query(kind: "system.interaction-plan")` and run it with
+  `commit(kind: "system.interaction-execute")`.
 - Q2 derives every component replacement and structural effect inside one transaction. Callers
   never supply effects, child IDs, relationships, events, audit data, or target state.
 - A stale expected status, malformed quest graph/context, invalid reason, blocked effect, or failed

@@ -1,4 +1,4 @@
----
+﻿---
 id: procedure.play.storytelling
 category: play
 name: Tell a grounded interactive fantasy story
@@ -15,8 +15,9 @@ created, changed, authorized, or retained.
 
 ## Instructions
 1. At a fresh start, read this procedure, then retrieve the active campaign through
-   `query(kind: "campaign-resume", id: "campaign....")`. Read only the specific world entities
-   needed for the current scene. Resume from stored state, never from an assumed transcript.
+   `query(kind: "entities", id: "campaign....")` against the owning application state space.
+   There is no `campaign-resume` query kind. Read only the specific world entities needed for
+   the current scene. Resume from stored state, never from an assumed transcript.
 2. Treat `game.core.campaign.chapter` as the current dramatic question and
    `game.core.campaign.arc` as the continuing stake. Their entity names are titles; their closed
    component state and the campaign resume are authoritative. Only

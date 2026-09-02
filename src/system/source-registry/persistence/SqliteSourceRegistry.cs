@@ -1,4 +1,4 @@
-using DantesRoleplay.Applications;
+﻿using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -16,6 +16,14 @@ public sealed class SqliteSourceRegistry(DantesRoleplayDbContext db) : ISourceRe
             : null;
         if (!db.Set<ApplicationRegistryRecord>().Any(x => x.Id == registration.ApplicationId.Value))
             throw new ArgumentException("A source can only be registered for an existing application.", nameof(registration));
+
+        // Retired rows stay in the table, so an ID that is invisible to resolution is still taken.
+        // Registering over one would either violate the primary key or quietly resurrect a
+        // registration somebody deliberately withdrew; both are worse than refusing.
+        if (db.Set<ApplicationSourceRecord>().Any(x => x.ApplicationId == registration.ApplicationId.Value
+            && x.SourceId == registration.SourceId && x.RetiredAtUtc != null))
+            throw new InvalidOperationException(
+                $"Source '{registration.SourceId}' was retired; source IDs are permanent and are not reused.");
 
         var existing = ReadFor(registration.ApplicationId);
         var validator = new InMemorySourceRegistry();
@@ -54,7 +62,8 @@ public sealed class SqliteSourceRegistry(DantesRoleplayDbContext db) : ISourceRe
         ArgumentNullException.ThrowIfNull(applicationId);
         ArgumentException.ThrowIfNullOrWhiteSpace(sourceId);
         var row = db.Set<ApplicationSourceRecord>().AsNoTracking()
-            .SingleOrDefault(x => x.ApplicationId == applicationId.Value && x.SourceId == sourceId);
+            .SingleOrDefault(x => x.ApplicationId == applicationId.Value && x.SourceId == sourceId
+                && x.RetiredAtUtc == null);
         return row is null ? null : ToContract(row);
     }
 
@@ -65,11 +74,41 @@ public sealed class SqliteSourceRegistry(DantesRoleplayDbContext db) : ISourceRe
         return Query(applicationId).Take(limit).ToArray();
     }
 
+    public RetiredSource Retire(ApplicationIdentifier applicationId, string sourceId, string reason)
+    {
+        ArgumentNullException.ThrowIfNull(applicationId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sourceId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+        var trimmed = reason.Trim();
+        if (trimmed.Length > 500)
+            throw new ArgumentException("A retirement reason is at most 500 characters.", nameof(reason));
+        var row = db.Set<ApplicationSourceRecord>()
+            .SingleOrDefault(x => x.ApplicationId == applicationId.Value && x.SourceId == sourceId)
+            ?? throw new InvalidOperationException($"Source '{sourceId}' is not registered for '{applicationId.Value}'.");
+        if (row.RetiredAtUtc is not null)
+            throw new InvalidOperationException($"Source '{sourceId}' is already retired.");
+        row.RetiredAtUtc = DateTime.UtcNow;
+        row.RetiredReason = trimmed;
+        db.SaveChanges();
+        return new(ToContract(row), row.RetiredAtUtc.Value, trimmed);
+    }
+
+    public IReadOnlyList<RetiredSource> Retired(ApplicationIdentifier applicationId)
+    {
+        ArgumentNullException.ThrowIfNull(applicationId);
+        return db.Set<ApplicationSourceRecord>().AsNoTracking()
+            .Where(x => x.ApplicationId == applicationId.Value && x.RetiredAtUtc != null)
+            .OrderBy(x => x.SourceId)
+            .ToArray()
+            .Select(x => new RetiredSource(ToContract(x), x.RetiredAtUtc!.Value, x.RetiredReason ?? ""))
+            .ToArray();
+    }
+
     private IReadOnlyList<SourceRegistration> ReadFor(ApplicationIdentifier applicationId) => Query(applicationId).ToArray();
 
     private IQueryable<SourceRegistration> Query(ApplicationIdentifier applicationId) => db.Set<ApplicationSourceRecord>()
         .AsNoTracking()
-        .Where(x => x.ApplicationId == applicationId.Value)
+        .Where(x => x.ApplicationId == applicationId.Value && x.RetiredAtUtc == null)
         .OrderByDescending(x => x.Precedence).ThenBy(x => x.SourceId)
         .Select(x => new SourceRegistration(
             ApplicationIdentifier.Parse(x.ApplicationId), x.SourceId, x.AllowedRootId,
@@ -169,6 +208,8 @@ internal sealed class ApplicationSourceRecord
     public int Precedence { get; set; }
     public required string LogicalIdentity { get; set; }
     public DateTime CreatedAtUtc { get; set; }
+    public DateTime? RetiredAtUtc { get; set; }
+    public string? RetiredReason { get; set; }
 }
 
 internal sealed class ApplicationSourceScanRecord

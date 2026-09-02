@@ -1,8 +1,8 @@
----
+﻿---
 id: procedure.play.story-plan
 category: play
 name: Execute a bounded story plan
-governs: commit(kind: "story-plan") start and cancel; query(kind: "story-plan")
+governs: starting and cancelling one bounded story plan run
 status: active
 createdBy: "seed"
 changeNote: "Seeded from bootstrap file."
@@ -31,6 +31,8 @@ selects and validates mechanics, commits action effects, and returns a bounded h
    work. Do not turn orchestration summaries into new mechanics or fictionally invent results.
 
 ## Constraints
+- There is no `story-plan` commit or query kind. The story plan runner is a host-internal
+  worker; it exposes no protocol verb of its own.
 - Version 1 is limited to the configured development GM audience. It has no production background
   authentication, actor execution, remote-model credentials, resume, plan generation, branching,
   loops, retries, output binding, parallelism, generic reads, raw effects, or arbitrary commits.

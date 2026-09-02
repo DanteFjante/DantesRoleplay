@@ -1,8 +1,8 @@
----
+﻿---
 id: procedure.character.playtest-bootstrap
 category: character.playtest
 name: Create and revise a provisional playtest character record
-governs: dnd2024.playtest-character-record; the existing commit(kind: "effects") and commit(kind: "campaign") calls used for provisional actor setup
+governs: dnd2024.playtest-character-record; the commit(kind: "effects") call used for provisional actor setup
 status: active
 createdBy: "seed"
 changeNote: "Seeded from bootstrap file."
@@ -20,9 +20,9 @@ record grants or executes any of those things.
 2. Use one `commit(kind: "effects", dryRun: true)` list to create the actor, its already-supported
    base components, and one add-only `dnd2024.playtest-character-record` in `draft` state. Read
    the dry run, then commit the identical list.
-3. Attach the pre-existing actor only through C15's `commit(kind: "campaign")` operation
-   `attach-character-participation`. Do not create campaign participation links through direct
-   effects.
+3. Attach the pre-existing actor only through the C15 `attach-character-participation`
+   operation described in `procedure.campaign.character-participation`. Do not create campaign
+   participation links through direct effects.
 4. Once C15 succeeds, use one `component.set` effect to replace the complete valid record with
    identical entries and `state: "active"`.
 5. Revise a record only through complete `component.set` replacement. Preserve prior meaningful

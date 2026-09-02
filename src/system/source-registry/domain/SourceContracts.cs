@@ -1,4 +1,4 @@
-using DantesRoleplay.Applications;
+﻿using DantesRoleplay.Applications;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -34,12 +34,31 @@ public static class SourceRegistrationFingerprint
     }
 }
 
+/// <summary>One registration withdrawn from resolution, kept as evidence of the withdrawal.</summary>
+public sealed record RetiredSource(SourceRegistration Source, DateTime RetiredAtUtc, string Reason);
+
 public interface ISourceRegistry
 {
     SourceRegistration Register(SourceRegistration registration);
     IReadOnlyList<SourceRegistration> For(ApplicationIdentifier applicationId);
     SourceRegistration? Get(ApplicationIdentifier applicationId, string sourceId);
     IReadOnlyList<SourceRegistration> List(ApplicationIdentifier applicationId, int limit);
+
+    /// <summary>
+    /// Withdraws one registration from resolution, keeping the row and recording why.
+    ///
+    /// A source ID is permanent and its specification immutable, so a registration whose files
+    /// have moved cannot be corrected -- it can only stop being consulted. Until this existed, a
+    /// migration that relocated catalog content left its old registrations behind reporting
+    /// SCAN_PATH_NOT_FOUND forever, which made the default application preview invalid and forced
+    /// every activation to hand-assemble the surviving source IDs. Retirement is not deletion:
+    /// the row, the timestamp and the reason stay, because a registration that silently vanished
+    /// would be indistinguishable from one that was never made.
+    /// </summary>
+    RetiredSource Retire(ApplicationIdentifier applicationId, string sourceId, string reason);
+
+    /// <summary>Every retired registration, for the operator who has to explain the gap.</summary>
+    IReadOnlyList<RetiredSource> Retired(ApplicationIdentifier applicationId);
 }
 
 public enum SourceScanStatus { Succeeded, Failed }
@@ -64,6 +83,7 @@ public interface ISourceScanReceiptStore
 public sealed class InMemorySourceRegistry : ISourceRegistry
 {
     private readonly List<SourceRegistration> _registrations = [];
+    private readonly List<RetiredSource> _retired = [];
 
     public SourceRegistration Register(SourceRegistration registration)
     {
@@ -102,6 +122,23 @@ public sealed class InMemorySourceRegistry : ISourceRegistry
         if (limit is < 1 or > 100) throw new ArgumentOutOfRangeException(nameof(limit));
         return For(applicationId).Take(limit).ToArray();
     }
+
+    public RetiredSource Retire(ApplicationIdentifier applicationId, string sourceId, string reason)
+    {
+        ArgumentNullException.ThrowIfNull(applicationId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sourceId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+        var registration = _registrations.SingleOrDefault(x => x.ApplicationId == applicationId && x.SourceId == sourceId)
+            ?? throw new InvalidOperationException("Only a registered source can be retired.");
+        _registrations.Remove(registration);
+        var retired = new RetiredSource(registration, DateTime.UtcNow, reason.Trim());
+        _retired.Add(retired);
+        return retired;
+    }
+
+    public IReadOnlyList<RetiredSource> Retired(ApplicationIdentifier applicationId) => _retired
+        .Where(x => x.Source.ApplicationId == applicationId)
+        .OrderBy(x => x.Source.SourceId, StringComparer.Ordinal).ToArray();
 
     private static bool IsSafeRelativeSpecification(string value) =>
         !string.IsNullOrWhiteSpace(value)

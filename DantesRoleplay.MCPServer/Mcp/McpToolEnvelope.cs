@@ -1,3 +1,4 @@
+﻿using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.Operations;
 
 namespace DantesRoleplay.MCPServer.Mcp;
@@ -132,25 +133,46 @@ internal static class ToolRunner
             var dispatch = ToolRunnerDispatch.Value;
             var effectiveTool = dispatch?.Tool ?? tool;
 
-            // An unhandled exception is still an event worth recording, and the model still needs
-            // somewhere to go next.
-            var operation = await log.RecordAsync(
-                effectiveTool,
-                $"Unhandled failure: {ex.Message}",
-                success: false,
-                intent,
-                dispatch is null || !string.IsNullOrEmpty(subject)
-                    ? subject
-                    : $"{dispatch.Tool}:{dispatch.Kind}",
-                proceduresCited,
-                "UNHANDLED",
-                consumesReadEvidence);
+            // A rejection thrown from deep inside a store still carries a stable code. Passing it
+            // through is the difference between "NAMESPACE_UNKNOWN: record 'x' uses unregistered
+            // namespace 'y'" and a caller spending an afternoon ruling out payload size.
+            var code = ex is CatalogNamespaceException typed ? typed.Code : "UNHANDLED";
+            var fix = ex is CatalogNamespaceException
+                // The contract, not the capability catalog: capabilities lists what the verbs take,
+                // and the caller's problem here is where an identity is allowed to live.
+                ? "query(kind: \"procedures\", id: \"procedure.system.namespace\") — where an id may live, and how to open somewhere new."
+                : "Call orient() to re-check the system state, then retry with corrected arguments.";
 
-            return ToolEnvelope.Failure(
-                "UNHANDLED",
-                ex.Message,
-                "Call orient() to re-check the system state, then retry with corrected arguments.",
-                operation.Id);
+            // Recording is attempted, not assumed.
+            //
+            // The store and the audit log share one DbContext. When a write is rejected during
+            // SaveChanges, its entities stay tracked as Added, so the audit row's own SaveChanges
+            // retries the rejected write and throws again — and that second throw escaped this
+            // method entirely, which is how a typed refusal reached a caller as an unstructured
+            // tool-invocation error with no audit row at all. The caller gets a typed answer
+            // either way now; losing the audit row is bad, losing the error as well is worse.
+            var operationId = string.Empty;
+            try
+            {
+                var operation = await log.RecordAsync(
+                    effectiveTool,
+                    $"Unhandled failure: {ex.Message}",
+                    success: false,
+                    intent,
+                    dispatch is null || !string.IsNullOrEmpty(subject)
+                        ? subject
+                        : $"{dispatch.Tool}:{dispatch.Kind}",
+                    proceduresCited,
+                    code,
+                    consumesReadEvidence);
+                operationId = operation.Id;
+            }
+            catch
+            {
+                // Deliberately swallowed: the failure being reported is the one worth returning.
+            }
+
+            return ToolEnvelope.Failure(code, ex.Message, fix, operationId);
         }
     }
 }

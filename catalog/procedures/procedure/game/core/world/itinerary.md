@@ -1,8 +1,8 @@
----
+﻿---
 id: procedure.game.core.world.itinerary
 category: game.core.world.travel
 name: Plan a mode-aware distant itinerary
-governs: query(kind: "itinerary-plan") proposing a distant journey over stored travel modes
+governs: commit(kind: "system.interaction-execute") proposing a distant journey over stored travel modes
 status: active
 createdBy: "seed"
 changeNote: "Seeded from bootstrap file."
@@ -15,8 +15,7 @@ not create a journey or move anyone; each returned leg must still be performed b
 one-leg action owner.
 
 ## Instructions
-1. Call `query(kind: "itinerary-plan")` with `worldId`, `travellerId`, and
-   `destinationLocationId`.
+1. Plan with `worldId`, `travellerId`, and `destinationLocationId`.
    Optionally include `groundConveyanceId` and/or `aerialConveyanceId` only for specifically
    selected, active conveyances that are directly co-located with the traveller at `presence`.
    Origin is always derived from the traveller's actual containment.
@@ -35,13 +34,16 @@ one-leg action owner.
    preference `portal`, `on-foot`, `ground`, `air`, then route-or-portal id and destination id.
    Closed on-foot routes remain structural evidence for `blocked`; malformed or irrelevant records
    never become an edge.
-6. A plan is advice, not authorization. To execute exactly one current leg, call
-   `commit(kind: "itinerary-advance")` with the same request, exact fingerprint, and the leg's
-   `nextLegIndex`. It re-reads the plan, rejects any changed fingerprint/index, invokes only the
+6. A plan is advice, not authorization. To execute exactly one current leg, advance it with the
+   same request, exact fingerprint, and the leg's `nextLegIndex`. It re-reads the plan, rejects any changed fingerprint/index, invokes only the
    named Feature 8, 12, 13, or 15 action owner, then returns a freshly rebuilt itinerary. Do not
    use direct effects or a distant containment move as a shortcut.
 
 ## Constraints
+- There is no `itinerary-plan` query kind and no `itinerary-advance` commit kind. An application
+  supplies planning and leg execution as mechanics: resolve one with
+  `query(kind: "system.interaction-plan")` and run it with
+  `commit(kind: "system.interaction-execute")`.
 - This query writes no containment, clock, component, relationship, event, reservation, or
   operation-derived world state.
 - It never selects a conveyance, invents a route, reverses a directed edge, grants access,

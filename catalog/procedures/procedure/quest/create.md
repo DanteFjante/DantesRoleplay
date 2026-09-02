@@ -1,8 +1,8 @@
----
+﻿---
 id: procedure.quest.create
 category: quest
 name: Create a campaign-scoped quest
-governs: commit(kind: "quest") creating one closed draft quest
+governs: commit(kind: "system.interaction-execute") creating one closed draft quest
 status: active
 createdBy: "seed"
 changeNote: "Re-seeded: the bootstrap file changed."
@@ -23,5 +23,8 @@ arc, chapter, and world references.
 4. Confirm by reading the returned quest entity. `procedure.quest.modify` owns all later lifecycle changes.
 
 ## Constraints
+- There is no `quest` commit kind. An application supplies this operation as a mechanic: resolve it with
+  `query(kind: "system.interaction-plan")` and run it with
+  `commit(kind: "system.interaction-execute")`.
 - Creation writes only one draft quest and three dormant objectives, with no lifecycle operation.
 - No caller effects, child IDs, component/link data, rewards, world changes, or campaign transitions.

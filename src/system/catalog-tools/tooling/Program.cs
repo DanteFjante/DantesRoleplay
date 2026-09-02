@@ -1,4 +1,4 @@
-using DantesRoleplay.Tools;
+﻿using DantesRoleplay.Tools;
 using DantesRoleplay.Tools.Commands;
 
 // Every tool that exists. Adding one is this line plus a file; there is no reflection scan,
@@ -15,6 +15,7 @@ ITool[] tools =
     new MigrateEcsIdentitiesTool(),
     new ValidateTool(),
     new VerifyTool(),
+    new SourcesTool(),
     new HashesTool(),
     new BackfillHashesTool(),
     new FeedbackTool()

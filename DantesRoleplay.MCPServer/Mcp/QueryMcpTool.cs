@@ -7,6 +7,7 @@ using DantesRoleplay.Procedures;
 using DantesRoleplay.World;
 using DantesRoleplay.SystemFeedback;
 using DantesRoleplay.Information;
+using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Ecs;
@@ -39,7 +40,7 @@ public sealed class QueryMcpTool
     [McpServerTool(Name = "query")]
     [Description(
         "Read anything in this system. kind is one of: capabilities, procedures, categories, world, entities, graph, information-answer, information-actions, system.audience-context, " +
-        "mechanics, event-types, events, subscriptions, notifications, feedback, system.applications, system.sources, system.application-preview, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, system.trigger-scheduling, system.blobs, history. Omit id for a list or search; " +
+        "mechanics, event-types, events, subscriptions, notifications, feedback, system.applications, system.sources, system.application-preview, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, system.trigger-scheduling, system.blobs, namespaces, history. Omit id for a list or search; " +
         "pass id for one record in full. When you are unsure what a kind takes or what a commit payload looks like, call " +
         "query(kind: \"capabilities\") — it is the exact catalog. Irrelevant filters are ignored unless a fixed query kind explicitly rejects them. Never changes state.")]
     public async Task<ToolEnvelope> QueryAsync(
@@ -125,6 +126,7 @@ public sealed class QueryMcpTool
         IInformationAnswerCoordinator? informationAnswers = null,
         IInformationActionCoordinator? informationActions = null,
         IPublicApplicationCatalogProvider? publicCatalogs = null,
+        ICatalogNamespaceRegistry? catalogNamespaces = null,
         IApplicationRegistry? applications = null,
         ISourceRegistry? sources = null,
         ISourceScanReceiptStore? sourceScans = null,
@@ -284,6 +286,8 @@ public sealed class QueryMcpTool
                 triggerSchedulingAdministration, privateOperator, log, applicationId, resource, id, limit, cancellationToken),
             "system.blobs" => await new SystemBlobHandler().QueryAsync(
                 blobTransfers, privateOperator, log, id, cancellationToken),
+            "namespaces" => await new CatalogNamespaceHandler().ListAsync(
+                catalogNamespaces, log, query, id, includeInactive, limit),
             "history" =>
                 await new HistoryQueryHandler().HistoryAsync(
                     log, limit ?? 20, failuresOnly, tool, subject, cancellationToken),

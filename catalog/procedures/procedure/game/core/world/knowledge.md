@@ -1,8 +1,8 @@
----
+﻿---
 id: procedure.game.core.world.knowledge
 category: game.core.world.knowledge
 name: Govern shared-game world knowledge
-governs: commit(kind: "component") declaring game.core.world.fact, game.core.world.rumour, game.core.world.secret, game.core.world.clue, game.core.world.knowledge.classification, game.core.world.knowledge.validity, game.core.world.interaction, or game.core.world.knowledge.acquisition; commit(kind: "effects") recording or correcting knowledge records and links; commit(kind: "action") revealing one clue or confirming one rumour; query(kind: "knowledge-answer") returning a configured authenticated or development audience's perspective-safe answer
+governs: commit(kind: "component") declaring game.core.world.fact, game.core.world.rumour, game.core.world.secret, game.core.world.clue, game.core.world.knowledge.classification, game.core.world.knowledge.validity, game.core.world.interaction, or game.core.world.knowledge.acquisition; commit(kind: "effects") recording or correcting knowledge records and links; commit(kind: "action") revealing one clue or confirming one rumour; the perspective-safe answer returned to a configured authenticated or development audience
 status: active
 createdBy: "seed"
 changeNote: "Seeded from bootstrap file."
@@ -71,8 +71,9 @@ entities with closed data; scope, subject, and evidentiary links are explicit re
   Timed historical/current and contested projections are trusted-host-only. Validity never changes
   whether an actor knows a record, which canonical claim wins, rumour confirmation, secret
   sensitivity, or authorization. Scheduled future truth and acquisition timestamps remain outside
-  this contract; the only player-safe query/search is the bounded `knowledge-answer` surface.
-- `query(kind: "knowledge-answer")` is the separate bounded, perspective-safe read surface. It
+  this contract; the only player-safe read is the bounded perspective-safe answer surface.
+- The perspective-safe answer is a separate bounded read surface with no query kind of its own;
+  `query(kind: "system.audience-context")` reports the audience binding it requires. It
   accepts campaign ID, question, optional kind/subject filters, and optional world minute only;
   it never accepts a principal, actor, role, world ID, visibility override, canonical knowledge ID,
   or include-hidden flag. A host must supply an audience policy before this query can answer. The

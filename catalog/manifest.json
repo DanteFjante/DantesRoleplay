@@ -342,23 +342,44 @@
     },
     {
       "kind": "procedure",
-      "id": "procedure.campaign.chapter",
+      "id": "procedure.authoring.campaign",
       "version": 1,
-      "contentHash": "E684B80ADA7218503B963FAF56A290C90BA557E74F243D9DB04F80C36A04C346",
+      "contentHash": "D526938E1CCE788DB9A793125B75E6A164A755CE23B8C8A13AB796FA975A2B45",
+      "path": "procedures/procedure/authoring/campaign.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.authoring.location",
+      "version": 1,
+      "contentHash": "B9F7C55A1C0EBDFA92C41E8127B04F2008DCACB0A200C08332B9CB83CBCF248E",
+      "path": "procedures/procedure/authoring/location.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.authoring.quest",
+      "version": 1,
+      "contentHash": "5AC67F838E829AE7B58AD75BCBCB5535C0BB748DE06E8E320BC5C694A721C76B",
+      "path": "procedures/procedure/authoring/quest.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.campaign.chapter",
+      "version": 2,
+      "contentHash": "22F0B9CBBC9BF5678A412BDF424B4675D482E44D449895D17D52C6B93753E542",
       "path": "procedures/procedure/campaign/chapter.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.campaign.character-participation",
-      "version": 1,
-      "contentHash": "EC20BF597645885AA0A8DCA979F5942FB1DEB8FC9D813E608D0CD012205B41C9",
+      "version": 2,
+      "contentHash": "7870A7037229D0225E64A99C4A3F0E27430907E3110DC8FAF53E9700A3D60C89",
       "path": "procedures/procedure/campaign/character-participation.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.campaign.create",
-      "version": 1,
-      "contentHash": "3DE3D1B94A8393A9C8F9ACDE848C855E3FEA7553E42B312229172F5B4CD4EB67",
+      "version": 2,
+      "contentHash": "F6AE2F20D816EBC5B3EE7E00617111A6422990BB7891E07028147F57F85335DB",
       "path": "procedures/procedure/campaign/create.md"
     },
     {
@@ -371,8 +392,8 @@
     {
       "kind": "procedure",
       "id": "procedure.campaign.quest-context",
-      "version": 4,
-      "contentHash": "2B9DE51A78A5DE97A560CBB642000DB0A9BF049C10C07463D637A55B0DEE90CD",
+      "version": 5,
+      "contentHash": "8A1D2D107EB8E70AF7C0D7D9A462FB46D9729BB6CA44D29CC53C4B8775C3421A",
       "path": "procedures/procedure/campaign/quest-context.md"
     },
     {
@@ -385,22 +406,22 @@
     {
       "kind": "procedure",
       "id": "procedure.campaign.session",
-      "version": 1,
-      "contentHash": "DCA3C53195134A31CAB62D938372FA563C7AD59FFE13703F7AC97028E9EA3075",
+      "version": 2,
+      "contentHash": "7E48C0D59005620B70FB1A3C1F40B19DC5248F8DE270686F9516013B50FACB64",
       "path": "procedures/procedure/campaign/session.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.character.playtest-bootstrap",
-      "version": 1,
-      "contentHash": "5194672D00267262DF72727F967CF8BCE53EE2E786CA619E571BA1E4A0852A94",
+      "version": 2,
+      "contentHash": "7D11552B43B246F7C2DE79EC9F4E98653CE7A233117A00D72F11DD63E7872ED9",
       "path": "procedures/procedure/character/playtest-bootstrap.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.contract.create",
-      "version": 4,
-      "contentHash": "BAB7F89E87E282CEE4EEA608F5648C40873A50D46359D38967199E78506EF5B6",
+      "version": 5,
+      "contentHash": "FBB9C20F7F2ED2AD09643CACBD373FE7FEAEC26A8F5001A9F490FD76E5993B59",
       "path": "procedures/procedure/contract/create.md"
     },
     {
@@ -413,8 +434,8 @@
     {
       "kind": "procedure",
       "id": "procedure.event.define",
-      "version": 2,
-      "contentHash": "C4CA64952AF0989BC218F02EE5B020648DBEA7672F3747A3CD3C77AC66F238C7",
+      "version": 3,
+      "contentHash": "BA45678F39274576E33562A2CD0F1A973137E7FDB5177C1B680746E6F97160B8",
       "path": "procedures/procedure/event/define.md"
     },
     {
@@ -476,15 +497,15 @@
     {
       "kind": "procedure",
       "id": "procedure.game.core.world.itinerary",
-      "version": 1,
-      "contentHash": "338A9AA3DE9A03FE413A849CAD3C6EE499AD7F4CFC2D0DD3567EF357DFA2FC6A",
+      "version": 2,
+      "contentHash": "DBF5931AD851BD6B2D20E719CC5719CE676E9AD00D6D4838B9EABC2C9E8D1481",
       "path": "procedures/procedure/game/core/world/itinerary.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.game.core.world.knowledge",
-      "version": 1,
-      "contentHash": "1369E9DA586294DA41CB191873E4D3DA42A21FDB370413ACADB73764CB07C933",
+      "version": 2,
+      "contentHash": "AA76C8C09D6A6573B19ACAE271623E9AE7E13F652B51E2B63E0433312AA1A1FC",
       "path": "procedures/procedure/game/core/world/knowledge.md"
     },
     {
@@ -525,15 +546,15 @@
     {
       "kind": "procedure",
       "id": "procedure.game.core.world.travel",
-      "version": 1,
-      "contentHash": "CDAE4E53E26198C39337653BD27E96C5200B7D6E4895203EDF0D28411C88D377",
+      "version": 2,
+      "contentHash": "F79A743F16C6A604D30AFECE4D45196512601E12E7B5D26F0E88905AD3927820",
       "path": "procedures/procedure/game/core/world/travel.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.information.action",
-      "version": 1,
-      "contentHash": "4790DBFEE58C03A59E1960135AA2B6874D01573EA1C1C52234CE8E2E91072F7D",
+      "version": 2,
+      "contentHash": "38283EE46A9F1AB323AF4279AD5B37861FDCA38153E40F372488217ED01FDAD7",
       "path": "procedures/procedure/information/action.md"
     },
     {
@@ -546,8 +567,8 @@
     {
       "kind": "procedure",
       "id": "procedure.information.manage",
-      "version": 1,
-      "contentHash": "7F1DC9A85F0306E5FC03B0440A94F2252C997331FE8072854024C75D71C17C32",
+      "version": 2,
+      "contentHash": "A0790770267A9DE77665D3D3A71AA672D00F2702A7BF0B75E6D66E1651348C95",
       "path": "procedures/procedure/information/manage.md"
     },
     {
@@ -574,7 +595,7 @@
     {
       "kind": "procedure",
       "id": "procedure.mechanic.projection",
-      "version": 4,
+      "version": 6,
       "contentHash": "1E6991490303CFE76463E5F493F1E6B72E9DBF59A9BF7941BCEF30D58097D3E6",
       "path": "procedures/procedure/mechanic/projection.md"
     },
@@ -588,50 +609,50 @@
     {
       "kind": "procedure",
       "id": "procedure.mechanic.write",
-      "version": 2,
-      "contentHash": "C702230A093B00A73EF03C0229C723EDFED94B36E9992C57193138A26A1A87E0",
+      "version": 3,
+      "contentHash": "89CF2BA192A3F27CCF4F7833DA124C367A1FC06316BB86032D33BBD62B8117F0",
       "path": "procedures/procedure/mechanic/write.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.notification.inspect",
-      "version": 1,
-      "contentHash": "B22884707158C752A7858C6C717DF3FEA51DB049F3CC983FC2DF447FDD2A20B9",
+      "version": 2,
+      "contentHash": "3D5C883E52199AB2AA17A44B16877C1788A2C4808DCE8FC4D5384DF1A585590E",
       "path": "procedures/procedure/notification/inspect.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.play.story-plan",
-      "version": 1,
-      "contentHash": "6123F57467F6655DA435E0CC6E396B0F0BEB10B6A03F7B50F28E0BEE213F47B5",
+      "version": 2,
+      "contentHash": "370863CF75F7E4656AE5751B033E6C40976C46526D53DDA6B869EFF3A519B25D",
       "path": "procedures/procedure/play/story-plan.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.play.storytelling",
-      "version": 1,
-      "contentHash": "C66ED6BAA6054911CCBE597CF912EBE6FC2F2546358B3540DC21CDC30F1F9335",
+      "version": 3,
+      "contentHash": "82A7FAFF6FBBA20EDAA2285164B07BC40C31441773B168C6C488206E8CADF856",
       "path": "procedures/procedure/play/storytelling.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.quest.create",
-      "version": 4,
-      "contentHash": "BA4754344F70D4836751162CEAED1A890293B843FD8CA5700A6A18509AAAD3B1",
+      "version": 5,
+      "contentHash": "446CD9EA0BEAF66E61D70B9842F8F0D138777DEDAB7F1B77F71A105444C428CA",
       "path": "procedures/procedure/quest/create.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.quest.inspect",
-      "version": 4,
-      "contentHash": "8ECCA1809015025CD99A9109C284E53886957395AC811220F59CB6133D2BC64D",
+      "version": 5,
+      "contentHash": "94C1867765368B32E5A37959225F78F6C1E7FEAF9A4D93FA8AB0AFBDCDEDC0D6",
       "path": "procedures/procedure/quest/inspect.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.quest.modify",
-      "version": 4,
-      "contentHash": "2338E2DB72B517B3C74A15EE8EF8A76CB70CCF662F722B61551080905A009A79",
+      "version": 5,
+      "contentHash": "68776F25A9A2CB4E7F3C687E3A970700D54686BCCC3ED71CE1A0B6EE13CE3B6E",
       "path": "procedures/procedure/quest/modify.md"
     },
     {
@@ -644,8 +665,8 @@
     {
       "kind": "procedure",
       "id": "procedure.subscription.create",
-      "version": 3,
-      "contentHash": "52917051214D6B4D17ACE1C11820C5CEE3B1F85477E6CA88CCF45E3787B8E817",
+      "version": 4,
+      "contentHash": "1B1726F15E7F287AA0A9574BC554578D8FA9471F3160EF877934A7D2449AD32E",
       "path": "procedures/procedure/subscription/create.md"
     },
     {
@@ -696,6 +717,13 @@
       "version": 2,
       "contentHash": "D4944852F0CB5BF406E0FA39C09C2DC6883CABC96B614065076662248099810D",
       "path": "procedures/procedure/system/modify.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.system.namespace",
+      "version": 1,
+      "contentHash": "F78BCAE7B24BEBD3632FD581BE4A320BECEB8DB6A60726E9B38379F4967C181F",
+      "path": "procedures/procedure/system/namespace.md"
     },
     {
       "kind": "procedure",
@@ -918,7 +946,7 @@
       "kind": "componentDefinition",
       "id": "game.core.rules.readable",
       "version": 0,
-      "contentHash": "2D2D62771789AF20F62FB96BE7768C6C12324E2AEF85E1A1122E74CF4D8508C7",
+      "contentHash": "259D65A12F9A0D0904BEAD3D475C7966C42B138737B9CD80BE0779BFE1DDE259",
       "path": "components/game/core/rules/readable.json"
     },
     {
@@ -988,7 +1016,7 @@
       "kind": "componentDefinition",
       "id": "game.core.world.faction",
       "version": 0,
-      "contentHash": "EEC48A4863F812DB1B26E7AFB35B12BB253B487A75F997152A2EE6896B63FE37",
+      "contentHash": "357DFB4D913BEC9DEA4E49D5B7EC69F1A9A4F8C9793B05D93DCDF83B1594828A",
       "path": "components/game/core/world/faction.json"
     },
     {
@@ -1086,7 +1114,7 @@
       "kind": "componentDefinition",
       "id": "game.core.world.secret",
       "version": 0,
-      "contentHash": "786AC0D2F08826961F75F010E05E5A30D850E78F737324632158383EEF24E695",
+      "contentHash": "1F9CB5E89EB5DB5B1EB9241E558D48515162E9FBBA6F31E452A95CD636CEE179",
       "path": "components/game/core/world/secret.json"
     },
     {

@@ -1,4 +1,4 @@
-using DantesRoleplay.Operations;
+﻿using DantesRoleplay.Operations;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.DataAccess;
@@ -88,7 +88,27 @@ public sealed class OperationLog(DantesRoleplayDbContext db) : IOperationLog
         };
 
         _db.Operations.Add(operation);
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            // The audit row is the one write that must survive a failed operation.
+            //
+            // A store and this log share one DbContext. When a write is rejected during
+            // SaveChanges — an unregistered namespace, a violated constraint — its entities stay
+            // tracked as Added, so recording the failure retries the rejected write and fails
+            // again. That took a real refusal, with a real code, and delivered it to the caller as
+            // an unstructured error with no audit row at all. The rejected changes are already
+            // dead; detaching them is not discarding anything a caller could still commit.
+            foreach (var entry in _db.ChangeTracker.Entries().ToArray())
+                if (!ReferenceEquals(entry.Entity, operation))
+                    entry.State = EntityState.Detached;
+
+            _db.Operations.Add(operation);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
 
         return operation;
     }

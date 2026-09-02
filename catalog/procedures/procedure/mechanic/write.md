@@ -1,4 +1,4 @@
----
+﻿---
 id: procedure.mechanic.write
 category: mechanic
 name: Write a game rule
@@ -15,6 +15,12 @@ commit is the live route; repository development uses the canonical `.md` and `.
 `catalog/mechanics/`.
 
 ## Instructions
+0. Your id decides where the rule lives. Everything before the last dot is its namespace, and that
+   namespace must already be registered and reviewed or the write is refused — after the dry run
+   passes, because a dry run checks the rule and not its identity. List what exists with
+   `query(kind: "namespaces")` and pick an id beneath one of them. If none fits, register the new
+   namespace with `commit(kind: "system.namespace.register")` first; it arrives needing review, and
+   nothing can be written into it until a person reviews it.
 1. Search before writing. `query(kind: "mechanics", query: "...")` with the words a player would
    actually use. Two rules answering the same phrase is the failure this system is most prone to,
    because the same action then resolves differently depending on which one ranked first.
@@ -42,6 +48,7 @@ commit is the live route; repository development uses the canonical `.md` and `.
     A rule that has never been executed—by a focused test or a live action—is a guess.
 
 ## Constraints
+- A namespace is not created by using it. An unregistered prefix fails the commit, not the dry run.
 - A mechanic never writes. It returns proposed effects; the system validates and applies them.
   There is no database, no network and no host inside `ctx`, and nothing that can be imported.
 - Never widen a rule by having it read a component it did not declare — it cannot, and attempting

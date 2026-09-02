@@ -1,4 +1,4 @@
-using DantesRoleplay.Applications;
+﻿using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Sources;
 using Microsoft.Data.Sqlite;
@@ -58,6 +58,48 @@ public sealed class ApplicationExtensionTests
             ApplicationExtensionSetCompiler.Compile(Application, ambiguous)).Code);
     }
 
+    /// <summary>
+    /// A source whose files moved cannot be corrected, only withdrawn. Before retirement existed,
+    /// seven such registrations made the default application preview permanently invalid, and every
+    /// activation had to name the surviving sources by hand.
+    /// </summary>
+    [Fact]
+    public async Task A_retired_source_leaves_resolution_but_keeps_its_row_and_its_id()
+    {
+        var databasePath = Path.Combine(Path.GetTempPath(), $"source-retire-{Guid.NewGuid():n}.db");
+        try
+        {
+            var options = new DbContextOptionsBuilder<DantesRoleplayDbContext>()
+                .UseSqlite($"Data Source={databasePath}").Options;
+            await using var db = new DantesRoleplayDbContext(options);
+            await db.Database.MigrateAsync();
+            var application = ApplicationIdentifier.Parse("retire-app");
+            new SqliteApplicationRegistry(db).Register(new(application, "Retire", "Retirement fixture.", []));
+            var registry = new SqliteSourceRegistry(db);
+            registry.Register(new(application, "moved", "workspace", "old/**/*", SourceTrust.Trusted, 0, "moved"));
+            registry.Register(new(application, "current", "workspace", "new/**/*", SourceTrust.Trusted, 1, "current"));
+
+            var retired = registry.Retire(application, "moved", "Content relocated; 'current' covers it.");
+
+            Assert.Equal("moved", retired.Source.SourceId);
+            Assert.Equal(["current"], registry.For(application).Select(value => value.SourceId));
+            Assert.Null(registry.Get(application, "moved"));
+            Assert.Equal(["moved"], registry.Retired(application).Select(value => value.Source.SourceId));
+            Assert.Equal("Content relocated; 'current' covers it.", registry.Retired(application)[0].Reason);
+
+            // The ID stays taken: re-registering would resurrect a withdrawal, or break the key.
+            Assert.Throws<InvalidOperationException>(() => registry.Register(
+                new(application, "moved", "workspace", "old/**/*", SourceTrust.Trusted, 0, "moved")));
+            Assert.Throws<InvalidOperationException>(() => registry.Retire(application, "moved", "Again."));
+            Assert.Throws<InvalidOperationException>(() => registry.Retire(application, "absent", "Nothing there."));
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (File.Exists(databasePath)) File.Delete(databasePath);
+        }
+    }
+
     [Fact]
     public async Task Existing_registration_upgrades_with_safe_legacy_presentation_metadata()
     {
@@ -70,8 +112,18 @@ public sealed class ApplicationExtensionTests
             await db.Database.MigrateAsync("20260831171544_EcsRoleConstraintsAndSystemWeb");
             var application = ApplicationIdentifier.Parse("legacy-app");
             new SqliteApplicationRegistry(db).Register(new(application, "Legacy", "Upgrade fixture.", []));
-            new SqliteSourceRegistry(db).Register(new(application, "legacy-source", "workspace",
-                "legacy/**/*", SourceTrust.Trusted, 0, "legacy-source"));
+            // Written as raw SQL, not through the registry: this row is created while the database
+            // is deliberately held at an older migration, and the registry reads columns that
+            // migration has not added yet. The subject here is the extension upgrade, not
+            // registration.
+            await db.Database.ExecuteSqlRawAsync("""
+                INSERT INTO system_application_source
+                    (ApplicationId, SourceId, AllowedRootId, RelativePathOrGlob, Trust, Precedence,
+                     LogicalIdentity, CreatedAtUtc)
+                VALUES
+                    ('legacy-app', 'legacy-source', 'workspace', 'legacy/**/*', 1, 0,
+                     'legacy-source', CURRENT_TIMESTAMP);
+                """);
             await db.Database.ExecuteSqlRawAsync("""
                 INSERT INTO system_application_extension
                     (ApplicationId, ExtensionId, Description, SourceIdsJson, NamespaceIdsJson,

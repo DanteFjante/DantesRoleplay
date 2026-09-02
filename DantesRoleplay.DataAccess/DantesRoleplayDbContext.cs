@@ -333,7 +333,10 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             var namespaceId = CatalogNamespaceIdentity.NamespaceOf(id!);
             if (!definitions.TryGetValue(namespaceId, out var definition))
                 throw new CatalogNamespaceException("NAMESPACE_UNKNOWN",
-                    $"Record '{id}' uses unregistered namespace '{namespaceId}'.");
+                    $"Record '{id}' uses unregistered namespace '{namespaceId}'. "
+                    + "An identity is placed by its prefix, so the namespace has to exist before the "
+                    + "record can be written. "
+                    + NearestRegistered(definitions, namespaceId, kind!));
             if (!AllowUnreviewedNamespaceWrites
                 && definition.ReviewStatus != CatalogNamespaceReviewStatuses.Reviewed)
                 throw new CatalogNamespaceException("NAMESPACE_UNREVIEWED",
@@ -355,6 +358,47 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
                 throw new CatalogNamespaceException("NAMESPACE_KIND_FORBIDDEN",
                     $"Namespace '{namespaceId}' does not allow '{kind}' records such as '{id}'.");
         }
+    }
+
+    /// <summary>
+    /// Names the nearest registered ancestor and what already lives under it.
+    ///
+    /// A refusal that only says "unregistered" leaves the caller with no move: it cannot see the
+    /// registry from here, so it has no way to tell a typo from a namespace that genuinely has to
+    /// be created, nor which sibling it should have used instead. A session spent an afternoon
+    /// ruling out payload size against what was really one missing prefix. The failure carries the
+    /// answer because that is the only place the caller is certain to be looking.
+    /// </summary>
+    private static string NearestRegistered(
+        IReadOnlyDictionary<string, CatalogNamespaceRecord> definitions,
+        string namespaceId,
+        string kind)
+    {
+        var candidate = namespaceId;
+        while (true)
+        {
+            var cut = candidate.LastIndexOf('.');
+            if (cut < 0) break;
+            candidate = candidate[..cut];
+            if (!definitions.ContainsKey(candidate)) continue;
+
+            var children = definitions.Keys
+                .Where(value => value.StartsWith(candidate + ".", StringComparison.Ordinal)
+                    && !value[(candidate.Length + 1)..].Contains('.', StringComparison.Ordinal))
+                .Order(StringComparer.Ordinal)
+                .Take(12)
+                .ToArray();
+            var siblings = children.Length == 0
+                ? "nothing is registered directly beneath it"
+                : "registered beneath it: " + string.Join(", ", children);
+            return $"The nearest registered ancestor is '{candidate}' ({siblings}). "
+                + $"Either use an id under one of those, or register '{namespaceId}' first "
+                + $"with commit(kind: \"system.namespace.register\") — a new namespace is reviewed "
+                + $"before anything may be written into it.";
+        }
+
+        return $"No ancestor of '{namespaceId}' is registered either, so this is a new root: "
+            + $"register it with commit(kind: \"system.namespace.register\") before writing '{kind}' records into it.";
     }
 
     private static void ConfigureCatalogNamespaces(ModelBuilder modelBuilder)
@@ -748,6 +792,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.Property(x => x.AllowedRootId).IsRequired();
             entity.Property(x => x.RelativePathOrGlob).IsRequired();
             entity.Property(x => x.LogicalIdentity).IsRequired();
+            entity.Property(x => x.RetiredReason).HasMaxLength(500);
             entity.HasIndex(x => new { x.ApplicationId, x.LogicalIdentity, x.Precedence }).IsUnique();
             entity.HasOne<ApplicationRegistryRecord>()
                 .WithMany()

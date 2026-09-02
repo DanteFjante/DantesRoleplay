@@ -1,4 +1,4 @@
----
+﻿---
 id: procedure.event.define
 category: event
 name: Define an event type
@@ -13,7 +13,8 @@ Define or revise an event type before any event can use it.
 
 ## Instructions
 1. Read existing event types and reuse one when its payload contract fits.
-2. Dry-run `commit(kind: "event-type")` before writing.
+2. Author the event type as a catalog file and run `.\roleplay validate catalog` before
+   importing it. There is no `event-type` commit kind.
 3. Give the type a permanent lower dotted id and an object-root JSON Schema Draft 2020-12 payload schema.
 4. Use a nonempty change note when revising an existing id.
 

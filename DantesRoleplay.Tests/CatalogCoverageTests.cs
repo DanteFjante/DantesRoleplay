@@ -623,6 +623,8 @@ public sealed class CatalogCoverageTests : IDisposable
         ["system_application_source.Precedence"] = "Live source registration, not carried by the catalog.",
         ["system_application_source.LogicalIdentity"] = "Live source registration, not carried by the catalog.",
         ["system_application_source.CreatedAtUtc"] = "Live source registration evidence, not carried by the catalog.",
+        ["system_application_source.RetiredAtUtc"] = "Live registry withdrawal evidence, not carried by the catalog.",
+        ["system_application_source.RetiredReason"] = "Live registry withdrawal evidence, not carried by the catalog.",
         ["system_application_source_scan.ApplicationId"] = "Runtime source-scan evidence, not carried by the catalog.",
         ["system_application_source_scan.SourceId"] = "Runtime source-scan evidence, not carried by the catalog.",
         ["system_application_source_scan.Generation"] = "Runtime source-scan evidence, not carried by the catalog.",

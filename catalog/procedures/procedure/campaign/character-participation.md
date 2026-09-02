@@ -1,4 +1,4 @@
----
+﻿---
 id: procedure.campaign.character-participation
 category: campaign
 name: Resolve campaign-owned character participation
@@ -20,9 +20,11 @@ only a complete active-to-withdrawn component replacement for a lifecycle root t
    verifier; they never read a campaign ID from a profile or accept one as a caller assertion.
 2. A valid result requires one active campaign root, one active participation component, and the
    two canonical empty-data relationships. Any other graph shape has no usable campaign scope.
-3. `commit(kind: "campaign")` accepts exactly `{ "operation": "attach-character-participation",
-   "campaignId": "campaign.*", "actorId": "actor.*" }` for a trusted-host C15 attachment. The
-   existing campaign kind is the public route; no new tool or kind exists.
+3. The attachment accepts exactly `{ "operation": "attach-character-participation",
+   "campaignId": "campaign.*", "actorId": "actor.*" }` for a trusted-host C15 attachment. There
+   is no `campaign` commit kind and no dedicated tool for it. An application supplies this operation as a mechanic: resolve it with
+  `query(kind: "system.interaction-plan")` and run it with
+  `commit(kind: "system.interaction-execute")`.
 4. The server derives the participation id as `campaignId + ".participation." + actorId`.
    Callers cannot provide it. An invalid/overlong derived id, collision, any prior participation
    history for the actor, inactive campaign, or absent actor rejects with no structural effects.

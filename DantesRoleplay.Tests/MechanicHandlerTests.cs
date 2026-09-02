@@ -1,5 +1,7 @@
-using System.Text.Json;
+﻿using System.Text.Json;
+using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.DataAccess;
+using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Mechanics;
 using Microsoft.EntityFrameworkCore;
@@ -147,6 +149,41 @@ public sealed class MechanicHandlerTests : IDisposable
         Assert.True(duplicate.Ok, Json(duplicate));
         Assert.Contains("no-near-duplicate", Json(duplicate.Data));
         Assert.Contains("false", Json(duplicate.Data));
+    }
+
+    /// <summary>
+    /// A namespace refusal is thrown during SaveChanges, deep inside the store, and the store
+    /// shares its DbContext with the audit log — so the rejected mechanic stayed tracked as Added
+    /// and the audit row's own SaveChanges threw the same refusal again. That second throw escaped
+    /// the tool wrapper, and the caller got an unstructured tool-invocation error with no code, no
+    /// fix and no audit row, for a rejection that had a perfectly good code all along. A session
+    /// spent an afternoon ruling out payload size, category, status and near-duplicates against
+    /// what was really "that namespace is not registered".
+    /// </summary>
+    [Fact]
+    public async Task An_unregistered_namespace_is_refused_with_its_own_code_not_an_opaque_failure()
+    {
+        await using var db = _fixture.CreateContext();
+        new SqliteCatalogNamespaceRegistry(db).Register(new CatalogNamespaceRegistration(
+            "mechanic", "mechanic", "Registered mechanic namespace.", [CatalogNamespaceKinds.Mechanic],
+            ReviewStatus: CatalogNamespaceReviewStatuses.Reviewed, ReviewNote: "Reviewed fixture."));
+
+        var result = await new MechanicHandler().WriteMechanicAsync(
+            new MechanicStore(db),
+            new OperationLog(db),
+            "mechanic.game.core.world.quest.register",
+            "quest",
+            "Register a quest",
+            "Creates one quest.",
+            "register a quest",
+            "{}",
+            "return { effects: [] };");
+
+        Assert.False(result.Ok, Json(result));
+        Assert.NotNull(result.Error);
+        Assert.Equal("NAMESPACE_UNKNOWN", result.Error!.Code);
+        Assert.Contains("mechanic.game.core.world.quest", result.Error.Why, StringComparison.Ordinal);
+        Assert.NotEmpty(result.Error.Fix);
     }
 
     [Fact]
