@@ -145,17 +145,17 @@ public sealed class CatalogWorldFeature10Tests : IDisposable
         AssertConditionLinks(contents.Relationships!.Relationships.Where(link => link.From == Condition).Select(link => new Link(link.From, link.To, link.Kind, link.Data)));
     }
 
-    private static ActionRunner Runner(DantesRoleplayDbContext db, WorldStore world, MechanicStore mechanics) =>
+    private static CatalogMechanicTestHarness Runner(DantesRoleplayDbContext db, WorldStore world, MechanicStore mechanics) =>
         new(db, mechanics, new ProjectionResolver(db), new JintMechanicEngine(), new EffectApplier(db, world, null, new EventLedger(db)), new OperationLog(db), new MechanicComposer(mechanics, new ProjectionResolver(db), new JintMechanicEngine()));
-    private static ActionRunner ReactiveRunner(DantesRoleplayDbContext db, WorldStore world, MechanicStore mechanics) =>
+    private static CatalogMechanicTestHarness ReactiveRunner(DantesRoleplayDbContext db, WorldStore world, MechanicStore mechanics) =>
         new(db, mechanics, new ProjectionResolver(db), new JintMechanicEngine(), ReactiveApplier(db, world), new OperationLog(db), new MechanicComposer(mechanics, new ProjectionResolver(db), new JintMechanicEngine()));
     private static EffectApplier ReactiveApplier(DantesRoleplayDbContext db, WorldStore world) =>
         new(db, world,
             new GuardRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine(), new WorldStore(db)),
             new EventLedger(db),
             new EventRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine(), new WorldStore(db)));
-    private static Task<ActionRunResult> ClockAsync(ActionRunner runner, int minutes) => runner.RunAsync(new ActionRequest { Intent = "advance world time", RoleEntityIds = new Dictionary<string, string> { ["world"] = Root }, Input = $"{{\"minutes\":{minutes}}}", Seed = 1011 });
-    private static Task<ActionRunResult> JourneyAsync(ActionRunner runner) => runner.RunAsync(new ActionRequest { Intent = "take the named gate-to-market route", RoleEntityIds = new Dictionary<string, string> { ["traveller"] = Traveller, ["origin"] = Gate, ["destination"] = Market, ["route"] = Route, ["world"] = Root }, Input = "{}", Seed = 1010 });
+    private static Task<ActionRunResult> ClockAsync(CatalogMechanicTestHarness runner, int minutes) => runner.RunAsync(new ActionRequest { Intent = "advance world time", RoleEntityIds = new Dictionary<string, string> { ["world"] = Root }, Input = $"{{\"minutes\":{minutes}}}", Seed = 1011 });
+    private static Task<ActionRunResult> JourneyAsync(CatalogMechanicTestHarness runner) => runner.RunAsync(new ActionRequest { Intent = "take the named gate-to-market route", RoleEntityIds = new Dictionary<string, string> { ["traveller"] = Traveller, ["origin"] = Gate, ["destination"] = Market, ["route"] = Route, ["world"] = Root }, Input = "{}", Seed = 1010 });
 
     private static async Task<State> StateAsync(WorldStore world)
     {

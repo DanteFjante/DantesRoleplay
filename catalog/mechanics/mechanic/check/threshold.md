@@ -4,7 +4,7 @@ category: check
 name: Test a value against a threshold
 status: active
 createdBy: "seed"
-changeNote: "Seeded from bootstrap rule file."
+changeNote: "Re-seeded: the embedded catalog mechanic changed."
 ---
 
 ## Description

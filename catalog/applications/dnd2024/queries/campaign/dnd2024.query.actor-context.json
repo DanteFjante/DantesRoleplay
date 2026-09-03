@@ -1,0 +1,42 @@
+{
+  "id": "dnd2024.query.actor-context",
+  "category": "game.core.campaign.read-model",
+  "name": "Actor context",
+  "description": "Returns one authorized campaign actor's participation, physical presence, current health, and conditions without biography, notes, or unrelated character data.",
+  "matches": ["show my actor context", "where is this character and what is their current state", "inspect campaign participant context"],
+  "roles": { "campaign": "The exact audience-authorized campaign.", "actor": "The exact audience-authorized actor." },
+  "executor": "mechanic-projection",
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.campaign.actor-context.project",
+    "version": 1,
+    "contentHash": "4F3BAEEA5759C117A65225AC946950EEA1DFAE7F994728FBED3270208685BD45",
+    "outputSchemaHash": "F5B23D36EE2A5EF9CE50FCCB3868EA12077D4C0EC428F32C63C8D607A1DB3A05"
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object", "additionalProperties": false,
+    "required": ["version", "campaignId", "actor", "participation", "identity", "presence", "hitPoints", "conditions"],
+    "properties": {
+      "version": { "const": 1 },
+      "campaignId": { "$ref": "#/$defs/id" },
+      "actor": { "$ref": "#/$defs/named" },
+      "participation": { "type": "object", "additionalProperties": false, "required": ["id", "status"], "properties": { "id": { "$ref": "#/$defs/id" }, "status": { "const": "active" } } },
+      "identity": { "anyOf": [{ "$ref": "#/$defs/identity" }, { "type": "null" }] },
+      "presence": { "type": "object", "additionalProperties": false, "required": ["containerId", "slot", "currentSceneLocationId", "presentInCurrentScene"], "properties": { "containerId": { "$ref": "#/$defs/nullableId" }, "slot": { "type": "string", "maxLength": 200 }, "currentSceneLocationId": { "$ref": "#/$defs/nullableId" }, "presentInCurrentScene": { "type": "boolean" } } },
+      "hitPoints": { "anyOf": [{ "$ref": "#/$defs/hitPoints" }, { "type": "null" }] },
+      "conditions": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/condition" } }
+    },
+    "$defs": {
+      "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "text": { "type": "string", "minLength": 1, "maxLength": 5000 },
+      "nullableText": { "type": ["string", "null"], "minLength": 1, "maxLength": 5000 },
+      "nullableId": { "type": ["string", "null"], "minLength": 1, "maxLength": 200 },
+      "named": { "type": "object", "additionalProperties": false, "required": ["id", "name"], "properties": { "id": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/text" } } },
+      "identity": { "type": "object", "additionalProperties": false, "required": ["pronouns", "appearance"], "properties": { "pronouns": { "$ref": "#/$defs/nullableText" }, "appearance": { "$ref": "#/$defs/nullableText" } } },
+      "hitPoints": { "type": "object", "additionalProperties": false, "required": ["current", "maximum", "temporary"], "properties": { "current": { "type": "integer", "minimum": 0 }, "maximum": { "type": "integer", "minimum": 1 }, "temporary": { "type": "integer", "minimum": 0 } } },
+      "condition": { "type": "object", "additionalProperties": false, "required": ["id", "level"], "properties": { "id": { "$ref": "#/$defs/id" }, "level": { "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 6 }, { "type": "null" }] } } }
+    }
+  },
+  "exposure": "model-visible",
+  "status": "active"
+}

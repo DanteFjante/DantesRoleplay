@@ -10,6 +10,7 @@ import type {
   ReadyHubEnvelope,
   WorldHistoryEvent,
 } from "../data/hub-types";
+import { legacyReferenceLabel } from "../data/legacy-reference-label.ts";
 import { classifyThalorienKnowledge } from "../data/thalorien-presentation.ts";
 
 function normalizeSlugWords(value: string | null): string | null {
@@ -60,30 +61,19 @@ function partyEntries(
     }));
 }
 
-function referenceLabel(value: string): string {
-  const parts = value.split(".").filter(Boolean);
-  const last = parts.at(-1) ?? value;
-  // Catalog content references carry a version suffix (for example `.v1`). The
-  // suffix is provenance, not the human-facing name; use the preceding slug.
-  const slug = /^v\d+$/u.test(last) && parts.length > 1
-    ? parts.at(-2) ?? last
-    : last;
-  return normalizeSlugWords(slug) ?? slug;
-}
-
 function canonicalSheetEntries(member: ConnectedPartyMember): PartyDossierEntry[] {
   const canonical = member.canonical;
   if (!canonical) return [];
   const entries: PartyDossierEntry[] = [];
   for (const membership of canonical.classes ?? []) {
-    const className = referenceLabel(membership.classId);
+    const detail = canonical.dossier.classes.find((entry) => entry.id === membership.id)?.definition;
     entries.push({
       id: `${member.id}:canonical:class:${membership.id}`,
       kind: "class",
-      title: `${className} · Level ${membership.level}`,
-      detail: membership.subclassId
-        ? `${referenceLabel(membership.subclassId)} subclass. Stored canonical class membership.`
-        : "Stored canonical class membership.",
+      title: `${membership.class.label} · Level ${membership.level}`,
+      detail: detail?.summary ?? (membership.subclass
+        ? `${membership.subclass.label} subclass. Stored canonical class membership.`
+        : "Stored canonical class membership."),
     });
   }
   if (canonical.hitPoints) {
@@ -107,10 +97,10 @@ function canonicalSheetEntries(member: ConnectedPartyMember): PartyDossierEntry[
   }
   for (const ability of canonical.abilities ?? []) {
     entries.push({
-      id: `${member.id}:canonical:ability:${ability.id}`,
+      id: `${member.id}:canonical:ability:${ability.ability.id}`,
       kind: "ability score",
-      title: referenceLabel(ability.id),
-      detail: `Score ${ability.score}. Modifiers remain derived by the rules owner.`,
+      title: ability.ability.label,
+      detail: `Score ${ability.score}; ${ability.modifier >= 0 ? "+" : ""}${ability.modifier} modifier.`,
     });
   }
   for (const speed of canonical.movement ?? []) {
@@ -118,10 +108,10 @@ function canonicalSheetEntries(member: ConnectedPartyMember): PartyDossierEntry[
       ? String(speed.numerator)
       : `${speed.numerator}/${speed.denominator}`;
     entries.push({
-      id: `${member.id}:canonical:movement:${speed.id}`,
+      id: `${member.id}:canonical:movement:${speed.kind.id}`,
       kind: "movement",
-      title: `${referenceLabel(speed.id)} speed`,
-      detail: `${amount} ${referenceLabel(speed.unitId)}.`,
+      title: `${speed.kind.label} speed`,
+      detail: `${amount} ${speed.unit.label}.`,
     });
   }
   if (canonical.body) {
@@ -129,7 +119,7 @@ function canonicalSheetEntries(member: ConnectedPartyMember): PartyDossierEntry[
       id: `${member.id}:canonical:size`,
       kind: "body",
       title: "Size",
-      detail: referenceLabel(canonical.body.sizeId),
+      detail: canonical.body.size.label,
     });
   }
   if (canonical.experience) {
@@ -142,10 +132,10 @@ function canonicalSheetEntries(member: ConnectedPartyMember): PartyDossierEntry[
   }
   for (const proficiency of canonical.proficiencies ?? []) {
     entries.push({
-      id: `${member.id}:canonical:proficiency:${proficiency.id}`,
+      id: `${member.id}:canonical:proficiency:${proficiency.proficiency.id}`,
       kind: "proficiency",
-      title: referenceLabel(proficiency.id),
-      detail: `${referenceLabel(proficiency.rankId)} rank. No bonus is calculated in the browser.`,
+      title: proficiency.proficiency.label,
+      detail: `${proficiency.rank.label} rank.`,
     });
   }
   return entries;
@@ -168,42 +158,70 @@ function canonicalBackstoryEntries(member: ConnectedPartyMember): PartyDossierEn
 }
 
 function canonicalOriginEntries(member: ConnectedPartyMember): PartyDossierEntry[] {
-  const origin = member.canonical?.origin;
-  if (!origin) return [];
+  const canonical = member.canonical;
+  const origin = canonical?.origin;
+  if (!canonical || !origin) return [];
   return [
     {
       id: `${member.id}:canonical:origin:species`,
       kind: "species",
-      title: referenceLabel(origin.speciesId),
-      detail: "Stored canonical species selection.",
+      title: origin.species.label,
+      detail: canonical.dossier.origin.species.summary ?? "Stored canonical species selection.",
     },
     {
       id: `${member.id}:canonical:origin:background`,
       kind: "background",
-      title: referenceLabel(origin.backgroundId),
-      detail: "Stored canonical background selection.",
+      title: origin.background.label,
+      detail: canonical.dossier.origin.background.summary ?? "Stored canonical background selection.",
     },
+    ...canonical.dossier.origin.traits.map((trait) => ({
+      id: `${member.id}:canonical:origin:trait:${trait.key}`,
+      kind: "trait",
+      title: trait.label,
+      detail: "Recorded origin trait; executable rules behavior is pending.",
+    })),
   ];
 }
 
 function canonicalInventoryEntries(member: ConnectedPartyMember): PartyDossierEntry[] {
   const canonical = member.canonical;
-  if (!canonical || canonical.inventoryStatus !== "ready") return [];
-  return canonical.inventory.map((item) => {
-    const placement = referenceLabel(item.slot);
+  if (!canonical) return [];
+  return canonical.inventory.items.map((item) => {
+    const definition = canonical.dossier.inventory.definitions.find((entry) => entry.id === item.definition.id);
+    const placement = legacyReferenceLabel(item.slot);
     const equipped = item.equipmentSlots.length > 0
-      ? ` Equipped in ${item.equipmentSlots.map(referenceLabel).join(", ")}.`
+      ? ` Equipped in ${item.equipmentSlots.map((entry) => entry.label).join(", ")}.`
       : "";
     return {
       id: `${member.id}:canonical:inventory:${item.id}`,
       kind: item.equipmentSlots.length > 0 ? "equipped" : "inventory",
       title: item.name,
-      detail: `Quantity ${item.quantity}. Placement: ${placement}.${equipped}`,
+      detail: `${definition?.summary ? `${definition.summary} ` : ""}Quantity ${item.quantity}. Placement: ${placement}.${equipped}`,
       ...(item.media?.illustration || item.media?.icon
         ? { media: item.media.illustration ?? item.media.icon }
         : {}),
     };
   });
+}
+
+function failedSectionState(result: Extract<
+  NonNullable<ConnectedPartyMember["canonicalResult"]>,
+  { status: "error" | "forbidden" }
+>) {
+  return result.status === "forbidden"
+    ? {
+        status: "forbidden" as const,
+        data: null,
+        failureCategory: "authorization" as const,
+        diagnosticId: result.diagnosticId,
+      }
+    : {
+        status: "error" as const,
+        data: null,
+        failureCategory: result.failureCategory,
+        diagnosticId: result.diagnosticId,
+        ...(result.httpStatus === undefined ? {} : { httpStatus: result.httpStatus }),
+      };
 }
 
 function projectParty(connection: ConnectedCampaignEnvelope): PartyMemberReadModel[] {
@@ -215,6 +233,16 @@ function projectParty(connection: ConnectedCampaignEnvelope): PartyMemberReadMod
     connection.knowledge.status === "ready";
 
   return members.map((member) => {
+    const canonicalResult = member.canonicalResult ?? (member.canonical ? {
+      status: "ready" as const,
+      data: member.canonical,
+      failureCategory: null,
+      diagnosticId: `canonical-character:${member.id}:legacy-ready`,
+    } : null);
+    const canonicalFailure = canonicalResult?.status === "error" || canonicalResult?.status === "forbidden"
+      ? canonicalResult
+      : null;
+    const canonicalFailed = canonicalFailure !== null;
     const provisionalSheet = partyEntries(member, ["class", "feature"]);
     const provisionalBackstory = partyEntries(member, ["background", "note"]);
     const provisionalOrigin = partyEntries(member, ["class", "background"]);
@@ -223,11 +251,33 @@ function projectParty(connection: ConnectedCampaignEnvelope): PartyMemberReadMod
     const projectedBackstory = canonicalBackstoryEntries(member);
     const projectedOrigin = canonicalOriginEntries(member);
     const projectedInventory = canonicalInventoryEntries(member);
-    const sheet = projectedSheet.length > 0 ? projectedSheet : provisionalSheet;
-    const backstory = projectedBackstory.length > 0 ? projectedBackstory : provisionalBackstory;
-    const origin = projectedOrigin.length > 0 ? projectedOrigin : provisionalOrigin;
-    const inventoryIsCanonical = member.canonical?.inventoryStatus === "ready";
-    const inventory = inventoryIsCanonical ? projectedInventory : provisionalInventory;
+    const sheet = member.canonical
+      ? projectedSheet
+      : (canonicalFailed ? [] : provisionalSheet);
+    const backstory = canonicalFailed
+      ? []
+      : (projectedBackstory.length > 0 ? projectedBackstory : provisionalBackstory);
+    const origin = canonicalFailed
+      ? []
+      : (projectedOrigin.length > 0 ? projectedOrigin : provisionalOrigin);
+    const inventoryIsCanonical = Boolean(member.canonical);
+    const inventory = inventoryIsCanonical
+      ? projectedInventory
+      : (canonicalFailed ? [] : provisionalInventory);
+    const sheetState = canonicalFailed
+      ? failedSectionState(canonicalFailure)
+      : {
+          status: sheet.length > 0 ? "ready" as const : "empty" as const,
+          data: sheet,
+          source: member.canonical ? "canonical" as const : "provisional" as const,
+        };
+    const inventoryState = canonicalFailed
+      ? failedSectionState(canonicalFailure)
+      : {
+          status: inventory.length > 0 ? "ready" as const : "empty" as const,
+          data: inventory,
+          source: inventoryIsCanonical ? "canonical" as const : "provisional" as const,
+        };
     const primaryDirection = origin[0]?.title ?? sheet[0]?.title ?? "Character details not yet recorded";
     return {
       id: member.id,
@@ -239,15 +289,21 @@ function projectParty(connection: ConnectedCampaignEnvelope): PartyMemberReadMod
       ...(member.media?.portrait ? { portrait: member.media.portrait } : {}),
       recordStatus: member.canonical
         ? "Canonical character state"
-        : (member.entries.length > 0 ? "Provisional character record" : "Identity only"),
+        : (canonicalFailed
+          ? "Canonical character unavailable"
+          : (member.entries.length > 0 ? "Provisional character record" : "Identity only")),
       sheetStatus: member.canonical
         ? "canonical"
-        : (provisionalSheet.length > 0 ? "provisional" : "empty"),
+        : (canonicalFailed ? "unavailable" : (provisionalSheet.length > 0 ? "provisional" : "empty")),
       inventoryStatus: inventoryIsCanonical
         ? (projectedInventory.length > 0 ? "canonical" : "empty")
-        : (member.canonical
+        : (canonicalFailed
+          ? "unavailable"
+          : member.canonical
           ? "unavailable"
           : (provisionalInventory.length > 0 ? "provisional" : "empty")),
+      sheetState,
+      inventoryState,
       sheet,
       knowledge: canAttachBoundKnowledge && member.current
         ? connection.knowledge.entries.map((entry, index) => ({

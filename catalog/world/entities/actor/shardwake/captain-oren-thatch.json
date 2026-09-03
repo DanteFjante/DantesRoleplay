@@ -1,0 +1,11 @@
+{
+  "id": "actor.shardwake.captain-oren-thatch",
+  "name": "Captain Oren Thatch",
+  "components": {
+    "game.core.world.motive": {
+      "status": "active",
+      "summary": "Oren wants to protect Lantern Harbor and his exhausted wardens, even if that means closing every sea lane and angering the Concord.",
+      "visibility": "public"
+    }
+  }
+}

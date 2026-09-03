@@ -2,7 +2,7 @@
 id: procedure.game.core.world.spatial
 category: game.core.world.spatial
 name: Govern display-only world map metadata
-governs: commit(kind: "component") declaring game.core.world.map.anchor or game.core.world.map.visual; commit(kind: "effects") recording or correcting reviewed map anchors and visual variants on World nodes
+governs: commit(kind: "system.component-type.register") declaring game.core.world.map.anchor or game.core.world.map.visual; commit(kind: "system.world-state.sync") recording or correcting reviewed map anchors and visual variants on World nodes
 status: active
 createdBy: "seed"
 changeNote: "Re-seeded: the bootstrap file changed."
@@ -13,6 +13,8 @@ Defines display placement and reviewed media selection for map consumers. An anc
 presentation metadata on one direct location within one active map plane. A map visual is optional
 presentation metadata owned by the world root or location whose plane it depicts. Containment,
 adjacency, routes, time, and audience knowledge remain the authoritative world model.
+
+## Matches
 
 ## Instructions
 1. Use `game.core.world.map.anchor` only on an active `game.core.world.location` directly

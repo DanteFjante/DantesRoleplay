@@ -72,7 +72,7 @@ public sealed class ApplicationClockBridgeTests : IDisposable
             new ApplicationMechanicProjectionMappingResolver(catalogs, stateSpaces, types, edges),
             evaluator, new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges), operations);
         ApplicationActionExecutionRequest Request(string input, string operationId) => new(
-            "clock-space", app, record.QualifiedId, record.ContentFingerprint,
+            "clock-space", app, record.QualifiedId, record.Version, record.ContentFingerprint,
             new Dictionary<string, string> { ["world"] = "world" }, input, 1,
             new(operationId, Hash(record.QualifiedId + "\n" + input)));
 

@@ -69,12 +69,31 @@ Write-Host "Starting as seat Role=$Role ..." -ForegroundColor Cyan
 
 # Keep this loop well under a remote shell's ~60s call budget: if the caller times out, the
 # teardown can take the freshly started server with it.
+$lastReadinessFailure = $null
 for ($i = 0; $i -lt 12; $i++) {
     Start-Sleep -Seconds 2
     if (Get-NetTCPConnection -LocalPort 6217 -State Listen -ErrorAction SilentlyContinue) {
-        Write-Host '    OK   listening on http://localhost:6217' -ForegroundColor Green
-        Write-Host '         Safe to close this window; the server keeps running.' -ForegroundColor DarkGray
-        return
+        try {
+            $readiness = Invoke-RestMethod `
+                -Uri 'http://localhost:6217/api/readiness/applications/dnd2024' `
+                -Method Get `
+                -TimeoutSec 5
+            if ($readiness.status -eq 'ready') {
+                Write-Host '    OK   listening on http://localhost:6217 and dnd2024 is ready' -ForegroundColor Green
+                Write-Host '         Safe to close this window; the server keeps running.' -ForegroundColor DarkGray
+                return
+            }
+            $lastReadinessFailure = $readiness | ConvertTo-Json -Depth 5 -Compress
+        }
+        catch {
+            $lastReadinessFailure = if ($_.ErrorDetails.Message) { $_.ErrorDetails.Message } else { $_.Exception.Message }
+        }
     }
 }
-Write-Host '    FAIL never started listening on 6217.' -ForegroundColor Red
+if (Get-NetTCPConnection -LocalPort 6217 -State Listen -ErrorAction SilentlyContinue) {
+    Write-Host '    FAIL listening on 6217, but dnd2024 readiness failed.' -ForegroundColor Red
+    if ($lastReadinessFailure) { Write-Host "         $lastReadinessFailure" -ForegroundColor Red }
+}
+else {
+    Write-Host '    FAIL never started listening on 6217.' -ForegroundColor Red
+}

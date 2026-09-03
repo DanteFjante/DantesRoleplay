@@ -11,6 +11,8 @@ changeNote: "Imported from the catalog."
 ## Description
 Defines a creature's complete known D&D 2024 Simple/Martial weapon-category proficiency state and its closed administrative writer. It records category membership only; later attack resolution derives Proficiency Bonus and compares this state to a canonical weapon profile.
 
+## Matches
+
 ## Instructions
 Source and scope
 

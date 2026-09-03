@@ -1,0 +1,12 @@
+{
+  "id": "furnishing",
+  "owner": "furnishing",
+  "description": "Namespace for authored location-furnishing entity records.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for furnishing entities created and placed by the focused location primitives."
+}

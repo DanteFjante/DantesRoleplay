@@ -1,16 +1,18 @@
-﻿---
+---
 id: procedure.game.core.world.knowledge
 category: game.core.world.knowledge
 name: Govern shared-game world knowledge
-governs: commit(kind: "component") declaring game.core.world.fact, game.core.world.rumour, game.core.world.secret, game.core.world.clue, game.core.world.knowledge.classification, game.core.world.knowledge.validity, game.core.world.interaction, or game.core.world.knowledge.acquisition; commit(kind: "effects") recording or correcting knowledge records and links; commit(kind: "action") revealing one clue or confirming one rumour; the perspective-safe answer returned to a configured authenticated or development audience
+governs: commit(kind: "system.component-type.register") declaring game.core.world.fact, game.core.world.rumour, game.core.world.secret, game.core.world.clue, game.core.world.knowledge.classification, game.core.world.knowledge.validity, game.core.world.interaction, or game.core.world.knowledge.acquisition; commit(kind: "system.world-state.sync") recording or correcting knowledge records and links; commit(kind: "application.action.execute") revealing one clue or confirming one rumour; the perspective-safe answer returned to a configured authenticated or development audience
 status: active
 createdBy: "seed"
-changeNote: "Seeded from bootstrap file."
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
 Records durable trusted-GM world knowledge. Facts, rumours, secrets, and clues are separate
 entities with closed data; scope, subject, and evidentiary links are explicit relationships.
+
+## Matches
 
 ## Instructions
 1. Use exactly one knowledge component on a knowledge entity. All records have complete status,

@@ -1,4 +1,4 @@
-﻿---
+---
 id: procedure.information.manage
 category: information
 name: Manage generic information sources and records
@@ -10,6 +10,8 @@ changeNote: "Seeded from bootstrap file."
 
 ## Description
 Create bounded user-defined information outside game, campaign, world, and ruleset state.
+
+## Matches
 
 ## Instructions
 1. Create a source with a stable id, generic scope id, name, optional description, and JSON-object metadata schema.

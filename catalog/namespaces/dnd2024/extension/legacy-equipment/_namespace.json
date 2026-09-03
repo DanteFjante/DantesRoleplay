@@ -1,9 +1,13 @@
 {
   "id": "dnd2024.extension.legacy-equipment",
   "owner": "dnd2024",
-  "description": "Optional compatibility equipment retained outside the D&D 2024 core catalog.",
-  "allowedKinds": ["entity"],
-  "aliases": ["legacy equipment compatibility"],
+  "description": "Optional compatibility equipment retained outside the D\u0026D 2024 core catalog.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [
+    "legacy equipment compatibility"
+  ],
   "enabled": true,
   "reviewStatus": "reviewed",
   "reviewNote": "Reviewed for the legacy equipment compatibility extension package."

@@ -82,6 +82,10 @@ public sealed class MechanicComposer(
                         : child.Error;
                     return CompositionResult.Failed($"CHILD_FAILED ({resultKey}): {detail}");
                 }
+                if (declaration.MechanicVersion > 0
+                    && (child.Mechanic.Version != declaration.MechanicVersion
+                        || child.Mechanic.SourceHash != declaration.ContentFingerprint))
+                    return CompositionResult.Failed($"CHILD_STALE ({resultKey}): '{declaration.MechanicId}' no longer matches its exact version and fingerprint.");
 
                 results.Add(new ChildMechanicResult(
                     child.Mechanic.Id,
@@ -166,9 +170,40 @@ public sealed class MechanicComposer(
     {
         var items = new List<PendingInvocation>();
 
+        if (!string.IsNullOrWhiteSpace(declaration.ForEachInputProperty))
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(projection.Input);
+                if (!document.RootElement.TryGetProperty(declaration.ForEachInputProperty, out var selected)
+                    || selected.ValueKind != JsonValueKind.Array)
+                    return new([], $"CHILD_INPUT_FAILED ({resultKey}): Parent input property '{declaration.ForEachInputProperty}' must be an array.");
+                if (selected.GetArrayLength() > MaxChildrenPerDeclaration)
+                    return new([], $"CHILD_LIMIT ({resultKey}): '{declaration.ForEachInputProperty}' has {selected.GetArrayLength()} items; the limit is {MaxChildrenPerDeclaration}.");
+                foreach (var value in selected.EnumerateArray())
+                {
+                    if (value.ValueKind != JsonValueKind.Object)
+                        return new([], $"CHILD_INPUT_FAILED ({resultKey}): Every '{declaration.ForEachInputProperty}' item must be an object.");
+                    var childInput = value;
+                    if (!string.IsNullOrWhiteSpace(declaration.InputFromEachItemProperty)
+                        && (!value.TryGetProperty(declaration.InputFromEachItemProperty, out childInput)
+                            || childInput.ValueKind != JsonValueKind.Object))
+                        return new([], $"CHILD_INPUT_FAILED ({resultKey}): Every '{declaration.ForEachInputProperty}' item must contain an object property '{declaration.InputFromEachItemProperty}'.");
+                    var bindings = BindRoles(resultKey, declaration, projection, itemId: null, childInput);
+                    if (bindings.Error.Length > 0) return new([], bindings.Error);
+                    items.Add(new PendingInvocation(bindings.RoleEntityIds, childInput.GetRawText(), ordinal++));
+                }
+                return new(items, string.Empty);
+            }
+            catch (JsonException ex)
+            {
+                return new([], $"CHILD_INPUT_FAILED ({resultKey}): Parent input could not be parsed: {ex.Message}");
+            }
+        }
+
         if (string.IsNullOrWhiteSpace(declaration.ForEachContentsOf))
         {
-            var bindings = BindRoles(resultKey, declaration, projection, itemId: null);
+            var bindings = BindRoles(resultKey, declaration, projection, itemId: null, inputItem: null);
             var input = ResolveInput(resultKey, declaration, projection.Input, completedChildren, itemId: null);
             if (bindings.Error.Length > 0 || input.Error.Length > 0)
                 return new([], bindings.Error.Length > 0 ? bindings.Error : input.Error);
@@ -192,7 +227,7 @@ public sealed class MechanicComposer(
 
         foreach (var item in contents)
         {
-            var bindings = BindRoles(resultKey, declaration, projection, item.Id);
+            var bindings = BindRoles(resultKey, declaration, projection, item.Id, inputItem: null);
             var input = ResolveInput(resultKey, declaration, projection.Input, completedChildren, item.Id);
             if (bindings.Error.Length > 0 || input.Error.Length > 0)
                 return new([], bindings.Error.Length > 0 ? bindings.Error : input.Error);
@@ -207,7 +242,8 @@ public sealed class MechanicComposer(
         string resultKey,
         ChildMechanicRequirement declaration,
         MechanicProjection projection,
-        string? itemId)
+        string? itemId,
+        JsonElement? inputItem)
     {
         var roleEntityIds = new Dictionary<string, string>(StringComparer.Ordinal);
 
@@ -219,6 +255,18 @@ public sealed class MechanicComposer(
                     return new(new Dictionary<string, string>(), $"CHILD_BINDING_FAILED ({resultKey}): '$item' is only valid while iterating contents.");
 
                 roleEntityIds[childRole] = itemId;
+                continue;
+            }
+
+            if (source.StartsWith("$input.", StringComparison.Ordinal))
+            {
+                var property = source[7..];
+                if (inputItem is not JsonElement input || input.ValueKind != JsonValueKind.Object
+                    || !input.TryGetProperty(property, out var value) || value.ValueKind != JsonValueKind.String
+                    || string.IsNullOrWhiteSpace(value.GetString()))
+                    return new(new Dictionary<string, string>(),
+                        $"CHILD_BINDING_FAILED ({resultKey}): Input property '{property}' must contain an entity id.");
+                roleEntityIds[childRole] = value.GetString()!;
                 continue;
             }
 
@@ -332,7 +380,7 @@ public sealed class MechanicComposer(
     {
         var remainingDependencies = declarations.Keys.ToDictionary(
             key => key,
-            key => declarations[key].InputFromChildData is { } binding ? 1 : 0,
+            key => Dependencies(declarations[key]).Distinct(StringComparer.Ordinal).Count(),
             StringComparer.Ordinal);
         var dependents = declarations.Keys.ToDictionary(
             key => key,
@@ -341,10 +389,9 @@ public sealed class MechanicComposer(
 
         foreach (var (consumer, declaration) in declarations)
         {
-            if (declaration.InputFromChildData is not { } binding || !dependents.TryGetValue(binding.ResultKey, out var sourceDependents))
-                continue;
-
-            sourceDependents.Add(consumer);
+            foreach (var dependency in Dependencies(declaration).Distinct(StringComparer.Ordinal))
+                if (dependents.TryGetValue(dependency, out var sourceDependents))
+                    sourceDependents.Add(consumer);
         }
 
         var ready = new SortedSet<string>(
@@ -368,7 +415,13 @@ public sealed class MechanicComposer(
 
         return ordered.Count == declarations.Count
             ? new OrderedChildren(ordered, string.Empty)
-            : new OrderedChildren([], "INVALID_CHILD_DECLARATION: inputFromChildData declarations must form an acyclic sibling graph.");
+            : new OrderedChildren([], "INVALID_CHILD_DECLARATION: Child input and after dependencies must form an acyclic sibling graph.");
+
+        static IEnumerable<string> Dependencies(ChildMechanicRequirement declaration)
+        {
+            foreach (var dependency in declaration.After) yield return dependency;
+            if (declaration.InputFromChildData is { } source) yield return source.ResultKey;
+        }
     }
 
     private sealed record PendingInvocation(IReadOnlyDictionary<string, string> RoleEntityIds, string Input, int Ordinal);

@@ -1,14 +1,14 @@
 {
   "id": "dnd2024.game",
   "owner": "dnd2024",
-  "description": "D&D 2024 application-owned runtime component-type namespaces.",
+  "description": "D\u0026D 2024 application-owned runtime component-type namespaces.",
   "allowedKinds": [
     "component-type"
   ],
   "aliases": [
-    "D&D runtime contracts"
+    "D\u0026D runtime contracts"
   ],
   "enabled": true,
   "reviewStatus": "reviewed",
-  "reviewNote": "Reviewed as the application-owned parent for generic game.core component contracts used by D&D 2024."
+  "reviewNote": "Reviewed as the application-owned parent for generic game.core component contracts used by D\u0026D 2024."
 }

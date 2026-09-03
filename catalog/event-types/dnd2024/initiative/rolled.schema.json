@@ -10,7 +10,7 @@
       "additionalProperties": false,
       "required": ["sourceId", "locator"],
       "properties": {
-        "sourceId": {"const": "dnd2024.source.srd-5.2.1"},
+        "sourceId": {"const": "source.dnd2024.srd-5.2.1"},
         "locator": {"const": "Playing the Game > Combat > The Order of Combat > Initiative"}
       }
     }

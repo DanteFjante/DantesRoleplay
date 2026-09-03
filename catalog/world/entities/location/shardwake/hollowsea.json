@@ -1,0 +1,16 @@
+{
+  "id": "location.shardwake.hollowsea",
+  "name": "Hollow Sea",
+  "container": {
+    "id": "world.shardwake",
+    "slot": "region"
+  },
+  "components": {
+    "game.core.world.location": {
+      "status": "active",
+      "summary": "The flooded central basin where drowned towers break the surface when storms pull the tide apart.",
+      "kind": "region",
+      "visibility": "public"
+    }
+  }
+}

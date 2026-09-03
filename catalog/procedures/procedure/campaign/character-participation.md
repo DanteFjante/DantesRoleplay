@@ -1,4 +1,4 @@
-﻿---
+---
 id: procedure.campaign.character-participation
 category: campaign
 name: Resolve campaign-owned character participation
@@ -14,6 +14,8 @@ verifier returns scope only when the campaign, participation state, and both can
 links are structurally valid and active. Its Slice 2 attach request creates that complete structure
 in one campaign transaction and never changes the actor. Its internal withdrawal planner returns
 only a complete active-to-withdrawn component replacement for a lifecycle root to apply.
+
+## Matches
 
 ## Instructions
 1. Character and campaign consumers resolve an actor only through the internal active-scope

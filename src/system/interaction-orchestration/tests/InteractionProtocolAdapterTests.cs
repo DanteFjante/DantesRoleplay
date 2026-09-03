@@ -1,5 +1,7 @@
 using DantesRoleplay.Applications;
+using DantesRoleplay.ApplicationExecution;
 using DantesRoleplay.Authorization;
+using DantesRoleplay.EcsEffects;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Operations;
@@ -68,6 +70,54 @@ public sealed class InteractionProtocolAdapterTests
             .RootElement.GetProperty("learningIntent").GetProperty("intentText").GetString());
     }
 
+    [Fact]
+    public async Task Exact_application_action_is_one_authorized_idempotent_call_with_structured_follow_up()
+    {
+        var actions = new Actions();
+        var payload = "{\"idempotencyKey\":\"action.1\",\"applicationId\":\"fixture-app\"," +
+            "\"stateSpaceId\":\"state.1\",\"qualifiedMechanicId\":\"fixture-app.mechanic.exact\"," +
+            "\"mechanicVersion\":7,\"contentFingerprint\":\"" + new string('A', 64) + "\"," +
+            "\"roleEntityIds\":{\"subject\":\"entity.1\"},\"input\":{\"value\":2}}";
+
+        var result = await new CommitMcpTool().CommitAsync(
+            log: new Log(),
+            kind: "application.action.execute", payload: payload, intent: "Execute exact action.",
+            proceduresUsed: ["procedure.system.use"], privateOperator: new Authorizer(),
+            applicationActions: actions);
+
+        Assert.True(result.Ok, System.Text.Json.JsonSerializer.Serialize(result));
+        Assert.NotNull(actions.Request);
+        Assert.Equal(7, actions.Request!.MechanicVersion);
+        Assert.Equal("fixture-app.mechanic.exact", actions.Request.QualifiedMechanicId);
+        Assert.Equal("{\"value\":2}", actions.Request.InputJson);
+        Assert.Equal(32, actions.Request.ExecutionIdentity.OperationId.Length);
+        using var data = System.Text.Json.JsonSerializer.SerializeToDocument(result.Data,
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+        Assert.Equal("The fixture changes.", data.RootElement.GetProperty("narration").GetString());
+        Assert.Equal("entity.1", data.RootElement.GetProperty("affectedEntityIds")[0].GetString());
+        Assert.Equal("application.action.execute.operation", data.RootElement.GetProperty("receipt")
+            .GetProperty("operationId").GetString());
+        Assert.Equal("mcp.query.entities", data.RootElement.GetProperty("nextActions")[0]
+            .GetProperty("capabilityId").GetString());
+    }
+
+    [Fact]
+    public async Task Exact_application_action_authorizes_before_parsing()
+    {
+        var actions = new Actions();
+        var authorization = new Authorizer(false);
+
+        var result = await new CommitMcpTool().CommitAsync(
+            log: new Log(),
+            kind: "application.action.execute", payload: "not-json",
+            privateOperator: authorization, applicationActions: actions);
+
+        Assert.False(result.Ok);
+        Assert.Equal("DENIED", result.Error?.Code);
+        Assert.Equal(PrivateOperatorCapability.Modify, authorization.LastCapability);
+        Assert.Null(actions.Request);
+    }
+
     private static Task<ToolEnvelope> QueryAsync(Gateway gateway, string request) =>
         new QueryMcpTool().QueryAsync(
             procedures: null!, world: null!, graphs: null!, mechanics: null!, eventTypes: null!,
@@ -76,8 +126,8 @@ public sealed class InteractionProtocolAdapterTests
             privateOperator: new Authorizer(), interactionGateway: gateway);
 
     private static Task<ToolEnvelope> CommitAsync(Gateway gateway, string payload) =>
-        new CommitMcpTool().CommitAsync(world: null!, effects: null!, mechanics: null!, actions: null!,
-            log: new Log(), kind: "system.interaction-execute", payload: payload, intent: "fixture",
+        new CommitMcpTool().CommitAsync(log: new Log(), kind: "system.interaction-execute",
+            payload: payload, intent: "fixture",
             proceduresUsed: ["procedure.system.use"], privateOperator: new Authorizer(),
             interactionGateway: gateway);
 
@@ -127,11 +177,44 @@ public sealed class InteractionProtocolAdapterTests
         }
     }
 
-    private sealed class Authorizer : IPrivateOperatorRequestAuthorizer
+    private sealed class Authorizer(bool allowed = true) : IPrivateOperatorRequestAuthorizer
     {
-        public PrivateOperatorAuthorizationDecision Authorize(PrivateOperatorCapability capability) =>
-            new(true, "ALLOWED", "", new("principal." + new string('a', 64), "fixture", "read",
-                "system.private-host", "fixture", true, "ALLOWED"));
+        public PrivateOperatorCapability? LastCapability { get; private set; }
+
+        public PrivateOperatorAuthorizationDecision Authorize(PrivateOperatorCapability capability)
+        {
+            LastCapability = capability;
+            return new(allowed, allowed ? "ALLOWED" : "DENIED", allowed ? "" : "Authenticate.",
+                new("principal." + new string('a', 64), "fixture", "modify",
+                    "system.private-host", "fixture", allowed, allowed ? "ALLOWED" : "DENIED"));
+        }
+    }
+
+    private sealed class Actions : IApplicationActionRunner
+    {
+        public ApplicationActionExecutionRequest? Request { get; private set; }
+
+        public Task<ApplicationActionExecutionResult> RunAsync(
+            ApplicationActionExecutionRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            Request = request;
+            return Task.FromResult(new ApplicationActionExecutionResult(
+                ApplicationActionExecutionDisposition.Succeeded,
+                "application.action.execute.operation",
+                request.QualifiedMechanicId,
+                request.ContentFingerprint,
+                request.Seed,
+                "The fixture changes.",
+                1,
+                [])
+            {
+                MechanicVersion = request.MechanicVersion,
+                AffectedEntityIds = ["entity.1"],
+                EffectReceipts = [new(0, ApplicationEcsEffectType.ComponentSet,
+                    "entity.1", "fixture.component", 2)]
+            });
+        }
     }
 
     private sealed class Log : IOperationLog

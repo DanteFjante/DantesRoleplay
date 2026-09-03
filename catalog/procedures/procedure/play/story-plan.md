@@ -1,4 +1,4 @@
-﻿---
+---
 id: procedure.play.story-plan
 category: play
 name: Execute a bounded story plan
@@ -12,6 +12,8 @@ changeNote: "Seeded from bootstrap file."
 Accept one small remote-story-model plan, then let the trusted backend resolve each semantic step
 serially. The backend alone retrieves the current procedure contracts, answers authorized knowledge,
 selects and validates mechanics, commits action effects, and returns a bounded handoff for narration.
+
+## Matches
 
 ## Instructions
 1. Start only a linear plan of one to six ordered steps. Each step is exactly `campaign-context`,

@@ -1,0 +1,27 @@
+{
+  "id": "faction.shardwake.tidebound-concord",
+  "name": "The Tidebound Concord",
+  "components": {
+    "game.core.world.faction": {
+      "visibility": "public",
+      "assets": [
+        "Thirteen beacon towers",
+        "The Concord chart archive"
+      ],
+      "goals": [
+        "Keep the beacon network independent.",
+        "Prevent a second Shattering."
+      ],
+      "summary": "A league of navigators, beacon keepers, and island delegates that preserves common sea lanes while resisting any single throne.",
+      "status": "active",
+      "methods": [
+        "Share charts through sworn navigators.",
+        "Broker island disputes before fleets mobilize."
+      ],
+      "agenda": {
+        "summary": "Find who caused the impossible thirteenth signal before panic closes the sea lanes.",
+        "state": "ready"
+      }
+    }
+  }
+}

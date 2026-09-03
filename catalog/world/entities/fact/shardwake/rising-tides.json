@@ -1,0 +1,16 @@
+{
+  "id": "fact.shardwake.rising-tides",
+  "name": "The Rising Tides",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Each skyglass awakening is followed by a local black tide that rises against wind and moon.",
+      "visibility": "gm",
+      "provenance": "Authored during the autonomous MCP machine-simulation world-creation session on 2026-09-01."
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "relationship",
+      "sensitivity": "secret"
+    }
+  }
+}

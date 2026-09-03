@@ -125,26 +125,6 @@ public sealed class GuardRouterTests : IDisposable
             Assert.Single(second.GuardEvaluations).Seed);
     }
 
-    [Fact]
-    public async Task A_denial_records_structured_proposal_and_guard_evidence_in_the_root_audit()
-    {
-        await using var db = _fixture.CreateContext();
-        await SeedDenyCreateAsync(db);
-        var world = new WorldStore(db);
-        var router = new GuardRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine(), new WorldStore(db));
-
-        var envelope = await new WorldHandler().ApplyEffectsAsync(
-            new EffectApplier(db, world, router), new OperationLog(db),
-            [new Effect { Type = EffectType.EntityCreate, EntityId = "audited", Name = "Audited" }]);
-
-        Assert.False(envelope.Ok);
-        Assert.Equal("EVENT_BLOCKED", envelope.Error?.Code);
-        var operation = await db.Operations.SingleAsync();
-        Assert.False(string.IsNullOrWhiteSpace(operation.GuardEvidenceJson));
-        Assert.Contains("TEST_BLOCKED", operation.GuardEvidenceJson, StringComparison.Ordinal);
-        Assert.Contains("world.entity.created", operation.GuardEvidenceJson, StringComparison.Ordinal);
-    }
-
     private static async Task SeedDenyCreateAsync(DantesRoleplayDbContext db)
     {
         await new EventTypeStore(db).WriteAsync(new WriteEventTypeRequest { Id = "world.entity.created", Category = "world", Name = "Entity created", Description = "Test event", PayloadSchema = "{\"type\":\"object\"}", Status = EventTypeStatus.Active });

@@ -4945,11 +4945,11 @@ public sealed class Dnd2024AbilityCheckTests
         var replay = await harness.Runner.RunAsync(request);
 
         Assert.True(evaluated.Ok, evaluated.Run?.Error ?? string.Join("; ", evaluated.Problems));
-        Assert.Equal(20, evaluated.Run!.Output.Effects.Count);
+        Assert.Equal(21, evaluated.Run!.Output.Effects.Count);
         Assert.Empty(evaluated.Run.Output.Events);
         Assert.Empty(evaluated.Run.Output.Notifications);
         Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, created.Disposition);
-        Assert.Equal(20, created.AppliedEffectCount);
+        Assert.Equal(21, created.AppliedEffectCount);
         Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replay.Disposition);
         Assert.NotNull(await harness.Entities.GetEntityAsync(DndHarness.StateSpaceId, actorId));
 
@@ -5011,7 +5011,16 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.Equal("basic-playable", record.RootElement.GetProperty("status").GetString());
         Assert.Equal("soldier-fighter-level-1-v1",
             record.RootElement.GetProperty("templateKey").GetString());
-        Assert.Equal(12, record.RootElement.GetProperty("appliedComponentIds").GetArrayLength());
+        Assert.Equal(13, record.RootElement.GetProperty("appliedComponentIds").GetArrayLength());
+        Assert.Contains("dnd2024.character.origin-selections",
+            record.RootElement.GetProperty("appliedComponentIds").EnumerateArray()
+                .Select(value => value.GetString()));
+        using var origin = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, actorId, "dnd2024.character.origin-selections"))!.ValueJson);
+        Assert.Equal("dnd2024.content.species.human.v1",
+            origin.RootElement.GetProperty("speciesRef").GetProperty("entityId").GetString());
+        Assert.Equal("dnd2024.content.background.soldier.v1",
+            origin.RootElement.GetProperty("backgroundRef").GetProperty("entityId").GetString());
         Assert.DoesNotContain("dnd2024.combat.turn-budget",
             record.RootElement.GetProperty("appliedComponentIds").EnumerateArray()
                 .Select(value => value.GetString()));
@@ -5064,6 +5073,11 @@ public sealed class Dnd2024AbilityCheckTests
             ApplicationIdentifier.Parse("dnd2024"),
             "dnd2024.query.character-sheet",
             new Dictionary<string, string> { ["subject"] = actorId }));
+        var registeredSheetV2 = await harness.ReadModels.ReadAsync(new(
+            DndHarness.StateSpaceId,
+            ApplicationIdentifier.Parse("dnd2024"),
+            "dnd2024.query.character-sheet-v2",
+            new Dictionary<string, string> { ["subject"] = actorId }));
         var initiative = await harness.EvaluateRolesAsync("dnd2024.mechanic.initiative.roll",
             new Dictionary<string, string> { ["subject"] = actorId }, "{}", 17);
         Assert.True(sheet.Ok, sheet.Run?.Error);
@@ -5088,11 +5102,24 @@ public sealed class Dnd2024AbilityCheckTests
             Assert.Equal(6, registered.RootElement.GetProperty("abilities").GetArrayLength());
             Assert.Equal(18, registered.RootElement.GetProperty("skills").GetArrayLength());
         }
+        using (var registered = JsonDocument.Parse(registeredSheetV2.DataJson))
+        {
+            Assert.Equal(2, registered.RootElement.GetProperty("version").GetInt32());
+            Assert.Equal("Fighter", registered.RootElement.GetProperty("classes")[0]
+                .GetProperty("class").GetProperty("label").GetString());
+            Assert.Equal("Strength", registered.RootElement.GetProperty("abilities")[0]
+                .GetProperty("ability").GetProperty("label").GetString());
+            Assert.Equal(0, registered.RootElement.GetProperty("wallet")
+                .GetProperty("copperValue").GetInt32());
+        }
         Assert.Matches("^[0-9A-F]{64}$", registeredSheet.StateSpaceFingerprint);
         Assert.Matches("^[0-9A-F]{64}$", registeredSheet.ResolutionFingerprint);
         Assert.Matches("^[0-9A-F]{64}$", registeredSheet.OutputSchemaHash);
         Assert.Matches("^[0-9A-F]{64}$", registeredSheet.ResultFingerprint);
         Assert.Matches("^[0-9A-F]{64}$", registeredSheet.SourceRevisionFingerprint);
+        Assert.Matches("^[0-9A-F]{64}$", registeredSheetV2.OutputSchemaHash);
+        Assert.Matches("^[0-9A-F]{64}$", registeredSheetV2.ResultFingerprint);
+        Assert.Matches("^[0-9A-F]{64}$", registeredSheetV2.SourceRevisionFingerprint);
         Assert.True(initiative.Ok, initiative.Run?.Error);
     }
 
@@ -7185,7 +7212,8 @@ public sealed class Dnd2024AbilityCheckTests
             var record = Record(localMechanicId);
             var subject = record.Summary.QualifiedId + "\n" + subjectId + "\n" + input + "\n" + seed;
             var fingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(subject)));
-            return new(StateSpaceId, Application, record.Summary.QualifiedId, record.Summary.ContentFingerprint,
+            return new(StateSpaceId, Application, record.Summary.QualifiedId, record.Summary.Version,
+                record.Summary.ContentFingerprint,
                 new Dictionary<string, string> { ["subject"] = subjectId }, input, seed,
                 new(operationId, fingerprint));
         }
@@ -7195,7 +7223,8 @@ public sealed class Dnd2024AbilityCheckTests
         {
             var record = Record(localMechanicId);
             var fingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(record.Summary.QualifiedId + "\n" + input + "\n" + seed)));
-            return new(StateSpaceId, Application, record.Summary.QualifiedId, record.Summary.ContentFingerprint,
+            return new(StateSpaceId, Application, record.Summary.QualifiedId, record.Summary.Version,
+                record.Summary.ContentFingerprint,
                 roles, input, seed, new(operationId, fingerprint));
         }
 

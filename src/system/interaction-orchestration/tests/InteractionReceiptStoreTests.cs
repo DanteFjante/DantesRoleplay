@@ -88,6 +88,37 @@ public sealed class InteractionReceiptStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task Recent_receipt_context_is_session_scoped_revision_bound_and_reauthorized()
+    {
+        await using var db = _fixture.CreateContext();
+        var policy = new TestAuthorizationPolicy();
+        var store = new InteractionReceiptStore(db, policy);
+        var resolution = (await store.AppendResolutionAsync(Resolution("recent.1", "Inspect"))).Receipt!;
+        var consent = new InteractionExecutionConsentReference(resolution.Id,
+            resolution.ProposalFingerprint!, Principal, App(), "state.1", "recent.execute.1");
+        await store.AppendExecutionAsync(new(consent, HashB,
+            InteractionExecutionReceiptDisposition.Succeeded, "Completed.", [],
+            [new(1, "step.1", InteractionExecutionStepDisposition.Succeeded)]));
+
+        var recent = await store.ReadRecentAsync(ReadRequest(App(), "state.1"), "session.1", 6);
+        var otherSession = await store.ReadRecentAsync(ReadRequest(App(), "state.1"), "session.other", 6);
+
+        Assert.Equal(2, recent.Count);
+        Assert.Contains(recent, value => value.Receipt.Kind == "resolution");
+        Assert.Contains(recent, value => value.Receipt.Kind == "execution");
+        Assert.All(recent, value =>
+        {
+            Assert.Equal("session.1", value.SessionContextId);
+            Assert.Equal(HashA, value.ApplicationFingerprint);
+            Assert.Equal("revision.1", value.StateRevision);
+            Assert.Equal(HashB, value.EffectiveSetFingerprint);
+            Assert.StartsWith("receipt:interaction-receipt.", value.Reference, StringComparison.Ordinal);
+        });
+        Assert.Empty(otherSession);
+        Assert.Equal(4, policy.EvaluationCount);
+    }
+
+    [Fact]
     public async Task Future_execution_receipts_link_existing_operations_without_executing_an_action()
     {
         await using var db = _fixture.CreateContext();
@@ -217,9 +248,11 @@ public sealed class InteractionReceiptStoreTests : IDisposable
         using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();
         var store = scope.ServiceProvider.GetRequiredService<IInteractionReceiptStore>();
+        var recent = scope.ServiceProvider.GetRequiredService<IInteractionRecentReceiptReader>();
         var policy = scope.ServiceProvider.GetRequiredService<IInteractionAuthorizationPolicy>();
 
         Assert.NotNull(store);
+        Assert.Same(store, recent);
         var decision = policy.Evaluate(ReadRequest(App(), "state.1"));
         Assert.False(decision.Allowed);
         Assert.Equal("INTERACTION_AUTHORIZATION_NOT_CONFIGURED", decision.Code);

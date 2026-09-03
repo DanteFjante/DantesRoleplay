@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using DantesRoleplay.AI;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.SystemCapabilities;
@@ -15,7 +14,8 @@ namespace DantesRoleplay.MCPServer.Mcp;
 /// </summary>
 public sealed class DirectCapabilityAiToolSource(
     IServiceProvider services,
-    IPrivateOperatorAuthorizationPolicy authorization) : ISystemAiToolSource
+    IPrivateOperatorAuthorizationPolicy authorization,
+    ISystemCapabilityCatalog? systemCapabilities = null) : ISystemAiToolSource
 {
     private static readonly MethodInfo QueryMethod = typeof(QueryMcpTool).GetMethod(nameof(QueryMcpTool.QueryAsync))!;
     private static readonly MethodInfo CommitMethod = typeof(CommitMcpTool).GetMethod(nameof(CommitMcpTool.CommitAsync))!;
@@ -23,10 +23,13 @@ public sealed class DirectCapabilityAiToolSource(
     public IReadOnlyList<IAiTool> CreateTools(SystemAiToolSourceContext context)
     {
         var authorizer = new InvocationAuthorizer(authorization, context.Invocation);
+        var typedSystemIds = systemCapabilities?.Discover(context.Invocation).Capabilities
+            .Select(value => value.Id).ToHashSet(StringComparer.Ordinal) ?? [];
         var result = new List<IAiTool>();
-        result.AddRange(McpVerbCatalog.QueryKinds.Where(value => value.Name != "capabilities")
+        result.AddRange(McpVerbCatalog.QueryKinds.Where(value => value.Name != "capabilities"
+                && !typedSystemIds.Contains(value.Name))
             .Select(value => (IAiTool)new DirectQueryTool(services, authorizer, value)));
-        result.AddRange(McpVerbCatalog.CommitKinds
+        result.AddRange(McpVerbCatalog.CommitKinds.Where(value => !typedSystemIds.Contains(value.Name))
             .Select(value => (IAiTool)new DirectCommitTool(services, authorizer, context.ToolApproval, value)));
         return result;
     }
@@ -98,43 +101,6 @@ public sealed class DirectCapabilityAiToolSource(
                     throw new InvalidOperationException($"Direct capability dependency '{parameter.ParameterType.Name}' is unavailable."));
         }
 
-        protected static string Schema(IEnumerable<string> names, MethodInfo method, bool payloadRequired = false)
-        {
-            var parameters = method.GetParameters().ToDictionary(value => value.Name!, StringComparer.Ordinal);
-            var properties = new JsonObject();
-            foreach (var name in names)
-            {
-                if (name == "payload")
-                {
-                    properties[name] = new JsonObject { ["type"] = "object" };
-                    continue;
-                }
-                properties[name] = TypeSchema(parameters[name].ParameterType);
-            }
-            var root = new JsonObject
-            {
-                ["type"] = "object",
-                ["additionalProperties"] = false,
-                ["properties"] = properties
-            };
-            if (payloadRequired) root["required"] = new JsonArray("payload");
-            return root.ToJsonString();
-        }
-
-        private static JsonNode TypeSchema(Type type)
-        {
-            type = Nullable.GetUnderlyingType(type) ?? type;
-            if (type == typeof(string)) return new JsonObject { ["type"] = "string" };
-            if (type == typeof(bool)) return new JsonObject { ["type"] = "boolean" };
-            if (type == typeof(int) || type == typeof(long)) return new JsonObject { ["type"] = "integer" };
-            if (type == typeof(string[])) return new JsonObject
-            {
-                ["type"] = "array",
-                ["items"] = new JsonObject { ["type"] = "string" }
-            };
-            throw new InvalidOperationException($"Unsupported direct AI parameter type '{type.Name}'.");
-        }
-
         protected static string ToolName(string prefix, string kind)
         {
             var normalized = new string(kind.Select(value => char.IsAsciiLetterOrDigit(value) ? value : '_').ToArray());
@@ -154,8 +120,11 @@ public sealed class DirectCapabilityAiToolSource(
             QueryKindSpec spec) : base(services, authorizer, QueryMethod)
         {
             this.spec = spec;
-            inputs = spec.Reads.ToHashSet(StringComparer.Ordinal);
-            Definition = new(ToolName("read", spec.Name), spec.Returns, Schema(inputs, QueryMethod));
+            using var schema = JsonDocument.Parse(spec.Descriptor.Input.SchemaJson);
+            inputs = schema.RootElement.GetProperty("properties").EnumerateObject()
+                .Select(value => value.Name).ToHashSet(StringComparer.Ordinal);
+            Definition = new(ToolName("read", spec.Name), spec.Descriptor.Description,
+                spec.Descriptor.Input.SchemaJson);
         }
 
         public override AiToolDefinition Definition { get; }
@@ -177,8 +146,9 @@ public sealed class DirectCapabilityAiToolSource(
         {
             this.approval = approval;
             this.spec = spec;
-            Definition = new(ToolName("write", spec.Name), spec.Summary +
-                " Non-preview execution requires trusted host confirmation.", Schema(Inputs, CommitMethod, true));
+            Definition = new(ToolName("write", spec.Name), spec.Descriptor.Description +
+                " Non-preview execution requires trusted host confirmation.",
+                spec.Descriptor.Input.SchemaJson);
         }
 
         public override AiToolDefinition Definition { get; }

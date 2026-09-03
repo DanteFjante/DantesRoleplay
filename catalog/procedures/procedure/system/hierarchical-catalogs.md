@@ -13,6 +13,8 @@ How to navigate procedure contracts and mechanics through their stable primary c
 Categories are derived from stored record paths; they are navigation metadata, not world state,
 ruleset identity, or an action-selection mechanism.
 
+## Matches
+
 ## Instructions
 1. Start at one catalog root with query(kind: "categories", catalog: "procedures") or
    query(kind: "categories", catalog: "mechanics").

@@ -17,7 +17,7 @@ namespace DantesRoleplay.SystemCapabilities.Tests;
 public sealed class SystemCapabilityCatalogTests
 {
     [Fact]
-    public void Generic_host_composition_registers_the_closed_system_task_capability_set()
+    public void Generic_host_composition_registers_the_closed_system_capability_set()
     {
         var services = new ServiceCollection();
         services.AddDantesRoleplayDataAccess("Data Source=:memory:");
@@ -35,14 +35,51 @@ public sealed class SystemCapabilityCatalogTests
             SystemCapabilityIds.ComponentTypeRegister,
             SystemCapabilityIds.Dependencies,
             SystemCapabilityIds.ExtensionRegister,
+            SystemCapabilityIds.InteractionContextPack,
+            SystemCapabilityIds.InteractionRecipeReview,
+            SystemCapabilityIds.InteractionRecipes,
+            SystemCapabilityIds.MechanicOpportunities,
+            SystemCapabilityIds.MechanicSandboxDraft,
+            SystemCapabilityIds.MechanicSandboxDrafts,
+            SystemCapabilityIds.MechanicSandboxPromote,
             SystemCapabilityIds.SourceRegister,
             SystemCapabilityIds.Sources,
             SystemCapabilityIds.StateSpaceAdoptLegacy,
             SystemCapabilityIds.StateSpaceCreate,
             SystemCapabilityIds.StateSpaceUpgrade
         ], descriptors.Select(value => value.Id).ToArray());
-        Assert.Equal(4, descriptors.Count(value => value.Mode == SystemCapabilityMode.Read));
-        Assert.Equal(8, descriptors.Count(value => value.Mode == SystemCapabilityMode.Write));
+        Assert.Equal(8, descriptors.Count(value => value.Mode == SystemCapabilityMode.Read));
+        Assert.Equal(11, descriptors.Count(value => value.Mode == SystemCapabilityMode.Write));
+    }
+
+    [Fact]
+    public async Task Governance_reads_use_registered_contracts_and_return_bounded_empty_views()
+    {
+        var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var services = new ServiceCollection();
+        services.AddDantesRoleplayDataAccess("Data Source=:memory:");
+        services.AddDbContext<DantesRoleplayDbContext>(options => options.UseSqlite(connection));
+        await using var provider = services.BuildServiceProvider();
+        await using var scope = provider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<DantesRoleplayDbContext>();
+        await db.Database.EnsureCreatedAsync();
+        var catalog = scope.ServiceProvider.GetRequiredService<ISystemCapabilityCatalog>();
+
+        var recipes = await catalog.ReadAsync(SystemCapabilityIds.InteractionRecipes,
+            """{"applicationId":"sample-app","limit":20}""", Context());
+        var opportunities = await catalog.ReadAsync(SystemCapabilityIds.MechanicOpportunities,
+            """{"applicationId":"sample-app","limit":20}""", Context());
+
+        Assert.True(recipes.Ok, recipes.Error?.Message);
+        Assert.Empty(recipes.Data!.Value.GetProperty("items").EnumerateArray());
+        Assert.True(opportunities.Ok, opportunities.Error?.Message);
+        Assert.Empty(opportunities.Data!.Value.GetProperty("items").EnumerateArray());
+        var review = catalog.Discover(Context()).Capabilities.Single(value =>
+            value.Id == SystemCapabilityIds.InteractionRecipeReview);
+        Assert.Equal(SystemCapabilityMode.Write, review.Mode);
+        Assert.True(review.RequiresConfirmation);
+        Assert.True(review.RequiresIdempotencyKey);
     }
 
     [Fact]
@@ -222,6 +259,20 @@ public sealed class SystemCapabilityCatalogTests
         Assert.False(registry.Touched);
     }
 
+    [Fact]
+    public async Task Context_aware_read_owner_receives_the_authorized_invocation_context()
+    {
+        var handler = new ContextRecordingHandler();
+        var catalog = Catalog(handler);
+
+        var result = await catalog.ReadAsync("system.context-fixture", "{}", Context());
+
+        Assert.True(result.Ok, result.Error?.Message);
+        Assert.Equal(Context().Principal.PrincipalId,
+            result.Data!.Value.GetProperty("principalId").GetString());
+        Assert.False(handler.LegacyEntryCalled);
+    }
+
     private static SystemCapabilityCatalog Catalog(params ISystemReadCapabilityHandler[] handlers) =>
         new(handlers, new BoundedJsonSchemaValidator(), new PrivateOperatorAuthorizationPolicy());
 
@@ -275,6 +326,34 @@ public sealed class SystemCapabilityCatalogTests
             if (throws) throw new InvalidOperationException("secret exception detail");
             return Task.FromResult(SystemCapabilityHandlerResult.Success(output));
         }
+    }
+
+    private sealed class ContextRecordingHandler : ISystemReadCapabilityHandler
+    {
+        public bool LegacyEntryCalled { get; private set; }
+        public SystemCapabilityRegistration Registration { get; } = new(
+            "system.context-fixture", 1, "test-owner", "Context fixture.", SystemCapabilityMode.Read,
+            """{"type":"object","additionalProperties":false}""",
+            """{"type":"object","additionalProperties":false,"required":["principalId"],"properties":{"principalId":{"type":"string","minLength":1,"maxLength":100}}}""",
+            ["procedure.system.inspect"], PrivateOperatorCapability.Read,
+            SystemCapabilitySensitivity.PrivateOperatorMetadata, false, false);
+
+        public Task<SystemCapabilityHandlerResult> ReadAsync(
+            JsonElement input,
+            CancellationToken cancellationToken = default)
+        {
+            LegacyEntryCalled = true;
+            return Task.FromResult(SystemCapabilityHandlerResult.Failure("CONTEXT_MISSING", "Context missing.", "Retry."));
+        }
+
+        public Task<SystemCapabilityHandlerResult> ReadAsync(
+            JsonElement input,
+            SystemCapabilityInvocationContext context,
+            CancellationToken cancellationToken = default) => Task.FromResult(
+                SystemCapabilityHandlerResult.Success(JsonSerializer.SerializeToElement(new
+                {
+                    principalId = context.Principal.PrincipalId
+                })));
     }
 
     private sealed class AllowingAuthorizer : IPrivateOperatorRequestAuthorizer

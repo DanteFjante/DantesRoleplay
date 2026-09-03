@@ -1,0 +1,15 @@
+var C={root:'game.core.campaign.root',scene:'game.core.campaign.current-scene',participation:'game.core.campaign.character-participation',identity:'dnd2024.character.identity',hp:'dnd2024.creature.hit-points',temp:'dnd2024.creature.temporary-hit-points',conditions:'dnd2024.conditions'},FOR='game.core.campaign.character-participation.for-actor';
+function object(v){return v!==null&&!Array.isArray(v)&&typeof v==='object';}
+function parse(raw,label){try{var v=JSON.parse(raw);if(!object(v))throw 0;return v;}catch(e){throw new Error(label+' is malformed.');}}
+function read(e,id,label,optional){var raw=e.components&&e.components[id];if(typeof raw!=='string'){if(optional)return null;throw new Error(label+' is missing.');}return parse(raw,label);}
+function ref(v){return object(v)&&Object.keys(v).length===1&&typeof v.entityId==='string'&&v.entityId.length>0?v.entityId:null;}
+if(!ctx.roles||!ctx.roles.campaign||!ctx.roles.actor||!object(ctx.input)||Object.keys(ctx.input).length)throw new Error('Actor context requires campaign and actor roles with empty input.');
+var c=ctx.roles.campaign,a=ctx.roles.actor,root=read(c,C.root,'Campaign root',false);if(root.status!=='active')throw new Error('Campaign is not active.');
+var linked=(a.relationships||[]).filter(function(v){return v.kind===FOR&&v.toEntityId===a.id;}),participations=c.related||[],matches=[];
+for(var i=0;i<participations.length;i++){var p=participations[i],state=read(p,C.participation,'Campaign participation',false);if(state.status==='active'&&linked.some(function(v){return v.fromEntityId===p.id;}))matches.push({entity:p,state:state});}
+if(matches.length!==1)throw new Error('Actor does not have one exact active campaign participation.');
+var scene=read(c,C.scene,'Current scene',true),sceneLocation=scene&&ref(scene.location),identity=read(a,C.identity,'Character identity',true),hp=read(a,C.hp,'Hit points',true),temp=read(a,C.temp,'Temporary hit points',true),conditions=read(a,C.conditions,'Conditions',true);
+var identityOut=null;if(identity){identityOut={pronouns:typeof identity.pronouns==='string'?identity.pronouns:null,appearance:typeof identity.appearance==='string'?identity.appearance:null};}
+var hpOut=null;if(hp){if(!Number.isSafeInteger(hp.current)||!Number.isSafeInteger(hp.maximum))throw new Error('Hit points are malformed.');hpOut={current:hp.current,maximum:hp.maximum,temporary:temp&&Number.isSafeInteger(temp.amount)?temp.amount:0};}
+var conditionOut=[];if(conditions){if(!Array.isArray(conditions.entries))throw new Error('Conditions are malformed.');conditionOut=conditions.entries.map(function(v){return {id:v.condition,level:Number.isSafeInteger(v.level)?v.level:null};});}
+return {narration:'Projected the audience-authorized actor context.',effects:[],events:[],notifications:[],data:{version:1,campaignId:c.id,actor:{id:a.id,name:a.name},participation:{id:matches[0].entity.id,status:matches[0].state.status},identity:identityOut,presence:{containerId:a.containerId||null,slot:a.containerSlot||'',currentSceneLocationId:sceneLocation||null,presentInCurrentScene:!!sceneLocation&&a.containerId===sceneLocation},hitPoints:hpOut,conditions:conditionOut}};

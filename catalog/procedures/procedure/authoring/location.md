@@ -4,8 +4,8 @@ category: authoring
 name: Furnish a place until it can be played in
 governs: the completeness pass over a single place, from bare row to somewhere a party can arrive
 status: active
-createdBy: "llm"
-changeNote: "Added so the completeness of an authored place is stated somewhere, rather than being remembered differently by each session."
+createdBy: "seed"
+changeNote: "Seeded from bootstrap file."
 ---
 
 ## Description
@@ -14,13 +14,6 @@ market are scenery; a toll inspector who needs an impossible number by Friday is
 play. This lists what turns the first into the second.
 
 ## Matches
-what does a location need to be playable
-what makes a place ready for players
-create a location
-register a new place
-add people and secrets to a location
-furnish a place before the party arrives
-who lives here and what do they want
 
 ## Instructions
 1. Write the place itself through its owning contract: kind, status, a summary that says what the

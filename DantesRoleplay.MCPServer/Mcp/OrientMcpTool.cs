@@ -1,258 +1,358 @@
 using System.ComponentModel;
-using DantesRoleplay.Categories;
-using DantesRoleplay.Mechanics;
+using System.Text.Json.Nodes;
+using DantesRoleplay.Applications;
+using DantesRoleplay.Authorization;
+using DantesRoleplay.Capabilities;
+using DantesRoleplay.Knowledge;
 using DantesRoleplay.Operations;
-using DantesRoleplay.Procedures;
-using DantesRoleplay.World;
+using DantesRoleplay.StateSpaceAdministration;
+using DantesRoleplay.SystemCapabilities;
 using ModelContextProtocol.Server;
 
 namespace DantesRoleplay.MCPServer.Mcp;
 
 /// <summary>
-/// The single entry point (ARCHITECTURE.md §7.2).
-///
-/// A session that has never seen this system should be able to call exactly one tool and know
-/// what this is, what state it is in, and what to do next.
-///
-/// **This response describes what EXISTS, never what is planned.** An earlier version said the
-/// agent "may add component definitions and world data" when no tool did either — a cold-model
-/// test caught it immediately. That is the same failure that crippled TravelRoleplay
-/// (ARCHITECTURE.md §1), just inverted: over-promising is as misleading as going stale, and this
-/// file is the one place where being wrong poisons everything downstream. Hence the capability
-/// section is not written here at all — it is <see cref="McpVerbCatalog.Announcement"/>, the same
-/// structure the dispatchers switch on, so it cannot drift from the code that serves it.
+/// A current, authorization-scoped projection over registered capability descriptors and runtime
+/// application owners. It contains no hand-maintained capability inventory.
 /// </summary>
 [McpServerToolType]
 public sealed class OrientMcpTool
 {
-    /// <summary>
-    /// Orientation counts are capped rather than exact. A number here is meant to tell a session
-    /// whether a thing exists and roughly how much of it, and orient has to stay cheap enough to
-    /// call again whenever someone loses the thread.
-    /// </summary>
-    private const int CountCap = 500;
+    private const int DiscoveryLimit = 100;
 
     [McpServerTool(Name = "orient")]
     [Description(
-        "START HERE. Explains what this system is, reports what currently exists in it, states " +
-        "what is NOT built yet, and tells you which call to make next. Cheap, read-only, and " +
-        "safe to call again at any point if you lose track of what you were doing.")]
-    public async Task<ToolEnvelope> OrientAsync(
-        IProcedureStore procedures,
-        IWorldStore world,
-        IMechanicStore mechanics,
+        "START HERE. Returns the current principal and audience boundary, authorized applications " +
+        "and state spaces, registered capability families, schema links, and deprecated-route " +
+        "replacements. Read-only and safe to call again whenever context changes.")]
+    public Task<ToolEnvelope> OrientAsync(
         IOperationLog log,
-        CancellationToken cancellationToken = default) =>
-        await ToolRunner.RunAsync(log, "orient", async () =>
+        CancellationToken cancellationToken = default,
+        IPrivateOperatorRequestAuthorizer? privateOperator = null,
+        IApplicationRegistry? applications = null,
+        IStateSpaceAdministrationReader? stateSpaces = null,
+        ISystemCapabilityCatalog? systemCapabilities = null,
+        ILocalKnowledgeSeatProvider? localKnowledgeSeats = null,
+        IAuthorizedKnowledgeAudiencePolicy? knowledgeAudiences = null,
+        IKnowledgeApplicationBindingResolver? knowledgeBindings = null,
+        IKnowledgeActorParticipationVerifier? knowledgeParticipation = null) =>
+        ToolRunner.RunAsync(log, "orient", async () =>
         {
-            var categories = await procedures.GetCategoriesAsync(
-                includeInactive: true,
-                cancellationToken: cancellationToken);
-            var definitions = await world.GetDefinitionsAsync(cancellationToken);
-            var ruleCategories = await mechanics.GetCategoriesAsync(
-                includeInactive: true,
-                cancellationToken: cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            var read = Authorize(privateOperator, PrivateOperatorCapability.Read);
+            var modify = Authorize(privateOperator, PrivateOperatorCapability.Modify);
+            var audience = await SystemAudienceContextHandler.ResolveAsync(
+                localKnowledgeSeats, knowledgeAudiences, knowledgeBindings, knowledgeParticipation,
+                cancellationToken);
 
-            var procedureCount = categories.Sum(c => c.Count);
-            var ruleCount = ruleCategories.Sum(c => c.Count);
-            var procedureRoots = CategoryPath.Browse(
-                branch: null,
-                categories.Select(c => new CategoryCount(c.Category, c.Count))).Children;
-            var ruleRoots = CategoryPath.Browse(
-                branch: null,
-                ruleCategories.Select(c => new CategoryCount(c.Category, c.Count))).Children;
-
-            // Archived rules included on purpose: this is the "does anything exist" number, and a
-            // session that is told zero will not go looking.
-            var rules = await mechanics.FindAsync(
-                includeInactive: true, limit: CountCap, cancellationToken: cancellationToken);
-
-            var byStatus = rules
-                .GroupBy(r => r.Status)
-                .ToDictionary(g => g.Key.ToString(), g => g.Count());
-
-            var byScope = rules
-                .GroupBy(r => string.IsNullOrWhiteSpace(r.Scope) ? "(shared)" : r.Scope)
-                .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
-
-            var runnableCount = rules.Count(r => r.Status == MechanicStatus.Active);
-
-            var sampled = await world.FindEntitiesAsync(
-                limit: CountCap, cancellationToken: cancellationToken);
-            var entityCount = sampled.Count == CountCap ? $"{CountCap}+" : sampled.Count.ToString();
+            var mcpContracts = McpVerbCatalog.Descriptors
+                .Where(value => Authorized(value, read.Allowed, modify.Allowed))
+                .Select(value => new RegisteredCapability(value, "mcp"))
+                .ToArray();
+            var directContracts = DiscoverDirect(systemCapabilities, read)
+                .Where(value => value.Authorization.Sensitivity != "secret")
+                .Where(value => Authorized(value, read.Allowed, modify.Allowed))
+                .Select(value => new RegisteredCapability(value, "direct-ai"))
+                .ToArray();
+            var registered = mcpContracts.Concat(directContracts).ToArray();
+            var active = registered
+                .Where(value => value.Contract.Lifecycle == CapabilityContractLifecycle.Active)
+                .OrderBy(value => value.Contract.Id, StringComparer.Ordinal)
+                .ThenBy(value => value.Interface, StringComparer.Ordinal)
+                .ToArray();
+            var deprecated = registered
+                .Where(value => value.Contract.Lifecycle == CapabilityContractLifecycle.Deprecated)
+                .OrderBy(value => value.Contract.Id, StringComparer.Ordinal)
+                .Select(value => DeprecatedView(value.Contract))
+                .ToArray();
+            var families = active.GroupBy(Family)
+                .OrderBy(value => FamilyOrder(value.Key))
+                .Select(value => new
+                {
+                    Id = value.Key,
+                    Description = FamilyDescription(value.Key),
+                    Capabilities = value.Select(CapabilityView).ToArray()
+                })
+                .ToArray();
+            var applicationView = Applications(applications, stateSpaces, read);
+            var nextActions = NextActions(active.Select(value => value.Contract).ToArray(),
+                applicationView, read.Allowed);
+            var nextSteps = nextActions.Select(McpNextActionFactory.Advice).ToArray();
 
             var data = new
             {
-                System = new
+                GeneratedFrom = new
                 {
-                    Is =
-                        "A persistent roleplaying-game kernel. It stores world state, runs game " +
-                        "rules, and records what was done. It contains no game itself: playable " +
-                        "features are meant to be data and JavaScript added at runtime.",
-                    YouAre =
-                        "The agent that operates and extends it. You can read everything listed " +
-                        "under capabilities, write procedure contracts, change world state " +
-                        "through commit(kind: \"effects\"), and WRITE AND RUN GAME RULES as " +
-                        "JavaScript. A rule you write during play is stored, versioned and " +
-                        "reusable next session — that is the point of this system, not a side " +
-                        "feature.",
-                    TheOneRule =
-                        "Before performing an operation, retrieve and follow the relevant " +
-                        "procedure contracts. Each contract states what it governs, so match " +
-                        "that against what you are about to do rather than guessing.",
-                    HowToOperateIt =
-                        "query(kind: \"procedures\", id: \"procedure.system.use\") — three verbs, " +
-                        "in one contract."
+                    McpDescriptorCount = mcpContracts.Length,
+                    DirectAiDescriptorCount = directContracts.Length,
+                    ApplicationRegistryAvailable = applications is not null,
+                    StateSpaceRegistryAvailable = stateSpaces is not null
                 },
-                Procedures = new
+                Principal = new
                 {
-                    Total = procedureCount,
-                    ByCategory = categories.ToDictionary(c => c.Category, c => c.Count),
-                    KnownCategories = categories.Select(c => c.Category).ToArray(),
-                    CategoryRoots = procedureRoots,
-                    HowToBrowse = "query(kind: \"categories\", catalog: \"procedures\")"
+                    Reference = read.Evidence.PrincipalReference,
+                    AuthenticationMethod = read.Evidence.AuthenticationMethod,
+                    Scope = read.Evidence.Scope,
+                    CanRead = read.Allowed,
+                    CanModify = modify.Allowed,
+                    ReadDecision = read.Code,
+                    ModifyDecision = modify.Code
                 },
-                World = new
+                Audience = audience.Error is null
+                    ? new { Status = "bound", Context = audience.Data, Error = (object?)null }
+                    : new
+                    {
+                        Status = "unavailable",
+                        Context = (object?)null,
+                        Error = (object?)new
+                        {
+                            audience.Error.Code,
+                            audience.Error.Why,
+                            audience.Error.Fix
+                        }
+                    },
+                Applications = applicationView,
+                CapabilityFamilies = families,
+                Schemas = new
                 {
-                    ComponentDefinitions = definitions.Count,
-                    Entities = entityCount,
-                    HowItWorks =
-                        "Everything in the world is an entity with components attached. There " +
-                        "are only five structures: entity, component, component definition, " +
-                        "containment, relationship. A new game concept is a row, never a schema " +
-                        "change.",
-                    Reachable = true,
-                    Note =
-                        "Reads go through query(kind: \"world\") and query(kind: \"entities\"). " +
-                        "EVERY change goes through commit(kind: \"effects\"), which validates the " +
-                        "whole list and then applies it in one transaction — there is no partial " +
-                        "write. A component cannot be attached until commit(kind: \"component\") " +
-                        "has declared it."
+                    McpCatalog = "query(kind: \"capabilities\")",
+                    Rule = "Each capability entry names its descriptor id, fingerprint, and input/output schema hashes. " +
+                        "MCP schemas are read from the MCP catalog; direct-AI schemas are supplied by that tool definition."
                 },
-                Rules = new
+                Limitations = new
                 {
-                    Total = ruleCount,
-                    Runnable = runnableCount,
-                    ByStatus = byStatus,
-                    ByCategory = ruleCategories.ToDictionary(c => c.Category, c => c.Count),
-                    ByScope = byScope,
-                    CategoryRoots = ruleRoots,
-                    HowToBrowse = "query(kind: \"categories\", catalog: \"mechanics\")",
-                    HowItWorks =
-                        "Game rules are JavaScript stored in this system and written during play. " +
-                        "A rule declares which participants and which components it reads, is " +
-                        "handed exactly that and nothing else, and returns proposed effects plus " +
-                        "narration. It cannot query, cannot reach the host, and is stopped by " +
-                        "execution limits. Chance is seeded, and the seed is recorded.",
-                    Note = RuleNote(ruleCount, runnableCount)
-                },
-                Capabilities = McpVerbCatalog.Announcement(),
-                NotYetBuilt = NotYetBuilt(ruleCount)
+                    Authorization = read.Allowed
+                        ? Array.Empty<object>()
+                        : new object[] { new { read.Code, read.Recovery } },
+                    DeprecatedCapabilities = deprecated,
+                    Rule = "A deprecated capability is callable only for compatibility and is never included in an active family. " +
+                        "Use its structured replacement capability."
+                }
             };
 
-            var nextSteps = new List<string>();
-
-            if (procedureCount == 0)
-            {
-                nextSteps.Add(
-                    "query(kind: \"history\", failuresOnly: true) — no procedures exist, which is " +
-                    "unexpected because the system seeds its own; this shows whether seeding failed.");
-            }
-            else
-            {
-                nextSteps.Add("query(kind: \"procedures\", id: \"procedure.system.use\") — how to operate these three verbs. Read this first.");
-                nextSteps.Add("query(kind: \"procedures\") — list the whole operating manual and match a contract to what you are about to do.");
-                if (procedureRoots.Count != 0)
-                {
-                    nextSteps.Add("query(kind: \"categories\", catalog: \"procedures\") — browse the procedure manual by category.");
-                }
-
-                nextSteps.Add("query(kind: \"world\") — what the world currently holds, and which component definitions exist.");
-                nextSteps.Add("query(kind: \"capabilities\") — every kind, parameter and payload shape, exactly.");
-                nextSteps.Add($"{McpVerbCatalog.CommitCall("effects", dryRun: true)} — if your task is to change the world.");
-
-                nextSteps.Add(ruleCount == 0
-                    ? $"{McpVerbCatalog.CommitCall("mechanic", dryRun: true)} — no game rules exist yet, so nothing can be resolved until one is written. This writes the first."
-                    : "query(kind: \"mechanics\", query: \"what the player is trying to do\") — find the rule and read which roles it needs, before running it.");
-                if (ruleRoots.Count != 0)
-                {
-                    nextSteps.Add("query(kind: \"categories\", catalog: \"mechanics\") — browse game rules by category.");
-                }
-
-                nextSteps.Add($"{McpVerbCatalog.CommitCall("action")} — resolve an action. The rule is chosen by intent; roleEntityIds must name the roles that rule declares.");
-            }
-
-            nextSteps.Add("query(kind: \"history\") — see what was done recently, optionally filtered by tool or subject.");
-            nextSteps.Add($"{McpVerbCatalog.CommitCall("feedback")} — record a concrete problem, friction point, or improvement idea about this system while testing it.");
-
-            return ToolOutcome.Ok(
-                data,
-                $"Oriented: {procedureCount} procedures, {definitions.Count} component definitions, " +
-                $"{entityCount} entities, {ruleCount} game rule(s) of which {runnableCount} runnable.",
-                [.. nextSteps]);
+            return new ToolOutcome(data,
+                $"Oriented from {active.Length} currently authorized active capability descriptor(s), " +
+                    $"{applicationView.Items.Count} application(s), and {applicationView.StateSpaceCount} state space(s).",
+                nextSteps,
+                NextActions: nextActions);
         });
 
-    /// <summary>
-    /// The three states worth telling apart. "Rules exist but none are active" reads as "no rules"
-    /// to anyone who only sees a total, and a session that believes there are no rules will invent
-    /// outcomes instead of resolving them.
-    /// </summary>
-    private static string RuleNote(int total, int runnable) =>
-        total == 0
-            ? "NO RULES EXIST YET. Nothing can be resolved until one is written — that is the "
-              + "intended empty state, not a fault. commit(kind: \"mechanic\", dryRun: true) "
-              + "creates the first."
-            : runnable == 0
-                ? $"{total} rule(s) are stored but NONE are active, so nothing can be resolved yet. "
-                  + "Read them with query(kind: \"mechanics\", includeInactive: true) and commit a "
-                  + "revision with status \"active\" once one is right."
-                : "An action selects the best-ranked active rule matching your intent and RUNS "
-                  + "it — there is no way to name a rule and no separate dry run. Read the rule "
-                  + "first with query(kind: \"mechanics\") to see which roles it declares; the "
-                  + "effects it proposes are validated before any of them are applied.";
+    private static PrivateOperatorAuthorizationDecision Authorize(
+        IPrivateOperatorRequestAuthorizer? authorizer,
+        PrivateOperatorCapability capability)
+    {
+        if (authorizer is not null) return authorizer.Authorize(capability);
+        PrivateOperatorCapabilityNames.TryGetAuditName(capability, out var name);
+        var evidence = new AuthorizationAuditEvidence("", "", name,
+            PrivateOperatorAuthorizationPolicy.PrivateHostScope, "orient", false,
+            "PRIVATE_OPERATOR_AUTHORIZATION_UNAVAILABLE");
+        return new(false, evidence.ReasonCode,
+            "Authenticate through the configured private host and call orient again.", evidence);
+    }
 
-    /// <summary>
-    /// Stated explicitly so a cold model does not infer these from the architecture's ambitions
-    /// and then invent a way to do them. Knowing what is absent is as useful as knowing what is
-    /// present, and much cheaper than discovering it by failing.
-    ///
-    /// The first line is conditional because it stops being true the moment a rule is written, and
-    /// a session that is told "no game exists" while the database holds the rules it needs will
-    /// bypass them and narrate an outcome instead.
-    /// </summary>
-    private static IReadOnlyList<string> NotYetBuilt(int ruleCount) =>
-    [
-        ruleCount == 0
-            ? "Any actual game. The machinery to write and run rules exists; no rule has been "
-              + "written yet. Whether this system can resolve a given action depends entirely on "
-              + "whether someone has written that rule — right now, nobody has."
-            : "A complete game. Rules exist, but only the ones somebody wrote — check with "
-              + "query(kind: \"mechanics\") before assuming an action can be resolved, and write "
-              + "the rule if it is missing.",
-        // Narrowed twice now, each time a slice landed. It first denied events and subscriptions
-        // outright, then denied reaction execution; both stopped being true. A session is told to
-        // believe this list over anything else it reads, so an over-broad denial here is worse
-        // than silence: it talks sessions out of a capability that works. Narrow it the same day
-        // the capability lands.
-        "Anything reaching a person on its own. Reactive rules exist in full — a guard can veto a " +
-        "change before it commits, an accepted change records events you can read with " +
-        "query(kind: \"events\"), a reaction runs on those with its effects in the same " +
-        "transaction, and it can declare an event or raise a notification. But a notification is a " +
-        "row somebody reads when they ask: nothing pushes, mails, polls or schedules, and time " +
-        "does not pass. Nothing in here moves unless somebody calls a verb.",
-        // The last false denial in this list, and it was false for a whole feature. Declarative
-        // composition has worked since Feature 5: a rule declares children in its requirements,
-        // the host runs them first, and their frozen results arrive as ctx.children. What is
-        // genuinely missing is the imperative form, and the difference is worth stating precisely
-        // rather than denying the whole capability.
-        "Calling a rule on demand from inside another. A mechanic CAN compose: declare children in "
-        + "`requirements.children` and their frozen results arrive as ctx.children, resolved before "
-        + "the parent runs, up to eight deep with cycles refused. What does not exist is deciding "
-        + "mid-execution which rule to run — there is no ctx.mechanics.run, and there is no host "
-        + "callback a rule could reach.",
-        "Choosing which rule runs. An action selects the best-ranked candidate for the intent; " +
-        "there is no way to name a specific mechanic, and no separate dry run for an action.",
-        "Inspecting this application's own source or tool registration — not available, so a " +
-        "procedure describing how the code works cannot currently be verified against the code."
-    ];
+    private static IReadOnlyList<CapabilityContractDescriptor> DiscoverDirect(
+        ISystemCapabilityCatalog? catalog,
+        PrivateOperatorAuthorizationDecision read)
+    {
+        if (catalog is null || !read.Allowed) return [];
+        var discovery = catalog.Discover(SystemCapabilityInvocationContext.FromAuthorization(read.Evidence));
+        return discovery.Ok
+            ? discovery.Capabilities.Select(value => value.Contract).ToArray()
+            : [];
+    }
+
+    private static bool Authorized(CapabilityContractDescriptor descriptor, bool canRead, bool canModify) =>
+        descriptor.Operations.ChangesState ? canModify : canRead;
+
+    private static ApplicationOrientation Applications(
+        IApplicationRegistry? applications,
+        IStateSpaceAdministrationReader? stateSpaces,
+        PrivateOperatorAuthorizationDecision read)
+    {
+        if (!read.Allowed)
+            return new("denied", [], 0, false,
+                "Application and state-space metadata require the current private read grant.");
+        if (applications is null)
+            return new("unavailable", [], 0, false,
+                "The application registry is not configured in this host.");
+
+        var page = applications.ListPage(null, DiscoveryLimit);
+        var count = 0;
+        var items = page.Applications.Select(registration =>
+        {
+            var revision = applications.Get(registration.Id)!;
+            var spaces = stateSpaces?.List(registration.Id, DiscoveryLimit) ?? [];
+            count += spaces.Count;
+            return new ApplicationView(
+                registration.Id.Value,
+                registration.DisplayName,
+                registration.Description,
+                revision.Revision,
+                revision.Fingerprint,
+                registration.BaseApplications.Select(value => value.Value).ToArray(),
+                spaces.Select(value => new StateSpaceView(
+                    value.StateSpaceId,
+                    value.Scope.ToString().ToLowerInvariant(),
+                    value.ApplicationRevision,
+                    value.BindingRevision,
+                    value.BindingFingerprint,
+                    value.ActiveFingerprint)).ToArray(),
+                $"query(kind: \"system.catalogs\", applicationId: \"{registration.Id.Value}\")",
+                $"query(kind: \"system.feature-search\", applicationId: \"{registration.Id.Value}\", query: \"describe the needed capability\")");
+        }).ToArray();
+        return new("authorized", items, count, page.NextApplicationId is not null,
+            stateSpaces is null
+                ? "Applications are visible, but the state-space registry is unavailable."
+                : "Every listed state space is visible under the current private read grant.");
+    }
+
+    private static string Family(RegisteredCapability value)
+    {
+        var id = value.Contract.Id;
+        if (value.Contract.SourceKind == "application-mechanic"
+            || id.EndsWith(".application.action.execute", StringComparison.Ordinal))
+            return "direct-execution";
+        if (id.Contains(".system.interaction-", StringComparison.Ordinal)
+            || id.StartsWith("system.interaction-", StringComparison.Ordinal))
+            return "planned-interaction";
+        if (!value.Contract.Operations.ChangesState) return "read-query";
+        if (id.StartsWith("system.mechanic-sandbox.", StringComparison.Ordinal))
+            return "draft-authoring";
+        return "state-change";
+    }
+
+    private static int FamilyOrder(string value) => value switch
+    {
+        "read-query" => 0,
+        "direct-execution" => 1,
+        "planned-interaction" => 2,
+        "draft-authoring" => 3,
+        _ => 4
+    };
+
+    private static string FamilyDescription(string value) => value switch
+    {
+        "read-query" => "Read current state without changing it.",
+        "direct-execution" => "Execute an already selected exact application mechanic in one confirmed idempotent call.",
+        "planned-interaction" => "Resolve or verify ambiguity as an inert proposal before confirmed execution.",
+        "draft-authoring" => "Create or revise reusable definitions and mechanics; preview when the descriptor allows it.",
+        _ => "Apply an authorized state or administration change under the descriptor's confirmation and idempotency rules."
+    };
+
+    private static object CapabilityView(RegisteredCapability value)
+    {
+        var descriptor = value.Contract;
+        return new
+        {
+            descriptor.Id,
+            descriptor.Version,
+            descriptor.Fingerprint,
+            descriptor.Owner,
+            descriptor.Name,
+            descriptor.Description,
+            Interface = value.Interface,
+            descriptor.Operations,
+            descriptor.Scope,
+            descriptor.Authorization,
+            descriptor.RequiresConfirmation,
+            descriptor.RequiresIdempotencyKey,
+            Schemas = new
+            {
+                InputHash = descriptor.Input.SchemaHash,
+                InputStatus = descriptor.Input.Status,
+                OutputHash = descriptor.Output.SchemaHash,
+                OutputStatus = descriptor.Output.Status,
+                ReadFrom = value.Interface == "mcp"
+                    ? "query(kind: \"capabilities\")"
+                    : $"direct-ai-tool-definition:{descriptor.Id}"
+            }
+        };
+    }
+
+    private static object DeprecatedView(CapabilityContractDescriptor descriptor) => new
+    {
+        descriptor.Id,
+        descriptor.Version,
+        descriptor.Fingerprint,
+        descriptor.Description,
+        descriptor.Lifecycle,
+        Replacements = descriptor.RecoveryActions.Select(value => new
+        {
+            value.CapabilityId,
+            value.Description,
+            value.InputJson
+        }).ToArray()
+    };
+
+    private static IReadOnlyList<ToolNextAction> NextActions(
+        IReadOnlyList<CapabilityContractDescriptor> descriptors,
+        ApplicationOrientation applications,
+        bool canRead)
+    {
+        var ids = descriptors.Select(value => value.Id).ToHashSet(StringComparer.Ordinal);
+        var result = new List<ToolNextAction>();
+        if (ids.Contains("mcp.query.capabilities"))
+            result.Add(McpNextActionFactory.Create(
+                "read-capability-contracts",
+                "Read exact current schemas and recovery contracts.",
+                "mcp.query.capabilities", new JsonObject(), []));
+        if (ids.Contains("mcp.query.system.audience-context"))
+            result.Add(McpNextActionFactory.Create(
+                "refresh-audience-context",
+                "Refresh the host-bound table and actor boundary.",
+                "mcp.query.system.audience-context", new JsonObject(), []));
+        if (canRead && ids.Contains("mcp.query.system.applications"))
+            result.Add(McpNextActionFactory.Create(
+                "inspect-applications",
+                "Inspect current application activation and state-space evidence.",
+                "mcp.query.system.applications", new JsonObject(), []));
+        if (ids.Contains("mcp.query.system.interaction-plan"))
+        {
+            var known = new JsonObject();
+            var missing = new List<McpNextActionFactory.MissingArgument>();
+            var applicationId = applications.Items.FirstOrDefault()?.Id;
+            if (applicationId is null)
+                missing.Add(new("applicationId", "Choose one currently authorized application id.",
+                    JsonValue.Create("application-id")!));
+            else
+                known["applicationId"] = applicationId;
+            missing.Add(new("request", "Describe the ambiguous request to resolve without changing state.",
+                JsonValue.Create("describe the intended action")!));
+            result.Add(McpNextActionFactory.Create(
+                "plan-ambiguous-request",
+                "Resolve an ambiguous request without changing state.",
+                "mcp.query.system.interaction-plan", known, missing, "applicationId", "request"));
+        }
+        if (ids.Contains("mcp.query.procedures"))
+            result.Add(McpNextActionFactory.Create(
+                "read-operating-contract",
+                "Read the operating contract.",
+                "mcp.query.procedures", new JsonObject { ["id"] = "procedure.system.use" }, [], "id"));
+        return result;
+    }
+
+    private sealed record RegisteredCapability(CapabilityContractDescriptor Contract, string Interface);
+    private sealed record ApplicationOrientation(
+        string Status,
+        IReadOnlyList<ApplicationView> Items,
+        int StateSpaceCount,
+        bool Truncated,
+        string Boundary);
+    private sealed record ApplicationView(
+        string Id,
+        string DisplayName,
+        string Description,
+        int Revision,
+        string Fingerprint,
+        IReadOnlyList<string> BaseApplications,
+        IReadOnlyList<StateSpaceView> StateSpaces,
+        string Catalogs,
+        string CapabilitySearch);
+    private sealed record StateSpaceView(
+        string Id,
+        string Scope,
+        int ApplicationRevision,
+        int BindingRevision,
+        string BindingFingerprint,
+        string ActiveFingerprint);
 }

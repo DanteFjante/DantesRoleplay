@@ -13,6 +13,8 @@ What “done” means for a repository change. Verification is risk-based while 
 at feature acceptance; repeating the largest gate after every file adds cost without adding new
 evidence.
 
+## Matches
+
 ## Instructions
 1. Add or update a focused test that would fail without the changed behavior. Run the smallest
    relevant build and tests while iterating so failures remain attributable.

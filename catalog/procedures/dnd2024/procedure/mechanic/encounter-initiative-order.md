@@ -11,6 +11,8 @@ changeNote: "Feature 5 Slice 2: the governing contract for the encounter Initiat
 ## Description
 Owns the single persistent D&D 2024 encounter Initiative-order snapshot and the parent rule that produces it by composing the individual Initiative resolver once per contained participant. Non-goals: rolling one creature's Initiative, turn economy, rounds, surprise, conditions, correcting or clearing an existing order.
 
+## Matches
+
 ## Instructions
 1. Explanation (SRD 5.2.1, Playing the Game > Combat > The Order of Combat > Initiative; CC-BY-4.0, https://www.dndbeyond.com/srd). At the start of a combat encounter every participant rolls Initiative: a Dexterity-based D20 Test. Participants act in order from highest count to lowest, and that order holds for the rest of the encounter. If two participants tie, the players involved or the GM decide which of them goes first. This paragraph explains the rule; the executable behaviour is defined below.
 2. Model the encounter as an entity that CONTAINS its participants. Containment is the roster: this contract never accepts a participant list as input, because a second list would be a second source of truth about who is in the fight.

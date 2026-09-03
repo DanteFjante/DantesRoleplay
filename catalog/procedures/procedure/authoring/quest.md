@@ -4,8 +4,8 @@ category: authoring
 name: Make a quest survive contact with players
 governs: the evidence-and-consequence check applied to one quest prior to offering it at a table
 status: active
-createdBy: "llm"
-changeNote: "Added because quest creation records objectives but says nothing about the evidence and consequences a quest needs to be playable."
+createdBy: "seed"
+changeNote: "Seeded from bootstrap file."
 ---
 
 ## Description
@@ -14,13 +14,6 @@ the evidence, and later they live with the consequences. Both have to exist befo
 offered, and the consequences have to be written down before anyone finds out which one they get.
 
 ## Matches
-what does a quest need
-create a quest with clues and rewards
-register a quest
-what rewards and xp does a quest need
-how do I record quest outcomes
-plant clues before offering a quest
-what happens when the party fails a quest
 
 ## Instructions
 1. Create the quest and its objectives through the owning creation contract, then attach it to the

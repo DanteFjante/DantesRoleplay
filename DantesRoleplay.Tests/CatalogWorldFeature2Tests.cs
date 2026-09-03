@@ -178,7 +178,7 @@ public sealed class CatalogWorldFeature2Tests : IDisposable
             secondEvent.TypeId);
     }
 
-    private static async Task<ActionRunResult> RunAsync(ActionRunner runner, string origin, string destination, string input) =>
+    private static async Task<ActionRunResult> RunAsync(CatalogMechanicTestHarness runner, string origin, string destination, string input) =>
         await runner.RunAsync(new ActionRequest
         {
             Intent = "move to a connected location",
@@ -192,7 +192,7 @@ public sealed class CatalogWorldFeature2Tests : IDisposable
             Seed = 903
         });
 
-    private static ActionRunner CreateRunner(DantesRoleplayDbContext db, WorldStore world, MechanicStore mechanics) =>
+    private static CatalogMechanicTestHarness CreateRunner(DantesRoleplayDbContext db, WorldStore world, MechanicStore mechanics) =>
         new(db, mechanics, new ProjectionResolver(db), new JintMechanicEngine(),
             new EffectApplier(db, world, null, new EventLedger(db)),
             new OperationLog(db), new MechanicComposer(mechanics, new ProjectionResolver(db), new JintMechanicEngine()));

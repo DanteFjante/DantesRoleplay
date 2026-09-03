@@ -2189,6 +2189,224 @@ namespace DantesRoleplay.DataAccess.Migrations
                         });
                 });
 
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionMechanicOpportunity", b =>
+                {
+                    b.Property<string>("RecipeId")
+                        .HasMaxLength(102)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProposalFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProposalJson")
+                        .IsRequired()
+                        .HasMaxLength(131072)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RecipeTemplateFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RecipeVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("RecipeId");
+
+                    b.HasIndex("ProposalFingerprint")
+                        .IsUnique();
+
+                    b.HasIndex("ApplicationId", "CreatedAtUtc", "RecipeId");
+
+                    b.ToTable("interaction_mechanic_opportunity", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_interaction_mechanic_opportunity_application", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system'");
+
+                            t.HasCheckConstraint("CK_interaction_mechanic_opportunity_hashes", "length(\"RecipeTemplateFingerprint\") = 64 AND \"RecipeTemplateFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"ProposalFingerprint\") = 64 AND \"ProposalFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_interaction_mechanic_opportunity_proposal", "length(\"ProposalJson\") BETWEEN 2 AND 131072 AND json_valid(\"ProposalJson\") AND json_type(\"ProposalJson\") = 'object'");
+
+                            t.HasCheckConstraint("CK_interaction_mechanic_opportunity_recipe", "length(\"RecipeId\") BETWEEN 41 AND 102 AND \"RecipeVersion\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionMechanicSandboxDraft", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(55)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CurrentRevision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OpportunityProposalFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("PromotedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PromotionAuthorizationEvidence")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PromotionIdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PromotionOperationId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PromotionPrincipalReference")
+                        .IsRequired()
+                        .HasMaxLength(74)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PromotionRequestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("QuotaSlot")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ReviewAuthorizationEvidence")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReviewPrincipalReference")
+                        .IsRequired()
+                        .HasMaxLength(74)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("RevisedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StateSpaceId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId", "QuotaSlot")
+                        .IsUnique()
+                        .HasFilter("\"Status\" IN ('draft', 'validated')");
+
+                    b.HasIndex("ApplicationId", "Status", "ExpiresAtUtc");
+
+                    b.ToTable("interaction_mechanic_sandbox_draft", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_interaction_mechanic_sandbox_draft_bounds", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND length(\"StateSpaceId\") BETWEEN 1 AND 200 AND length(\"ReviewPrincipalReference\") = 74 AND length(\"ReviewAuthorizationEvidence\") BETWEEN 1 AND 200 AND length(\"PromotionPrincipalReference\") <= 74 AND length(\"PromotionAuthorizationEvidence\") <= 200 AND length(\"PromotionIdempotencyKey\") <= 128 AND length(\"PromotionOperationId\") <= 200");
+
+                            t.HasCheckConstraint("CK_interaction_mechanic_sandbox_draft_hashes", "length(\"OpportunityProposalFingerprint\") = 64 AND \"OpportunityProposalFingerprint\" NOT GLOB '*[^0-9A-F]*' AND (\"PromotionRequestFingerprint\" = '' OR length(\"PromotionRequestFingerprint\") = 64 AND \"PromotionRequestFingerprint\" NOT GLOB '*[^0-9A-F]*')");
+
+                            t.HasCheckConstraint("CK_interaction_mechanic_sandbox_draft_id", "length(\"Id\") = 55 AND \"Id\" GLOB 'mechanic-sandbox-draft.[0-9a-f]*'");
+
+                            t.HasCheckConstraint("CK_interaction_mechanic_sandbox_draft_quota_slot", "\"QuotaSlot\" BETWEEN 1 AND 5");
+
+                            t.HasCheckConstraint("CK_interaction_mechanic_sandbox_draft_revision", "\"CurrentRevision\" BETWEEN 1 AND 8");
+
+                            t.HasCheckConstraint("CK_interaction_mechanic_sandbox_draft_status", "\"Status\" IN ('draft', 'validated', 'approved-for-export', 'expired')");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionMechanicSandboxDraftRevision", b =>
+                {
+                    b.Property<string>("DraftId")
+                        .HasMaxLength(55)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CandidateFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CandidateJson")
+                        .IsRequired()
+                        .HasMaxLength(262144)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OperationId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RequestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ValidationJson")
+                        .IsRequired()
+                        .HasMaxLength(262144)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("DraftId", "Revision");
+
+                    b.HasIndex("ApplicationId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.ToTable("interaction_mechanic_sandbox_draft_revision", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_interaction_mechanic_sandbox_revision_bounds", "length(\"ApplicationId\") BETWEEN 1 AND 63 AND length(\"IdempotencyKey\") BETWEEN 1 AND 128 AND length(\"OperationId\") BETWEEN 1 AND 200");
+
+                            t.HasCheckConstraint("CK_interaction_mechanic_sandbox_revision_hashes", "length(\"CandidateFingerprint\") = 64 AND \"CandidateFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"RequestFingerprint\") = 64 AND \"RequestFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+
+                            t.HasCheckConstraint("CK_interaction_mechanic_sandbox_revision_json", "length(\"CandidateJson\") BETWEEN 2 AND 262144 AND json_valid(\"CandidateJson\") AND json_type(\"CandidateJson\") = 'object' AND length(\"ValidationJson\") BETWEEN 2 AND 262144 AND json_valid(\"ValidationJson\") AND json_type(\"ValidationJson\") = 'object'");
+
+                            t.HasCheckConstraint("CK_interaction_mechanic_sandbox_revision_number", "\"Revision\" BETWEEN 1 AND 8");
+                        });
+                });
+
             modelBuilder.Entity("DantesRoleplay.Interactions.InteractionRecipe", b =>
                 {
                     b.Property<string>("Id")
@@ -2259,6 +2477,33 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("ReplayActualAiCalls")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReplayBaselineAiCalls")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReplayChoiceResolutionMilliseconds")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReplayElapsedMilliseconds")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReplayExecutionMilliseconds")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReplayOutputTokens")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReplayPromptTokens")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReplayProposalMilliseconds")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReplaySavedAiCalls")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("ResolutionReceiptId")
                         .IsRequired()
                         .HasMaxLength(52)
@@ -2282,6 +2527,8 @@ namespace DantesRoleplay.DataAccess.Migrations
                             t.HasCheckConstraint("CK_interaction_recipe_evidence_hash", "length(\"IntentFingerprint\") = 64 AND \"IntentFingerprint\" NOT GLOB '*[^0-9A-F]*'");
 
                             t.HasCheckConstraint("CK_interaction_recipe_evidence_kind", "\"Kind\" IN ('derived', 'use-success', 'use-failure')");
+
+                            t.HasCheckConstraint("CK_interaction_recipe_evidence_replay_performance", "\"ReplayBaselineAiCalls\" BETWEEN 0 AND 16 AND \"ReplayActualAiCalls\" BETWEEN 0 AND 1 AND \"ReplaySavedAiCalls\" >= 0 AND \"ReplayElapsedMilliseconds\" >= 0 AND \"ReplayChoiceResolutionMilliseconds\" >= 0 AND \"ReplayProposalMilliseconds\" >= 0 AND \"ReplayExecutionMilliseconds\" >= 0 AND \"ReplayPromptTokens\" >= 0 AND \"ReplayOutputTokens\" >= 0");
                         });
                 });
 
@@ -7221,6 +7468,28 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.Navigation("ExecutionReceipt");
                 });
 
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionMechanicOpportunity", b =>
+                {
+                    b.HasOne("DantesRoleplay.Interactions.InteractionRecipe", "Recipe")
+                        .WithOne("MechanicOpportunity")
+                        .HasForeignKey("DantesRoleplay.Interactions.InteractionMechanicOpportunity", "RecipeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Recipe");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionMechanicSandboxDraftRevision", b =>
+                {
+                    b.HasOne("DantesRoleplay.Interactions.InteractionMechanicSandboxDraft", "Draft")
+                        .WithMany("Revisions")
+                        .HasForeignKey("DraftId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Draft");
+                });
+
             modelBuilder.Entity("DantesRoleplay.Interactions.InteractionRecipeEvidence", b =>
                 {
                     b.HasOne("DantesRoleplay.Interactions.InteractionExecutionReceipt", null)
@@ -8187,9 +8456,16 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.Navigation("Steps");
                 });
 
+            modelBuilder.Entity("DantesRoleplay.Interactions.InteractionMechanicSandboxDraft", b =>
+                {
+                    b.Navigation("Revisions");
+                });
+
             modelBuilder.Entity("DantesRoleplay.Interactions.InteractionRecipe", b =>
                 {
                     b.Navigation("Evidence");
+
+                    b.Navigation("MechanicOpportunity");
 
                     b.Navigation("Revisions");
                 });

@@ -14,6 +14,8 @@ result in the current system while testing it. A report is durable and its origi
 append-only. It does not change the game world, create an event, notify anyone, or cause work to
 happen automatically.
 
+## Matches
+
 ## Instructions
 1. When a call fails, first follow the concrete `error.fix` once if it is safe and applicable.
 2. Submit feedback when that recovery also fails, when the advertised behavior differs from what

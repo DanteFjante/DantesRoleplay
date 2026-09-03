@@ -1,0 +1,118 @@
+{
+  "schema": "dnd2024.website-baseline.v1",
+  "generatedAtUtc": "2026-09-03T14:54:12.155Z",
+  "source": {
+    "commit": "828789b7c5a9d6919a9dea5409392f575aad1659",
+    "branch": "master",
+    "trackedDiffSha256": "5f3adba45332deade6a3850fab20e0947e854ac1b0cde23cdc771bd4d0b6ac52",
+    "untrackedManifestSha256": "b70015c55bc32a0a959b7c932887ae5b0f976c5a9e39065106581266dc82c1e2",
+    "untrackedFileCount": 80,
+    "fingerprint": "8e471b9121dcf1f5049880b844278c594f95a2dcb4893f3e82390229ee83bbe2"
+  },
+  "target": {
+    "machine": {
+      "profile": "current-local-development-machine",
+      "platform": "win32",
+      "release": "10.0.26200",
+      "cpu": "Intel(R) Core(TM) Ultra 9 275HX",
+      "logicalProcessors": 24,
+      "memoryGiB": 31.4
+    },
+    "browser": {
+      "name": "Google Chrome",
+      "version": "152.0.7977.75"
+    }
+  },
+  "gates": {
+    "tests": {
+      "command": "node --test",
+      "exitCode": 0,
+      "status": "passed",
+      "summary": {
+        "tests": 157,
+        "pass": 157,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    "typecheck": {
+      "command": "node node_modules/typescript/bin/tsc --noEmit",
+      "exitCode": 1,
+      "status": "failed",
+      "diagnosticCount": 8,
+      "diagnostics": [
+        "src/components/DndInformationHub.tsx(144,85): error TS2339: Property 'scene' does not exist on type '{ status: \"ready\"; kind: \"recorded\"; locationId?: string | undefined; recorded: { id: string; kind: \"exploration\" | \"conversation\" | \"combat\" | \"out-of-character\" | \"investigation\" | \"travel\" | \"rest\" | \"downtime\" | \"other\"; summary: string; participants: { ...; }[]; interactions: { ...; }[]; location?: { ...; } | u...'.",
+        "src/components/DndInformationHub.tsx(145,24): error TS2339: Property 'scene' does not exist on type '{ status: \"ready\"; kind: \"recorded\"; locationId?: string | undefined; recorded: { id: string; kind: \"exploration\" | \"conversation\" | \"combat\" | \"out-of-character\" | \"investigation\" | \"travel\" | \"rest\" | \"downtime\" | \"other\"; summary: string; participants: { ...; }[]; interactions: { ...; }[]; location?: { ...; } | u...'.",
+        "src/components/MapFeatureList.tsx(41,34): error TS7006: Parameter 'feature' implicitly has an 'any' type.",
+        "src/components/PlayConversationPanel.tsx(22,36): error TS2307: Cannot find module '/components/application-conversation.js' or its corresponding type declarations.",
+        "src/server-host/main.tsx(31,5): error TS2322: Type 'string | undefined' is not assignable to type 'null | undefined'.",
+        "src/server-host/main.tsx(62,30): error TS2339: Property 'message' does not exist on type 'DeniedHubEnvelope | ConnectedCampaignEnvelope | CharacterCreationRequiredEnvelope | UnavailableHubEnvelope'.",
+        "src/server-host/main.tsx(88,36): error TS2339: Property 'message' does not exist on type 'HubEnvelope'.",
+        "src/server/connected-hub-envelope.ts(13,44): error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled."
+      ]
+    },
+    "serverBuild": {
+      "command": "node node_modules/vite/bin/vite.js build --config vite.server.config.ts",
+      "exitCode": 0,
+      "status": "passed"
+    }
+  },
+  "sourceBundle": {
+    "bytes": 554110,
+    "sha256": "9183069b8d563d18dadd9e9a10a9d134b13bc1396f8349feeeb086e18a396b4a",
+    "artifacts": [
+      {
+        "path": "assets/index-BppOVqIx.css",
+        "bytes": 107662,
+        "sha256": "b82fe0d29ec1bd5c8f846911b5058fc9499710313539decf76b66a3e8e8df697"
+      },
+      {
+        "path": "assets/index-jtLe1aQo.js",
+        "bytes": 445659,
+        "sha256": "656f1479245a67676156b37f86fa8fd77f2e7581bb7ac62bb0a48bbfe33a6bdb"
+      },
+      {
+        "path": "index.html",
+        "bytes": 789,
+        "sha256": "1e1581a420002495b2176ad2fb946562a106837e8c8a97c52c8a804cc32fec8e"
+      }
+    ]
+  },
+  "live": {
+    "status": "blocked",
+    "reason": "Neither configured listener served /ui/dnd2024-play; active revision, live bundle, and browser timings were not inferred from build output.",
+    "probes": [
+      {
+        "listener": "http://127.0.0.1:6217",
+        "status": "unavailable",
+        "reason": "connect ECONNREFUSED 127.0.0.1:6217"
+      },
+      {
+        "listener": "https://127.0.0.1:5144",
+        "status": "unavailable",
+        "reason": "connect ECONNREFUSED 127.0.0.1:5144"
+      }
+    ],
+    "activeRevision": null,
+    "bundleSha256": null
+  },
+  "browserMeasurements": {
+    "status": "blocked",
+    "reason": "No live listener was available, so browser cold/warm sampling was not run.",
+    "requiredSamples": {
+      "cold": 20,
+      "warm": 20
+    },
+    "browser": {
+      "name": "Google Chrome",
+      "version": "152.0.7977.75"
+    },
+    "listener": null
+  },
+  "invariants": {
+    "livePagePublishedOrActivated": false,
+    "privatePayloadBodiesRecorded": false
+  }
+}

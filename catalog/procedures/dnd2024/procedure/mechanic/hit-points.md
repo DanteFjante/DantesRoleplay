@@ -11,6 +11,8 @@ changeNote: "Imported from the catalog."
 ## Description
 Defines one creature's authoritative current and maximum Hit Point state and its closed administrative writer. The pair is always written as one component so no record can contain an unbounded current value or an orphaned maximum.
 
+## Matches
+
 ## Instructions
 Source and scope
 

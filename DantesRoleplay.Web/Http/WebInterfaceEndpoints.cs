@@ -108,6 +108,8 @@ public static class WebInterfaceEndpoints
             "/system/conversations", GetSystemConversationsAsync);
         endpoints.MapDantesRoleplayControlGet(
             "/system/conversations/{conversationId}", GetSystemConversationAsync);
+        endpoints.MapDantesRoleplayControlGet(
+            "/system/capabilities", GetSystemCapabilities);
         endpoints.MapDantesRoleplayControlGet("/ai/providers", GetAiProviders);
         endpoints.MapDantesRoleplayControlGet("/ai/providers/{providerId}/models", GetAiModelsAsync);
         endpoints.MapDantesRoleplayControlGet("/ai/conversations", GetAiConversationsAsync);
@@ -175,7 +177,7 @@ public static class WebInterfaceEndpoints
         endpoints.MapDantesRoleplayControlPost(
             "/web/applications/{applicationId}/pages", PrivateOperatorCapability.ControlPagesWrite, CreateAdminPageAsync);
         endpoints.MapDantesRoleplayControlGet(
-            "/web/applications/{applicationId}/pages/{entityId}", GetAdminPageAsync);
+            "/web/applications/{applicationId}/pages/{entityId:regex(^web-page:.+$)}", GetAdminPageAsync);
         endpoints.MapDantesRoleplayControlPut(
             "/web/applications/{applicationId}/pages/{entityId}/metadata", PrivateOperatorCapability.ControlPagesWrite, UpdateAdminPageMetadataAsync);
         endpoints.MapDantesRoleplayControlPut(
@@ -190,6 +192,8 @@ public static class WebInterfaceEndpoints
             "/web/applications/{applicationId}/pages/{entityId}/revisions/{revision:int}", GetAdminPageRevisionAsync);
         endpoints.MapDantesRoleplayControlPost(
             "/web/applications/{applicationId}/pages/{entityId}/drafts", PrivateOperatorCapability.ControlPagesWrite, AppendAdminPageDraftAsync);
+        endpoints.MapDantesRoleplayControlPost(
+            "/web/applications/{applicationId}/pages/{entityId}/bundle-drafts", PrivateOperatorCapability.ControlPagesWrite, AppendAdminPageBundleDraftAsync);
         endpoints.MapDantesRoleplayControlPut(
             "/web/applications/{applicationId}/pages/{entityId}/bundle", PrivateOperatorCapability.ControlPagesWrite, PublishAdminPageBundleAsync);
         endpoints.MapDantesRoleplayControlPut(
@@ -912,6 +916,12 @@ public static class WebInterfaceEndpoints
         AssistantAsync(context, () => Task.FromResult<object?>(explorer.Get(
             WebControlRequestFilter.GetAuthorizationEvidence(context), capabilityId)));
 
+    private static Task<IResult> GetSystemCapabilities(
+        HttpContext context,
+        ControlSystemCapabilityExplorer explorer) =>
+        AssistantAsync(context, () => Task.FromResult<object?>(explorer.List(
+            WebControlRequestFilter.GetAuthorizationEvidence(context))));
+
     private static async Task<IResult> StreamCodexAsync(
         HttpContext context, IAsyncEnumerable<CodexConversationEvent> events,
         CancellationToken cancellationToken)
@@ -1599,6 +1609,24 @@ public static class WebInterfaceEndpoints
                     context.Request.Body, context.Request.ContentLength, cancellationToken),
                 cancellationToken));
 
+    private static Task<IResult> AppendAdminPageBundleDraftAsync(
+        string applicationId,
+        string entityId,
+        HttpContext context,
+        WebPageAdministration pages,
+        CancellationToken cancellationToken) =>
+        PageAdministrationAsync(context, async () =>
+            (object?)await pages.AppendBundleDraftAsync(
+                ApplicationIdentifier.Parse(applicationId),
+                entityId,
+                ParseOptionalPositiveInt(
+                    context.Request.Query["expectedLatestRevision"].FirstOrDefault(),
+                    "expectedLatestRevision")
+                    ?? throw new ArgumentException("expectedLatestRevision is required."),
+                await new WebPageBundleReader().ReadAsync(
+                    context.Request.Body, context.Request.ContentLength, cancellationToken),
+                cancellationToken));
+
     private static Task<IResult> ActivateAdminPageRevisionAsync(
         string applicationId,
         string entityId,
@@ -1725,10 +1753,12 @@ public static class WebInterfaceEndpoints
 
     private static async Task<IResult> GetPageAsync(
         string id,
+        HttpContext context,
         IWebPageStore pages,
         [FromServices] IWebPublicationDiscovery publications,
         CancellationToken cancellationToken)
     {
+        context.Response.Headers.CacheControl = "private, no-store";
         var contentPageId = id;
         if (!SystemWebPageIds.IsSystemOwned(id))
         {
@@ -1744,14 +1774,16 @@ public static class WebInterfaceEndpoints
     }
 
     private static Task<IResult> GetHomePageAsync(
+        HttpContext context,
         IWebPageStore pages,
         [FromServices] IWebPublicationDiscovery publications,
         CancellationToken cancellationToken) =>
-        GetPageAsync(HomePageId, pages, publications, cancellationToken);
+        GetPageAsync(HomePageId, context, pages, publications, cancellationToken);
 
     private static async Task<IResult> GetAssetAsync(
         string id,
         string? path,
+        HttpContext context,
         IWebPageStore pages,
         [FromServices] IWebPublicationDiscovery publications,
         CancellationToken cancellationToken)
@@ -1769,9 +1801,25 @@ public static class WebInterfaceEndpoints
             contentPageId = route.Page.ContentPageId;
         }
         var asset = await pages.GetActiveAssetAsync(contentPageId, $"assets/{path}", cancellationToken);
+        context.Response.Headers.CacheControl = asset is not null && IsContentAddressedAsset(asset.Path)
+            ? "private, max-age=31536000, immutable"
+            : "private, no-store";
         return asset is null
             ? Results.NotFound()
             : Results.File(asset.Content, asset.ContentType);
+    }
+
+    private static bool IsContentAddressedAsset(string path)
+    {
+        var fileName = Path.GetFileNameWithoutExtension(path);
+        for (var separator = fileName.IndexOf('-'); separator >= 0; separator = fileName.IndexOf('-', separator + 1))
+        {
+            var fingerprint = fileName[(separator + 1)..];
+            if (fingerprint.Length is >= 8 and <= 64 &&
+                fingerprint.All(character => char.IsAsciiLetterOrDigit(character) || character is '_' or '-'))
+                return true;
+        }
+        return false;
     }
 
     private static IResult PublicationRouteError(string status)

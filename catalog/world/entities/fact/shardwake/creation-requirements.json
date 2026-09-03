@@ -1,0 +1,16 @@
+{
+  "id": "fact.shardwake.creation-requirements",
+  "name": "World Creation Requirements",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Create an original D&D 2024-ready setting with a clear premise, nested world geography, several playable locations, durable public and hidden truths, competing factions, recurring people with motives, dated history, connected travel choices, a concrete opening situation, room for discovery, and no invented house rules. Preserve player agency and store later story truths rather than relying on transcript memory.",
+      "visibility": "gm",
+      "provenance": "Authored during the autonomous MCP machine-simulation world-creation session on 2026-09-01."
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "confidential"
+    }
+  }
+}

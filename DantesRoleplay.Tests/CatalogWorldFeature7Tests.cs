@@ -96,7 +96,7 @@ public sealed class CatalogWorldFeature7Tests : IDisposable
         Assert.False((await new CatalogImporter(db, mechanics, procedures, world, new EventTypeStore(db), new SubscriptionStore(db))
             .ApplyAsync(_copy, new CatalogImportOptions())).Aborted);
 
-        var runner = new ActionRunner(db, mechanics, new ProjectionResolver(db), new JintMechanicEngine(),
+        var runner = new CatalogMechanicTestHarness(db, mechanics, new ProjectionResolver(db), new JintMechanicEngine(),
             new EffectApplier(db, world,
                 new GuardRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine(), new WorldStore(db)),
                 new EventLedger(db),

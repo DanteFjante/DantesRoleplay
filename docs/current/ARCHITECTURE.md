@@ -1,6 +1,6 @@
 # Architecture
 
-Last reviewed: 2026-09-01.
+Last reviewed: 2026-09-03.
 
 DantesRoleplay is a generic C# host for data-authored roleplaying games. The host knows how to execute and audit declared behavior; it must not know the rules or vocabulary of D&D or any other game.
 
@@ -174,7 +174,18 @@ Generic security, resource, and transaction invariants remain host responsibilit
 - Stable record IDs are contracts. Add or change them deliberately.
 - Component schemas own stored state shape; mechanics do not invent undeclared state.
 - Procedures declare the context and capabilities mechanics may use.
+- Every callable system capability, application mechanic, and application query is projected into
+  one transport-neutral capability descriptor. The descriptor declares exact provenance and
+  lifecycle, input and output schemas, scope and roles, authorization, operation mode,
+  confirmation and idempotency, examples, stable errors, and structured recovery actions.
+  Existing registries and active application catalogs remain authoritative; the common descriptor
+  is a discovery and presentation contract, not a new owner of executable behavior.
 - Effects are validated before mutation and applied within the owning transaction.
+- Application composite mechanics declare exact child versions and content fingerprints. The host
+  evaluates their bounded dependency graph before the parent, carries every child proposal in
+  dependency order, and applies child and parent effects as one idempotent transaction. Array
+  expansion may select closed object inputs and projected role IDs, but never treats caller data as
+  authority; each selected role is resolved and authorized through the ordinary projection owner.
 - Live database records are exported and reviewed before corresponding authored files are changed.
 - Web features read and write through supported runtime operations; they do not become a second game-state store.
 - AI providers never call the MCP server to reach host functionality. They receive explicitly
@@ -183,6 +194,9 @@ Generic security, resource, and transaction invariants remain host responsibilit
   system capabilities, durable system tasks and plans, interaction recipes, scheduling, and every
   fine-grained operation published by the MCP host. Local models are not given the transport
   multiplexers `orient`, `query`, or `commit`; each underlying kind is a separately described tool.
+  MCP discovery, direct AI tools, orientation, and schema-driven web forms consume the same common
+  descriptors. Compatibility dispatch metadata may remain internal, but loose payload-shape
+  strings are not a public discovery contract.
 - Verified multi-step recipes may recursively invoke the selected local provider once per bounded,
   dependency-ordered task. Each child receives prerequisite results and the same direct authorized
   tool surface, except the recipe-run tool itself. Recipe templates retain the shared 16-step graph

@@ -2,10 +2,10 @@
 id: procedure.game.core.world.chronology
 category: game.core.world.chronology
 name: Govern dedicated dated World chronology
-governs: commit(kind: "component") declaring game.core.world.chronology; commit(kind: "effects") recording, correcting, or archiving chronology entries and their game.core.world.chronology.in-world and game.core.world.chronology.about relationships
+governs: commit(kind: "system.component-type.register") declaring game.core.world.chronology; commit(kind: "system.world-state.sync") recording, correcting, or archiving chronology entries and their game.core.world.chronology.in-world and game.core.world.chronology.about relationships
 status: active
 createdBy: "seed"
-changeNote: "Seeded from bootstrap file."
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
@@ -13,6 +13,8 @@ Defines durable dated setting history for one World. A chronology entry has one 
 coordinate and authored display date, one World scope, and optional exact subjects. It is not a
 campaign recap, knowledge record, structural event, clock history, or automatic consequence of
 another write.
+
+## Matches
 
 ## Instructions
 1. Declare `game.core.world.chronology` once. Its complete closed data contains status, title,

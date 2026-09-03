@@ -221,42 +221,93 @@ test("prefers canonical character state and direct inventory over provisional no
         { kind: "equipment", key: "ocarina", label: "Narrative ocarina" },
       ],
       canonical: {
+        version: 2,
+        subject: { id: "actor.thalorien.brackenford.orban", label: "Orban" },
         identity: { appearance: "Tall and slender.", biography: "Raised by performers." },
         origin: {
-          speciesId: "dnd2024.content.species.human",
-          backgroundId: "dnd2024.content.background.criminal",
+          species: { id: "dnd2024.content.species.human", label: "Human" },
+          background: { id: "dnd2024.content.background.criminal", label: "Criminal" },
         },
-        abilities: [{ id: "dnd2024.vocabulary.ability.charisma", score: 17 }],
-        hitPoints: { current: 9, maximum: 9 },
-        temporaryHitPoints: null,
-        body: { sizeId: "dnd2024.vocabulary.size.medium" },
+        abilities: [{ ability: { id: "dnd2024.vocabulary.ability.charisma", label: "Charisma" }, score: 17, modifier: 3 }],
+        hitPoints: { current: 9, maximum: 9, maximumReduction: 0 },
+        body: { size: { id: "dnd2024.vocabulary.size.medium", label: "Medium" } },
         movement: [{
-          id: "dnd2024.vocabulary.movement-mode.walk",
+          kind: { id: "dnd2024.vocabulary.movement-mode.walk", label: "Walk" },
           numerator: 9,
           denominator: 1,
-          unitId: "dnd2024.vocabulary.distance-unit.meter",
+          unit: { id: "dnd2024.vocabulary.distance-unit.meter", label: "Meter" },
         }],
         proficiencies: [{
-          id: "dnd2024.vocabulary.skill.performance",
-          rankId: "dnd2024.vocabulary.proficiency-rank.proficiency",
+          proficiency: { id: "dnd2024.vocabulary.skill.performance", label: "Performance" },
+          rank: { id: "dnd2024.vocabulary.proficiency-rank.proficiency", label: "Proficiency" },
         }],
         experience: { total: 0 },
         classes: [{
           id: "actor.thalorien.brackenford.orban.class-membership.bard",
           name: "Bard membership",
-          classId: "dnd2024.content.class.bard",
+          class: { id: "dnd2024.content.class.bard", label: "Bard" },
           level: 1,
+          subclass: null,
         }],
-        inventoryStatus: "ready",
-        inventory: [{
-          id: "item.orban.gold",
-          name: "Starting Gold",
-          definitionId: "dnd2024.content.item.currency.gold-piece",
-          quantity: 45,
-          slot: "inventory.currency",
-          equipmentSlots: [],
-          media: { illustration: itemIllustration },
-        }],
+        inventory: {
+          contentsDepth: 4,
+          mayOmitDeeperContents: true,
+          items: [{
+            id: "item.orban.gold",
+            name: "Starting Gold",
+            definition: { id: "dnd2024.content.item.currency.gold-piece", label: "Gold Piece" },
+            quantity: 45,
+            slot: "inventory.currency",
+            parentItemId: null,
+            order: 0,
+            depth: 1,
+            childCount: 0,
+            deeperContentsOmitted: false,
+            equipmentSlots: [],
+            media: { illustration: itemIllustration },
+          }],
+        },
+        wallet: {
+          coinCount: 45,
+          copperValue: 4500,
+          gpCount: 45,
+          denominations: [{
+            denomination: { id: "dnd2024.content.item.currency.gold-piece", label: "Gold Piece" },
+            code: "gp",
+            count: 45,
+            copperValuePerCoin: 100,
+            totalCopperValue: 4500,
+          }],
+        },
+        dossier: {
+          origin: {
+            species: { id: "dnd2024.content.species.human", label: "Human", canonicalName: "Human", kind: "species", status: "active", summary: null, source: null },
+            background: { id: "dnd2024.content.background.criminal", label: "Criminal", canonicalName: "Criminal", kind: "background", status: "active", summary: null, source: null },
+            traits: [],
+          },
+          classes: [{
+            id: "actor.thalorien.brackenford.orban.class-membership.bard",
+            name: "Bard membership",
+            definition: { id: "dnd2024.content.class.bard", label: "Bard", canonicalName: "Bard", kind: "class", status: "active", summary: null, source: null },
+            level: 1,
+            subclass: null,
+          }],
+          features: [],
+          inventory: {
+            definitions: [{ id: "dnd2024.content.item.currency.gold-piece", label: "Gold Piece", canonicalName: "Gold Piece", kind: "equipment", status: "identity-only", summary: null, source: null }],
+            contentsDepth: 4,
+            mayOmitDeeperContents: true,
+          },
+          definitions: [],
+          provenance: {
+            sheetQueryId: "dnd2024.query.character-sheet-v2",
+            sheetProjectionId: "dnd2024.mechanic.character-sheet-v2.project",
+            dossierProjectionId: "dnd2024.mechanic.character-dossier-v1.project",
+            definitionCount: 0,
+            inventoryDepth: 4,
+            ruleTextPolicy: "canonical-only",
+          },
+        },
       },
     }],
   }));
@@ -266,6 +317,9 @@ test("prefers canonical character state and direct inventory over provisional no
   assert.equal(member.recordStatus, "Canonical character state");
   assert.equal(member.sheetStatus, "canonical");
   assert.equal(member.inventoryStatus, "canonical");
+  assert.equal(member.sheetState.status, "ready");
+  assert.equal(member.sheetState.source, "canonical");
+  assert.equal(member.inventoryState.status, "ready");
   assert.deepEqual(member.sheet.slice(0, 3).map((entry) => entry.title), [
     "Bard · Level 1",
     "Hit Points",
@@ -278,6 +332,89 @@ test("prefers canonical character state and direct inventory over provisional no
   assert.equal(JSON.stringify(member).includes("Provisional Bard direction"), false);
   assert.equal(JSON.stringify(member).includes("Narrative ocarina"), false);
   assert.equal(JSON.stringify(member).includes("armor class"), false);
+});
+
+test("canonical failures remain errors and never fall back to provisional character values", () => {
+  const envelope = connectedCampaignToHubEnvelope(connectedFixture({
+    audience: { seat: "player", allowedPerspectives: ["player"] },
+    party: [{
+      id: "actor.one",
+      name: "One",
+      state: "active",
+      current: true,
+      entries: [
+        { kind: "class", key: "wizard", label: "Invented fallback wizard" },
+        { kind: "equipment", key: "wand", label: "Invented fallback wand" },
+      ],
+      canonicalResult: {
+        status: "error",
+        data: null,
+        failureCategory: "incompatible-data",
+        diagnosticId: "projection-malformed-1",
+      },
+    }],
+  }));
+
+  const member = envelope.party[0];
+  assert.equal(member.sheetState.status, "error");
+  assert.equal(member.sheetState.failureCategory, "incompatible-data");
+  assert.equal(member.inventoryState.status, "error");
+  assert.deepEqual(member.sheet, []);
+  assert.deepEqual(member.inventory, []);
+  assert.equal(member.characterSheet, undefined);
+  assert.equal(JSON.stringify(member).includes("Invented fallback"), false);
+});
+
+test("catalog HTTP failures retain their status as explicit error sections", () => {
+  const envelope = connectedCampaignToHubEnvelope(connectedFixture({
+    audience: { seat: "player", allowedPerspectives: ["player"] },
+    party: [{
+      id: "actor.one",
+      name: "One",
+      state: "active",
+      current: true,
+      entries: [],
+      canonicalResult: {
+        status: "error",
+        data: null,
+        failureCategory: "http",
+        diagnosticId: "projection-catalog-422",
+        httpStatus: 422,
+      },
+    }],
+  }));
+
+  assert.deepEqual(envelope.party[0].sheetState, {
+    status: "error",
+    data: null,
+    failureCategory: "http",
+    diagnosticId: "projection-catalog-422",
+    httpStatus: 422,
+  });
+  assert.deepEqual(envelope.party[0].inventoryState, envelope.party[0].sheetState);
+});
+
+test("authorization failures are represented as forbidden section states", () => {
+  const envelope = connectedCampaignToHubEnvelope(connectedFixture({
+    audience: { seat: "player", allowedPerspectives: ["player"] },
+    party: [{
+      id: "actor.one",
+      name: "One",
+      state: "active",
+      current: true,
+      entries: [],
+      canonicalResult: {
+        status: "forbidden",
+        data: null,
+        failureCategory: "authorization",
+        diagnosticId: "projection-forbidden-1",
+        httpStatus: 403,
+      },
+    }],
+  }));
+
+  assert.equal(envelope.party[0].sheetState.status, "forbidden");
+  assert.equal(envelope.party[0].inventoryState.status, "forbidden");
 });
 
 test("does not attach DM knowledge to character dossiers", () => {

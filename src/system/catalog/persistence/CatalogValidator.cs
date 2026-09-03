@@ -2,6 +2,7 @@
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.CatalogNamespaces;
+using DantesRoleplay.SchemaValidation;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.DataAccess.Catalog;
@@ -80,8 +81,17 @@ public static class CatalogValidator
 
         var contents = await CatalogReader.ReadAsync(root, cancellationToken);
         var issues = new List<CatalogValidationIssue>();
+        var inputSchemas = new BoundedJsonSchemaValidator();
         issues.AddRange(CatalogNamespaceConformance.FindUnreviewedRecords(contents).Select(issue =>
             new CatalogValidationIssue(issue.Kind, issue.Id, "namespace-review", issue.Detail, Warning: true)));
+        var antiSprawl = CatalogAntiSprawlAnalyzer.Analyze(
+            contents.Mechanics.Select(file => CatalogAntiSprawlMechanic.Create(file, file.Id)).ToArray(),
+            await CatalogAntiSprawlReviewCatalog.ReadAsync(root, cancellationToken));
+        issues.AddRange(antiSprawl.Findings
+            .Where(finding => finding.Blocking || finding.Classification == "review")
+            .Select(finding => new CatalogValidationIssue(
+                "mechanic", finding.Left.QualifiedId, finding.Code, finding.Summary,
+                Warning: !finding.Blocking)));
 
         var imported = await importer.ApplyAsync(root, new CatalogImportOptions(), cancellationToken);
 
@@ -102,6 +112,15 @@ public static class CatalogValidator
 
         foreach (var file in contents.Mechanics)
         {
+            var requirements = MechanicRequirements.Parse(file.Requirements);
+            if (requirements.InputSchema is System.Text.Json.JsonElement inputSchema)
+            {
+                var compiled = inputSchemas.Compile(inputSchema.GetRawText());
+                if (!compiled.IsAccepted)
+                    issues.Add(new CatalogValidationIssue("mechanic", file.Id, "input-schema",
+                        compiled.Diagnostics.FirstOrDefault()?.Message
+                        ?? "The authored mechanic input schema is invalid.", Warning: false));
+            }
             var checks = await mechanics.CheckAsync(
                 new WriteMechanicRequest
                 {
@@ -121,8 +140,9 @@ public static class CatalogValidator
 
             issues.AddRange(checks
                 .Where(check => !check.Passed)
-                .Where(check => check.Blocking || IsChanged(
-                    contents.Manifest, CatalogRecordKind.Mechanic, file.Id, file.ContentHash))
+                // The legacy two-token warning remains useful during one-record authoring, but the
+                // catalog gate above owns whole-overlay conflicts and explicit reviewed baselines.
+                .Where(check => check.Name != "no-near-duplicate")
                 .Select(check => new CatalogValidationIssue(
                     "mechanic", file.Id, check.Name, check.Detail, Warning: !check.Blocking)));
         }
@@ -148,8 +168,10 @@ public static class CatalogValidator
 
             issues.AddRange(checks
                 .Where(check => !check.Passed)
-                .Where(check => check.Name != "no-near-duplicate" || IsChanged(
-                    contents.Manifest, CatalogRecordKind.Procedure, file.Id, file.ContentHash))
+                // ProcedureStore keeps this as an interactive authoring nudge. It is not a
+                // content-addressed whole-overlay decision and must not reintroduce hash-suppressed
+                // pseudo-reviews into catalog validation.
+                .Where(check => check.Name != "no-near-duplicate")
                 .Select(check => new CatalogValidationIssue(
                     "procedure",
                     file.Id,

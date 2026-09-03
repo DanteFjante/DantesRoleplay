@@ -93,7 +93,6 @@ public static class ServerConfiguration
                     completion);
         });
         services.AddScoped<IInformationActionCoordinator, InformationActionCoordinator>();
-        services.AddScoped<IInformationActionExecutor, MechanicActionInformationExecutor>();
         var localKnowledgeSeat = new ConfigurationLocalKnowledgeSeatProvider(hostConfiguration);
         services.AddSingleton<ILocalKnowledgeSeatProvider>(localKnowledgeSeat);
         services.AddSingleton<IWebReadableRulesAudienceProvider,

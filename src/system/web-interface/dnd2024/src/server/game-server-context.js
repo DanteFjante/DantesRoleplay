@@ -537,27 +537,214 @@ function referenceId(value) {
   return token(value.entityId);
 }
 
-async function readCanonicalCharacter({ fetchImpl, origin, applicationId, stateSpaceId, actorId }) {
+function canonicalCharacterDiagnosticId(response, actorId, category) {
+  const requestId = text(response?.headers?.get?.("x-request-id"), 160);
+  return requestId ?? `canonical-character:${actorId}:${category}`;
+}
+
+function boundedInteger(value, minimum, maximum = Number.MAX_SAFE_INTEGER) {
+  return Number.isSafeInteger(value) && value >= minimum && value <= maximum;
+}
+
+function namedCharacterReference(value) {
+  return hasExactKeys(value, ["id", "label"]) && token(value.id) && text(value.label, 5_000);
+}
+
+function namedCharacterReferences(value, maximum) {
+  return Array.isArray(value) && value.length <= maximum && value.every(namedCharacterReference);
+}
+
+function validCharacterInventory(value) {
+  if (!hasExactKeys(value, ["items", "contentsDepth", "mayOmitDeeperContents"]) ||
+      value.contentsDepth !== 4 || value.mayOmitDeeperContents !== true ||
+      !Array.isArray(value.items) || value.items.length > 512) return false;
+
+  const ids = new Set();
+  const positions = new Set();
+  for (const item of value.items) {
+    if (!hasExactKeys(item, ["id", "name", "definition", "quantity", "slot", "parentItemId",
+      "order", "depth", "childCount", "deeperContentsOmitted", "equipmentSlots"]) ||
+        !token(item.id) || !text(item.name, 5_000) || !namedCharacterReference(item.definition) ||
+        !boundedInteger(item.quantity, 1) || typeof item.slot !== "string" || item.slot.length > 200 ||
+        !(item.parentItemId === null || token(item.parentItemId)) ||
+        !boundedInteger(item.order, 0, 99) || !boundedInteger(item.depth, 1, 4) ||
+        !boundedInteger(item.childCount, 0, 100) || typeof item.deeperContentsOmitted !== "boolean" ||
+        !namedCharacterReferences(item.equipmentSlots, 32) || ids.has(item.id)) return false;
+    ids.add(item.id);
+    const position = `${item.parentItemId ?? "root"}:${item.order}`;
+    if (positions.has(position)) return false;
+    positions.add(position);
+  }
+
+  const byId = new Map(value.items.map((item) => [item.id, item]));
+  const actualChildren = new Map();
+  for (const item of value.items) {
+    if (item.parentItemId === null) {
+      if (item.depth !== 1) return false;
+    } else {
+      const parent = byId.get(item.parentItemId);
+      if (!parent || item.depth !== parent.depth + 1) return false;
+      actualChildren.set(parent.id, (actualChildren.get(parent.id) ?? 0) + 1);
+    }
+    const visited = new Set([item.id]);
+    let parentId = item.parentItemId;
+    while (parentId !== null) {
+      if (visited.has(parentId)) return false;
+      visited.add(parentId);
+      parentId = byId.get(parentId)?.parentItemId ?? null;
+    }
+  }
+  return value.items.every((item) =>
+    item.childCount === (actualChildren.get(item.id) ?? 0) &&
+    (item.depth !== 4 || item.deeperContentsOmitted));
+}
+
+function validCharacterWallet(value) {
+  const codes = new Set(["cp", "sp", "ep", "gp", "pp"]);
+  const copperValues = new Set([1, 10, 50, 100, 1000]);
+  if (!hasExactKeys(value, ["coinCount", "copperValue", "gpCount", "denominations"]) ||
+      !boundedInteger(value.coinCount, 0) || !boundedInteger(value.copperValue, 0) ||
+      !boundedInteger(value.gpCount, 0) || !Array.isArray(value.denominations) ||
+      value.denominations.length > 5) return false;
+  const seen = new Set();
+  let coinCount = 0;
+  let copperValue = 0;
+  let gpCount = 0;
+  for (const row of value.denominations) {
+    if (!hasExactKeys(row, ["denomination", "code", "count", "copperValuePerCoin", "totalCopperValue"]) ||
+        !namedCharacterReference(row.denomination) || !codes.has(row.code) || seen.has(row.code) ||
+        !boundedInteger(row.count, 1) || !copperValues.has(row.copperValuePerCoin) ||
+        !boundedInteger(row.totalCopperValue, 1) ||
+        row.totalCopperValue !== row.count * row.copperValuePerCoin) return false;
+    seen.add(row.code);
+    coinCount += row.count;
+    copperValue += row.totalCopperValue;
+    if (row.code === "gp") gpCount = row.count;
+  }
+  return coinCount === value.coinCount && copperValue === value.copperValue && gpCount === value.gpCount;
+}
+
+function validCharacterSheetV2(value, actorId) {
+  const allowed = new Set([
+    "version", "subject", "identity", "origin", "experience", "classes", "level",
+    "proficiencyBonus", "abilities", "savingThrows", "skills", "initiative", "hitPoints",
+    "temporaryHitPoints", "armorClass", "body", "movement", "senses", "conditions",
+    "proficiencies", "features", "resources", "spellcasting", "actions", "inventory", "wallet",
+  ]);
+  if (!value || typeof value !== "object" || Array.isArray(value) ||
+      Object.keys(value).some((key) => !allowed.has(key)) || value.version !== 2 ||
+      !namedCharacterReference(value.subject) || value.subject.id !== actorId ||
+      !validCharacterInventory(value.inventory) || !validCharacterWallet(value.wallet)) return false;
+
+  const optionalArrays = ["classes", "abilities", "savingThrows", "skills", "movement", "senses",
+    "conditions", "proficiencies", "features", "resources", "spellcasting", "actions"];
+  if (optionalArrays.some((key) => value[key] !== undefined && !Array.isArray(value[key]))) return false;
+  if (value.abilities && (value.abilities.length !== 6 || value.abilities.some((entry) =>
+    !namedCharacterReference(entry?.ability) || !boundedInteger(entry?.score, 1, 30) ||
+    !boundedInteger(entry?.modifier, -1000, 1000)))) return false;
+  if (value.savingThrows && (value.savingThrows.length !== 6 || value.savingThrows.some((entry) =>
+    !namedCharacterReference(entry?.ability) || typeof entry?.proficient !== "boolean" ||
+    !boundedInteger(entry?.modifier, -1000, 1000)))) return false;
+  if (value.skills && (value.skills.length !== 18 || value.skills.some((entry) =>
+    !namedCharacterReference(entry?.skill) || !namedCharacterReference(entry?.ability) ||
+    typeof entry?.proficient !== "boolean" || typeof entry?.expertise !== "boolean" ||
+    !boundedInteger(entry?.modifier, -1000, 1000)))) return false;
+  if (value.classes && value.classes.some((entry) =>
+    !token(entry?.id) || !text(entry?.name, 5_000) || !namedCharacterReference(entry?.class) ||
+    !boundedInteger(entry?.level, 1, 20) || !(entry?.subclass === null || namedCharacterReference(entry?.subclass)))) return false;
+  if (value.spellcasting && value.spellcasting.some((entry) =>
+    !token(entry?.id) || !text(entry?.name, 5_000) || !namedCharacterReference(entry?.sourceDefinition) ||
+    !namedCharacterReference(entry?.ability) || !namedCharacterReferences(entry?.preparedSpells, 2_048) ||
+    !namedCharacterReferences(entry?.availableSpells, 2_048))) return false;
+  if (value.actions && value.actions.some((entry) =>
+    !token(entry?.id) || !text(entry?.name, 5_000) || !namedCharacterReferences(entry?.activities, 256))) return false;
+  return true;
+}
+
+function validDossierDefinition(value) {
+  if (!hasExactKeys(value, ["id", "label", "canonicalName", "kind", "status", "summary", "source"]) ||
+      !token(value.id) || !text(value.label, 5_000) || !text(value.canonicalName, 5_000) ||
+      !token(value.kind) || !["active", "identity-only"].includes(value.status) ||
+      !(value.summary === null || text(value.summary, 5_000))) return false;
+  return value.source === null || (hasExactKeys(value.source, ["sourceId", "locator"]) &&
+    token(value.source.sourceId) && text(value.source.locator, 5_000));
+}
+
+function validCharacterDossier(value, actorId) {
+  if (!hasExactKeys(value, ["version", "sheet", "origin", "classes", "features", "inventory", "definitions", "provenance"]) ||
+      value.version !== 1 || !validCharacterSheetV2(value.sheet, actorId) ||
+      !hasExactKeys(value.origin, ["species", "background", "traits"]) ||
+      !validDossierDefinition(value.origin.species) || !validDossierDefinition(value.origin.background) ||
+      !Array.isArray(value.origin.traits) || value.origin.traits.length > 128 ||
+      value.origin.traits.some((entry) => !hasExactKeys(entry, ["key", "label", "status", "reason", "source"]) ||
+        !token(entry.key) || !text(entry.label, 5_000) || entry.status !== "pending" || !token(entry.reason) ||
+        !(entry.source === null || (hasExactKeys(entry.source, ["sourceId", "locator"]) && token(entry.source.sourceId) && text(entry.source.locator, 5_000)))) ||
+      !Array.isArray(value.classes) || value.classes.length < 1 || value.classes.length > 20 ||
+      value.classes.some((entry) => !hasExactKeys(entry, ["id", "name", "definition", "level", "subclass"]) ||
+        !token(entry.id) || !text(entry.name, 5_000) || !validDossierDefinition(entry.definition) ||
+        !boundedInteger(entry.level, 1, 20) || !(entry.subclass === null || namedCharacterReference(entry.subclass))) ||
+      !Array.isArray(value.features) || value.features.length > 1_024 ||
+      value.features.some((entry) => !hasExactKeys(entry, ["definition", "grantedBy", "grantKind", "classLevel", "configurationKey", "implementation"]) ||
+        !validDossierDefinition(entry.definition) || !validDossierDefinition(entry.grantedBy) || !token(entry.grantKind) ||
+        !(entry.classLevel === null || boundedInteger(entry.classLevel, 1, 20)) ||
+        !(entry.configurationKey === null || token(entry.configurationKey)) ||
+        !hasExactKeys(entry.implementation, ["status", "reason", "entitlementKey"]) ||
+        !["recorded", "pending"].includes(entry.implementation.status) ||
+        !(entry.implementation.reason === null || token(entry.implementation.reason)) ||
+        !(entry.implementation.entitlementKey === null || token(entry.implementation.entitlementKey))) ||
+      !hasExactKeys(value.inventory, ["definitions", "contentsDepth", "mayOmitDeeperContents"]) ||
+      !Array.isArray(value.inventory.definitions) || value.inventory.definitions.length > 512 ||
+      value.inventory.definitions.some((entry) => !validDossierDefinition(entry)) ||
+      value.inventory.contentsDepth !== 4 || value.inventory.mayOmitDeeperContents !== true ||
+      !Array.isArray(value.definitions) || value.definitions.length > 512 ||
+      value.definitions.some((entry) => !validDossierDefinition(entry)) ||
+      !hasExactKeys(value.provenance, ["sheetQueryId", "sheetProjectionId", "dossierProjectionId", "definitionCount", "inventoryDepth", "ruleTextPolicy"]) ||
+      value.provenance.sheetQueryId !== "dnd2024.query.character-sheet-v2" ||
+      value.provenance.sheetProjectionId !== "dnd2024.mechanic.character-sheet-v2.project" ||
+      value.provenance.dossierProjectionId !== "dnd2024.mechanic.character-dossier-v1.project" ||
+      value.provenance.definitionCount !== value.definitions.length || value.provenance.inventoryDepth !== 4 ||
+      value.provenance.ruleTextPolicy !== "canonical-only") return false;
+  return value.sheet.origin?.species?.id === value.origin.species.id &&
+    value.sheet.origin?.background?.id === value.origin.background.id;
+}
+
+export async function readCanonicalCharacter({ fetchImpl, origin, applicationId, stateSpaceId, actorId }) {
   const applicationRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
     `/state-spaces/${encodeURIComponent(stateSpaceId)}`;
   const entityRoot = `${applicationRoot}/entities`;
   const headers = { Accept: "application/json" };
   try {
     const response = await fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(actorId)}` +
-      `/read-models/${encodeURIComponent("dnd2024.query.character-sheet")}`), {
+      `/read-models/${encodeURIComponent("dnd2024.query.character-dossier-v1")}`), {
       headers,
       cache: "no-store",
     });
-    if (!response?.ok) return null;
+    if (!response?.ok) {
+      const forbidden = response?.status === 401 || response?.status === 403;
+      const category = forbidden ? "authorization" : "http";
+      return {
+        status: forbidden ? "forbidden" : "error",
+        data: null,
+        failureCategory: category,
+        diagnosticId: canonicalCharacterDiagnosticId(response, actorId, category),
+        ...(Number.isInteger(response?.status) ? { httpStatus: response.status } : {}),
+      };
+    }
     const payload = await json(response);
     const projected = payload?.data;
-    if (!projected || projected.version !== 1 || projected.subject?.id !== actorId ||
-        token(payload?.qualifiedQueryId) !== "dnd2024.query.character-sheet" ||
+    if (!validCharacterDossier(projected, actorId) ||
+        token(payload?.qualifiedQueryId) !== "dnd2024.query.character-dossier-v1" ||
         !token(payload?.stateSpaceFingerprint) || !token(payload?.resolutionFingerprint) ||
-        !Array.isArray(projected.inventory?.items)) return null;
-    const inventory = (await Promise.all(projected.inventory.items.map(async (item) => {
+        !token(payload?.resultFingerprint) || !token(payload?.sourceRevisionFingerprint) ||
+        !Array.isArray(projected.sheet?.inventory?.items)) return {
+      status: "error",
+      data: null,
+      failureCategory: "incompatible-data",
+      diagnosticId: canonicalCharacterDiagnosticId(response, actorId, "incompatible-data"),
+    };
+    const inventory = (await Promise.all(projected.sheet.inventory.items.map(async (item) => {
       const itemId = token(item?.id);
-      const definitionId = token(item?.definitionId);
+      const definitionId = token(item?.definition?.id);
       if (!itemId || !definitionId) return null;
       const [instanceMediaValue, definitionMediaValue] = await Promise.all([
         readEntityMedia(fetchImpl, origin, entityRoot, itemId),
@@ -570,18 +757,35 @@ async function readCanonicalCharacter({ fetchImpl, origin, applicationId, stateS
       return inheritedMedia ? { ...item, media: inheritedMedia } : item;
     }))).filter(Boolean);
     return {
-      ...projected,
-      inventoryStatus: "ready",
-      inventory,
+      status: "ready",
+      diagnosticId: canonicalCharacterDiagnosticId(response, actorId, "ready"),
+      failureCategory: null,
+      data: {
+      ...projected.sheet,
+      inventory: { ...projected.sheet.inventory, items: inventory },
+      dossier: {
+        origin: projected.origin,
+        classes: projected.classes,
+        features: projected.features,
+        inventory: projected.inventory,
+        definitions: projected.definitions,
+        provenance: projected.provenance,
+      },
       projection: {
         stateSpaceFingerprint: payload.stateSpaceFingerprint,
         resolutionFingerprint: payload.resolutionFingerprint,
         resultFingerprint: payload.resultFingerprint,
         sourceRevisionFingerprint: payload.sourceRevisionFingerprint,
       },
+      },
     };
   } catch {
-    return null;
+    return {
+      status: "error",
+      data: null,
+      failureCategory: "transport",
+      diagnosticId: canonicalCharacterDiagnosticId(null, actorId, "transport"),
+    };
   }
 }
 
@@ -1513,10 +1717,9 @@ async function readPartyRoster({
   perspective,
   boundActor,
   boundActorDetails,
-  boundCanonical,
+  boundCanonicalResult,
 }) {
-  if (serverRole.role === "actor") {
-    if (!boundActor) return [];
+  if (perspective === "player" && boundActor) {
     const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
       `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
     const mediaValue = await readEntityMedia(fetchImpl, origin, entityRoot, boundActor.id);
@@ -1524,12 +1727,13 @@ async function readPartyRoster({
     return [{
       ...boundActor,
       ...boundActorDetails,
-      ...(boundCanonical ? { canonical: boundCanonical } : {}),
+      canonicalResult: boundCanonicalResult,
+      ...(boundCanonicalResult?.status === "ready" ? { canonical: boundCanonicalResult.data } : {}),
       ...(media ? { media } : {}),
       current: true,
     }];
   }
-  if (perspective !== "dm") return [];
+  if (serverRole.role === "actor" || perspective !== "dm") return [];
 
   const applicationRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
     `/state-spaces/${encodeURIComponent(stateSpaceId)}`;
@@ -1603,7 +1807,7 @@ async function readPartyRoster({
       ]);
       const actor = entity(actorPayload, actorId);
       if (!actor) return null;
-      const [canonical, mediaValue] = await Promise.all([
+      const [canonicalResult, mediaValue] = await Promise.all([
         readCanonicalCharacter({ fetchImpl, origin, applicationId, stateSpaceId, actorId }),
         readEntityMedia(fetchImpl, origin, entityRoot, actorId),
       ]);
@@ -1613,7 +1817,8 @@ async function readPartyRoster({
         ...characterDetails(recordPayload
           ? componentValue(recordPayload, actorId, PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID)
           : null),
-        ...(canonical ? { canonical } : {}),
+        canonicalResult,
+        ...(canonicalResult.status === "ready" ? { canonical: canonicalResult.data } : {}),
         ...(media ? { media } : {}),
         current: false,
       };
@@ -1960,6 +2165,14 @@ async function readCampaignStructure({
  * Reads the host-selected application/state-space/seat binding and a server-validated campaign
  * context. The browser may request a campaign token, but it is accepted only after this adapter
  * rediscovers an exact readable campaign root inside the already authorized state space.
+ * @param {{
+ *   serverOrigin: string,
+ *   fetchImpl?: typeof fetch,
+ *   requestedPerspective?: string | null,
+ *   requestedCampaignId?: string | null,
+ *   localSeat?: string,
+ *   mediaAssetBaseUrl?: string,
+ * }} options
  */
 export async function readGameServerContext({
   serverOrigin,
@@ -1991,6 +2204,7 @@ export async function readGameServerContext({
 
   const binding = audience(context);
   if (!binding) return unavailable("The game server returned an invalid audience binding.");
+  const hasBoundActor = binding.status === "bound" && binding.role === "actor";
   const serverRole = overrideServerRole(binding, normalizeSeat(localSeat));
   const isGameMaster = serverRole.role === "game-master";
   const contextAudience = isGameMaster
@@ -2000,6 +2214,8 @@ export async function readGameServerContext({
         allowedPerspectives: ["dm", "player"],
       }
     : { seat: "player", allowedPerspectives: ["player"] };
+  const effectivePerspective = contextAudience.perspective ?? "player";
+  const shouldReadBoundActor = hasBoundActor && effectivePerspective === "player";
   const canReadBoundKnowledge = !isGameMaster || contextAudience.perspective === "dm";
   if (binding.status === "character-creation-required") {
     return {
@@ -2047,7 +2263,7 @@ export async function readGameServerContext({
       fetchImpl(url(origin, `${root}/${encodeURIComponent(selectedCampaignId)}`), {
         headers: { Accept: "application/json" }, cache: "no-store",
       }),
-      serverRole.role === "actor"
+      shouldReadBoundActor
         ? fetchImpl(url(origin, `${root}/${encodeURIComponent(binding.actorId)}`), {
           headers: { Accept: "application/json" }, cache: "no-store",
         })
@@ -2060,7 +2276,7 @@ export async function readGameServerContext({
         `/components/${CAMPAIGN_CURRENT_SCENE_COMPONENT_TYPE_ID}`), {
         headers: { Accept: "application/json" }, cache: "no-store",
       }).catch(() => null),
-      serverRole.role === "actor"
+      shouldReadBoundActor
         ? fetchImpl(url(origin, `${root}/${encodeURIComponent(binding.actorId)}` +
           `/components/${PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID}`), {
           headers: { Accept: "application/json" }, cache: "no-store",
@@ -2099,11 +2315,12 @@ export async function readGameServerContext({
     json(playSessionResponse),
   ]);
   const campaignEntity = campaignResponse?.ok ? entity(campaign, selectedCampaignId) : null;
+  const boundActorEntity = shouldReadBoundActor && actorResponse?.ok
+    ? entity(actor, binding.actorId)
+    : null;
   const actorEntity = isGameMaster
     ? { id: "local-game-master", name: "Dungeon Master" }
-    : (serverRole.role === "actor" && actorResponse?.ok
-    ? entity(actor, binding.actorId)
-    : null);
+    : boundActorEntity;
   if (!campaignEntity || !actorEntity) {
     return unavailable("The campaign binding no longer matches readable game state.");
   }
@@ -2141,7 +2358,7 @@ export async function readGameServerContext({
     }),
   ]);
   let currentLocationId = null;
-  if (serverRole.role === "actor" && locationDirectory.length > 0) {
+  if (shouldReadBoundActor && locationDirectory.length > 0) {
     try {
       const containmentResponse = await fetchImpl(url(origin,
         `${root}/${encodeURIComponent(binding.actorId)}/containment`), {
@@ -2170,10 +2387,10 @@ export async function readGameServerContext({
     })
     : null;
   const boundActorDetails = characterDetails(actorComponentResponse?.ok
-    && serverRole.role === "actor"
+    && shouldReadBoundActor
     ? componentValue(actorComponent, binding.actorId, PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID)
     : null);
-  const boundCanonical = serverRole.role === "actor"
+  const boundCanonicalResult = shouldReadBoundActor
     ? await readCanonicalCharacter({
       fetchImpl,
       origin,
@@ -2189,10 +2406,10 @@ export async function readGameServerContext({
     stateSpaceId: binding.stateSpaceId,
     campaignId: selectedCampaignId,
     serverRole,
-    perspective: contextAudience.perspective,
-    boundActor: serverRole.role === "actor" ? actorEntity : null,
+    perspective: effectivePerspective,
+    boundActor: boundActorEntity,
     boundActorDetails,
-    boundCanonical,
+    boundCanonicalResult,
   });
   const authorizedLocationIds = locationDirectory.map((location) => location.id);
   const sceneComponentWasReturned = currentSceneComponentResponse?.ok === true;

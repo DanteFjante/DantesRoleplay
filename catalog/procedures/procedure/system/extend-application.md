@@ -5,7 +5,7 @@ name: Extend an application with non-core content
 governs: catalog/extensions/**; system.extension.register; system.application.activate with extensionIds; extension-owned namespaces; effective application content
 status: active
 createdBy: "seed"
-changeNote: "Seeded from bootstrap file."
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
@@ -13,6 +13,8 @@ How to add homebrew, third-party or compatibility content to an application that
 so it is usable at play time and never mistaken for the core ruleset it extends. Written after
 adding a homebrew species to `dnd2024`, where four of the five things that cost time were
 invisible from the surface and only appear once you read the registered schemas.
+
+## Matches
 
 ## Instructions
 1. Use the extension seam that already exists; do not invent a source or ID convention. An

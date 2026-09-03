@@ -2,11 +2,12 @@ import {
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
-  type WheelEvent as ReactWheelEvent,
+  useEffect,
   useRef,
 } from "react";
 import type { MapDocument, MapFeature } from "../data/hub-types";
 import { Icon } from "./Icon";
+import { markMapReady } from "../observability/performance.js";
 
 export type MapViewportState = { zoom: number; x: number; y: number };
 
@@ -18,7 +19,6 @@ const KEYBOARD_PAN_STEP = 64;
 
 type Point = { x: number; y: number };
 type DragGesture = { kind: "drag"; pointerId: number; point: Point; view: MapViewportState };
-type PinchGesture = { kind: "pinch"; distance: number; centre: Point; view: MapViewportState };
 
 /** Every marker stays in the coordinate space declared by its current map. */
 function placement(feature: MapFeature, map: MapDocument) {
@@ -32,14 +32,6 @@ function clampZoom(value: number) {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
 }
 
-function distance(left: Point, right: Point) {
-  return Math.hypot(right.x - left.x, right.y - left.y);
-}
-
-function centre(left: Point, right: Point): Point {
-  return { x: (left.x + right.x) / 2, y: (left.y + right.y) / 2 };
-}
-
 export function MapCanvas({
   map,
   selectedFeatureId,
@@ -47,7 +39,6 @@ export function MapCanvas({
   scopeLinkFeatureIds,
   annotatedFeatureIds,
   influencedFeatureIds,
-  fitOnLoad,
   viewport,
   onViewportChange,
   onFeatureSelect,
@@ -59,7 +50,6 @@ export function MapCanvas({
   scopeLinkFeatureIds: Map<string, string>;
   annotatedFeatureIds: Set<string>;
   influencedFeatureIds: Set<string>;
-  fitOnLoad: boolean;
   viewport: MapViewportState;
   onViewportChange: (viewport: MapViewportState) => void;
   onFeatureSelect: (featureId: string) => void;
@@ -67,9 +57,12 @@ export function MapCanvas({
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const pointersRef = useRef(new Map<number, Point>());
-  const gestureRef = useRef<DragGesture | PinchGesture | null>(null);
+  const gestureRef = useRef<DragGesture | null>(null);
   const movedRef = useRef(false);
+
+  useEffect(() => {
+    markMapReady(map.id);
+  }, [map.id]);
 
   const constrain = (candidate: MapViewportState): MapViewportState => {
     const viewportElement = viewportRef.current;
@@ -140,48 +133,25 @@ export function MapCanvas({
 
   const beginGesture = (event: ReactPointerEvent<HTMLDivElement>) => {
     if ((event.target as Element).closest("button")) return;
+    const activeGesture = gestureRef.current;
+    if (activeGesture) {
+      if (event.currentTarget.hasPointerCapture(activeGesture.pointerId)) {
+        event.currentTarget.releasePointerCapture(activeGesture.pointerId);
+      }
+      gestureRef.current = null;
+      movedRef.current = false;
+      return;
+    }
     const point = localPoint(event.clientX, event.clientY);
-    pointersRef.current.set(event.pointerId, point);
-    event.currentTarget.setPointerCapture(event.pointerId);
+    if (event.pointerType !== "touch") event.currentTarget.setPointerCapture(event.pointerId);
     movedRef.current = false;
-    const points = [...pointersRef.current.values()];
-    gestureRef.current = points.length >= 2
-      ? { kind: "pinch", distance: distance(points[0]!, points[1]!), centre: centre(points[0]!, points[1]!), view: viewport }
-      : { kind: "drag", pointerId: event.pointerId, point, view: viewport };
+    gestureRef.current = { kind: "drag", pointerId: event.pointerId, point, view: viewport };
   };
 
   const moveGesture = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!pointersRef.current.has(event.pointerId)) return;
-    pointersRef.current.set(event.pointerId, localPoint(event.clientX, event.clientY));
-    const points = [...pointersRef.current.values()];
-    if (points.length >= 2) {
-      if (gestureRef.current?.kind !== "pinch") {
-        gestureRef.current = {
-          kind: "pinch",
-          distance: distance(points[0]!, points[1]!),
-          centre: centre(points[0]!, points[1]!),
-          view: viewport,
-        };
-        return;
-      }
-      const gesture = gestureRef.current;
-      const currentCentre = centre(points[0]!, points[1]!);
-      const nextZoom = clampZoom(
-        gesture.view.zoom * (distance(points[0]!, points[1]!) / Math.max(1, gesture.distance)),
-      );
-      const contentX = (gesture.centre.x - gesture.view.x) / gesture.view.zoom;
-      const contentY = (gesture.centre.y - gesture.view.y) / gesture.view.zoom;
-      movedRef.current = true;
-      updateViewport({
-        zoom: nextZoom,
-        x: currentCentre.x - contentX * nextZoom,
-        y: currentCentre.y - contentY * nextZoom,
-      });
-      return;
-    }
     const gesture = gestureRef.current;
-    if (gesture?.kind !== "drag" || gesture.pointerId !== event.pointerId) return;
-    const point = points[0]!;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+    const point = localPoint(event.clientX, event.clientY);
     const dx = point.x - gesture.point.x;
     const dy = point.y - gesture.point.y;
     if (Math.abs(dx) + Math.abs(dy) > 3) movedRef.current = true;
@@ -189,22 +159,10 @@ export function MapCanvas({
   };
 
   const endGesture = (event: ReactPointerEvent<HTMLDivElement>) => {
-    pointersRef.current.delete(event.pointerId);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
-    const remaining = [...pointersRef.current.entries()];
-    gestureRef.current = remaining.length === 1
-      ? { kind: "drag", pointerId: remaining[0]![0], point: remaining[0]![1], view: viewport }
-      : null;
-  };
-
-  const handleWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    zoomAt(
-      viewport.zoom + (event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP),
-      localPoint(event.clientX, event.clientY),
-    );
+    if (gestureRef.current?.pointerId === event.pointerId) gestureRef.current = null;
   };
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -212,11 +170,7 @@ export function MapCanvas({
       event.preventDefault();
       event.stopPropagation();
     };
-    if (event.key === "+" || event.key === "=") {
-      handled(); zoomAt(viewport.zoom + ZOOM_STEP);
-    } else if (event.key === "-") {
-      handled(); zoomAt(viewport.zoom - ZOOM_STEP);
-    } else if (event.key === "ArrowLeft") {
+    if (event.key === "ArrowLeft") {
       handled(); updateViewport({ ...viewport, x: viewport.x + KEYBOARD_PAN_STEP });
     } else if (event.key === "ArrowRight") {
       handled(); updateViewport({ ...viewport, x: viewport.x - KEYBOARD_PAN_STEP });
@@ -250,7 +204,7 @@ export function MapCanvas({
       </div>
       <div
         aria-describedby="map-viewport-help"
-        aria-keyshortcuts="+ - ArrowLeft ArrowRight ArrowUp ArrowDown 0 F"
+        aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown 0 F"
         aria-label={`${map.subject.name} interactive map`}
         className="world-map-canvas"
         data-base={map.base ? "present" : "absent"}
@@ -263,7 +217,6 @@ export function MapCanvas({
         onPointerDown={beginGesture}
         onPointerMove={moveGesture}
         onPointerUp={endGesture}
-        onWheel={handleWheel}
         ref={viewportRef}
         tabIndex={0}
       >
@@ -273,7 +226,7 @@ export function MapCanvas({
           style={{ transform: `translate3d(${viewport.x}px, ${viewport.y}px, 0) scale(${viewport.zoom})` }}
         >
           {map.base ? (
-            <img alt={map.base.alt} draggable={false} onLoad={fitOnLoad ? fitMap : undefined} src={map.base.imageUrl} />
+            <img alt={map.base.alt} draggable={false} src={map.base.imageUrl} />
           ) : (
             <p className="map-base-absent">
               <Icon name="Map" size={20} />
@@ -327,8 +280,9 @@ export function MapCanvas({
         </div>
       </div>
       <p className="world-map-panel__note" id="map-viewport-help">
-        Drag or swipe to pan; pinch, scroll, or use + and − to zoom. Arrow keys pan, F fits the map,
-        and 0 resets the view. Placement is illustrative within this scope only and calculates no travel.
+        Drag the map or use arrow keys to pan. Use the visible controls to zoom, fit, reset, or focus
+        the selected place. Page scrolling and browser gestures never change map zoom. Placement is
+        illustrative within this scope only and calculates no travel.
       </p>
     </section>
   );

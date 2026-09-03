@@ -1,5 +1,6 @@
 ﻿using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.Operations;
+using System.Text.Json.Nodes;
 
 namespace DantesRoleplay.MCPServer.Mcp;
 
@@ -17,10 +18,17 @@ public sealed record ToolEnvelope
     public object? Data { get; init; }
 
     /// <summary>
-    /// Literal calls that make sense from here. Not prose — the model should be able to pick one
-    /// and run it. This is what keeps a low-context session moving without a system prompt.
+    /// Human-readable compatibility rendering of what makes sense from here. When NextActions is
+    /// present, clients should execute its schema-bound descriptor rather than parsing this text.
     /// </summary>
     public IReadOnlyList<string> NextSteps { get; init; } = [];
+
+    /// <summary>
+    /// Schema-bound call descriptors for clients that should not have to parse or guess from
+    /// <see cref="NextSteps"/>. A descriptor is executable as-is when Ready is true; otherwise its
+    /// missing arguments name exactly which example values in Arguments must be replaced first.
+    /// </summary>
+    public IReadOnlyList<ToolNextAction> NextActions { get; init; } = [];
 
     /// <summary>Id of the audit row this call produced. Quote it when reporting what you did.</summary>
     public string OperationId { get; init; } = string.Empty;
@@ -121,12 +129,22 @@ internal static class ToolRunner
                 guardEvidenceJson: outcome.GuardEvidenceJson);
 
             return outcome.Error is null
-                ? ToolEnvelope.Success(outcome.Data, operation.Id, [.. outcome.NextSteps])
-                : ToolEnvelope.Failure(
-                    outcome.Error.Code,
-                    outcome.Error.Why,
-                    outcome.Error.Fix,
-                    operation.Id);
+                ? new ToolEnvelope
+                {
+                    Ok = true,
+                    Data = outcome.Data,
+                    OperationId = operation.Id,
+                    NextSteps = outcome.NextSteps,
+                    NextActions = outcome.NextActions ?? []
+                }
+                : new ToolEnvelope
+                {
+                    Ok = false,
+                    OperationId = operation.Id,
+                    Error = outcome.Error,
+                    NextSteps = outcome.NextSteps,
+                    NextActions = outcome.NextActions ?? []
+                };
         }
         catch (Exception ex)
         {
@@ -225,7 +243,8 @@ internal sealed record ToolOutcome(
     IReadOnlyList<string> NextSteps,
     ToolError? Error = null,
     string Subject = "",
-    string GuardEvidenceJson = "")
+    string GuardEvidenceJson = "",
+    IReadOnlyList<ToolNextAction>? NextActions = null)
 {
     public static ToolOutcome Ok(object? data, string summary, params string[] nextSteps) =>
         new(data, summary, nextSteps);
@@ -236,3 +255,27 @@ internal sealed record ToolOutcome(
     public static ToolOutcome Fail(string code, string why, string fix, string summary) =>
         new(null, summary, [fix], new ToolError(code, why, fix));
 }
+
+/// <summary>
+/// One current capability call. Tool and Kind select the MCP route; Arguments is a complete
+/// schema-valid example. KnownArguments are already established by the current response, while
+/// MissingArguments identify example values that must be replaced before the call is ready.
+/// </summary>
+public sealed record ToolNextAction(
+    string Id,
+    string Description,
+    string CapabilityId,
+    string CapabilityFingerprint,
+    string InputSchemaHash,
+    string Interface,
+    string Tool,
+    string Kind,
+    IReadOnlyList<string> RequiredArguments,
+    JsonObject KnownArguments,
+    IReadOnlyList<ToolNextActionMissingArgument> MissingArguments,
+    JsonObject Arguments,
+    bool Ready);
+
+public sealed record ToolNextActionMissingArgument(
+    string Name,
+    string Description);

@@ -8,7 +8,8 @@ namespace DantesRoleplay.DataAccess;
 
 public sealed class InteractionReceiptStore(
     DantesRoleplayDbContext db,
-    IInteractionAuthorizationPolicy authorizationPolicy) : IInteractionReceiptStore, IInteractionExecutionAuthorityStore
+    IInteractionAuthorizationPolicy authorizationPolicy) : IInteractionReceiptStore, IInteractionExecutionAuthorityStore,
+    IInteractionRecentReceiptReader
 {
     public async Task<InteractionReceiptWriteResult> AppendResolutionAsync(InteractionResolutionReceiptDraft draft, CancellationToken cancellationToken = default)
     {
@@ -163,6 +164,57 @@ public sealed class InteractionReceiptStore(
         return execution is null ? null : Projection(execution);
     }
 
+    public async Task<IReadOnlyList<InteractionReceiptContext>> ReadRecentAsync(
+        InteractionAuthorizationRequest authorizationRequest,
+        string sessionContextId,
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(authorizationRequest);
+        if (string.IsNullOrWhiteSpace(sessionContextId) || sessionContextId != sessionContextId.Trim()
+            || sessionContextId.Length > InteractionContractLimits.Identifier
+            || sessionContextId.Any(char.IsControl))
+            throw new InteractionContractException("INVALID_SESSION_CONTEXT_ID",
+                "The session context id is invalid.", nameof(sessionContextId));
+        if (limit is < 1 or > 8)
+            throw new InteractionContractException("INVALID_RECEIPT_CONTEXT_LIMIT",
+                "The recent receipt limit is outside the closed range.");
+
+        var before = authorizationPolicy.Evaluate(authorizationRequest);
+        if (!CanRead(before, authorizationRequest)) return [];
+
+        var resolutions = await db.InteractionResolutionReceipts.AsNoTracking()
+            .Where(row => row.PrincipalReference == before.PrincipalReference
+                && row.ApplicationId == before.ApplicationId.Value
+                && row.StateSpaceId == before.StateSpaceId
+                && row.SessionContextId == sessionContextId)
+            .OrderByDescending(row => row.CreatedAtUtc)
+            .Take(limit)
+            .ToArrayAsync(cancellationToken);
+        var resolutionIds = resolutions.Select(row => row.Id).ToArray();
+        var executions = resolutionIds.Length == 0
+            ? []
+            : await db.InteractionExecutionReceipts.AsNoTracking()
+                .Include(row => row.Steps).Include(row => row.QueryResults)
+                .Where(row => resolutionIds.Contains(row.ResolutionReceiptId))
+                .OrderByDescending(row => row.CreatedAtUtc)
+                .Take(limit)
+                .ToArrayAsync(cancellationToken);
+        var byId = resolutions.ToDictionary(row => row.Id, StringComparer.Ordinal);
+        var values = resolutions.Select(row => Context(row, Projection(row)))
+            .Concat(executions.Select(row => Context(byId[row.ResolutionReceiptId], Projection(row))))
+            .OrderByDescending(value => value.Receipt.CreatedAtUtc)
+            .ThenBy(value => value.Receipt.Id, StringComparer.Ordinal)
+            .Take(limit)
+            .ToArray();
+
+        var after = authorizationPolicy.Evaluate(authorizationRequest);
+        return CanRead(after, authorizationRequest)
+            && after.EvidenceReference == before.EvidenceReference
+            ? Array.AsReadOnly(values)
+            : [];
+    }
+
     async Task<InteractionResolutionExecutionAuthority?> IInteractionExecutionAuthorityStore.GetAsync(
         InteractionAuthorizationRequest authorizationRequest,
         string resolutionReceiptId,
@@ -236,6 +288,28 @@ public sealed class InteractionReceiptStore(
         QueryResults: row.QueryResults.OrderBy(value => value.Ordinal).Select(value => new InteractionQueryResultProjection(
             value.ProposalStepId, value.QualifiedId, value.OutputSchemaHash, value.ResultFingerprint,
             value.SourceRevisionFingerprint, value.OutputJson is null ? null : JsonSerializer.Deserialize<JsonElement>(value.OutputJson))).ToArray());
+
+    private static InteractionReceiptContext Context(
+        InteractionResolutionReceipt authority,
+        InteractionReceiptProjection receipt) => new(
+        $"receipt:{receipt.Id}#{receipt.RequestFingerprint}",
+        authority.SessionContextId,
+        authority.ApplicationRevision,
+        authority.ApplicationFingerprint,
+        authority.StateRevision,
+        authority.EffectiveSetFingerprint,
+        authority.AuthorizationEvidenceReference,
+        receipt);
+
+    private static bool CanRead(
+        InteractionAuthorizationDecision decision,
+        InteractionAuthorizationRequest request) =>
+        decision.Allowed
+        && decision.Capability == InteractionCapability.ReadReceipt
+        && request.Capability == InteractionCapability.ReadReceipt
+        && decision.PrincipalReference == request.Principal.PrincipalId
+        && decision.ApplicationId == request.ApplicationId
+        && decision.StateSpaceId == request.StateSpaceId;
 
     private static string ExecutionDisposition(InteractionExecutionReceiptDisposition value) => value switch
     {

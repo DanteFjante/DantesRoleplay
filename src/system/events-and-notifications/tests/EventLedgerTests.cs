@@ -414,7 +414,7 @@ public sealed class EventLedgerTests : IDisposable
     /// <summary>
     /// The nine structural types ship with the kernel, not only with the catalog.
     ///
-    /// They were catalog-only, which meant a fresh install could not run `commit(kind: "effects")`
+    /// They were catalog-only, which meant a fresh install could not run `commit(kind: "system.world-state.sync")`
     /// at all — the ledger has nothing to record the change against. Nothing declared that
     /// dependency and no test covered it; the protocol walk found it only once the ledger started
     /// reporting the missing type instead of failing obscurely later.

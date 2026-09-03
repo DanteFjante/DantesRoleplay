@@ -65,10 +65,13 @@ public sealed class ApplicationMechanicEvaluator(
         var composed = await ComposeAsync(request, requirements, exactProjection, depth, ancestors, budget, cancellationToken);
         if (composed.Projection is null) return Failed(request, composed.Error);
         var run = await engine.RunAsync(document.Source ?? "", composed.Projection, ExecutionLimits.Default, cancellationToken);
-        return new(request.QualifiedMechanicId, request.ContentFingerprint, composed.Projection, run, []);
+        return new(request.QualifiedMechanicId, request.ContentFingerprint, composed.Projection, run, [])
+        {
+            Proposal = composed.Proposal
+        };
     }
 
-    private async Task<(MechanicProjection? Projection, string Error)> ComposeAsync(
+    private async Task<(MechanicProjection? Projection, string Error, CompositionProposal Proposal)> ComposeAsync(
         ApplicationMechanicEvaluationRequest parent,
         MechanicRequirements requirements,
         MechanicProjection projection,
@@ -77,15 +80,15 @@ public sealed class ApplicationMechanicEvaluator(
         CompositionBudget budget,
         CancellationToken cancellationToken)
     {
-        if (requirements.Children.Count == 0) return (projection, "");
-        if (depth >= MaxDepth) return (null, $"CHILD_DEPTH_LIMIT: Maximum child depth is {MaxDepth}.");
+        if (requirements.Children.Count == 0) return (projection, "", CompositionProposal.Empty);
+        if (depth >= MaxDepth) return (null, $"CHILD_DEPTH_LIMIT: Maximum child depth is {MaxDepth}.", CompositionProposal.Empty);
         if (requirements.Children.Count > MaxChildDeclarations)
-            return (null, $"CHILD_DECLARATION_LIMIT: At most {MaxChildDeclarations} child declarations are permitted.");
+            return (null, $"CHILD_DECLARATION_LIMIT: At most {MaxChildDeclarations} child declarations are permitted.", CompositionProposal.Empty);
         if (!catalogs.TryGet(parent.ApplicationId, out var catalog))
-            return (null, "APPLICATION_CATALOG_UNAVAILABLE: The exact active application catalog is unavailable.");
+            return (null, "APPLICATION_CATALOG_UNAVAILABLE: The exact active application catalog is unavailable.", CompositionProposal.Empty);
         var lineage = new HashSet<string>(ancestors, StringComparer.Ordinal);
         if (!lineage.Add(parent.QualifiedMechanicId))
-            return (null, $"CHILD_CYCLE: '{parent.QualifiedMechanicId}' is already executing.");
+            return (null, $"CHILD_CYCLE: '{parent.QualifiedMechanicId}' is already executing.", CompositionProposal.Empty);
         var children = new Dictionary<string, IReadOnlyList<ChildMechanicResult>>(StringComparer.Ordinal);
         var componentRevisions = projection.ComponentRevisions.ToDictionary(
             pair => pair.Key,
@@ -94,26 +97,31 @@ public sealed class ApplicationMechanicEvaluator(
         var containmentRevisions = projection.ContainmentRevisions.ToDictionary(
             pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
         var ordinal = 0;
+        var proposal = CompositionProposal.Empty;
         var ordered = ResolveExecutionOrder(requirements.Children);
         if (ordered.Count != requirements.Children.Count)
-            return (null, "INVALID_CHILD_DECLARATION: inputFromChildData declarations must form an acyclic sibling graph.");
+            return (null, "INVALID_CHILD_DECLARATION: inputFromChildData declarations must form an acyclic sibling graph.", CompositionProposal.Empty);
         foreach (var pair in ordered)
         {
             var invocations = BuildInvocations(pair.Key, pair.Value, projection, children, ref ordinal);
-            if (invocations.Error.Length > 0) return (null, invocations.Error);
+            if (invocations.Error.Length > 0) return (null, invocations.Error, CompositionProposal.Empty);
             var results = new List<ChildMechanicResult>(invocations.Items.Count);
             foreach (var invocation in invocations.Items)
             {
                 if (!budget.TryReserve())
-                    return (null, $"CHILD_INVOCATION_LIMIT: At most {MaxChildInvocations} child invocations are permitted per root action.");
+                    return (null, $"CHILD_INVOCATION_LIMIT: At most {MaxChildInvocations} child invocations are permitted per root action.", CompositionProposal.Empty);
                 var childMechanicId = QualifyMechanicId(parent.ApplicationId, pair.Value.MechanicId);
                 if (lineage.Contains(childMechanicId))
-                    return (null, $"CHILD_CYCLE: '{childMechanicId}' is already executing.");
+                    return (null, $"CHILD_CYCLE: '{childMechanicId}' is already executing.", CompositionProposal.Empty);
                 CatalogRecordView childRecord;
                 try { childRecord = catalog.Inspect(new(parent.ApplicationId, parent.ApplicationId.Value, childMechanicId)); }
-                catch (Exception) { return (null, $"CHILD_NOT_ACTIVE ({pair.Key}): '{childMechanicId}' is unavailable."); }
+                catch (Exception) { return (null, $"CHILD_NOT_ACTIVE ({pair.Key}): '{childMechanicId}' is unavailable.", CompositionProposal.Empty); }
                 if (childRecord.Summary.Kind != "mechanic" || childRecord.Summary.Status != "active")
-                    return (null, $"CHILD_NOT_ACTIVE ({pair.Key}): '{pair.Value.MechanicId}' is inactive.");
+                    return (null, $"CHILD_NOT_ACTIVE ({pair.Key}): '{pair.Value.MechanicId}' is inactive.", CompositionProposal.Empty);
+                if (pair.Value.MechanicVersion > 0
+                    && (childRecord.Summary.Version != pair.Value.MechanicVersion
+                        || childRecord.Summary.ContentFingerprint != pair.Value.ContentFingerprint))
+                    return (null, $"CHILD_STALE ({pair.Key}): '{pair.Value.MechanicId}' no longer matches its exact version and fingerprint.", CompositionProposal.Empty);
                 var childExecution = parent.Execution is null ? null : new MechanicExecutionContext(
                     parent.Execution.RootOperationId,
                     DeriveChildOperationId(parent.Execution, invocation.Ordinal,
@@ -126,16 +134,15 @@ public sealed class ApplicationMechanicEvaluator(
                     childExecution),
                     depth + 1, lineage, budget, cancellationToken);
                 if (!child.Ok || child.Projection is null || child.Run is null)
-                    return (null, $"CHILD_FAILED ({pair.Key}): " + (child.Problems.FirstOrDefault() ?? child.Run?.Error ?? "Child did not produce a result."));
-                if (child.Run.Output.Effects.Count > 0 || child.Run.Output.Events.Count > 0 || child.Run.Output.Notifications.Count > 0)
-                    return (null, $"CHILD_OUTPUT_UNSUPPORTED ({pair.Key}): A direct application child must return data only.");
+                    return (null, $"CHILD_FAILED ({pair.Key}): " + (child.Problems.FirstOrDefault() ?? child.Run?.Error ?? "Child did not produce a result."), CompositionProposal.Empty);
                 var snapshotProblem = MergeSnapshots(
                     componentRevisions, containmentRevisions, child.Projection);
                 if (snapshotProblem.Length > 0)
-                    return (null, $"CHILD_SNAPSHOT_CONFLICT ({pair.Key}): {snapshotProblem}");
+                    return (null, $"CHILD_SNAPSHOT_CONFLICT ({pair.Key}): {snapshotProblem}", CompositionProposal.Empty);
                 results.Add(new ChildMechanicResult(child.QualifiedMechanicId, childRecord.Summary.Version,
                     child.Projection.Seed, invocation.RoleEntityIds, child.Run.Output, child.Run.Log,
                     child.Run.ElapsedMilliseconds, child.Projection.Execution));
+                proposal = proposal.Append(child.Proposal).Append(child.Run.Output);
             }
             children[pair.Key] = results;
         }
@@ -144,7 +151,7 @@ public sealed class ApplicationMechanicEvaluator(
             Children = children,
             ComponentRevisions = componentRevisions,
             ContainmentRevisions = containmentRevisions
-        }, "");
+        }, "", proposal);
     }
 
     private static string MergeSnapshots(
@@ -179,10 +186,11 @@ public sealed class ApplicationMechanicEvaluator(
         IReadOnlyDictionary<string, ChildMechanicRequirement> declarations)
     {
         var remaining = declarations.Keys.ToDictionary(key => key,
-            key => declarations[key].InputFromChildData is null ? 0 : 1, StringComparer.Ordinal);
+            key => Dependencies(declarations[key]).Distinct(StringComparer.Ordinal).Count(), StringComparer.Ordinal);
         var dependents = declarations.Keys.ToDictionary(key => key, _ => new List<string>(), StringComparer.Ordinal);
         foreach (var (consumer, declaration) in declarations)
-            if (declaration.InputFromChildData is { } source && dependents.TryGetValue(source.ResultKey, out var values)) values.Add(consumer);
+            foreach (var dependency in Dependencies(declaration).Distinct(StringComparer.Ordinal))
+                if (dependents.TryGetValue(dependency, out var values)) values.Add(consumer);
         var ready = new SortedSet<string>(remaining.Where(pair => pair.Value == 0).Select(pair => pair.Key), StringComparer.Ordinal);
         var ordered = new List<KeyValuePair<string, ChildMechanicRequirement>>(declarations.Count);
         while (ready.Count > 0)
@@ -194,15 +202,51 @@ public sealed class ApplicationMechanicEvaluator(
                 if (--remaining[consumer] == 0) ready.Add(consumer);
         }
         return ordered.Count == declarations.Count ? ordered : [];
+
+        static IEnumerable<string> Dependencies(ChildMechanicRequirement declaration)
+        {
+            foreach (var dependency in declaration.After) yield return dependency;
+            if (declaration.InputFromChildData is { } source) yield return source.ResultKey;
+        }
     }
 
     private static InvocationList BuildInvocations(string resultKey, ChildMechanicRequirement declaration,
         MechanicProjection projection, IReadOnlyDictionary<string, IReadOnlyList<ChildMechanicResult>> completed, ref int ordinal)
     {
         var items = new List<PendingInvocation>();
+        if (!string.IsNullOrWhiteSpace(declaration.ForEachInputProperty))
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(projection.Input);
+                if (!document.RootElement.TryGetProperty(declaration.ForEachInputProperty, out var selected)
+                    || selected.ValueKind != JsonValueKind.Array)
+                    return new([], $"CHILD_INPUT_FAILED ({resultKey}): Parent input property '{declaration.ForEachInputProperty}' must be an array.");
+                if (selected.GetArrayLength() > MaxChildrenPerDeclaration)
+                    return new([], $"CHILD_LIMIT ({resultKey}): '{declaration.ForEachInputProperty}' has {selected.GetArrayLength()} items; the limit is {MaxChildrenPerDeclaration}.");
+                foreach (var value in selected.EnumerateArray())
+                {
+                    if (value.ValueKind != JsonValueKind.Object)
+                        return new([], $"CHILD_INPUT_FAILED ({resultKey}): Every '{declaration.ForEachInputProperty}' item must be an object.");
+                    var childInput = value;
+                    if (!string.IsNullOrWhiteSpace(declaration.InputFromEachItemProperty)
+                        && (!value.TryGetProperty(declaration.InputFromEachItemProperty, out childInput)
+                            || childInput.ValueKind != JsonValueKind.Object))
+                        return new([], $"CHILD_INPUT_FAILED ({resultKey}): Every '{declaration.ForEachInputProperty}' item must contain an object property '{declaration.InputFromEachItemProperty}'.");
+                    var roles = BindRoles(resultKey, declaration, projection, null, childInput);
+                    if (roles.Error.Length > 0) return new([], roles.Error);
+                    items.Add(new(roles.Value, childInput.GetRawText(), ordinal++));
+                }
+                return new(items, "");
+            }
+            catch (JsonException exception)
+            {
+                return new([], $"CHILD_INPUT_FAILED ({resultKey}): Parent input could not be parsed: {exception.Message}");
+            }
+        }
         if (string.IsNullOrWhiteSpace(declaration.ForEachContentsOf))
         {
-            var roles = BindRoles(resultKey, declaration, projection, null);
+            var roles = BindRoles(resultKey, declaration, projection, null, null);
             var input = ResolveInput(resultKey, declaration, projection.Input, completed, null);
             return roles.Error.Length > 0 || input.Error.Length > 0
                 ? new([], roles.Error.Length > 0 ? roles.Error : input.Error)
@@ -215,7 +259,7 @@ public sealed class ApplicationMechanicEvaluator(
             return new([], $"CHILD_LIMIT ({resultKey}): '{declaration.ForEachContentsOf}' has {contents.Count} contents; the limit is {MaxChildrenPerDeclaration}.");
         foreach (var item in contents)
         {
-            var roles = BindRoles(resultKey, declaration, projection, item.Id);
+            var roles = BindRoles(resultKey, declaration, projection, item.Id, null);
             var input = ResolveInput(resultKey, declaration, projection.Input, completed, item.Id);
             if (roles.Error.Length > 0 || input.Error.Length > 0)
                 return new([], roles.Error.Length > 0 ? roles.Error : input.Error);
@@ -225,7 +269,7 @@ public sealed class ApplicationMechanicEvaluator(
     }
 
     private static ValueResult<IReadOnlyDictionary<string, string>> BindRoles(string resultKey,
-        ChildMechanicRequirement declaration, MechanicProjection projection, string? itemId)
+        ChildMechanicRequirement declaration, MechanicProjection projection, string? itemId, JsonElement? inputItem)
     {
         var roles = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var (childRole, source) in declaration.RoleBindings)
@@ -236,6 +280,16 @@ public sealed class ApplicationMechanicEvaluator(
                     return new(new Dictionary<string, string>(StringComparer.Ordinal),
                         $"CHILD_BINDING_FAILED ({resultKey}): '$item' is only valid while iterating contents.");
                 roles[childRole] = itemId;
+            }
+            else if (source.StartsWith("$input.", StringComparison.Ordinal))
+            {
+                var property = source[7..];
+                if (inputItem is not JsonElement input || input.ValueKind != JsonValueKind.Object
+                    || !input.TryGetProperty(property, out var value) || value.ValueKind != JsonValueKind.String
+                    || string.IsNullOrWhiteSpace(value.GetString()))
+                    return new(new Dictionary<string, string>(StringComparer.Ordinal),
+                        $"CHILD_BINDING_FAILED ({resultKey}): Input property '{property}' must contain an entity id.");
+                roles[childRole] = value.GetString()!;
             }
             else if (projection.Roles.TryGetValue(source, out var parentRole)) roles[childRole] = parentRole.Id;
             else return new(new Dictionary<string, string>(StringComparer.Ordinal),

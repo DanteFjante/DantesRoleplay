@@ -14,6 +14,8 @@ generic: this procedure owns the world component and relationship vocabulary, th
 meaning of each recipe. The results are setting context for a GM or future website consumer, not
 player-safe views or a map.
 
+## Matches
+
 ## Instructions
 1. Read `query(kind: "capabilities")` before using this procedure, then use only
    `query(kind: "graph")` with the exact recipe fields below. Supply the active world-root ID or

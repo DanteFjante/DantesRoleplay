@@ -1,4 +1,4 @@
-﻿---
+---
 id: procedure.subscription.create
 category: subscription
 name: Create an event subscription
@@ -10,6 +10,8 @@ changeNote: "Re-seeded: the bootstrap file changed."
 
 ## Description
 Register one versioned guard or reaction middleware subscription. This contract creates a registration only. Registering emits nothing and runs nothing; the registration takes effect the next time a matching event is proposed.
+
+## Matches
 
 ## Instructions
 1. Read the target event type and event mechanic before registering either mode.

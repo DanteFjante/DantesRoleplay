@@ -50,6 +50,9 @@ public sealed record ApplicationMechanicEvaluationResult(
     MechanicRunResult? Run,
     IReadOnlyList<string> Problems)
 {
+    /// <summary>Ordered proposals from the evaluated child tree; the root execution owner applies them atomically.</summary>
+    public CompositionProposal Proposal { get; init; } = CompositionProposal.Empty;
+
     public bool Evaluated => Problems.Count == 0 && Projection is not null && Run is not null;
     public bool Ok => Evaluated && Run!.Ok;
 }

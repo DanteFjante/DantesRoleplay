@@ -19,9 +19,9 @@ public sealed class TriggerSchedulingProtocolTests : IDisposable
     {
         var query = Assert.Single(McpVerbCatalog.QueryKinds, value => value.Name == "system.trigger-scheduling");
         var commit = Assert.Single(McpVerbCatalog.CommitKinds, value => value.Name == "system.trigger-scheduling");
-        Assert.True(commit.SupportsDryRun);
-        Assert.Contains("resource", query.Reads);
-        Assert.Equal(["procedure.system.use"], commit.Contracts);
+        Assert.True(commit.Descriptor.Operations.SupportsPreview);
+        Assert.Contains("resource", query.Descriptor.Input.SchemaJson, StringComparison.Ordinal);
+        Assert.Equal(["procedure.system.use"], commit.Descriptor.ProcedureIds);
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public sealed class TriggerSchedulingProtocolTests : IDisposable
         var deniedService = new RecordingAdministration();
         var denied = new RecordingAuthorizer(allowed: false);
         var deniedResult = await new CommitMcpTool().CommitAsync(
-            world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
+            log: new OperationLog(db),
             kind: "system.trigger-scheduling", payload: "not-json", intent: "test", proceduresUsed: [],
             dryRun: true, privateOperator: denied, triggerSchedulingAdministration: deniedService);
 
@@ -64,7 +64,7 @@ public sealed class TriggerSchedulingProtocolTests : IDisposable
         {"requestToken":"0123456789abcdef0123456789abcdef","operation":"phone.revoke","applicationId":"quest","value":{"deviceId":"phone-device.0123456789abcdef0123456789abcdef"}}
         """;
         var preview = await new CommitMcpTool().CommitAsync(
-            world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
+            log: new OperationLog(db),
             kind: "system.trigger-scheduling", payload: payload, intent: "test",
             proceduresUsed: ["procedure.system.use"], dryRun: true, privateOperator: allowed,
             triggerSchedulingAdministration: service);

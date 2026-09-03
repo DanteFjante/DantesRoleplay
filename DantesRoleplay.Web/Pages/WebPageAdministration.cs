@@ -261,6 +261,18 @@ public sealed class WebPageAdministration(
             bundle,
             cancellationToken);
 
+    public async Task<WebPageRevisionDocument> AppendBundleDraftAsync(
+        ApplicationIdentifier applicationId,
+        string entityId,
+        int expectedLatestRevision,
+        WebPageBundle bundle,
+        CancellationToken cancellationToken = default) =>
+        await content.AppendBundleDraftAsync(
+            await ContentIdAsync(applicationId, entityId, cancellationToken),
+            expectedLatestRevision,
+            bundle,
+            cancellationToken);
+
     public async Task<WebPageRevisionDiscoveryPage> ListRevisionsAsync(
         ApplicationIdentifier applicationId,
         string entityId,

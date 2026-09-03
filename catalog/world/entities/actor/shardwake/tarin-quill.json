@@ -1,0 +1,44 @@
+{
+  "id": "actor.shardwake.tarin-quill",
+  "name": "Tarin Quill",
+  "container": {
+    "id": "location.shardwake.lantern-harbor",
+    "slot": "presence"
+  },
+  "components": {
+    "dnd2024.abilities": {
+      "dex": 14,
+      "con": 12,
+      "wis": 15,
+      "cha": 10,
+      "str": 10,
+      "int": 13
+    },
+    "dnd2024.character-level": {
+      "sourceRef": {
+        "locator": "Character Creation > Character Advancement",
+        "sourceId": "dnd2024.source.srd-5.2.1"
+      },
+      "level": 1
+    },
+    "dnd2024.skill-proficiencies": {
+      "sourceRef": {
+        "locator": "Playing the Game > Proficiency > Skill Proficiencies and Skills",
+        "sourceId": "dnd2024.source.srd-5.2.1"
+      },
+      "skills": [
+        "investigation",
+        "perception",
+        "survival"
+      ]
+    },
+    "game.core.world.motive": {
+      "status": "active",
+      "summary": "Tarin follows strange signals and unfinished maps, but refuses to leave endangered travelers behind for the sake of discovery.",
+      "visibility": "party"
+    },
+    "game.core.world.traveller": {
+      "status": "active"
+    }
+  }
+}

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using DantesRoleplay.Applications;
+using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.MCPServer;
@@ -58,10 +59,25 @@ public sealed class ApplicationReadModelWebEndpointTests
         Assert.Equal(0, service.Calls);
     }
 
+    [Fact]
+    public async Task Live_catalog_roles_bind_from_the_authorized_seat_context()
+    {
+        var service = new ReadModels();
+        var response = await ReadAsync(
+            new(true, "player", "dnd2024", "campaign.1", "actor.aric"),
+            "actor.aric", service, new QueryCatalog("dnd2024.query.actor-context", "campaign", "actor"));
+
+        Assert.Equal(StatusCodes.Status200OK, response.StatusCode);
+        Assert.Equal("campaign.1", service.LastRequest!.RoleBindings["campaign"]);
+        Assert.Equal("actor.aric", service.LastRequest.RoleBindings["actor"]);
+        Assert.Equal(2, service.LastRequest.RoleBindings.Count);
+    }
+
     private static async Task<(int StatusCode, JsonElement Body)> ReadAsync(
         LocalKnowledgeSeatSnapshot seat,
         string entityId,
-        ReadModels service)
+        ReadModels service,
+        IPublicApplicationCatalogProvider? catalogs = null)
     {
         var context = new DefaultHttpContext();
         context.Response.Body = new MemoryStream();
@@ -73,7 +89,7 @@ public sealed class ApplicationReadModelWebEndpointTests
             .BuildServiceProvider();
         var result = await ApplicationReadModelWebEndpoint.ReadAsync(
             "dnd2024", "dnd2024-main", entityId, "dnd2024.query.character-sheet",
-            context, new Seats(seat), service, CancellationToken.None);
+            context, new Seats(seat), service, CancellationToken.None, catalogs);
         await result.ExecuteAsync(context);
         context.Response.Body.Position = 0;
         using var document = await JsonDocument.ParseAsync(context.Response.Body);
@@ -88,12 +104,17 @@ public sealed class ApplicationReadModelWebEndpointTests
     private sealed class ReadModels : IApplicationReadModelService
     {
         public int Calls { get; private set; }
+        public ApplicationReadModelRequest? LastRequest { get; private set; }
 
         public Task<ApplicationReadModelResult> ReadAsync(
             ApplicationReadModelRequest request,
             CancellationToken cancellationToken = default)
         {
             Calls++;
+            LastRequest = request;
+            var data = request.RoleBindings.TryGetValue("subject", out var subject)
+                ? JsonSerializer.Serialize(new { subject = new { id = subject } })
+                : JsonSerializer.Serialize(new { roles = request.RoleBindings });
             return Task.FromResult(new ApplicationReadModelResult(
                 request.ApplicationId.Value,
                 request.StateSpaceId,
@@ -103,7 +124,56 @@ public sealed class ApplicationReadModelWebEndpointTests
                 new string('A', 64),
                 new string('B', 64),
                 new string('C', 64),
-                JsonSerializer.Serialize(new { subject = new { id = request.RoleBindings["subject"] } })));
+                data));
         }
+    }
+
+    private sealed class QueryCatalog(string queryId, params string[] roles) : IPublicApplicationCatalogProvider
+    {
+        private readonly ICatalogNavigator _navigator = new QueryNavigator(queryId, roles);
+
+        public bool TryGet(ApplicationIdentifier applicationId, out ICatalogNavigator navigator)
+        {
+            navigator = _navigator;
+            return true;
+        }
+    }
+
+    private sealed class QueryNavigator(string queryId, IReadOnlyList<string> roles) : ICatalogNavigator
+    {
+        public CatalogRecordView Inspect(CatalogRecordRequest request)
+        {
+            var roleMap = roles.ToDictionary(value => value, value => $"Bind {value}.", StringComparer.Ordinal);
+            var json = JsonSerializer.Serialize(new
+            {
+                id = queryId,
+                category = "game.core.campaign.read-model",
+                name = "Test query",
+                description = "A focused query contract for endpoint role binding.",
+                matches = new[] { "test query" },
+                roles = roleMap,
+                executor = "mechanic-projection",
+                projection = new
+                {
+                    qualifiedId = "dnd2024.mechanic.test.project",
+                    version = 1,
+                    contentHash = new string('A', 64),
+                    outputSchemaHash = new string('B', 64)
+                },
+                outputSchema = new { type = "object" },
+                exposure = "model-visible",
+                status = "active"
+            });
+            return new(new("dnd2024", "query", queryId, "Test query", "Test query.", "", "active", 1,
+                new string('C', 64), "test", "test.json"), json);
+        }
+
+        public IReadOnlyList<CatalogCollectionSummary> ListCollections(ApplicationIdentifier applicationId) =>
+            throw new NotSupportedException();
+        public CatalogBrowseResult Browse(CatalogBrowseRequest request) => throw new NotSupportedException();
+        public CatalogSearchResult Search(CatalogSearchRequest request) => throw new NotSupportedException();
+        public EffectiveApplicationContentResult EffectiveContent(EffectiveApplicationContentRequest request) =>
+            throw new NotSupportedException();
+        public ReadableRulesResult ReadableRules(ReadableRulesRequest request) => throw new NotSupportedException();
     }
 }

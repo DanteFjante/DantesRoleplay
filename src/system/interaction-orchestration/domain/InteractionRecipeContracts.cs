@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using DantesRoleplay.Applications;
 
 namespace DantesRoleplay.Interactions;
@@ -331,7 +332,20 @@ public sealed record InteractionRecipeEvidenceReference(
     string ExecutionReceiptId,
     string Kind,
     string IntentFingerprint,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    [property: JsonIgnore] string IntentText = "",
+    InteractionRecipeReplayPerformance? ReplayPerformance = null);
+
+public sealed record InteractionRecipeReplayPerformance(
+    int BaselineAiCalls,
+    int ActualAiCalls,
+    int SavedAiCalls,
+    int ElapsedMilliseconds,
+    int ChoiceResolutionMilliseconds,
+    int ProposalMilliseconds,
+    int ExecutionMilliseconds,
+    int PromptTokens,
+    int OutputTokens);
 
 public sealed record InteractionRecipeProvenanceValidation(bool Valid, string Code, string SafeSummary);
 
@@ -373,7 +387,9 @@ public sealed record InteractionRecipeUseEvidenceDraft(
     string ExecutionReceiptId,
     bool Successful,
     string IntentFingerprint,
-    string RoleProfile);
+    string RoleProfile,
+    string IntentText = "",
+    InteractionRecipeReplayPerformance? ReplayPerformance = null);
 
 public sealed record InteractionRecipeStaleDraft(
     InteractionRecipeReference Recipe,
@@ -440,6 +456,7 @@ public sealed class InteractionRecipe
     public DateTime CreatedAtUtc { get; set; }
     public ICollection<InteractionRecipeRevision> Revisions { get; } = new List<InteractionRecipeRevision>();
     public ICollection<InteractionRecipeEvidence> Evidence { get; } = new List<InteractionRecipeEvidence>();
+    public InteractionMechanicOpportunity? MechanicOpportunity { get; set; }
 }
 
 public sealed class InteractionRecipeRevision
@@ -468,6 +485,15 @@ public sealed class InteractionRecipeEvidence
     public string IntentText { get; set; } = "";
     public string IntentFingerprint { get; set; } = "";
     public string RoleProfile { get; set; } = "";
+    public int ReplayBaselineAiCalls { get; set; }
+    public int ReplayActualAiCalls { get; set; }
+    public int ReplaySavedAiCalls { get; set; }
+    public int ReplayElapsedMilliseconds { get; set; }
+    public int ReplayChoiceResolutionMilliseconds { get; set; }
+    public int ReplayProposalMilliseconds { get; set; }
+    public int ReplayExecutionMilliseconds { get; set; }
+    public int ReplayPromptTokens { get; set; }
+    public int ReplayOutputTokens { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public InteractionRecipe? Recipe { get; set; }
 }

@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-using DantesRoleplay.Actions;
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
@@ -32,7 +31,7 @@ public sealed class ApplicationMechanicProjectionResolver(
         var stateSpace = stateSpaces.Get(stateSpaceId);
         if (stateSpace is null || stateSpace.ApplicationRevision.ApplicationId != applicationId)
             return ProjectionResult.Failed("STATE_SPACE_APPLICATION_MISMATCH: The state space does not belong to the requested application.");
-        if (!ActionInput.TryValidateObject(inputJson, out var inputProblem))
+        if (!MechanicInput.TryValidateObject(inputJson, out var inputProblem))
             problems.Add($"INVALID_INPUT: {inputProblem}");
         problems.AddRange(requirements.ProjectionProblems().Select(value => $"INVALID_PROJECTION_REQUIREMENTS: {value}"));
         foreach (var supplied in roleAssignments.Keys.Where(value => !requirements.Roles.ContainsKey(value)))
@@ -53,7 +52,7 @@ public sealed class ApplicationMechanicProjectionResolver(
                     new[] { reference.SourceComponentId }.Concat(reference.TargetComponentIds)
                         .Concat(reference.OptionalTargetComponentIds ?? [])))
                 .Concat((value.RelationshipComponents ?? []).SelectMany(reference =>
-                    reference.TargetComponentIds)))
+                    reference.TargetComponentIds.Concat(reference.OptionalTargetComponentIds ?? []))))
             .Distinct(StringComparer.Ordinal).ToArray();
         foreach (var localId in requiredLocalIds)
         {
@@ -128,14 +127,17 @@ public sealed class ApplicationMechanicProjectionResolver(
         var referenceProjection = new Dictionary<string, ReferencedEntityProjection>(StringComparer.Ordinal);
         foreach (var (entityId, localIds) in references)
         {
-            if (!entities.ContainsKey(entityId) || !components.TryGetValue(entityId, out var values)
+            components.TryGetValue(entityId, out var values);
+            values ??= new Dictionary<string, string>(StringComparer.Ordinal);
+            if (!entities.TryGetValue(entityId, out var referencedEntity)
                 || requiredReferences[entityId].Any(value => !values.ContainsKey(value)))
             {
                 problems.Add($"COMPONENT_REFERENCE_TARGET_MISSING: Target '{entityId}' is unavailable or incomplete.");
                 continue;
             }
             referenceProjection[entityId] = new(entityId, values
-                .Where(value => localIds.Contains(value.Key)).ToDictionary(StringComparer.Ordinal));
+                .Where(value => localIds.Contains(value.Key)).ToDictionary(StringComparer.Ordinal),
+                referencedEntity.Name);
         }
 
         var projection = new MechanicProjection
@@ -193,9 +195,12 @@ public sealed class ApplicationMechanicProjectionResolver(
                         }
                         related.Add(new(endpointId, endpoint.Name, edge.FromEntityId, edge.ToEntityId,
                             relatedRequirement.Kind, edge.Data, endpointComponents
-                                .Where(value => relatedRequirement.TargetComponentIds.Contains(value.Key, StringComparer.Ordinal))
+                                .Where(value => relatedRequirement.TargetComponentIds
+                                    .Concat(relatedRequirement.OptionalTargetComponentIds ?? [])
+                                    .Contains(value.Key, StringComparer.Ordinal))
                                 .ToDictionary(StringComparer.Ordinal)));
-                        RecordComponentRevisions(endpointId, relatedRequirement.TargetComponentIds);
+                        RecordComponentRevisions(endpointId, relatedRequirement.TargetComponentIds
+                            .Concat(relatedRequirement.OptionalTargetComponentIds ?? []));
                     }
                 }
                 if (related.Count > ProjectionLimits.MaxRelatedNodes)
@@ -290,29 +295,24 @@ public sealed class ApplicationMechanicProjectionResolver(
             try
             {
                 using var document = JsonDocument.Parse(raw);
-                if (document.RootElement.ValueKind != JsonValueKind.Object
-                    || !document.RootElement.TryGetProperty(reference.Field, out var field))
+                if (!ComponentReferencePath.TryRead(document.RootElement, reference.Field,
+                        out var targets, out var referenceProblem))
                 {
-                    problems.Add($"COMPONENT_REFERENCE_INVALID: Role '{role}' component '{reference.SourceComponentId}' lacks reference field '{reference.Field}'.");
+                    problems.Add($"COMPONENT_REFERENCE_INVALID: Role '{role}' component '{reference.SourceComponentId}' path '{reference.Field}' is invalid: {referenceProblem}");
                     return;
                 }
-                var target = field.ValueKind == JsonValueKind.String ? field.GetString() :
-                    field.ValueKind == JsonValueKind.Object && field.EnumerateObject().Count() == 1 &&
-                    field.TryGetProperty("entityId", out var referencedId) && referencedId.ValueKind == JsonValueKind.String
-                        ? referencedId.GetString() : null;
-                if (string.IsNullOrWhiteSpace(target))
+                foreach (var target in targets)
                 {
-                    problems.Add($"COMPONENT_REFERENCE_INVALID: Role '{role}' component '{reference.SourceComponentId}' field '{reference.Field}' is not an entity reference.");
-                    return;
+                    if (!references.TryGetValue(target, out var ids))
+                        references[target] = ids = new(StringComparer.Ordinal);
+                    if (!requiredReferences.TryGetValue(target, out var requiredIds))
+                        requiredReferences[target] = requiredIds = new(StringComparer.Ordinal);
+                    requiredIds.UnionWith(reference.TargetComponentIds);
+                    ids.UnionWith(reference.TargetComponentIds);
+                    ids.UnionWith(reference.OptionalTargetComponentIds ?? []);
                 }
-                target = target.Trim();
-                if (!references.TryGetValue(target, out var ids))
-                    references[target] = ids = new(StringComparer.Ordinal);
-                if (!requiredReferences.TryGetValue(target, out var requiredIds))
-                    requiredReferences[target] = requiredIds = new(StringComparer.Ordinal);
-                requiredIds.UnionWith(reference.TargetComponentIds);
-                ids.UnionWith(reference.TargetComponentIds);
-                ids.UnionWith(reference.OptionalTargetComponentIds ?? []);
+                if (references.Count > ProjectionLimits.MaxReferencedEntities)
+                    problems.Add($"COMPONENT_REFERENCE_LIMIT_EXCEEDED: Role '{role}' exceeds the referenced-entity limit.");
             }
             catch (JsonException) { problems.Add($"COMPONENT_REFERENCE_INVALID: Role '{role}' contains invalid JSON."); }
         }

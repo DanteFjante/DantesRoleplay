@@ -1,0 +1,59 @@
+{
+  "id": "dnd2024.query.campaign-resume",
+  "category": "game.core.campaign.read-model",
+  "name": "Campaign resume",
+  "description": "Returns bounded party-visible continuity for resuming an active campaign, including the current scene, active story structure, latest durable recap, and available party actions.",
+  "matches": ["resume the campaign", "what is happening in the campaign", "continue play from authoritative state"],
+  "roles": { "campaign": "The exact audience-authorized active campaign." },
+  "executor": "mechanic-projection",
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.campaign.resume.project",
+    "version": 1,
+    "contentHash": "E4D828EA321FBE32BBAB186CD23D5660215A9BD7AD56DD433002399DECF03784",
+    "outputSchemaHash": "7485EAF15A4993B406AE19BF1DC99C220B0F70C682FA3A729A73BFD13278558B"
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["version", "campaign", "party", "scene", "activeArc", "activeChapter", "activeSession", "latestRecap", "affordances"],
+    "properties": {
+      "version": { "const": 1 },
+      "campaign": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "name", "title", "premise", "partyGoals", "toneAndBoundaries"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/text" },
+          "title": { "$ref": "#/$defs/text" }, "premise": { "$ref": "#/$defs/summary" },
+          "partyGoals": { "type": "array", "minItems": 1, "maxItems": 3, "items": { "$ref": "#/$defs/summary" } },
+          "toneAndBoundaries": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "$ref": "#/$defs/summary" } }
+        }
+      },
+      "party": { "type": "object", "additionalProperties": false, "required": ["activeMemberCount"], "properties": { "activeMemberCount": { "$ref": "#/$defs/count" } } },
+      "scene": { "anyOf": [{ "$ref": "#/$defs/scene" }, { "type": "null" }] },
+      "activeArc": { "anyOf": [{ "$ref": "#/$defs/arc" }, { "type": "null" }] },
+      "activeChapter": { "anyOf": [{ "$ref": "#/$defs/chapter" }, { "type": "null" }] },
+      "activeSession": { "anyOf": [{ "$ref": "#/$defs/session" }, { "type": "null" }] },
+      "latestRecap": { "anyOf": [{ "$ref": "#/$defs/recap" }, { "type": "null" }] },
+      "affordances": { "type": "array", "maxItems": 24, "items": { "$ref": "#/$defs/affordance" } }
+    },
+    "$defs": {
+      "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "text": { "type": "string", "minLength": 1, "maxLength": 500 },
+      "summary": { "type": "string", "minLength": 1, "maxLength": 2000 },
+      "count": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+      "nullableId": { "type": ["string", "null"], "minLength": 1, "maxLength": 200 },
+      "scene": { "type": "object", "additionalProperties": false, "required": ["locationId", "conversationId", "encounterId"], "properties": { "locationId": { "$ref": "#/$defs/id" }, "conversationId": { "$ref": "#/$defs/nullableId" }, "encounterId": { "$ref": "#/$defs/nullableId" } } },
+      "arc": { "type": "object", "additionalProperties": false, "required": ["id", "name", "title", "partyStake"], "properties": { "id": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/text" }, "title": { "$ref": "#/$defs/text" }, "partyStake": { "$ref": "#/$defs/summary" } } },
+      "chapter": { "type": "object", "additionalProperties": false, "required": ["id", "name", "title", "partyQuestion"], "properties": { "id": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/text" }, "title": { "$ref": "#/$defs/text" }, "partyQuestion": { "$ref": "#/$defs/summary" } } },
+      "session": { "type": "object", "additionalProperties": false, "required": ["id", "name", "ordinal", "status"], "properties": { "id": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/text" }, "ordinal": { "type": "integer", "minimum": 1 }, "status": { "const": "active" } } },
+      "recap": { "type": "object", "additionalProperties": false, "required": ["sessionId", "ordinal", "chapter", "arc", "milestones"], "properties": { "sessionId": { "$ref": "#/$defs/id" }, "ordinal": { "type": "integer", "minimum": 1 }, "chapter": { "$ref": "#/$defs/recapChapter" }, "arc": { "$ref": "#/$defs/recapArc" }, "milestones": { "type": "array", "maxItems": 5, "items": { "$ref": "#/$defs/milestone" } } } },
+      "recapChapter": { "type": "object", "additionalProperties": false, "required": ["id", "title", "partyQuestion"], "properties": { "id": { "$ref": "#/$defs/id" }, "title": { "$ref": "#/$defs/text" }, "partyQuestion": { "$ref": "#/$defs/summary" } } },
+      "recapArc": { "type": "object", "additionalProperties": false, "required": ["id", "title", "partyStake"], "properties": { "id": { "$ref": "#/$defs/id" }, "title": { "$ref": "#/$defs/text" }, "partyStake": { "$ref": "#/$defs/summary" } } },
+      "milestone": { "type": "object", "additionalProperties": false, "required": ["chapterId", "title", "closingSummary", "timestamp", "sequence"], "properties": { "chapterId": { "$ref": "#/$defs/id" }, "title": { "$ref": "#/$defs/text" }, "closingSummary": { "$ref": "#/$defs/summary" }, "timestamp": { "type": "string", "minLength": 1, "maxLength": 100 }, "sequence": { "type": "integer", "minimum": 0 } } },
+      "affordance": { "type": "object", "additionalProperties": false, "required": ["key", "label", "summary"], "properties": { "key": { "$ref": "#/$defs/id" }, "label": { "$ref": "#/$defs/text" }, "summary": { "$ref": "#/$defs/summary" } } }
+    }
+  },
+  "exposure": "model-visible",
+  "status": "active"
+}

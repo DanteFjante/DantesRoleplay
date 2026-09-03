@@ -1,0 +1,11 @@
+{
+  "id": "actor.shardwake.abbess-iora",
+  "name": "Abbess Iora",
+  "components": {
+    "game.core.world.motive": {
+      "status": "active",
+      "summary": "Iora wants the Tidechapel opened carefully because its moving mosaic matches forbidden hymns preserved by her order.",
+      "visibility": "party"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "chronology.shardwake.concord-founded",
+  "name": "The Tidebound Compact",
+  "components": {
+    "game.core.world.chronology": {
+      "calendarId": "shardwake-reckoning",
+      "precision": "approximate",
+      "title": "The Tidebound Compact",
+      "summary": "Surviving island pilots established the Tidebound Concord and the first shared beacon law.",
+      "dateLabel": "Year 87 SR",
+      "occurredAtMinute": 45748800,
+      "status": "active",
+      "visibility": "public"
+    }
+  }
+}

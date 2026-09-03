@@ -13,6 +13,8 @@ A reaction runs after a structural event has survived every guard and been writt
 inside the same uncommitted transaction as the change that caused it. What it returns becomes part
 of that change, so a reaction either commits with the event it answered or nothing commits at all.
 
+## Matches
+
 ## Instructions
 1. Declare `requirements.event` with `mode: "reaction"`, the exact event types the rule answers,
    and the `components` it needs projected onto the entities those events touch.

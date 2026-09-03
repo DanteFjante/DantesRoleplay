@@ -4,8 +4,10 @@ import type {
   VisualMedia,
   WorldLocation,
 } from "../data/hub-types";
+import { useEffect } from "react";
 import { Icon } from "./Icon";
 import { MediaImage } from "./MediaImage";
+import { markCombatBoardReady } from "../observability/performance.js";
 
 function ViewIntro({ eyebrow, title, copy }: { eyebrow: string; title: string; copy: string }) {
   return (
@@ -68,6 +70,12 @@ export function CurrentViewPreview({
   location: WorldLocation | null;
   situation: CurrentSituationReadModel;
 }) {
+  useEffect(() => {
+    if (situation.status === "ready" && situation.kind === "combat") {
+      markCombatBoardReady(situation.combat.id);
+    }
+  }, [situation]);
+
   if (situation.status === "ready" && situation.kind === "recorded") {
     const label = situation.recorded.kind.split("-").map(value =>
       value.length ? value[0].toUpperCase() + value.slice(1) : value).join(" ");

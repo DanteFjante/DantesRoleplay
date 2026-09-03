@@ -11,6 +11,8 @@ changeNote: "Re-seeded: the bootstrap file changed."
 ## Description
 How to change this application's own code or configuration.
 
+## Matches
+
 ## Instructions
 1. Inspect the relevant subsystem — see `procedure.system.inspect`.
 2. Retrieve its governing contracts.

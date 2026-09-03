@@ -1,4 +1,4 @@
-﻿---
+---
 id: procedure.campaign.session
 category: campaign
 name: Validate, start, and end a campaign session
@@ -13,6 +13,8 @@ Session S1 validates whether a C3-readable campaign can start its next session, 
 creates its minimal scoped record. S3 validates then atomically ends one active session with an
 immutable C3-only factual recap. S4 validates and captures one evidence-only checkpoint for an ended
 S3 session. These operations create no gameplay or external owner state.
+
+## Matches
 
 ## Instructions
 1. Send exactly `{"operation":"validate-session","campaignId":"campaign.*","sessionId":"session.*"}`.

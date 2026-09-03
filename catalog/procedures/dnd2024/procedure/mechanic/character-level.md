@@ -11,6 +11,8 @@ changeNote: "Created as Feature 2 Slice 2 after the SRD source registry was veri
 ## Description
 Defines a character total-level component, its fixed SRD source reference, the derived level-based Proficiency Bonus, and the validated administrative mechanic that records the level. Non-goals include classes, advancement and monster CR.
 
+## Matches
+
 ## Instructions
 Source and attribution
 - Rule source: dnd2024.source.srd-5.2.1, locator "Character Creation > Character Advancement" in System Reference Document 5.2.1.

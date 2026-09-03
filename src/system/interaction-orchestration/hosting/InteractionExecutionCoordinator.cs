@@ -182,6 +182,7 @@ internal sealed class InteractionExecutionCoordinator(
                     authority.StateSpaceId,
                     authority.ApplicationId,
                     step.Contract.QualifiedKey,
+                    step.Contract.Version,
                     step.Contract.Fingerprint,
                     bound.RoleBindings,
                     bound.InputJson,

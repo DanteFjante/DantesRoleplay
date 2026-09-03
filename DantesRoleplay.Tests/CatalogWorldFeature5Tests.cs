@@ -47,7 +47,7 @@ public sealed class CatalogWorldFeature5Tests : IDisposable
     {
         Copy(RepositoryCatalog(), _copy); await using var db=_fixture.CreateContext(); var world=new WorldStore(db); var mechanics=new MechanicStore(db);
         Assert.False((await new CatalogImporter(db,mechanics,new ProcedureStore(db),world,new EventTypeStore(db)).ApplyAsync(_copy,new CatalogImportOptions())).Aborted);
-        var runner=new ActionRunner(db,mechanics,new ProjectionResolver(db),new JintMechanicEngine(),new EffectApplier(db,world,null,new EventLedger(db)),new OperationLog(db),new MechanicComposer(mechanics,new ProjectionResolver(db),new JintMechanicEngine()));
+        var runner=new CatalogMechanicTestHarness(db,mechanics,new ProjectionResolver(db),new JintMechanicEngine(),new EffectApplier(db,world,null,new EventLedger(db)),new OperationLog(db),new MechanicComposer(mechanics,new ProjectionResolver(db),new JintMechanicEngine()));
         var result=await Run(runner,"{\"minutes\":60}"); Assert.True(result.Ok,result.Error?.Why); Assert.Equal(1,result.AppliedCount);
         AssertClockEquals((await world.GetEntityAsync("world.feature-01.fixture"))!,60,1);
         var ledger = new EventLedger(db); var events = await ledger.FindAsync(rootOperationId: result.OperationId);
@@ -66,7 +66,7 @@ public sealed class CatalogWorldFeature5Tests : IDisposable
         Assert.False((await Run(runner,"{\"minutes\":1}")).Ok); AssertClockEquals((await world.GetEntityAsync("world.feature-01.fixture"))!,1000000000,1);
     }
 
-    private static async Task<ActionRunResult> Run(ActionRunner runner,string input)=>await runner.RunAsync(new ActionRequest{Intent="advance world time",RoleEntityIds=new Dictionary<string,string>{{"world","world.feature-01.fixture"}},Input=input,Seed=505});
+    private static async Task<ActionRunResult> Run(CatalogMechanicTestHarness runner,string input)=>await runner.RunAsync(new ActionRequest{Intent="advance world time",RoleEntityIds=new Dictionary<string,string>{{"world","world.feature-01.fixture"}},Input=input,Seed=505});
     private static void AssertClockEquals(EntitySnapshot root,long minute,long revision){using var d=JsonDocument.Parse(root.Components.Single(c=>c.DefinitionId=="game.core.world.clock").Data);Assert.Equal(minute,d.RootElement.GetProperty("currentMinute").GetInt64());Assert.Equal(revision,d.RootElement.GetProperty("revision").GetInt64());}
 
     private static void AssertClock(string json)

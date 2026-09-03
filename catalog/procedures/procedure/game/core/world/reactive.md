@@ -12,6 +12,8 @@ changeNote: "Seeded from bootstrap file."
 Defines the fixture-bound consequence of the Lantern Compact agenda advancing: reveal Oren's
 unsent letter once, inside the same committed event chain.
 
+## Matches
+
 ## Instructions
 1. Register only the fixed active reaction subscription for the existing faction replacement
    event, with the fixed Oren-letter clue role, faction tracking, scalar entity/component filters,

@@ -21,7 +21,10 @@ export function MapFeatureList({
   onFeatureSelect: (featureId: string) => void;
   onOpenScope: (mapId: string) => void;
 }) {
-  const groups = groupMapFeaturesByLayers(map);
+  const groups = groupMapFeaturesByLayers(map) as Array<{
+    layer: MapDocument["layers"][number];
+    features: MapDocument["features"];
+  }>;
 
   return (
     <section className="map-feature-list" aria-label={`${map.subject.name} places list`}>

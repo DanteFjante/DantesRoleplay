@@ -35,11 +35,13 @@ test("selected place stays in page flow and empty map space clears marker select
   assert.match(component, /onClick=\{\(event\) => \{\s*event\.stopPropagation\(\);\s*onFeatureSelect\(feature\.id\);/s);
 });
 
-test("map interaction supports every input mode and keeps viewport state outside game state", () => {
-  assert.match(component, /onWheel=\{handleWheel\}/);
-  assert.match(component, /onPointerDown=\{beginGesture\}/);
-  assert.match(component, /kind: "pinch"/);
-  assert.match(component, /onKeyDown=\{handleKeyDown\}/);
+test("map viewport state stays local and touch policy leaves browser gestures available", () => {
+  assert.doesNotMatch(component, /onWheel=/);
+  assert.doesNotMatch(component, /addEventListener\(\s*["']wheel["']/);
+  assert.doesNotMatch(styles, /\.world-map-canvas\s*\{[^}]*touch-action:\s*none;/s);
+  assert.match(styles, /\.world-map-canvas\s*\{[^}]*touch-action:\s*pan-y pinch-zoom;/s);
+  assert.match(styles, /\.map-viewport-toolbar button\s*\{[^}]*min-width:\s*44px;[^}]*min-height:\s*44px;/s);
+  assert.match(styles, /\.map-viewport-toolbar button:focus-visible\s*\{[^}]*outline:\s*2px solid/s);
   assert.match(component, /Fit map/);
   assert.match(component, /Focus selected/);
   assert.match(workspace, /window\.sessionStorage\.setItem\(MAP_VIEW_SESSION_KEY/);

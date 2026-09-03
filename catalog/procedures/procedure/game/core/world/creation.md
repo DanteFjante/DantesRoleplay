@@ -2,16 +2,18 @@
 id: procedure.game.core.world.creation
 category: game.core.world.creation
 name: Create and verify an extensive world
-governs: reviewed creation of a new world through generic ECS effects or system.world-state.sync, followed by intent-driven play verification and durable continuity recording
+governs: reviewed creation of a new world through system.world-state.sync and application mechanics, followed by intent-driven play verification and durable continuity recording
 status: active
-createdBy: "llm"
-changeNote: "Added after the Shardwake MCP machine simulation exposed the need for one discoverable end-to-end world-creation contract under strict namespaces and application-bound state."
+createdBy: "seed"
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
 Creates an original, playable world as reviewed durable state rather than as prose held only in a
 conversation. It coordinates the narrower location, faction, knowledge, chronology, time, travel,
 media, campaign, action, and storytelling contracts without taking ownership away from them.
+
+## Matches
 
 ## Instructions
 1. Orient first. Read `procedure.system.use`, this procedure, and only the narrower contracts needed

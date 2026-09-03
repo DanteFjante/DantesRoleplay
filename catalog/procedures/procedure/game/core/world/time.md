@@ -2,7 +2,7 @@
 id: procedure.game.core.world.time
 category: game.core.world.time
 name: Govern shared-game world time
-governs: commit(kind: "component") declaring game.core.world.clock; commit(kind: "effects") recording or correcting a root clock; commit(kind: "action") advancing one root clock directly or through a declared route, ground-conveyance, or aerial-conveyance journey
+governs: commit(kind: "system.component-type.register") declaring game.core.world.clock; commit(kind: "system.world-state.sync") recording or correcting a root clock; commit(kind: "application.action.execute") advancing one root clock directly or through a declared route, ground-conveyance, or aerial-conveyance journey
 status: active
 createdBy: "seed"
 changeNote: "Re-seeded: the bootstrap file changed."
@@ -11,6 +11,8 @@ changeNote: "Re-seeded: the bootstrap file changed."
 ## Description
 Defines one explicit in-world coordinate on a world root. It is authored state, not wall-clock time,
 a date system, a schedule, travel cost, or campaign duplicate.
+
+## Matches
 
 ## Instructions
 1. Attach `game.core.world.clock` directly to one active world root. Its complete data is

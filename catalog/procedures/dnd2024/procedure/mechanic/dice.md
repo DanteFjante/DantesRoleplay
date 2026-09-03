@@ -11,6 +11,8 @@ changeNote: "Creates the core reusable D\u0026D 2024 dice mechanic under ruleset
 ## Description
 Provides a simple, seeded dice roll for D&D 2024 actions without changing world state.
 
+## Matches
+
 ## Instructions
 1. Accept an action intent that clearly asks to roll dice, such as "roll a d20" or "roll 2d6+3".
 2. Read count, sides, and modifier from action input when supplied; default to count 1, sides 20, and modifier 0.

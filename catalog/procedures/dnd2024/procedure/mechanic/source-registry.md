@@ -11,6 +11,8 @@ changeNote: "Created as Feature 2 Slice 1, the lowest dependency for source-cite
 ## Description
 Defines the centralized, immutable source identity and CC-BY attribution record used by D&D 2024 rules-bearing data. Non-goals: rules execution, copied rules prose, actor state, and campaign content.
 
+## Matches
+
 ## Instructions
 Source and attribution
 - System Reference Document 5.2.1, Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd.

@@ -13,6 +13,8 @@ Read the append-only record of structural events. Every row says that one world 
 proposed, survived every registered guard, and committed in the same transaction as the change
 itself.
 
+## Matches
+
 ## Instructions
 1. Start from what you already know. With an operation id from `query(kind: "history")`, use
    `rootOperationId`; with an event in hand, use its `correlationId` to see everything that
@@ -37,7 +39,7 @@ itself.
   written directly would be a claim about a change that never happened.
 - Rows are never revised or removed. A correction is a new world change, which records its own
   event.
-- An event exists only because `commit(kind: "effects")` or `commit(kind: "action")` succeeded.
+- An event exists only because `commit(kind: "system.world-state.sync")` or `commit(kind: "application.action.execute")` succeeded.
   Catalog import, seeding, migrations and administrative writes deliberately emit nothing, so an
   absent event is not evidence that the world did not change by those routes.
 - A denied guard leaves no event. The refusal is recorded as a failed operation in

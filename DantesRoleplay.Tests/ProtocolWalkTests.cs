@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using DantesRoleplay.DataAccess;
@@ -12,6 +12,15 @@ using ModelContextProtocol.AspNetCore;
 using DantesRoleplay.Blobs;
 using System.Security.Cryptography;
 using DantesRoleplay.Web.Security;
+using DantesRoleplay.SchemaValidation;
+using DantesRoleplay.ApplicationExecution;
+using DantesRoleplay.Applications;
+using DantesRoleplay.Authorization;
+using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.Ecs;
+using DantesRoleplay.Interactions;
+using DantesRoleplay.Knowledge;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace DantesRoleplay.Tests;
 
@@ -30,6 +39,8 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
     private HttpClient _client = null!;
     private string _databasePath = null!;
     private int _nextId = 1;
+    private static readonly ApplicationIdentifier ColdApplication = ApplicationIdentifier.Parse("cold");
+    private static readonly CatalogRecordDefinition ColdMechanic = CreateColdMechanic();
 
     public async Task InitializeAsync()
     {
@@ -42,9 +53,27 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
         builder.Services.Configure<WebRemoteAccessOptions>(_ => { });
         builder.Services.AddSingleton<WebAccessPolicy>();
         builder.Services.AddSingleton<WebPrivateOperatorGuard>();
+        builder.Services.Replace(ServiceDescriptor.Scoped<IInteractionGateway, ColdInteractionGateway>());
+        builder.Services.Replace(ServiceDescriptor.Scoped<IApplicationActionRunner, ColdActionRunner>());
+        builder.Services.Replace(ServiceDescriptor.Singleton<ILocalKnowledgeSeatProvider>(
+            new ColdSeats()));
+        builder.Services.Replace(ServiceDescriptor.Singleton<IAuthorizedKnowledgeAudiencePolicy>(
+            new ColdAudience()));
+        builder.Services.Replace(ServiceDescriptor.Scoped<IKnowledgeApplicationBindingResolver,
+            ColdBindings>());
+        builder.Services.Replace(ServiceDescriptor.Scoped<IKnowledgeActorParticipationVerifier,
+            ColdParticipation>());
 
         _app = builder.Build();
         await _app.Services.InitialiseDantesRoleplayAsync();
+        using (var scope = _app.Services.CreateScope())
+        {
+            var applications = scope.ServiceProvider.GetRequiredService<IApplicationRegistry>();
+            var revision = applications.Register(new(ColdApplication, "Cold conformance fixture",
+                "A bounded fixture visible to a cold agent.", []));
+            scope.ServiceProvider.GetRequiredService<IStateSpaceRegistry>().Create(
+                new("cold-space", revision, Hash("cold-active-manifest")));
+        }
         _app.MapMcp(ServerConfiguration.McpEndpoint);
         _app.MapPut("/api/blob-uploads/{uploadId}", async (HttpContext context) =>
             await (await BlobTransferWebEndpoints.UploadAsync(
@@ -129,198 +158,172 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// The acceptance walk from VERB_MIGRATION.md B3, in one test because the steps depend on each
-    /// other: the component has to exist before an effect can name it, and the entity has to exist
-    /// before it can be read back.
+    /// A cold session can orient, inspect the typed catalog, and learn in one response that the
+    /// superseded generic write kinds are physically absent.
     /// </summary>
     [Fact]
-    public async Task A_session_can_orient_read_commit_and_confirm_without_leaving_the_three_verbs()
+    public async Task A_session_can_orient_and_read_the_current_closed_surface()
     {
-        // 1. Orient. It must state what exists and hand back calls that can be made verbatim.
         var orient = await ToolAsync("orient", new { });
 
         Assert.True(orient.Ok, orient.Raw);
-        Assert.Contains("query(kind: \"procedures\"", string.Join(" ", orient.NextSteps));
         AssertEveryStepIsCallable(orient);
+        AssertEveryNextActionMatchesCurrentSchema(orient);
+        Assert.True(orient.Data.GetProperty("principal").GetProperty("canRead").GetBoolean());
+        Assert.True(orient.Data.GetProperty("generatedFrom").GetProperty("directAiDescriptorCount").GetInt32() > 0);
 
-        var capabilities = orient.Data.GetProperty("capabilities");
-        Assert.True(capabilities.TryGetProperty("query", out _));
-        Assert.True(capabilities.TryGetProperty("commit", out _));
+        var families = orient.Data.GetProperty("capabilityFamilies").EnumerateArray().ToArray();
+        Assert.Contains(families, value => value.GetProperty("id").GetString() == "read-query");
+        Assert.Contains(families, value => value.GetProperty("id").GetString() == "direct-execution");
+        Assert.Contains(families, value => value.GetProperty("id").GetString() == "planned-interaction");
+        Assert.Contains(families, value => value.GetProperty("id").GetString() == "draft-authoring");
+        Assert.Empty(orient.Data.GetProperty("limitations")
+            .GetProperty("deprecatedCapabilities").EnumerateArray());
 
-        // 2. The catalog. This is what a session reads instead of guessing a payload shape.
         var catalog = await ToolAsync("query", new { kind = "capabilities" });
-
         Assert.True(catalog.Ok, catalog.Raw);
-        Assert.Equal(
-            DantesRoleplay.MCPServer.Mcp.McpVerbCatalog.QueryKindNames.Order(StringComparer.Ordinal),
-            catalog.Data.GetProperty("query").EnumerateArray()
-                .Select(value => value.GetProperty("name").GetString()).Order(StringComparer.Ordinal));
+        var ids = catalog.Data.GetProperty("capabilities").EnumerateArray()
+            .Select(value => value.GetProperty("id").GetString()!).ToHashSet(StringComparer.Ordinal);
+        Assert.Contains("mcp.commit.application.action.execute", ids);
+        foreach (var retired in new[] { "component", "effects", "mechanic", "action" })
+            Assert.DoesNotContain($"mcp.commit.{retired}", ids);
 
-        // 3. The world, before changing it.
         var world = await ToolAsync("query", new { kind = "world" });
         Assert.True(world.Ok, world.Raw);
 
-        // 4. Declare a component, then use it. Note the payload is a JSON string, as advertised.
-        var component = await ToolAsync("commit", new
+        foreach (var retired in new[] { "component", "effects", "mechanic", "action" })
         {
-            kind = "component",
-            payload = """{"id":"walk.note","name":"Note","description":"A line of text about something."}""",
-            intent = "declare a component for the protocol walk"
-        });
-
-        Assert.True(component.Ok, component.Raw);
-
-        // 5. A rejection has to be recoverable. An effect naming an entity that does not exist is
-        //    the ordinary mistake, and the fix must be a call, not advice.
-        var rejected = await ToolAsync("commit", new
-        {
-            kind = "effects",
-            payload = """{"effects":[{"type":"component.set","entityId":"nobody","definitionId":"walk.note","data":"{}"}]}""",
-            dryRun = true
-        });
-
-        Assert.False(rejected.Ok);
-        Assert.Equal("INVALID_EFFECTS", rejected.Error.GetProperty("code").GetString());
-        AssertIsCall(rejected.Error.GetProperty("fix").GetString()!);
-
-        // 6. Dry run first, exactly as every contract insists.
-        // The seeded threshold mechanic advertises fixture.legacy.stats. Nothing seeds that
-        // definition, so a fresh database cannot resolve the action until someone declares the
-        // exact component contract it read from the mechanic.
-        var stats = await ToolAsync("commit", new
-        {
-            kind = "component",
-            payload = """{"id":"fixture.legacy.stats","name":"Stats","description":"Numbers about an entity, e.g. vigour."}"""
-        });
-
-        Assert.True(stats.Ok, stats.Raw);
-
-        const string effects =
-            """
-            {"effects":[
-              {"type":"entity.create","entityId":"walk.orban","name":"Orban"},
-              {"type":"component.set","entityId":"walk.orban","definitionId":"walk.note","data":"{\"text\":\"carries a lantern\"}"},
-              {"type":"component.set","entityId":"walk.orban","definitionId":"fixture.legacy.stats","data":"{\"vigour\":6}"}
-            ]}
-            """;
-
-        var dryRun = await ToolAsync("commit", new { kind = "effects", payload = effects, dryRun = true });
-
-        Assert.True(dryRun.Ok, dryRun.Raw);
-        Assert.False(dryRun.Data.GetProperty("applied").GetBoolean());
-
-        // 7. The identical payload, committed.
-        var applied = await ToolAsync("commit", new
-        {
-            kind = "effects",
-            payload = effects,
-            intent = "create the walk's one entity",
-            proceduresUsed = new[] { "procedure.world.change" }
-        });
-
-        Assert.True(applied.Ok, applied.Raw);
-        Assert.Equal(3, applied.Data.GetProperty("count").GetInt32());
-        Assert.NotEmpty(applied.OperationId);
-
-        // 8. Confirm by reading back, which is what the contracts ask for and what makes the
-        //    reported outcome something other than a claim.
-        // Exact unscoped IDs are now reserved for application-state inspection. The generic world
-        // search remains the correct read-back route for an entity created through generic effects.
-        var entities = await ToolAsync("query", new { kind = "entities", nameQuery = "Orban" });
-
-        Assert.True(entities.Ok, entities.Raw);
-        Assert.Contains("walk.orban", entities.Raw);
-
-        var graph = await ToolAsync("query", new
-        {
-            kind = "graph",
-            id = "walk.orban",
-            componentIds = new[] { "walk.note" },
-            containmentDepth = 0,
-            relationshipKinds = Array.Empty<string>(),
-            relationshipDepth = 0
-        });
-
-        Assert.True(graph.Ok, graph.Raw);
-        Assert.Contains("carries a lantern", graph.Raw);
-        Assert.Equal("walk.orban", graph.Data.GetProperty("rootId").GetString());
-        Assert.Single(graph.Data.GetProperty("nodes").EnumerateArray());
-
-        // 9. A rule, read before it is used, exactly as procedure.mechanic.run asks.
-        var rules = await ToolAsync("query", new { kind = "mechanics", query = "can they manage it" });
-
-        Assert.True(rules.Ok, rules.Raw);
-
-        var rule = rules.Data.GetProperty("mechanics").EnumerateArray().First();
-        var ruleId = rule.GetProperty("id").GetString();
-
-        // 10. An action, the one commit kind with a whole subsystem behind it. Selection is by
-        //     intent — there is no way to name the rule — so the roles have to be filled from what
-        //     the rule declares. Getting that wrong is recoverable, and this is where a session
-        //     most often does.
-        foreach (var payload in new[]
-                 {
-                     "{",
-                     "[]",
-                     "{}"
-                 })
-        {
-            var malformedAction = await ToolAsync("commit", new { kind = "action", payload });
-            Assert.False(malformedAction.Ok);
-            Assert.Equal("INVALID_PAYLOAD", malformedAction.Error.GetProperty("code").GetString());
-            Assert.False(string.IsNullOrWhiteSpace(malformedAction.Error.GetProperty("why").GetString()));
-            Assert.DoesNotContain("the rule is broken, not your arguments", malformedAction.Error.GetProperty("fix").GetString(), StringComparison.OrdinalIgnoreCase);
-            AssertIsCall(malformedAction.Error.GetProperty("fix").GetString()!);
+            var rejected = await ToolAsync("commit", new { kind = retired, payload = "{}" });
+            Assert.False(rejected.Ok);
+            Assert.Equal("UNKNOWN_KIND", rejected.Error.GetProperty("code").GetString());
+            AssertIsCall(rejected.Error.GetProperty("fix").GetString()!);
         }
-
-        var missingRole = await ToolAsync("commit", new
-        {
-            kind = "action",
-            payload = """{"intent":"can they manage it"}"""
-        });
-
-        Assert.False(missingRole.Ok);
-        Assert.Equal("PROJECTION_FAILED", missingRole.Error.GetProperty("code").GetString());
-        Assert.Contains("subject", missingRole.Error.GetProperty("why").GetString());
-        Assert.DoesNotContain("the rule is broken, not your arguments", missingRole.Error.GetProperty("fix").GetString(), StringComparison.OrdinalIgnoreCase);
-        AssertIsCall(missingRole.Error.GetProperty("fix").GetString()!);
-
-        // 11. The same action with the role supplied. This runs AI-written JavaScript in the
-        //     sandbox and applies what it proposes, which is the sentence the whole system exists
-        //     to make true.
-        var ran = await ToolAsync("commit", new
-        {
-            kind = "action",
-            payload = """
-                {"intent":"can they manage it","roleEntityIds":{"subject":"walk.orban"},"input":"{\"field\":\"vigour\",\"threshold\":5}","seed":7}
-                """,
-            intent = "resolve whether Orban manages it",
-            proceduresUsed = new[] { "procedure.mechanic.run" }
-        });
-
-        Assert.True(ran.Ok, ran.Raw);
-        Assert.Equal(ruleId, ran.Data.GetProperty("mechanic").GetProperty("id").GetString());
-        Assert.NotEqual(0, ran.Data.GetProperty("seed").GetInt64());
-        Assert.False(string.IsNullOrWhiteSpace(ran.Data.GetProperty("narration").GetString()));
-
-        // 12. History records the public verbs, not the handler names behind them.
-        var history = await ToolAsync("query", new { kind = "history", limit = 50 });
-
-        Assert.True(history.Ok, history.Raw);
-
-        var tools = history.Data.GetProperty("operations")
-            .EnumerateArray()
-            .Select(o => o.GetProperty("tool").GetString())
-            .Distinct(StringComparer.Ordinal)
-            .ToList();
-
-        Assert.All(tools, tool => Assert.Contains(tool,
-            new[] { "orient", "query", "commit", "apply_effects", "define_component" }));
     }
 
     [Fact]
-    public async Task Binary_content_is_a_resource_template_not_a_fourth_tool()
+    public async Task A_cold_agent_can_complete_the_self_explanation_conformance_walk()
     {
+        // The only bootstrap information is the protocol schema plus orient. No fixture IDs are
+        // passed to orient, and every later ID is read from a response produced by the system.
+        var listed = await CallAsync("tools/list", new { });
+        Assert.Equal(3, listed.GetProperty("tools").GetArrayLength());
+        var orient = await ToolAsync("orient", new { });
+        Assert.True(orient.Ok, orient.Raw);
+
+        var application = Assert.Single(orient.Data.GetProperty("applications")
+            .GetProperty("items").EnumerateArray(), value =>
+                value.GetProperty("id").GetString() == ColdApplication.Value);
+        var stateSpace = Assert.Single(application.GetProperty("stateSpaces").EnumerateArray());
+        var applicationId = application.GetProperty("id").GetString()!;
+        var stateSpaceId = stateSpace.GetProperty("id").GetString()!;
+        Assert.Equal("cold-space", stateSpaceId);
+        Assert.Equal("bound", orient.Data.GetProperty("audience").GetProperty("context")
+            .GetProperty("status").GetString());
+
+        var families = orient.Data.GetProperty("capabilityFamilies").EnumerateArray().ToArray();
+        Assert.Contains(families, value => value.GetProperty("id").GetString() == "direct-execution");
+        Assert.Contains(families, value => value.GetProperty("id").GetString() == "planned-interaction");
+        Assert.Contains(families, value => value.GetProperty("id").GetString() == "read-query");
+
+        var audience = await ToolAsync("query", new { kind = "system.audience-context" });
+        Assert.True(audience.Ok, audience.Raw);
+        Assert.Equal(applicationId, audience.Data.GetProperty("applicationId").GetString());
+        Assert.Equal(stateSpaceId, audience.Data.GetProperty("stateSpaceId").GetString());
+
+        var found = await ToolAsync("query", new
+        {
+            kind = "system.feature-search",
+            applicationId,
+            query = "record a message"
+        });
+        Assert.True(found.Ok, found.Raw);
+        var capability = Assert.Single(found.Data.GetProperty("capabilities").EnumerateArray());
+        var mechanicId = capability.GetProperty("id").GetString()!;
+        var version = capability.GetProperty("version").GetInt32();
+        var fingerprint = capability.GetProperty("sourceFingerprint").GetString()!;
+        var role = Assert.Single(capability.GetProperty("roles").EnumerateArray());
+        Assert.Equal("subject", role.GetProperty("name").GetString());
+        Assert.True(role.GetProperty("required").GetBoolean());
+        Assert.Equal("authored", capability.GetProperty("input").GetProperty("status").GetString());
+        using (var schema = JsonDocument.Parse(capability.GetProperty("input")
+                   .GetProperty("schemaJson").GetString()!))
+        {
+            Assert.Contains("message", schema.RootElement.GetProperty("required")
+                .EnumerateArray().Select(value => value.GetString()));
+        }
+
+        // Ambiguity goes through planning and remains inert.
+        var planned = await ToolAsync("query", new
+        {
+            kind = "system.interaction-plan",
+            applicationId,
+            request = JsonSerializer.Serialize(new
+            {
+                operation = "resolve",
+                stateSpaceId,
+                sessionContextId = "cold-session",
+                intent = new { idempotencyKey = "plan.cold.1", intentText = "do something here" }
+            })
+        });
+        Assert.True(planned.Ok, planned.Raw);
+        Assert.Equal("Ambiguous", planned.Data.GetProperty("status").GetString());
+        Assert.False(planned.Data.TryGetProperty("proposal", out _));
+
+        var missingRole = await ExactActionAsync(applicationId, stateSpaceId, mechanicId,
+            version, fingerprint, "exact.missing-role", new { }, new { message = "hello" });
+        Assert.False(missingRole.Ok);
+        Assert.Equal("MISSING_REQUIRED_ROLE", missingRole.Error.GetProperty("code").GetString());
+        var roleRecovery = Assert.Single(missingRole.NextActions);
+        Assert.Equal("mcp.query.system.feature-search",
+            roleRecovery.GetProperty("capabilityId").GetString());
+        Assert.True((await FollowAsync(roleRecovery)).Ok);
+
+        var stale = await ExactActionAsync(applicationId, stateSpaceId, mechanicId,
+            version, Hash("stale-mechanic"), "exact.stale", new { subject = "entity.cold" },
+            new { message = "hello" });
+        Assert.False(stale.Ok);
+        Assert.Equal("MECHANIC_STALE", stale.Error.GetProperty("code").GetString());
+        var refresh = Assert.Single(stale.NextActions);
+        var refreshed = await FollowAsync(refresh);
+        Assert.True(refreshed.Ok, refreshed.Raw);
+        Assert.Equal(fingerprint, Assert.Single(refreshed.Data.GetProperty("capabilities")
+            .EnumerateArray()).GetProperty("sourceFingerprint").GetString());
+
+        var executed = await ExactActionAsync(applicationId, stateSpaceId, mechanicId,
+            version, fingerprint, "exact.success", new { subject = "entity.cold" },
+            new { message = "hello" });
+        Assert.True(executed.Ok, executed.Raw);
+        Assert.Equal("Recorded the exact cold action.", executed.Data.GetProperty("narration").GetString());
+        var receipt = executed.Data.GetProperty("receipt");
+        Assert.Equal("succeeded", receipt.GetProperty("disposition").GetString());
+        Assert.Equal(mechanicId, receipt.GetProperty("qualifiedMechanicId").GetString());
+        Assert.Equal(version, receipt.GetProperty("mechanicVersion").GetInt32());
+        Assert.Equal(fingerprint, receipt.GetProperty("contentFingerprint").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(receipt.GetProperty("operationId").GetString()));
+
+        // No result means proposal, never invention or activation.
+        var absent = await ToolAsync("query", new
+        {
+            kind = "system.feature-search",
+            applicationId,
+            query = "teleport the campaign into a different ruleset"
+        });
+        Assert.True(absent.Ok, absent.Raw);
+        Assert.Empty(absent.Data.GetProperty("hits").EnumerateArray());
+        Assert.Empty(absent.Data.GetProperty("capabilities").EnumerateArray());
+        var proposal = Assert.Single(absent.NextActions);
+        Assert.Equal("mcp.commit.feedback", proposal.GetProperty("capabilityId").GetString());
+        Assert.True(proposal.GetProperty("ready").GetBoolean());
+        var submitted = await FollowAsync(proposal);
+        Assert.True(submitted.Ok, submitted.Raw);
+
+        var discovery = orient.Raw + (await ToolAsync("query", new { kind = "capabilities" })).Raw;
+        foreach (var retired in new[] { "component", "effects", "mechanic", "action" })
+            Assert.DoesNotContain($"mcp.commit.{retired}\"", discovery, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Binary_content_is_a_resource_template_not_a_fourth_tool()    {
         var bytes = new byte[] { 137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82 };
         var digest = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
         var begin = await ToolAsync("commit", new
@@ -405,10 +408,13 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
     public async Task Interaction_kinds_are_discoverable_and_fail_closed_over_real_json_rpc()
     {
         var capabilities = await ToolAsync("query", new { kind = "capabilities" });
-        var queryKinds = capabilities.Data.GetProperty("query").EnumerateArray()
-            .Select(value => value.GetProperty("name").GetString()).ToArray();
-        var commitKinds = capabilities.Data.GetProperty("commit").EnumerateArray()
-            .Select(value => value.GetProperty("name").GetString()).ToArray();
+        var descriptors = capabilities.Data.GetProperty("capabilities").EnumerateArray().ToArray();
+        var queryKinds = descriptors.Select(value => value.GetProperty("id").GetString())
+            .Where(value => value!.StartsWith("mcp.query.", StringComparison.Ordinal))
+            .Select(value => value!["mcp.query.".Length..]).ToArray();
+        var commitKinds = descriptors.Select(value => value.GetProperty("id").GetString())
+            .Where(value => value!.StartsWith("mcp.commit.", StringComparison.Ordinal))
+            .Select(value => value!["mcp.commit.".Length..]).ToArray();
         Assert.Contains("system.feature-search", queryKinds);
         Assert.Contains("system.interaction-plan", queryKinds);
         Assert.Contains("system.interaction-receipt", queryKinds);
@@ -634,31 +640,38 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
         Assert.Contains("procedures", unknownKind.Error.GetProperty("why").GetString());
         AssertIsCall(unknownKind.Error.GetProperty("fix").GetString()!);
 
-        var badPayload = await ToolAsync("commit", new { kind = "component", payload = "{\"name\":\"No id\"}" });
+        var retired = await ToolAsync("commit", new { kind = "component", payload = "{}" });
+
+        Assert.False(retired.Ok);
+        Assert.Equal("UNKNOWN_KIND", retired.Error.GetProperty("code").GetString());
+        AssertIsCall(retired.Error.GetProperty("fix").GetString()!);
+
+        var badPayload = await ToolAsync("commit", new { kind = "feedback", payload = "{\"summary\":\"Incomplete\"}" });
 
         Assert.False(badPayload.Ok);
         Assert.Equal("INVALID_PAYLOAD", badPayload.Error.GetProperty("code").GetString());
 
         // The shape travels with the failure: the reason names every field the payload needed.
         var why = badPayload.Error.GetProperty("why").GetString()!;
-        Assert.Contains("component requires id, name, and description", why);
+        Assert.Contains("exact closed shape", why);
 
         var fix = badPayload.Error.GetProperty("fix").GetString()!;
         AssertIsCall(fix);
 
         // And the fix is not merely well formed — sending it back gets a different, better answer.
+        var token = "feedback-request." + Guid.NewGuid().ToString("n");
         var retry = await ToolAsync("commit", new
         {
-            kind = "component",
-            payload = """{"id":"walk.retry","name":"Retry","description":"Written by following the fix."}"""
+            kind = "feedback",
+            payload = $$"""{"operation":"submit","requestToken":"{{token}}","category":"documentation","impact":"minor","summary":"Recovery retry","observed":"The typed recovery path was exercised."}"""
         });
 
         Assert.True(retry.Ok, retry.Raw);
 
         var dryRunUnsupported = await ToolAsync("commit", new
         {
-            kind = "component",
-            payload = """{"id":"walk.retry","name":"Retry","description":"..."}""",
+            kind = "feedback",
+            payload = $$"""{"operation":"submit","requestToken":"{{token}}.preview","category":"documentation","impact":"minor","summary":"Preview retry","observed":"Preview is not supported for feedback."}""",
             dryRun = true
         });
 
@@ -725,6 +738,64 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
         }
     }
 
+    private static void AssertEveryNextActionMatchesCurrentSchema(ToolResult result)
+    {
+        Assert.NotEmpty(result.NextActions);
+        var validator = new BoundedJsonSchemaValidator();
+        foreach (var action in result.NextActions)
+        {
+            var capabilityId = action.GetProperty("capabilityId").GetString();
+            var descriptor = Assert.Single(DantesRoleplay.MCPServer.Mcp.McpVerbCatalog.Descriptors,
+                value => value.Id == capabilityId);
+            Assert.Equal(descriptor.Fingerprint,
+                action.GetProperty("capabilityFingerprint").GetString());
+            Assert.Equal(descriptor.Input.SchemaHash,
+                action.GetProperty("inputSchemaHash").GetString());
+            Assert.Equal(SchemaValueStatus.Valid, validator.Validate(descriptor.Input.SchemaJson,
+                action.GetProperty("arguments").GetRawText()).Status);
+        }
+    }
+
+    private Task<ToolResult> ExactActionAsync(
+        string applicationId,
+        string stateSpaceId,
+        string qualifiedMechanicId,
+        int mechanicVersion,
+        string contentFingerprint,
+        string idempotencyKey,
+        object roleEntityIds,
+        object input) => ToolAsync("commit", new
+        {
+            kind = "application.action.execute",
+            payload = JsonSerializer.Serialize(new
+            {
+                idempotencyKey,
+                applicationId,
+                stateSpaceId,
+                qualifiedMechanicId,
+                mechanicVersion,
+                contentFingerprint,
+                roleEntityIds,
+                input
+            })
+        });
+
+    private async Task<ToolResult> FollowAsync(JsonElement action)
+    {
+        var arguments = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["kind"] = action.GetProperty("kind").GetString()
+        };
+        var tool = action.GetProperty("tool").GetString()!;
+        foreach (var property in action.GetProperty("arguments").EnumerateObject())
+        {
+            arguments[property.Name] = tool == "commit" && property.Name == "payload"
+                ? property.Value.GetRawText()
+                : property.Value.Clone();
+        }
+        return await ToolAsync(tool, arguments);
+    }
+
     private async Task<ToolResult> ToolAsync(string name, object arguments)
     {
         var result = await CallAsync("tools/call", new { name, arguments });
@@ -748,6 +819,9 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
             envelope.TryGetProperty("error", out var error) ? error : default,
             envelope.TryGetProperty("nextSteps", out var steps)
                 ? [.. steps.EnumerateArray().Select(s => s.GetString() ?? string.Empty)]
+                : [],
+            envelope.TryGetProperty("nextActions", out var actions)
+                ? [.. actions.EnumerateArray().Select(value => value.Clone())]
                 : [],
             envelope.TryGetProperty("operationId", out var operation)
                 ? operation.GetString() ?? string.Empty
@@ -815,11 +889,184 @@ public sealed class ProtocolWalkTests : IAsyncLifetime
         return payload.ToString();
     }
 
+    private static CatalogRecordDefinition CreateColdMechanic()
+    {
+        const string requirements = """
+            {"roles":{"subject":{"components":[],"description":"The entity receiving the recorded message."}},"inputSchema":{"type":"object","properties":{"message":{"type":"string","minLength":1}},"required":["message"],"additionalProperties":false}}
+            """;
+        var content = JsonSerializer.Serialize(new
+        {
+            id = "mechanic.exact",
+            name = "Record a message",
+            description = "Records one exact message for a selected subject.",
+            matches = new[] { "record a message" },
+            requirements,
+            source = "export function execute() { return { narration: 'recorded', effects: [] }; }",
+            status = "active"
+        });
+        return new(ColdApplication.Value, "mechanic", "cold.mechanic.exact",
+            "Record a message", "Records one exact message for a selected subject.", [],
+            ["record a message"], "mechanics/exact", "active", 3, content, Hash(content),
+            "cold-conformance", "mechanics/exact.js");
+    }
+
+    private static string Hash(string value) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+
+    private static string RepositoryRoot()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory);
+             directory is not null; directory = directory.Parent)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "AGENTS.md"))) return directory.FullName;
+        }
+        throw new InvalidOperationException("Repository root not found.");
+    }
+
+    private sealed class ColdInteractionGateway : IInteractionGateway
+    {
+        public Task<InteractionFeatureSearchResult> SearchFeaturesAsync(
+            ApplicationIdentifier applicationId, string? query, string? qualifiedId,
+            int limit = 10, string? namespaceId = null,
+            CancellationToken cancellationToken = default)
+        {
+            var matches = applicationId == ColdApplication
+                && (qualifiedId == ColdMechanic.QualifiedId
+                    || query?.Contains("record a message", StringComparison.OrdinalIgnoreCase) == true);
+            if (!matches)
+                return Task.FromResult(InteractionFeatureSearchResult.Create(
+                    InteractionRetrievalMode.Exact, []));
+            var reference = InteractionFeatureReference.Create(ColdApplication,
+                InteractionRetrievalLane.TrustedFeature, Hash("cold-catalog"), ColdMechanic);
+            var hit = InteractionFeatureHit.Create(reference, ColdMechanic, null, null, true);
+            return Task.FromResult(InteractionFeatureSearchResult.Create(
+                InteractionRetrievalMode.Exact, [hit]));
+        }
+
+        public Task<InteractionPlanGatewayResult> PlanAsync(
+            TrustedPrincipalContext principal, ApplicationIdentifier applicationId,
+            string stateSpaceId, string sessionContextId, string intentJson,
+            string? submittedProposalJson = null, string? conversationId = null,
+            InteractionAiRole role = InteractionAiRole.Outer, string? parentDelegationId = null,
+            CancellationToken cancellationToken = default)
+        {
+            var receipt = Receipt(principal.PrincipalId, applicationId, stateSpaceId,
+                submittedProposalJson is null ? "plan.cold.ambiguous" : "plan.cold.direct");
+            if (submittedProposalJson is null)
+                return Task.FromResult(new InteractionPlanGatewayResult(
+                    InteractionResolutionStatus.Ambiguous, "INTERACTION_AMBIGUOUS",
+                    "More detail is required before any action can be selected.",
+                    ["No exact capability was selected."], null, null,
+                    InteractionReceiptWriteResult.Appended(receipt), Hash("cold-plan-trace")));
+
+            using var document = JsonDocument.Parse(submittedProposalJson);
+            var step = document.RootElement.GetProperty("steps")[0];
+            var proposal = new InteractionProposalProjection("propose",
+                [new("action", "action", ColdMechanic.QualifiedId, ColdMechanic.Version,
+                    ColdMechanic.ContentFingerprint, [],
+                    step.GetProperty("roleBindings").EnumerateObject().ToDictionary(
+                        value => value.Name, value => value.Value.GetString()!, StringComparer.Ordinal),
+                    step.GetProperty("input").Clone(), [])]);
+            return Task.FromResult(new InteractionPlanGatewayResult(
+                InteractionResolutionStatus.Resolved, "INTERACTION_RESOLVED",
+                "The exact action is ready for confirmation.", [], Hash("cold-proposal"),
+                proposal, InteractionReceiptWriteResult.Appended(receipt), Hash("cold-plan-trace")));
+        }
+
+        public Task<InteractionReceiptProjection?> GetReceiptAsync(
+            TrustedPrincipalContext principal, ApplicationIdentifier applicationId,
+            string stateSpaceId, string receiptId,
+            CancellationToken cancellationToken = default) => Task.FromResult<InteractionReceiptProjection?>(null);
+
+        public Task<InteractionExecutionOutcome> ExecuteAsync(
+            TrustedPrincipalContext principal, ApplicationIdentifier applicationId,
+            string stateSpaceId, string executionRequestJson,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        private static InteractionReceiptProjection Receipt(
+            string principal, ApplicationIdentifier applicationId, string stateSpaceId, string key) => new(
+                "interaction-receipt." + new string('c', 32), "resolution", principal,
+                applicationId, stateSpaceId, key, Hash(key), "ambiguous", "INTERACTION_AMBIGUOUS",
+                null, "The request remains inert.", [], DateTime.UnixEpoch);
+    }
+
+    private sealed class ColdActionRunner : IApplicationActionRunner
+    {
+        public Task<ApplicationActionExecutionResult> RunAsync(
+            ApplicationActionExecutionRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            if (request.ContentFingerprint != ColdMechanic.ContentFingerprint
+                || request.MechanicVersion != ColdMechanic.Version)
+                return Task.FromResult(Failed(ApplicationActionExecutionDisposition.Stale,
+                    request, "MECHANIC_STALE", "The selected mechanic fingerprint is stale."));
+            if (!request.RoleEntityIds.ContainsKey("subject"))
+                return Task.FromResult(Failed(ApplicationActionExecutionDisposition.Failed,
+                    request, "MISSING_REQUIRED_ROLE", "The required subject role is missing."));
+            return Task.FromResult(new ApplicationActionExecutionResult(
+                ApplicationActionExecutionDisposition.Succeeded,
+                request.ExecutionIdentity.OperationId, request.QualifiedMechanicId,
+                request.ContentFingerprint, request.Seed, "Recorded the exact cold action.", 0, [])
+            {
+                MechanicVersion = request.MechanicVersion,
+                AffectedEntityIds = [request.RoleEntityIds["subject"]]
+            });
+        }
+
+        private static ApplicationActionExecutionResult Failed(
+            ApplicationActionExecutionDisposition disposition,
+            ApplicationActionExecutionRequest request, string code, string message) => new(
+                disposition, request.ExecutionIdentity.OperationId, request.QualifiedMechanicId,
+                request.ContentFingerprint, request.Seed, "", 0, [new(code, message)])
+            { MechanicVersion = request.MechanicVersion };
+    }
+
+    private sealed class ColdSeats : ILocalKnowledgeSeatProvider
+    {
+        public LocalKnowledgeSeatSnapshot Current() => new(true, "principal.cold", ColdApplication.Value,
+            "campaign.cold", null, KnowledgeAudienceRole.GameMaster);
+    }
+
+    private sealed class ColdAudience : IAuthorizedKnowledgeAudiencePolicy
+    {
+        public Task<KnowledgeAudienceResolution> ResolveAsync(
+            string campaignId, CancellationToken cancellationToken = default) => Task.FromResult(
+                new KnowledgeAudienceResolution(new("principal.cold", campaignId,
+                    KnowledgeAudienceRole.GameMaster, null, "policy.cold")));
+    }
+
+    private sealed class ColdBindings : IKnowledgeApplicationBindingResolver
+    {
+        public Task<KnowledgeApplicationBinding?> ResolveAsync(
+            string campaignId, CancellationToken cancellationToken = default)
+        {
+            var path = Path.Combine(RepositoryRoot(), "catalog", "applications", "dnd2024",
+                "metadata", "authorized-knowledge.json");
+            if (!KnowledgeApplicationBindingDocument.TryParse(
+                    File.ReadAllText(path), "dnd2024", out var document))
+                throw new InvalidOperationException("The current authorized knowledge contract is invalid.");
+            var binding = document.Bind("dnd2024", "cold-space", campaignId, "binding.cold") with
+            {
+                ApplicationId = ColdApplication.Value
+            };
+            return Task.FromResult<KnowledgeApplicationBinding?>(binding);
+        }
+    }
+
+    private sealed class ColdParticipation : IKnowledgeActorParticipationVerifier
+    {
+        public Task<KnowledgeParticipationResolution> ResolveAsync(
+            KnowledgeApplicationBinding binding, string actorId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(KnowledgeParticipationResolution.Denied());
+    }
+
     private sealed record ToolResult(
         bool Ok,
         JsonElement Data,
         JsonElement Error,
         IReadOnlyList<string> NextSteps,
+        IReadOnlyList<JsonElement> NextActions,
         string OperationId,
         string Raw);
 }

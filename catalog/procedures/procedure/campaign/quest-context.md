@@ -1,4 +1,4 @@
-﻿---
+---
 id: procedure.campaign.quest-context
 category: campaign
 name: Attach quest context to campaign continuity
@@ -11,6 +11,8 @@ changeNote: "Re-seeded: the bootstrap file changed."
 ## Description
 Attach an active quest to an existing campaign arc and chapter as continuity context without
 changing quest or campaign lifecycle state.
+
+## Matches
 
 ## Instructions
 1. Read the active quest and the campaign with `query(kind: "entities", ids: ["quest.*",

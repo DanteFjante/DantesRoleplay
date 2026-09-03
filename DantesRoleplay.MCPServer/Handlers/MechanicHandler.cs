@@ -1,23 +1,19 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
 
 namespace DantesRoleplay.MCPServer.Mcp;
 
 /// <summary>
-/// The mechanic handlers behind <c>query(kind: "mechanics")</c> and
-/// <c>commit(kind: "mechanic")</c>. Not registered as MCP tools (VERB_MIGRATION.md D5).
+/// The read-only legacy-mechanic handler behind <c>query(kind: "mechanics")</c>.
+/// Current mechanics are discovered through application catalogs, executed through
+/// <c>application.action.execute</c>, and authored through the governed mechanic sandbox.
+/// Not registered as an MCP tool (VERB_MIGRATION.md D5).
 ///
 /// There is no separate "get" path. Reading one in full is <c>query(kind: "mechanics", id: ...)</c>
 /// — the same kind, one argument different — because an unbounded collection needs exactly two
 /// layers, summary list and full record, and nothing more.
 ///
-/// This class also held a second, older <c>run_action</c> implementation taking a mechanicId, a
-/// roles map and its own dryRun. It was superseded by <see cref="ActionHandler"/> over
-/// <c>IActionRunner</c> and had been unreachable and untested ever since — but its next-step
-/// strings still advertised choosing a mechanic by id and dry-running an action, neither of which
-/// the live path supports. It was removed rather than repaired: a dead second implementation that
-/// describes capabilities the real one lacks is worse than no implementation at all.
 /// </summary>
 public sealed class MechanicHandler
 {
@@ -74,8 +70,8 @@ public sealed class MechanicHandler
                     steps.Add($"This is version {mechanic.Version} of {mechanic.LatestVersion}. query(kind: \"mechanics\", id: \"{id}\") returns the live one.");
                 }
 
-                steps.Add($"{McpVerbCatalog.CommitCall("action")} — resolve an action through it. A rule is selected by intent, not by id, so use words this one matches, and fill roleEntityIds with the role names it declares above.");
-                steps.Add($"{McpVerbCatalog.CommitCall("mechanic", id, dryRun: true)} — only if running it showed it is wrong.");
+                steps.Add("query(kind: \"system.feature-search\", applicationId: \"...\", query: \"...\") — find the current application mechanic that owns this intent.");
+                steps.Add($"{McpVerbCatalog.CommitCall("application.action.execute")} — execute an exact current application mechanic after filling its registered contract.");
 
                 return ToolOutcome.OkAbout(id, mechanic, $"Read {id} v{mechanic.Version}.", [.. steps]);
             }
@@ -97,7 +93,7 @@ public sealed class MechanicHandler
                     $"No mechanics matched (query: '{query}').",
                     all.Count > 0
                         ? "query(kind: \"mechanics\") — clear the filters; rules exist, just not matching this."
-                        : $"No rules exist at all. This system ships without a game — {McpVerbCatalog.CommitCall("mechanic", dryRun: true)} creates the first one.");
+                        : "No legacy rules exist. orient() lists the active draft-authoring capability; system.mechanic-sandbox.draft creates only a governed inert draft.");
             }
 
             return ToolOutcome.Ok(
@@ -105,133 +101,4 @@ public sealed class MechanicHandler
                 $"Found {results.Count} mechanic(s).",
                 $"query(kind: \"mechanics\", id: \"{results[0].Id}\") — read one in full, source included.");
         });
-    [Description(
-        """
-        Create a game rule, or revise one. Writing an existing id APPENDS a version; the old source
-        is kept forever, because an operation recorded last week ran against it. ALWAYS dryRun
-        first — it reports named checks including whether the components you named exist and
-        whether another rule already answers the same phrases.
-
-        The source is a JavaScript function body. It receives `ctx` and returns an object:
-
-          ctx.roles.<name>            an entity you declared: .id, .name, .components, .containerId
-          ctx.roles.<name>.components component data as JSON STRINGS — JSON.parse them
-          ctx.input                   the caller's arguments for this action
-          ctx.randomInt(min, max)     seeded and reproducible, inclusive both ends
-          ctx.random()                seeded, 0 to 1
-          ctx.log(message)            shows up in the run result and in history
-
-          return { narration: "what happened", effects: [ ...same shape as commit(kind: "effects")... ] }
-
-        The rule CANNOT read the database, call out, or reach anything not in ctx — it gets exactly
-        what its requirements declared and nothing else. That is what makes it reviewable, so
-        declare honestly rather than minimally.
-
-        requirements is JSON:
-          {"roles": {"subject": {"components": ["stats"], "description": "who acts",
-                                 "optional": false, "includeContents": false}}}
-        """)]
-    public async Task<ToolEnvelope> WriteMechanicAsync(
-        IMechanicStore mechanics,
-        IOperationLog log,
-        [Description("Dotted id, e.g. \"mechanic.check.ability\". PERMANENT — no rename, no delete.")]
-        string id,
-        [Description("Category for browsing, e.g. \"check\", \"movement\". Reuse an existing one where you can.")]
-        string category,
-        [Description("Short human title.")] string name,
-        [Description("One or two sentences describing what this rule resolves.")]
-        string description,
-        [Description("What players might say to invoke this, ONE PER LINE. Without these, an action will rarely find it.")]
-        string matches,
-        [Description("JSON projection spec — the roles and components this rule reads. Declare honestly.")]
-        string requirements,
-        [Description("The JavaScript function body. See this tool's description for what ctx holds.")]
-        string source,
-        [Description("Ruleset this belongs to. Omit for a rule shared by every campaign.")]
-        string scope = "",
-        [Description("One of: draft, active, deprecated, archived. Defaults to active on create.")]
-        string? status = null,
-        [Description("Why this revision exists. Expected when revising.")] string changeNote = "",
-        [Description("What you were trying to achieve, in your own words. Goes in the audit log.")]
-        string intent = "",
-        [Description("Ids of procedures you consulted.")] string[]? proceduresUsed = null,
-        [Description("Validate and report named checks without writing. Do this first.")]
-        bool dryRun = false,
-        CancellationToken cancellationToken = default) =>
-        // Same reasoning as write_procedure and apply_effects: a dry run validates rather than
-        // acts, so it must not spend the read evidence the real call is judged against.
-        await ToolRunner.RunAsync(log, "write_mechanic", intent, id, proceduresUsed, async () =>
-        {
-            MechanicStatus? parsedStatus = null;
-
-            if (!string.IsNullOrWhiteSpace(status))
-            {
-                if (!Enum.TryParse<MechanicStatus>(status, ignoreCase: true, out var value))
-                {
-                    return ToolOutcome.Fail(
-                        "INVALID_STATUS",
-                        $"'{status}' is not a status.",
-                        $"{McpVerbCatalog.CommitCall("mechanic", id)} — retry with status omitted, or one of: draft, active, deprecated, archived.",
-                        $"Rejected write to '{id}': bad status.");
-                }
-
-                parsedStatus = value;
-            }
-
-            var request = new WriteMechanicRequest
-            {
-                Id = id,
-                Category = category,
-                Name = name,
-                Description = description,
-                Matches = matches,
-                Requirements = string.IsNullOrWhiteSpace(requirements) ? "{}" : requirements,
-                Source = source,
-                Scope = scope,
-                Status = parsedStatus,
-                CreatedBy = "llm",
-                ChangeNote = changeNote
-            };
-
-            var checks = await mechanics.CheckAsync(request, cancellationToken);
-            var read = await log.RecentlyReadProceduresAsync(cancellationToken);
-
-            if (dryRun)
-            {
-                return ToolOutcome.Ok(
-                    new
-                    {
-                        Checks = checks,
-                        ProceduresYouDemonstrablyRead = read,
-                        Committed = false
-                    },
-                    $"Dry run for '{id}': {checks.Count(c => c.Passed)}/{checks.Count} checks passed, nothing written.",
-                    checks.Any(c => !c.Passed)
-                        ? "Address the failing checks above, then send the identical payload again with dryRun omitted."
-                        : $"{McpVerbCatalog.CommitCall("mechanic", id)} — the identical payload with dryRun omitted commits it.");
-            }
-
-            var blocking = checks
-                .Where(c => c.Blocking && !c.Passed)
-                .ToList();
-
-            if (blocking.Count > 0)
-            {
-                return ToolOutcome.Fail(
-                    "INVALID_MECHANIC",
-                    $"The mechanic failed {blocking.Count} blocking check(s): " +
-                    string.Join(" ", blocking.Select(c => c.Detail)),
-                    $"{McpVerbCatalog.CommitCall("mechanic", id, dryRun: true)} — correct the blocking checks before committing.",
-                    $"Rejected '{id}': blocking mechanic checks failed.");
-            }
-
-            var result = await mechanics.WriteAsync(request, cancellationToken);
-            var verb = result.Created ? "Created" : "Revised";
-
-            return ToolOutcome.Ok(
-                new { result.Mechanic, result.Created, Checks = checks, ProceduresYouDemonstrablyRead = read },
-                $"{verb} {id} v{result.Mechanic.Version}.",
-                $"{McpVerbCatalog.CommitCall("action")} — run it; a rule that has never been run is a guess. Use words from its match phrases as the intent.",
-                "query(kind: \"mechanics\") — check you have not created a near-duplicate.");
-        }, consumesReadEvidence: !dryRun);
 }

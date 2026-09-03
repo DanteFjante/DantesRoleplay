@@ -2,7 +2,7 @@
 id: procedure.game.core.world.location
 category: game.core.world.topology
 name: Record shared-game world topology
-governs: commit(kind: "component") declaring game.core.world.root or game.core.world.location; commit(kind: "effects") creating or correcting world roots, locations, containment, and game.core.world.location.connected-to relationships
+governs: commit(kind: "system.component-type.register") declaring game.core.world.root, game.core.world.location, or game.core.world.location.furnishing; the focused location-shell, placement, furnishing, adjacency, knowledge-link, and media mechanics; commit(kind: "system.world-state.sync") correcting world roots, locations, containment, and game.core.world.location.connected-to relationships
 status: active
 createdBy: "seed"
 changeNote: "Re-seeded: the bootstrap file changed."
@@ -12,6 +12,8 @@ changeNote: "Re-seeded: the bootstrap file changed."
 Defines the persistent shared-game topology used by later campaign, movement, and lore features:
 one world-root component, reusable location components, containment hierarchy, and canonical travel
 adjacency. It does not move actors, decide travel, reveal lore, or create a campaign.
+
+## Matches
 
 ## Instructions
 1. Use `game.core.world.root` only on a world entity. It contains exactly status, summary, and
@@ -33,6 +35,12 @@ adjacency. It does not move actors, decide travel, reveal lore, or create a camp
    adds, containment moves, then relationship creates.
 6. Replace a closed root/location record as a complete object when correcting it. Do not use merge
    to invent partial state. Visibility is descriptive until an authorised audience feature exists.
+7. Prefer the focused location authoring mechanics when building a playable place. Shell creation
+   owns only `game.core.world.location`; placement owns only containment; furnishing creation owns
+   only `game.core.world.location.furnishing`; furnishing attachment owns only its containment;
+   adjacency owns only `game.core.world.location.connected-to`; knowledge attachment owns only the
+   `knowledge.about` link; media attachment owns only `game.core.media.visual`. The caller supplies
+   all concrete prose, visibility, classifications, and finalized media references.
 
 ## Constraints
 - Status is exactly draft, active, or archived. Visibility is exactly public, party, or gm.
@@ -40,6 +48,8 @@ adjacency. It does not move actors, decide travel, reveal lore, or create a camp
 - A direct child with kind `region` uses containment slot `region`; a direct child with any other
   location kind uses slot `location`.
 - Summary is a trimmed, nonempty string of at most 1,000 Unicode scalar values.
+- A furnishing contains exactly status, summary, and visibility. Its location is derived from
+  containment slot `furnishing`; an unplaced furnishing is valid draft authoring state.
 - Root/location components never contain child IDs, parent IDs, world IDs, campaign IDs, adjacency
   arrays, actor positions, facts, factions, clues, time, terrain, or coordinates.
 - A reverse, duplicate, self, non-location, or nonempty-data adjacency violates this topology

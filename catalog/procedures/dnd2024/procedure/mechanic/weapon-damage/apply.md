@@ -11,6 +11,8 @@ changeNote: "Imported from the catalog."
 ## Description
 Defines the D&D 2024 parent that composes one confirmed weapon-damage child and atomically applies its verified result to the target's authoritative Hit Point state. It has no second dice owner and infers no zero-Hit-Point consequence.
 
+## Matches
+
 ## Instructions
 Source and ownership
 

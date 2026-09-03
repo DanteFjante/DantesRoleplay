@@ -869,6 +869,7 @@ public sealed class TrailSurvivalSimulationTests
                 StateSpaceId,
                 Application,
                 qualified,
+                record.Summary.Version,
                 record.Summary.ContentFingerprint,
                 roles,
                 input,

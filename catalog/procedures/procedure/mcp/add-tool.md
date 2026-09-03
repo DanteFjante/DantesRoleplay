@@ -11,6 +11,8 @@ changeNote: "Re-seeded: the bootstrap file changed."
 ## Description
 How to extend this system's MCP surface, and why the answer is almost always "do not".
 
+## Matches
+
 ## Instructions
 1. **Assume the answer is no.** There are exactly three tools — `orient`, `query`, `commit` — and
    there will not be a fourth. Every tool description is loaded into every conversation whether it

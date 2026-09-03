@@ -11,6 +11,8 @@ changeNote: "Feature 4 Slice 2: define the fixed-DC character saving-throw resol
 ## Description
 Defines the distinct D&D 2024 character saving-throw resolver, not an ability check: it reads saving-throw-proficiency state rather than skill state, applies the established D20 circumstance convention, and returns an effect-free seeded fixed-DC save result.
 
+## Matches
+
 ## Instructions
 Source and scope
 - Use dnd2024.source.srd-5.2.1. The save rule cites "Playing the Game > D20 Tests > Saving Throws"; proficiency membership cites "Playing the Game > Proficiency > Saving Throw Proficiencies".

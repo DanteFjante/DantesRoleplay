@@ -1,0 +1,41 @@
+{
+  "id": "dnd2024.query.recent-consequences",
+  "category": "game.core.campaign.read-model",
+  "name": "Recent consequences",
+  "description": "Returns bounded party-visible outcomes already committed to session recaps, closed chapters, resolved arcs, and location-visit memory.",
+  "matches": ["what happened recently", "show recent campaign consequences", "recap the latest durable outcomes"],
+  "roles": { "campaign": "The exact audience-authorized active campaign." },
+  "executor": "mechanic-projection",
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.campaign.recent-consequences.project",
+    "version": 1,
+    "contentHash": "75C0D7EFA392027751C077B7D9130B01557591B4E51A2792A616D9A5046DAFEB",
+    "outputSchemaHash": "D208BED18D12EF5270B25D791E0E68F21734DE1165C26E8B2C987E82B7555E41"
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object", "additionalProperties": false,
+    "required": ["version", "campaignId", "endedSessions", "closedChapters", "resolvedArcs", "locationVisits"],
+    "properties": {
+      "version": { "const": 1 },
+      "campaignId": { "$ref": "#/$defs/id" },
+      "endedSessions": { "type": "array", "maxItems": 5, "items": { "$ref": "#/$defs/session" } },
+      "closedChapters": { "type": "array", "maxItems": 5, "items": { "$ref": "#/$defs/chapter" } },
+      "resolvedArcs": { "type": "array", "maxItems": 5, "items": { "$ref": "#/$defs/arc" } },
+      "locationVisits": { "type": "array", "maxItems": 10, "items": { "$ref": "#/$defs/visit" } }
+    },
+    "$defs": {
+      "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "text": { "type": "string", "minLength": 1, "maxLength": 2000 },
+      "session": { "type": "object", "additionalProperties": false, "required": ["sessionId", "ordinal", "chapter", "arc", "milestones"], "properties": { "sessionId": { "$ref": "#/$defs/id" }, "ordinal": { "type": "integer", "minimum": 1 }, "chapter": { "$ref": "#/$defs/recapChapter" }, "arc": { "$ref": "#/$defs/recapArc" }, "milestones": { "type": "array", "maxItems": 5, "items": { "$ref": "#/$defs/milestone" } } } },
+      "recapChapter": { "type": "object", "additionalProperties": false, "required": ["id", "status", "title", "partyQuestion"], "properties": { "id": { "$ref": "#/$defs/id" }, "status": { "const": "active" }, "title": { "$ref": "#/$defs/text" }, "partyQuestion": { "$ref": "#/$defs/text" } } },
+      "recapArc": { "type": "object", "additionalProperties": false, "required": ["id", "status", "title", "partyStake"], "properties": { "id": { "$ref": "#/$defs/id" }, "status": { "const": "active" }, "title": { "$ref": "#/$defs/text" }, "partyStake": { "$ref": "#/$defs/text" } } },
+      "milestone": { "type": "object", "additionalProperties": false, "required": ["chapterId", "title", "closingSummary", "timestamp", "sequence"], "properties": { "chapterId": { "$ref": "#/$defs/id" }, "title": { "$ref": "#/$defs/text" }, "closingSummary": { "$ref": "#/$defs/text" }, "timestamp": { "type": "string", "minLength": 1, "maxLength": 100 }, "sequence": { "type": "integer", "minimum": 0 } } },
+      "chapter": { "type": "object", "additionalProperties": false, "required": ["chapterId", "title", "closingSummary"], "properties": { "chapterId": { "$ref": "#/$defs/id" }, "title": { "$ref": "#/$defs/text" }, "closingSummary": { "$ref": "#/$defs/text" } } },
+      "arc": { "type": "object", "additionalProperties": false, "required": ["arcId", "status", "title", "closingSummary"], "properties": { "arcId": { "$ref": "#/$defs/id" }, "status": { "enum": ["resolved", "abandoned"] }, "title": { "$ref": "#/$defs/text" }, "closingSummary": { "$ref": "#/$defs/text" } } },
+      "visit": { "type": "object", "additionalProperties": false, "required": ["visitId", "status", "summary", "memory", "lastVisitedMinute", "visitCount"], "properties": { "visitId": { "$ref": "#/$defs/id" }, "status": { "enum": ["current", "departed"] }, "summary": { "$ref": "#/$defs/text" }, "memory": { "$ref": "#/$defs/text" }, "lastVisitedMinute": { "type": "integer", "minimum": 0 }, "visitCount": { "type": "integer", "minimum": 1 } } }
+    }
+  },
+  "exposure": "model-visible",
+  "status": "active"
+}

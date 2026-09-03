@@ -2,10 +2,17 @@ namespace DantesRoleplay.Interactions;
 
 internal sealed class InteractionRecipeLearner(
     IInteractionRecipeStore store,
-    IInteractionRecipeAutoVerifier? autoVerifier = null) : IInteractionRecipeLearner
+    IInteractionRecipeAutoVerifier? autoVerifier = null,
+    IInteractionMechanicOpportunityLearner? mechanicOpportunities = null) : IInteractionRecipeLearner
 {
-    public async Task RecordUseAsync(InteractionRecipeUseEvidenceDraft draft, CancellationToken cancellationToken = default) =>
-        _ = await store.AppendUseEvidenceAsync(draft, cancellationToken);
+    public async Task RecordUseAsync(InteractionRecipeUseEvidenceDraft draft, CancellationToken cancellationToken = default)
+    {
+        var recorded = await store.AppendUseEvidenceAsync(draft, cancellationToken);
+        if (!draft.Successful || recorded.Disposition == InteractionRecipeWriteDisposition.Conflict
+            || recorded.Recipe is null || mechanicOpportunities is null)
+            return;
+        await mechanicOpportunities.ObserveAsync(recorded.Recipe, cancellationToken);
+    }
 
     public async Task<InteractionRecipeLearningResult> LearnAsync(
         InteractionRecipeLearningRequest request,

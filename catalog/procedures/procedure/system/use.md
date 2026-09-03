@@ -2,7 +2,7 @@
 id: procedure.system.use
 category: system
 name: Use this system
-governs: orient(), query(kind: "capabilities"), any session operating this system
+governs: cold-session orientation, capability discovery, and the common operating protocol
 status: active
 createdBy: "seed"
 changeNote: "Re-seeded: the bootstrap file changed."
@@ -11,6 +11,8 @@ changeNote: "Re-seeded: the bootstrap file changed."
 ## Description
 How to operate this system through its three verbs. `orient` tells you where you are, `query`
 reads anything, `commit` changes anything. Nothing else exists.
+
+## Matches
 
 ## Instructions
 1. Call `orient()` first. It states what this system is, what exists in it right now, what is not
@@ -21,7 +23,8 @@ reads anything, `commit` changes anything. Nothing else exists.
    `system.applications`, `system.sources`, `system.application-preview`, `system.dependencies`,
    `system.catalogs`, `system.catalog.browse`, `system.catalog.search`, `system.catalog.record`,
    `system.feature-search`, `system.interaction-plan`, `system.interaction-receipt`,
-   `system.interaction-recipes`, `system.trigger-scheduling`, `system.blobs`, and `history`. No `id`
+   `system.interaction-recipes`, `system.trigger-scheduling`, `system.blobs`, `namespaces`, and
+   `history`. No `id`
    returns a list or search; `id` returns one record in full; fixed query kinds state their required
    scope and reject unrelated filters in their own contract.
    `version` with `id` returns an older revision. Read the full record before revising anything —
@@ -91,12 +94,14 @@ reads anything, `commit` changes anything. Nothing else exists.
    that against the commit you are about to make. Then cite what you read in `proceduresUsed` and
    say what you are doing in `intent`, in your own words. The audit records both, and records
    separately which contracts you actually opened.
-5. Change with `commit(kind: ..., payload: ...)`. The generic-host kinds are `component`,
-   `effects`, `mechanic`, `action`, `system.application.register`, `system.component-type.register`,
+5. Change with a currently registered typed capability. MCP commit kinds include
+   `application.action.execute`, `system.application.register`,
+   `system.component-type.register`,
    `system.source.register`, `system.extension.register`, and
    `system.application.activate`, `system.state-space.create`, `system.state-space.upgrade`,
    `system.state-space.adopt-legacy`, `system.world-state.sync`, `system.interaction-execute`,
    `system.interaction-recipe-review`, `system.trigger-scheduling`, `system.knowledge-state.sync`,
+   `system.namespace.register`,
    `system.blob-upload.begin`, and `system.blob-upload.finalize`. Every `system.*` kind
    authenticates from the transport. Registry, activation, component-type, and state-space
    administration commits require a 32-character lowercase hexadecimal `requestToken`.
@@ -107,6 +112,12 @@ reads anything, `commit` changes anything. Nothing else exists.
    and retirement are append-only and request-token replay protected. Application and source registration require
    `expectedFingerprint`: use `null` only when the target must be absent, otherwise use the exact
    current fingerprint from the corresponding `system.applications` or `system.sources` query.
+   When the exact application, state space, mechanic id, mechanic version, mechanic fingerprint,
+   role bindings, and input are already known, use `application.action.execute` with a distinct
+   idempotency key. It rechecks current activation, authorization, and exact mechanic provenance,
+   then returns affected entities, narration, a receipt, and structured next actions. When any of
+   those choices are ambiguous, resolve and review a proposal through `system.interaction-plan`
+   instead. The old unscoped action selector is physically absent and has no compatibility route.
    `system.component-type.register` accepts only an already registered application, an owner-qualified
    type ID, its raw JSON schema, and `expectedSchemaHash`: use `null` only when that type is absent,
    otherwise use the latest exact schema hash returned by the registration receipt. It derives the
@@ -177,7 +188,7 @@ reads anything, `commit` changes anything. Nothing else exists.
 - `query` never changes state. `commit` is the only MCP write coordinator. The short-lived HTTP
   upload capability may accept only the exact bytes declared by a prior blob begin commit and
   cannot bind them to game state. Raw generic world changes use
-  `commit(kind: "effects")` or `commit(kind: "action")`; the closed reviewed knowledge-state sync
+  `commit(kind: "system.world-state.sync")` or `commit(kind: "application.action.execute")`; the closed reviewed knowledge-state sync
   delegates its validated edge batch to the same generic application ECS transaction owner.
 - Never invent a kind, a parameter or a payload field. If it is not in
   `query(kind: "capabilities")`, it does not exist.

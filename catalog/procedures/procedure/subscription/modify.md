@@ -11,6 +11,8 @@ changeNote: "Re-seeded: the bootstrap file changed."
 ## Description
 Revise an existing guard or reaction registration without replacing its history.
 
+## Matches
+
 ## Instructions
 1. Query the subscription in full and read the contract that governs the change.
 2. Dry-run the complete replacement payload before committing it.

@@ -1,4 +1,4 @@
-﻿---
+---
 id: procedure.campaign.chapter
 category: campaign
 name: Maintain campaign chapters and arcs
@@ -13,6 +13,8 @@ Campaign continuity has exactly one active chapter and one active arc in this fi
 The campaign runner derives all structural effects, validates expected state inside one transaction,
 and records its audit with the structural events. The resume view is trusted-host material, not
 player authorization.
+
+## Matches
 
 ## Instructions
 1. Initialize one active C2 campaign once with a re-ratified chapter and arc seed.

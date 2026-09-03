@@ -11,6 +11,8 @@ changeNote: "Imported from the catalog."
 ## Description
 Defines one effect-free D&D 2024 weapon attack resolver. It reads authoritative attacker, target, and canonical weapon state, then reports hit/miss and natural 20/1 classification without dealing damage or changing the world.
 
+## Matches
+
 ## Instructions
 Source and scope
 

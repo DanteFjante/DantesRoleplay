@@ -11,6 +11,8 @@ changeNote: "Imported from the catalog."
 ## Description
 Defines the authoritative final Armor Class component and its closed administrative writer. It records one final value for a creature with fixed SRD attribution; it does not construct Armor Class from armor, Dexterity, or any other rule input.
 
+## Matches
+
 ## Instructions
 Source and scope
 

@@ -11,7 +11,7 @@ namespace DantesRoleplay.DataAccess.Bootstrap;
 /// These are kernel contracts rather than game content, and the distinction is not academic: every
 /// accepted world change records an event against one of them, so a database that does not have
 /// them cannot change the world at all. They shipped as catalog files only, which left a fresh
-/// install unable to run `commit(kind: "effects")` until somebody happened to import the catalog —
+/// install unable to run `commit(kind: "system.world-state.sync")` until somebody happened to import the catalog —
 /// a dependency nothing declared and no test covered.
 ///
 /// The canonical catalog files are embedded at build time, so the kernel is self-sufficient without

@@ -252,7 +252,7 @@ public sealed class CatalogWorldFeature3Tests : IDisposable
             "ready", "advanced", eventRow.TypeId);
     }
 
-    private static async Task<ActionRunResult> RunAgendaAsync(ActionRunner runner, string input = "{}") =>
+    private static async Task<ActionRunResult> RunAgendaAsync(CatalogMechanicTestHarness runner, string input = "{}") =>
         await runner.RunAsync(new ActionRequest
         {
             Intent = "advance faction agenda",
@@ -261,7 +261,7 @@ public sealed class CatalogWorldFeature3Tests : IDisposable
             Seed = 1703
         });
 
-    private static ActionRunner CreateRunner(DantesRoleplayDbContext db, WorldStore world, MechanicStore mechanics) =>
+    private static CatalogMechanicTestHarness CreateRunner(DantesRoleplayDbContext db, WorldStore world, MechanicStore mechanics) =>
         new(db, mechanics, new ProjectionResolver(db), new JintMechanicEngine(),
             new EffectApplier(db, world, null, new EventLedger(db)),
             new OperationLog(db), new MechanicComposer(mechanics, new ProjectionResolver(db), new JintMechanicEngine()));

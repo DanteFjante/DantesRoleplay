@@ -1,0 +1,13 @@
+{
+  "id": "game.core.world.location",
+  "owner": "game",
+  "description": "Namespace for shared-game location-owned component records.",
+  "allowedKinds": [
+    "component-definition",
+    "component-type"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for the focused location-authoring primitives and furnishing component owner."
+}

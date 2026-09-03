@@ -1,0 +1,5 @@
+{
+  "id": "game.core.world.location.furnishing",
+  "name": "Location Furnishing",
+  "description": "One authored furnishing or fixed feature that may be placed inside a world location. Placement is containment, never a copied location field."
+}

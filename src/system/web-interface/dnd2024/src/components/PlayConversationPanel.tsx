@@ -19,7 +19,8 @@ export function PlayConversationPanel({
   }, [onConversationChange]);
 
   useEffect(() => {
-    void import(/* @vite-ignore */ "/components/application-conversation.js");
+    const conversationModuleUrl = "/components/application-conversation.js";
+    void import(/* @vite-ignore */ conversationModuleUrl);
     const parent = container.current;
     if (!parent) return undefined;
     const conversation = document.createElement("application-conversation");

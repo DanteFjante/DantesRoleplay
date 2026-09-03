@@ -176,6 +176,9 @@ app.MapGet("/api/blobs/sha256/{sha256}", BlobTransferWebEndpoints.DownloadAsync)
 app.MapGet("/api/audience-context", AudienceContextWebEndpoint.CurrentAsync)
     .AddEndpointFilter<WebInterfaceSecurityFilter>()
     .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
+app.MapGet("/api/readiness/applications/{applicationId}", ApplicationReadinessWebEndpoint.ReadAsync)
+    .AddEndpointFilter<WebInterfaceSecurityFilter>()
+    .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
 app.MapGet(
         "/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/media",
         EntityMediaWebEndpoints.DiscoverAsync)

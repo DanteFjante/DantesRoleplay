@@ -1,0 +1,37 @@
+{
+  "id": "dnd2024.query.current-scene",
+  "category": "game.core.campaign.read-model",
+  "name": "Current scene",
+  "description": "Returns the exact party-visible current location, play mode, linked conversation or encounter, and currently valid party affordances.",
+  "matches": ["show the current scene", "where is the party now", "what can we do here"],
+  "roles": { "campaign": "The exact audience-authorized campaign whose current scene is projected." },
+  "executor": "mechanic-projection",
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.campaign.current-scene.project",
+    "version": 1,
+    "contentHash": "933F30FC074C9DA98565F36BC6DD3F09F461C12DA68FC0576E1DA37613B5BF9B",
+    "outputSchemaHash": "AD5008129E328FF53A393D342B931199B71275F9E36E847DB6F16E7F6B16F1E4"
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object", "additionalProperties": false,
+    "required": ["version", "kind", "location", "conversationId", "encounterId", "affordances"],
+    "properties": {
+      "version": { "const": 1 },
+      "kind": { "enum": ["exploration", "conversation", "combat"] },
+      "location": { "type": "object", "additionalProperties": false, "required": ["id", "kind", "summary", "visibility"], "properties": { "id": { "$ref": "#/$defs/id" }, "kind": { "enum": ["region", "settlement", "site", "interior"] }, "summary": { "$ref": "#/$defs/summary" }, "visibility": { "enum": ["public", "party"] } } },
+      "conversationId": { "$ref": "#/$defs/nullableId" },
+      "encounterId": { "$ref": "#/$defs/nullableId" },
+      "affordances": { "type": "array", "maxItems": 24, "items": { "$ref": "#/$defs/affordance" } }
+    },
+    "$defs": {
+      "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "text": { "type": "string", "minLength": 1, "maxLength": 500 },
+      "summary": { "type": "string", "minLength": 1, "maxLength": 2000 },
+      "nullableId": { "type": ["string", "null"], "minLength": 1, "maxLength": 200 },
+      "affordance": { "type": "object", "additionalProperties": false, "required": ["key", "label", "summary"], "properties": { "key": { "$ref": "#/$defs/id" }, "label": { "$ref": "#/$defs/text" }, "summary": { "$ref": "#/$defs/summary" } } }
+    }
+  },
+  "exposure": "model-visible",
+  "status": "active"
+}

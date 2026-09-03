@@ -58,6 +58,9 @@
       !validId(value.qualifiedMechanicId) || value.qualifiedMechanicId !== mechanicId ||
       typeof value.name !== 'string' || typeof value.description !== 'string' ||
       !value.input || typeof value.input !== 'object' || Array.isArray(value.input) ||
+      !value.capability || typeof value.capability !== 'object' || Array.isArray(value.capability) ||
+      value.capability.id !== mechanicId || !value.capability.input ||
+      typeof value.capability.input.schemaJson !== 'string' ||
       !Array.isArray(value.roles)) {
       throw new ApplicationWorkspaceError('APPLICATION_DESCRIPTOR_INVALID',
         'The current application action contract is invalid.');
@@ -356,12 +359,17 @@
 
     _renderFields(descriptor) {
       const fields = element('section', 'fields'); fields.append(element('p', 'section-label', 'Action details'));
-      if (descriptor.input.schemaStatus !== 'authored' || typeof descriptor.input.schemaJson !== 'string') {
+      const inputContract = descriptor.capability.input;
+      if (!['authored', 'generated', 'generic'].includes(inputContract.status)) {
+        throw new ApplicationWorkspaceError('APPLICATION_DESCRIPTOR_INVALID',
+          'The current application action input contract is invalid.');
+      }
+      if (inputContract.status === 'generic') {
         fields.append(element('p', 'field-note', 'This action has no published entry fields. It will be reviewed with an empty input object.'));
         this._input = {}; return fields;
       }
       let schema;
-      try { schema = JSON.parse(descriptor.input.schemaJson); } catch { schema = null; }
+      try { schema = JSON.parse(inputContract.schemaJson); } catch { schema = null; }
       const properties = schema && schema.type === 'object' && schema.properties && typeof schema.properties === 'object' && !Array.isArray(schema.properties) ? Object.entries(schema.properties) : [];
       if (properties.length > MAXIMUM_FIELDS || properties.some(([, value]) => !value || typeof value !== 'object' || !['string', 'number', 'integer', 'boolean'].includes(value.type))) {
         fields.append(element('p', 'field-note', 'The published input form is not supported by this generic control.'));

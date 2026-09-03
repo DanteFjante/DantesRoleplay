@@ -11,6 +11,8 @@ changeNote: "Seeded from bootstrap file."
 ## Description
 Return a bounded answer using only records selected from one host-authorized generic information scope.
 
+## Matches
+
 ## Instructions
 1. Supply an authorized concrete scope or terminal `.*` namespace selector and a bounded question.
 2. Optionally narrow to source ids within that same scope.

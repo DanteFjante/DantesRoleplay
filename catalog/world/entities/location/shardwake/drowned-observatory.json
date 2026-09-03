@@ -1,0 +1,16 @@
+{
+  "id": "location.shardwake.drowned-observatory",
+  "name": "The Drowned Observatory",
+  "container": {
+    "id": "location.shardwake.hollowsea",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "status": "active",
+      "summary": "The upper rings of a pre-Shattering observatory visible at the lowest tides in the Hollow Sea.",
+      "kind": "site",
+      "visibility": "party"
+    }
+  }
+}

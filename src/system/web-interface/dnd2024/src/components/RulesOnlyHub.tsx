@@ -3,7 +3,9 @@ import { MainNavigation } from "./MainNavigation";
 import { RulesView } from "./RulesView";
 import { InstalledContentView } from "./InstalledContentView";
 import type { InstalledContentModel } from "../server/effective-content";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { markActiveViewReady } from "../observability/performance.js";
+import { ViewErrorBoundary } from "./ViewErrorBoundary";
 
 type RulesLoader = () => Promise<RuleReadModel[]>;
 
@@ -17,6 +19,9 @@ export function RulesOnlyHub({
   loadContent: () => Promise<InstalledContentModel>;
 }) {
   const [activeTab, setActiveTab] = useState<"rules" | "content">("rules");
+  useEffect(() => {
+    markActiveViewReady(activeTab);
+  }, [activeTab]);
   return (
     <div className="information-hub rules-only-hub" data-perspective="player">
       <a className="skip-link" href="#information-content">Skip to information</a>
@@ -48,9 +53,11 @@ export function RulesOnlyHub({
           progress="Private campaign views require authorization"
         />
         <main className="information-content" id="information-content">
-          {activeTab === "content"
-            ? <InstalledContentView loadContent={loadContent} />
-            : <RulesView loadRules={loadRules} rules={[]} />}
+          <ViewErrorBoundary key={activeTab} viewLabel={activeTab === "content" ? "Installed Content" : "Rules"}>
+            {activeTab === "content"
+              ? <InstalledContentView loadContent={loadContent} />
+              : <RulesView loadRules={loadRules} rules={[]} />}
+          </ViewErrorBoundary>
         </main>
       </div>
     </div>

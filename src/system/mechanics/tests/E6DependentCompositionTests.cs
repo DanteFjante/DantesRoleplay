@@ -255,11 +255,11 @@ public sealed class E6DependentCompositionTests : IDisposable
         Status = MechanicStatus.Active
     };
 
-    private static ActionRunner Runner(DantesRoleplayDbContext db, WorldStore world, MechanicStore mechanics)
+    private static CatalogMechanicTestHarness Runner(DantesRoleplayDbContext db, WorldStore world, MechanicStore mechanics)
     {
         var projections = new ProjectionResolver(db);
         var engine = new JintMechanicEngine();
-        return new ActionRunner(
+        return new CatalogMechanicTestHarness(
             db,
             mechanics,
             projections,

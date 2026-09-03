@@ -207,7 +207,8 @@ public sealed class InteractionFeatureRetriever(
         try
         {
             var values = snapshot.Documents.Where(document => document.Trust == trust)
-                .Where(document => document.Record.Kind is "procedure" or "mechanic")
+                .Where(document => document.Record.Kind is "procedure" or "mechanic"
+                    or ApplicationQueryContract.CatalogKind)
                 .Select(document =>
                 {
                     _ = InteractionRetrievalFingerprint.SearchText(document.Record);

@@ -635,11 +635,20 @@ public sealed class WebInterfaceTests
         Assert.Equal(SystemCapabilityIds.Applications, descriptor!.Id);
         Assert.Equal("read", descriptor.Mode);
         Assert.Equal(JsonValueKind.Object, descriptor.InputSchema.ValueKind);
+        Assert.Equal(JsonValueKind.Object, descriptor.OutputSchema.ValueKind);
         Assert.Matches("^[0-9A-F]{64}$", descriptor.Fingerprint);
         Assert.Matches("^[0-9A-F]{64}$", descriptor.InputSchemaHash);
+        Assert.Matches("^[0-9A-F]{64}$", descriptor.OutputSchemaHash);
         Assert.False(descriptor.RequiresConfirmation);
         Assert.False(descriptor.RequiresIdempotencyKey);
+        Assert.Equal(descriptor.Id, descriptor.Contract.Id);
+        Assert.Equal(descriptor.InputSchemaHash, descriptor.Contract.Input.SchemaHash);
+        Assert.Equal("system-capability", descriptor.Contract.SourceKind);
+        Assert.NotEmpty(descriptor.Contract.Examples);
+        Assert.NotEmpty(descriptor.Contract.Errors);
+        Assert.NotEmpty(descriptor.Contract.RecoveryActions);
         Assert.Null(explorer.Get(CapabilityAuthorization(), "system.secret-fixture"));
+        Assert.Single(explorer.List(CapabilityAuthorization()));
         Assert.Null(explorer.Get(CapabilityAuthorization(), "system.unknown-fixture"));
         Assert.Equal("SYSTEM_CAPABILITY_ID_INVALID", Assert.Throws<ControlAssistantException>(
             () => explorer.Get(CapabilityAuthorization(), "application.attack")).Code);
@@ -659,7 +668,7 @@ public sealed class WebInterfaceTests
 
         var publicNames = typeof(ControlSystemCapabilityDocument).GetProperties()
             .Select(property => property.Name).ToHashSet(StringComparer.Ordinal);
-        Assert.DoesNotContain("OutputSchema", publicNames);
+        Assert.Contains("OutputSchema", publicNames);
         Assert.DoesNotContain("AuthorizationEvidence", publicNames);
         Assert.DoesNotContain("RequiredCapability", publicNames);
         Assert.DoesNotContain("Sensitivity", publicNames);
@@ -698,6 +707,30 @@ public sealed class WebInterfaceTests
         Assert.DoesNotContain("provider:", controls, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("expectedFingerprint", controls, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("requestToken", controls, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Governance_control_center_discovers_contracts_and_reuses_the_generic_system_form()
+    {
+        var script = await BrowserComponentAssets.ReadAsync("governance-control-center");
+        Assert.NotNull(script);
+        Assert.Contains("/api/control/system/capabilities", script, StringComparison.Ordinal);
+        Assert.Contains("document.createElement('system-form')", script, StringComparison.Ordinal);
+        Assert.Contains("item.inputSchema", script, StringComparison.Ordinal);
+        Assert.Contains("item.outputSchema", script, StringComparison.Ordinal);
+        Assert.Contains("item.contract.examples", script, StringComparison.Ordinal);
+        Assert.Contains("Stable errors and recovery", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("system.mechanic-sandbox", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("system.interaction-recipes", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("innerHTML", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("/components/governance-control-center.js", SystemWorkspaceElement.Script,
+            StringComparison.Ordinal);
+        Assert.Contains("Download result JSON", SystemWorkspaceElement.Script, StringComparison.Ordinal);
+
+        var page = File.ReadAllText(Path.Combine(RepositoryRoot(), "src", "system", "web-interface",
+            "examples", "control-center", "index.html"));
+        Assert.Contains("href=\"#/governance\"", page, StringComparison.Ordinal);
+        Assert.Contains("<governance-control-center id=\"ai-governance\"", page, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -796,7 +829,8 @@ public sealed class WebInterfaceTests
         Assert.Contains("Confirm and execute", applicationScript, StringComparison.Ordinal);
         Assert.Contains("actionResults", applicationScript, StringComparison.Ordinal);
         Assert.Contains("result?.narration", applicationScript, StringComparison.Ordinal);
-        Assert.Contains("schemaStatus !== 'authored'", applicationScript, StringComparison.Ordinal);
+        Assert.Contains("descriptor.capability.input", applicationScript, StringComparison.Ordinal);
+        Assert.Contains("inputContract.status === 'generic'", applicationScript, StringComparison.Ordinal);
         Assert.Contains("empty input object", applicationScript, StringComparison.Ordinal);
         Assert.Contains("bubbles: true, composed: true", applicationScript, StringComparison.Ordinal);
         Assert.Contains("method: 'POST'", applicationScript, StringComparison.Ordinal);
@@ -1114,6 +1148,41 @@ public sealed class WebInterfaceTests
         Assert.Contains("Stable", (await store.GetActiveAsync("control-center"))!.Html, StringComparison.Ordinal);
         Assert.Equal(2, await db.PageRevisions.CountAsync());
         Assert.Equal(2, await db.PageAssets.CountAsync());
+    }
+
+    [Fact]
+    public async Task Bundle_drafts_replace_assets_without_activation_and_reject_stale_writes()
+    {
+        await using var connection = new SqliteConnection("Filename=:memory:");
+        await connection.OpenAsync();
+        await using var db = CreateWebContext(connection);
+        await db.Database.EnsureCreatedAsync();
+        var store = new WebPageStore(db);
+        await store.SaveBundleAndActivateAsync(
+            "dnd2024-play",
+            new WebPageBundle(
+                "<script src=\"assets/old.js\"></script>",
+                [new WebPageAssetUpload("assets/old.js", Encoding.UTF8.GetBytes("old"))]));
+
+        var nextBytes = Encoding.UTF8.GetBytes("new");
+        var draft = await store.AppendBundleDraftAsync(
+            "dnd2024-play",
+            1,
+            new WebPageBundle(
+                "<script src=\"assets/index-12345678.js\"></script>",
+                [new WebPageAssetUpload("assets/index-12345678.js", nextBytes)]));
+
+        Assert.Equal(2, draft.Summary.Revision);
+        Assert.False(draft.Summary.IsActive);
+        Assert.Equal("assets/index-12345678.js", Assert.Single(draft.Assets).Path);
+        Assert.Equal(nextBytes, Assert.Single(draft.Assets).Content);
+        Assert.Equal(1, (await store.GetActiveAsync("dnd2024-play"))!.Revision);
+        Assert.NotNull(await store.GetActiveAssetAsync("dnd2024-play", "assets/old.js"));
+        Assert.Null(await store.GetActiveAssetAsync("dnd2024-play", "assets/index-12345678.js"));
+        var stale = await Assert.ThrowsAsync<WebPageStoreException>(() =>
+            store.AppendBundleDraftAsync(
+                "dnd2024-play", 1, new WebPageBundle("<h1>stale</h1>", [])));
+        Assert.Equal("PAGE_LATEST_STALE", stale.Code);
     }
 
     [Fact]
@@ -1966,6 +2035,12 @@ public sealed class WebInterfaceTests
                 Assert.Equal("ready", panel.State);
                 Assert.False(string.IsNullOrWhiteSpace(panel.Message));
             },
+            panel =>
+            {
+                Assert.Equal("ai-governance", panel.Id);
+                Assert.Equal("ready", panel.State);
+                Assert.False(string.IsNullOrWhiteSpace(panel.Message));
+            },
             panel => AssertPanel(panel, "ecs-explorer"),
             panel =>
             {
@@ -2289,6 +2364,7 @@ public sealed class WebInterfaceTests
             "/api/control/conversations/{conversationId}/turns/{turnId}/approvals/{approvalId}",
             "/api/control/system/conversations",
             "/api/control/system/conversations/{conversationId}",
+            "/api/control/system/capabilities",
             "/api/control/ai/providers",
             "/api/control/ai/providers/{providerId}/models",
             "/api/control/ai/conversations",
@@ -2331,7 +2407,7 @@ public sealed class WebInterfaceTests
             "/api/control/web/page-migration/reviews",
             "/api/control/web/applications/{applicationId}/pages",
             "/api/control/web/applications/{applicationId}/pages",
-            "/api/control/web/applications/{applicationId}/pages/{entityId}",
+            "/api/control/web/applications/{applicationId}/pages/{entityId:regex(^web-page:.+$)}",
             "/api/control/web/applications/{applicationId}/pages/{entityId}/metadata",
             "/api/control/web/applications/{applicationId}/pages/{entityId}/index",
             "/api/control/web/applications/{applicationId}/pages/{entityId}/enabled",
@@ -2339,6 +2415,7 @@ public sealed class WebInterfaceTests
             "/api/control/web/applications/{applicationId}/pages/{entityId}/revisions",
             "/api/control/web/applications/{applicationId}/pages/{entityId}/revisions/{revision:int}",
             "/api/control/web/applications/{applicationId}/pages/{entityId}/drafts",
+            "/api/control/web/applications/{applicationId}/pages/{entityId}/bundle-drafts",
             "/api/control/web/applications/{applicationId}/pages/{entityId}/bundle",
             "/api/control/web/applications/{applicationId}/pages/{entityId}/active"
         ], patterns);

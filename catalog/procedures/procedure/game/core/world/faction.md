@@ -2,10 +2,10 @@
 id: procedure.game.core.world.faction
 category: game.core.world.faction
 name: Govern shared-game factions, fronts, and recurring motives
-governs: commit(kind: "component") declaring game.core.world.faction, game.core.world.faction.front, or game.core.world.motive; commit(kind: "effects") recording or correcting faction/front/motive state and faction relationships; commit(kind: "action") advancing one active ready faction agenda or one scoped faction front
+governs: commit(kind: "system.component-type.register") declaring game.core.world.faction, game.core.world.faction.front, or game.core.world.motive; commit(kind: "system.world-state.sync") recording or correcting faction/front/motive state and faction relationships; commit(kind: "application.action.execute") advancing one active ready faction agenda or one scoped faction front
 status: active
 createdBy: "seed"
-changeNote: "Seeded from bootstrap file."
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
@@ -14,13 +14,15 @@ descriptive state and agenda, an actor's durable motive, one manual faction pres
 explicit faction links. Its action paths advance a ready agenda or a confirmed front phase; it does
 not decide why an advance occurred, allegiance, simulation, or campaign/quest state.
 
+## Matches
+
 ## Instructions
 1. Declare `game.core.world.faction` and `game.core.world.motive` once. Both are complete closed
    objects; use the entity name as the display name and do not duplicate it in component data.
 2. A faction record contains status, summary, visibility, 1–5 goals, 1–5 methods, 0–10 descriptive
    assets, and one agenda with state `ready` or `advanced`. Assets are descriptions, not entity IDs.
    A motive record contains only status, summary, and descriptive visibility.
-3. Set up reviewed world state with one inspected `commit(kind: "effects")` list, ordered entity
+3. Set up reviewed world state with one previewed `commit(kind: "system.world-state.sync")` manifest, with entities
    creation, complete component additions or replacements, then relationship creation. Correct a
    closed component as a complete replacement; do not merge a partial motive or agenda.
 4. Use exact empty object data `{}` for all faction links. `game.core.world.faction.member` is

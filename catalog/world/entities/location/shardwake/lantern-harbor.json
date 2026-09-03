@@ -1,0 +1,16 @@
+{
+  "id": "location.shardwake.lantern-harbor",
+  "name": "Lantern Harbor",
+  "container": {
+    "id": "location.shardwake.crownward",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "status": "active",
+      "summary": "A crowded cliff harbor whose thirteen signal towers guide ships between reefs; the oldest beacon has just answered a light no keeper lit.",
+      "kind": "settlement",
+      "visibility": "public"
+    }
+  }
+}

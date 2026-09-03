@@ -105,12 +105,16 @@ public sealed class InteractionRecipeStore(DantesRoleplayDbContext db) : IIntera
         if (current.Version != draft.Recipe.Version)
             return new(InteractionRecipeWriteDisposition.Conflict, null, "RECIPE_VERSION_CONFLICT");
         var kind = draft.Successful ? "use-success" : "use-failure";
+        var intentText = string.IsNullOrWhiteSpace(draft.IntentText) ? "" : NormalizeIntent(draft.IntentText);
+        var performance = RequireReplayPerformance(draft.ReplayPerformance);
         var existing = await db.InteractionRecipeEvidence.AsNoTracking().SingleOrDefaultAsync(row =>
             row.RecipeId == recipe.Id && row.ExecutionReceiptId == draft.ExecutionReceiptId && row.Kind == kind,
             cancellationToken);
         if (existing is not null)
             return existing.ResolutionReceiptId == draft.ResolutionReceiptId
                 && existing.IntentFingerprint == draft.IntentFingerprint
+                && existing.IntentText == intentText
+                && SamePerformance(existing, performance)
                 ? new(InteractionRecipeWriteDisposition.Replayed, draft.Recipe, "RECIPE_USE_REPLAYED")
                 : new(InteractionRecipeWriteDisposition.Conflict, null, "RECIPE_USE_CONFLICT");
         db.InteractionRecipeEvidence.Add(new InteractionRecipeEvidence
@@ -119,9 +123,18 @@ public sealed class InteractionRecipeStore(DantesRoleplayDbContext db) : IIntera
             ExecutionReceiptId = InteractionReceiptIds.Require(draft.ExecutionReceiptId, nameof(draft.ExecutionReceiptId)),
             ResolutionReceiptId = InteractionReceiptIds.Require(draft.ResolutionReceiptId, nameof(draft.ResolutionReceiptId)),
             Kind = kind,
-            IntentText = "",
+            IntentText = intentText,
             IntentFingerprint = RequireHash(draft.IntentFingerprint, nameof(draft.IntentFingerprint)),
             RoleProfile = RequireIdentifier(draft.RoleProfile, nameof(draft.RoleProfile)),
+            ReplayBaselineAiCalls = performance?.BaselineAiCalls ?? 0,
+            ReplayActualAiCalls = performance?.ActualAiCalls ?? 0,
+            ReplaySavedAiCalls = performance?.SavedAiCalls ?? 0,
+            ReplayElapsedMilliseconds = performance?.ElapsedMilliseconds ?? 0,
+            ReplayChoiceResolutionMilliseconds = performance?.ChoiceResolutionMilliseconds ?? 0,
+            ReplayProposalMilliseconds = performance?.ProposalMilliseconds ?? 0,
+            ReplayExecutionMilliseconds = performance?.ExecutionMilliseconds ?? 0,
+            ReplayPromptTokens = performance?.PromptTokens ?? 0,
+            ReplayOutputTokens = performance?.OutputTokens ?? 0,
             CreatedAtUtc = DateTime.UtcNow
         });
         try
@@ -406,9 +419,36 @@ public sealed class InteractionRecipeStore(DantesRoleplayDbContext db) : IIntera
             revision.ApplicationRevision, revision.ApplicationFingerprint, revision.EffectiveSetFingerprint,
             row.Evidence.OrderBy(value => value.CreatedAtUtc).ThenBy(value => value.ExecutionReceiptId, StringComparer.Ordinal)
                 .Select(value => new InteractionRecipeEvidenceReference(value.ResolutionReceiptId,
-                    value.ExecutionReceiptId, value.Kind, value.IntentFingerprint, value.CreatedAtUtc)).ToArray(),
+                    value.ExecutionReceiptId, value.Kind, value.IntentFingerprint, value.CreatedAtUtc,
+                    value.IntentText, Performance(value))).ToArray(),
             revision.ResolutionFingerprint);
     }
+
+    private static InteractionRecipeReplayPerformance? RequireReplayPerformance(
+        InteractionRecipeReplayPerformance? value)
+    {
+        if (value is null) return null;
+        if (value.BaselineAiCalls is < 1 or > InteractionContractLimits.ProposalSteps
+            || value.ActualAiCalls is < 0 or > 1
+            || value.SavedAiCalls != Math.Max(0, value.BaselineAiCalls - value.ActualAiCalls)
+            || value.ElapsedMilliseconds < 0 || value.ChoiceResolutionMilliseconds < 0
+            || value.ProposalMilliseconds < 0 || value.ExecutionMilliseconds < 0
+            || value.PromptTokens < 0 || value.OutputTokens < 0)
+            throw new InteractionContractException("INVALID_RECIPE_REPLAY_PERFORMANCE",
+                "Recipe replay performance is outside its closed bounds.");
+        return value;
+    }
+
+    private static InteractionRecipeReplayPerformance? Performance(InteractionRecipeEvidence value) =>
+        value.ReplayBaselineAiCalls == 0 ? null : new(
+            value.ReplayBaselineAiCalls, value.ReplayActualAiCalls, value.ReplaySavedAiCalls,
+            value.ReplayElapsedMilliseconds, value.ReplayChoiceResolutionMilliseconds,
+            value.ReplayProposalMilliseconds, value.ReplayExecutionMilliseconds,
+            value.ReplayPromptTokens, value.ReplayOutputTokens);
+
+    private static bool SamePerformance(
+        InteractionRecipeEvidence stored,
+        InteractionRecipeReplayPerformance? expected) => Performance(stored) == expected;
 
     private async Task<InteractionRecipeWriteResult> EvidenceReplayAsync(
         InteractionRecipeEvidence row,

@@ -13,6 +13,8 @@ Defines the generic storage boundary for one producer-owned immutable snapshot p
 public MCP operation: a named domain coordinator may call the typed in-process store only within
 its own approved root transaction.
 
+## Matches
+
 ## Instructions
 1. Ask the registered scope producer for one closed `SnapshotCaptureProposal`; never accept bytes,
    a digest, a storage id, a path, URI, credentials, domain list, raw effect, or restore option

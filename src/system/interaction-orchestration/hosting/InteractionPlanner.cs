@@ -14,7 +14,8 @@ internal sealed class InteractionPlanner(
     IInteractionProposalVerifier verifier,
     IVerifiedInteractionRecipeResolver recipes,
     IInteractionReceiptStore receipts,
-    IEnumerable<IInteractionPlanningCompletionProvider> providers) : IInteractionPlanner
+    IEnumerable<IInteractionPlanningCompletionProvider> providers,
+    IInteractionTaskContextMaterializer? taskContext = null) : IInteractionPlanner
 {
     public async Task<InteractionPlanningOutcome> PlanAsync(
         AuthorizedInteractionEnvelope envelope,
@@ -34,8 +35,38 @@ internal sealed class InteractionPlanner(
         var searchCount = 0;
         var inspectionCount = 0;
         VerifiedInteractionRecipeGuidance? verifiedRoute = null;
+        InteractionTaskContextPack? contextPack = null;
 
         InteractionResolutionResult? terminal = FreshAuthorization(envelope, authorizationRequest);
+        if (terminal is null && taskContext is not null)
+        {
+            try
+            {
+                contextPack = await taskContext.MaterializeAsync(
+                    envelope, authorizationRequest, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                terminal = NonResolution(InteractionResolutionStatus.Unavailable, "PLANNER_CANCELLED",
+                    "Interaction planning was cancelled.");
+            }
+            catch (InteractionTaskContextException exception)
+            {
+                terminal = NonResolution(
+                    exception.Code.Contains("AUTHORIZATION", StringComparison.Ordinal)
+                        ? InteractionResolutionStatus.Unsafe
+                        : exception.Code.Contains("STALE", StringComparison.Ordinal)
+                            ? InteractionResolutionStatus.Stale
+                            : InteractionResolutionStatus.Unavailable,
+                    exception.Code,
+                    exception.Message);
+            }
+            catch
+            {
+                terminal = NonResolution(InteractionResolutionStatus.Unavailable,
+                    "TASK_CONTEXT_UNAVAILABLE", "Task context could not be materialized.");
+            }
+        }
         if (terminal is null)
         {
             try
@@ -78,7 +109,7 @@ internal sealed class InteractionPlanner(
             {
                 deadline.Token.ThrowIfCancellationRequested();
                 rounds++;
-                var observation = Observation(envelope, verifiedRoute, searches, inspectedById.Values,
+                var observation = Observation(envelope, contextPack, verifiedRoute, searches, inspectedById.Values,
                     rounds, searchCount, inspectionCount, candidateById.Count, watch.ElapsedMilliseconds);
                 if (Encoding.UTF8.GetByteCount(observation) > envelope.Host.Budgets.MaximumObservationBytes)
                 {
@@ -235,8 +266,8 @@ internal sealed class InteractionPlanner(
 
         var usage = new InteractionPlannerUsage(rounds, searchCount, inspectionCount,
             candidateById.Count, Math.Min(watch.ElapsedMilliseconds, InteractionPlannerLimits.MaximumElapsedMilliseconds));
-        var trace = TraceFingerprint(envelope, verifiedRoute, searches, inspectedById.Values, usage);
-        terminal = WithPlannerEvidence(terminal!, identity, usage);
+        var trace = TraceFingerprint(envelope, contextPack, verifiedRoute, searches, inspectedById.Values, usage);
+        terminal = WithPlannerEvidence(terminal!, identity, usage, contextPack);
         var receipt = await receipts.AppendResolutionAsync(new(envelope, terminal, trace), CancellationToken.None);
         if (receipt.Disposition == InteractionReceiptWriteDisposition.Replay
             && !Equivalent(receipt.Receipt, terminal))
@@ -277,6 +308,7 @@ internal sealed class InteractionPlanner(
 
     private static string Observation(
         AuthorizedInteractionEnvelope envelope,
+        InteractionTaskContextPack? contextPack,
         VerifiedInteractionRecipeGuidance? verifiedRoute,
         IReadOnlyList<SearchTrace> searches,
         IEnumerable<InteractionInspectedFeature> inspected,
@@ -305,6 +337,8 @@ internal sealed class InteractionPlanner(
                 envelope.Host.EffectiveSetFingerprint,
                 productRole = envelope.Host.RoleProfile.Role.ToString().ToLowerInvariant()
             },
+            taskContext = contextPack is null ? (JsonElement?)null
+                : JsonSerializer.Deserialize<JsonElement>(contextPack.Json),
             remaining = new
             {
                 rounds = InteractionPlannerLimits.MaximumRounds - rounds,
@@ -359,6 +393,7 @@ internal sealed class InteractionPlanner(
 
     private static string TraceFingerprint(
         AuthorizedInteractionEnvelope envelope,
+        InteractionTaskContextPack? contextPack,
         VerifiedInteractionRecipeGuidance? verifiedRoute,
         IReadOnlyList<SearchTrace> searches,
         IEnumerable<InteractionInspectedFeature> inspected,
@@ -367,6 +402,7 @@ internal sealed class InteractionPlanner(
         var value = JsonSerializer.Serialize(new
         {
             envelope = envelope.Fingerprint,
+            taskContext = contextPack?.Fingerprint,
             verifiedRoute = verifiedRoute is null ? null : new
             {
                 verifiedRoute.Reference.Id,
@@ -431,7 +467,8 @@ internal sealed class InteractionPlanner(
     private static InteractionResolutionResult WithPlannerEvidence(
         InteractionResolutionResult result,
         InteractionPlannerIdentity? identity,
-        InteractionPlannerUsage usage)
+        InteractionPlannerUsage usage,
+        InteractionTaskContextPack? contextPack)
     {
         var plannerEvidence = new[]
         {
@@ -441,6 +478,7 @@ internal sealed class InteractionPlanner(
             "revision:" + (identity?.Revision ?? "unavailable"),
             "profile:" + (identity?.Profile ?? "unavailable"),
             "effort:" + (string.IsNullOrEmpty(identity?.ReasoningEffort) ? "not-applicable" : identity.ReasoningEffort),
+            "context:" + (contextPack?.Fingerprint ?? "unavailable"),
             $"usage:rounds={usage.Rounds},searches={usage.Searches},inspections={usage.Inspections},candidates={usage.Candidates}"
         };
         var evidence = result.Evidence

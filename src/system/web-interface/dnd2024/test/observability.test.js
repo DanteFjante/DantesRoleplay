@@ -1,0 +1,136 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+
+import {
+  PERFORMANCE_MARKS,
+  markActiveViewReady,
+  markBootstrapResponse,
+  markCharacterReady,
+  markCombatBoardReady,
+  markMapReady,
+  markShellReady,
+  resetPerformanceMarksForTests,
+} from "../src/observability/performance.js";
+import {
+  DEVELOPMENT_OBSERVABILITY_KEY,
+  installDevelopmentRequestLedger,
+  recordDevelopmentDiagnostic,
+  withinDevelopmentInteraction,
+} from "../src/observability/request-ledger.js";
+
+test("readiness marks are stable and recorded only once", () => {
+  resetPerformanceMarksForTests();
+  const entries = [];
+  const target = { performance: { mark: (name, options) => entries.push({ name, options }) } };
+
+  assert.equal(markShellReady(target), true);
+  assert.equal(markShellReady(target), false);
+  markBootstrapResponse("ready", target);
+  markActiveViewReady("world", target);
+  markCharacterReady("actor.1", target);
+  markMapReady("map.1", target);
+  markCombatBoardReady("encounter.1", target);
+
+  assert.deepEqual(entries.map((entry) => entry.name), Object.values(PERFORMANCE_MARKS));
+});
+
+test("development request ledger records metadata without URLs, query values, or bodies", async () => {
+  let now = 10;
+  const target = {
+    location: { origin: "https://table.example" },
+    performance: { now: () => (now += 5) },
+    fetch: async () => new Response("secret response body", {
+      status: 200,
+      headers: { "cache-status": "local; hit" },
+    }),
+  };
+  const observability = installDevelopmentRequestLedger({ target });
+
+  await withinDevelopmentInteraction("bootstrap", () => target.fetch(
+    "/api/campaigns/campaign.1?private=do-not-record",
+    { method: "POST", body: "do-not-record" },
+  ), target);
+  await new Promise((resolve) => setImmediate(resolve));
+
+  const snapshot = observability.snapshot();
+  assert.equal(snapshot.requests.length, 1);
+  assert.deepEqual(snapshot.requests[0], {
+    id: 1,
+    parentInteraction: "bootstrap:1",
+    path: "/api/campaigns/campaign.1",
+    method: "POST",
+    durationMs: 5,
+    status: 200,
+    payloadBytes: 20,
+    cacheResult: "local; hit",
+    outcome: "response",
+  });
+  assert.doesNotMatch(JSON.stringify(snapshot), /private=|do-not-record|secret response body/);
+
+  observability.restore();
+  assert.equal(target[DEVELOPMENT_OBSERVABILITY_KEY], undefined);
+});
+
+test("development ledger records bounded party-read status without component values", async () => {
+  const target = {
+    location: { origin: "https://table.example" },
+    performance: { now: () => 1 },
+    fetch: async () => new Response(null, { status: 204 }),
+  };
+  const observability = installDevelopmentRequestLedger({ target, maximumEntries: 2 });
+  await withinDevelopmentInteraction("hub-load", async () => {
+    assert.equal(recordDevelopmentDiagnostic("party-read", {
+      campaignId: "campaign.one",
+      partyDiscovery: "ready",
+      sourceRevision: "live:one",
+      members: [{
+        actorId: "actor.one",
+        readModelStatus: "error",
+        sections: { sheet: "error", inventory: "error" },
+        diagnosticId: "request-422",
+      }],
+    }, target), true);
+  }, target);
+
+  const snapshot = observability.snapshot();
+  assert.deepEqual(snapshot.diagnostics, [{
+    id: "party-read:1",
+    parentInteraction: "hub-load:1",
+    kind: "party-read",
+    detail: {
+      campaignId: "campaign.one",
+      partyDiscovery: "ready",
+      sourceRevision: "live:one",
+      members: [{
+        actorId: "actor.one",
+        readModelStatus: "error",
+        sections: { sheet: "error", inventory: "error" },
+        diagnosticId: "request-422",
+      }],
+    },
+  }]);
+  assert.doesNotMatch(JSON.stringify(snapshot), /componentValue|valueJson|private biography/u);
+  observability.restore();
+});
+
+test("production component paths emit every readiness mark", () => {
+  const source = [
+    "../src/server-host/main.tsx",
+    "../src/components/DndInformationHub.tsx",
+    "../src/components/RulesOnlyHub.tsx",
+    "../src/components/PartyView.tsx",
+    "../src/components/MapCanvas.tsx",
+    "../src/components/PreviewViews.tsx",
+  ].map((path) => readFileSync(new URL(path, import.meta.url), "utf8")).join("\n");
+
+  for (const call of [
+    "markShellReady(",
+    "markBootstrapResponse(",
+    "markActiveViewReady(",
+    "markCharacterReady(",
+    "markMapReady(",
+    "markCombatBoardReady(",
+  ]) assert.match(source, new RegExp(call.replace("(", "\\(")));
+  assert.match(source, /process\.env\.NODE_ENV !== "production"\) installDevelopmentRequestLedger\(\)/);
+});

@@ -189,7 +189,6 @@ export function ScopedMapWorkspace({
           <MapCanvas
             annotatedFeatureIds={annotatedFeatureIds}
             currentLocationId={currentLocationId}
-            fitOnLoad={mapViews[map.id] === undefined}
             influencedFeatureIds={influencedFeatureIds}
             map={visibleMap}
             onFeatureSelect={selectFeature}

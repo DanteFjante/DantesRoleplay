@@ -175,6 +175,35 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
         return Document(row, page.ActiveRevision);
     }
 
+    public async Task<WebPageRevisionDocument> AppendBundleDraftAsync(
+        string id,
+        int expectedLatestRevision,
+        WebPageBundle bundle,
+        CancellationToken cancellationToken = default)
+    {
+        RequirePageId(id);
+        RequireRevision(expectedLatestRevision, nameof(expectedLatestRevision));
+        ArgumentNullException.ThrowIfNull(bundle);
+        ArgumentNullException.ThrowIfNull(bundle.Assets);
+        var validatedAssets = ValidateContent(bundle.Html, bundle.Assets);
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var page = await db.Pages.SingleOrDefaultAsync(value => value.Id == id, cancellationToken)
+            ?? throw new WebPageStoreException("PAGE_UNKNOWN", "The page is unknown.");
+        var latestRevision = await db.PageRevisions
+            .Where(value => value.PageId == id)
+            .MaxAsync(value => value.Revision, cancellationToken);
+        if (latestRevision != expectedLatestRevision)
+            throw new WebPageStoreException("PAGE_LATEST_STALE", "The page has a newer revision. Reload before saving another draft.");
+
+        var now = DateTime.UtcNow;
+        var row = CreateRevision(id, latestRevision + 1, bundle.Html, validatedAssets, now);
+        db.PageRevisions.Add(row);
+        await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return Document(row, page.ActiveRevision);
+    }
+
     public async Task<WebPageActivationResult> ActivateRevisionAsync(
         string id,
         int revision,

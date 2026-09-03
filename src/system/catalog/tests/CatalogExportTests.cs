@@ -1,7 +1,10 @@
+using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.DataAccess.Catalog;
+using DantesRoleplay.Ecs;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.SchemaValidation;
 using Jint;
 
 namespace DantesRoleplay.Tests;
@@ -174,6 +177,24 @@ public sealed class CatalogExportTests : IDisposable
                     $"{entry.Id} has no .js beside its .md.");
             }
         }
+    }
+
+    [Fact]
+    public async Task Application_component_types_are_not_legacy_catalog_records()
+    {
+        await using var db = await SeededAsync();
+        var application = ApplicationIdentifier.Parse("fixture-app");
+        new SqliteApplicationRegistry(db).Register(new(application, "Fixture application", "", []));
+        new SqliteComponentTypeRegistry(db, new BoundedJsonSchemaValidator()).Define(new(
+            application,
+            "fixture-app.runtime-note",
+            "{\"type\":\"object\"}"));
+
+        await new CatalogExporter(db).ExportAsync(_root);
+
+        Assert.False(File.Exists(CatalogLayout.ToFileSystemPath(
+            _root,
+            CatalogLayout.Namespace("fixture-app"))));
     }
 
     /// <summary>

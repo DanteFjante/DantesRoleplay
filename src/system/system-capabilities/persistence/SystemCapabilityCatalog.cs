@@ -102,7 +102,7 @@ public sealed class SystemCapabilityCatalog : ISystemCapabilityCatalog
         SystemCapabilityHandlerResult handled;
         try
         {
-            handled = await entry.ReadHandler.ReadAsync(inputElement, cancellationToken);
+            handled = await entry.ReadHandler.ReadAsync(inputElement, context, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

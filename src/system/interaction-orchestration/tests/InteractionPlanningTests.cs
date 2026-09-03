@@ -83,7 +83,8 @@ public sealed class InteractionPlanningTests
             fixture.Verifier, new GuidanceResolver(guidance), fixture.ReceiptStore,
             kind == InteractionPlannerKind.Local
                 ? [provider, new SequenceProvider(InteractionPlannerKind.Remote, [])]
-                : [new SequenceProvider(InteractionPlannerKind.Local, []), provider]);
+                : [new SequenceProvider(InteractionPlannerKind.Local, []), provider],
+            new FixedTaskContext());
 
         var outcome = await planner.PlanAsync(fixture.Envelope, fixture.AuthorizationRequest,
             kind);
@@ -91,6 +92,8 @@ public sealed class InteractionPlanningTests
         Assert.Equal(InteractionResolutionStatus.Resolved, outcome.Result.Status);
         using var observation = JsonDocument.Parse(provider.Requests[0].ObservationJson);
         var route = observation.RootElement.GetProperty("verifiedRoute");
+        Assert.Equal(InteractionTaskContextProfiles.Version1,
+            observation.RootElement.GetProperty("taskContext").GetProperty("profile").GetString());
         Assert.Equal(fixture.Record.QualifiedId,
             route.GetProperty("steps")[0].GetProperty("qualifiedId").GetString());
         Assert.DoesNotContain("entity.1", route.GetRawText(), StringComparison.Ordinal);
@@ -626,6 +629,16 @@ public sealed class InteractionPlanningTests
             throw new InvalidOperationException("Execution is forbidden in Slice 12E.");
         public Task<InteractionReceiptProjection?> GetAsync(InteractionAuthorizationRequest authorizationRequest, string receiptId, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
+    }
+
+    private sealed class FixedTaskContext : IInteractionTaskContextMaterializer
+    {
+        private const string Json = "{\"profile\":\"interaction-task-context/v1\",\"scope\":[]}";
+        public Task<InteractionTaskContextPack> MaterializeAsync(
+            AuthorizedInteractionEnvelope envelope,
+            InteractionAuthorizationRequest authorizationRequest,
+            CancellationToken cancellationToken = default) => Task.FromResult(new InteractionTaskContextPack(
+            InteractionTaskContextProfiles.Version1, Json, Hash(Json), []));
     }
 
     private sealed class DelegateHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> handler) : HttpMessageHandler

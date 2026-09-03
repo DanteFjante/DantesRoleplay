@@ -1,1 +1,1 @@
-{"name":"mechanics","classification":"system","status":"migrated","owns":["mechanic declarations","declared context","sandbox invocation"],"mayDependOn":["building-blocks","state","procedures","operations-and-audit"]}
+{"name":"mechanics","classification":"system","status":"migrated","owns":["mechanic declarations","declared context","sandbox invocation","transport-neutral mechanic anti-sprawl finding envelopes"],"mayDependOn":["building-blocks","state","procedures","operations-and-audit"]}

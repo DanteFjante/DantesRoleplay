@@ -11,6 +11,8 @@ changeNote: "Moves the player-facing D\u0026D 2024 contract under ruleset.dnd202
 ## Description
 Player-facing session protocol for declaring an adventurer intent, supplying relevant character context, and receiving a narrated result. Non-goals: host adjudication, scene creation, and implementing game mechanics.
 
+## Matches
+
 ## Instructions
 1. Receive the current scene, known facts, and any applicable limitations from the host.
 2. State what the adventurer tries to do in fiction; do not prescribe a rule, DC, die result, or consequence.

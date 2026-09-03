@@ -31,6 +31,12 @@ public interface IWebPageStore
         string html,
         CancellationToken cancellationToken = default);
 
+    Task<WebPageRevisionDocument> AppendBundleDraftAsync(
+        string id,
+        int expectedLatestRevision,
+        WebPageBundle bundle,
+        CancellationToken cancellationToken = default);
+
     Task<WebPageActivationResult> ActivateRevisionAsync(
         string id,
         int revision,

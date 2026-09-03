@@ -11,6 +11,8 @@ changeNote: "Imported from the catalog."
 ## Description
 Defines the reusable canonical D&D 2024 weapon profile and its closed administrative writer. A profile is source data on a weapon entity, never a copied actor object or an attack result.
 
+## Matches
+
 ## Instructions
 Source and scope
 

@@ -1,4 +1,4 @@
-﻿---
+---
 id: procedure.campaign.create
 category: campaign
 name: Validate and create an existing-world campaign
@@ -12,6 +12,8 @@ changeNote: "Seeded from bootstrap file."
 Campaign creation is a two-stage path. Validation is read-only and returns a fingerprint. Creation
 may accept only the same valid blueprint and matching fingerprint, then atomically creates one
 campaign root with directed world and reference links.
+
+## Matches
 
 ## Instructions
 1. Submit the closed `CampaignBlueprint` with `operation: "validate"`. It resolves only existing

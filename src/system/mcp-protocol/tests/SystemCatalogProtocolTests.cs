@@ -40,10 +40,13 @@ public sealed class SystemCatalogProtocolTests : IDisposable
         Assert.False(result.Ok);
         Assert.Equal("PUBLIC_CATALOG_UNAVAILABLE", result.Error?.Code);
         Assert.Equal("query(kind: \"capabilities\")", result.Error?.Fix);
-        Assert.Contains(data.GetProperty("Query").EnumerateArray(), item => item.GetProperty("Name").GetString() == "system.catalog.browse");
+        Assert.Contains(data.GetProperty("Capabilities").EnumerateArray(), item =>
+            item.GetProperty("SourceKind").GetString() == "mcp-query"
+            && item.GetProperty("Name").GetString() == "system.catalog.browse");
         Assert.Equal(
-            ["system.application.activate", "system.application.register", "system.blob-upload.begin", "system.blob-upload.finalize", "system.component-type.register", "system.extension.register", "system.interaction-execute", "system.interaction-recipe-review", "system.knowledge-state.sync", "system.source.register", "system.state-space.adopt-legacy", "system.state-space.create", "system.state-space.upgrade", "system.trigger-scheduling", "system.world-state.sync"],
-            data.GetProperty("Commit").EnumerateArray()
+            ["system.application.activate", "system.application.register", "system.blob-upload.begin", "system.blob-upload.finalize", "system.component-type.register", "system.extension.register", "system.interaction-execute", "system.interaction-recipe-review", "system.knowledge-state.sync", "system.namespace.register", "system.source.register", "system.state-space.adopt-legacy", "system.state-space.create", "system.state-space.upgrade", "system.trigger-scheduling", "system.world-state.sync"],
+            data.GetProperty("Capabilities").EnumerateArray()
+                .Where(item => item.GetProperty("SourceKind").GetString() == "mcp-commit")
                 .Select(item => item.GetProperty("Name").GetString())
                 .Where(name => name!.StartsWith("system.", StringComparison.Ordinal))
                 .Order(StringComparer.Ordinal));
@@ -603,18 +606,25 @@ public sealed class SystemCatalogMcpWalkTests : IAsyncLifetime
         Assert.Equal(applicationCommit.Data.GetRawText(), applicationReplay.Data.GetRawText());
         Assert.Equal(sourceToken, sourceCommit.OperationId);
         Assert.Equal("documents/**/*.md", registeredSource.Data.GetProperty("source").GetProperty("relativePathOrGlob").GetString());
-        Assert.Contains(capabilities.Data.GetProperty("query").EnumerateArray(),
-            item => item.GetProperty("name").GetString() == "system.catalog.search");
-        Assert.Contains(capabilities.Data.GetProperty("query").EnumerateArray(),
-            item => item.GetProperty("name").GetString() == "system.dependencies");
-        Assert.Contains(capabilities.Data.GetProperty("commit").EnumerateArray(),
-            item => item.GetProperty("name").GetString() == "system.application.activate");
-        Assert.Contains(capabilities.Data.GetProperty("commit").EnumerateArray(),
-            item => item.GetProperty("name").GetString() == "system.component-type.register");
-        Assert.Contains(capabilities.Data.GetProperty("commit").EnumerateArray(),
-            item => item.GetProperty("name").GetString() == "system.state-space.create");
-        Assert.Contains(capabilities.Data.GetProperty("commit").EnumerateArray(),
-            item => item.GetProperty("name").GetString() == "system.state-space.upgrade");
+        var discoveredCapabilities = capabilities.Data.GetProperty("capabilities").EnumerateArray().ToArray();
+        Assert.Contains(discoveredCapabilities,
+            item => item.GetProperty("sourceKind").GetString() == "mcp-query"
+                && item.GetProperty("name").GetString() == "system.catalog.search");
+        Assert.Contains(discoveredCapabilities,
+            item => item.GetProperty("sourceKind").GetString() == "mcp-query"
+                && item.GetProperty("name").GetString() == "system.dependencies");
+        Assert.Contains(discoveredCapabilities,
+            item => item.GetProperty("sourceKind").GetString() == "mcp-commit"
+                && item.GetProperty("name").GetString() == "system.application.activate");
+        Assert.Contains(discoveredCapabilities,
+            item => item.GetProperty("sourceKind").GetString() == "mcp-commit"
+                && item.GetProperty("name").GetString() == "system.component-type.register");
+        Assert.Contains(discoveredCapabilities,
+            item => item.GetProperty("sourceKind").GetString() == "mcp-commit"
+                && item.GetProperty("name").GetString() == "system.state-space.create");
+        Assert.Contains(discoveredCapabilities,
+            item => item.GetProperty("sourceKind").GetString() == "mcp-commit"
+                && item.GetProperty("name").GetString() == "system.state-space.upgrade");
         Assert.Equal("fixture.attack", record.Data.GetProperty("record").GetProperty("summary").GetProperty("qualifiedId").GetString());
         Assert.Equal("ledger", ledgerListed.Data.GetProperty("applicationId").GetString());
         Assert.Equal("ledger.reconcile", ledgerSearch.Data.GetProperty("result").GetProperty("records")[0]

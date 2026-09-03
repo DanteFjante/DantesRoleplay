@@ -83,15 +83,19 @@ internal sealed class SystemApplicationPreviewHandler
             Sources = preview.Sources.Count,
             Winners = preview.Winners.Count,
             Shadows = preview.Shadows.Count,
-            Problems = preview.Problems.Count
+            Problems = preview.Problems.Count,
+            AntiSprawlFindings = preview.AntiSprawlFindings.Count,
+            BlockingAntiSprawlFindings = preview.AntiSprawlFindings.Count(value => value.Blocking)
         },
         Sources = preview.Sources.Take(limit).ToArray(),
         Winners = preview.Winners.Take(limit).ToArray(),
         Shadows = preview.Shadows.Take(limit).ToArray(),
         Problems = preview.Problems.Take(limit).ToArray(),
+        AntiSprawlFindings = preview.AntiSprawlFindings.Take(limit).ToArray(),
         Limit = limit,
         Truncated = preview.Sources.Count > limit || preview.Winners.Count > limit
             || preview.Shadows.Count > limit || preview.Problems.Count > limit
+            || preview.AntiSprawlFindings.Count > limit
     };
 
     private static PrivateOperatorAuthorizationDecision Authorize(IPrivateOperatorRequestAuthorizer? authorization) =>

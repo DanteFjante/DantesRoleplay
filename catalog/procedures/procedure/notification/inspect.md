@@ -1,4 +1,4 @@
-﻿---
+---
 id: procedure.notification.inspect
 category: notification
 name: Read and clear notifications
@@ -11,6 +11,8 @@ changeNote: "Seeded from bootstrap file."
 ## Description
 Notifications are what rules want a person told. Reading them is a query; clearing them is a
 separate commit. Nothing delivers them — they wait until somebody asks.
+
+## Matches
 
 ## Instructions
 1. Start with `query(kind: "notifications", state: "unread")`. That is the question a reader

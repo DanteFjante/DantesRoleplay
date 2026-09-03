@@ -10,14 +10,26 @@ public sealed class ApplicationPreviewService(
     ISourceRegistry sources,
     IApplicationExtensionRegistry extensions,
     IRegisteredSourceScanner scanner,
-    ISourceOverlayResolver overlays) : IApplicationPreviewService
+    ISourceOverlayResolver overlays,
+    IApplicationAntiSprawlGate antiSprawl) : IApplicationPreviewService
 {
+    public ApplicationPreviewService(
+        IApplicationRegistry applications,
+        ISourceRegistry sources,
+        IApplicationExtensionRegistry extensions,
+        IRegisteredSourceScanner scanner,
+        ISourceOverlayResolver overlays)
+        : this(applications, sources, extensions, scanner, overlays, new EmptyApplicationAntiSprawlGate())
+    {
+    }
+
     public ApplicationPreviewService(
         IApplicationRegistry applications,
         ISourceRegistry sources,
         IRegisteredSourceScanner scanner,
         ISourceOverlayResolver overlays)
-        : this(applications, sources, new InMemoryApplicationExtensionRegistry(sources), scanner, overlays)
+        : this(applications, sources, new InMemoryApplicationExtensionRegistry(sources), scanner, overlays,
+            new EmptyApplicationAntiSprawlGate())
     {
     }
 
@@ -78,6 +90,13 @@ public sealed class ApplicationPreviewService(
         var documents = scan.Documents.Where(value => selectedIds.Contains(value.SourceId)).ToArray();
         var problems = scan.Problems.Where(value => selectedIds.Contains(value.SourceId)).ToArray();
         var candidate = overlays.Resolve(applicationId, documents, problems);
+        var governance = await antiSprawl.EvaluateAsync(
+            applicationId, registrations, candidate.Winners, extensionSet, cancellationToken);
+        var candidateProblems = candidate.Problems.Concat(governance.Problems)
+            .OrderBy(value => value.Code, StringComparer.Ordinal)
+            .ThenBy(value => value.SourceId, StringComparer.Ordinal)
+            .ThenBy(value => value.LogicalPath, StringComparer.Ordinal)
+            .ThenBy(value => value.Message, StringComparer.Ordinal).ToArray();
         var sourceSummaries = registrations.Select(registration => new ApplicationPreviewSource(
                 registration.SourceId,
                 SourceRegistrationFingerprint.Compute(registration),
@@ -96,14 +115,15 @@ public sealed class ApplicationPreviewService(
             scannedDocumentsFingerprint,
             candidate.Fingerprint,
             previewFingerprint,
-            candidate.IsValid,
+            candidate.IsValid && governance.Problems.Count == 0,
             Array.AsReadOnly(sourceSummaries),
             candidate.Winners,
             candidate.Shadows,
-            candidate.Problems)
+            candidateProblems)
         {
             ResolutionFingerprint = extensionSet.Fingerprint,
-            ExtensionIds = extensionSet.Extensions.Select(value => value.ExtensionId).ToArray()
+            ExtensionIds = extensionSet.Extensions.Select(value => value.ExtensionId).ToArray(),
+            AntiSprawlFindings = governance.Findings
         };
     }
 

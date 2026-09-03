@@ -2,12 +2,12 @@
   "id": "item.caldris.ganjis-carving-knife",
   "name": "Ganji's Carving Knife",
   "components": {
-    "fixture.legacy.stats": {
+    "stats": {
       "kind": "tool",
       "toolCategory": "woodcarvers-tools",
-      "description": "A small, worn-handled carving knife Ganji has carried as long as he can remember. Its blade never dulls and can shave stone as easily as wood.",
+      "description": "A small, worn-handled carving knife the Tensor Sect entrusted to Ganji as a gift, in recognition of how important he was to them. Its blade never dulls and can shave stone as easily as wood.",
       "enchantment": "Never needs sharpening; can carve or shave solid stone as if it were wood.",
-      "origin": "Unexplained. The Tensor Sect never told him where it came from, and its make matches nothing in their records.",
+      "origin": "A gift from the Tensor Sect itself, given to Ganji for his importance to them. Its enchantment is unexplained -- the Sect never told him where its magic came from, and its make matches nothing in their records.",
       "carriedBy": "actor.caldris.ganji"
     }
   }

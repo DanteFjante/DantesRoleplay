@@ -99,8 +99,8 @@ public sealed class BootstrapContractTests : IDisposable
     {
         var ids = ProcedureSeeder.Load().Select(file => file.Id).ToHashSet(StringComparer.Ordinal);
 
-        var named = McpVerbCatalog.QueryKinds.SelectMany(k => k.Contracts)
-            .Concat(McpVerbCatalog.CommitKinds.SelectMany(k => k.Contracts))
+        var named = McpVerbCatalog.QueryKinds.SelectMany(k => k.Descriptor.ProcedureIds)
+            .Concat(McpVerbCatalog.CommitKinds.SelectMany(k => k.Descriptor.ProcedureIds))
             .Distinct(StringComparer.Ordinal)
             .ToList();
 

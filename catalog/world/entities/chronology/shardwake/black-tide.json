@@ -1,0 +1,16 @@
+{
+  "id": "chronology.shardwake.black-tide",
+  "name": "The First Black Tide",
+  "components": {
+    "game.core.world.chronology": {
+      "calendarId": "shardwake-reckoning",
+      "precision": "exact",
+      "title": "The First Black Tide",
+      "summary": "The sea rose black around the Drowned Observatory while every visible skyglass fragment rang once.",
+      "dateLabel": "Night 312.104 SR",
+      "occurredAtMinute": 164004480,
+      "status": "active",
+      "visibility": "party"
+    }
+  }
+}

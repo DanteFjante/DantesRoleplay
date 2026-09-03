@@ -2,16 +2,18 @@
 id: procedure.game.core.world.condition
 category: game.core.world.condition
 name: Govern scheduled world route closures
-governs: commit(kind: "component") declaring game.core.world.condition or game.core.world.route.availability; commit(kind: "effects") recording or correcting one reviewed condition or route availability
+governs: commit(kind: "system.component-type.register") declaring game.core.world.condition or game.core.world.route.availability; commit(kind: "system.world-state.sync") recording or correcting one reviewed condition or route availability
 status: active
 createdBy: "seed"
-changeNote: "Seeded from bootstrap file."
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
 Defines one deterministic, clock-derived route-closure condition. The condition's scope is explicit
 world and route relationships; its stored status and the route's availability are reconciled from
 the resulting root-clock minute by one fixed reaction.
+
+## Matches
 
 ## Instructions
 1. A condition entity has exactly one closed `game.core.world.condition` record. The only initial

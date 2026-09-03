@@ -1,0 +1,11 @@
+{
+  "id": "actor.shardwake.mara-vale",
+  "name": "Mara Vale",
+  "components": {
+    "game.core.world.motive": {
+      "status": "active",
+      "summary": "Mara wants to finish the chart her vanished mother began and prove the thirteenth signal points to a real route rather than grief-made obsession.",
+      "visibility": "party"
+    }
+  }
+}

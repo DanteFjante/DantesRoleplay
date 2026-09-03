@@ -16,6 +16,7 @@ public sealed record ApplicationActionExecutionRequest(
     string StateSpaceId,
     ApplicationIdentifier ApplicationId,
     string QualifiedMechanicId,
+    int MechanicVersion,
     string ContentFingerprint,
     IReadOnlyDictionary<string, string> RoleEntityIds,
     string InputJson,
@@ -36,6 +37,9 @@ public sealed record ApplicationActionExecutionResult(
 {
     public bool Successful => Disposition is ApplicationActionExecutionDisposition.Succeeded
         or ApplicationActionExecutionDisposition.Replayed;
+    public int MechanicVersion { get; init; }
+    public IReadOnlyList<string> AffectedEntityIds { get; init; } = [];
+    public IReadOnlyList<ApplicationEcsEffectReceipt> EffectReceipts { get; init; } = [];
 }
 
 /// <summary>

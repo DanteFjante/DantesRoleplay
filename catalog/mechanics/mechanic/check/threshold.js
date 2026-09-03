@@ -6,7 +6,7 @@ var raw = ctx.roles.subject.components['fixture.legacy.stats'];
 if (!raw) {
   throw new Error(
     ctx.roles.subject.name + ' has no "fixture.legacy.stats" component, so there is nothing to test. ' +
-    'Attach one with commit(kind: "effects"), or use a rule that reads whatever component ' +
+    'Attach one with commit(kind: "system.world-state.sync"), or use a rule that reads whatever component ' +
     'this game uses.');
 }
 

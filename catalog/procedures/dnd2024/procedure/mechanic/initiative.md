@@ -11,6 +11,8 @@ changeNote: "Feature 5 Slice 1: define the individual fixed-Dexterity Initiative
 ## Description
 Defines the D&D 2024 individual Initiative resolver: it reads validated Dexterity state, applies the established D20 roll-circumstance convention, derives the Initiative count, and returns a seeded effect-free result.
 
+## Matches
+
 ## Instructions
 Source and scope
 - Use dnd2024.source.srd-5.2.1, "Playing the Game > Combat > The Order of Combat > Initiative" and "Playing the Game > D20 Tests > Advantage/Disadvantage".

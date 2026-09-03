@@ -89,7 +89,7 @@ public sealed class ApplicationMechanicProjectionMappingResolver(
                                  new[] { reference.SourceComponentId }.Concat(reference.TargetComponentIds)
                                      .Concat(reference.OptionalTargetComponentIds ?? [])))
                              .Concat((value.RelationshipComponents ?? []).SelectMany(reference =>
-                                 reference.TargetComponentIds))))
+                                 reference.TargetComponentIds.Concat(reference.OptionalTargetComponentIds ?? [])))))
                 localIds.Add(localId);
             foreach (var kind in declared.Roles.Values
                          .SelectMany(value => value.RelationshipComponents ?? [])
@@ -122,6 +122,10 @@ public sealed class ApplicationMechanicProjectionMappingResolver(
                 }
                 if (childRecord.Summary.Kind != "mechanic" || childRecord.Summary.Status != "active")
                     return $"Declared child '{child.Key}' is inactive.";
+                if (child.Value.MechanicVersion > 0
+                    && (childRecord.Summary.Version != child.Value.MechanicVersion
+                        || childRecord.Summary.ContentFingerprint != child.Value.ContentFingerprint))
+                    return $"Declared child '{child.Key}' no longer matches its exact version and fingerprint.";
                 try
                 {
                     using var document = JsonDocument.Parse(childRecord.ContentJson);

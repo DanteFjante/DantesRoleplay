@@ -2,10 +2,10 @@
 id: procedure.game.core.media
 category: game.core.media
 name: Govern reviewed entity visual media
-governs: commit(kind: "component") declaring game.core.media.visual; commit(kind: "effects") adding, replacing, or removing reviewed visual-media bindings on existing entities; commit(kind: "system.blob-upload.begin"); commit(kind: "system.blob-upload.finalize"); query(kind: "system.blobs")
+governs: commit(kind: "system.component-type.register") declaring game.core.media.visual; commit(kind: "system.world-state.sync") adding or replacing reviewed visual-media bindings on existing entities; commit(kind: "system.blob-upload.begin"); commit(kind: "system.blob-upload.finalize"); query(kind: "system.blobs")
 status: active
 createdBy: "seed"
-changeNote: "Moved visual media to the generic entity-media contract and removed filesystem asset keys."
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
@@ -13,6 +13,8 @@ Defines reusable, entity-owned visual attachments for people, creatures, locatio
 items, clues, handouts, and other existing entities. The entity and its normal owner determine
 identity and authorization. SQLite owns attachment metadata and association; verified immutable
 bytes live only in the adjacent content-addressed blob store.
+
+## Matches
 
 ## Instructions
 1. Attach `game.core.media.visual` only to an existing entity governed by its normal owner. Never

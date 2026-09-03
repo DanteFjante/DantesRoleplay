@@ -22,6 +22,13 @@ public sealed record MechanicRequirements
     public Dictionary<string, RoleRequirement> Roles { get; init; } = [];
 
     /// <summary>
+    /// Optional authored JSON Schema for the mechanic's input object. Discovery surfaces expose
+    /// this contract before execution; JavaScript still performs semantic checks that depend on
+    /// projected state.
+    /// </summary>
+    public JsonElement? InputSchema { get; init; }
+
+    /// <summary>
     /// Present only when this mechanic is an event middleware target. The explicit mode prevents a
     /// guard (which may only decide allow/deny) from being registered as a reaction by accident.
     /// </summary>
@@ -49,7 +56,12 @@ public sealed record MechanicRequirements
     public IReadOnlyList<string> AllComponentIds() =>
         Roles.Values
             .SelectMany(r => r.Components.Concat(r.OptionalComponents ?? [])
-                .Concat(r.ContentComponentIds ?? []))
+                .Concat(r.ContentComponentIds ?? [])
+                .Concat((r.ComponentReferences ?? []).SelectMany(reference =>
+                    new[] { reference.SourceComponentId }.Concat(reference.TargetComponentIds)
+                        .Concat(reference.OptionalTargetComponentIds ?? [])))
+                .Concat((r.RelationshipComponents ?? []).SelectMany(reference =>
+                    reference.TargetComponentIds.Concat(reference.OptionalTargetComponentIds ?? []))))
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
@@ -86,12 +98,38 @@ public sealed record MechanicRequirements
                 continue;
             }
 
+            var hasVersion = child.MechanicVersion != 0;
+            var hasFingerprint = !string.IsNullOrWhiteSpace(child.ContentFingerprint);
+            if (hasVersion != hasFingerprint || child.MechanicVersion < 0
+                || (hasFingerprint && !IsUpperSha256(child.ContentFingerprint)))
+                problems.Add($"Child '{key}' must supply both a positive mechanicVersion and an uppercase SHA-256 contentFingerprint, or neither.");
+
             if (!string.IsNullOrWhiteSpace(child.ForEachContentsOf) &&
                 !Roles.ContainsKey(child.ForEachContentsOf))
             {
                 problems.Add(
                     $"Child '{key}' iterates contents of undeclared parent role '{child.ForEachContentsOf}'.");
             }
+
+            if (!string.IsNullOrWhiteSpace(child.ForEachInputProperty))
+            {
+                if (child.ForEachInputProperty.Trim() != child.ForEachInputProperty)
+                    problems.Add($"Child '{key}' has an untrimmed forEachInputProperty.");
+                if (!string.IsNullOrWhiteSpace(child.ForEachContentsOf) || child.InheritInput
+                    || !string.Equals(child.Input, "{}", StringComparison.Ordinal)
+                    || !string.IsNullOrWhiteSpace(child.InputFromParentProperty)
+                    || child.InputForEachItem || child.InputFromChildData is not null)
+                    problems.Add($"Child '{key}' cannot combine forEachInputProperty with another input or foreach source.");
+                if (!string.IsNullOrWhiteSpace(child.InputFromEachItemProperty)
+                    && child.InputFromEachItemProperty.Trim() != child.InputFromEachItemProperty)
+                    problems.Add($"Child '{key}' has an untrimmed inputFromEachItemProperty.");
+            }
+            else if (!string.IsNullOrWhiteSpace(child.InputFromEachItemProperty))
+                problems.Add($"Child '{key}' uses inputFromEachItemProperty without forEachInputProperty.");
+
+            if (child.After.Count > 64 || child.After.Any(string.IsNullOrWhiteSpace)
+                || child.After.Distinct(StringComparer.Ordinal).Count() != child.After.Count)
+                problems.Add($"Child '{key}' has invalid after dependencies.");
 
             foreach (var (childRole, source) in child.RoleBindings)
             {
@@ -101,11 +139,16 @@ public sealed record MechanicRequirements
                     continue;
                 }
 
-                if (source != "$item" && !Roles.ContainsKey(source))
+                if (source != "$item" && !source.StartsWith("$input.", StringComparison.Ordinal)
+                    && !Roles.ContainsKey(source))
                     problems.Add($"Child '{key}' binds '{childRole}' from undeclared parent role '{source}'.");
 
                 if (source == "$item" && string.IsNullOrWhiteSpace(child.ForEachContentsOf))
                     problems.Add($"Child '{key}' uses '$item' but does not declare forEachContentsOf.");
+
+                if (source.StartsWith("$input.", StringComparison.Ordinal)
+                    && string.IsNullOrWhiteSpace(child.ForEachInputProperty))
+                    problems.Add($"Child '{key}' uses an input role binding without forEachInputProperty.");
             }
 
             if (!child.InheritInput && !IsJsonObject(child.Input))
@@ -142,7 +185,16 @@ public sealed record MechanicRequirements
         {
             var sourceKey = child?.InputFromChildData?.ResultKey;
             if (string.IsNullOrWhiteSpace(sourceKey))
+            {
+                foreach (var dependency in child?.After ?? [])
+                {
+                    if (string.Equals(key, dependency, StringComparison.Ordinal))
+                        problems.Add($"Child '{key}' cannot run after itself.");
+                    else if (!Children.ContainsKey(dependency))
+                        problems.Add($"Child '{key}' runs after unknown child '{dependency}'.");
+                }
                 continue;
+            }
 
             if (string.Equals(key, sourceKey, StringComparison.Ordinal))
             {
@@ -158,15 +210,23 @@ public sealed record MechanicRequirements
 
             if (!string.IsNullOrWhiteSpace(producer.ForEachContentsOf))
                 problems.Add($"Child '{key}' cannot read data from foreach child '{sourceKey}'.");
+
+            foreach (var dependency in child?.After ?? [])
+            {
+                if (string.Equals(key, dependency, StringComparison.Ordinal))
+                    problems.Add($"Child '{key}' cannot run after itself.");
+                else if (!Children.ContainsKey(dependency))
+                    problems.Add($"Child '{key}' runs after unknown child '{dependency}'.");
+            }
         }
 
-        if (HasChildDataCycle())
-            problems.Add("inputFromChildData declarations must form an acyclic sibling graph.");
+        if (HasChildCycle())
+            problems.Add("Child input and after dependencies must form an acyclic sibling graph.");
 
         return problems;
     }
 
-    private bool HasChildDataCycle()
+    private bool HasChildCycle()
     {
         var visited = new HashSet<string>(StringComparer.Ordinal);
         var active = new HashSet<string>(StringComparer.Ordinal);
@@ -177,8 +237,11 @@ public sealed record MechanicRequirements
                 return active.Contains(key);
 
             active.Add(key);
-            var sourceKey = Children[key]?.InputFromChildData?.ResultKey;
-            var hasCycle = !string.IsNullOrWhiteSpace(sourceKey) && Children.ContainsKey(sourceKey) && Visit(sourceKey);
+            var child = Children[key];
+            var dependencies = (child?.After ?? []).Concat(
+                string.IsNullOrWhiteSpace(child?.InputFromChildData?.ResultKey)
+                    ? [] : [child!.InputFromChildData!.ResultKey]);
+            var hasCycle = dependencies.Any(dependency => Children.ContainsKey(dependency) && Visit(dependency));
             active.Remove(key);
             return hasCycle;
         }
@@ -190,6 +253,10 @@ public sealed record MechanicRequirements
     public IReadOnlyList<string> ProjectionProblems()
     {
         var problems = new List<string>();
+        if (InputSchema is JsonElement inputSchema
+            && (inputSchema.ValueKind != JsonValueKind.Object
+                || inputSchema.GetRawText().Length > 64 * 1024))
+            problems.Add("inputSchema must be one bounded JSON Schema object.");
         if (EffectComponentIds.Count > ProjectionLimits.MaxContentComponentIds ||
             EffectComponentIds.Any(string.IsNullOrWhiteSpace) ||
             EffectComponentIds.Distinct(StringComparer.Ordinal).Count() != EffectComponentIds.Count)
@@ -208,8 +275,7 @@ public sealed record MechanicRequirements
             {
                 var optionalTargetComponentIds = reference?.OptionalTargetComponentIds ?? [];
                 if (reference is null || string.IsNullOrWhiteSpace(reference.SourceComponentId) ||
-                    string.IsNullOrWhiteSpace(reference.Field) || reference.Field.Trim() != reference.Field ||
-                    reference.TargetComponentIds.Count == 0 ||
+                    !ComponentReferencePath.IsValid(reference.Field) ||
                     reference.TargetComponentIds.Count + optionalTargetComponentIds.Count >
                         ProjectionLimits.MaxContentComponentIds ||
                     reference.TargetComponentIds.Any(string.IsNullOrWhiteSpace) ||
@@ -252,12 +318,16 @@ public sealed record MechanicRequirements
             var relationshipKeys = new HashSet<string>(StringComparer.Ordinal);
             foreach (var related in relationshipComponents)
             {
+                var optionalTargetComponentIds = related?.OptionalTargetComponentIds ?? [];
                 if (related is null || string.IsNullOrWhiteSpace(related.Kind) || related.Kind.Trim() != related.Kind ||
                     related.Direction is not ("outgoing" or "incoming" or "either") ||
                     related.TargetComponentIds.Count == 0 ||
-                    related.TargetComponentIds.Count > ProjectionLimits.MaxContentComponentIds ||
+                    related.TargetComponentIds.Count + optionalTargetComponentIds.Count > ProjectionLimits.MaxContentComponentIds ||
                     related.TargetComponentIds.Any(string.IsNullOrWhiteSpace) ||
-                    related.TargetComponentIds.Distinct(StringComparer.Ordinal).Count() != related.TargetComponentIds.Count)
+                    optionalTargetComponentIds.Any(string.IsNullOrWhiteSpace) ||
+                    related.TargetComponentIds.Concat(optionalTargetComponentIds)
+                        .Distinct(StringComparer.Ordinal).Count() !=
+                        related.TargetComponentIds.Count + optionalTargetComponentIds.Count)
                 {
                     problems.Add($"Role '{role}' has an invalid relationship component declaration.");
                     continue;
@@ -310,6 +380,9 @@ public sealed record MechanicRequirements
             return false;
         }
     }
+
+    private static bool IsUpperSha256(string value) => value is { Length: 64 }
+        && value.All(character => char.IsAsciiDigit(character) || character is >= 'A' and <= 'F');
 }
 
 /// <summary>The one event mode a mechanic declares. It must match its subscription.</summary>
@@ -376,7 +449,8 @@ public sealed record ComponentReferenceRequirement(
 public sealed record RelationshipComponentRequirement(
     string Kind,
     string Direction,
-    IReadOnlyList<string> TargetComponentIds);
+    IReadOnlyList<string> TargetComponentIds,
+    IReadOnlyList<string>? OptionalTargetComponentIds = null);
 
 /// <summary>Generic containment-projection limits; they carry no game meaning.</summary>
 public static class ProjectionLimits
@@ -387,6 +461,7 @@ public static class ProjectionLimits
     public const int MaxContentComponentIds = 12;
     public const int MaxRelationshipComponentDeclarations = 12;
     public const int MaxRelatedNodes = 100;
+    public const int MaxReferencedEntities = 512;
 }
 
 /// <summary>
@@ -400,9 +475,30 @@ public sealed record ChildMechanicRequirement
 {
     public string MechanicId { get; init; } = string.Empty;
 
+    /// <summary>
+    /// Optional exact catalog pin. Application composition rejects a child whose active record no
+    /// longer has this version and fingerprint. The pair is optional only for compatibility with
+    /// legacy database-authored compositions; new catalog composites should always supply both.
+    /// </summary>
+    public int MechanicVersion { get; init; }
+
+    public string ContentFingerprint { get; init; } = string.Empty;
+
     public Dictionary<string, string> RoleBindings { get; init; } = [];
 
     public string ForEachContentsOf { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Invoke the child once for every object in this bounded parent-input array. Each array item
+    /// becomes the child's complete input object. Caller data never becomes an entity role.
+    /// </summary>
+    public string ForEachInputProperty { get; init; } = string.Empty;
+
+    /// <summary>Optional object property selected from each input-array item as the child input.</summary>
+    public string InputFromEachItemProperty { get; init; } = string.Empty;
+
+    /// <summary>Sibling result keys that must finish before this declaration begins.</summary>
+    public IReadOnlyList<string> After { get; init; } = [];
 
     /// <summary>
     /// Child input defaults to the parent's already-validated JSON object. A static object may
@@ -531,7 +627,10 @@ public sealed record ContainedProjection(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     IReadOnlyList<ContainedProjection>? Contains = null);
 
-public sealed record ReferencedEntityProjection(string Id, IReadOnlyDictionary<string, string> Components);
+public sealed record ReferencedEntityProjection(
+    string Id,
+    IReadOnlyDictionary<string, string> Components,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Name = null);
 
 /// <summary>
 /// One relationship touching an explicitly opted-in role. The raw object JSON is preserved so the

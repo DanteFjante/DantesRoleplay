@@ -7,6 +7,7 @@ internal static class ApplicationPreviewComponentRegistration
 {
     internal static IServiceCollection AddApplicationPreviewComponent(this IServiceCollection services)
     {
+        services.AddScoped<IApplicationAntiSprawlGate, ApplicationAntiSprawlGate>();
         services.AddScoped<IApplicationPreviewService, ApplicationPreviewService>();
         return services;
     }

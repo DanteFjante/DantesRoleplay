@@ -1,4 +1,4 @@
-﻿---
+---
 id: procedure.event.define
 category: event
 name: Define an event type
@@ -10,6 +10,8 @@ changeNote: "Re-seeded: the bootstrap file changed."
 
 ## Description
 Define or revise an event type before any event can use it.
+
+## Matches
 
 ## Instructions
 1. Read existing event types and reuse one when its payload contract fits.

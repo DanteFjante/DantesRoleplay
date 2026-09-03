@@ -1,4 +1,4 @@
-﻿---
+---
 id: procedure.game.core.world.itinerary
 category: game.core.world.travel
 name: Plan a mode-aware distant itinerary
@@ -13,6 +13,8 @@ Defines the trusted, read-only planner for a traveller's distant journey. It rea
 already-governed on-foot, ground-conveyance, aerial-conveyance, and fixed-portal records. It does
 not create a journey or move anyone; each returned leg must still be performed by its existing
 one-leg action owner.
+
+## Matches
 
 ## Instructions
 1. Plan with `worldId`, `travellerId`, and `destinationLocationId`.

@@ -74,7 +74,7 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
         var authorization = new DenyingAuthorizer();
 
         var result = await new CommitMcpTool().CommitAsync(
-            world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
+            log: new OperationLog(db),
             kind: "system.application.activate", payload: "not-json", dryRun: true,
             applicationActivations: activations, privateOperator: authorization);
 
@@ -94,7 +94,7 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
         var authorization = new DenyingAuthorizer();
 
         var result = await new CommitMcpTool().CommitAsync(
-            world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
+            log: new OperationLog(db),
             kind: "system.state-space.create", payload: "not-json", dryRun: true,
             stateSpaceAdministration: stateSpaces, privateOperator: authorization);
 
@@ -114,7 +114,7 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
         var authorization = new DenyingAuthorizer();
 
         var result = await new CommitMcpTool().CommitAsync(
-            world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
+            log: new OperationLog(db),
             kind: "system.state-space.upgrade", payload: "not-json", dryRun: true,
             stateSpaceAdministration: stateSpaces, privateOperator: authorization);
 
@@ -132,7 +132,7 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
         var authorization = new DenyingAuthorizer();
 
         var result = await new CommitMcpTool().CommitAsync(
-            world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
+            log: new OperationLog(db),
             kind: "system.state-space.adopt-legacy", payload: "not-json", dryRun: true,
             legacyStateAdoption: adoption, privateOperator: authorization);
 
@@ -149,7 +149,7 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
         var authorizer = new DenyingAuthorizer();
 
         var result = await new CommitMcpTool().CommitAsync(
-            world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
+            log: new OperationLog(db),
             kind: "system.application.register", payload: "not-json", dryRun: true,
             registryAdministration: null, privateOperator: authorizer);
 
@@ -168,7 +168,7 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
         await using var db = _fixture.CreateContext();
         var authorization = new DenyingAuthorizer();
         var result = await new CommitMcpTool().CommitAsync(
-            world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
+            log: new OperationLog(db),
             kind: "system.component-type.register", payload: "not-json", dryRun: true,
             privateOperator: authorization);
 
@@ -192,11 +192,11 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
         var unsafeSource = """{"requestToken":"8123456789abcdef0123456789abcdef","applicationId":"fixture-app","sourceId":"unsafe","allowedRootId":"workspace","relativePathOrGlob":"../outside/**/*.json","trust":"trusted","precedence":1,"logicalIdentity":"catalog","expectedFingerprint":null}""";
 
         var extraResult = await new CommitMcpTool().CommitAsync(
-            world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
+            log: new OperationLog(db),
             kind: "system.application.register", payload: extra, dryRun: true,
             registryAdministration: administration, privateOperator: authorization);
         var unsafeResult = await new CommitMcpTool().CommitAsync(
-            world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
+            log: new OperationLog(db),
             kind: "system.source.register", payload: unsafeSource, dryRun: true,
             registryAdministration: administration, privateOperator: authorization);
 
@@ -285,6 +285,9 @@ public sealed class SystemRegistryAuthorizationTests : IDisposable
 
         Assert.True(one.Ok); Assert.True(two.Ok);
         Assert.Equal(2, oneData.GetProperty("Counts").GetProperty("Winners").GetInt32());
+        Assert.Equal(0, oneData.GetProperty("Counts").GetProperty("AntiSprawlFindings").GetInt32());
+        Assert.Equal(0, oneData.GetProperty("Counts").GetProperty("BlockingAntiSprawlFindings").GetInt32());
+        Assert.Equal(JsonValueKind.Array, oneData.GetProperty("AntiSprawlFindings").ValueKind);
         Assert.Single(oneData.GetProperty("Winners").EnumerateArray());
         Assert.Equal(2, twoData.GetProperty("Winners").GetArrayLength());
         Assert.True(oneData.GetProperty("Truncated").GetBoolean());

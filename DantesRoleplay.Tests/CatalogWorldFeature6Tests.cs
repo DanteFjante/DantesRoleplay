@@ -94,7 +94,7 @@ public sealed class CatalogWorldFeature6Tests : IDisposable
         var mechanics = new MechanicStore(db);
         Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db), new SubscriptionStore(db)).ApplyAsync(_copy, new CatalogImportOptions())).Aborted);
 
-        var result = await new ActionRunner(db, mechanics, new ProjectionResolver(db), new JintMechanicEngine(),
+        var result = await new CatalogMechanicTestHarness(db, mechanics, new ProjectionResolver(db), new JintMechanicEngine(),
             new EffectApplier(db, world,
                 new GuardRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine(), new WorldStore(db)),
                 new EventLedger(db),
@@ -153,7 +153,7 @@ public sealed class CatalogWorldFeature6Tests : IDisposable
         Assert.Empty(await db.EventExecutions.AsNoTracking().ToListAsync());
         Assert.Empty(await new EventLedger(db).FindAsync(rootOperationId: result.OperationId));
     }
-    private static ActionRunner CreateRunner(DantesRoleplayDbContext db, WorldStore world, MechanicStore mechanics) =>
+    private static CatalogMechanicTestHarness CreateRunner(DantesRoleplayDbContext db, WorldStore world, MechanicStore mechanics) =>
         new(db, mechanics, new ProjectionResolver(db), new JintMechanicEngine(),
             new EffectApplier(db, world,
                 new GuardRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine(), new WorldStore(db)),
@@ -161,7 +161,7 @@ public sealed class CatalogWorldFeature6Tests : IDisposable
                 new EventRouter(db, new MechanicStore(db), new ProjectionResolver(db), new JintMechanicEngine(), new WorldStore(db))),
             new OperationLog(db), new MechanicComposer(mechanics, new ProjectionResolver(db), new JintMechanicEngine()));
 
-    private static Task<ActionRunResult> AdvanceAsync(ActionRunner runner) => runner.RunAsync(new ActionRequest
+    private static Task<ActionRunResult> AdvanceAsync(CatalogMechanicTestHarness runner) => runner.RunAsync(new ActionRequest
     {
         Intent = "advance faction agenda",
         RoleEntityIds = new Dictionary<string, string> { ["faction"] = "faction.feature-03.fixture" },

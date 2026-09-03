@@ -1,0 +1,16 @@
+var subject=ctx.roles&&ctx.roles.subject,input=ctx.input;
+var RECORD='dnd2024.character-creation-record',ORIGIN='dnd2024.character.origin-selections',CONTENT='dnd2024.character.content-definition';
+function object(value){return value!==null&&!Array.isArray(value)&&typeof value==='object';}
+function closed(value,keys){if(!object(value))return false;var actual=Object.keys(value).sort(),expected=keys.slice().sort();if(actual.length!==expected.length)return false;for(var i=0;i<expected.length;i++)if(actual[i]!==expected[i])return false;return true;}
+function parse(raw,label){try{var value=JSON.parse(raw);if(!object(value))throw 0;return value;}catch(error){throw new Error(label+' is malformed.');}}
+function definition(id,kind){var value=ctx.references&&ctx.references[id];if(!value||value.id!==id||typeof value.name!=='string'||!value.name.trim())throw new Error('The recorded '+kind+' definition is unavailable.');var state=parse(value.components&&value.components[CONTENT],kind+' definition');if(!closed(state,['kind','contentKey','contentVersion','status','sourceRef'])||state.kind!==kind||state.status!=='active'||!Number.isSafeInteger(state.contentVersion)||state.contentVersion<1||!closed(state.sourceRef,['sourceId','locator']))throw new Error('The recorded '+kind+' definition is invalid or inactive.');return value;}
+if(!subject||!closed(input,[]))throw new Error('Origin materialization requires one subject and empty input.');
+var record=parse(subject.components&&subject.components[RECORD],'Character creation record');
+if(record.status!=='basic-playable'||!object(record.selections))throw new Error('Origin materialization requires valid basic-playable creation evidence.');
+var speciesId=record.selections.speciesDefinitionId,backgroundId=record.selections.backgroundDefinitionId;
+if(typeof speciesId!=='string'||!speciesId.trim()||speciesId!==speciesId.trim()||typeof backgroundId!=='string'||!backgroundId.trim()||backgroundId!==backgroundId.trim())throw new Error('The creation record lacks exact origin references.');
+var species=definition(speciesId,'species'),background=definition(backgroundId,'background');
+var next={speciesRef:{entityId:speciesId},backgroundRef:{entityId:backgroundId}},raw=subject.components&&subject.components[ORIGIN],effects=[],status='materialized';
+if(raw){var prior=parse(raw,'Existing origin selections');if(!closed(prior,['speciesRef','backgroundRef'])||!closed(prior.speciesRef,['entityId'])||!closed(prior.backgroundRef,['entityId']))throw new Error('Existing origin selections are invalid.');if(prior.speciesRef.entityId!==speciesId||prior.backgroundRef.entityId!==backgroundId)throw new Error('Existing origin selections conflict with immutable creation evidence.');status='already-materialized';}
+else effects.push({type:'component.add',entityId:subject.id,definitionId:ORIGIN,data:JSON.stringify(next)});
+return {narration:status==='materialized'?subject.name+' origin selections are restored from immutable creation evidence.':subject.name+' origin selections already match immutable creation evidence.',effects:effects,events:[],notifications:[],data:{test:'character-origin-materialize',subjectId:subject.id,status:status,species:{id:species.id,name:species.name},background:{id:background.id,name:background.name},creationRecordPreserved:true}};

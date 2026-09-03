@@ -88,7 +88,7 @@ public sealed class CatalogValidationTests
     }
 
     [Fact]
-    public async Task Ratified_dnd2024_action_records_have_authored_navigation_metadata_and_lossless_paths()
+    public async Task Ratified_action_records_have_authored_navigation_metadata_and_lossless_paths()
     {
         var catalog = RepositoryCatalog();
         var contents = await CatalogReader.ReadAsync(catalog);
@@ -98,7 +98,7 @@ public sealed class CatalogValidationTests
             "game.core", "check", "change")).ToArray();
 
         Assert.Equal(25, procedures.Length);
-        Assert.Equal(14, mechanics.Length);
+        Assert.Equal(22, mechanics.Length);
         var records = procedures.Select(value => (value.Id, value.Category, value.Name, value.Description))
             .Concat(mechanics.Select(value => (value.Id, value.Category, value.Name, value.Description)))
             .ToArray();
@@ -118,18 +118,19 @@ public sealed class CatalogValidationTests
     }
 
     [Fact]
-    public async Task Ratified_dnd2024_mechanics_need_no_structural_compatibility_projections()
+    public async Task Ratified_mechanics_need_no_structural_compatibility_projections()
     {
         var catalog = RepositoryCatalog();
         var contents = await CatalogReader.ReadAsync(catalog);
         var mechanics = contents.Mechanics.Where(value => InCategory(value.Category,
             "game.core", "check", "change")).ToArray();
 
-        Assert.Equal(14, mechanics.Length);
+        Assert.Equal(22, mechanics.Length);
         var requirements = mechanics
             .Select(mechanic => (mechanic.Id, Parsed: MechanicRequirements.Parse(mechanic.Requirements)))
             .ToArray();
-        var supportedRequirementProperties = new HashSet<string>(["roles", "event", "children"], StringComparer.Ordinal);
+        var supportedRequirementProperties = new HashSet<string>(
+            ["roles", "event", "children", "effectComponentIds", "inputSchema"], StringComparer.Ordinal);
         foreach (var mechanic in mechanics)
         {
             using var document = JsonDocument.Parse(mechanic.Requirements);

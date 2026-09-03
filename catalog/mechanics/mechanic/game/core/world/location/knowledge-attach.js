@@ -1,0 +1,19 @@
+var w=ctx.roles.world,l=ctx.roles.location,k=ctx.roles.knowledge,ROOT='game.core.world.root',LOCATION='game.core.world.location',CLASS='game.core.world.knowledge.classification',FACT='game.core.world.fact',SECRET='game.core.world.secret',CLUE='game.core.world.clue',SCOPE='game.core.world.knowledge.in-world',ABOUT='game.core.world.knowledge.about';
+function exact(v,keys){if(v===null||Array.isArray(v)||typeof v!=='object')return false;var a=Object.keys(v).sort(),b=keys.slice().sort();return JSON.stringify(a)===JSON.stringify(b);}
+function parse(v,n){if(typeof v!=='string')throw new Error(n+' is corrupt.');try{return JSON.parse(v);}catch(e){throw new Error(n+' is corrupt.');}}
+function text(v,n){return typeof v==='string'&&v.trim()===v&&v.length>0&&Array.from(v).length<=n;}
+function contains(nodes,id){return (nodes||[]).some(function(x){return x.id===id||contains(x.contains,id);});}
+var pending=exact(ctx.input,['knowledgeId','locationId','locationName'])?ctx.input:null;
+if(!w||!k||!w.components||!k.components||!w.components[ROOT]||!k.components[CLASS]||!Array.isArray(k.relationships)||(pending&&l)||(!pending&&(!exact(ctx.input,[])||!l||!l.components||!l.components[LOCATION])))throw new Error('Knowledge attachment requires world and knowledge roles plus one existing or pending location.');
+if(pending&&pending.knowledgeId!==k.id)throw new Error('Pending knowledge identity does not match its projected role.');
+if(l&&!contains(w.contains,l.id))throw new Error('The location is not contained beneath the selected world.');
+var locationId=l?l.id:pending.locationId,locationName=l?l.name:pending.locationName;
+var types=[FACT,SECRET,CLUE].filter(function(id){return !!k.components[id];});if(types.length!==1)throw new Error('Knowledge must carry exactly one supported fact, secret, or clue component.');
+var c=parse(k.components[CLASS],'Knowledge classification');if(!exact(c,['sensitivity','subjectKind'])||['state','event','identity','relationship','location','capability','rule','quantity','intention','negative'].indexOf(c.subjectKind)<0||['open','discreet','confidential','secret'].indexOf(c.sensitivity)<0)throw new Error('Knowledge classification is invalid.');
+var state=parse(k.components[types[0]],'Knowledge state');if(!exact(state,['provenance','status','summary','visibility'])||!text(state.summary,1000)||!text(state.provenance,500))throw new Error('Knowledge state is invalid.');
+if(types[0]===FACT&&(state.status!=='active'||['public','party','gm'].indexOf(state.visibility)<0))throw new Error('The fact must be active with valid visibility.');
+if(types[0]===SECRET&&(state.status!=='active'||state.visibility!=='gm'))throw new Error('The secret must be active and GM-only.');
+if(types[0]===CLUE&&(['unrevealed','revealed'].indexOf(state.status)<0||['party','gm'].indexOf(state.visibility)<0))throw new Error('The clue state is invalid.');
+var scope=0,about=0;for(var x=0;x<k.relationships.length;x++){var e=k.relationships[x];if(!exact(e,['data','fromEntityId','kind','toEntityId'])||typeof e.data!=='string')throw new Error('Knowledge relationship evidence is corrupt.');if(e.kind===SCOPE){if(e.fromEntityId!==k.id||e.toEntityId!==w.id||!exact(parse(e.data,'Scope data'),[]))throw new Error('Knowledge scope is invalid.');scope++;}if(e.kind===ABOUT)about++;}
+if(scope!==1||about!==0)throw new Error('Knowledge must have one matching world scope and no existing about relationship.');
+return {narration:k.name+' is attached to '+locationName+'.',effects:[{type:'relationship.create',entityId:k.id,toEntityId:locationId,kind:ABOUT,data:'{}'}],events:[],notifications:[],data:{knowledgeId:k.id,locationId:locationId,worldId:w.id,knowledgeType:types[0]}};

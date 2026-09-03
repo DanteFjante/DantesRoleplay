@@ -73,7 +73,9 @@ public sealed class BootstrapRuleTests : IDisposable
             Assert.DoesNotContain("```", file.Requirements);
 
             var requirements = MechanicRequirements.Parse(file.Requirements);
-            Assert.NotEmpty(requirements.Roles);
+            Assert.True(requirements.Roles.Count > 0
+                || requirements.EffectComponentIds.Count > 0 && requirements.InputSchema is not null,
+                $"{file.Id} must declare projected reads, or authored input plus the component family created from it.");
         }
     }
 

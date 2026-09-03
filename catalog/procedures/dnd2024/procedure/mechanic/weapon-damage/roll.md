@@ -11,6 +11,8 @@ changeNote: "Imported from the catalog."
 ## Description
 Defines one effect-free D&D 2024 base weapon-damage resolver. A caller invokes it only after confirming a Feature 8 hit, then it reads canonical weapon facts and a selected ability, reports normal or critical damage, and never changes Hit Points.
 
+## Matches
+
 ## Instructions
 Source and scope
 

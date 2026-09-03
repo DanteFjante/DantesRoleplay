@@ -1,5 +1,4 @@
-﻿using DantesRoleplay.Actions;
-using DantesRoleplay.Mechanics;
+﻿using DantesRoleplay.Mechanics;
 using DantesRoleplay.World;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -32,7 +31,7 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
 
         var problems = new List<string>();
 
-        if (!ActionInput.TryValidateObject(input, out var inputProblem))
+        if (!MechanicInput.TryValidateObject(input, out var inputProblem))
         {
             problems.Add($"INVALID_INPUT: {inputProblem}");
         }
@@ -207,36 +206,30 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
             try
             {
                 using var document = JsonDocument.Parse(raw);
-                if (document.RootElement.ValueKind != JsonValueKind.Object ||
-                    !document.RootElement.TryGetProperty(reference.Field, out var value))
+                if (!ComponentReferencePath.TryRead(document.RootElement, reference.Field,
+                        out var targetIds, out var referenceProblem))
                 {
-                    problems.Add($"COMPONENT_REFERENCE_INVALID: Role '{role}' entity '{entityId}' component '{reference.SourceComponentId}' lacks reference field '{reference.Field}'.");
+                    problems.Add($"COMPONENT_REFERENCE_INVALID: Role '{role}' entity '{entityId}' component '{reference.SourceComponentId}' path '{reference.Field}' is invalid: {referenceProblem}");
                     return;
                 }
-
-                var targetId = value.ValueKind == JsonValueKind.String ? value.GetString() :
-                    value.ValueKind == JsonValueKind.Object && value.EnumerateObject().Count() == 1 &&
-                    value.TryGetProperty("entityId", out var referencedId) && referencedId.ValueKind == JsonValueKind.String
-                        ? referencedId.GetString() : null;
-                if (string.IsNullOrWhiteSpace(targetId))
+                foreach (var targetId in targetIds)
                 {
-                    problems.Add($"COMPONENT_REFERENCE_INVALID: Role '{role}' entity '{entityId}' component '{reference.SourceComponentId}' field '{reference.Field}' is not an entity reference.");
-                    return;
+                    if (!referenceTargets.TryGetValue(targetId, out var targetComponents))
+                    {
+                        targetComponents = new HashSet<string>(StringComparer.Ordinal);
+                        referenceTargets[targetId] = targetComponents;
+                    }
+                    if (!requiredReferenceTargets.TryGetValue(targetId, out var requiredComponents))
+                    {
+                        requiredComponents = new HashSet<string>(StringComparer.Ordinal);
+                        requiredReferenceTargets[targetId] = requiredComponents;
+                    }
+                    requiredComponents.UnionWith(reference.TargetComponentIds);
+                    targetComponents.UnionWith(reference.TargetComponentIds);
+                    targetComponents.UnionWith(reference.OptionalTargetComponentIds ?? []);
                 }
-                targetId = targetId.Trim();
-                if (!referenceTargets.TryGetValue(targetId, out var targetComponents))
-                {
-                    targetComponents = new HashSet<string>(StringComparer.Ordinal);
-                    referenceTargets[targetId] = targetComponents;
-                }
-                if (!requiredReferenceTargets.TryGetValue(targetId, out var requiredComponents))
-                {
-                    requiredComponents = new HashSet<string>(StringComparer.Ordinal);
-                    requiredReferenceTargets[targetId] = requiredComponents;
-                }
-                requiredComponents.UnionWith(reference.TargetComponentIds);
-                targetComponents.UnionWith(reference.TargetComponentIds);
-                targetComponents.UnionWith(reference.OptionalTargetComponentIds ?? []);
+                if (referenceTargets.Count > ProjectionLimits.MaxReferencedEntities)
+                    problems.Add($"COMPONENT_REFERENCE_LIMIT_EXCEEDED: Role '{role}' exceeds the referenced-entity limit.");
             }
             catch (JsonException)
             {
@@ -259,26 +252,27 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
             }
         }
 
-        var referenceComponentRows = referenceTargets.Count == 0
+        var referencedEntityRows = referenceTargets.Count == 0
             ? []
-            : await _db.Components
+            : await _db.Entities
                 .AsNoTracking()
-                .Where(component => referenceTargets.Keys.Contains(component.EntityId) &&
-                    component.Entity != null && component.Entity.DeletedAt == null)
-                .Select(component => new { component.EntityId, component.DefinitionId, component.Data })
+                .Where(entity => referenceTargets.Keys.Contains(entity.Id) && entity.DeletedAt == null)
+                .Select(entity => new
+                {
+                    entity.Id,
+                    entity.Name,
+                    Components = entity.Components.Select(component => new
+                        { component.DefinitionId, component.Data }).ToList()
+                })
                 .ToListAsync(cancellationToken);
-
-        referenceComponentRows = referenceComponentRows
-            .Where(component => referenceTargets[component.EntityId].Contains(component.DefinitionId))
-            .ToList();
-
-        var referenced = referenceComponentRows
-            .GroupBy(component => component.EntityId, StringComparer.Ordinal)
-            .ToDictionary(
-                group => group.Key,
-                group => new ReferencedEntityProjection(group.Key,
-                    group.ToDictionary(component => component.DefinitionId, component => component.Data, StringComparer.Ordinal)),
-                StringComparer.Ordinal);
+        var referenced = referencedEntityRows.ToDictionary(
+            entity => entity.Id,
+            entity => new ReferencedEntityProjection(entity.Id,
+                entity.Components
+                    .Where(component => referenceTargets[entity.Id].Contains(component.DefinitionId))
+                    .ToDictionary(component => component.DefinitionId, component => component.Data,
+                        StringComparer.Ordinal), entity.Name),
+            StringComparer.Ordinal);
 
         foreach (var (targetId, expectedComponents) in requiredReferenceTargets)
         {
@@ -326,6 +320,7 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
             if (!relatedTargets.TryGetValue(endpointId, out var componentIds))
                 relatedTargets[endpointId] = componentIds = new(StringComparer.Ordinal);
             componentIds.UnionWith(declaration.TargetComponentIds);
+            componentIds.UnionWith(declaration.OptionalTargetComponentIds ?? []);
         }
         var relatedEntities = relatedTargets.Count == 0
             ? []
@@ -419,8 +414,9 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
                 }
                 result.Add(new(endpointId, endpoint.Name, relationship.FromEntityId,
                     relationship.ToEntityId, relationship.Kind, relationship.Data,
-                    components.Where(value => declaration.TargetComponentIds.Contains(value.Key,
-                        StringComparer.Ordinal)).ToDictionary(StringComparer.Ordinal)));
+                    components.Where(value => declaration.TargetComponentIds
+                        .Concat(declaration.OptionalTargetComponentIds ?? [])
+                        .Contains(value.Key, StringComparer.Ordinal)).ToDictionary(StringComparer.Ordinal)));
             }
             if (result.Count > ProjectionLimits.MaxRelatedNodes)
             {

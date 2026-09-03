@@ -1,4 +1,4 @@
-﻿---
+---
 id: procedure.information.action
 category: information
 name: Use scoped information action contracts
@@ -11,6 +11,8 @@ changeNote: "Seeded from bootstrap file."
 ## Description
 List, define, and execute explicit action contracts in a generic information namespace. A contract
 links rule records to one host-enabled executor; it does not grant access or allow arbitrary code.
+
+## Matches
 
 ## Instructions
 1. Store rule text as information records in a concrete namespace such as `game.worldname.rules`.

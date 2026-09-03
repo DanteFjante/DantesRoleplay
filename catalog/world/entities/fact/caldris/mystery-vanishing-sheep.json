@@ -1,0 +1,12 @@
+{
+  "id": "fact.caldris.mystery-vanishing-sheep",
+  "name": "The Vanishing Sheep of Thistlewick",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Thistlewick's shepherds have lost eleven sheep this month -- no blood, no tracks, no wolves seen or heard. Each one vanished at night, always from the pastures nearest Sable Hollow. The villagers are more baffled than afraid, but they'd very much like it to stop.",
+      "provenance": "Local rumor, easily heard in Bramblebridge or Thistlewick",
+      "visibility": "party"
+    }
+  }
+}

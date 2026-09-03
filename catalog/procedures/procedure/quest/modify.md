@@ -1,4 +1,4 @@
-﻿---
+---
 id: procedure.quest.modify
 category: quest
 name: Progress a campaign-scoped quest
@@ -11,6 +11,8 @@ changeNote: "Re-seeded: the bootstrap file changed."
 ## Description
 Apply one validated quest or objective lifecycle transition atomically and return the updated
 quest state.
+
+## Matches
 
 ## Instructions
 1. Read the quest entity and use its actual root status as `expectedQuestStatus`.

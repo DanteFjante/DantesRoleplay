@@ -1,4 +1,4 @@
-﻿---
+---
 id: procedure.quest.create
 category: quest
 name: Create a campaign-scoped quest
@@ -11,6 +11,8 @@ changeNote: "Re-seeded: the bootstrap file changed."
 ## Description
 Create one draft campaign-scoped quest with three dormant objectives from validated campaign,
 arc, chapter, and world references.
+
+## Matches
 
 ## Instructions
 1. Use the closed Q1 request only for one active C3 campaign, its active linked arc, and one or

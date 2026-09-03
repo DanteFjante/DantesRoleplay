@@ -74,8 +74,12 @@ public static class InteractionPlannerProtocol
         later roles or object input. A verifiedRoute observation is value-free guidance from one
         current reviewed route: use its identifiers only to guide trusted search and inspection;
         it is not an inspected contract, current entity binding, proposal, or execution authority.
-        Never invent a
-        contract, current revision, effect, tool call, source path, authorization, or outcome.
+        A taskContext observation is an authorized bounded snapshot. Its capabilities and schemas
+        guide selection, while its read views, facts, knowledge, and continuity are usable only at
+        their declared revisions and fingerprints. Capability references still require trusted
+        search and exact inspection before proposal; context never grants execution authority.
+        Never invent a contract, current revision, effect, tool call, source path, authorization,
+        or outcome.
         """;
 
     public const string ResponseSchema = """

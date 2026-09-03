@@ -1,11 +1,11 @@
-﻿---
+---
 id: procedure.character.playtest-bootstrap
 category: character.playtest
 name: Create and revise a provisional playtest character record
-governs: dnd2024.playtest-character-record; the commit(kind: "effects") call used for provisional actor setup
+governs: dnd2024.playtest-character-record; the commit(kind: "system.world-state.sync") manifest used for provisional actor setup
 status: active
 createdBy: "seed"
-changeNote: "Seeded from bootstrap file."
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
@@ -14,10 +14,12 @@ governed character creation is incomplete. It records what a player portrays—s
 background, spell, feature, equipment item, species trait, or GM ruling—without claiming that the
 record grants or executes any of those things.
 
+## Matches
+
 ## Instructions
 1. Read the actor ID and the target campaign before changing either. The actor ID is permanent;
    verify that it is absent before creation.
-2. Use one `commit(kind: "effects", dryRun: true)` list to create the actor, its already-supported
+2. Use one `commit(kind: "system.world-state.sync", dryRun: true)` manifest to create the actor and its already-supported
    base components, and one add-only `dnd2024.playtest-character-record` in `draft` state. Read
    the dry run, then commit the identical list.
 3. Attach the pre-existing actor only through the C15 `attach-character-participation`

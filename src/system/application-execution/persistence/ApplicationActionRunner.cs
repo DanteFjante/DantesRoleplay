@@ -35,11 +35,8 @@ public sealed class ApplicationActionRunner(
         ArgumentNullException.ThrowIfNull(request.ApplicationId);
         ArgumentNullException.ThrowIfNull(request.ExecutionIdentity);
 
-        var replay = await ReplayAsync(request, cancellationToken);
-        if (replay is not null) return replay;
-
         if (!ValidId(request.StateSpaceId) || !ValidId(request.QualifiedMechanicId)
-            || !UpperSha256(request.ContentFingerprint)
+            || request.MechanicVersion < 1 || !UpperSha256(request.ContentFingerprint)
             || request.RoleEntityIds is null || request.RoleEntityIds.Count > 32
             || request.RoleEntityIds.Any(value => !ValidId(value.Key) || !ValidId(value.Value)))
             return Failed(request, ApplicationActionExecutionDisposition.Failed,
@@ -69,9 +66,13 @@ public sealed class ApplicationActionRunner(
                 "MECHANIC_UNKNOWN", "The exact application mechanic is unavailable.");
         }
         if (record.Summary.Kind != "mechanic" || record.Summary.Status != "active"
+            || record.Summary.Version != request.MechanicVersion
             || record.Summary.ContentFingerprint != request.ContentFingerprint)
             return Failed(request, ApplicationActionExecutionDisposition.Stale,
                 "MECHANIC_STALE", "The exact application mechanic changed or is inactive.");
+
+        var replay = await ReplayAsync(request, cancellationToken);
+        if (replay is not null) return replay;
 
         MechanicRequirements requirements;
         try
@@ -121,12 +122,13 @@ public sealed class ApplicationActionRunner(
             return Failed(request, ApplicationActionExecutionDisposition.Failed,
                 string.IsNullOrWhiteSpace(evaluation.Run.LimitHit) ? "MECHANIC_FAILED" : "MECHANIC_LIMIT",
                 SafeMechanicError(evaluation.Run.Error, evaluation.Run.LimitHit));
-        if (evaluation.Run.Output.Events.Count > 0 || evaluation.Run.Output.Notifications.Count > 0)
+        var proposal = evaluation.Proposal.Append(evaluation.Run.Output);
+        if (proposal.Events.Count > 0 || proposal.Notifications.Count > 0)
             return Failed(request, ApplicationActionExecutionDisposition.Unsupported,
                 "MECHANIC_OUTPUT_UNSUPPORTED", "Application event or notification output is not enabled for direct execution.");
 
         var translated = await TranslateAsync(
-            stateSpace, mapping.Mapping!, evaluation.Projection!, evaluation.Run.Output.Effects, cancellationToken);
+            stateSpace, mapping.Mapping!, evaluation.Projection!, proposal.Effects, cancellationToken);
         if (translated.Problems.Count > 0)
             return Failed(request, translated.Stale
                     ? ApplicationActionExecutionDisposition.Stale
@@ -152,7 +154,7 @@ public sealed class ApplicationActionRunner(
         }, cancellationToken: cancellationToken);
         if (applied.Replayed)
             return Result(request, ApplicationActionExecutionDisposition.Replayed, applied.OperationId,
-                "The exact application action was already committed.", 0, []);
+                "The exact application action was already committed.", 0, [], applied.Receipts);
         if (!applied.Applied || applied.Problems.Count > 0)
         {
             var problem = applied.Problems.FirstOrDefault();
@@ -162,10 +164,10 @@ public sealed class ApplicationActionRunner(
                     : ApplicationActionExecutionDisposition.Failed,
                 applied.OperationId, "", 0,
                 [new(problem?.Code ?? "APPLICATION_EFFECTS_REJECTED",
-                    "The application effect transaction was rejected.")]);
+                    "The application effect transaction was rejected.")], applied.Receipts);
         }
         return Result(request, ApplicationActionExecutionDisposition.Succeeded, applied.OperationId,
-            evaluation.Run.Output.Narration, applied.Receipts.Count, []);
+            evaluation.Run.Output.Narration, applied.Receipts.Count, [], applied.Receipts);
     }
 
     private async Task<ApplicationActionExecutionResult?> ReplayAsync(
@@ -356,9 +358,20 @@ public sealed class ApplicationActionRunner(
         string operationId,
         string narration,
         int applied,
-        IReadOnlyList<ApplicationActionExecutionProblem> problems) => new(
+        IReadOnlyList<ApplicationActionExecutionProblem> problems,
+        IReadOnlyList<ApplicationEcsEffectReceipt>? receipts = null) => new(
             disposition, operationId, request.QualifiedMechanicId, request.ContentFingerprint,
-            request.Seed, narration, applied, problems);
+            request.Seed, narration, applied, problems)
+        {
+            MechanicVersion = request.MechanicVersion,
+            EffectReceipts = receipts ?? [],
+            AffectedEntityIds = (receipts ?? [])
+                .SelectMany(value => string.IsNullOrWhiteSpace(value.TargetEntityId)
+                    ? new[] { value.EntityId }
+                    : new[] { value.EntityId, value.TargetEntityId })
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray()
+        };
 
     /// <summary>
     /// The message a refusing mechanic wrote for its caller. A mechanic's own `throw` is authored

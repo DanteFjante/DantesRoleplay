@@ -1,6 +1,5 @@
 ﻿using System.Text.Json;
 using System.Text.RegularExpressions;
-using DantesRoleplay.Effects;
 using DantesRoleplay.MCPServer.Mcp;
 
 namespace DantesRoleplay.Tests;
@@ -157,22 +156,43 @@ public sealed class GuardTests
     }
 
     /// <summary>
-    /// The direction that actually failed in practice, at the level it can fail now. orient once
-    /// advertised writing component definitions and world data when no such tool existed; a cold
-    /// model believed it and planned around a capability that was not there.
+    /// Orientation consumes these descriptors directly. Every active descriptor must therefore
+    /// identify one normal dispatcher route. Superseded compatibility routes are physically
+    /// absent rather than hidden behind a second dispatcher inventory.
     /// </summary>
     [Fact]
-    public void Orient_announces_exactly_the_registered_verbs()
+    public void Capability_descriptors_name_only_registered_callable_routes()
     {
-        using var announcement = JsonSerializer.SerializeToDocument(McpVerbCatalog.Announcement());
+        var activeQueries = McpVerbCatalog.Descriptors
+            .Where(value => value.Id.StartsWith("mcp.query.", StringComparison.Ordinal))
+            .Select(value => value.Id["mcp.query.".Length..]).Order(StringComparer.Ordinal);
+        var activeCommits = McpVerbCatalog.Descriptors
+            .Where(value => value.Id.StartsWith("mcp.commit.", StringComparison.Ordinal))
+            .Select(value => value.Id["mcp.commit.".Length..]).Order(StringComparer.Ordinal);
+        Assert.Equal(McpVerbCatalog.QueryKindNames.Order(StringComparer.Ordinal), activeQueries);
+        Assert.Equal(McpVerbCatalog.CommitKindNames.Order(StringComparer.Ordinal), activeCommits);
+    }
 
-        var announced = announcement.RootElement
-            .EnumerateObject()
-            .Select(p => p.Name.ToLowerInvariant())
-            .Order(StringComparer.Ordinal)
-            .ToArray();
+    [Fact]
+    public void Superseded_generic_write_routes_and_runner_sources_are_physically_absent()
+    {
+        foreach (var kind in new[] { "component", "effects", "mechanic", "action" })
+        {
+            Assert.DoesNotContain(kind, McpVerbCatalog.CommitKindNames);
+            Assert.DoesNotContain(McpVerbCatalog.Descriptors,
+                value => value.Id == $"mcp.commit.{kind}");
+        }
 
-        Assert.Equal(DeclaredToolNames().Order(StringComparer.Ordinal).ToArray(), announced);
+        var root = RepositoryRoot();
+        foreach (var path in new[]
+        {
+            Path.Combine("DantesRoleplay.MCPServer", "Handlers", "ActionHandler.cs"),
+            Path.Combine("DantesRoleplay.MCPServer", "Handlers", "MechanicActionInformationExecutor.cs"),
+            Path.Combine("src", "system", "actions", "domain", "IActionRunner.cs"),
+            Path.Combine("src", "system", "actions", "persistence", "ActionRunner.cs"),
+            Path.Combine("src", "system", "actions", "hosting", "ActionsComponentRegistration.cs")
+        })
+            Assert.False(File.Exists(Path.Combine(root, path)), $"Superseded source still exists: {path}");
     }
 
     /// <summary>
@@ -194,7 +214,7 @@ public sealed class GuardTests
         Assert.Equal(advertised, DispatchedKinds("QueryMcpTool.cs"));
     }
 
-    /// <summary>D9, the write side.</summary>
+    /// <summary>D9, the write side. Only current registered routes are callable.</summary>
     [Fact]
     public void Commit_dispatch_handles_exactly_the_advertised_kinds()
     {
@@ -240,9 +260,6 @@ public sealed class GuardTests
         var root = RepositoryRoot();
 
         var files = EnumerateSource(Path.Combine(root, "DantesRoleplay.MCPServer"))
-            // The action runner owns its own audit rows and its own error text, so it emits
-            // recovery calls without passing through the dispatchers.
-            .Append(Path.Combine(root, "src", "system", "actions", "persistence", "ActionRunner.cs"))
             .Where(File.Exists);
 
         var offences = new List<string>();
@@ -412,20 +429,6 @@ public sealed class GuardTests
     }
 
     /// <summary>
-    /// The effect vocabulary is the one part of the surface that lives in the kernel. It reached
-    /// clients through the old `apply_effects` description and briefly reached nobody at all after
-    /// that class stopped being registered — five of the nine verbs were then discoverable only by
-    /// sending a wrong one and reading the rejection.
-    /// </summary>
-    [Fact]
-    public void Every_effect_type_is_documented_in_the_catalog()
-    {
-        Assert.Equal(
-            EffectType.All.Order(StringComparer.Ordinal).ToArray(),
-            McpVerbCatalog.EffectVocabulary.Keys.Order(StringComparer.Ordinal).ToArray());
-    }
-
-    /// <summary>
     /// Every commit example has to be a payload that would actually parse. An example that only
     /// looks like JSON is worse than none: it is quoted verbatim into the next call.
     /// </summary>
@@ -434,10 +437,11 @@ public sealed class GuardTests
     {
         foreach (var kind in McpVerbCatalog.CommitKinds)
         {
-            var document = JsonDocument.Parse(kind.Example);
+            var document = JsonDocument.Parse(kind.Descriptor.Examples[0].InputJson);
+            var payload = document.RootElement.GetProperty("payload");
 
             Assert.True(
-                document.RootElement.ValueKind == JsonValueKind.Object,
+                payload.ValueKind == JsonValueKind.Object,
                 $"The example payload for commit kind '{kind.Name}' is not a JSON object.");
         }
     }

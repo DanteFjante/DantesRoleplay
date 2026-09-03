@@ -1,4 +1,4 @@
-﻿---
+---
 id: procedure.play.storytelling
 category: play
 name: Tell a grounded interactive fantasy story
@@ -12,6 +12,8 @@ changeNote: "Seeded from bootstrap file."
 Turn verified campaign and world state into vivid, player-directed fantasy narration. The world
 store is canon; this procedure governs how a trusted host reads and presents it, not how state is
 created, changed, authorized, or retained.
+
+## Matches
 
 ## Instructions
 1. At a fresh start, read this procedure, then retrieve the active campaign through

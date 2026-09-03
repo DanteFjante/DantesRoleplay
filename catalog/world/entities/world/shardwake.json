@@ -1,0 +1,16 @@
+{
+  "id": "world.shardwake",
+  "name": "The Shardwake Isles",
+  "components": {
+    "game.core.world.clock": {
+      "calendarId": "shardwake-reckoning",
+      "currentMinute": 525645,
+      "revision": 1
+    },
+    "game.core.world.root": {
+      "status": "active",
+      "summary": "A storm-fractured fantasy archipelago where old skyglass ruins wake beneath rising tides, rival island powers contest safe passage, and every voyage can change what the world knows.",
+      "visibility": "public"
+    }
+  }
+}

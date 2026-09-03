@@ -11,6 +11,8 @@ changeNote: "Seeded from bootstrap file."
 ## Description
 What bounds a reactive chain, what happens when a bound is reached, and how to read the result.
 
+## Matches
+
 ## Instructions
 1. Expect four bounds on one committed change: depth 8, one hundred events, one hundred guard and
    reaction executions, and each subscription's own `maxExecutionsPerChain` of 1 to 8.

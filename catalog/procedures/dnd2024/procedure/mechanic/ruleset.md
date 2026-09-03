@@ -11,6 +11,8 @@ changeNote: "Adds a core subcategory under ruleset.dnd2024 so core rules can lat
 ## Description
 Governs the incremental creation and revision of SRD v5.2.1-compatible D&D ruleset components, including useful source-cited explanations for players and hosts.
 
+## Matches
+
 ## Instructions
 1. Define one small game component with a permanent id and one responsibility.
 2. Choose one primary category path from the D&D taxonomy under ruleset.dnd2024.core: governance, play, host, data.<component>, gameplay.<area>.<rule>, combat.<area>.<rule>, magic.<area>.<rule>, advancement.<area>.<rule>, or content.<area>.<rule>. Use lowercase, hyphen-delimited words within dot-delimited segments. Category paths describe purpose; the separate scope identifies the SRD ruleset version.

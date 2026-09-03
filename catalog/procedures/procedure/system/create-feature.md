@@ -13,6 +13,8 @@ How to add one capability safely without making repository development imitate a
 session. Repository files are authoritative while developing; SQLite remains authoritative for a
 running game's state and for content authored by an agent that has no filesystem.
 
+## Matches
+
 ## Instructions
 1. Define one target capability, its boundary and explicit non-goals. If it can be expressed as
    data, a contract or JavaScript, it does not go in C#.

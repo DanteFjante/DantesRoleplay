@@ -109,6 +109,9 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
     public DbSet<InteractionRecipe> InteractionRecipes => Set<InteractionRecipe>();
     public DbSet<InteractionRecipeRevision> InteractionRecipeRevisions => Set<InteractionRecipeRevision>();
     public DbSet<InteractionRecipeEvidence> InteractionRecipeEvidence => Set<InteractionRecipeEvidence>();
+    public DbSet<InteractionMechanicOpportunity> InteractionMechanicOpportunities => Set<InteractionMechanicOpportunity>();
+    public DbSet<InteractionMechanicSandboxDraft> InteractionMechanicSandboxDrafts => Set<InteractionMechanicSandboxDraft>();
+    public DbSet<InteractionMechanicSandboxDraftRevision> InteractionMechanicSandboxDraftRevisions => Set<InteractionMechanicSandboxDraftRevision>();
     public DbSet<TriggerObservationStructureRecord> TriggerObservationStructures => Set<TriggerObservationStructureRecord>();
     public DbSet<TriggerObservationStructureCurrentRecord> TriggerObservationStructureCurrent => Set<TriggerObservationStructureCurrentRecord>();
     public DbSet<TriggerObservationSourceRecord> TriggerObservationSources => Set<TriggerObservationSourceRecord>();
@@ -1664,6 +1667,8 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
                 table.HasCheckConstraint("CK_interaction_recipe_evidence_kind", "\"Kind\" IN ('derived', 'use-success', 'use-failure')");
                 table.HasCheckConstraint("CK_interaction_recipe_evidence_hash", string.Format(hash, "IntentFingerprint"));
                 table.HasCheckConstraint("CK_interaction_recipe_evidence_bounds", "length(\"RecipeId\") BETWEEN 41 AND 102 AND length(\"ExecutionReceiptId\") = 52 AND length(\"ResolutionReceiptId\") = 52 AND length(\"IntentText\") <= 500 AND length(\"RoleProfile\") BETWEEN 1 AND 300");
+                table.HasCheckConstraint("CK_interaction_recipe_evidence_replay_performance",
+                    "\"ReplayBaselineAiCalls\" BETWEEN 0 AND 16 AND \"ReplayActualAiCalls\" BETWEEN 0 AND 1 AND \"ReplaySavedAiCalls\" >= 0 AND \"ReplayElapsedMilliseconds\" >= 0 AND \"ReplayChoiceResolutionMilliseconds\" >= 0 AND \"ReplayProposalMilliseconds\" >= 0 AND \"ReplayExecutionMilliseconds\" >= 0 AND \"ReplayPromptTokens\" >= 0 AND \"ReplayOutputTokens\" >= 0");
             });
             entity.HasKey(row => new { row.RecipeId, row.ExecutionReceiptId, row.Kind });
             entity.Property(row => row.RecipeId).HasMaxLength(102);
@@ -1676,6 +1681,96 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.HasOne(row => row.Recipe).WithMany(row => row.Evidence).HasForeignKey(row => row.RecipeId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<InteractionExecutionReceipt>().WithMany().HasForeignKey(row => row.ExecutionReceiptId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<InteractionResolutionReceipt>().WithMany().HasForeignKey(row => row.ResolutionReceiptId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<InteractionMechanicOpportunity>(entity =>
+        {
+            entity.ToTable("interaction_mechanic_opportunity", table =>
+            {
+                table.HasCheckConstraint("CK_interaction_mechanic_opportunity_recipe",
+                    "length(\"RecipeId\") BETWEEN 41 AND 102 AND \"RecipeVersion\" > 0");
+                table.HasCheckConstraint("CK_interaction_mechanic_opportunity_application",
+                    "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system'");
+                table.HasCheckConstraint("CK_interaction_mechanic_opportunity_hashes",
+                    string.Join(" AND ", string.Format(hash, "RecipeTemplateFingerprint"),
+                        string.Format(hash, "ProposalFingerprint")));
+                table.HasCheckConstraint("CK_interaction_mechanic_opportunity_proposal",
+                    "length(\"ProposalJson\") BETWEEN 2 AND 131072 AND json_valid(\"ProposalJson\") AND json_type(\"ProposalJson\") = 'object'");
+            });
+            entity.HasKey(row => row.RecipeId);
+            entity.Property(row => row.RecipeId).HasMaxLength(102);
+            entity.Property(row => row.RecipeTemplateFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(row => row.ApplicationId).HasMaxLength(63).IsRequired();
+            entity.Property(row => row.ProposalFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(row => row.ProposalJson).HasMaxLength(131072).IsRequired();
+            entity.HasIndex(row => new { row.ApplicationId, row.CreatedAtUtc, row.RecipeId });
+            entity.HasIndex(row => row.ProposalFingerprint).IsUnique();
+            entity.HasOne(row => row.Recipe).WithOne(row => row.MechanicOpportunity)
+                .HasForeignKey<InteractionMechanicOpportunity>(row => row.RecipeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<InteractionMechanicSandboxDraft>(entity =>
+        {
+            entity.ToTable("interaction_mechanic_sandbox_draft", table =>
+            {
+                table.HasCheckConstraint("CK_interaction_mechanic_sandbox_draft_id",
+                    "length(\"Id\") = 55 AND \"Id\" GLOB 'mechanic-sandbox-draft.[0-9a-f]*'");
+                table.HasCheckConstraint("CK_interaction_mechanic_sandbox_draft_status",
+                    "\"Status\" IN ('draft', 'validated', 'approved-for-export', 'expired')");
+                table.HasCheckConstraint("CK_interaction_mechanic_sandbox_draft_revision",
+                    $"\"CurrentRevision\" BETWEEN 1 AND {InteractionMechanicSandboxProtocol.MaximumRevisionsPerDraft}");
+                table.HasCheckConstraint("CK_interaction_mechanic_sandbox_draft_quota_slot",
+                    $"\"QuotaSlot\" BETWEEN 1 AND {InteractionMechanicSandboxProtocol.MaximumActiveDraftsPerApplication}");
+                table.HasCheckConstraint("CK_interaction_mechanic_sandbox_draft_hashes",
+                    $"{string.Format(hash, "OpportunityProposalFingerprint")} AND (\"PromotionRequestFingerprint\" = '' OR {string.Format(hash, "PromotionRequestFingerprint")})");
+                table.HasCheckConstraint("CK_interaction_mechanic_sandbox_draft_bounds",
+                    "length(\"ApplicationId\") BETWEEN 1 AND 63 AND length(\"StateSpaceId\") BETWEEN 1 AND 200 AND length(\"ReviewPrincipalReference\") = 74 AND length(\"ReviewAuthorizationEvidence\") BETWEEN 1 AND 200 AND length(\"PromotionPrincipalReference\") <= 74 AND length(\"PromotionAuthorizationEvidence\") <= 200 AND length(\"PromotionIdempotencyKey\") <= 128 AND length(\"PromotionOperationId\") <= 200");
+            });
+            entity.HasKey(row => row.Id);
+            entity.Property(row => row.Id).HasMaxLength(55);
+            entity.Property(row => row.ApplicationId).HasMaxLength(63).IsRequired();
+            entity.Property(row => row.StateSpaceId).HasMaxLength(200).IsRequired();
+            entity.Property(row => row.OpportunityProposalFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(row => row.Status).HasMaxLength(30).IsRequired();
+            entity.Property(row => row.ReviewPrincipalReference).HasMaxLength(74).IsRequired();
+            entity.Property(row => row.ReviewAuthorizationEvidence).HasMaxLength(200).IsRequired();
+            entity.Property(row => row.PromotionPrincipalReference).HasMaxLength(74).IsRequired();
+            entity.Property(row => row.PromotionAuthorizationEvidence).HasMaxLength(200).IsRequired();
+            entity.Property(row => row.PromotionIdempotencyKey).HasMaxLength(128).IsRequired();
+            entity.Property(row => row.PromotionRequestFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(row => row.PromotionOperationId).HasMaxLength(200).IsRequired();
+            entity.HasIndex(row => new { row.ApplicationId, row.Status, row.ExpiresAtUtc });
+            entity.HasIndex(row => new { row.ApplicationId, row.QuotaSlot }).IsUnique()
+                .HasFilter("\"Status\" IN ('draft', 'validated')");
+        });
+
+        modelBuilder.Entity<InteractionMechanicSandboxDraftRevision>(entity =>
+        {
+            entity.ToTable("interaction_mechanic_sandbox_draft_revision", table =>
+            {
+                table.HasCheckConstraint("CK_interaction_mechanic_sandbox_revision_number",
+                    $"\"Revision\" BETWEEN 1 AND {InteractionMechanicSandboxProtocol.MaximumRevisionsPerDraft}");
+                table.HasCheckConstraint("CK_interaction_mechanic_sandbox_revision_hashes",
+                    string.Join(" AND ", string.Format(hash, "CandidateFingerprint"),
+                        string.Format(hash, "RequestFingerprint")));
+                table.HasCheckConstraint("CK_interaction_mechanic_sandbox_revision_json",
+                    "length(\"CandidateJson\") BETWEEN 2 AND 262144 AND json_valid(\"CandidateJson\") AND json_type(\"CandidateJson\") = 'object' AND length(\"ValidationJson\") BETWEEN 2 AND 262144 AND json_valid(\"ValidationJson\") AND json_type(\"ValidationJson\") = 'object'");
+                table.HasCheckConstraint("CK_interaction_mechanic_sandbox_revision_bounds",
+                    "length(\"ApplicationId\") BETWEEN 1 AND 63 AND length(\"IdempotencyKey\") BETWEEN 1 AND 128 AND length(\"OperationId\") BETWEEN 1 AND 200");
+            });
+            entity.HasKey(row => new { row.DraftId, row.Revision });
+            entity.Property(row => row.DraftId).HasMaxLength(55);
+            entity.Property(row => row.ApplicationId).HasMaxLength(63).IsRequired();
+            entity.Property(row => row.CandidateFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(row => row.CandidateJson).HasMaxLength(262144).IsRequired();
+            entity.Property(row => row.ValidationJson).HasMaxLength(262144).IsRequired();
+            entity.Property(row => row.IdempotencyKey).HasMaxLength(128).IsRequired();
+            entity.Property(row => row.RequestFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(row => row.OperationId).HasMaxLength(200).IsRequired();
+            entity.HasIndex(row => new { row.ApplicationId, row.IdempotencyKey }).IsUnique();
+            entity.HasOne(row => row.Draft).WithMany(row => row.Revisions).HasForeignKey(row => row.DraftId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 

@@ -1,7 +1,7 @@
 {
   "id": "dnd2024.character",
   "owner": "dnd2024",
-  "description": "Reviewed D&D 2024 character runtime contracts, including creation, advancement, identity, and feature entitlements.",
+  "description": "Reviewed D\u0026D 2024 character runtime contracts, including creation, advancement, identity, and feature entitlements.",
   "allowedKinds": [
     "component-definition",
     "component-type"
@@ -9,5 +9,5 @@
   "aliases": [],
   "enabled": true,
   "reviewStatus": "reviewed",
-  "reviewNote": "Registered for canonical character contracts during D&D 2024 Slice 1 identity convergence."
+  "reviewNote": "Registered for canonical character contracts during D\u0026D 2024 Slice 1 identity convergence."
 }

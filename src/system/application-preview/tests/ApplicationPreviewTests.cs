@@ -1,7 +1,10 @@
 using DantesRoleplay.ApplicationPreview;
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
+using DantesRoleplay.DataAccess.Bootstrap;
+using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.LocalAI;
+using DantesRoleplay.Mechanics;
 using DantesRoleplay.Sources;
 using DantesRoleplay.Tests;
 using Microsoft.EntityFrameworkCore;
@@ -148,6 +151,78 @@ public sealed class ApplicationPreviewTests : IDisposable
         Assert.NotEqual(first.PreviewFingerprint, changed.PreviewFingerprint);
     }
 
+    [Fact]
+    public async Task Deterministic_mechanic_conflict_blocks_activation_until_an_exact_trusted_review_exists()
+    {
+        var catalog = Path.Combine(_root, "catalog");
+        var mechanics = Path.Combine(catalog, "mechanics");
+        var reviewDirectory = Path.Combine(catalog, "governance", "anti-sprawl", "reviews");
+        Directory.CreateDirectory(mechanics);
+        Directory.CreateDirectory(reviewDirectory);
+        var left = new MechanicFile("fixture-app.mechanic.location.create", "game.core.world.location",
+            "Create location", "Creates one location shell.", "register a location", "{}",
+            "return { narration: 'created', effects: [] };", "", MechanicStatus.Active);
+        var right = new MechanicFile("fixture-app.mechanic.location.register", "game.core.world.location",
+            "Register location", "Registers an existing location.", "register a location", "{}",
+            "return { narration: 'registered', effects: [] };", "", MechanicStatus.Active);
+        await WriteMechanicAsync(mechanics, "left", left);
+        await WriteMechanicAsync(mechanics, "right", right);
+
+        await using var db = _fixture.CreateContext();
+        var applications = new SqliteApplicationRegistry(db);
+        var sources = new SqliteSourceRegistry(db);
+        var app = ApplicationIdentifier.Parse("fixture-app");
+        applications.Register(new(app, "Fixture", "Neutral anti-sprawl fixture.", []));
+        sources.Register(new(app, "catalog", "workspace", "catalog/**/*.*",
+            SourceTrust.Trusted, 10, "catalog"));
+        var roots = new Roots(_root);
+        var service = new ApplicationPreviewService(applications, sources,
+            new InMemoryApplicationExtensionRegistry(sources),
+            new RegisteredSourceScanner(sources, roots, new LocalDocumentScanner()),
+            new SourceOverlayResolver(), new ApplicationAntiSprawlGate(roots));
+
+        var blocked = await service.PreviewAsync(app);
+        Assert.False(blocked.IsValid);
+        Assert.Contains(blocked.Problems, value => value.Code == "ANTI_SPRAWL_CONFLICT");
+        var conflict = Assert.Single(blocked.AntiSprawlFindings, value => value.Blocking);
+        Assert.Equal("unreviewed", conflict.ReviewState);
+
+        var review = JsonSerializer.Serialize(new
+        {
+            schemaVersion = 1,
+            left = new { qualifiedId = left.Id, contentFingerprint = left.ContentHash },
+            right = new { qualifiedId = right.Id, contentFingerprint = right.ContentHash },
+            disposition = CatalogAntiSprawlDispositions.DistinctResponsibility,
+            rationale = "One mechanic creates the shell; the other registers an existing shell."
+        });
+        await File.WriteAllTextAsync(Path.Combine(reviewDirectory, "location-responsibilities.json"), review);
+        var reviewed = await service.PreviewAsync(app);
+        Assert.True(reviewed.IsValid, string.Join("; ", reviewed.Problems.Select(value => value.Message)));
+        Assert.Equal("reviewed", Assert.Single(reviewed.AntiSprawlFindings).ReviewState);
+
+        right = right with { Source = "return { narration: 'revised', effects: [] };" };
+        await WriteMechanicAsync(mechanics, "right", right);
+        var expired = await service.PreviewAsync(app);
+        Assert.False(expired.IsValid);
+        Assert.Equal("stale", Assert.Single(expired.AntiSprawlFindings, value => value.Blocking).ReviewState);
+    }
+
+    [Fact]
+    public async Task Duplicate_selected_extension_namespace_blocks_preview_without_requiring_a_mechanic_pair()
+    {
+        var app = ApplicationIdentifier.Parse("fixture-app");
+        var extension = new Func<string, ApplicationExtensionRegistration>(id => new(
+            app, id, id, "Namespace ownership fixture.", ApplicationExtensionClassifications.Homebrew,
+            [id], ["fixture-app.mechanic.shared"], [], [], [], true));
+        var extensions = new CompiledApplicationExtensionSet(app, new string('A', 64),
+            [extension("alpha"), extension("beta")], ["alpha", "beta", ApplicationExtensionIdentity.Base]);
+
+        var result = await new ApplicationAntiSprawlGate(new Roots(_root))
+            .EvaluateAsync(app, [], [], extensions);
+
+        Assert.Contains(result.Problems, value => value.Code == "ANTI_SPRAWL_NAMESPACE_CONFLICT");
+    }
+
     public void Dispose()
     {
         _fixture.Dispose();
@@ -159,6 +234,12 @@ public sealed class ApplicationPreviewTests : IDisposable
         sources,
         new RegisteredSourceScanner(sources, new Roots(_root), new LocalDocumentScanner()),
         new SourceOverlayResolver());
+
+    private static async Task WriteMechanicAsync(string directory, string name, MechanicFile mechanic)
+    {
+        await File.WriteAllTextAsync(Path.Combine(directory, name + ".md"), mechanic.ToMarkdown());
+        await File.WriteAllTextAsync(Path.Combine(directory, name + ".js"), mechanic.Source + Environment.NewLine);
+    }
 
     private sealed class Roots(string root) : IAllowedSourceRootResolver
     {

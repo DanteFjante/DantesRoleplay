@@ -1,5 +1,4 @@
-﻿using DantesRoleplay.Actions;
-using DantesRoleplay.DataAccess.Bootstrap;
+﻿using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.DataAccess.Composition;
 using DantesRoleplay.Effects;
 using DantesRoleplay.Mechanics;
@@ -94,7 +93,6 @@ public static class DataAccessServiceCollectionExtensions
             .AddMechanicsComponent()
             .AddEventsAndNotificationsComponent()
             .AddEffectsAndTransactionsComponent()
-            .AddActionsComponent()
             .AddSnapshotsComponent()
             .AddFeedbackComponent()
             .AddInformationComponent()

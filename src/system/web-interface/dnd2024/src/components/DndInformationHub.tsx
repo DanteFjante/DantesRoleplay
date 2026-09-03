@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 import { resolveCampaignWorldTarget } from "../data/campaign-navigation";
+import { preserveLastGoodPartyData } from "../data/section-state";
+import { ViewReadError } from "../data/view-read-client";
 import type {
   CampaignSectionId,
   HubContextSelection,
@@ -29,18 +31,36 @@ import {
   resolveSelectedMapFeature,
 } from "../state.js";
 import { MainNavigation } from "./MainNavigation";
-import { InstalledContentView } from "./InstalledContentView";
 import type { InstalledContentModel } from "../server/effective-content";
-import { CampaignView } from "./CampaignView";
-import { CurrentViewPreview } from "./PreviewViews";
-import { PartyView } from "./PartyView";
-import { PlayConversationPanel } from "./PlayConversationPanel";
-import { RulesView } from "./RulesView";
 import { TopBar } from "./TopBar";
 import { WorldView } from "./WorldView";
+import { markActiveViewReady } from "../observability/performance.js";
+import { ViewErrorBoundary } from "./ViewErrorBoundary";
 
 const PERSPECTIVE_KEY = "dnd2024-table-mode";
 const CAMPAIGN_KEY = "dnd2024-table-campaign";
+const CampaignView = lazy(() => import("./CampaignView")
+  .then((module) => ({ default: module.CampaignView })));
+const InstalledContentView = lazy(() => import("./InstalledContentView")
+  .then((module) => ({ default: module.InstalledContentView })));
+const PartyView = lazy(() => import("./PartyView")
+  .then((module) => ({ default: module.PartyView })));
+const PlayConversationPanel = lazy(() => import("./PlayConversationPanel")
+  .then((module) => ({ default: module.PlayConversationPanel })));
+const CurrentViewPreview = lazy(() => import("./PreviewViews")
+  .then((module) => ({ default: module.CurrentViewPreview })));
+const RulesView = lazy(() => import("./RulesView")
+  .then((module) => ({ default: module.RulesView })));
+
+function ViewLoading({ label }: { label: string }) {
+  return (
+    <section aria-busy="true" className="view-loading" role="status">
+      <span className="eyebrow">{label}</span>
+      <h1 id="main-view-heading" tabIndex={-1}>Opening {label.toLocaleLowerCase()}</h1>
+      <p>The current authorized view is loading.</p>
+    </section>
+  );
+}
 
 function loadRequestedPerspective(): Perspective | null {
   try {
@@ -113,6 +133,7 @@ export function DndInformationHub({
   const [announcement, setAnnouncement] = useState("World view ready");
   const [hubBusy, setHubBusy] = useState(false);
   const [hubError, setHubError] = useState("");
+  const hubRequestSequence = useRef(0);
 
   const perspective = envelope.audience.perspective;
   const contextSelection: HubContextSelection = envelope.contextSelection ?? {
@@ -140,7 +161,7 @@ export function DndInformationHub({
   const currentSituation = envelope.currentSituation ?? (currentSceneLocation
     ? { status: "ready" as const, kind: "exploration" as const, locationId: currentSceneLocation.id }
     : { status: "unavailable" as const, message: "No authoritative current scene is available." });
-  const currentSceneImage = currentSituation.status === "ready" && currentSituation.scene
+  const currentSceneImage = currentSituation.status === "ready" && currentSituation.kind !== "recorded" && currentSituation.scene
     ? currentSituation.scene
     : currentSceneLocation?.media?.scene ?? currentSceneLocation?.media?.setting ?? null;
   const selectedLocation = resolveSelectedLocation(
@@ -157,11 +178,11 @@ export function DndInformationHub({
   ) {
     const requested = normalizePerspective(nextPerspective) as Perspective;
     if (
-      hubBusy ||
       (!force && requested === perspective && nextCampaignId === contextSelection.selectedCampaignId) ||
       !envelope.audience.allowedPerspectives.includes(requested)
     ) return;
 
+    const requestId = ++hubRequestSequence.current;
     setHubBusy(true);
     setHubError("");
     try {
@@ -182,13 +203,18 @@ export function DndInformationHub({
           throw new Error("The perspective response was unavailable.");
         }
       }
+      if (requestId !== hubRequestSequence.current) return;
       if (!isReadyHubEnvelope(nextEnvelope)) {
         throw new Error("The perspective response was unavailable.");
       }
 
-      const readyEnvelope = nextEnvelope as ReadyHubEnvelope;
-      const campaignChanged = readyEnvelope.contextSelection?.selectedCampaignId !==
+      const loadedEnvelope = nextEnvelope as ReadyHubEnvelope;
+      const campaignChanged = loadedEnvelope.contextSelection?.selectedCampaignId !==
         contextSelection.selectedCampaignId;
+      const perspectiveChanged = loadedEnvelope.audience.perspective !== perspective;
+      const readyEnvelope = campaignChanged || perspectiveChanged
+        ? loadedEnvelope
+        : preserveLastGoodPartyData(envelope, loadedEnvelope);
       setEnvelope(readyEnvelope);
       setLocationSection(
         normalizeLocationSection(
@@ -228,11 +254,13 @@ export function DndInformationHub({
           ? `${readyEnvelope.campaign.title} opened in ${readyEnvelope.world.name}`
           : `${readyEnvelope.audience.perspective === "dm" ? "DM" : "Player"} perspective active`);
       }
-    } catch {
+    } catch (error) {
+      if (requestId !== hubRequestSequence.current ||
+          (error instanceof ViewReadError && error.category === "cancelled")) return;
       setHubError("The view could not be changed. Your current information is still available.");
       setAnnouncement("World or campaign change unavailable");
     } finally {
-      setHubBusy(false);
+      if (requestId === hubRequestSequence.current) setHubBusy(false);
     }
   }
 
@@ -264,6 +292,10 @@ export function DndInformationHub({
     // The first preference request is intentionally evaluated once by the server.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    markActiveViewReady(activeTab);
+  }, [activeTab]);
 
   function focusViewHeading() {
     window.requestAnimationFrame(() => document.querySelector<HTMLElement>("#main-view-heading")?.focus());
@@ -341,7 +373,11 @@ export function DndInformationHub({
           />
         );
       case "party":
-        return <PartyView party={envelope.party} />;
+        return <PartyView
+          loading={hubBusy}
+          onRetry={() => void requestHub(perspective, contextSelection.selectedCampaignId, false, true)}
+          party={envelope.party}
+        />;
       case "current":
         return (
           <div className="current-play-workspace">
@@ -458,7 +494,11 @@ export function DndInformationHub({
           onSelect={selectTab}
         />
         <main className="information-content" id="information-content">
-          {renderActiveView()}
+          <ViewErrorBoundary key={activeTab} viewLabel={activeTab === "current" ? "Current view" : activeTab}>
+            <Suspense fallback={<ViewLoading label={activeTab === "current" ? "Current view" : activeTab} />}>
+              {renderActiveView()}
+            </Suspense>
+          </ViewErrorBoundary>
         </main>
       </div>
       <div aria-atomic="true" aria-live="polite" className="sr-only">{announcement}</div>

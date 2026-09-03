@@ -17,9 +17,9 @@ public sealed class WorldStateProtocolTests : IDisposable
     {
         var commit = Assert.Single(McpVerbCatalog.CommitKinds,
             value => value.Name == "system.world-state.sync");
-        Assert.True(commit.SupportsDryRun);
-        Assert.Equal(["procedure.system.use"], commit.Contracts);
-        Assert.Contains("rootEntityId", commit.Payload, StringComparison.Ordinal);
+        Assert.True(commit.Descriptor.Operations.SupportsPreview);
+        Assert.Equal(["procedure.system.use"], commit.Descriptor.ProcedureIds);
+        Assert.Contains("rootEntityId", commit.Descriptor.Input.SchemaJson, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public sealed class WorldStateProtocolTests : IDisposable
         var authorization = new RecordingAuthorizer(false);
 
         var result = await new CommitMcpTool().CommitAsync(
-            world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
+            log: new OperationLog(db),
             kind: "system.world-state.sync", payload: "not-json", dryRun: true,
             privateOperator: authorization, worldStateSynchronization: service);
 
@@ -50,7 +50,7 @@ public sealed class WorldStateProtocolTests : IDisposable
         """;
 
         var accepted = await new CommitMcpTool().CommitAsync(
-            world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
+            log: new OperationLog(db),
             kind: "system.world-state.sync", payload: payload, intent: "Author Thalos.",
             proceduresUsed: ["procedure.system.use", "procedure.game.core.world.location"], dryRun: true,
             privateOperator: authorization, worldStateSynchronization: service);
@@ -66,7 +66,7 @@ public sealed class WorldStateProtocolTests : IDisposable
         {"requestToken":"1123456789abcdef0123456789abcdef","applicationId":"dnd2024","stateSpaceId":"dnd2024-main","rootEntityId":"world.thalorien","entities":[{"entityId":"location.thalorien.thalos","name":"Thalos","expectedRevision":1,"components":[{"qualifiedTypeId":"game.core.world.location","expectedRevision":1,"value":{"kind":"region","status":"active","summary":"The central continent.","visibility":"public"}}]}],"relationships":[]}
         """;
         var update = await new CommitMcpTool().CommitAsync(
-            world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
+            log: new OperationLog(db),
             kind: "system.world-state.sync", payload: updateWithoutContainment, dryRun: true,
             privateOperator: authorization, worldStateSynchronization: service);
 
@@ -75,7 +75,7 @@ public sealed class WorldStateProtocolTests : IDisposable
 
         var invalid = payload[..^1] + ",\"effects\":[]}\n";
         var rejected = await new CommitMcpTool().CommitAsync(
-            world: null!, effects: null!, mechanics: null!, actions: null!, log: new OperationLog(db),
+            log: new OperationLog(db),
             kind: "system.world-state.sync", payload: invalid, dryRun: true,
             privateOperator: authorization, worldStateSynchronization: service);
 

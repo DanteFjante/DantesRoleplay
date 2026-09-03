@@ -8,6 +8,7 @@ public static class SystemWorkspaceElement
     import '/components/system-publication.js';
     import '/components/ai-workspace.js';
     import '/components/page-administration.js';
+    import '/components/governance-control-center.js';
 
     const CONTROL_CENTER_PATH = '/ui/control-center/index.html';
 
@@ -730,7 +731,15 @@ public static class SystemWorkspaceElement
     }
 
     function systemComponentDescriptor(value, capabilityId) {
-      if (!value || value.id !== capabilityId || !systemComponentCapabilityId(value.id) ||
+      const contract = value?.contract;
+      if (!contract || contract.id !== capabilityId || !systemComponentCapabilityId(contract.id) ||
+          !contract.input || typeof contract.input.schemaJson !== 'string' ||
+          !contract.output || typeof contract.output.schemaJson !== 'string' ||
+          !contract.operations || !contract.scope || !contract.authorization ||
+          !Array.isArray(contract.examples) || contract.examples.length < 1 ||
+          !Array.isArray(contract.errors) || contract.errors.length < 1 ||
+          !Array.isArray(contract.recoveryActions) || contract.recoveryActions.length < 1 ||
+          value.id !== capabilityId ||
           !Number.isInteger(value.version) || value.version < 1 ||
           typeof value.fingerprint !== 'string' || !/^[0-9A-F]{64}$/.test(value.fingerprint) ||
           typeof value.owner !== 'string' || value.owner.length < 1 || value.owner.length > 80 ||
@@ -750,7 +759,7 @@ public static class SystemWorkspaceElement
         throw new SystemComponentError(
           'SYSTEM_CAPABILITY_SCHEMA_TOO_LARGE', 'The system capability input contract is too large.');
       }
-      return value;
+      return {...value, inputSchema: JSON.parse(contract.input.schemaJson), contract};
     }
 
     async function systemComponentConversation(signal) {
@@ -895,7 +904,21 @@ public static class SystemWorkspaceElement
           if (step.output != null) {
             const output = document.createElement('pre');
             output.textContent = JSON.stringify(step.output, null, 2);
-            item.append(output);
+            const download = document.createElement('button');
+            download.type = 'button';
+            download.textContent = 'Download result JSON';
+            download.setAttribute('part', 'download-output');
+            download.addEventListener('click', () => {
+              const blob = new Blob([JSON.stringify(step.output, null, 2) + '\n'],
+                {type: 'application/json'});
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `${step.capabilityId || 'system-result'}.json`;
+              link.click();
+              setTimeout(() => URL.revokeObjectURL(url), 0);
+            });
+            item.append(output, download);
           }
           list.append(item);
         }

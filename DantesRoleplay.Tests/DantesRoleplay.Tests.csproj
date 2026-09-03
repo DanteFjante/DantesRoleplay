@@ -70,7 +70,6 @@
     <Compile Remove="SqliteVecExtensionProbeTests.cs" />
     <Compile Remove="VerbToolTests.cs" />
     <Compile Remove="..\src\system\events-and-notifications\tests\SubscriptionStoreTests.cs" />
-    <Compile Remove="..\src\system\actions\tests\ActionRunnerParticipantTests.cs" />
     <Compile Remove="..\src\system\snapshots\tests\SnapshotFeature1Tests.cs" />
   </ItemGroup>
 

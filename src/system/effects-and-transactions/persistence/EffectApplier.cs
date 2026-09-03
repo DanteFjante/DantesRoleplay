@@ -75,9 +75,9 @@ public sealed class EffectApplier(
         if (dryRun)
         {
             // Direct effect dry runs must exercise the same guards against the same final batch
-            // state as a commit. An ambient transaction belongs to ActionRunner's existing
-            // validation pass, which intentionally does not mutate it; its real apply below is
-            // still guarded before that runner commits.
+            // state as a commit. An ambient transaction belongs to the calling execution
+            // boundary's validation pass, which intentionally does not mutate it; its real apply
+            // below is still guarded before that boundary commits.
             if (_guards is not null && _db.Database.CurrentTransaction is null)
             {
                 return await DryRunWithGuardsAsync(effects, cancellationToken);

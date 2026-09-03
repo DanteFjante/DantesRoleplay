@@ -29,10 +29,11 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
         var now = DateTime.UtcNow;
         db.ComponentDefinitions.AddRange(Definition("alpha", now), Definition("link", now), Definition("child", now));
         db.Entities.AddRange(Entity("actor", "Actor", now), Entity("container", "Container", now),
-            Entity("child", "Child", now), Entity("target", "Target", now), Entity("reference", "Reference", now));
+            Entity("child", "Child", now), Entity("target", "Target", now), Entity("reference", "Reference", now),
+            Entity("identity", "Identity only", now));
         db.Components.AddRange(
             Component("actor", "alpha", "{\"value\":1}", now),
-            Component("actor", "link", "{\"targetRef\":{\"entityId\":\"reference\"}}", now),
+            Component("actor", "link", "{\"targetRef\":{\"entityId\":\"reference\"},\"nested\":{\"targets\":[{\"entity\":{\"entityId\":\"identity\"}}]}}", now),
             Component("child", "child", "{\"value\":2}", now),
             Component("reference", "alpha", "{\"value\":3}", now),
             Component("target", "alpha", "{\"value\":4}", now));
@@ -57,11 +58,11 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
         var link = types.Define(new(app, "fixture.link", "{}"));
         var child = types.Define(new(app, "fixture.child", "{}"));
         var store = new SqliteEntityComponentStore(db, types, schemas);
-        foreach (var value in new[] { ("actor", "Actor"), ("container", "Container"), ("child", "Child"), ("target", "Target"), ("reference", "Reference") })
+        foreach (var value in new[] { ("actor", "Actor"), ("container", "Container"), ("child", "Child"), ("target", "Target"), ("reference", "Reference"), ("identity", "Identity only") })
             await store.CreateEntityAsync("space", value.Item1, value.Item2);
         await store.AddComponentAsync(Write("actor", alpha, "{\"value\":1}"));
         await store.AddComponentAsync(Write("actor", link,
-            "{\"targetRef\":{\"entityId\":\"reference\"}}"));
+            "{\"targetRef\":{\"entityId\":\"reference\"},\"nested\":{\"targets\":[{\"entity\":{\"entityId\":\"identity\"}}]}}"));
         await store.AddComponentAsync(Write("child", child, "{\"value\":2}"));
         await store.AddComponentAsync(Write("reference", alpha, "{\"value\":3}"));
         await store.AddComponentAsync(Write("target", alpha, "{\"value\":4}"));
@@ -76,7 +77,11 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
             {
                 ["subject"] = new(["alpha", "link"], IncludeContents: true,
                     IncludeRelationships: true, ContentsDepth: 2, ContentComponentIds: ["child"],
-                    ComponentReferences: [new("link", "targetRef", ["alpha"], ["beta"])],
+                    ComponentReferences:
+                    [
+                        new("link", "targetRef", ["alpha"], ["beta"]),
+                        new("link", "nested.targets[].entity", [])
+                    ],
                     RelationshipComponents: [new("knows", "outgoing", ["alpha"])])
             }
         };
@@ -98,6 +103,9 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
         Assert.Equal(1, application.Projection.ComponentRevisions["child"]["child"]);
         Assert.Equal(1, application.Projection.ComponentRevisions["reference"]["alpha"]);
         Assert.DoesNotContain("beta", application.Projection.References["reference"].Components.Keys);
+        Assert.Equal("Reference", application.Projection.References["reference"].Name);
+        Assert.Equal("Identity only", application.Projection.References["identity"].Name);
+        Assert.Empty(application.Projection.References["identity"].Components);
         Assert.Equal(1, application.Projection.ComponentRevisions["target"]["alpha"]);
         var related = Assert.Single(application.Projection.Roles["subject"].Related!);
         Assert.Equal("target", related.Id);
@@ -108,11 +116,11 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
     }
 
     [Fact]
-    public async Task Exact_catalog_evaluator_invokes_all_fourteen_ratified_mechanics_with_parity()
+    public async Task Exact_catalog_evaluator_invokes_all_ratified_mechanics_with_parity()
     {
         var app = ApplicationIdentifier.Parse("fixture");
         var files = RatifiedMechanics();
-        Assert.Equal(14, files.Length);
+        Assert.Equal(23, files.Length);
         var records = files.Select(file =>
         {
             var content = JsonSerializer.Serialize(new { requirements = file.Requirements, source = file.Source });
@@ -184,6 +192,207 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
         Assert.Equal(7, result.Projection!.ComponentRevisions["entity"]["state"]);
         Assert.Equal([new ContainmentRevision("item", "slot", 3)],
             result.Projection.ContainmentRevisions["entity"]);
+    }
+
+    [Fact]
+    public async Task Exact_application_composition_carries_foreach_child_effects_and_rejects_stale_pins()
+    {
+        var app = ApplicationIdentifier.Parse("composite");
+        var childContent = JsonSerializer.Serialize(new
+        {
+            requirements = "{}",
+            source = "return {effects:[{type:'entity.create',entityId:ctx.input.entityId,name:ctx.input.name}],data:{entityId:ctx.input.entityId}};"
+        });
+        var child = new CatalogRecordDefinition(app.Value, "mechanic", app.Value + ".mechanic.child",
+            "Child", "Child.", [], [], "mechanics", "active", 1, childContent, Hash(childContent),
+            "source", "mechanics/child.md");
+        string ParentContent(string fingerprint) => JsonSerializer.Serialize(new
+        {
+            requirements = $$$$"""{"children":{"items":{"mechanicId":"mechanic.child","mechanicVersion":1,"contentFingerprint":"{{{{fingerprint}}}}","roleBindings":{},"after":["zFirst"],"inheritInput":false,"forEachInputProperty":"items"},"zFirst":{"mechanicId":"mechanic.child","mechanicVersion":1,"contentFingerprint":"{{{{fingerprint}}}}","roleBindings":{},"inheritInput":false,"input":"{\"entityId\":\"first\",\"name\":\"First\"}"}}}""",
+            source = "return {effects:[{type:'entity.create',entityId:'parent',name:'Parent'}],data:{childCount:ctx.children.items.length}};"
+        });
+        var validContent = ParentContent(child.ContentFingerprint);
+        var staleContent = ParentContent(Hash("stale-child"));
+        var valid = new CatalogRecordDefinition(app.Value, "mechanic", app.Value + ".mechanic.valid",
+            "Valid", "Valid.", [], [], "mechanics", "active", 1, validContent, Hash(validContent),
+            "source", "mechanics/valid.md");
+        var stale = new CatalogRecordDefinition(app.Value, "mechanic", app.Value + ".mechanic.stale",
+            "Stale", "Stale.", [], [], "mechanics", "active", 1, staleContent, Hash(staleContent),
+            "source", "mechanics/stale.md");
+        var manifest = CatalogNavigationManifest.Create(app, Hash("composite-catalog"), "catalog-lexical-v1",
+            [new(app.Value, "Composite", "Composite catalog.")],
+            [new(app.Value, "", "Composite", "Composite catalog.", CatalogDescriptionStatus.Authored),
+             new(app.Value, "mechanics", "Mechanics", "Mechanics.", CatalogDescriptionStatus.Authored)],
+            [child, valid, stale]);
+        var provider = new InMemoryPublicApplicationCatalogProvider(new Dictionary<ApplicationIdentifier, ICatalogNavigator>
+        {
+            [app] = new InMemoryCatalogNavigator(manifest,
+                new CatalogCursorCodec(Encoding.UTF8.GetBytes("composite-test-cursor-signing-key-32")))
+        });
+        var evaluator = new ApplicationMechanicEvaluator(provider, new PassThroughResolver(), new JintMechanicEngine());
+        var input = "{\"items\":[{\"entityId\":\"child-a\",\"name\":\"A\"},{\"entityId\":\"child-b\",\"name\":\"B\"}]}";
+        var mapping = new ApplicationMechanicProjectionMapping(new Dictionary<string, EcsComponentReference>(),
+            new Dictionary<string, string>());
+
+        var result = await evaluator.EvaluateAsync(new("space", app, valid.QualifiedId,
+            valid.ContentFingerprint, mapping, new Dictionary<string, string>(), input, 42));
+        var staleResult = await evaluator.EvaluateAsync(new("space", app, stale.QualifiedId,
+            stale.ContentFingerprint, mapping, new Dictionary<string, string>(), input, 42));
+
+        Assert.True(result.Ok, result.Run?.Error ?? string.Join("; ", result.Problems));
+        Assert.Equal(["first", "child-a", "child-b"], result.Proposal.Effects.Select(value => value.EntityId));
+        Assert.Equal("parent", Assert.Single(result.Run!.Output.Effects).EntityId);
+        Assert.Equal(2, result.Projection!.Children["items"].Count);
+        Assert.False(staleResult.Evaluated);
+        Assert.Contains("CHILD_STALE", Assert.Single(staleResult.Problems));
+    }
+
+    [Fact]
+    public async Task Furnished_location_composite_is_found_by_one_intent_and_pins_every_primitive()
+    {
+        var files = (await CatalogReader.ReadAsync(Path.Combine(RepositoryRoot(), "catalog"))).Mechanics;
+        var composite = Assert.Single(files, value =>
+            value.Id == "mechanic.game.core.world.location.register-furnished");
+        var content = CatalogMechanicContent(composite);
+        var app = ApplicationIdentifier.Parse("fixture");
+        var record = new CatalogRecordDefinition(app.Value, "mechanic", app.Value + "." + composite.Id,
+            composite.Name, SingleLine(composite.Description), [], composite.Matches.Split('\n',
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+            "mechanics", "active", 1, content, Hash(content), "catalog", "mechanics/register-furnished.md");
+        var manifest = CatalogNavigationManifest.Create(app, Hash("furnished-location-catalog"), "catalog-lexical-v1",
+            [new(app.Value, "Fixture", "Fixture catalog.")],
+            [new(app.Value, "", "Fixture", "Fixture catalog.", CatalogDescriptionStatus.Authored),
+             new(app.Value, "mechanics", "Mechanics", "Mechanics.", CatalogDescriptionStatus.Authored)], [record]);
+        var navigator = new InMemoryCatalogNavigator(manifest,
+            new CatalogCursorCodec(Encoding.UTF8.GetBytes("furnished-location-search-key-32-bytes")));
+
+        var hit = Assert.Single(navigator.Search(new(app, "register a furnished location")).Records);
+        Assert.Equal(record.QualifiedId, hit.Record.QualifiedId);
+        var requirements = MechanicRequirements.Parse(composite.Requirements);
+        Assert.Equal(7, requirements.Children.Count);
+        Assert.All(requirements.Children.Where(value => value.Key != "shell"),
+            child => Assert.Contains("shell", child.Value.After));
+        Assert.All(requirements.Children.Values, child =>
+        {
+            Assert.Equal(1, child.MechanicVersion);
+            var target = Assert.Single(files, value => value.Id == child.MechanicId);
+            Assert.Equal(Hash(CatalogMechanicContent(target)), child.ContentFingerprint);
+        });
+        Assert.Equal(JsonValueKind.Object, requirements.InputSchema!.Value.ValueKind);
+    }
+
+    [Fact]
+    public async Task Furnished_location_composite_evaluates_the_complete_real_child_graph_in_creation_order()
+    {
+        var files = (await CatalogReader.ReadAsync(Path.Combine(RepositoryRoot(), "catalog"))).Mechanics;
+        var wanted = files.Where(value => value.Id.StartsWith(
+                "mechanic.game.core.world.location.", StringComparison.Ordinal)
+            && value.Id is not "mechanic.game.core.world.location.move").ToArray();
+        Assert.Equal(9, wanted.Length);
+        var app = ApplicationIdentifier.Parse("fixture");
+        var records = wanted.Select(file =>
+        {
+            var content = CatalogMechanicContent(file);
+            return new CatalogRecordDefinition(app.Value, "mechanic", app.Value + "." + file.Id,
+                file.Name, SingleLine(file.Description), [], file.Matches.Split('\n',
+                    StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+                "mechanics", "active", 1, content, Hash(content), "catalog",
+                "mechanics/" + file.Id.Split('.')[^1] + ".md");
+        }).ToArray();
+        var manifest = CatalogNavigationManifest.Create(app, Hash("real-furnished-location-catalog"),
+            "catalog-lexical-v1", [new(app.Value, "Fixture", "Fixture catalog.")],
+            [new(app.Value, "", "Fixture", "Fixture catalog.", CatalogDescriptionStatus.Authored),
+             new(app.Value, "mechanics", "Mechanics", "Mechanics.", CatalogDescriptionStatus.Authored)], records);
+        var provider = new InMemoryPublicApplicationCatalogProvider(new Dictionary<ApplicationIdentifier, ICatalogNavigator>
+        {
+            [app] = new InMemoryCatalogNavigator(manifest,
+                new CatalogCursorCodec(Encoding.UTF8.GetBytes("real-furnished-location-key-32-bytes")))
+        });
+        var composite = Assert.Single(records, value =>
+            value.QualifiedId.EndsWith(".register-furnished", StringComparison.Ordinal));
+        var input = JsonSerializer.Serialize(new
+        {
+            worldId = "world.fixture",
+            parentId = "location.fixture.parent",
+            location = new
+            {
+                locationId = "location.fixture.workshop", name = "Workshop", kind = "interior",
+                status = "active", summary = "A complete reviewed workshop.", visibility = "party"
+            },
+            furnishings = new[]
+            {
+                new
+                {
+                    definition = new
+                    {
+                        furnishingId = "furnishing.fixture.table", name = "Drafting table",
+                        status = "active", summary = "A reviewed drafting table.", visibility = "party"
+                    },
+                    placement = new
+                    {
+                        locationId = "location.fixture.workshop", locationName = "Workshop",
+                        locationStatus = "active", furnishingId = "furnishing.fixture.table",
+                        furnishingName = "Drafting table", furnishingStatus = "active"
+                    }
+                }
+            },
+            connections = new[]
+            {
+                new
+                {
+                    locationId = "location.fixture.workshop", locationName = "Workshop",
+                    locationStatus = "active", targetLocationId = "location.fixture.hall"
+                }
+            },
+            relevantFacts = new[]
+            {
+                new
+                {
+                    locationId = "location.fixture.workshop", locationName = "Workshop",
+                    knowledgeId = "fact.fixture.charter"
+                }
+            },
+            media = new[]
+            {
+                new
+                {
+                    locationId = "location.fixture.workshop", locationName = "Workshop",
+                    locationStatus = "active",
+                    attachments = new[]
+                    {
+                        new
+                        {
+                            role = "setting", visibility = new[] { "player", "dm" },
+                            sha256 = new string('a', 64), mimeType = "image/png", width = 1200,
+                            height = 675, alt = "The workshop.", caption = "Workshop", order = 0,
+                            provenance = new
+                            {
+                                kind = "original", credit = "Fixture", source = "Finalized receipt",
+                                reviewedOn = "2026-09-03", version = 1
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        var evaluator = new ApplicationMechanicEvaluator(provider,
+            new FurnishedCompositeResolver(), new JintMechanicEngine());
+        var result = await evaluator.EvaluateAsync(new("space", app, composite.QualifiedId,
+            composite.ContentFingerprint,
+            new(new Dictionary<string, EcsComponentReference>(), new Dictionary<string, string>()),
+            new Dictionary<string, string>
+            {
+                ["world"] = "world.fixture", ["parent"] = "location.fixture.parent"
+            }, input, 42));
+
+        Assert.True(result.Ok, result.Run?.Error ?? string.Join("; ", result.Problems));
+        Assert.Equal(9, result.Proposal.Effects.Count);
+        Assert.Equal(EffectType.EntityCreate, result.Proposal.Effects[0].Type);
+        Assert.Equal("location.fixture.workshop", result.Proposal.Effects[0].EntityId);
+        Assert.Equal(EffectType.ComponentAdd, result.Proposal.Effects[1].Type);
+        Assert.Equal("game.core.world.location", result.Proposal.Effects[1].DefinitionId);
+        Assert.Equal(7, result.Projection!.Children.Count);
+        Assert.Empty(result.Run!.Output.Effects);
     }
 
     [Fact]
@@ -291,7 +500,6 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
                 {
                     Effects =
                     [
-                        new Effect { Type = EffectType.EntityCreate, EntityId = "created", Name = "Created" },
                         new Effect
                         {
                             Type = EffectType.ComponentAdd,
@@ -302,19 +510,38 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
                     ],
                     Narration = "A fixture appears."
                 }
-            }, []));
+            }, [])
+        {
+            Proposal = new CompositionProposal(
+                [new Effect { Type = EffectType.EntityCreate, EntityId = "created", Name = "Created" }],
+                [], [])
+        });
         var runner = new ApplicationActionRunner(catalogs, activation, stateSpaces, types, entities, edges,
             new ApplicationMechanicProjectionMappingResolver(catalogs, stateSpaces, types, edges),
             evaluator, effectApplier, operations);
         var request = new ApplicationActionExecutionRequest("action-space", app, record.QualifiedId,
-            record.ContentFingerprint, new Dictionary<string, string>(), "{}", 42,
+            record.Version, record.ContentFingerprint, new Dictionary<string, string>(), "{}", 42,
             new("0123456789abcdef0123456789abcdef", new string('A', 64)));
+        var staleVersion = await runner.RunAsync(request with
+        {
+            MechanicVersion = request.MechanicVersion + 1,
+            ExecutionIdentity = new("1123456789abcdef0123456789abcdef", new string('B', 64))
+        });
+        var staleFingerprint = await runner.RunAsync(request with
+        {
+            ContentFingerprint = Hash("changed-mechanic"),
+            ExecutionIdentity = new("2123456789abcdef0123456789abcdef", new string('C', 64))
+        });
 
         var first = await runner.RunAsync(request);
         var replay = await runner.RunAsync(request);
 
         Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, first.Disposition);
         Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replay.Disposition);
+        Assert.Equal(ApplicationActionExecutionDisposition.Stale, staleVersion.Disposition);
+        Assert.Equal("MECHANIC_STALE", Assert.Single(staleVersion.Problems).Code);
+        Assert.Equal(ApplicationActionExecutionDisposition.Stale, staleFingerprint.Disposition);
+        Assert.Equal("MECHANIC_STALE", Assert.Single(staleFingerprint.Problems).Code);
         Assert.Equal(new MechanicExecutionContext(
             request.ExecutionIdentity.OperationId,
             request.ExecutionIdentity.OperationId,
@@ -322,12 +549,51 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
             0), evaluator.LastRequest!.Execution);
         Assert.Equal("A fixture appears.", first.Narration);
         Assert.Equal(2, first.AppliedEffectCount);
+        Assert.Equal(["created"], first.AffectedEntityIds);
+        Assert.Equal(2, first.EffectReceipts.Count);
         Assert.NotNull(await entities.GetEntityAsync("action-space", "created"));
         var component = await entities.GetComponentAsync(
             "action-space", "created", createdState.QualifiedId);
         Assert.NotNull(component);
         Assert.Equal("{\"ready\":true}", component.ValueJson);
         Assert.Single((await entities.ListEntitiesAsync("action-space", null, 10)).Entities);
+
+        var rejectedEvaluator = new StaticEvaluator(new ApplicationMechanicEvaluationResult(
+            record.QualifiedId, record.ContentFingerprint, new MechanicProjection(),
+            new MechanicRunResult
+            {
+                Ok = true,
+                Seed = 43,
+                Output = new MechanicOutput
+                {
+                    Effects =
+                    [
+                        new Effect
+                        {
+                            Type = EffectType.ContainmentMove,
+                            EntityId = "rolled-back",
+                            ToEntityId = "missing-parent",
+                            Slot = "inside"
+                        }
+                    ]
+                }
+            }, [])
+        {
+            Proposal = new CompositionProposal(
+                [new Effect { Type = EffectType.EntityCreate, EntityId = "rolled-back", Name = "Rolled back" }],
+                [], [])
+        });
+        var rejectedRunner = new ApplicationActionRunner(catalogs, activation, stateSpaces, types, entities, edges,
+            new ApplicationMechanicProjectionMappingResolver(catalogs, stateSpaces, types, edges),
+            rejectedEvaluator, effectApplier, operations);
+        var rejected = await rejectedRunner.RunAsync(request with
+        {
+            Seed = 43,
+            ExecutionIdentity = new("3123456789abcdef0123456789abcdef", new string('D', 64))
+        });
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Stale, rejected.Disposition);
+        Assert.Null(await entities.GetEntityAsync("action-space", "rolled-back"));
     }
 
     public void Dispose() => _fixture.Dispose();
@@ -338,6 +604,7 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
         return CatalogReader.ReadAsync(Path.Combine(root, "catalog")).GetAwaiter().GetResult().Mechanics
             .Where(value => new[] { "game.core", "check", "change" }.Any(category =>
                 value.Category == category || value.Category.StartsWith(category + ".", StringComparison.Ordinal)))
+            .Where(value => MechanicRequirements.Parse(value.Requirements).Children.Count == 0)
             .OrderBy(value => value.Id, StringComparer.Ordinal)
             .ToArray();
     }
@@ -347,6 +614,18 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
         value.Ok, value.Output, value.Error, value.LimitHit, value.Log, value.Seed
     });
     private static string Hash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+    private static string CatalogMechanicContent(MechanicFile file) => JsonSerializer.Serialize(new
+    {
+        id = file.Id,
+        category = file.Category,
+        name = file.Name,
+        description = file.Description,
+        matches = file.Matches,
+        requirements = file.Requirements,
+        source = file.Source,
+        scope = file.Scope,
+        status = file.Status.ToString().ToLowerInvariant()
+    });
     private static string SingleLine(string value) => string.Join(' ', value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
     private static ComponentDefinition Definition(string id, DateTime now) => new() { Id = id, Name = id, Description = id, Schema = "{}", CreatedAt = now, UpdatedAt = now };
     private static Entity Entity(string id, string name, DateTime now) => new() { Id = id, Name = name, CreatedAt = now };
@@ -396,6 +675,48 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
             IReadOnlyDictionary<string, string> roleAssignments, string inputJson, long seed,
             CancellationToken cancellationToken = default) => Task.FromResult(new ProjectionResult(
                 new MechanicProjection { StateSpaceId = stateSpaceId, Input = inputJson, Seed = seed }, []));
+    }
+
+    private sealed class FurnishedCompositeResolver : IApplicationMechanicProjectionResolver
+    {
+        public Task<ProjectionResult> ResolveAsync(string stateSpaceId, ApplicationIdentifier applicationId,
+            MechanicRequirements requirements, ApplicationMechanicProjectionMapping mapping,
+            IReadOnlyDictionary<string, string> roleAssignments, string inputJson, long seed,
+            CancellationToken cancellationToken = default)
+        {
+            var projection = new MechanicProjection { StateSpaceId = stateSpaceId, Input = inputJson, Seed = seed };
+            foreach (var (role, entityId) in roleAssignments)
+            {
+                projection.Roles[role] = role switch
+                {
+                    "world" => new(entityId, "World", new Dictionary<string, string>
+                    {
+                        ["game.core.world.root"] = "{\"status\":\"active\",\"summary\":\"Fixture world.\",\"visibility\":\"party\"}"
+                    }, Contains: []),
+                    "parent" => Location(entityId, "Parent", "region"),
+                    "right" => Location(entityId, "Hall", "interior"),
+                    "knowledge" => new(entityId, "Workshop charter", new Dictionary<string, string>
+                    {
+                        ["game.core.world.knowledge.classification"] = "{\"subjectKind\":\"location\",\"sensitivity\":\"open\"}",
+                        ["game.core.world.fact"] = "{\"status\":\"active\",\"summary\":\"The workshop has a charter.\",\"provenance\":\"Fixture.\",\"visibility\":\"party\"}"
+                    }, Relationships:
+                    [
+                        new(entityId, "world.fixture", "game.core.world.knowledge.in-world", "{}")
+                    ]),
+                    _ => new(entityId, entityId, new Dictionary<string, string>())
+                };
+            }
+            return Task.FromResult(new ProjectionResult(projection, []));
+        }
+
+        private static EntityProjection Location(string id, string name, string kind) => new(
+            id, name, new Dictionary<string, string>
+            {
+                ["game.core.world.location"] = JsonSerializer.Serialize(new
+                {
+                    kind, status = "active", summary = "Fixture location.", visibility = "party"
+                })
+            }, Relationships: []);
     }
 
     private sealed class StaticActivation(ActiveApplicationManifest value) : IApplicationActivationReader

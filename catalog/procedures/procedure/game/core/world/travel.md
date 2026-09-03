@@ -1,11 +1,11 @@
-﻿---
+---
 id: procedure.game.core.world.travel
 category: game.core.world.travel
 name: Govern adjacent movement and named conveyance journeys
-governs: commit(kind: "component") declaring game.core.world.traveller, game.core.world.route, game.core.world.conveyance, game.core.world.conveyance-route, game.core.world.aerial-conveyance, game.core.world.aerial-route, or game.core.world.teleport-gate; commit(kind: "effects") recording or removing a traveller marker or reviewed route/conveyance fixture; commit(kind: "action") moving one active traveller between adjacent locations or over one declared route; planning a bounded on-foot itinerary
+governs: commit(kind: "system.component-type.register") declaring game.core.world.traveller, game.core.world.route, game.core.world.conveyance, game.core.world.conveyance-route, game.core.world.aerial-conveyance, game.core.world.aerial-route, or game.core.world.teleport-gate; commit(kind: "system.world-state.sync") recording a traveller marker or reviewed route/conveyance fixture; commit(kind: "application.action.execute") moving one active traveller between adjacent locations or over one declared route; planning a bounded on-foot itinerary
 status: active
 createdBy: "seed"
-changeNote: "Seeded from bootstrap file."
+changeNote: "Re-seeded: the bootstrap file changed."
 ---
 
 ## Description
@@ -14,10 +14,12 @@ adjacent local move, one named on-foot route journey, one named ground-conveyanc
 later named aerial-conveyance journey. It consumes Feature 1 containment and
 canonical adjacency; containment remains the only current-location state.
 
+## Matches
+
 ## Instructions
 1. Declare `game.core.world.traveller` once. Its data is exactly `{ "status": "active" }` and it
    marks only that the entity may use this movement capability.
-2. Record or remove the marker with an inspected `commit(kind: "effects")` list. A fixture traveller
+2. Record the marker with a previewed `commit(kind: "system.world-state.sync")` manifest. A fixture traveller
    is placed directly in an active location using containment slot `presence`; do not store origin
    or destination in component data.
 3. A route entity has one closed `game.core.world.route` record: active/archived lifecycle,

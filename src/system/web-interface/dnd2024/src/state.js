@@ -912,6 +912,64 @@ function isPartyKnowledgeEntry(value) {
     typeof value.text === "string";
 }
 
+function isNamedCharacterReference(value) {
+  return value && typeof value === "object" && !Array.isArray(value) &&
+    Object.keys(value).length === 2 && typeof value.id === "string" && value.id.length > 0 &&
+    typeof value.label === "string" && value.label.length > 0;
+}
+
+function isCharacterSheetV2(value) {
+  if (!value || typeof value !== "object" || value.version !== 2 ||
+      !isNamedCharacterReference(value.subject) || !Array.isArray(value.inventory?.items) ||
+      value.inventory.contentsDepth !== 4 || value.inventory.mayOmitDeeperContents !== true ||
+      !value.wallet || !Array.isArray(value.wallet.denominations)) return false;
+  const ids = new Set();
+  const byId = new Map();
+  for (const item of value.inventory.items) {
+    if (!item || typeof item.id !== "string" || ids.has(item.id) ||
+        !isNamedCharacterReference(item.definition) || !Number.isSafeInteger(item.quantity) || item.quantity < 1 ||
+        !(item.parentItemId === null || typeof item.parentItemId === "string") ||
+        !Number.isInteger(item.order) || !Number.isInteger(item.depth) || item.depth < 1 || item.depth > 4 ||
+        !Number.isInteger(item.childCount) || typeof item.deeperContentsOmitted !== "boolean" ||
+        !Array.isArray(item.equipmentSlots) || !item.equipmentSlots.every(isNamedCharacterReference)) return false;
+    ids.add(item.id);
+    byId.set(item.id, item);
+  }
+  for (const item of value.inventory.items) {
+    if (item.parentItemId === null ? item.depth !== 1 :
+      !byId.has(item.parentItemId) || item.depth !== byId.get(item.parentItemId).depth + 1) return false;
+  }
+  return Number.isSafeInteger(value.wallet.coinCount) && value.wallet.coinCount >= 0 &&
+    Number.isSafeInteger(value.wallet.copperValue) && value.wallet.copperValue >= 0 &&
+    Number.isSafeInteger(value.wallet.gpCount) && value.wallet.gpCount >= 0;
+}
+
+function isDossierSectionState(value) {
+  if (!value || typeof value !== "object" || !["idle", "loading", "ready", "empty", "stale", "error", "forbidden"].includes(value.status)) {
+    return false;
+  }
+  const dataIsValid = value.data === null ||
+    (Array.isArray(value.data) && value.data.every(isPartyDossierEntry));
+  if (!dataIsValid) return false;
+  if (value.status === "idle") return value.data === null;
+  if (value.status === "loading") return true;
+  if (value.status === "ready" || value.status === "empty") {
+    return Array.isArray(value.data) && ["canonical", "provisional"].includes(value.source);
+  }
+  if (value.status === "stale") {
+    return Array.isArray(value.data) && ["canonical", "provisional"].includes(value.source) &&
+      ["transport", "http", "incompatible-data", "unknown"].includes(value.failureCategory) &&
+      typeof value.diagnosticId === "string";
+  }
+  if (value.status === "error") {
+    return value.data === null &&
+      ["transport", "http", "incompatible-data", "unknown"].includes(value.failureCategory) &&
+      typeof value.diagnosticId === "string";
+  }
+  return value.data === null && value.failureCategory === "authorization" &&
+    typeof value.diagnosticId === "string";
+}
+
 function isPartyMember(value) {
   return value &&
     typeof value.id === "string" &&
@@ -922,13 +980,16 @@ function isPartyMember(value) {
     typeof value.isCurrent === "boolean" &&
     (value.portrait === undefined || isVisualMedia(value.portrait)) &&
     typeof value.recordStatus === "string" &&
-    ["canonical", "provisional", "empty"].includes(value.sheetStatus) &&
+    ["canonical", "provisional", "unavailable", "empty"].includes(value.sheetStatus) &&
     ["canonical", "provisional", "unavailable", "empty"].includes(value.inventoryStatus) &&
+    isDossierSectionState(value.sheetState) &&
+    isDossierSectionState(value.inventoryState) &&
     Array.isArray(value.sheet) && value.sheet.every(isPartyDossierEntry) &&
     Array.isArray(value.knowledge) && value.knowledge.every(isPartyKnowledgeEntry) &&
     Array.isArray(value.backstory) && value.backstory.every(isPartyDossierEntry) &&
     Array.isArray(value.origin) && value.origin.every(isPartyDossierEntry) &&
-    Array.isArray(value.inventory) && value.inventory.every(isPartyDossierEntry);
+    Array.isArray(value.inventory) && value.inventory.every(isPartyDossierEntry) &&
+    (value.characterSheet === undefined || isCharacterSheetV2(value.characterSheet));
 }
 
 function isRuleReference(value) {

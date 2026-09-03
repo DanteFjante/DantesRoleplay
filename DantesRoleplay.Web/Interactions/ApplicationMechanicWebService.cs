@@ -2,9 +2,12 @@ using System.Text.Json;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
+using DantesRoleplay.Capabilities;
+using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.SchemaValidation;
 
 namespace DantesRoleplay.Web.Interactions;
 
@@ -63,7 +66,8 @@ public sealed record ApplicationMechanicDescriptorView(
     string ContentFingerprint,
     bool RequiresConfirmation,
     ApplicationMechanicInputContractView Input,
-    IReadOnlyList<ApplicationMechanicRoleView> Roles);
+    IReadOnlyList<ApplicationMechanicRoleView> Roles,
+    CapabilityContractDescriptor Capability);
 
 public sealed record ApplicationMechanicPrepareRequest(
     string? IdempotencyKey,
@@ -91,7 +95,8 @@ public sealed class ApplicationMechanicWebService(
     IStateSpaceRegistry stateSpaces,
     IApplicationActivationReader activations,
     IApplicationComponentTypeRegistry componentTypes,
-    IInteractionGateway interactions)
+    IInteractionGateway interactions,
+    IBoundedJsonSchemaValidator schemas)
 {
     private const string SessionContextId = "web.direct-application-action";
 
@@ -144,9 +149,15 @@ public sealed class ApplicationMechanicWebService(
             .Prepend(stateSpace.ApplicationRevision.ApplicationId).ToArray();
         var roles = requirements.Roles.OrderBy(value => value.Key, StringComparer.Ordinal)
             .Select(value => Role(value.Key, value.Value, owners)).ToArray();
+        var capability = ApplicationCapabilityContractAdapter.CreateMechanic(
+            applicationId, hit.Reference.QualifiedId, hit.Name, hit.Description,
+            hit.Reference.Version, hit.Reference.ContentFingerprint, "active",
+            hit.ContractJson, stateSpaceId);
         return new(applicationId, stateSpaceId, hit.Reference.QualifiedId, authoritativeId,
             hit.Name, hit.Description, hit.Reference.Version, hit.Reference.ContentFingerprint,
-            true, new("json-object", "mechanic", "not-authored", null), roles);
+            capability.RequiresConfirmation,
+            new("json-object", "mechanic", capability.Input.Status, capability.Input.SchemaJson),
+            roles, capability);
     }
 
     public async Task<ApplicationMechanicPreparationView> PrepareAsync(
@@ -166,6 +177,10 @@ public sealed class ApplicationMechanicWebService(
                 "Application action input must be one bounded JSON object.", 400);
         var roles = CopyRoles(request.RoleEntityIds);
         var input = InteractionCanonicalJson.CanonicalizeObject(request.Input.GetRawText());
+        var validation = schemas.Validate(descriptor.Capability.Input.SchemaJson, input);
+        if (validation.Status != SchemaValueStatus.Valid)
+            throw Failure("APPLICATION_ACTION_INPUT_SCHEMA_INVALID",
+                "Application action input does not match the current mechanic schema.", 400);
         var idempotencyKey = RequireText(request.IdempotencyKey, "idempotencyKey");
         var intentJson = JsonSerializer.Serialize(new
         {
@@ -240,6 +255,11 @@ public sealed class ApplicationMechanicWebService(
             || (step.ResultBindings?.Count ?? 0) != 0)
             throw Failure("APPLICATION_ACTION_PROPOSAL_SCOPE_MISMATCH",
                 "The execution proposal does not name the one route mechanic.", 409);
+        var descriptor = await DescribeAsync(applicationId, stateSpaceId, qualifiedMechanicId,
+            cancellationToken);
+        if (step.Version != descriptor.Version || step.Fingerprint != descriptor.ContentFingerprint)
+            throw Failure("MECHANIC_CONTRACT_STALE",
+                "The prepared mechanic version or content fingerprint is stale.", 409);
         var executionJson = JsonSerializer.Serialize(new
         {
             resolutionReceiptId = RequireText(request.ResolutionReceiptId, "resolutionReceiptId"),

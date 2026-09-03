@@ -1,0 +1,12 @@
+{
+  "id": "mechanic.lock",
+  "owner": "mechanic",
+  "description": "Disabled migration-only namespace for an obsolete live lock-picking rehearsal record.",
+  "allowedKinds": [
+    "mechanic"
+  ],
+  "aliases": [],
+  "enabled": false,
+  "reviewStatus": "needs-review",
+  "reviewNote": "Do not author here. This namespace exists only so legacy live state can be exported and retired safely."
+}

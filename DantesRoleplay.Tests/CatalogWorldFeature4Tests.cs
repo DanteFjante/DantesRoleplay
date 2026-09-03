@@ -87,7 +87,7 @@ public sealed class CatalogWorldFeature4Tests : IDisposable
         var world = new WorldStore(db); var mechanics = new MechanicStore(db);
         var imported = await new CatalogImporter(db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db)).ApplyAsync(_catalogCopy, new CatalogImportOptions());
         Assert.False(imported.Aborted);
-        var runner = new ActionRunner(db, mechanics, new ProjectionResolver(db), new JintMechanicEngine(), new EffectApplier(db, world, null, new EventLedger(db)), new OperationLog(db), new MechanicComposer(mechanics, new ProjectionResolver(db), new JintMechanicEngine()));
+        var runner = new CatalogMechanicTestHarness(db, mechanics, new ProjectionResolver(db), new JintMechanicEngine(), new EffectApplier(db, world, null, new EventLedger(db)), new OperationLog(db), new MechanicComposer(mechanics, new ProjectionResolver(db), new JintMechanicEngine()));
         var secret = Component(Require(await world.GetEntityAsync(Secret)), "game.core.world.secret");
         var clueBefore = Component(Require(await world.GetEntityAsync(Clues[0])), "game.core.world.clue");
         var rumourBefore = Component(Require(await world.GetEntityAsync(Rumour)), "game.core.world.rumour");
@@ -110,7 +110,7 @@ public sealed class CatalogWorldFeature4Tests : IDisposable
         Assert.Equal(secret, Component(Require(await world.GetEntityAsync(Secret)), "game.core.world.secret"));
     }
 
-    private static async Task<ActionRunResult> RunAsync(ActionRunner runner, string intent, string role, string id, string mechanicId)
+    private static async Task<ActionRunResult> RunAsync(CatalogMechanicTestHarness runner, string intent, string role, string id, string mechanicId)
     {
         var result = await runner.RunAsync(new ActionRequest { Intent = intent, RoleEntityIds = new Dictionary<string, string> { [role] = id, ["world"] = World }, Input = "{}", Seed = 404 });
         Assert.Equal(mechanicId, result.Mechanic?.Id); return result;

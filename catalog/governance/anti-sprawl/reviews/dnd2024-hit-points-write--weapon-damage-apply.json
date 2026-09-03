@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "left": {
+    "qualifiedId": "dnd2024.mechanic.hit-points.write",
+    "contentFingerprint": "415E2AA920D2F5291817E80083CF6FBB488D5C8C94B5ADCBCF337CB420F9D868"
+  },
+  "right": {
+    "qualifiedId": "dnd2024.mechanic.weapon-damage.apply",
+    "contentFingerprint": "DAC1FC4B2171EB15B64EF1D692B1CB5F0ACD95D1FD81FBAD9E8045EE4C9006D5"
+  },
+  "disposition": "distinct-responsibility",
+  "rationale": "hit-points.write records or corrects authoritative current and maximum Hit Point state; weapon-damage.apply consumes a confirmed weapon-damage result and changes only current Hit Points during gameplay. They intentionally share the Hit Point component but do not own the same operation."
+}

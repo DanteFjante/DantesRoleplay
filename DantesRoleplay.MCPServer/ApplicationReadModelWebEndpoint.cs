@@ -1,5 +1,6 @@
 using System.Text.Json;
 using DantesRoleplay.Applications;
+using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Knowledge;
 
@@ -15,7 +16,8 @@ public static class ApplicationReadModelWebEndpoint
         HttpContext context,
         ILocalKnowledgeSeatProvider seats,
         IApplicationReadModelService readModels,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IPublicApplicationCatalogProvider? catalogs = null)
     {
         context.Response.Headers.CacheControl = "private, no-store";
         var seat = seats.Current();
@@ -28,14 +30,19 @@ public static class ApplicationReadModelWebEndpoint
 
         try
         {
+            var roleBindings = ResolveRoleBindings(
+                catalogs, application!, qualifiedQueryId, entityId, seat);
+            if (roleBindings is null)
+                return Results.Json(new
+                {
+                    code = "READ_MODEL_ROLES_UNAVAILABLE",
+                    message = "The current audience context cannot bind every declared read-model role."
+                }, statusCode: StatusCodes.Status422UnprocessableEntity);
             var result = await readModels.ReadAsync(new(
                 stateSpaceId,
                 application!,
                 qualifiedQueryId,
-                new Dictionary<string, string>(StringComparer.Ordinal)
-                {
-                    ["subject"] = entityId
-                }), cancellationToken);
+                roleBindings), cancellationToken);
             using var data = JsonDocument.Parse(result.DataJson);
             return Results.Json(new
             {
@@ -59,6 +66,46 @@ public static class ApplicationReadModelWebEndpoint
                     : StatusCodes.Status422UnprocessableEntity;
             return Results.Json(new { code = exception.Code, message = exception.Message },
                 statusCode: status);
+        }
+    }
+
+    private static IReadOnlyDictionary<string, string>? ResolveRoleBindings(
+        IPublicApplicationCatalogProvider? catalogs,
+        ApplicationIdentifier application,
+        string qualifiedQueryId,
+        string entityId,
+        LocalKnowledgeSeatSnapshot seat)
+    {
+        // Retain the original subject contract for isolated callers and older tests. The live host
+        // supplies the catalog so role binding follows the query's own declaration rather than a
+        // second handwritten list of D&D read models.
+        if (catalogs is null)
+            return new Dictionary<string, string>(StringComparer.Ordinal) { ["subject"] = entityId };
+        try
+        {
+            if (!catalogs.TryGet(application, out var catalog)) return null;
+            var record = catalog.Inspect(new(application, application.Value, qualifiedQueryId));
+            var contract = ApplicationQueryContract.Parse(record.ContentJson, application);
+            var bindings = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var role in contract.Roles.Keys)
+            {
+                var value = role switch
+                {
+                    "campaign" when !string.IsNullOrWhiteSpace(seat.CampaignId) => seat.CampaignId,
+                    "actor" when !string.IsNullOrWhiteSpace(seat.ActorId) => seat.ActorId,
+                    "actor" => entityId,
+                    "subject" => entityId,
+                    _ when contract.Roles.Count == 1 => entityId,
+                    _ => null
+                };
+                if (string.IsNullOrWhiteSpace(value)) return null;
+                bindings.Add(role, value);
+            }
+            return bindings;
+        }
+        catch (Exception exception) when (exception is ArgumentException or KeyNotFoundException or JsonException)
+        {
+            return null;
         }
     }
 

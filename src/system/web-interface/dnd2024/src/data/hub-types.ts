@@ -377,6 +377,34 @@ export type PartyKnowledgeEntry = {
   text: string;
 };
 
+export type SectionFailureCategory = "authorization" | "transport" | "http" | "incompatible-data" | "unknown";
+
+export type SectionState<T> =
+  | { status: "idle"; data: null }
+  | { status: "loading"; data: T | null }
+  | { status: "ready" | "empty"; data: T; source: "canonical" | "provisional" }
+  | {
+      status: "stale";
+      data: T;
+      source: "canonical" | "provisional";
+      failureCategory: Exclude<SectionFailureCategory, "authorization">;
+      diagnosticId: string;
+      httpStatus?: number;
+    }
+  | {
+      status: "error";
+      data: null;
+      failureCategory: Exclude<SectionFailureCategory, "authorization">;
+      diagnosticId: string;
+      httpStatus?: number;
+    }
+  | {
+      status: "forbidden";
+      data: null;
+      failureCategory: "authorization";
+      diagnosticId: string;
+    };
+
 export type CharacterSheetProjection = {
   version: 1;
   subject: { id: string; name: string };
@@ -411,6 +439,189 @@ export type CharacterSheetProjection = {
   actions?: Array<{ id: string; name: string; activityIds: string[] }>;
 };
 
+export type NamedCharacterReference = { id: string; label: string };
+
+export type CharacterInventoryItemV2 = {
+  id: string;
+  name: string;
+  definition: NamedCharacterReference;
+  quantity: number;
+  slot: string;
+  parentItemId: string | null;
+  order: number;
+  depth: number;
+  childCount: number;
+  deeperContentsOmitted: boolean;
+  equipmentSlots: NamedCharacterReference[];
+  media?: EntityVisualMedia;
+};
+
+export type CharacterWalletV2 = {
+  coinCount: number;
+  copperValue: number;
+  gpCount: number;
+  denominations: Array<{
+    denomination: NamedCharacterReference;
+    code: "cp" | "sp" | "ep" | "gp" | "pp";
+    count: number;
+    copperValuePerCoin: 1 | 10 | 50 | 100 | 1000;
+    totalCopperValue: number;
+  }>;
+};
+
+export type CharacterSheetProjectionV2 = {
+  version: 2;
+  subject: NamedCharacterReference;
+  identity?: { pronouns?: string; appearance?: string; biography?: string; playerNotes?: string };
+  origin?: { species: NamedCharacterReference; background: NamedCharacterReference };
+  experience?: { total: number };
+  classes?: Array<{
+    id: string;
+    name: string;
+    class: NamedCharacterReference;
+    level: number;
+    subclass: NamedCharacterReference | null;
+  }>;
+  level?: number;
+  proficiencyBonus?: number;
+  abilities?: Array<{ ability: NamedCharacterReference; score: number; modifier: number }>;
+  savingThrows?: Array<{ ability: NamedCharacterReference; proficient: boolean; modifier: number }>;
+  skills?: Array<{
+    skill: NamedCharacterReference;
+    ability: NamedCharacterReference;
+    proficient: boolean;
+    expertise: boolean;
+    modifier: number;
+  }>;
+  initiative?: { ability: NamedCharacterReference; modifier: number };
+  hitPoints?: { current: number; maximum: number; maximumReduction: number };
+  temporaryHitPoints?: { amount: number };
+  armorClass?: { value: number };
+  body?: { size: NamedCharacterReference };
+  movement?: Array<{
+    kind: NamedCharacterReference;
+    numerator: number;
+    denominator: number;
+    unit: NamedCharacterReference;
+  }>;
+  senses?: Array<{
+    sense: NamedCharacterReference;
+    numerator?: number;
+    denominator?: number;
+    unit?: NamedCharacterReference;
+  }>;
+  conditions?: Array<{ condition: NamedCharacterReference; level: number | null }>;
+  proficiencies?: Array<{ proficiency: NamedCharacterReference; rank: NamedCharacterReference }>;
+  features?: Array<{
+    feature: NamedCharacterReference;
+    grantedBy: NamedCharacterReference;
+    grantKind: NamedCharacterReference;
+    classLevel: number | null;
+  }>;
+  resources?: Array<{ id: string; name: string; definition: NamedCharacterReference; expended: number }>;
+  spellcasting?: Array<{
+    id: string;
+    name: string;
+    sourceDefinition: NamedCharacterReference;
+    ability: NamedCharacterReference;
+    preparedSpells: NamedCharacterReference[];
+    availableSpells: NamedCharacterReference[];
+  }>;
+  actions?: Array<{ id: string; name: string; activities: NamedCharacterReference[] }>;
+  inventory: {
+    items: CharacterInventoryItemV2[];
+    contentsDepth: 4;
+    mayOmitDeeperContents: true;
+  };
+  wallet: CharacterWalletV2;
+};
+
+export type CharacterDossierSource = { sourceId: string; locator: string };
+
+export type CharacterDossierDefinition = {
+  id: string;
+  label: string;
+  canonicalName: string;
+  kind: string;
+  status: "active" | "identity-only";
+  summary: string | null;
+  source: CharacterDossierSource | null;
+};
+
+export type CharacterDossierMetadata = {
+  origin: {
+    species: CharacterDossierDefinition;
+    background: CharacterDossierDefinition;
+    traits: Array<{
+      key: string;
+      label: string;
+      status: "pending";
+      reason: string;
+      source: CharacterDossierSource | null;
+    }>;
+  };
+  classes: Array<{
+    id: string;
+    name: string;
+    definition: CharacterDossierDefinition;
+    level: number;
+    subclass: NamedCharacterReference | null;
+  }>;
+  features: Array<{
+    definition: CharacterDossierDefinition;
+    grantedBy: CharacterDossierDefinition;
+    grantKind: string;
+    classLevel: number | null;
+    configurationKey: string | null;
+    implementation: {
+      status: "recorded" | "pending";
+      reason: string | null;
+      entitlementKey: string | null;
+    };
+  }>;
+  inventory: {
+    definitions: CharacterDossierDefinition[];
+    contentsDepth: 4;
+    mayOmitDeeperContents: true;
+  };
+  definitions: CharacterDossierDefinition[];
+  provenance: {
+    sheetQueryId: "dnd2024.query.character-sheet-v2";
+    sheetProjectionId: "dnd2024.mechanic.character-sheet-v2.project";
+    dossierProjectionId: "dnd2024.mechanic.character-dossier-v1.project";
+    definitionCount: number;
+    inventoryDepth: 4;
+    ruleTextPolicy: "canonical-only";
+  };
+};
+
+export type CanonicalCharacterData = CharacterSheetProjectionV2 & {
+  dossier: CharacterDossierMetadata;
+  projection?: {
+    stateSpaceFingerprint: string;
+    resolutionFingerprint: string;
+    resultFingerprint: string;
+    sourceRevisionFingerprint: string;
+  };
+};
+
+export type CanonicalCharacterResult =
+  | { status: "ready"; data: CanonicalCharacterData; failureCategory: null; diagnosticId: string }
+  | {
+      status: "error";
+      data: null;
+      failureCategory: Exclude<SectionFailureCategory, "authorization">;
+      diagnosticId: string;
+      httpStatus?: number;
+    }
+  | {
+      status: "forbidden";
+      data: null;
+      failureCategory: "authorization";
+      diagnosticId: string;
+      httpStatus?: number;
+    };
+
 export type PartyMemberReadModel = {
   id: string;
   initials: string;
@@ -420,14 +631,16 @@ export type PartyMemberReadModel = {
   isCurrent: boolean;
   portrait?: VisualMedia;
   recordStatus: string;
-  sheetStatus: "canonical" | "provisional" | "empty";
+  sheetStatus: "canonical" | "provisional" | "unavailable" | "empty";
   inventoryStatus: "canonical" | "provisional" | "unavailable" | "empty";
+  sheetState: SectionState<PartyDossierEntry[]>;
+  inventoryState: SectionState<PartyDossierEntry[]>;
   sheet: PartyDossierEntry[];
   knowledge: PartyKnowledgeEntry[];
   backstory: PartyDossierEntry[];
   origin: PartyDossierEntry[];
   inventory: PartyDossierEntry[];
-  characterSheet?: CharacterSheetProjection;
+  characterSheet?: CanonicalCharacterData;
 };
 
 export type RuleReadModel = {
@@ -675,18 +888,8 @@ export type ConnectedCampaignEnvelope = {
     current: boolean;
     media?: EntityVisualMedia;
     entries: Array<{ kind: string; key: string; label: string; details?: string }>;
-    canonical?: CharacterSheetProjection & {
-      inventoryStatus: "ready" | "unavailable";
-      inventory: Array<{
-        id: string;
-        name: string;
-        definitionId: string;
-        quantity: number;
-        slot: string;
-        equipmentSlots: string[];
-        media?: EntityVisualMedia;
-      }>;
-    };
+    canonical?: CanonicalCharacterData;
+    canonicalResult?: CanonicalCharacterResult;
   }>;
   knowledge: {
     status: "ready" | "empty" | "unavailable";

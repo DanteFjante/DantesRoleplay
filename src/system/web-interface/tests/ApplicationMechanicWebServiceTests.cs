@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.ApplicationExecution;
 using DantesRoleplay.Applications;
@@ -10,6 +11,7 @@ using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Sources;
+using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.Web.Interactions;
 using DantesRoleplay.Web.Hosting;
 using Microsoft.AspNetCore.Builder;
@@ -36,7 +38,17 @@ public sealed class ApplicationMechanicWebServiceTests
 
         Assert.Equal("mechanic.fixture", descriptor.AuthoritativeId);
         Assert.True(descriptor.RequiresConfirmation);
-        Assert.Equal("not-authored", descriptor.Input.SchemaStatus);
+        Assert.Equal("authored", descriptor.Input.SchemaStatus);
+        using (var inputSchema = JsonDocument.Parse(descriptor.Input.SchemaJson!))
+            Assert.Contains("bonus", inputSchema.RootElement.GetProperty("required")
+                .EnumerateArray().Select(value => value.GetString()));
+        Assert.Equal(fixture.Record.QualifiedId, descriptor.Capability.Id);
+        Assert.Equal("application-mechanic", descriptor.Capability.SourceKind);
+        Assert.True(descriptor.Capability.Operations.ChangesState);
+        Assert.True(descriptor.Capability.RequiresIdempotencyKey);
+        Assert.NotEmpty(descriptor.Capability.Examples);
+        Assert.NotEmpty(descriptor.Capability.Errors);
+        Assert.NotEmpty(descriptor.Capability.RecoveryActions);
         var role = Assert.Single(descriptor.Roles);
         Assert.Equal("subject", role.Name);
         Assert.True(role.Required);
@@ -96,13 +108,53 @@ public sealed class ApplicationMechanicWebServiceTests
 
         var prepared = await fixture.Service.PrepareAsync(Principal, App, "space.1",
             fixture.Record.QualifiedId, new("prepare.valid",
-                new() { ["subject"] = "entity.hero" }, Element("{}")));
+                new() { ["subject"] = "entity.hero" }, Element("{\"bonus\":0}")));
         var proposal = JsonSerializer.SerializeToElement(prepared.Proposal, WebJson);
         var tamper = await Assert.ThrowsAsync<ApplicationMechanicWebException>(() =>
             fixture.Service.ExecuteAsync(Principal, App, "space.1", "fixture.mechanic.other",
                 new(prepared.Receipt.Id, prepared.ProposalFingerprint, "execute.tampered", proposal)));
         Assert.Equal("APPLICATION_ACTION_PROPOSAL_SCOPE_MISMATCH", tamper.Code);
         Assert.Equal(0, fixture.Gateway.ExecuteCalls);
+    }
+
+    [Fact]
+    public async Task Web_contract_recovers_missing_roles_rejects_stale_proposals_and_explains_receipts()
+    {
+        var fixture = new Fixture();
+        var descriptor = await fixture.Service.DescribeAsync(App, "space.1", fixture.Record.QualifiedId);
+        Assert.Equal("subject", Assert.Single(descriptor.Capability.Roles).Name);
+        Assert.True(Assert.Single(descriptor.Capability.Roles).Required);
+
+        var missing = await fixture.Service.PrepareAsync(Principal, App, "space.1",
+            fixture.Record.QualifiedId, new("prepare.missing-role", [], Element("{\"bonus\":1}")));
+        Assert.False(missing.Ready);
+        Assert.Equal("MISSING_REQUIRED_ROLE", missing.Code);
+        Assert.Contains("subject", missing.Evidence);
+
+        var invalid = await Assert.ThrowsAsync<ApplicationMechanicWebException>(() =>
+            fixture.Service.PrepareAsync(Principal, App, "space.1", fixture.Record.QualifiedId,
+                new("prepare.bad-schema", new() { ["subject"] = "entity.hero" }, Element("{}"))));
+        Assert.Equal("APPLICATION_ACTION_INPUT_SCHEMA_INVALID", invalid.Code);
+
+        var prepared = await fixture.Service.PrepareAsync(Principal, App, "space.1",
+            fixture.Record.QualifiedId, new("prepare.current",
+                new() { ["subject"] = "entity.hero" }, Element("{\"bonus\":1}")));
+        var stale = JsonNode.Parse(JsonSerializer.Serialize(prepared.Proposal, WebJson))!.AsObject();
+        stale["steps"]![0]!["fingerprint"] = Hash("stale-web-proposal");
+        var staleError = await Assert.ThrowsAsync<ApplicationMechanicWebException>(() =>
+            fixture.Service.ExecuteAsync(Principal, App, "space.1", fixture.Record.QualifiedId,
+                new(prepared.Receipt.Id, prepared.ProposalFingerprint, "execute.stale",
+                    Element(stale.ToJsonString()))));
+        Assert.Equal("MECHANIC_CONTRACT_STALE", staleError.Code);
+        Assert.Equal(0, fixture.Gateway.ExecuteCalls);
+
+        var outcome = await fixture.Service.ExecuteAsync(Principal, App, "space.1",
+            fixture.Record.QualifiedId, new(prepared.Receipt.Id, prepared.ProposalFingerprint,
+                "execute.current", JsonSerializer.SerializeToElement(prepared.Proposal, WebJson)));
+        Assert.True(outcome.Successful);
+        Assert.Equal("execution", outcome.Receipt!.Receipt!.Kind);
+        Assert.Equal("succeeded", outcome.Receipt.Receipt.Status);
+        Assert.Equal("INTERACTION_EXECUTION_SUCCEEDED", outcome.Receipt.Receipt.Code);
     }
 
     [Fact]
@@ -194,7 +246,7 @@ public sealed class ApplicationMechanicWebServiceTests
 
         public Fixture(bool staleActivation = false, string? requirements = null)
         {
-            requirements ??= "{\"roles\":{\"subject\":{\"components\":[\"stats\"],\"description\":\"The selected fixture subject.\"}}}";
+            requirements ??= "{\"roles\":{\"subject\":{\"components\":[\"stats\"],\"description\":\"The selected fixture subject.\"}},\"inputSchema\":{\"type\":\"object\",\"properties\":{\"bonus\":{\"type\":\"integer\"}},\"required\":[\"bonus\"],\"additionalProperties\":false}}";
             var content = JsonSerializer.Serialize(new
             {
                 id = "mechanic.fixture",
@@ -216,7 +268,8 @@ public sealed class ApplicationMechanicWebServiceTests
                 Hash("dependencies"), staleActivation ? Hash("changed") : activationFingerprint,
                 "coverage-v1", true, [], [], "operation.activation", DateTime.UnixEpoch);
             Gateway = new Gateway(Record);
-            Service = new(new Spaces(state), new Activation(activation), new Types(), Gateway);
+            Service = new(new Spaces(state), new Activation(activation), new Types(), Gateway,
+                new BoundedJsonSchemaValidator());
         }
 
         public CatalogRecordDefinition Record { get; }
@@ -288,6 +341,20 @@ public sealed class ApplicationMechanicWebServiceTests
             SubmittedProposalJson = submittedProposalJson;
             using var document = JsonDocument.Parse(submittedProposalJson!);
             var step = document.RootElement.GetProperty("steps")[0];
+            if (!step.GetProperty("roleBindings").TryGetProperty("subject", out _))
+            {
+                var missingReceipt = ResolutionReceipt("prepare.missing-role") with
+                {
+                    Status = "needs-input",
+                    Code = "MISSING_REQUIRED_ROLE",
+                    SafeSummary = "The required subject role is missing.",
+                    Evidence = ["subject"]
+                };
+                return Task.FromResult(new InteractionPlanGatewayResult(
+                    InteractionResolutionStatus.NeedsInput, "MISSING_REQUIRED_ROLE",
+                    "The required subject role is missing.", ["subject"], null, null,
+                    InteractionReceiptWriteResult.Appended(missingReceipt), Hash("trace.missing-role")));
+            }
             var proposal = new InteractionProposalProjection("propose",
                 [new("action", "action", record.QualifiedId, record.Version,
                     record.ContentFingerprint, [], new Dictionary<string, string>

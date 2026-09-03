@@ -1,3 +1,5 @@
+import { lazy, Suspense } from "react";
+
 import type {
   CampaignReadModel,
   LocationSectionId,
@@ -9,12 +11,14 @@ import type {
 import { LocationBrowser } from "./LocationBrowser";
 import { LocationWorkspace } from "./LocationWorkspace";
 import { WorldOverview } from "./WorldOverview";
-import { ScopedMapWorkspace } from "./ScopedMapWorkspace";
 import { WorldHistory } from "./WorldHistory";
 import { WorldPeopleDirectory } from "./WorldPeopleDirectory";
 import { WorldFactions } from "./WorldFactions";
 import { WorldLore } from "./WorldLore";
 import { WorldSectionNavigation } from "./WorldSectionNavigation";
+
+const ScopedMapWorkspace = lazy(() => import("./ScopedMapWorkspace")
+  .then((module) => ({ default: module.ScopedMapWorkspace })));
 
 export function WorldView({
   section,
@@ -72,21 +76,23 @@ export function WorldView({
           world={world}
         />
       ) : section === "map" ? (
-        <ScopedMapWorkspace
-          activeMapId={activeMapId}
-          campaignTitle={campaign.title}
-          overlays={campaign.mapOverlays}
-          currentLocationId={currentLocation.id}
-          onFeatureSelect={onMapFeatureSelect}
-          onMapChange={onMapChange}
-          onNavigateToFeature={onMapNavigateToFeature}
-          onOpenLocation={(locationId) => {
-            onLocationSelect(locationId);
-            onSectionChange("locations");
-          }}
-          selectedFeatureId={selectedMapFeatureId}
-          world={world}
-        />
+        <Suspense fallback={<section aria-busy="true" className="view-loading" role="status">Opening map…</section>}>
+          <ScopedMapWorkspace
+            activeMapId={activeMapId}
+            campaignTitle={campaign.title}
+            overlays={campaign.mapOverlays}
+            currentLocationId={currentLocation.id}
+            onFeatureSelect={onMapFeatureSelect}
+            onMapChange={onMapChange}
+            onNavigateToFeature={onMapNavigateToFeature}
+            onOpenLocation={(locationId) => {
+              onLocationSelect(locationId);
+              onSectionChange("locations");
+            }}
+            selectedFeatureId={selectedMapFeatureId}
+            world={world}
+          />
+        </Suspense>
       ) : section === "history" ? (
         <WorldHistory
           onOpenLocation={(locationId) => {

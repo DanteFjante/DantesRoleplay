@@ -6,6 +6,7 @@ import {
   normalizeGameServerOrigin,
   projectMediaVisual,
   readCombatCurrentScene,
+  readCanonicalCharacter,
   readConversationCurrentScene,
   readGameServerContext,
   readKnownOpenRoutes,
@@ -16,6 +17,50 @@ import {
 } from "../src/server/game-server-context.js";
 
 const MEDIA_HASH = "3ae0336e89155a4a00fb0d982ae903bf9ed1137cd292b097b252fd38c1501fa3";
+
+function dossierDefinition(reference, kind, status = "active") {
+  return {
+    id: reference.id,
+    label: reference.label,
+    canonicalName: reference.label,
+    kind,
+    status,
+    summary: null,
+    source: status === "active" ? { sourceId: "dnd2024.source.srd-5.2.1", locator: `Fixture > ${reference.label}` } : null,
+  };
+}
+
+function characterDossier(sheet) {
+  const species = dossierDefinition(sheet.origin.species, "species");
+  const background = dossierDefinition(sheet.origin.background, "background");
+  const classes = sheet.classes.map((entry) => ({
+    id: entry.id,
+    name: entry.name,
+    definition: dossierDefinition(entry.class, "class"),
+    level: entry.level,
+    subclass: entry.subclass,
+  }));
+  const inventoryDefinitions = sheet.inventory.items.map((entry) =>
+    dossierDefinition(entry.definition, "equipment", "identity-only"));
+  const definitions = [species, background, ...classes.map((entry) => entry.definition), ...inventoryDefinitions];
+  return {
+    version: 1,
+    sheet,
+    origin: { species, background, traits: [] },
+    classes,
+    features: [],
+    inventory: { definitions: inventoryDefinitions, contentsDepth: 4, mayOmitDeeperContents: true },
+    definitions,
+    provenance: {
+      sheetQueryId: "dnd2024.query.character-sheet-v2",
+      sheetProjectionId: "dnd2024.mechanic.character-sheet-v2.project",
+      dossierProjectionId: "dnd2024.mechanic.character-dossier-v1.project",
+      definitionCount: definitions.length,
+      inventoryDepth: 4,
+      ruleTextPolicy: "canonical-only",
+    },
+  };
+}
 
 function mediaAttachment(role = "portrait", alt = "A reviewed portrait", mediaId = "visual-0") {
   return {
@@ -533,6 +578,51 @@ function response(status, body) {
   });
 }
 
+test("canonical character reads distinguish HTTP, authorization, transport, and incompatible data", async () => {
+  const common = {
+    origin: "http://localhost:6217",
+    applicationId: "dnd2024",
+    stateSpaceId: "dnd2024-main",
+    actorId: "actor.test.hero",
+  };
+  const serverError = await readCanonicalCharacter({
+    ...common,
+    fetchImpl: async () => new Response("{}", {
+      status: 500,
+      headers: { "x-request-id": "request-500" },
+    }),
+  });
+  assert.deepEqual(serverError, {
+    status: "error",
+    data: null,
+    failureCategory: "http",
+    diagnosticId: "request-500",
+    httpStatus: 500,
+  });
+
+  const forbidden = await readCanonicalCharacter({
+    ...common,
+    fetchImpl: async () => response(403, {}),
+  });
+  assert.equal(forbidden.status, "forbidden");
+  assert.equal(forbidden.failureCategory, "authorization");
+
+  const incompatible = await readCanonicalCharacter({
+    ...common,
+    fetchImpl: async () => response(200, { data: { version: 1 } }),
+  });
+  assert.equal(incompatible.status, "error");
+  assert.equal(incompatible.failureCategory, "incompatible-data");
+  assert.equal(incompatible.data, null);
+
+  const transport = await readCanonicalCharacter({
+    ...common,
+    fetchImpl: async () => { throw new Error("offline"); },
+  });
+  assert.equal(transport.status, "error");
+  assert.equal(transport.failureCategory, "transport");
+});
+
 function playerMapDirectoryResponse(path) {
   const id = path.includes("location.thalorien.brackenford")
     ? "location.thalorien.brackenford"
@@ -789,6 +879,12 @@ test("reads only the server-selected campaign, actor, and authorized knowledge",
       current: true,
       state: "active",
       entries: [{ kind: "class", key: "bard", label: "Provisional Bard direction" }],
+      canonicalResult: {
+        status: "error",
+        data: null,
+        failureCategory: "transport",
+        diagnosticId: "canonical-character:actor.thalorien.brackenford.orban:transport",
+      },
     }],
     knowledge: {
       status: "ready",
@@ -848,7 +944,7 @@ test("reads only the server-selected campaign, actor, and authorized knowledge",
     "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/clue.thalorien.brackenford.waystone/media",
     "/api/applications/dnd2024/state-spaces/dnd2024-main/entities",
     "/api/applications/dnd2024/state-spaces/dnd2024-main/entities",
-    "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/actor.thalorien.brackenford.orban/read-models/dnd2024.query.character-sheet",
+    "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/actor.thalorien.brackenford.orban/read-models/dnd2024.query.character-dossier-v1",
     "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/actor.thalorien.brackenford.orban/media",
   ]);
 });
@@ -1173,6 +1269,62 @@ test("maps a server-authorized actor binding to local DM seat when localSeat ove
   assert.equal(calls.some((path) => path.endsWith(
     "/entities/actor.thalorien.brackenford.orban/components/dnd2024.playtest-character-record",
   )), false);
+});
+
+test("local DM player preview retains the server-bound actor when the character query fails", async () => {
+  const campaignId = "campaign.thalorien.brackenford";
+  const actorId = "actor.thalorien.brackenford.orban";
+  const value = await readGameServerContext({
+    serverOrigin: "http://localhost:6217",
+    localSeat: "dm",
+    requestedPerspective: "player",
+    fetchImpl: async (input) => {
+      const requested = new URL(input);
+      const path = requested.pathname;
+      if (path === "/api/audience-context") return response(200, {
+        status: "bound",
+        applicationId: "dnd2024",
+        stateSpaceId: "dnd2024-main",
+        campaignId,
+        actorId,
+        role: "actor",
+      });
+      if (path.endsWith(`/${campaignId}`)) {
+        return response(200, { entityId: campaignId, name: "The Waystone at Brackenford" });
+      }
+      if (path.endsWith(`/${actorId}`)) {
+        return response(200, { entityId: actorId, name: "Orban" });
+      }
+      if (path.endsWith(`/${campaignId}/components/game.core.campaign.root`)) {
+        return response(200, {
+          entityId: campaignId,
+          qualifiedTypeId: "game.core.campaign.root",
+          valueJson: JSON.stringify({ status: "active", premise: "A live campaign.", partyGoals: [], toneAndBoundaries: [] }),
+        });
+      }
+      if (path === "/api/applications/dnd2024/state-spaces/dnd2024-main/entities") {
+        return response(200, { items: [
+          { entityId: campaignId, name: "The Waystone at Brackenford" },
+          { entityId: actorId, name: "Orban" },
+        ], nextCursor: null });
+      }
+      if (path.endsWith(`/${actorId}/read-models/dnd2024.query.character-dossier-v1`)) {
+        return response(503, { code: "READ_MODEL_TEMPORARILY_UNAVAILABLE" });
+      }
+      return response(404, {});
+    },
+  });
+
+  assert.deepEqual(value.audience, {
+    seat: "dm",
+    perspective: "player",
+    allowedPerspectives: ["dm", "player"],
+  });
+  assert.equal(value.party.length, 1);
+  assert.equal(value.party[0].id, actorId);
+  assert.equal(value.party[0].current, true);
+  assert.equal(value.party[0].canonicalResult.status, "error");
+  assert.equal(value.party[0].canonicalResult.httpStatus, 503);
 });
 
 test("supports selecting player perspective for a local game master", async () => {
@@ -1679,6 +1831,8 @@ test("projects only exact active campaign participation into the DM party roster
   const campaignId = "campaign.thalorien.brackenford";
   const activeParticipation = `${campaignId}.participation.actor.thalorien.brackenford.orban`;
   const withdrawnParticipation = `${campaignId}.participation.actor.thalorien.brackenford.sol`;
+  const duplicateParticipation = `${campaignId}.participation.duplicate`;
+  const ambiguousParticipation = `${campaignId}.participation.ambiguous`;
   const fetchImpl = async (input) => {
     const requested = new URL(input);
     const path = requested.pathname;
@@ -1718,11 +1872,20 @@ test("projects only exact active campaign participation into the DM party roster
         qualifiedKind === "game.core.campaign.has-character-participation") {
       return response(200, { items: [
         { fromEntityId: campaignId, toEntityId: withdrawnParticipation, qualifiedKind },
+        { fromEntityId: campaignId, toEntityId: duplicateParticipation, qualifiedKind },
         { fromEntityId: campaignId, toEntityId: activeParticipation, qualifiedKind },
+        { fromEntityId: campaignId, toEntityId: duplicateParticipation, qualifiedKind },
+        { fromEntityId: campaignId, toEntityId: ambiguousParticipation, qualifiedKind },
       ] });
     }
     if (path.endsWith("/relationships") &&
         qualifiedKind === "game.core.campaign.character-participation.for-actor") {
+      if (fromEntityId === ambiguousParticipation) {
+        return response(200, { items: [
+          { fromEntityId, toEntityId: "actor.thalorien.brackenford.orban", qualifiedKind },
+          { fromEntityId, toEntityId: "actor.thalorien.brackenford.sol", qualifiedKind },
+        ] });
+      }
       const actorId = fromEntityId === activeParticipation
         ? "actor.thalorien.brackenford.orban"
         : "actor.thalorien.brackenford.sol";
@@ -1744,6 +1907,13 @@ test("projects only exact active campaign participation into the DM party roster
         entityId: withdrawnParticipation,
         qualifiedTypeId: "game.core.campaign.character-participation",
         valueJson: JSON.stringify({ status: "withdrawn" }),
+      });
+    }
+    if (path.endsWith(`/${ambiguousParticipation}/components/game.core.campaign.character-participation`)) {
+      return response(200, {
+        entityId: ambiguousParticipation,
+        qualifiedTypeId: "game.core.campaign.character-participation",
+        valueJson: JSON.stringify({ status: "active" }),
       });
     }
     if (path.endsWith("/actor.thalorien.brackenford.orban/components/dnd2024.playtest-character-record")) {
@@ -1783,6 +1953,13 @@ test("projects only exact active campaign participation into the DM party roster
     name: "Orban",
     state: "active",
     entries: [{ kind: "class", key: "bard", label: "Provisional Bard direction" }],
+    canonicalResult: {
+      status: "error",
+      data: null,
+      failureCategory: "http",
+      diagnosticId: "canonical-character:actor.thalorien.brackenford.orban:http",
+      httpStatus: 404,
+    },
     current: false,
   }]);
   assert.equal(JSON.stringify(value).includes("actor.thalorien.brackenford.sol"), false);
@@ -1837,46 +2014,69 @@ test("reads the registered character projection and enriches its bounded invento
       }
       if (path.endsWith(`/${campaignId}`)) return response(200, { entityId: campaignId, name: "Brackenford" });
       if (path.endsWith(`/${actorId}/components/dnd2024.playtest-character-record`)) return response(404, {});
-      if (path.endsWith(`/${actorId}/read-models/dnd2024.query.character-sheet`)) {
+      if (path.endsWith(`/${actorId}/read-models/dnd2024.query.character-dossier-v1`)) {
         return response(200, {
-          qualifiedQueryId: "dnd2024.query.character-sheet",
+          qualifiedQueryId: "dnd2024.query.character-dossier-v1",
           stateSpaceFingerprint: "A".repeat(64),
           resolutionFingerprint: "B".repeat(64),
           resultFingerprint: "C".repeat(64),
           sourceRevisionFingerprint: "D".repeat(64),
-          data: {
-            version: 1,
-            subject: { id: actorId, name: "Orban" },
+          data: characterDossier({
+            version: 2,
+            subject: { id: actorId, label: "Orban" },
             identity: { biography: "Raised by performers." },
             origin: {
-              speciesId: "dnd2024.content.species.human",
-              backgroundId: "dnd2024.content.background.criminal",
+              species: { id: "dnd2024.content.species.human", label: "Human" },
+              background: { id: "dnd2024.content.background.criminal", label: "Criminal" },
             },
             classes: [{
               id: membershipId,
               name: "Bard membership",
-              classId: "dnd2024.content.class.bard",
+              class: { id: "dnd2024.content.class.bard", label: "Bard" },
               level: 1,
-              subclassId: null,
+              subclass: null,
             }],
             level: 1,
             proficiencyBonus: 2,
-            abilities: [{ id: "cha", score: 17, modifier: 3 }],
+            abilities: [
+              { ability: { id: "str", label: "Strength" }, score: 10, modifier: 0 },
+              { ability: { id: "dex", label: "Dexterity" }, score: 14, modifier: 2 },
+              { ability: { id: "con", label: "Constitution" }, score: 12, modifier: 1 },
+              { ability: { id: "int", label: "Intelligence" }, score: 11, modifier: 0 },
+              { ability: { id: "wis", label: "Wisdom" }, score: 13, modifier: 1 },
+              { ability: { id: "cha", label: "Charisma" }, score: 17, modifier: 3 },
+            ],
             hitPoints: { current: 9, maximum: 9, maximumReduction: 0 },
             inventory: {
               items: [{
                 id: itemId,
                 name: "Starting Gold",
-                definitionId,
+                definition: { id: definitionId, label: "Gold Piece" },
                 quantity: 45,
                 slot: "inventory.currency",
+                parentItemId: null,
+                order: 0,
                 depth: 1,
+                childCount: 0,
+                deeperContentsOmitted: false,
                 equipmentSlots: [],
               }],
               contentsDepth: 4,
               mayOmitDeeperContents: true,
             },
-          },
+            wallet: {
+              coinCount: 45,
+              copperValue: 4500,
+              gpCount: 45,
+              denominations: [{
+                denomination: { id: definitionId, label: "Gold Piece" },
+                code: "gp",
+                count: 45,
+                copperValuePerCoin: 100,
+                totalCopperValue: 4500,
+              }],
+            },
+          }),
         });
       }
       if (path.endsWith(`/${actorId}/components`)) {
@@ -1932,15 +2132,19 @@ test("reads the registered character projection and enriches its bounded invento
   });
 
   assert.equal(value.party.length, 1);
-  assert.equal(value.party[0].canonical.classes[0].classId, "dnd2024.content.class.bard");
-  assert.equal(value.party[0].canonical.abilities[0].score, 17);
-  assert.deepEqual(value.party[0].canonical.inventory, [{
+  assert.equal(value.party[0].canonical.classes[0].class.id, "dnd2024.content.class.bard");
+  assert.equal(value.party[0].canonical.abilities[5].score, 17);
+  assert.deepEqual(value.party[0].canonical.inventory.items, [{
     id: itemId,
     name: "Starting Gold",
-    definitionId,
+    definition: { id: definitionId, label: "Gold Piece" },
     quantity: 45,
     slot: "inventory.currency",
+    parentItemId: null,
+    order: 0,
     depth: 1,
+    childCount: 0,
+    deeperContentsOmitted: false,
     equipmentSlots: [],
     media: {
       illustration: {

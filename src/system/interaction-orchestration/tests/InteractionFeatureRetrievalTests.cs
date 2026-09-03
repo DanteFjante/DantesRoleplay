@@ -157,6 +157,27 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
     }
 
     [Fact]
+    public async Task Active_query_contracts_are_discoverable_as_trusted_capabilities()
+    {
+        var content = """
+            {"id":"sample-app.query.resume","category":"campaign.resume","name":"Resume","description":"Read the current campaign summary.","matches":["resume campaign"],"roles":{},"executor":"mechanic-projection","projection":{"qualifiedId":"sample-app.mechanic.resume","version":1,"contentHash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","outputSchemaHash":"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"},"outputSchema":{"type":"object"},"exposure":"model-visible","status":"active"}
+            """;
+        var record = new CatalogRecordDefinition("sample", ApplicationQueryContract.CatalogKind,
+            "sample-app.query.resume", "Resume", "Read the current campaign summary.", [],
+            ["resume campaign"], "", "active", 1, content, Hash(content), "source", "queries/resume.json");
+        var retriever = new InteractionFeatureRetriever(new MutableSnapshots(Snapshot([record])));
+
+        var result = await retriever.SearchAsync(
+            new(Application, InteractionRetrievalLane.TrustedFeature),
+            new("resume campaign", kinds: [ApplicationQueryContract.CatalogKind], statuses: ["active"]));
+
+        var hit = Assert.Single(result.Hits);
+        Assert.Equal(InteractionRetrievalMode.Exact, result.Mode);
+        Assert.Equal(ApplicationQueryContract.CatalogKind, hit.Reference.Kind);
+        Assert.Equal(record.ContentFingerprint, hit.Reference.ContentFingerprint);
+    }
+
+    [Fact]
     public async Task Rebuild_and_hybrid_search_use_only_current_same_lane_documents()
     {
         var provider = new MutableSnapshots(Snapshot());

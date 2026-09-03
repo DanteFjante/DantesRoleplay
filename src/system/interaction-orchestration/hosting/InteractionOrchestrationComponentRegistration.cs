@@ -1,6 +1,8 @@
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.Interactions;
+using DantesRoleplay.Knowledge;
+using DantesRoleplay.Play;
 using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.Retrieval;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,7 +24,43 @@ internal static class InteractionOrchestrationComponentRegistration
             provider.GetRequiredService<InteractionReceiptStore>());
         services.TryAddScoped<IInteractionExecutionAuthorityStore>(provider =>
             provider.GetRequiredService<InteractionReceiptStore>());
+        services.TryAddScoped<IInteractionRecentReceiptReader>(provider =>
+            provider.GetRequiredService<InteractionReceiptStore>());
         services.TryAddScoped<IInteractionRecipeStore, InteractionRecipeStore>();
+        services.TryAddScoped<IInteractionMechanicOpportunityStore, InteractionMechanicOpportunityStore>();
+        services.TryAddScoped<IInteractionMechanicOpportunityLearner, InteractionMechanicOpportunityLearner>();
+        services.TryAddScoped<IInteractionMechanicSandboxService, InteractionMechanicSandboxService>();
+        services.AddScoped<ISystemReadCapabilityHandler, InteractionMechanicSandboxReadCapabilityHandler>();
+        foreach (var id in new[]
+        {
+            SystemCapabilityIds.InteractionContextPack,
+            SystemCapabilityIds.InteractionRecipes,
+            SystemCapabilityIds.MechanicOpportunities
+        })
+        {
+            var capabilityId = id;
+            services.AddScoped<ISystemReadCapabilityHandler>(provider =>
+                new InteractionGovernanceReadCapabilityHandler(
+                    capabilityId,
+                    provider.GetRequiredService<IInteractionRecipeStore>(),
+                    provider.GetRequiredService<IInteractionMechanicOpportunityStore>(),
+                    provider.GetRequiredService<IInteractionEnvelopeFactory>(),
+                    provider.GetRequiredService<IInteractionTaskContextMaterializer>()));
+        }
+        services.AddScoped<ISystemWriteCapabilityHandler>(provider =>
+            new InteractionMechanicSandboxWriteCapabilityHandler(
+                SystemCapabilityIds.MechanicSandboxDraft,
+                provider.GetRequiredService<IInteractionMechanicSandboxService>(),
+                provider.GetRequiredService<IInteractionMechanicOpportunityStore>()));
+        services.AddScoped<ISystemWriteCapabilityHandler>(provider =>
+            new InteractionMechanicSandboxWriteCapabilityHandler(
+                SystemCapabilityIds.MechanicSandboxPromote,
+                provider.GetRequiredService<IInteractionMechanicSandboxService>(),
+                provider.GetRequiredService<IInteractionMechanicOpportunityStore>()));
+        services.AddScoped<ISystemWriteCapabilityHandler>(provider =>
+            new InteractionRecipeReviewCapabilityHandler(
+                provider.GetRequiredService<IInteractionRecipeStore>(),
+                provider.GetRequiredService<IInteractionRecipeReviewService>()));
         services.TryAddScoped<ISystemAiToolSource, InteractionRecipeAiToolSource>();
         services.TryAddScoped<IInteractionRecipeAutoVerificationEvidenceReader, InteractionRecipeAutoVerificationEvidenceReader>();
         services.TryAddScoped<IInteractionRecipeAutoVerifier, InteractionRecipeAutoVerifier>();
@@ -45,6 +83,15 @@ internal static class InteractionOrchestrationComponentRegistration
         services.TryAddScoped<IInteractionQueryExecutor, MechanicProjectionInteractionQueryExecutor>();
         services.TryAddScoped<IInteractionQueryExecutorRegistry, InteractionQueryExecutorRegistry>();
         services.TryAddScoped<IApplicationReadModelService, ApplicationReadModelService>();
+        services.TryAddScoped<IInteractionTaskContextMaterializer>(provider =>
+            new InteractionTaskContextMaterializer(
+                provider.GetRequiredService<IInteractionAuthorizationPolicy>(),
+                provider.GetRequiredService<IInteractionFeatureRetriever>(),
+                provider.GetRequiredService<IActiveCatalogFeatureSnapshotProvider>(),
+                provider.GetRequiredService<IApplicationReadModelService>(),
+                provider.GetService<IAuthorizedKnowledgeCandidateResolver>(),
+                provider.GetService<IApplicationPlayRecordStore>(),
+                provider.GetService<IInteractionRecentReceiptReader>()));
         services.TryAddScoped<IInteractionEnvelopeFactory, InteractionEnvelopeFactory>();
         services.TryAddScoped<IInteractionExecutionCoordinator, InteractionExecutionCoordinator>();
         services.TryAddScoped<IInteractionGateway, InteractionGateway>();
@@ -68,7 +115,8 @@ internal static class InteractionOrchestrationComponentRegistration
                     provider.GetService<IInteractionOuterLocalCompletionProvider>()),
                 (IInteractionPlanningCompletionProvider?)provider.GetService<OpenAiResponsesInteractionPlanningProvider>()
                     ?? new UnavailableRemoteInteractionPlanningProvider()
-            ]));
+            ],
+            provider.GetRequiredService<IInteractionTaskContextMaterializer>()));
         return services;
     }
 

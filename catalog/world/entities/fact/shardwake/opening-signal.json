@@ -1,0 +1,16 @@
+{
+  "id": "fact.shardwake.opening-signal",
+  "name": "The Thirteenth Beacon",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "At midnight, Lantern Harbor's unstaffed thirteenth beacon answered a blue signal from beneath the Hollow Sea.",
+      "visibility": "public",
+      "provenance": "Authored during the autonomous MCP machine-simulation world-creation session on 2026-09-01."
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "event",
+      "sensitivity": "open"
+    }
+  }
+}

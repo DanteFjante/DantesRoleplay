@@ -4,6 +4,7 @@ using System.Text.Json;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.AI;
 using DantesRoleplay.Applications;
+using DantesRoleplay.Capabilities;
 using DantesRoleplay.SchemaValidation;
 
 namespace DantesRoleplay.SystemCapabilities;
@@ -22,6 +23,13 @@ public static class SystemCapabilityIds
     public const string StateSpaceCreate = "system.state-space.create";
     public const string StateSpaceUpgrade = "system.state-space.upgrade";
     public const string StateSpaceAdoptLegacy = "system.state-space.adopt-legacy";
+    public const string MechanicSandboxDrafts = "system.mechanic-sandbox.drafts";
+    public const string MechanicSandboxDraft = "system.mechanic-sandbox.draft";
+    public const string MechanicSandboxPromote = "system.mechanic-sandbox.promote";
+    public const string InteractionContextPack = "system.interaction-context-pack";
+    public const string InteractionRecipes = "system.interaction-recipes";
+    public const string InteractionRecipeReview = "system.interaction-recipe.review";
+    public const string MechanicOpportunities = "system.mechanic-opportunities";
 }
 
 public enum SystemCapabilityMode
@@ -71,7 +79,10 @@ public sealed record SystemCapabilityDescriptor(
     SystemCapabilitySensitivity Sensitivity,
     string SensitivityName,
     bool RequiresConfirmation,
-    bool RequiresIdempotencyKey);
+    bool RequiresIdempotencyKey)
+{
+    public CapabilityContractDescriptor Contract => SystemCapabilityContractAdapter.Create(this);
+}
 
 public sealed record SystemCapabilityInvocationContext(
     TrustedPrincipalContext Principal,
@@ -146,6 +157,11 @@ public interface ISystemReadCapabilityHandler
     Task<SystemCapabilityHandlerResult> ReadAsync(
         JsonElement input,
         CancellationToken cancellationToken = default);
+
+    Task<SystemCapabilityHandlerResult> ReadAsync(
+        JsonElement input,
+        SystemCapabilityInvocationContext context,
+        CancellationToken cancellationToken = default) => ReadAsync(input, cancellationToken);
 }
 
 public static class SystemCapabilityPreflightStatuses

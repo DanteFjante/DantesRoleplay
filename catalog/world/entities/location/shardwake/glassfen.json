@@ -1,0 +1,16 @@
+{
+  "id": "location.shardwake.glassfen",
+  "name": "Glassfen",
+  "container": {
+    "id": "location.shardwake.embercoast",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "status": "active",
+      "summary": "A salt marsh where translucent reeds sing before storms and fragments of ancient skyglass surface after black rain.",
+      "kind": "site",
+      "visibility": "public"
+    }
+  }
+}

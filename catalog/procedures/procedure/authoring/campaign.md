@@ -4,8 +4,8 @@ category: authoring
 name: Bring a campaign to its first playable moment
 governs: the ordered chain running from premise through to an opening a player may act inside
 status: active
-createdBy: "llm"
-changeNote: "Added after a campaign with a root, an arc, and a chapter still had no scene, no party, and no session, and so could not be played."
+createdBy: "seed"
+changeNote: "Seeded from bootstrap file."
 ---
 
 ## Description
@@ -14,12 +14,6 @@ world, arc, chapter, party, scene, session — and it has an order, because each
 checkable once the one before it exists.
 
 ## Matches
-how do I design a campaign
-what does a campaign need to be playable
-create a new campaign
-set up a campaign from scratch
-what comes before the first session
-how do I start playing a campaign
 
 ## Instructions
 1. Write the root through its owning contract: premise, party goals, and the tone and boundaries

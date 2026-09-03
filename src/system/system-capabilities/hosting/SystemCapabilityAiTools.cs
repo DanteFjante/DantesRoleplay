@@ -48,8 +48,8 @@ public static class SystemCapabilityAiTools
     {
         public AiToolDefinition Definition { get; } = new(
             ToolName(descriptor.Id),
-            $"Read the in-process system capability '{descriptor.Id}'. {descriptor.Description}",
-            descriptor.InputSchemaJson);
+            $"Read the in-process system capability '{descriptor.Contract.Id}'. {descriptor.Contract.Description}",
+            descriptor.Contract.Input.SchemaJson);
 
         public async Task<AiToolResult> InvokeAsync(
             AiToolInvocation invocation,
@@ -76,9 +76,9 @@ public static class SystemCapabilityAiTools
     {
         public AiToolDefinition Definition { get; } = new(
             ToolName(descriptor.Id),
-            $"Write through the in-process system capability '{descriptor.Id}'. " +
-            $"Trusted confirmation and an idempotency token are required. {descriptor.Description}",
-            descriptor.InputSchemaJson);
+            $"Write through the in-process system capability '{descriptor.Contract.Id}'. " +
+            $"Trusted confirmation and an idempotency token are required. {descriptor.Contract.Description}",
+            descriptor.Contract.Input.SchemaJson);
 
         public async Task<AiToolResult> InvokeAsync(
             AiToolInvocation invocation,

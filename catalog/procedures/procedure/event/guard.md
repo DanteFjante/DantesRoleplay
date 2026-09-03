@@ -13,6 +13,8 @@ A guard reads one immutable proposed structural event after its enclosing effect
 applied inside an uncommitted transaction. It must explicitly allow the proposal or deny the whole
 root world change.
 
+## Matches
+
 ## Instructions
 1. Declare `requirements.event` with `mode: "guard"`, the exact structural event types, and the
    `components` the guard needs projected onto the entities the event touches.

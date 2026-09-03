@@ -1,0 +1,12 @@
+{
+  "id": "location.caldris.sable-hollow",
+  "name": "Sable Hollow",
+  "components": {
+    "game.core.world.location": {
+      "kind": "wilderness",
+      "status": "active",
+      "summary": "A small, quiet wood at the edge of Thistlewick's pastures. Nothing dangerous has ever come out of it -- but lately things have been going into it and not coming back.",
+      "visibility": "public"
+    }
+  }
+}

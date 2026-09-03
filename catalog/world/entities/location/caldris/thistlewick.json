@@ -1,0 +1,12 @@
+{
+  "id": "location.caldris.thistlewick",
+  "name": "Thistlewick",
+  "components": {
+    "game.core.world.location": {
+      "kind": "settlement",
+      "status": "active",
+      "summary": "A small shepherd village half a day up the Lantern Road from Bramblebridge, known for its wool and for the ring of old standing stones on the hill above the pastures. Quiet, insular, and currently missing sheep.",
+      "visibility": "public"
+    }
+  }
+}

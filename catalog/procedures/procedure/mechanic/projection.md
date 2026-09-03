@@ -11,8 +11,10 @@ changeNote: "Re-seeded: the bootstrap file changed."
 ## Description
 A kernel-development contract: how the projection layer turns a mechanic's declared requirements
 and explicit role assignments into the frozen, minimal world data handed to the JavaScript
-engine. If you are calling `commit(kind: "action")` over MCP, this is not your contract — read
+engine. If you are calling `commit(kind: "application.action.execute")` over MCP, this is not your contract — read
 `procedure.action.run` instead; the runner performs all of this for you.
+
+## Matches
 
 ## Instructions
 1. Parse the stored `requirements` with `MechanicRequirements.Parse`. The stored declaration is the

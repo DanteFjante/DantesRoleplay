@@ -128,9 +128,6 @@ public sealed class CatalogExporter(DantesRoleplayDbContext db)
             .Select(value => (value, CatalogNamespaceKinds.Procedure)));
         values.AddRange((await _db.ComponentDefinitions.AsNoTracking().Select(value => value.Id).ToArrayAsync(cancellationToken))
             .Select(value => (value, CatalogNamespaceKinds.ComponentDefinition)));
-        values.AddRange((await _db.Set<ComponentTypeRecord>().AsNoTracking().Select(value => value.QualifiedId)
-                .ToArrayAsync(cancellationToken))
-            .Select(value => (value, CatalogNamespaceKinds.ComponentType)));
         values.AddRange((await _db.EventTypes.AsNoTracking().Select(value => value.Id).ToArrayAsync(cancellationToken))
             .Select(value => (value, CatalogNamespaceKinds.EventType)));
         values.AddRange((await _db.Subscriptions.AsNoTracking().Select(value => value.Id).ToArrayAsync(cancellationToken))

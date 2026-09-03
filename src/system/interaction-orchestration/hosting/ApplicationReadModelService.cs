@@ -132,7 +132,8 @@ internal sealed class ApplicationReadModelService(
                 "The catalog projection could not produce a read model.");
         var output = evaluation.Run.Output;
         if (!output.HasData || output.Effects.Count != 0 || output.Events.Count != 0
-            || output.Notifications.Count != 0)
+            || output.Notifications.Count != 0 || evaluation.Proposal.Effects.Count != 0
+            || evaluation.Proposal.Events.Count != 0 || evaluation.Proposal.Notifications.Count != 0)
             throw Failure("READ_MODEL_OUTPUT_UNSAFE",
                 "A read model must return structured data without effects, events, or notifications.");
 

@@ -321,6 +321,34 @@ public sealed class ProjectionResolverTests : IDisposable
     }
 
     [Fact]
+    public async Task Nested_content_projection_fails_closed_on_a_persisted_cycle()
+    {
+        await using var db = _fixture.CreateContext();
+        var world = await WorldAsync(db);
+        await world.CreateEntityAsync("Backpack", "pack");
+        var now = DateTime.UtcNow;
+        db.Containments.AddRange(
+            new DantesRoleplay.World.Containment
+            {
+                ContainerId = "orban", ContainedId = "pack", Slot = "carried", CreatedAt = now
+            },
+            new DantesRoleplay.World.Containment
+            {
+                ContainerId = "pack", ContainedId = "orban", Slot = "inside", CreatedAt = now
+            });
+        await db.SaveChangesAsync();
+
+        var result = await new ProjectionResolver(db).ResolveAsync(
+            Requires("""{"roles":{"subject":{"components":[],"includeContents":true,"contentsDepth":3}}}"""),
+            new Dictionary<string, string> { ["subject"] = "orban" });
+
+        Assert.False(result.Ok);
+        Assert.Null(result.Projection);
+        Assert.Contains(result.Problems, problem => problem.StartsWith(
+            "CONTAINMENT_PROJECTION_CYCLE:", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task Where_an_entity_is_comes_for_free_because_a_rule_almost_always_needs_it()
     {
         await using var db = _fixture.CreateContext();
@@ -470,6 +498,32 @@ public sealed class ProjectionResolverTests : IDisposable
         Assert.Null(result.Projection);
         Assert.Contains(result.Problems, problem => problem.StartsWith(
             "RELATIONSHIP_COMPONENT_TARGET_MISSING:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Relationship_endpoint_declarations_include_optional_components_only_when_present()
+    {
+        await using var db = _fixture.CreateContext();
+        var world = await WorldAsync(db);
+        await world.CreateEntityAsync("Bridge", "bridge");
+        await world.SetComponentAsync("bridge", "stats", "{\"span\":2}");
+        await world.RelateAsync("orban", "bridge", "knows");
+        var requirements = Requires("""
+            {"roles":{"subject":{"components":[],"includeRelationships":true,
+              "relationshipComponents":[{"kind":"knows","direction":"outgoing",
+                "targetComponentIds":["stats"],"optionalTargetComponentIds":["marks"]}]}}}
+            """);
+
+        var withoutOptional = await new ProjectionResolver(db).ResolveAsync(requirements,
+            new Dictionary<string, string> { ["subject"] = "orban" });
+        Assert.True(withoutOptional.Ok, string.Join("; ", withoutOptional.Problems));
+        Assert.Equal(["stats"], Assert.Single(withoutOptional.Projection!.Roles["subject"].Related!).Components.Keys);
+
+        await world.SetComponentAsync("bridge", "marks", "{\"stable\":true}");
+        var withOptional = await new ProjectionResolver(db).ResolveAsync(requirements,
+            new Dictionary<string, string> { ["subject"] = "orban" });
+        Assert.True(withOptional.Ok, string.Join("; ", withOptional.Problems));
+        Assert.Equal(["marks", "stats"], Assert.Single(withOptional.Projection!.Roles["subject"].Related!).Components.Keys);
     }
 
     [Theory]

@@ -1,8 +1,11 @@
 using System.Text.Json;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Nodes;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
+using DantesRoleplay.Capabilities;
+using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Operations;
 
@@ -24,9 +27,44 @@ internal sealed class SystemInteractionHandler
             async _ =>
             {
                 if (gateway is null) return Unavailable("system.feature-search");
-                var result = await gateway.SearchFeaturesAsync(ApplicationIdentifier.Parse(applicationId ?? string.Empty),
+                var application = ApplicationIdentifier.Parse(applicationId ?? string.Empty);
+                var result = await gateway.SearchFeaturesAsync(application,
                     query, qualifiedId, limit ?? 10, namespaceId, cancellationToken);
-                return ToolOutcome.Ok(result, "Returned application-scoped interaction features.");
+                var capabilities = result.Hits.Select(value => Capability(application, value))
+                    .Where(value => value is not null).Cast<CapabilityContractDescriptor>().ToArray();
+                var data = new
+                {
+                    result.Mode,
+                    result.Hits,
+                    result.AvailabilityCode,
+                    result.AvailabilityMessage,
+                    result.ResolutionDiagnostics,
+                    Capabilities = capabilities
+                };
+                if (result.Hits.Count > 0)
+                    return ToolOutcome.Ok(data, "Returned application-scoped interaction features.");
+
+                var requested = Bound(qualifiedId ?? query ?? "the requested capability", 180);
+                var token = "feedback-request." + Convert.ToHexString(SHA256.HashData(
+                    Encoding.UTF8.GetBytes(application.Value + "\n" + requested)))[..32].ToLowerInvariant();
+                var payload = new JsonObject
+                {
+                    ["operation"] = "submit",
+                    ["requestToken"] = token,
+                    ["category"] = "suggestion",
+                    ["impact"] = "minor",
+                    ["summary"] = Bound("Missing capability: " + requested, 200),
+                    ["observed"] = Bound(
+                        $"No current trusted feature in application '{application.Value}' matched '{requested}'. " +
+                        "This is an inert proposal for review and does not create or activate a mechanic.", 500)
+                };
+                var proposal = McpNextActionFactory.Create(
+                    "propose-missing-capability",
+                    "Submit an inert suggestion for review without fabricating or activating a capability.",
+                    "mcp.commit.feedback", new JsonObject { ["payload"] = payload }, []);
+                return new ToolOutcome(data,
+                    "No current trusted feature matched; no capability was invented.",
+                    [McpNextActionFactory.Advice(proposal)], NextActions: [proposal]);
             });
 
     public Task<ToolEnvelope> PlanAsync(
@@ -272,6 +310,28 @@ internal sealed class SystemInteractionHandler
 
     private static ToolOutcome Unavailable(string kind) => ToolOutcome.Fail("INTERACTION_COMPONENT_UNAVAILABLE",
         "The interaction component is unavailable.", "query(kind: \"capabilities\")", $"{kind} is unavailable.");
+
+    private static CapabilityContractDescriptor? Capability(
+        ApplicationIdentifier application,
+        InteractionFeatureHit hit)
+    {
+        if (hit.Reference.Kind == "mechanic")
+            return ApplicationCapabilityContractAdapter.CreateMechanic(
+                application, hit.Reference.QualifiedId, hit.Name, hit.Description,
+                hit.Reference.Version, hit.Reference.ContentFingerprint, "active", hit.ContractJson);
+        if (hit.Reference.Kind != ApplicationQueryContract.CatalogKind) return null;
+        return ApplicationCapabilityContractAdapter.Create(application, new(
+            application.Value, hit.Reference.Kind, hit.Reference.QualifiedId,
+            hit.Name, hit.Description, [], [], "", "active", hit.Reference.Version,
+            hit.ContractJson, hit.Reference.ContentFingerprint, "active-catalog", "discovery"));
+    }
+
+    private static string Bound(string value, int maximum)
+    {
+        var cleaned = new string(value.Where(character => !char.IsControl(character)).ToArray()).Trim();
+        if (cleaned.Length == 0) return "unspecified request";
+        return cleaned.Length <= maximum ? cleaned : cleaned[..maximum];
+    }
 
     private static JsonDocument ParseObject(string? json, string label)
     {

@@ -12,6 +12,8 @@ changeNote: "Re-seeded: the bootstrap file changed."
 How to discover a reusable mechanic and read the exact version that would be revised or
 executed. Search results are summaries; an id lookup returns the stored source and requirements.
 
+## Matches
+
 ## Instructions
 1. Browse `query(kind: "categories", catalog: "mechanics")` first when you know the part of the
    ruleset but not the mechanic's words. Open a branch with `category: "..."`, then list its
@@ -34,7 +36,7 @@ executed. Search results are summaries; an id lookup returns the stored source a
    that a mechanic does not exist from one overly specific query.
 
 ## Constraints
-- Do not execute source returned by this query. `commit(kind: "action")` is the only mechanic
+- Do not execute source returned by this query. `commit(kind: "application.action.execute")` is the only mechanic
   execution path.
 - Do not infer role names, component meanings or game vocabulary from the kernel. Read the
   mechanic's declared requirements and source as authored content.
