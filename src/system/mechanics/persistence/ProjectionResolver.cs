@@ -257,6 +257,7 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
             : await _db.Entities
                 .AsNoTracking()
                 .Where(entity => referenceTargets.Keys.Contains(entity.Id) && entity.DeletedAt == null)
+                .OrderBy(entity => entity.Id)
                 .Select(entity => new
                 {
                     entity.Id,

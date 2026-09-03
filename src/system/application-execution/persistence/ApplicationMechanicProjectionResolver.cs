@@ -125,7 +125,7 @@ public sealed class ApplicationMechanicProjectionResolver(
             }
         }
         var referenceProjection = new Dictionary<string, ReferencedEntityProjection>(StringComparer.Ordinal);
-        foreach (var (entityId, localIds) in references)
+        foreach (var (entityId, localIds) in references.OrderBy(value => value.Key, StringComparer.Ordinal))
         {
             components.TryGetValue(entityId, out var values);
             values ??= new Dictionary<string, string>(StringComparer.Ordinal);
