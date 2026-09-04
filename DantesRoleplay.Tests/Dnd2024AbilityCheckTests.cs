@@ -8020,6 +8020,234 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.Equal(100, clock.RootElement.GetProperty("currentMinute").GetInt32());
     }
 
+    [Fact]
+    public async Task Social_attitudes_record_explicit_reasons_filter_by_audience_and_compensate()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await AddSocialFixturesAsync(harness);
+        var roles = SocialRoles("actor.social.target");
+        var initialInput = SocialInput(
+            "social.attitude.primary", null, "dnd2024.vocabulary.attitude.friendly", "party", 0,
+            [("social.reason.party", "The party returned the sealed letter.", "party"),
+             ("social.reason.private", "The DM selected a private corroborating reason.", "gm")],
+            ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],
+            ("social.consequence.primary", "The steward records the completed audience.", "party"));
+        var request = harness.ActionForRoles(
+            "dnd2024.mechanic.social.attitude.transition", roles, initialInput, 0,
+            "60000000000000000000000000000001");
+
+        var recorded = await harness.Runner.RunAsync(request);
+        var replay = await harness.Runner.RunAsync(request);
+
+        AssertSucceeded(recorded);
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replay.Disposition);
+        Assert.Single(await harness.EventsAsync(recorded.OperationId));
+        Assert.NotNull(await harness.Entities.GetEntityAsync(
+            DndHarness.StateSpaceId, "social.consequence.primary"));
+        using (var state = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "social.attitude.primary",
+                   "dnd2024.exploration.social-attitude"))!.ValueJson))
+        {
+            Assert.Equal(1, state.RootElement.GetProperty("revision").GetInt32());
+            Assert.Equal("dnd2024.vocabulary.attitude.friendly",
+                state.RootElement.GetProperty("attitude").GetProperty("entityId").GetString());
+        }
+        AssertSucceeded(await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.social.attitude.transition", SocialRoles("subject.low"),
+            SocialInput("social.attitude.private", null,
+                "dnd2024.vocabulary.attitude.hostile", "gm", 0,
+                [("social.reason.record-private", "The DM selected a private attitude record.", "gm")]),
+            0, "60000000000000000000000000000005")));
+
+        var sourceRole = new Dictionary<string, string> { ["source"] = "subject.high" };
+        var noAudience = await Assert.ThrowsAsync<ApplicationReadModelException>(() =>
+            harness.ReadModels.ReadAsync(new(
+                DndHarness.StateSpaceId, ApplicationIdentifier.Parse("dnd2024"),
+                "dnd2024.query.social-context", sourceRole)));
+        Assert.Equal("READ_MODEL_EVALUATION_FAILED", noAudience.Code);
+        var player = await harness.ReadModels.ReadAsync(new(
+            DndHarness.StateSpaceId, ApplicationIdentifier.Parse("dnd2024"),
+            "dnd2024.query.social-context", sourceRole, MechanicAudienceContext.Player));
+        var dm = await harness.ReadModels.ReadAsync(new(
+            DndHarness.StateSpaceId, ApplicationIdentifier.Parse("dnd2024"),
+            "dnd2024.query.social-context", sourceRole, MechanicAudienceContext.GameMaster));
+        using (var playerData = JsonDocument.Parse(player.DataJson))
+        {
+            Assert.Equal("player", playerData.RootElement.GetProperty("perspective").GetString());
+            var attitude = Assert.Single(playerData.RootElement.GetProperty("attitudes").EnumerateArray());
+            var reason = Assert.Single(attitude.GetProperty("reasons").EnumerateArray());
+            Assert.Equal("social.reason.party", reason.GetProperty("factId").GetString());
+            Assert.DoesNotContain("private", player.DataJson, StringComparison.OrdinalIgnoreCase);
+        }
+        using (var dmData = JsonDocument.Parse(dm.DataJson))
+        {
+            Assert.Equal("dm", dmData.RootElement.GetProperty("perspective").GetString());
+            var attitudes = dmData.RootElement.GetProperty("attitudes").EnumerateArray().ToArray();
+            Assert.Equal(2, attitudes.Length);
+            Assert.Equal(2, attitudes.Single(value =>
+                    value.GetProperty("relationshipId").GetString() == "social.attitude.primary")
+                .GetProperty("reasons").GetArrayLength());
+        }
+
+        roles["relationship"] = "social.attitude.primary";
+        var changed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.social.attitude.transition", roles,
+            SocialInput("social.attitude.primary", "dnd2024.vocabulary.attitude.friendly",
+                "dnd2024.vocabulary.attitude.indifferent", "party", 1,
+                [("social.reason.changed", "The DM selected a changed attitude after negotiation.", "party")]),
+            0, "60000000000000000000000000000002"));
+        var noOp = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.social.attitude.transition", roles,
+            SocialInput("social.attitude.primary", "dnd2024.vocabulary.attitude.indifferent",
+                "dnd2024.vocabulary.attitude.indifferent", "party", 2, []),
+            0, "60000000000000000000000000000003"));
+        var compensation = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.social.attitude.transition", roles,
+            SocialInput("social.attitude.primary", "dnd2024.vocabulary.attitude.indifferent",
+                "dnd2024.vocabulary.attitude.friendly", "party", 2,
+                [("social.reason.compensation", "The DM explicitly corrected the selected attitude.", "party")]),
+            0, "60000000000000000000000000000004"));
+
+        AssertSucceeded(changed);
+        AssertSucceeded(noOp);
+        AssertSucceeded(compensation);
+        Assert.Empty(await harness.EventsAsync(noOp.OperationId));
+        using var compensated = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "social.attitude.primary",
+            "dnd2024.exploration.social-attitude"))!.ValueJson);
+        Assert.Equal(3, compensated.RootElement.GetProperty("revision").GetInt32());
+        Assert.Equal("dnd2024.vocabulary.attitude.friendly",
+            compensated.RootElement.GetProperty("attitude").GetProperty("entityId").GetString());
+    }
+
+    [Fact]
+    public async Task Social_attitudes_reject_stale_unknown_and_creative_judgment_inputs()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await AddSocialFixturesAsync(harness);
+        var roles = SocialRoles("actor.social.target");
+        AssertSucceeded(await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.social.attitude.transition", roles,
+            SocialInput("social.attitude.guarded", null,
+                "dnd2024.vocabulary.attitude.indifferent", "party", 0,
+                [("social.reason.guarded", "The DM selected the initial attitude.", "party")]),
+            0, "61000000000000000000000000000001")));
+        roles["relationship"] = "social.attitude.guarded";
+
+        var stale = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.social.attitude.transition", roles,
+            SocialInput("social.attitude.guarded", "dnd2024.vocabulary.attitude.indifferent",
+                "dnd2024.vocabulary.attitude.hostile", "party", 99,
+                [("social.reason.stale", "This stale selection must not be committed.", "party")]),
+            0, "61000000000000000000000000000002"));
+        var creative = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.social.attitude.transition", roles,
+            SocialInput("social.attitude.guarded", "dnd2024.vocabulary.attitude.indifferent",
+                "dnd2024.vocabulary.attitude.hostile", "party", 1,
+                [("social.reason.creative", "This invalid request must not be committed.", "party")],
+                creativeDecision: "The NPC agrees and delivers a speech."),
+            0, "61000000000000000000000000000003"));
+        var unknown = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.social.attitude.transition", SocialRoles("actor.social.missing"),
+            SocialInput("social.attitude.missing", null,
+                "dnd2024.vocabulary.attitude.friendly", "party", 0,
+                [("social.reason.missing", "This target does not exist.", "party")]),
+            0, "61000000000000000000000000000004"));
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, stale.Disposition);
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, creative.Disposition);
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, unknown.Disposition);
+        Assert.Null(await harness.Entities.GetEntityAsync(DndHarness.StateSpaceId, "social.reason.stale"));
+        Assert.Null(await harness.Entities.GetEntityAsync(DndHarness.StateSpaceId, "social.reason.creative"));
+        using var unchanged = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "social.attitude.guarded",
+            "dnd2024.exploration.social-attitude"))!.ValueJson);
+        Assert.Equal(1, unchanged.RootElement.GetProperty("revision").GetInt32());
+        Assert.Equal("dnd2024.vocabulary.attitude.indifferent",
+            unchanged.RootElement.GetProperty("attitude").GetProperty("entityId").GetString());
+    }
+
+    [Fact]
+    public async Task Social_attitude_transaction_failure_rolls_back_facts_state_and_event()
+    {
+        await using var harness = await DndHarness.CreateAsync(failTransactionAfterEffects: true);
+        await AddSocialFixturesAsync(harness);
+        var failed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.social.attitude.transition", SocialRoles("actor.social.target"),
+            SocialInput("social.attitude.rollback", null,
+                "dnd2024.vocabulary.attitude.friendly", "party", 0,
+                [("social.reason.rollback", "This transaction is forced to roll back.", "party")],
+                consequence: ("social.consequence.rollback", "This consequence must roll back.", "party")),
+            0, "62000000000000000000000000000001"));
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, failed.Disposition);
+        Assert.Null(await harness.Entities.GetEntityAsync(DndHarness.StateSpaceId, "social.attitude.rollback"));
+        Assert.Null(await harness.Entities.GetEntityAsync(DndHarness.StateSpaceId, "social.reason.rollback"));
+        Assert.Null(await harness.Entities.GetEntityAsync(DndHarness.StateSpaceId, "social.consequence.rollback"));
+        Assert.Empty(await harness.EventsAsync(failed.OperationId));
+    }
+
+    private static async Task AddSocialFixturesAsync(DndHarness harness)
+    {
+        await harness.Entities.CreateEntityAsync(
+            DndHarness.StateSpaceId, "actor.social.target", "Social target");
+        await harness.Entities.CreateEntityAsync(
+            DndHarness.StateSpaceId, "campaign.social.fixture", "Social campaign");
+        await harness.AddApplicationComponentAsync("campaign.social.fixture", "game.core.campaign.root",
+            "{\"status\":\"active\",\"title\":\"Social fixture\",\"premise\":\"Test explicit social consequences.\"," +
+            "\"partyGoals\":[\"Preserve selected state.\"],\"toneAndBoundaries\":[\"No invented judgment.\"]," +
+            "\"rulesetScope\":\"dnd2024\",\"creationMethod\":\"manual\",\"reviewFingerprint\":\"" +
+            new string('a', 64) + "\"}");
+    }
+
+    private static Dictionary<string, string> SocialRoles(string targetId) => new(StringComparer.Ordinal)
+    {
+        ["source"] = "subject.high",
+        ["target"] = targetId,
+        ["campaign"] = "campaign.social.fixture"
+    };
+
+    private static string SocialInput(
+        string relationshipId,
+        string? previousAttitudeId,
+        string nextAttitudeId,
+        string visibility,
+        int expectedRevision,
+        IReadOnlyList<(string Id, string Summary, string Visibility)> reasons,
+        IReadOnlyList<string>? evidence = null,
+        (string Id, string Summary, string Visibility)? consequence = null,
+        string? creativeDecision = null)
+    {
+        var input = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["relationshipId"] = relationshipId,
+            ["previousAttitudeId"] = previousAttitudeId,
+            ["nextAttitudeId"] = nextAttitudeId,
+            ["visibility"] = visibility,
+            ["reasonFacts"] = reasons.Select(value => new
+            {
+                factId = value.Id,
+                kind = "reason",
+                summary = value.Summary,
+                provenance = "DM-selected Slice 13 test evidence",
+                visibility = value.Visibility
+            }).ToArray(),
+            ["evidenceReceiptIds"] = evidence ?? [],
+            ["expectedRevision"] = expectedRevision
+        };
+        if (consequence is { } selected)
+            input["consequence"] = new
+            {
+                factId = selected.Id,
+                kind = "consequence",
+                summary = selected.Summary,
+                provenance = "DM-selected Slice 13 consequence",
+                visibility = selected.Visibility
+            };
+        if (creativeDecision is not null) input["dialogueAndAcceptance"] = creativeDecision;
+        return JsonSerializer.Serialize(input);
+    }
+
     private static Dictionary<string, string> ObjectDurabilityRoles(string objectId, string definitionId) =>
         new(StringComparer.Ordinal) { ["object"] = objectId, ["definition"] = definitionId };
 
@@ -8510,6 +8738,7 @@ public sealed class Dnd2024AbilityCheckTests
             foreach (var componentId in new[]
                      {
                          "game.core.world.root", "game.core.world.clock",
+                         "game.core.world.fact", "game.core.campaign.root",
                          "game.core.campaign.character-participation",
                          "game.core.world.location", "game.core.world.route",
                          "game.core.world.route.availability", "game.core.world.traveller",
@@ -8595,6 +8824,17 @@ public sealed class Dnd2024AbilityCheckTests
                         eventName + ".schema.json"))
                 });
             }
+            await new EventTypeStore(db).WriteAsync(new()
+            {
+                Id = "dnd2024.social.attitude-changed",
+                Category = "dnd2024.ruleset.core.gameplay.social",
+                Name = "Social attitude changed",
+                Scope = "world",
+                Status = EventTypeStatus.Active,
+                PayloadSchema = await File.ReadAllTextAsync(Path.Combine(
+                    RepositoryRoot(), "catalog", "event-types", "dnd2024", "social",
+                    "attitude-changed.schema.json"))
+            });
             await entities.CreateEntityAsync(StateSpaceId,
                 "dnd2024.content.defense.unarmored.v1", "Unarmored Defense (ordinary, D&D 2024)");
             var defenseBasis = additionalTypes["dnd2024.creature.defense-basis"];

@@ -41,7 +41,8 @@ public sealed record ApplicationMechanicEvaluationRequest(
     IReadOnlyDictionary<string, string> RoleEntityIds,
     string InputJson,
     long Seed,
-    MechanicExecutionContext? Execution = null);
+    MechanicExecutionContext? Execution = null,
+    MechanicAudienceContext? Audience = null);
 
 public sealed record ApplicationMechanicEvaluationResult(
     string QualifiedMechanicId,

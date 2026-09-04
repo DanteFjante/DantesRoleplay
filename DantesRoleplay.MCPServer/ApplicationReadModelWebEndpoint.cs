@@ -3,6 +3,7 @@ using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Knowledge;
+using DantesRoleplay.Mechanics;
 
 namespace DantesRoleplay.MCPServer;
 
@@ -42,7 +43,10 @@ public static class ApplicationReadModelWebEndpoint
                 stateSpaceId,
                 application!,
                 qualifiedQueryId,
-                roleBindings), cancellationToken);
+                roleBindings,
+                seat.Role == KnowledgeAudienceRole.GameMaster
+                    ? MechanicAudienceContext.GameMaster
+                    : MechanicAudienceContext.Player), cancellationToken);
             using var data = JsonDocument.Parse(result.DataJson);
             return Results.Json(new
             {

@@ -1,0 +1,9 @@
+var i=ctx.input,s=ctx.roles.source,t=ctx.roles.target,c=ctx.roles.campaign,FACT='game.core.world.fact',REASON='social-attitude.reason',CONSEQUENCE='social-attitude.consequence',ABOUT='game.core.world.knowledge.about',REFERENCE='game.core.campaign.references';
+function object(v){return v!==null&&!Array.isArray(v)&&typeof v==='object';}
+function exact(v,keys){return object(v)&&Object.keys(v).sort().join('|')===keys.slice().sort().join('|');}
+function text(v,n){return typeof v==='string'&&v.trim()===v&&v.length>0&&v.length<=n&&!/[\u0000-\u001f]/.test(v);}
+if(!exact(i,['factId','kind','summary','provenance','visibility'])||!text(i.factId,200)||!text(i.summary,1000)||!text(i.provenance,500)||(i.kind!=='reason'&&i.kind!=='consequence')||(i.visibility!=='party'&&i.visibility!=='gm')||!s||!t||s.id===t.id||i.factId===s.id||i.factId===t.id)throw new Error('The selected social fact is invalid.');
+if(i.kind==='consequence'&&!c)throw new Error('A campaign consequence requires the exact campaign owner.');
+var effects=[{type:'entity.create',entityId:i.factId,name:i.kind==='reason'?'Social attitude reason':'Campaign social consequence'},{type:'component.add',entityId:i.factId,definitionId:FACT,data:JSON.stringify({status:'active',summary:i.summary,provenance:i.provenance,visibility:i.visibility})},{type:'relationship.create',entityId:s.id,toEntityId:i.factId,kind:i.kind==='reason'?REASON:CONSEQUENCE,data:'{}'},{type:'relationship.create',entityId:i.factId,toEntityId:t.id,kind:ABOUT,data:'{}'}];
+if(i.kind==='consequence')effects.push({type:'relationship.create',entityId:c.id,toEntityId:i.factId,kind:REFERENCE,data:JSON.stringify({role:'social-consequence',audience:i.visibility})});
+return {narration:'Recorded one selected '+i.kind+' fact.',effects:effects,events:[],notifications:[],data:{factId:i.factId,kind:i.kind,visibility:i.visibility}};

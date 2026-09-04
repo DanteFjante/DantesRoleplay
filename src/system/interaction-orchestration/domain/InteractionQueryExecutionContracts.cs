@@ -1,4 +1,5 @@
 using DantesRoleplay.Applications;
+using DantesRoleplay.Mechanics;
 
 namespace DantesRoleplay.Interactions;
 
@@ -13,7 +14,8 @@ public sealed record InteractionQueryExecutionRequest(
     ApplicationIdentifier ApplicationId,
     string QualifiedQueryId,
     InteractionQueryContractReference Contract,
-    IReadOnlyDictionary<string, string> RoleBindings);
+    IReadOnlyDictionary<string, string> RoleBindings,
+    MechanicAudienceContext? Audience = null);
 
 public sealed record InteractionQueryExecutionResult(
     string OutputJson,

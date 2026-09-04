@@ -3,6 +3,7 @@ using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Knowledge;
+using DantesRoleplay.Mechanics;
 using DantesRoleplay.MCPServer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Json;
@@ -23,6 +24,7 @@ public sealed class ApplicationReadModelWebEndpointTests
             "actor.other", service);
 
         Assert.Equal(StatusCodes.Status200OK, own.StatusCode);
+        Assert.Equal(MechanicAudienceContext.Player, service.LastRequest!.Audience);
         Assert.Equal("actor.aric", own.Body.GetProperty("data").GetProperty("subject")
             .GetProperty("id").GetString());
         Assert.Equal(StatusCodes.Status403Forbidden, other.StatusCode);
@@ -39,6 +41,7 @@ public sealed class ApplicationReadModelWebEndpointTests
             KnowledgeAudienceRole.GameMaster), "actor.aric", service);
 
         Assert.Equal(StatusCodes.Status200OK, response.StatusCode);
+        Assert.Equal(MechanicAudienceContext.GameMaster, service.LastRequest!.Audience);
         Assert.Equal("resolution-fingerprint", response.Body
             .GetProperty("resolutionFingerprint").GetString());
         Assert.Equal(1, service.Calls);

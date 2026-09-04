@@ -36,6 +36,8 @@ public sealed class ApplicationMechanicEvaluator(
         ArgumentNullException.ThrowIfNull(request);
         if (!ValidExecution(request.Execution))
             return Failed(request, "MECHANIC_EXECUTION_INVALID: The host execution identity is invalid.");
+        if (request.Audience is not null && !request.Audience.IsValid)
+            return Failed(request, "MECHANIC_AUDIENCE_INVALID: The host audience is invalid.");
         if (!catalogs.TryGet(request.ApplicationId, out var catalog))
             return Failed(request, "APPLICATION_CATALOG_UNAVAILABLE: The exact active application catalog is unavailable.");
         CatalogRecordView record;
@@ -61,7 +63,11 @@ public sealed class ApplicationMechanicEvaluator(
             requirements, request.Mapping, request.RoleEntityIds, request.InputJson, request.Seed, cancellationToken);
         if (!projection.Ok)
             return new(request.QualifiedMechanicId, request.ContentFingerprint, null, null, projection.Problems);
-        var exactProjection = projection.Projection! with { Execution = request.Execution };
+        var exactProjection = projection.Projection! with
+        {
+            Execution = request.Execution,
+            Audience = request.Audience
+        };
         var composed = await ComposeAsync(request, requirements, exactProjection, depth, ancestors, budget, cancellationToken);
         if (composed.Projection is null) return Failed(request, composed.Error);
         var run = await engine.RunAsync(document.Source ?? "", composed.Projection, ExecutionLimits.Default, cancellationToken);
@@ -131,7 +137,7 @@ public sealed class ApplicationMechanicEvaluator(
                 var child = await EvaluateCoreAsync(new(parent.StateSpaceId, parent.ApplicationId,
                     childRecord.Summary.QualifiedId, childRecord.Summary.ContentFingerprint, parent.Mapping,
                     invocation.RoleEntityIds, invocation.Input, DeriveSeed(parent.Seed, invocation.Ordinal),
-                    childExecution),
+                    childExecution, parent.Audience),
                     depth + 1, lineage, budget, cancellationToken);
                 if (!child.Ok || child.Projection is null || child.Run is null)
                     return (null, $"CHILD_FAILED ({pair.Key}): " + (child.Problems.FirstOrDefault() ?? child.Run?.Error ?? "Child did not produce a result."), CompositionProposal.Empty);

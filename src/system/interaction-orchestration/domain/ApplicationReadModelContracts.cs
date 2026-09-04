@@ -1,4 +1,5 @@
 using DantesRoleplay.Applications;
+using DantesRoleplay.Mechanics;
 
 namespace DantesRoleplay.Interactions;
 
@@ -6,7 +7,8 @@ public sealed record ApplicationReadModelRequest(
     string StateSpaceId,
     ApplicationIdentifier ApplicationId,
     string QualifiedQueryId,
-    IReadOnlyDictionary<string, string> RoleBindings);
+    IReadOnlyDictionary<string, string> RoleBindings,
+    MechanicAudienceContext? Audience = null);
 
 public sealed record ApplicationReadModelResult(
     string ApplicationId,

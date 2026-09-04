@@ -606,6 +606,13 @@ public sealed record MechanicProjection
     /// </summary>
     public MechanicExecutionContext? Execution { get; init; }
 
+    /// <summary>
+    /// Optional host-selected audience for an audience-aware read projection. Callers never put
+    /// this value in mechanic input; transport and planning adapters bind it from their current
+    /// authorization context. Ordinary actions and audience-neutral reads leave it absent.
+    /// </summary>
+    public MechanicAudienceContext? Audience { get; init; }
+
     /// <summary>Role name to the entity filling it. A missing optional role is simply absent.</summary>
     public Dictionary<string, EntityProjection> Roles { get; init; } = [];
 
@@ -710,6 +717,15 @@ public sealed record MechanicExecutionContext(
     string OperationId,
     string? ParentOperationId,
     int InvocationOrdinal);
+
+/// <summary>Immutable host-owned audience supplied only to audience-aware read projections.</summary>
+public sealed record MechanicAudienceContext(string Perspective)
+{
+    public static MechanicAudienceContext Player { get; } = new("player");
+    public static MechanicAudienceContext GameMaster { get; } = new("dm");
+
+    public bool IsValid => Perspective is "player" or "dm";
+}
 
 /// <summary>Replayable child output supplied to a parent as frozen JSON data.</summary>
 public sealed record ChildMechanicResult(

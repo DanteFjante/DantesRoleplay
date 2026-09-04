@@ -115,7 +115,8 @@ internal sealed class MechanicProjectionInteractionQueryExecutor(IApplicationRea
             request.StateSpaceId,
             request.ApplicationId,
             request.QualifiedQueryId,
-            request.RoleBindings), cancellationToken);
+            request.RoleBindings,
+            request.Audience), cancellationToken);
         if (result.QualifiedQueryId != request.QualifiedQueryId
             || result.OutputSchemaHash != request.Contract.OutputSchemaHash)
             throw new InteractionContractException("QUERY_READ_MODEL_STALE",

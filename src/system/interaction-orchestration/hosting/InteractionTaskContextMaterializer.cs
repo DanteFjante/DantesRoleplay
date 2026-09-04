@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Knowledge;
+using DantesRoleplay.Mechanics;
 using DantesRoleplay.Play;
 using DantesRoleplay.Sources;
 
@@ -60,8 +61,9 @@ public sealed class InteractionTaskContextMaterializer(
         var limitations = new List<string>();
         if (!string.IsNullOrEmpty(search.AvailabilityCode))
             limitations.Add(search.AvailabilityCode);
-        var readViewItems = await ReadViews(envelope, records, limitations, cancellationToken);
         var knowledgeItems = await ReadKnowledge(envelope, limitations, cancellationToken);
+        var readViewItems = await ReadViews(
+            envelope, records, knowledgeItems.Audience, limitations, cancellationToken);
         var continuity = ReadContinuity(envelope);
         var receiptItems = await ReadReceipts(envelope, limitations, cancellationToken);
 
@@ -93,6 +95,7 @@ public sealed class InteractionTaskContextMaterializer(
     private async Task<List<ContextItem>> ReadViews(
         AuthorizedInteractionEnvelope envelope,
         IReadOnlyList<CatalogRecordDefinition> records,
+        AudienceContext? audience,
         List<string> limitations,
         CancellationToken cancellationToken)
     {
@@ -115,7 +118,10 @@ public sealed class InteractionTaskContextMaterializer(
             try
             {
                 var result = await readModels.ReadAsync(new(envelope.Host.StateSpaceId,
-                    envelope.Host.ApplicationRevision.ApplicationId, contract.Id, bindings), cancellationToken);
+                    envelope.Host.ApplicationRevision.ApplicationId, contract.Id, bindings,
+                    audience is null ? null : audience.ActorAudience
+                        ? MechanicAudienceContext.Player
+                        : MechanicAudienceContext.GameMaster), cancellationToken);
                 if (result.StateSpaceFingerprint != envelope.Host.EffectiveSetFingerprint
                     || result.ResolutionFingerprint != envelope.Host.ResolutionFingerprint)
                     throw Failure("TASK_CONTEXT_READ_VIEW_STALE",

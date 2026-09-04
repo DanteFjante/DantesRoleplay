@@ -25,7 +25,8 @@ internal sealed class ApplicationReadModelService(
         ArgumentNullException.ThrowIfNull(request.ApplicationId);
         if (!Token(request.StateSpaceId) || !Token(request.QualifiedQueryId)
             || request.RoleBindings is null || request.RoleBindings.Count > 32
-            || request.RoleBindings.Any(value => !Token(value.Key) || !Token(value.Value)))
+            || request.RoleBindings.Any(value => !Token(value.Key) || !Token(value.Value))
+            || request.Audience is not null && !request.Audience.IsValid)
             throw Failure("READ_MODEL_REQUEST_INVALID", "The read-model request is invalid or unbounded.");
 
         var stateSpace = stateSpaces.Get(request.StateSpaceId);
@@ -126,7 +127,8 @@ internal sealed class ApplicationReadModelService(
             mapping.Mapping!,
             request.RoleBindings,
             "{}",
-            0), cancellationToken);
+            0,
+            Audience: request.Audience), cancellationToken);
         if (!evaluation.Ok || evaluation.Run is null || evaluation.Projection is null)
             throw Failure("READ_MODEL_EVALUATION_FAILED",
                 "The catalog projection could not produce a read model.");

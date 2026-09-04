@@ -36,8 +36,9 @@ effect-free JavaScript mechanic. The generic host resolves installed component i
 sandbox, validates the returned data against the registered output schema, and binds the response
 to state-space, resolution, result, and source-revision fingerprints. A website must consume that
 read model instead of reproducing ruleset calculations or scanning raw ECS components. Host-bound
-audience policy selects which entity may be projected; the request or model never selects its own
-audience.
+audience policy selects which entity may be projected and supplies the frozen player-or-DM
+perspective seen by audience-aware JavaScript; mechanic input and model output never select or
+upgrade their own audience.
 
 Before an application planner receives a turn, materialize one bounded task-context pack for the
 already-authorized principal, application, state space, session, and audience. The pack may contain

@@ -1,0 +1,10 @@
+{
+  "id": "dnd2024.social",
+  "owner": "dnd2024",
+  "description": "Namespace for typed D&D 2024 social-attitude transition events.",
+  "allowedKinds": ["event-type"],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for the Slice 13 governed social-attitude contract."
+}

@@ -1,0 +1,35 @@
+{
+  "id": "dnd2024.query.social-context",
+  "category": "game.core.campaign.read-model",
+  "name": "Current social context",
+  "description": "Returns audience-filtered current attitudes and their authorized reason facts for one exact source actor.",
+  "matches": ["show current social attitudes", "why does this npc feel this way", "show social relationship context"],
+  "roles": { "source": "The exact audience-authorized source actor." },
+  "executor": "mechanic-projection",
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.social.context.project",
+    "version": 1,
+    "contentHash": "9B9104656D0AD78CE0D4A2A540808F94AC3316563D88B28D6440156DBCF245D9",
+    "outputSchemaHash": "F03C5EFA300B641603B6250029C7CC313B6DC172503FB4D48B15125E43E59AEA"
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["version", "sourceActorId", "perspective", "attitudes"],
+    "properties": {
+      "version": { "const": 1 },
+      "sourceActorId": { "$ref": "#/$defs/id" },
+      "perspective": { "enum": ["player", "dm"] },
+      "attitudes": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/attitude" } }
+    },
+    "$defs": {
+      "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "attitudeId": { "enum": ["dnd2024.vocabulary.attitude.friendly", "dnd2024.vocabulary.attitude.indifferent", "dnd2024.vocabulary.attitude.hostile"] },
+      "reason": { "type": "object", "additionalProperties": false, "required": ["factId", "summary", "provenance", "visibility"], "properties": { "factId": { "$ref": "#/$defs/id" }, "summary": { "type": "string", "minLength": 1, "maxLength": 1000 }, "provenance": { "type": "string", "minLength": 1, "maxLength": 500 }, "visibility": { "enum": ["public", "party", "gm"] } } },
+      "attitude": { "type": "object", "additionalProperties": false, "required": ["relationshipId", "sourceActorId", "targetEntityId", "attitudeId", "reasons", "revision", "visibility", "changedByOperationId", "evidenceCount"], "properties": { "relationshipId": { "$ref": "#/$defs/id" }, "sourceActorId": { "$ref": "#/$defs/id" }, "targetEntityId": { "$ref": "#/$defs/id" }, "attitudeId": { "$ref": "#/$defs/attitudeId" }, "reasons": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/reason" } }, "revision": { "type": "integer", "minimum": 1, "maximum": 2147483647 }, "visibility": { "enum": ["party", "gm"] }, "changedByOperationId": { "type": "string", "pattern": "^[0-9a-f]{32}$" }, "evidenceCount": { "type": "integer", "minimum": 0, "maximum": 8 } } }
+    }
+  },
+  "exposure": "model-visible",
+  "status": "active"
+}
