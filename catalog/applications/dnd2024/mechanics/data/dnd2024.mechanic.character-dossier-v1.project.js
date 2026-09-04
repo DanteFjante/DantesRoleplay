@@ -33,6 +33,12 @@ sheet.origin={species:named(species),background:named(background)};
 sheet.classes=classes.map(function(value){return {id:value.id,name:value.name,class:named(value.definition),level:value.level,subclass:value.subclass};});
 sheet.features=detailedFeatures.map(function(value){return {feature:named(value.definition),grantedBy:named(value.grantedBy),grantKind:{id:value.grantKind,label:value.grantKind==='origin-feat'?'Origin Feat':'Class Feature'},classLevel:value.classLevel};});
 sheet.inventory={items:items,contentsDepth:4,mayOmitDeeperContents:true};
-if(levelOneRules.armorClass&&levelOneRules.armorClass.eligible&&Number.isInteger(levelOneRules.armorClass.value))sheet.armorClass={value:levelOneRules.armorClass.value};var sheetSenses=Array.isArray(sheet.senses)?sheet.senses:[];for(var senseIndex=0;senseIndex<levelOneRules.senses.length;senseIndex++){var sense=levelOneRules.senses[senseIndex],exists=sheetSenses.some(function(value){return value.id===sense.id;});if(!exists)sheetSenses.push({id:sense.id,numerator:sense.rangeFeet,denominator:1,unitId:'dnd2024.vocabulary.distance-unit.foot'});}if(sheetSenses.length)sheet.senses=sheetSenses;
+if(levelOneRules.armorClass&&levelOneRules.armorClass.eligible&&Number.isInteger(levelOneRules.armorClass.value))sheet.armorClass={value:levelOneRules.armorClass.value};
+var sheetSenses=Array.isArray(sheet.senses)?sheet.senses:[];
+for(var senseIndex=0;senseIndex<levelOneRules.senses.length;senseIndex++){
+  var sense=levelOneRules.senses[senseIndex],exists=sheetSenses.some(function(value){return value.sense&&value.sense.id===sense.id;});
+  if(!exists)sheetSenses.push({sense:{id:sense.id,label:title(sense.id.split('.').pop())},numerator:sense.rangeFeet,denominator:1,unit:{id:'dnd2024.vocabulary.distance-unit.foot',label:'Foot'}});
+}
+if(sheetSenses.length)sheet.senses=sheetSenses;
 var allDefinitions=uniqueDefinitions(definitions);
 return {narration:'Projected the complete canonical character dossier for '+subject.name+'.',effects:[],events:[],notifications:[],data:{version:1,sheet:sheet,origin:{species:species,background:background,traits:traits},classes:classes,features:detailedFeatures,inventory:{definitions:uniqueDefinitions(inventoryDefinitions),contentsDepth:4,mayOmitDeeperContents:true},levelOneRules:levelOneRules,definitions:allDefinitions,provenance:{sheetQueryId:'dnd2024.query.character-sheet-v2',sheetProjectionId:'dnd2024.mechanic.character-sheet-v2.project',dossierProjectionId:'dnd2024.mechanic.character-dossier-v1.project',definitionCount:allDefinitions.length,inventoryDepth:4,ruleTextPolicy:'canonical-only'}}};

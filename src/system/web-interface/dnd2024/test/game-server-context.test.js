@@ -80,6 +80,41 @@ function mediaAttachment(role = "portrait", alt = "A reviewed portrait", mediaId
   };
 }
 
+test("canonical senses use named references and reject legacy or partial measurements before rendering", async () => {
+  const namedSense = { sense: { id: "dnd2024.vocabulary.sense.darkvision", label: "Darkvision" },
+    numerator: 60, denominator: 1, unit: { id: "dnd2024.vocabulary.distance-unit.foot", label: "Foot" } };
+  const cases = [
+    { sense: namedSense, ready: true },
+    { sense: { sense: namedSense.sense }, ready: true },
+    { sense: { id: namedSense.sense.id, numerator: 60, denominator: 1, unitId: namedSense.unit.id }, ready: false },
+    { sense: { ...namedSense, unit: undefined }, ready: false },
+    { sense: { ...namedSense, denominator: 0 }, ready: false },
+    { sense: { ...namedSense, sense: { id: namedSense.sense.id } }, ready: false },
+    { sense: null, ready: false },
+  ];
+  for (const item of cases) {
+    const data = characterDossier({
+      version: 2, subject: { id: "actor.fixture", label: "Fixture Hero" },
+      origin: { species: { id: "species.fixture", label: "Fixture Species" }, background: { id: "background.fixture", label: "Fixture Background" } },
+      classes: [{ id: "membership.fixture", name: "Fixture membership", class: { id: "class.fixture", label: "Fixture Class" }, level: 1, subclass: null }],
+      senses: [item.sense], inventory: { items: [], contentsDepth: 4, mayOmitDeeperContents: true },
+      wallet: { coinCount: 0, copperValue: 0, gpCount: 0, denominations: [] },
+    });
+    const result = await readCanonicalCharacter({
+      origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "fixture", actorId: "actor.fixture",
+      fetchImpl: async () => response(200, { qualifiedQueryId: "dnd2024.query.character-dossier-v1",
+        stateSpaceFingerprint: "A".repeat(64), resolutionFingerprint: "B".repeat(64),
+        resultFingerprint: "C".repeat(64), sourceRevisionFingerprint: "D".repeat(64), data }),
+    });
+    assert.equal(result.status, item.ready ? "ready" : "error", JSON.stringify(item.sense));
+    if (item.ready) assert.deepEqual(result.data.senses, [item.sense]);
+    else {
+      assert.equal(result.failureCategory, "incompatible-data");
+      assert.equal(result.data, null);
+    }
+  }
+});
+
 function mediaRecord(...attachments) {
   return {
     applicationId: "dnd2024",

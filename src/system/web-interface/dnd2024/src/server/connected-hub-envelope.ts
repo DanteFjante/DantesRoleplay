@@ -282,7 +282,9 @@ function projectParty(connection: ConnectedCampaignEnvelope): PartyMemberReadMod
           data: inventory,
           source: inventoryIsCanonical ? "canonical" as const : "provisional" as const,
         };
-    const primaryDirection = origin[0]?.title ?? sheet[0]?.title ?? "Character details not yet recorded";
+    const primaryDirection = origin[0]?.title ?? sheet[0]?.title ?? (canonicalFailed
+      ? "Character details temporarily unavailable"
+      : "Character details not yet recorded");
     return {
       id: member.id,
       initials: initials(member.name),

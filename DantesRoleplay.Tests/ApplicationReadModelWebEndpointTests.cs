@@ -76,6 +76,19 @@ public sealed class ApplicationReadModelWebEndpointTests
         Assert.Equal(2, service.LastRequest.RoleBindings.Count);
     }
 
+    [Fact]
+    public async Task Unavailable_catalog_is_not_reported_as_missing_audience_roles()
+    {
+        var service = new ReadModels();
+        var response = await ReadAsync(
+            new(true, "player", "dnd2024", "campaign.1", "actor.aric"),
+            "actor.aric", service, new EmptyPublicApplicationCatalogProvider());
+
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable, response.StatusCode);
+        Assert.Equal("READ_MODEL_CATALOG_UNAVAILABLE", response.Body.GetProperty("code").GetString());
+        Assert.Equal(0, service.Calls);
+    }
+
     private static async Task<(int StatusCode, JsonElement Body)> ReadAsync(
         LocalKnowledgeSeatSnapshot seat,
         string entityId,

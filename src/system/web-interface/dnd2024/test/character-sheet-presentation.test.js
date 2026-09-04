@@ -42,9 +42,14 @@ test("inventory renders canonical definition details and provenance from the dos
   assert.match(source, /definition\?\.summary/u);
   assert.match(source, /definition\?\.source/u);
   assert.doesNotMatch(source, /fixture\.legacy|legacy\.stats/u);
+  assert.match(styles, /\.character-inventory__item-copy small\s*\{[^}]*overflow-wrap:\s*anywhere;[^}]*white-space:\s*normal;/su);
 });
 
 test("the character page owns responsive desktop, tablet, and mobile layouts", () => {
+  for (const [selector, width] of [["character-sheet-v2__columns", 360], ["character-abilities", 100],
+    ["character-checks", 230], ["character-inventory-layout", 280]]) {
+    assert.match(styles, new RegExp(`\\.${selector}\\s*\\{[^}]*repeat\\(auto-fit, minmax\\(min\\(100%, ${width}px\\), 1fr\\)\\)`, "u"));
+  }
   assert.match(styles, /\.character-page\s*\{[^}]*min-width:\s*0/su);
   assert.match(styles, /\.character-workspace\s*\{[^}]*grid-template-columns:\s*minmax\(220px,\s*0\.25fr\)\s*minmax\(0,\s*1fr\)/su);
   for (const breakpoint of ["1100px", "820px", "520px"]) {

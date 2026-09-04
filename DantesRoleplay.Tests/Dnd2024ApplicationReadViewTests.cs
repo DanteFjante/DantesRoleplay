@@ -746,8 +746,10 @@ public sealed class Dnd2024ApplicationReadViewTests
         Assert.Contains("bounded depth", depthResult.Error, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public async Task Character_dossier_joins_recorded_origin_features_inventory_and_provenance_without_private_rules_text()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Character_dossier_joins_recorded_origin_features_inventory_and_provenance_without_private_rules_text(bool hasRecordedSense)
     {
         const string speciesId = "dnd2024.content.species.half-elf.v1";
         const string backgroundId = "dnd2024.content.background.acolyte.v1";
@@ -845,8 +847,27 @@ public sealed class Dnd2024ApplicationReadViewTests
             }
         };
 
+        if (hasRecordedSense)
+        {
+            var recordedSheet = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(sheet)!;
+            recordedSheet["senses"] = JsonSerializer.SerializeToElement(new[]
+            {
+                new { sense = new { id = "dnd2024.vocabulary.sense.darkvision", label = "Darkvision" },
+                    numerator = 120, denominator = 1,
+                    unit = new { id = "dnd2024.vocabulary.distance-unit.foot", label = "Foot" } }
+            });
+            projection.Children["sheet"] = [Child("dnd2024.mechanic.character-sheet-v2.project", "subject", subject.Id, JsonSerializer.Serialize(recordedSheet))];
+        }
         using var output = await Run("data/dnd2024.mechanic.character-dossier-v1.project", projection);
         var data = output.RootElement;
+        var projectedSense = Assert.Single(data.GetProperty("sheet").GetProperty("senses").EnumerateArray());
+        Assert.Equal("dnd2024.vocabulary.sense.darkvision", projectedSense.GetProperty("sense").GetProperty("id").GetString());
+        Assert.Equal("Darkvision", projectedSense.GetProperty("sense").GetProperty("label").GetString());
+        Assert.Equal(hasRecordedSense ? 120 : 60, projectedSense.GetProperty("numerator").GetInt32());
+        Assert.Equal(1, projectedSense.GetProperty("denominator").GetInt32());
+        Assert.Equal("Foot", projectedSense.GetProperty("unit").GetProperty("label").GetString());
+        Assert.False(projectedSense.TryGetProperty("id", out _));
+        Assert.False(projectedSense.TryGetProperty("unitId", out _));
         Assert.Equal("Half-Elf", data.GetProperty("origin").GetProperty("species").GetProperty("label").GetString());
         Assert.Equal("Acolyte", data.GetProperty("origin").GetProperty("background").GetProperty("label").GetString());
         Assert.Equal("Monk", data.GetProperty("classes")[0].GetProperty("definition").GetProperty("label").GetString());

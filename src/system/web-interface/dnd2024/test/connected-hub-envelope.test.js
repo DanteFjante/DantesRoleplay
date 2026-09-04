@@ -364,6 +364,7 @@ test("canonical failures remain errors and never fall back to provisional charac
   assert.equal(member.sheetState.status, "error");
   assert.equal(member.sheetState.failureCategory, "incompatible-data");
   assert.equal(member.inventoryState.status, "error");
+  assert.equal(member.detail, "Character details temporarily unavailable");
   assert.deepEqual(member.sheet, []);
   assert.deepEqual(member.inventory, []);
   assert.equal(member.characterSheet, undefined);

@@ -65,6 +65,8 @@ public static class ApplicationReadModelWebEndpoint
         {
             var status = exception.Code is "READ_MODEL_UNKNOWN" or "READ_MODEL_STATE_SPACE_UNKNOWN"
                 ? StatusCodes.Status404NotFound
+                : exception.Code is "READ_MODEL_CATALOG_UNAVAILABLE"
+                    ? StatusCodes.Status503ServiceUnavailable
                 : exception.Code.Contains("STALE", StringComparison.Ordinal)
                     ? StatusCodes.Status409Conflict
                     : StatusCodes.Status422UnprocessableEntity;
@@ -87,7 +89,9 @@ public static class ApplicationReadModelWebEndpoint
             return new Dictionary<string, string>(StringComparer.Ordinal) { ["subject"] = entityId };
         try
         {
-            if (!catalogs.TryGet(application, out var catalog)) return null;
+            if (!catalogs.TryGet(application, out var catalog))
+                throw new ApplicationReadModelException("READ_MODEL_CATALOG_UNAVAILABLE",
+                    "The active application catalog is unavailable. Inspect application readiness and restore or reactivate the reviewed catalog before retrying.");
             var record = catalog.Inspect(new(application, application.Value, qualifiedQueryId));
             var contract = ApplicationQueryContract.Parse(record.ContentJson, application);
             var bindings = new Dictionary<string, string>(StringComparer.Ordinal);

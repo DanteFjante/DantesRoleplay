@@ -491,18 +491,63 @@ test("mounted Party view distinguishes loading, ready, empty, stale, forbidden, 
 
   for (const scenario of cases) {
     await t.test(scenario.name, async () => {
+      const member = partyMember(scenario.state);
+      member.inventoryState = scenario.state;
       const mounted = await mount(
-        <PartyView loading={scenario.loading} party={[partyMember(scenario.state)]} />,
+        <PartyView loading={scenario.loading} party={[member]} />,
       );
       try {
         await click(button(mounted.container, "Character"));
         const text = mounted.container.textContent ?? "";
         assert.match(text, new RegExp(scenario.expected, "i"));
         if (scenario.excluded) assert.doesNotMatch(text, new RegExp(scenario.excluded, "i"));
+        if (scenario.state.status === "error" || scenario.state.status === "forbidden") {
+          assert.match(text, /Record count unavailable/);
+          assert.doesNotMatch(text, /0 recorded entries/);
+          await click(button(mounted.container, "Inventory"));
+          const inventoryText = mounted.container.textContent ?? "";
+          assert.match(inventoryText, /Record count unavailable/);
+          assert.doesNotMatch(inventoryText, /0 recorded entries|No coins are recorded|No inventory recorded/);
+        }
       } finally {
         await mounted.cleanup();
       }
     });
+  }
+});
+
+test("mounted character sheet renders species senses without crashing the party view", async () => {
+  const { PartyView } = await import("../../src/components/PartyView");
+  const member = partyMember({ status: "ready", source: "canonical", data: [] });
+  const definition = { id: "species.fixture", label: "Fixture species", canonicalName: "Fixture species",
+    kind: "species", status: "identity-only" as const, summary: null, source: null };
+  member.characterSheet = {
+    version: 2, subject: { id: member.id, label: member.name },
+    hitPoints: { current: 9, maximum: 9, maximumReduction: 0 }, armorClass: { value: 15 },
+    senses: [{ sense: { id: "dnd2024.vocabulary.sense.darkvision", label: "Darkvision" },
+      numerator: 60, denominator: 1, unit: { id: "dnd2024.vocabulary.distance-unit.foot", label: "Foot" } }],
+    inventory: { items: [], contentsDepth: 4, mayOmitDeeperContents: true },
+    wallet: { coinCount: 0, copperValue: 0, gpCount: 0, denominations: [] },
+    dossier: {
+      origin: { species: definition, background: { ...definition, id: "background.fixture", kind: "background" }, traits: [] },
+      classes: [], features: [], inventory: { definitions: [], contentsDepth: 4, mayOmitDeeperContents: true },
+      levelOneRules: { test: "character-level-one-rules-project", subjectId: member.id,
+        armorClass: {}, attacks: [], senses: [], savingThrowCircumstances: [], spellAccess: {}, equipment: {}, entitlements: [] },
+      definitions: [], provenance: {
+        sheetQueryId: "dnd2024.query.character-sheet-v2", sheetProjectionId: "dnd2024.mechanic.character-sheet-v2.project",
+        dossierProjectionId: "dnd2024.mechanic.character-dossier-v1.project", definitionCount: 0, inventoryDepth: 4, ruleTextPolicy: "canonical-only",
+      },
+    },
+  };
+  const mounted = await mount(<PartyView party={[member]} />);
+  try {
+    await click(button(mounted.container, "Character"));
+    const text = mounted.container.textContent ?? "";
+    assert.match(text, /Hit points9 \/ 9/);
+    assert.match(text, /Armor class15/);
+    assert.match(text, /Darkvision60 Foot/);
+  } finally {
+    await mounted.cleanup();
   }
 });
 

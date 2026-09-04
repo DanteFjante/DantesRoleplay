@@ -81,10 +81,14 @@ function SectionHeader({ count, member, section }: {
   member: PartyMemberReadModel;
   section: PartySectionId;
 }) {
+  const state = section === "sheet" ? member.sheetState
+    : section === "inventory" ? member.inventoryState : null;
+  const unavailable = state?.status === "error" || state?.status === "forbidden";
   return (
     <header className="character-section-heading">
       <div><span className="eyebrow">{member.name}</span><h2>{CHARACTER_SECTIONS.find((candidate) => candidate.id === section)?.label}</h2></div>
-      <p>{count} recorded {count === 1 ? "entry" : "entries"}</p>
+      <p>{unavailable ? "Record count unavailable"
+        : `${count} ${state?.status === "stale" ? "last confirmed" : "recorded"} ${count === 1 ? "entry" : "entries"}`}</p>
     </header>
   );
 }

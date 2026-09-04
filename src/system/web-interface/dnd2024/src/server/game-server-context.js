@@ -666,6 +666,12 @@ function validCharacterSheetV2(value, actorId) {
     !namedCharacterReferences(entry?.availableSpells, 2_048))) return false;
   if (value.actions && value.actions.some((entry) =>
     !token(entry?.id) || !text(entry?.name, 5_000) || !namedCharacterReferences(entry?.activities, 256))) return false;
+  if (value.senses && (value.senses.length > 32 || value.senses.some((entry) =>
+    !entry || !namedCharacterReference(entry.sense) ||
+    Object.keys(entry).some((key) => !["sense", "numerator", "denominator", "unit"].includes(key)) ||
+    !(entry.numerator === undefined && entry.denominator === undefined && entry.unit === undefined ||
+      boundedInteger(entry.numerator, 0, Number.MAX_SAFE_INTEGER) &&
+      boundedInteger(entry.denominator, 1, Number.MAX_SAFE_INTEGER) && namedCharacterReference(entry.unit))))) return false;
   return true;
 }
 
