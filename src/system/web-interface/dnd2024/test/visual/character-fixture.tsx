@@ -100,7 +100,7 @@ const characterSheet = {
     origin: {
       species: definition("dnd2024.species.elf", "Elf", "species"),
       background: definition("dnd2024.background.guide", "Wilderness Guide", "background"),
-      traits: [{ key: "darkvision", label: "Darkvision", status: "pending" as const, reason: "application-deferred", source: null }],
+      traits: [{ key: "darkvision", label: "Darkvision", status: "active" as const, reason: null, mechanicId: "dnd2024.mechanic.species-origin-traits.read", source: null }],
     },
     classes: [{
       id: "actor.fixture.vesryn.class.ranger", name: "Ranger 5",
@@ -111,15 +111,20 @@ const characterSheet = {
       {
         definition: definition("dnd2024.feature.favored-enemy", "Favored Enemy", "feature"),
         grantedBy: definition("dnd2024.class.ranger", "Ranger", "class"), grantKind: "class-feature", classLevel: 1,
-        configurationKey: null, implementation: { status: "recorded" as const, reason: null, entitlementKey: null },
+        configurationKey: null, implementation: { status: "recorded" as const, reason: null, entitlementKey: null, nextCapabilityId: null },
       },
       {
         definition: definition("dnd2024.feature.extra-attack", "Extra Attack", "feature"),
         grantedBy: definition("dnd2024.class.ranger", "Ranger", "class"), grantKind: "class-feature", classLevel: 5,
-        configurationKey: null, implementation: { status: "recorded" as const, reason: null, entitlementKey: null },
+        configurationKey: null, implementation: { status: "recorded" as const, reason: null, entitlementKey: null, nextCapabilityId: null },
       },
     ],
     inventory: { definitions: [], contentsDepth: 4 as const, mayOmitDeeperContents: true as const },
+    levelOneRules: {
+      test: "character-level-one-rules-project" as const,
+      subjectId: "actor.fixture.vesryn",
+      armorClass: {}, attacks: [], senses: [], savingThrowCircumstances: [], spellAccess: {}, equipment: {}, entitlements: [],
+    },
     definitions: [],
     provenance: {
       sheetQueryId: "dnd2024.query.character-sheet-v2" as const,

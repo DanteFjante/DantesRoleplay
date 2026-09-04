@@ -178,7 +178,9 @@ function canonicalOriginEntries(member: ConnectedPartyMember): PartyDossierEntry
       id: `${member.id}:canonical:origin:trait:${trait.key}`,
       kind: "trait",
       title: trait.label,
-      detail: "Recorded origin trait; executable rules behavior is pending.",
+      detail: trait.status === "active"
+        ? "Active canonical origin trait."
+        : `Recorded origin trait; ${trait.reason?.replaceAll("-", " ") ?? "executable rules behavior is pending"}.`,
     })),
   ];
 }

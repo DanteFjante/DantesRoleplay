@@ -298,6 +298,11 @@ test("prefers canonical character state and direct inventory over provisional no
             contentsDepth: 4,
             mayOmitDeeperContents: true,
           },
+          levelOneRules: {
+            test: "character-level-one-rules-project",
+            subjectId: "actor.thalorien.brackenford.orban",
+            armorClass: {}, attacks: [], senses: [], savingThrowCircumstances: [], spellAccess: {}, equipment: {}, entitlements: [],
+          },
           definitions: [],
           provenance: {
             sheetQueryId: "dnd2024.query.character-sheet-v2",

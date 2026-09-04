@@ -109,8 +109,8 @@ public sealed class Dnd2024AbilityCheckTests
         var untrained = await harness.EvaluateAsync("subject.high",
             "{\"ability\":\"str\",\"dc\":40,\"skill\":\"acrobatics\"}", 77);
 
-        Assert.True(proficient.Ok, proficient.Run?.Error);
-        Assert.True(untrained.Ok, untrained.Run?.Error);
+        Assert.True(proficient.Ok, proficient.Run?.Error ?? string.Join("; ", proficient.Problems));
+        Assert.True(untrained.Ok, untrained.Run?.Error ?? string.Join("; ", untrained.Problems));
         using var proficientData = JsonDocument.Parse(proficient.Run!.Output.Data);
         using var untrainedData = JsonDocument.Parse(untrained.Run!.Output.Data);
         Assert.True(proficientData.RootElement.GetProperty("proficient").GetBoolean());
@@ -209,8 +209,8 @@ public sealed class Dnd2024AbilityCheckTests
             "{\"ability\":\"str\",\"dc\":0,\"voluntaryFailure\":true}", 77,
             "dnd2024.mechanic.saving-throw");
 
-        Assert.True(advantage.Ok, advantage.Run?.Error);
-        Assert.True(voluntary.Ok, voluntary.Run?.Error);
+        Assert.True(advantage.Ok, advantage.Run?.Error ?? string.Join("; ", advantage.Problems));
+        Assert.True(voluntary.Ok, voluntary.Run?.Error ?? string.Join("; ", voluntary.Problems));
         AssertRollMode(advantage, "advantage", 2, values => Math.Max(values[0], values[1]));
         using var data = JsonDocument.Parse(voluntary.Run!.Output.Data);
         Assert.Equal("voluntary-failure", data.RootElement.GetProperty("resolution").GetString());
@@ -1147,6 +1147,186 @@ public sealed class Dnd2024AbilityCheckTests
             "dnd2024.mechanic.armor-class.read");
         Assert.False(rejected.Ok);
         Assert.True(rejected.Run is null || rejected.Run.Output.Effects.Count == 0);
+    }
+
+    [Fact]
+    public async Task Monk_level_one_rules_activate_replay_attack_and_fail_closed_for_equipment_or_stale_fingerprints()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.ReplaceApplicationComponentRawAsync("subject.high",
+            "dnd2024.character.feature-entitlements", JsonSerializer.Serialize(new
+            {
+                entitlements = new object[]
+                {
+                    new
+                    {
+                        featureRef = new { entityId = "dnd2024.content.feature.monk.martial-arts.v1" },
+                        grantedByRef = new { entityId = "dnd2024.content.class.monk.v1" },
+                        grantKind = "class-feature", classLevel = 1,
+                        sourceRef = new { sourceId = "dnd2024.source.srd-5.2.1", locator = "Classes > Monk > Martial Arts" }
+                    },
+                    new
+                    {
+                        featureRef = new { entityId = "dnd2024.content.feature.monk.unarmored-defense.v1" },
+                        grantedByRef = new { entityId = "dnd2024.content.class.monk.v1" },
+                        grantKind = "class-feature", classLevel = 1,
+                        sourceRef = new { sourceId = "dnd2024.source.srd-5.2.1", locator = "Classes > Monk > Unarmored Defense" }
+                    }
+                }
+            }));
+        await harness.AddClassMembershipAsync("subject.high", "monk",
+            "dnd2024.content.class.monk.v1", 1);
+        await harness.AddApplicationComponentAsync("subject.high", "dnd2024.creature.defenses",
+            "{\"armorClassSource\":{\"entityId\":\"dnd2024.content.defense.unarmored.v1\"},\"damageResponses\":[]}");
+        await harness.AddApplicationComponentAsync("subject.low", "dnd2024.creature.defenses",
+            "{\"armorClassSource\":{\"entityId\":\"dnd2024.content.defense.unarmored.v1\"},\"damageResponses\":[]}");
+
+        var derived = await harness.EvaluateAsync("subject.high", "{}", 0,
+            "dnd2024.mechanic.armor-class.monk-unarmored");
+        Assert.True(derived.Ok, derived.Run?.Error);
+        using (var data = JsonDocument.Parse(derived.Run!.Output.Data))
+        {
+            Assert.True(data.RootElement.GetProperty("eligible").GetBoolean());
+            Assert.True(data.RootElement.GetProperty("armorClass").GetInt32() >= 10);
+        }
+
+        var action = harness.ActionFor("dnd2024.mechanic.monk.unarmored-defense.activate",
+            "subject.high", "{}", 0, "8123456789abcdef0123456789abcdea");
+        var activated = await harness.Runner.RunAsync(action);
+        var replayed = await harness.Runner.RunAsync(action);
+        var stale = await harness.Runner.RunAsync(action with
+        {
+            ContentFingerprint = new string('0', 64),
+            ExecutionIdentity = action.ExecutionIdentity with { OperationId = "8123456789abcdef0123456789abcdeb" }
+        });
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, activated.Disposition);
+        Assert.Equal(1, activated.AppliedEffectCount);
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replayed.Disposition);
+        Assert.Equal(ApplicationActionExecutionDisposition.Stale, stale.Disposition);
+        Assert.NotNull(await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+            "subject.high", "dnd2024.character.monk-unarmored-defense"));
+        var defenses = await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+            "subject.high", "dnd2024.creature.defenses");
+        Assert.NotNull(defenses);
+        using (var defenseState = JsonDocument.Parse(defenses!.ValueJson))
+            Assert.Equal("dnd2024.content.defense.unarmored.v1",
+                defenseState.RootElement.GetProperty("armorClassSource").GetProperty("entityId").GetString());
+
+        var selected = await harness.EvaluateAsync("subject.high", "{}", 0,
+            "dnd2024.mechanic.armor-class.read");
+        Assert.True(selected.Ok, selected.Run?.Error ?? string.Join("; ", selected.Problems));
+        var attack = await harness.EvaluateRolesAsync("dnd2024.mechanic.monk.martial-arts.attack",
+            new Dictionary<string, string> { ["subject"] = "subject.high", ["target"] = "subject.low" },
+            "{\"ability\":\"dex\",\"economy\":\"action\"}", 77);
+        Assert.True(attack.Ok, attack.Run?.Error ?? string.Join("; ", attack.Problems));
+        using (var attackData = JsonDocument.Parse(attack.Run!.Output.Data))
+            Assert.Equal("d6", attackData.RootElement.GetProperty("damageDie").GetString());
+
+        const string armorDefinitionId = "dnd2024.fixture.armor.monk-ineligible";
+        const string armorItemId = "item.fixture.armor.monk-ineligible";
+        await harness.Entities.CreateEntityAsync(DndHarness.StateSpaceId, armorDefinitionId, "Fixture armor");
+        await harness.AddApplicationComponentAsync(armorDefinitionId, "dnd2024.item.armor",
+            "{\"category\":{\"entityId\":\"dnd2024.equipment.armor-category.light\"},\"armorClass\":{\"mechanicId\":\"dnd2024.mechanic.armor-class.unarmored\",\"inputBindings\":{\"base\":11}}}");
+        await harness.Entities.CreateEntityAsync(DndHarness.StateSpaceId, armorItemId, "Worn fixture armor");
+        await harness.AddApplicationComponentAsync(armorItemId, "dnd2024.core.definition-link",
+            JsonSerializer.Serialize(new { definition = new { entityId = armorDefinitionId } }));
+        await harness.AddApplicationComponentAsync(armorItemId, "dnd2024.item.equipment",
+            JsonSerializer.Serialize(new
+            {
+                equippedBy = new { entityId = "subject.high" },
+                slots = new[] { new { entityId = "dnd2024.equipment-slot.body" } }
+            }));
+        await harness.Edges.MoveContainmentAsync(DndHarness.StateSpaceId, armorItemId,
+            "subject.high", "carried", 0);
+        var ineligible = await harness.EvaluateAsync("subject.high", "{}", 0,
+            "dnd2024.mechanic.armor-class.monk-unarmored");
+        Assert.True(ineligible.Ok, ineligible.Run?.Error);
+        using (var data = JsonDocument.Parse(ineligible.Run!.Output.Data))
+        {
+            Assert.False(data.RootElement.GetProperty("eligible").GetBoolean());
+            Assert.Contains(data.RootElement.GetProperty("ineligibilityReasons").EnumerateArray(),
+                value => value.GetString() == "armor-equipped");
+        }
+
+        var absentExtension = await harness.EvaluateAsync("subject.low", "{}", 0,
+            "dnd2024.mechanic.species-origin-traits.read");
+        Assert.True(absentExtension.Ok, absentExtension.Run?.Error);
+        using (var data = JsonDocument.Parse(absentExtension.Run!.Output.Data))
+        {
+            Assert.False(data.RootElement.GetProperty("known").GetBoolean());
+            Assert.Equal("origin-unavailable", data.RootElement.GetProperty("problem").GetString());
+        }
+    }
+
+    [Fact]
+    public async Task Magic_initiate_requires_every_reviewed_choice_and_replays_one_complete_configuration()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.ReplaceApplicationComponentRawAsync("subject.high",
+            "dnd2024.character.feature-entitlements", JsonSerializer.Serialize(new
+            {
+                entitlements = new object[]
+                {
+                    new
+                    {
+                        featureRef = new { entityId = "dnd2024.content.feature.magic-initiate.v1" },
+                        grantedByRef = new { entityId = "dnd2024.content.background.acolyte.v1" },
+                        grantKind = "origin-feat", configurationKey = "cleric",
+                        sourceRef = new { sourceId = "dnd2024.source.srd-5.2.1", locator = "Feats > Magic Initiate" }
+                    }
+                }
+            }));
+        foreach (var (id, level) in new[]
+                 {
+                     ("spell.fixture.cantrip-a", 0), ("spell.fixture.cantrip-b", 0),
+                     ("spell.fixture.level-one", 1)
+                 })
+        {
+            await harness.Entities.CreateEntityAsync(DndHarness.StateSpaceId, id, id);
+            await harness.AddApplicationComponentAsync(id, "dnd2024.spellcasting.spell",
+                JsonSerializer.Serialize(new
+                {
+                    level,
+                    school = new { entityId = "dnd2024.spell-school.divination" },
+                    castingActivity = new { entityId = "dnd2024.shared.action.magic" },
+                    ritual = false
+                }));
+            await harness.AddApplicationComponentAsync(id, "dnd2024.spellcasting.spell-list-membership",
+                "{\"lists\":[{\"entityId\":\"dnd2024.spell-list.cleric\"}]}");
+        }
+
+        var incomplete = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.magic-initiate.configure",
+            new Dictionary<string, string>
+            {
+                ["subject"] = "subject.high", ["cantripOne"] = "spell.fixture.cantrip-a",
+                ["cantripTwo"] = "spell.fixture.cantrip-b"
+            }, "{\"mode\":\"record\",\"spellcastingAbility\":\"wis\"}", 0,
+            "8223456789abcdef0123456789abcdea"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, incomplete.Disposition);
+        Assert.Null(await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId, "subject.high",
+            "dnd2024.character.magic-initiate-configuration"));
+
+        var action = harness.ActionForRoles("dnd2024.mechanic.magic-initiate.configure",
+            new Dictionary<string, string>
+            {
+                ["subject"] = "subject.high", ["cantripOne"] = "spell.fixture.cantrip-a",
+                ["cantripTwo"] = "spell.fixture.cantrip-b", ["levelOneSpell"] = "spell.fixture.level-one"
+            }, "{\"mode\":\"record\",\"spellcastingAbility\":\"wis\"}", 0,
+            "8223456789abcdef0123456789abcdeb");
+        var recorded = await harness.Runner.RunAsync(action);
+        var replayed = await harness.Runner.RunAsync(action);
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, recorded.Disposition);
+        Assert.Equal(1, recorded.AppliedEffectCount);
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replayed.Disposition);
+        var stored = await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId, "subject.high",
+            "dnd2024.character.magic-initiate-configuration");
+        Assert.NotNull(stored);
+        using var configuration = JsonDocument.Parse(stored.ValueJson);
+        Assert.Equal("wis", configuration.RootElement.GetProperty("spellcastingAbility").GetString());
+        Assert.Equal("spell.fixture.level-one",
+            configuration.RootElement.GetProperty("levelOneSpellRef").GetProperty("entityId").GetString());
+        Assert.Equal(2, configuration.RootElement.GetProperty("cantripRefs").GetArrayLength());
     }
 
     [Fact]

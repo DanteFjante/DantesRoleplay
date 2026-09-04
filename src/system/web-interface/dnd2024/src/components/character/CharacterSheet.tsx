@@ -110,12 +110,12 @@ export function FeatureGroups({ sheet }: { sheet: CanonicalCharacterData }) {
               ? <small>{sheet.dossier.features.find((detail) => detail.definition.id === entry.feature.id)?.definition.summary}</small>
               : null}
             {sheet.dossier.features.find((detail) => detail.definition.id === entry.feature.id)?.implementation.status === "pending"
-              ? <small>Rules behavior is not yet implemented.</small>
-              : null}
+              ? <small>Pending: {sheet.dossier.features.find((detail) => detail.definition.id === entry.feature.id)?.implementation.reason?.replaceAll("-", " ") ?? "a required choice"}.</small>
+              : <small>Executable from current canonical state.</small>}
           </li>
         ))}</ul></div> : null}
         {sheet.dossier.origin.traits.length ? <div><h4>Origin traits</h4><ul>{sheet.dossier.origin.traits.map((trait) => (
-          <li key={trait.key}><strong>{trait.label}</strong><span>Recorded choice · rules behavior pending</span></li>
+          <li key={trait.key}><strong>{trait.label}</strong><span>{trait.status === "active" ? "Active canonical rule" : `Pending · ${trait.reason?.replaceAll("-", " ") ?? "missing rule owner"}`}</span></li>
         ))}</ul></div> : null}
         {sheet.proficiencies?.length ? <div><h4>Proficiencies</h4><ul>{sheet.proficiencies.map((entry) => (
           <li key={entry.proficiency.id}><strong>{entry.proficiency.label}</strong><span>{entry.rank.label}</span></li>

@@ -555,8 +555,9 @@ export type CharacterDossierMetadata = {
     traits: Array<{
       key: string;
       label: string;
-      status: "pending";
-      reason: string;
+      status: "active" | "pending";
+      reason: string | null;
+      mechanicId: string | null;
       source: CharacterDossierSource | null;
     }>;
   };
@@ -574,15 +575,37 @@ export type CharacterDossierMetadata = {
     classLevel: number | null;
     configurationKey: string | null;
     implementation: {
-      status: "recorded" | "pending";
+      status: "recorded" | "executable" | "pending";
       reason: string | null;
       entitlementKey: string | null;
+      nextCapabilityId: string | null;
     };
   }>;
   inventory: {
     definitions: CharacterDossierDefinition[];
     contentsDepth: 4;
     mayOmitDeeperContents: true;
+  };
+  levelOneRules: {
+    test: "character-level-one-rules-project";
+    subjectId: string;
+    armorClass: Record<string, unknown>;
+    attacks: Array<Record<string, unknown>>;
+    senses: Array<Record<string, unknown>>;
+    savingThrowCircumstances: Array<Record<string, unknown>>;
+    spellAccess: Record<string, unknown>;
+    equipment: Record<string, unknown>;
+    entitlements: Array<{
+      ownerDefinitionId: string;
+      entitlementKey: string;
+      status: "active" | "pending";
+      reason: string | null;
+      mechanicId: string | null;
+      nextCapabilityId: string | null;
+      knownValues: Record<string, unknown>;
+      missingValues: string[];
+      source: CharacterDossierSource;
+    }>;
   };
   definitions: CharacterDossierDefinition[];
   provenance: {

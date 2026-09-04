@@ -670,14 +670,31 @@ function validDossierDefinition(value) {
     token(value.source.sourceId) && text(value.source.locator, 5_000));
 }
 
+function validLevelOneRules(value, actorId) {
+  return hasExactKeys(value, ["test", "subjectId", "armorClass", "attacks", "senses", "savingThrowCircumstances", "spellAccess", "equipment", "entitlements"]) &&
+    value.test === "character-level-one-rules-project" && value.subjectId === actorId &&
+    Array.isArray(value.attacks) && value.attacks.length <= 32 &&
+    Array.isArray(value.senses) && value.senses.length <= 32 &&
+    Array.isArray(value.savingThrowCircumstances) && value.savingThrowCircumstances.length <= 32 &&
+    Array.isArray(value.entitlements) && value.entitlements.length <= 64 &&
+    value.entitlements.every((entry) => hasExactKeys(entry, ["ownerDefinitionId", "entitlementKey", "status", "reason", "mechanicId", "nextCapabilityId", "knownValues", "missingValues", "source"]) &&
+      token(entry.ownerDefinitionId) && token(entry.entitlementKey) && ["active", "pending"].includes(entry.status) &&
+      (entry.reason === null || token(entry.reason)) && (entry.mechanicId === null || token(entry.mechanicId)) &&
+      (entry.nextCapabilityId === null || token(entry.nextCapabilityId)) && entry.knownValues && typeof entry.knownValues === "object" &&
+      !Array.isArray(entry.knownValues) && Array.isArray(entry.missingValues) && entry.missingValues.length <= 16 &&
+      entry.missingValues.every(token) && hasExactKeys(entry.source, ["sourceId", "locator"]) &&
+      token(entry.source.sourceId) && text(entry.source.locator, 5_000));
+}
+
 function validCharacterDossier(value, actorId) {
-  if (!hasExactKeys(value, ["version", "sheet", "origin", "classes", "features", "inventory", "definitions", "provenance"]) ||
+  if (!hasExactKeys(value, ["version", "sheet", "origin", "classes", "features", "inventory", "levelOneRules", "definitions", "provenance"]) ||
       value.version !== 1 || !validCharacterSheetV2(value.sheet, actorId) ||
       !hasExactKeys(value.origin, ["species", "background", "traits"]) ||
       !validDossierDefinition(value.origin.species) || !validDossierDefinition(value.origin.background) ||
       !Array.isArray(value.origin.traits) || value.origin.traits.length > 128 ||
-      value.origin.traits.some((entry) => !hasExactKeys(entry, ["key", "label", "status", "reason", "source"]) ||
-        !token(entry.key) || !text(entry.label, 5_000) || entry.status !== "pending" || !token(entry.reason) ||
+      value.origin.traits.some((entry) => !hasExactKeys(entry, ["key", "label", "status", "reason", "mechanicId", "source"]) ||
+        !token(entry.key) || !text(entry.label, 5_000) || !["active", "pending"].includes(entry.status) ||
+        !(entry.reason === null || token(entry.reason)) || !(entry.mechanicId === null || token(entry.mechanicId)) ||
         !(entry.source === null || (hasExactKeys(entry.source, ["sourceId", "locator"]) && token(entry.source.sourceId) && text(entry.source.locator, 5_000)))) ||
       !Array.isArray(value.classes) || value.classes.length < 1 || value.classes.length > 20 ||
       value.classes.some((entry) => !hasExactKeys(entry, ["id", "name", "definition", "level", "subclass"]) ||
@@ -688,14 +705,16 @@ function validCharacterDossier(value, actorId) {
         !validDossierDefinition(entry.definition) || !validDossierDefinition(entry.grantedBy) || !token(entry.grantKind) ||
         !(entry.classLevel === null || boundedInteger(entry.classLevel, 1, 20)) ||
         !(entry.configurationKey === null || token(entry.configurationKey)) ||
-        !hasExactKeys(entry.implementation, ["status", "reason", "entitlementKey"]) ||
-        !["recorded", "pending"].includes(entry.implementation.status) ||
+        !hasExactKeys(entry.implementation, ["status", "reason", "entitlementKey", "nextCapabilityId"]) ||
+        !["recorded", "executable", "pending"].includes(entry.implementation.status) ||
         !(entry.implementation.reason === null || token(entry.implementation.reason)) ||
-        !(entry.implementation.entitlementKey === null || token(entry.implementation.entitlementKey))) ||
+        !(entry.implementation.entitlementKey === null || token(entry.implementation.entitlementKey)) ||
+        !(entry.implementation.nextCapabilityId === null || token(entry.implementation.nextCapabilityId))) ||
       !hasExactKeys(value.inventory, ["definitions", "contentsDepth", "mayOmitDeeperContents"]) ||
       !Array.isArray(value.inventory.definitions) || value.inventory.definitions.length > 512 ||
       value.inventory.definitions.some((entry) => !validDossierDefinition(entry)) ||
       value.inventory.contentsDepth !== 4 || value.inventory.mayOmitDeeperContents !== true ||
+      !validLevelOneRules(value.levelOneRules, actorId) ||
       !Array.isArray(value.definitions) || value.definitions.length > 512 ||
       value.definitions.some((entry) => !validDossierDefinition(entry)) ||
       !hasExactKeys(value.provenance, ["sheetQueryId", "sheetProjectionId", "dossierProjectionId", "definitionCount", "inventoryDepth", "ruleTextPolicy"]) ||
@@ -768,6 +787,7 @@ export async function readCanonicalCharacter({ fetchImpl, origin, applicationId,
         classes: projected.classes,
         features: projected.features,
         inventory: projected.inventory,
+        levelOneRules: projected.levelOneRules,
         definitions: projected.definitions,
         provenance: projected.provenance,
       },

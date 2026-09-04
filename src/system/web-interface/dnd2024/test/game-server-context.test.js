@@ -50,6 +50,10 @@ function characterDossier(sheet) {
     classes,
     features: [],
     inventory: { definitions: inventoryDefinitions, contentsDepth: 4, mayOmitDeeperContents: true },
+    levelOneRules: {
+      test: "character-level-one-rules-project", subjectId: sheet.subject.id,
+      armorClass: {}, attacks: [], senses: [], savingThrowCircumstances: [], spellAccess: {}, equipment: {}, entitlements: [],
+    },
     definitions,
     provenance: {
       sheetQueryId: "dnd2024.query.character-sheet-v2",
