@@ -67,6 +67,15 @@ public sealed class CatalogValidationTests
     }
 
     [Fact]
+    public void Kernel_bootstrap_does_not_embed_ruleset_content_from_legacy_namespace_paths()
+    {
+        Assert.DoesNotContain(ProcedureSeeder.Load(), file =>
+            file.Category.StartsWith("ruleset.", StringComparison.Ordinal));
+        Assert.DoesNotContain(MechanicSeeder.Load(), file =>
+            file.Category.StartsWith("ruleset.", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task Embedded_startup_content_is_the_canonical_catalog_content()
     {
         var contents = await CatalogReader.ReadAsync(RepositoryCatalog());

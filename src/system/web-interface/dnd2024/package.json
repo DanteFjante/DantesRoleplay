@@ -10,6 +10,7 @@
     "release:manifest": "node scripts/create-release-manifest.mjs",
     "release:verify-live": "node scripts/verify-live-release.mjs",
     "typecheck": "tsc --noEmit",
+    "slice19:preflight": "node scripts/campaign-simulation-preflight.mjs",
     "test:node": "node --test \"test/*.test.js\"",
     "test:mounted": "tsx --test \"test/mounted/*.test.tsx\"",
     "test": "npm run test:node && npm run test:mounted",

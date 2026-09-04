@@ -22,7 +22,7 @@
          install the operating manual into a fresh database without maintaining a second folder.
          Ruleset procedures are intentionally excluded: the kernel can start without a game. -->
     <EmbeddedResource Include="..\catalog\procedures\**\*.md"
-                      Exclude="..\catalog\procedures\dnd2024\**\*.md">
+                      Exclude="..\catalog\procedures\dnd2024\**\*.md;..\catalog\procedures\procedure\mechanic\dnd2024\**\*.md">
       <Link>Bootstrap\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <LogicalName>DantesRoleplay.Bootstrap.%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
       <!-- `.run.md` otherwise looks like the `run` culture and is moved to a satellite
@@ -33,7 +33,7 @@
     <!-- The two generic example mechanics also come directly from their canonical catalog
          metadata/source pairs. Ruleset mechanics remain installable content, not kernel seed. -->
     <EmbeddedResource Include="..\catalog\mechanics\**\*.md;..\catalog\mechanics\**\*.js"
-                      Exclude="..\catalog\mechanics\dnd2024\**\*">
+                      Exclude="..\catalog\mechanics\dnd2024\**\*;..\catalog\mechanics\mechanic\dnd2024\**\*">
       <Link>Rules\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <LogicalName>DantesRoleplay.Rules.%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
       <WithCulture>false</WithCulture>
