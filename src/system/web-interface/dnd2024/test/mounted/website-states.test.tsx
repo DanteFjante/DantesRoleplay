@@ -623,13 +623,13 @@ test("mounted hub switches Player to DM to Player without retaining DM-only data
   const initial = envelope("player");
   const dm = envelope("dm");
   const player = envelope("player");
-  const requests: Array<[Perspective, string]> = [];
+  const requests: Array<[Perspective, string, boolean]> = [];
   const mounted = await mount(
     <DndInformationHub
       initialEnvelope={initial}
       loadContent={async () => { throw new Error("not used"); }}
-      loadEnvelope={async (perspective, campaignId) => {
-        requests.push([perspective, campaignId]);
+      loadEnvelope={async (perspective, campaignId, preferCached) => {
+        requests.push([perspective, campaignId, preferCached]);
         return perspective === "dm" ? dm : player;
       }}
     />,
@@ -639,8 +639,8 @@ test("mounted hub switches Player to DM to Player without retaining DM-only data
     assert.equal(mounted.container.querySelector(".information-hub")?.getAttribute("data-perspective"), "dm");
     await click(button(mounted.container, "Player"));
     assert.deepEqual(requests, [
-      ["dm", "campaign.fixture.eldervale"],
-      ["player", "campaign.fixture.eldervale"],
+      ["dm", "campaign.fixture.eldervale", true],
+      ["player", "campaign.fixture.eldervale", true],
     ]);
     assert.equal(mounted.container.querySelector(".information-hub")?.getAttribute("data-perspective"), "player");
     const rendered = mounted.container.innerHTML;

@@ -101,6 +101,7 @@ function saveSelectedCampaign(campaignId: string) {
 type HubEnvelopeLoader = (
   perspective: Perspective,
   campaignId: string,
+  preferCached: boolean,
 ) => Promise<ReadyHubEnvelope>;
 
 type RulesLoader = () => Promise<RuleReadModel[]>;
@@ -188,7 +189,7 @@ export function DndInformationHub({
     try {
       let nextEnvelope: unknown;
       if (loadEnvelope) {
-        nextEnvelope = await loadEnvelope(requested, nextCampaignId);
+        nextEnvelope = await loadEnvelope(requested, nextCampaignId, !force);
       } else {
         const parameters = new URLSearchParams({
           perspective: requested,

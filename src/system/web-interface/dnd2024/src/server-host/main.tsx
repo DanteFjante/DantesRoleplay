@@ -125,8 +125,18 @@ async function loadInstalledContent() {
 async function loadReadyEnvelope(
   perspective: Perspective,
   campaignId: string,
+  preferCached = false,
 ): Promise<ReadyHubEnvelope> {
-  const envelope = await loadEnvelope(perspective, campaignId);
+  const request = { perspective, campaignId };
+  const explicit = preferCached ? hubClient.peek(request) : null;
+  const bound = preferCached && explicit === null
+    ? hubClient.peek({ perspective })
+    : null;
+  const cached = explicit ?? (bound?.value.status === "ready" &&
+    bound.value.contextSelection?.selectedCampaignId === campaignId
+    ? bound
+    : null);
+  const envelope = cached?.value ?? await loadEnvelope(perspective, campaignId);
   if (envelope.status !== "ready") {
     throw new Error(envelopeMessage(envelope));
   }

@@ -70,12 +70,16 @@ internal sealed class ConfigurationLocalKnowledgeSeatProvider(IConfiguration? co
             "GameMaster" => KnowledgeAudienceRole.GameMaster,
             _ => (KnowledgeAudienceRole)(-1)
         };
+        // A higher-priority role override does not erase an ActorId supplied by appsettings.
+        // Normalize the mutually exclusive seat shape here so selecting GameMaster cannot inherit
+        // the configured local player's actor identity from a lower-priority provider.
+        var actorId = role == KnowledgeAudienceRole.GameMaster ? null : section?["ActorId"];
         return new(
             section?.GetValue<bool>("Enabled") ?? false,
             section?["PrincipalId"] ?? "",
             section?["ApplicationId"] ?? "",
             section?["CampaignId"] ?? "",
-            section?["ActorId"],
+            actorId,
             role,
             Array.AsReadOnly((section?.GetSection("SourceIds").GetChildren()
                 .Select(value => value.Value ?? "").ToArray()) ?? []));

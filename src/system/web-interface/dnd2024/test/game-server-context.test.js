@@ -941,11 +941,11 @@ test("reads only the server-selected campaign, actor, and authorized knowledge",
     "/api/applications/dnd2024/campaigns/campaign.thalorien.brackenford/knowledge",
     "/api/applications/dnd2024/campaigns/campaign.thalorien.brackenford/chronology",
     "/api/applications/dnd2024/state-spaces/dnd2024-main/play/sessions/campaign.thalorien.brackenford",
+    "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/actor.thalorien.brackenford.orban/read-models/dnd2024.query.character-dossier-v1",
+    "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/actor.thalorien.brackenford.orban/media",
     "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/clue.thalorien.brackenford.waystone/media",
     "/api/applications/dnd2024/state-spaces/dnd2024-main/entities",
     "/api/applications/dnd2024/state-spaces/dnd2024-main/entities",
-    "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/actor.thalorien.brackenford.orban/read-models/dnd2024.query.character-dossier-v1",
-    "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/actor.thalorien.brackenford.orban/media",
   ]);
 });
 
@@ -1328,12 +1328,17 @@ test("local DM player preview retains the server-bound actor when the character 
 });
 
 test("supports selecting player perspective for a local game master", async () => {
+  const campaignId = "campaign.thalorien.brackenford";
+  const actorId = "actor.thalorien.brackenford.orban";
+  const participationId = `${campaignId}.participation.${actorId}`;
   const calls = [];
+  const relationshipKinds = [];
   const value = await readGameServerContext({
     serverOrigin: "http://localhost:6217",
     requestedPerspective: "player",
     fetchImpl: async (input) => {
-      const path = new URL(input).pathname;
+      const requested = new URL(input);
+      const path = requested.pathname;
       calls.push(path);
       if (path === "/api/audience-context") {
         return response(200, {
@@ -1366,6 +1371,37 @@ test("supports selecting player perspective for a local game master", async () =
           ],
         });
       }
+      if (path.endsWith(`/${participationId}/components/game.core.campaign.character-participation`)) {
+        return response(200, {
+          entityId: participationId,
+          qualifiedTypeId: "game.core.campaign.character-participation",
+          valueJson: JSON.stringify({ status: "active" }),
+        });
+      }
+      if (path.endsWith("/relationships")) {
+        const fromEntityId = requested.searchParams.get("fromEntityId");
+        const qualifiedKind = requested.searchParams.get("qualifiedKind");
+        relationshipKinds.push(qualifiedKind);
+        if (fromEntityId === campaignId &&
+            qualifiedKind === "game.core.campaign.has-character-participation") {
+          return response(200, { items: [{
+            fromEntityId: campaignId,
+            toEntityId: participationId,
+            qualifiedKind,
+          }] });
+        }
+        if (fromEntityId === participationId &&
+            qualifiedKind === "game.core.campaign.character-participation.for-actor") {
+          return response(200, { items: [{
+            fromEntityId: participationId,
+            toEntityId: actorId,
+            qualifiedKind,
+          }] });
+        }
+      }
+      if (path.endsWith(`/${actorId}`)) {
+        return response(200, { entityId: actorId, name: "Orban" });
+      }
       const mapResponse = playerMapDirectoryResponse(path);
       if (mapResponse) return mapResponse;
       throw new Error(`Unexpected request ${path}`);
@@ -1393,13 +1429,30 @@ test("supports selecting player perspective for a local game master", async () =
   }]);
   assert.equal(JSON.stringify(value).includes("CANARY DM MAP"), false);
   assert.equal(JSON.stringify(value).includes("A hidden city"), false);
-  assert.deepEqual(value.party, []);
+  assert.equal(value.party.length, 1, JSON.stringify({ calls, relationshipKinds }));
+  assert.deepEqual(value.party[0], {
+    id: actorId,
+    name: "Orban",
+    state: null,
+    entries: [],
+    current: false,
+  });
   assert.deepEqual(value.knowledge, { status: "unavailable", entries: [], locations: [] });
   assert.equal(calls.some((path) => path.endsWith("/campaign.thalorien.brackenford/knowledge")), false);
   assert.equal(calls.some((path) => path.endsWith("/campaign.thalorien.brackenford/chronology")), true);
-  assert.equal(calls.some((path) => path.includes("has-character-participation")), false);
+  assert.deepEqual(relationshipKinds.filter(Boolean), [
+    "game.core.campaign.has-character-participation",
+    "game.core.campaign.character-participation.for-actor",
+  ]);
+  assert.equal(calls.some((path) => path.endsWith(
+    `/${actorId}/components/dnd2024.playtest-character-record`,
+  )), false);
+  assert.equal(calls.some((path) => path.endsWith(
+    `/${actorId}/read-models/dnd2024.query.character-dossier-v1`,
+  )), false);
+  assert.equal(calls.some((path) => path.endsWith(`/${actorId}/media`)), false);
   assert.equal(calls.some((path) => path.includes("clue.") && path.endsWith("/media")), false);
-  assert.equal(calls.length, 17);
+  assert.equal(calls.length, 21);
 });
 
 test("reads live campaign chapters and arcs while omitting GM context from player preview", async () => {
@@ -1833,11 +1886,13 @@ test("projects only exact active campaign participation into the DM party roster
   const withdrawnParticipation = `${campaignId}.participation.actor.thalorien.brackenford.sol`;
   const duplicateParticipation = `${campaignId}.participation.duplicate`;
   const ambiguousParticipation = `${campaignId}.participation.ambiguous`;
+  const calls = [];
   const fetchImpl = async (input) => {
     const requested = new URL(input);
     const path = requested.pathname;
     const fromEntityId = requested.searchParams.get("fromEntityId");
     const qualifiedKind = requested.searchParams.get("qualifiedKind");
+    calls.push({ path, fromEntityId, qualifiedKind });
     if (path === "/api/audience-context") {
       return response(200, {
         status: "bound",
@@ -1963,6 +2018,15 @@ test("projects only exact active campaign participation into the DM party roster
     current: false,
   }]);
   assert.equal(JSON.stringify(value).includes("actor.thalorien.brackenford.sol"), false);
+  const partyReadIndex = calls.findIndex((call) => call.path.endsWith("/relationships") &&
+    call.fromEntityId === campaignId &&
+    call.qualifiedKind === "game.core.campaign.has-character-participation");
+  const worldDirectoryIndex = calls.findLastIndex((call) =>
+    call.path === "/api/applications/dnd2024/state-spaces/dnd2024-main/entities");
+  assert.ok(partyReadIndex >= 0);
+  assert.ok(worldDirectoryIndex >= 0);
+  assert.ok(partyReadIndex < worldDirectoryIndex,
+    "The authoritative party graph must be read before the optional World directory fan-out.");
 });
 
 test("reads the registered character projection and enriches its bounded inventory media", async () => {

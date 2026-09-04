@@ -1733,7 +1733,7 @@ async function readPartyRoster({
       current: true,
     }];
   }
-  if (serverRole.role === "actor" || perspective !== "dm") return [];
+  if (serverRole.role === "actor") return [];
 
   const applicationRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
     `/state-spaces/${encodeURIComponent(stateSpaceId)}`;
@@ -1794,11 +1794,13 @@ async function readPartyRoster({
           headers,
           cache: "no-store",
         }),
-        fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(actorId)}` +
-          `/components/${PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID}`), {
-          headers,
-          cache: "no-store",
-        }).catch(() => null),
+        perspective === "dm"
+          ? fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(actorId)}` +
+            `/components/${PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID}`), {
+            headers,
+            cache: "no-store",
+          }).catch(() => null)
+          : Promise.resolve(null),
       ]);
       if (!actorResponse?.ok) return null;
       const [actorPayload, recordPayload] = await Promise.all([
@@ -1807,6 +1809,16 @@ async function readPartyRoster({
       ]);
       const actor = entity(actorPayload, actorId);
       if (!actor) return null;
+      // A GM's Player preview may use the authoritative participation graph to keep party
+      // identity stable, but it must not reuse GM-authorized character records, media, or query
+      // results. A real Actor seat takes the bound-actor path above and receives its own
+      // authorized canonical dossier.
+      if (perspective === "player") return {
+        ...actor,
+        state: actor.state ?? null,
+        entries: actor.entries ?? [],
+        current: false,
+      };
       const [canonicalResult, mediaValue] = await Promise.all([
         readCanonicalCharacter({ fetchImpl, origin, applicationId, stateSpaceId, actorId }),
         readEntityMedia(fetchImpl, origin, entityRoot, actorId),
@@ -2324,6 +2336,34 @@ export async function readGameServerContext({
   if (!campaignEntity || !actorEntity) {
     return unavailable("The campaign binding no longer matches readable game state.");
   }
+  // Resolve the small, authoritative party graph before the optional World and knowledge
+  // directories fan out into many reads. Otherwise a large DM projection can consume the shared
+  // read budget first and make a valid active participant look like an empty roster.
+  const boundActorDetails = characterDetails(actorComponentResponse?.ok
+    && shouldReadBoundActor
+    ? componentValue(actorComponent, binding.actorId, PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID)
+    : null);
+  const boundCanonicalResult = shouldReadBoundActor
+    ? await readCanonicalCharacter({
+      fetchImpl,
+      origin,
+      applicationId: binding.applicationId,
+      stateSpaceId: binding.stateSpaceId,
+      actorId: binding.actorId,
+    })
+    : null;
+  const party = await readPartyRoster({
+    fetchImpl,
+    origin,
+    applicationId: binding.applicationId,
+    stateSpaceId: binding.stateSpaceId,
+    campaignId: selectedCampaignId,
+    serverRole,
+    perspective: effectivePerspective,
+    boundActor: boundActorEntity,
+    boundActorDetails,
+    boundCanonicalResult,
+  });
   let projectedKnowledge = knowledgeResponse?.ok
     ? knowledge(knowledgeEnvelope)
     : { status: "unavailable", entries: [], locations: [] };
@@ -2386,31 +2426,6 @@ export async function readGameServerContext({
       mediaAssetBaseUrl,
     })
     : null;
-  const boundActorDetails = characterDetails(actorComponentResponse?.ok
-    && shouldReadBoundActor
-    ? componentValue(actorComponent, binding.actorId, PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID)
-    : null);
-  const boundCanonicalResult = shouldReadBoundActor
-    ? await readCanonicalCharacter({
-      fetchImpl,
-      origin,
-      applicationId: binding.applicationId,
-      stateSpaceId: binding.stateSpaceId,
-      actorId: binding.actorId,
-    })
-    : null;
-  const party = await readPartyRoster({
-    fetchImpl,
-    origin,
-    applicationId: binding.applicationId,
-    stateSpaceId: binding.stateSpaceId,
-    campaignId: selectedCampaignId,
-    serverRole,
-    perspective: effectivePerspective,
-    boundActor: boundActorEntity,
-    boundActorDetails,
-    boundCanonicalResult,
-  });
   const authorizedLocationIds = locationDirectory.map((location) => location.id);
   const sceneComponentWasReturned = currentSceneComponentResponse?.ok === true;
   const sceneRecord = sceneComponentWasReturned
