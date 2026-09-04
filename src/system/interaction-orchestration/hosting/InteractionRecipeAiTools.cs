@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using DantesRoleplay.AI;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
@@ -35,8 +36,8 @@ public sealed class InteractionRecipeAiToolSource(
             """{"type":"object","additionalProperties":false,"required":["applicationId","query"],"properties":{"applicationId":{"type":"string"},"query":{"type":"string"},"status":{"enum":["candidate","verified","stale","retired"]},"limit":{"type":"integer","minimum":1,"maximum":50}}}""",
             (call, token) => FindAsync(call, token)),
         new DelegateTool("interaction_recipe_run",
-            "Compile one current verified recipe into an exact proposal and execute its dependency-ordered steps. Known roles and per-step inputs are bound deterministically; only missing role choices may invoke one read-only AI pass. Trusted host confirmation is required before execution.",
-            """{"type":"object","additionalProperties":false,"required":["applicationId","query"],"properties":{"applicationId":{"type":"string"},"query":{"type":"string"},"roleBindings":{"type":"object","maxProperties":32,"additionalProperties":{"type":"string"}},"stepInputs":{"type":"object","maxProperties":16,"additionalProperties":{"type":"object"}}}}""",
+            "Compile one current verified recipe into an exact proposal and execute its dependency-ordered steps. Known roles and declared input parameters are bound deterministically; one read-only AI pass may fill only explicitly missing choices. Trusted host confirmation is required before execution.",
+            """{"type":"object","additionalProperties":false,"required":["applicationId","query"],"properties":{"applicationId":{"type":"string"},"query":{"type":"string"},"roleBindings":{"type":"object","maxProperties":32,"additionalProperties":{"type":"string"}},"inputBindings":{"type":"object","maxProperties":512},"stepInputs":{"type":"object","maxProperties":16,"additionalProperties":{"type":"object"}}}}""",
             (call, token) => RunAsync(context, call, token)),
         new DelegateTool("interaction_mechanic_opportunities_list",
             "List inert review proposals created from repeated successful verified recipe use. Proposals never choose a mechanic ID and cannot activate or write catalog content.",
@@ -127,15 +128,17 @@ public sealed class InteractionRecipeAiToolSource(
             var recipe = found[0];
             await RequireCurrentAsync(recipe, source, cancellationToken);
             var bindings = Bindings(call, recipe);
-            var inputs = Inputs(call, recipe);
+            var inputBindings = InputBindings(call, recipe);
+            var legacyInputs = LegacyInputs(call, recipe);
             var choiceWatch = Stopwatch.StartNew();
-            var choice = await ResolveMissingBindingsAsync(source, recipe, bindings, cancellationToken);
+            var choice = await ResolveMissingChoicesAsync(source, recipe, bindings, inputBindings, cancellationToken);
             choiceWatch.Stop();
             if (!choice.Ok)
                 return AiToolResult.Failure(choice.ErrorCode, choice.ErrorMessage);
             bindings = choice.Bindings;
+            inputBindings = choice.Inputs;
 
-            var proposal = Compile(recipe, bindings, inputs);
+            var proposal = Compile(recipe, bindings, inputBindings, legacyInputs);
             var proposalJson = ProposalJson(proposal);
             var intentFingerprint = InteractionCanonicalJson.Fingerprint(
                 ReplayIntentFingerprintDomain,
@@ -144,7 +147,8 @@ public sealed class InteractionRecipeAiToolSource(
                     recipe = recipe.Reference,
                     query,
                     roleBindings = bindings,
-                    stepInputs = inputs
+                    inputBindings,
+                    stepInputs = legacyInputs
                 })));
             var identity = Hash(source.Invocation.CorrelationId + "\n" + call.CallId + "\n" + intentFingerprint)
                 [..32].ToLowerInvariant();
@@ -198,7 +202,8 @@ public sealed class InteractionRecipeAiToolSource(
                 Milliseconds(planningWatch),
                 Milliseconds(executionWatch),
                 choice.PromptTokens,
-                choice.OutputTokens);
+                choice.OutputTokens,
+                choice.FallbackReason);
             if (execution.Receipt?.Receipt is not null)
             {
                 try
@@ -245,7 +250,8 @@ public sealed class InteractionRecipeAiToolSource(
                     executionMilliseconds = performance.ExecutionMilliseconds,
                     promptTokens = performance.PromptTokens,
                     outputTokens = performance.OutputTokens,
-                    totalTokens = performance.PromptTokens + performance.OutputTokens
+                    totalTokens = performance.PromptTokens + performance.OutputTokens,
+                    aiFallbackReason = performance.FallbackReason
                 }
             }, Json));
         }
@@ -262,50 +268,74 @@ public sealed class InteractionRecipeAiToolSource(
     private static int Milliseconds(Stopwatch value) =>
         (int)Math.Min(int.MaxValue, value.ElapsedMilliseconds);
 
-    private async Task<BindingResolution> ResolveMissingBindingsAsync(
+    private async Task<BindingResolution> ResolveMissingChoicesAsync(
         SystemAiToolSourceContext source,
         InteractionRecipeProjection recipe,
         IReadOnlyDictionary<string, string> known,
+        IReadOnlyDictionary<string, JsonElement> knownInputs,
         CancellationToken cancellationToken)
     {
         var required = recipe.Template.Steps.SelectMany(step => step.RoleSlots)
             .Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
         var missing = required.Where(value => !known.ContainsKey(value)).ToArray();
-        if (missing.Length == 0) return BindingResolution.Success(known, 0, 0, 0);
+        var requiredInputs = recipe.Template.Steps.SelectMany(step => step.InputBindings)
+            .Select(value => value.Parameter).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
+        var missingInputs = requiredInputs.Where(value => !knownInputs.ContainsKey(value)).ToArray();
+        if (missing.Length == 0 && missingInputs.Length == 0)
+            return BindingResolution.Success(known, knownInputs, 0, 0, 0, "none");
         if (ai is null)
-            return BindingResolution.Failure("AI_SERVICE_UNAVAILABLE",
-                $"Recipe replay needs role bindings: {string.Join(", ", missing)}.");
+            return BindingResolution.Failure("INTERACTION_RECIPE_CHOICES_REQUIRED",
+                $"Recipe replay needs {MissingSummary(missing, missingInputs)}.");
         var readTools = source.AuthorizedTools().Where(tool =>
                 tool.Definition.Name != "interaction_recipe_run"
                 && (tool.Definition.Name.StartsWith("read_", StringComparison.Ordinal)
                     || tool.Definition.Description.StartsWith("Read ", StringComparison.Ordinal)
                     || tool.Definition.Name == "interaction_recipes_find"))
             .ToArray();
-        var properties = missing.ToDictionary(value => value,
+        var roleProperties = missing.ToDictionary(value => value,
             _ => (object)new { type = "string", minLength = 1, maxLength = 200 },
             StringComparer.Ordinal);
+        var inputProperties = missingInputs.ToDictionary(value => value,
+            _ => (object)new { }, StringComparer.Ordinal);
+        var rootProperties = new Dictionary<string, object>(StringComparer.Ordinal);
+        var requiredGroups = new List<string>();
+        if (missing.Length > 0)
+        {
+            rootProperties.Add("roleBindings", new
+            {
+                type = "object",
+                additionalProperties = false,
+                required = missing,
+                properties = roleProperties
+            });
+            requiredGroups.Add("roleBindings");
+        }
+        if (missingInputs.Length > 0)
+        {
+            rootProperties.Add("inputBindings", new
+            {
+                type = "object",
+                additionalProperties = false,
+                required = missingInputs,
+                properties = inputProperties
+            });
+            requiredGroups.Add("inputBindings");
+        }
         var schema = JsonSerializer.Serialize(new
         {
             type = "object",
             additionalProperties = false,
-            required = new[] { "roleBindings" },
-            properties = new
-            {
-                roleBindings = new
-                {
-                    type = "object",
-                    additionalProperties = false,
-                    required = missing,
-                    properties
-                }
-            }
+            required = requiredGroups,
+            properties = rootProperties
         });
         var prompt = new StringBuilder()
-            .Append("Resolve only the missing entity references for current verified recipe '")
+            .Append("Resolve only the missing choices for current verified recipe '")
             .Append(recipe.Reference.Id).AppendLine("'.")
             .Append("Missing roles: ").AppendLine(string.Join(", ", missing))
+            .Append("Missing input parameters: ").AppendLine(string.Join(", ", missingInputs))
             .Append("Known roles: ").AppendLine(JsonSerializer.Serialize(known))
-            .AppendLine("Use read-only tools when necessary. Return only the required structured roleBindings. Do not execute or propose any action.")
+            .Append("Known input parameters: ").AppendLine(JsonSerializer.Serialize(knownInputs))
+            .AppendLine("Use read-only tools when necessary. Return only the missing structured choices. Do not execute or propose any action.")
             .ToString();
         var response = await ai.SendAgentRequestAsync(source.Profile, new(
             source.Request.Provider,
@@ -323,21 +353,43 @@ public sealed class InteractionRecipeAiToolSource(
                 string.IsNullOrEmpty(response.ErrorMessage) ? "Missing recipe roles could not be resolved." : response.ErrorMessage,
                 response.PromptTokens, response.OutputTokens);
         var resolved = new Dictionary<string, string>(known, StringComparer.Ordinal);
+        var resolvedInputs = knownInputs.ToDictionary(value => value.Key, value => value.Value.Clone(), StringComparer.Ordinal);
         var root = response.StructuredData.Value;
-        if (!root.TryGetProperty("roleBindings", out var values) || values.ValueKind != JsonValueKind.Object)
+        if (missing.Length > 0 && (!root.TryGetProperty("roleBindings", out var roleValues)
+                || roleValues.ValueKind != JsonValueKind.Object))
             return BindingResolution.Failure("INTERACTION_RECIPE_BINDING_RESOLUTION_FAILED",
                 "The binding resolver returned an invalid structured result.",
                 response.PromptTokens, response.OutputTokens);
-        foreach (var role in missing)
+        if (missing.Length > 0)
         {
-            if (!values.TryGetProperty(role, out var value) || value.ValueKind != JsonValueKind.String
-                || string.IsNullOrWhiteSpace(value.GetString()))
-                return BindingResolution.Failure("INTERACTION_RECIPE_BINDING_RESOLUTION_FAILED",
-                    $"The binding resolver did not resolve role '{role}'.",
-                    response.PromptTokens, response.OutputTokens);
-            resolved.Add(role, value.GetString()!);
+            roleValues = root.GetProperty("roleBindings");
+            foreach (var role in missing)
+            {
+                if (!roleValues.TryGetProperty(role, out var value) || value.ValueKind != JsonValueKind.String
+                    || string.IsNullOrWhiteSpace(value.GetString()))
+                    return BindingResolution.Failure("INTERACTION_RECIPE_BINDING_RESOLUTION_FAILED",
+                        $"The binding resolver did not resolve role '{role}'.",
+                        response.PromptTokens, response.OutputTokens);
+                resolved.Add(role, value.GetString()!);
+            }
         }
-        return BindingResolution.Success(resolved, 1, response.PromptTokens, response.OutputTokens);
+        if (missingInputs.Length > 0)
+        {
+            if (!root.TryGetProperty("inputBindings", out var inputValues) || inputValues.ValueKind != JsonValueKind.Object)
+                return BindingResolution.Failure("INTERACTION_RECIPE_BINDING_RESOLUTION_FAILED",
+                    "The binding resolver returned invalid input parameters.",
+                    response.PromptTokens, response.OutputTokens);
+            foreach (var parameter in missingInputs)
+            {
+                if (!inputValues.TryGetProperty(parameter, out var value))
+                    return BindingResolution.Failure("INTERACTION_RECIPE_BINDING_RESOLUTION_FAILED",
+                        $"The binding resolver did not resolve input parameter '{parameter}'.",
+                        response.PromptTokens, response.OutputTokens);
+                resolvedInputs.Add(parameter, value.Clone());
+            }
+        }
+        return BindingResolution.Success(resolved, resolvedInputs, 1, response.PromptTokens,
+            response.OutputTokens, FallbackReason(missing, missingInputs));
     }
 
     private async Task RequireCurrentAsync(
@@ -358,7 +410,8 @@ public sealed class InteractionRecipeAiToolSource(
                 && source.Invocation.ResolutionFingerprint != resolution)
             || recipe.Template.Steps.Any(step => snapshot.Documents.SingleOrDefault(document =>
                 document.Trust == SourceTrust.Trusted
-                && document.Record.Kind == "mechanic"
+                && document.Record.Kind == (step.Kind == InteractionPlanStepKind.Query
+                    ? ApplicationQueryContract.CatalogKind : "mechanic")
                 && document.Record.Status == "active"
                 && document.Record.QualifiedId == step.QualifiedId
                 && document.Record.Version == step.ContractVersion
@@ -381,11 +434,14 @@ public sealed class InteractionRecipeAiToolSource(
     private static InteractionPlannerProposalCommand Compile(
         InteractionRecipeProjection recipe,
         IReadOnlyDictionary<string, string> bindings,
-        IReadOnlyDictionary<string, string> inputs) => new(recipe.Template.Steps.Select(step =>
-        new InteractionPlannerDraftStep(step.StepId, InteractionPlanStepKind.Action,
+        IReadOnlyDictionary<string, JsonElement> inputs,
+        IReadOnlyDictionary<string, string> legacyInputs) => new(recipe.Template.Steps.Select(step =>
+        new InteractionPlannerDraftStep(step.StepId, step.Kind,
             step.QualifiedId, step.ContractVersion, step.ContractFingerprint, step.DependsOn,
             step.RoleSlots.ToDictionary(role => role, role => bindings[role], StringComparer.Ordinal),
-            inputs.TryGetValue(step.StepId, out var input) ? input : "{}", [])).ToArray());
+            step.InputBindings.Count > 0 ? BoundInput(step, inputs)
+                : legacyInputs.TryGetValue(step.StepId, out var input) ? input : "{}",
+            step.ResultBindings)).ToArray());
 
     private static string ProposalJson(InteractionPlannerProposalCommand proposal) =>
         InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
@@ -394,14 +450,20 @@ public sealed class InteractionRecipeAiToolSource(
             steps = proposal.Steps.Select(step => new
             {
                 stepId = step.StepId,
-                kind = "action",
+                kind = step.Kind == InteractionPlanStepKind.Query ? "query" : "action",
                 qualifiedId = step.QualifiedId,
                 version = step.Version,
                 fingerprint = step.Fingerprint,
                 dependsOn = step.DependsOn,
                 roleBindings = step.RoleBindings,
                 input = JsonSerializer.Deserialize<JsonElement>(step.InputJson),
-                resultBindings = Array.Empty<object>()
+                resultBindings = (step.ResultBindings ?? []).Select(binding => new
+                {
+                    fromStepId = binding.FromStepId,
+                    fromPointer = binding.FromPointer,
+                    toRole = binding.ToRole,
+                    toInputPointer = binding.ToInputPointer
+                })
             })
         }));
 
@@ -428,27 +490,93 @@ public sealed class InteractionRecipeAiToolSource(
         return result;
     }
 
-    private static IReadOnlyDictionary<string, string> Inputs(
+    private static IReadOnlyDictionary<string, JsonElement> InputBindings(
+        AiToolInvocation call,
+        InteractionRecipeProjection recipe)
+    {
+        if (!call.Arguments.TryGetProperty("inputBindings", out var value))
+            return new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+        if (value.ValueKind != JsonValueKind.Object)
+            throw new InteractionContractException("INTERACTION_RECIPE_INPUT_INVALID",
+                "inputBindings must be an object.");
+        var allowed = recipe.Template.Steps.SelectMany(step => step.InputBindings)
+            .Select(binding => binding.Parameter).ToHashSet(StringComparer.Ordinal);
+        var result = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+        foreach (var property in value.EnumerateObject())
+        {
+            if (!allowed.Contains(property.Name) || !result.TryAdd(property.Name, property.Value.Clone()))
+                throw new InteractionContractException("INTERACTION_RECIPE_STEP_INPUT_INVALID",
+                    "A recipe input parameter is unknown, duplicated, or invalid.");
+        }
+        return result;
+    }
+
+    private static IReadOnlyDictionary<string, string> LegacyInputs(
         AiToolInvocation call,
         InteractionRecipeProjection recipe)
     {
         if (!call.Arguments.TryGetProperty("stepInputs", out var value))
             return new Dictionary<string, string>(StringComparer.Ordinal);
+        if (recipe.Template.Steps.Any(step => step.InputBindings.Count > 0))
+            throw new InteractionContractException("INTERACTION_RECIPE_STEP_INPUT_INVALID",
+                "Parameterized recipes require declared inputBindings instead of raw stepInputs.");
         if (value.ValueKind != JsonValueKind.Object)
-            throw new InteractionContractException("INTERACTION_RECIPE_INPUT_INVALID",
-                "stepInputs must be an object.");
+            throw new InteractionContractException("INTERACTION_RECIPE_INPUT_INVALID", "stepInputs must be an object.");
         var allowed = recipe.Template.Steps.Select(step => step.StepId).ToHashSet(StringComparer.Ordinal);
         var result = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var property in value.EnumerateObject())
         {
             if (!allowed.Contains(property.Name) || property.Value.ValueKind != JsonValueKind.Object
-                || !result.TryAdd(property.Name,
-                    InteractionCanonicalJson.CanonicalizeObject(property.Value.GetRawText())))
+                || !result.TryAdd(property.Name, InteractionCanonicalJson.CanonicalizeObject(property.Value.GetRawText())))
                 throw new InteractionContractException("INTERACTION_RECIPE_STEP_INPUT_INVALID",
                     "A per-step input is unknown, duplicated, or invalid.");
         }
         return result;
     }
+
+    private static string BoundInput(
+        InteractionRecipeTemplateStep step,
+        IReadOnlyDictionary<string, JsonElement> values)
+    {
+        var root = new JsonObject();
+        foreach (var binding in step.InputBindings)
+            SetInput(root, binding.ToInputPointer, JsonNode.Parse(values[binding.Parameter].GetRawText()));
+        return InteractionCanonicalJson.CanonicalizeObject(root.ToJsonString());
+    }
+
+    private static void SetInput(JsonObject root, string pointer, JsonNode? value)
+    {
+        var tokens = pointer.Split('/').Skip(1).Select(token => token
+            .Replace("~1", "/", StringComparison.Ordinal).Replace("~0", "~", StringComparison.Ordinal)).ToArray();
+        JsonObject current = root;
+        for (var index = 0; index < tokens.Length - 1; index++)
+        {
+            if (current[tokens[index]] is not JsonObject child)
+            {
+                child = new JsonObject();
+                current[tokens[index]] = child;
+            }
+            current = child;
+        }
+        current[tokens[^1]] = value;
+    }
+
+    private static string MissingSummary(IReadOnlyList<string> roles, IReadOnlyList<string> inputs)
+    {
+        var parts = new List<string>();
+        if (roles.Count > 0) parts.Add("role bindings: " + string.Join(", ", roles));
+        if (inputs.Count > 0) parts.Add("input parameters: " + string.Join(", ", inputs));
+        return string.Join("; ", parts);
+    }
+
+    private static string FallbackReason(IReadOnlyList<string> roles, IReadOnlyList<string> inputs) =>
+        (roles.Count > 0, inputs.Count > 0) switch
+        {
+            (true, true) => "missing-roles-and-inputs",
+            (true, false) => "missing-roles",
+            (false, true) => "missing-inputs",
+            _ => "none"
+        };
 
     private static string Hash(string value) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
@@ -459,20 +587,24 @@ public sealed class InteractionRecipeAiToolSource(
     private sealed record BindingResolution(
         bool Ok,
         IReadOnlyDictionary<string, string> Bindings,
+        IReadOnlyDictionary<string, JsonElement> Inputs,
         int AiCalls,
         int PromptTokens,
         int OutputTokens,
         string ErrorCode,
-        string ErrorMessage)
+        string ErrorMessage,
+        string FallbackReason)
     {
         public static BindingResolution Success(IReadOnlyDictionary<string, string> bindings,
-            int calls, int promptTokens, int outputTokens) =>
-            new(true, bindings, calls, promptTokens, outputTokens, "", "");
+            IReadOnlyDictionary<string, JsonElement> inputs, int calls, int promptTokens, int outputTokens,
+            string fallbackReason) =>
+            new(true, bindings, inputs, calls, promptTokens, outputTokens, "", "", fallbackReason);
 
         public static BindingResolution Failure(string code, string message,
             int promptTokens = 0, int outputTokens = 0) =>
-            new(false, new Dictionary<string, string>(StringComparer.Ordinal), 1,
-                promptTokens, outputTokens, code, message);
+            new(false, new Dictionary<string, string>(StringComparer.Ordinal),
+                new Dictionary<string, JsonElement>(StringComparer.Ordinal), 1,
+                promptTokens, outputTokens, code, message, "resolution-failed");
     }
 
     private sealed class DelegateTool(

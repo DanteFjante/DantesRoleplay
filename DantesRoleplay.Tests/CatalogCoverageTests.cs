@@ -1081,6 +1081,7 @@ public sealed class CatalogCoverageTests : IDisposable
         ["interaction_recipe_evidence.ReplayExecutionMilliseconds"] = "Measured recipe execution latency, not carried by the catalog.",
         ["interaction_recipe_evidence.ReplayPromptTokens"] = "Measured recipe choice prompt tokens, not carried by the catalog.",
         ["interaction_recipe_evidence.ReplayOutputTokens"] = "Measured recipe choice output tokens, not carried by the catalog.",
+        ["interaction_recipe_evidence.ReplayFallbackReason"] = "Closed reason for the bounded recipe choice-resolution pass, not carried by the catalog.",
         ["interaction_recipe_evidence.CreatedAtUtc"] = "Private evidence timestamp, not carried by the catalog.",
         ["interaction_mechanic_opportunity.RecipeId"] = "Private source-recipe identity for an inert runtime proposal, not carried by the catalog.",
         ["interaction_mechanic_opportunity.RecipeVersion"] = "Exact reviewed source-recipe revision, not carried by the catalog.",

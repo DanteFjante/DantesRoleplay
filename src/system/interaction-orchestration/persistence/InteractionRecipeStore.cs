@@ -135,6 +135,7 @@ public sealed class InteractionRecipeStore(DantesRoleplayDbContext db) : IIntera
             ReplayExecutionMilliseconds = performance?.ExecutionMilliseconds ?? 0,
             ReplayPromptTokens = performance?.PromptTokens ?? 0,
             ReplayOutputTokens = performance?.OutputTokens ?? 0,
+            ReplayFallbackReason = performance?.FallbackReason ?? "none",
             CreatedAtUtc = DateTime.UtcNow
         });
         try
@@ -433,7 +434,10 @@ public sealed class InteractionRecipeStore(DantesRoleplayDbContext db) : IIntera
             || value.SavedAiCalls != Math.Max(0, value.BaselineAiCalls - value.ActualAiCalls)
             || value.ElapsedMilliseconds < 0 || value.ChoiceResolutionMilliseconds < 0
             || value.ProposalMilliseconds < 0 || value.ExecutionMilliseconds < 0
-            || value.PromptTokens < 0 || value.OutputTokens < 0)
+            || value.PromptTokens < 0 || value.OutputTokens < 0
+            || value.FallbackReason is not ("none" or "missing-roles" or "missing-inputs"
+                or "missing-roles-and-inputs")
+            || (value.ActualAiCalls == 0) != (value.FallbackReason == "none"))
             throw new InteractionContractException("INVALID_RECIPE_REPLAY_PERFORMANCE",
                 "Recipe replay performance is outside its closed bounds.");
         return value;
@@ -444,7 +448,7 @@ public sealed class InteractionRecipeStore(DantesRoleplayDbContext db) : IIntera
             value.ReplayBaselineAiCalls, value.ReplayActualAiCalls, value.ReplaySavedAiCalls,
             value.ReplayElapsedMilliseconds, value.ReplayChoiceResolutionMilliseconds,
             value.ReplayProposalMilliseconds, value.ReplayExecutionMilliseconds,
-            value.ReplayPromptTokens, value.ReplayOutputTokens);
+            value.ReplayPromptTokens, value.ReplayOutputTokens, value.ReplayFallbackReason);
 
     private static bool SamePerformance(
         InteractionRecipeEvidence stored,

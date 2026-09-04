@@ -1678,6 +1678,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.Property(row => row.IntentText).HasMaxLength(500).IsRequired();
             entity.Property(row => row.IntentFingerprint).HasMaxLength(64).IsRequired();
             entity.Property(row => row.RoleProfile).HasMaxLength(300).IsRequired();
+            entity.Property(row => row.ReplayFallbackReason).HasMaxLength(30).IsRequired();
             entity.HasOne(row => row.Recipe).WithMany(row => row.Evidence).HasForeignKey(row => row.RecipeId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<InteractionExecutionReceipt>().WithMany().HasForeignKey(row => row.ExecutionReceiptId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<InteractionResolutionReceipt>().WithMany().HasForeignKey(row => row.ResolutionReceiptId).OnDelete(DeleteBehavior.Restrict);

@@ -127,13 +127,17 @@ legacy capabilities.
 Verified recipe replay is a deterministic interaction fast path, not a prompt-per-step workflow.
 Before any step commits, recheck the recipe's application revision, effective catalog and
 resolution fingerprints, and every referenced active mechanic version and content fingerprint.
-Bind supplied role references and per-step input objects into one inert proposal, verify it through
-the common interaction gateway, obtain the existing trusted-host confirmation, and let the normal
-executor run its dependency-ordered steps and receipts. If required roles remain unknown, one
-read-only AI resolution pass may fill only those roles; it must not execute actions. Replay output
-records the old per-step AI-call baseline, actual and saved calls, phase latency, and prompt/output
-tokens on the immutable recipe-use evidence so the efficiency gain remains observable after the
-tool response is gone.
+Learned templates retain exact action/query kinds, dependency order, versions, fingerprints, and
+safe result bindings. Literal mechanic input values are replaced with named JSON-pointer parameters;
+role entities and input values never become part of the template identity. Replay binds supplied
+roles and declared parameters into one inert proposal, verifies it through the common interaction
+gateway, obtains the existing trusted-host confirmation, and lets the normal executor run its
+dependency-ordered steps and receipts. If required roles or declared parameters remain unknown,
+one read-only AI resolution pass may fill only those missing choices; it must not execute actions.
+Replay output records the fallback reason, old per-step AI-call baseline, actual and saved calls,
+phase latency, and prompt/output tokens on the immutable recipe-use evidence so the efficiency gain
+remains observable after the tool response is gone. Existing value-free templates keep their
+canonical identity and may still accept the compatibility per-step input shape until retired.
 
 Recipe memory and mechanic learning are separate lanes. After three distinct successful uses of
 the same verified recipe for the same normalized intent, the host may persist one inert mechanic-

@@ -197,10 +197,11 @@ Generic security, resource, and transaction invariants remain host responsibilit
   MCP discovery, direct AI tools, orientation, and schema-driven web forms consume the same common
   descriptors. Compatibility dispatch metadata may remain internal, but loose payload-shape
   strings are not a public discovery contract.
-- Verified multi-step recipes may recursively invoke the selected local provider once per bounded,
-  dependency-ordered task. Each child receives prerequisite results and the same direct authorized
-  tool surface, except the recipe-run tool itself. Recipe templates retain the shared 16-step graph
-  limit, so recursive work cannot expand without bound.
+- Verified multi-step recipes compile exact query/action graphs without per-step model calls. Their
+  templates replace literal inputs with declared parameters and retain safe result bindings. One
+  read-only provider pass may resolve only missing roles or declared inputs; it cannot execute a
+  child action. Recipe templates retain the shared 16-step graph limit, so replay cannot expand
+  without bound.
 - One-time and recurring local-AI tasks use the durable trigger scheduler. Fired tasks are audited
   and run without write-approval gates, so unattended work may read or prepare an inert plan but
   cannot confirm its own mutation.

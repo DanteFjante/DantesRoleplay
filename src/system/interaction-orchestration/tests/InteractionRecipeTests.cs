@@ -31,14 +31,30 @@ public sealed class InteractionRecipeContractTests
     }
 
     [Fact]
-    public void Template_rejects_values_queries_and_cross_application_contracts()
+    public void Template_parameterizes_values_and_retains_queries_and_safe_result_bindings()
     {
-        Assert.Equal("RECIPE_INPUT_PARAMETERIZATION_UNSUPPORTED",
-            Assert.Throws<InteractionContractException>(() =>
-                InteractionRecipeTemplate.FromProposal(App(), Command("{\"amount\":1}", InteractionPlanStepKind.Action))).Code);
-        Assert.Equal("RECIPE_STEP_KIND_UNSUPPORTED",
-            Assert.Throws<InteractionContractException>(() =>
-                InteractionRecipeTemplate.FromProposal(App(), Command("{}", InteractionPlanStepKind.Query))).Code);
+        var parameterized = InteractionRecipeTemplate.FromProposal(App(),
+            Command("{\"amount\":1}", InteractionPlanStepKind.Action));
+        var input = Assert.Single(Assert.Single(parameterized.Steps).InputBindings);
+        Assert.Equal("step.1.input.1", input.Parameter);
+        Assert.Equal("/amount", input.ToInputPointer);
+        Assert.DoesNotContain("\"amount\":1", parameterized.CanonicalJson, StringComparison.Ordinal);
+
+        var query = InteractionRecipeTemplate.FromProposal(App(), Command("{}", InteractionPlanStepKind.Query));
+        Assert.Equal(InteractionPlanStepKind.Query, Assert.Single(query.Steps).Kind);
+
+        var resultBound = new InteractionPlannerProposalCommand([
+            new("read", InteractionPlanStepKind.Query, "sample-app.query.fixture", 1, HashA,
+                [], new Dictionary<string, string>(), "{}"),
+            new("act", InteractionPlanStepKind.Action, "sample-app.action.fixture", 1, HashA,
+                ["read"], new Dictionary<string, string> { ["actor"] = "entity.private" }, "{}",
+                [new("read", "/entityId", toRole: "actor")])
+        ]);
+        var retained = InteractionRecipeTemplate.FromProposal(App(), resultBound);
+        var binding = Assert.Single(retained.Steps[1].ResultBindings);
+        Assert.Equal("step.1", binding.FromStepId);
+        Assert.Equal("actor", binding.ToRole);
+
         var cross = new InteractionPlannerProposalCommand([
             new("step.1", InteractionPlanStepKind.Action, "other-app.action.fixture", 1, HashA,
                 [], new Dictionary<string, string>(), "{}")]);
@@ -49,13 +65,38 @@ public sealed class InteractionRecipeContractTests
                 [], new Dictionary<string, string> { ["ignore previous instructions"] = "entity.private" }, "{}")]);
         Assert.Equal("RECIPE_TEMPLATE_UNSAFE",
             Assert.Throws<InteractionContractException>(() => InteractionRecipeTemplate.FromProposal(App(), poisoned)).Code);
-        var resultBound = new InteractionPlannerProposalCommand([
+        var invalidResultBound = new InteractionPlannerProposalCommand([
             new("step.1", InteractionPlanStepKind.Action, "sample-app.action.fixture", 1, HashA,
                 [], new Dictionary<string, string> { ["actor"] = "entity.private" }, "{}",
                 [new("step.0", "/id", toRole: "actor")])]);
-        Assert.Equal("RECIPE_RESULT_BINDINGS_UNSUPPORTED",
+        Assert.Equal("INVALID_RECIPE_DEPENDENCIES",
             Assert.Throws<InteractionContractException>(() =>
-                InteractionRecipeTemplate.FromProposal(App(), resultBound)).Code);
+                InteractionRecipeTemplate.FromProposal(App(), invalidResultBound)).Code);
+    }
+
+    [Fact]
+    public void Parameterized_query_action_template_roundtrips_without_runtime_values()
+    {
+        var source = new InteractionPlannerProposalCommand([
+            new("context", InteractionPlanStepKind.Query, "sample-app.query.context", 2, HashA,
+                [], new Dictionary<string, string> { ["campaign"] = "entity.secret-campaign" },
+                "{\"audience\":\"gm\"}"),
+            new("act", InteractionPlanStepKind.Action, "sample-app.action.fixture", 3, HashA,
+                ["context"], new Dictionary<string, string> { ["actor"] = "entity.secret-actor" },
+                "{\"amount\":4}", [new("context", "/actor/id", toRole: "actor")])
+        ]);
+
+        var template = InteractionRecipeTemplate.FromProposal(App(), source);
+        var parsed = InteractionRecipeTemplate.Parse(template.CanonicalJson, App());
+
+        Assert.Equal(template.Fingerprint, parsed.Fingerprint);
+        Assert.Equal(template.CanonicalJson, parsed.CanonicalJson);
+        Assert.Equal(InteractionPlanStepKind.Query, parsed.Steps[0].Kind);
+        Assert.Single(parsed.Steps[0].InputBindings);
+        Assert.Single(parsed.Steps[1].ResultBindings);
+        Assert.DoesNotContain("entity.secret", parsed.CanonicalJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"gm\"", parsed.CanonicalJson, StringComparison.Ordinal);
+        Assert.DoesNotContain(":4", parsed.CanonicalJson, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -165,6 +206,13 @@ public sealed class InteractionRecipeStoreTests : IDisposable
         var verified = Assert.Single(await store.SearchAsync(InteractionRecipeContractTests.App(), "caravan", InteractionRecipeStatus.Verified));
         Assert.Equal(InteractionRecipeStatus.Verified, verified.Status);
         Assert.Equal(2, verified.Reference.Version);
+        var use = await store.AppendUseEvidenceAsync(new(verified.Reference, resolution.Id, execution.Id,
+            true, HashB, envelope.Host.RoleProfile.StableKey, "Attack the private caravan driver",
+            new(1, 1, 0, 12, 4, 3, 5, 20, 4, "missing-roles")));
+        Assert.Equal(InteractionRecipeWriteDisposition.Created, use.Disposition);
+        var measured = Assert.Single((await store.GetAsync(InteractionRecipeContractTests.App(),
+            verified.Reference.Id))!.Provenance!, value => value.Kind == "use-success");
+        Assert.Equal("missing-roles", measured.ReplayPerformance!.FallbackReason);
         Assert.Equal("RECIPE_REVIEW_TOKEN_CONFLICT", (await store.ReviewAsync(request with { Reason = "different" })).Code);
         Assert.Equal(2, db.InteractionRecipeRevisions.Count());
 
@@ -522,7 +570,7 @@ public sealed class InteractionRecipeLearningTests
     }
 
     [Fact]
-    public async Task Unsupported_input_never_calls_recipe_storage_or_changes_execution_truth()
+    public async Task Successful_input_is_learned_as_a_parameter_without_retaining_its_value()
     {
         var store = new CaptureStore();
         var learner = new DantesRoleplay.Interactions.InteractionRecipeLearner(store);
@@ -530,13 +578,14 @@ public sealed class InteractionRecipeLearningTests
         var result = await learner.LearnAsync(new(Envelope(),
             InteractionRecipeContractTests.Command("{\"amount\":1}", InteractionPlanStepKind.Action), Receipt()));
 
-        Assert.Equal(InteractionRecipeLearningDisposition.NotCreated, result.Disposition);
-        Assert.Equal("RECIPE_INPUT_PARAMETERIZATION_UNSUPPORTED", result.Code);
-        Assert.Null(store.Draft);
+        Assert.Equal(InteractionRecipeLearningDisposition.Created, result.Disposition);
+        Assert.NotNull(store.Draft);
+        Assert.Single(Assert.Single(store.Draft!.Template.Steps).InputBindings);
+        Assert.DoesNotContain("\"amount\":1", store.Draft.Template.CanonicalJson, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task Result_binding_never_calls_recipe_storage_or_persists_a_prior_query_path()
+    public async Task Unknown_result_binding_source_never_calls_recipe_storage()
     {
         var store = new CaptureStore();
         var learner = new DantesRoleplay.Interactions.InteractionRecipeLearner(store);
@@ -548,7 +597,7 @@ public sealed class InteractionRecipeLearningTests
         var result = await learner.LearnAsync(new(Envelope(), command, Receipt()));
 
         Assert.Equal(InteractionRecipeLearningDisposition.NotCreated, result.Disposition);
-        Assert.Equal("RECIPE_RESULT_BINDINGS_UNSUPPORTED", result.Code);
+        Assert.Equal("INVALID_RECIPE_DEPENDENCIES", result.Code);
         Assert.Null(store.Draft);
     }
 

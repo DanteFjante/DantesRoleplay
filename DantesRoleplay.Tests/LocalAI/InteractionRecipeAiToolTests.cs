@@ -125,6 +125,64 @@ public sealed class InteractionRecipeAiToolTests
     }
 
     [Fact]
+    public async Task Parameterized_recipe_rebinds_declared_inputs_and_retains_result_flow()
+    {
+        var fixture = Fixture(parameterized: true);
+        var provider = new CapturingProvider();
+        var source = new InteractionRecipeAiToolSource(fixture.Store, new AiService([provider]),
+            fixture.Gateway, fixture.Applications, fixture.Snapshots);
+        var run = Tool(source, fixture.Context);
+
+        var result = await run.InvokeAsync(new("recipe-call", run.Definition.Name,
+            JsonSerializer.SerializeToElement(new
+            {
+                applicationId = App.Value,
+                query = "solve fixture",
+                roleBindings = new { actor = "entity.actor" },
+                inputBindings = new Dictionary<string, object> { ["step.2.input.1"] = 7 }
+            }), AiRequestKind.Task));
+
+        Assert.True(result.Ok, result.ErrorMessage);
+        Assert.Empty(provider.Requests);
+        using var proposal = JsonDocument.Parse(fixture.Gateway.SubmittedProposal!);
+        var second = proposal.RootElement.GetProperty("steps")[1];
+        Assert.Equal(7, second.GetProperty("input").GetProperty("amount").GetInt32());
+        var binding = Assert.Single(second.GetProperty("resultBindings").EnumerateArray());
+        Assert.Equal("step.1", binding.GetProperty("fromStepId").GetString());
+        Assert.Equal("/sourceOperationId", binding.GetProperty("toInputPointer").GetString());
+    }
+
+    [Fact]
+    public async Task Missing_declared_input_uses_one_ai_pass_for_only_that_choice()
+    {
+        var fixture = Fixture(parameterized: true);
+        var provider = new CapturingProvider(resolveInput: true);
+        var source = new InteractionRecipeAiToolSource(fixture.Store, new AiService([provider]),
+            fixture.Gateway, fixture.Applications, fixture.Snapshots);
+        var run = Tool(source, fixture.Context);
+
+        var result = await run.InvokeAsync(new("recipe-call", run.Definition.Name,
+            JsonSerializer.SerializeToElement(new
+            {
+                applicationId = App.Value,
+                query = "solve fixture",
+                roleBindings = new { actor = "entity.actor" }
+            }), AiRequestKind.Task));
+
+        Assert.True(result.Ok, result.ErrorMessage);
+        var request = Assert.Single(provider.Requests);
+        Assert.Contains("Missing input parameters: step.2.input.1", request.Messages.Last().Content,
+            StringComparison.Ordinal);
+        using var proposal = JsonDocument.Parse(fixture.Gateway.SubmittedProposal!);
+        Assert.Equal(9, proposal.RootElement.GetProperty("steps")[1]
+            .GetProperty("input").GetProperty("amount").GetInt32());
+        using var output = JsonDocument.Parse(result.Content);
+        Assert.Equal("missing-inputs", output.RootElement.GetProperty("efficiency")
+            .GetProperty("aiFallbackReason").GetString());
+        Assert.Equal("missing-inputs", fixture.Store.UseEvidence!.ReplayPerformance!.FallbackReason);
+    }
+
+    [Fact]
     public async Task Stale_mechanic_is_rejected_before_confirmation_or_partial_execution()
     {
         var fixture = Fixture(staleSecondStep: true);
@@ -174,7 +232,7 @@ public sealed class InteractionRecipeAiToolTests
     private static IAiTool Tool(InteractionRecipeAiToolSource source, SystemAiToolSourceContext context) =>
         source.CreateTools(context).Single(value => value.Definition.Name == "interaction_recipe_run");
 
-    private static FixtureData Fixture(bool staleSecondStep = false)
+    private static FixtureData Fixture(bool staleSecondStep = false, bool parameterized = false)
     {
         var applications = new InMemoryApplicationRegistry();
         var revision = applications.Register(new(App, "Example", "Recipe replay fixture.", []));
@@ -184,7 +242,9 @@ public sealed class InteractionRecipeAiToolTests
             new("first", InteractionPlanStepKind.Action, first.QualifiedId, first.Version,
                 first.ContentFingerprint, [], new Dictionary<string, string> { ["actor"] = "slot" }, "{}"),
             new("second", InteractionPlanStepKind.Action, second.QualifiedId, second.Version,
-                second.ContentFingerprint, ["first"], new Dictionary<string, string>(), "{}")
+                second.ContentFingerprint, ["first"], new Dictionary<string, string>(),
+                parameterized ? "{\"amount\":1}" : "{}",
+                parameterized ? [new("first", "/operationId", toInputPointer: "/sourceOperationId")] : [])
         ]);
         var template = InteractionRecipeTemplate.FromProposal(App, proposal);
         var recipe = new InteractionRecipeProjection(
@@ -325,7 +385,7 @@ public sealed class InteractionRecipeAiToolTests
         }
     }
 
-    private sealed class CapturingProvider(bool resolveActor = false) : IAiProvider
+    private sealed class CapturingProvider(bool resolveActor = false, bool resolveInput = false) : IAiProvider
     {
         public List<AiProviderRequest> Requests { get; } = [];
         public AiProviderInfo Info { get; } = new("test", "Test");
@@ -339,7 +399,10 @@ public sealed class InteractionRecipeAiToolTests
             return Task.FromResult(resolveActor
                 ? new AiProviderResponse(true, Model(), "", "{\"roleBindings\":{\"actor\":\"entity.resolved\"}}",
                     [], 30, 5)
-                : new AiProviderResponse(true, Model(), "", "{}", []));
+                : resolveInput
+                    ? new AiProviderResponse(true, Model(), "", "{\"inputBindings\":{\"step.2.input.1\":9}}",
+                        [], 25, 4)
+                    : new AiProviderResponse(true, Model(), "", "{}", []));
         }
 
         private static AiModel Model() => new("test", "model", "Test",

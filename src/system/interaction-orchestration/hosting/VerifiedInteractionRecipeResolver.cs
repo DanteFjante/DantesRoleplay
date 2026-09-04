@@ -1,4 +1,5 @@
 using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.Applications;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Sources;
 using DantesRoleplay.Retrieval;
@@ -23,13 +24,15 @@ internal sealed class VerifiedInteractionRecipeResolver(
         if (current is null) return null;
         var recipe = current.Recipe;
         var snapshot = current.Snapshot;
+        if (recipe.Template.Steps.Any(step => step.InputBindings.Count > 0)) return null;
 
         var inspected = new List<InteractionInspectedFeature>();
         var draftSteps = new List<InteractionPlannerDraftStep>();
         foreach (var step in recipe.Template.Steps)
         {
             var record = snapshot.Documents.SingleOrDefault(document => document.Trust == SourceTrust.Trusted
-                && document.Record.Kind == "mechanic" && document.Record.Status == "active"
+                && document.Record.Kind == (step.Kind == InteractionPlanStepKind.Query
+                    ? ApplicationQueryContract.CatalogKind : "mechanic") && document.Record.Status == "active"
                 && document.Record.QualifiedId == step.QualifiedId
                 && document.Record.Version == step.ContractVersion
                 && document.Record.ContentFingerprint == step.ContractFingerprint)?.Record;
@@ -47,7 +50,7 @@ internal sealed class VerifiedInteractionRecipeResolver(
             var reference = InteractionFeatureReference.Create(envelope.Host.ApplicationRevision.ApplicationId,
                 InteractionRetrievalLane.TrustedFeature, snapshot.Manifest.Fingerprint, record);
             inspected.Add(new(InteractionFeatureHit.Create(reference, record, null, null, exact: true), record.ContentJson));
-            draftSteps.Add(new(step.StepId, InteractionPlanStepKind.Action, step.QualifiedId,
+            draftSteps.Add(new(step.StepId, step.Kind, step.QualifiedId,
                 step.ContractVersion, step.ContractFingerprint, step.DependsOn, bindings, "{}"));
         }
         var result = verifier.Verify(new(envelope, inspected.AsReadOnly(),
@@ -91,7 +94,8 @@ internal sealed class VerifiedInteractionRecipeResolver(
         foreach (var step in recipe.Template.Steps)
         {
             var record = snapshot.Documents.SingleOrDefault(document => document.Trust == SourceTrust.Trusted
-                && document.Record.Kind == "mechanic" && document.Record.Status == "active"
+                && document.Record.Kind == (step.Kind == InteractionPlanStepKind.Query
+                    ? ApplicationQueryContract.CatalogKind : "mechanic") && document.Record.Status == "active"
                 && document.Record.QualifiedId == step.QualifiedId
                 && document.Record.Version == step.ContractVersion
                 && document.Record.ContentFingerprint == step.ContractFingerprint)?.Record;
@@ -121,7 +125,8 @@ internal sealed class VerifiedInteractionRecipeResolver(
                 foreach (var step in recipe.Template.Steps)
                 {
                     var record = snapshot.Documents.SingleOrDefault(value => value.Trust == SourceTrust.Trusted
-                        && value.Record.Kind == "mechanic" && value.Record.Status == "active"
+                        && value.Record.Kind == (step.Kind == InteractionPlanStepKind.Query
+                            ? ApplicationQueryContract.CatalogKind : "mechanic") && value.Record.Status == "active"
                         && value.Record.QualifiedId == step.QualifiedId
                         && value.Record.Version == step.ContractVersion
                         && value.Record.ContentFingerprint == step.ContractFingerprint)?.Record;
