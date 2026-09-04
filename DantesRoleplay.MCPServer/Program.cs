@@ -132,6 +132,7 @@ builder.Services.AddCodexBridgeComponent(new CodexBridgeOptions(
     Model: builder.Configuration["Codex:Model"] ?? CodexBridgeModels.Luna));
 builder.Services.AddScoped<IAiService, AiService>();
 builder.Services.AddDantesRoleplayWeb(databasePath, builder.Configuration);
+builder.Services.AddScoped<ApplicationReadinessService>();
 
 var app = builder.Build();
 

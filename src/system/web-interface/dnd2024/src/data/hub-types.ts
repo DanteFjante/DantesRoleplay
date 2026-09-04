@@ -377,7 +377,7 @@ export type PartyKnowledgeEntry = {
   text: string;
 };
 
-export type SectionFailureCategory = "authorization" | "transport" | "http" | "incompatible-data" | "unknown";
+export type SectionFailureCategory = "authorization" | "stale-data" | "transport" | "http" | "incompatible-data" | "unknown";
 
 export type SectionState<T> =
   | { status: "idle"; data: null }
@@ -389,6 +389,7 @@ export type SectionState<T> =
       source: "canonical" | "provisional";
       failureCategory: Exclude<SectionFailureCategory, "authorization">;
       diagnosticId: string;
+      errorCode?: string;
       httpStatus?: number;
     }
   | {
@@ -396,6 +397,7 @@ export type SectionState<T> =
       data: null;
       failureCategory: Exclude<SectionFailureCategory, "authorization">;
       diagnosticId: string;
+      errorCode?: string;
       httpStatus?: number;
     }
   | {
@@ -403,6 +405,7 @@ export type SectionState<T> =
       data: null;
       failureCategory: "authorization";
       diagnosticId: string;
+      errorCode?: string;
     };
 
 export type CharacterSheetProjection = {
@@ -635,6 +638,7 @@ export type CanonicalCharacterResult =
       data: null;
       failureCategory: Exclude<SectionFailureCategory, "authorization">;
       diagnosticId: string;
+      errorCode?: string;
       httpStatus?: number;
     }
   | {
@@ -642,6 +646,7 @@ export type CanonicalCharacterResult =
       data: null;
       failureCategory: "authorization";
       diagnosticId: string;
+      errorCode?: string;
       httpStatus?: number;
     };
 

@@ -20,7 +20,8 @@ reads anything, `commit` changes anything. Nothing else exists.
 2. Read with `query(kind: ...)`. The kinds are `capabilities`, `procedures`, `categories`, `world`,
    `entities`, `graph`, `mechanics`, `event-types`, `events`, `subscriptions`, `notifications`,
    `feedback`, `information-answer`, `information-actions`, `system.audience-context`,
-   `system.applications`, `system.sources`, `system.application-preview`, `system.dependencies`,
+   `system.applications`, `system.sources`, `system.application-preview`, `system.application-readiness`,
+   `system.dependencies`,
    `system.catalogs`, `system.catalog.browse`, `system.catalog.search`, `system.catalog.record`,
    `system.feature-search`, `system.interaction-plan`, `system.interaction-receipt`,
    `system.interaction-recipes`, `system.trigger-scheduling`, `system.blobs`, `namespaces`, and
@@ -41,6 +42,11 @@ reads anything, `commit` changes anything. Nothing else exists.
    `query(kind: "system.application-preview", applicationId: "...")` to scan the registered
    allowed-root-relative paths/globs and inspect the candidate fingerprint, winners, shadows, and
    closed problems. Canonical root paths come only from host configuration and never from this call.
+   After activation, use `query(kind: "system.application-readiness", applicationId: "...")` to
+   inspect registration, active catalog resolution, query callability, current page revision/hash,
+   and the current host-authorized audience independently. The private web readiness route returns
+   the same check report. Follow its stable code and recovery action rather than treating an empty
+   interface as evidence that the application has no content.
    Use `query(kind: "system.dependencies", applicationId: "...")` to inventory declared exact
    component-field and projection dependencies. Supply a returned canonical node `id` to traverse
    its direct or transitive dependents. The response names consumer kinds not yet indexed; the

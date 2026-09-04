@@ -633,7 +633,7 @@ function response(status, body) {
   });
 }
 
-test("canonical character reads distinguish HTTP, authorization, transport, and incompatible data", async () => {
+test("canonical character reads distinguish stale fingerprints, HTTP, authorization, transport, and incompatible data", async () => {
   const common = {
     origin: "http://localhost:6217",
     applicationId: "dnd2024",
@@ -661,6 +661,18 @@ test("canonical character reads distinguish HTTP, authorization, transport, and 
   });
   assert.equal(forbidden.status, "forbidden");
   assert.equal(forbidden.failureCategory, "authorization");
+
+  const stale = await readCanonicalCharacter({
+    ...common,
+    fetchImpl: async () => response(409, {
+      code: "READ_MODEL_STATE_SPACE_STALE",
+      message: "The state space is not bound to the current application resolution.",
+    }),
+  });
+  assert.equal(stale.status, "error");
+  assert.equal(stale.failureCategory, "stale-data");
+  assert.equal(stale.errorCode, "READ_MODEL_STATE_SPACE_STALE");
+  assert.equal(stale.httpStatus, 409);
 
   const incompatible = await readCanonicalCharacter({
     ...common,

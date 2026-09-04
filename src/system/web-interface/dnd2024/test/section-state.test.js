@@ -136,6 +136,22 @@ test("transient HTTP failures may reuse canonical data and retain the response s
   assert.equal(result.party[0].sheet[0].title, "Bard");
 });
 
+test("stale fingerprints retain last-good canonical data and their stable error code", () => {
+  const ready = envelope([member({ status: "ready" })]);
+  const failedState = {
+    status: "error",
+    data: null,
+    failureCategory: "stale-data",
+    diagnosticId: "stale-request",
+    errorCode: "READ_MODEL_STATE_SPACE_STALE",
+    httpStatus: 409,
+  };
+  const result = preserveLastGoodPartyData(ready, envelope([member(failedState)]));
+  assert.equal(result.party[0].sheetState.status, "stale");
+  assert.equal(result.party[0].sheetState.errorCode, "READ_MODEL_STATE_SPACE_STALE");
+  assert.equal(result.party[0].sheet[0].title, "Bard");
+});
+
 test("last-good data is isolated by campaign, perspective, audience, and source revision", () => {
   const ready = envelope([member({ status: "ready" })], "player", "campaign.one");
   const failure = member({

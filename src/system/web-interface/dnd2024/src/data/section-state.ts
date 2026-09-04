@@ -17,7 +17,7 @@ function sameAudienceBoundary(previous: ReadyHubEnvelope, next: ReadyHubEnvelope
 function isTransientFailure<T>(
   failed: Extract<SectionState<T>, { status: "error" }>,
 ): boolean {
-  if (failed.failureCategory === "transport") return true;
+  if (failed.failureCategory === "transport" || failed.failureCategory === "stale-data") return true;
   if (failed.failureCategory !== "http" || failed.httpStatus === undefined) return false;
   return failed.httpStatus === 408 || failed.httpStatus === 429 || failed.httpStatus >= 500;
 }
@@ -35,6 +35,7 @@ function staleFrom<T>(
     source: previous.source,
     failureCategory: failed.failureCategory,
     diagnosticId: failed.diagnosticId,
+    ...(failed.errorCode === undefined ? {} : { errorCode: failed.errorCode }),
     ...(failed.httpStatus === undefined ? {} : { httpStatus: failed.httpStatus }),
   };
 }

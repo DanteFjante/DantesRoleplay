@@ -446,7 +446,7 @@ test("mounted Party view distinguishes loading, ready, empty, stale, forbidden, 
     {
       name: "empty",
       state: { status: "empty", source: "canonical", data: [] },
-      expected: "No sheet recorded",
+      expected: "No canonical character sheet is recorded",
     },
     {
       name: "loading",

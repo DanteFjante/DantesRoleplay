@@ -544,6 +544,12 @@ function canonicalCharacterDiagnosticId(response, actorId, category) {
   return requestId ?? `canonical-character:${actorId}:${category}`;
 }
 
+function canonicalCharacterFailureCategory(response, code) {
+  if (response?.status === 401 || response?.status === 403) return "authorization";
+  if (response?.status === 409 || (typeof code === "string" && code.includes("STALE"))) return "stale-data";
+  return "http";
+}
+
 function boundedInteger(value, minimum, maximum = Number.MAX_SAFE_INTEGER) {
   return Number.isSafeInteger(value) && value >= minimum && value <= maximum;
 }
@@ -741,13 +747,16 @@ export async function readCanonicalCharacter({ fetchImpl, origin, applicationId,
       cache: "no-store",
     });
     if (!response?.ok) {
-      const forbidden = response?.status === 401 || response?.status === 403;
-      const category = forbidden ? "authorization" : "http";
+      const failure = await json(response);
+      const errorCode = token(failure?.code);
+      const category = canonicalCharacterFailureCategory(response, errorCode);
+      const forbidden = category === "authorization";
       return {
         status: forbidden ? "forbidden" : "error",
         data: null,
         failureCategory: category,
         diagnosticId: canonicalCharacterDiagnosticId(response, actorId, category),
+        ...(errorCode ? { errorCode } : {}),
         ...(Number.isInteger(response?.status) ? { httpStatus: response.status } : {}),
       };
     }

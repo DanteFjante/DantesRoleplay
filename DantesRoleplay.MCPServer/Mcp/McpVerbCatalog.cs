@@ -36,6 +36,7 @@ public static class McpVerbCatalog
         new("system.applications", "Authenticated bounded inspection of registered applications and revisions.", ["applicationId", "limit"], ["procedure.system.inspect"]),
         new("system.sources", "Authenticated bounded inspection of registered relative sources and latest scan evidence.", ["applicationId", "id", "limit"], ["procedure.system.inspect"]),
         new("system.application-preview", "Authenticated disposable scan and candidate resolution preview for reviewed base sources plus registered extensions.", ["applicationId", "sourceIds", "extensionIds", "limit"], ["procedure.system.inspect"]),
+        new("system.application-readiness", "Authenticated operational diagnostics for independently versioned application registration, activation, catalog, query, web-page, and audience owners.", ["applicationId"], ["procedure.system.inspect"]),
         new("system.dependencies", "Authenticated declared component-field and projection dependency impact for one application.", ["applicationId", "id", "transitive", "limit"], ["procedure.system.inspect"]),
         new("system.catalogs", "Public catalog collections for one application.", ["applicationId"], ["procedure.system.inspect"]),
         new("system.catalog.browse", "One described public catalog branch with bounded cursor paging.", ["applicationId", "collection", "branch", "pageSize", "cursor"], ["procedure.system.inspect"]),

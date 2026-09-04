@@ -216,12 +216,14 @@ function failedSectionState(result: Extract<
         data: null,
         failureCategory: "authorization" as const,
         diagnosticId: result.diagnosticId,
+        ...(result.errorCode === undefined ? {} : { errorCode: result.errorCode }),
       }
     : {
         status: "error" as const,
         data: null,
         failureCategory: result.failureCategory,
         diagnosticId: result.diagnosticId,
+        ...(result.errorCode === undefined ? {} : { errorCode: result.errorCode }),
         ...(result.httpStatus === undefined ? {} : { httpStatus: result.httpStatus }),
       };
 }

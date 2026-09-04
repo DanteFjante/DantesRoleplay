@@ -119,7 +119,7 @@ export function PartyView({
   const state = selectedMember && (section === "sheet" || section === "inventory")
     ? (section === "sheet" ? selectedMember.sheetState : selectedMember.inventoryState)
     : null;
-  const stateFailed = state?.status === "error" || state?.status === "forbidden";
+  const stateBlocksContent = state?.status === "empty" || state?.status === "error" || state?.status === "forbidden";
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const filteredEntries = useMemo(() => entries.filter((entry) => {
     if (!normalizedQuery) return true;
@@ -162,9 +162,9 @@ export function PartyView({
               <input onChange={(event) => setQuery(event.target.value.slice(0, 80))} placeholder={`Search ${section}…`} type="search" value={query} />
             </label>
           ) : null}
-          {stateFailed ? null : section === "sheet" && selectedMember.characterSheet ? (
+          {stateBlocksContent ? null : section === "sheet" && selectedMember.characterSheet ? (
             <CharacterSheet sheet={selectedMember.characterSheet} />
-          ) : stateFailed ? null : section === "inventory" && selectedMember.characterSheet ? (
+          ) : stateBlocksContent ? null : section === "inventory" && selectedMember.characterSheet ? (
             <div className="character-inventory-layout">
               <InventoryTree
                 definitions={selectedMember.characterSheet.dossier?.inventory.definitions ?? []}
