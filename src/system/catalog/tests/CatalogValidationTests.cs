@@ -35,7 +35,7 @@ public sealed class CatalogValidationTests
         var queryPaths = Directory.EnumerateFiles(queryRoot, "*.json", SearchOption.AllDirectories)
             .Order(StringComparer.Ordinal).ToArray();
 
-        Assert.Equal(109, mechanicPaths.Length);
+        Assert.Equal(119, mechanicPaths.Length);
         Assert.Equal(9, queryPaths.Length);
         foreach (var path in mechanicPaths)
         {
@@ -129,7 +129,7 @@ public sealed class CatalogValidationTests
         var mechanics = contents.Mechanics.Where(value => InCategory(value.Category,
             "game.core", "check", "change")).ToArray();
 
-        Assert.Equal(25, procedures.Length);
+        Assert.Equal(26, procedures.Length);
         Assert.Equal(24, mechanics.Length);
         var records = procedures.Select(value => (value.Id, value.Category, value.Name, value.Description))
             .Concat(mechanics.Select(value => (value.Id, value.Category, value.Name, value.Description)))

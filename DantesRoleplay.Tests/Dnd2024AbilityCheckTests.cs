@@ -7446,6 +7446,203 @@ public sealed class Dnd2024AbilityCheckTests
             DndHarness.StateSpaceId, "subject.high"))!.ContainerEntityId);
     }
 
+    [Fact]
+    public async Task Failed_trap_detection_reveals_no_hazard_identity_or_event()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddHazardFixturesAsync(detectionDc: 100);
+        var input = "{\"check\":{\"ability\":\"wis\",\"skill\":\"perception\",\"dc\":100},\"expectedDefinitionRevision\":1}";
+
+        var result = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.trap.detect", TrapDetectRoles(), input, 17,
+            "51000000000000000000000000000001"));
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, result.Disposition);
+        Assert.Equal("No hidden hazard is established.", result.Narration);
+        Assert.DoesNotContain("hazard.trap", result.Narration, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(await harness.Edges.GetRelationshipAsync(DndHarness.StateSpaceId,
+            "subject.high", "hazard.trap.instance.fixture", "dnd2024.hazard.detected"));
+        Assert.Empty(await harness.EventsAsync(result.OperationId));
+        Assert.Contains(harness.Search("detect a hidden trap").Records,
+            value => value.Record.QualifiedId == "dnd2024.mechanic.trap.detect");
+    }
+
+    [Theory]
+    [InlineData(0, true)]
+    [InlineData(100, false)]
+    public async Task Detected_trap_disarm_uses_the_exact_authored_check(
+        int disarmDc, bool expectedDisarmed)
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddHazardFixturesAsync(disarmDc: disarmDc);
+        var detected = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.trap.detect", TrapDetectRoles(),
+            "{\"check\":{\"ability\":\"wis\",\"skill\":\"perception\",\"dc\":0},\"expectedDefinitionRevision\":1}",
+            17, "52000000000000000000000000000001"));
+        var disarmInput = "{\"check\":{\"ability\":\"dex\",\"skill\":\"sleight-of-hand\",\"dc\":"
+                          + disarmDc + "},\"expectedDefinitionRevision\":1}";
+
+        var disarmed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.trap.disarm", TrapDisarmRoles(), disarmInput, 17,
+            expectedDisarmed
+                ? "52000000000000000000000000000002"
+                : "52000000000000000000000000000003"));
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, detected.Disposition);
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, disarmed.Disposition);
+        Assert.NotNull(await harness.Edges.GetRelationshipAsync(DndHarness.StateSpaceId,
+            "subject.high", "hazard.trap.instance.fixture", "dnd2024.hazard.detected"));
+        using var state = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "hazard.trap.instance.fixture",
+            "dnd2024.hazard.trap-state"))!.ValueJson);
+        Assert.Equal(expectedDisarmed
+                ? "dnd2024.hazard.trap-phase.disabled"
+                : "dnd2024.hazard.trap-phase.armed",
+            state.RootElement.GetProperty("phase").GetProperty("entityId").GetString());
+        Assert.Equal(expectedDisarmed ? 1 : 0,
+            (await harness.EventsAsync(disarmed.OperationId)).Count);
+    }
+
+    [Fact]
+    public async Task Trap_trigger_reset_clear_and_replay_preserve_one_authoritative_history()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddHazardFixturesAsync();
+        var trigger = harness.ActionForRoles(
+            "dnd2024.mechanic.trap.trigger", TrapTriggerRoles(),
+            "{\"expectedDefinitionRevision\":1,\"saveCheck\":{\"ability\":\"dex\",\"dc\":100},\"damageEffects\":[{\"amount\":3,\"damageType\":\"piercing\",\"saveSucceeded\":false,\"successfulSaveBehavior\":\"none\"}],\"conditionEffects\":[{\"mode\":\"apply\",\"conditions\":[\"prone\"]}]}",
+            17, "53000000000000000000000000000001");
+
+        var first = await harness.Runner.RunAsync(trigger);
+        var replay = await harness.Runner.RunAsync(trigger);
+
+        Assert.True(first.Disposition == ApplicationActionExecutionDisposition.Succeeded,
+            first.Disposition + ": " + string.Join("; ", first.Problems.Select(value =>
+                value.Code + " " + value.SafeMessage)));
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replay.Disposition);
+        using (var hitPoints = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "subject.high", "dnd2024.creature.hit-points"))!.ValueJson))
+            Assert.Equal(7, hitPoints.RootElement.GetProperty("current").GetInt32());
+        using (var conditions = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "subject.high", "dnd2024.conditions"))!.ValueJson))
+            Assert.Contains(conditions.RootElement.GetProperty("entries").EnumerateArray(),
+                value => value.GetProperty("condition").GetString() == "prone");
+        Assert.Single(await harness.EventsAsync(first.OperationId));
+
+        var reset = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.trap.reset", TrapLifecycleRoles(),
+            "{\"expectedDefinitionRevision\":1,\"satisfiedResetKind\":\"dawn\"}", 0,
+            "53000000000000000000000000000002"));
+        var cleared = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.trap.clear", TrapLifecycleRoles(),
+            "{\"expectedDefinitionRevision\":1}", 0,
+            "53000000000000000000000000000003"));
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, reset.Disposition);
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, cleared.Disposition);
+        using var finalState = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "hazard.trap.instance.fixture",
+            "dnd2024.hazard.trap-state"))!.ValueJson);
+        Assert.Equal("dnd2024.hazard.trap-phase.cleared",
+            finalState.RootElement.GetProperty("phase").GetProperty("entityId").GetString());
+        Assert.Equal(1, finalState.RootElement.GetProperty("activationCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task Environmental_exposure_progresses_time_supports_mitigation_and_recovery()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddHazardFixturesAsync();
+        var begin = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.environment-exposure.begin", ExposureBeginRoles(),
+            "{\"exposureId\":\"hazard.exposure.fixture\",\"expectedDefinitionRevision\":1}", 0,
+            "54000000000000000000000000000001"));
+        var progressRequest = harness.ActionForRoles(
+            "dnd2024.mechanic.environment-exposure.progress", ExposureProgressRoles("hazard.exposure.fixture"),
+            FailedExposureInput(7), 17, "54000000000000000000000000000002");
+        var preview = await harness.EvaluateRolesAsync(
+            "dnd2024.mechanic.environment-exposure.resolve",
+            ExposureResolveRoles("hazard.exposure.fixture"), FailedExposureInput(7), 17);
+
+        Assert.True(preview.Ok, preview.Run?.Error ?? string.Join("; ", preview.Problems));
+
+        var progress = await harness.Runner.RunAsync(progressRequest);
+        var replay = await harness.Runner.RunAsync(progressRequest);
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, begin.Disposition);
+        Assert.True(progress.Disposition == ApplicationActionExecutionDisposition.Succeeded,
+            progress.Disposition + ": " + string.Join("; ", progress.Problems.Select(value =>
+                value.Code + " " + value.SafeMessage)));
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replay.Disposition);
+        using (var exposure = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "hazard.exposure.fixture",
+                   "dnd2024.hazard.environment-exposure"))!.ValueJson))
+        {
+            Assert.Equal(60, exposure.RootElement.GetProperty("accumulatedExposure")
+                .GetProperty("value").GetProperty("numerator").GetInt32());
+            Assert.Equal(1, exposure.RootElement.GetProperty("exposureCount").GetInt32());
+            Assert.Equal(1, exposure.RootElement.GetProperty("failedChecks").GetInt32());
+        }
+        using (var clock = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "world.hazard.fixture", "game.core.world.clock"))!.ValueJson))
+        {
+            Assert.Equal(160, clock.RootElement.GetProperty("currentMinute").GetInt32());
+            Assert.Equal(8, clock.RootElement.GetProperty("revision").GetInt32());
+        }
+        Assert.Equal(2, (await harness.EventsAsync(progress.OperationId)).Count);
+
+        var recovered = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.environment-exposure.recover", ExposureRecoverRoles("hazard.exposure.fixture"),
+            "{\"expectedDefinitionRevision\":1}", 0,
+            "54000000000000000000000000000003"));
+        var afterRecovery = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.environment-exposure.progress", ExposureProgressRoles("hazard.exposure.fixture"),
+            FailedExposureInput(8), 17, "54000000000000000000000000000004"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, recovered.Disposition);
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, afterRecovery.Disposition);
+
+        await harness.AddExposureRecordAsync("hazard.exposure.mitigated.fixture");
+        var mitigated = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.environment-exposure.progress",
+            ExposureProgressRoles("hazard.exposure.mitigated.fixture"),
+            "{\"minutes\":60,\"expectedClockRevision\":8,\"expectedDefinitionRevision\":1,\"selectedMitigationIndex\":0,\"damageEffects\":[],\"conditionEffects\":[]}",
+            17, "54000000000000000000000000000005"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, mitigated.Disposition);
+        using var hitPoints = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.creature.hit-points"))!.ValueJson);
+        Assert.Equal(8, hitPoints.RootElement.GetProperty("current").GetInt32());
+    }
+
+    [Fact]
+    public async Task Environmental_progress_transaction_failure_rolls_back_consequences_events_and_clock()
+    {
+        await using var harness = await DndHarness.CreateAsync(failTransactionAfterEffects: true);
+        await harness.AddHazardFixturesAsync();
+        await harness.AddExposureRecordAsync();
+
+        var failed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.environment-exposure.progress", ExposureProgressRoles("hazard.exposure.fixture"),
+            FailedExposureInput(7), 17, "55000000000000000000000000000001"));
+
+        Assert.True(failed.Disposition == ApplicationActionExecutionDisposition.Failed,
+            failed.Disposition + ": " + string.Join("; ", failed.Problems.Select(value =>
+                value.Code + " " + value.SafeMessage)));
+        using (var hitPoints = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "subject.high", "dnd2024.creature.hit-points"))!.ValueJson))
+            Assert.Equal(10, hitPoints.RootElement.GetProperty("current").GetInt32());
+        using (var conditions = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "subject.high", "dnd2024.conditions"))!.ValueJson))
+            Assert.Empty(conditions.RootElement.GetProperty("entries").EnumerateArray());
+        using (var exposure = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "hazard.exposure.fixture",
+                   "dnd2024.hazard.environment-exposure"))!.ValueJson))
+            Assert.Equal(0, exposure.RootElement.GetProperty("exposureCount").GetInt32());
+        using (var clock = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "world.hazard.fixture", "game.core.world.clock"))!.ValueJson))
+            Assert.Equal(100, clock.RootElement.GetProperty("currentMinute").GetInt32());
+        Assert.Empty(await harness.EventsAsync(failed.OperationId));
+    }
+
     private static Dictionary<string, string> TravelRoles() => new(StringComparer.Ordinal)
     {
         ["traveller"] = "subject.high",
@@ -7464,6 +7661,71 @@ public sealed class Dnd2024AbilityCheckTests
                     + "\",\"expectedClockRevision\":7}}";
         return input.Insert(1, extraProperty is null ? "" : extraProperty + ",");
     }
+
+    private static Dictionary<string, string> TrapDetectRoles() => new(StringComparer.Ordinal)
+    {
+        ["observer"] = "subject.high",
+        ["trap"] = "hazard.trap.instance.fixture",
+        ["definition"] = "hazard.trap.definition.fixture",
+        ["activity"] = "activity.hazard.detect.fixture"
+    };
+
+    private static Dictionary<string, string> TrapDisarmRoles() => new(StringComparer.Ordinal)
+    {
+        ["actor"] = "subject.high",
+        ["trap"] = "hazard.trap.instance.fixture",
+        ["definition"] = "hazard.trap.definition.fixture",
+        ["activity"] = "activity.hazard.disarm.fixture"
+    };
+
+    private static Dictionary<string, string> TrapTriggerRoles() => new(StringComparer.Ordinal)
+    {
+        ["trap"] = "hazard.trap.instance.fixture",
+        ["definition"] = "hazard.trap.definition.fixture",
+        ["target"] = "subject.high"
+    };
+
+    private static Dictionary<string, string> TrapLifecycleRoles() => new(StringComparer.Ordinal)
+    {
+        ["trap"] = "hazard.trap.instance.fixture",
+        ["definition"] = "hazard.trap.definition.fixture"
+    };
+
+    private static Dictionary<string, string> ExposureBeginRoles() => new(StringComparer.Ordinal)
+    {
+        ["subject"] = "subject.high",
+        ["definition"] = "hazard.environment.definition.fixture"
+    };
+
+    private static Dictionary<string, string> ExposureProgressRoles(string exposureId) => new(StringComparer.Ordinal)
+    {
+        ["exposure"] = exposureId,
+        ["definition"] = "hazard.environment.definition.fixture",
+        ["subject"] = "subject.high",
+        ["activity"] = "activity.hazard.exposure.fixture",
+        ["world"] = "world.hazard.fixture"
+    };
+
+    private static Dictionary<string, string> ExposureResolveRoles(string exposureId) => new(StringComparer.Ordinal)
+    {
+        ["exposure"] = exposureId,
+        ["definition"] = "hazard.environment.definition.fixture",
+        ["subject"] = "subject.high",
+        ["activity"] = "activity.hazard.exposure.fixture"
+    };
+
+    private static Dictionary<string, string> ExposureRecoverRoles(string exposureId) => new(StringComparer.Ordinal)
+    {
+        ["exposure"] = exposureId,
+        ["definition"] = "hazard.environment.definition.fixture",
+        ["subject"] = "subject.high"
+    };
+
+    private static string FailedExposureInput(int expectedClockRevision) =>
+        "{\"minutes\":60,\"expectedClockRevision\":" + expectedClockRevision
+        + ",\"expectedDefinitionRevision\":1,\"check\":{\"ability\":\"con\",\"dc\":100},"
+        + "\"damageEffects\":[{\"amount\":2,\"damageType\":\"cold\",\"saveSucceeded\":false,\"successfulSaveBehavior\":\"none\"}],"
+        + "\"conditionEffects\":[{\"mode\":\"apply\",\"conditions\":[\"prone\"]}]}";
 
     private sealed class DndHarness : IAsyncDisposable
     {
@@ -7739,6 +8001,24 @@ public sealed class Dnd2024AbilityCheckTests
                         eventName + ".schema.json"))
                 });
             }
+            foreach (var eventName in new[]
+                     {
+                         "trap-detected", "trap-disarmed", "trap-triggered", "trap-reset",
+                         "trap-cleared", "exposure-started", "exposure-resolved", "exposure-recovered"
+                     })
+            {
+                await new EventTypeStore(db).WriteAsync(new()
+                {
+                    Id = "dnd2024.hazard." + eventName,
+                    Category = "dnd2024.ruleset.core.gameplay.hazards",
+                    Name = "Hazard " + eventName,
+                    Scope = "world",
+                    Status = EventTypeStatus.Active,
+                    PayloadSchema = await File.ReadAllTextAsync(Path.Combine(
+                        RepositoryRoot(), "catalog", "event-types", "dnd2024", "hazard",
+                        eventName + ".schema.json"))
+                });
+            }
             await entities.CreateEntityAsync(StateSpaceId,
                 "dnd2024.content.defense.unarmored.v1", "Unarmored Defense (ordinary, D&D 2024)");
             var defenseBasis = additionalTypes["dnd2024.creature.defense-basis"];
@@ -7803,7 +8083,11 @@ public sealed class Dnd2024AbilityCheckTests
                     ["encounter.has-turn"] = "dnd2024.encounter.has-turn",
                     ["encounter.round.has-turn"] = "dnd2024.encounter.round.has-turn",
                     ["encounter.active-round"] = "dnd2024.encounter.active-round",
-                    ["encounter.active-turn"] = "dnd2024.encounter.active-turn"
+                    ["encounter.active-turn"] = "dnd2024.encounter.active-turn",
+                    ["hazard.detected"] = "dnd2024.hazard.detected",
+                    ["hazard.exposure.subject"] = "dnd2024.hazard.exposure.subject",
+                    ["hazard.exposure.schedule"] = "dnd2024.hazard.exposure.schedule",
+                    ["hazard.exposure.recovered"] = "dnd2024.hazard.exposure.recovered"
                 });
             return await new ApplicationMechanicEvaluator(
                 _catalogs, new ApplicationMechanicProjectionResolver(_db,
@@ -8198,6 +8482,156 @@ public sealed class Dnd2024AbilityCheckTests
                           + ",\"arrivalPolicy\":\"move-record-and-visit\"}";
             await AddApplicationComponentAsync("route.travel.fixture",
                 "dnd2024.exploration.route-profile", profile);
+        }
+
+        public async Task AddHazardFixturesAsync(
+            int detectionDc = 0,
+            int disarmDc = 0,
+            int exposureDc = 100)
+        {
+            await AddProficiencyStateAsync("subject.high", 1, ["perception", "sleight-of-hand"]);
+            await AddSavingThrowStateAsync("subject.high", ["dex", "con"]);
+            await AddHitPointsAsync("subject.high", 10, 10);
+            await AddApplicationComponentAsync("subject.high", "dnd2024.creature.defenses",
+                "{\"damageResponses\":[]}");
+            await AddApplicationComponentAsync("subject.high", "dnd2024.conditions",
+                "{\"entries\":[],\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Rules Glossary\"}}");
+
+            foreach (var (id, name, ability, skill, dc) in new[]
+                     {
+                         ("activity.hazard.detect.fixture", "Detect Fixture Trap", "wisdom", "perception", detectionDc),
+                         ("activity.hazard.disarm.fixture", "Disarm Fixture Trap", "dexterity", "sleight-of-hand", disarmDc),
+                         ("activity.hazard.exposure.fixture", "Endure Fixture Exposure", "constitution", null, exposureDc)
+                     })
+            {
+                await Entities.CreateEntityAsync(StateSpaceId, id, name);
+                await AddApplicationComponentAsync(id, "dnd2024.core.version",
+                    "{\"revision\":1,\"status\":\"active\"}");
+                await AddApplicationComponentAsync(id, "dnd2024.activity.check",
+                    JsonSerializer.Serialize(new
+                    {
+                        abilityOptions = new[]
+                        {
+                            new { entityId = "dnd2024.vocabulary.ability." + ability }
+                        },
+                        proficiencySources = skill is null
+                            ? Array.Empty<object>()
+                            : new object[] { new { entityId = "dnd2024.vocabulary.skill." + skill } },
+                        difficulty = dc
+                    }));
+            }
+
+            await Entities.CreateEntityAsync(StateSpaceId, "hazard.trap.definition.fixture", "Fixture Needle Trap");
+            await AddApplicationComponentAsync("hazard.trap.definition.fixture", "dnd2024.core.version",
+                "{\"revision\":1,\"status\":\"active\"}");
+            await AddApplicationComponentAsync("hazard.trap.definition.fixture", "dnd2024.core.source",
+                "{\"citations\":[{\"sourceRef\":{\"entityId\":\"dnd2024.source.srd-5.2.1\"},\"locator\":\"Slice 10 focused fixture\"}]}");
+            await AddApplicationComponentAsync("hazard.trap.definition.fixture", "dnd2024.hazard.trap",
+                JsonSerializer.Serialize(new
+                {
+                    category = new { entityId = "dnd2024.hazard.category.trap" },
+                    trigger = new { @event = "hazard.fixture.entered", timing = "when" },
+                    duration = new { kind = "instantaneous" },
+                    detectionActivity = new { entityId = "activity.hazard.detect.fixture" },
+                    disarmActivity = new { entityId = "activity.hazard.disarm.fixture" },
+                    triggerEffects = new object[]
+                    {
+                        new
+                        {
+                            effect = new { entityId = "dnd2024.mechanic.hazard.damage.apply" },
+                            parameters = new Dictionary<string, object>
+                            {
+                                ["amount"] = 3,
+                                ["damageType"] = new { entityId = "dnd2024.vocabulary.damage-type.piercing" },
+                                ["saveAbility"] = "dex",
+                                ["saveDc"] = 100,
+                                ["successfulSaveBehavior"] = "none"
+                            }
+                        },
+                        new
+                        {
+                            effect = new { entityId = "dnd2024.mechanic.conditions.write" },
+                            parameters = new Dictionary<string, object>
+                            {
+                                ["condition"] = "prone",
+                                ["saveAbility"] = "dex",
+                                ["saveDc"] = 100,
+                                ["successfulSaveBehavior"] = "none"
+                            }
+                        }
+                    },
+                    reset = new { kind = "dawn" }
+                }));
+            await Entities.CreateEntityAsync(StateSpaceId, "hazard.trap.instance.fixture", "Hidden Fixture Needle Trap");
+            await AddApplicationComponentAsync("hazard.trap.instance.fixture", "dnd2024.core.definition-link",
+                "{\"definition\":{\"entityId\":\"hazard.trap.definition.fixture\"},\"definitionRevision\":1}");
+            await AddApplicationComponentAsync("hazard.trap.instance.fixture", "dnd2024.hazard.trap-state",
+                "{\"phase\":{\"entityId\":\"dnd2024.hazard.trap-phase.armed\"},\"activationCount\":0}");
+
+            await Entities.CreateEntityAsync(StateSpaceId, "hazard.environment.definition.fixture", "Fixture Bitter Cold");
+            await AddApplicationComponentAsync("hazard.environment.definition.fixture", "dnd2024.core.version",
+                "{\"revision\":1,\"status\":\"active\"}");
+            await AddApplicationComponentAsync("hazard.environment.definition.fixture", "dnd2024.core.source",
+                "{\"citations\":[{\"sourceRef\":{\"entityId\":\"dnd2024.source.srd-5.2.1\"},\"locator\":\"Slice 10 focused fixture\"}]}");
+            await AddApplicationComponentAsync("hazard.environment.definition.fixture", "dnd2024.hazard.environment",
+                JsonSerializer.Serialize(new
+                {
+                    category = new { entityId = "dnd2024.hazard.category.environment" },
+                    exposureTrigger = new { @event = "hazard.fixture.exposed", timing = "when" },
+                    checkActivity = new { entityId = "activity.hazard.exposure.fixture" },
+                    exposureInterval = new
+                    {
+                        kind = "measured", amount = 60,
+                        unit = new { entityId = "dnd2024.vocabulary.time-unit.minute" }
+                    },
+                    effects = new object[]
+                    {
+                        new
+                        {
+                            effect = new { entityId = "dnd2024.mechanic.hazard.damage.apply" },
+                            parameters = new Dictionary<string, object>
+                            {
+                                ["amount"] = 2,
+                                ["damageType"] = new { entityId = "dnd2024.vocabulary.damage-type.cold" },
+                                ["successfulSaveBehavior"] = "none"
+                            }
+                        },
+                        new
+                        {
+                            effect = new { entityId = "dnd2024.mechanic.conditions.write" },
+                            parameters = new Dictionary<string, object>
+                            {
+                                ["condition"] = "prone",
+                                ["successfulSaveBehavior"] = "none"
+                            }
+                        }
+                    },
+                    mitigations = new[]
+                    {
+                        new
+                        {
+                            @operator = "predicate", predicateId = "predicate.hazard.fixture.shelter",
+                            arguments = new[] { "shelter" }
+                        }
+                    }
+                }));
+
+            await Entities.CreateEntityAsync(StateSpaceId, "world.hazard.fixture", "Hazard World");
+            await AddApplicationComponentAsync("world.hazard.fixture", "game.core.world.root",
+                "{\"status\":\"active\",\"summary\":\"A bounded hazard test world.\",\"visibility\":\"party\"}");
+            await AddApplicationComponentAsync("world.hazard.fixture", "game.core.world.clock",
+                "{\"calendarId\":\"calendar.fixture\",\"currentMinute\":100,\"revision\":7}");
+        }
+
+        public async Task AddExposureRecordAsync(string exposureId = "hazard.exposure.fixture")
+        {
+            await Entities.CreateEntityAsync(StateSpaceId, exposureId, "Fixture environmental exposure");
+            await AddApplicationComponentAsync(exposureId, "dnd2024.core.definition-link",
+                "{\"definition\":{\"entityId\":\"hazard.environment.definition.fixture\"},\"definitionRevision\":1}");
+            await AddApplicationComponentAsync(exposureId, "dnd2024.hazard.environment-exposure",
+                "{\"accumulatedExposure\":{\"dimension\":\"time\",\"value\":{\"numerator\":0,\"denominator\":1},\"unit\":{\"entityId\":\"dnd2024.vocabulary.time-unit.minute\"}},\"exposureCount\":0,\"failedChecks\":0}");
+            await Edges.SetRelationshipAsync(StateSpaceId, exposureId, "subject.high",
+                "dnd2024.hazard.exposure.subject", "{}", 0);
         }
 
         public async Task SetRestClockAsync(int currentMinute, int revision)

@@ -1,0 +1,1 @@
+{"id":"dnd2024.hazard.trap-reset","category":"ruleset.dnd2024.core.gameplay.hazards","name":"D&D 2024 trap reset","description":"One triggered authored trap returned to its armed phase after its authored reset condition was established.","scope":"dnd2024-srd-5.2.1","status":"Active","createdBy":"seed","changeNote":"Added for Slice 10 authored traps."}

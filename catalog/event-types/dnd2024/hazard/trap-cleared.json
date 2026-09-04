@@ -1,0 +1,1 @@
+{"id":"dnd2024.hazard.trap-cleared","category":"ruleset.dnd2024.core.gameplay.hazards","name":"D&D 2024 trap cleared","description":"One authored trap instance left active play while preserving its definition and activation history.","scope":"dnd2024-srd-5.2.1","status":"Active","createdBy":"seed","changeNote":"Added for Slice 10 authored traps."}
