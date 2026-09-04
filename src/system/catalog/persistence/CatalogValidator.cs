@@ -82,6 +82,7 @@ public static class CatalogValidator
         var contents = await CatalogReader.ReadAsync(root, cancellationToken);
         var issues = new List<CatalogValidationIssue>();
         var inputSchemas = new BoundedJsonSchemaValidator();
+        issues.AddRange(ApplicationCapabilityCatalogValidator.Validate(root));
         issues.AddRange(CatalogNamespaceConformance.FindUnreviewedRecords(contents).Select(issue =>
             new CatalogValidationIssue(issue.Kind, issue.Id, "namespace-review", issue.Detail, Warning: true)));
         var antiSprawl = CatalogAntiSprawlAnalyzer.Analyze(

@@ -25,6 +25,38 @@ public sealed class CatalogValidationTests
     }
 
     [Fact]
+    public void Dnd_application_capabilities_have_complete_authored_contracts_and_exact_child_pins()
+    {
+        var catalog = RepositoryCatalog();
+        var mechanicsRoot = Path.Combine(catalog, "applications", "dnd2024", "mechanics");
+        var queryRoot = Path.Combine(catalog, "applications", "dnd2024", "queries");
+        var mechanicPaths = Directory.EnumerateFiles(mechanicsRoot, "*.md", SearchOption.AllDirectories)
+            .Order(StringComparer.Ordinal).ToArray();
+        var queryPaths = Directory.EnumerateFiles(queryRoot, "*.json", SearchOption.AllDirectories)
+            .Order(StringComparer.Ordinal).ToArray();
+
+        Assert.Equal(98, mechanicPaths.Length);
+        Assert.Equal(8, queryPaths.Length);
+        foreach (var path in mechanicPaths)
+        {
+            var file = MechanicFile.Parse(File.ReadAllText(path), path,
+                File.ReadAllText(Path.ChangeExtension(path, ".js")));
+            var requirements = MechanicRequirements.Parse(file.Requirements);
+            Assert.NotNull(requirements.InputSchema);
+            Assert.All(requirements.Children, child =>
+            {
+                Assert.Equal(1, child.Value.MechanicVersion);
+                Assert.Matches("^[0-9A-F]{64}$", child.Value.ContentFingerprint);
+            });
+        }
+
+        var errors = ApplicationCapabilityCatalogValidator.Validate(catalog)
+            .Where(issue => !issue.Warning && issue.Id.StartsWith("dnd2024.", StringComparison.Ordinal))
+            .ToArray();
+        Assert.Empty(errors);
+    }
+
+    [Fact]
     public async Task Every_repository_identity_has_a_reviewed_conforming_namespace()
     {
         var result = await CatalogValidator.ValidateAsync(RepositoryCatalog());

@@ -50,6 +50,12 @@ public sealed class SystemCapabilityCatalogTests
         ], descriptors.Select(value => value.Id).ToArray());
         Assert.Equal(8, descriptors.Count(value => value.Mode == SystemCapabilityMode.Read));
         Assert.Equal(11, descriptors.Count(value => value.Mode == SystemCapabilityMode.Write));
+        Assert.All(descriptors, descriptor =>
+        {
+            var contract = descriptor.Contract;
+            Assert.Equal([true, false], contract.Examples.Select(value => value.ExpectedValid).ToArray());
+            Assert.False(string.IsNullOrWhiteSpace(contract.Fingerprint));
+        });
     }
 
     [Fact]

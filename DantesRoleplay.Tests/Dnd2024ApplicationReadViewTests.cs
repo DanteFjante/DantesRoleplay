@@ -23,7 +23,8 @@ public sealed class Dnd2024ApplicationReadViewTests
         { "play/dnd2024.query.unresolved-decisions.json", "play/dnd2024.mechanic.play.unresolved-decisions.project" },
         { "campaign/dnd2024.query.recent-consequences.json", "campaign/dnd2024.mechanic.campaign.recent-consequences.project" },
         { "character/dnd2024.query.character-sheet-v2.json", "data/dnd2024.mechanic.character-sheet-v2.project" },
-        { "character/dnd2024.query.character-dossier-v1.json", "data/dnd2024.mechanic.character-dossier-v1.project" }
+        { "character/dnd2024.query.character-dossier-v1.json", "data/dnd2024.mechanic.character-dossier-v1.project" },
+        { "character/dnd2024.query.character-sheet.json", "data/dnd2024.mechanic.character-sheet.project" }
     };
 
     [Theory]

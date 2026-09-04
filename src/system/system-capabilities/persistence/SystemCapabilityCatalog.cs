@@ -284,10 +284,14 @@ public sealed class SystemCapabilityCatalog : ISystemCapabilityCatalog
             SensitivityName(registration.Sensitivity),
             registration.RequiresConfirmation,
             registration.RequiresIdempotencyKey);
-        return withoutFingerprint with
+        var descriptor = withoutFingerprint with
         {
             Fingerprint = SystemCapabilityDescriptorFingerprint.Compute(withoutFingerprint)
         };
+        var contractProblems = CapabilityContractConformanceValidator.FindProblems(descriptor.Contract, _schemas);
+        if (contractProblems.Count > 0)
+            throw Configuration("SYSTEM_CAPABILITY_CONTRACT_INVALID", $"{descriptor.Id}: {contractProblems[0]}");
+        return descriptor;
     }
 
     private PrivateOperatorAuthorizationDecision Authorize(

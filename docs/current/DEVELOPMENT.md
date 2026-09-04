@@ -19,11 +19,16 @@ Put ruleset vocabulary, IDs, formulas, eligibility, choices, and outcome branchi
 
 Schemas define stored component state. Procedures define how a capability is invoked and what context it receives. JavaScript mechanics calculate game-specific results. Tests should assert the boundary as well as the result.
 
-Directly callable mechanics should declare a closed authored `inputSchema` in their requirements.
-Capability discovery exposes that schema and a generated minimal example before execution. The
-mechanic JavaScript must still validate exact keys, state-dependent constraints, and authored
-content before proposing effects; a schema is discoverability and structural validation, not
-permission to invent missing world details.
+Every repository-authored application mechanic declares a closed `inputSchema` in its requirements.
+Capability discovery exposes that schema plus generated valid and invalid examples; the common
+descriptor also carries the closed output envelope, owner, lifecycle, roles, authorization,
+confirmation, idempotency, stable errors, and structured recovery. Catalog validation compiles the
+schemas, validates both examples, and requires every child declaration to pin the exact current
+version and content fingerprint. An application that has not begun this migration remains a
+warning-only legacy boundary, but once any mechanic in that application adopts authored contracts,
+missing schemas block validation. Mechanic JavaScript must still validate exact keys,
+state-dependent constraints, and authored content before proposing effects; a schema is
+discoverability and structural validation, not permission to invent missing world details.
 
 Application-facing read models follow the same ownership rule. Register a closed query contract
 under the application `queries/` tree and point `mechanic-projection` at one exact active,

@@ -19,7 +19,7 @@ public static class ApplicationCapabilityContractAdapter
         {"type":"object","maxProperties":64}
         """;
     private const string GenericMechanicOutputSchema = """
-        {"type":"object","additionalProperties":true,"properties":{"narration":{"type":"string"},"data":{},"effects":{"type":"array"},"events":{"type":"array"},"notifications":{"type":"array"}}}
+        {"type":"object","additionalProperties":false,"required":["narration","data","effects","events","notifications"],"properties":{"narration":{"type":"string"},"data":{},"effects":{"type":"array","items":{}},"events":{"type":"array","items":{}},"notifications":{"type":"array","items":{}}}}
         """;
 
     public static CapabilityContractDescriptor Create(
@@ -81,6 +81,7 @@ public static class ApplicationCapabilityContractAdapter
             ? CapabilityContractSchemaStatus.Generic
             : CapabilityContractSchemaStatus.Authored;
         var example = CapabilityContractBuilder.MinimalExample(inputSchema);
+        var invalidExample = CapabilityContractBuilder.MinimalInvalidExample(inputSchema);
         return CapabilityContractBuilder.Create(
             qualifiedId, version, "application-mechanic", contentFingerprint, applicationId.Value,
             name, description, Lifecycle(status), new(true, true, true),
@@ -89,7 +90,10 @@ public static class ApplicationCapabilityContractAdapter
             Scope(stateSpaceId), roles,
             new("interaction-authorization", "execute-application-action", "application-state"),
             true, true, ["procedure.system.use"],
-            [new("Prepare the mechanic", example)],
+            [
+                new("valid-minimal", example),
+                new("invalid-unknown-property", invalidExample, ExpectedValid: false)
+            ],
             [
                 new("APPLICATION_ACTION_INPUT_INVALID", "The mechanic input is not one bounded JSON object.", "Correct the input and prepare the action again."),
                 new("MECHANIC_CONTRACT_STALE", "The selected mechanic no longer matches the active application catalog.", "Rediscover the current mechanic before preparing it again.")
@@ -115,7 +119,10 @@ public static class ApplicationCapabilityContractAdapter
             new(query.Exposure == ApplicationQueryExposure.ModelVisible ? "model-visible-query" : "binding-only-query",
                 "read-application-state", "application-state"),
             false, false, ["procedure.system.inspect"],
-            [new("Read the projection", "{}")],
+            [
+                new("valid-read", "{}"),
+                new("invalid-unknown-property", "{\"__unexpected\":true}", ExpectedValid: false)
+            ],
             [new("APPLICATION_QUERY_STALE", "The selected query no longer matches the active application catalog.",
                 "Rediscover the current query and retry the read.")],
             [new(query.Id, "Rediscover and run the current query contract.", "{}")]);

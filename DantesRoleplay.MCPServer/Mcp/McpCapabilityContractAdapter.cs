@@ -7,7 +7,7 @@ namespace DantesRoleplay.MCPServer.Mcp;
 internal static class McpCapabilityContractAdapter
 {
     private const string EnvelopeSchema = """
-        {"type":"object","additionalProperties":true,"required":["ok"],"properties":{"ok":{"type":"boolean"},"data":{},"error":{"type":["object","null"]}}}
+        {"type":"object","additionalProperties":false,"required":["ok"],"properties":{"ok":{"type":"boolean"},"data":{},"nextSteps":{"type":"array","items":{"type":"string"}},"nextActions":{"type":"array","items":{"type":"object"}},"operationId":{"type":"string"},"error":{"type":["object","null"]}}}
         """;
 
     public static CapabilityContractDescriptor Query(
@@ -24,7 +24,10 @@ internal static class McpCapabilityContractAdapter
             EnvelopeSchema, CapabilityContractSchemaStatus.Generated, Scope(inputNames), [],
             new("private-operator", "read-system-state", "private-system-state"),
             false, false, procedureIds,
-            [new("Read through MCP", CapabilityContractBuilder.MinimalExample(schema))],
+            [
+                new("valid-read", CapabilityContractBuilder.MinimalExample(schema)),
+                new("invalid-unknown-property", CapabilityContractBuilder.MinimalInvalidExample(schema), ExpectedValid: false)
+            ],
             [new("MCP_QUERY_INVALID", "The query request is invalid or unavailable.",
                 "Inspect the capability catalog and retry with the declared input schema.")],
             [new("mcp.query.capabilities", "Read the current capability catalog.", "{}")]);
@@ -67,7 +70,10 @@ internal static class McpCapabilityContractAdapter
             Scope(payload.Select(value => value.Key)), [],
             new("private-operator", "change-system-state", "private-system-state"),
             true, idempotent, procedureIds,
-            [new("Invoke through MCP", new JsonObject { ["payload"] = payload.DeepClone() }.ToJsonString())],
+            [
+                new("valid-commit", new JsonObject { ["payload"] = payload.DeepClone() }.ToJsonString()),
+                new("invalid-unknown-property", CapabilityContractBuilder.MinimalInvalidExample(schema), ExpectedValid: false)
+            ],
             errors,
             replacement is null
                 ? [new("mcp.query.capabilities", "Read the current capability catalog before retrying.", "{}")]

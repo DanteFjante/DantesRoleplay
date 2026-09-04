@@ -142,18 +142,7 @@ public sealed class ActivatedApplicationCatalogMaterializer(
             throw Failure("MECHANIC_SOURCE_SPLIT", "A mechanic contract and JavaScript sidecar must come from one effective source.");
         var source = ReadText(sourceWinner, registrations);
         var file = MechanicFile.Parse(markdown, markdownWinner.RelativePath, source);
-        var content = JsonSerializer.Serialize(new
-        {
-            id = file.Id,
-            category = file.Category,
-            name = file.Name,
-            description = file.Description,
-            matches = file.Matches,
-            requirements = file.Requirements,
-            source = file.Source,
-            scope = file.Scope,
-            status = file.Status.ToString().ToLowerInvariant()
-        });
+        var content = ApplicationCatalogRecordContent.MechanicJson(file);
         return Record(applicationId, collection, "mechanic", file.Id, file.Category, file.Name,
             file.Description, SplitTerms(file.Matches), file.Status.ToString(), content, markdownWinner);
     }
@@ -190,28 +179,7 @@ public sealed class ActivatedApplicationCatalogMaterializer(
         ActivatedApplicationDocument winner,
         ApplicationQueryContract file)
     {
-        using var schema = JsonDocument.Parse(file.OutputSchemaJson);
-        var content = JsonSerializer.Serialize(new
-        {
-            id = file.Id,
-            category = file.Category,
-            name = file.Name,
-            description = file.Description,
-            matches = file.Matches,
-            roles = file.Roles,
-            executor = file.Executor,
-            projection = new
-            {
-                qualifiedId = file.ProjectionQualifiedId,
-                version = file.ProjectionVersion,
-                contentHash = file.ProjectionContentHash,
-                outputSchemaHash = file.OutputSchemaHash
-            },
-            outputSchema = schema.RootElement,
-            exposure = file.Exposure == ApplicationQueryExposure.ModelVisible
-                ? "model-visible" : "binding-only",
-            status = file.Status
-        });
+        var content = ApplicationCatalogRecordContent.QueryJson(file);
         return Record(applicationId, collection, ApplicationQueryContract.CatalogKind, file.Id,
             file.Category, file.Name, file.Description, file.Matches, file.Status, content, winner);
     }

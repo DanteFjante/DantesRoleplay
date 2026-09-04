@@ -1,6 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using DantesRoleplay.Capabilities;
+using DantesRoleplay.SchemaValidation;
+using DantesRoleplay.SystemCapabilities;
 
 namespace DantesRoleplay.MCPServer.Mcp;
 
@@ -12,7 +14,7 @@ public static class McpVerbCatalog
         {"type":"object","additionalProperties":false,"required":["payload"],"properties":{"payload":{"type":"object","additionalProperties":false,"required":["idempotencyKey","applicationId","stateSpaceId","qualifiedMechanicId","mechanicVersion","contentFingerprint","roleEntityIds","input"],"properties":{"idempotencyKey":{"type":"string","minLength":1,"maxLength":200},"applicationId":{"type":"string","minLength":1,"maxLength":63},"stateSpaceId":{"type":"string","minLength":1,"maxLength":200},"qualifiedMechanicId":{"type":"string","minLength":1,"maxLength":200},"mechanicVersion":{"type":"integer","minimum":1},"contentFingerprint":{"type":"string","pattern":"^[0-9A-F]{64}$"},"roleEntityIds":{"type":"object","maxProperties":32,"additionalProperties":{"type":"string","minLength":1,"maxLength":200}},"input":{"type":"object"}}},"intent":{"type":"string"},"proceduresUsed":{"type":"array","items":{"type":"string"}},"dryRun":{"type":"boolean","const":false}}}
         """;
     private const string DirectApplicationActionOutputSchema = """
-        {"type":"object","additionalProperties":true,"required":["ok"],"properties":{"ok":{"type":"boolean"},"data":{"type":["object","null"],"additionalProperties":false,"required":["affectedEntityIds","narration","receipt","nextActions"],"properties":{"affectedEntityIds":{"type":"array","items":{"type":"string"}},"narration":{"type":"string"},"receipt":{"type":"object","additionalProperties":false,"required":["operationId","disposition","qualifiedMechanicId","mechanicVersion","contentFingerprint","seed","appliedEffectCount","effects"],"properties":{"operationId":{"type":"string"},"disposition":{"enum":["succeeded","replayed"]},"qualifiedMechanicId":{"type":"string"},"mechanicVersion":{"type":"integer","minimum":1},"contentFingerprint":{"type":"string","pattern":"^[0-9A-F]{64}$"},"seed":{"type":"integer"},"appliedEffectCount":{"type":"integer","minimum":0},"effects":{"type":"array","items":{"type":"object"}}}},"nextActions":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","description","capabilityId","capabilityFingerprint","inputSchemaHash","interface","tool","kind","requiredArguments","knownArguments","missingArguments","arguments","ready"],"properties":{"id":{"type":"string"},"description":{"type":"string"},"capabilityId":{"type":"string"},"capabilityFingerprint":{"type":"string","pattern":"^[0-9A-F]{64}$"},"inputSchemaHash":{"type":"string","pattern":"^[0-9A-F]{64}$"},"interface":{"const":"mcp"},"tool":{"enum":["query","commit"]},"kind":{"type":"string"},"requiredArguments":{"type":"array","items":{"type":"string"}},"knownArguments":{"type":"object"},"missingArguments":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["name","description"],"properties":{"name":{"type":"string"},"description":{"type":"string"}}}},"arguments":{"type":"object"},"ready":{"type":"boolean"}}}}}},"error":{"type":["object","null"]}}}
+        {"type":"object","additionalProperties":false,"required":["ok"],"properties":{"ok":{"type":"boolean"},"data":{"type":["object","null"],"additionalProperties":false,"required":["affectedEntityIds","narration","receipt","nextActions"],"properties":{"affectedEntityIds":{"type":"array","items":{"type":"string"}},"narration":{"type":"string"},"receipt":{"type":"object","additionalProperties":false,"required":["operationId","disposition","qualifiedMechanicId","mechanicVersion","contentFingerprint","seed","appliedEffectCount","effects"],"properties":{"operationId":{"type":"string"},"disposition":{"enum":["succeeded","replayed"]},"qualifiedMechanicId":{"type":"string"},"mechanicVersion":{"type":"integer","minimum":1},"contentFingerprint":{"type":"string","pattern":"^[0-9A-F]{64}$"},"seed":{"type":"integer"},"appliedEffectCount":{"type":"integer","minimum":0},"effects":{"type":"array","items":{"type":"object"}}}},"nextActions":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","description","capabilityId","capabilityFingerprint","inputSchemaHash","interface","tool","kind","requiredArguments","knownArguments","missingArguments","arguments","ready"],"properties":{"id":{"type":"string"},"description":{"type":"string"},"capabilityId":{"type":"string"},"capabilityFingerprint":{"type":"string","pattern":"^[0-9A-F]{64}$"},"inputSchemaHash":{"type":"string","pattern":"^[0-9A-F]{64}$"},"interface":{"const":"mcp"},"tool":{"enum":["query","commit"]},"kind":{"type":"string"},"requiredArguments":{"type":"array","items":{"type":"string"}},"knownArguments":{"type":"object"},"missingArguments":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["name","description"],"properties":{"name":{"type":"string"},"description":{"type":"string"}}}},"arguments":{"type":"object"},"ready":{"type":"boolean"}}}}}},"nextSteps":{"type":"array","items":{"type":"string"}},"nextActions":{"type":"array","items":{"type":"object"}},"operationId":{"type":"string"},"error":{"type":["object","null"]}}}
         """;
     public static IReadOnlyList<QueryKindSpec> QueryKinds { get; } =
     [
@@ -73,10 +75,10 @@ public static class McpVerbCatalog
 
     public static IReadOnlyList<string> QueryKindNames => QueryKinds.Select(kind => kind.Name).ToArray();
     public static IReadOnlyList<string> CommitKindNames => CommitKinds.Select(kind => kind.Name).ToArray();
-    public static IReadOnlyList<CapabilityContractDescriptor> Descriptors { get; } =
+    public static IReadOnlyList<CapabilityContractDescriptor> Descriptors { get; } = Validate(
         QueryKinds.Select(value => value.Descriptor)
             .Concat(CommitKinds.Select(value => value.Descriptor))
-            .OrderBy(value => value.Id, StringComparer.Ordinal).ToArray();
+            .OrderBy(value => value.Id, StringComparer.Ordinal).ToArray());
     public static bool IsQueryKind(string kind) => QueryKinds.Any(item => item.Name == kind);
     public static CommitKindSpec? Commit(string kind) => CommitKinds.FirstOrDefault(item => item.Name == kind);
     internal static CommitKindSpec? DispatchCommit(string kind) => Commit(kind);
@@ -109,6 +111,19 @@ public static class McpVerbCatalog
         Capabilities = Descriptors,
         NothingElseExists = "Only these generic kinds are available in this host."
     };
+
+    private static IReadOnlyList<CapabilityContractDescriptor> Validate(
+        IReadOnlyList<CapabilityContractDescriptor> descriptors)
+    {
+        var schemas = new BoundedJsonSchemaValidator();
+        foreach (var descriptor in descriptors)
+        {
+            var problems = CapabilityContractConformanceValidator.FindProblems(descriptor, schemas);
+            if (problems.Count > 0)
+                throw new InvalidOperationException($"MCP capability '{descriptor.Id}' is invalid: {problems[0]}");
+        }
+        return descriptors;
+    }
 }
 
 public sealed record QueryKindSpec

@@ -55,7 +55,8 @@ public sealed record CapabilityAuthorizationContract(
 public sealed record CapabilityExampleContract(
     string Name,
     string InputJson,
-    string? OutputJson = null);
+    string? OutputJson = null,
+    bool ExpectedValid = true);
 
 public sealed record CapabilityErrorContract(
     string Code,
@@ -161,7 +162,9 @@ public static class CapabilityContractBuilder
         var copiedExamples = (examples ?? []).ToArray();
         var copiedErrors = (errors ?? []).ToArray();
         var copiedRecovery = (recoveryActions ?? []).ToArray();
-        if (copiedExamples.Length is < 1 or > 16 || copiedExamples.Any(value => !Text(value.Name, 120)
+        if (copiedExamples.Length is < 2 or > 16 || !copiedExamples.Any(value => value.ExpectedValid)
+            || !copiedExamples.Any(value => !value.ExpectedValid)
+            || copiedExamples.Any(value => !Text(value.Name, 120)
                 || !JsonObject(value.InputJson) || value.OutputJson is not null && !ValidJsonValue(value.OutputJson))
             || copiedErrors.Length is < 1 or > 32 || copiedErrors.Select(value => value.Code).Distinct(StringComparer.Ordinal).Count() != copiedErrors.Length
             || copiedErrors.Any(value => !Identifier(value.Code, 120) || !Text(value.Message, 500) || !Text(value.Recovery, 1_000))
@@ -181,7 +184,30 @@ public static class CapabilityContractBuilder
     {
         var root = JsonNode.Parse(schemaJson) as JsonObject
             ?? throw new ArgumentException("A capability schema must be a JSON object.", nameof(schemaJson));
-        return Example(root).ToJsonString(new JsonSerializerOptions { WriteIndented = false });
+        return Example(root, root, 0, 0).ToJsonString(new JsonSerializerOptions { WriteIndented = false });
+    }
+
+    public static string MinimalInvalidExample(string schemaJson)
+    {
+        var root = JsonNode.Parse(schemaJson) as JsonObject
+            ?? throw new ArgumentException("A capability schema must be a JSON object.", nameof(schemaJson));
+        const string unexpectedProperty = "{\"__unexpected\":true}";
+        if (RejectsUnknownProperty(root))
+            return unexpectedProperty;
+
+        var maximum = root["maxProperties"]?.GetValue<int>();
+        if (maximum is null or < 0 or > 64)
+            throw new ArgumentException("A capability input schema must close or bound its top-level object.", nameof(schemaJson));
+        var oversized = new JsonObject();
+        for (var index = 0; index <= maximum; index++) oversized[$"property{index}"] = true;
+        return oversized.ToJsonString();
+    }
+
+    private static bool RejectsUnknownProperty(JsonObject schema)
+    {
+        if (schema["additionalProperties"]?.GetValue<bool>() == false) return true;
+        return schema["anyOf"] is JsonArray alternatives && alternatives.Count > 0
+            && alternatives.All(value => value is JsonObject alternative && RejectsUnknownProperty(alternative));
     }
 
     public static string SchemaHash(string schemaJson) => Hash(Normalize(schemaJson));
@@ -231,14 +257,18 @@ public static class CapabilityContractBuilder
         return new(profile, normalized, hash, status);
     }
 
-    private static JsonNode Example(JsonObject schema)
+    private static JsonNode Example(JsonObject schema, JsonObject root, int variant, int depth)
     {
+        if (depth > 64)
+            throw new ArgumentException("A capability schema has a cyclic or excessively deep local reference.", nameof(schema));
+        if (schema["$ref"]?.GetValue<string>() is { } reference)
+            return Example(ResolveLocalReference(root, reference), root, variant, depth + 1);
         if (schema["default"] is JsonNode declaredDefault) return declaredDefault.DeepClone();
         if (schema["const"] is JsonNode constant) return constant.DeepClone();
         if (schema["enum"] is JsonArray choices && choices.Count > 0 && choices[0] is JsonNode choice)
             return choice.DeepClone();
         if (schema["anyOf"] is JsonArray alternatives && alternatives.Count > 0
-            && alternatives[0] is JsonObject firstAlternative) return Example(firstAlternative);
+            && alternatives[0] is JsonObject firstAlternative) return Example(firstAlternative, root, variant, depth + 1);
         var type = schema["type"]?.GetValue<string>();
         if (type == "object" || schema["properties"] is JsonObject)
         {
@@ -248,7 +278,19 @@ public static class CapabilityContractBuilder
                 .Where(value => value.Length > 0).ToHashSet(StringComparer.Ordinal) ?? [];
             if (properties is not null)
                 foreach (var property in properties.Where(value => required.Contains(value.Key)))
-                    if (property.Value is JsonObject propertySchema) result[property.Key] = Example(propertySchema);
+                    if (property.Value is JsonObject propertySchema)
+                        result[property.Key] = Example(propertySchema, root, variant, depth + 1);
+            var minimumProperties = schema["minProperties"]?.GetValue<int>() ?? 0;
+            if (properties is not null && result.Count < minimumProperties)
+                foreach (var property in properties.Where(value => !result.ContainsKey(value.Key)))
+                {
+                    if (property.Value is JsonObject propertySchema)
+                        result[property.Key] = Example(propertySchema, root, variant, depth + 1);
+                    if (result.Count >= minimumProperties) break;
+                }
+            if (result.Count < minimumProperties && schema["additionalProperties"] is JsonObject additional)
+                while (result.Count < minimumProperties)
+                    result[$"property{result.Count}"] = Example(additional, root, result.Count, depth + 1);
             return result;
         }
         if (type == "array")
@@ -256,7 +298,8 @@ public static class CapabilityContractBuilder
             var result = new JsonArray();
             var minimum = schema["minItems"]?.GetValue<int>() ?? 0;
             if (schema["items"] is JsonObject item)
-                for (var index = 0; index < minimum; index++) result.Add(Example(item));
+                for (var index = 0; index < minimum; index++)
+                    result.Add(Example(item, root, index, depth + 1));
             return result;
         }
         if (type == "boolean") return JsonValue.Create(false)!;
@@ -265,7 +308,32 @@ public static class CapabilityContractBuilder
         if (type == "number")
             return JsonValue.Create(schema["minimum"]?.GetValue<double>() ?? 0)!;
         var minimumLength = schema["minLength"]?.GetValue<int>() ?? 1;
-        return JsonValue.Create(new string('x', Math.Clamp(minimumLength, 1, 64)))!;
+        var maximumLength = schema["maxLength"]?.GetValue<int>() ?? 64;
+        var suffix = variant == 0 ? "" : variant.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var length = Math.Clamp(Math.Max(minimumLength, suffix.Length + 1), 1, Math.Min(maximumLength, 64));
+        var text = new string('x', length);
+        if (suffix.Length > 0 && suffix.Length < text.Length)
+            text = text[..^suffix.Length] + suffix;
+        return JsonValue.Create(text)!;
+    }
+
+    private static JsonObject ResolveLocalReference(JsonObject root, string reference)
+    {
+        if (!reference.StartsWith("#/", StringComparison.Ordinal))
+            throw new ArgumentException("Capability examples support only local JSON Schema references.", nameof(reference));
+        JsonNode? current = root;
+        foreach (var rawSegment in reference[2..].Split('/'))
+        {
+            var segment = rawSegment.Replace("~1", "/", StringComparison.Ordinal)
+                .Replace("~0", "~", StringComparison.Ordinal);
+            current = current is JsonObject objectValue && objectValue.TryGetPropertyValue(segment, out var next)
+                ? next
+                : null;
+            if (current is null)
+                throw new ArgumentException($"Capability schema reference '{reference}' cannot be resolved.", nameof(reference));
+        }
+        return current as JsonObject
+            ?? throw new ArgumentException($"Capability schema reference '{reference}' does not target an object schema.", nameof(reference));
     }
 
     private static string Normalize(string json)

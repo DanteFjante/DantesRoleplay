@@ -16,6 +16,7 @@ public static class SystemCapabilityContractAdapter
         if (requiresStateSpace) context.Add("state-space-id");
         context.Add("trusted-principal");
         var example = CapabilityContractBuilder.MinimalExample(descriptor.InputSchemaJson);
+        var invalidExample = CapabilityContractBuilder.MinimalInvalidExample(descriptor.InputSchemaJson);
         return CapabilityContractBuilder.Create(
             descriptor.Id,
             descriptor.Version,
@@ -38,7 +39,10 @@ public static class SystemCapabilityContractAdapter
             descriptor.RequiresConfirmation,
             descriptor.RequiresIdempotencyKey,
             descriptor.ProcedureIds,
-            [new("minimal", example)],
+            [
+                new("valid-minimal", example),
+                new("invalid-unknown-property", invalidExample, ExpectedValid: false)
+            ],
             [
                 new("SYSTEM_CAPABILITY_INPUT_INVALID", "The capability input does not satisfy its declared schema.", "Reload the descriptor and correct the input."),
                 new("PRIVATE_OPERATOR_DENIED", "The current principal is not authorized for this capability.", "Use an authorized private-operator context."),

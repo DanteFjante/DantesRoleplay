@@ -101,7 +101,8 @@ public sealed class ApplicationCapabilityContractTests
         using var schema = JsonDocument.Parse(contract.Input.SchemaJson);
         Assert.Equal(["locationId", "summary"], schema.RootElement.GetProperty("required")
             .EnumerateArray().Select(value => value.GetString()!).ToArray());
-        using var example = JsonDocument.Parse(Assert.Single(contract.Examples).InputJson);
+        Assert.Equal([true, false], contract.Examples.Select(value => value.ExpectedValid).ToArray());
+        using var example = JsonDocument.Parse(contract.Examples.Single(value => value.ExpectedValid).InputJson);
         Assert.Equal(["locationId", "summary"], example.RootElement.EnumerateObject()
             .Select(value => value.Name).ToArray());
     }
