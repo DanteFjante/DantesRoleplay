@@ -49,8 +49,10 @@ fingerprint, and the complete pack has its own fingerprint that is recorded in p
 Authorize before any retrieval, apply structural scope filters before ranking, rank lexically with
 optional vector fusion, rehydrate from the canonical owner, then recheck authorization and source
 revisions before returning the pack. Vector results select candidates only; they never establish
-truth, permission, audience, or freshness. If the pack exceeds its closed byte budget, discard
-lower-priority optional items rather than expanding the planning context.
+truth, permission, audience, or freshness. The `interaction-task-context/v2` envelope declares
+closed byte, item, elapsed-time, and per-section budgets and names every budget-driven omission.
+Discard lower-priority optional items rather than expanding the planning context; fail closed when
+mandatory context cannot fit or the deadline, authorization, catalog, or state revision changes.
 
 When a query follows relationships to related entities, put always-required endpoint state in
 `targetComponentIds` and state that is valid only on some endpoints in

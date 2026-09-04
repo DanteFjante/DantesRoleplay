@@ -31,7 +31,7 @@ public sealed class InteractionTaskContextTests
 
         var pack = await materializer.MaterializeAsync(envelope, request);
 
-        Assert.Equal(InteractionTaskContextProfiles.Version1, pack.Profile);
+        Assert.Equal(InteractionTaskContextProfiles.Version2, pack.Profile);
         Assert.True(Encoding.UTF8.GetByteCount(pack.Json) <= InteractionTaskContextMaterializer.MaximumPackBytes);
         Assert.Equal(Hash(pack.Json), pack.Fingerprint);
         Assert.Equal(2, policy.Calls);
@@ -44,6 +44,11 @@ public sealed class InteractionTaskContextTests
         Assert.Single(root.GetProperty("facts").EnumerateArray());
         Assert.Single(root.GetProperty("continuity").EnumerateArray());
         Assert.Single(root.GetProperty("recentReceipts").EnumerateArray());
+        Assert.Equal(InteractionTaskContextMaterializer.MaximumPackBytes,
+            root.GetProperty("budgets").GetProperty("maximumBytes").GetInt32());
+        Assert.Equal(InteractionTaskContextMaterializer.MaximumPackItems,
+            root.GetProperty("budgets").GetProperty("maximumItems").GetInt32());
+        Assert.Empty(root.GetProperty("omissions").EnumerateArray());
         foreach (var item in root.GetProperty("scope").EnumerateArray()
                      .Concat(root.GetProperty("capabilities").EnumerateArray())
                      .Concat(root.GetProperty("readViews").EnumerateArray())
@@ -116,9 +121,34 @@ public sealed class InteractionTaskContextTests
         Assert.InRange(capabilities, 1, 11);
         Assert.Contains(document.RootElement.GetProperty("limitations").EnumerateArray(),
             value => value.GetString() == "TASK_CONTEXT_TRUNCATED");
+        Assert.Contains(document.RootElement.GetProperty("omissions").EnumerateArray(),
+            value => value.GetProperty("reason").GetString() == "byte-budget"
+                     && value.GetProperty("removedItems").GetInt32() > 0);
     }
 
-    private static (AuthorizedInteractionEnvelope Envelope, InteractionAuthorizationRequest Request) Envelope()
+    [Fact]
+    public async Task Item_budget_omissions_name_the_trimmed_section_and_count()
+    {
+        var mechanic = Mechanic("sample-app.mechanic.act", "Act", "Apply an action.");
+        var snapshot = Snapshot([mechanic]);
+        var policy = new RecordingAuthorization();
+        var materializer = new InteractionTaskContextMaterializer(policy,
+            new RecordingRetriever(policy, snapshot, [mechanic]), new FixedSnapshots(snapshot),
+            new ReadModels(), play: new Play(20));
+        var (envelope, request) = Envelope(includeFactReference: false);
+
+        var pack = await materializer.MaterializeAsync(envelope, request);
+
+        using var document = JsonDocument.Parse(pack.Json);
+        Assert.Equal(16, document.RootElement.GetProperty("facts").GetArrayLength());
+        var omission = Assert.Single(document.RootElement.GetProperty("omissions").EnumerateArray());
+        Assert.Equal("facts", omission.GetProperty("section").GetString());
+        Assert.Equal("item-budget", omission.GetProperty("reason").GetString());
+        Assert.Equal(4, omission.GetProperty("removedItems").GetInt32());
+    }
+
+    private static (AuthorizedInteractionEnvelope Envelope, InteractionAuthorizationRequest Request) Envelope(
+        bool includeFactReference = true)
     {
         var applications = new InMemoryApplicationRegistry();
         var revision = applications.Register(new(App, "Sample", "Task-context fixture.", []));
@@ -129,9 +159,10 @@ public sealed class InteractionTaskContextTests
         var host = new InteractionHostContext(principal, revision, "state.1", "session.1",
             "state-revision.1", CatalogFingerprint, InteractionRoleProfile.Inner,
             new(4, 65_536, 65_536), initial, resolutionFingerprint: CatalogFingerprint);
+        var references = includeFactReference ? "[\"fact.1\"]" : "[]";
         var intent = InteractionIntent.Parse("""
-            {"idempotencyKey":"context.1","intentText":"resume the campaign and act","maximumPlanSteps":2,"roleHints":{"campaign":"campaign.1","subject":"entity.1"},"conversationFactReferences":["fact.1"]}
-            """);
+            {"idempotencyKey":"context.1","intentText":"resume the campaign and act","maximumPlanSteps":2,"roleHints":{"campaign":"campaign.1","subject":"entity.1"},"conversationFactReferences":FACT_REFERENCES}
+            """.Replace("FACT_REFERENCES", references, StringComparison.Ordinal));
         return (AuthorizedInteractionEnvelope.Create(intent, host), request);
     }
 
@@ -274,15 +305,17 @@ public sealed class InteractionTaskContextTests
             false));
     }
 
-    private sealed class Play : IApplicationPlayRecordStore
+    private sealed class Play(int factCount = 1) : IApplicationPlayRecordStore
     {
         public PlayConversationDocument? GetSession(PlayConversationIdentity identity) => new(
             "conversation.1", identity.PrincipalId, identity.ApplicationId, identity.StateSpaceId,
             identity.SessionContextId, "active", 3, 1, [],
             new("situation.1", 2, PlaySituationKinds.Conversation, PlaySituationStatuses.Active,
                 "At the open gate.", [], null, DateTime.UnixEpoch, DateTime.UnixEpoch, null),
-            [new("fact.1", 1, "The gate is open.", ["entity.gate"], "message.1",
-                "situation.1", DateTime.UnixEpoch)], DateTime.UnixEpoch, DateTime.UnixEpoch);
+            Enumerable.Range(1, factCount).Select(index => new PlayTruthDocument(
+                "fact." + index, index, "Established fact " + index + ".", ["entity.gate"],
+                "message." + index, "situation.1", DateTime.UnixEpoch)).ToArray(),
+            DateTime.UnixEpoch, DateTime.UnixEpoch);
         public PlayConversationDocument ResumeOrCreate(PlayConversationIdentity identity) => throw new NotSupportedException();
         public PlayConversationDocument? Get(string principalId, string applicationId, string conversationId) => throw new NotSupportedException();
         public PlayConversationDocument AppendMessage(string conversationId, PlayMessageAppend message, string status) => throw new NotSupportedException();

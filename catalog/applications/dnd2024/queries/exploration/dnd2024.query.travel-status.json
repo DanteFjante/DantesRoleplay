@@ -1,0 +1,48 @@
+{
+  "id": "dnd2024.query.travel-status",
+  "category": "dnd2024.ruleset.core.gameplay.exploration.read-model",
+  "name": "Current route travel status",
+  "description": "Returns one audience-authorized traveller's current location, exact route profile, route availability, authoritative clock, and missing values for travel execution.",
+  "matches": ["show current travel status", "is this route ready for travel", "what remains before this journey can start"],
+  "roles": {
+    "traveller": "The exact audience-authorized traveller.",
+    "route": "The exact audience-authorized D&D route.",
+    "world": "The route's exact active world."
+  },
+  "executor": "mechanic-projection",
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.travel.status.project",
+    "version": 1,
+    "contentHash": "4BDEF78C174E65C4C9463A3DA9BA31B6FD1777F1FE2BA06438355FFE5DA659DE",
+    "outputSchemaHash": "7AAA87D978F42D834BA94DDCC57D46ADB7EE758D4A96E9501D5EDD07F4B7D484"
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["version", "traveller", "route", "clock", "status", "requirements", "nextActions"],
+    "properties": {
+      "version": {"const": 1},
+      "traveller": {"$ref": "#/$defs/traveller"},
+      "route": {"$ref": "#/$defs/route"},
+      "clock": {"$ref": "#/$defs/clock"},
+      "status": {"enum": ["ready", "traveller-inactive", "traveller-destroyed", "route-inactive", "route-closed", "wrong-origin"]},
+      "requirements": {"type": "array", "minItems": 5, "maxItems": 5, "items": {"$ref": "#/$defs/requirement"}},
+      "nextActions": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"$ref": "#/$defs/action"}}
+    },
+    "$defs": {
+      "id": {"type": "string", "minLength": 1, "maxLength": 200},
+      "ref": {"type": "object", "additionalProperties": false, "required": ["entityId"], "properties": {"entityId": {"$ref": "#/$defs/id"}}},
+      "rational": {"type": "object", "additionalProperties": false, "required": ["numerator", "denominator"], "properties": {"numerator": {"type": "integer", "minimum": 1}, "denominator": {"type": "integer", "minimum": 1}}},
+      "distance": {"type": "object", "additionalProperties": false, "required": ["dimension", "value", "unit"], "properties": {"dimension": {"const": "distance"}, "value": {"$ref": "#/$defs/rational"}, "unit": {"$ref": "#/$defs/ref"}}},
+      "traveller": {"type": "object", "additionalProperties": false, "required": ["id", "name", "currentLocationId", "active", "usable"], "properties": {"id": {"$ref": "#/$defs/id"}, "name": {"type": "string", "minLength": 1, "maxLength": 400}, "currentLocationId": {"type": ["string", "null"], "minLength": 1, "maxLength": 200}, "active": {"type": "boolean"}, "usable": {"type": "boolean"}}},
+      "exposure": {"oneOf": [{"type": "object", "additionalProperties": false, "required": ["enabled"], "properties": {"enabled": {"const": false}}}, {"type": "object", "additionalProperties": false, "required": ["enabled", "cadenceMinutes"], "properties": {"enabled": {"const": true}, "cadenceMinutes": {"type": "integer", "minimum": 1, "maximum": 1440}}}]},
+      "route": {"type": "object", "additionalProperties": false, "required": ["id", "name", "status", "availability", "summary", "revision", "fingerprint", "worldId", "originId", "destinationId", "distance", "allowedModeIds", "terrainId", "visibilityId", "navigationRequired", "exposure"], "properties": {"id": {"$ref": "#/$defs/id"}, "name": {"type": "string", "minLength": 1, "maxLength": 400}, "status": {"enum": ["active", "archived"]}, "availability": {"enum": ["open", "closed"]}, "summary": {"type": "string", "minLength": 1, "maxLength": 1000}, "revision": {"type": "integer", "minimum": 1}, "fingerprint": {"type": "string", "pattern": "^[0-9A-F]{64}$"}, "worldId": {"$ref": "#/$defs/id"}, "originId": {"$ref": "#/$defs/id"}, "destinationId": {"$ref": "#/$defs/id"}, "distance": {"$ref": "#/$defs/distance"}, "allowedModeIds": {"type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}}, "terrainId": {"$ref": "#/$defs/id"}, "visibilityId": {"$ref": "#/$defs/id"}, "navigationRequired": {"type": "boolean"}, "exposure": {"$ref": "#/$defs/exposure"}}},
+      "clock": {"type": "object", "additionalProperties": false, "required": ["calendarId", "minute", "revision"], "properties": {"calendarId": {"type": "string", "minLength": 1, "maxLength": 100}, "minute": {"type": "integer", "minimum": 0}, "revision": {"type": "integer", "minimum": 0}}},
+      "requirement": {"type": "object", "additionalProperties": false, "required": ["code", "satisfied"], "properties": {"code": {"enum": ["traveller-active", "traveller-usable", "route-active", "route-open", "traveller-at-origin"]}, "satisfied": {"type": "boolean"}}},
+      "action": {"type": "object", "additionalProperties": false, "required": ["capabilityId", "roles", "input", "missingValues", "ready"], "properties": {"capabilityId": {"const": "dnd2024.mechanic.travel.execute"}, "roles": {"type": "object", "additionalProperties": false, "required": ["traveller", "origin", "destination", "route", "world"], "properties": {"traveller": {"$ref": "#/$defs/id"}, "origin": {"$ref": "#/$defs/id"}, "destination": {"$ref": "#/$defs/id"}, "route": {"$ref": "#/$defs/id"}, "world": {"$ref": "#/$defs/id"}}}, "input": {"type": "object"}, "missingValues": {"type": "array", "minItems": 3, "maxItems": 5, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 100}}, "ready": {"const": false}}}
+    }
+  },
+  "exposure": "model-visible",
+  "status": "active"
+}

@@ -23,6 +23,8 @@ public sealed class InteractionTaskContextMaterializer(
     IInteractionRecentReceiptReader? receipts = null) : IInteractionTaskContextMaterializer
 {
     public const int MaximumPackBytes = 32 * 1024;
+    public const int MaximumPackElapsedMilliseconds = 5_000;
+    public const int MaximumPackItems = 64;
     private const int MaximumCapabilities = 12;
     private const int MaximumReadViews = 4;
     private const int MaximumKnowledge = 8;
@@ -33,6 +35,25 @@ public sealed class InteractionTaskContextMaterializer(
         AuthorizedInteractionEnvelope envelope,
         InteractionAuthorizationRequest authorizationRequest,
         CancellationToken cancellationToken = default)
+    {
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(MaximumPackElapsedMilliseconds);
+        try
+        {
+            return await MaterializeCoreAsync(envelope, authorizationRequest, deadline.Token);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested
+                                                 && deadline.IsCancellationRequested)
+        {
+            throw Failure("TASK_CONTEXT_TIME_BUDGET_EXCEEDED",
+                "Task-context materialization exceeded its closed time budget.");
+        }
+    }
+
+    private async Task<InteractionTaskContextPack> MaterializeCoreAsync(
+        AuthorizedInteractionEnvelope envelope,
+        InteractionAuthorizationRequest authorizationRequest,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(envelope);
         ArgumentNullException.ThrowIfNull(authorizationRequest);
@@ -59,13 +80,14 @@ public sealed class InteractionTaskContextMaterializer(
         }).ToList();
 
         var limitations = new List<string>();
+        var omissions = new List<PackOmission>();
         if (!string.IsNullOrEmpty(search.AvailabilityCode))
             limitations.Add(search.AvailabilityCode);
-        var knowledgeItems = await ReadKnowledge(envelope, limitations, cancellationToken);
+        var knowledgeItems = await ReadKnowledge(envelope, limitations, omissions, cancellationToken);
         var readViewItems = await ReadViews(
-            envelope, records, knowledgeItems.Audience, limitations, cancellationToken);
-        var continuity = ReadContinuity(envelope);
-        var receiptItems = await ReadReceipts(envelope, limitations, cancellationToken);
+            envelope, records, knowledgeItems.Audience, limitations, omissions, cancellationToken);
+        var continuity = ReadContinuity(envelope, omissions);
+        var receiptItems = await ReadReceipts(envelope, limitations, omissions, cancellationToken);
 
         EnsureContinuityUnchanged(envelope, continuity);
         EnsureSnapshotUnchanged(envelope, snapshot);
@@ -83,12 +105,15 @@ public sealed class InteractionTaskContextMaterializer(
             continuity.Facts,
             continuity.Items,
             receiptItems,
-            limitations.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList());
+            limitations.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList(),
+            new(MaximumPackBytes, MaximumPackItems, MaximumPackElapsedMilliseconds,
+                MaximumCapabilities, MaximumReadViews, MaximumKnowledge, MaximumFacts,
+                MaximumReceipts), omissions);
         var json = Fit(document);
         var references = document.AllItems().Select(value => value.Reference)
             .Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
         var fingerprint = Hash(json);
-        return new(InteractionTaskContextProfiles.Version1, json, fingerprint,
+        return new(InteractionTaskContextProfiles.Version2, json, fingerprint,
             Array.AsReadOnly(references));
     }
 
@@ -97,11 +122,11 @@ public sealed class InteractionTaskContextMaterializer(
         IReadOnlyList<CatalogRecordDefinition> records,
         AudienceContext? audience,
         List<string> limitations,
+        List<PackOmission> omissions,
         CancellationToken cancellationToken)
     {
         var values = new List<ContextItem>();
-        foreach (var record in records.Where(value => value.Kind == ApplicationQueryContract.CatalogKind)
-                     .Take(MaximumReadViews))
+        foreach (var record in records.Where(value => value.Kind == ApplicationQueryContract.CatalogKind))
         {
             ApplicationQueryContract contract;
             try { contract = ApplicationQueryContract.Parse(record.ContentJson, envelope.Host.ApplicationRevision.ApplicationId); }
@@ -113,6 +138,11 @@ public sealed class InteractionTaskContextMaterializer(
             if (contract.Exposure != ApplicationQueryExposure.ModelVisible
                 || contract.Roles.Keys.Any(role => !envelope.Intent.RoleHints.ContainsKey(role)))
                 continue;
+            if (values.Count >= MaximumReadViews)
+            {
+                RecordOmission(omissions, "readViews", "item-budget");
+                continue;
+            }
             var bindings = contract.Roles.Keys.Order(StringComparer.Ordinal)
                 .ToDictionary(role => role, role => envelope.Intent.RoleHints[role], StringComparer.Ordinal);
             try
@@ -150,6 +180,7 @@ public sealed class InteractionTaskContextMaterializer(
     private async Task<KnowledgeContext> ReadKnowledge(
         AuthorizedInteractionEnvelope envelope,
         List<string> limitations,
+        List<PackOmission> omissions,
         CancellationToken cancellationToken)
     {
         if (knowledge is null || !envelope.Intent.RoleHints.TryGetValue("campaign", out var campaignId))
@@ -163,6 +194,9 @@ public sealed class InteractionTaskContextMaterializer(
             return new([], null);
         }
         if (!string.IsNullOrEmpty(result.ErrorCode)) limitations.Add(result.ErrorCode);
+        if (result.Candidates.Count > MaximumKnowledge)
+            RecordOmission(omissions, "knowledge", "item-budget",
+                result.Candidates.Count - MaximumKnowledge);
         var items = result.Candidates.Take(MaximumKnowledge).Select(candidate =>
             Item($"knowledge:{candidate.KnowledgeId}#{candidate.Revision}", candidate.Revision,
                 candidate.Revision, new
@@ -178,7 +212,8 @@ public sealed class InteractionTaskContextMaterializer(
     }
 
     private ContinuityContext ReadContinuity(
-        AuthorizedInteractionEnvelope envelope)
+        AuthorizedInteractionEnvelope envelope,
+        List<PackOmission> omissions)
     {
         if (play is null) return new([], [], null, null);
         var conversation = play.GetSession(new(
@@ -195,9 +230,13 @@ public sealed class InteractionTaskContextMaterializer(
                 "Session continuity does not match the authorized scope.");
 
         var requested = envelope.Intent.ConversationFactReferences.ToHashSet(StringComparer.Ordinal);
-        var facts = conversation.KnownTruths
+        var eligibleFacts = conversation.KnownTruths
             .Where(value => requested.Count == 0 || requested.Contains(value.Id))
-            .OrderByDescending(value => value.Ordinal).Take(MaximumFacts)
+            .OrderByDescending(value => value.Ordinal).ToArray();
+        if (eligibleFacts.Length > MaximumFacts)
+            RecordOmission(omissions, "facts", "item-budget",
+                eligibleFacts.Length - MaximumFacts);
+        var facts = eligibleFacts.Take(MaximumFacts)
             .Select(value => Item($"fact:{value.Id}#{HashObject(value)}", value.Ordinal.ToString(),
                 HashObject(value), value)).ToList();
         var continuity = new List<ContextItem>
@@ -242,6 +281,7 @@ public sealed class InteractionTaskContextMaterializer(
     private async Task<List<ContextItem>> ReadReceipts(
         AuthorizedInteractionEnvelope envelope,
         List<string> limitations,
+        List<PackOmission> omissions,
         CancellationToken cancellationToken)
     {
         if (receipts is null) return [];
@@ -252,11 +292,15 @@ public sealed class InteractionTaskContextMaterializer(
                 InteractionCapability.ReadReceipt, "interaction.task-context.receipts");
             var values = await receipts.ReadRecentAsync(request, envelope.Host.SessionContextId,
                 MaximumReceipts, cancellationToken);
-            return values.Where(value => value.SessionContextId == envelope.Host.SessionContextId
+            var eligible = values.Where(value => value.SessionContextId == envelope.Host.SessionContextId
                     && value.ApplicationRevision == envelope.Host.ApplicationRevision.Revision
                     && value.ApplicationFingerprint == envelope.Host.ApplicationRevision.Fingerprint
                     && value.StateRevision == envelope.Host.StateRevision
-                    && value.EffectiveSetFingerprint == envelope.Host.EffectiveSetFingerprint)
+                    && value.EffectiveSetFingerprint == envelope.Host.EffectiveSetFingerprint).ToArray();
+            if (eligible.Length > MaximumReceipts)
+                RecordOmission(omissions, "recentReceipts", "item-budget",
+                    eligible.Length - MaximumReceipts);
+            return eligible.Take(MaximumReceipts)
                 .Select(value => Item(value.Reference, value.StateRevision,
                     value.Receipt.RequestFingerprint, new
                     {
@@ -419,17 +463,20 @@ public sealed class InteractionTaskContextMaterializer(
     {
         while (true)
         {
+            if (document.AllItems().Count() > MaximumPackItems)
+                throw Failure("TASK_CONTEXT_ITEM_BUDGET_EXCEEDED",
+                    "The mandatory task context exceeds the closed item budget.");
             var json = SerializeRaw(document);
             if (Encoding.UTF8.GetByteCount(json) <= MaximumPackBytes)
                 return InteractionCanonicalJson.CanonicalizeObject(json);
-            if (RemoveLast(document.Receipts)) { MarkTruncated(document); continue; }
-            if (RemoveLast(document.Facts)) { MarkTruncated(document); continue; }
-            if (RemoveLast(document.Knowledge)) { MarkTruncated(document); continue; }
-            if (RemoveLast(document.ReadViews)) { MarkTruncated(document); continue; }
-            if (RemoveLast(document.Continuity)) { MarkTruncated(document); continue; }
-            if (document.Capabilities.Count > 1 && RemoveLast(document.Capabilities))
+            if (RemoveLast(document, document.Receipts, "recentReceipts")) continue;
+            if (RemoveLast(document, document.Facts, "facts")) continue;
+            if (RemoveLast(document, document.Knowledge, "knowledge")) continue;
+            if (RemoveLast(document, document.Continuity, "continuity")) continue;
+            if (RemoveLast(document, document.ReadViews, "readViews")) continue;
+            if (document.Capabilities.Count > 1
+                && RemoveLast(document, document.Capabilities, "capabilities"))
             {
-                MarkTruncated(document);
                 continue;
             }
             throw Failure("TASK_CONTEXT_BUDGET_EXCEEDED",
@@ -440,7 +487,7 @@ public sealed class InteractionTaskContextMaterializer(
     private static string SerializeRaw(PackDocument document) =>
         JsonSerializer.Serialize(new
         {
-            profile = InteractionTaskContextProfiles.Version1,
+            profile = InteractionTaskContextProfiles.Version2,
             scope = document.Scope,
             capabilities = document.Capabilities,
             readViews = document.ReadViews,
@@ -448,14 +495,54 @@ public sealed class InteractionTaskContextMaterializer(
             facts = document.Facts,
             continuity = document.Continuity,
             recentReceipts = document.Receipts,
-            limitations = document.Limitations
+            limitations = document.Limitations,
+            budgets = new
+            {
+                maximumBytes = document.Budgets.MaximumBytes,
+                maximumItems = document.Budgets.MaximumItems,
+                maximumElapsedMilliseconds = document.Budgets.MaximumElapsedMilliseconds,
+                maximumCapabilities = document.Budgets.MaximumCapabilities,
+                maximumReadViews = document.Budgets.MaximumReadViews,
+                maximumKnowledge = document.Budgets.MaximumKnowledge,
+                maximumFacts = document.Budgets.MaximumFacts,
+                maximumReceipts = document.Budgets.MaximumReceipts
+            },
+            omissions = document.Omissions.OrderBy(value => value.Section, StringComparer.Ordinal)
+                .ThenBy(value => value.Reason, StringComparer.Ordinal)
+                .Select(value => new
+                {
+                    section = value.Section,
+                    reason = value.Reason,
+                    removedItems = value.RemovedItems
+                })
         });
 
-    private static bool RemoveLast(List<ContextItem> values)
+    private static bool RemoveLast(
+        PackDocument document,
+        List<ContextItem> values,
+        string section)
     {
         if (values.Count == 0) return false;
         values.RemoveAt(values.Count - 1);
+        RecordOmission(document.Omissions, section, "byte-budget");
+        MarkTruncated(document);
         return true;
+    }
+
+    private static void RecordOmission(
+        List<PackOmission> omissions,
+        string section,
+        string reason,
+        int removedItems = 1)
+    {
+        var index = omissions.FindIndex(value => value.Section == section && value.Reason == reason);
+        if (index < 0)
+            omissions.Add(new(section, reason, removedItems));
+        else
+            omissions[index] = omissions[index] with
+            {
+                RemovedItems = omissions[index].RemovedItems + removedItems
+            };
     }
 
     private static void MarkTruncated(PackDocument document)
@@ -507,9 +594,23 @@ public sealed class InteractionTaskContextMaterializer(
         List<ContextItem> Facts,
         List<ContextItem> Continuity,
         List<ContextItem> Receipts,
-        List<string> Limitations)
+        List<string> Limitations,
+        PackBudgets Budgets,
+        List<PackOmission> Omissions)
     {
         public IEnumerable<ContextItem> AllItems() => Scope.Concat(Capabilities).Concat(ReadViews)
             .Concat(Knowledge).Concat(Facts).Concat(Continuity).Concat(Receipts);
     }
+
+    private sealed record PackBudgets(
+        int MaximumBytes,
+        int MaximumItems,
+        int MaximumElapsedMilliseconds,
+        int MaximumCapabilities,
+        int MaximumReadViews,
+        int MaximumKnowledge,
+        int MaximumFacts,
+        int MaximumReceipts);
+
+    private sealed record PackOmission(string Section, string Reason, int RemovedItems);
 }

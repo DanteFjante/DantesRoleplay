@@ -1,0 +1,44 @@
+{
+  "id": "dnd2024.query.hazard-status",
+  "category": "dnd2024.ruleset.core.gameplay.hazards.read-model",
+  "name": "Due hazards and afflictions",
+  "description": "Returns one audience-authorized subject's bounded poison, contagion, curse, and environmental-exposure status against the authoritative clock.",
+  "matches": ["show due hazards and afflictions", "what poison contagion curse or exposure is active", "show current hazard status"],
+  "roles": {
+    "subject": "The exact audience-authorized subject.",
+    "world": "The exact active world and authoritative clock."
+  },
+  "executor": "mechanic-projection",
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.hazard.status.project",
+    "version": 1,
+    "contentHash": "218259634FF09B049249ABC9FC90A4FA8503866029502217B6C02897FD5EDC61",
+    "outputSchemaHash": "15A8577E4D21490B086FA0ECEEC8882CD117B4CF8F558D0A7B96AFA11565F741"
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["version", "subject", "worldId", "clock", "perspective", "summary", "afflictions", "environmentalExposures"],
+    "properties": {
+      "version": {"const": 1},
+      "subject": {"$ref": "#/$defs/named"},
+      "worldId": {"$ref": "#/$defs/id"},
+      "clock": {"$ref": "#/$defs/clock"},
+      "perspective": {"enum": ["player", "dm"]},
+      "summary": {"$ref": "#/$defs/summary"},
+      "afflictions": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/affliction"}},
+      "environmentalExposures": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/exposure"}}
+    },
+    "$defs": {
+      "id": {"type": "string", "minLength": 1, "maxLength": 200},
+      "named": {"type": "object", "additionalProperties": false, "required": ["id", "name"], "properties": {"id": {"$ref": "#/$defs/id"}, "name": {"type": "string", "minLength": 1, "maxLength": 400}}},
+      "clock": {"type": "object", "additionalProperties": false, "required": ["calendarId", "minute", "revision"], "properties": {"calendarId": {"type": "string", "minLength": 1, "maxLength": 100}, "minute": {"type": "integer", "minimum": 0}, "revision": {"type": "integer", "minimum": 0}}},
+      "summary": {"type": "object", "additionalProperties": false, "required": ["afflictionCount", "exposureCount", "dueCount"], "properties": {"afflictionCount": {"type": "integer", "minimum": 0, "maximum": 64}, "exposureCount": {"type": "integer", "minimum": 0, "maximum": 64}, "dueCount": {"type": "integer", "minimum": 0, "maximum": 64}}},
+      "affliction": {"type": "object", "additionalProperties": false, "required": ["id", "name", "kind", "status", "definitionId", "definitionRevision", "definitionFingerprint", "stacks", "nextDueMinute", "due", "concealed", "phaseId"], "properties": {"id": {"$ref": "#/$defs/id"}, "name": {"type": "string", "minLength": 1, "maxLength": 400}, "kind": {"enum": ["poison", "contagion", "curse"]}, "status": {"type": "string", "minLength": 1, "maxLength": 100}, "definitionId": {"$ref": "#/$defs/id"}, "definitionRevision": {"type": "integer", "minimum": 1}, "definitionFingerprint": {"type": "string", "pattern": "^[0-9A-F]{64}$"}, "stacks": {"type": "integer", "minimum": 0}, "nextDueMinute": {"type": ["integer", "null"], "minimum": 0}, "due": {"type": "boolean"}, "concealed": {"type": "boolean"}, "phaseId": {"type": ["string", "null"], "minLength": 1, "maxLength": 200}}},
+      "exposure": {"type": "object", "additionalProperties": false, "required": ["id", "name", "definitionId", "definitionRevision", "exposureCount", "failedChecks"], "properties": {"id": {"$ref": "#/$defs/id"}, "name": {"type": "string", "minLength": 1, "maxLength": 400}, "definitionId": {"$ref": "#/$defs/id"}, "definitionRevision": {"type": "integer", "minimum": 1}, "exposureCount": {"type": "integer", "minimum": 0}, "failedChecks": {"type": "integer", "minimum": 0}}}
+    }
+  },
+  "exposure": "model-visible",
+  "status": "active"
+}

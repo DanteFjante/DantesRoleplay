@@ -8121,6 +8121,34 @@ public sealed class Dnd2024AbilityCheckTests
     }
 
     [Fact]
+    public async Task Active_catalog_keeps_existing_read_views_and_exposes_all_slice_16_status_views()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        var existing = new[]
+        {
+            "dnd2024.query.campaign-resume",
+            "dnd2024.query.current-scene",
+            "dnd2024.query.actor-context",
+            "dnd2024.query.unresolved-decisions",
+            "dnd2024.query.recent-consequences",
+            "dnd2024.query.character-sheet-v2",
+            "dnd2024.query.character-dossier-v1"
+        };
+        var status = new[]
+        {
+            "dnd2024.query.travel-status",
+            "dnd2024.query.rest-status",
+            "dnd2024.query.hazard-status",
+            "dnd2024.query.object-durability",
+            "dnd2024.query.social-context",
+            "dnd2024.query.downtime-status"
+        };
+
+        Assert.All(existing.Concat(status), queryId => Assert.True(
+            harness.HasActiveQuery(queryId), $"Active catalog is missing {queryId}."));
+    }
+
+    [Fact]
     public async Task Social_attitudes_reject_stale_unknown_and_creative_judgment_inputs()
     {
         await using var harness = await DndHarness.CreateAsync();
@@ -8796,6 +8824,21 @@ public sealed class Dnd2024AbilityCheckTests
             Assert.True(_catalogs.TryGet(Application, out var catalog));
             return catalog.Search(new(Application, query,
                 Kinds: ["mechanic"], PageSize: 10));
+        }
+
+        public bool HasActiveQuery(string queryId)
+        {
+            if (!_catalogs.TryGet(Application, out var catalog)) return false;
+            try
+            {
+                var record = catalog.Inspect(new(Application, Application.Value, queryId));
+                return record.Summary.Kind == ApplicationQueryContract.CatalogKind
+                       && record.Summary.Status == "active";
+            }
+            catch (KeyNotFoundException)
+            {
+                return false;
+            }
         }
 
         public Task<IReadOnlyList<EventSummary>> EventsAsync(string rootOperationId) =>

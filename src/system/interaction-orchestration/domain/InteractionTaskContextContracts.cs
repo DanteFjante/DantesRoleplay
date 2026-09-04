@@ -5,6 +5,7 @@ namespace DantesRoleplay.Interactions;
 public static class InteractionTaskContextProfiles
 {
     public const string Version1 = "interaction-task-context/v1";
+    public const string Version2 = "interaction-task-context/v2";
 }
 
 /// <summary>

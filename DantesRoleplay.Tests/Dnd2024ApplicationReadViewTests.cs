@@ -25,7 +25,12 @@ public sealed class Dnd2024ApplicationReadViewTests
         { "character/dnd2024.query.character-sheet-v2.json", "data/dnd2024.mechanic.character-sheet-v2.project" },
         { "character/dnd2024.query.character-dossier-v1.json", "data/dnd2024.mechanic.character-dossier-v1.project" },
         { "character/dnd2024.query.character-sheet.json", "data/dnd2024.mechanic.character-sheet.project" },
-        { "character/dnd2024.query.rest-status.json", "data/dnd2024.mechanic.rest.status.project" }
+        { "character/dnd2024.query.rest-status.json", "data/dnd2024.mechanic.rest.status.project" },
+        { "character/dnd2024.query.downtime-status.json", "downtime/dnd2024.mechanic.downtime.status.project" },
+        { "data/dnd2024.query.object-durability.json", "objects/dnd2024.mechanic.object.durability.read" },
+        { "social/dnd2024.query.social-context.json", "social/dnd2024.mechanic.social.context.project" },
+        { "exploration/dnd2024.query.travel-status.json", "exploration/dnd2024.mechanic.travel.status.project" },
+        { "hazards/dnd2024.query.hazard-status.json", "hazards/dnd2024.mechanic.hazard.status.project" }
     };
 
     [Theory]
@@ -147,6 +152,118 @@ public sealed class Dnd2024ApplicationReadViewTests
         Assert.True(next.GetProperty("ready").GetBoolean());
         Assert.Empty(next.GetProperty("missingValues").EnumerateArray());
         AssertSchema("character/dnd2024.query.rest-status.json", data.GetRawText());
+    }
+
+    [Fact]
+    public async Task Travel_status_returns_current_route_clock_and_prepared_known_values()
+    {
+        var traveller = Entity("traveller", "Ganji", new()
+        {
+            ["game.core.world.traveller"] = Json(new { status = "active" })
+        }, containerId: "origin", containerSlot: "presence");
+        var route = Entity("route", "Old Road", new()
+        {
+            ["game.core.world.route"] = Json(new
+            {
+                status = "active", summary = "The old road to the market.", visibility = "party",
+                mode = "on-foot", durationMinutes = 120
+            }),
+            ["game.core.world.route.availability"] = Json(new { status = "open" }),
+            ["dnd2024.exploration.route-profile"] = Json(new
+            {
+                revision = 3, fingerprint = new string('A', 64), world = Ref("world"),
+                origin = Ref("origin"), destination = Ref("destination"),
+                distance = new { dimension = "distance", value = new { numerator = 6, denominator = 1 }, unit = Ref("dnd2024.vocabulary.distance-unit.mile") },
+                allowedModes = new[] { Ref("dnd2024.vocabulary.movement-mode.walk") },
+                terrain = Ref("dnd2024.content.terrain.road"),
+                visibility = Ref("dnd2024.content.visibility.clear"),
+                terrainDurationMultiplier = new { numerator = 1, denominator = 1 },
+                visibilityDurationMultiplier = new { numerator = 1, denominator = 1 },
+                navigation = new { required = false }, exposure = new { enabled = false },
+                arrivalPolicy = "move-record-and-visit"
+            })
+        });
+        var world = Entity("world", "World", new()
+        {
+            ["game.core.world.root"] = Json(new { status = "active" }),
+            ["game.core.world.clock"] = Json(new { calendarId = "calendar.fixture", currentMinute = 240, revision = 7 })
+        });
+        var projection = new MechanicProjection
+        {
+            Input = "{}",
+            Roles = { ["traveller"] = traveller, ["route"] = route, ["world"] = world }
+        };
+
+        using var output = await Run("exploration/dnd2024.mechanic.travel.status.project", projection);
+        var data = output.RootElement;
+        var action = Assert.Single(data.GetProperty("nextActions").EnumerateArray());
+
+        Assert.Equal("ready", data.GetProperty("status").GetString());
+        Assert.Equal("origin", data.GetProperty("traveller").GetProperty("currentLocationId").GetString());
+        Assert.Equal(3, data.GetProperty("route").GetProperty("revision").GetInt32());
+        Assert.Equal(7, data.GetProperty("clock").GetProperty("revision").GetInt32());
+        Assert.Equal("origin", action.GetProperty("roles").GetProperty("origin").GetString());
+        Assert.Equal(3, action.GetProperty("missingValues").GetArrayLength());
+        AssertSchema("exploration/dnd2024.query.travel-status.json", data.GetRawText());
+    }
+
+    [Fact]
+    public async Task Hazard_status_filters_concealed_curses_for_players_and_reports_due_state()
+    {
+        var poison = new RelatedEntityProjection("affliction.poison", "Wyvern poison",
+            "affliction.poison", "ganji", "affliction.subject", "{}", new Dictionary<string, string>
+            {
+                ["dnd2024.effect.active-effect-state"] = Json(new
+                {
+                    definition = Ref("hazard.poison.wyvern"), target = Ref("ganji"), status = "active",
+                    stacks = 1, appliedAtEvent = new { eventId = new string('a', 32) },
+                    parameters = new { kind = "poison", definitionRevision = 2,
+                        definitionFingerprint = new string('B', 64), nextDueMinute = 300 }
+                }),
+                ["dnd2024.hazard.poison-application"] = Json(new { saveSuccesses = 0, saveFailures = 1 })
+            });
+        var curse = new RelatedEntityProjection("affliction.curse", "Hidden affliction",
+            "affliction.curse", "ganji", "affliction.subject", "{}", new Dictionary<string, string>
+            {
+                ["dnd2024.effect.active-effect-state"] = Json(new
+                {
+                    definition = Ref("hazard.curse.fixture"), target = Ref("ganji"), status = "active",
+                    stacks = 1, appliedAtEvent = new { eventId = new string('c', 32) },
+                    parameters = new { kind = "curse", definitionRevision = 1,
+                        definitionFingerprint = new string('C', 64), nextDueMinute = 500, concealed = true }
+                })
+            });
+        var exposure = new RelatedEntityProjection("exposure.cold", "Cold exposure",
+            "exposure.cold", "ganji", "hazard.exposure.subject", "{}", new Dictionary<string, string>
+            {
+                ["dnd2024.core.definition-link"] = Json(new { definition = Ref("hazard.environment.cold"), definitionRevision = 1 }),
+                ["dnd2024.hazard.environment-exposure"] = Json(new { exposureCount = 2, failedChecks = 1 })
+            });
+        var subject = Entity("ganji", "Ganji", new(), related: [poison, curse, exposure]);
+        var world = Entity("world", "World", new()
+        {
+            ["game.core.world.root"] = Json(new { status = "active" }),
+            ["game.core.world.clock"] = Json(new { calendarId = "calendar.fixture", currentMinute = 360, revision = 8 })
+        });
+        var playerProjection = new MechanicProjection
+        {
+            Input = "{}", Audience = MechanicAudienceContext.Player,
+            Roles = { ["subject"] = subject, ["world"] = world }
+        };
+        using var player = await Run("hazards/dnd2024.mechanic.hazard.status.project", playerProjection);
+
+        Assert.Single(player.RootElement.GetProperty("afflictions").EnumerateArray());
+        Assert.Equal(1, player.RootElement.GetProperty("summary").GetProperty("dueCount").GetInt32());
+        Assert.Equal(1, player.RootElement.GetProperty("summary").GetProperty("afflictionCount").GetInt32());
+        Assert.Single(player.RootElement.GetProperty("environmentalExposures").EnumerateArray());
+        Assert.DoesNotContain("hazard.curse.fixture", player.RootElement.GetRawText(), StringComparison.Ordinal);
+        AssertSchema("hazards/dnd2024.query.hazard-status.json", player.RootElement.GetRawText());
+
+        var dmProjection = playerProjection with { Audience = MechanicAudienceContext.GameMaster };
+        using var dm = await Run("hazards/dnd2024.mechanic.hazard.status.project", dmProjection);
+        Assert.Equal(2, dm.RootElement.GetProperty("afflictions").GetArrayLength());
+        Assert.Equal(2, dm.RootElement.GetProperty("summary").GetProperty("afflictionCount").GetInt32());
+        AssertSchema("hazards/dnd2024.query.hazard-status.json", dm.RootElement.GetRawText());
     }
 
     [Fact]
