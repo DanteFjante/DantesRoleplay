@@ -170,6 +170,21 @@ public sealed class MechanicComposer(
     {
         var items = new List<PendingInvocation>();
 
+        if (!string.IsNullOrWhiteSpace(declaration.WhenParentProperty))
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(projection.Input);
+                if (!document.RootElement.TryGetProperty(declaration.WhenParentProperty, out var selected)
+                    || selected.ValueKind == JsonValueKind.Null)
+                    return new(items, string.Empty);
+            }
+            catch (JsonException ex)
+            {
+                return new([], $"CHILD_CONDITION_FAILED ({resultKey}): Parent input could not be parsed: {ex.Message}");
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(declaration.ForEachInputProperty))
         {
             try

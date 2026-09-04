@@ -184,6 +184,13 @@ public sealed record MechanicRequirements
             if (!string.IsNullOrWhiteSpace(child.InputFromParentProperty) && child.InheritInput)
                 problems.Add($"Child '{key}' cannot inherit the full parent input and select an input property at once.");
 
+            if (child.WhenParentProperty.Length > 0 &&
+                (string.IsNullOrWhiteSpace(child.WhenParentProperty)
+                 || child.WhenParentProperty.Trim() != child.WhenParentProperty))
+                problems.Add($"Child '{key}' has an invalid whenParentProperty.");
+            if ((child.WhenParentProperty?.Length ?? 0) > 100)
+                problems.Add($"Child '{key}' has an overlong whenParentProperty.");
+
             if (!string.IsNullOrWhiteSpace(child.InputFromParentProperty) &&
                 child.InputFromParentProperty.Trim() != child.InputFromParentProperty)
             {
@@ -548,6 +555,13 @@ public sealed record ChildMechanicRequirement
     /// closed even when the parent also needs sibling metadata such as a tie decision.
     /// </summary>
     public string InputFromParentProperty { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Optional top-level parent-input property that makes this child conditional. The child is
+    /// skipped when the property is absent or null and runs when it is present with any other JSON
+    /// value. This is host-owned composition control; JavaScript cannot add an undeclared child.
+    /// </summary>
+    public string WhenParentProperty { get; init; } = string.Empty;
 
     /// <summary>
     /// Select an object from <see cref="InputFromParentProperty"/> by the current `$item` id.

@@ -1,0 +1,10 @@
+{
+  "id": "dnd2024.travel.arrived",
+  "category": "ruleset.dnd2024.core.gameplay.exploration",
+  "name": "D&D 2024 route arrival",
+  "description": "A traveller arrived through one resolved D&D route after the world clock advanced atomically.",
+  "scope": "dnd2024-srd-5.2.1",
+  "status": "Active",
+  "createdBy": "seed",
+  "changeNote": "Added for Slice 9 D&D route travel."
+}

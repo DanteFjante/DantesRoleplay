@@ -232,10 +232,55 @@ public sealed class E6DependentCompositionTests : IDisposable
         Assert.Null(await world.GetEntityAsync("e6-should-not-exist"));
     }
 
+    [Fact]
+    public async Task Conditional_child_runs_only_when_the_named_parent_property_is_present()
+    {
+        await using var db = _fixture.CreateContext();
+        var mechanics = new MechanicStore(db);
+        var world = new WorldStore(db);
+
+        await mechanics.WriteAsync(Mechanic(
+            "mechanic.test.e6.conditional-child",
+            "return { data: { ran: true }, effects: [] };"));
+        await mechanics.WriteAsync(Mechanic(
+            "mechanic.test.e6.conditional-parent",
+            "return { narration: String((ctx.children.optional || []).length), effects: [] };",
+            """
+            { "children": {
+              "optional": {
+                "mechanicId": "mechanic.test.e6.conditional-child",
+                "roleBindings": {},
+                "inheritInput": false,
+                "input": "{}",
+                "whenParentProperty": "choice"
+              }
+            }}
+            """));
+
+        var absent = await Runner(db, world, mechanics).RunAsync(new ActionRequest
+        {
+            Intent = "run mechanic.test.e6.conditional-parent",
+            Input = "{}",
+            Seed = 32
+        });
+        var present = await Runner(db, world, mechanics).RunAsync(new ActionRequest
+        {
+            Intent = "run mechanic.test.e6.conditional-parent",
+            Input = "{\"choice\":{}}",
+            Seed = 33
+        });
+
+        Assert.True(absent.Ok, absent.Error?.Why);
+        Assert.Equal("0", absent.Output.Narration);
+        Assert.True(present.Ok, present.Error?.Why);
+        Assert.Equal("1", present.Output.Narration);
+    }
+
     [Theory]
     [InlineData("""{"children":{"consumer":{"mechanicId":"mechanic.test.child","roleBindings":{},"inheritInput":true,"inputFromChildData":{"resultKey":"producer"}},"producer":{"mechanicId":"mechanic.test.child","roleBindings":{}}}}""", "cannot combine")]
     [InlineData("""{"children":{"consumer":{"mechanicId":"mechanic.test.child","roleBindings":{},"inheritInput":false,"inputFromChildData":{"resultKey":"missing"}}}}""", "unknown child")]
     [InlineData("""{"children":{"a":{"mechanicId":"mechanic.test.child","roleBindings":{},"inheritInput":false,"inputFromChildData":{"resultKey":"b"}},"b":{"mechanicId":"mechanic.test.child","roleBindings":{},"inheritInput":false,"inputFromChildData":{"resultKey":"a"}}}}""", "acyclic")]
+    [InlineData("""{"children":{"child":{"mechanicId":"mechanic.test.child","roleBindings":{},"whenParentProperty":"   "}}}""", "whenParentProperty")]
     public void Invalid_dependent_declarations_are_rejected_before_execution(string requirementsJson, string expectedProblem)
     {
         var problems = MechanicRequirements.Parse(requirementsJson).CompositionProblems();

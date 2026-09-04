@@ -35,7 +35,7 @@ public sealed class CatalogValidationTests
         var queryPaths = Directory.EnumerateFiles(queryRoot, "*.json", SearchOption.AllDirectories)
             .Order(StringComparer.Ordinal).ToArray();
 
-        Assert.Equal(105, mechanicPaths.Length);
+        Assert.Equal(109, mechanicPaths.Length);
         Assert.Equal(9, queryPaths.Length);
         foreach (var path in mechanicPaths)
         {

@@ -7339,6 +7339,132 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.Equal(expected(rolls), root.GetProperty("roll").GetInt32());
     }
 
+    [Theory]
+    [InlineData("fast", 1, 1, 96)]
+    [InlineData("normal", 1, 1, 120)]
+    [InlineData("slow", 1, 1, 160)]
+    [InlineData("normal", 2, 1, 240)]
+    [InlineData("normal", 1, 2, 240)]
+    public async Task Dnd_route_profile_resolves_pace_terrain_and_visibility_into_exact_minutes(
+        string pace, int terrainMultiplier, int visibilityMultiplier, int expectedMinutes)
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddTravelFixturesAsync(
+            terrainMultiplier: terrainMultiplier,
+            visibilityMultiplier: visibilityMultiplier);
+
+        var result = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.travel.execute", TravelRoles(), TravelInput(pace), 17,
+            "41000000000000000000000000000001"));
+
+        Assert.True(result.Disposition == ApplicationActionExecutionDisposition.Succeeded,
+            result.Disposition + ": " + string.Join("; ", result.Problems.Select(value =>
+                value.Code + " " + value.SafeMessage)));
+        using var clock = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "world.travel.fixture", "game.core.world.clock"))!.ValueJson);
+        Assert.Equal(100 + expectedMinutes, clock.RootElement.GetProperty("currentMinute").GetInt32());
+        Assert.Equal(8, clock.RootElement.GetProperty("revision").GetInt32());
+    }
+
+    [Fact]
+    public async Task Prepared_route_travel_moves_records_exposure_events_and_replays_without_duplicates()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddTravelFixturesAsync(exposureCadenceMinutes: 60);
+        var discovery = harness.Search("travel the party along the named route");
+        var request = harness.ActionForRoles(
+            "dnd2024.mechanic.travel.execute", TravelRoles(), TravelInput("normal"), 17,
+            "42000000000000000000000000000001");
+
+        var first = await harness.Runner.RunAsync(request);
+        var replay = await harness.Runner.RunAsync(request);
+
+        Assert.Equal("dnd2024.mechanic.travel.execute",
+            Assert.Single(discovery.Records).Record.QualifiedId);
+        Assert.True(first.Disposition == ApplicationActionExecutionDisposition.Succeeded,
+            first.Disposition + ": " + string.Join("; ", first.Problems.Select(value =>
+                value.Code + " " + value.SafeMessage)));
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replay.Disposition);
+        Assert.NotNull(await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "journey.slice9", "dnd2024.exploration.journey"));
+        var schedule = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "exposure.slice9", "dnd2024.exploration.exposure-schedule");
+        Assert.NotNull(schedule);
+        using (var state = JsonDocument.Parse(schedule!.ValueJson))
+            Assert.Equal(2, state.RootElement.GetProperty("occurrences").GetInt32());
+        var containment = await harness.Edges.GetContainmentAsync(
+            DndHarness.StateSpaceId, "subject.high");
+        Assert.Equal("location.travel.destination", containment!.ContainerEntityId);
+        Assert.Equal("presence", containment.Slot);
+        Assert.Equal(3, (await harness.EventsAsync(first.OperationId)).Count);
+    }
+
+    [Fact]
+    public async Task Failed_verified_navigation_roll_commits_no_movement_journey_exposure_or_time()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddTravelFixturesAsync(navigationRequired: true, navigationDc: 100,
+            exposureCadenceMinutes: 60);
+        await harness.AddProficiencyStateAsync("subject.high", 1, []);
+        var roles = TravelRoles();
+        roles["navigator"] = "subject.high";
+        var input = TravelInput("normal", "\"navigationCheck\":{\"ability\":\"wis\",\"skill\":\"survival\",\"dc\":100}");
+
+        var failed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.travel.execute", roles, input, 17,
+            "43000000000000000000000000000001"));
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, failed.Disposition);
+        Assert.Null(await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "journey.slice9", "dnd2024.exploration.journey"));
+        Assert.Null(await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "exposure.slice9", "dnd2024.exploration.exposure-schedule"));
+        Assert.Equal("location.travel.origin", (await harness.Edges.GetContainmentAsync(
+            DndHarness.StateSpaceId, "subject.high"))!.ContainerEntityId);
+        using var clock = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "world.travel.fixture", "game.core.world.clock"))!.ValueJson);
+        Assert.Equal(100, clock.RootElement.GetProperty("currentMinute").GetInt32());
+        Assert.Empty(await harness.EventsAsync(failed.OperationId));
+    }
+
+    [Fact]
+    public async Task Later_transaction_failure_rolls_back_the_complete_route_travel_proposal()
+    {
+        await using var harness = await DndHarness.CreateAsync(failTransactionAfterEffects: true);
+        await harness.AddTravelFixturesAsync(exposureCadenceMinutes: 60);
+
+        var failed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.travel.execute", TravelRoles(), TravelInput("normal"), 17,
+            "44000000000000000000000000000001"));
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, failed.Disposition);
+        Assert.Null(await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "journey.slice9", "dnd2024.exploration.journey"));
+        Assert.Null(await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "exposure.slice9", "dnd2024.exploration.exposure-schedule"));
+        Assert.Equal("location.travel.origin", (await harness.Edges.GetContainmentAsync(
+            DndHarness.StateSpaceId, "subject.high"))!.ContainerEntityId);
+    }
+
+    private static Dictionary<string, string> TravelRoles() => new(StringComparer.Ordinal)
+    {
+        ["traveller"] = "subject.high",
+        ["origin"] = "location.travel.origin",
+        ["destination"] = "location.travel.destination",
+        ["route"] = "route.travel.fixture",
+        ["world"] = "world.travel.fixture"
+    };
+
+    private static string TravelInput(string pace, string? extraProperty = null)
+    {
+        var input = "{\"travel\":{\"journeyId\":\"journey.slice9\",\"exposureScheduleId\":\"exposure.slice9\",\"mode\":\"walk\",\"pace\":\""
+                    + pace
+                    + "\",\"expectedRouteRevision\":1,\"expectedRouteFingerprint\":\""
+                    + new string('A', 64)
+                    + "\",\"expectedClockRevision\":7}}";
+        return input.Insert(1, extraProperty is null ? "" : extraProperty + ",");
+    }
+
     private sealed class DndHarness : IAsyncDisposable
     {
         public const string StateSpaceId = "dnd2024-ability-check";
@@ -7388,6 +7514,13 @@ public sealed class Dnd2024AbilityCheckTests
         public SqliteStateSpaceEdgeStore Edges { get; }
         public ApplicationActionRunner Runner { get; }
         public IApplicationReadModelService ReadModels { get; }
+
+        public CatalogSearchResult Search(string query)
+        {
+            Assert.True(_catalogs.TryGet(Application, out var catalog));
+            return catalog.Search(new(Application, query,
+                Kinds: ["mechanic"], PageSize: 10));
+        }
 
         public Task<IReadOnlyList<EventSummary>> EventsAsync(string rootOperationId) =>
             new EventLedger(_db).FindAsync(rootOperationId: rootOperationId);
@@ -7557,7 +7690,9 @@ public sealed class Dnd2024AbilityCheckTests
             foreach (var componentId in new[]
                      {
                          "game.core.world.root", "game.core.world.clock",
-                         "game.core.campaign.character-participation"
+                         "game.core.campaign.character-participation",
+                         "game.core.world.location", "game.core.world.route",
+                         "game.core.world.route.availability", "game.core.world.traveller"
                      })
             {
                 var definition = await GameDefinitionAsync(componentId);
@@ -7587,6 +7722,20 @@ public sealed class Dnd2024AbilityCheckTests
                     Status = EventTypeStatus.Active,
                     PayloadSchema = await File.ReadAllTextAsync(Path.Combine(
                         RepositoryRoot(), "catalog", "event-types", "dnd2024", "rest",
+                        eventName + ".schema.json"))
+                });
+            }
+            foreach (var eventName in new[] { "journey-recorded", "arrived" })
+            {
+                await new EventTypeStore(db).WriteAsync(new()
+                {
+                    Id = "dnd2024.travel." + eventName,
+                    Category = "dnd2024.ruleset.core.gameplay.exploration",
+                    Name = "Travel " + eventName,
+                    Scope = "world",
+                    Status = EventTypeStatus.Active,
+                    PayloadSchema = await File.ReadAllTextAsync(Path.Combine(
+                        RepositoryRoot(), "catalog", "event-types", "dnd2024", "travel",
                         eventName + ".schema.json"))
                 });
             }
@@ -7978,6 +8127,77 @@ public sealed class Dnd2024AbilityCheckTests
             await Entities.CreateEntityAsync(StateSpaceId, entity.Id, entity.Name);
             foreach (var component in entity.Components)
                 await AddApplicationComponentAsync(entity.Id, component.DefinitionId, component.Data);
+        }
+
+        public async Task AddTravelFixturesAsync(
+            int terrainMultiplier = 1,
+            int visibilityMultiplier = 1,
+            bool navigationRequired = false,
+            int navigationDc = 10,
+            int? exposureCadenceMinutes = null)
+        {
+            await Entities.CreateEntityAsync(StateSpaceId, "world.travel.fixture", "Travel World");
+            await AddApplicationComponentAsync("world.travel.fixture", "game.core.world.root",
+                "{\"status\":\"active\",\"summary\":\"A bounded travel test world.\",\"visibility\":\"party\"}");
+            await AddApplicationComponentAsync("world.travel.fixture", "game.core.world.clock",
+                "{\"calendarId\":\"calendar.fixture\",\"currentMinute\":100,\"revision\":7}");
+
+            foreach (var (id, name) in new[]
+                     {
+                         ("location.travel.origin", "Travel Origin"),
+                         ("location.travel.destination", "Travel Destination")
+                     })
+            {
+                await Entities.CreateEntityAsync(StateSpaceId, id, name);
+                await AddApplicationComponentAsync(id, "game.core.world.location",
+                    "{\"kind\":\"site\",\"status\":\"active\",\"summary\":\"A travel fixture location.\",\"visibility\":\"party\"}");
+                await Edges.MoveContainmentAsync(StateSpaceId, id, "world.travel.fixture", "location", 0);
+            }
+            await AddApplicationComponentAsync("subject.high", "game.core.world.traveller",
+                "{\"status\":\"active\"}");
+            await Edges.MoveContainmentAsync(StateSpaceId, "subject.high",
+                "location.travel.origin", "presence", 0);
+
+            await Entities.CreateEntityAsync(StateSpaceId, "terrain.travel.fixture", "Travel Terrain");
+            await AddApplicationComponentAsync("terrain.travel.fixture", "dnd2024.exploration.terrain",
+                "{\"terrainType\":{\"entityId\":\"dnd2024.vocabulary.terrain-type.plains\"},\"maximumPace\":{\"entityId\":\"dnd2024.vocabulary.travel-pace.fast\"}}");
+            await Entities.CreateEntityAsync(StateSpaceId, "visibility.travel.fixture", "Travel Visibility");
+            await AddApplicationComponentAsync("visibility.travel.fixture", "dnd2024.exploration.visibility",
+                "{\"basis\":{\"entityId\":\"dnd2024.vocabulary.visibility.clear\"}}");
+
+            await Entities.CreateEntityAsync(StateSpaceId, "route.travel.fixture", "Travel Route");
+            await AddApplicationComponentAsync("route.travel.fixture", "game.core.world.route",
+                "{\"status\":\"active\",\"summary\":\"A six-mile authored route.\",\"visibility\":\"party\",\"mode\":\"on-foot\",\"durationMinutes\":120}");
+            await AddApplicationComponentAsync("route.travel.fixture", "game.core.world.route.availability",
+                "{\"status\":\"open\"}");
+            var navigation = navigationRequired
+                ? JsonSerializer.Serialize(new
+                {
+                    required = true,
+                    ability = "wis",
+                    skill = "survival",
+                    dc = navigationDc,
+                    rollCircumstances = Array.Empty<object>()
+                })
+                : "{\"required\":false}";
+            var exposure = exposureCadenceMinutes is int cadence
+                ? JsonSerializer.Serialize(new
+                {
+                    enabled = true,
+                    cadenceMinutes = cadence,
+                    hazard = new { entityId = "dnd2024.hazard.environment.travel-fixture" }
+                })
+                : "{\"enabled\":false}";
+            var profile = "{\"revision\":1,\"fingerprint\":\"" + new string('A', 64)
+                          + "\",\"world\":{\"entityId\":\"world.travel.fixture\"},\"origin\":{\"entityId\":\"location.travel.origin\"},\"destination\":{\"entityId\":\"location.travel.destination\"},\"distance\":{\"dimension\":\"distance\",\"value\":{\"numerator\":6,\"denominator\":1},\"unit\":{\"entityId\":\"dnd2024.vocabulary.distance-unit.mile\"}},\"allowedModes\":[{\"entityId\":\"dnd2024.vocabulary.movement-mode.walk\"}],\"terrain\":{\"entityId\":\"terrain.travel.fixture\"},\"visibility\":{\"entityId\":\"visibility.travel.fixture\"},\"terrainDurationMultiplier\":{\"numerator\":"
+                          + terrainMultiplier
+                          + ",\"denominator\":1},\"visibilityDurationMultiplier\":{\"numerator\":"
+                          + visibilityMultiplier
+                          + ",\"denominator\":1},\"navigation\":" + navigation
+                          + ",\"exposure\":" + exposure
+                          + ",\"arrivalPolicy\":\"move-record-and-visit\"}";
+            await AddApplicationComponentAsync("route.travel.fixture",
+                "dnd2024.exploration.route-profile", profile);
         }
 
         public async Task SetRestClockAsync(int currentMinute, int revision)
