@@ -3,7 +3,7 @@ id: mechanic.dnd2024.weapon-proficiencies.write
 category: ruleset.dnd2024.core.data.weapon-proficiencies
 name: Record weapon-category proficiencies
 scope: dnd2024-srd-5.2.1
-status: active
+status: deprecated
 createdBy: "import"
 changeNote: "Imported from the catalog."
 ---

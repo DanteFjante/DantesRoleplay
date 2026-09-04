@@ -2,7 +2,7 @@
   "id": "item.caldris.ganjis-quarterstaff",
   "name": "Ganji's Quarterstaff",
   "components": {
-    "stats": {
+    "fixture.legacy.stats": {
       "kind": "weapon-instrument",
       "weaponCategory": "simple",
       "weaponType": "quarterstaff",

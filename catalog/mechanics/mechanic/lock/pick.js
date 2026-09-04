@@ -1,5 +1,5 @@
-var statsRaw = ctx.roles.subject.components.stats;
-var lockRaw = ctx.roles.lock.components.lock;
+var statsRaw = ctx.roles.subject.components['fixture.legacy.stats'];
+var lockRaw = ctx.roles.lock.components['fixture.legacy.lock'];
 
 if (!statsRaw) {
   throw new Error(ctx.roles.subject.name + ' has no stats component for a lock-picking attempt.');

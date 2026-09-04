@@ -3,7 +3,7 @@ id: mechanic.dnd2024.initiative.roll
 category: ruleset.dnd2024.core.gameplay.initiative.roll
 name: Roll individual Initiative
 scope: dnd2024-srd-5.2.1
-status: active
+status: deprecated
 createdBy: "llm"
 changeNote: "Feature 5 Slice 1: closed action-input transport is verified; activate the previously drafted individual Initiative resolver for its complete verification matrix."
 ---

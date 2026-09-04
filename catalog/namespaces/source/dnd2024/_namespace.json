@@ -6,7 +6,7 @@
     "entity"
   ],
   "aliases": [],
-  "enabled": false,
+  "enabled": true,
   "reviewStatus": "needs-review",
-  "reviewNote": "Uses inverted D\u0026D ownership; migrate records to the dnd2024 namespace before approval."
+  "reviewNote": "Migration-only compatibility boundary for records still referenced by legacy catalog state. New D\u0026D source identities belong under dnd2024.source; retire this namespace after reference and live-record proof."
 }

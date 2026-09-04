@@ -2,7 +2,7 @@
 id: mechanic.lock.pick
 category: check
 name: Pick a lock
-status: active
+status: deprecated
 createdBy: "llm"
 changeNote: "Added during assisted cold-walk rehearsal for reusable lock-picking resolution."
 ---
@@ -18,5 +18,5 @@ open a locked door
 
 ## Requirements
 ```json
-{"roles":{"subject":{"components":["stats"],"description":"The entity attempting to pick the lock."},"lock":{"components":["lock"],"description":"The locked entity being opened."}}}
+{"roles":{"subject":{"components":["fixture.legacy.stats"],"description":"The entity attempting to pick the lock."},"lock":{"components":["fixture.legacy.lock"],"description":"The locked entity being opened."}}}
 ```

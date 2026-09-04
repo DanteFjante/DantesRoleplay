@@ -3,7 +3,7 @@ id: mechanic.dnd2024.weapon-attack
 category: ruleset.dnd2024.core.gameplay.weapon-attacks
 name: Resolve a weapon attack against Armor Class
 scope: dnd2024-srd-5.2.1
-status: active
+status: deprecated
 createdBy: "import"
 changeNote: "Imported from the catalog."
 ---

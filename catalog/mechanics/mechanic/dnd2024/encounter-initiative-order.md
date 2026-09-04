@@ -3,7 +3,7 @@ id: mechanic.dnd2024.encounter-initiative-order
 category: ruleset.dnd2024.core.combat.initiative.order
 name: Set an encounter's Initiative order
 scope: dnd2024-srd-5.2.1
-status: active
+status: deprecated
 createdBy: "llm"
 changeNote: "Replaces the temporary diagnostic version and restores the real rule. The diagnostic proved the running host does not expose ctx.children to the sandbox even though the composer produced three correct child results, so this version fails with an explicit, actionable message when the host is stale rather than reporting a misleading count mismatch. It also reports the received count when the counts genuinely differ."
 ---

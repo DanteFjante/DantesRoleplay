@@ -120,105 +120,105 @@
       "kind": "mechanic",
       "id": "mechanic.dnd2024.armor-class.write",
       "version": 1,
-      "contentHash": "664A2E2D1C56DC6EA5746C6601448C90792C36491677A6048975475800B2489A",
+      "contentHash": "530110C2671E7FE097E2AA6D6560AE49308301B22089543927F4D63E65C70CC0",
       "path": "mechanics/mechanic/dnd2024/armor-class/write.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.character-level.record",
       "version": 1,
-      "contentHash": "79AF9F2291D5E6969BA91C80C097DD8A60FE62D3E7F4E856999375A0E1873E71",
+      "contentHash": "2E2D4098BC1E6328F5952F49314A0B4637968DBBE42F5B2C20FB68B7F0FE7D28",
       "path": "mechanics/mechanic/dnd2024/character-level/record.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.check.ability",
       "version": 4,
-      "contentHash": "2FA7CDDEE6CE3228EB31DA27BCF31CDBBD53A8CC1193EFBE2CD132DCB551E903",
+      "contentHash": "E35C48CBFEFE7DE30FF4FE42BD1C1BA8A9D195B6BB42392FA6070EE479E9D8A6",
       "path": "mechanics/mechanic/dnd2024/check/ability.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.dice",
       "version": 1,
-      "contentHash": "3167F0E27B9174458DDB251A87438E72E7BD5E132D5C600BC50BF68B5596B3A4",
+      "contentHash": "1FA34A01C9DCACFE3D9E5BC6C57670B9ADD19F42C9E8C7481B74CDFD1BE9EFE3",
       "path": "mechanics/mechanic/dnd2024/dice.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.encounter-initiative-order",
       "version": 5,
-      "contentHash": "F043A5E63C0E42878F60079B03A4E362C70C37A1AA56B8C7360DAB962C185026",
+      "contentHash": "FBDCDDB68D1208CAFD13E47F98661117F1BEDCB17EE38153BBA1465396464736",
       "path": "mechanics/mechanic/dnd2024/encounter-initiative-order.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.hit-points.write",
       "version": 1,
-      "contentHash": "3E9C6D7F8309681115B128B4DAC9839E4ADF3D59282180D9BB9A4E606A35A596",
+      "contentHash": "39A0D4BE00E68D5FC143C7C69BFF007982BA928767BD5F86BACDC04884C88FFB",
       "path": "mechanics/mechanic/dnd2024/hit-points/write.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.initiative.roll",
       "version": 3,
-      "contentHash": "671C39266B5DF1D0FEC8128FC914154937FE5F4C18463E85488F2CD44ED7CC51",
+      "contentHash": "0331FE4A07C75BE720A7CBEAD86FC547AABA46F0B2A44F09B84A47B5ADC73AAC",
       "path": "mechanics/mechanic/dnd2024/initiative/roll.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.saving-throw",
       "version": 2,
-      "contentHash": "FD1FD86AA79377637D0783F68F864A0A12463D9069386693EF67090AAB0B0891",
+      "contentHash": "86CD7E6FC618256E9F43BB209553F84129DEC5898CCECB0BF74DA5681597EAC0",
       "path": "mechanics/mechanic/dnd2024/saving-throw.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.saving-throw-proficiencies.record",
       "version": 1,
-      "contentHash": "3F1F81EE4F9B15EC6CD4D54F718BCC9782FBA26CDBE59ACB4CDB1C93F853BFF5",
+      "contentHash": "C31C19501F1F50C12349FADCEC0377AD6470CC0E4225816FA0D2F95B0F103AA2",
       "path": "mechanics/mechanic/dnd2024/saving-throw-proficiencies/record.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.skill-proficiencies.record",
       "version": 1,
-      "contentHash": "8354805F5EB0BDD531ECBF0D6C3493A2C372D27E054BE5E2F359E8C8180DFB65",
+      "contentHash": "9941CF5586684B1E79101B79B6DE9C5C50F8A41E2462724E67C236DDB27A1B0D",
       "path": "mechanics/mechanic/dnd2024/skill-proficiencies/record.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.weapon-attack",
       "version": 1,
-      "contentHash": "EED7D99D306E5A29E02BB4BE2B037ACF4C5A9DE281612E1D64B5164B2C3827FF",
+      "contentHash": "230944EF8167836078EAC8A8328F566245AE16FBE94C8A14C0AD589CDDD47131",
       "path": "mechanics/mechanic/dnd2024/weapon-attack.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.weapon-damage.apply",
       "version": 1,
-      "contentHash": "49D70C8A8C2491118773B37005B1D99793B146DF7BB3922034729267BB6544EE",
+      "contentHash": "6A5472D35490AE4052ECDF59E07BD2B24CF54FF91A4595633FC7538A36CBA4E4",
       "path": "mechanics/mechanic/dnd2024/weapon-damage/apply.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.weapon-damage.roll",
       "version": 1,
-      "contentHash": "8CF99368C171BB434B45086E58FC2985808B54C6F6E4B4F131B0E227D69FD9B7",
+      "contentHash": "AFB5BFDDD69EA1AB4F316C919BB65E47A63B129C2AA90D40B1709DD34557211E",
       "path": "mechanics/mechanic/dnd2024/weapon-damage/roll.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.weapon-proficiencies.write",
       "version": 1,
-      "contentHash": "06FE84EC74F73C53BB6309B8C71A2ED0221102E8D63F36CF82E72918E98B9EC8",
+      "contentHash": "46CD6463B9F3AE51C6227FB5A6076811462D6D0C34F2ED6E3397AC6E759BCB54",
       "path": "mechanics/mechanic/dnd2024/weapon-proficiencies/write.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.weapon-profile.write",
       "version": 1,
-      "contentHash": "9E1F5A7EF22D22BAA9166F716131BFDB4C3F094EC9EEB4DB306A3587B0D6BD27",
+      "contentHash": "E6FE8FE412D5E95EFBD6E921986F4F566900DE18BD11A8F2D64EBF9E3DF49AC6",
       "path": "mechanics/mechanic/dnd2024/weapon-profile/write.md"
     },
     {
@@ -372,7 +372,7 @@
       "kind": "mechanic",
       "id": "mechanic.lock.pick",
       "version": 1,
-      "contentHash": "E7D6445708EF8EA1FB771CAFCADC623F97DD7143E0F3BEF5087657FD88F6E585",
+      "contentHash": "462D03BFD9C9B1A930EE1358168B2DD21137217D4A141DF226DDC6A30D88938C",
       "path": "mechanics/mechanic/lock/pick.md"
     },
     {
@@ -3207,14 +3207,14 @@
       "kind": "entity",
       "id": "item.caldris.ganjis-carving-knife",
       "version": 0,
-      "contentHash": "E7AAA01BD748263195E2D449C0E99255903D37CA2580A229F31808337A119324",
+      "contentHash": "B7B4A452A34BE4940448C437E7A1C11243F56925FFF3B3A8F1C3323E474E016E",
       "path": "world/entities/item/caldris/ganjis-carving-knife.json"
     },
     {
       "kind": "entity",
       "id": "item.caldris.ganjis-quarterstaff",
       "version": 0,
-      "contentHash": "A5E8589AD3F91D601D6DEB6CA77DA881E7E337888D16BA989878363A2EE90217",
+      "contentHash": "574440B6114F9D7D9F15C32C9FE4F3B6C952DCDF674A8016D348E82EA15B27F2",
       "path": "world/entities/item/caldris/ganjis-quarterstaff.json"
     },
     {

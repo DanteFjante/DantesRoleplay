@@ -3,7 +3,7 @@ id: mechanic.dnd2024.skill-proficiencies.record
 category: ruleset.dnd2024.core.data.skill-proficiencies
 name: Record skill proficiencies
 scope: dnd2024-srd-5.2.1
-status: active
+status: deprecated
 createdBy: "llm"
 changeNote: "Created for Feature 2 Slice 3 as the validated creation and correction path for character skill-proficiency state."
 ---

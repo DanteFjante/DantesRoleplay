@@ -3,7 +3,7 @@ id: mechanic.dnd2024.dice
 category: ruleset.dnd2024.core.gameplay.dice
 name: Roll dice
 scope: dnd2024-srd-5.2.1
-status: active
+status: deprecated
 createdBy: "llm"
 changeNote: "Adds a reusable core D\u0026D 2024 dice-roll mechanic with seeded, reproducible results."
 ---

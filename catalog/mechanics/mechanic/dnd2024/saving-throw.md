@@ -3,7 +3,7 @@ id: mechanic.dnd2024.saving-throw
 category: ruleset.dnd2024.core.gameplay.saving-throws.fixed-dc
 name: Resolve a fixed-DC saving throw
 scope: dnd2024-srd-5.2.1
-status: active
+status: deprecated
 createdBy: "llm"
 changeNote: "Feature 4 Slice 2: v2 corrects closed-object key-order validation found by the first live saving-throw run."
 ---

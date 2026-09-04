@@ -3,7 +3,7 @@ id: mechanic.dnd2024.character-level.record
 category: ruleset.dnd2024.core.data.character-level
 name: Record total character level
 scope: dnd2024-srd-5.2.1
-status: active
+status: deprecated
 createdBy: "llm"
 changeNote: "Created for Feature 2 Slice 2 as the validated write path for total character level."
 ---

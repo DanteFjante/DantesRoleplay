@@ -6,7 +6,7 @@
     "mechanic"
   ],
   "aliases": [],
-  "enabled": false,
+  "enabled": true,
   "reviewStatus": "needs-review",
-  "reviewNote": "Do not author here. This namespace exists only so legacy live state can be exported and retired safely."
+  "reviewNote": "Migration-only compatibility boundary. Do not add records here; mechanic.lock.pick remains exportable until its production references and live records have a verified replacement and retirement path."
 }

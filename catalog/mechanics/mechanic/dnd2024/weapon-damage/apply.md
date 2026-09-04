@@ -3,7 +3,7 @@ id: mechanic.dnd2024.weapon-damage.apply
 category: ruleset.dnd2024.core.gameplay.weapon-damage
 name: Apply confirmed weapon damage to Hit Points
 scope: dnd2024-srd-5.2.1
-status: active
+status: deprecated
 createdBy: "import"
 changeNote: "Imported from the catalog."
 ---

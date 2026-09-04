@@ -3,7 +3,7 @@ id: mechanic.dnd2024.armor-class.write
 category: ruleset.dnd2024.core.data.armor-class
 name: Record authoritative Armor Class
 scope: dnd2024-srd-5.2.1
-status: active
+status: deprecated
 createdBy: "import"
 changeNote: "Imported from the catalog."
 ---

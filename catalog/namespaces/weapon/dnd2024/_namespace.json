@@ -6,7 +6,7 @@
     "entity"
   ],
   "aliases": [],
-  "enabled": false,
+  "enabled": true,
   "reviewStatus": "needs-review",
-  "reviewNote": "Uses inverted D\u0026D ownership; migrate records to the dnd2024 namespace before approval."
+  "reviewNote": "Migration-only compatibility boundary for legacy weapon identities still retained by catalog and live state. New D\u0026D weapons belong under dnd2024.weapon; retire this namespace only after reference and live-record proof."
 }

@@ -3,7 +3,7 @@ id: mechanic.dnd2024.saving-throw-proficiencies.record
 category: ruleset.dnd2024.core.data.saving-throw-proficiencies
 name: Record saving-throw proficiencies
 scope: dnd2024-srd-5.2.1
-status: active
+status: deprecated
 createdBy: "llm"
 changeNote: "Feature 4 Slice 1: validated creation and correction path for independent saving-throw proficiency state."
 ---

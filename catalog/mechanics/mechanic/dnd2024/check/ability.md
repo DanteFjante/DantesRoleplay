@@ -3,7 +3,7 @@ id: mechanic.dnd2024.check.ability
 category: ruleset.dnd2024.core.gameplay.ability-checks.fixed-dc
 name: Resolve a fixed-DC ability check
 scope: dnd2024-srd-5.2.1
-status: active
+status: deprecated
 createdBy: "llm"
 changeNote: "Feature 3 Slice 2: execute the v3 ability-check contract\u0027s validated Advantage/Disadvantage roll-circumstance convention within the existing owning mechanic."
 ---
