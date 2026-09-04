@@ -35,8 +35,8 @@ public sealed class CatalogValidationTests
         var queryPaths = Directory.EnumerateFiles(queryRoot, "*.json", SearchOption.AllDirectories)
             .Order(StringComparer.Ordinal).ToArray();
 
-        Assert.Equal(98, mechanicPaths.Length);
-        Assert.Equal(8, queryPaths.Length);
+        Assert.Equal(105, mechanicPaths.Length);
+        Assert.Equal(9, queryPaths.Length);
         foreach (var path in mechanicPaths)
         {
             var file = MechanicFile.Parse(File.ReadAllText(path), path,
@@ -130,7 +130,7 @@ public sealed class CatalogValidationTests
             "game.core", "check", "change")).ToArray();
 
         Assert.Equal(25, procedures.Length);
-        Assert.Equal(22, mechanics.Length);
+        Assert.Equal(24, mechanics.Length);
         var records = procedures.Select(value => (value.Id, value.Category, value.Name, value.Description))
             .Concat(mechanics.Select(value => (value.Id, value.Category, value.Name, value.Description)))
             .ToArray();
@@ -157,12 +157,13 @@ public sealed class CatalogValidationTests
         var mechanics = contents.Mechanics.Where(value => InCategory(value.Category,
             "game.core", "check", "change")).ToArray();
 
-        Assert.Equal(22, mechanics.Length);
+        Assert.Equal(24, mechanics.Length);
         var requirements = mechanics
             .Select(mechanic => (mechanic.Id, Parsed: MechanicRequirements.Parse(mechanic.Requirements)))
             .ToArray();
         var supportedRequirementProperties = new HashSet<string>(
-            ["roles", "event", "children", "effectComponentIds", "inputSchema"], StringComparer.Ordinal);
+            ["roles", "event", "children", "effectComponentIds", "inputSchema", "elapsedTime"],
+            StringComparer.Ordinal);
         foreach (var mechanic in mechanics)
         {
             using var document = JsonDocument.Parse(mechanic.Requirements);

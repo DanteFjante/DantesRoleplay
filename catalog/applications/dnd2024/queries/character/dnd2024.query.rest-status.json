@@ -1,0 +1,49 @@
+{
+  "id": "dnd2024.query.rest-status",
+  "category": "dnd2024.ruleset.core.gameplay.rest.read-model",
+  "name": "Rest status",
+  "description": "Returns one audience-authorized creature's authoritative rest lifecycle, missing completion requirements, and structured next actions.",
+  "matches": ["show rest status", "what remains before this rest can finish", "how can this creature continue resting"],
+  "roles": {
+    "creature": "The exact audience-authorized creature.",
+    "world": "The exact audience-authorized active world.",
+    "policy": "The canonical standard-rest policy."
+  },
+  "executor": "mechanic-projection",
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.rest.status.project",
+    "version": 1,
+    "contentHash": "7FCD94C7A4F0164D5B2B28B3BAD02D5E5CFCC975341A2914BEDC2F7FF229DB01",
+    "outputSchemaHash": "B657EE872766F4287D3159CBCA1E9F8813DFACB467C3ED03DD2BC89F912DBAB5"
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["version", "creature", "worldId", "clock", "status", "kind", "progress", "completion", "requirements", "nextActions"],
+    "properties": {
+      "version": { "const": 1 },
+      "creature": { "$ref": "#/$defs/named" },
+      "worldId": { "$ref": "#/$defs/id" },
+      "clock": { "$ref": "#/$defs/clock" },
+      "status": { "enum": ["idle", "active", "ready", "complete"] },
+      "kind": { "type": ["string", "null"], "enum": ["short", "long", null] },
+      "progress": { "anyOf": [{ "$ref": "#/$defs/progress" }, { "type": "null" }] },
+      "completion": { "anyOf": [{ "$ref": "#/$defs/completion" }, { "type": "null" }] },
+      "requirements": { "type": "array", "maxItems": 4, "items": { "$ref": "#/$defs/requirement" } },
+      "nextActions": { "type": "array", "minItems": 1, "maxItems": 1, "items": { "$ref": "#/$defs/nextAction" } }
+    },
+    "$defs": {
+      "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "named": { "type": "object", "additionalProperties": false, "required": ["id", "name"], "properties": { "id": { "$ref": "#/$defs/id" }, "name": { "type": "string", "minLength": 1, "maxLength": 400 } } },
+      "clock": { "type": "object", "additionalProperties": false, "required": ["calendarId", "minute", "revision"], "properties": { "calendarId": { "type": "string", "minLength": 1, "maxLength": 100 }, "minute": { "type": "integer", "minimum": 0 }, "revision": { "type": "integer", "minimum": 0 } } },
+      "progress": { "type": "object", "additionalProperties": false, "required": ["startedAtMinute", "observedAtMinute", "requiredMinutes", "remainingMinutes", "sleepMinutes", "lightActivityMinutes", "interruptionCount"], "properties": { "startedAtMinute": { "type": "integer", "minimum": 0 }, "observedAtMinute": { "type": "integer", "minimum": 0 }, "requiredMinutes": { "type": "integer", "minimum": 60 }, "remainingMinutes": { "type": "integer", "minimum": 0 }, "sleepMinutes": { "type": "integer", "minimum": 0 }, "lightActivityMinutes": { "type": "integer", "minimum": 0 }, "interruptionCount": { "type": "integer", "minimum": 0 } } },
+      "benefits": { "type": "object", "additionalProperties": false, "required": ["hitDiceSpent", "hitDiceRecovered", "hitPointsRestored", "resourcePoolsRestored", "exhaustionLevelsReduced", "abilityScoresRestored"], "properties": { "hitDiceSpent": { "type": "integer", "minimum": 0 }, "hitDiceRecovered": { "type": "integer", "minimum": 0 }, "hitPointsRestored": { "type": "integer", "minimum": 0 }, "resourcePoolsRestored": { "type": "integer", "minimum": 0 }, "exhaustionLevelsReduced": { "type": "integer", "minimum": 0 }, "abilityScoresRestored": { "type": "integer", "minimum": 0 } } },
+      "completion": { "type": "object", "additionalProperties": false, "required": ["startedAtMinute", "completedAtMinute", "completedClockRevision", "benefits"], "properties": { "startedAtMinute": { "type": "integer", "minimum": 0 }, "completedAtMinute": { "type": "integer", "minimum": 0 }, "completedClockRevision": { "type": "integer", "minimum": 0 }, "benefits": { "$ref": "#/$defs/benefits" } } },
+      "requirement": { "type": "object", "additionalProperties": false, "required": ["code", "satisfied", "missingValue"], "properties": { "code": { "type": "string", "minLength": 1, "maxLength": 100 }, "satisfied": { "type": "boolean" }, "missingValue": { "type": ["string", "null"], "minLength": 1, "maxLength": 100 } } },
+      "nextAction": { "type": "object", "additionalProperties": false, "required": ["capabilityId", "roles", "input", "missingValues", "ready"], "properties": { "capabilityId": { "enum": ["dnd2024.mechanic.rest.begin", "dnd2024.mechanic.rest.progress", "dnd2024.mechanic.rest.complete"] }, "roles": { "type": "object", "additionalProperties": false, "required": ["creature", "world", "policy"], "properties": { "creature": { "$ref": "#/$defs/id" }, "world": { "$ref": "#/$defs/id" }, "policy": { "$ref": "#/$defs/id" } } }, "input": { "type": "object" }, "missingValues": { "type": "array", "maxItems": 2, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 100 } }, "ready": { "type": "boolean" } } }
+    }
+  },
+  "exposure": "model-visible",
+  "status": "active"
+}

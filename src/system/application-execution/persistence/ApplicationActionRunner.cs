@@ -123,9 +123,9 @@ public sealed class ApplicationActionRunner(
                 string.IsNullOrWhiteSpace(evaluation.Run.LimitHit) ? "MECHANIC_FAILED" : "MECHANIC_LIMIT",
                 SafeMechanicError(evaluation.Run.Error, evaluation.Run.LimitHit));
         var proposal = evaluation.Proposal.Append(evaluation.Run.Output);
-        if (proposal.Events.Count > 0 || proposal.Notifications.Count > 0)
+        if (proposal.Notifications.Count > 0)
             return Failed(request, ApplicationActionExecutionDisposition.Unsupported,
-                "MECHANIC_OUTPUT_UNSUPPORTED", "Application event or notification output is not enabled for direct execution.");
+                "MECHANIC_OUTPUT_UNSUPPORTED", "Application notification output is not enabled for direct execution.");
 
         var translated = await TranslateAsync(
             stateSpace, mapping.Mapping!, evaluation.Projection!, proposal.Effects, cancellationToken);
@@ -161,6 +161,7 @@ public sealed class ApplicationActionRunner(
                 .Select(pair => new ApplicationEcsContainmentExpectation(pair.Key,
                     pair.Value.Select(value => new EcsContainmentExpectationItem(value.EntityId, value.Slot, value.Revision)).ToArray()))
                 .ToArray(),
+            DeclaredEvents = proposal.Events,
             MechanicId = record.Summary.QualifiedId,
             MechanicVersion = record.Summary.Version,
             Seed = request.Seed,

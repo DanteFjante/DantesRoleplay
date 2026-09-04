@@ -1,0 +1,10 @@
+{
+  "id": "dnd2024.rest.progressed",
+  "category": "ruleset.dnd2024.core.gameplay.rest",
+  "name": "D&D 2024 rest progressed",
+  "description": "One bounded interval was classified into an active rest and advanced the authoritative world clock atomically.",
+  "scope": "dnd2024-srd-5.2.1",
+  "status": "Active",
+  "createdBy": "seed",
+  "changeNote": "Added for the complete D&D 2024 rest lifecycle."
+}

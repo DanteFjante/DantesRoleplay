@@ -76,6 +76,12 @@ commits the event, operation receipt, and sibling effects together. A time-coupl
 not ask its caller to run a separate clock action. Reusing the action execution identity returns
 the existing lineage without advancing time or writing another event.
 
+Application mechanics may also declare catalog-owned semantic events. The generic application
+transaction validates their registered active type, payload schema, bounded application-state-space
+entity references, and reserved structural namespace, then writes them in the same transaction as
+the effects and operation receipt. Structural `world.*` events remain kernel-owned; application
+mechanics still cannot emit notifications through this path.
+
 Generic `component`, `effects`, and `mechanic` commit kinds are also retired. Application component
 types use versioned registration, reviewed world authoring uses `system.world-state.sync`, and AI-
 authored mechanic candidates use the governed mechanic sandbox before an explicit catalog export

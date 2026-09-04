@@ -16,6 +16,8 @@ internal static class EventsAndNotificationsComponentRegistration
         services.AddScoped<IEventRouter, EventRouter>();
         services.AddScoped<IApplicationEcsTransactionParticipant,
             ApplicationClockEventTransactionParticipant>();
+        services.AddScoped<IApplicationEcsTransactionParticipant,
+            ApplicationDeclaredEventTransactionParticipant>();
         services.AddScoped<INotificationStore, NotificationStore>();
         return services;
     }

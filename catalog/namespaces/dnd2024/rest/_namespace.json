@@ -1,0 +1,12 @@
+{
+  "id": "dnd2024.rest",
+  "owner": "dnd2024",
+  "description": "Namespace for typed D&D 2024 rest lifecycle events.",
+  "allowedKinds": [
+    "event-type"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for the Slice 8 rest lifecycle event contracts."
+}

@@ -3519,7 +3519,7 @@ public sealed class Dnd2024AbilityCheckTests
 
         Assert.True(evaluated.Ok, evaluated.Run?.Error ?? string.Join("; ", evaluated.Problems));
         Assert.Equal(2, evaluated.Run!.Output.Effects.Count);
-        Assert.Empty(evaluated.Run.Output.Events);
+        Assert.Single(evaluated.Run.Output.Events);
         Assert.Empty(evaluated.Run.Output.Notifications);
         using var result = JsonDocument.Parse(evaluated.Run.Output.Data);
         Assert.Equal(321, result.RootElement.GetProperty("startedAtMinute").GetInt32());
@@ -3661,7 +3661,7 @@ public sealed class Dnd2024AbilityCheckTests
             Assert.Equal(8, state.RootElement.GetProperty("observedClockRevision").GetInt32());
         }
         Assert.True(finalEvaluation.Ok, finalEvaluation.Run?.Error);
-        Assert.Empty(finalEvaluation.Run!.Output.Events);
+        Assert.Single(finalEvaluation.Run!.Output.Events);
         Assert.Empty(finalEvaluation.Run.Output.Notifications);
         Assert.Contains("\"benefitsGranted\":false", finalEvaluation.Run.Output.Data,
             StringComparison.Ordinal);
@@ -3670,8 +3670,191 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.Equal("ready", finalState.RootElement.GetProperty("status").GetString());
         Assert.Equal(60, finalState.RootElement.GetProperty("lightActivityMinutes").GetInt32());
         Assert.Equal(3, ready.Revision);
-        Assert.Single(await harness.EventsAsync(first.OperationId));
-        Assert.Single(await harness.EventsAsync(final.OperationId));
+        Assert.Equal(2, (await harness.EventsAsync(first.OperationId)).Count);
+        Assert.Equal(2, (await harness.EventsAsync(final.OperationId)).Count);
+    }
+
+    [Theory]
+    [InlineData("short", 60, 1, 0)]
+    [InlineData("long", 480, 10, 9)]
+    public async Task Duration_ready_rest_completes_benefits_events_and_replay_atomically(
+        string kind, int duration, int expectedHitPoints, int expectedRestored)
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddRestBeginFixturesAsync(currentHitPoints: 1, currentMinute: 100);
+        if (kind == "long")
+        {
+            await harness.AddClassMembershipAsync(
+                "subject.high", "fighter", "dnd2024.content.class.fighter.v1", 3);
+            await harness.AddApplicationComponentAsync("subject.high", "dnd2024.character.hit-dice",
+                "{\"pools\":{\"subject.high.class-membership.fighter\":{\"dieRef\":{\"entityId\":\"dnd2024.vocabulary.die.d10\"},\"spent\":2}}}");
+            await harness.AddApplicationComponentAsync("subject.high", "dnd2024.conditions",
+                "{\"entries\":[{\"condition\":\"exhaustion\",\"level\":2}],\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Rules Glossary\"}}");
+            await harness.ReplaceCoreComponentRawAsync("subject.high",
+                "dnd2024.creature.ability-scores",
+                "{\"scores\":{\"dnd2024.vocabulary.ability.strength\":30,\"dnd2024.vocabulary.ability.dexterity\":10,\"dnd2024.vocabulary.ability.constitution\":8,\"dnd2024.vocabulary.ability.intelligence\":10,\"dnd2024.vocabulary.ability.wisdom\":10,\"dnd2024.vocabulary.ability.charisma\":10}}");
+            await harness.AddApplicationComponentAsync("subject.high",
+                "dnd2024.creature.ability-score-basis",
+                "{\"scores\":{\"dnd2024.vocabulary.ability.strength\":30,\"dnd2024.vocabulary.ability.dexterity\":10,\"dnd2024.vocabulary.ability.constitution\":10,\"dnd2024.vocabulary.ability.intelligence\":10,\"dnd2024.vocabulary.ability.wisdom\":10,\"dnd2024.vocabulary.ability.charisma\":10}}");
+            await harness.Entities.CreateEntityAsync(
+                DndHarness.StateSpaceId, "resource.definition.fixture", "Long-rest resource");
+            await harness.AddApplicationComponentAsync("resource.definition.fixture",
+                "dnd2024.resource.definition",
+                "{\"usageLimit\":{\"maximum\":3,\"recharge\":{\"kind\":\"long-rest\"}}}");
+            await harness.Entities.CreateEntityAsync(
+                DndHarness.StateSpaceId, "resource.pool.fixture", "Resource pool");
+            await harness.AddApplicationComponentAsync("resource.pool.fixture", "dnd2024.resource.pool",
+                "{\"resourceDefinition\":{\"entityId\":\"resource.definition.fixture\"},\"expended\":2}");
+            await harness.Edges.MoveContainmentAsync(DndHarness.StateSpaceId,
+                "resource.pool.fixture", "subject.high", "resource", 0);
+        }
+        var roles = RestBeginRoles();
+        var started = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.rest.begin", roles, "{\"kind\":\"" + kind + "\"}", 0,
+            "31200000000000000000000000000001"));
+        ApplicationActionExecutionResult progressed;
+        if (kind == "long")
+        {
+            await harness.Runner.RunAsync(harness.ActionForRoles(
+                "dnd2024.mechanic.rest.progress", roles,
+                "{\"activity\":\"sleep\",\"minutes\":360}", 0,
+                "31200000000000000000000000000002"));
+            progressed = await harness.Runner.RunAsync(harness.ActionForRoles(
+                "dnd2024.mechanic.rest.progress", roles,
+                "{\"activity\":\"light\",\"minutes\":120}", 0,
+                "31200000000000000000000000000003"));
+        }
+        else
+        {
+            progressed = await harness.Runner.RunAsync(harness.ActionForRoles(
+                "dnd2024.mechanic.rest.progress", roles,
+                "{\"activity\":\"light\",\"minutes\":60}", 0,
+                "31200000000000000000000000000003"));
+        }
+        var request = harness.ActionForRoles(
+            "dnd2024.mechanic.rest.complete", roles, "{\"hitDice\":[]}", 0,
+            "31200000000000000000000000000004");
+
+        var completed = await harness.Runner.RunAsync(request);
+        var replay = await harness.Runner.RunAsync(request);
+        var hp = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.creature.hit-points");
+        var completion = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.rest-completion");
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, started.Disposition);
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, progressed.Disposition);
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, completed.Disposition);
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replay.Disposition);
+        using (var hitPoints = JsonDocument.Parse(hp!.ValueJson))
+            Assert.Equal(expectedHitPoints, hitPoints.RootElement.GetProperty("current").GetInt32());
+        using (var terminal = JsonDocument.Parse(completion!.ValueJson))
+        {
+            Assert.Equal("complete", terminal.RootElement.GetProperty("status").GetString());
+            Assert.Equal(kind, terminal.RootElement.GetProperty("kind").GetString());
+            Assert.Equal(100 + duration,
+                terminal.RootElement.GetProperty("completedAtMinute").GetInt32());
+            Assert.Equal(expectedRestored, terminal.RootElement.GetProperty("benefits")
+                .GetProperty("hitPointsRestored").GetInt32());
+            if (kind == "long")
+            {
+                var benefits = terminal.RootElement.GetProperty("benefits");
+                Assert.Equal(2, benefits.GetProperty("hitDiceRecovered").GetInt32());
+                Assert.Equal(1, benefits.GetProperty("resourcePoolsRestored").GetInt32());
+                Assert.Equal(1, benefits.GetProperty("exhaustionLevelsReduced").GetInt32());
+                Assert.Equal(1, benefits.GetProperty("abilityScoresRestored").GetInt32());
+            }
+        }
+        Assert.Null(await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.rest-episode"));
+        Assert.Null(await harness.Edges.GetRelationshipAsync(
+            DndHarness.StateSpaceId, "world.rest.fixture", "subject.high", "dnd2024.rest.world"));
+        Assert.Single(await harness.EventsAsync(started.OperationId));
+        Assert.Equal(2, (await harness.EventsAsync(progressed.OperationId)).Count);
+        Assert.Single(await harness.EventsAsync(completed.OperationId));
+        Assert.Equal("dnd2024.rest.completed",
+            Assert.Single(await harness.EventsAsync(completed.OperationId)).TypeId);
+        if (kind == "long")
+        {
+            using var dice = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                DndHarness.StateSpaceId, "subject.high", "dnd2024.character.hit-dice"))!.ValueJson);
+            Assert.Equal(0, dice.RootElement.GetProperty("pools")
+                .GetProperty("subject.high.class-membership.fighter").GetProperty("spent").GetInt32());
+            using var conditions = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                DndHarness.StateSpaceId, "subject.high", "dnd2024.conditions"))!.ValueJson);
+            Assert.Equal(1, Assert.Single(conditions.RootElement.GetProperty("entries").EnumerateArray())
+                .GetProperty("level").GetInt32());
+            using var abilities = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                DndHarness.StateSpaceId, "subject.high", "dnd2024.creature.ability-scores"))!.ValueJson);
+            Assert.Equal(10, abilities.RootElement.GetProperty("scores")
+                .GetProperty("dnd2024.vocabulary.ability.constitution").GetInt32());
+            using var resource = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                DndHarness.StateSpaceId, "resource.pool.fixture", "dnd2024.resource.pool"))!.ValueJson);
+            Assert.Equal(0, resource.RootElement.GetProperty("expended").GetInt32());
+        }
+    }
+
+    [Fact]
+    public async Task Rest_completion_rolls_back_benefits_terminal_state_and_event_on_late_failure()
+    {
+        await using var harness = await DndHarness.CreateAsync(failTransactionAfterEffects: true);
+        await harness.AddRestBeginFixturesAsync(currentHitPoints: 1, currentMinute: 580);
+        await harness.AddApplicationComponentAsync("subject.high", "dnd2024.rest-episode",
+            "{\"policyEntityId\":\"dnd2024.content.rest-policy.standard.v1\",\"kind\":\"long\",\"worldId\":\"world.rest.fixture\",\"startedAtMinute\":100,\"observedAtMinute\":580,\"observedClockRevision\":7,\"requiredMinutes\":480,\"sleepMinutes\":360,\"lightActivityMinutes\":120,\"interruptionCount\":0,\"status\":\"ready\",\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Rules Glossary > Long Rest, PDF page 185\"}}");
+        await harness.Edges.SetRelationshipAsync(DndHarness.StateSpaceId,
+            "world.rest.fixture", "subject.high", "dnd2024.rest.world", "{}", 0);
+
+        var failed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.rest.complete", RestBeginRoles(), "{\"hitDice\":[]}", 0,
+            "31300000000000000000000000000001"));
+        var hp = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.creature.hit-points");
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, failed.Disposition);
+        using (var hitPoints = JsonDocument.Parse(hp!.ValueJson))
+            Assert.Equal(1, hitPoints.RootElement.GetProperty("current").GetInt32());
+        Assert.NotNull(await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.rest-episode"));
+        Assert.Null(await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.rest-completion"));
+        Assert.NotNull(await harness.Edges.GetRelationshipAsync(
+            DndHarness.StateSpaceId, "world.rest.fixture", "subject.high", "dnd2024.rest.world"));
+        Assert.Empty(await harness.EventsAsync(failed.OperationId));
+    }
+
+    [Fact]
+    public async Task Rest_completion_rejects_stale_policy_before_any_benefit()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddRestBeginFixturesAsync(currentHitPoints: 1, currentMinute: 100);
+        var roles = RestBeginRoles();
+        await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.rest.begin", roles, "{\"kind\":\"short\"}", 0,
+            "31400000000000000000000000000001"));
+        await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.rest.progress", roles,
+            "{\"activity\":\"light\",\"minutes\":60}", 0,
+            "31400000000000000000000000000002"));
+        var policy = await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+            "dnd2024.content.rest-policy.standard.v1", "dnd2024.rest-policy");
+        await harness.ReplaceApplicationComponentRawAsync(
+            "dnd2024.content.rest-policy.standard.v1", "dnd2024.rest-policy",
+            policy!.ValueJson.Replace("\"policyVersion\":1", "\"policyVersion\":2",
+                StringComparison.Ordinal));
+
+        var failed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.rest.complete", roles, "{\"hitDice\":[]}", 0,
+            "31400000000000000000000000000003"));
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, failed.Disposition);
+        Assert.NotNull(await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.rest-episode"));
+        Assert.Null(await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.rest-completion"));
+        using var hp = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.creature.hit-points"))!.ValueJson);
+        Assert.Equal(1, hp.RootElement.GetProperty("current").GetInt32());
+        Assert.Empty(await harness.EventsAsync(failed.OperationId));
     }
 
     [Fact]
@@ -7281,10 +7464,13 @@ public sealed class Dnd2024AbilityCheckTests
                 catalogs, stateSpaces, types, edges);
             var clockParticipant = new ApplicationClockEventTransactionParticipant(
                 new EventTypeStore(db), new EventLedger(db), schemas);
+            var declaredEventParticipant = new ApplicationDeclaredEventTransactionParticipant(
+                db, new EventLedger(db));
             IReadOnlyList<IApplicationEcsTransactionParticipant> participants =
                 failTransactionAfterEffects
-                    ? [clockParticipant, new RejectAfterEffectsTransactionParticipant()]
-                    : [clockParticipant];
+                    ? [clockParticipant, declaredEventParticipant,
+                        new RejectAfterEffectsTransactionParticipant()]
+                    : [clockParticipant, declaredEventParticipant];
             var applier = new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges,
                 participants);
             var runner = new ApplicationActionRunner(
@@ -7390,6 +7576,20 @@ public sealed class Dnd2024AbilityCheckTests
                     RepositoryRoot(), "catalog", "event-types", "game", "core", "world",
                     "clock", "advanced.schema.json"))
             });
+            foreach (var eventName in new[] { "started", "progressed", "interrupted", "completed" })
+            {
+                await new EventTypeStore(db).WriteAsync(new()
+                {
+                    Id = "dnd2024.rest." + eventName,
+                    Category = "dnd2024.ruleset.core.gameplay.rest",
+                    Name = "Rest " + eventName,
+                    Scope = "world",
+                    Status = EventTypeStatus.Active,
+                    PayloadSchema = await File.ReadAllTextAsync(Path.Combine(
+                        RepositoryRoot(), "catalog", "event-types", "dnd2024", "rest",
+                        eventName + ".schema.json"))
+                });
+            }
             await entities.CreateEntityAsync(StateSpaceId,
                 "dnd2024.content.defense.unarmored.v1", "Unarmored Defense (ordinary, D&D 2024)");
             var defenseBasis = additionalTypes["dnd2024.creature.defense-basis"];

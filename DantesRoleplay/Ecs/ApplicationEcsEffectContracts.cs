@@ -1,4 +1,5 @@
 using DantesRoleplay.Ecs;
+using DantesRoleplay.Events;
 
 namespace DantesRoleplay.EcsEffects;
 
@@ -55,6 +56,7 @@ public sealed record ApplicationEcsEffectBatch
     public ApplicationEcsExecutionIdentity? ExecutionIdentity { get; init; }
     public IReadOnlyList<ApplicationEcsContainmentExpectation> ContainmentExpectations { get; init; } = [];
     public IReadOnlyList<ApplicationEcsContainmentEdgeExpectation> ContainmentEdgeExpectations { get; init; } = [];
+    public IReadOnlyList<DeclaredEvent> DeclaredEvents { get; init; } = [];
 
     /// <summary>
     /// Optional exact mechanic evidence supplied by a generic evaluated-action owner. Ordinary
@@ -151,6 +153,9 @@ public static class ApplicationEcsEffectValidation
     public const int MaximumContainmentExpectations = 32 * 101;
     public const int MaximumContentsPerExpectation = 100;
     public const int MaximumContainmentEdgeExpectations = 32 * 101;
+    public const int MaximumDeclaredEvents = 64;
+    public const int MaximumDeclaredEventEntities = 100;
+    public const int MaximumDeclaredEventPayloadLength = 65_536;
 
     public static IReadOnlyList<ApplicationEcsEffectProblem> Validate(ApplicationEcsEffectBatch? batch)
     {
@@ -256,6 +261,40 @@ public static class ApplicationEcsEffectValidation
                 || !IsUpperSha256(batch.ExecutionIdentity.RequestFingerprint)))
             problems.Add(new(-1, "EXECUTION_IDENTITY_INVALID",
                 "Execution identity requires a 32-character lowercase operation ID and uppercase SHA-256 request fingerprint."));
+        if (batch.DeclaredEvents is null)
+            problems.Add(new(-1, "DECLARED_EVENTS_REQUIRED", "The declared-event list is required."));
+        else if (batch.DeclaredEvents.Count > MaximumDeclaredEvents)
+            problems.Add(new(-1, "DECLARED_EVENT_LIMIT",
+                $"At most {MaximumDeclaredEvents} declared events may join one application action."));
+        else
+        {
+            for (var eventIndex = 0; eventIndex < batch.DeclaredEvents.Count; eventIndex++)
+            {
+                var declared = batch.DeclaredEvents[eventIndex];
+                if (declared is null || string.IsNullOrWhiteSpace(declared.Type)
+                    || declared.Type.Length > 200 || declared.Type.StartsWith("world.", StringComparison.Ordinal)
+                    || declared.Scope is null || declared.Scope.Length > 200
+                    || declared.Payload is null || declared.Payload.Length > MaximumDeclaredEventPayloadLength
+                    || declared.EntityIds is null || declared.EntityIds.Count > MaximumDeclaredEventEntities
+                    || declared.EntityIds.Any(id => string.IsNullOrWhiteSpace(id) || id.Length > 200))
+                {
+                    problems.Add(new(-1, "DECLARED_EVENT_INVALID",
+                        $"Declared event {eventIndex} has an invalid type, scope, entity index, or payload bound."));
+                    continue;
+                }
+                try
+                {
+                    using var payload = System.Text.Json.JsonDocument.Parse(declared.Payload);
+                    if (payload.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object)
+                        throw new System.Text.Json.JsonException();
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                    problems.Add(new(-1, "DECLARED_EVENT_INVALID",
+                        $"Declared event {eventIndex} payload must be one bounded JSON object."));
+                }
+            }
+        }
         var hasMechanicAudit = !string.IsNullOrEmpty(batch.MechanicId)
             || batch.MechanicVersion is not null || batch.Seed is not null
             || !string.IsNullOrEmpty(batch.ProjectionJson);

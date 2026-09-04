@@ -24,7 +24,8 @@ public sealed class Dnd2024ApplicationReadViewTests
         { "campaign/dnd2024.query.recent-consequences.json", "campaign/dnd2024.mechanic.campaign.recent-consequences.project" },
         { "character/dnd2024.query.character-sheet-v2.json", "data/dnd2024.mechanic.character-sheet-v2.project" },
         { "character/dnd2024.query.character-dossier-v1.json", "data/dnd2024.mechanic.character-dossier-v1.project" },
-        { "character/dnd2024.query.character-sheet.json", "data/dnd2024.mechanic.character-sheet.project" }
+        { "character/dnd2024.query.character-sheet.json", "data/dnd2024.mechanic.character-sheet.project" },
+        { "character/dnd2024.query.rest-status.json", "data/dnd2024.mechanic.rest.status.project" }
     };
 
     [Theory]
@@ -93,6 +94,59 @@ public sealed class Dnd2024ApplicationReadViewTests
         Assert.DoesNotContain("Secret patron", data.GetRawText(), StringComparison.Ordinal);
         Assert.DoesNotContain("GM-only route", data.GetRawText(), StringComparison.Ordinal);
         AssertSchema("campaign/dnd2024.query.campaign-resume.json", data.GetRawText());
+    }
+
+    [Fact]
+    public async Task Rest_status_reports_ready_state_and_one_schema_valid_completion_action()
+    {
+        var creature = Entity("ganji", "Ganji", new()
+        {
+            ["dnd2024.rest-episode"] = Json(new
+            {
+                policyEntityId = "dnd2024.content.rest-policy.standard.v1",
+                kind = "long",
+                worldId = "world",
+                startedAtMinute = 100,
+                observedAtMinute = 580,
+                observedClockRevision = 8,
+                requiredMinutes = 480,
+                sleepMinutes = 360,
+                lightActivityMinutes = 120,
+                interruptionCount = 0,
+                status = "ready"
+            })
+        });
+        var world = Entity("world", "World", new()
+        {
+            ["game.core.world.root"] = Json(new { status = "active" }),
+            ["game.core.world.clock"] = Json(new
+            {
+                calendarId = "calendar.fixture", currentMinute = 580, revision = 8
+            })
+        });
+        var policy = Entity("dnd2024.content.rest-policy.standard.v1", "Standard Rest", new()
+        {
+            ["dnd2024.rest-policy"] = Json(new
+            {
+                policyKey = "standard", policyVersion = 1,
+                longRest = new { minimumSleepMinutes = 360 }
+            })
+        });
+        var projection = new MechanicProjection { Input = "{}" };
+        projection.Roles["creature"] = creature;
+        projection.Roles["world"] = world;
+        projection.Roles["policy"] = policy;
+
+        using var output = await Run("data/dnd2024.mechanic.rest.status.project", projection);
+        var data = output.RootElement;
+        var next = Assert.Single(data.GetProperty("nextActions").EnumerateArray());
+
+        Assert.Equal("ready", data.GetProperty("status").GetString());
+        Assert.Equal("dnd2024.mechanic.rest.complete",
+            next.GetProperty("capabilityId").GetString());
+        Assert.True(next.GetProperty("ready").GetBoolean());
+        Assert.Empty(next.GetProperty("missingValues").EnumerateArray());
+        AssertSchema("character/dnd2024.query.rest-status.json", data.GetRawText());
     }
 
     [Fact]

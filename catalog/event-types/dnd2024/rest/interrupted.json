@@ -1,0 +1,10 @@
+{
+  "id": "dnd2024.rest.interrupted",
+  "category": "ruleset.dnd2024.core.gameplay.rest",
+  "name": "D&D 2024 rest interrupted",
+  "description": "An authoritative interruption stopped a Short Rest or extended and resumed a Long Rest.",
+  "scope": "dnd2024-srd-5.2.1",
+  "status": "Active",
+  "createdBy": "seed",
+  "changeNote": "Added for the complete D&D 2024 rest lifecycle."
+}

@@ -1,0 +1,10 @@
+{
+  "id": "dnd2024.rest.completed",
+  "category": "ruleset.dnd2024.core.gameplay.rest",
+  "name": "D&D 2024 rest completed",
+  "description": "A duration-ready rest completed and its eligible benefit families committed atomically.",
+  "scope": "dnd2024-srd-5.2.1",
+  "status": "Active",
+  "createdBy": "seed",
+  "changeNote": "Added for the complete D&D 2024 rest lifecycle."
+}

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using DantesRoleplay.Ecs;
 using DantesRoleplay.Events;
 using Json.Schema;
 using Microsoft.EntityFrameworkCore;
@@ -51,7 +52,8 @@ internal static class DerivedEvents
         string correlationId,
         string causationEventId,
         int depth,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string applicationStateSpaceId = "")
     {
         if (declared.Count == 0)
         {
@@ -146,8 +148,12 @@ internal static class DerivedEvents
                 // Live only. The entity index is the filter people actually search by, and an
                 // event pointing at nothing is a row that can never be found the way it will be
                 // looked for.
-                var exists = await db.Entities.AsNoTracking()
-                    .AnyAsync(e => e.Id == id && e.DeletedAt == null, cancellationToken);
+                var exists = applicationStateSpaceId.Length == 0
+                    ? await db.Entities.AsNoTracking()
+                        .AnyAsync(e => e.Id == id && e.DeletedAt == null, cancellationToken)
+                    : await db.Set<ApplicationEcsEntityRecord>().AsNoTracking()
+                        .AnyAsync(e => e.StateSpaceId == applicationStateSpaceId
+                            && e.Id == id && e.DeletedAtUtc == null, cancellationToken);
 
                 if (!exists)
                 {
