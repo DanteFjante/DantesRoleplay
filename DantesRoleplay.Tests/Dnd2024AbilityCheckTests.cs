@@ -7800,6 +7800,285 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.Empty(await harness.EventsAsync(failed.OperationId));
     }
 
+    [Fact]
+    public async Task Object_durability_resolves_threshold_responses_repairs_and_registered_read_model()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await AddObjectDurabilityFixturesAsync(harness);
+        var roles = ObjectDurabilityRoles("object.durability.fixture", "object.definition.fixture");
+        var initialized = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.object.durability.initialize", roles,
+            ObjectVersionInput(), 0, "5b000000000000000000000000000001"));
+        AssertSucceeded(initialized);
+
+        var threshold = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.object.damage", roles,
+            ObjectDamageInput(4, "bludgeoning"), 0,
+            "5b000000000000000000000000000002"));
+        var resistant = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.object.damage", roles,
+            ObjectDamageInput(10, "fire"), 0,
+            "5b000000000000000000000000000003"));
+        var immune = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.object.damage", roles,
+            ObjectDamageInput(100, "cold"), 0,
+            "5b000000000000000000000000000004"));
+        var vulnerable = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.object.damage", roles,
+            ObjectDamageInput(4, "acid"), 0,
+            "5b000000000000000000000000000005"));
+        AssertSucceeded(threshold);
+        AssertSucceeded(resistant);
+        AssertSucceeded(immune);
+        AssertSucceeded(vulnerable);
+
+        using (var state = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "object.durability.fixture",
+                   "dnd2024.object.durability"))!.ValueJson))
+        {
+            Assert.Equal(7, state.RootElement.GetProperty("currentHitPoints").GetInt32());
+            Assert.False(state.RootElement.GetProperty("destroyed").GetBoolean());
+        }
+
+        var partial = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.object.repair", roles,
+            ObjectRepairInput(5, "cost-free", "[]"), 0,
+            "5b000000000000000000000000000006"));
+        var fullRequest = harness.ActionForRoles(
+            "dnd2024.mechanic.object.repair", roles,
+            ObjectRepairInput(100, "cost-free", "[]"), 0,
+            "5b000000000000000000000000000007");
+        var full = await harness.Runner.RunAsync(fullRequest);
+        var replay = await harness.Runner.RunAsync(fullRequest);
+        AssertSucceeded(partial);
+        AssertSucceeded(full);
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replay.Disposition);
+
+        var read = await harness.ReadModels.ReadAsync(new(
+            DndHarness.StateSpaceId, ApplicationIdentifier.Parse("dnd2024"),
+            "dnd2024.query.object-durability", roles));
+        using var projected = JsonDocument.Parse(read.DataJson);
+        Assert.Equal(20, projected.RootElement.GetProperty("durability")
+            .GetProperty("currentHitPoints").GetInt32());
+        Assert.True(projected.RootElement.GetProperty("usable").GetBoolean());
+        Assert.Equal("dnd2024.mechanic.object.damage", projected.RootElement
+            .GetProperty("nextActions")[0].GetProperty("capabilityId").GetString());
+        Assert.Matches("^[0-9A-F]{64}$", read.OutputSchemaHash);
+        Assert.Contains(harness.Search("show object damage and repair status").Records,
+            value => value.Record.QualifiedId == "dnd2024.mechanic.object.durability.read");
+    }
+
+    [Fact]
+    public async Task Zero_hit_points_destroy_owned_capabilities_atomically_and_replay_once()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await AddObjectDurabilityFixturesAsync(harness);
+        var roles = ObjectDurabilityRoles("object.durability.fixture", "object.definition.fixture");
+        AssertSucceeded(await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.object.durability.initialize", roles,
+            ObjectVersionInput(), 0, "5c000000000000000000000000000001")));
+        var input = "{\"amount\":25,\"damageType\":\"bludgeoning\","
+                    + "\"expectedDefinitionRevision\":1,\"expectedDefinitionFingerprint\":\"" + Fingerprint + "\","
+                    + "\"destruction\":{\"expectedBeforeCurrent\":20,\"postDamageCurrent\":0,"
+                    + "\"damageType\":\"bludgeoning\",\"resolvedDamage\":25,\"expectedDefinitionRevision\":1,"
+                    + "\"expectedDefinitionFingerprint\":\"" + Fingerprint + "\",\"specialDestructionSatisfied\":false,"
+                    + "\"consequences\":[\"unequip\",\"close-route\",\"disable-trap\"]}}";
+        var request = harness.ActionForRoles("dnd2024.mechanic.object.damage", roles, input, 0,
+            "5c000000000000000000000000000002");
+
+        var destroyed = await harness.Runner.RunAsync(request);
+        var replay = await harness.Runner.RunAsync(request);
+
+        AssertSucceeded(destroyed);
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replay.Disposition);
+        using (var state = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "object.durability.fixture",
+                   "dnd2024.object.durability"))!.ValueJson))
+            Assert.True(state.RootElement.GetProperty("destroyed").GetBoolean());
+        Assert.Null(await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+            "object.durability.fixture", "dnd2024.item.equipment"));
+        using (var route = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "object.durability.fixture",
+                   "game.core.world.route.availability"))!.ValueJson))
+            Assert.Equal("closed", route.RootElement.GetProperty("status").GetString());
+        using (var trap = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "object.durability.fixture",
+                   "dnd2024.hazard.trap-state"))!.ValueJson))
+            Assert.Equal("dnd2024.hazard.trap-phase.disabled",
+                trap.RootElement.GetProperty("phase").GetProperty("entityId").GetString());
+        Assert.Equal(2, (await harness.EventsAsync(destroyed.OperationId)).Count);
+
+        var ineligible = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.object.repair", roles,
+            ObjectRepairInput(5, "cost-free", "[]"), 0,
+            "5c000000000000000000000000000003"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, ineligible.Disposition);
+        var rebuilt = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.object.repair", roles,
+            ObjectRepairInput(5, "slice14-settled",
+                "[\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]"), 0,
+            "5c000000000000000000000000000004"));
+        AssertSucceeded(rebuilt);
+    }
+
+    [Fact]
+    public async Task Magic_item_resilience_and_stabilization_fail_closed_until_explicitly_satisfied()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await AddObjectDurabilityFixturesAsync(harness);
+        var roles = ObjectDurabilityRoles("object.resilient.fixture", "object.resilient.definition.fixture");
+        AssertSucceeded(await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.object.durability.initialize", roles,
+            ObjectVersionInput(), 0, "5d000000000000000000000000000001")));
+        var damaged = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.object.damage", roles,
+            ObjectDamageInput(20, "force"), 0,
+            "5d000000000000000000000000000002"));
+        AssertSucceeded(damaged);
+        using (var state = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "object.resilient.fixture",
+                   "dnd2024.object.durability"))!.ValueJson))
+        {
+            Assert.Equal(0, state.RootElement.GetProperty("currentHitPoints").GetInt32());
+            Assert.False(state.RootElement.GetProperty("destroyed").GetBoolean());
+        }
+        var destroyed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.object.destroy", roles,
+            "{\"expectedBeforeCurrent\":0,\"postDamageCurrent\":0,\"damageType\":\"force\",\"resolvedDamage\":20,"
+            + "\"expectedDefinitionRevision\":1,\"expectedDefinitionFingerprint\":\"" + Fingerprint + "\","
+            + "\"specialDestructionSatisfied\":true,\"consequences\":[]}", 0,
+            "5d000000000000000000000000000003"));
+        AssertSucceeded(destroyed);
+
+        await harness.AddApplicationComponentAsync("object.durability.fixture",
+            "dnd2024.object.durability",
+            "{\"currentHitPoints\":10,\"destroyed\":false,\"stabilized\":false,\"basisRevision\":1,"
+            + "\"basisFingerprint\":\"" + Fingerprint + "\",\"activeDamageEffects\":[{\"entityId\":\"effect.fixture\"}]}");
+        var stabilized = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.object.stabilize",
+            ObjectDurabilityRoles("object.durability.fixture", "object.definition.fixture"),
+            ObjectVersionInput(), 0, "5d000000000000000000000000000004"));
+        AssertSucceeded(stabilized);
+    }
+
+    [Fact]
+    public async Task Object_destruction_transaction_failure_rolls_back_state_consequences_and_events()
+    {
+        await using var harness = await DndHarness.CreateAsync(failTransactionAfterEffects: true);
+        await AddObjectDurabilityFixturesAsync(harness, initialized: true);
+        var roles = ObjectDurabilityRoles("object.durability.fixture", "object.definition.fixture");
+        var failed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.object.damage", roles,
+            "{\"amount\":25,\"damageType\":\"bludgeoning\",\"expectedDefinitionRevision\":1,"
+            + "\"expectedDefinitionFingerprint\":\"" + Fingerprint + "\",\"destruction\":{"
+            + "\"expectedBeforeCurrent\":20,\"postDamageCurrent\":0,\"damageType\":\"bludgeoning\","
+            + "\"resolvedDamage\":25,\"expectedDefinitionRevision\":1,\"expectedDefinitionFingerprint\":\""
+            + Fingerprint + "\",\"specialDestructionSatisfied\":false,"
+            + "\"consequences\":[\"unequip\",\"close-route\",\"disable-trap\"]}}",
+            0, "5e000000000000000000000000000001"));
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, failed.Disposition);
+        using var state = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "object.durability.fixture",
+            "dnd2024.object.durability"))!.ValueJson);
+        Assert.Equal(20, state.RootElement.GetProperty("currentHitPoints").GetInt32());
+        Assert.False(state.RootElement.GetProperty("destroyed").GetBoolean());
+        Assert.NotNull(await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+            "object.durability.fixture", "dnd2024.item.equipment"));
+        Assert.Empty(await harness.EventsAsync(failed.OperationId));
+    }
+
+    [Fact]
+    public async Task Destroyed_items_cannot_be_equipped_and_destroyed_travellers_cannot_travel()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        const string definitionId = "dnd2024.item.destroyed-fixture.v1";
+        await harness.AddItemDefinitionAsync(definitionId, "Destroyed fixture definition",
+            SeparateItemDefinition("[\"held\"]"));
+        await harness.AddPhysicalItemAsync("item.destroyed.fixture", "Destroyed fixture",
+            definitionId, "subject.high");
+        await harness.AddApplicationComponentAsync("item.destroyed.fixture",
+            "dnd2024.object.durability",
+            "{\"currentHitPoints\":0,\"destroyed\":true,\"stabilized\":true}");
+        var equip = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.item.equip", new Dictionary<string, string>
+            {
+                ["item"] = "item.destroyed.fixture", ["holder"] = "subject.high"
+            }, "{\"slotIds\":[\"dnd2024.equipment-slot.main-hand\"]}", 0,
+            "5f000000000000000000000000000001"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, equip.Disposition);
+
+        await harness.AddTravelFixturesAsync();
+        await harness.AddApplicationComponentAsync("subject.high", "dnd2024.object.durability",
+            "{\"currentHitPoints\":0,\"destroyed\":true,\"stabilized\":true}");
+        var travel = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.travel.execute", TravelRoles(), TravelInput("normal"), 0,
+            "5f000000000000000000000000000002"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, travel.Disposition);
+        using var clock = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "world.travel.fixture", "game.core.world.clock"))!.ValueJson);
+        Assert.Equal(100, clock.RootElement.GetProperty("currentMinute").GetInt32());
+    }
+
+    private static Dictionary<string, string> ObjectDurabilityRoles(string objectId, string definitionId) =>
+        new(StringComparer.Ordinal) { ["object"] = objectId, ["definition"] = definitionId };
+
+    private static string ObjectVersionInput() =>
+        "{\"expectedDefinitionRevision\":1,\"expectedDefinitionFingerprint\":\"" + Fingerprint + "\"}";
+
+    private static string ObjectDamageInput(int amount, string damageType) =>
+        "{\"amount\":" + amount + ",\"damageType\":\"" + damageType
+        + "\",\"expectedDefinitionRevision\":1,\"expectedDefinitionFingerprint\":\"" + Fingerprint + "\"}";
+
+    private static string ObjectRepairInput(int amount, string authority, string receipts) =>
+        "{\"hitPointsRestored\":" + amount + ",\"repairAuthority\":\"" + authority
+        + "\",\"settlementReceiptIds\":" + receipts
+        + ",\"expectedDefinitionRevision\":1,\"expectedDefinitionFingerprint\":\"" + Fingerprint + "\"}";
+
+    private static async Task AddObjectDurabilityFixturesAsync(DndHarness harness, bool initialized = false)
+    {
+        await harness.Entities.CreateEntityAsync(DndHarness.StateSpaceId,
+            "object.definition.fixture", "Fixture destructible object definition");
+        await harness.AddApplicationComponentAsync("object.definition.fixture", "dnd2024.core.version",
+            "{\"revision\":1,\"status\":\"active\"}");
+        await harness.AddApplicationComponentAsync("object.definition.fixture", "dnd2024.core.source",
+            "{\"citations\":[{\"sourceRef\":{\"entityId\":\"dnd2024.source.srd-5.2.1\"},\"locator\":\"Slice 12 fixture\"}]}");
+        await harness.AddApplicationComponentAsync("object.definition.fixture", "dnd2024.object.durability-basis",
+            "{\"armorClass\":15,\"maximumHitPoints\":20,\"damageThreshold\":5,\"damageResponses\":["
+            + "{\"damageType\":{\"entityId\":\"dnd2024.vocabulary.damage-type.acid\"},\"response\":{\"entityId\":\"dnd2024.vocabulary.damage-response.vulnerability\"}},"
+            + "{\"damageType\":{\"entityId\":\"dnd2024.vocabulary.damage-type.cold\"},\"response\":{\"entityId\":\"dnd2024.vocabulary.damage-response.immunity\"}},"
+            + "{\"damageType\":{\"entityId\":\"dnd2024.vocabulary.damage-type.fire\"},\"response\":{\"entityId\":\"dnd2024.vocabulary.damage-response.resistance\"}}]}");
+        await harness.Entities.CreateEntityAsync(DndHarness.StateSpaceId,
+            "object.durability.fixture", "Fixture destructible object");
+        await harness.AddApplicationComponentAsync("object.durability.fixture", "dnd2024.core.definition-link",
+            "{\"definition\":{\"entityId\":\"object.definition.fixture\"},\"definitionRevision\":1}");
+        await harness.AddApplicationComponentAsync("object.durability.fixture", "dnd2024.item.equipment",
+            "{\"equippedBy\":{\"entityId\":\"subject.high\"},\"slots\":[{\"entityId\":\"slot.fixture\"}]}");
+        await harness.AddApplicationComponentAsync("object.durability.fixture", "game.core.world.route.availability",
+            "{\"status\":\"open\"}");
+        await harness.AddApplicationComponentAsync("object.durability.fixture", "dnd2024.hazard.trap-state",
+            "{\"phase\":{\"entityId\":\"dnd2024.hazard.trap-phase.armed\"},\"activationCount\":0}");
+        if (initialized)
+            await harness.AddApplicationComponentAsync("object.durability.fixture", "dnd2024.object.durability",
+                "{\"currentHitPoints\":20,\"destroyed\":false,\"stabilized\":true,\"basisRevision\":1,"
+                + "\"basisFingerprint\":\"" + Fingerprint + "\",\"activeDamageEffects\":[]}");
+
+        await harness.Entities.CreateEntityAsync(DndHarness.StateSpaceId,
+            "object.resilient.definition.fixture", "Fixture resilient object definition");
+        await harness.AddApplicationComponentAsync("object.resilient.definition.fixture", "dnd2024.core.version",
+            "{\"revision\":1,\"status\":\"active\"}");
+        await harness.AddApplicationComponentAsync("object.resilient.definition.fixture", "dnd2024.core.source",
+            "{\"citations\":[{\"sourceRef\":{\"entityId\":\"dnd2024.source.srd-5.2.1\"},\"locator\":\"Slice 12 resilient fixture\"}]}");
+        await harness.AddApplicationComponentAsync("object.resilient.definition.fixture", "dnd2024.object.durability-basis",
+            "{\"armorClass\":15,\"maximumHitPoints\":20,\"damageThreshold\":0,\"damageResponses\":[]}");
+        await harness.AddApplicationComponentAsync("object.resilient.definition.fixture", "dnd2024.magic-item.resilience",
+            "{\"destructionRequirement\":{\"operator\":\"predicate\",\"predicateId\":\"predicate.always\",\"arguments\":[]}}");
+        await harness.Entities.CreateEntityAsync(DndHarness.StateSpaceId,
+            "object.resilient.fixture", "Fixture resilient object");
+        await harness.AddApplicationComponentAsync("object.resilient.fixture", "dnd2024.core.definition-link",
+            "{\"definition\":{\"entityId\":\"object.resilient.definition.fixture\"},\"definitionRevision\":1}");
+    }
+
     private const string Fingerprint = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
 
     private static void AssertSucceeded(ApplicationActionExecutionResult result) =>
@@ -8233,7 +8512,8 @@ public sealed class Dnd2024AbilityCheckTests
                          "game.core.world.root", "game.core.world.clock",
                          "game.core.campaign.character-participation",
                          "game.core.world.location", "game.core.world.route",
-                         "game.core.world.route.availability", "game.core.world.traveller"
+                         "game.core.world.route.availability", "game.core.world.traveller",
+                         "game.core.media.visual", "game.core.world.media.visual"
                      })
             {
                 var definition = await GameDefinitionAsync(componentId);
@@ -8298,6 +8578,20 @@ public sealed class Dnd2024AbilityCheckTests
                     Status = EventTypeStatus.Active,
                     PayloadSchema = await File.ReadAllTextAsync(Path.Combine(
                         RepositoryRoot(), "catalog", "event-types", "dnd2024", "hazard",
+                        eventName + ".schema.json"))
+                });
+            }
+            foreach (var eventName in new[] { "damaged", "destroyed", "repaired" })
+            {
+                await new EventTypeStore(db).WriteAsync(new()
+                {
+                    Id = "dnd2024.object." + eventName,
+                    Category = "dnd2024.ruleset.core.gameplay.objects",
+                    Name = "Object " + eventName,
+                    Scope = "world",
+                    Status = EventTypeStatus.Active,
+                    PayloadSchema = await File.ReadAllTextAsync(Path.Combine(
+                        RepositoryRoot(), "catalog", "event-types", "dnd2024", "object",
                         eventName + ".schema.json"))
                 });
             }

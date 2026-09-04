@@ -1,0 +1,1 @@
+{"id":"dnd2024.object.damaged","category":"ruleset.dnd2024.core.gameplay.objects","name":"D&D 2024 object damaged","description":"One authored object durability state received resolved damage.","scope":"dnd2024-srd-5.2.1","status":"Active","createdBy":"seed","changeNote":"Added for Slice 12 object durability lifecycles."}

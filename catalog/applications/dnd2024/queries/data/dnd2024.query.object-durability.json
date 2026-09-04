@@ -1,0 +1,50 @@
+{
+  "id": "dnd2024.query.object-durability",
+  "category": "dnd2024.ruleset.core.gameplay.objects.read-model",
+  "name": "Object durability status",
+  "description": "Returns one audience-authorized object's authoritative durability, authored basis, provenance, usability consequences, and structured next action.",
+  "matches": ["inspect object durability", "show object damage and repair status", "can this item vehicle or trap still be used"],
+  "roles": {
+    "object": "The exact audience-authorized item, trap, vehicle, or scenery object.",
+    "definition": "The object's exact audience-authorized authored definition."
+  },
+  "executor": "mechanic-projection",
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.object.durability.read",
+    "version": 1,
+    "contentHash": "CC59A88144AD18012838558AA6F715E3DB52B5458DE349D16B60B911D299107A",
+    "outputSchemaHash": "E7BB4B0ABB58633331C7230F1AA1386A4042687C26D2CF2EC803C7A915F3529A"
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["version", "object", "definition", "basis", "durability", "specialDestructionRequired", "usable", "consequences", "sourceRef", "nextActions"],
+    "properties": {
+      "version": { "const": 1 },
+      "object": { "$ref": "#/$defs/named" },
+      "definition": { "$ref": "#/$defs/definition" },
+      "basis": { "$ref": "#/$defs/basis" },
+      "durability": { "$ref": "#/$defs/durability" },
+      "specialDestructionRequired": { "type": "boolean" },
+      "usable": { "type": "boolean" },
+      "consequences": { "$ref": "#/$defs/consequences" },
+      "sourceRef": { "$ref": "#/$defs/source" },
+      "nextActions": { "type": "array", "minItems": 1, "maxItems": 1, "items": { "$ref": "#/$defs/nextAction" } }
+    },
+    "$defs": {
+      "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "named": { "type": "object", "additionalProperties": false, "required": ["id", "name"], "properties": { "id": { "$ref": "#/$defs/id" }, "name": { "type": "string", "minLength": 1, "maxLength": 400 } } },
+      "definition": { "type": "object", "additionalProperties": false, "required": ["id", "revision", "status"], "properties": { "id": { "$ref": "#/$defs/id" }, "revision": { "type": "integer", "minimum": 1 }, "status": { "enum": ["active", "deprecated", "superseded", "archived"] } } },
+      "reference": { "type": "object", "additionalProperties": false, "required": ["entityId"], "properties": { "entityId": { "$ref": "#/$defs/id" }, "expectedArchetype": { "type": "string", "minLength": 1, "maxLength": 200 } } },
+      "response": { "type": "object", "additionalProperties": false, "required": ["damageType", "response"], "properties": { "damageType": { "$ref": "#/$defs/reference" }, "response": { "$ref": "#/$defs/reference" }, "condition": { "type": "object" } } },
+      "basis": { "type": "object", "additionalProperties": false, "required": ["armorClass", "maximumHitPoints", "damageThreshold", "damageResponses"], "properties": { "armorClass": { "type": "integer", "minimum": 0 }, "maximumHitPoints": { "type": "integer", "minimum": 1 }, "damageThreshold": { "type": "integer", "minimum": 0 }, "damageResponses": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/response" } } } },
+      "durability": { "type": "object", "additionalProperties": false, "required": ["currentHitPoints", "temporaryHitPoints", "destroyed", "stabilized", "basisRevision", "basisFingerprint"], "properties": { "currentHitPoints": { "type": "integer", "minimum": 0 }, "temporaryHitPoints": { "type": "integer", "minimum": 0 }, "destroyed": { "type": "boolean" }, "stabilized": { "type": "boolean" }, "basisRevision": { "type": ["integer", "null"], "minimum": 1 }, "basisFingerprint": { "type": ["string", "null"], "pattern": "^[A-F0-9]{64}$" } } },
+      "consequences": { "type": "object", "additionalProperties": false, "required": ["equipped", "trapState", "routeStatus", "visualMedia"], "properties": { "equipped": { "type": "boolean" }, "trapState": { "type": "boolean" }, "routeStatus": { "type": ["string", "null"], "enum": ["open", "closed", null] }, "visualMedia": { "type": "boolean" } } },
+      "source": { "type": "object", "additionalProperties": false, "required": ["sourceId", "locator"], "properties": { "sourceId": { "$ref": "#/$defs/id" }, "locator": { "type": "string", "minLength": 1, "maxLength": 500 } } },
+      "nextAction": { "type": "object", "additionalProperties": false, "required": ["capabilityId", "roles", "input", "missingValues", "ready"], "properties": { "capabilityId": { "enum": ["dnd2024.mechanic.object.damage", "dnd2024.mechanic.object.destroy", "dnd2024.mechanic.object.repair"] }, "roles": { "type": "object", "additionalProperties": false, "required": ["object", "definition"], "properties": { "object": { "$ref": "#/$defs/id" }, "definition": { "$ref": "#/$defs/id" } } }, "input": { "type": "object" }, "missingValues": { "type": "array", "minItems": 1, "maxItems": 4, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 100 } }, "ready": { "const": false } } }
+    }
+  },
+  "exposure": "model-visible",
+  "status": "active"
+}
