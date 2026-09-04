@@ -1,1 +1,45 @@
-{"type":"object","additionalProperties":false,"required":["worldId","calendarId","beforeMinute","afterMinute","beforeRevision","afterRevision"],"properties":{"worldId":{"type":"string","minLength":1,"maxLength":200},"calendarId":{"type":"string","minLength":1,"maxLength":100},"beforeMinute":{"type":"integer","minimum":0},"afterMinute":{"type":"integer","minimum":1},"beforeRevision":{"type":"integer","minimum":0},"afterRevision":{"type":"integer","minimum":1}},"x-dantes-entity-payload-fields":["worldId"]}
+{
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["worldId", "calendarId", "beforeMinute", "afterMinute", "beforeRevision", "afterRevision"],
+      "properties": {
+        "worldId": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "calendarId": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "beforeMinute": { "type": "integer", "minimum": 0 },
+        "afterMinute": { "type": "integer", "minimum": 1 },
+        "beforeRevision": { "type": "integer", "minimum": 0 },
+        "afterRevision": { "type": "integer", "minimum": 1 }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion", "worldId", "calendarId", "beforeMinute", "deltaMinutes",
+        "afterMinute", "beforeRevision", "afterRevision", "causeCapabilityId",
+        "subjectEntityId", "activityId", "idempotencyKey", "operationReceipt"
+      ],
+      "properties": {
+        "contractVersion": { "const": 1 },
+        "worldId": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "calendarId": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "beforeMinute": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "deltaMinutes": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+        "afterMinute": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+        "beforeRevision": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "afterRevision": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+        "causeCapabilityId": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "subjectEntityId": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "activityId": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "idempotencyKey": { "type": "string", "minLength": 64, "maxLength": 64, "pattern": "^[0-9A-F]{64}$" },
+        "operationReceipt": { "type": "string", "minLength": 32, "maxLength": 32, "pattern": "^[0-9a-f]{32}$" }
+      }
+    }
+  ],
+  "properties": {
+    "worldId": { "type": "string", "minLength": 1, "maxLength": 200 }
+  },
+  "x-dantes-entity-payload-fields": ["worldId"]
+}

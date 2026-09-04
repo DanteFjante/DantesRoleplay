@@ -12,6 +12,7 @@ using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.EcsEffects;
+using DantesRoleplay.Events;
 using DantesRoleplay.LocalAI;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Interactions;
@@ -746,9 +747,9 @@ public sealed class Dnd2024AbilityCheckTests
         await readyHarness.Runner.RunAsync(readyHarness.ActionForRoles(
             "dnd2024.mechanic.rest.begin", restRoles, "{\"kind\":\"short\"}", 0,
             "39500000000000000000000000000000"));
-        await readyHarness.SetRestClockAsync(160, 8);
         await readyHarness.Runner.RunAsync(readyHarness.ActionForRoles(
-            "dnd2024.mechanic.rest.progress", restRoles, "{\"activity\":\"light\"}", 0,
+            "dnd2024.mechanic.rest.progress", restRoles,
+            "{\"activity\":\"light\",\"minutes\":60}", 0,
             "39500000000000000000000000000001"));
         var readyBefore = await readyHarness.Entities.GetComponentAsync(
             DndHarness.StateSpaceId, "subject.high", "dnd2024.rest-episode");
@@ -3634,19 +3635,17 @@ public sealed class Dnd2024AbilityCheckTests
         var started = await harness.Runner.RunAsync(harness.ActionForRoles(
             "dnd2024.mechanic.rest.begin", roles, "{\"kind\":\"short\"}", 0,
             "31000000000000000000000000000001"));
-        await harness.SetRestClockAsync(159, 8);
         var firstRequest = harness.ActionForRoles(
-            "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"light\"}", 0,
+            "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"light\",\"minutes\":59}", 0,
             "31000000000000000000000000000002");
         var first = await harness.Runner.RunAsync(firstRequest);
         var replay = await harness.Runner.RunAsync(firstRequest);
         var active = await harness.Entities.GetComponentAsync(
             DndHarness.StateSpaceId, "subject.high", "dnd2024.rest-episode");
-        await harness.SetRestClockAsync(160, 9);
         var finalEvaluation = await harness.EvaluateRolesAsync(
-            "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"light\"}", 0);
+            "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"light\",\"minutes\":1}", 0);
         var final = await harness.Runner.RunAsync(harness.ActionForRoles(
-            "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"light\"}", 0,
+            "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"light\",\"minutes\":1}", 0,
             "31000000000000000000000000000003"));
         var ready = await harness.Entities.GetComponentAsync(
             DndHarness.StateSpaceId, "subject.high", "dnd2024.rest-episode");
@@ -3671,6 +3670,29 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.Equal("ready", finalState.RootElement.GetProperty("status").GetString());
         Assert.Equal(60, finalState.RootElement.GetProperty("lightActivityMinutes").GetInt32());
         Assert.Equal(3, ready.Revision);
+        Assert.Single(await harness.EventsAsync(first.OperationId));
+        Assert.Single(await harness.EventsAsync(final.OperationId));
+    }
+
+    [Fact]
+    public async Task Authoritative_clock_and_event_roll_back_when_a_late_participant_refuses()
+    {
+        await using var harness = await DndHarness.CreateAsync(failTransactionAfterEffects: true);
+        await harness.AddRestBeginFixturesAsync(currentMinute: 100);
+        var request = harness.ActionForRoles(
+            "dnd2024.mechanic.world.clock.advance",
+            new Dictionary<string, string> { ["world"] = "world.rest.fixture" },
+            "{\"minutes\":60}", 0, "31100000000000000000000000000001");
+
+        var result = await harness.Runner.RunAsync(request);
+        var clock = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "world.rest.fixture", "game.core.world.clock");
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, result.Disposition);
+        using var state = JsonDocument.Parse(clock!.ValueJson);
+        Assert.Equal(100, state.RootElement.GetProperty("currentMinute").GetInt32());
+        Assert.Equal(7, state.RootElement.GetProperty("revision").GetInt32());
+        Assert.Empty(await harness.EventsAsync(result.OperationId));
     }
 
     [Fact]
@@ -3683,14 +3705,12 @@ public sealed class Dnd2024AbilityCheckTests
             (await harness.Runner.RunAsync(harness.ActionForRoles(
                 "dnd2024.mechanic.rest.begin", roles, "{\"kind\":\"long\"}", 0,
                 "32000000000000000000000000000001"))).Disposition);
-        await harness.SetRestClockAsync(460, 8);
         Assert.Equal(ApplicationActionExecutionDisposition.Succeeded,
             (await harness.Runner.RunAsync(harness.ActionForRoles(
-                "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"sleep\"}", 0,
+                "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"sleep\",\"minutes\":360}", 0,
                 "32000000000000000000000000000002"))).Disposition);
-        await harness.SetRestClockAsync(580, 9);
         var completed = await harness.Runner.RunAsync(harness.ActionForRoles(
-            "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"light\"}", 0,
+            "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"light\",\"minutes\":120}", 0,
             "32000000000000000000000000000003"));
         var episode = await harness.Entities.GetComponentAsync(
             DndHarness.StateSpaceId, "subject.high", "dnd2024.rest-episode");
@@ -3712,9 +3732,8 @@ public sealed class Dnd2024AbilityCheckTests
         await harness.Runner.RunAsync(harness.ActionForRoles(
             "dnd2024.mechanic.rest.begin", roles, "{\"kind\":\"long\"}", 0,
             "33000000000000000000000000000001"));
-        await harness.SetRestClockAsync(160, 8);
         await harness.Runner.RunAsync(harness.ActionForRoles(
-            "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"sleep\"}", 0,
+            "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"sleep\",\"minutes\":60}", 0,
             "33000000000000000000000000000002"));
         var evaluated = await harness.EvaluateRolesAsync(
             "dnd2024.mechanic.rest.interrupt", roles, "{\"kind\":\"damage\"}", 0);
@@ -3736,20 +3755,17 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.Equal(540, state.RootElement.GetProperty("requiredMinutes").GetInt32());
         Assert.Equal(60, state.RootElement.GetProperty("sleepMinutes").GetInt32());
 
-        await harness.SetRestClockAsync(460, 9);
         Assert.Equal(ApplicationActionExecutionDisposition.Succeeded,
             (await harness.Runner.RunAsync(harness.ActionForRoles(
-                "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"sleep\"}", 0,
+                "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"sleep\",\"minutes\":300}", 0,
                 "33000000000000000000000000000004"))).Disposition);
-        await harness.SetRestClockAsync(580, 10);
         Assert.Equal(ApplicationActionExecutionDisposition.Succeeded,
             (await harness.Runner.RunAsync(harness.ActionForRoles(
-                "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"light\"}", 0,
+                "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"light\",\"minutes\":120}", 0,
                 "33000000000000000000000000000005"))).Disposition);
-        await harness.SetRestClockAsync(640, 11);
         Assert.Equal(ApplicationActionExecutionDisposition.Succeeded,
             (await harness.Runner.RunAsync(harness.ActionForRoles(
-                "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"sleep\"}", 0,
+                "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"sleep\",\"minutes\":60}", 0,
                 "33000000000000000000000000000006"))).Disposition);
         var ready = await harness.Entities.GetComponentAsync(
             DndHarness.StateSpaceId, "subject.high", "dnd2024.rest-episode");
@@ -3819,7 +3835,7 @@ public sealed class Dnd2024AbilityCheckTests
     }
 
     [Theory]
-    [InlineData("unchanged-clock")]
+    [InlineData("stale-clock")]
     [InlineData("short-sleep")]
     [InlineData("extra-input")]
     [InlineData("excess-long-light")]
@@ -3833,15 +3849,16 @@ public sealed class Dnd2024AbilityCheckTests
         await harness.Runner.RunAsync(harness.ActionForRoles(
             "dnd2024.mechanic.rest.begin", roles, "{\"kind\":\"" + kind + "\"}", 0,
             "36000000000000000000000000000000"));
-        if (stateCase != "unchanged-clock")
-            await harness.SetRestClockAsync(stateCase == "excess-long-light" ? 221 : 101, 8);
+        if (stateCase == "stale-clock")
+            await harness.SetRestClockAsync(101, 8);
         var before = await harness.Entities.GetComponentAsync(
             DndHarness.StateSpaceId, "subject.high", "dnd2024.rest-episode");
         var input = stateCase switch
         {
-            "short-sleep" => "{\"activity\":\"sleep\"}",
-            "extra-input" => "{\"activity\":\"light\",\"minutes\":1}",
-            _ => "{\"activity\":\"light\"}"
+            "short-sleep" => "{\"activity\":\"sleep\",\"minutes\":1}",
+            "extra-input" => "{\"activity\":\"light\",\"minutes\":1,\"currentMinute\":0}",
+            "excess-long-light" => "{\"activity\":\"light\",\"minutes\":121}",
+            _ => "{\"activity\":\"light\",\"minutes\":1}"
         };
 
         var result = await harness.EvaluateRolesAsync(
@@ -3906,12 +3923,13 @@ public sealed class Dnd2024AbilityCheckTests
                 episode!.ValueJson.Replace("\"sleepMinutes\":0", "\"sleepMinutes\":1",
                     StringComparison.Ordinal));
         }
-        await harness.SetRestClockAsync(101, stateCase == "incoherent-clock" ? 7 : 8);
+        if (stateCase == "incoherent-clock")
+            await harness.SetRestClockAsync(101, 7);
         var before = await harness.Entities.GetComponentAsync(
             DndHarness.StateSpaceId, "subject.high", "dnd2024.rest-episode");
 
         var result = await harness.EvaluateRolesAsync(
-            "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"sleep\"}", 0);
+            "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"sleep\",\"minutes\":1}", 0);
         var after = await harness.Entities.GetComponentAsync(
             DndHarness.StateSpaceId, "subject.high", "dnd2024.rest-episode");
 
@@ -3930,14 +3948,12 @@ public sealed class Dnd2024AbilityCheckTests
         await harness.Runner.RunAsync(harness.ActionForRoles(
             "dnd2024.mechanic.rest.begin", roles, "{\"kind\":\"short\"}", 0,
             "38000000000000000000000000000000"));
-        await harness.SetRestClockAsync(160, 8);
         await harness.Runner.RunAsync(harness.ActionForRoles(
-            "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"light\"}", 0,
+            "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"light\",\"minutes\":60}", 0,
             "38000000000000000000000000000001"));
-        await harness.SetRestClockAsync(161, 9);
 
         var progress = await harness.EvaluateRolesAsync(
-            "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"light\"}", 0);
+            "dnd2024.mechanic.rest.progress", roles, "{\"activity\":\"light\",\"minutes\":1}", 0);
         var interruption = await harness.EvaluateRolesAsync(
             "dnd2024.mechanic.rest.interrupt", roles, "{\"kind\":\"damage\"}", 0);
 
@@ -4079,9 +4095,9 @@ public sealed class Dnd2024AbilityCheckTests
             "39200000000000000000000000000000"));
         if (stateCase == "ready")
         {
-            await harness.SetRestClockAsync(160, 8);
             await harness.Runner.RunAsync(harness.ActionForRoles(
-                "dnd2024.mechanic.rest.progress", restRoles, "{\"activity\":\"light\"}", 0,
+                "dnd2024.mechanic.rest.progress", restRoles,
+                "{\"activity\":\"light\",\"minutes\":60}", 0,
                 "39200000000000000000000000000001"));
         }
         var before = await harness.Entities.GetComponentAsync(
@@ -7190,6 +7206,9 @@ public sealed class Dnd2024AbilityCheckTests
         public ApplicationActionRunner Runner { get; }
         public IApplicationReadModelService ReadModels { get; }
 
+        public Task<IReadOnlyList<EventSummary>> EventsAsync(string rootOperationId) =>
+            new EventLedger(_db).FindAsync(rootOperationId: rootOperationId);
+
         /// <summary>
         /// One prepared database per source set, kept for the process.
         ///
@@ -7260,10 +7279,14 @@ public sealed class Dnd2024AbilityCheckTests
             var edges = new SqliteStateSpaceEdgeStore(db, stateSpaces);
             var mappings = new ApplicationMechanicProjectionMappingResolver(
                 catalogs, stateSpaces, types, edges);
-            var applier = new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges,
+            var clockParticipant = new ApplicationClockEventTransactionParticipant(
+                new EventTypeStore(db), new EventLedger(db), schemas);
+            IReadOnlyList<IApplicationEcsTransactionParticipant> participants =
                 failTransactionAfterEffects
-                    ? [new RejectAfterEffectsTransactionParticipant()]
-                    : null);
+                    ? [clockParticipant, new RejectAfterEffectsTransactionParticipant()]
+                    : [clockParticipant];
+            var applier = new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges,
+                participants);
             var runner = new ApplicationActionRunner(
                 catalogs, activations, stateSpaces, types, entities, edges,
                 mappings,
@@ -7356,6 +7379,17 @@ public sealed class Dnd2024AbilityCheckTests
                     GameApplication, definition.Id, definition.Schema));
             }
             var entities = new SqliteEntityComponentStore(db, types, schemas);
+            await new EventTypeStore(db).WriteAsync(new()
+            {
+                Id = "game.core.world.clock.advanced",
+                Category = "game.core.world.time",
+                Name = "World clock advanced",
+                Scope = "world",
+                Status = EventTypeStatus.Active,
+                PayloadSchema = await File.ReadAllTextAsync(Path.Combine(
+                    RepositoryRoot(), "catalog", "event-types", "game", "core", "world",
+                    "clock", "advanced.schema.json"))
+            });
             await entities.CreateEntityAsync(StateSpaceId,
                 "dnd2024.content.defense.unarmored.v1", "Unarmored Defense (ordinary, D&D 2024)");
             var defenseBasis = additionalTypes["dnd2024.creature.defense-basis"];

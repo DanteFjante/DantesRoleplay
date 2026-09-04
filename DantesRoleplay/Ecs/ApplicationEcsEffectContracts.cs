@@ -10,6 +10,7 @@ public static class ApplicationEcsEffectType
     public const string ComponentSet = "component.set";
     public const string ComponentMerge = "component.merge";
     public const string ComponentRemove = "component.remove";
+    public const string ClockAdvance = "clock.advance";
     public const string ContainmentMove = "containment.move";
     public const string ContainmentRemove = "containment.remove";
     public const string RelationshipSet = "relationship.set";
@@ -18,7 +19,7 @@ public static class ApplicationEcsEffectType
     public static readonly IReadOnlyList<string> All =
     [
         EntityCreate, EntityDelete,
-        ComponentAdd, ComponentSet, ComponentMerge, ComponentRemove,
+        ComponentAdd, ComponentSet, ComponentMerge, ComponentRemove, ClockAdvance,
         ContainmentMove, ContainmentRemove, RelationshipSet, RelationshipRemove
     ];
 }
@@ -34,6 +35,15 @@ public sealed record ApplicationEcsEffect
     public EcsComponentReference? ComponentType { get; init; }
     public string DataJson { get; init; } = string.Empty;
     public int ExpectedRevision { get; init; }
+    public string CalendarId { get; init; } = string.Empty;
+    public long PreviousMinute { get; init; }
+    public long DeltaMinutes { get; init; }
+    public long ResultingMinute { get; init; }
+    public long PreviousClockRevision { get; init; }
+    public long ResultingClockRevision { get; init; }
+    public string EventTypeId { get; init; } = string.Empty;
+    public string SubjectEntityId { get; init; } = string.Empty;
+    public string ActivityId { get; init; } = string.Empty;
 }
 
 public sealed record ApplicationEcsEffectBatch
@@ -129,6 +139,7 @@ public sealed class ApplicationEcsTransactionParticipantException(string message
 
 public static class ApplicationEcsEffectValidation
 {
+    public const long MaximumClockValue = 9_007_199_254_740_991;
     public const int MaximumEffects = 128;
     public const int MaximumIntentLength = 2_000;
     public const int MaximumProcedures = 64;
@@ -309,6 +320,9 @@ public static class ApplicationEcsEffectValidation
                 case ApplicationEcsEffectType.ComponentRemove:
                     ValidateComponent(effect, index, problems);
                     break;
+                case ApplicationEcsEffectType.ClockAdvance:
+                    ValidateClockAdvance(effect, index, batch, problems);
+                    break;
                 case ApplicationEcsEffectType.ContainmentMove:
                     if (string.IsNullOrWhiteSpace(effect.TargetEntityId) || effect.TargetEntityId.Length > 200)
                         problems.Add(new(index, "TARGET_ENTITY_REQUIRED", "Containment move requires a bounded container entity ID."));
@@ -343,8 +357,72 @@ public static class ApplicationEcsEffectValidation
                     break;
             }
         }
+        if (batch.Effects.Count(effect => effect?.Type == ApplicationEcsEffectType.ClockAdvance) > 1)
+            problems.Add(new(-1, "CLOCK_ADVANCE_MULTIPLE",
+                "One atomic application action may advance the authoritative clock only once."));
         return problems.AsReadOnly();
     }
+
+    private static void ValidateClockAdvance(
+        ApplicationEcsEffect effect,
+        int index,
+        ApplicationEcsEffectBatch batch,
+        List<ApplicationEcsEffectProblem> problems)
+    {
+        if (effect.ComponentType is null)
+            problems.Add(new(index, "COMPONENT_TYPE_REQUIRED",
+                "A clock advance requires an exact clock component type reference."));
+        else
+        {
+            try { effect.ComponentType.Validate(); }
+            catch (ArgumentException exception)
+            {
+                problems.Add(new(index, "COMPONENT_TYPE_INVALID", exception.Message));
+            }
+        }
+        if (effect.ExpectedRevision < 1)
+            problems.Add(new(index, "REVISION_INVALID",
+                "A clock advance requires a positive observed component revision."));
+        if (string.IsNullOrWhiteSpace(effect.DataJson))
+            problems.Add(new(index, "DATA_REQUIRED", "A clock advance requires the next clock JSON object."));
+        else
+        {
+            try
+            {
+                using var data = System.Text.Json.JsonDocument.Parse(effect.DataJson);
+                if (data.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object)
+                    throw new System.Text.Json.JsonException();
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                problems.Add(new(index, "DATA_INVALID", "A clock advance requires one valid JSON object."));
+            }
+        }
+
+        if (!Bounded(effect.CalendarId) || !Bounded(effect.EventTypeId)
+            || !Bounded(effect.SubjectEntityId) || !Bounded(effect.ActivityId))
+            problems.Add(new(index, "CLOCK_METADATA_INVALID",
+                "Clock calendar, event type, subject, and activity IDs are required and bounded."));
+        if (batch.ExecutionIdentity is null || string.IsNullOrWhiteSpace(batch.MechanicId))
+            problems.Add(new(index, "CLOCK_AUDIT_REQUIRED",
+                "A clock advance requires host-owned execution identity and mechanic audit evidence."));
+        if (effect.PreviousMinute < 0 || effect.PreviousMinute > MaximumClockValue
+            || effect.DeltaMinutes < 1 || effect.DeltaMinutes > MaximumClockValue
+            || effect.PreviousMinute > MaximumClockValue - effect.DeltaMinutes
+            || effect.ResultingMinute != effect.PreviousMinute + effect.DeltaMinutes)
+            problems.Add(new(index, "CLOCK_DELTA_INVALID",
+                "Clock minutes must advance monotonically by the declared positive bounded delta."));
+        if (effect.PreviousClockRevision < 0 || effect.PreviousClockRevision >= MaximumClockValue
+            || effect.ResultingClockRevision != effect.PreviousClockRevision + 1)
+            problems.Add(new(index, "CLOCK_REVISION_INVALID",
+                "The authoritative clock revision must advance by exactly one."));
+        if (!string.IsNullOrEmpty(effect.Name) || !string.IsNullOrEmpty(effect.TargetEntityId)
+            || !string.IsNullOrEmpty(effect.Slot) || !string.IsNullOrEmpty(effect.QualifiedRelationshipKind))
+            problems.Add(new(index, "FIELDS_INVALID", "A clock advance cannot carry create or edge fields."));
+    }
+
+    private static bool Bounded(string value) =>
+        !string.IsNullOrWhiteSpace(value) && value.Length <= 200;
 
     private static bool IsOperationId(string value) => value is { Length: 32 }
         && value.All(character => char.IsAsciiDigit(character) || character is >= 'a' and <= 'f');

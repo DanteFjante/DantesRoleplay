@@ -95,6 +95,26 @@ public static class EffectValidation
                 Require(effect.EntityId, "entityId", type)
                 ?? Require(effect.DefinitionId, "definitionId", type),
 
+            EffectType.ClockAdvance =>
+                Require(effect.EntityId, "entityId", type)
+                ?? Require(effect.DefinitionId, "definitionId", type)
+                ?? Require(effect.CalendarId, "calendarId", type)
+                ?? Require(effect.EventTypeId, "eventTypeId", type)
+                ?? Require(effect.SubjectEntityId, "subjectEntityId", type)
+                ?? Require(effect.ActivityId, "activityId", type)
+                ?? (effect.PreviousMinute < 0 ? "clock.advance needs a non-negative previousMinute." : null)
+                ?? (effect.DeltaMinutes < 1 ? "clock.advance needs a positive deltaMinutes." : null)
+                ?? (effect.PreviousMinute > long.MaxValue - effect.DeltaMinutes
+                    || effect.ResultingMinute != effect.PreviousMinute + effect.DeltaMinutes
+                    ? "clock.advance resultingMinute must equal previousMinute plus deltaMinutes without overflow."
+                    : null)
+                ?? (effect.PreviousClockRevision < 0
+                    || effect.PreviousClockRevision == long.MaxValue
+                    || effect.ResultingClockRevision != effect.PreviousClockRevision + 1
+                    ? "clock.advance resultingClockRevision must be exactly one greater than previousClockRevision."
+                    : null)
+                ?? CheckJsonObject(effect.Data, type),
+
             EffectType.ContainmentMove => CheckMove(effect),
 
             EffectType.RelationshipCreate =>

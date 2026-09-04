@@ -12,12 +12,21 @@ public sealed class Dnd2024ClockBridgeTests
 
         Assert.True(result.Ok, result.Error);
         var effect = Assert.Single(result.Output.Effects);
-        Assert.Equal("component.set", effect.Type);
+        Assert.Equal("clock.advance", effect.Type);
         Assert.Equal("world.fixture", effect.EntityId);
         Assert.Equal("game.core.world.clock", effect.DefinitionId);
         Assert.Equal(
             "{\"calendarId\":\"calendar.fixture\",\"currentMinute\":160,\"revision\":8}",
             effect.Data);
+        Assert.Equal("calendar.fixture", effect.CalendarId);
+        Assert.Equal(100, effect.PreviousMinute);
+        Assert.Equal(60, effect.DeltaMinutes);
+        Assert.Equal(160, effect.ResultingMinute);
+        Assert.Equal(7, effect.PreviousClockRevision);
+        Assert.Equal(8, effect.ResultingClockRevision);
+        Assert.Equal("game.core.world.clock.advanced", effect.EventTypeId);
+        Assert.Equal("world.fixture", effect.SubjectEntityId);
+        Assert.Equal("dnd2024.mechanic.world.clock.advance", effect.ActivityId);
         Assert.Empty(result.Output.Events);
         Assert.Empty(result.Output.Notifications);
     }

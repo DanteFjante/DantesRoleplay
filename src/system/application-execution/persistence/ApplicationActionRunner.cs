@@ -134,6 +134,20 @@ public sealed class ApplicationActionRunner(
                     ? ApplicationActionExecutionDisposition.Stale
                     : ApplicationActionExecutionDisposition.Unsupported,
                 translated.Problems[0].Code, translated.Problems[0].SafeMessage);
+        var clockAdvanceCount = translated.Effects.Count(effect =>
+            effect.Type == ApplicationEcsEffectType.ClockAdvance);
+        var elapsedMode = requirements.ElapsedTime?.Mode?.Trim();
+        if (clockAdvanceCount > 1)
+            return Failed(request, ApplicationActionExecutionDisposition.Unsupported,
+                "CLOCK_ADVANCE_MULTIPLE", "One action may advance the authoritative clock only once.");
+        if (clockAdvanceCount == 1 && elapsedMode is not ("fixed" or "derived" or "supplied"))
+            return Failed(request, ApplicationActionExecutionDisposition.Unsupported,
+                "ELAPSED_TIME_CONTRACT_MISSING",
+                "A time-coupled action must declare how its elapsed time is obtained.");
+        if (clockAdvanceCount == 0 && elapsedMode is "fixed" or "derived" or "supplied")
+            return Failed(request, ApplicationActionExecutionDisposition.Unsupported,
+                "CLOCK_ADVANCE_MISSING",
+                "A non-zero elapsed-time declaration must produce one authoritative clock advance.");
 
         var applied = await effects.ApplyAsync(new ApplicationEcsEffectBatch
         {
@@ -284,6 +298,41 @@ public sealed class ApplicationActionRunner(
                         ComponentType = type,
                         DataJson = effect.Type == EffectType.ComponentRemove ? "" : effect.Data,
                         ExpectedRevision = observedRevision ?? 0
+                    });
+                    break;
+                }
+                case EffectType.ClockAdvance:
+                {
+                    var type = mapping.Components.TryGetValue(effect.DefinitionId, out var declared)
+                        ? declared : ResolveComponent(owners, effect.DefinitionId);
+                    if (type is null)
+                        return TranslationResult.Failed("COMPONENT_MAPPING_MISSING",
+                            "The authoritative clock has no exact component mapping.");
+                    var localId = mapping.Components.ContainsKey(effect.DefinitionId)
+                        ? effect.DefinitionId
+                        : mapping.Components.FirstOrDefault(pair => pair.Value == type).Key;
+                    if (string.IsNullOrWhiteSpace(localId)
+                        || !projection.ComponentRevisions.TryGetValue(effect.EntityId, out var revisions)
+                        || !revisions.TryGetValue(localId, out var observedRevision)
+                        || observedRevision is null)
+                        return TranslationResult.Failed("COMPONENT_SNAPSHOT_MISSING",
+                            "The authoritative clock was not declared in the evaluated projection.");
+                    result.Add(new()
+                    {
+                        Type = ApplicationEcsEffectType.ClockAdvance,
+                        EntityId = effect.EntityId,
+                        ComponentType = type,
+                        DataJson = effect.Data,
+                        ExpectedRevision = observedRevision.Value,
+                        CalendarId = effect.CalendarId,
+                        PreviousMinute = effect.PreviousMinute,
+                        DeltaMinutes = effect.DeltaMinutes,
+                        ResultingMinute = effect.ResultingMinute,
+                        PreviousClockRevision = effect.PreviousClockRevision,
+                        ResultingClockRevision = effect.ResultingClockRevision,
+                        EventTypeId = effect.EventTypeId,
+                        SubjectEntityId = effect.SubjectEntityId,
+                        ActivityId = effect.ActivityId
                     });
                     break;
                 }

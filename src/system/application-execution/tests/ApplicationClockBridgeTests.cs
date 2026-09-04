@@ -7,6 +7,7 @@ using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.EcsEffects;
+using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
 using DantesRoleplay.SchemaValidation;
@@ -42,11 +43,22 @@ public sealed class ApplicationClockBridgeTests : IDisposable
             "{\"status\":\"active\"}", 0));
         await entities.AddComponentAsync(new("clock-space", "world", Reference(clockType),
             "{\"calendarId\":\"fixture\",\"currentMinute\":100,\"revision\":7}", 0));
+        var eventTypes = new EventTypeStore(db);
+        await eventTypes.WriteAsync(new()
+        {
+            Id = "game.core.world.clock.advanced",
+            Category = "fixture.time",
+            Name = "Clock advanced",
+            Scope = "world",
+            Status = EventTypeStatus.Active,
+            PayloadSchema = File.ReadAllText(Path.Combine(RepositoryRoot(), "catalog", "event-types",
+                "game", "core", "world", "clock", "advanced.schema.json"))
+        });
 
         var content = JsonSerializer.Serialize(new
         {
-            requirements = "{\"roles\":{\"world\":{\"components\":[\"clock-fixture.game.core.world.root\",\"clock-fixture.game.core.world.clock\"]}}}",
-            source = "var k='clock-fixture.game.core.world.clock',c=JSON.parse(ctx.roles.world.components[k]);if(Object.keys(ctx.input).length!==1||!Number.isInteger(ctx.input.minutes)||ctx.input.minutes<1)throw new Error('invalid clock input');var n={calendarId:c.calendarId,currentMinute:c.currentMinute+ctx.input.minutes,revision:c.revision+1};return {effects:[{type:'component.set',entityId:ctx.roles.world.id,definitionId:k,data:JSON.stringify(n)}],data:n};"
+            requirements = "{\"roles\":{\"world\":{\"components\":[\"clock-fixture.game.core.world.root\",\"clock-fixture.game.core.world.clock\"]}},\"elapsedTime\":{\"mode\":\"supplied\",\"inputProperty\":\"minutes\"}}",
+            source = "var k='clock-fixture.game.core.world.clock',c=JSON.parse(ctx.roles.world.components[k]);if(Object.keys(ctx.input).length!==1||!Number.isInteger(ctx.input.minutes)||ctx.input.minutes<1)throw new Error('invalid clock input');var n={calendarId:c.calendarId,currentMinute:c.currentMinute+ctx.input.minutes,revision:c.revision+1};return {effects:[{type:'clock.advance',entityId:ctx.roles.world.id,definitionId:k,data:JSON.stringify(n),calendarId:c.calendarId,previousMinute:c.currentMinute,deltaMinutes:ctx.input.minutes,resultingMinute:n.currentMinute,previousClockRevision:c.revision,resultingClockRevision:n.revision,eventTypeId:'game.core.world.clock.advanced',subjectEntityId:ctx.roles.world.id,activityId:'clock-fixture.mechanic.clock'}],data:n};"
         });
         var record = new CatalogRecordDefinition(app.Value, "mechanic", app.Value + ".mechanic.clock",
             "Clock", "Advance clock.", [], [], "mechanics", "active", 1, content, Hash(content),
@@ -68,9 +80,15 @@ public sealed class ApplicationClockBridgeTests : IDisposable
         var operations = new OperationLog(db);
         var evaluator = new ApplicationMechanicEvaluator(catalogs,
             new ApplicationMechanicProjectionResolver(db, stateSpaces), new JintMechanicEngine());
+        var ledger = new EventLedger(db);
+        var participant = new ApplicationClockEventTransactionParticipant(
+            eventTypes, ledger, schemas);
+        var mappingResolver = new ApplicationMechanicProjectionMappingResolver(
+            catalogs, stateSpaces, types, edges);
         var runner = new ApplicationActionRunner(catalogs, activation, stateSpaces, types, entities, edges,
-            new ApplicationMechanicProjectionMappingResolver(catalogs, stateSpaces, types, edges),
-            evaluator, new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges), operations);
+            mappingResolver,
+            evaluator, new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges,
+                [participant]), operations);
         ApplicationActionExecutionRequest Request(string input, string operationId) => new(
             "clock-space", app, record.QualifiedId, record.Version, record.ContentFingerprint,
             new Dictionary<string, string> { ["world"] = "world" }, input, 1,
@@ -78,14 +96,56 @@ public sealed class ApplicationClockBridgeTests : IDisposable
 
         var accepted = await runner.RunAsync(Request("{\"minutes\":60}",
             "10000000000000000000000000000001"));
-        var replay = await runner.RunAsync(Request("{\"minutes\":60}",
-            "10000000000000000000000000000001"));
+        var replays = new List<ApplicationActionExecutionResult>();
+        for (var index = 0; index < 10; index++)
+            replays.Add(await runner.RunAsync(Request("{\"minutes\":60}",
+                "10000000000000000000000000000001")));
         var invalid = await runner.RunAsync(Request(
             "{\"minutes\":1,\"currentMinute\":0}", "10000000000000000000000000000002"));
 
+        var rejectingRunner = new ApplicationActionRunner(catalogs, activation, stateSpaces, types,
+            entities, edges, mappingResolver, evaluator,
+            new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges,
+                [participant, new RejectAfterClockParticipant()]), operations);
+        var rejectedAfterStaging = await rejectingRunner.RunAsync(Request("{\"minutes\":15}",
+            "10000000000000000000000000000003"));
+        var stale = await new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges,
+            [participant]).ApplyAsync(new ApplicationEcsEffectBatch
+        {
+            StateSpaceId = "clock-space",
+            Effects = [new()
+            {
+                Type = ApplicationEcsEffectType.ClockAdvance,
+                EntityId = "world",
+                ComponentType = Reference(clockType),
+                DataJson = "{\"calendarId\":\"fixture\",\"currentMinute\":105,\"revision\":8}",
+                ExpectedRevision = 1,
+                CalendarId = "fixture",
+                PreviousMinute = 100,
+                DeltaMinutes = 5,
+                ResultingMinute = 105,
+                PreviousClockRevision = 7,
+                ResultingClockRevision = 8,
+                EventTypeId = "game.core.world.clock.advanced",
+                SubjectEntityId = "world",
+                ActivityId = record.QualifiedId
+            }],
+            ExecutionIdentity = new("10000000000000000000000000000004", Hash("stale-clock")),
+            MechanicId = record.QualifiedId,
+            MechanicVersion = record.Version,
+            Seed = 1,
+            ProjectionJson = "{}"
+        });
+
         Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, accepted.Disposition);
-        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replay.Disposition);
+        Assert.All(replays, replay =>
+        {
+            Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replay.Disposition);
+            Assert.Equal(accepted.OperationId, replay.OperationId);
+        });
         Assert.Equal(ApplicationActionExecutionDisposition.Failed, invalid.Disposition);
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, rejectedAfterStaging.Disposition);
+        Assert.Contains(stale.Problems, problem => problem.Code == "REVISION_STALE");
         var clock = await entities.GetComponentAsync("clock-space", "world", clockType.QualifiedId);
         Assert.NotNull(clock);
         Assert.Equal(2, clock.Revision);
@@ -93,6 +153,18 @@ public sealed class ApplicationClockBridgeTests : IDisposable
         Assert.Equal("fixture", state.RootElement.GetProperty("calendarId").GetString());
         Assert.Equal(160, state.RootElement.GetProperty("currentMinute").GetInt32());
         Assert.Equal(8, state.RootElement.GetProperty("revision").GetInt32());
+        var acceptedEvents = await ledger.FindAsync(rootOperationId: accepted.OperationId);
+        var clockSummary = Assert.Single(acceptedEvents);
+        var clockEvent = await ledger.GetAsync(clockSummary.Id);
+        Assert.NotNull(clockEvent);
+        Assert.Equal("game.core.world.clock.advanced", clockEvent.TypeId);
+        using var payload = JsonDocument.Parse(clockEvent.PayloadJson);
+        Assert.Equal(1, payload.RootElement.GetProperty("contractVersion").GetInt32());
+        Assert.Equal(60, payload.RootElement.GetProperty("deltaMinutes").GetInt64());
+        Assert.Equal(record.QualifiedId,
+            payload.RootElement.GetProperty("causeCapabilityId").GetString());
+        Assert.Equal(accepted.OperationId,
+            payload.RootElement.GetProperty("operationReceipt").GetString());
     }
 
     public void Dispose() => _fixture.Dispose();
@@ -103,9 +175,30 @@ public sealed class ApplicationClockBridgeTests : IDisposable
     private static EcsComponentReference Reference(RegisteredComponentTypeVersion type) =>
         new(type.QualifiedId, type.Version, type.SchemaHash);
 
+    private static string RepositoryRoot()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory);
+             directory is not null;
+             directory = directory.Parent)
+            if (File.Exists(Path.Combine(directory.FullName, "DantesRoleplay.slnx")))
+                return directory.FullName;
+        throw new DirectoryNotFoundException();
+    }
+
     private sealed class StaticActivation(ActiveApplicationManifest value) : IApplicationActivationReader
     {
         public ActiveApplicationManifest? Current(ApplicationIdentifier applicationId) =>
             applicationId == value.ApplicationId ? value : null;
+    }
+
+    private sealed class RejectAfterClockParticipant : IApplicationEcsTransactionParticipant
+    {
+        public Task StageAsync(
+            ApplicationEcsEffectBatch batch,
+            IReadOnlyList<ApplicationEcsEffectReceipt> receipts,
+            string operationId,
+            CancellationToken cancellationToken = default) =>
+            throw new ApplicationEcsTransactionParticipantException(
+                "Reject after the clock event is staged to prove full rollback.");
     }
 }

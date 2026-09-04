@@ -21,6 +21,13 @@ public static class EffectType
     public const string ComponentMerge = "component.merge";
     public const string ComponentRemove = "component.remove";
 
+    /// <summary>
+    /// Atomically replaces one authoritative clock component and records the corresponding
+    /// structural event. The kernel validates only generic monotonic/revision invariants; the
+    /// catalog remains responsible for calculating elapsed time.
+    /// </summary>
+    public const string ClockAdvance = "clock.advance";
+
     public const string ContainmentMove = "containment.move";
 
     public const string RelationshipCreate = "relationship.create";
@@ -30,7 +37,7 @@ public static class EffectType
     public static readonly IReadOnlyList<string> All =
     [
         EntityCreate, EntityDelete,
-        ComponentAdd, ComponentSet, ComponentMerge, ComponentRemove,
+        ComponentAdd, ComponentSet, ComponentMerge, ComponentRemove, ClockAdvance,
         ContainmentMove,
         RelationshipCreate, RelationshipRemove
     ];
@@ -72,6 +79,17 @@ public sealed record Effect
 
     /// <summary>JSON object payload for component and relationship data.</summary>
     public string Data { get; init; } = "{}";
+
+    /// <summary>Generic clock metadata used only by <see cref="EffectType.ClockAdvance"/>.</summary>
+    public string CalendarId { get; init; } = string.Empty;
+    public long PreviousMinute { get; init; }
+    public long DeltaMinutes { get; init; }
+    public long ResultingMinute { get; init; }
+    public long PreviousClockRevision { get; init; }
+    public long ResultingClockRevision { get; init; }
+    public string EventTypeId { get; init; } = string.Empty;
+    public string SubjectEntityId { get; init; } = string.Empty;
+    public string ActivityId { get; init; } = string.Empty;
 
     public override string ToString() =>
         $"{Type}({(EntityId.Length > 0 ? EntityId : "-")}{(DefinitionId.Length > 0 ? $", {DefinitionId}" : "")})";

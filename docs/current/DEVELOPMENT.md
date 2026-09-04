@@ -66,6 +66,16 @@ confirmation gate; it must not add a second consent system or reintroduce unscop
 selection. The former `action` commit kind is physically retired and must not be advertised,
 dispatched, or generated as a direct AI tool.
 
+Time-coupled application mechanics use one `clock.advance` effect in the same effect batch as all
+sibling state changes. Their requirements declare `elapsedTime.mode` as `zero`, `fixed`, `derived`,
+or `supplied`; supplied durations name the closed input property and derived durations describe
+their catalog-owned source. JavaScript calculates the next coordinate and supplies the typed clock
+metadata. The generic kernel validates a positive bounded monotonic delta and a one-step clock
+revision, replaces the exact observed component, records `game.core.world.clock.advanced`, and
+commits the event, operation receipt, and sibling effects together. A time-coupled mechanic must
+not ask its caller to run a separate clock action. Reusing the action execution identity returns
+the existing lineage without advancing time or writing another event.
+
 Generic `component`, `effects`, and `mechanic` commit kinds are also retired. Application component
 types use versioned registration, reviewed world authoring uses `system.world-state.sync`, and AI-
 authored mechanic candidates use the governed mechanic sandbox before an explicit catalog export

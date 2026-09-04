@@ -50,6 +50,12 @@ public sealed record MechanicRequirements
     public IReadOnlyList<string> EffectComponentIds { get; init; } = [];
 
     /// <summary>
+    /// Declares whether this mechanic advances authoritative time. The declaration describes
+    /// where the catalog obtains its duration; the generic kernel never calculates game time.
+    /// </summary>
+    public ElapsedTimeRequirement? ElapsedTime { get; init; }
+
+    /// <summary>
     /// Everything the mechanic may read, flattened. Used by the resolver to build one query, and
     /// by the supervision view to answer "what can this rule see?" without reading its source.
     /// </summary>
@@ -86,6 +92,27 @@ public sealed record MechanicRequirements
     public IReadOnlyList<string> CompositionProblems()
     {
         var problems = new List<string>();
+
+        if (ElapsedTime is not null)
+        {
+            var mode = ElapsedTime.Mode?.Trim() ?? string.Empty;
+            if (mode is not ("zero" or "fixed" or "derived" or "supplied"))
+                problems.Add("Elapsed time mode must be zero, fixed, derived, or supplied.");
+            if (mode == "fixed" && ElapsedTime.Minutes is not > 0)
+                problems.Add("Fixed elapsed time requires positive minutes.");
+            if (mode != "fixed" && ElapsedTime.Minutes is not null)
+                problems.Add("Only fixed elapsed time may declare minutes.");
+            if (mode == "supplied" && string.IsNullOrWhiteSpace(ElapsedTime.InputProperty))
+                problems.Add("Supplied elapsed time requires an inputProperty.");
+            if (mode != "supplied" && !string.IsNullOrWhiteSpace(ElapsedTime.InputProperty))
+                problems.Add("Only supplied elapsed time may declare an inputProperty.");
+            if (mode == "derived" && string.IsNullOrWhiteSpace(ElapsedTime.Source))
+                problems.Add("Derived elapsed time requires a bounded source description.");
+            if (mode != "derived" && !string.IsNullOrWhiteSpace(ElapsedTime.Source))
+                problems.Add("Only derived elapsed time may declare a source description.");
+            if ((ElapsedTime.InputProperty?.Length ?? 0) > 100 || (ElapsedTime.Source?.Length ?? 0) > 400)
+                problems.Add("Elapsed time declaration values exceed their bounds.");
+        }
 
         foreach (var (key, child) in Children)
         {
@@ -383,6 +410,14 @@ public sealed record MechanicRequirements
 
     private static bool IsUpperSha256(string value) => value is { Length: 64 }
         && value.All(character => char.IsAsciiDigit(character) || character is >= 'A' and <= 'F');
+}
+
+public sealed record ElapsedTimeRequirement
+{
+    public string Mode { get; init; } = string.Empty;
+    public long? Minutes { get; init; }
+    public string InputProperty { get; init; } = string.Empty;
+    public string Source { get; init; } = string.Empty;
 }
 
 /// <summary>The one event mode a mechanic declares. It must match its subscription.</summary>

@@ -129,6 +129,8 @@ public sealed class ApplicationEcsEffectApplier(
                 return Receipt(index, effect, await store.AddComponentAsync(Write(stateSpaceId, effect), cancellationToken));
             case ApplicationEcsEffectType.ComponentSet:
                 return Receipt(index, effect, await store.SetComponentAsync(Write(stateSpaceId, effect), cancellationToken));
+            case ApplicationEcsEffectType.ClockAdvance:
+                return Receipt(index, effect, await store.SetComponentAsync(Write(stateSpaceId, effect), cancellationToken));
             case ApplicationEcsEffectType.ComponentMerge:
                 return Receipt(index, effect, await store.MergeComponentAsync(Write(stateSpaceId, effect), cancellationToken));
             case ApplicationEcsEffectType.ComponentRemove:
