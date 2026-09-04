@@ -8187,6 +8187,234 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.Empty(await harness.EventsAsync(failed.OperationId));
     }
 
+    [Fact]
+    public async Task Downtime_consumes_once_advances_clock_completes_output_and_replays()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await AddDowntimeFixturesAsync(harness);
+        var beginRoles = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["participant"] = "subject.high", ["world"] = "world.downtime.fixture",
+            ["definition"] = "downtime.definition.crafting.fixture"
+        };
+        var beginInput = "{\"activityId\":\"downtime.activity.fixture\",\"expectedDefinitionRevision\":1,"
+                         + "\"expectedDefinitionFingerprint\":\"" + Fingerprint + "\","
+                         + "\"prerequisiteKeys\":[\"tool.smith\"],\"reservations\":[{"
+                         + "\"itemId\":\"item.downtime.material.fixture\","
+                         + "\"definitionId\":\"item.definition.downtime.material\","
+                         + "\"quantity\":2,\"purpose\":\"material\"}]}";
+        var beginRequest = harness.ActionForRoles("dnd2024.mechanic.downtime.begin",
+            beginRoles, beginInput, 0, "63000000000000000000000000000001");
+        var begun = await harness.Runner.RunAsync(beginRequest);
+        var beginReplay = await harness.Runner.RunAsync(beginRequest);
+        AssertSucceeded(begun);
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, beginReplay.Disposition);
+        using (var quantity = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "item.downtime.material.fixture",
+                   "dnd2024.item.quantity"))!.ValueJson))
+            Assert.Equal(1, quantity.RootElement.GetProperty("current").GetInt32());
+
+        var progressRoles = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["participant"] = "subject.high", ["world"] = "world.downtime.fixture"
+        };
+        var progressRequest = harness.ActionForRoles("dnd2024.mechanic.downtime.progress",
+            progressRoles, "{\"minutes\":60,\"expectedClockRevision\":7}", 0,
+            "63000000000000000000000000000002");
+        var progressed = await harness.Runner.RunAsync(progressRequest);
+        var progressReplay = await harness.Runner.RunAsync(progressRequest);
+        AssertSucceeded(progressed);
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, progressReplay.Disposition);
+        using (var clock = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "world.downtime.fixture",
+                   "game.core.world.clock"))!.ValueJson))
+        {
+            Assert.Equal(160, clock.RootElement.GetProperty("currentMinute").GetInt32());
+            Assert.Equal(8, clock.RootElement.GetProperty("revision").GetInt32());
+        }
+
+        var completeRoles = new Dictionary<string, string>(beginRoles, StringComparer.Ordinal)
+        {
+            ["outputDefinition"] = "item.definition.downtime.output"
+        };
+        var completed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.downtime.complete", completeRoles,
+            "{\"expectedDefinitionRevision\":1,\"expectedDefinitionFingerprint\":\""
+            + Fingerprint + "\",\"output\":{\"itemId\":\"item.downtime.output.fixture\","
+            + "\"name\":\"Finished Fixture\",\"slot\":\"inventory.crafted\"}}", 0,
+            "63000000000000000000000000000003"));
+        AssertSucceeded(completed);
+        Assert.NotNull(await harness.Entities.GetEntityAsync(
+            DndHarness.StateSpaceId, "item.downtime.output.fixture"));
+        using (var activity = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "subject.high", "dnd2024.downtime.activity"))!.ValueJson))
+            Assert.Equal("completed", activity.RootElement.GetProperty("status").GetString());
+
+        var read = await harness.ReadModels.ReadAsync(new(
+            DndHarness.StateSpaceId, ApplicationIdentifier.Parse("dnd2024"),
+            "dnd2024.query.downtime-status", beginRoles));
+        using var projected = JsonDocument.Parse(read.DataJson);
+        Assert.Equal("completed", projected.RootElement.GetProperty("status").GetString());
+        Assert.Equal(160, projected.RootElement.GetProperty("clock").GetProperty("minute").GetInt32());
+        Assert.Empty(projected.RootElement.GetProperty("nextActions").EnumerateArray());
+        Assert.Contains(harness.Search("what downtime is due or ready").Records,
+            value => value.Record.QualifiedId == "dnd2024.mechanic.downtime.status.project");
+    }
+
+    [Fact]
+    public async Task Downtime_transaction_failure_rolls_back_reservations_state_and_events()
+    {
+        await using var harness = await DndHarness.CreateAsync(failTransactionAfterEffects: true);
+        await AddDowntimeFixturesAsync(harness);
+        var roles = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["participant"] = "subject.high", ["world"] = "world.downtime.fixture",
+            ["definition"] = "downtime.definition.crafting.fixture"
+        };
+        var failed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.downtime.begin", roles,
+            "{\"activityId\":\"downtime.activity.rollback\",\"expectedDefinitionRevision\":1,"
+            + "\"expectedDefinitionFingerprint\":\"" + Fingerprint + "\","
+            + "\"prerequisiteKeys\":[\"tool.smith\"],\"reservations\":[{"
+            + "\"itemId\":\"item.downtime.material.fixture\","
+            + "\"definitionId\":\"item.definition.downtime.material\","
+            + "\"quantity\":2,\"purpose\":\"material\"}]}", 0,
+            "64000000000000000000000000000001"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, failed.Disposition);
+        Assert.Null(await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.downtime.activity"));
+        using var quantity = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "item.downtime.material.fixture",
+            "dnd2024.item.quantity"))!.ValueJson);
+        Assert.Equal(3, quantity.RootElement.GetProperty("current").GetInt32());
+        Assert.Empty(await harness.EventsAsync(failed.OperationId));
+    }
+
+    [Fact]
+    public async Task Downtime_cancellation_refunds_only_by_the_authored_policy()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await AddDowntimeFixturesAsync(harness);
+        var roles = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["participant"] = "subject.low", ["world"] = "world.downtime.fixture",
+            ["definition"] = "downtime.definition.crafting.fixture"
+        };
+        AssertSucceeded(await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.downtime.begin", roles,
+            "{\"activityId\":\"downtime.activity.cancel\",\"expectedDefinitionRevision\":1,"
+            + "\"expectedDefinitionFingerprint\":\"" + Fingerprint + "\","
+            + "\"prerequisiteKeys\":[\"tool.smith\"],\"reservations\":[{"
+            + "\"itemId\":\"item.downtime.cancel-material.fixture\","
+            + "\"definitionId\":\"item.definition.downtime.material\","
+            + "\"quantity\":2,\"purpose\":\"material\"}]}", 0,
+            "65000000000000000000000000000001")));
+        Assert.Null(await harness.Entities.GetEntityAsync(
+            DndHarness.StateSpaceId, "item.downtime.cancel-material.fixture"));
+
+        var cancelled = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.downtime.cancel", roles,
+            "{\"expectedDefinitionRevision\":1,\"expectedDefinitionFingerprint\":\""
+            + Fingerprint + "\",\"refunds\":[{"
+            + "\"reservationItemId\":\"item.downtime.cancel-material.fixture\","
+            + "\"refundItemId\":\"item.downtime.refund.fixture\"}]}", 0,
+            "65000000000000000000000000000002"));
+        AssertSucceeded(cancelled);
+        using (var refund = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "item.downtime.refund.fixture",
+                   "dnd2024.item.quantity"))!.ValueJson))
+            Assert.Equal(2, refund.RootElement.GetProperty("current").GetInt32());
+        using (var activity = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "subject.low", "dnd2024.downtime.activity"))!.ValueJson))
+            Assert.Equal("cancelled", activity.RootElement.GetProperty("status").GetString());
+    }
+
+    [Theory]
+    [InlineData("recovery")]
+    [InlineData("service")]
+    [InlineData("training")]
+    [InlineData("lifestyle")]
+    public async Task Non_crafting_downtime_families_complete_mechanically_without_creative_output(string kind)
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await AddDowntimeFixturesAsync(harness);
+        var definitionId = "downtime.definition." + kind + ".fixture";
+        var roles = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["participant"] = "subject.high", ["world"] = "world.downtime.fixture",
+            ["definition"] = definitionId
+        };
+        AssertSucceeded(await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.downtime.begin", roles,
+            "{\"activityId\":\"downtime.activity." + kind
+            + "\",\"expectedDefinitionRevision\":1,\"expectedDefinitionFingerprint\":\""
+            + Fingerprint + "\",\"prerequisiteKeys\":[],\"reservations\":[]}", 0,
+            "66000000000000000000000000000001")));
+        AssertSucceeded(await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.downtime.progress",
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["participant"] = "subject.high", ["world"] = "world.downtime.fixture"
+            }, "{\"minutes\":5,\"expectedClockRevision\":7}", 0,
+            "66000000000000000000000000000002")));
+        AssertSucceeded(await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.downtime.complete", roles,
+            "{\"expectedDefinitionRevision\":1,\"expectedDefinitionFingerprint\":\""
+            + Fingerprint + "\"}", 0, "66000000000000000000000000000003")));
+        using var activity = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.downtime.activity"))!.ValueJson);
+        Assert.Equal(kind, activity.RootElement.GetProperty("kind").GetString());
+        Assert.Equal("completed", activity.RootElement.GetProperty("status").GetString());
+        Assert.False(activity.RootElement.TryGetProperty("outputItemId", out _));
+    }
+
+    private static async Task AddDowntimeFixturesAsync(DndHarness harness)
+    {
+        await harness.Entities.CreateEntityAsync(DndHarness.StateSpaceId,
+            "world.downtime.fixture", "Downtime World");
+        await harness.AddApplicationComponentAsync("world.downtime.fixture", "game.core.world.root",
+            "{\"status\":\"active\",\"summary\":\"Bounded downtime fixture.\",\"visibility\":\"party\"}");
+        await harness.AddApplicationComponentAsync("world.downtime.fixture", "game.core.world.clock",
+            "{\"calendarId\":\"calendar.fixture\",\"currentMinute\":100,\"revision\":7}");
+        await harness.Entities.CreateEntityAsync(DndHarness.StateSpaceId,
+            "downtime.definition.crafting.fixture", "Fixture crafting downtime");
+        await harness.AddApplicationComponentAsync("downtime.definition.crafting.fixture",
+            "dnd2024.core.version", "{\"revision\":1,\"status\":\"active\"}");
+        await harness.AddApplicationComponentAsync("downtime.definition.crafting.fixture",
+            "dnd2024.downtime.definition", "{\"revision\":1,\"fingerprint\":\"" + Fingerprint
+            + "\",\"kind\":\"crafting\",\"totalMinutes\":60,"
+            + "\"prerequisiteKeys\":[\"tool.smith\"],\"reservations\":[{"
+            + "\"definitionId\":\"item.definition.downtime.material\",\"quantity\":2,"
+            + "\"purpose\":\"material\"}],\"cancellationPolicy\":\"refund\","
+            + "\"output\":{\"definitionId\":\"item.definition.downtime.output\"}}");
+        foreach (var kind in new[] { "recovery", "service", "training", "lifestyle" })
+        {
+            var definitionId = "downtime.definition." + kind + ".fixture";
+            await harness.Entities.CreateEntityAsync(DndHarness.StateSpaceId,
+                definitionId, "Fixture " + kind + " downtime");
+            await harness.AddApplicationComponentAsync(definitionId, "dnd2024.core.version",
+                "{\"revision\":1,\"status\":\"active\"}");
+            await harness.AddApplicationComponentAsync(definitionId, "dnd2024.downtime.definition",
+                "{\"revision\":1,\"fingerprint\":\"" + Fingerprint + "\",\"kind\":\""
+                + kind + "\",\"totalMinutes\":5,\"prerequisiteKeys\":[],\"reservations\":[],"
+                + "\"cancellationPolicy\":\"retain\"}");
+        }
+        foreach (var (id, name) in new[]
+                 {
+                     ("item.definition.downtime.material", "Fixture material definition"),
+                     ("item.definition.downtime.output", "Fixture output definition")
+                 })
+        {
+            await harness.Entities.CreateEntityAsync(DndHarness.StateSpaceId, id, name);
+            await harness.AddApplicationComponentAsync(id, "dnd2024.core.version",
+                "{\"revision\":1,\"status\":\"active\"}");
+        }
+        await harness.AddPhysicalItemAsync("item.downtime.material.fixture", "Fixture material",
+            "item.definition.downtime.material", "subject.high", "inventory.materials", 3);
+        await harness.AddPhysicalItemAsync("item.downtime.cancel-material.fixture", "Refundable fixture material",
+            "item.definition.downtime.material", "subject.low", "inventory.materials", 2);
+    }
+
     private static async Task AddSocialFixturesAsync(DndHarness harness)
     {
         await harness.Entities.CreateEntityAsync(
@@ -8835,6 +9063,20 @@ public sealed class Dnd2024AbilityCheckTests
                     RepositoryRoot(), "catalog", "event-types", "dnd2024", "social",
                     "attitude-changed.schema.json"))
             });
+            foreach (var eventName in new[] { "started", "progressed", "completed", "cancelled" })
+            {
+                await new EventTypeStore(db).WriteAsync(new()
+                {
+                    Id = "dnd2024.downtime." + eventName,
+                    Category = "dnd2024.ruleset.core.gameplay.downtime",
+                    Name = "Downtime " + eventName,
+                    Scope = "world",
+                    Status = EventTypeStatus.Active,
+                    PayloadSchema = await File.ReadAllTextAsync(Path.Combine(
+                        RepositoryRoot(), "catalog", "event-types", "dnd2024", "downtime",
+                        eventName + ".schema.json"))
+                });
+            }
             await entities.CreateEntityAsync(StateSpaceId,
                 "dnd2024.content.defense.unarmored.v1", "Unarmored Defense (ordinary, D&D 2024)");
             var defenseBasis = additionalTypes["dnd2024.creature.defense-basis"];

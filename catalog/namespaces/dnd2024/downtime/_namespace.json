@@ -1,0 +1,10 @@
+{
+  "id": "dnd2024.downtime",
+  "owner": "dnd2024",
+  "description": "Namespace for typed D&D 2024 bounded downtime lifecycle events.",
+  "allowedKinds": ["event-type"],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for the Slice 14 crafting, recovery, service, training, and lifestyle downtime contracts."
+}
