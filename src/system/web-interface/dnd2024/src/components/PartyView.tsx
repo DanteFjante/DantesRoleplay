@@ -166,7 +166,10 @@ export function PartyView({
             <CharacterSheet sheet={selectedMember.characterSheet} />
           ) : stateFailed ? null : section === "inventory" && selectedMember.characterSheet ? (
             <div className="character-inventory-layout">
-              <InventoryTree items={selectedMember.characterSheet.inventory.items} />
+              <InventoryTree
+                definitions={selectedMember.characterSheet.dossier?.inventory.definitions ?? []}
+                items={selectedMember.characterSheet.inventory.items}
+              />
               <WalletSummary wallet={selectedMember.characterSheet.wallet} />
             </div>
           ) : filteredEntries.length ? (

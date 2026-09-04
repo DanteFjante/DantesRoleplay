@@ -383,9 +383,29 @@ public sealed class Dnd2024ApplicationReadViewTests
             [martialArtsId] = Definition(martialArtsId, "Martial Arts (SRD 5.2.1, content v1)", "feature", "martial-arts"),
             [unarmoredDefenseId] = Definition(unarmoredDefenseId, "Unarmored Defense (SRD 5.2.1, content v1)", "feature", "unarmored-defense"),
             [originFeatId] = Definition(originFeatId, "Magic Initiate (SRD 5.2.1, content v1)", "feature", "magic-initiate"),
-            ["dnd2024.equipment.weapon.quarterstaff"] = new("dnd2024.equipment.weapon.quarterstaff", new Dictionary<string, string>(), "Quarterstaff"),
+            ["dnd2024.equipment.weapon.quarterstaff"] = new("dnd2024.equipment.weapon.quarterstaff", new Dictionary<string, string>
+            {
+                ["dnd2024.item-definition"] = Json(new
+                {
+                    definitionVersion = 1,
+                    kind = "weapon",
+                    stackPolicy = "separate",
+                    massPounds = new { numerator = 4, denominator = 1 },
+                    equipmentModes = new[] { "held" },
+                    sourceRef = new { sourceId = "dnd2024.source.srd-5.2.1", locator = "Equipment > Weapons > Quarterstaff" }
+                })
+            }, "Quarterstaff"),
             ["dnd2024.equipment.tool.carving-knife"] = new("dnd2024.equipment.tool.carving-knife", new Dictionary<string, string>
             {
+                ["dnd2024.item-definition"] = Json(new
+                {
+                    definitionVersion = 1,
+                    kind = "adventuring-gear",
+                    stackPolicy = "separate",
+                    massPounds = new { numerator = 1, denominator = 2 },
+                    equipmentModes = new[] { "held" },
+                    sourceRef = new { sourceId = "dnd2024-extension.caldris-homebrew", locator = "Caldris Homebrew > Items > Ganji's Carving Knife" }
+                }),
                 ["game.core.rules.readable"] = Json(new { visibility = "gm", presentationStatus = "published", summary = "Private GM equipment history." })
             }, "Carving Knife")
         };
@@ -408,6 +428,18 @@ public sealed class Dnd2024ApplicationReadViewTests
         Assert.Equal(3, data.GetProperty("features").GetArrayLength());
         Assert.Equal(2, data.GetProperty("sheet").GetProperty("inventory").GetProperty("items").GetArrayLength());
         Assert.Equal(4, data.GetProperty("provenance").GetProperty("inventoryDepth").GetInt32());
+        var inventoryDefinitions = data.GetProperty("inventory").GetProperty("definitions")
+            .EnumerateArray().ToArray();
+        Assert.All(inventoryDefinitions, definition =>
+        {
+            Assert.Equal("active", definition.GetProperty("status").GetString());
+            Assert.NotNull(definition.GetProperty("summary").GetString());
+            Assert.NotEqual(JsonValueKind.Null, definition.GetProperty("source").ValueKind);
+        });
+        Assert.Contains(inventoryDefinitions, definition =>
+            definition.GetProperty("summary").GetString() == "Weapon · 4 lb · Held");
+        Assert.Contains(inventoryDefinitions, definition =>
+            definition.GetProperty("summary").GetString() == "Adventuring Gear · 0.5 lb · Held");
         Assert.DoesNotContain("Private GM equipment history", data.GetRawText(), StringComparison.Ordinal);
         Assert.DoesNotContain(Labels(data), value => value.EndsWith(" V1", StringComparison.Ordinal));
         AssertSchema("character/dnd2024.query.character-dossier-v1.json", data.GetRawText());

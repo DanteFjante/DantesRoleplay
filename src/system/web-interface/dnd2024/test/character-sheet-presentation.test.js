@@ -37,6 +37,13 @@ test("large spell and action reference sets remain bounded in the presentation",
   assert.match(source, /values\.length - visible\.length/u);
 });
 
+test("inventory renders canonical definition details and provenance from the dossier", () => {
+  assert.match(source, /dossier\?\.inventory\.definitions/u);
+  assert.match(source, /definition\?\.summary/u);
+  assert.match(source, /definition\?\.source/u);
+  assert.doesNotMatch(source, /fixture\.legacy|legacy\.stats/u);
+});
+
 test("the character page owns responsive desktop, tablet, and mobile layouts", () => {
   assert.match(styles, /\.character-page\s*\{[^}]*min-width:\s*0/su);
   assert.match(styles, /\.character-workspace\s*\{[^}]*grid-template-columns:\s*minmax\(220px,\s*0\.25fr\)\s*minmax\(0,\s*1fr\)/su);

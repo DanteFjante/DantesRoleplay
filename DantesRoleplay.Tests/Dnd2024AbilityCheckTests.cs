@@ -5123,6 +5123,54 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.True(initiative.Ok, initiative.Run?.Error);
     }
 
+    [Fact]
+    public async Task Character_origin_materialization_commits_one_receipted_component_and_replays()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddBasicCharacterCreationFixturesAsync();
+        const string actorId = "actor.origin.materialize";
+        const string input =
+            "{\"characterId\":\"actor.origin.materialize\",\"name\":\"Restored Origin\",\"ability\":{\"scores\":{\"str\":15,\"dex\":14,\"con\":13,\"int\":8,\"wis\":10,\"cha\":12},\"increases\":{\"str\":2,\"con\":1}},\"speciesSelection\":{\"size\":\"medium\"}}";
+        var created = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.character.basic.create",
+            BasicCreationRoles("world.character-creation.fixture",
+                "dnd2024.content.species.human.v1"),
+            input, 0, "cc4a0000000000000000000000000000"));
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, created.Disposition);
+
+        var origin = (await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+            actorId, "dnd2024.character.origin-selections"))!;
+        Assert.True(await harness.Entities.RemoveComponentAsync(DndHarness.StateSpaceId,
+            actorId, origin.Type, origin.Revision));
+        var creationRecord = (await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+            actorId, "dnd2024.character-creation-record"))!.ValueJson;
+        var request = harness.ActionForRoles(
+            "dnd2024.mechanic.character.origin.materialize",
+            new Dictionary<string, string> { ["subject"] = actorId }, "{}", 0,
+            "cc4a1000000000000000000000000000");
+
+        var materialized = await harness.Runner.RunAsync(request);
+        var replay = await harness.Runner.RunAsync(request);
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, materialized.Disposition);
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replay.Disposition);
+        Assert.Equal(actorId, Assert.Single(materialized.AffectedEntityIds));
+        var receipt = Assert.Single(materialized.EffectReceipts);
+        Assert.Equal("component.add", receipt.Type);
+        Assert.Equal(actorId, receipt.EntityId);
+        Assert.Equal("dnd2024.character.origin-selections", receipt.QualifiedTypeId);
+        using var restored = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, actorId,
+            "dnd2024.character.origin-selections"))!.ValueJson);
+        Assert.Equal("dnd2024.content.species.human.v1",
+            restored.RootElement.GetProperty("speciesRef").GetProperty("entityId").GetString());
+        Assert.Equal("dnd2024.content.background.soldier.v1",
+            restored.RootElement.GetProperty("backgroundRef").GetProperty("entityId").GetString());
+        Assert.Equal(creationRecord, (await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, actorId,
+            "dnd2024.character-creation-record"))!.ValueJson);
+    }
+
     [Theory]
     [MemberData(nameof(BasicClassCreationCases))]
     public async Task Basic_character_creation_supports_every_srd_level_one_class_model(

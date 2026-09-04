@@ -1,10 +1,10 @@
 import { useMemo, useState, type SyntheticEvent } from "react";
 
-import type { CharacterInventoryItemV2 } from "../../data/hub-types";
+import type { CharacterDossierDefinition, CharacterInventoryItemV2 } from "../../data/hub-types";
 import { Icon } from "../Icon";
 import { MediaImage } from "../MediaImage";
 
-function ItemIdentity({ item }: { item: CharacterInventoryItemV2 }) {
+function ItemIdentity({ definition, item }: { definition?: CharacterDossierDefinition; item: CharacterInventoryItemV2 }) {
   const visual = item.media?.illustration ?? item.media?.icon;
   return (
     <>
@@ -14,6 +14,8 @@ function ItemIdentity({ item }: { item: CharacterInventoryItemV2 }) {
       <span className="character-inventory__item-copy">
         <strong>{item.name}</strong>
         <small>{item.definition.label}{item.quantity > 1 ? ` · ${item.quantity}` : ""}</small>
+        {definition?.summary ? <small>{definition.summary}</small> : null}
+        {definition?.source ? <small>{definition.source.locator}</small> : null}
       </span>
       {item.equipmentSlots.length ? <span className="character-inventory__equipped">Equipped</span> : null}
     </>
@@ -22,10 +24,12 @@ function ItemIdentity({ item }: { item: CharacterInventoryItemV2 }) {
 
 function InventoryBranch({
   childrenByParent,
+  definitions,
   item,
   onDisclosure,
 }: {
   childrenByParent: Map<string | null, CharacterInventoryItemV2[]>;
+  definitions: Map<string, CharacterDossierDefinition>;
   item: CharacterInventoryItemV2;
   onDisclosure: (item: CharacterInventoryItemV2, expanded: boolean) => void;
 }) {
@@ -35,26 +39,27 @@ function InventoryBranch({
     <ul>
       {children.map((child) => (
         <li key={child.id}>
-          <InventoryBranch childrenByParent={childrenByParent} item={child} onDisclosure={onDisclosure} />
+          <InventoryBranch childrenByParent={childrenByParent} definitions={definitions} item={child} onDisclosure={onDisclosure} />
         </li>
       ))}
     </ul>
   ) : item.deeperContentsOmitted ? <p className="character-inventory__omission">Deeper contents were intentionally omitted.</p> : null;
 
-  if (!canExpand) return <div className="character-inventory__leaf"><ItemIdentity item={item} /></div>;
+  if (!canExpand) return <div className="character-inventory__leaf"><ItemIdentity definition={definitions.get(item.definition.id)} item={item} /></div>;
   return (
     <details
       className="character-inventory__branch"
       onToggle={(event: SyntheticEvent<HTMLDetailsElement>) => onDisclosure(item, event.currentTarget.open)}
     >
-      <summary><ItemIdentity item={item} /></summary>
+      <summary><ItemIdentity definition={definitions.get(item.definition.id)} item={item} /></summary>
       {contents}
     </details>
   );
 }
 
-export function InventoryTree({ items }: { items: CharacterInventoryItemV2[] }) {
+export function InventoryTree({ definitions: values, items }: { definitions: CharacterDossierDefinition[]; items: CharacterInventoryItemV2[] }) {
   const [announcement, setAnnouncement] = useState("");
+  const definitions = useMemo(() => new Map(values.map((value) => [value.id, value])), [values]);
   const childrenByParent = useMemo(() => {
     const groups = new Map<string | null, CharacterInventoryItemV2[]>();
     for (const item of items) {
@@ -80,6 +85,7 @@ export function InventoryTree({ items }: { items: CharacterInventoryItemV2[] }) 
             <li key={item.id}>
               <InventoryBranch
                 childrenByParent={childrenByParent}
+                definitions={definitions}
                 item={item}
                 onDisclosure={(changed, expanded) => setAnnouncement(
                   `${changed.name} ${expanded ? "expanded" : "collapsed"}. ${changed.childCount} contained ${changed.childCount === 1 ? "item" : "items"}.`,
