@@ -1,0 +1,44 @@
+{
+  "id": "dnd2024.query.encounter-board",
+  "category": "dnd2024.ruleset.core.combat.tactical-board.read-model",
+  "name": "Current tactical encounter board",
+  "description": "Returns one audience-authorized encounter's bounded grid, visible terrain and obstacles, positioned participants, Initiative order, and active turn.",
+  "matches": ["show the tactical encounter board", "show combat positions and obstacles", "where is everyone in this encounter"],
+  "roles": {"encounter": "The exact audience-authorized encounter."},
+  "executor": "mechanic-projection",
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.encounter.board.project",
+    "version": 1,
+    "contentHash": "7742D067B5F340E6A2CC2140943BD9AF240686778AD6EAB6FC88D1B6AFC610EA",
+    "outputSchemaHash": "A36C0B4B04C0CF278A7DDA904EBBC912F3FEED7B62EC9C3C1ABA417CA547138F"
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["version", "perspective", "encounter", "board", "terrain", "obstacles", "participants", "turn"],
+    "properties": {
+      "version": {"const": 1},
+      "perspective": {"enum": ["player", "dm"]},
+      "encounter": {"$ref": "#/$defs/named"},
+      "board": {"$ref": "#/$defs/board"},
+      "terrain": {"type": "array", "maxItems": 256, "items": {"$ref": "#/$defs/terrain"}},
+      "obstacles": {"type": "array", "maxItems": 256, "items": {"$ref": "#/$defs/obstacle"}},
+      "participants": {"type": "array", "maxItems": 100, "items": {"$ref": "#/$defs/participant"}},
+      "turn": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/turn"}]}
+    },
+    "$defs": {
+      "id": {"type": "string", "minLength": 1, "maxLength": 200},
+      "named": {"type": "object", "additionalProperties": false, "required": ["id", "name"], "properties": {"id": {"$ref": "#/$defs/id"}, "name": {"type": "string", "minLength": 1, "maxLength": 400}}},
+      "area": {"type": "object", "additionalProperties": false, "required": ["x", "y", "width", "height"], "properties": {"x": {"type": "integer", "minimum": 0, "maximum": 63}, "y": {"type": "integer", "minimum": 0, "maximum": 63}, "width": {"type": "integer", "minimum": 1, "maximum": 64}, "height": {"type": "integer", "minimum": 1, "maximum": 64}}},
+      "board": {"type": "object", "additionalProperties": false, "required": ["revision", "columns", "rows", "feetPerSquare"], "properties": {"revision": {"type": "integer", "minimum": 1}, "columns": {"type": "integer", "minimum": 1, "maximum": 64}, "rows": {"type": "integer", "minimum": 1, "maximum": 64}, "feetPerSquare": {"type": "integer", "minimum": 1, "maximum": 30}}},
+      "terrain": {"type": "object", "additionalProperties": false, "required": ["id", "label", "area", "movementCost", "visibility"], "properties": {"id": {"$ref": "#/$defs/id"}, "label": {"type": "string", "minLength": 1, "maxLength": 200}, "area": {"$ref": "#/$defs/area"}, "movementCost": {"type": "integer", "minimum": 1, "maximum": 4}, "visibility": {"enum": ["public", "dm"]}}},
+      "obstacle": {"type": "object", "additionalProperties": false, "required": ["id", "label", "area", "blocksMovement", "visibility"], "properties": {"id": {"$ref": "#/$defs/id"}, "label": {"type": "string", "minLength": 1, "maxLength": 200}, "area": {"$ref": "#/$defs/area"}, "blocksMovement": {"const": true}, "visibility": {"enum": ["public", "dm"]}}},
+      "position": {"type": "object", "additionalProperties": false, "required": ["x", "y", "width", "height", "elevationFeet", "revision"], "properties": {"x": {"type": "integer", "minimum": 0, "maximum": 63}, "y": {"type": "integer", "minimum": 0, "maximum": 63}, "width": {"type": "integer", "minimum": 1, "maximum": 8}, "height": {"type": "integer", "minimum": 1, "maximum": 8}, "elevationFeet": {"type": "integer", "minimum": -1000, "maximum": 1000}, "revision": {"type": "integer", "minimum": 1}}},
+      "participant": {"type": "object", "additionalProperties": false, "required": ["participationId", "name", "initiative", "tieBreakOrder", "status", "position", "activeTurn"], "properties": {"participationId": {"$ref": "#/$defs/id"}, "name": {"type": "string", "minLength": 1, "maxLength": 400}, "initiative": {"type": "integer", "minimum": -1000000, "maximum": 1000000}, "tieBreakOrder": {"type": "integer", "minimum": 0, "maximum": 99}, "status": {"const": "active"}, "position": {"$ref": "#/$defs/position"}, "activeTurn": {"type": "boolean"}}},
+      "turn": {"type": "object", "additionalProperties": false, "required": ["id", "participationId", "ordinal"], "properties": {"id": {"$ref": "#/$defs/id"}, "participationId": {"$ref": "#/$defs/id"}, "ordinal": {"type": "integer", "minimum": 0, "maximum": 99}}}
+    }
+  },
+  "exposure": "model-visible",
+  "status": "active"
+}

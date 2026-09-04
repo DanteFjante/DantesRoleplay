@@ -1,1 +1,1 @@
-{"id":"dnd2024.combat.position","name":"Combat position state","description":"Tracks combat-grid spaces, elevation, and facing while generic containment remains authoritative for the current world location."}
+{"id":"dnd2024.combat.position","name":"Combat position state","description":"Tracks one encounter participation's exact grid anchor, footprint, elevation, visibility, and revision while generic containment remains authoritative for world location."}

@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import { Icon } from "./Icon";
 import { MediaImage } from "./MediaImage";
 import { markCombatBoardReady } from "../observability/performance.js";
+import { TacticalBoard } from "./TacticalBoard";
 
 function ViewIntro({ eyebrow, title, copy }: { eyebrow: string; title: string; copy: string }) {
   return (
@@ -213,6 +214,7 @@ export function CurrentViewPreview({
             </div>
           </div>
         </section>
+        {combat.board ? <TacticalBoard board={combat.board} /> : null}
         <div className="current-scene-grid current-combat-grid">
           <section className="current-scene-panel" aria-labelledby="current-initiative-title">
             <header><Icon name="Swords" size={18} /><h2 id="current-initiative-title">Initiative</h2></header>

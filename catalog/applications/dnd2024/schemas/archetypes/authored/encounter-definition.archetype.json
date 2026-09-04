@@ -12,6 +12,7 @@
     "dnd2024.core.presentation",
     "dnd2024.core.rules-text",
     "dnd2024.core.tags",
+    "dnd2024.encounter.board",
     "dnd2024.encounter.difficulty"
   ],
   "sourceSections": ["Gameplay Toolbox 192–203"],

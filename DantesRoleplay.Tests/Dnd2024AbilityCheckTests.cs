@@ -2539,6 +2539,64 @@ public sealed class Dnd2024AbilityCheckTests
     }
 
     [Fact]
+    public async Task Tactical_board_places_and_moves_through_public_direct_actions_atomically_and_idempotently()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddEncounterFixturesAsync();
+        var encounterRoles = new Dictionary<string, string> { ["encounter"] = "encounter.fixture" };
+        var orderRequest = await EncounterOrderWithHighFirstAsync(harness);
+        AssertSucceeded(await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.encounter-initiative-order", encounterRoles,
+            orderRequest.Input, orderRequest.Seed, "1023456789abcdef0123456789abcdf0")));
+        AssertSucceeded(await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.encounter-turn.start", encounterRoles,
+            "{\"roundId\":\"encounter.round.1\",\"turnId\":\"encounter.turn.1.0\"}", 0,
+            "2023456789abcdef0123456789abcdf0")));
+
+        await harness.AddApplicationComponentAsync("encounter.fixture", "dnd2024.encounter.board",
+            "{\"revision\":3,\"status\":\"active\",\"visibility\":\"public\",\"columns\":12,\"rows\":8,\"feetPerSquare\":5,\"terrain\":[],\"obstacles\":[]}");
+        await harness.AddApplicationComponentAsync("encounter.participation.low", "dnd2024.combat.position",
+            "{\"encounter\":{\"entityId\":\"encounter.fixture\"},\"anchor\":{\"x\":8,\"y\":2},\"footprint\":{\"width\":1,\"height\":1},\"elevationFeet\":0,\"visibility\":\"public\",\"revision\":1}");
+
+        var placementRoles = new Dictionary<string, string>
+        {
+            ["encounter"] = "encounter.fixture",
+            ["participation"] = "encounter.participation.high"
+        };
+        var placed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.encounter.board.place", placementRoles,
+            "{\"expectedBoardRevision\":3,\"expectedPositionRevision\":null,\"position\":{\"anchor\":{\"x\":1,\"y\":1},\"footprint\":{\"width\":1,\"height\":1},\"elevationFeet\":0,\"visibility\":\"public\"}}",
+            0, "3023456789abcdef0123456789abcdf0"));
+        AssertSucceeded(placed);
+
+        var movementRoles = new Dictionary<string, string>
+        {
+            ["subject"] = "subject.high",
+            ["encounter"] = "encounter.fixture",
+            ["participation"] = "encounter.participation.high"
+        };
+        var moveRequest = harness.ActionForRoles(
+            "dnd2024.mechanic.encounter.board.move", movementRoles,
+            "{\"expectedBoardRevision\":3,\"expectedPositionRevision\":1,\"expectedTurnId\":\"encounter.turn.1.0\",\"path\":[{\"x\":2,\"y\":1}],\"spend\":{\"resource\":\"movement\",\"distance\":{\"dimension\":\"distance\",\"value\":{\"numerator\":381,\"denominator\":250},\"unit\":{\"entityId\":\"dnd2024.vocabulary.distance-unit.meter\"}}}}",
+            0, "4023456789abcdef0123456789abcdf0");
+        var moved = await harness.Runner.RunAsync(moveRequest);
+        var replay = await harness.Runner.RunAsync(moveRequest);
+        AssertSucceeded(moved);
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replay.Disposition);
+        Assert.Equal(moved.OperationId, replay.OperationId);
+
+        var position = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "encounter.participation.high", "dnd2024.combat.position");
+        using var positionJson = JsonDocument.Parse(position!.ValueJson);
+        Assert.Equal(2, positionJson.RootElement.GetProperty("anchor").GetProperty("x").GetInt32());
+        Assert.Equal(2, positionJson.RootElement.GetProperty("revision").GetInt32());
+        var budget = await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "encounter.turn.1.0", "dnd2024.combat.turn-budget");
+        using var budgetJson = JsonDocument.Parse(budget!.ValueJson);
+        Assert.Single(budgetJson.RootElement.GetProperty("movementSpent").EnumerateArray());
+    }
+
+    [Fact]
     public async Task Character_content_definition_is_source_fixed_write_once_and_replay_safe()
     {
         await using var harness = await DndHarness.CreateAsync();
@@ -8121,7 +8179,7 @@ public sealed class Dnd2024AbilityCheckTests
     }
 
     [Fact]
-    public async Task Active_catalog_keeps_existing_read_views_and_exposes_all_slice_16_status_views()
+    public async Task Active_catalog_keeps_existing_read_views_and_exposes_slice_16_status_and_slice_17_board_views()
     {
         await using var harness = await DndHarness.CreateAsync();
         var existing = new[]
@@ -8132,7 +8190,8 @@ public sealed class Dnd2024AbilityCheckTests
             "dnd2024.query.unresolved-decisions",
             "dnd2024.query.recent-consequences",
             "dnd2024.query.character-sheet-v2",
-            "dnd2024.query.character-dossier-v1"
+            "dnd2024.query.character-dossier-v1",
+            "dnd2024.query.encounter-board"
         };
         var status = new[]
         {

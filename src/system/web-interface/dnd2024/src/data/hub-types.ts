@@ -726,6 +726,32 @@ export type CurrentSceneAffordance = {
   summary: string;
 };
 
+export type TacticalEncounterBoard = {
+  revision: number;
+  columns: number;
+  rows: number;
+  feetPerSquare: number;
+  terrain: Array<{
+    id: string;
+    label: string;
+    area: { x: number; y: number; width: number; height: number };
+    movementCost: number;
+  }>;
+  obstacles: Array<{
+    id: string;
+    label: string;
+    area: { x: number; y: number; width: number; height: number };
+  }>;
+  participants: Array<{
+    id: string;
+    name: string;
+    initiative: number;
+    active: boolean;
+    position: { x: number; y: number; width: number; height: number; elevationFeet: number; revision: number };
+  }>;
+  turn?: { id: string; participationId: string; actorId: string; actorName: string; ordinal: number };
+};
+
 export type CurrentSituationReadModel =
   | {
       status: "unavailable";
@@ -775,6 +801,7 @@ export type CurrentSituationReadModel =
       combat: {
         id: string;
         name: string;
+        board?: TacticalEncounterBoard;
         round?: { id: string; number: number };
         turn?: {
           id: string;

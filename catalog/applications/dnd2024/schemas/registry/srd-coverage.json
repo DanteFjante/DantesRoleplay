@@ -67,6 +67,7 @@
         "dnd2024.creature.proficiencies",
         "dnd2024.creature.senses",
         "dnd2024.creature.temporary-hit-points",
+        "dnd2024.encounter.board",
         "dnd2024.encounter.participation",
         "dnd2024.encounter.round",
         "dnd2024.encounter.turn",
@@ -438,6 +439,7 @@
       "componentKeys": [
         "dnd2024.encounter.definition",
         "dnd2024.encounter.difficulty",
+        "dnd2024.encounter.board",
         "dnd2024.encounter.participation",
         "dnd2024.encounter.round",
         "dnd2024.encounter.turn",

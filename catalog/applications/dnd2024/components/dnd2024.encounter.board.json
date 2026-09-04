@@ -1,0 +1,1 @@
+{"id":"dnd2024.encounter.board","name":"Tactical encounter board","description":"Owns one encounter's bounded square-grid geometry, scale, terrain, obstacles, audience visibility, and revision independently of any attached art."}

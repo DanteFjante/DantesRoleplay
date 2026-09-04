@@ -697,6 +697,69 @@ test("client envelope validation accepts only the closed ready shape", () => {
         id: "encounter.archive.ambush",
         name: "Archive ambush",
         participants: [{ id: "actor.hero", name: "Hero", initiative: 17, active: true }],
+        board: {
+          revision: 3,
+          columns: 12,
+          rows: 8,
+          feetPerSquare: 5,
+          terrain: [{ id: "terrain.rubble", label: "Rubble", area: { x: 2, y: 2, width: 2, height: 1 }, movementCost: 2 }],
+          obstacles: [{ id: "obstacle.wall", label: "Wall", area: { x: 6, y: 1, width: 1, height: 3 } }],
+          participants: [{
+            id: "actor.hero",
+            name: "Hero",
+            initiative: 17,
+            active: true,
+            position: { x: 1, y: 1, width: 1, height: 1, elevationFeet: 0, revision: 2 },
+          }],
+          turn: {
+            id: "turn.archive.1",
+            participationId: "participation.hero",
+            actorId: "actor.hero",
+            actorName: "Hero",
+            ordinal: 0,
+          },
+        },
+      },
+    },
+  }), true);
+  assert.equal(isReadyHubEnvelope({
+    ...ready,
+    currentSituation: {
+      status: "ready",
+      kind: "combat",
+      locationId: "archive",
+      combat: {
+        id: "encounter.archive.ambush",
+        name: "Archive ambush",
+        participants: [{ id: "actor.hero", name: "Hero", initiative: 17, active: true }],
+        board: {
+          revision: 3,
+          columns: 12,
+          rows: 8,
+          feetPerSquare: 5,
+          terrain: [],
+          obstacles: [],
+          participants: [{
+            id: "actor.hero",
+            name: "Hero",
+            initiative: 17,
+            active: true,
+            position: { x: 11, y: 7, width: 2, height: 1, elevationFeet: 0, revision: 2 },
+          }],
+        },
+      },
+    },
+  }), false);
+  assert.equal(isReadyHubEnvelope({
+    ...ready,
+    currentSituation: {
+      status: "ready",
+      kind: "combat",
+      locationId: "archive",
+      combat: {
+        id: "encounter.archive.ambush",
+        name: "Archive ambush",
+        participants: [{ id: "actor.hero", name: "Hero", initiative: 17, active: true }],
         turn: {
           id: "turn.archive.1",
           participationId: "participation.hero",

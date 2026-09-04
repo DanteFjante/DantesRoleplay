@@ -10,6 +10,7 @@ import type {
   Perspective,
   ReadyHubEnvelope,
   SectionState,
+  TacticalEncounterBoard,
 } from "../../src/data/hub-types";
 import { resolveAudience } from "../../src/server/audience-policy.js";
 import { projectHubEnvelope } from "../../src/server/hub-envelope.js";
@@ -26,6 +27,7 @@ import {
   MapCanvas,
   type MapViewportState,
 } from "../../src/components/MapCanvas";
+import { TacticalBoard } from "../../src/components/TacticalBoard";
 
 const dmPrincipal = "principal.dm.fixture";
 
@@ -221,6 +223,53 @@ test("mounted map lets a longer page consume wheel input without changing zoom",
     assert.equal(wheel.defaultPrevented, false);
     assert.equal(page.scrollTop, 280);
     assert.equal(mounted.container.querySelector("[aria-label='Current map zoom']")?.textContent, "100%");
+  } finally {
+    await mounted.cleanup();
+  }
+});
+
+const mountedBoard: TacticalEncounterBoard = {
+  revision: 4,
+  columns: 12,
+  rows: 8,
+  feetPerSquare: 5,
+  terrain: [{ id: "terrain.rubble", label: "Rubble", area: { x: 4, y: 1, width: 2, height: 2 }, movementCost: 2 }],
+  obstacles: [{ id: "obstacle.wall", label: "Stone wall", area: { x: 8, y: 0, width: 1, height: 4 } }],
+  participants: [{
+    id: "actor.hero", name: "Hero", initiative: 17, active: true,
+    position: { x: 2, y: 3, width: 1, height: 1, elevationFeet: 0, revision: 2 },
+  }],
+  turn: { id: "turn.1", participationId: "participation.hero", actorId: "actor.hero", actorName: "Hero", ordinal: 0 },
+};
+
+test("mounted tactical board leaves wheel scrolling to the page and zooms only through buttons", async () => {
+  const mounted = await mount(<div data-testid="board-page" style={{ height: "2400px", overflow: "auto" }}><TacticalBoard board={mountedBoard} /></div>);
+  try {
+    const viewport = mounted.container.querySelector(".tactical-board-viewport") as HTMLDivElement;
+    const stage = mounted.container.querySelector(".tactical-board-stage") as HTMLDivElement;
+    const page = mounted.container.querySelector("[data-testid=board-page]") as HTMLDivElement;
+    assert.ok(viewport);
+    assert.ok(stage);
+    Object.defineProperties(viewport, {
+      clientWidth: { configurable: true, value: 400 },
+      clientHeight: { configurable: true, value: 300 },
+    });
+    Object.defineProperties(stage, {
+      offsetWidth: { configurable: true, value: 800 },
+      offsetHeight: { configurable: true, value: 500 },
+    });
+    const wheel = new window.WheelEvent("wheel", { bubbles: true, cancelable: true, deltaY: 220 });
+    const browserDefaultAllowed = await dispatch(viewport, wheel);
+    if (browserDefaultAllowed) page.scrollTop += wheel.deltaY;
+    assert.equal(browserDefaultAllowed, true);
+    assert.equal(wheel.defaultPrevented, false);
+    assert.equal(page.scrollTop, 220);
+    assert.equal(mounted.container.querySelector("[aria-label='Current tactical board zoom']")?.textContent, "100%");
+
+    const zoomIn = mounted.container.querySelector("[aria-label='Zoom tactical board in']") as HTMLButtonElement;
+    await click(zoomIn);
+    assert.equal(mounted.container.querySelector("[aria-label='Current tactical board zoom']")?.textContent, "125%");
+    assert.match(mounted.container.querySelector("[aria-label^='Hero. Current turn']")?.getAttribute("aria-label") ?? "", /Grid 3, 4.*Footprint 1 by 1.*Elevation 0 feet/u);
   } finally {
     await mounted.cleanup();
   }

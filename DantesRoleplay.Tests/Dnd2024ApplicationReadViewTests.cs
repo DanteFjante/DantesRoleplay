@@ -30,7 +30,8 @@ public sealed class Dnd2024ApplicationReadViewTests
         { "data/dnd2024.query.object-durability.json", "objects/dnd2024.mechanic.object.durability.read" },
         { "social/dnd2024.query.social-context.json", "social/dnd2024.mechanic.social.context.project" },
         { "exploration/dnd2024.query.travel-status.json", "exploration/dnd2024.mechanic.travel.status.project" },
-        { "hazards/dnd2024.query.hazard-status.json", "hazards/dnd2024.mechanic.hazard.status.project" }
+        { "hazards/dnd2024.query.hazard-status.json", "hazards/dnd2024.mechanic.hazard.status.project" },
+        { "combat/dnd2024.query.encounter-board.json", "combat/dnd2024.mechanic.encounter.board.project" }
     };
 
     [Theory]
@@ -366,6 +367,251 @@ public sealed class Dnd2024ApplicationReadViewTests
         Assert.DoesNotContain("Secret sponsor", raw, StringComparison.Ordinal);
         Assert.DoesNotContain("The guard lied", raw, StringComparison.Ordinal);
         AssertSchema("campaign/dnd2024.query.recent-consequences.json", raw);
+    }
+
+    [Fact]
+    public async Task Encounter_board_projects_exact_geometry_and_filters_gm_tactical_state()
+    {
+        const string encounterId = "encounter.archive.ambush";
+        static string Position(string encounterId, int x, string visibility) => Json(new
+        {
+            encounter = Ref(encounterId), anchor = new { x, y = 2 }, footprint = new { width = 1, height = 1 },
+            elevationFeet = 0, visibility, revision = 2
+        });
+        static RelatedEntityProjection Participant(
+            string encounterId, string id, string name, int initiative, int order, int x, string visibility) =>
+            new(id, name, encounterId, id, "encounter.has-participation", "{}", new Dictionary<string, string>
+            {
+                ["dnd2024.encounter.participation"] = Json(new
+                {
+                    membershipRelationship = new
+                    {
+                        stateSpaceId = "dnd2024-main", fromEntityId = encounterId, toEntityId = id,
+                        qualifiedKind = "dnd2024.encounter.has-participation"
+                    },
+                    status = "active"
+                }),
+                ["dnd2024.combat.initiative"] = Json(new
+                {
+                    encounter = Ref(encounterId), status = "locked", result = initiative, tieBreakOrder = order
+                }),
+                ["dnd2024.combat.position"] = Position(encounterId, x, visibility)
+            });
+
+        var publicParticipant = Participant(encounterId, "participation.hero", "Hero", 17, 0, 2, "public");
+        var secretParticipant = Participant(encounterId, "participation.secret", "Hidden stalker", 15, 1, 8, "dm");
+        var turn = new RelatedEntityProjection("turn.secret", "Hidden turn", encounterId, "turn.secret",
+            "encounter.active-turn", "{}", new Dictionary<string, string>
+            {
+                ["dnd2024.encounter.turn"] = Json(new
+                {
+                    encounter = Ref(encounterId), round = Ref("round.1"), participant = Ref("participation.secret"),
+                    ordinal = 1, status = "active"
+                })
+            });
+        var encounter = Entity(encounterId, "Archive ambush", new()
+        {
+            ["dnd2024.encounter.board"] = Json(new
+            {
+                revision = 7, status = "active", visibility = "public", columns = 12, rows = 8, feetPerSquare = 5,
+                terrain = new object[]
+                {
+                    new { id = "terrain.rubble", label = "Rubble", area = new { x = 4, y = 2, width = 2, height = 1 }, movementCost = 2, visibility = "public" },
+                    new { id = "terrain.sinkhole", label = "Hidden sinkhole", area = new { x = 9, y = 3, width = 1, height = 1 }, movementCost = 3, visibility = "dm" }
+                },
+                obstacles = new object[]
+                {
+                    new { id = "obstacle.wall", label = "Wall", area = new { x = 6, y = 1, width = 1, height = 3 }, blocksMovement = true, visibility = "public" },
+                    new { id = "obstacle.secret", label = "Illusory barrier", area = new { x = 10, y = 4, width = 1, height = 1 }, blocksMovement = true, visibility = "dm" }
+                }
+            })
+        }, related: [publicParticipant, secretParticipant, turn]);
+
+        var playerProjection = new MechanicProjection
+        {
+            Input = "{}", Audience = MechanicAudienceContext.Player, Roles = { ["encounter"] = encounter }
+        };
+        using var player = await Run("combat/dnd2024.mechanic.encounter.board.project", playerProjection);
+        Assert.Equal("Hero", Assert.Single(player.RootElement.GetProperty("participants").EnumerateArray())
+            .GetProperty("name").GetString());
+        Assert.Single(player.RootElement.GetProperty("terrain").EnumerateArray());
+        Assert.Single(player.RootElement.GetProperty("obstacles").EnumerateArray());
+        Assert.Equal(JsonValueKind.Null, player.RootElement.GetProperty("turn").ValueKind);
+        Assert.DoesNotContain("Hidden", player.RootElement.GetRawText(), StringComparison.Ordinal);
+        Assert.DoesNotContain("Illusory", player.RootElement.GetRawText(), StringComparison.Ordinal);
+        AssertSchema("combat/dnd2024.query.encounter-board.json", player.RootElement.GetRawText());
+
+        var dmProjection = playerProjection with { Audience = MechanicAudienceContext.GameMaster };
+        using var dm = await Run("combat/dnd2024.mechanic.encounter.board.project", dmProjection);
+        Assert.Equal(2, dm.RootElement.GetProperty("participants").GetArrayLength());
+        Assert.Equal("participation.secret", dm.RootElement.GetProperty("turn").GetProperty("participationId").GetString());
+        AssertSchema("combat/dnd2024.query.encounter-board.json", dm.RootElement.GetRawText());
+    }
+
+    [Fact]
+    public async Task Encounter_board_placement_validates_footprints_collisions_and_stale_revisions()
+    {
+        const string encounterId = "encounter.board.place";
+        const string participationId = "participation.hero";
+        var participationComponent = Json(new
+        {
+            membershipRelationship = new
+            {
+                stateSpaceId = "dnd2024-main", fromEntityId = encounterId, toEntityId = participationId,
+                qualifiedKind = "dnd2024.encounter.has-participation"
+            },
+            status = "active"
+        });
+        var encounter = Entity(encounterId, "Placement board", new()
+        {
+            ["dnd2024.encounter.board"] = Json(new
+            {
+                revision = 3, status = "active", visibility = "public", columns = 10, rows = 8, feetPerSquare = 5,
+                terrain = Array.Empty<object>(),
+                obstacles = new[] { new { id = "obstacle.wall", label = "Wall", area = new { x = 5, y = 1, width = 1, height = 4 }, blocksMovement = true, visibility = "public" } }
+            })
+        }, related:
+        [
+            new(participationId, "Hero", encounterId, participationId, "encounter.has-participation", "{}",
+                new Dictionary<string, string> { ["dnd2024.encounter.participation"] = participationComponent })
+        ]);
+        var participation = Entity(participationId, "Hero", new()
+        {
+            ["dnd2024.encounter.participation"] = participationComponent
+        });
+        var projection = new MechanicProjection
+        {
+            StateSpaceId = "dnd2024-main",
+            Input = Json(new
+            {
+                expectedBoardRevision = 3,
+                expectedPositionRevision = (int?)null,
+                position = new
+                {
+                    anchor = new { x = 2, y = 2 }, footprint = new { width = 2, height = 1 },
+                    elevationFeet = 0, visibility = "public"
+                }
+            }),
+            Roles = { ["encounter"] = encounter, ["participation"] = participation }
+        };
+        var placed = await RunRaw("combat/dnd2024.mechanic.encounter.board.place", projection);
+        Assert.True(placed.Ok, placed.Error);
+        var effect = Assert.Single(placed.Output.Effects);
+        Assert.Equal("component.add", effect.Type);
+        using var position = JsonDocument.Parse(effect.Data);
+        Assert.Equal(2, position.RootElement.GetProperty("footprint").GetProperty("width").GetInt32());
+        Assert.Equal(1, position.RootElement.GetProperty("revision").GetInt32());
+
+        var blocked = projection with
+        {
+            Input = Json(new
+            {
+                expectedBoardRevision = 3,
+                expectedPositionRevision = (int?)null,
+                position = new
+                {
+                    anchor = new { x = 4, y = 2 }, footprint = new { width = 2, height = 1 },
+                    elevationFeet = 0, visibility = "public"
+                }
+            })
+        };
+        var rejected = await RunRaw("combat/dnd2024.mechanic.encounter.board.place", blocked);
+        Assert.False(rejected.Ok);
+        Assert.Contains("obstacle", rejected.Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Encounter_board_movement_uses_exact_terrain_cost_and_pinned_budget_result()
+    {
+        const string encounterId = "encounter.board.move";
+        const string participationId = "participation.hero";
+        const string turnId = "turn.hero";
+        var participationComponent = Json(new
+        {
+            membershipRelationship = new
+            {
+                stateSpaceId = "dnd2024-main", fromEntityId = encounterId, toEntityId = participationId,
+                qualifiedKind = "dnd2024.encounter.has-participation"
+            },
+            status = "active"
+        });
+        var positionComponent = Json(new
+        {
+            encounter = Ref(encounterId), anchor = new { x = 1, y = 1 }, footprint = new { width = 1, height = 1 },
+            elevationFeet = 0, visibility = "public", revision = 4
+        });
+        var encounter = Entity(encounterId, "Movement board", new()
+        {
+            ["dnd2024.encounter.board"] = Json(new
+            {
+                revision = 6, status = "active", visibility = "public", columns = 10, rows = 8, feetPerSquare = 5,
+                terrain = new[] { new { id = "terrain.rubble", label = "Rubble", area = new { x = 2, y = 1, width = 1, height = 1 }, movementCost = 2, visibility = "public" } },
+                obstacles = Array.Empty<object>()
+            })
+        }, related:
+        [
+            new(participationId, "Hero", encounterId, participationId, "encounter.has-participation", "{}",
+                new Dictionary<string, string>
+                {
+                    ["dnd2024.encounter.participation"] = participationComponent,
+                    ["dnd2024.combat.position"] = positionComponent
+                }),
+            new(turnId, "Hero turn", encounterId, turnId, "encounter.active-turn", "{}",
+                new Dictionary<string, string>
+                {
+                    ["dnd2024.encounter.turn"] = Json(new
+                    {
+                        encounter = Ref(encounterId), round = Ref("round.1"), participant = Ref(participationId),
+                        ordinal = 0, status = "active"
+                    }),
+                    ["dnd2024.combat.turn-budget"] = "{}"
+                })
+        ]);
+        var participation = Entity(participationId, "Hero", new()
+        {
+            ["dnd2024.encounter.participation"] = participationComponent,
+            ["dnd2024.combat.position"] = positionComponent
+        });
+        var subject = Entity("actor.hero", "Hero", new());
+        var distance = new
+        {
+            dimension = "distance", value = new { numerator = 381, denominator = 125 },
+            unit = Ref("dnd2024.vocabulary.distance-unit.meter")
+        };
+        var projection = new MechanicProjection
+        {
+            StateSpaceId = "dnd2024-main",
+            Input = Json(new
+            {
+                expectedBoardRevision = 6, expectedPositionRevision = 4, expectedTurnId = turnId,
+                path = new[] { new { x = 2, y = 1 } }, spend = new { resource = "movement", distance }
+            }),
+            Roles = { ["subject"] = subject, ["encounter"] = encounter, ["participation"] = participation },
+            Children =
+            {
+                ["movementBudget"] =
+                [
+                    Child("dnd2024.mechanic.turn-budget.spend", "subject", subject.Id,
+                        Json(new
+                        {
+                            test = "turn-budget-spend", encounterId, subjectId = subject.Id, participationId,
+                            turnId, resource = "movement", distance
+                        }))
+                ]
+            }
+        };
+
+        var moved = await RunRaw("combat/dnd2024.mechanic.encounter.board.move", projection);
+        Assert.True(moved.Ok, moved.Error);
+        var effect = Assert.Single(moved.Output.Effects);
+        Assert.Equal("component.set", effect.Type);
+        using var next = JsonDocument.Parse(effect.Data);
+        Assert.Equal(2, next.RootElement.GetProperty("anchor").GetProperty("x").GetInt32());
+        Assert.Equal(5, next.RootElement.GetProperty("revision").GetInt32());
+        using var data = JsonDocument.Parse(moved.Output.Data);
+        Assert.Equal(2, data.RootElement.GetProperty("movementCostSquares").GetInt32());
+        Assert.Equal(381, data.RootElement.GetProperty("distance").GetProperty("value").GetProperty("numerator").GetInt32());
+        Assert.Equal(125, data.RootElement.GetProperty("distance").GetProperty("value").GetProperty("denominator").GetInt32());
     }
 
     [Fact]

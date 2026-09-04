@@ -40,3 +40,8 @@ test("Current tab binds the durable play conversation to the selected campaign a
   assert.match(play, /conversation-change/u);
   assert.doesNotMatch(play, /dnd2024|thalorien|caldris/iu);
 });
+
+test("Combat Current View renders the canonical tactical board when projected", () => {
+  assert.match(component, /import \{ TacticalBoard \} from "\.\/TacticalBoard"/u);
+  assert.match(component, /combat\.board \? <TacticalBoard board=\{combat\.board\}/u);
+});
