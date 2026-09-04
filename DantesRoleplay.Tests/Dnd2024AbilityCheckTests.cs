@@ -7643,6 +7643,285 @@ public sealed class Dnd2024AbilityCheckTests
         Assert.Empty(await harness.EventsAsync(failed.OperationId));
     }
 
+    [Fact]
+    public async Task Immediate_poison_resolves_authored_failed_and_successful_saves_once()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddAfflictionFixturesAsync();
+        var failedSave = harness.ActionForRoles(
+            "dnd2024.mechanic.poison.apply", PoisonApplyRoles("hazard.poison.immediate.fixture", "activity.poison.save.fail"),
+            PoisonApplyInput("affliction.poison.immediate.fixture", 100,
+                "[{\"amount\":2,\"damageType\":\"poison\",\"saveSucceeded\":false,\"successfulSaveBehavior\":\"none\"}]",
+                "[{\"mode\":\"apply\",\"conditions\":[\"poisoned\"]}]"),
+            17, "56000000000000000000000000000001");
+
+        var applied = await harness.Runner.RunAsync(failedSave);
+        var replay = await harness.Runner.RunAsync(failedSave);
+        var avoided = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.poison.apply", PoisonApplyRoles("hazard.poison.success.fixture", "activity.poison.save.success"),
+            PoisonApplyInput("affliction.poison.success.fixture", 0,
+                "[{\"amount\":2,\"damageType\":\"poison\",\"saveSucceeded\":true,\"successfulSaveBehavior\":\"none\"}]", "[]"),
+            17, "56000000000000000000000000000002"));
+
+        AssertSucceeded(applied);
+        Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replay.Disposition);
+        AssertSucceeded(avoided);
+        using (var hp = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "subject.high", "dnd2024.creature.hit-points"))!.ValueJson))
+            Assert.Equal(8, hp.RootElement.GetProperty("current").GetInt32());
+        using (var conditions = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+                   DndHarness.StateSpaceId, "subject.high", "dnd2024.conditions"))!.ValueJson))
+            Assert.Single(conditions.RootElement.GetProperty("entries").EnumerateArray());
+        Assert.Single(await harness.EventsAsync(applied.OperationId));
+        Assert.Contains(harness.Search("apply an authored poison").Records,
+            value => value.Record.QualifiedId == "dnd2024.mechanic.poison.apply");
+    }
+
+    [Fact]
+    public async Task Delayed_poison_waits_for_authoritative_time_then_progresses_and_recovers()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddAfflictionFixturesAsync();
+        var roles = PoisonApplyRoles("hazard.poison.delayed.fixture", null);
+        var applied = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.poison.apply", roles,
+            PoisonApplyInput("affliction.poison.delayed.fixture", null, "[]", "[]"),
+            17, "57000000000000000000000000000001"));
+        var premature = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.poison.progress", PoisonProgressRoles("affliction.poison.delayed.fixture"),
+            PoisonProgressInput(7), 17, "57000000000000000000000000000002"));
+
+        await harness.SetAfflictionClockAsync(105, 8);
+        var progressed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.poison.progress", PoisonProgressRoles("affliction.poison.delayed.fixture"),
+            PoisonProgressInput(8), 17, "57000000000000000000000000000003"));
+        var recovered = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.poison.recover", PoisonRecoverRoles("affliction.poison.delayed.fixture"),
+            AfflictionCheckInput(0), 17, "57000000000000000000000000000004"));
+
+        AssertSucceeded(applied);
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, premature.Disposition);
+        AssertSucceeded(progressed);
+        AssertSucceeded(recovered);
+        Assert.NotNull(await harness.Edges.GetRelationshipAsync(DndHarness.StateSpaceId,
+            "affliction.poison.delayed.fixture", "subject.high", "dnd2024.affliction.recovered"));
+        using var clock = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "world.affliction.fixture", "game.core.world.clock"))!.ValueJson);
+        Assert.Equal(105, clock.RootElement.GetProperty("currentMinute").GetInt32());
+    }
+
+    [Fact]
+    public async Task Contagion_requires_explicit_exposure_and_source_bound_transmission()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddAfflictionFixturesAsync();
+        var exposed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.contagion.expose", ContagionExposeRoles(),
+            ContagionStartInput("affliction.contagion.source.fixture", 7), 0,
+            "58000000000000000000000000000001"));
+        await harness.SetAfflictionClockAsync(105, 8);
+        var progressed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.contagion.progress", ContagionProgressRoles("affliction.contagion.source.fixture"),
+            "{\"expectedDefinitionRevision\":1,\"expectedDefinitionFingerprint\":\"" + Fingerprint
+            + "\",\"expectedClockRevision\":8,\"damageEffects\":[{\"amount\":1,\"damageType\":\"poison\",\"saveSucceeded\":false,\"successfulSaveBehavior\":\"full\"}],\"conditionEffects\":[{\"mode\":\"apply\",\"conditions\":[\"poisoned\"]}]}",
+            0, "58000000000000000000000000000002"));
+        var transmitted = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.contagion.transmit", ContagionTransmitRoles(),
+            ContagionStartInput("affliction.contagion.target.fixture", 8), 0,
+            "58000000000000000000000000000003"));
+        var recovered = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.contagion.recover", ContagionRecoverRoles(),
+            AfflictionCheckInput(0), 17, "58000000000000000000000000000004"));
+
+        AssertSucceeded(exposed);
+        AssertSucceeded(progressed);
+        AssertSucceeded(transmitted);
+        AssertSucceeded(recovered);
+        Assert.NotNull(await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+            "affliction.contagion.target.fixture", "dnd2024.hazard.contagion-application"));
+        Assert.NotNull(await harness.Edges.GetRelationshipAsync(DndHarness.StateSpaceId,
+            "affliction.contagion.target.fixture", "affliction.contagion.source.fixture",
+            "dnd2024.contagion.source-application"));
+    }
+
+    [Fact]
+    public async Task Curse_knowledge_is_observer_specific_and_separate_from_inventory_source()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        await harness.AddAfflictionFixturesAsync();
+        var bound = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.curse.bind", CurseBindRoles(),
+            "{\"applicationId\":\"affliction.curse.fixture\",\"appliedAtEventId\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"expectedDefinitionRevision\":1,\"expectedDefinitionFingerprint\":\""
+            + Fingerprint + "\",\"expectedClockRevision\":7,\"bindingEvent\":\"curse.fixture.bound\"}",
+            0, "59000000000000000000000000000001"));
+        var discovered = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.curse.discover", CurseDiscoverRoles(),
+            CurseDiscoveryInput(), 17, "59000000000000000000000000000002"));
+        var removed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.curse.remove", CurseRemoveRoles(),
+            AfflictionCheckInput(0), 17, "59000000000000000000000000000003"));
+
+        AssertSucceeded(bound);
+        Assert.DoesNotContain("Fixture Curse", bound.Narration, StringComparison.Ordinal);
+        Assert.Null(await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+            "item.curse.source.fixture", "dnd2024.hazard.curse"));
+        AssertSucceeded(discovered);
+        Assert.NotNull(await harness.Edges.GetRelationshipAsync(DndHarness.StateSpaceId,
+            "affliction.curse.fixture", "subject.low", "dnd2024.curse.known-by"));
+        Assert.NotNull(await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+            "knowledge.curse.fixture", "dnd2024.magic-item.knowledge"));
+        Assert.NotNull(await harness.Edges.GetRelationshipAsync(DndHarness.StateSpaceId,
+            "subject.low", "item.curse.source.fixture", "dnd2024.magic-item.knowledge"));
+        Assert.Null(await harness.Edges.GetRelationshipAsync(DndHarness.StateSpaceId,
+            "affliction.curse.fixture", "subject.high", "dnd2024.curse.known-by"));
+        AssertSucceeded(removed);
+        Assert.NotNull(await harness.Edges.GetRelationshipAsync(DndHarness.StateSpaceId,
+            "affliction.curse.fixture", "subject.high", "dnd2024.affliction.recovered"));
+    }
+
+    [Fact]
+    public async Task Affliction_transaction_failure_rolls_back_application_consequences_and_event()
+    {
+        await using var harness = await DndHarness.CreateAsync(failTransactionAfterEffects: true);
+        await harness.AddAfflictionFixturesAsync();
+        var failed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.poison.apply", PoisonApplyRoles("hazard.poison.immediate.fixture", "activity.poison.save.fail"),
+            PoisonApplyInput("affliction.poison.rollback.fixture", 100,
+                "[{\"amount\":2,\"damageType\":\"poison\",\"saveSucceeded\":false,\"successfulSaveBehavior\":\"none\"}]",
+                "[{\"mode\":\"apply\",\"conditions\":[\"poisoned\"]}]"),
+            17, "5a000000000000000000000000000001"));
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, failed.Disposition);
+        Assert.Null(await harness.Entities.GetEntityAsync(DndHarness.StateSpaceId,
+            "affliction.poison.rollback.fixture"));
+        using var hp = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.creature.hit-points"))!.ValueJson);
+        Assert.Equal(10, hp.RootElement.GetProperty("current").GetInt32());
+        Assert.Empty(await harness.EventsAsync(failed.OperationId));
+    }
+
+    private const string Fingerprint = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+
+    private static void AssertSucceeded(ApplicationActionExecutionResult result) =>
+        Assert.True(result.Disposition == ApplicationActionExecutionDisposition.Succeeded,
+            result.Disposition + ": " + string.Join("; ", result.Problems.Select(value =>
+                value.Code + " " + value.SafeMessage)));
+
+    private static Dictionary<string, string> PoisonApplyRoles(string definitionId, string? activityId)
+    {
+        var roles = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["source"] = "item.affliction.source.fixture",
+            ["target"] = "subject.high",
+            ["definition"] = definitionId,
+            ["world"] = "world.affliction.fixture"
+        };
+        if (activityId is not null) roles["activity"] = activityId;
+        return roles;
+    }
+
+    private static Dictionary<string, string> PoisonProgressRoles(string applicationId) => new(StringComparer.Ordinal)
+    {
+        ["application"] = applicationId,
+        ["target"] = "subject.high",
+        ["definition"] = "hazard.poison.delayed.fixture",
+        ["activity"] = "activity.poison.save.success",
+        ["world"] = "world.affliction.fixture"
+    };
+
+    private static Dictionary<string, string> PoisonRecoverRoles(string applicationId) => new(StringComparer.Ordinal)
+    {
+        ["application"] = applicationId,
+        ["target"] = "subject.high",
+        ["definition"] = "hazard.poison.delayed.fixture",
+        ["activity"] = "activity.poison.recover.fixture"
+    };
+
+    private static string PoisonApplyInput(string applicationId, int? dc, string damage, string conditions) =>
+        "{\"applicationId\":\"" + applicationId
+        + "\",\"appliedAtEventId\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"expectedDefinitionRevision\":1,\"expectedDefinitionFingerprint\":\""
+        + Fingerprint + "\",\"expectedClockRevision\":7,\"deliveryMethod\":\"dnd2024.vocabulary.poison-delivery.injury\""
+        + (dc is null ? "" : ",\"check\":{\"ability\":\"con\",\"dc\":" + dc + "}")
+        + ",\"damageEffects\":" + damage + ",\"conditionEffects\":" + conditions + "}";
+
+    private static string PoisonProgressInput(int clockRevision) =>
+        "{\"expectedDefinitionRevision\":1,\"expectedDefinitionFingerprint\":\"" + Fingerprint
+        + "\",\"expectedClockRevision\":" + clockRevision
+        + ",\"check\":{\"ability\":\"con\",\"dc\":0},\"damageEffects\":[{\"amount\":2,\"damageType\":\"poison\",\"saveSucceeded\":true,\"successfulSaveBehavior\":\"none\"}],\"conditionEffects\":[]}";
+
+    private static string AfflictionCheckInput(int dc) =>
+        "{\"expectedDefinitionRevision\":1,\"expectedDefinitionFingerprint\":\"" + Fingerprint
+        + "\",\"check\":{\"ability\":\"con\",\"dc\":" + dc + "}}";
+
+    private static Dictionary<string, string> ContagionExposeRoles() => new(StringComparer.Ordinal)
+    {
+        ["source"] = "item.affliction.source.fixture",
+        ["target"] = "subject.high",
+        ["definition"] = "hazard.contagion.fixture",
+        ["world"] = "world.affliction.fixture"
+    };
+
+    private static Dictionary<string, string> ContagionProgressRoles(string applicationId) => new(StringComparer.Ordinal)
+    {
+        ["application"] = applicationId,
+        ["target"] = "subject.high",
+        ["definition"] = "hazard.contagion.fixture",
+        ["world"] = "world.affliction.fixture"
+    };
+
+    private static Dictionary<string, string> ContagionTransmitRoles() => new(StringComparer.Ordinal)
+    {
+        ["sourceApplication"] = "affliction.contagion.source.fixture",
+        ["sourceHost"] = "subject.high",
+        ["target"] = "subject.low",
+        ["definition"] = "hazard.contagion.fixture",
+        ["world"] = "world.affliction.fixture"
+    };
+
+    private static Dictionary<string, string> ContagionRecoverRoles() => new(StringComparer.Ordinal)
+    {
+        ["application"] = "affliction.contagion.source.fixture",
+        ["target"] = "subject.high",
+        ["definition"] = "hazard.contagion.fixture",
+        ["activity"] = "activity.contagion.recover.fixture"
+    };
+
+    private static string ContagionStartInput(string applicationId, int clockRevision) =>
+        "{\"applicationId\":\"" + applicationId
+        + "\",\"appliedAtEventId\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"expectedDefinitionRevision\":1,\"expectedDefinitionFingerprint\":\""
+        + Fingerprint + "\",\"expectedClockRevision\":" + clockRevision
+        + ",\"triggerEvent\":\"contagion.fixture.contact\"}";
+
+    private static Dictionary<string, string> CurseBindRoles() => new(StringComparer.Ordinal)
+    {
+        ["source"] = "item.curse.source.fixture",
+        ["target"] = "subject.high",
+        ["definition"] = "hazard.curse.fixture",
+        ["world"] = "world.affliction.fixture"
+    };
+
+    private static Dictionary<string, string> CurseDiscoverRoles() => new(StringComparer.Ordinal)
+    {
+        ["application"] = "affliction.curse.fixture",
+        ["source"] = "item.curse.source.fixture",
+        ["target"] = "subject.high",
+        ["observer"] = "subject.low",
+        ["definition"] = "hazard.curse.fixture",
+        ["activity"] = "activity.curse.discover.fixture"
+    };
+
+    private static string CurseDiscoveryInput() =>
+        "{\"expectedDefinitionRevision\":1,\"expectedDefinitionFingerprint\":\"" + Fingerprint
+        + "\",\"knowledgeId\":\"knowledge.curse.fixture\",\"discoveryEventId\":\"cccccccccccccccccccccccccccccccc\",\"check\":{\"ability\":\"con\",\"dc\":0}}";
+
+    private static Dictionary<string, string> CurseRemoveRoles() => new(StringComparer.Ordinal)
+    {
+        ["application"] = "affliction.curse.fixture",
+        ["target"] = "subject.high",
+        ["definition"] = "hazard.curse.fixture",
+        ["activity"] = "activity.curse.remove.fixture"
+    };
+
     private static Dictionary<string, string> TravelRoles() => new(StringComparer.Ordinal)
     {
         ["traveller"] = "subject.high",
@@ -8004,7 +8283,10 @@ public sealed class Dnd2024AbilityCheckTests
             foreach (var eventName in new[]
                      {
                          "trap-detected", "trap-disarmed", "trap-triggered", "trap-reset",
-                         "trap-cleared", "exposure-started", "exposure-resolved", "exposure-recovered"
+                         "trap-cleared", "exposure-started", "exposure-resolved", "exposure-recovered",
+                         "poison-applied", "poison-progressed", "poison-recovered",
+                         "contagion-exposed", "contagion-transmitted", "contagion-progressed",
+                         "contagion-recovered", "curse-bound", "curse-discovered", "curse-removed"
                      })
             {
                 await new EventTypeStore(db).WriteAsync(new()
@@ -8633,6 +8915,196 @@ public sealed class Dnd2024AbilityCheckTests
             await Edges.SetRelationshipAsync(StateSpaceId, exposureId, "subject.high",
                 "dnd2024.hazard.exposure.subject", "{}", 0);
         }
+
+        public async Task AddAfflictionFixturesAsync()
+        {
+            await AddSavingThrowStateAsync("subject.high", ["con"]);
+            await AddSavingThrowStateAsync("subject.low", ["con"]);
+            await AddHitPointsAsync("subject.high", 10, 10);
+            await AddHitPointsAsync("subject.low", 10, 10);
+            foreach (var subjectId in new[] { "subject.high", "subject.low" })
+            {
+                await AddApplicationComponentAsync(subjectId, "dnd2024.creature.defenses",
+                    "{\"damageResponses\":[]}");
+                await AddApplicationComponentAsync(subjectId, "dnd2024.conditions",
+                    "{\"entries\":[],\"sourceRef\":{\"sourceId\":\"dnd2024.source.srd-5.2.1\",\"locator\":\"Rules Glossary\"}}");
+            }
+
+            await Entities.CreateEntityAsync(StateSpaceId, "world.affliction.fixture", "Affliction World");
+            await AddApplicationComponentAsync("world.affliction.fixture", "game.core.world.root",
+                "{\"status\":\"active\",\"summary\":\"A bounded affliction test world.\",\"visibility\":\"party\"}");
+            await AddApplicationComponentAsync("world.affliction.fixture", "game.core.world.clock",
+                "{\"calendarId\":\"calendar.fixture\",\"currentMinute\":100,\"revision\":7}");
+            await Entities.CreateEntityAsync(StateSpaceId, "item.affliction.source.fixture", "Affliction Source");
+            await Entities.CreateEntityAsync(StateSpaceId, "item.curse.source.fixture", "Ordinary Looking Ring");
+            await AddApplicationComponentAsync("item.curse.source.fixture", "dnd2024.magic-item.curse",
+                "{\"curse\":{\"entityId\":\"hazard.curse.fixture\"}}");
+
+            foreach (var (id, name, dc) in new[]
+                     {
+                         ("activity.poison.save.fail", "Resist Fixture Poison", 100),
+                         ("activity.poison.save.success", "Resist Delayed Fixture Poison", 0),
+                         ("activity.poison.recover.fixture", "Recover from Fixture Poison", 0),
+                         ("activity.contagion.recover.fixture", "Recover from Fixture Contagion", 0),
+                         ("activity.curse.discover.fixture", "Discover Fixture Curse", 0),
+                         ("activity.curse.remove.fixture", "Remove Fixture Curse", 0)
+                     })
+            {
+                await Entities.CreateEntityAsync(StateSpaceId, id, name);
+                await AddApplicationComponentAsync(id, "dnd2024.core.version",
+                    "{\"revision\":1,\"status\":\"active\"}");
+                await AddApplicationComponentAsync(id, "dnd2024.activity.check",
+                    JsonSerializer.Serialize(new
+                    {
+                        abilityOptions = new[]
+                        {
+                            new { entityId = "dnd2024.vocabulary.ability.constitution" }
+                        },
+                        proficiencySources = Array.Empty<object>(),
+                        difficulty = dc
+                    }));
+            }
+
+            var poisonEffects = new object[]
+            {
+                new
+                {
+                    effect = new { entityId = "dnd2024.mechanic.hazard.damage.apply" },
+                    parameters = new Dictionary<string, object>
+                    {
+                        ["amount"] = 2,
+                        ["damageType"] = new { entityId = "dnd2024.vocabulary.damage-type.poison" },
+                        ["successfulSaveBehavior"] = "none"
+                    }
+                },
+                new
+                {
+                    effect = new { entityId = "dnd2024.mechanic.conditions.write" },
+                    parameters = new Dictionary<string, object>
+                    {
+                        ["condition"] = "poisoned",
+                        ["successfulSaveBehavior"] = "none"
+                    }
+                }
+            };
+            foreach (var (id, name, activityId, onset) in new[]
+                     {
+                         ("hazard.poison.immediate.fixture", "Immediate Fixture Poison",
+                             "activity.poison.save.fail", (object)new { kind = "instantaneous" }),
+                         ("hazard.poison.success.fixture", "Avoidable Fixture Poison",
+                             "activity.poison.save.success", (object)new { kind = "instantaneous" }),
+                         ("hazard.poison.delayed.fixture", "Delayed Fixture Poison",
+                             "activity.poison.save.success", (object)new
+                             {
+                                 kind = "measured", amount = 5,
+                                 unit = new { entityId = "dnd2024.vocabulary.time-unit.minute" }
+                             })
+                     })
+            {
+                await Entities.CreateEntityAsync(StateSpaceId, id, name);
+                await AddApplicationComponentAsync(id, "dnd2024.core.version",
+                    "{\"revision\":1,\"status\":\"active\"}");
+                await AddApplicationComponentAsync(id, "dnd2024.core.source",
+                    "{\"citations\":[{\"sourceRef\":{\"entityId\":\"dnd2024.source.srd-5.2.1\"},\"locator\":\"Slice 11 focused poison fixture\"}]}");
+                await AddApplicationComponentAsync(id, "dnd2024.hazard.poison",
+                    JsonSerializer.Serialize(new
+                    {
+                        category = new { entityId = "dnd2024.hazard-category.poison" },
+                        deliveryMethods = new[]
+                        {
+                            new { entityId = "dnd2024.vocabulary.poison-delivery.injury" }
+                        },
+                        onset,
+                        duration = new { kind = "special" },
+                        savingThrowActivity = new { entityId = activityId },
+                        effects = poisonEffects,
+                        recoveryActivities = new[]
+                        {
+                            new { entityId = "activity.poison.recover.fixture" }
+                        }
+                    }));
+            }
+
+            await Entities.CreateEntityAsync(StateSpaceId, "hazard.contagion.fixture", "Fixture Contagion");
+            await AddApplicationComponentAsync("hazard.contagion.fixture", "dnd2024.core.version",
+                "{\"revision\":1,\"status\":\"active\"}");
+            await AddApplicationComponentAsync("hazard.contagion.fixture", "dnd2024.core.source",
+                "{\"citations\":[{\"sourceRef\":{\"entityId\":\"dnd2024.source.srd-5.2.1\"},\"locator\":\"Slice 11 focused contagion fixture\"}]}");
+            await AddApplicationComponentAsync("hazard.contagion.fixture", "dnd2024.hazard.contagion",
+                JsonSerializer.Serialize(new
+                {
+                    transmissionTriggers = new[]
+                    {
+                        new { @event = "contagion.fixture.contact", timing = "when" }
+                    },
+                    incubation = new
+                    {
+                        kind = "measured", amount = 5,
+                        unit = new { entityId = "dnd2024.vocabulary.time-unit.minute" }
+                    },
+                    activeEffects = new object[]
+                    {
+                        new
+                        {
+                            effect = new { entityId = "dnd2024.mechanic.hazard.damage.apply" },
+                            parameters = new Dictionary<string, object>
+                            {
+                                ["amount"] = 1,
+                                ["damageType"] = new { entityId = "dnd2024.vocabulary.damage-type.poison" }
+                            }
+                        },
+                        new
+                        {
+                            effect = new { entityId = "dnd2024.mechanic.conditions.write" },
+                            parameters = new Dictionary<string, object> { ["condition"] = "poisoned" }
+                        }
+                    },
+                    recoveryActivity = new { entityId = "activity.contagion.recover.fixture" },
+                    recoveryRequirement = new
+                    {
+                        @operator = "predicate", predicateId = "predicate.always",
+                        arguments = Array.Empty<object>()
+                    },
+                    postRecoveryImmunity = new { kind = "special" }
+                }));
+
+            await Entities.CreateEntityAsync(StateSpaceId, "hazard.curse.fixture", "Fixture Curse");
+            await AddApplicationComponentAsync("hazard.curse.fixture", "dnd2024.core.version",
+                "{\"revision\":1,\"status\":\"active\"}");
+            await AddApplicationComponentAsync("hazard.curse.fixture", "dnd2024.core.source",
+                "{\"citations\":[{\"sourceRef\":{\"entityId\":\"dnd2024.source.srd-5.2.1\"},\"locator\":\"Slice 11 focused curse fixture\"}]}");
+            await AddApplicationComponentAsync("hazard.curse.fixture", "dnd2024.hazard.curse",
+                JsonSerializer.Serialize(new
+                {
+                    bindingTrigger = new { @event = "curse.fixture.bound", timing = "when" },
+                    duration = new { kind = "permanent" },
+                    effects = new object[]
+                    {
+                        new
+                        {
+                            effect = new { entityId = "dnd2024.mechanic.conditions.write" },
+                            parameters = new Dictionary<string, object> { ["condition"] = "frightened" }
+                        }
+                    },
+                    removalRequirement = new
+                    {
+                        @operator = "predicate", predicateId = "predicate.always",
+                        arguments = Array.Empty<object>()
+                    },
+                    removalActivities = new[]
+                    {
+                        new { entityId = "activity.curse.remove.fixture" }
+                    },
+                    discoveryActivity = new { entityId = "activity.curse.discover.fixture" }
+                }));
+        }
+
+        public async Task SetAfflictionClockAsync(int currentMinute, int revision)
+            => await ReplaceApplicationComponentRawAsync("world.affliction.fixture", "game.core.world.clock",
+                JsonSerializer.Serialize(new
+                {
+                    calendarId = "calendar.fixture", currentMinute, revision
+                }));
 
         public async Task SetRestClockAsync(int currentMinute, int revision)
             => await ReplaceApplicationComponentRawAsync("world.rest.fixture", "game.core.world.clock",
