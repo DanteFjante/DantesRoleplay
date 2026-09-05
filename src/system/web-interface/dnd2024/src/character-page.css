@@ -233,12 +233,13 @@
 .character-sheet-v2 { display: grid; gap: 18px; }
 .character-sheet-v2__columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 16px; align-items: start; }
 .character-panel { min-width: 0; padding: 20px; border: 1px solid var(--character-line); border-radius: 12px; background: var(--character-surface-raised); }
+.character-panel--abilities { grid-column: 1 / -1; }
 .character-panel--checks { grid-row: auto; }
 .character-panel__heading { margin-bottom: 15px; }
 .character-panel__heading span,
 .character-card-grid article > span { color: var(--character-gold); font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.1em; }
 .character-panel__heading h3 { margin: 3px 0 0; font-family: var(--serif); font-size: 1.4rem; font-weight: 500; }
-.character-abilities { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 100px), 1fr)); gap: 8px; }
+.character-abilities { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
 .character-abilities article { display: grid; min-height: 118px; place-items: center; align-content: center; padding: 10px; border: 1px solid var(--character-line); border-radius: 10px; background: rgba(4, 12, 10, 0.35); text-align: center; }
 .character-abilities span { min-height: 2.2em; color: var(--character-muted); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; }
 .character-abilities strong { color: var(--character-text); font-family: var(--serif); font-size: 2.5rem; font-weight: 400; line-height: 1; }
@@ -331,6 +332,7 @@
 }
 
 @media (max-width: 820px) {
+  .character-abilities { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .character-workspace { grid-template-columns: 1fr; }
   .character-roster { position: static; }
   .character-roster__list { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }

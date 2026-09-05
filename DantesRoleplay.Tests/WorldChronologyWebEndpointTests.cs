@@ -130,6 +130,33 @@ public sealed class WorldChronologyWebEndpointTests
         Assert.DoesNotContain("Public dedication", response.Body.GetRawText(), StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(497, 200)]
+    [InlineData(498, 503)]
+    public async Task Expanded_chronology_preserves_order_and_enforces_its_bound(int additional, int expectedStatus)
+    {
+        var fixture = Fixture();
+        for (var index = 0; index < additional; index++)
+        {
+            var id = $"chronology.extra.{index:D4}";
+            fixture.Entities.AddEntity(id, $"Historical entry {index}");
+            fixture.Entities.AddComponent(id, fixture.Chronology.ComponentTypeId,
+                Chronology("active", $"Historical entry {index}", -additional + index, "public"));
+            fixture.Edges.Add(Relationship(id, "world.fixture", fixture.Chronology.InWorldRelationshipKind));
+        }
+        var response = await ReadAsync(fixture, GameMasterSeat(), "dm");
+        Assert.Equal(expectedStatus, response.StatusCode);
+        if (expectedStatus == 200)
+        {
+            var entries = response.Body.GetProperty("entries").EnumerateArray().ToArray();
+            Assert.Equal(500, entries.Length);
+            Assert.Equal("Historical entry 0", entries[0].GetProperty("title").GetString());
+            Assert.Equal("GM canary", entries[^1].GetProperty("title").GetString());
+            Assert.DoesNotContain("Archived canary", response.Body.GetRawText(), StringComparison.Ordinal);
+        }
+        else Assert.False(response.Body.TryGetProperty("entries", out _));
+    }
+
     private static async Task<(int StatusCode, JsonElement Body)> ReadAsync(
         ChronologyFixture fixture,
         LocalKnowledgeSeatSnapshot seat,
@@ -334,7 +361,9 @@ public sealed class WorldChronologyWebEndpointTests
             var values = _entities.Values.OrderBy(value => value.EntityId, StringComparer.Ordinal)
                 .Where(value => afterEntityId is null || StringComparer.Ordinal.Compare(value.EntityId, afterEntityId) > 0)
                 .Take(limit).ToArray();
-            return Task.FromResult(new EcsEntityDiscoveryPage(values, null));
+            var hasMore = values.Length > 0 && _entities.Keys.Any(id =>
+                StringComparer.Ordinal.Compare(id, values[^1].EntityId) > 0);
+            return Task.FromResult(new EcsEntityDiscoveryPage(values, hasMore ? values[^1].EntityId : null));
         }
 
         public Task<EcsComponentView?> GetComponentAsync(string stateSpaceId, string entityId,
@@ -367,6 +396,8 @@ public sealed class WorldChronologyWebEndpointTests
         IReadOnlyList<EcsContainmentView> containments) : IStateSpaceEdgeStore
     {
         public int ReadCalls { get; private set; }
+        private readonly List<EcsRelationshipView> _relationships = relationships.ToList();
+        public void Add(EcsRelationshipView value) => _relationships.Add(value);
 
         public Task<IReadOnlyList<EcsContainmentView>> ListContainmentsAsync(
             string stateSpaceId, CancellationToken cancellationToken = default)
@@ -379,7 +410,7 @@ public sealed class WorldChronologyWebEndpointTests
             string stateSpaceId, CancellationToken cancellationToken = default)
         {
             ReadCalls++;
-            return Task.FromResult(relationships);
+            return Task.FromResult<IReadOnlyList<EcsRelationshipView>>(_relationships);
         }
 
         public Task<EcsContainmentView?> GetContainmentAsync(string stateSpaceId, string containedEntityId,

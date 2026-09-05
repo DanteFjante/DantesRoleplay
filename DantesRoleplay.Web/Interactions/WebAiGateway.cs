@@ -440,7 +440,7 @@ public sealed class WebAiGateway(
             "AI_SURFACE_INVALID", "The AI surface must be outer or inner.");
         RequireProvider(request.Provider);
         if (!Bounded(request.Model, 200) || !Bounded(request.Operation, 40) ||
-            !Bounded(request.Input, MaximumInputLength) ||
+            !BoundedMessage(request.Input, MaximumInputLength) ||
             !Bounded(request.IdempotencyKey, 100) ||
             request.MaximumToolRounds is < 0 or > 8 ||
             request.MaximumOutputTokens is < 1 or > 8_192)
@@ -741,6 +741,10 @@ public sealed class WebAiGateway(
 
     private static bool Bounded(string? value, int maximum) =>
         !string.IsNullOrWhiteSpace(value) && value.Length <= maximum && !value.Any(char.IsControl);
+
+    private static bool BoundedMessage(string? value, int maximum) =>
+        !string.IsNullOrWhiteSpace(value) && value.Length <= maximum &&
+        !value.Any(character => char.IsControl(character) && character is not ('\r' or '\n' or '\t'));
 
     private static string Bound(string? value, int maximum) => string.IsNullOrEmpty(value)
         ? ""

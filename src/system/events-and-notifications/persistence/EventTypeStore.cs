@@ -133,7 +133,8 @@ public sealed class EventTypeStore(DantesRoleplayDbContext db) : IEventTypeStore
 
             if (schemaOk)
             {
-                _ = JsonSchema.FromText(EventPayloadRoleMetadata.WithoutExtension(payloadSchema));
+                _ = JsonSchema.FromText(EventPayloadRoleMetadata.WithoutExtension(payloadSchema),
+                    new BuildOptions { SchemaRegistry = new SchemaRegistry() });
                 schemaDetail = "Payload schema is a JSON Schema Draft 2020-12 object.";
             }
             else

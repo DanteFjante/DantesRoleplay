@@ -10,6 +10,21 @@ namespace DantesRoleplay.SchemaValidation;
 /// <summary>A closed, offline subset of JSON Schema Draft 2020-12 with hard input bounds.</summary>
 public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
 {
+    internal const int MaximumCachedSchemas = 256;
+    internal const int MaximumCachedTextBytes = 2 * 1024 * 1024;
+    internal const int MaximumCachedSchemaNodes = 32_000;
+
+    private readonly object cacheLock = new();
+    private readonly Dictionary<(string Schema, string? Profile), LinkedListNode<CacheEntry>> cache = [];
+    private readonly LinkedList<CacheEntry> recency = [];
+    private int cachedTextBytes;
+    private int cachedSchemaNodes;
+
+    internal (int Count, int TextBytes, int Nodes) CacheUsage
+    {
+        get { lock (cacheLock) return (cache.Count, cachedTextBytes, cachedSchemaNodes); }
+    }
+
     private static readonly HashSet<string> AllowedKeywords = new(StringComparer.Ordinal)
     {
         "$schema", "$comment", "$defs", "$ref", "title", "description", "type", "enum", "const", "allOf", "anyOf", "oneOf", "not",
@@ -19,10 +34,52 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
         "propertyNames", "if", "then", "else", "x-dantes-entity-roles", "x-dantes-role-constraints"
     };
 
-    public SchemaCompilationResult Compile(string schemaJson) => Compile(schemaJson, null);
+    public SchemaCompilationResult Compile(string schemaJson) => GetSchema(schemaJson, null).Compilation;
 
-    private static SchemaCompilationResult Compile(string schemaJson, string? requiredProfileId)
+    private CompiledSchema GetSchema(string schemaJson, string? requiredProfileId)
     {
+        if (schemaJson is null || schemaJson.Length > SystemJsonSchemaProfile.MaximumSchemaBytes)
+            return new(RejectedCompilation("SCHEMA_SIZE", "The schema is absent or exceeds the byte limit."), null);
+
+        var key = (schemaJson, requiredProfileId);
+        lock (cacheLock)
+        {
+            if (cache.TryGetValue(key, out var existing))
+            {
+                recency.Remove(existing);
+                recency.AddFirst(existing);
+                return existing.Value.Value;
+            }
+
+            // Build once per concurrent miss. Invalid schemas never occupy the cache.
+            var compilation = CompileUncached(schemaJson, requiredProfileId, out var schema, out var nodes);
+            var value = new CompiledSchema(compilation, schema);
+            if (!compilation.IsAccepted) return value;
+            var textBytes = checked(2 * (schemaJson.Length + compilation.NormalizedSchema.Length +
+                (requiredProfileId?.Length ?? 0)));
+            if (textBytes > MaximumCachedTextBytes || nodes > MaximumCachedSchemaNodes) return value;
+            while (cache.Count >= MaximumCachedSchemas || cachedTextBytes + textBytes > MaximumCachedTextBytes ||
+                   cachedSchemaNodes + nodes > MaximumCachedSchemaNodes)
+            {
+                var oldest = recency.Last!;
+                recency.RemoveLast();
+                cache.Remove(oldest.Value.Key);
+                cachedTextBytes -= oldest.Value.TextBytes;
+                cachedSchemaNodes -= oldest.Value.Nodes;
+            }
+            var entry = new CacheEntry(key, value, textBytes, nodes);
+            cache.Add(key, recency.AddFirst(entry));
+            cachedTextBytes += textBytes;
+            cachedSchemaNodes += nodes;
+            return value;
+        }
+    }
+
+    private static SchemaCompilationResult CompileUncached(string schemaJson, string? requiredProfileId,
+        out JsonSchema? compiledSchema, out int nodeCount)
+    {
+        compiledSchema = null;
+        nodeCount = 0;
         var diagnostics = new List<SchemaDiagnostic>();
         if (schemaJson is null || Encoding.UTF8.GetByteCount(schemaJson) > SystemJsonSchemaProfile.MaximumSchemaBytes)
             return RejectedCompilation("SCHEMA_SIZE", "The schema is absent or exceeds the byte limit.");
@@ -47,7 +104,6 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
             if (document.RootElement.ValueKind is not (JsonValueKind.Object or JsonValueKind.True or JsonValueKind.False))
                 return RejectedCompilation("SCHEMA_ROOT", "A schema must be an object or boolean.");
 
-            var nodeCount = 0;
             CountNodes(document.RootElement, ref nodeCount);
             if (nodeCount > SystemJsonSchemaProfile.MaximumSchemaNodes)
                 return RejectedCompilation("SCHEMA_NODES", "The schema exceeds the node limit.");
@@ -66,7 +122,9 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
             var normalized = JsonSerializer.Serialize(document.RootElement);
             try
             {
-                _ = JsonSchema.FromText(AssertionSchema(normalized));
+                // Schema builds register their object graphs; never use the process-wide registry.
+                compiledSchema = JsonSchema.FromText(AssertionSchema(normalized),
+                    new BuildOptions { SchemaRegistry = new SchemaRegistry() });
             }
             catch (Exception exception) when (exception is JsonException or JsonSchemaException)
             {
@@ -83,13 +141,14 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
     }
 
     public SchemaValueValidationResult Validate(string normalizedSchema, string valueJson) =>
-        ValidateCore(Compile(normalizedSchema), valueJson);
+        ValidateCore(GetSchema(normalizedSchema, null), valueJson);
 
     public SchemaValueValidationResult Validate(string profileId, string normalizedSchema, string valueJson) =>
-        ValidateCore(Compile(normalizedSchema, profileId), valueJson);
+        ValidateCore(GetSchema(normalizedSchema, profileId), valueJson);
 
-    private static SchemaValueValidationResult ValidateCore(SchemaCompilationResult compilation, string valueJson)
+    private static SchemaValueValidationResult ValidateCore(CompiledSchema cached, string valueJson)
     {
+        var compilation = cached.Compilation;
         if (!compilation.IsAccepted)
             return new(SchemaValueStatus.Rejected, compilation.Diagnostics);
         if (valueJson is null || Encoding.UTF8.GetByteCount(valueJson) > SystemJsonSchemaProfile.MaximumValueBytes)
@@ -119,21 +178,23 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
 
             try
             {
-                var schema = JsonSchema.FromText(AssertionSchema(compilation.NormalizedSchema));
-                var evaluation = schema.Evaluate(value.RootElement,
-                    new EvaluationOptions
+                // Values and results are per request. Serialize use of each retained schema graph.
+                lock (cached)
+                {
+                    var evaluation = cached.Schema!.Evaluate(value.RootElement, new EvaluationOptions
                     {
                         OutputFormat = OutputFormat.List,
                         RequireFormatValidation = true
                     });
-                if (evaluation.IsValid) return new(SchemaValueStatus.Valid, []);
+                    if (evaluation.IsValid) return new(SchemaValueStatus.Valid, []);
 
-                var diagnostics = Complaints(evaluation)
-                    .Take(SystemJsonSchemaProfile.MaximumDiagnostics)
-                    .ToArray();
-                if (diagnostics.Length == 0)
-                    diagnostics = [new("VALUE_INVALID", "", "The value does not satisfy the schema.")];
-                return new(SchemaValueStatus.Invalid, ReadOnly(diagnostics));
+                    var diagnostics = Complaints(evaluation)
+                        .Take(SystemJsonSchemaProfile.MaximumDiagnostics)
+                        .ToArray();
+                    if (diagnostics.Length == 0)
+                        diagnostics = [new("VALUE_INVALID", "", "The value does not satisfy the schema.")];
+                    return new(SchemaValueStatus.Invalid, ReadOnly(diagnostics));
+                }
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
@@ -141,6 +202,10 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
             }
         }
     }
+
+    private sealed record CompiledSchema(SchemaCompilationResult Compilation, JsonSchema? Schema);
+    private sealed record CacheEntry((string Schema, string? Profile) Key, CompiledSchema Value,
+        int TextBytes, int Nodes);
 
     private static IEnumerable<SchemaDiagnostic> Complaints(EvaluationResults result)
     {

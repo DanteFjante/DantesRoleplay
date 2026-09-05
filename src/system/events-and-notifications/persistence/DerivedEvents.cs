@@ -204,7 +204,8 @@ internal static class DerivedEvents
 
         try
         {
-            schema = JsonSchema.FromText(EventPayloadRoleMetadata.WithoutExtension(string.IsNullOrWhiteSpace(schemaJson) ? "{}" : schemaJson));
+            schema = JsonSchema.FromText(EventPayloadRoleMetadata.WithoutExtension(string.IsNullOrWhiteSpace(schemaJson) ? "{}" : schemaJson),
+                new BuildOptions { SchemaRegistry = new SchemaRegistry() });
         }
         catch (Exception ex) when (ex is JsonException or JsonSchemaException)
         {

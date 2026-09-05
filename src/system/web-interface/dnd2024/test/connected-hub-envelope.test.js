@@ -1101,6 +1101,20 @@ test("infers region names from location container hierarchy", () => {
   assert.equal(locationsById["location.thalorien.southwestern-volcano"], "Southwestern Volcanic Region");
 });
 
+test("a child with an unloaded parent image cannot become the world map", () => {
+  const envelope = connectedCampaignToHubEnvelope(connectedFixture({
+    audience: { seat: "dm", perspective: "dm", allowedPerspectives: ["dm", "player"] },
+    locationDirectory: [
+      { id: "location.world", name: "World atlas", containerId: "world.thalorien",
+        mapVisual: visual("world", "World atlas") },
+      { id: "location.region", name: "Region", containerId: "location.world", mapAnchor: { x: 400, y: 400 } },
+      { id: "location.child", name: "Aunholt", containerId: "location.region",
+        mapVisual: visual("child", "Local map"), mapAnchor: { x: 500, y: 500 } },
+    ],
+  }));
+  assert.equal(envelope.world.maps.find((map) => map.id === envelope.world.rootMapId).subject.name, "World atlas");
+});
+
 test("uses exact live containment for cropped Region map membership", () => {
   const envelope = connectedCampaignToHubEnvelope(connectedFixture({
     audience: { seat: "dm", perspective: "dm", allowedPerspectives: ["dm", "player"] },

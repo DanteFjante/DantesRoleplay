@@ -48,7 +48,7 @@ public sealed class WebInterfaceTests
     [Fact]
     public void Web_quotas_keep_writes_and_streams_tight_while_allowing_catalog_reads()
     {
-        Assert.Equal(2_000, WebInterfaceSecurity.ReadRequestsPerMinute);
+        Assert.Equal(6_000, WebInterfaceSecurity.ReadRequestsPerMinute);
         Assert.Equal(10, WebInterfaceSecurity.UploadRequestsPerMinute);
         Assert.Equal(4, WebInterfaceSecurity.ConcurrentStreams);
     }
@@ -2660,8 +2660,16 @@ public sealed class WebInterfaceTests
         Assert.DoesNotContain("gpt-5", script, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public async Task Provider_neutral_ai_rejects_a_stale_application_fingerprint_before_execution()
+    [Theory]
+    [InlineData("Inspect the application.", "AI_APPLICATION_CONTEXT_STALE")]
+    [InlineData("Inspect the application.\nExplain the result.", "AI_APPLICATION_CONTEXT_STALE")]
+    [InlineData("Inspect the application.\r\n\tExplain the result.", "AI_APPLICATION_CONTEXT_STALE")]
+    [InlineData("Inspect the application.\rExplain the result.", "AI_APPLICATION_CONTEXT_STALE")]
+    [InlineData("Inspect\0the application.", "AI_REQUEST_INVALID")]
+    [InlineData("Inspect\u001bthe application.", "AI_REQUEST_INVALID")]
+    [InlineData(" \r\n\t", "AI_REQUEST_INVALID")]
+    public async Task Provider_neutral_ai_validates_message_text_before_checking_application_freshness(
+        string input, string expectedCode)
     {
         var applications = new InMemoryApplicationRegistry();
         var application = ApplicationIdentifier.Parse("fixture-app");
@@ -2697,13 +2705,14 @@ public sealed class WebInterfaceTests
                 "fixture",
                 "fixture-model",
                 "task",
-                "Inspect the application.",
+                input,
                 "web-ai-stale-1",
                 application.Value,
                 new string(current.Fingerprint[0] == 'A' ? 'B' : 'A', 64))));
 
-        Assert.Equal("AI_APPLICATION_CONTEXT_STALE", exception.Code);
-        Assert.Equal(StatusCodes.Status409Conflict, exception.StatusCode);
+        Assert.Equal(expectedCode, exception.Code);
+        Assert.Equal(expectedCode == "AI_REQUEST_INVALID"
+            ? StatusCodes.Status400BadRequest : StatusCodes.Status409Conflict, exception.StatusCode);
     }
 
     [Fact]

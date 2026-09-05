@@ -15,7 +15,7 @@ internal static class WorldChronologyWebEndpoint
     private const int PageSize = 100;
     private const int MaximumEntities = 10_000;
     private const int MaximumEdges = 10_000;
-    private const int MaximumEntries = 100;
+    private const int MaximumEntries = 500;
     private const int MaximumSubjects = 10;
 
     public static async Task<IResult> ReadAsync(

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using DantesRoleplay.AI;
+using Json.Schema;
 
 namespace DantesRoleplay.Tests;
 
@@ -104,6 +105,58 @@ public sealed class AiServiceTests
         Assert.Equal(["system_read"], provider.Requests[0].Tools.Select(value => value.Name));
     }
 
+    [Theory]
+    [InlineData("{\"answer\":\"yes\"}", true)]
+    [InlineData("{\"answer\":12}", false)]
+    public async Task Response_schemas_resolve_local_references_without_global_retention(string output, bool valid)
+    {
+        var schemaId = new Uri($"urn:schema-test:{Guid.NewGuid():N}");
+        var schema = """
+            {"$id":"SCHEMA_ID","$schema":"https://json-schema.org/draft/2020-12/schema",
+             "$defs":{"answer":{"type":"string"}},"type":"object","additionalProperties":false,
+             "required":["answer"],"properties":{"answer":{"$ref":"#/$defs/answer"}}}
+            """.Replace("SCHEMA_ID", schemaId.ToString(), StringComparison.Ordinal);
+        var service = new AiService([new QueueProvider([Success(output, structured: true)])]);
+        var result = await service.SendRequestAsync(new(
+            "test", "model", [new(AiMessageRole.User, "answer")],
+            AiRequestKind.StructuredRequest, ResponseSchemaJson: schema));
+
+        Assert.Equal(valid, result.Ok);
+        if (!valid) Assert.Equal("AI_RESPONSE_SCHEMA_MISMATCH", result.ErrorCode);
+        Assert.Null(SchemaRegistry.Global.Get(schemaId));
+        Assert.Null(BuildOptions.Default.SchemaRegistry.Get(schemaId));
+    }
+
+    [Theory]
+    [InlineData("{\"key\":\"value\"}", true)]
+    [InlineData("{\"key\":12}", false)]
+    public async Task Tool_schemas_remain_local_during_registration_and_execution(string arguments, bool valid)
+    {
+        var schemaId = new Uri($"urn:schema-test:{Guid.NewGuid():N}");
+        var schema = """
+            {"$id":"SCHEMA_ID","$defs":{"key":{"type":"string"}},
+             "type":"object","additionalProperties":false,"required":["key"],
+             "properties":{"key":{"$ref":"#/$defs/key"}}}
+            """.Replace("SCHEMA_ID", schemaId.ToString(), StringComparison.Ordinal);
+        var provider = new QueueProvider([
+            new(true, Model(), "", "", [new("call-1", "system_read", arguments)]),
+            Success("finished")
+        ]);
+        var tool = new CapturingTool(schema);
+        var service = new AiService([provider], [tool]);
+        Assert.Null(SchemaRegistry.Global.Get(schemaId));
+        Assert.Null(BuildOptions.Default.SchemaRegistry.Get(schemaId));
+
+        var result = await service.SendTaskAsync("test", "model", "inspect", allowedTools: ["system_read"]);
+
+        Assert.True(result.Ok, result.ErrorMessage);
+        Assert.Equal(valid ? JsonValueKind.Object : JsonValueKind.Undefined, tool.Arguments.ValueKind);
+        if (!valid) Assert.Contains(provider.Requests[1].Messages,
+            message => message.Role == AiMessageRole.Tool && message.Content.Contains("AI_TOOL_ARGUMENTS_INVALID"));
+        Assert.Null(SchemaRegistry.Global.Get(schemaId));
+        Assert.Null(BuildOptions.Default.SchemaRegistry.Get(schemaId));
+    }
+
     private static AiProviderResponse Success(string text, bool structured = false) =>
         new(true, Model(), text, structured ? text : "", []);
 
@@ -131,13 +184,13 @@ public sealed class AiServiceTests
         }
     }
 
-    private sealed class CapturingTool : IAiTool
+    private sealed class CapturingTool(string? schema = null) : IAiTool
     {
         public JsonElement Arguments { get; private set; }
         public AiToolDefinition Definition { get; } = new(
             "system_read",
             "Read a system value.",
-            """{"type":"object","additionalProperties":false,"required":["key"],"properties":{"key":{"type":"string"}}}""");
+            schema ?? """{"type":"object","additionalProperties":false,"required":["key"],"properties":{"key":{"type":"string"}}}""");
 
         public Task<AiToolResult> InvokeAsync(
             AiToolInvocation invocation,

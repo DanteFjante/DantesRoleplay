@@ -4,6 +4,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   useEffect,
   useRef,
+  useState,
 } from "react";
 import type { MapDocument, MapFeature } from "../data/hub-types";
 import { Icon } from "./Icon";
@@ -59,10 +60,13 @@ export function MapCanvas({
   const stageRef = useRef<HTMLDivElement>(null);
   const gestureRef = useRef<DragGesture | null>(null);
   const movedRef = useRef(false);
+  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+  const [imageAttempt, setImageAttempt] = useState(0);
+  const imageFailed = !!map.base && failedImageUrl === map.base.imageUrl;
 
   useEffect(() => {
-    markMapReady(map.id);
-  }, [map.id]);
+    if (!map.base) markMapReady(map.id);
+  }, [map.id, map.base]);
 
   const constrain = (candidate: MapViewportState): MapViewportState => {
     const viewportElement = viewportRef.current;
@@ -203,7 +207,7 @@ export function MapCanvas({
         aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown"
         aria-label={`${map.subject.name} interactive map`}
         className="world-map-canvas"
-        data-base={map.base ? "present" : "absent"}
+        data-base={map.base && !imageFailed ? "present" : "absent"}
         onClick={() => {
           if (movedRef.current) { movedRef.current = false; return; }
           onFeatureSelect("");
@@ -221,8 +225,20 @@ export function MapCanvas({
           ref={stageRef}
           style={{ transform: `translate3d(${viewport.x}px, ${viewport.y}px, 0) scale(${viewport.zoom})` }}
         >
-          {map.base ? (
-            <img alt={map.base.alt} draggable={false} src={map.base.imageUrl} />
+          {map.base && !imageFailed ? (
+            <img alt={map.base.alt} draggable={false} src={map.base.imageUrl}
+              key={`${map.base.imageUrl}:${imageAttempt}`}
+              onLoad={() => markMapReady(map.id)}
+              onError={() => setFailedImageUrl(map.base!.imageUrl)} />
+          ) : imageFailed ? (
+            <div className="map-base-absent" role="alert">
+              <p>The map image could not be loaded. The places below are still available.</p>
+              <button type="button" onClick={(event) => {
+                event.stopPropagation();
+                setFailedImageUrl(null);
+                setImageAttempt((attempt) => attempt + 1);
+              }}>Try loading the map again</button>
+            </div>
           ) : (
             <p className="map-base-absent">
               <Icon name="Map" size={20} />

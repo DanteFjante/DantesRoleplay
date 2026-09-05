@@ -1,3 +1,5 @@
+import { createHubReadScope } from "./hub-read-scope.js";
+
 const TOKEN_MAXIMUM = 200;
 const LOCATION_COMPONENT_TYPE_ID = "game.core.world.location";
 const WORLD_MAP_ANCHOR_COMPONENT_TYPE_ID = "game.core.world.map.anchor";
@@ -926,7 +928,7 @@ function chronology(value, expectedPerspective) {
   if (!hasExactKeys(value, ["status", "perspective", "entries"]) ||
       value.perspective !== expectedPerspective ||
       (value.status !== "ready" && value.status !== "empty") ||
-      !Array.isArray(value.entries) || value.entries.length > 100) {
+      !Array.isArray(value.entries) || value.entries.length > 500) {
     return { status: "unavailable", perspective: expectedPerspective, entries: [] };
   }
   const includeSubjects = expectedPerspective === "dm";
@@ -1864,10 +1866,20 @@ async function readPartyRoster({
       const actor = entity(actorPayload, actorId);
       if (!actor) return null;
       if (deferCharacterDetails) return { ...actor, state: null, entries: [], detailsDeferred: true, current: false };
-      // A GM's Player preview retains identity only; the selected dossier is read separately.
-      if (perspective === "player") return {
-        ...actor, state: actor.state ?? null, entries: actor.entries ?? [], current: false,
-      };
+      // Request a fresh player-filtered projection rather than reusing a GM dossier.
+      if (perspective === "player") {
+        const canonicalResult = await readCanonicalCharacter({
+          fetchImpl, origin, applicationId, stateSpaceId, actorId, perspective: "player",
+        });
+        return {
+          ...actor,
+          state: null,
+          entries: [],
+          canonicalResult,
+          ...(canonicalResult.status === "ready" ? { canonical: canonicalResult.data } : {}),
+          current: false,
+        };
+      }
       const [canonicalResult, mediaValue] = await Promise.all([
         readCanonicalCharacter({ fetchImpl, origin, applicationId, stateSpaceId, actorId }),
         readEntityMedia(fetchImpl, origin, entityRoot, actorId),
@@ -2236,7 +2248,13 @@ async function readCampaignStructure({
  *   deferCharacterDetails?: boolean,
  * }} options
  */
-export async function readGameServerContext({
+export async function readGameServerContext(options) {
+  const scope = createHubReadScope(options.fetchImpl ?? fetch);
+  const envelope = await readGameServerContextCore({ ...options, fetchImpl: scope.fetch });
+  return scope.failure ? unavailable(scope.failure) : envelope;
+}
+
+async function readGameServerContextCore({
   serverOrigin,
   fetchImpl = fetch,
   requestedPerspective = "dm",

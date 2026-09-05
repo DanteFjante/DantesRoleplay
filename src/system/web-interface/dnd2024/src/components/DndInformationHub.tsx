@@ -283,7 +283,9 @@ export function DndInformationHub({
     } catch (error) {
       if (requestId !== hubRequestSequence.current ||
           (error instanceof ViewReadError && error.category === "cancelled")) return;
-      setHubError("The view could not be changed. Your current information is still available.");
+      setHubError(error instanceof ViewReadError && error.category === "transport"
+        ? error.message
+        : "The view could not be changed. Your current information is still available.");
       setAnnouncement("World or campaign change unavailable");
     } finally {
       if (requestId === hubRequestSequence.current) setHubBusy(false);

@@ -208,6 +208,22 @@ async function dispatch(target: Element, event: Event) {
   return allowed;
 }
 
+test("a failed map image has a retry action and does not leave a broken image", async () => {
+  const mounted = await mount(<MapCanvas map={{ ...mountedMap,
+    base: { imageUrl: "/map.png", alt: "Test map" } }} selectedFeatureId="" currentLocationId=""
+    scopeLinkFeatureIds={new Map()} annotatedFeatureIds={new Set()} influencedFeatureIds={new Set()}
+    viewport={DEFAULT_MAP_VIEWPORT} onViewportChange={() => {}} onFeatureSelect={() => {}} onOpenScope={() => {}} />);
+  try {
+    await act(async () => mounted.container.querySelector(".world-map-stage > img")!
+      .dispatchEvent(new window.Event("error")));
+    assert.equal(mounted.container.querySelector(".world-map-stage > img"), null);
+    assert.match(mounted.container.querySelector('[role="alert"]')!.textContent!, /map image could not be loaded/u);
+    await click(button(mounted.container, "Try loading the map again"));
+    assert.equal(mounted.container.querySelector(".world-map-stage > img")!.getAttribute("src"), "/map.png");
+    assert.equal(mounted.container.querySelector('[role="alert"]'), null);
+  } finally { await mounted.cleanup(); }
+});
+
 test("mounted map leaves wheel events uncancelled without changing zoom", async () => {
   const mounted = await mount(<MapHarness />);
   try {

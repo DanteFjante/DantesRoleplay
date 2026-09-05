@@ -95,7 +95,11 @@ public sealed partial class AiService : IAiService
         JsonSchema? responseSchema = null;
         if (!string.IsNullOrWhiteSpace(request.ResponseSchemaJson))
         {
-            try { responseSchema = JsonSchema.FromText(request.ResponseSchemaJson); }
+            try
+            {
+                responseSchema = JsonSchema.FromText(request.ResponseSchemaJson,
+                    new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+            }
             catch (Exception exception) when (exception is JsonException or JsonSchemaException)
             {
                 return AiResponse.Failure("AI_RESPONSE_SCHEMA_INVALID", Bound(exception.Message));
@@ -235,7 +239,8 @@ public sealed partial class AiService : IAiService
             using var arguments = JsonDocument.Parse(call.ArgumentsJson);
             if (arguments.RootElement.ValueKind != JsonValueKind.Object)
                 return AiToolResult.Failure("AI_TOOL_ARGUMENTS_INVALID", "Tool arguments must be a JSON object.");
-            var schema = JsonSchema.FromText(tool.Definition.InputSchemaJson);
+            var schema = JsonSchema.FromText(tool.Definition.InputSchemaJson,
+                new BuildOptions { SchemaRegistry = new SchemaRegistry() });
             if (!schema.Evaluate(arguments.RootElement).IsValid)
                 return AiToolResult.Failure("AI_TOOL_ARGUMENTS_INVALID", "Tool arguments do not match the declared schema.");
             return await tool.InvokeAsync(
@@ -317,7 +322,8 @@ public sealed partial class AiService : IAiService
                 string.IsNullOrWhiteSpace(value.Definition.InputSchemaJson) ||
                 !result.TryAdd(value.Definition.Name, value))
                 throw new ArgumentException("AI tools must have unique valid names, descriptions, and schemas.", nameof(values));
-            _ = JsonSchema.FromText(value.Definition.InputSchemaJson);
+            _ = JsonSchema.FromText(value.Definition.InputSchemaJson,
+                new BuildOptions { SchemaRegistry = new SchemaRegistry() });
         }
         return result;
     }

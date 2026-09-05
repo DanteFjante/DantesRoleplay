@@ -121,6 +121,10 @@ public static class WebInterfaceServiceCollectionExtensions
             options.OnRejected = async (context, cancellationToken) =>
             {
                 WebInterfaceSecurity.ApplyHeaders(context.HttpContext.Response);
+                if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+                    context.HttpContext.Response.Headers.RetryAfter = Math.Max(1,
+                        (int)Math.Ceiling(retryAfter.TotalSeconds)).ToString(
+                            System.Globalization.CultureInfo.InvariantCulture);
                 await context.HttpContext.Response.WriteAsJsonAsync(
                     new
                     {
@@ -129,16 +133,22 @@ public static class WebInterfaceServiceCollectionExtensions
                     },
                     cancellationToken);
             };
-            options.AddFixedWindowLimiter(
+            options.AddPolicy(
                 WebInterfaceSecurity.ReadRateLimitPolicy,
-                limiter =>
+                context => RateLimitPartition.GetFixedWindowLimiter(
+                    // Keep API polling and catalog traversal from locking users out of the UI.
+                    context.Request.Path.StartsWithSegments("/api") &&
+                    !(context.Request.Path.Value!.Contains("/media/", StringComparison.Ordinal) &&
+                      context.Request.Path.Value.EndsWith("/content", StringComparison.Ordinal))
+                        ? "api" : "content",
+                    _ => new FixedWindowRateLimiterOptions
                 {
-                    limiter.PermitLimit = WebInterfaceSecurity.ReadRequestsPerMinute;
-                    limiter.Window = TimeSpan.FromMinutes(1);
-                    limiter.QueueLimit = 0;
-                    limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                    limiter.AutoReplenishment = true;
-                });
+                    PermitLimit = WebInterfaceSecurity.ReadRequestsPerMinute,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    AutoReplenishment = true
+                }));
             options.AddFixedWindowLimiter(
                 WebInterfaceSecurity.UploadRateLimitPolicy,
                 limiter =>

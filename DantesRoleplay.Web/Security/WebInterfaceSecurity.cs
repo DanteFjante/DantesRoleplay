@@ -8,7 +8,9 @@ public static class WebInterfaceSecurity
     public const string ReadRateLimitPolicy = "dantes-web-read";
     public const string UploadRateLimitPolicy = "dantes-web-upload";
     public const string StreamRateLimitPolicy = "dantes-web-stream";
-    public const int ReadRequestsPerMinute = 2_000;
+    // A complete authored world requires about 1,100 small reads. Allow normal view changes
+    // and reloads while retaining a finite allowance; browser reads also limit concurrency.
+    public const int ReadRequestsPerMinute = 6_000;
     public const int UploadRequestsPerMinute = 10;
     public const int ConcurrentStreams = 4;
 

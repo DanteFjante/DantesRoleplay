@@ -4,7 +4,8 @@ import { createRoot } from "react-dom/client";
 import { BootstrapShell } from "../components/BootstrapShell";
 import { resolveHubSurface } from "../data/hub-availability.js";
 import type { CanonicalCharacterResult, ConnectedCampaignEnvelope, HubEnvelope, PartyMemberReadModel, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
-import { ViewReadClient } from "../data/view-read-client";
+import { ViewReadClient, ViewReadError } from "../data/view-read-client";
+import { loadInitialHub } from "../data/hub-preferences";
 import { isReadyHubEnvelope } from "../state.js";
 import { markBootstrapResponse } from "../observability/performance.js";
 import {
@@ -195,7 +196,7 @@ async function loadReadyEnvelope(
     : null);
   const envelope = cached?.value ?? await loadEnvelope(perspective, campaignId);
   if (envelope.status !== "ready") {
-    throw new Error(envelopeMessage(envelope));
+    throw new ViewReadError("transport", envelopeMessage(envelope));
   }
   return envelope;
 }
@@ -210,7 +211,9 @@ root.render(
 );
 
 try {
-  const initialEnvelope = await loadEnvelope("player");
+  const initialEnvelope = await loadInitialHub(loadEnvelope, {
+    getItem: (key) => window.localStorage.getItem(key),
+  });
   if (typeof EventSource !== "undefined") {
     const changes = new EventSource("/api/changes?page=dnd2024-play");
     let connected = false;

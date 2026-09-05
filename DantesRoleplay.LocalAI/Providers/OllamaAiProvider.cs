@@ -196,7 +196,8 @@ public sealed class OllamaAiProvider(HttpClient http, OllamaCompletionOptions op
         JsonElement schemaElement;
         try
         {
-            schema = JsonSchema.FromText(request.ResponseSchema);
+            schema = JsonSchema.FromText(request.ResponseSchema,
+                new BuildOptions { SchemaRegistry = new SchemaRegistry() });
             using var schemaDocument = JsonDocument.Parse(request.ResponseSchema);
             schemaElement = schemaDocument.RootElement.Clone();
         }

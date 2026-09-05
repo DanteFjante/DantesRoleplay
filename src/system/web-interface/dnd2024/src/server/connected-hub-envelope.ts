@@ -576,7 +576,8 @@ function buildLiveMapTree(entries: readonly LiveDirectoryEntry[]): {
     .filter((entry) => resolvedMapBase(entry) !== null)
     .map((entry) => [entry.id, entry]));
   const rootOwner = [...mapOwners.values()]
-    .filter((entry) => !entry.containerId || !byId.has(entry.containerId) || !mapOwners.has(entry.containerId))
+    // A missing parent image never promotes its child to the world root.
+    .filter((entry) => !entry.containerId || !byId.has(entry.containerId))
     .sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id))[0] ?? null;
   if (!rootOwner) {
     const rootMapId = "map.live.world.unavailable";

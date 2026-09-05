@@ -19,6 +19,18 @@ Put ruleset vocabulary, IDs, formulas, eligibility, choices, and outcome branchi
 
 Schemas define stored component state. Procedures define how a capability is invoked and what context it receives. JavaScript mechanics calculate game-specific results. Tests should assert the boundary as well as the result.
 
+Compile request and catalog JSON Schemas with a fresh `BuildOptions` and `SchemaRegistry` for each
+build. JsonSchema.Net registers compiled graphs; its default shared registry retains them for the
+process lifetime. Keep local references within that build and preserve built-in dialect lookup.
+Never register per-request schemas globally or clear the global registry as a cleanup workaround.
+
+The singleton bounded validator may reuse successful schema compilations by exact schema text and
+requested profile. Its least-recently-used cache is capped at 256 entries, 2 MiB of retained schema
+text, and 32,000 schema nodes. Each cache miss still builds with its own registry, and each value is
+parsed and validated afresh under the existing limits. Invalid compilations, input values, validation
+results, authorization decisions, and game-state projections are not cached. Edited schemas use new
+keys immediately; no time-based expiry can serve an older contract for changed contents.
+
 Every repository-authored application mechanic declares a closed `inputSchema` in its requirements.
 Capability discovery exposes that schema plus generated valid and invalid examples; the common
 descriptor also carries the closed output envelope, owner, lifecycle, roles, authorization,
@@ -39,6 +51,12 @@ read model instead of reproducing ruleset calculations or scanning raw ECS compo
 audience policy selects which entity may be projected and supplies the frozen player-or-DM
 perspective seen by audience-aware JavaScript; mechanic input and model output never select or
 upgrade their own audience.
+
+The read-model HTTP endpoint accepts an optional `perspective=player|dm`. An authorized
+GameMaster may request a Player projection; an Actor cannot request DM or another actor's
+entity. Invalid or repeated perspective values fail before projection. GM Player previews
+must request a fresh Player projection and omit ambient-GM media enrichment rather than
+reuse a DM dossier.
 
 Before an application planner receives a turn, materialize one bounded task-context pack for the
 already-authorized principal, application, state space, session, and audience. The pack may contain
@@ -254,6 +272,18 @@ the finalized bytes. It does not change ECS associations or delete sources. Back
 a runtime database must include both the SQLite file and its adjacent `blobs/` directory.
 
 ## Published web bundles
+
+Web read throttling keeps API reads and page/browser-asset loads in separate bounded allowances.
+API polling or catalog traversal must not prevent a user from reloading the UI or its entity-owned
+map images. Media content shares the page/asset allowance. Each read group permits 6,000 requests
+per minute to accommodate complete world views; writes retain their existing limits. Paths and query
+values within each group share its allowance; writes and live streams retain their separate limits.
+Fixed-window rejections return `Retry-After` with the existing `WEB_RATE_LIMITED` response.
+
+The D&D browser requests saved view preferences on its initial authorized load rather than loading
+Player and then repeating the world load for DM. Each view load limits reads to eight concurrent
+requests and reuses bounded entity listings only within that load. A rate-limited load never becomes
+a successful partial world/map; the current view remains available.
 
 Build an application page bundle from its maintained browser source, then stage it through the
 registered ECS page identity. Post an `application/zip` body containing root `index.html` and

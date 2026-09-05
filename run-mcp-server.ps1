@@ -8,7 +8,8 @@
     Production configuration, and the mcp-remote bridge Claude Desktop uses never reconnects.
     The launch profile in Properties/launchSettings.json supplies both the URL and a set of
     Knowledge__LocalPlayer__* environment variables that OVERRIDE appsettings.json. This script
-    reproduces that environment so the server comes up on 6217 with the intended player seat.
+    reproduces that environment so the server comes up on 6217 with a local GameMaster seat
+    that can use both DM and Player views. Pass -Role Actor for a player-only session.
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File .\run-mcp-server.ps1
@@ -20,7 +21,8 @@
 [CmdletBinding()]
 param(
     [switch] $Restart,
-    [string] $Role     = 'Actor',
+    [ValidateSet('Actor', 'GameMaster')]
+    [string] $Role     = 'GameMaster',
     [string] $ActorId  = 'actor.caldris.ganji',
     [string] $Campaign = 'campaign.caldris.measure-of-mercy'
 )

@@ -19,6 +19,35 @@ import {
 
 const MEDIA_HASH = "3ae0336e89155a4a00fb0d982ae903bf9ed1137cd292b097b252fd38c1501fa3";
 
+for (const count of [500, 501]) {
+  test(`world history handles ${count} entries with its bounded contract`, async () => {
+    const entries = Array.from({ length: count }, (_, index) => ({
+      id: `chronology-${index + 1}`, occurredAtMinute: index, dateLabel: `Year ${index}`,
+      precision: "era", title: `History ${index}`, summary: "A recorded historical event.",
+    }));
+    const value = await readGameServerContext({
+      serverOrigin: "http://localhost:6217",
+      fetchImpl: async (input) => {
+        const path = new URL(input).pathname;
+        if (path === "/api/audience-context") return response(200, {
+          status: "bound", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+          campaignId: "campaign.thalorien.brackenford", actorId: "actor.thalorien.brackenford.orban",
+        });
+        if (path.endsWith("/campaign.thalorien.brackenford")) return response(200, {
+          entityId: "campaign.thalorien.brackenford", name: "Brackenford",
+        });
+        if (path.endsWith("/actor.thalorien.brackenford.orban")) return response(200, {
+          entityId: "actor.thalorien.brackenford.orban", name: "Orban",
+        });
+        if (path.endsWith("/chronology")) return response(200, { status: "ready", perspective: "player", entries });
+        return response(404, {});
+      },
+    });
+    assert.equal(value.chronology.status, count === 500 ? "ready" : "unavailable");
+    assert.equal(value.chronology.entries.length, count === 500 ? 500 : 0);
+  });
+}
+
 function dossierDefinition(reference, kind, status = "active") {
   return {
     id: reference.id,
@@ -914,6 +943,7 @@ test("reads only the server-selected campaign, actor, and authorized knowledge",
       if (path.endsWith("/actor.thalorien.brackenford.orban")) {
         return response(200, { entityId: "actor.thalorien.brackenford.orban", name: "Orban" });
       }
+      if (path.endsWith("/entities")) return response(200, { items: [], nextCursor: null });
       throw new Error(`Unexpected request ${path}`);
     },
   });
@@ -1030,7 +1060,6 @@ test("reads only the server-selected campaign, actor, and authorized knowledge",
     "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/actor.thalorien.brackenford.orban/media",
     "/api/applications/dnd2024/state-spaces/dnd2024-main/entities/clue.thalorien.brackenford.waystone/media",
     "/api/applications/dnd2024/state-spaces/dnd2024-main/entities",
-    "/api/applications/dnd2024/state-spaces/dnd2024-main/entities",
   ]);
 });
 
@@ -1107,6 +1136,7 @@ test("maps a server-authorized game master context to the local DM seat without 
       if (path.endsWith("/relationships")) {
         return response(200, { items: [] });
       }
+      if (path.endsWith("/containment") || path.endsWith("/components/game.core.world.location")) return response(404, {});
       throw new Error(`Unexpected request ${path}`);
     },
   });
@@ -1203,7 +1233,7 @@ test("reads location directory items that use `id` instead of `entityId`", async
   assert.equal("containerId" in value.locationDirectory[1], false);
 });
 
-test("keeps partial location-directory pages when a later page fetch fails", async () => {
+test("rejects partial location-directory pages when a later page fetch fails", async () => {
   const value = await readGameServerContext({
     serverOrigin: "http://localhost:6217",
     fetchImpl: async (input) => {
@@ -1258,13 +1288,9 @@ test("keeps partial location-directory pages when a later page fetch fails", asy
     },
   });
 
-  assert.deepEqual(value.audience, {
-    seat: "dm",
-    perspective: "dm",
-    allowedPerspectives: ["dm", "player"],
-  });
-  assert.deepEqual(value.locationDirectory, [{ id: "location.thalorien.aldros", name: "Aldros" }]);
-  assert.equal(value.locationDirectory.length, 1);
+  assert.equal(value.status, "unavailable");
+  assert.match(value.message, /Some world information could not be loaded/u);
+  assert.equal(value.locationDirectory, undefined);
 });
 
 test("an obsolete local DM override cannot promote a server-authorized actor", async () => {
@@ -1522,6 +1548,10 @@ test("supports selecting player perspective for a local game master", async () =
     name: "Orban",
     state: null,
     entries: [],
+    canonicalResult: {
+      status: "error", data: null, failureCategory: "transport",
+      diagnosticId: `canonical-character:${actorId}:transport`,
+    },
     current: false,
   });
   assert.deepEqual(value.knowledge, { status: "unavailable", entries: [], locations: [] });
@@ -1536,10 +1566,10 @@ test("supports selecting player perspective for a local game master", async () =
   )), false);
   assert.equal(calls.some((path) => path.endsWith(
     `/${actorId}/read-models/dnd2024.query.character-dossier-v1`,
-  )), false);
+  )), true);
   assert.equal(calls.some((path) => path.endsWith(`/${actorId}/media`)), false);
   assert.equal(calls.some((path) => path.includes("clue.") && path.endsWith("/media")), false);
-  assert.equal(calls.length, 21);
+  assert.equal(calls.length, 20);
 });
 
 test("reads live campaign chapters and arcs while omitting GM context from player preview", async () => {
@@ -2007,6 +2037,7 @@ test("projects only exact active campaign participation into the DM party roster
         { entityId: campaignId, name: "The Waystone at Brackenford" },
         { entityId: "actor.thalorien.brackenford.orban", name: "Orban" },
         { entityId: "actor.thalorien.brackenford.sol", name: "Sol" },
+        { entityId: "location.thalorien.fixture", name: "A test crossroads" },
       ], nextCursor: null });
     }
     if (path.endsWith("/relationships") &&
@@ -2108,8 +2139,8 @@ test("projects only exact active campaign participation into the DM party roster
   const partyReadIndex = calls.findIndex((call) => call.path.endsWith("/relationships") &&
     call.fromEntityId === campaignId &&
     call.qualifiedKind === "game.core.campaign.has-character-participation");
-  const worldDirectoryIndex = calls.findLastIndex((call) =>
-    call.path === "/api/applications/dnd2024/state-spaces/dnd2024-main/entities");
+  const worldDirectoryIndex = calls.findIndex((call) =>
+    call.path.endsWith("/location.thalorien.fixture/containment"));
   assert.ok(partyReadIndex >= 0);
   assert.ok(worldDirectoryIndex >= 0);
   assert.ok(partyReadIndex < worldDirectoryIndex,
@@ -2123,6 +2154,39 @@ test("projects only exact active campaign participation into the DM party roster
     [{ id: "actor.thalorien.brackenford.orban", detailsDeferred: true }]);
   assert.equal(calls.filter(({ path }) => path.includes("/read-models/")).length, 0,
     "Opening World must not read any character dossier.");
+
+  const previewCalls = [];
+  const preview = await readGameServerContext({
+    serverOrigin: "http://localhost:6217",
+    requestedPerspective: "player",
+    fetchImpl: async (input) => {
+      const requested = new URL(input);
+      previewCalls.push(requested);
+      if (requested.pathname.endsWith("/read-models/dnd2024.query.character-dossier-v1")) {
+        assert.equal(requested.searchParams.get("perspective"), "player");
+        return response(200, {
+          qualifiedQueryId: "dnd2024.query.character-dossier-v1",
+          stateSpaceFingerprint: "A".repeat(64), resolutionFingerprint: "B".repeat(64),
+          resultFingerprint: "C".repeat(64), sourceRevisionFingerprint: "D".repeat(64),
+          data: characterDossier({
+            version: 2, subject: { id: "actor.thalorien.brackenford.orban", label: "Orban" },
+            origin: { species: { id: "species.fixture", label: "Species" }, background: { id: "background.fixture", label: "Background" } },
+            classes: [{ id: "membership.fixture", name: "Bard", class: { id: "class.fixture", label: "Bard" }, level: 1, subclass: null }],
+            hitPoints: { current: 9, maximum: 9, maximumReduction: 0 },
+            inventory: { items: [], contentsDepth: 4, mayOmitDeeperContents: true },
+            wallet: { coinCount: 0, copperValue: 0, gpCount: 0, denominations: [] },
+          }),
+        });
+      }
+      return fetchImpl(input);
+    },
+  });
+  assert.equal(preview.party.length, 1);
+  assert.equal(preview.party[0].canonicalResult.status, "ready");
+  assert.equal(preview.party[0].canonical.hitPoints.current, 9);
+  assert.deepEqual(preview.party[0].entries, []);
+  assert.equal(preview.party[0].media, undefined);
+  assert.equal(previewCalls.some((call) => call.pathname.endsWith("/components/dnd2024.playtest-character-record")), false);
 });
 
 test("reads the registered character projection and enriches its bounded inventory media", async () => {

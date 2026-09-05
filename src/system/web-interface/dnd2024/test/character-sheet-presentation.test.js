@@ -46,7 +46,8 @@ test("inventory renders canonical definition details and provenance from the dos
 });
 
 test("the character page owns responsive desktop, tablet, and mobile layouts", () => {
-  for (const [selector, width] of [["character-sheet-v2__columns", 360], ["character-abilities", 100],
+  assert.match(styles, /\.character-abilities\s*\{[^}]*grid-template-columns:\s*repeat\(6,\s*minmax\(0,\s*1fr\)\)/u);
+  for (const [selector, width] of [["character-sheet-v2__columns", 360],
     ["character-checks", 230], ["character-inventory-layout", 280]]) {
     assert.match(styles, new RegExp(`\\.${selector}\\s*\\{[^}]*repeat\\(auto-fit, minmax\\(min\\(100%, ${width}px\\), 1fr\\)\\)`, "u"));
   }

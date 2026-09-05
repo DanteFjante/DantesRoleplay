@@ -9,7 +9,7 @@ function source(path) {
 test("bootstrap renders the navigation shell before the private v1 adapter resolves", () => {
   const main = source("../src/server-host/main.tsx");
   const shellRender = main.indexOf("<BootstrapShell />");
-  const initialRead = main.indexOf('await loadEnvelope("player")');
+  const initialRead = main.indexOf('await loadInitialHub(loadEnvelope,');
 
   assert.ok(shellRender >= 0);
   assert.ok(initialRead > shellRender);

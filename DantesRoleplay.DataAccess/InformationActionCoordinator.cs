@@ -40,7 +40,8 @@ public sealed class InformationActionCoordinator(
     {
         try
         {
-            var schema = JsonSchema.FromText(schemaJson);
+            var schema = JsonSchema.FromText(schemaJson,
+                new BuildOptions { SchemaRegistry = new SchemaRegistry() });
             using var input = JsonDocument.Parse(inputJson);
             return schema.Evaluate(input.RootElement, new EvaluationOptions { OutputFormat = OutputFormat.List }).IsValid;
         }
