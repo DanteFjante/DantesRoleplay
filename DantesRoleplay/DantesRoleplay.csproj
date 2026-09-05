@@ -31,9 +31,11 @@
     </EmbeddedResource>
 
     <!-- The two generic example mechanics also come directly from their canonical catalog
-         metadata/source pairs. Ruleset mechanics remain installable content, not kernel seed. -->
+         metadata/source pairs. Ruleset mechanics remain installable content, not kernel seed.
+         The deprecated lock-picking rehearsal is export-only compatibility content: excluding
+         its resources does not delete or revise any catalog file or existing runtime record. -->
     <EmbeddedResource Include="..\catalog\mechanics\**\*.md;..\catalog\mechanics\**\*.js"
-                      Exclude="..\catalog\mechanics\dnd2024\**\*;..\catalog\mechanics\mechanic\dnd2024\**\*">
+                      Exclude="..\catalog\mechanics\dnd2024\**\*;..\catalog\mechanics\mechanic\dnd2024\**\*;..\catalog\mechanics\mechanic\lock\pick.md;..\catalog\mechanics\mechanic\lock\pick.js">
       <Link>Rules\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <LogicalName>DantesRoleplay.Rules.%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
       <WithCulture>false</WithCulture>

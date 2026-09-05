@@ -38,6 +38,10 @@ export function acceptanceStatus(stageResults) {
   return stages.every(stage => stageResults[stage] === 'passed') ? 'passed' : 'incomplete';
 }
 
+export function preflightExitCode(stageResults) {
+  return stageResults.bootstrap === 'passed' ? 0 : 1;
+}
+
 async function command(file, args, cwd, env = process.env, onText = () => {}) {
   const child = spawn(file, args, { cwd, env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
   let output = '';
@@ -109,21 +113,28 @@ export async function run() {
       Retrieval__Embedding__Enabled: 'false', Knowledge__Completion__Enabled: 'false',
       InteractionOuter__Local__Enabled: 'false', InteractionPlanning__Remote__Enabled: 'false' };
     delete env.OPENAI_API_KEY;
-    let readyResolve;
-    const ready = new Promise(accept => { readyResolve = accept; });
-    let startup = '';
-    server = await command(join(root, 'server/DantesRoleplay.MCPServer.exe'), ['--urls', 'http://127.0.0.1:0', '--Logging:LogLevel:Microsoft.Hosting.Lifetime', 'Information'], root, env, text => {
-      startup += text;
-      const match = startup.match(/Now listening on:\s+(http:\/\/127\.0\.0\.1:\d+)/);
-      if (match) readyResolve(requireIsolatedOrigin(match[1]));
-    });
-    let timer;
-    try {
-      origin = await Promise.race([ready, server.done.then(result => { throw new Error(result.output); }),
-        new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Isolated server startup timed out')), 60000); })]);
-    } finally { clearTimeout(timer); }
-    console.log(`Isolated listener: ${origin}`);
-    await tool('query', { kind: 'capabilities' });
+    // A true process restart against the same disposable database checks bootstrap idempotency.
+    // This is not a campaign resume: gameplay and its durability assertions remain not-run.
+    for (const phase of ['cold-start', 'bootstrap-restart']) {
+      let readyResolve;
+      const ready = new Promise(accept => { readyResolve = accept; });
+      let startup = '';
+      server = await command(join(root, 'server/DantesRoleplay.MCPServer.exe'), ['--urls', 'http://127.0.0.1:0', '--Logging:LogLevel:Microsoft.Hosting.Lifetime', 'Information'], root, env, text => {
+        startup += text;
+        const match = startup.match(/Now listening on:\s+(http:\/\/127\.0\.0\.1:\d+)/);
+        if (match) readyResolve(match[1]);
+      });
+      let timer;
+      try {
+        origin = requireIsolatedOrigin(await Promise.race([ready, server.done.then(result => { throw new Error(result.output); }),
+          new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Isolated server startup timed out')), 60000); })]));
+      } finally { clearTimeout(timer); }
+      console.log(`${phase} listener: ${origin}`);
+      await tool('query', { kind: 'capabilities' });
+      server.child.kill();
+      await evidence(`server-process-${phase}`, await server.done);
+      server = null;
+    }
     report.stages.bootstrap = 'passed';
   } catch (error) {
     report.status = 'blocked';
@@ -137,11 +148,12 @@ export async function run() {
       await evidence('server-process', await server.done);
     }
     report.status = acceptanceStatus(report.stages);
-    if (report.status !== 'passed') process.exitCode = 1;
+    report.preflightStatus = report.stages.bootstrap;
+    process.exitCode = preflightExitCode(report.stages);
     report.finishedAt = new Date().toISOString();
     for (const item of report.evidence) assert.equal(hash(await readFile(join(root, item.name))), item.sha256);
     await writeFile(join(root, 'report.json'), JSON.stringify(report, null, 2) + '\n');
-    console.log(`Result: ${report.status}; retained evidence and disposable database: ${root}`);
+    console.log(`Preflight: ${report.preflightStatus}; full Slice 19: ${report.status}; retained evidence and disposable database: ${root}`);
   }
   return report;
 }

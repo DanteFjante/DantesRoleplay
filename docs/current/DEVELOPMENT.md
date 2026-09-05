@@ -99,6 +99,9 @@ legacy-state adoption facility remains available while old state exists. `fixtur
 content remains quarantined until its live records and non-fixture authored references have been
 exported or migrated; never confuse that prefix with historical migrations, optional compatibility
 extensions, or game vocabulary that happens to contain the word legacy.
+Export-only compatibility records must not be embedded as fresh-start bootstrap content. Excluding
+their build resources preserves catalog export and existing runtime revisions; it is not retirement
+of their storage or approval of their namespace.
 
 Orientation is a runtime projection, not authored capability prose. It combines only the current
 dispatcher-backed MCP descriptors, authorization-scoped in-process capability discovery, the

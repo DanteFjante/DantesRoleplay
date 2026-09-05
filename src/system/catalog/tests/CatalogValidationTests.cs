@@ -95,6 +95,7 @@ public sealed class CatalogValidationTests
 
         var catalogMechanics = contents.Mechanics
             .Where(file => !file.Category.StartsWith("ruleset.", StringComparison.Ordinal))
+            .Where(file => file.Id != "mechanic.lock.pick") // Export-only compatibility record, not startup content.
             .ToDictionary(file => file.Id, StringComparer.Ordinal);
         var embeddedMechanics = MechanicSeeder.Load().ToDictionary(file => file.Id, StringComparer.Ordinal);
 
@@ -126,6 +127,18 @@ public sealed class CatalogValidationTests
             var directory = Path.Combine(RepositoryRoot(), "DantesRoleplay", legacy);
             Assert.False(Directory.Exists(directory) && Directory.EnumerateFiles(directory).Any());
         }
+    }
+
+    [Fact]
+    public async Task Deprecated_rehearsal_remains_exportable_but_is_not_a_bootstrap_resource()
+    {
+        var contents = await CatalogReader.ReadAsync(RepositoryCatalog());
+        var retained = Assert.Single(contents.Mechanics, file => file.Id == "mechanic.lock.pick");
+        Assert.Equal(MechanicStatus.Deprecated, retained.Status);
+        Assert.NotEmpty(retained.Source);
+        Assert.DoesNotContain(MechanicSeeder.Load(), file => file.Id == retained.Id);
+        Assert.DoesNotContain(typeof(Mechanic).Assembly.GetManifestResourceNames(), name =>
+            name.Contains(".Rules.mechanic.lock.pick.", StringComparison.Ordinal));
     }
 
     [Fact]

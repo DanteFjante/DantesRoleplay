@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { acceptanceStatus, parseRpc, requireIsolatedOrigin } from '../scripts/campaign-simulation-preflight.mjs';
+import { acceptanceStatus, parseRpc, preflightExitCode, requireIsolatedOrigin } from '../scripts/campaign-simulation-preflight.mjs';
 
 test('simulation refuses live listeners, remote hosts and decorated URLs', () => {
   for (const origin of ['http://localhost:6217', 'http://127.0.0.1:6217',
@@ -32,4 +32,12 @@ test('bootstrap alone cannot satisfy campaign acceptance', () => {
   assert.equal(acceptanceStatus(complete), 'passed');
   assert.equal(acceptanceStatus({ ...complete, 'audience-isolation': 'not-run' }), 'incomplete');
   assert.equal(acceptanceStatus({ ...complete, 'restart-resume': 'failed' }), 'blocked');
+});
+
+test('successful preflight exits cleanly without claiming campaign acceptance', () => {
+  assert.equal(preflightExitCode({ bootstrap: 'passed' }), 0);
+  assert.equal(acceptanceStatus({ bootstrap: 'passed' }), 'incomplete');
+  assert.equal(preflightExitCode({ bootstrap: 'failed' }), 1);
+  assert.equal(preflightExitCode({ bootstrap: 'not-run' }), 1);
+  assert.equal(preflightExitCode({}), 1);
 });

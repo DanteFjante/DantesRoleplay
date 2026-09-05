@@ -128,6 +128,34 @@ public sealed class BootstrapRuleTests : IDisposable
     // ---- they actually run --------------------------------------------------------------
 
     [Fact]
+    public async Task Startup_neither_installs_nor_revises_the_retained_rehearsal_mechanic()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new MechanicStore(db);
+        var seeder = new MechanicSeeder(store);
+        await seeder.SeedAsync();
+        Assert.Null(await store.GetAsync("mechanic.lock.pick"));
+
+        // Represents a pre-existing runtime-authored record, with deliberately different content.
+        await store.WriteAsync(new WriteMechanicRequest
+        {
+            Id = "mechanic.lock.pick", Category = "check", Name = "Retained rehearsal",
+            Description = "Do not replace this runtime revision.", Matches = "retained rehearsal",
+            Requirements = "{}", Source = "return { narration: 'retained', effects: [] };",
+            Status = MechanicStatus.Deprecated, CreatedBy = "test", ChangeNote = "Pre-existing record."
+        });
+        var before = await store.GetAsync("mechanic.lock.pick");
+        Assert.Equal(0, await seeder.SeedAsync());
+        var after = await store.GetAsync("mechanic.lock.pick");
+        Assert.NotNull(before);
+        Assert.NotNull(after);
+        Assert.Equal(before.Version, after.Version);
+        Assert.Equal(before.SourceHash, after.SourceHash);
+        Assert.Equal(before.Source, after.Source);
+        Assert.Equal(before.Status, after.Status);
+    }
+
+    [Fact]
     public async Task The_check_rule_resolves_and_reports_how_it_got_there()
     {
         await using var db = _fixture.CreateContext();
