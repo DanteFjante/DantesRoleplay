@@ -1,12 +1,12 @@
 # Item view implementation plan
 
-Version 1.7 · 5 September 2026
+Version 1.8 · 5 September 2026
 
 ## Purpose and delivery boundary
 
 Build a full item dossier that opens from a character's inventory. It has three tabs: **Details**, **Known recipes**, and **Known uses**. Recipes are split into **Makes this item** and **Uses this item**, as requested. The dossier describes the actual item instance and the knowledge of the selected character, while preserving the current character sheet, nested inventory, and DM and Player switch.
 
-This document specifies implementation work; it is not evidence that the published feature exists. IV00 contracts were approved by the user on 5 September 2026. IV01–IV05 are implemented within their documented supported boundaries; IV06 association review and disposable fixtures are complete; IV07–IV10 remain pending. Validation results and exclusions are recorded in the implementation commits. The concrete review packet is [item-view-contracts/README.md](item-view-contracts/README.md). The requested document does not itself authorize new runtime identities, catalog synchronization, or activation. Apply the repository working agreement at each concrete boundary, using authorization already present in the implementation task rather than repeatedly requesting it.
+This document specifies implementation work; it is not evidence that the published feature exists. IV00 contracts were approved by the user on 5 September 2026. IV01–IV07 are complete within their documented supported boundaries, including IV06 association review and disposable fixtures; IV08–IV10 remain pending. Validation results and exclusions are recorded in the implementation commits. The concrete review packet is [item-view-contracts/README.md](item-view-contracts/README.md). The requested document does not itself authorize new runtime identities, catalog synchronization, or activation. Apply the repository working agreement at each concrete boundary, using authorization already present in the implementation task rather than repeatedly requesting it.
 
 The first release is read-only. Opening a tab must not equip, consume, identify, reveal, craft, advance time, or record a discovery. Use and Start crafting are explicitly deferred to follow-up slices after this release. Do not infer missing recipes, properties, or uses from prose or item names.
 
@@ -195,6 +195,12 @@ All twelve currently authored crafting records have empty outputs, absent materi
 **Rollback and stop:** Revert task-owned authored changes before activation. Export any corresponding live records before editing their file counterparts. Stop on absent source authority, ambiguous definition links, or unresolved knowledge semantics. Incomplete recipes do not block truthful empty or unavailable UI states.
 
 ## IV07 Known recipes projection and tab
+
+**Status:** Implemented in source and the authored catalog without live activation. The binding-only Recipes query pins its effect-free JavaScript projection and closed schema; the approved mechanic has an enabled discovery namespace. Makes and Uses independently match exact definition references, deduplicate by recipe ID and page in stable order. Unknown recipes and unknown selected-item identities cannot reveal associations. Referenced labels hydrate only after effective knowledge permits them (or the real DM grant applies); missing labels stay neutral and partial. Generic host code handles reference materialization and rejects stale continuation before evaluation; recipe semantics remain in catalog JavaScript.
+
+The Recipes tab loads on first visit, preserves independent page selections across tab changes, and offers explicit refresh after expiry or source changes. It renders outputs, materials, quantities, supported tools, literal duration, requirements, uncertainty and source disclosures. Each response replaces the current bounded pages; no client-side crafting calculations or actions are added. Cache keys include the authorized client lifetime, complete selection, query hash, offsets and source revision. Context invalidation retires all item-tab caches. Empty, partial, incomplete, unavailable and stale results remain distinct. Browser verification covers populated, empty, incomplete and changed-source states, source expansion, paging, and 390/320-pixel layouts.
+
+Current recipe predicates have no complete canonical eligibility evaluator. Production therefore returns `not-evaluated` or `definition-incomplete`, while the renderer preserves all reviewed availability states. Missing inventory materials do not hide a known recipe. Single-reference tool/crafter proficiency requirements and literal measured/special durations are supported; compound predicates, unresolved references, material-cost interpretation, completion effects and parameterized templates report incomplete or unavailable supporting data. The byte budget uses a conservative UTF-8 upper bound to return a fitting prefix within the existing sandbox memory limit; pages can contain fewer than sixteen entries. No authored incomplete recipe or live discovery was repaired to populate acceptance fixtures. The commit records validation results and deliberate exclusions.
 
 **Owner and files:** Catalog crafting projection and web item-view owners; proposed recipes query/mechanic, `ItemRecipes.tsx`, `item-view-client.ts`, and proposed `WEB/test/mounted/item-recipes.test.tsx`.
 

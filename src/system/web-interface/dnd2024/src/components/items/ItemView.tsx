@@ -6,7 +6,7 @@ const tabs: { id: ItemTab; label: string }[] = [
 ];
 
 // Only ConnectedItemView supplies identity from a validated, current response.
-export function ItemView({ tab, onTab, onBack, name, details }: { tab: ItemTab; onTab: (tab: ItemTab) => void; onBack: () => void; name?: string; details?: ReactNode }) {
+export function ItemView({ tab, onTab, onBack, name, details, recipes }: { tab: ItemTab; onTab: (tab: ItemTab) => void; onBack: () => void; name?: string; details?: ReactNode; recipes?: ReactNode }) {
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { heading.current?.focus(); }, []);
   return <section className="item-page" onKeyDown={(event) => {
@@ -29,7 +29,8 @@ export function ItemView({ tab, onTab, onBack, name, details }: { tab: ItemTab; 
         }}>{candidate.label}</button>)}
     </div>
     <section id="item-panel" role="tabpanel" aria-labelledby={`item-tab-${tab}`} tabIndex={0}>
-      {tab === "details" && details ? details : <><h2>{tabs.find((candidate) => candidate.id === tab)?.label} unavailable</h2>
+      <div hidden={tab !== "recipes"}>{recipes}</div>
+      {tab === "recipes" && recipes ? null : tab === "details" && details ? details : <><h2>{tabs.find((candidate) => candidate.id === tab)?.label} unavailable</h2>
       <p>This information is not available in this view yet.</p></>}
     </section>
   </section>;

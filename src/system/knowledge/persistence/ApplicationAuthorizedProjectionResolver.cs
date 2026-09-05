@@ -233,12 +233,38 @@ public sealed class ApplicationAuthorizedProjectionResolver(
             }
             if (sources.Associations is { } associationSource)
             {
+                var labelIds = new HashSet<string>(StringComparer.Ordinal);
                 foreach (var id in (request.Audience.Perspective == "dm" ? candidateIds :
                         documents.Select(value => value.SubjectId)).Distinct(StringComparer.Ordinal)
                     .Where(value => value != selectedId && value != definitionId).Order(StringComparer.Ordinal))
                 {
                     var component = await Components(id, [associationSource.CandidateComponentId]);
-                    if (component.Count > 0) snapshot.References[id] = new(id, component);
+                    if (component.Count == 0) continue;
+                    var entity = await entityQuery.SingleOrDefaultAsync(row => row.Id == id, cancellationToken);
+                    if (entity is null) return Unavailable();
+                    observed.Add(new { entity.Id, entity.Revision });
+                    snapshot.References[id] = new(id, component, entity.Name);
+                    using var data = JsonDocument.Parse(component[associationSource.CandidateComponentId]);
+                    foreach (var path in associationSource.ReferencePaths.Values)
+                        foreach (var target in ReferenceTargets(data.RootElement, path))
+                        {
+                            labelIds.Add(target);
+                            if (labelIds.Count > declared.MaxKnowledgeCandidates) return Unavailable();
+                        }
+                }
+                // Declared references identify labels, not permission to read arbitrary entities.
+                // Resolve their effective states before hydrating names; include negative lookups
+                // and name/state revisions in the same authorized snapshot.
+                var labelStates = await states.ResolveAllAsync(binding, observer, scope.WorldId, labelIds.ToArray(), cancellationToken);
+                if (labelStates.Count != labelIds.Count || labelStates.Values.Any(value => value.WorldId != scope.WorldId)) return Unavailable();
+                effective = effective.Concat(labelStates.Where(pair => !effective.ContainsKey(pair.Key))).ToDictionary(pair => pair.Key, pair => pair.Value);
+                foreach (var id in labelIds.Order(StringComparer.Ordinal))
+                {
+                    if (request.Audience.Perspective != "dm" && labelStates[id].State != binding.BaselineState) continue;
+                    var entity = await entityQuery.SingleOrDefaultAsync(row => row.Id == id, cancellationToken);
+                    observed.Add(new { id, revision = entity?.Revision });
+                    if (entity is not null && !snapshot.References.ContainsKey(id))
+                        snapshot.References[id] = new(id, new Dictionary<string, string>(), entity.Name);
                 }
             }
             // Activities are canonical source records; selection/eligibility remains catalog-owned.
@@ -312,6 +338,9 @@ public sealed class ApplicationAuthorizedProjectionResolver(
                 member.Revision, inventoryRevision, knowledgeRevision }))));
             var currentGrant = await audiences.ResolveAsync(campaign, cancellationToken);
             if (!currentGrant.Granted || currentGrant.Grant != grant) return ProjectionResult.Failed("READ_MODEL_SOURCE_STALE");
+            if (input.RootElement.TryGetProperty("expectedSourceRevision", out var expectedSource) &&
+                expectedSource.ValueKind != JsonValueKind.Null && expectedSource.GetString() != fingerprint)
+                return ProjectionResult.Failed("READ_MODEL_SOURCE_STALE");
             snapshot = snapshot with { AuthorizedSourceRevision = fingerprint, AuthorizedObserver = JsonSerializer.SerializeToElement(new
             {
                 version = 1, applicationId = request.ApplicationId.Value, stateSpaceId = request.StateSpaceId,
@@ -330,6 +359,20 @@ public sealed class ApplicationAuthorizedProjectionResolver(
     }
 
     private static string Hash(object value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value, Json))));
+    private static IEnumerable<string> ReferenceTargets(JsonElement root, string path)
+    {
+        IEnumerable<JsonElement> nodes = [root];
+        foreach (var part in path.Split('.'))
+        {
+            var array = part.EndsWith("[]", StringComparison.Ordinal);
+            var key = array ? part[..^2] : part;
+            nodes = nodes.SelectMany(node => node.ValueKind == JsonValueKind.Object && node.TryGetProperty(key, out var value)
+                ? array && value.ValueKind == JsonValueKind.Array ? value.EnumerateArray().ToArray() : array ? [] : new[] { value }
+                : []);
+        }
+        return nodes.Where(node => node.ValueKind == JsonValueKind.Object && node.TryGetProperty("entityId", out var id) && id.ValueKind == JsonValueKind.String)
+            .Select(node => node.GetProperty("entityId").GetString()!).Where(id => !string.IsNullOrWhiteSpace(id) && id.Length <= 200);
+    }
     private static ProjectionResult Denied() => ProjectionResult.Failed("READ_MODEL_FORBIDDEN");
     private static ProjectionResult Unavailable() => ProjectionResult.Failed("READ_MODEL_UNAVAILABLE");
 }

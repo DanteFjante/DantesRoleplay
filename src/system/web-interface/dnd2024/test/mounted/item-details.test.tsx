@@ -67,7 +67,10 @@ test("Details renders exact zero/false, units, partial reasons and uncertain sou
   const request = { ...itemRequest, itemId: "item.special", perspective: "dm" as const };
   const data = itemData(request); data.state = "partial"; data.reasons = ["dependency-unavailable"];
   let calls = 0;
-  const client = new ItemViewClient((async () => { calls++; return response(itemEnvelope(request, data)); }) as typeof fetch);
+  const client = new ItemViewClient((async (url) => {
+    if (!String(url).includes("inventory-item-details")) return new Response(null, { status: 404 });
+    calls++; return response(itemEnvelope(request, data));
+  }) as typeof fetch);
   const view = await mounted(client, request);
   try {
     assert.equal(view.container.querySelector("h1")?.textContent, data.name);

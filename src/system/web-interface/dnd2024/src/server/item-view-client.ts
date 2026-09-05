@@ -1,3 +1,5 @@
+import { boundedJson } from "./item-read-response";
+import { readItemRecipes, recipesKey, type ItemRecipesRequest, type ItemRecipesResult } from "./item-recipes-client";
 import validate, { contract } from "./item-details-validator.js";
 import { ViewReadClient, ViewReadError } from "../data/view-read-client";
 import type { Perspective } from "../data/hub-types";
@@ -25,23 +27,6 @@ const fingerprint = (value: unknown) => typeof value === "string" && /^[a-f0-9]{
 const id = (value: string) => /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,199}$/.test(value);
 const envelopeKeys = ["applicationId", "stateSpaceId", "qualifiedQueryId", "stateSpaceFingerprint", "resolutionFingerprint", "outputSchemaHash", "resultFingerprint", "sourceRevisionFingerprint", "data"];
 
-async function boundedJson(response: Response): Promise<unknown> {
-  if (!response.body) throw new ViewReadError("incompatible-data", "Missing item response.");
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = []; let size = 0;
-  try {
-    while (true) {
-      const next = await reader.read(); if (next.done) break;
-      size += next.value.byteLength;
-      if (size > 70_000) { await reader.cancel(); throw new ViewReadError("incompatible-data", "Item response exceeds its limit."); }
-      chunks.push(next.value);
-    }
-  } finally { reader.releaseLock(); }
-  const bytes = new Uint8Array(size); let offset = 0;
-  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
-  try { return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); }
-  catch { throw new ViewReadError("incompatible-data", "Invalid item response."); }
-}
 
 export async function readItemDetails(request: ItemDetailsRequest, signal: AbortSignal, fetchImpl: typeof fetch = fetch): Promise<ItemDetailsResult> {
   if (![request.applicationId, request.stateSpaceId, request.campaignId, request.observerId, request.itemId].every(id) ||
@@ -71,11 +56,17 @@ let nextClient = 0;
 export class ItemViewClient {
   readonly identity = ++nextClient;
   readonly maximumAgeMs: number;
+  readonly recipes: ViewReadClient<ItemRecipesRequest, ItemRecipesResult>;
   readonly reads: ViewReadClient<ItemDetailsRequest, ItemDetailsResult>;
   #revision = 0;
   #listeners = new Set<() => void>();
   constructor(fetchImpl: typeof fetch = fetch, maximumAgeMs = 30_000) {
     this.maximumAgeMs = maximumAgeMs;
+    this.recipes = new ViewReadClient({ read: async (request, signal) => {
+      const value = await readItemRecipes(request, signal, fetchImpl);
+      return value.status === "ready" ? { ...value, expiresAt: Date.now() + maximumAgeMs } : value;
+    }, cacheKey: (request) => recipesKey(this.identity, request), maximumCachedScopes: 8, maximumCacheAgeMs: maximumAgeMs,
+      validate: (value): value is ItemRecipesResult => Boolean(value && typeof value === "object" && "status" in value) });
     this.reads = new ViewReadClient({ read: async (request, signal) => {
       const result = await readItemDetails(request, signal, fetchImpl);
       return result.status === "ready" ? { ...result, expiresAt: Date.now() + maximumAgeMs } : result;
@@ -88,5 +79,5 @@ export class ItemViewClient {
   key(request: ItemDetailsRequest) { return JSON.stringify([this.identity, contract.contentHash, request.applicationId, request.stateSpaceId, request.campaignId, request.observerId, request.perspective, request.itemId, request.contextRevision]); }
   snapshot = () => this.#revision;
   subscribe = (listener: () => void) => { this.#listeners.add(listener); return () => { this.#listeners.delete(listener); }; };
-  invalidate = () => { this.reads.invalidate(); this.#revision++; for (const listener of this.#listeners) listener(); };
+  invalidate = () => { this.reads.invalidate(); this.recipes.invalidate(); this.#revision++; for (const listener of this.#listeners) listener(); };
 }
