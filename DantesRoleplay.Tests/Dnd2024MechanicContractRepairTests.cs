@@ -5,6 +5,39 @@ namespace DantesRoleplay.Tests;
 
 public sealed class Dnd2024MechanicContractRepairTests
 {
+    [Theory]
+    [InlineData(1, true)]
+    [InlineData(0, false)]
+    [InlineData(null, false)]
+    public async Task Inventory_inspects_retained_definitions_without_converting_or_mutating_them(int? version, bool expected)
+    {
+        var definitionComponents = new Dictionary<string, string>();
+        if (version is not null) definitionComponents["dnd2024.item-definition"] = JsonSerializer.Serialize(new {
+            definitionVersion = version, kind = "adventuring-gear", stackPolicy = "separate",
+            massPounds = new { numerator = 1, denominator = 2 },
+            sourceRef = new { sourceId = "fixture", locator = "Retained fixture item" }
+        });
+        var item = new ContainedProjection("item.retained", "Retained knife", "carried", new Dictionary<string, string> {
+            ["dnd2024.core.definition-link"] = "{\"definition\":{\"entityId\":\"definition.retained\"}}",
+            ["dnd2024.item.quantity"] = "{\"current\":1}"
+        });
+        var result = await RunAsync("data/dnd2024.mechanic.inventory.read", new MechanicProjection {
+            Input = "{}", Roles = new() { ["root"] = new EntityProjection("actor.fixture", "Actor", new Dictionary<string, string>(), Contains: [item]) },
+            References = new() { ["definition.retained"] = new("definition.retained", definitionComponents) }
+        });
+        Assert.Equal(expected, result.Ok);
+        Assert.Empty(result.Output.Effects);
+        Assert.Empty(result.Output.Events);
+        if (expected)
+        {
+            using var data = JsonDocument.Parse(result.Output.Data);
+            var row = data.RootElement.GetProperty("items")[0];
+            Assert.Equal(1, row.GetProperty("quantity").GetInt32());
+            Assert.Equal("definition.retained", row.GetProperty("definitionId").GetString());
+            Assert.Equal("dnd2024.item-definition", Assert.Single(row.GetProperty("definitionComponentIds").EnumerateArray()).GetString());
+        }
+    }
+
     [Fact]
     public async Task Weapon_damage_application_uses_current_hp_and_temporary_hp_only()
     {
@@ -248,6 +281,7 @@ public sealed class Dnd2024MechanicContractRepairTests
                 "dnd2024.equipment.weapon.club",
                 new Dictionary<string, string>(StringComparer.Ordinal)
                 {
+                    ["dnd2024.core.version"] = "{\"revision\":1,\"status\":\"active\"}",
                     ["dnd2024.item.equippable"] =
                         "{\"equipmentSlots\":[{\"entityId\":\"dnd2024.equipment-slot.main-hand\"}]}",
                     ["dnd2024.item.weapon"] =

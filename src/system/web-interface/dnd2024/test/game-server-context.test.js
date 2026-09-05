@@ -940,7 +940,7 @@ test("reads only the server-selected campaign, actor, and authorized knowledge",
     status: "connected",
     applicationId: "dnd2024",
     stateSpaceId: "dnd2024-main",
-    audience: { seat: "player", allowedPerspectives: ["player"] },
+    audience: { seat: "player", perspective: "player", allowedPerspectives: ["player"] },
     contextSelection: {
       selectedWorldId: "world.thalorien",
       selectedCampaignId: "campaign.thalorien.brackenford",
@@ -1284,7 +1284,7 @@ test("keeps partial location-directory pages when a later page fetch fails", asy
   assert.equal(value.locationDirectory.length, 1);
 });
 
-test("maps a server-authorized actor binding to local DM seat when localSeat overrides it", async () => {
+test("an obsolete local DM override cannot promote a server-authorized actor", async () => {
   const calls = [];
   const value = await readGameServerContext({
     serverOrigin: "http://localhost:6217",
@@ -1358,22 +1358,24 @@ test("maps a server-authorized actor binding to local DM seat when localSeat ove
           valueJson: JSON.stringify({ x: 692, y: 516 }),
         });
       }
-      throw new Error(`Unexpected request ${path}`);
+      if (path.endsWith('/entities/actor.thalorien.brackenford.orban')) return response(200, { entityId: 'actor.thalorien.brackenford.orban', name: 'Orban' });
+      return response(404, {});
     },
   });
 
   assert.deepEqual(value.audience, {
-    seat: "dm",
-    perspective: "dm",
-    allowedPerspectives: ["dm", "player"],
+    seat: "player",
+    perspective: "player",
+    allowedPerspectives: ["player"],
   });
-  assert.deepEqual(value.actor, { id: "local-game-master", name: "Dungeon Master", state: null, entries: [] });
+  assert.equal(value.actor.id, "actor.thalorien.brackenford.orban");
+  assert.ok(!JSON.stringify(value.locationDirectory).includes("Crownmere"));
   assert.equal(calls.some((path) => path.endsWith(
     "/entities/actor.thalorien.brackenford.orban/components/dnd2024.playtest-character-record",
-  )), false);
+  )), true);
 });
 
-test("local DM player preview retains the server-bound actor when the character query fails", async () => {
+test("actor preview ignores a local DM preference and retains the bound actor when its query fails", async () => {
   const campaignId = "campaign.thalorien.brackenford";
   const actorId = "actor.thalorien.brackenford.orban";
   const value = await readGameServerContext({
@@ -1418,9 +1420,9 @@ test("local DM player preview retains the server-bound actor when the character 
   });
 
   assert.deepEqual(value.audience, {
-    seat: "dm",
+    seat: "player",
     perspective: "player",
-    allowedPerspectives: ["dm", "player"],
+    allowedPerspectives: ["player"],
   });
   assert.equal(value.party.length, 1);
   assert.equal(value.party[0].id, actorId);

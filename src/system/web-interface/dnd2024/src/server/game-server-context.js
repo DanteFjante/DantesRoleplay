@@ -56,7 +56,6 @@ const WORLD_FACTION_RELATIONSHIP_KINDS = {
   allies: "game.core.world.faction.allied-with",
   opponents: "game.core.world.faction.opposed-to",
 };
-const DEVELOPMENT_SEAT = new Set(["player", "dm"]);
 const RECORDED_SITUATION_KINDS = new Set([
   "out-of-character", "conversation", "combat", "exploration", "investigation",
   "travel", "rest", "downtime", "other",
@@ -125,16 +124,6 @@ const VALID_PERSPECTIVES = new Set(["player", "dm"]);
 
 function normalizePerspective(value) {
   return VALID_PERSPECTIVES.has(value) ? value : "player";
-}
-
-function normalizeSeat(value) {
-  return typeof value === "string" && DEVELOPMENT_SEAT.has(value) ? value : null;
-}
-
-function overrideServerRole(binding, localSeatOverride) {
-  if (localSeatOverride !== "dm") return binding;
-  if (binding?.role !== "actor") return binding;
-  return { status: binding.status, applicationId: binding.applicationId, stateSpaceId: binding.stateSpaceId, campaignId: binding.campaignId, role: "game-master" };
 }
 
 function entity(value, expectedId) {
@@ -2315,7 +2304,7 @@ async function readCampaignStructure({
  *   fetchImpl?: typeof fetch,
  *   requestedPerspective?: string | null,
  *   requestedCampaignId?: string | null,
- *   localSeat?: string,
+ *   localSeat?: string, // Legacy option accepted but never used to override the server seat.
  *   mediaAssetBaseUrl?: string,
  * }} options
  */
@@ -2324,7 +2313,6 @@ export async function readGameServerContext({
   fetchImpl = fetch,
   requestedPerspective = "dm",
   requestedCampaignId = null,
-  localSeat,
   mediaAssetBaseUrl = "/ui/dnd2024-play/assets/",
 }) {
   const normalizedRequestedPerspective = requestedPerspective === null ? "dm" : requestedPerspective;
@@ -2350,7 +2338,8 @@ export async function readGameServerContext({
   const binding = audience(context);
   if (!binding) return unavailable("The game server returned an invalid audience binding.");
   const hasBoundActor = binding.status === "bound" && binding.role === "actor";
-  const serverRole = overrideServerRole(binding, normalizeSeat(localSeat));
+  // A development preference or requested perspective can never promote a server-bound actor.
+  const serverRole = binding;
   const isGameMaster = serverRole.role === "game-master";
   const contextAudience = isGameMaster
     ? {
@@ -2358,7 +2347,7 @@ export async function readGameServerContext({
         perspective: normalizePerspective(normalizedRequestedPerspective),
         allowedPerspectives: ["dm", "player"],
       }
-    : { seat: "player", allowedPerspectives: ["player"] };
+    : { seat: "player", perspective: "player", allowedPerspectives: ["player"] };
   const effectivePerspective = contextAudience.perspective ?? "player";
   const shouldReadBoundActor = hasBoundActor && effectivePerspective === "player";
   const canReadBoundKnowledge = !isGameMaster || contextAudience.perspective === "dm";

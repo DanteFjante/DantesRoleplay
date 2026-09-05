@@ -1,0 +1,12 @@
+{
+  "id": "dnd2024.mechanic.character-abilities",
+  "owner": "dnd2024",
+  "description": "Namespace for existing authored D&D 2024 application features.",
+  "allowedKinds": [
+    "mechanic"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Existing application feature prefixes reviewed for exact retrieval and public contract discovery. Does not admit legacy-store records or create new game capabilities."
+}

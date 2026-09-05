@@ -113,6 +113,12 @@ Retained procedure prose must not advertise retired calls, match new gameplay re
 the kernel. Dedicated world-feature test relationships belong in the test fixture and are merged
 only into disposable catalog copies; a live world export must never supply their test topology.
 
+Application feature identities need an enabled, reviewed registration for their exact namespace
+in `catalog/namespaces/`, including nested mechanic and query prefixes. Catalog browsing alone
+does not prove discovery: the trusted retrieval gate deliberately excludes unregistered namespaces.
+Synchronize reviewed registration metadata with `roleplay import --namespaces-only`; never relax
+the retrieval guard to compensate for a missing registration.
+
 Orientation is a runtime projection, not authored capability prose. It combines only the current
 dispatcher-backed MCP descriptors, authorization-scoped in-process capability discovery, the
 current private principal decision, the ambient audience binding, and authorized application and

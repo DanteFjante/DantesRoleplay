@@ -59,7 +59,6 @@ async function readEnvelope(
     fetchImpl: fetchWithSignal,
     requestedPerspective: perspective,
     requestedCampaignId: campaignId ?? null,
-    localSeat: "dm",
     mediaAssetBaseUrl: PAGE_ASSET_BASE,
   })) as HubEnvelope;
 

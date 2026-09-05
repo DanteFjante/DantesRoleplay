@@ -70,6 +70,32 @@ public sealed class CatalogValidationTests
     }
 
     [Fact]
+    public void Every_authored_dnd_feature_has_an_enabled_reviewed_discovery_namespace()
+    {
+        var catalog = RepositoryCatalog();
+        foreach (var (folder, extension, kind) in new[] {
+            ("mechanics", "*.md", "mechanic"), ("procedures", "*.md", "procedure"), ("queries", "*.json", "document") })
+        foreach (var path in Directory.EnumerateFiles(Path.Combine(catalog, "applications", "dnd2024", folder), extension, SearchOption.AllDirectories))
+        {
+            var text = File.ReadAllText(path);
+            using var query = extension == "*.json" ? JsonDocument.Parse(text) : null;
+            var id = query is not null
+                ? query.RootElement.GetProperty("id").GetString()!
+                : text.Split('\n').Single(line => line.StartsWith("id: ", StringComparison.Ordinal))[4..].Trim();
+            var namespaceId = id[..id.LastIndexOf('.')];
+            var namespacePath = Path.Combine(catalog, "namespaces", namespaceId.Replace('.', Path.DirectorySeparatorChar), "_namespace.json");
+            Assert.True(File.Exists(namespacePath), $"{id} is hidden from exact discovery: namespace {namespaceId} is missing.");
+            using var registration = JsonDocument.Parse(File.ReadAllText(namespacePath));
+            var value = registration.RootElement;
+            Assert.Equal(namespaceId, value.GetProperty("id").GetString());
+            Assert.Equal("dnd2024", value.GetProperty("owner").GetString());
+            Assert.True(value.GetProperty("enabled").GetBoolean());
+            Assert.Equal("reviewed", value.GetProperty("reviewStatus").GetString());
+            Assert.Contains(kind, value.GetProperty("allowedKinds").EnumerateArray().Select(item => item.GetString()));
+        }
+    }
+
+    [Fact]
     public async Task Retained_compatibility_procedures_are_not_callable_or_kernel_bootstrap_content()
     {
         var catalog = RepositoryCatalog();
