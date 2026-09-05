@@ -28,22 +28,16 @@ test("place names behave as visual tooltips without replacing accessible button 
   assert.match(styles, /\.world-map-marker\[aria-pressed="true"\] \.world-map-marker__label\s*\{[^}]*visibility:\s*visible;/s);
 });
 
-test("selected place stays in page flow and empty map space clears marker selection", () => {
+test("selected place stays in page flow", () => {
   assert.match(styles, /\.world-map-selection\s*\{[^}]*position:\s*static;/s);
   assert.doesNotMatch(styles, /\.world-map-selection\s*\{[^}]*position:\s*sticky;/s);
-  assert.match(component, /className="world-map-canvas"[\s\S]*?onClick=\{\(\) => \{[\s\S]*?onFeatureSelect\(""\);/s);
-  assert.match(component, /onClick=\{\(event\) => \{\s*event\.stopPropagation\(\);\s*onFeatureSelect\(feature\.id\);/s);
 });
 
 test("map viewport state stays local and touch policy leaves browser gestures available", () => {
-  assert.doesNotMatch(component, /onWheel=/);
-  assert.doesNotMatch(component, /addEventListener\(\s*["']wheel["']/);
   assert.doesNotMatch(styles, /\.world-map-canvas\s*\{[^}]*touch-action:\s*none;/s);
   assert.match(styles, /\.world-map-canvas\s*\{[^}]*touch-action:\s*pan-y pinch-zoom;/s);
   assert.match(styles, /\.map-viewport-toolbar button\s*\{[^}]*min-width:\s*44px;[^}]*min-height:\s*44px;/s);
   assert.match(styles, /\.map-viewport-toolbar button:focus-visible\s*\{[^}]*outline:\s*2px solid/s);
-  assert.match(component, /Fit map/);
-  assert.match(component, /Focus selected/);
   assert.match(workspace, /window\.sessionStorage\.setItem\(MAP_VIEW_SESSION_KEY/);
   assert.doesNotMatch(workspace, /fetch\([^)]*MAP_VIEW_SESSION_KEY/);
 });

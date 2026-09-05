@@ -17,14 +17,7 @@ test("tactical board renders only projected geometry and authoritative labels", 
   assert.match(styles, /background-size:[\s\S]*--board-columns[\s\S]*--board-rows/u);
 });
 
-test("tactical board has uniform explicit controls without scroll-wheel zoom", () => {
-  assert.doesNotMatch(component, /onWheel=/u);
-  assert.doesNotMatch(component, /addEventListener\(\s*["']wheel["']/u);
-  assert.match(component, /aria-label="Zoom tactical board out"/u);
-  assert.match(component, /aria-label="Zoom tactical board in"/u);
-  assert.match(component, /> Fit board</u);
-  assert.match(component, /> Reset view</u);
-  assert.match(component, /aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown 0 F"/u);
+test("tactical board styles permit native vertical scrolling and browser pinch", () => {
   assert.match(styles, /\.tactical-board-viewport\s*\{[^}]*touch-action:\s*pan-y pinch-zoom;/su);
 });
 

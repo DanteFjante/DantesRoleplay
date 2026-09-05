@@ -178,10 +178,6 @@ export function MapCanvas({
       handled(); updateViewport({ ...viewport, y: viewport.y + KEYBOARD_PAN_STEP });
     } else if (event.key === "ArrowDown") {
       handled(); updateViewport({ ...viewport, y: viewport.y - KEYBOARD_PAN_STEP });
-    } else if (event.key === "0") {
-      handled(); resetView();
-    } else if (event.key.toLowerCase() === "f") {
-      handled(); fitMap();
     }
   };
 
@@ -204,7 +200,7 @@ export function MapCanvas({
       </div>
       <div
         aria-describedby="map-viewport-help"
-        aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown 0 F"
+        aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown"
         aria-label={`${map.subject.name} interactive map`}
         className="world-map-canvas"
         data-base={map.base ? "present" : "absent"}
@@ -280,7 +276,7 @@ export function MapCanvas({
         </div>
       </div>
       <p className="world-map-panel__note" id="map-viewport-help">
-        Drag the map or use arrow keys to pan. Use the visible controls to zoom, fit, reset, or focus
+        Drag the map or use arrow keys to pan. Only the visible buttons zoom, fit, reset, or focus
         the selected place. Page scrolling and browser gestures never change map zoom. Placement is
         illustrative within this scope only and calculates no travel.
       </p>

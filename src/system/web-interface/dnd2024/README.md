@@ -18,6 +18,26 @@ and authored content live under `catalog/applications/dnd2024`; live game state 
   hash, asset reference, cache policy, and retired map signature with that manifest.
 - `npm run verify` runs typecheck, both test groups, and the production server build as one gate.
 
+## Map interaction verification
+
+Map and tactical-board zoom changes only through the visible buttons (including keyboard activation
+of those buttons). Arrow keys and dragging pan; wheel, trackpad and touch gestures remain available
+to the browser. Zoom is clamped to 50–400%, and the control toolbar wraps on narrow screens.
+
+The mounted tests check event handling. For real document scrolling and mobile browser gestures,
+run the separate browser gate with Playwright and an installed Chromium-family browser:
+
+```powershell
+npm run test:map-browser -- --playwright-module "<absolute-path-to-playwright/index.mjs>" --browser-executable "<absolute-path-to-chrome.exe>"
+```
+
+This starts and closes an isolated, loopback-only fixture server using the maintained components,
+styles and synthetic data. It checks desktop and phone-sized map/board views (down to 320 pixels), native wheel and
+touch scrolling, native browser pinch, keyboard button activation, zoom limits, panning, selection,
+focus/fit/reset controls, focus outlines and 44-pixel touch targets. Reports and failure screenshots
+go to ignored `.tmp/website-slice-2/`. It does not contact the game server, publish a page, or prove
+that the currently published bundle matches the source. Release verification remains separate.
+
 ## Reproducible baseline
 
 The Slice 0 tools inspect current source and the exact live release separately. They never publish

@@ -98,8 +98,6 @@ export function TacticalBoard({ board }: { board: TacticalEncounterBoard }) {
     else if (event.key === "ArrowRight") { handled(); update({ ...viewport, x: viewport.x - PAN_STEP }); }
     else if (event.key === "ArrowUp") { handled(); update({ ...viewport, y: viewport.y + PAN_STEP }); }
     else if (event.key === "ArrowDown") { handled(); update({ ...viewport, y: viewport.y - PAN_STEP }); }
-    else if (event.key === "0") { handled(); setViewport(DEFAULT_VIEW); }
-    else if (event.key.toLowerCase() === "f") { handled(); fit(); }
   };
 
   const zoomPercent = Math.round(viewport.zoom * 100);
@@ -118,7 +116,7 @@ export function TacticalBoard({ board }: { board: TacticalEncounterBoard }) {
       </div>
       <div
         aria-describedby="tactical-board-help"
-        aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown 0 F"
+        aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown"
         aria-label={`Tactical encounter board. ${board.participants.length} visible combatants. ${board.turn ? `Current turn: ${board.turn.actorName}.` : "No active turn."}`}
         className="tactical-board-viewport"
         onKeyDown={handleKeyDown}
@@ -161,7 +159,7 @@ export function TacticalBoard({ board }: { board: TacticalEncounterBoard }) {
         </div>
       </div>
       <p className="world-map-panel__note" id="tactical-board-help">
-        Drag the board or use arrow keys to pan. Use the visible controls to zoom, fit, or reset.
+        Drag the board or use arrow keys to pan. Only the visible buttons zoom, fit, or reset.
         Page scrolling never changes board zoom. Movement legality comes from the
         encounter mechanics, not this display.
       </p>

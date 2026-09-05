@@ -207,22 +207,19 @@ async function dispatch(target: Element, event: Event) {
   return allowed;
 }
 
-test("mounted map lets a longer page consume wheel input without changing zoom", async () => {
+test("mounted map leaves wheel events uncancelled without changing zoom", async () => {
   const mounted = await mount(<MapHarness />);
   try {
     const { canvas } = setMapGeometry(mounted.container);
-    const page = mounted.container.querySelector("[data-testid=long-page]") as HTMLDivElement;
     const wheel = new window.WheelEvent("wheel", {
       bubbles: true,
       cancelable: true,
       deltaY: 280,
     });
     const browserDefaultAllowed = await dispatch(canvas, wheel);
-    if (browserDefaultAllowed) page.scrollTop += wheel.deltaY;
 
     assert.equal(browserDefaultAllowed, true);
     assert.equal(wheel.defaultPrevented, false);
-    assert.equal(page.scrollTop, 280);
     assert.equal(mounted.container.querySelector("[aria-label='Current map zoom']")?.textContent, "100%");
   } finally {
     await mounted.cleanup();
@@ -243,12 +240,11 @@ const mountedBoard: TacticalEncounterBoard = {
   turn: { id: "turn.1", participationId: "participation.hero", actorId: "actor.hero", actorName: "Hero", ordinal: 0 },
 };
 
-test("mounted tactical board leaves wheel scrolling to the page and zooms only through buttons", async () => {
+test("mounted tactical board leaves wheel events uncancelled and zooms only through buttons", async () => {
   const mounted = await mount(<div data-testid="board-page" style={{ height: "2400px", overflow: "auto" }}><TacticalBoard board={mountedBoard} /></div>);
   try {
     const viewport = mounted.container.querySelector(".tactical-board-viewport") as HTMLDivElement;
     const stage = mounted.container.querySelector(".tactical-board-stage") as HTMLDivElement;
-    const page = mounted.container.querySelector("[data-testid=board-page]") as HTMLDivElement;
     assert.ok(viewport);
     assert.ok(stage);
     Object.defineProperties(viewport, {
@@ -261,15 +257,19 @@ test("mounted tactical board leaves wheel scrolling to the page and zooms only t
     });
     const wheel = new window.WheelEvent("wheel", { bubbles: true, cancelable: true, deltaY: 220 });
     const browserDefaultAllowed = await dispatch(viewport, wheel);
-    if (browserDefaultAllowed) page.scrollTop += wheel.deltaY;
     assert.equal(browserDefaultAllowed, true);
     assert.equal(wheel.defaultPrevented, false);
-    assert.equal(page.scrollTop, 220);
     assert.equal(mounted.container.querySelector("[aria-label='Current tactical board zoom']")?.textContent, "100%");
 
     const zoomIn = mounted.container.querySelector("[aria-label='Zoom tactical board in']") as HTMLButtonElement;
     await click(zoomIn);
     assert.equal(mounted.container.querySelector("[aria-label='Current tactical board zoom']")?.textContent, "125%");
+    for (const key of ["+", "-", "0", "f", "F"]) {
+      const shortcut = new window.KeyboardEvent("keydown", { bubbles: true, cancelable: true, key });
+      assert.equal(await dispatch(viewport, shortcut), true);
+      assert.equal(shortcut.defaultPrevented, false);
+      assert.equal(mounted.container.querySelector("[aria-label='Current tactical board zoom']")?.textContent, "125%");
+    }
     assert.match(mounted.container.querySelector("[aria-label^='Hero. Current turn']")?.getAttribute("aria-label") ?? "", /Grid 3, 4.*Footprint 1 by 1.*Elevation 0 feet/u);
   } finally {
     await mounted.cleanup();
@@ -294,7 +294,15 @@ test("mounted map changes zoom only through buttons and retains its non-zoom int
     assert.equal(await dispatch(canvas, minus), true);
     assert.equal(minus.defaultPrevented, false);
     assert.equal(zoom(), "100%");
-    assert.equal(canvas.getAttribute("aria-keyshortcuts"), "ArrowLeft ArrowRight ArrowUp ArrowDown 0 F");
+    assert.equal(canvas.getAttribute("aria-keyshortcuts"), "ArrowLeft ArrowRight ArrowUp ArrowDown");
+    await click(zoomIn);
+    for (const key of ["0", "f", "F"]) {
+      const shortcut = new window.KeyboardEvent("keydown", { bubbles: true, cancelable: true, key });
+      assert.equal(await dispatch(canvas, shortcut), true);
+      assert.equal(shortcut.defaultPrevented, false);
+      assert.equal(zoom(), "125%");
+    }
+    await click(button(mounted.container, "Reset view"));
 
     const firstTouch = pointerEvent("pointerdown", {
       clientX: 120,
