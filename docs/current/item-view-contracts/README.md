@@ -1,0 +1,136 @@
+# IV00 item-view contract review
+
+Status: **approved on 5 September 2026; IV01 foundation implemented**. The query descriptors remain unregistered review artifacts. This packet establishes neither catalog activation nor published-feature acceptance. These files are documentation outside `catalog/` and must not be imported.
+
+Read this with [the implementation plan](../ITEM-VIEW-IMPLEMENTATION.md). Each `*.query.draft.json` wraps a proposed query, its closed input schema and its closed output schema. Each `*.requirements.draft.json` distinguishes existing requirement fields from the proposed generic authorization extension. Null projection hashes deliberately prevent registration: the implementation must obtain exact hashes from the canonical store and contract tests. `status: active` inside a draft describes the eventual reviewed registration, not current runtime status.
+
+## Approved implementation boundary
+
+The user approved these six permanent identities for implementation in their owning slices:
+
+| Query | Effect-free projection mechanic |
+| --- | --- |
+| `dnd2024.query.inventory-item-details` | `dnd2024.mechanic.inventory-item-details.project` |
+| `dnd2024.query.inventory-item-recipes` | `dnd2024.mechanic.inventory-item-recipes.project` |
+| `dnd2024.query.inventory-item-uses` | `dnd2024.mechanic.inventory-item-uses.project` |
+
+The approval also covers the generic query-input, authorized-observer materialization, source-revision and HTTP error extensions described below. The approval satisfies confirmation for these public-contract changes under repository `AGENTS.md`, **Confirmation and evidence**: “Confirmation is required for new permanent IDs, schema-meaning changes, migrations, public-surface changes, destructive operations, cross-owner semantic changes, and completed feature acceptance.” Approval of this packet permits the dependent implementation work; live synchronization/publication remains IV10. No new component, relationship or permanent knowledge identity is proposed here.
+
+## Baseline owners and constraints identified in IV00
+
+Paths in this packet use the aliases in the main plan.
+
+| Existing owner | Finding and required treatment |
+| --- | --- |
+| `src/system/catalog-navigation/domain/ApplicationQueryContracts.cs` | Query records have an exact field allowlist and no `inputSchema`. Adding it requires an explicit backward-compatible parser/registration contract change. |
+| `READMODELS/domain/ApplicationReadModelContracts.cs`, `READMODELS/hosting/ApplicationReadModelService.cs` | Requests carry roles and audience; evaluation currently receives `{}`. Results already carry application, state-space, resolution, output-schema, source-revision and result fingerprints. Preserve that envelope. |
+| `READMODELS/domain/InteractionPrimitives.cs` | Canonical JSON is limited to 65,536 UTF-8 bytes and depth 32. Do not increase it. Whole-inventory detailed dossiers cannot reliably fit. |
+| `DantesRoleplay.MCPServer/ApplicationReadModelWebEndpoint.cs` | Actor self-access and GM Player perspective exist. Subject selection alone does not establish active campaign participation or a selected actor's knowledge. |
+| `src/system/mechanics/domain/MechanicModels.cs` | Audience contains only Player/DM. Requirements already support bounded containment and component references; a trusted authorized observer does not exist. |
+| `src/system/application-execution/persistence/ApplicationMechanicProjectionResolver.cs`, `ApplicationMechanicEvaluator.cs`, `DantesRoleplay.DataAccess/Mechanics/JintMechanicEngine.cs` | Generic projection resolution and frozen sandbox context are the extension seams. No D&D formulas belong here. |
+| `KNOWLEDGE/persistence/ApplicationKnowledgeActorParticipationVerifier.cs` | Reuse exact state-space membership and unambiguous active campaign participation validation. |
+| `KNOWLEDGE/persistence/ApplicationKnowledgeEffectiveStateResolver.cs` | Reuse explicit state over applicable scoped/world baseline and existing ambiguity handling. Resolver candidate cap is 10,000. |
+| `KNOWLEDGE/persistence/AuthorizedKnowledgeNotebookReader.cs` | Resolves the ambient grant. A GM notebook is not a substitute for a selected character's knowledge in Player preview. Reuse lower-level authorization/effective-state owners. |
+| `APP/mechanics/data/dnd2024.mechanic.inventory.read.md` | Depth-4 subject contents and definition references exist. Enforce the 512-item response boundary explicitly; the requirements shown do not themselves declare a 512-item materialization cap. Do not claim unbounded resolver traversal is already safe. |
+| `APP/components/dnd2024.item-activity.schema.json` | Currently describes `consume-and-grant-item`, not every possible weapon/tool activity. Other uses require an existing canonical owner or reviewed knowledge statements. |
+
+The source-revision fingerprint currently covers projected components and containment. It is insufficient for effective knowledge: changes in participation, binding, policy, explicit knowledge relationships, baseline scope and candidate membership must invalidate the new query results too.
+
+## Request and authorization contract
+
+Preserve the existing entity read-model route. Its entity remains the **character**, never an arbitrary item role. Proposed optional query parameters are `campaignId` and `input` alongside existing `perspective`. `input` is one URL-encoded JSON object, at most 1,024 decoded UTF-8 bytes, depth 8. Reject duplicate parameters, unknown input fields, malformed JSON and oversized input. Existing queries without an input schema continue to receive only `{}`; omitted input remains `{}`. Never forward unknown request properties to a mechanic.
+
+Details input is `{ "itemId": "fixture.item" }`. Recipes input adds `makesOffset: 0`, `usesOffset: 0`, `expectedSourceRevision: null`. Uses input adds `offset: 0`, `expectedSourceRevision: null`. Examples are synthetic. Offsets are integers in 0–10,000. A nonzero offset requires the source fingerprint from the preceding page. An expected fingerprint may also accompany an initial page to request a coherent refresh.
+
+The host resolves the caller's actual grant and authorized campaign through `SystemAudienceContextHandler.ResolveAsync` and the existing knowledge policy. An omitted campaign uses the authorized seat campaign. An explicit campaign must be independently authorized for the principal; it does not widen an Actor seat. Bind `campaign` from that resolution and `subject` from the authorized route. Validate selected-character active participation in that campaign and state space for both roles. GM Player preview uses the selected character as observer while retaining the real GM principal and grant. Never fabricate an Actor grant or modify the ambient seat.
+
+Resolve the bounded inventory before accepting `input.itemId`. It must be an actual materialized descendant of this subject, within depth 4 and the 512-item cap. Reject foreign, removed, unmaterialized and malformed selections without an existence-sensitive distinction. A caller-provided definition or component reference cannot bypass this membership check. Deterministic traversal uses the existing canonical containment order and stable entity-ID tie breaking. A materializer extension must stop traversal at the cap, not load an unbounded inventory and trim afterward.
+
+## Trusted observer and source materialization
+
+`authorized-observer.schema.draft.json` specifies the proposed **host-only**, frozen `ctx.authorizedObserver` context. It is never an accepted HTTP input or a client response. `observerId` must equal the validated subject. Revision fields are opaque SHA-256 fingerprints produced by the host; effective-state row revisions preserve the resolver's opaque revision string. Principal identifiers remain in host authorization/cache state, outside the catalog context and public data.
+
+`proposedAuthorizedContext` remains the review-wrapper name. IV01 implements it as `authorizedContext` inside actual mechanic requirements, with strict nested parsing, exact role validation, application knowledge metadata resolution and denial when dependencies are unavailable. Merge it with `existingRequirementFields` when preparing a registered mechanic; never import the wrapper itself. The generic resolver supplies validated effective states and authorized records using catalog-declared selectors. Catalog JavaScript owns item-specific visibility, discovery interpretation and projected property values. The browser supplies none of these decisions.
+
+Use two stages: resolve IDs, containment, bindings and effective knowledge first; materialize only permitted content/reference fields for the requested perspective second. Sensitive descriptions, images and private source locators must not be sent to the browser for client-side filtering. Player `familiar` permits only an authored safe label/summary, never full unknown properties. Ambiguous explicit knowledge, missing discovery linkage or incomplete authorization cannot become permission.
+
+The existing baseline inventory requirements in the drafts only establish membership and ordinary definition references. They are not sufficient for magic discovery, recipes or general uses. IV01's new authorized materializer must supply the following declared source sets to the appropriate catalog projection after authorization; it must not silently expose all optional components through the baseline references:
+
+| Projection | Additional authoritative source set and interpretation owner |
+| --- | --- |
+| Details | Instance `dnd2024.magic-item.knowledge`, its exact `knowledgeRelationship` and `knownProperties` references; applicable `dnd2024.magic-item.charges`, `.attunement`, `.curse` and `dnd2024.object.durability`; catalog projection controls disclosure. Missing knowledge is not proof of identity or absence of a curse. |
+| Recipes | Records carrying `dnd2024.crafting.recipe`, authorized knowledge records and their existing subject associations. Resolve output/material definition references only from declared fields. IV06 owns association completeness. |
+| Uses | `dnd2024.item-activity` on the authorized instance/definition and authorized knowledge records associated with that instance/definition. Existing canonical mechanics own other supported activity semantics. |
+
+The requirement drafts include explicit proposed `sourceSets` selectors for these sources. IV01 implements their strict generic parsing inside this reviewed boundary. Resolve `selected-definition` only through the validated item's canonical definition link; the client cannot supply it. Reuse registered relationship IDs from application metadata. Validate a magic discovery record's exact relationship against this observer, item and state space before interpreting its booleans. Charges require the referenced canonical resource owner to supply a current value; `resourceDefinition` alone is not a charge count. If existing associations cannot establish which record teaches a recipe/property/use, return unavailable and stop that dependent projection; adding relationship semantics requires a separate concrete review. Never search by display name or create live facts to fill an empty tab.
+
+Candidate retrieval must apply the authorized allowlist before ordering/limiting results. Use a bounded query/index, not a catalog-wide expansion per item. A failure to establish a complete authorized candidate set within the 10,000-candidate work cap returns unavailable without candidate counts. No count, offset, reason or timing label may encode hidden matches. A negative lookup and candidate-set membership must participate in invalidation, so newly learned/added recipes invalidate an earlier empty result.
+
+## Output field ownership
+
+The schema's common `version`, `observerId`, `itemId` and `perspective` identify a presentation contract and validated selection. They grant no authority. Fingerprints remain in the existing read-model envelope, not repeated in catalog data.
+
+| Output fields | Owner and missing-data rule |
+| --- | --- |
+| Details `name`, `description`, `definitionId` | Authorized instance/definition records and catalog disclosure policy. Prefer an authored safe unidentified label when identity is hidden; otherwise use the neutral UI label “Item.” Null description/definition is allowed. Instance overrides require an existing explicit owner; never merge JSON indiscriminately. |
+| `quantity`, `container`, `equipmentSlots` | Instance quantity/equipment components and bounded canonical containment. Null quantity means unavailable, zero is an actual recorded zero. Container names/IDs must also be authorized; null covers absent or undisclosable context. |
+| `properties[].label/value/unit` | Existing item physical/weapon/armor/tool/consumable schemas and authorized optional magic/durability owners. Projection formats supported values with units without inventing calculations. Omit unsupported properties. |
+| `sources[].label/knowledgeState` | Audience-safe canonical source label or effective knowledge statement. No private IDs, relationship addresses or database paths. State qualifies the displayed assertion; it does not turn a suspected use into a canonical ability. |
+| `observerKnowledge` | DM-only comparison with the selected character's effective state, including unknown. Null in Player payloads. Canonical assertion certainty and observer knowledge are distinct. Missing comparison stays null. |
+| `media[].contentUrl/alt/caption` | IV03 authorized media delivery. An API-relative URL must be reauthorized on access and bound to the selected observer/perspective; schema validation alone cannot authorize it. Default empty until that path exists. |
+| Recipe `id/name/description`, `outputs/materials` | Authorized recipe record and exact authored definition/quantity links. Empty outputs on an incomplete recipe do not prove a Makes association. Both groups may contain the same known recipe, once per group. |
+| Recipe `tools/duration/requirements` | Existing recipe requirement/duration schemas interpreted by canonical catalog owners. Null/empty when not safely interpretable. Do not infer eligibility from formatting predicates. |
+| Recipe/use `availability` | Existing canonical evaluator only. Default `not-evaluated`; `available` and `requirements-not-met` require supported evaluation against the same snapshot. `definition-incomplete` is independent of character knowledge. |
+| Use `kind/costs/effects/executionSupport` | Declared item activity or an authorized recorded application. `supported` means an existing canonical executor exists, not that the UI can execute it. Adjudicated prose remains descriptive. |
+| Group `state/entries/nextOffset/reasons` | Projection completeness and authorized-page membership. Reasons describe missing authorized data or operational bounds, never hidden item counts. |
+
+All objects are closed, text and arrays are bounded, and no raw component JSON, command bindings, secret locator, effect envelope or runtime action is returned. Text is rendered as text; no HTML injection. Nullable fields use explicit `anyOf` schemas compatible with existing catalog conventions.
+
+## Paging, state and freshness
+
+Details returns one selected instance. Recipes returns both groups in one request, up to 16 entries per group; Uses returns up to 32. Sort each authorized group by stable record ID, deduplicate before paging, and preserve item-instance distinctions. Fetch tabs lazily. The first visit makes one projection request; further pages require explicit continuation. A recipe belonging to both groups has independent positions. Offsets count only authorized rows.
+
+The serializer must stop at 65,536 bytes, respecting the shared response budget and reserving space for metadata. Reduce each group fairly to a fitting prefix. `nextOffset` advances by the number actually returned; never return a nonadvancing continuation. If a single record cannot fit or required source material is invalid, return explicit unavailable instead of dropping fields silently. Schema maxima are per-field bounds, not proof that every maximum-sized combination fits the total byte cap.
+
+`empty` means that group's complete authorized query has zero matches. `ready` means its returned content is complete, with nonempty entries and no continuation/reasons. `partial` requires a reason; a page or byte limit includes the next authorized offset, while source incompleteness can have no continuation. A continuation past the last authorized entry returns unavailable, not a false empty group. Preserve and combine earlier pages client-side; do not replace the complete group with a misleading empty last page.
+
+Check expected source revision before returning any continuation. The new source fingerprint must include the relevant component and containment revisions plus authorization policy, principal/grant scope, campaign binding, participation, knowledge relationships, baseline scope, candidate membership and canonical source revisions. It is not a public hash of raw secret content; do not create a low-entropy secret oracle. No timestamps or unstable iteration order in fingerprints. Existing queries retain their old fingerprint semantics.
+
+Cache scope includes principal/binding, application, state space, campaign, observer, perspective, query/projection version, selected item, page offsets and source revision. Cancel and clear visible content on a scope change. Reauthorize on reads and media requests; never cache a prior authorization decision indefinitely. Same-observer Player content must match between actual Actor access and GM Player preview, although host authorization fingerprints may differ. If the projection cannot read a coherent snapshot, fail stale; do not assemble independently fetched snapshots under one fingerprint.
+
+| HTTP outcome | Stable proposed client state and disclosure |
+| --- | --- |
+| 200 | Validated ready/empty/partial data and existing fingerprint envelope. Loading is client-only. |
+| 400 `READ_MODEL_INPUT_INVALID` | Malformed/duplicate/oversized input or invalid perspective. Fixed safe message, no echoed payload. |
+| 403 `READ_MODEL_FORBIDDEN` | Caller cannot access the requested subject/campaign/perspective, including inactive or ambiguous participation. Same response for absent and inaccessible subjects. No data/fingerprints/identities. |
+| 404 `READ_MODEL_SELECTION_UNAVAILABLE` | Authorized subject but selected item absent, foreign, removed or outside the materialized boundary. Same response shape and fixed message. |
+| 409 `READ_MODEL_SOURCE_STALE` | Expected revision mismatch or snapshot race. No partial old payload; client discards all pages and refreshes. |
+| 503 `READ_MODEL_UNAVAILABLE` | Knowledge/materialization failure, work cap, invalid canonical source or unfit record. Fixed message and no hidden counts, hashes or data. |
+
+`errors.schema.draft.json` defines exact status/body pairs and fixed messages; `status` is the HTTP status and only `body` is serialized. These stable error codes apply to the new input-aware contract. Preserve existing query error behavior unless a separately reviewed change requires otherwise. Unexpected faults are sanitized through the existing host error boundary; never return stack traces or catalog internals. Viewing has no effects, events, notifications, discovery writes, elapsed time or inventory mutations; normal transport logging is not a game-state mutation.
+
+## Implemented IV01 boundary
+
+The implementation lives in `ApplicationReadModelInput`, `ApplicationQueryContract`, `ApplicationReadModelService`, `AuthorizedProjectionRequirements`, `ApplicationAuthorizedProjectionResolver`, the application evaluator/mapping resolver, the frozen Jint context and the HTTP endpoint. `AddAuthorizedKnowledgeCore` supplies the new resolver when the host has a database; database-free knowledge hosts keep working and return unavailable for this optional projection capability.
+
+New read-model inputs are bounded to 1,024 decoded UTF-8 bytes and depth 8, reject duplicate keys, and must match both query and mechanic schemas. Legacy queries accept only the empty object. New requests use sanitized fixed error bodies. `ctx.authorizedObserver` exists only for opted-in projections and cannot be replaced or mutated; legacy sandbox context keys remain unchanged.
+
+The loader validates the actual grant, application/state/campaign binding, selected observer participation and current bounded possession. It materializes the selected instance and declared references, using one scoped database read transaction. It reuses the existing effective-state precedence for statements, the selected instance and its definition. A discovery component is available only when its exact observer-to-selection knowledge relationship exists and has a permitted content state; the generic host does not interpret identity/curse booleans. This provides the knowledge boundary for IV02 without inventing D&D rules.
+
+Hydrated knowledge statements appear in `ctx.references[knowledgeId].components["authorized-knowledge"]` as normalized presentation-source JSON (`subjectId`, `displayText`, `presentationKind`, `state`). This is a host projection payload key, not a registered ECS component or new stored identity. Unknown and familiar statements have no hydrated proposition payload. The host context retains effective-state rows for the catalog's disclosure decisions. Association selectors use a generic `referencePaths` dictionary; group meanings and output/material matching remain catalog JavaScript responsibilities in IV07.
+
+Raw optional facets and activities are available only to DM projections in this foundation. Player projections receive validated discovery and authorized statements; knowing one statement never grants the whole underlying private component. IV02/IV08 must implement their supported field-disclosure policies and canonical activity descriptions before claiming those details in Player view. Unavailable values must remain unavailable. This slice does not register the three item queries or render any item tab.
+
+Authorized projections reject children, elapsed-time declarations and effects. This prevents a child from bypassing the bounded loader through an older projection path. Future composition requires an explicitly bounded and authorized implementation before enabling it. Existing read-only queries keep their existing behavior.
+
+The shared graph readers are guarded by a 10,000-row cap on each edge collection; candidate enumeration is separately capped by the declaration. The materialized context has a 1 MiB ceiling, checked while hydrating sources and before evaluation. Exceeding a work/context bound returns unavailable without counts. These are operational limits, not claims that a larger world contains no known information.
+
+Source fingerprints include the selected context, canonical revisions, containment, participation, policy/binding, effective knowledge and candidate membership. An HMAC key held privately for the host process prevents using public revision tokens to guess low-entropy private changes. Restarting the host invalidates these tokens and requires refreshing pages. Actor and same-observer GM Player payloads agree while authorization fingerprints may differ. Expected-source mismatches return stale without mixed pages.
+
+## Verification and handoff boundary
+
+Run `node docs/current/item-view-contracts/validate.mjs` from the repository root. It compiles all draft input/output/context schemas with the installed web AJV, validates synthetic examples and rejects extra fields, role injection, invalid pagination, unknown Player comparison data and inconsistent empty/partial shapes. It also checks that draft requirements remain effect-free and match query input, that objects are closed, and that sample payloads fit the host byte limit. This is contract-draft verification, not a .NET parser, authorization, catalog, runtime or feature test.
+
+IV01 includes focused host/database/sandbox tests for two observers, Actor/GM preview parity, explicit unknown overriding baseline, knowledge/containment revision invalidation, cross-campaign/state denial, bounded traversal and invalid inputs. Pagination schema checks cover continuation shape; integrated recipe/use continuation behavior remains IV07/IV08. IV02/IV07/IV08 must test real catalog parsing/hashes and output validation. IV03 must prove media authorization. IV09/IV10 retain mounted, full-suite and live-browser acceptance. Draft examples cannot substitute for any of these.
+
+IV00 inspected the existing HTTP listener and active bundle read-only; it does not reserve publication ownership. Recheck concurrent runners and page revisions immediately before any future build/publication. Preserve the mixed worktree. Rollback for IV00 removes only this task's unregistered drafts and restores its plan edits; there is no runtime recovery operation.

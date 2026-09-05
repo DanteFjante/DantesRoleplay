@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "body"
+      ],
+      "properties": {
+        "status": {
+          "const": 400
+        },
+        "body": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "const": "READ_MODEL_INPUT_INVALID"
+            },
+            "message": {
+              "const": "The request is invalid."
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "body"
+      ],
+      "properties": {
+        "status": {
+          "const": 403
+        },
+        "body": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "const": "READ_MODEL_FORBIDDEN"
+            },
+            "message": {
+              "const": "This view is not available to the current audience."
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "body"
+      ],
+      "properties": {
+        "status": {
+          "const": 404
+        },
+        "body": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "const": "READ_MODEL_SELECTION_UNAVAILABLE"
+            },
+            "message": {
+              "const": "This selection is unavailable."
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "body"
+      ],
+      "properties": {
+        "status": {
+          "const": 409
+        },
+        "body": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "const": "READ_MODEL_SOURCE_STALE"
+            },
+            "message": {
+              "const": "The view changed. Refresh to continue."
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "body"
+      ],
+      "properties": {
+        "status": {
+          "const": 503
+        },
+        "body": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "const": "READ_MODEL_UNAVAILABLE"
+            },
+            "message": {
+              "const": "This view is temporarily unavailable."
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -4,6 +4,7 @@ using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.MCPServer.Mcp;
 
 namespace DantesRoleplay.MCPServer;
 
@@ -18,19 +19,61 @@ public static class ApplicationReadModelWebEndpoint
         ILocalKnowledgeSeatProvider seats,
         IApplicationReadModelService readModels,
         CancellationToken cancellationToken,
-        IPublicApplicationCatalogProvider? catalogs = null)
+        IPublicApplicationCatalogProvider? catalogs = null,
+        IAuthorizedKnowledgeAudiencePolicy? audiences = null,
+        IKnowledgeApplicationBindingResolver? bindings = null,
+        IKnowledgeActorParticipationVerifier? participation = null)
     {
         context.Response.Headers.CacheControl = "private, no-store";
+        var inputAware = context.Request.Query.ContainsKey("input") || context.Request.Query.ContainsKey("campaignId");
         var seat = seats.Current();
         if (!Authorized(seat, applicationId, entityId, out var application))
+        {
+            if (inputAware) return SafeError("READ_MODEL_FORBIDDEN");
             return Results.Json(new
             {
                 code = "READ_MODEL_AUDIENCE_DENIED",
                 message = "The current server-selected audience cannot inspect this entity."
             }, statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        var perspective = context.Request.Query["perspective"];
+        if (perspective.Count > 1 || (perspective.Count == 1 && perspective[0] is not ("player" or "dm")))
+        {
+            if (inputAware) return SafeError("READ_MODEL_INPUT_INVALID");
+            return Results.Json(new { code = "READ_MODEL_INVALID_PERSPECTIVE" },
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+        if (perspective == "dm" && seat.Role != KnowledgeAudienceRole.GameMaster)
+        {
+            if (inputAware) return SafeError("READ_MODEL_FORBIDDEN");
+            return Results.Json(new { code = "READ_MODEL_AUDIENCE_DENIED" },
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+        // A preview may narrow the host's grant, but can never elevate an actor seat.
+        var audience = seat.Role == KnowledgeAudienceRole.GameMaster && perspective != "player"
+            ? MechanicAudienceContext.GameMaster
+            : MechanicAudienceContext.Player;
 
         try
         {
+            var suppliedInput = context.Request.Query["input"];
+            var suppliedCampaign = context.Request.Query["campaignId"];
+            if (suppliedInput.Count > 1 || suppliedCampaign.Count > 1)
+                return SafeError("READ_MODEL_INPUT_INVALID");
+            var input = ApplicationReadModelInput.Normalize(suppliedInput.Count == 0 ? "{}" : suppliedInput[0]!);
+            if (suppliedCampaign.Count == 1)
+            {
+                var campaignId = suppliedCampaign[0];
+                var authorized = await SystemAudienceContextHandler.ResolveAsync(
+                    seats, audiences, bindings, participation, campaignId, cancellationToken);
+                if (authorized.Error is not null || bindings is null) return SafeError("READ_MODEL_FORBIDDEN");
+                var binding = await bindings.ResolveAsync(campaignId!, cancellationToken);
+                if (binding is null || binding.ApplicationId != applicationId || binding.StateSpaceId != stateSpaceId ||
+                    binding.CampaignEntityId != campaignId) return SafeError("READ_MODEL_FORBIDDEN");
+                // This local value binds roles; it never changes the ambient host seat.
+                seat = seat with { CampaignId = campaignId! };
+            }
             var roleBindings = ResolveRoleBindings(
                 catalogs, application!, qualifiedQueryId, entityId, seat);
             if (roleBindings is null)
@@ -44,9 +87,7 @@ public static class ApplicationReadModelWebEndpoint
                 application!,
                 qualifiedQueryId,
                 roleBindings,
-                seat.Role == KnowledgeAudienceRole.GameMaster
-                    ? MechanicAudienceContext.GameMaster
-                    : MechanicAudienceContext.Player), cancellationToken);
+                audience, input), cancellationToken);
             using var data = JsonDocument.Parse(result.DataJson);
             return Results.Json(new
             {
@@ -63,6 +104,17 @@ public static class ApplicationReadModelWebEndpoint
         }
         catch (ApplicationReadModelException exception)
         {
+            if (exception.Code is "READ_MODEL_INPUT_INVALID" or "READ_MODEL_FORBIDDEN" or
+                "READ_MODEL_SELECTION_UNAVAILABLE" or "READ_MODEL_SOURCE_STALE" or "READ_MODEL_UNAVAILABLE")
+                return SafeError(exception.Code);
+            if (inputAware)
+                return SafeError(exception.Code switch
+                {
+                    "READ_MODEL_REQUEST_INVALID" => "READ_MODEL_INPUT_INVALID",
+                    "READ_MODEL_STATE_SPACE_UNKNOWN" => "READ_MODEL_FORBIDDEN",
+                    _ when exception.Code.Contains("STALE", StringComparison.Ordinal) => "READ_MODEL_SOURCE_STALE",
+                    _ => "READ_MODEL_UNAVAILABLE"
+                });
             var status = exception.Code is "READ_MODEL_UNKNOWN" or "READ_MODEL_STATE_SPACE_UNKNOWN"
                 ? StatusCodes.Status404NotFound
                 : exception.Code is "READ_MODEL_CATALOG_UNAVAILABLE"
@@ -73,6 +125,21 @@ public static class ApplicationReadModelWebEndpoint
             return Results.Json(new { code = exception.Code, message = exception.Message },
                 statusCode: status);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch (Exception) when (inputAware) { return SafeError("READ_MODEL_UNAVAILABLE"); }
+    }
+
+    private static IResult SafeError(string code)
+    {
+        var (status, message) = code switch
+        {
+            "READ_MODEL_INPUT_INVALID" => (400, "The request is invalid."),
+            "READ_MODEL_FORBIDDEN" => (403, "This view is not available to the current audience."),
+            "READ_MODEL_SELECTION_UNAVAILABLE" => (404, "This selection is unavailable."),
+            "READ_MODEL_SOURCE_STALE" => (409, "The view changed. Refresh to continue."),
+            _ => (503, "This view is temporarily unavailable.")
+        };
+        return Results.Json(new { code, message }, statusCode: status);
     }
 
     private static IReadOnlyDictionary<string, string>? ResolveRoleBindings(

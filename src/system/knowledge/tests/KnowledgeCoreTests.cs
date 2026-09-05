@@ -554,7 +554,7 @@ public sealed class KnowledgeCoreTests
                 ? document : null;
     }
 
-    private sealed class KnowledgeFixture : IDisposable
+    internal sealed class KnowledgeFixture : IDisposable
     {
         private const string Application = "fixture-knowledge";
         private static readonly string Manifest = new('A', 64);
@@ -744,8 +744,15 @@ public sealed class KnowledgeCoreTests
         private async Task EntityAsync(string id, string name) =>
             _ = await Entities.CreateEntityAsync(Campaign, id, name);
 
-        private async Task ComponentAsync(string entityId, string typeId, string json) =>
+        public async Task ComponentAsync(string entityId, string typeId, string json) =>
             _ = await Entities.AddComponentAsync(new(Campaign, entityId, _types[typeId], json, 0));
+
+        public EcsComponentReference DefineComponent(string id)
+        {
+            var registry = new SqliteComponentTypeRegistry(_db, new BoundedJsonSchemaValidator());
+            var type = registry.Define(new(ApplicationIdentifier.Parse(Application), id, "true"));
+            return _types[id] = new(type.QualifiedId, type.Version, type.SchemaHash);
+        }
 
         public void Dispose()
         {

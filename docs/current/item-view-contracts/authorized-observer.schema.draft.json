@@ -1,0 +1,138 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "applicationId",
+    "stateSpaceId",
+    "campaignId",
+    "observerId",
+    "perspective",
+    "policyRevision",
+    "participationRevision",
+    "bindingRevision",
+    "inventoryRevision",
+    "knowledgeRevision",
+    "authorizedSourceRevision",
+    "inventoryComplete",
+    "knowledgeComplete",
+    "knowledge"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "applicationId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "stateSpaceId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "campaignId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "observerId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "perspective": {
+      "enum": [
+        "player",
+        "dm"
+      ]
+    },
+    "policyRevision": {
+      "type": "string",
+      "pattern": "^[A-F0-9]{64}$"
+    },
+    "participationRevision": {
+      "type": "string",
+      "pattern": "^[A-F0-9]{64}$"
+    },
+    "bindingRevision": {
+      "type": "string",
+      "pattern": "^[A-F0-9]{64}$"
+    },
+    "inventoryRevision": {
+      "type": "string",
+      "pattern": "^[A-F0-9]{64}$"
+    },
+    "knowledgeRevision": {
+      "type": "string",
+      "pattern": "^[A-F0-9]{64}$"
+    },
+    "authorizedSourceRevision": {
+      "type": "string",
+      "pattern": "^[A-F0-9]{64}$"
+    },
+    "inventoryComplete": {
+      "type": "boolean"
+    },
+    "knowledgeComplete": {
+      "type": "boolean"
+    },
+    "knowledge": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "knowledgeId",
+          "state",
+          "sourceKind",
+          "sourceEntityId",
+          "revision"
+        ],
+        "properties": {
+          "knowledgeId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "state": {
+            "enum": [
+              "known",
+              "suspected",
+              "believed",
+              "doubted",
+              "disbelieved",
+              "familiar",
+              "unknown"
+            ]
+          },
+          "sourceKind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "sourceEntityId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "revision": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        }
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

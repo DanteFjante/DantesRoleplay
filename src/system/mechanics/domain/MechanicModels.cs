@@ -28,6 +28,8 @@ public sealed record MechanicRequirements
     /// </summary>
     public JsonElement? InputSchema { get; init; }
 
+    public AuthorizedProjectionRequirements? AuthorizedContext { get; init; }
+
     /// <summary>
     /// Present only when this mechanic is an event middleware target. The explicit mode prevents a
     /// guard (which may only decide allow/deny) from being registered as a reaction by accident.
@@ -68,6 +70,7 @@ public sealed record MechanicRequirements
                         .Concat(reference.OptionalTargetComponentIds ?? [])))
                 .Concat((r.RelationshipComponents ?? []).SelectMany(reference =>
                     reference.TargetComponentIds.Concat(reference.OptionalTargetComponentIds ?? []))))
+            .Concat(AuthorizedContext?.SourceSets.ComponentIds() ?? [])
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
@@ -83,10 +86,40 @@ public sealed record MechanicRequirements
     };
 
     /// <summary>Parse a stored spec. Throws <see cref="JsonException"/> on malformed input.</summary>
-    public static MechanicRequirements Parse(string json) =>
-        string.IsNullOrWhiteSpace(json)
-            ? new MechanicRequirements()
-            : JsonSerializer.Deserialize<MechanicRequirements>(json, JsonOptions) ?? new MechanicRequirements();
+    public static MechanicRequirements Parse(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return new();
+        var parsed = JsonSerializer.Deserialize<MechanicRequirements>(json, JsonOptions) ?? new();
+        if (parsed.AuthorizedContext is not null)
+        {
+            using var document = JsonDocument.Parse(json);
+            RejectDuplicates(document.RootElement);
+            try
+            {
+                if (!parsed.AuthorizedContext.Valid(parsed)) throw new JsonException("Invalid authorized projection declaration.");
+            }
+            catch (Exception exception) when (exception is NullReferenceException or ArgumentException)
+            {
+                throw new JsonException("Invalid authorized projection declaration.", exception);
+            }
+        }
+        return parsed;
+    }
+
+    private static void RejectDuplicates(JsonElement element)
+    {
+        if (element.ValueKind == JsonValueKind.Object)
+        {
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var property in element.EnumerateObject())
+            {
+                if (!names.Add(property.Name)) throw new JsonException("Duplicate projection declaration.");
+                RejectDuplicates(property.Value);
+            }
+        }
+        else if (element.ValueKind == JsonValueKind.Array)
+            foreach (var value in element.EnumerateArray()) RejectDuplicates(value);
+    }
 
     /// <summary>Checks declarations that cannot be validated by deserialisation alone.</summary>
     public IReadOnlyList<string> CompositionProblems()
@@ -612,6 +645,13 @@ public sealed record MechanicProjection
     /// authorization context. Ordinary actions and audience-neutral reads leave it absent.
     /// </summary>
     public MechanicAudienceContext? Audience { get; init; }
+
+    /// <summary>Frozen, host-materialized context, never copied from input JSON.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public JsonElement? AuthorizedObserver { get; init; }
+
+    [JsonIgnore]
+    public string? AuthorizedSourceRevision { get; init; }
 
     /// <summary>Role name to the entity filling it. A missing optional role is simply absent.</summary>
     public Dictionary<string, EntityProjection> Roles { get; init; } = [];

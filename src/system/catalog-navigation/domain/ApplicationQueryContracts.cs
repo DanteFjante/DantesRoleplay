@@ -30,7 +30,8 @@ public sealed record ApplicationQueryContract(
     string OutputSchemaHash,
     string OutputSchemaJson,
     ApplicationQueryExposure Exposure,
-    string Status)
+    string Status,
+    string? InputSchemaJson = null)
 {
     public const string CatalogKind = "query";
     public const string ProjectionExecutor = "projection";
@@ -51,8 +52,17 @@ public sealed record ApplicationQueryContract(
         var root = document.RootElement;
         if (root.ValueKind != JsonValueKind.Object)
             throw Invalid("A query contract must be an object.");
-        Exact(root, "id", "category", "name", "description", "matches", "roles", "executor",
-            "projection", "outputSchema", "exposure", "status");
+        var fields = new[] { "id", "category", "name", "description", "matches", "roles", "executor",
+            "projection", "outputSchema", "exposure", "status" };
+        Exact(root, root.TryGetProperty("inputSchema", out var inputSchema)
+            ? [.. fields, "inputSchema"] : fields);
+        if (inputSchema.ValueKind != JsonValueKind.Undefined &&
+            (inputSchema.ValueKind != JsonValueKind.Object
+             || Encoding.UTF8.GetByteCount(inputSchema.GetRawText()) > 65_536
+             || !inputSchema.TryGetProperty("type", out var inputType) || inputType.ValueKind != JsonValueKind.String || inputType.GetString() != "object"
+             || !inputSchema.TryGetProperty("additionalProperties", out var additional)
+             || additional.ValueKind != JsonValueKind.False))
+            throw Invalid("A query input schema must declare one bounded closed object.");
 
         var id = String(root, "id", 400);
         if (!id.StartsWith(owner.Value + ".", StringComparison.Ordinal)
@@ -96,7 +106,8 @@ public sealed record ApplicationQueryContract(
             throw Invalid("A query status is not supported.");
 
         return new(id, category, name, description, matches, roles, executor, projectionId, version,
-            contentHash, schemaHash, schema.GetRawText(), exposure, status);
+            contentHash, schemaHash, schema.GetRawText(), exposure, status,
+            inputSchema.ValueKind == JsonValueKind.Undefined ? null : inputSchema.GetRawText());
     }
 
     private static void Exact(JsonElement value, params string[] names)

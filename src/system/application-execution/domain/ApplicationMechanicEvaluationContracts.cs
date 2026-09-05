@@ -71,6 +71,12 @@ public interface IApplicationMechanicProjectionResolver
         CancellationToken cancellationToken = default);
 }
 
+public interface IApplicationAuthorizedProjectionResolver
+{
+    Task<ProjectionResult> ResolveAsync(ApplicationMechanicEvaluationRequest request,
+        MechanicRequirements requirements, CancellationToken cancellationToken = default);
+}
+
 /// <summary>Evaluates one exact active catalog mechanic; it never applies the proposed output.</summary>
 public interface IApplicationMechanicEvaluator
 {

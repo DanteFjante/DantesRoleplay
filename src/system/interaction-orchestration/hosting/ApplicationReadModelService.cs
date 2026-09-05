@@ -75,6 +75,20 @@ internal sealed class ApplicationReadModelService(
             throw Failure("READ_MODEL_ROLES_INVALID",
                 "The read-model request does not bind its exact declared roles.");
 
+        var input = ApplicationReadModelInput.Normalize(request.InputJson);
+        if (contract.InputSchemaJson is null)
+        {
+            if (input != "{}")
+                throw Failure("READ_MODEL_INPUT_INVALID", "The request is invalid.");
+        }
+        else
+        {
+            var inputSchema = schemas.Compile(contract.InputSchemaJson);
+            if (!inputSchema.IsAccepted || schemas.Validate(inputSchema.ProfileId,
+                    inputSchema.NormalizedSchema, input).Status != SchemaValueStatus.Valid)
+                throw Failure("READ_MODEL_INPUT_INVALID", "The request is invalid.");
+        }
+
         CatalogRecordView mechanicRecord;
         try
         {
@@ -111,6 +125,10 @@ internal sealed class ApplicationReadModelService(
             || requirements.CompositionProblems().Count > 0)
             throw Failure("READ_MODEL_PROJECTION_INVALID",
                 "The catalog projection is not a valid read-only projection.");
+        if (contract.InputSchemaJson is not null && (requirements.InputSchema is null
+            || InteractionCanonicalJson.CanonicalizeObject(requirements.InputSchema.Value.GetRawText())
+                != InteractionCanonicalJson.CanonicalizeObject(contract.InputSchemaJson)))
+            throw Failure("READ_MODEL_CONTRACT_INVALID", "The query and projection input contracts disagree.");
 
         var mapping = await mappings.ResolveAsync(request.StateSpaceId, request.ApplicationId,
             mechanicRecord.Summary.QualifiedId, requirements, cancellationToken);
@@ -126,12 +144,19 @@ internal sealed class ApplicationReadModelService(
             mechanicRecord.Summary.ContentFingerprint,
             mapping.Mapping!,
             request.RoleBindings,
-            "{}",
+            input,
             0,
             Audience: request.Audience), cancellationToken);
         if (!evaluation.Ok || evaluation.Run is null || evaluation.Projection is null)
+        {
+            var safeCode = evaluation.Problems.FirstOrDefault();
+            if (requirements.AuthorizedContext is not null && safeCode is
+                ("READ_MODEL_FORBIDDEN" or "READ_MODEL_UNAVAILABLE" or "READ_MODEL_SELECTION_UNAVAILABLE"
+                 or "READ_MODEL_SOURCE_STALE" or "READ_MODEL_INPUT_INVALID"))
+                throw Failure(safeCode, "The requested view is unavailable.");
             throw Failure("READ_MODEL_EVALUATION_FAILED",
                 "The catalog projection could not produce a read model.");
+        }
         var output = evaluation.Run.Output;
         if (!output.HasData || output.Effects.Count != 0 || output.Events.Count != 0
             || output.Notifications.Count != 0 || evaluation.Proposal.Effects.Count != 0
@@ -188,8 +213,14 @@ internal sealed class ApplicationReadModelService(
                         .Select(value => new { value.EntityId, value.Slot, value.Revision })
                 })
         }));
-        var sourceFingerprint = InteractionCanonicalJson.Fingerprint(
-            InteractionQueryFingerprintDomains.SourceRevisions, sourceRevisionJson);
+        var sourceFingerprint = evaluation.Projection.AuthorizedSourceRevision
+            ?? InteractionCanonicalJson.Fingerprint(
+                InteractionQueryFingerprintDomains.SourceRevisions, sourceRevisionJson);
+        using var inputDocument = JsonDocument.Parse(input);
+        if (requirements.AuthorizedContext is not null &&
+            inputDocument.RootElement.TryGetProperty("expectedSourceRevision", out var expected)
+            && expected.ValueKind != JsonValueKind.Null && expected.GetString() != sourceFingerprint)
+            throw Failure("READ_MODEL_SOURCE_STALE", "The view changed. Refresh to continue.");
 
         return new(request.ApplicationId.Value, request.StateSpaceId, request.QualifiedQueryId,
             stateSpace.ManifestFingerprint, stateSpace.ResolutionFingerprint,

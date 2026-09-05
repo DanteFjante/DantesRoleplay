@@ -1,0 +1,152 @@
+{
+  "details": {
+    "version": 1,
+    "observerId": "fixture.actor",
+    "itemId": "fixture.item",
+    "perspective": "player",
+    "state": "ready",
+    "name": "Practice item",
+    "description": null,
+    "definitionId": null,
+    "quantity": 1,
+    "container": null,
+    "equipmentSlots": [],
+    "properties": [
+      {
+        "label": "Weight",
+        "value": 0,
+        "unit": "fixture unit",
+        "sources": [
+          {
+            "label": "Recorded item description",
+            "knowledgeState": "known"
+          }
+        ],
+        "observerKnowledge": null
+      }
+    ],
+    "sources": [
+      {
+        "label": "Recorded item description",
+        "knowledgeState": "known"
+      }
+    ],
+    "media": [],
+    "reasons": [],
+    "observerKnowledge": null
+  },
+  "recipes": {
+    "version": 1,
+    "observerId": "fixture.actor",
+    "itemId": "fixture.item",
+    "perspective": "player",
+    "makes": {
+      "state": "ready",
+      "entries": [
+        {
+          "id": "fixture.recipe",
+          "name": "Practice recipe",
+          "description": null,
+          "knowledgeState": "known",
+          "sources": [
+            {
+              "label": "Recorded item description",
+              "knowledgeState": "known"
+            }
+          ],
+          "requirements": [],
+          "availability": "not-evaluated",
+          "outputs": [
+            {
+              "name": "Practice item",
+              "definitionId": null,
+              "quantity": 1
+            }
+          ],
+          "materials": [
+            {
+              "name": "Practice material",
+              "definitionId": null,
+              "quantity": 1
+            }
+          ],
+          "tools": [],
+          "duration": null,
+          "observerKnowledge": null
+        }
+      ],
+      "nextOffset": null,
+      "reasons": []
+    },
+    "uses": {
+      "state": "ready",
+      "entries": [
+        {
+          "id": "fixture.recipe",
+          "name": "Practice recipe",
+          "description": null,
+          "knowledgeState": "known",
+          "sources": [
+            {
+              "label": "Recorded item description",
+              "knowledgeState": "known"
+            }
+          ],
+          "requirements": [],
+          "availability": "not-evaluated",
+          "outputs": [
+            {
+              "name": "Practice item",
+              "definitionId": null,
+              "quantity": 1
+            }
+          ],
+          "materials": [
+            {
+              "name": "Practice material",
+              "definitionId": null,
+              "quantity": 1
+            }
+          ],
+          "tools": [],
+          "duration": null,
+          "observerKnowledge": null
+        }
+      ],
+      "nextOffset": null,
+      "reasons": []
+    }
+  },
+  "uses": {
+    "version": 1,
+    "observerId": "fixture.actor",
+    "itemId": "fixture.item",
+    "perspective": "player",
+    "uses": {
+      "state": "ready",
+      "entries": [
+        {
+          "id": "fixture.use",
+          "name": "Recorded application",
+          "description": "An authored example for contract verification.",
+          "knowledgeState": "suspected",
+          "sources": [
+            {
+              "label": "Character note",
+              "knowledgeState": "suspected"
+            }
+          ],
+          "requirements": [],
+          "availability": "not-evaluated",
+          "kind": "recorded-application",
+          "costs": [],
+          "effects": [],
+          "executionSupport": "adjudication-required",
+          "observerKnowledge": null
+        }
+      ],
+      "nextOffset": null,
+      "reasons": []
+    }
+  }
+}

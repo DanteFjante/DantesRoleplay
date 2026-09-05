@@ -1,0 +1,441 @@
+{
+  "registrationReady": false,
+  "requiresApproval": [
+    "new-query-and-mechanic-ids",
+    "generic-query-input",
+    "authorized-observer-materialization",
+    "authorized-source-revision"
+  ],
+  "query": {
+    "id": "dnd2024.query.inventory-item-details",
+    "category": "dnd2024.presentation.inventory-item",
+    "name": "D&D 2024 inventory item details",
+    "description": "Returns authorized details for one item in the selected character inventory.",
+    "matches": [
+      "inspect carried item details"
+    ],
+    "roles": {
+      "subject": "Exact authorized active character.",
+      "campaign": "Host-authorized campaign for that character."
+    },
+    "executor": "mechanic-projection",
+    "projection": {
+      "qualifiedId": "dnd2024.mechanic.inventory-item-details.project",
+      "version": 1,
+      "contentHash": null,
+      "outputSchemaHash": null
+    },
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "itemId"
+      ],
+      "properties": {
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      }
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "observerId",
+        "itemId",
+        "perspective",
+        "state",
+        "name",
+        "description",
+        "definitionId",
+        "quantity",
+        "container",
+        "equipmentSlots",
+        "properties",
+        "sources",
+        "media",
+        "reasons",
+        "observerKnowledge"
+      ],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "observerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "perspective": {
+          "enum": [
+            "player",
+            "dm"
+          ]
+        },
+        "state": {
+          "enum": [
+            "ready",
+            "partial"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "definitionId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "quantity": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "container": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "itemId",
+                "name",
+                "observerKnowledge"
+              ],
+              "properties": {
+                "itemId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "observerKnowledge": {
+                  "anyOf": [
+                    {
+                      "enum": [
+                        "known",
+                        "suspected",
+                        "believed",
+                        "doubted",
+                        "disbelieved",
+                        "familiar",
+                        "unknown"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "equipmentSlots": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "properties": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "value",
+              "unit",
+              "sources",
+              "observerKnowledge"
+            ],
+            "properties": {
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 512
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "boolean"
+                  }
+                ]
+              },
+              "unit": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "sources": {
+                "type": "array",
+                "maxItems": 4,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "label",
+                    "knowledgeState"
+                  ],
+                  "properties": {
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    },
+                    "knowledgeState": {
+                      "enum": [
+                        "known",
+                        "suspected",
+                        "believed",
+                        "doubted",
+                        "disbelieved",
+                        "familiar"
+                      ]
+                    }
+                  }
+                }
+              },
+              "observerKnowledge": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "known",
+                      "suspected",
+                      "believed",
+                      "doubted",
+                      "disbelieved",
+                      "familiar",
+                      "unknown"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "sources": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "knowledgeState"
+            ],
+            "properties": {
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "knowledgeState": {
+                "enum": [
+                  "known",
+                  "suspected",
+                  "believed",
+                  "doubted",
+                  "disbelieved",
+                  "familiar"
+                ]
+              }
+            }
+          }
+        },
+        "media": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "contentUrl",
+              "alt",
+              "caption"
+            ],
+            "properties": {
+              "contentUrl": {
+                "type": "string",
+                "pattern": "^/api/\\S+$",
+                "maxLength": 512
+              },
+              "alt": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "caption": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 240
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "reasons": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "enum": [
+              "inventory-bound",
+              "source-incomplete",
+              "page-limit",
+              "byte-limit",
+              "dependency-unavailable"
+            ]
+          }
+        },
+        "observerKnowledge": {
+          "anyOf": [
+            {
+              "enum": [
+                "known",
+                "suspected",
+                "believed",
+                "doubted",
+                "disbelieved",
+                "familiar",
+                "unknown"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "ready"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "reasons": {
+                "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "partial"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "reasons": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "perspective": {
+                "const": "player"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "properties": {
+                "items": {
+                  "properties": {
+                    "observerKnowledge": {
+                      "type": "null"
+                    }
+                  }
+                }
+              },
+              "observerKnowledge": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ],
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    },
+    "exposure": "binding-only",
+    "status": "active"
+  }
+}

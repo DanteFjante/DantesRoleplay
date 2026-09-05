@@ -89,13 +89,91 @@ public sealed class ApplicationReadModelWebEndpointTests
         Assert.Equal(0, service.Calls);
     }
 
+    [Fact]
+    public async Task Game_master_player_preview_runs_with_player_audience()
+    {
+        var service = new ReadModels();
+        var response = await ReadAsync(new(true, "gm", "dnd2024", "campaign.1", null,
+            KnowledgeAudienceRole.GameMaster), "actor.aric", service, perspective: "player");
+        Assert.Equal(StatusCodes.Status200OK, response.StatusCode);
+        Assert.Equal(MechanicAudienceContext.Player, service.LastRequest!.Audience);
+    }
+
+    [Theory]
+    [InlineData("dm", 403)]
+    [InlineData("invalid", 400)]
+    [InlineData("player&perspective=dm", 400)]
+    public async Task Invalid_or_elevated_preview_fails_before_projection(string perspective, int status)
+    {
+        var service = new ReadModels();
+        var response = await ReadAsync(new(true, "player", "dnd2024", "campaign.1", "actor.aric"),
+            "actor.aric", service, perspective: perspective);
+        Assert.Equal(status, response.StatusCode);
+        Assert.Equal(0, service.Calls);
+    }
+
+    [Theory]
+    [InlineData("input=%7B%7D&input=%7B%7D")]
+    [InlineData("input=%7B%22x%22%3A1%2C%22x%22%3A2%7D")]
+    [InlineData("input=%5B%5D")]
+    [InlineData("campaignId=one&campaignId=two")]
+    public async Task Invalid_query_input_is_rejected_before_any_read_model(string query)
+    {
+        var service = new ReadModels();
+        var response = await ReadAsync(new(true, "player", "dnd2024", "campaign.1", "actor.aric"),
+            "actor.aric", service, query: query);
+        Assert.Equal(400, response.StatusCode);
+        Assert.Equal("READ_MODEL_INPUT_INVALID", response.Body.GetProperty("code").GetString());
+        Assert.Equal(0, service.Calls);
+    }
+
+    [Fact]
+    public async Task Input_reaches_the_service_but_cannot_change_the_authorized_role()
+    {
+        var service = new ReadModels();
+        var response = await ReadAsync(new(true, "player", "dnd2024", "campaign.1", "actor.aric"),
+            "actor.aric", service, query: "input=" + Uri.EscapeDataString("{\"itemId\":\"fixture.item\"}"));
+        Assert.Equal(200, response.StatusCode);
+        Assert.Equal("actor.aric", service.LastRequest!.RoleBindings["subject"]);
+        Assert.Equal("{\"itemId\":\"fixture.item\"}", service.LastRequest.InputJson);
+    }
+
+    [Fact]
+    public async Task Explicit_campaign_requires_host_authorization_before_projection()
+    {
+        var service = new ReadModels();
+        var response = await ReadAsync(new(true, "player", "dnd2024", "campaign.1", "actor.aric"),
+            "actor.aric", service, query: "campaignId=foreign");
+        Assert.Equal(403, response.StatusCode);
+        Assert.Equal("READ_MODEL_FORBIDDEN", response.Body.GetProperty("code").GetString());
+        Assert.Equal(0, service.Calls);
+    }
+
+    [Theory]
+    [InlineData("READ_MODEL_OUTPUT_INVALID", 503, "READ_MODEL_UNAVAILABLE")]
+    [InlineData("READ_MODEL_SOURCE_STALE", 409, "READ_MODEL_SOURCE_STALE")]
+    [InlineData("READ_MODEL_STATE_SPACE_UNKNOWN", 403, "READ_MODEL_FORBIDDEN")]
+    public async Task New_input_aware_errors_are_sanitized(string failure, int status, string code)
+    {
+        var response = await ReadAsync(new(true, "player", "dnd2024", "campaign.1", "actor.aric"),
+            "actor.aric", new ReadModels { FailureCode = failure }, query: "input=%7B%7D");
+        Assert.Equal(status, response.StatusCode);
+        Assert.Equal(code, response.Body.GetProperty("code").GetString());
+        Assert.DoesNotContain("SECRET", response.Body.GetRawText());
+        Assert.Equal(2, response.Body.EnumerateObject().Count());
+    }
+
     private static async Task<(int StatusCode, JsonElement Body)> ReadAsync(
         LocalKnowledgeSeatSnapshot seat,
         string entityId,
         ReadModels service,
-        IPublicApplicationCatalogProvider? catalogs = null)
+        IPublicApplicationCatalogProvider? catalogs = null,
+        string? perspective = null,
+        string? query = null)
     {
         var context = new DefaultHttpContext();
+        if (perspective is not null) context.Request.QueryString = new QueryString("?perspective=" + perspective);
+        if (query is not null) context.Request.QueryString = new QueryString("?" + query);
         context.Response.Body = new MemoryStream();
         context.RequestServices = new ServiceCollection()
             .AddOptions<JsonOptions>()
@@ -121,6 +199,7 @@ public sealed class ApplicationReadModelWebEndpointTests
     {
         public int Calls { get; private set; }
         public ApplicationReadModelRequest? LastRequest { get; private set; }
+        public string? FailureCode { get; init; }
 
         public Task<ApplicationReadModelResult> ReadAsync(
             ApplicationReadModelRequest request,
@@ -128,6 +207,7 @@ public sealed class ApplicationReadModelWebEndpointTests
         {
             Calls++;
             LastRequest = request;
+            if (FailureCode is not null) throw new ApplicationReadModelException(FailureCode, "SECRET source detail");
             var data = request.RoleBindings.TryGetValue("subject", out var subject)
                 ? JsonSerializer.Serialize(new { subject = new { id = subject } })
                 : JsonSerializer.Serialize(new { roles = request.RoleBindings });

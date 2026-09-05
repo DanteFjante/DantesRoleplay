@@ -8,7 +8,8 @@ public sealed record ApplicationReadModelRequest(
     ApplicationIdentifier ApplicationId,
     string QualifiedQueryId,
     IReadOnlyDictionary<string, string> RoleBindings,
-    MechanicAudienceContext? Audience = null);
+    MechanicAudienceContext? Audience = null,
+    string InputJson = "{}");
 
 public sealed record ApplicationReadModelResult(
     string ApplicationId,

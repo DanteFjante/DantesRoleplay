@@ -45,16 +45,21 @@ public sealed class InteractionQueryTests
             QueryJson("binding-only").Replace("sample-app.query.find-target", "other-app.query.find-target"), App));
     }
 
-    [Fact]
-    public async Task Mechanic_projection_read_model_is_schema_validated_and_fingerprint_bound()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Mechanic_projection_read_model_is_schema_validated_and_fingerprint_bound(bool withInput)
     {
         var applications = new InMemoryApplicationRegistry();
         var revision = applications.Register(new(App, "Sample", "Read-model fixture.", []));
         var activationFingerprint = Hash("read-model-activation");
+        const string inputSchema = "{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"selection\"],\"properties\":{\"selection\":{\"type\":\"string\"}}}";
         var mechanicContent = JsonSerializer.Serialize(new
         {
             id = "sample-app.mechanic.character.project",
-            requirements = "{\"roles\":{\"subject\":{\"components\":[]}}}",
+            requirements = withInput
+                ? "{\"roles\":{\"subject\":{\"components\":[]}},\"inputSchema\":" + inputSchema + "}"
+                : "{\"roles\":{\"subject\":{\"components\":[]}}}",
             source = "return { data: { entityId: ctx.roles.subject.id, score: 16 } };"
         });
         var mechanic = Record("mechanic", "sample-app.mechanic.character.project",
@@ -82,6 +87,12 @@ public sealed class InteractionQueryTests
             exposure = "model-visible",
             status = "active"
         });
+        if (withInput)
+        {
+            var value = System.Text.Json.Nodes.JsonNode.Parse(queryContent)!;
+            value["inputSchema"] = System.Text.Json.Nodes.JsonNode.Parse(inputSchema);
+            queryContent = value.ToJsonString();
+        }
         var query = Record("query", "sample-app.query.character", "queries/character", queryContent);
         var manifest = CatalogNavigationManifest.Create(App, Hash("read-model-catalog"),
             "catalog-lexical-v1", [new(App.Value, "Sample", "Read-model fixture.")],
@@ -145,11 +156,19 @@ public sealed class InteractionQueryTests
                     Data = "{\"score\":16,\"entityId\":\"orban\"}"
                 }
             }, []);
+        var evaluator = new Evaluation(evaluation);
         var service = new ApplicationReadModelService(catalogs, new Activation(activation),
-            new Spaces(state), new MappingResolver(), new Evaluation(evaluation), validator);
+            new Spaces(state), new MappingResolver(), evaluator, validator);
 
         var result = await service.ReadAsync(new(state.StateSpaceId, App, query.QualifiedId,
-            new Dictionary<string, string> { ["subject"] = "orban" }));
+            new Dictionary<string, string> { ["subject"] = "orban" },
+            InputJson: withInput ? "{\"selection\":\"selected\"}" : "{}"));
+
+        Assert.Equal(withInput ? "{\"selection\":\"selected\"}" : "{}", evaluator.LastRequest!.InputJson);
+        var badInput = await Assert.ThrowsAsync<ApplicationReadModelException>(() => service.ReadAsync(new(
+            state.StateSpaceId, App, query.QualifiedId, new Dictionary<string, string> { ["subject"] = "orban" },
+            InputJson: "{\"observerId\":\"other\"}")));
+        Assert.Equal("READ_MODEL_INPUT_INVALID", badInput.Code);
 
         Assert.Equal(activationFingerprint, result.StateSpaceFingerprint);
         Assert.Equal(activationFingerprint, result.ResolutionFingerprint);
@@ -439,9 +458,14 @@ public sealed class InteractionQueryTests
     private sealed class Evaluation(ApplicationMechanicEvaluationResult value)
         : IApplicationMechanicEvaluator
     {
+        public ApplicationMechanicEvaluationRequest? LastRequest { get; private set; }
         public Task<ApplicationMechanicEvaluationResult> EvaluateAsync(
             ApplicationMechanicEvaluationRequest request,
-            CancellationToken cancellationToken = default) => Task.FromResult(value);
+            CancellationToken cancellationToken = default)
+        {
+            LastRequest = request;
+            return Task.FromResult(value);
+        }
     }
 
     private sealed class Allow : IInteractionAuthorizationPolicy

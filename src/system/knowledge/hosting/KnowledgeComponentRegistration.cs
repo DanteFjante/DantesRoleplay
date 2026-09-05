@@ -14,6 +14,15 @@ public static class KnowledgeComponentRegistration
         ArgumentNullException.ThrowIfNull(services);
         services.AddScoped<IKnowledgeCanonicalSource, ApplicationKnowledgeCanonicalSource>();
         services.AddScoped<IKnowledgeEffectiveStateResolver, ApplicationKnowledgeEffectiveStateResolver>();
+        services.AddScoped<DantesRoleplay.ApplicationExecution.IApplicationAuthorizedProjectionResolver>(provider =>
+            provider.GetService<DantesRoleplay.DataAccess.DantesRoleplayDbContext>() is { } db
+                ? new ApplicationAuthorizedProjectionResolver(db,
+                    provider.GetRequiredService<IAuthorizedKnowledgeAudiencePolicy>(),
+                    provider.GetRequiredService<IKnowledgeApplicationBindingResolver>(),
+                    provider.GetRequiredService<IKnowledgeActorParticipationVerifier>(),
+                    provider.GetRequiredService<IKnowledgeCanonicalSource>(),
+                    provider.GetRequiredService<IKnowledgeEffectiveStateResolver>())
+                : new UnavailableAuthorizedProjectionResolver());
         services.AddSingleton<IKnowledgeLexicalRetriever, DeterministicKnowledgeLexicalRetriever>();
         services.AddScoped<IAuthorizedKnowledgeCandidateResolver, AuthorizedKnowledgeCandidateResolver>();
         services.AddScoped<IAuthorizedKnowledgeNotebookReader, AuthorizedKnowledgeNotebookReader>();
@@ -36,5 +45,14 @@ public static class KnowledgeComponentRegistration
             CancellationToken cancellationToken = default) =>
             Task.FromResult(AuthorizedKnowledgeResult.Unknown(
                 "KNOWLEDGE_MODEL_UNAVAILABLE", "The optional local answer model is not configured."));
+    }
+
+    private sealed class UnavailableAuthorizedProjectionResolver : DantesRoleplay.ApplicationExecution.IApplicationAuthorizedProjectionResolver
+    {
+        public Task<DantesRoleplay.Mechanics.ProjectionResult> ResolveAsync(
+            DantesRoleplay.ApplicationExecution.ApplicationMechanicEvaluationRequest request,
+            DantesRoleplay.Mechanics.MechanicRequirements requirements,
+            CancellationToken cancellationToken = default) => Task.FromResult(
+                DantesRoleplay.Mechanics.ProjectionResult.Failed("READ_MODEL_UNAVAILABLE"));
     }
 }

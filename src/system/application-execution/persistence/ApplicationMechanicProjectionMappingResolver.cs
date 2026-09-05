@@ -50,7 +50,9 @@ public sealed class ApplicationMechanicProjectionMappingResolver(
         }
 
         var relationships = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var relationship in await edges.ListRelationshipsAsync(stateSpaceId, cancellationToken))
+        foreach (var relationship in requirements.AuthorizedContext is null
+                     ? await edges.ListRelationshipsAsync(stateSpaceId, cancellationToken)
+                     : Array.Empty<EcsRelationshipView>())
         {
             var owner = owners.FirstOrDefault(value =>
                 relationship.QualifiedKind.StartsWith(value.Value + ".", StringComparison.Ordinal));
@@ -82,6 +84,14 @@ public sealed class ApplicationMechanicProjectionMappingResolver(
         {
             foreach (var localId in declared.EffectComponentIds)
                 localIds.Add(localId);
+            if (declared.AuthorizedContext is { SourceSets: var sources })
+            {
+                localIds.Add(sources.Selection.DefinitionLinkComponentId);
+                foreach (var id in sources.OptionalSelectedItemComponents) localIds.Add(id);
+                if (sources.Discovery is { } discovery) localIds.Add(discovery.ComponentId);
+                if (sources.Associations is { } associations) localIds.Add(associations.CandidateComponentId);
+                if (sources.Activities is { } activities) localIds.Add(activities.ComponentId);
+            }
             foreach (var localId in declared.Roles.Values.SelectMany(value =>
                          value.Components.Concat(value.OptionalComponents ?? [])
                              .Concat(value.ContentComponentIds ?? [])

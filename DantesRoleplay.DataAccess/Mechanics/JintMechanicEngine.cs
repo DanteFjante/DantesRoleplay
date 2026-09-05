@@ -86,6 +86,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
                     stateSpaceId = projection.StateSpaceId,
                     execution = projection.Execution,
                     audience = projection.Audience,
+                    authorizedObserver = projection.AuthorizedObserver,
                     roles = projection.Roles,
                     references = projection.References,
                     input = projection.Input,
@@ -327,6 +328,11 @@ public sealed class JintMechanicEngine : IMechanicEngine
               effects: []
             };
 
+            if (payload.authorizedObserver !== null && payload.authorizedObserver !== undefined) {
+              Object.defineProperty(ctx, 'authorizedObserver', {
+                value: freezeDeep(payload.authorizedObserver), writable: false, configurable: false, enumerable: true
+              });
+            }
             var fn = new Function('ctx', __source);
             var output = fn(ctx);
 

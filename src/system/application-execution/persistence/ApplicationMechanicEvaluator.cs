@@ -14,7 +14,8 @@ namespace DantesRoleplay.ApplicationExecution;
 public sealed class ApplicationMechanicEvaluator(
     IPublicApplicationCatalogProvider catalogs,
     IApplicationMechanicProjectionResolver projections,
-    IMechanicEngine engine) : IApplicationMechanicEvaluator
+    IMechanicEngine engine,
+    IApplicationAuthorizedProjectionResolver? authorizedProjections = null) : IApplicationMechanicEvaluator
 {
     private const int MaxDepth = 8;
     private const int MaxChildrenPerDeclaration = 100;
@@ -59,8 +60,12 @@ public sealed class ApplicationMechanicEvaluator(
         catch (JsonException) { return Failed(request, "MECHANIC_INVALID: The active mechanic requirements are malformed."); }
         if (requirements.ProjectionProblems().Count > 0 || requirements.CompositionProblems().Count > 0)
             return Failed(request, "MECHANIC_INVALID: The active mechanic requirements are invalid.");
-        var projection = await projections.ResolveAsync(request.StateSpaceId, request.ApplicationId,
-            requirements, request.Mapping, request.RoleEntityIds, request.InputJson, request.Seed, cancellationToken);
+        var projection = requirements.AuthorizedContext is null
+            ? await projections.ResolveAsync(request.StateSpaceId, request.ApplicationId,
+                requirements, request.Mapping, request.RoleEntityIds, request.InputJson, request.Seed, cancellationToken)
+            : authorizedProjections is null
+                ? ProjectionResult.Failed("READ_MODEL_UNAVAILABLE")
+                : await authorizedProjections.ResolveAsync(request, requirements, cancellationToken);
         if (!projection.Ok)
             return new(request.QualifiedMechanicId, request.ContentFingerprint, null, null, projection.Problems);
         var exactProjection = projection.Projection! with
@@ -71,6 +76,9 @@ public sealed class ApplicationMechanicEvaluator(
         var composed = await ComposeAsync(request, requirements, exactProjection, depth, ancestors, budget, cancellationToken);
         if (composed.Projection is null) return Failed(request, composed.Error);
         var run = await engine.RunAsync(document.Source ?? "", composed.Projection, ExecutionLimits.Default, cancellationToken);
+        if (requirements.AuthorizedContext is not null && (run.Output.Effects.Count != 0 ||
+            run.Output.Events.Count != 0 || run.Output.Notifications.Count != 0))
+            return Failed(request, "READ_MODEL_OUTPUT_UNSAFE");
         return new(request.QualifiedMechanicId, request.ContentFingerprint, composed.Projection, run, [])
         {
             Proposal = composed.Proposal

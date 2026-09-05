@@ -1,0 +1,137 @@
+{
+  "registrationReady": false,
+  "existingRequirementFields": {
+    "roles": {
+      "subject": {
+        "components": [],
+        "includeContents": true,
+        "contentsDepth": 4,
+        "contentComponentIds": [
+          "dnd2024.core.definition-link",
+          "dnd2024.item.quantity",
+          "dnd2024.item.equipment"
+        ],
+        "componentReferences": [
+          {
+            "sourceComponentId": "dnd2024.core.definition-link",
+            "field": "definition",
+            "targetComponentIds": [],
+            "optionalTargetComponentIds": [
+              "dnd2024.core.version",
+              "dnd2024.item-definition",
+              "dnd2024.item.physical",
+              "dnd2024.item.weapon",
+              "dnd2024.item.armor",
+              "dnd2024.item.container",
+              "dnd2024.item.equippable",
+              "dnd2024.item.consumable",
+              "dnd2024.item.ammunition",
+              "dnd2024.item.tool"
+            ]
+          }
+        ]
+      },
+      "campaign": {
+        "components": []
+      }
+    },
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "itemId",
+        "expectedSourceRevision",
+        "offset"
+      ],
+      "properties": {
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "expectedSourceRevision": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-F0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "anyOf": [
+              {
+                "properties": {
+                  "offset": {
+                    "minimum": 1
+                  }
+                }
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "expectedSourceRevision": {
+                "type": "string",
+                "pattern": "^[A-F0-9]{64}$"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "effectComponentIds": []
+  },
+  "proposedAuthorizedContext": {
+    "observerRole": "subject",
+    "campaignRole": "campaign",
+    "requireActiveParticipation": true,
+    "knowledgeBinding": "application-metadata",
+    "contentPolicy": "authorize-before-materialization",
+    "maxInventoryItems": 512,
+    "maxInventoryDepth": 4,
+    "maxKnowledgeCandidates": 10000,
+    "maxSerializedOutputBytes": 65536,
+    "sourceSets": {
+      "selection": {
+        "itemInputField": "itemId",
+        "inventoryRole": "subject",
+        "definitionLinkComponentId": "dnd2024.core.definition-link",
+        "definitionLinkField": "definition"
+      },
+      "knowledge": {
+        "bindingSource": "application-metadata",
+        "subjectSources": [
+          "selected-item",
+          "selected-definition"
+        ],
+        "filterBeforeContent": true
+      },
+      "activities": {
+        "componentId": "dnd2024.item-activity",
+        "field": "activities",
+        "owners": [
+          "selected-item",
+          "selected-definition"
+        ],
+        "allowNameInference": false
+      }
+    }
+  },
+  "executionPostcondition": {
+    "effects": [],
+    "events": [],
+    "notifications": []
+  },
+  "note": "This is a review descriptor, not a supported mechanic requirements object. See README for generic extension and projection source ownership."
+}
