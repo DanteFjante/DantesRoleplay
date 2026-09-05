@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="1500" viewBox="0 0 1000 750">
+    <defs><clipPath id="land"><path d="M 126.0,92.0 L 115.0,180.0 L 145.0,280.0 L 123.0,380.0 L 134.0,495.0 L 105.0,590.0 L 136.0,690.0 L 955.0,690.0 L 955.0,92.0 Z"/></clipPath><clipPath id="field"><rect x="45" y="92" width="910" height="598" rx="3"/></clipPath>
+    <pattern id="grain" width="37" height="31" patternUnits="userSpaceOnUse"><circle cx="4" cy="6" r=".6" fill="#6a6047" opacity=".15"/><circle cx="27" cy="23" r=".4" fill="#6a6047" opacity=".13"/></pattern>
+    <pattern id="waves" width="54" height="28" patternUnits="userSpaceOnUse"><path d="M 5 15 q 9 -3 18 0 t 18 0" fill="none" stroke="#547f80" stroke-width=".65" opacity=".35"/></pattern>
+    <linearGradient id="paper" x2="1" y2="1"><stop stop-color="#f6eed6"/><stop offset="1" stop-color="#ded2ae"/></linearGradient></defs>
+    <rect width="1000" height="750" fill="url(#paper)"/><rect x="15" y="15" width="970" height="720" rx="2" fill="none" stroke="#463e30" stroke-width="1.1"/>
+    <rect x="21" y="21" width="958" height="708" fill="none" stroke="#756d50" stroke-width=".5"/>
+    <g font-family="Georgia, 'Times New Roman', serif">
+<text x="500.0" y="49.0" text-anchor="middle" fill="#463e30" font-size="26" letter-spacing="3">LETH SARAI</text>
+<text x="500.0" y="72.0" text-anchor="middle" fill="#756d50" font-size="11" >A western waterfront backed by workshops and archives</text>
+<g clip-path="url(#field)">
+<rect x="45" y="92" width="910" height="598" fill="#a2c2be"/>
+<rect x="45" y="92" width="910" height="598" fill="url(#waves)"/>
+<path d="M 126.0,92.0 L 115.0,180.0 L 145.0,280.0 L 123.0,380.0 L 134.0,495.0 L 105.0,590.0 L 136.0,690.0 L 955.0,690.0 L 955.0,92.0 Z" fill="none" stroke="#709a97" stroke-width="13" opacity=".25"/><path d="M 126.0,92.0 L 115.0,180.0 L 145.0,280.0 L 123.0,380.0 L 134.0,495.0 L 105.0,590.0 L 136.0,690.0 L 955.0,690.0 L 955.0,92.0 Z" fill="#e9dfbd" stroke="#62786a" stroke-width="1.8"/>
+<g clip-path="url(#land)">
+<ellipse cx="881.9" cy="440.7" rx="127.2" ry="69.3" fill="#aeb995" opacity=".14"/>
+<ellipse cx="828.8" cy="132.8" rx="64.8" ry="42.5" fill="#aeb995" opacity=".14"/>
+<ellipse cx="531.0" cy="228.8" rx="121.3" ry="77.2" fill="#aeb995" opacity=".14"/>
+<ellipse cx="186.5" cy="410.5" rx="61.5" ry="25.3" fill="#aeb995" opacity=".14"/>
+<ellipse cx="336.3" cy="615.1" rx="75.6" ry="36.4" fill="#aeb995" opacity=".14"/>
+<ellipse cx="330.7" cy="581.6" rx="123.6" ry="71.2" fill="#aeb995" opacity=".14"/>
+<ellipse cx="798.4" cy="362.1" rx="102.2" ry="44.2" fill="#aeb995" opacity=".14"/>
+<ellipse cx="875.4" cy="266.9" rx="47.3" ry="50.6" fill="#aeb995" opacity=".14"/>
+<rect x="144.5" y="472.9" width="13.7" height="10.8" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-2 144.5 472.9)"/>
+<rect x="224.9" y="456.8" width="10.5" height="5.6" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(5 224.9 456.8)"/>
+<rect x="166.6" y="454.7" width="13.3" height="9.5" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(3 166.6 454.7)"/>
+<rect x="136.8" y="441.0" width="12.0" height="8.3" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-13 136.8 441.0)"/>
+<rect x="167.1" y="427.4" width="8.1" height="6.8" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-16 167.1 427.4)"/>
+<rect x="230.4" y="482.3" width="13.8" height="10.1" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(16 230.4 482.3)"/>
+<rect x="177.9" y="434.1" width="8.3" height="7.8" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-19 177.9 434.1)"/>
+<rect x="215.2" y="430.6" width="14.5" height="10.0" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-12 215.2 430.6)"/>
+<rect x="398.9" y="336.0" width="12.4" height="10.9" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(11 398.9 336.0)"/>
+<rect x="418.2" y="340.8" width="13.4" height="10.7" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-13 418.2 340.8)"/>
+<rect x="358.7" y="326.6" width="12.1" height="6.8" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-16 358.7 326.6)"/>
+<rect x="375.8" y="354.4" width="7.6" height="10.3" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(11 375.8 354.4)"/>
+<rect x="347.0" y="362.0" width="8.3" height="5.5" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-7 347.0 362.0)"/>
+<rect x="358.1" y="381.5" width="8.3" height="9.7" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-10 358.1 381.5)"/>
+<rect x="370.7" y="359.0" width="12.8" height="6.7" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(17 370.7 359.0)"/>
+<rect x="387.2" y="339.1" width="14.6" height="10.5" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-18 387.2 339.1)"/>
+<rect x="595.1" y="256.3" width="12.3" height="6.3" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-3 595.1 256.3)"/>
+<rect x="599.4" y="226.3" width="11.0" height="10.6" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-13 599.4 226.3)"/>
+<rect x="579.2" y="188.3" width="8.1" height="8.1" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(18 579.2 188.3)"/>
+<rect x="570.6" y="251.8" width="12.5" height="5.3" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(16 570.6 251.8)"/>
+<rect x="608.3" y="227.1" width="11.9" height="6.1" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(18 608.3 227.1)"/>
+<rect x="525.6" y="217.0" width="8.7" height="8.7" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(1 525.6 217.0)"/>
+<rect x="538.6" y="254.3" width="8.7" height="7.0" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(19 538.6 254.3)"/>
+<rect x="609.7" y="259.3" width="14.7" height="8.6" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(4 609.7 259.3)"/>
+<rect x="766.5" y="150.6" width="6.9" height="10.3" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(6 766.5 150.6)"/>
+<rect x="792.9" y="181.0" width="12.6" height="5.6" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(17 792.9 181.0)"/>
+<rect x="780.2" y="198.0" width="7.3" height="6.0" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(1 780.2 198.0)"/>
+<rect x="771.1" y="134.4" width="6.1" height="6.5" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-15 771.1 134.4)"/>
+<rect x="726.9" y="132.4" width="10.6" height="6.5" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(6 726.9 132.4)"/>
+<rect x="790.5" y="151.1" width="6.3" height="9.4" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-2 790.5 151.1)"/>
+<rect x="818.3" y="143.8" width="13.5" height="9.3" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-17 818.3 143.8)"/>
+<rect x="712.0" y="171.1" width="7.3" height="5.8" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-8 712.0 171.1)"/>
+<rect x="680.3" y="531.2" width="11.6" height="10.9" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(16 680.3 531.2)"/>
+<rect x="682.5" y="508.5" width="12.5" height="7.0" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(4 682.5 508.5)"/>
+<rect x="677.9" y="507.5" width="8.7" height="5.6" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(11 677.9 507.5)"/>
+<rect x="703.7" y="476.3" width="8.4" height="5.0" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-8 703.7 476.3)"/>
+<rect x="716.0" y="507.7" width="12.3" height="6.7" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(16 716.0 507.7)"/>
+<rect x="685.7" y="479.8" width="11.0" height="8.5" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-5 685.7 479.8)"/>
+<rect x="697.9" y="506.5" width="12.9" height="9.6" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(11 697.9 506.5)"/>
+<rect x="638.6" y="478.0" width="12.5" height="8.7" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(2 638.6 478.0)"/>
+<rect x="45" y="92" width="910" height="598" fill="url(#grain)"/></g>
+<path d="M 190.0,461.2 L 375.0,352.5" fill="none" stroke="#f4ebd1" stroke-width="7" stroke-linecap="round"/>
+<path d="M 190.0,461.2 L 375.0,352.5" fill="none" stroke="#a36b45" stroke-width="2.1" stroke-dasharray="none" stroke-linecap="round"/>
+<path d="M 375.0,352.5 L 575.0,225.0" fill="none" stroke="#f4ebd1" stroke-width="7" stroke-linecap="round"/>
+<path d="M 375.0,352.5 L 575.0,225.0" fill="none" stroke="#a36b45" stroke-width="2.1" stroke-dasharray="none" stroke-linecap="round"/>
+<path d="M 575.0,225.0 L 765.0,165.0" fill="none" stroke="#f4ebd1" stroke-width="7" stroke-linecap="round"/>
+<path d="M 575.0,225.0 L 765.0,165.0" fill="none" stroke="#a36b45" stroke-width="2.1" stroke-dasharray="none" stroke-linecap="round"/>
+<path d="M 375.0,352.5 L 690.0,502.5" fill="none" stroke="#f4ebd1" stroke-width="7" stroke-linecap="round"/>
+<path d="M 375.0,352.5 L 690.0,502.5" fill="none" stroke="#a36b45" stroke-width="2.1" stroke-dasharray="none" stroke-linecap="round"/>
+<circle cx="190" cy="461.25" r="4" fill="#463e30" stroke="#f8edcf" stroke-width="1.2"/>
+<circle cx="375" cy="352.5" r="4" fill="#463e30" stroke="#f8edcf" stroke-width="1.2"/>
+<circle cx="575" cy="225.0" r="4" fill="#463e30" stroke="#f8edcf" stroke-width="1.2"/>
+<circle cx="765" cy="165.0" r="4" fill="#463e30" stroke="#f8edcf" stroke-width="1.2"/>
+<circle cx="690" cy="502.5" r="4" fill="#463e30" stroke="#f8edcf" stroke-width="1.2"/>
+<text x="190.0" y="486.8" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round">Lastlight Pier</text>
+<text x="765.0" y="190.5" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round">Mothwatch Kiln</text>
+<text x="575.0" y="250.5" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round">The Quiet Archive</text>
+<text x="690.0" y="528.0" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round">The Hall of Unsent Maps</text>
+<text x="375.0" y="378.0" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round">The House of Salt</text>
+<text x="375.0" y="391.5" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round">Letters</text>
+</g>
+<g transform="translate(934 122)"><path d="M 0 -12 L 5 8 L 0 4 L -5 8 Z" fill="#463e30"/><text x="0.0" y="-17.0" text-anchor="middle" fill="#463e30" font-size="9" >N</text></g>
+<path d="M 45 699 H 955" stroke="#a19673" stroke-width=".7"/>
+<path d="M 48 713 h 24" stroke="#a36b45" stroke-width="2"/>
+<text x="79.0" y="717.0" text-anchor="start" fill="#463e30" font-size="10" >road / path</text>
+<path d="M 182 713 h 24" stroke="#3e757d" stroke-width="1.8" stroke-dasharray="5 3"/>
+<text x="213.0" y="717.0" text-anchor="start" fill="#463e30" font-size="10" >boat passage</text>
+<path d="M 329 709 l 8 8 M 329 717 l 8 -8" stroke="#8e5450" stroke-width="1.5"/>
+<text x="344.0" y="717.0" text-anchor="start" fill="#463e30" font-size="10" >closed / uncertain</text>
+<text x="951.0" y="715.0" text-anchor="end" fill="#756d50" font-size="9" letter-spacing="1">TRAVELLER’S ATLAS  ·  PRESENT DAY</text>
+</g></svg>

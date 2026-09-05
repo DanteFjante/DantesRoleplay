@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="1500" viewBox="0 0 1000 750">
+    <defs><clipPath id="land"><path d="M 126.0,92.0 L 115.0,180.0 L 145.0,280.0 L 123.0,380.0 L 134.0,495.0 L 105.0,590.0 L 136.0,690.0 L 955.0,690.0 L 955.0,92.0 Z"/></clipPath><clipPath id="field"><rect x="45" y="92" width="910" height="598" rx="3"/></clipPath>
+    <pattern id="grain" width="37" height="31" patternUnits="userSpaceOnUse"><circle cx="4" cy="6" r=".6" fill="#6a6047" opacity=".15"/><circle cx="27" cy="23" r=".4" fill="#6a6047" opacity=".13"/></pattern>
+    <pattern id="waves" width="54" height="28" patternUnits="userSpaceOnUse"><path d="M 5 15 q 9 -3 18 0 t 18 0" fill="none" stroke="#547f80" stroke-width=".65" opacity=".35"/></pattern>
+    <linearGradient id="paper" x2="1" y2="1"><stop stop-color="#f6eed6"/><stop offset="1" stop-color="#ded2ae"/></linearGradient></defs>
+    <rect width="1000" height="750" fill="url(#paper)"/><rect x="15" y="15" width="970" height="720" rx="2" fill="none" stroke="#463e30" stroke-width="1.1"/>
+    <rect x="21" y="21" width="958" height="708" fill="none" stroke="#756d50" stroke-width=".5"/>
+    <g font-family="Georgia, 'Times New Roman', serif">
+<text x="500.0" y="49.0" text-anchor="middle" fill="#463e30" font-size="26" letter-spacing="3">SEVEN LAMPS LEAGUE</text>
+<text x="500.0" y="72.0" text-anchor="middle" fill="#756d50" font-size="11" >Commercial cities of the western Solascan shore</text>
+<g clip-path="url(#field)">
+<rect x="45" y="92" width="910" height="598" fill="#a2c2be"/>
+<rect x="45" y="92" width="910" height="598" fill="url(#waves)"/>
+<path d="M 126.0,92.0 L 115.0,180.0 L 145.0,280.0 L 123.0,380.0 L 134.0,495.0 L 105.0,590.0 L 136.0,690.0 L 955.0,690.0 L 955.0,92.0 Z" fill="none" stroke="#709a97" stroke-width="13" opacity=".25"/><path d="M 126.0,92.0 L 115.0,180.0 L 145.0,280.0 L 123.0,380.0 L 134.0,495.0 L 105.0,590.0 L 136.0,690.0 L 955.0,690.0 L 955.0,92.0 Z" fill="#e9dfbd" stroke="#62786a" stroke-width="1.8"/>
+<g clip-path="url(#land)">
+<ellipse cx="73.6" cy="610.9" rx="112.8" ry="29.3" fill="#aeb995" opacity=".14"/>
+<ellipse cx="772.0" cy="187.7" rx="116.5" ry="61.9" fill="#aeb995" opacity=".14"/>
+<ellipse cx="838.9" cy="162.7" rx="107.0" ry="34.4" fill="#aeb995" opacity=".14"/>
+<ellipse cx="277.3" cy="587.8" rx="72.0" ry="32.7" fill="#aeb995" opacity=".14"/>
+<ellipse cx="316.5" cy="151.3" rx="114.0" ry="71.5" fill="#aeb995" opacity=".14"/>
+<ellipse cx="701.1" cy="509.4" rx="126.5" ry="64.3" fill="#aeb995" opacity=".14"/>
+<ellipse cx="588.4" cy="364.5" rx="88.6" ry="70.2" fill="#aeb995" opacity=".14"/>
+<ellipse cx="858.5" cy="480.1" rx="93.1" ry="62.4" fill="#aeb995" opacity=".14"/>
+<rect x="45" y="92" width="910" height="598" fill="url(#grain)"/></g>
+<path d="M 165.0,232.5 L 575.0,195.0" fill="none" stroke="#f4ebd1" stroke-width="5.8" stroke-linecap="round"/>
+<path d="M 165.0,232.5 L 575.0,195.0" fill="none" stroke="#a36b45" stroke-width="2.1" stroke-dasharray="none" stroke-linecap="round"/>
+<path d="M 575.0,195.0 L 630.0,367.5" fill="none" stroke="#f4ebd1" stroke-width="5.8" stroke-linecap="round"/>
+<path d="M 575.0,195.0 L 630.0,367.5" fill="none" stroke="#a36b45" stroke-width="2.1" stroke-dasharray="none" stroke-linecap="round"/>
+<path d="M 630.0,367.5 L 510.0,442.5" fill="none" stroke="#f4ebd1" stroke-width="5.8" stroke-linecap="round"/>
+<path d="M 630.0,367.5 L 510.0,442.5" fill="none" stroke="#a36b45" stroke-width="2.1" stroke-dasharray="none" stroke-linecap="round"/>
+<path d="M 510.0,442.5 L 165.0,551.2" fill="none" stroke="#f4ebd1" stroke-width="5.8" stroke-linecap="round"/>
+<path d="M 510.0,442.5 L 165.0,551.2" fill="none" stroke="#a36b45" stroke-width="2.1" stroke-dasharray="none" stroke-linecap="round"/>
+<path d="M 630.0,367.5 L 755.0,491.2" fill="none" stroke="#f4ebd1" stroke-width="5.8" stroke-linecap="round"/>
+<path d="M 630.0,367.5 L 755.0,491.2" fill="none" stroke="#a36b45" stroke-width="2.1" stroke-dasharray="none" stroke-linecap="round"/>
+<path d="M 755.0,491.2 L 165.0,551.2" fill="none" stroke="#f4ebd1" stroke-width="5.8" stroke-linecap="round"/>
+<path d="M 755.0,491.2 L 165.0,551.2" fill="none" stroke="#a36b45" stroke-width="2.1" stroke-dasharray="none" stroke-linecap="round"/>
+<path d="M 510.0,442.5 L 165.0,438.8" fill="none" stroke="#f4ebd1" stroke-width="5.8" stroke-linecap="round"/>
+<path d="M 510.0,442.5 L 165.0,438.8" fill="none" stroke="#a36b45" stroke-width="2.1" stroke-dasharray="none" stroke-linecap="round"/>
+<path d="M 575.0,195.0 L 720.0,116.2" fill="none" stroke="#f4ebd1" stroke-width="5.8" stroke-linecap="round"/>
+<path d="M 575.0,195.0 L 720.0,116.2" fill="none" stroke="#a36b45" stroke-width="1.5" stroke-dasharray="3 3" stroke-linecap="round"/>
+<path d="M 165.0,232.5 L 205.0,652.5" fill="none" stroke="#f4ebd1" stroke-width="5.8" stroke-linecap="round"/>
+<path d="M 165.0,232.5 L 205.0,652.5" fill="none" stroke="#a36b45" stroke-width="2.1" stroke-dasharray="none" stroke-linecap="round"/>
+<path d="M 205,652.5 Q 50,652.5 80,601.875 Q 45,551.25 165,551.25" fill="none" stroke="#3e757d" stroke-width="1.8" stroke-dasharray="7 5" opacity=".85"/>
+<path d="M 575,195.0 L 785,277.5" stroke="#8e5450" stroke-width="1.1" stroke-dasharray="2 7"/><path d="M 675.0,231.25 l 10,10 M 675.0,241.25 l 10,-10" stroke="#8e5450" stroke-width="2"/>
+<circle cx="165" cy="232.5" r="6.5" fill="#f7eed6" stroke="#463e30" stroke-width="1.5"/><circle cx="165" cy="232.5" r="2.5" fill="#463e30"/>
+<circle cx="165" cy="438.75" r="6.5" fill="#f7eed6" stroke="#463e30" stroke-width="1.5"/><circle cx="165" cy="438.75" r="2.5" fill="#463e30"/>
+<circle cx="165" cy="551.25" r="6.5" fill="#f7eed6" stroke="#463e30" stroke-width="1.5"/><circle cx="165" cy="551.25" r="2.5" fill="#463e30"/>
+<circle cx="575" cy="195.0" r="4" fill="#463e30" stroke="#f8edcf" stroke-width="1.2"/>
+<circle cx="630" cy="367.5" r="4" fill="#463e30" stroke="#f8edcf" stroke-width="1.2"/>
+<circle cx="755" cy="491.25" r="4" fill="#463e30" stroke="#f8edcf" stroke-width="1.2"/>
+<circle cx="510" cy="442.5" r="4" fill="#463e30" stroke="#f8edcf" stroke-width="1.2"/>
+<circle cx="720" cy="116.25" r="4" fill="#463e30" stroke="#f8edcf" stroke-width="1.2"/>
+<circle cx="785" cy="277.5" r="4" fill="#463e30" stroke="#f8edcf" stroke-width="1.2"/>
+<path d="M 780 285.5 h 10" stroke="#8e5450" stroke-width="2"/>
+<path d="M 205,644.5 l 8,8 -8,8 -8,-8 Z" fill="#f6eed5" stroke="#463e30" stroke-width="1.5"/>
+<text x="205.0" y="678.0" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round" font-weight="bold">Serevan</text>
+<text x="165.0" y="258.0" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round">Aster Quay</text>
+<text x="165.0" y="464.2" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round">Glassharbor</text>
+<text x="165.0" y="576.8" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round">Low Lantern</text>
+<text x="575.0" y="220.5" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round">Chairman&#x27;s Nap</text>
+<text x="785.0" y="303.0" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round">The Sealed Hall</text>
+<text x="630.0" y="393.0" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round">Halfprice Bridge</text>
+<text x="755.0" y="516.8" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round">Pepperglass Yard</text>
+<text x="720.0" y="141.8" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round">Brokers&#x27; Orchard</text>
+<text x="510.0" y="468.0" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round">The Fifth Warehouse</text>
+</g>
+<g transform="translate(934 122)"><path d="M 0 -12 L 5 8 L 0 4 L -5 8 Z" fill="#463e30"/><text x="0.0" y="-17.0" text-anchor="middle" fill="#463e30" font-size="9" >N</text></g>
+<path d="M 45 699 H 955" stroke="#a19673" stroke-width=".7"/>
+<path d="M 48 713 h 24" stroke="#a36b45" stroke-width="2"/>
+<text x="79.0" y="717.0" text-anchor="start" fill="#463e30" font-size="10" >road / path</text>
+<path d="M 182 713 h 24" stroke="#3e757d" stroke-width="1.8" stroke-dasharray="5 3"/>
+<text x="213.0" y="717.0" text-anchor="start" fill="#463e30" font-size="10" >boat passage</text>
+<path d="M 329 709 l 8 8 M 329 717 l 8 -8" stroke="#8e5450" stroke-width="1.5"/>
+<text x="344.0" y="717.0" text-anchor="start" fill="#463e30" font-size="10" >closed / uncertain</text>
+<text x="951.0" y="715.0" text-anchor="end" fill="#756d50" font-size="9" letter-spacing="1">TRAVELLER’S ATLAS  ·  PRESENT DAY</text>
+</g></svg>

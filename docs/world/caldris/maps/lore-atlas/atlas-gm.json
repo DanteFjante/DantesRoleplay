@@ -1,0 +1,5568 @@
+{
+  "places": {
+    "Alderwick": {
+      "id": "location.caldris.alderwick",
+      "name": "Alderwick",
+      "kind": "region",
+      "summary": "Alderwick is a kingdom of Eredane. Its present pressure: A childless queen, aggressive toll reform, and a suspiciously organized smuggling response.",
+      "visibility": "public",
+      "parentId": "location.caldris.eredane",
+      "original": true,
+      "x": 525,
+      "y": 530
+    },
+    "Merebutton": {
+      "id": "location.caldris.alderwick.button-hills.merebutton",
+      "name": "Merebutton",
+      "kind": "settlement",
+      "summary": "A muddy Button Hills sheep village of low stone cottages, stubborn families, and children who gather old coat buttons after rain. Years ago, rumours about an uncanny infant brought passing Tensor monks to its lanes.",
+      "visibility": "public",
+      "parentId": "location.caldris.alderwick.the-button-hills",
+      "original": true,
+      "x": 280,
+      "y": 400
+    },
+    "Dunwarren": {
+      "id": "location.caldris.alderwick.dunwarren",
+      "name": "Dunwarren",
+      "kind": "settlement",
+      "summary": "Dunwarren controls the eastern forest roads and supplies beams, charcoal, carts, and bow staves. Its walls incorporate living oaks protected by charter, making maintenance both impressive and botanically argumentative.",
+      "visibility": "public",
+      "parentId": "location.caldris.alderwick",
+      "original": true,
+      "x": 780,
+      "y": 255
+    },
+    "Highmead": {
+      "id": "location.caldris.alderwick.highmead",
+      "name": "Highmead",
+      "kind": "settlement",
+      "summary": "Highmead stands on a defensible chalk ridge above sheep country. It is known for wool halls, teacher-priests, legal schools, large skies, and citizens who regard climbing the hill as evidence of moral seriousness.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.chalklands",
+      "original": true,
+      "x": 580,
+      "y": 290
+    },
+    "House of the Ninth Angle": {
+      "id": "location.caldris.alderwick.highmead.house-of-the-ninth-angle",
+      "name": "House of the Ninth Angle",
+      "kind": "settlement",
+      "summary": "A severe chalk monastery in Highmead's Whitewall district where Tensor monks study breath, balance, gaze, muscle tension, and displaced weight in pursuit of perfect perception. Its hospitality and first-aid teaching are respected; its authority over novices is increasingly disputed.",
+      "visibility": "public",
+      "parentId": "location.caldris.alderwick.highmead",
+      "original": true,
+      "x": 290,
+      "y": 205
+    },
+    "The Prediction Court": {
+      "id": "location.caldris.alderwick.highmead.prediction-court",
+      "name": "The Prediction Court",
+      "kind": "interior",
+      "summary": "An interior court crossed by lines of suspended bronze bells. Tensor students practise moving through it without sound while instructors introduce distractions; the sect preserves the silent path of one escaped novice as a sacred mystery.",
+      "visibility": "public",
+      "parentId": "location.caldris.alderwick.highmead.house-of-the-ninth-angle",
+      "original": true,
+      "x": 500,
+      "y": 475
+    },
+    "King's Patience Wood": {
+      "id": "location.caldris.alderwick.kings-patience-wood",
+      "name": "King's Patience Wood",
+      "kind": "site",
+      "summary": "Managed oak woodland supplying bridge beams, charcoal, pannage, and the kingdom's slowest official hunting lodge. Present pressure: Foresters and villagers dispute emergency cutting after storm damage.",
+      "visibility": "public",
+      "parentId": "location.caldris.alderwick",
+      "original": true,
+      "x": 815,
+      "y": 445
+    },
+    "Mallow Quay": {
+      "id": "location.caldris.alderwick.mallow-quay",
+      "name": "Mallow Quay",
+      "kind": "site",
+      "summary": "A small river landing for honey, medicinal herbs, and cheap pottery, perfumed by marsh mallow and woodsmoke. Present pressure: Barges refuse to stop after three crews report a singing light beneath the pilings.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.bramble-country",
+      "original": true,
+      "x": 570,
+      "y": 755
+    },
+    "Merecross": {
+      "id": "location.caldris.alderwick.merecross",
+      "name": "Merecross",
+      "kind": "settlement",
+      "summary": "Merecross grew where the Mere meets the Lark and Weir rivers. Barges, paper, apples, wool, court business, and bridge tolls feed a city of stone quays and timber upper stories. Its seven public bridges are maintained by different institutions, producing beautiful views and spectacularly petty jurisdiction disputes.",
+      "visibility": "public",
+      "parentId": "location.caldris.alderwick",
+      "original": true,
+      "x": 620,
+      "y": 570
+    },
+    "Ragman's Mile": {
+      "id": "location.caldris.alderwick.ragmans-mile",
+      "name": "Ragman's Mile",
+      "kind": "site",
+      "summary": "road hamlet in Alderwick. Repairs anything, asks no questions, knows every cart by sound.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.chalklands",
+      "original": true,
+      "x": 755,
+      "y": 525
+    },
+    "Sevenpost Field": {
+      "id": "location.caldris.alderwick.sevenpost-field",
+      "name": "Sevenpost Field",
+      "kind": "site",
+      "summary": "ancient moot field in Alderwick. Six visible stones and one buried under the road; land-right riddle.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.chalklands",
+      "original": true,
+      "x": 480,
+      "y": 460
+    },
+    "Sourapple Ford": {
+      "id": "location.caldris.alderwick.sourapple-ford",
+      "name": "Sourapple Ford",
+      "kind": "site",
+      "summary": "A shallow cattle crossing, cider hamlet, and eel-smoking stop where every fence leans in the same prevailing wind. Present pressure: A new upstream weir has deepened the ford and stranded the autumn drove.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.bramble-country",
+      "original": true,
+      "x": 545,
+      "y": 595
+    },
+    "The Button Hills": {
+      "id": "location.caldris.alderwick.the-button-hills",
+      "name": "The Button Hills",
+      "kind": "region",
+      "summary": "Chalk sheep country dotted with round barrows and generations of lost coat buttons gathered by children after rain. Present pressure: Sinkholes are opening along the wool road.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.chalklands",
+      "original": true,
+      "x": 275,
+      "y": 245
+    },
+    "The Drowned Groves": {
+      "id": "location.caldris.alderwick.the-drowned-groves",
+      "name": "The Drowned Groves",
+      "kind": "site",
+      "summary": "submerged forest in Alderwick. Mourenne's old compact, fishing taboos, exposed trunks during drought.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.bramble-country",
+      "original": true,
+      "x": 830,
+      "y": 800
+    },
+    "The White Lamb Downs": {
+      "id": "location.caldris.alderwick.the-white-lamb-downs",
+      "name": "The White Lamb Downs",
+      "kind": "site",
+      "summary": "upland pasture in Alderwick. Sheep trails reveal older aerial pattern; annual comic shepherd trial.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.chalklands",
+      "original": true,
+      "x": 330,
+      "y": 435
+    },
+    "Caldris Atlas": {
+      "id": "location.caldris.atlas",
+      "name": "Caldris",
+      "kind": "region",
+      "summary": "The complete known-world atlas of Caldris, centered on Eredane, Solasca, and the Lantern Sea between them.",
+      "visibility": "public",
+      "parentId": "world.caldris",
+      "original": true,
+      "x": 500,
+      "y": 500
+    },
+    "Bellafont": {
+      "id": "location.caldris.bellafont",
+      "name": "Bellafont",
+      "kind": "region",
+      "summary": "Bellafont is a kingdom of Eredane. Its present pressure: An orchard blight and rival claims over irrigation monasteries strain a famously charming court.",
+      "visibility": "public",
+      "parentId": "location.caldris.eredane",
+      "original": true,
+      "x": 525,
+      "y": 790
+    },
+    "Bellafont City": {
+      "id": "location.caldris.bellafont.bellafont",
+      "name": "Bellafont",
+      "kind": "settlement",
+      "summary": "The capital terraces down orchard hills toward a palace, cathedral gardens, cloth halls, fountains, and a river lined with laundry platforms. Manners are polished; civic debates are not.",
+      "visibility": "public",
+      "parentId": "location.caldris.bellafont",
+      "original": true,
+      "x": 540,
+      "y": 400
+    },
+    "Blue Apron Fair": {
+      "id": "location.caldris.bellafont.blue-apron-fair",
+      "name": "Blue Apron Fair",
+      "kind": "site",
+      "summary": "Seasonal cloth-and-food market held in roofed lanes; stallholders wear indigo aprons to show neutral trading status. Present pressure: A ceremonial apron has been stolen before treaty negotiations.",
+      "visibility": "public",
+      "parentId": "location.caldris.bellafont",
+      "original": true,
+      "x": 470,
+      "y": 570
+    },
+    "Cresset": {
+      "id": "location.caldris.bellafont.cresset",
+      "name": "Cresset",
+      "kind": "settlement",
+      "summary": "Cresset is a textile and dye city where canals turn fulling mills and entire streets change colour with the day's work.",
+      "visibility": "public",
+      "parentId": "location.caldris.bellafont",
+      "original": true,
+      "x": 740,
+      "y": 600
+    },
+    "Greywife Orchard": {
+      "id": "location.caldris.bellafont.greywife-orchard",
+      "name": "Greywife Orchard",
+      "kind": "site",
+      "summary": "diseased orchard in Bellafont. Pale-canker centre and disputed pre-Crownmaking water right.",
+      "visibility": "public",
+      "parentId": "location.caldris.bellafont",
+      "original": true,
+      "x": 240,
+      "y": 525
+    },
+    "Mothglass House": {
+      "id": "location.caldris.bellafont.mothglass-house",
+      "name": "Mothglass House",
+      "kind": "site",
+      "summary": "Rural workshop producing fine window glass and maintaining mulberry hedges for silk moths. Present pressure: Night moths gather in impossible numbers around one furnace.",
+      "visibility": "public",
+      "parentId": "location.caldris.bellafont",
+      "original": true,
+      "x": 820,
+      "y": 410
+    },
+    "Quince Ladder": {
+      "id": "location.caldris.bellafont.quince-ladder",
+      "name": "Quince Ladder",
+      "kind": "site",
+      "summary": "Terraced orchard village reached by a stair-road wide enough for one mule and two strongly held opinions. Present pressure: Fruit trees flower twice and exhaust themselves before harvest.",
+      "visibility": "public",
+      "parentId": "location.caldris.bellafont",
+      "original": true,
+      "x": 680,
+      "y": 200
+    },
+    "The Honey Parliament": {
+      "id": "location.caldris.bellafont.the-honey-parliament",
+      "name": "The Honey Parliament",
+      "kind": "site",
+      "summary": "monastery apiary in Bellafont. Beekeepers arbitrate land disputes with alarming success.",
+      "visibility": "public",
+      "parentId": "location.caldris.bellafont",
+      "original": true,
+      "x": 195,
+      "y": 725
+    },
+    "The Rain Parlour": {
+      "id": "location.caldris.bellafont.the-rain-parlour",
+      "name": "The Rain Parlour",
+      "kind": "site",
+      "summary": "A roadside pavilion where orchard workers wait out storms, exchange songs, and leave jars of preserved fruit. Present pressure: Someone replaces friendly messages with threatening prophecies.",
+      "visibility": "public",
+      "parentId": "location.caldris.bellafont",
+      "original": true,
+      "x": 320,
+      "y": 300
+    },
+    "Vintner's Reach": {
+      "id": "location.caldris.bellafont.vintners-reach",
+      "name": "Vintner's Reach",
+      "kind": "settlement",
+      "summary": "Vintner's Reach controls southern wine roads, barrel making, river barges, and hillside reservoirs. Its guild feasts are legendary and its hangovers legally irrelevant.",
+      "visibility": "public",
+      "parentId": "location.caldris.bellafont",
+      "original": true,
+      "x": 370,
+      "y": 790
+    },
+    "Bramblebridge": {
+      "id": "location.caldris.bramblebridge",
+      "name": "Bramblebridge",
+      "kind": "settlement",
+      "summary": "Alderwick's rain-polished market town where the old Lantern Road crosses the narrow Weir, serving twelve villages, three mills, Mallow Abbey, and a weekly market famous for onions, wool, second-hand books, and arguments about awnings.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.bramble-country",
+      "original": true,
+      "x": 455,
+      "y": 450
+    },
+    "Bramble Theatre Loft": {
+      "id": "location.caldris.bramblebridge.bramble-theatre-loft",
+      "name": "Bramble Theatre Loft",
+      "kind": "site",
+      "summary": "Function and texture: Amateur stage over a cooper's shop. Current pressure: The troupe's comic villain costume contains a real ministerial dispatch.",
+      "visibility": "public",
+      "parentId": "location.caldris.bramblebridge",
+      "original": true,
+      "x": 235,
+      "y": 380
+    },
+    "Bridge House": {
+      "id": "location.caldris.bramblebridge.bridge-house",
+      "name": "Bridge House",
+      "kind": "site",
+      "summary": "Function and texture: Toll office, guard room, records cupboard, damp cells. Current pressure: New forms arrive bearing a seven-sided seal and contradictory chicken classifications.",
+      "visibility": "public",
+      "parentId": "location.caldris.bramblebridge",
+      "original": true,
+      "x": 565,
+      "y": 490
+    },
+    "Honest Weights Hall": {
+      "id": "location.caldris.bramblebridge.honest-weights-hall",
+      "name": "Honest Weights Hall",
+      "kind": "site",
+      "summary": "Function and texture: Guild scales, public measures, arbitration room, and ceremonial giant spoon. Current pressure: One standard weight is hollow and contains a coded debt list.",
+      "visibility": "public",
+      "parentId": "location.caldris.bramblebridge",
+      "original": true,
+      "x": 380,
+      "y": 400
+    },
+    "Little Quay": {
+      "id": "location.caldris.bramblebridge.little-quay",
+      "name": "Little Quay",
+      "kind": "site",
+      "summary": "Function and texture: Barge landing, fish tables, rope sheds, muddy children. Current pressure: An unmanned boat arrives with dry cargo during heavy rain.",
+      "visibility": "public",
+      "parentId": "location.caldris.bramblebridge",
+      "original": true,
+      "x": 600,
+      "y": 755
+    },
+    "Mallow Abbey": {
+      "id": "location.caldris.bramblebridge.mallow-abbey",
+      "name": "Mallow Abbey",
+      "kind": "site",
+      "summary": "Function and texture: Modest roadside abbey, hospice beds, apiary, orchard, archive room. Current pressure: Bees build comb around one erased name in a recovered charter.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.bramble-country",
+      "original": true,
+      "x": 230,
+      "y": 325
+    },
+    "Old Weir Mill": {
+      "id": "location.caldris.bramblebridge.old-weir-mill",
+      "name": "Old Weir Mill",
+      "kind": "site",
+      "summary": "Function and texture: Flour mill, eel wheel, narrow footbridge, flour everywhere. Current pressure: The wheel stops at the same minute each night despite steady water.",
+      "visibility": "public",
+      "parentId": "location.caldris.bramblebridge",
+      "original": true,
+      "x": 635,
+      "y": 200
+    },
+    "Pike House": {
+      "id": "location.caldris.bramblebridge.pike-house",
+      "name": "Pike House",
+      "kind": "site",
+      "summary": "Function and texture: Magistrate's residence and hearing room, stern frontage, chaotic kitchen garden. Current pressure: Someone uses Magistrate Pike's seal while she is publicly holding it.",
+      "visibility": "public",
+      "parentId": "location.caldris.bramblebridge",
+      "original": true,
+      "x": 710,
+      "y": 295
+    },
+    "The Bent Penny": {
+      "id": "location.caldris.bramblebridge.the-bent-penny",
+      "name": "The Bent Penny",
+      "kind": "site",
+      "summary": "Function and texture: Pawnbroker, repair counter, second-hand clothing, discreet messages. Current pressure: A supposedly worthless brooch belongs to three living claimants.",
+      "visibility": "public",
+      "parentId": "location.caldris.bramblebridge",
+      "original": true,
+      "x": 335,
+      "y": 700
+    },
+    "The Crooked Saint": {
+      "id": "location.caldris.bramblebridge.the-crooked-saint",
+      "name": "The Crooked Saint",
+      "kind": "site",
+      "summary": "Function and texture: Tiny bridge shrine repaired so often no original material remains. Current pressure: Travellers leave unfamiliar copper tokens that are legal nowhere nearby.",
+      "visibility": "public",
+      "parentId": "location.caldris.bramblebridge",
+      "original": true,
+      "x": 715,
+      "y": 565
+    },
+    "Tibb's Watch Post": {
+      "id": "location.caldris.bramblebridge.tibbs-watch-post",
+      "name": "Tibb's Watch Post",
+      "kind": "site",
+      "summary": "Function and texture: One-room civic watch office with maps, rejected poems, spare boots, and labelled string. Current pressure: A map drawn as a romantic gift accurately predicts a smuggler path Tibb has never walked.",
+      "visibility": "public",
+      "parentId": "location.caldris.bramblebridge",
+      "original": true,
+      "x": 810,
+      "y": 430
+    },
+    "Candlefen": {
+      "id": "location.caldris.candlefen",
+      "name": "Candlefen",
+      "kind": "settlement",
+      "summary": "A settlement of raised paths and low marsh islands where ferries, reed craft, smoked eel, practical flood knowledge, dry socks, and gossip are all taken seriously.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.bramble-country",
+      "original": true,
+      "x": 685,
+      "y": 690
+    },
+    "Carrowmere": {
+      "id": "location.caldris.carrowmere",
+      "name": "Carrowmere",
+      "kind": "region",
+      "summary": "Carrowmere is a kingdom of Eredane. Its present pressure: Shipwright labour disputes threaten the grain fleet before a dangerous sailing season.",
+      "visibility": "public",
+      "parentId": "location.caldris.eredane",
+      "original": true,
+      "x": 235,
+      "y": 640
+    },
+    "Brinewife's Steps": {
+      "id": "location.caldris.carrowmere.brinewifes-steps",
+      "name": "Brinewife's Steps",
+      "kind": "site",
+      "summary": "Salt terraces descending to tidal pans, worked by extended households in mirrored light. Present pressure: An unusual tide spoils the season's first harvest.",
+      "visibility": "public",
+      "parentId": "location.caldris.carrowmere",
+      "original": true,
+      "x": 425,
+      "y": 560
+    },
+    "Gannet Mercy": {
+      "id": "location.caldris.carrowmere.gannet-mercy",
+      "name": "Gannet Mercy",
+      "kind": "site",
+      "summary": "Cliff hospice and signal station caring for wreck survivors regardless of flag. Present pressure: A rescued stranger refuses to identify a ship no lookout saw sink.",
+      "visibility": "public",
+      "parentId": "location.caldris.carrowmere",
+      "original": true,
+      "x": 160,
+      "y": 490
+    },
+    "Gullstrand": {
+      "id": "location.caldris.carrowmere.gullstrand",
+      "name": "Gullstrand",
+      "kind": "settlement",
+      "summary": "Gullstrand's vast yards build and repair deep-water ships. The city smells of oak, tar, hot metal, salt, and communal kitchens run by craft fraternities.",
+      "visibility": "public",
+      "parentId": "location.caldris.carrowmere",
+      "original": true,
+      "x": 180,
+      "y": 760
+    },
+    "Mackerel Crown": {
+      "id": "location.caldris.carrowmere.mackerel-crown",
+      "name": "Mackerel Crown",
+      "kind": "site",
+      "summary": "A crowded fishing island whose houses wear blue roof tiles salvaged from wrecks. Present pressure: Two elected harbour speakers both possess apparently valid seals.",
+      "visibility": "public",
+      "parentId": "location.caldris.carrowmere",
+      "original": true,
+      "x": 630,
+      "y": 650
+    },
+    "Penross": {
+      "id": "location.caldris.carrowmere.penross",
+      "name": "Penross",
+      "kind": "settlement",
+      "summary": "Penross clings to western cliffs around a natural harbour and a renowned school of navigation, weather, law, and rescue medicine.",
+      "visibility": "public",
+      "parentId": "location.caldris.carrowmere",
+      "original": true,
+      "x": 165,
+      "y": 335
+    },
+    "Saltmere": {
+      "id": "location.caldris.carrowmere.saltmere",
+      "name": "Saltmere",
+      "kind": "settlement",
+      "summary": "Saltmere stands on tidal islands joined by stone causeways and movable timber bridges. Royal offices share space with fish markets, salt warehouses, rescue houses, and legal chambers specialising in things that floated away.",
+      "visibility": "public",
+      "parentId": "location.caldris.carrowmere",
+      "original": true,
+      "x": 165,
+      "y": 630
+    },
+    "The Dry Admiral": {
+      "id": "location.caldris.carrowmere.the-dry-admiral",
+      "name": "The Dry Admiral",
+      "kind": "site",
+      "summary": "Inland ship-timber yard and tavern where retired captains command imaginary fleets over bowls of stew. Present pressure: Carefully seasoned masts disappear without wagon tracks.",
+      "visibility": "public",
+      "parentId": "location.caldris.carrowmere",
+      "original": true,
+      "x": 570,
+      "y": 360
+    },
+    "The Walking Dunes": {
+      "id": "location.caldris.carrowmere.the-walking-dunes",
+      "name": "The Walking Dunes",
+      "kind": "site",
+      "summary": "coastal sands in Carrowmere. Buried road stones migrate into view after gales.",
+      "visibility": "public",
+      "parentId": "location.caldris.carrowmere",
+      "original": true,
+      "x": 150,
+      "y": 770
+    },
+    "Widow's Beam": {
+      "id": "location.caldris.carrowmere.widows-beam",
+      "name": "Widow's Beam",
+      "kind": "site",
+      "summary": "rescue tower in Carrowmere. Signal appears before storms; maintained by feuding cousins.",
+      "visibility": "public",
+      "parentId": "location.caldris.carrowmere",
+      "original": true,
+      "x": 750,
+      "y": 825
+    },
+    "Mothglass Ruin": {
+      "id": "location.caldris.central-eredane.mothglass-ruin",
+      "name": "Mothglass Ruin",
+      "kind": "site",
+      "summary": "Concord archive fort in central Eredane. Records burned, glass survived, ink crows nest in the walls.",
+      "visibility": "public",
+      "parentId": "location.caldris.alderwick",
+      "original": true,
+      "x": 470,
+      "y": 180
+    },
+    "Dunmarrow": {
+      "id": "location.caldris.dunmarrow",
+      "name": "Dunmarrow",
+      "kind": "region",
+      "summary": "Dunmarrow is a kingdom of Eredane. Its present pressure: Iron wealth declines while border forts and old military families demand more funding.",
+      "visibility": "public",
+      "parentId": "location.caldris.eredane",
+      "original": true,
+      "x": 270,
+      "y": 235
+    },
+    "Blackcap Fell": {
+      "id": "location.caldris.dunmarrow.blackcap-fell",
+      "name": "Blackcap Fell",
+      "kind": "site",
+      "summary": "Peat-cutting upland of black stone shelters, hard rain, and tiny white flowers used in miners' funerals. Present pressure: A peat fire burns underground and vents beside isolated homes.",
+      "visibility": "public",
+      "parentId": "location.caldris.dunmarrow",
+      "original": true,
+      "x": 265,
+      "y": 575
+    },
+    "Cold Barrow": {
+      "id": "location.caldris.dunmarrow.cold-barrow",
+      "name": "Cold Barrow",
+      "kind": "site",
+      "summary": "burial hill in Dunmarrow. Warm in winter, politically sensitive excavation, mourning moths.",
+      "visibility": "public",
+      "parentId": "location.caldris.dunmarrow",
+      "original": true,
+      "x": 170,
+      "y": 375
+    },
+    "Greyharrow": {
+      "id": "location.caldris.dunmarrow.greyharrow",
+      "name": "Greyharrow",
+      "kind": "settlement",
+      "summary": "The capital crowns a black basalt ridge above two peat rivers. Its fortress, iron exchange, winter courts, and roofed market make it severe from a distance; inside, painted doors, heated benches, and competitive soup reveal a more domestic city.",
+      "visibility": "public",
+      "parentId": "location.caldris.dunmarrow",
+      "original": true,
+      "x": 430,
+      "y": 425
+    },
+    "Latchwater": {
+      "id": "location.caldris.dunmarrow.latchwater",
+      "name": "Latchwater",
+      "kind": "site",
+      "summary": "Reservoir village maintaining sluices for mines and winter mills; every doorway displays a carved wooden latch. Present pressure: Someone opens the upper gate at night, wasting scarce water.",
+      "visibility": "public",
+      "parentId": "location.caldris.dunmarrow",
+      "original": true,
+      "x": 620,
+      "y": 560
+    },
+    "Moorwatch": {
+      "id": "location.caldris.dunmarrow.moorwatch",
+      "name": "Moorwatch",
+      "kind": "settlement",
+      "summary": "Moorwatch began as a frontier fort and became a borough of peat cutters, shepherds, horse breeders, and military pensioners. Its straight streets end abruptly in bog.",
+      "visibility": "public",
+      "parentId": "location.caldris.dunmarrow",
+      "original": true,
+      "x": 760,
+      "y": 330
+    },
+    "Rook Anvil": {
+      "id": "location.caldris.dunmarrow.rook-anvil",
+      "name": "Rook Anvil",
+      "kind": "site",
+      "summary": "A forge hamlet recycling worn tools and battlefield iron beneath a rook colony that mimics hammer rhythms. Present pressure: Finished blades crack despite good workmanship.",
+      "visibility": "public",
+      "parentId": "location.caldris.dunmarrow",
+      "original": true,
+      "x": 440,
+      "y": 735
+    },
+    "Saint Vey's Crutch": {
+      "id": "location.caldris.dunmarrow.saint-veys-crutch",
+      "name": "Saint Vey's Crutch",
+      "kind": "site",
+      "summary": "A narrow pass with an inn built around a bent pine said to have supported a wandering saint. Present pressure: An avalanche has closed the official road while an escort company monopolizes the safer goat path.",
+      "visibility": "public",
+      "parentId": "location.caldris.dunmarrow",
+      "original": true,
+      "x": 815,
+      "y": 650
+    },
+    "Stonewake": {
+      "id": "location.caldris.dunmarrow.stonewake",
+      "name": "Stonewake",
+      "kind": "settlement",
+      "summary": "Stonewake is a northern port built behind a long breakwater of fitted dark stone. Ore, smoked fish, timber, and soldiers pass through it; so do rumours from beyond the Greyward Ocean.",
+      "visibility": "public",
+      "parentId": "location.caldris.dunmarrow",
+      "original": true,
+      "x": 280,
+      "y": 190
+    },
+    "The Iron Choir": {
+      "id": "location.caldris.dunmarrow.the-iron-choir",
+      "name": "The Iron Choir",
+      "kind": "site",
+      "summary": "abandoned mine in Dunmarrow. Wind through shafts sounds like formal harmony.",
+      "visibility": "public",
+      "parentId": "location.caldris.dunmarrow",
+      "original": true,
+      "x": 690,
+      "y": 790
+    },
+    "The Road That Forgets": {
+      "id": "location.caldris.eastern-eredane.the-road-that-forgets",
+      "name": "The Road That Forgets",
+      "kind": "site",
+      "summary": "forest road in eastern Eredane. Waymarks rotate after storms; smugglers and pilgrims tell different causes.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.bramble-country",
+      "original": true,
+      "x": 865,
+      "y": 420
+    },
+    "Eredane": {
+      "id": "location.caldris.eredane",
+      "name": "Eredane",
+      "kind": "region",
+      "summary": "The western continent: a green-and-grey patchwork of river kingdoms, cold moors, sea cliffs, orchards, monasteries, old imperial roads, and mountains hiding exhausted mines and older obligations.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas",
+      "original": true,
+      "x": 255,
+      "y": 380
+    },
+    "The Gilded Kettle": {
+      "id": "location.caldris.gilded-kettle",
+      "name": "The Gilded Kettle",
+      "kind": "interior",
+      "summary": "Bramblebridge's warm timber inn: copper pots, crowded common tables, excellent dumplings, wet cloaks, a permanently crooked stair, and letters addressed to an inn that burned ninety years ago.",
+      "visibility": "public",
+      "parentId": "location.caldris.bramblebridge",
+      "original": true,
+      "x": 280,
+      "y": 575
+    },
+    "Kethria": {
+      "id": "location.caldris.kethria",
+      "name": "Kethria",
+      "kind": "region",
+      "summary": "Kethria is a kingdom of Solasca. Its present pressure: Copper tithe records suggest someone has paid a sleeping dragon for generations.",
+      "visibility": "public",
+      "parentId": "location.caldris.solasca",
+      "original": true,
+      "x": 680,
+      "y": 245
+    },
+    "Breadshield Monastery": {
+      "id": "location.caldris.kethria.breadshield-monastery",
+      "name": "Breadshield Monastery",
+      "kind": "site",
+      "summary": "Fortified bakery and refuge storing grain against snow closures; loaves are stamped like little shields. Present pressure: Its flour reserve is infested just before winter.",
+      "visibility": "public",
+      "parentId": "location.caldris.kethria",
+      "original": true,
+      "x": 295,
+      "y": 295
+    },
+    "Copper Rain Terrace": {
+      "id": "location.caldris.kethria.copper-rain-terrace",
+      "name": "Copper Rain Terrace",
+      "kind": "site",
+      "summary": "Vineyard and ore-washing terraces where runoff stains stone green beneath dry-season storms. Present pressure: Crops fail below a newly reopened wash channel.",
+      "visibility": "public",
+      "parentId": "location.caldris.kethria",
+      "original": true,
+      "x": 720,
+      "y": 460
+    },
+    "Copperwell": {
+      "id": "location.caldris.kethria.copperwell",
+      "name": "Copperwell",
+      "kind": "settlement",
+      "summary": "Copperwell serves mines, smelters, metalworkers, and caravan brokers. Its deep communal well is lined with donation plaques spanning four centuries.",
+      "visibility": "public",
+      "parentId": "location.caldris.kethria",
+      "original": true,
+      "x": 710,
+      "y": 645
+    },
+    "Karsh's Sleeping Ridge": {
+      "id": "location.caldris.kethria.karshs-sleeping-ridge",
+      "name": "Karsh's Sleeping Ridge",
+      "kind": "site",
+      "summary": "volcanic mountain in Kethria. Copper tithe route and warm caves; climbing prohibited without three permits.",
+      "visibility": "public",
+      "parentId": "location.caldris.kethria",
+      "original": true,
+      "x": 810,
+      "y": 160
+    },
+    "Snowgate": {
+      "id": "location.caldris.kethria.snowgate",
+      "name": "Snowgate",
+      "kind": "settlement",
+      "summary": "Snowgate controls the northern pass and its avalanche shelters. Summer markets are brief and intense; winter life moves into connected stone halls.",
+      "visibility": "public",
+      "parentId": "location.caldris.kethria",
+      "original": true,
+      "x": 440,
+      "y": 190
+    },
+    "The Door Valley": {
+      "id": "location.caldris.kethria.the-door-valley",
+      "name": "The Door Valley",
+      "kind": "site",
+      "summary": "terraced villages in Kethria. Every house door carved with a family water history.",
+      "visibility": "public",
+      "parentId": "location.caldris.kethria",
+      "original": true,
+      "x": 340,
+      "y": 690
+    },
+    "The Empty Saddle": {
+      "id": "location.caldris.kethria.the-empty-saddle",
+      "name": "The Empty Saddle",
+      "kind": "site",
+      "summary": "Caravanserai at a pass where travelers hang one unused saddle in memory of those lost to winter. Present pressure: Someone removes saddles bearing particular family marks.",
+      "visibility": "public",
+      "parentId": "location.caldris.kethria",
+      "original": true,
+      "x": 610,
+      "y": 285
+    },
+    "Var Keth": {
+      "id": "location.caldris.kethria.var-keth",
+      "name": "Var Keth",
+      "kind": "settlement",
+      "summary": "The capital occupies terraces above the confluence of three snowmelt canals. Copper roofs, carved doors, council courts, wrestling grounds, and fruit gardens define the city.",
+      "visibility": "public",
+      "parentId": "location.caldris.kethria",
+      "original": true,
+      "x": 505,
+      "y": 470
+    },
+    "Whisper Kiln": {
+      "id": "location.caldris.kethria.whisper-kiln",
+      "name": "Whisper Kiln",
+      "kind": "site",
+      "summary": "Remote pottery works whose cooling vents make conversational sounds in mountain wind. Present pressure: Workers hear specific names whispered before accidents.",
+      "visibility": "public",
+      "parentId": "location.caldris.kethria",
+      "original": true,
+      "x": 845,
+      "y": 795
+    },
+    "Ilyr's Listening Caves": {
+      "id": "location.caldris.lantern-sea.ilyrs-listening-caves",
+      "name": "Ilyr's Listening Caves",
+      "kind": "site",
+      "summary": "salt caverns in Lantern Sea. Dragon archive, echo riddles, shipwreck access, location uncertain.",
+      "visibility": "gm",
+      "parentId": "location.caldris.atlas.morrow-strait",
+      "original": true,
+      "x": 795,
+      "y": 735
+    },
+    "The Halfway Light": {
+      "id": "location.caldris.lantern-sea.the-halfway-light",
+      "name": "The Halfway Light",
+      "kind": "site",
+      "summary": "lighthouse island in Lantern Sea. Maintained jointly by four states that agree it belongs to none of them.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.morrow-strait",
+      "original": true,
+      "x": 470,
+      "y": 470
+    },
+    "Brokers' Orchard": {
+      "id": "location.caldris.league.brokers-orchard",
+      "name": "Brokers' Orchard",
+      "kind": "site",
+      "summary": "memorial garden in League. Trees planted for failed treaties; some bear unexpectedly sweet fruit.",
+      "visibility": "public",
+      "parentId": "location.caldris.seven-lamps-league",
+      "original": true,
+      "x": 720,
+      "y": 155
+    },
+    "The Sealed Hall": {
+      "id": "location.caldris.league.the-sealed-hall",
+      "name": "The Sealed Hall",
+      "kind": "site",
+      "summary": "Concord ruin in League. Publicly empty since Year 1 AS; private maintenance invoices continue.",
+      "visibility": "public",
+      "parentId": "location.caldris.seven-lamps-league",
+      "original": true,
+      "x": 785,
+      "y": 370
+    },
+    "Alderwake": {
+      "id": "location.caldris.lore.alderwake",
+      "name": "Alderwake",
+      "kind": "settlement",
+      "summary": "Location: East of Harth's orchard branch, where a drovers' track meets the route toward the river. Livelihood: Livestock, cloth, lodging, and seasonal fairs. The ancient fairground becomes a small town whose widest lanes remain open for temporary stalls. On ordinary days it feels half empty. On fair days kitchens overflow into courtyards and children navigate by stall awnings rather than house numbers. The original fair bell is lost; successive bells inherit its name.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.orchard-march",
+      "original": true,
+      "x": 765,
+      "y": 440
+    },
+    "Amberstile": {
+      "id": "location.caldris.lore.amberstile",
+      "name": "Amberstile",
+      "kind": "settlement",
+      "summary": "A modest market town whose wax sheds serve candle makers, craftspeople, and local households. Seasonal trading fills a broad yard behind the old gate. The honey cakes sold to visitors are good enough that residents forgive the inaccurate stories printed on their wrappers.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.orchard-march",
+      "original": true,
+      "x": 660,
+      "y": 730
+    },
+    "Ash Salt": {
+      "id": "location.caldris.lore.ash-salt",
+      "name": "Ash Salt",
+      "kind": "settlement",
+      "summary": "Working stalls, smokehouses, net sheds, and lamps arranged around a tidal landing. The market's busiest hours change with local water conditions. It is a place of honest work, occasional opportunism, and visitors who mistake informality for lawlessness.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.vey-lowlands",
+      "original": true,
+      "x": 750,
+      "y": 730
+    },
+    "Ashglass House": {
+      "id": "location.caldris.lore.ashglass-house",
+      "name": "Ashglass House",
+      "kind": "site",
+      "summary": "A glass workshop in Istravel with a small repair room and a collection of clearly labelled failed experiments. Most of its business is ordinary glass. Its modest enchanted vessels require careful handling, compatible materials, and occasional renewal by someone who understands their particular binding.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.istravel",
+      "original": true,
+      "x": 350,
+      "y": 330
+    },
+    "Aunholt": {
+      "id": "location.caldris.lore.aunholt",
+      "name": "Aunholt",
+      "kind": "region",
+      "summary": "Hamlets, orchards, pasture, and irrigation channels occupy several sheltered terraces. The communal assembly roof has been rebuilt more than once, incorporating older supports where sound. Local maps record grazing turns, water rights, and winter shelters more thoroughly than distant commercial maps.",
+      "visibility": "public",
+      "parentId": "location.caldris.lornesse",
+      "original": true,
+      "x": 245,
+      "y": 730
+    },
+    "Bellwade": {
+      "id": "location.caldris.lore.bellwade",
+      "name": "Bellwade",
+      "kind": "settlement",
+      "summary": "An inland village facing a tidal marsh where fragments of its first site occasionally emerge. Some houses incorporate old lintels, though many claimed originals are later commemorations. The communal bell has been recast since its relocation, preserving portions of earlier metal and its inherited name.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.vey-lowlands",
+      "original": true,
+      "x": 760,
+      "y": 270
+    },
+    "Bluecup Hollow": {
+      "id": "location.caldris.lore.bluecup-hollow",
+      "name": "Bluecup Hollow",
+      "kind": "site",
+      "summary": "A small protected patch amid working land near the routes between the orchard country and the northern foothills. Propagated plants grow in a nearby nursery, but the wild pocket retains conditions difficult to reproduce elsewhere. The ancient companions' exact collecting spot is only approximately known.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.chalklands",
+      "original": true,
+      "x": 610,
+      "y": 730
+    },
+    "Boughmeet": {
+      "id": "location.caldris.lore.boughmeet",
+      "name": "Boughmeet",
+      "kind": "settlement",
+      "summary": "Location: On the southern approach to Harth Orchard. Livelihood: Grafting stock, seedlings, cider, and practical teaching. Plots bear names of villages that no longer exist. The oldest varieties persist through deliberate propagation, not immortal trees. A row of training pears grows against a warm stone wall, each labelled with both its market name and the name used by the person who brought it.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.orchard-march",
+      "original": true,
+      "x": 450,
+      "y": 650
+    },
+    "Brinefold": {
+      "id": "location.caldris.lore.brinefold",
+      "name": "Brinefold",
+      "kind": "settlement",
+      "summary": "A small harbour and salt-working settlement in the Vey Lowlands. Its active waterfront stands inland of the drowned old quay. Certain low tides reveal walls and slippery thresholds. A rebuilt bell house keeps copies of the subscription chest's later rules.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.vey-lowlands",
+      "original": true,
+      "x": 790,
+      "y": 865
+    },
+    "Cairn Moss": {
+      "id": "location.caldris.lore.cairn-moss",
+      "name": "Cairn Moss",
+      "kind": "site",
+      "summary": "Location: Peat country west of Whitewindow's surface road. Livelihood: Limited peat cutting, grazing, and guide work. The listening ring lies in a protected patch within working land. Its stones were reset after later disturbance, and only part of the original effect persists. Visitors often hear nothing. Local families maintain paths because losing someone in the moss is a greater concern than disappointing a scholar.",
+      "visibility": "public",
+      "parentId": "location.caldris.lornesse",
+      "original": true,
+      "x": 150,
+      "y": 200
+    },
+    "Celandine House": {
+      "id": "location.caldris.lore.celandine-house",
+      "name": "Celandine House",
+      "kind": "site",
+      "summary": "A modest local institution with rebuilt accommodation, gardens, and a small archive. It has changed governance and function more than once. Some early records survive as copied extracts in other collections, with private details separated from public registers.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.vey-lowlands",
+      "original": true,
+      "x": 885,
+      "y": 435
+    },
+    "Cinder Meadow": {
+      "id": "location.caldris.lore.cinder-meadow",
+      "name": "Cinder Meadow",
+      "kind": "site",
+      "summary": "A recovering meadow and nursery margin in Boughmeet's growing country. Later fires and planting changes have altered the ground. A few protected impressions are documented as surviving evidence of the ember herons; visitors can also see casts that are clearly labelled as copies.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.boughmeet",
+      "original": true,
+      "x": 800,
+      "y": 245
+    },
+    "Crowstep Shelter": {
+      "id": "location.caldris.lore.crowstep-shelter",
+      "name": "Crowstep Shelter",
+      "kind": "site",
+      "summary": "A maintained refuge on a local northern branch near the Roven approaches. It serves fewer carriers than Hearthscar and depends on seasonal deliveries. The winter descent has changed after later rockfalls.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.roven-approaches",
+      "original": true,
+      "x": 705,
+      "y": 395
+    },
+    "Darnel Field": {
+      "id": "location.caldris.lore.darnel-field",
+      "name": "Darnel Field",
+      "kind": "site",
+      "summary": "A working orchard beside a protected burial area. The memorial has been repaired and partially recopied; original fragments are stored locally. Later ownership changes explain why some graves lie beyond the oldest recorded boundary.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.vey-lowlands",
+      "original": true,
+      "x": 700,
+      "y": 635
+    },
+    "Doorhaven": {
+      "id": "location.caldris.lore.doorhaven",
+      "name": "Doorhaven",
+      "kind": "settlement",
+      "summary": "A small riverland settlement whose oldest lanes follow the original raised camp areas. Houses contain reused materials from several places. Flood preparedness is a practical community concern, and door carvings preserve stories whose details are not always reliable.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.vey-lowlands",
+      "original": true,
+      "x": 740,
+      "y": 460
+    },
+    "Dunmere Steps": {
+      "id": "location.caldris.lore.dunmere-steps",
+      "name": "Dunmere Steps",
+      "kind": "site",
+      "summary": "Dunmere survives as a name for an old lower quarter of Highmead. Most ancient structures have been replaced, but a market stair incorporates original weighing stones. Bakers leave flowers on one step each year without agreeing whose grave it commemorates.",
+      "visibility": "public",
+      "parentId": "location.caldris.alderwick.highmead",
+      "original": true,
+      "x": 510,
+      "y": 755
+    },
+    "Glasswinter Tarn": {
+      "id": "location.caldris.lore.glasswinter-tarn",
+      "name": "Glasswinter Tarn",
+      "kind": "site",
+      "summary": "An upland tarn in Lornesse, approached by a marked path and a viewing place on firm ground. Local notes record irregular acoustic phenomena during certain freezes. Conditions vary, and clear ice is not treated as proof that the surface can bear travellers.",
+      "visibility": "public",
+      "parentId": "location.caldris.lornesse",
+      "original": true,
+      "x": 600,
+      "y": 150
+    },
+    "Goat's Ledger": {
+      "id": "location.caldris.lore.goats-ledger",
+      "name": "Goat's Ledger",
+      "kind": "settlement",
+      "summary": "Warehouses, animal yards, repair sheds, and lodging cluster around unloading grounds. Its wealth depends on reliable handling rather than ownership of every cargo. Marks on older warehouse beams record different generations of carrying partnerships.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.aunholt",
+      "original": true,
+      "x": 720,
+      "y": 470
+    },
+    "Greyfold Ridge": {
+      "id": "location.caldris.lore.greyfold-ridge",
+      "name": "Greyfold Ridge",
+      "kind": "site",
+      "summary": "An abandoned deep quarry beside a smaller working stone face. The hunt's sealed approaches have undergone erosion and later interference. Upper chambers contain quarry remains; lower architecture belongs to an older, still-unresolved history.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.roven-approaches",
+      "original": true,
+      "x": 810,
+      "y": 640
+    },
+    "Harth Orchard": {
+      "id": "location.caldris.lore.harth-orchard",
+      "name": "Harth Orchard",
+      "kind": "settlement",
+      "summary": "The orchard boundaries have changed many times, but growers keep renewing the unpicked strip. The founding tree survives only through successive grafts. The guesthouse is now a small hospice whose garden contains the oldest known graft.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.orchard-march",
+      "original": true,
+      "x": 490,
+      "y": 300
+    },
+    "Hazelstairs": {
+      "id": "location.caldris.lore.hazelstairs",
+      "name": "Hazelstairs",
+      "kind": "site",
+      "summary": "Terraces, cellar mouths, and fragments of the mill stand among summer grazing. Later shepherd shelters occupy some foundations. Streams have changed course and roots have shifted retaining walls; exploration requires care around unstable drops.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.roven-approaches",
+      "original": true,
+      "x": 180,
+      "y": 615
+    },
+    "Hearthscar Shelter": {
+      "id": "location.caldris.lore.hearthscar-shelter",
+      "name": "Hearthscar Shelter",
+      "kind": "site",
+      "summary": "A maintained northern shelter on the lower alternative to a difficult pass. Human and animal accommodation are separate. Stores depend on deliveries and honest use. Older braces and wall scars remain visible among later work.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.roven-approaches",
+      "original": true,
+      "x": 315,
+      "y": 370
+    },
+    "Istravel": {
+      "id": "location.caldris.lore.istravel",
+      "name": "Istravel",
+      "kind": "settlement",
+      "summary": "Active glassworkers occupy the upper terraces. Lower kilns have become gardens and storage. Part of the Night Garden lies beneath a later courtyard occupied by several households. Its pools retain only fragments of original lining, and its old sight lines are obstructed by new roofs.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.serevan",
+      "original": true,
+      "x": 630,
+      "y": 350
+    },
+    "Juniper Gate": {
+      "id": "location.caldris.lore.juniper-gate",
+      "name": "Juniper Gate",
+      "kind": "site",
+      "summary": "A guarded pass serving several jurisdictions. Parts of the old gate are incorporated into a shelter and customs yard. The displayed rebellion chain has replacement links from later repairs. Cliff paths lead to abandoned observation posts and nesting ledges.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.roven-approaches",
+      "original": true,
+      "x": 400,
+      "y": 185
+    },
+    "Lanterns' End": {
+      "id": "location.caldris.lore.lanterns-end",
+      "name": "Lanterns' End",
+      "kind": "site",
+      "summary": "Location: On the coast beyond Veymouth's river mouth, overlooking the approaches from Morrow Strait. Livelihood: Pilotage, sheep grazing, and maintenance of a coastal light. Successive towers stand on and beside the low observatory's foundations. Some carved sight lines still point usefully across the water; others refer to vanished sandbanks. The sea has eaten part of the old keeper's garden.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.vey-lowlands",
+      "original": true,
+      "x": 320,
+      "y": 780
+    },
+    "Lastlight Pier": {
+      "id": "location.caldris.lore.lastlight-pier",
+      "name": "Lastlight Pier",
+      "kind": "site",
+      "summary": "A modest landing rebuilt along the old line, used by local fishers and people walking the shore. The lamp has successive outer housings around an older internal bracket. Supplies and maintenance have passed between households; the spirit's continued residence is a working present-day premise, not evidence that its wooden shelter survived untouched.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.leth-sarai",
+      "original": true,
+      "x": 190,
+      "y": 615
+    },
+    "Leth Sarai": {
+      "id": "location.caldris.lore.leth-sarai",
+      "name": "Leth Sarai",
+      "kind": "settlement",
+      "summary": "A densely inhabited old quarter behind a rebuilt waterfront. Courtyards hold workshops, kitchens, and shared wells. Buildings have changed occupants and functions many times; old signs survive beneath paint or in reused lintels. The town trades in ordinary necessities as well as fine goods.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.serevan",
+      "original": true,
+      "x": 160,
+      "y": 585
+    },
+    "Low Fen Redoubt": {
+      "id": "location.caldris.lore.low-fen-redoubt",
+      "name": "Low Fen Redoubt",
+      "kind": "site",
+      "summary": "Overgrown wartime earthworks in the Vey Lowlands around the foundations of a former depot. Later drainage has altered parts of the site. Local households use nearby grazing while keeping known unstable pits marked; small finds are recorded inconsistently.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.vey-lowlands",
+      "original": true,
+      "x": 290,
+      "y": 565
+    },
+    "Morrowstep Sanctuary": {
+      "id": "location.caldris.lore.morrowstep-sanctuary",
+      "name": "Morrowstep Sanctuary",
+      "kind": "site",
+      "summary": "A small sanctuary above a coastal road serving the western approaches to Morrow Strait. Its guest rooms and workshop are used more often than its ceremonial hall. Different communities preserve different explanations of the unlit-lamp emblem.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.vey-lowlands",
+      "original": true,
+      "x": 210,
+      "y": 680
+    },
+    "Mothwatch Kiln": {
+      "id": "location.caldris.lore.mothwatch-kiln",
+      "name": "Mothwatch Kiln",
+      "kind": "site",
+      "summary": "A pottery workshop and small examination room in Leth Sarai. Its older kiln is maintained with ordinary masonry, and dangerous objects are handled in rooms with mechanical closures. The public collection includes harmless fired vessels and copies of historical warnings.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.leth-sarai",
+      "original": true,
+      "x": 765,
+      "y": 220
+    },
+    "Nacre Quay": {
+      "id": "location.caldris.lore.nacre-quay",
+      "name": "Nacre Quay",
+      "kind": "settlement",
+      "summary": "Location: A sheltered coastal inlet south of Veymouth. Livelihood: Coastal cargo, fishing, rope work, and marine repair. The original night harbour is now a shallow boat basin within a larger, repeatedly rebuilt port. Old shell marks survive on stones reused in warehouses. Its rivalry with Veymouth is expressed as often through rowing contests and insulting pastries as through serious commercial competition.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.vey-lowlands",
+      "original": true,
+      "x": 470,
+      "y": 885
+    },
+    "Namar Vale": {
+      "id": "location.caldris.lore.namar-vale",
+      "name": "Namar Vale",
+      "kind": "settlement",
+      "summary": "A settlement of shaded yards, carriers' lodging, potteries, and leaf warehouses near irrigated cultivation. Fine imported goods pass through, but most residents earn a living from ordinary growing, carrying, repairs, and food. Old survey lines are preserved unevenly beneath later subdivisions.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.selvar",
+      "original": true,
+      "x": 490,
+      "y": 530
+    },
+    "Old Merecross": {
+      "id": "location.caldris.lore.old-merecross",
+      "name": "Old Merecross",
+      "kind": "site",
+      "summary": "Ancient ferry-settlement ruins near Bramblebridge, distinct from the living city of Merecross at the river confluence. Merecross is an archaeological layer beneath meadow and river silt near Bramblebridge, not a second thriving town. Some descendants of its inhabitants moved to the later bridge settlement. Drought exposes old ferry posts; exceptional floods reveal foundations and then conceal them again.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.bramble-country",
+      "original": true,
+      "x": 650,
+      "y": 540
+    },
+    "Orrel Wood": {
+      "id": "location.caldris.lore.orrel-wood",
+      "name": "Orrel Wood",
+      "kind": "site",
+      "summary": "Location: North of the Alderwake road. Livelihood: Managed coppice, charcoal, mushrooms, and limited timber cutting. The wood has been felled and regrown in sections many times. Hart's Mouth remains an identifiable limestone sink, surrounded by younger trees. A modest shrine commemorates Branna and, in newer inscriptions, her companions. Forest workers know reliable paths that romantic visitor maps omit.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.orchard-march",
+      "original": true,
+      "x": 795,
+      "y": 230
+    },
+    "Penn's Reach": {
+      "id": "location.caldris.lore.penns-reach",
+      "name": "Penn's Reach",
+      "kind": "settlement",
+      "summary": "An inhabited waterside district with inspection paths, channels, farms, and several later sluices replacing earlier arrangements. Only part of the old scheme remains functional. Some land deliberately left open for water has acquired other uses through later decisions.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.vey-lowlands",
+      "original": true,
+      "x": 475,
+      "y": 290
+    },
+    "Rainbell Orchard": {
+      "id": "location.caldris.lore.rainbell-orchard",
+      "name": "Rainbell Orchard",
+      "kind": "site",
+      "summary": "A small nursery plot within Boughmeet's growing district. Ordinary fruit trees support the maintenance of a few carefully propagated rainbell pears. A sheltered festival instrument sounds only when rainwater reaches its dried seed cases; replacement parts are recorded by harvest year.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.boughmeet",
+      "original": true,
+      "x": 570,
+      "y": 395
+    },
+    "Redbank Reach": {
+      "id": "location.caldris.lore.redbank-reach",
+      "name": "Redbank Reach",
+      "kind": "site",
+      "summary": "Location: On the main river downstream of the Bramblebridge area and upstream of Reedminster. Livelihood: Barges, mills, pasture, and a working ferry near later bridges. Redbank's unfinished piers remain as heavily eroded stone islands, altered by salvage and repair. King's Span was replaced more than once and is now represented by abutments near a newer crossing. The shared district outlived the original peace only through later arrangements, some of which still influence local identity.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.vey-lowlands",
+      "original": true,
+      "x": 340,
+      "y": 175
+    },
+    "Reedminster": {
+      "id": "location.caldris.lore.reedminster",
+      "name": "Reedminster",
+      "kind": "settlement",
+      "summary": "Location: A low island in the lower Vey river system, upstream of the tidal ports. Livelihood: Reed work, gardens, ferry service, and donations for hospitality. Its buildings have been repeatedly raised above flood level. A landing shelter stands outside the devotional precinct, preserving the distinction between accepting hospitality and joining worship. Old guest rules survive through generations of commentary, including disagreements written neatly in the margins.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.vey-lowlands",
+      "original": true,
+      "x": 575,
+      "y": 580
+    },
+    "Reedname Landing": {
+      "id": "location.caldris.lore.reedname-landing",
+      "name": "Reedname Landing",
+      "kind": "site",
+      "summary": "A modest public landing in Namarra with boat moorings, a covered waiting place, and a forwarding service. Its working records track changing channels and actual deliveries. The landing's visibility does not make confidential household lists public or settle the legal recognition of the communities its crews serve.",
+      "visibility": "public",
+      "parentId": "location.caldris.namarra",
+      "original": true,
+      "x": 515,
+      "y": 625
+    },
+    "Reth Gate": {
+      "id": "location.caldris.lore.reth-gate",
+      "name": "Reth Gate",
+      "kind": "settlement",
+      "summary": "A local administrative and lodging cluster in the former Reth jurisdiction. Its current rulers and borders remain for later history to establish. The old tollhouse is partly a shelter, with marks where removable sleeping platforms once fitted.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.roven-approaches",
+      "original": true,
+      "x": 470,
+      "y": 665
+    },
+    "Ribbon Bridge": {
+      "id": "location.caldris.lore.ribbon-bridge",
+      "name": "Ribbon Bridge",
+      "kind": "site",
+      "summary": "Several replacement bridges have occupied the crossing. Ribbons are now tied to a separate frame so they do not obstruct inspections. Households remove them after a return, a confirmed death, or a decision to stop waiting; the meanings differ and are not publicly policed.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.orchard-march",
+      "original": true,
+      "x": 640,
+      "y": 455
+    },
+    "Rookwater": {
+      "id": "location.caldris.lore.rookwater",
+      "name": "Rookwater",
+      "kind": "settlement",
+      "summary": "A small settlement in the Vey Lowlands with a ferry landing, harness workshop, modest market, and houses repeatedly adapted to flooding. The working channel has shifted since its foundation. Public access to the water survives through later agreements that residents must still maintain and interpret.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.vey-lowlands",
+      "original": true,
+      "x": 530,
+      "y": 435
+    },
+    "Rusk Hollow": {
+      "id": "location.caldris.lore.rusk-hollow",
+      "name": "Rusk Hollow",
+      "kind": "settlement",
+      "summary": "The original homes lie beneath pasture. A younger village occupies the hollow's sheltered edge, and shepherds still uncover hearthstones after heavy rain. The old kitchen can be entered through a collapsed smoke vent. Later building phases explain why a cellar may contain objects separated by centuries.",
+      "visibility": "public",
+      "parentId": "location.caldris.alderwick.the-button-hills",
+      "original": true,
+      "x": 680,
+      "y": 570
+    },
+    "Saffron Court": {
+      "id": "location.caldris.lore.saffron-court",
+      "name": "Saffron Court",
+      "kind": "site",
+      "summary": "A busy courtyard market in Namar Vale with shared ovens, washing places, and a mixture of permanent and daily stalls. Its name remains grander than most of its meals. The reserved newcomer places survive through later lease renewals that vendors must occasionally defend.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.namar-vale",
+      "original": true,
+      "x": 335,
+      "y": 550
+    },
+    "Saint Meret's Rest": {
+      "id": "location.caldris.lore.saint-merets-rest",
+      "name": "Saint Meret's Rest",
+      "kind": "site",
+      "summary": "A working hospice and archive built and rebuilt around the burial ground. Almost all early records survive as later copies; water damage, transcription mistakes, and well-intended corrections are normal. A few original wooden name boards were preserved in dry interior walls and rediscovered during repairs.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.orchard-march",
+      "original": true,
+      "x": 265,
+      "y": 335
+    },
+    "Sallowmere": {
+      "id": "location.caldris.lore.sallowmere",
+      "name": "Sallowmere",
+      "kind": "settlement",
+      "summary": "Location: A shallow lake west of the orchard country, linked to it by a local cart road. Livelihood: Fishing, reeds, copying, and a small guesthouse. The original teaching house is partly incorporated into a later library and partly a garden of low foundations. Its collection has been dispersed and reassembled more than once. A narrow room is still called the Spoon Room after an object that may now be a replacement of a replacement.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.orchard-march",
+      "original": true,
+      "x": 180,
+      "y": 600
+    },
+    "Seln": {
+      "id": "location.caldris.lore.seln",
+      "name": "Seln",
+      "kind": "settlement",
+      "summary": "Workshops stand among managed woodland. The original hollow trunks have died or changed; younger trees and carefully maintained structures preserve parts of the soundscape. The Listener's presence is intermittent and tied to the place, not guaranteed at every performance.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.aunholt",
+      "original": true,
+      "x": 245,
+      "y": 735
+    },
+    "Selvar": {
+      "id": "location.caldris.lore.selvar",
+      "name": "Selvar",
+      "kind": "region",
+      "summary": "Historic inland district east of Serevan on Solasca, connected by caravan roads, gardens and market towns including Namar Vale.",
+      "visibility": "public",
+      "parentId": "location.caldris.ordelain",
+      "original": true,
+      "x": 205,
+      "y": 350
+    },
+    "Serevan": {
+      "id": "location.caldris.lore.serevan",
+      "name": "Serevan",
+      "kind": "region",
+      "summary": "Historic coastal district of Solasca facing Morrow Strait, a crossing of the Lantern Sea; home to Leth Sarai and Istravel. Its old principality does not establish the present political borders.",
+      "visibility": "public",
+      "parentId": "location.caldris.seven-lamps-league",
+      "original": true,
+      "x": 205,
+      "y": 870
+    },
+    "Seven Scripts Court": {
+      "id": "location.caldris.lore.seven-scripts-court",
+      "name": "Seven Scripts Court",
+      "kind": "site",
+      "summary": "Small workrooms around a courtyard, occupied by translators, copyists, and several unrelated businesses. The old name survives despite changes in its languages and organisation. Its oldest records are mostly later copies with identifiable chains of transmission.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.namar-vale",
+      "original": true,
+      "x": 680,
+      "y": 355
+    },
+    "Sunborrow House": {
+      "id": "location.caldris.lore.sunborrow-house",
+      "name": "Sunborrow House",
+      "kind": "site",
+      "summary": "A communal workroom in Seln with two surviving enchanted panes, one unreliable, and an ordinary replacement where the third once stood. Its summer gathering frame was moved during a later rebuilding. Keepers maintain both fuel stores and an illumination rota.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.seln",
+      "original": true,
+      "x": 665,
+      "y": 665
+    },
+    "Swallowwatch Orchard": {
+      "id": "location.caldris.lore.swallowwatch-orchard",
+      "name": "Swallowwatch Orchard",
+      "kind": "site",
+      "summary": "A working orchard and observation plot in Bellafont. Its notebooks compare weather, flowering, insect activity, birds, and yields across several decades. Trees and keepers have changed; corrections and gaps remain visible. Its observations address particular places and do not automatically explain every regional blight or failed migration.",
+      "visibility": "public",
+      "parentId": "location.caldris.bellafont",
+      "original": true,
+      "x": 830,
+      "y": 785
+    },
+    "Tallow Ford": {
+      "id": "location.caldris.lore.tallow-ford",
+      "name": "Tallow Ford",
+      "kind": "settlement",
+      "summary": "A working caravan yard beside a newer bridge, with remnants of older crossings visible at low water. Local farms depend on visitors but must retain enough fodder for their own animals. Its largest stable incorporates tether stones from several building phases.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.roven-approaches",
+      "original": true,
+      "x": 390,
+      "y": 805
+    },
+    "The Chalk Stag Chamber": {
+      "id": "location.caldris.lore.the-chalk-stag-chamber",
+      "name": "The Chalk Stag Chamber",
+      "kind": "site",
+      "summary": "A restricted archaeological chamber beneath the Rusk Hollow storehouse complex. A safe upper approach permits examination of the carving; deeper passages need a separate assessment after each significant collapse.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.rusk-hollow",
+      "original": true,
+      "x": 620,
+      "y": 450
+    },
+    "The Closed Launch": {
+      "id": "location.caldris.lore.the-closed-launch",
+      "name": "The Closed Launch",
+      "kind": "site",
+      "summary": "A shipyard slip and small record shelter in Carrowmere associated with the historical Grain Fleet Refusal and later hearings. Working vessels and timber stores have changed repeatedly. Surviving measurements and contract copies are kept alongside later inspection records, rather than treated as substitutes for examining a current hull.",
+      "visibility": "public",
+      "parentId": "location.caldris.carrowmere.gullstrand",
+      "original": true,
+      "x": 600,
+      "y": 580
+    },
+    "The Copper Kettle": {
+      "id": "location.caldris.lore.the-copper-kettle",
+      "name": "The Copper Kettle",
+      "kind": "site",
+      "summary": "A modest inn near Boughmeet's orchard road, rebuilt around successive kitchens. Blue pottery fragments form a small hearth mosaic, with replacement pieces documented by later keepers. A working copy of Nivren's boot-drying charm hangs beside the wet-weather bench. Most visitors come for food and shelter rather than the old story.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.boughmeet",
+      "original": true,
+      "x": 440,
+      "y": 190
+    },
+    "The Dry Exchange": {
+      "id": "location.caldris.lore.the-dry-exchange",
+      "name": "The Dry Exchange",
+      "kind": "site",
+      "summary": "A covered trading hall in Brinefold with raised document rooms and a public counter for inspecting registered cargo pledges. Its rules have been revised under successive authorities. Carved fish on the older beam ends commemorate the early dispute over promises made against the same catch.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.brinefold",
+      "original": true,
+      "x": 355,
+      "y": 325
+    },
+    "The Evening Market": {
+      "id": "location.caldris.lore.the-evening-market",
+      "name": "The Evening Market",
+      "kind": "site",
+      "summary": "A modest market yard in Brinefold where sailors, craftspeople, and households sell used equipment and small consignments after the working day. Inspection rules and fees reflect later amendments. Repaired awnings cover stalls carrying practical goods alongside occasional objects with unusual histories.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.brinefold",
+      "original": true,
+      "x": 650,
+      "y": 480
+    },
+    "The Green Awning Yard": {
+      "id": "location.caldris.lore.the-green-awning-yard",
+      "name": "The Green Awning Yard",
+      "kind": "site",
+      "summary": "A freight assembly yard in Brinefold with repaired awnings, shared weighing space, and places rented by independent carriers. Its earliest arrangements have been replaced or renewed over time. The spring gathering survives intermittently when trade and local organisers can support it.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.brinefold",
+      "original": true,
+      "x": 320,
+      "y": 655
+    },
+    "The Hall of Unsent Maps": {
+      "id": "location.caldris.lore.the-hall-of-unsent-maps",
+      "name": "The Hall of Unsent Maps",
+      "kind": "site",
+      "summary": "A chart collection and copying business in Leth Sarai. Working extracts are updated as reports arrive; historical drafts retain their original qualifications. Restricted charts have custody records, and decorative copies are identified separately from surveys intended for travel.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.leth-sarai",
+      "original": true,
+      "x": 690,
+      "y": 670
+    },
+    "The Hollow Mint": {
+      "id": "location.caldris.lore.the-hollow-mint",
+      "name": "The Hollow Mint",
+      "kind": "site",
+      "summary": "Former mint buildings in Highmead's old commercial quarter, now divided among licensed assayers, metalworkers, and small shops. The original furnaces survive only below one protected floor. The public weighing counter uses renewed standards rather than ancient coins as unquestioned authority.",
+      "visibility": "public",
+      "parentId": "location.caldris.alderwick.highmead",
+      "original": true,
+      "x": 775,
+      "y": 535
+    },
+    "The House of Paired Seals": {
+      "id": "location.caldris.lore.the-house-of-paired-seals",
+      "name": "The House of Paired Seals",
+      "kind": "site",
+      "summary": "A record and meeting house in Highmead containing copies of negotiations before the Three Banner War and later comparative work. Some originals are held elsewhere. Exhibits distinguish signatures, proposed terms, and provisions that were actually adopted.",
+      "visibility": "public",
+      "parentId": "location.caldris.alderwick.highmead",
+      "original": true,
+      "x": 565,
+      "y": 290
+    },
+    "The House of Salt Letters": {
+      "id": "location.caldris.lore.the-house-of-salt-letters",
+      "name": "The House of Salt Letters",
+      "kind": "site",
+      "summary": "A copying and forwarding house in Leth Sarai, with dry storage for letters awaiting reliable carriers. Its procedures distinguish delivery, copying, and private storage. Some historical packets remain sealed because later custodians have found no legitimate recipient or permission to open them.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.leth-sarai",
+      "original": true,
+      "x": 375,
+      "y": 470
+    },
+    "The House of Two Hands": {
+      "id": "location.caldris.lore.the-house-of-two-hands",
+      "name": "The House of Two Hands",
+      "kind": "site",
+      "summary": "A craftspeople's teaching house in Istravel, with pottery benches, finishing tables, and copies of Nen Tal's documented work. Original objects rotate between collections; labels distinguish originals, teaching copies, and later reconstructions. Some teaching places are supported by renewed endowments.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.istravel",
+      "original": true,
+      "x": 630,
+      "y": 660
+    },
+    "The Lantern Hospice": {
+      "id": "location.caldris.lore.the-lantern-hospice",
+      "name": "The Lantern Hospice",
+      "kind": "site",
+      "summary": "A roadside hospitality house in the Veyr Marches offering paid lodging and a limited number of supported places. Its rooms and stores have been rebuilt repeatedly. Conduct rules apply to patrons as well as guests, and its founders' refusal of exclusive sponsorship remains a debated tradition.",
+      "visibility": "public",
+      "parentId": "location.caldris.veyr-marches",
+      "original": true,
+      "x": 695,
+      "y": 825
+    },
+    "The Last Measure Workshop": {
+      "id": "location.caldris.lore.the-last-measure-workshop",
+      "name": "The Last Measure Workshop",
+      "kind": "site",
+      "summary": "An instrument workshop in Willowrace whose later owners preserve copies of Orven's deposit lists and teaching arrangements. The benches and tools have changed repeatedly. A few documented components survive in protected storage, while working instruments continue to be altered for living players.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.willowrace",
+      "original": true,
+      "x": 265,
+      "y": 355
+    },
+    "The Last Mile Porch": {
+      "id": "location.caldris.lore.the-last-mile-porch",
+      "name": "The Last Mile Porch",
+      "kind": "site",
+      "summary": "A covered waiting and message space at Bramblebridge's Lantern Road approach, supported by nearby food and lodging. Travellers mend straps, arrange deliveries, and compare current directions. Posted notices distinguish confirmed information from reports still awaiting a witness.",
+      "visibility": "public",
+      "parentId": "location.caldris.bramblebridge",
+      "original": true,
+      "x": 135,
+      "y": 550
+    },
+    "The Listening House": {
+      "id": "location.caldris.lore.the-listening-house",
+      "name": "The Listening House",
+      "kind": "site",
+      "summary": "A much-repaired house used for visiting researchers and musicians. Some notebooks belong to other collections; the local inventory records where known copies went. Its garden contains descendants of propagated plants, subject to documented losses and replacements. Ysra is not assumed to live here in the present.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.seln",
+      "original": true,
+      "x": 325,
+      "y": 395
+    },
+    "The Long Table Rooms": {
+      "id": "location.caldris.lore.the-long-table-rooms",
+      "name": "The Long Table Rooms",
+      "kind": "site",
+      "summary": "Lodging and dining rooms in the Seven Lamps League used by small delegations, interpreters, and travellers conducting civic business. Meals and language services have stated prices. Informal discussion can prepare a formal case but confers no automatic authority over council proceedings.",
+      "visibility": "public",
+      "parentId": "location.caldris.seven-lamps-league.aster-quay",
+      "original": true,
+      "x": 575,
+      "y": 490
+    },
+    "The Mile of Little Bridges": {
+      "id": "location.caldris.lore.the-mile-of-little-bridges",
+      "name": "The Mile of Little Bridges",
+      "kind": "site",
+      "summary": "The route has a different count of spans after centuries of channel movement, rebuilding, and diversion. Some ancient abutments stand beside active crossings; others lie in grass away from the modern road. Its maintenance remains local and visible.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.aunholt",
+      "original": true,
+      "x": 480,
+      "y": 590
+    },
+    "The Names House": {
+      "id": "location.caldris.lore.the-names-house",
+      "name": "The Names House",
+      "kind": "site",
+      "summary": "A small search archive and mediation office in Rookwater. Its records distinguish confirmed outcomes from unanswered inquiries. Later household correspondence supplements the post-war material, and restricted notes have custody rules governing their use.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.rookwater",
+      "original": true,
+      "x": 360,
+      "y": 425
+    },
+    "The Narrow Bell Foundry": {
+      "id": "location.caldris.lore.the-narrow-bell-foundry",
+      "name": "The Narrow Bell Foundry",
+      "kind": "site",
+      "summary": "A working foundry in Highmead with later furnaces and a retained collection of casting marks, failed pieces, and signal tables. Its reputation rests on inspection and repair as much as new bells. Objects attributed to its founders require assessment rather than automatic acceptance.",
+      "visibility": "public",
+      "parentId": "location.caldris.alderwick.highmead",
+      "original": true,
+      "x": 770,
+      "y": 325
+    },
+    "The Open Ledger Room": {
+      "id": "location.caldris.lore.the-open-ledger-room",
+      "name": "The Open Ledger Room",
+      "kind": "site",
+      "summary": "A public reading and teaching room in Highmead with comparative seal casts, local measures, and copies of disputed obligations. Original records remain with their custodians unless specifically deposited. Staff distinguish teaching examples, authenticated evidence, and unanswered questions.",
+      "visibility": "public",
+      "parentId": "location.caldris.alderwick.highmead",
+      "original": true,
+      "x": 560,
+      "y": 445
+    },
+    "The Open String Hall": {
+      "id": "location.caldris.lore.the-open-string-hall",
+      "name": "The Open String Hall",
+      "kind": "site",
+      "summary": "A community teaching and performance hall in Willowrace with repaired instruments, ordinary rehearsal rooms, and a collection of marked teaching scores. Fees, supported places, and instrument loans are recorded separately. Its paired performances remain a living custom rather than a fixed reconstruction of the founders' first concert.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.willowrace",
+      "original": true,
+      "x": 455,
+      "y": 630
+    },
+    "The Orchard of Departures": {
+      "id": "location.caldris.lore.the-orchard-of-departures",
+      "name": "The Orchard of Departures",
+      "kind": "site",
+      "summary": "A nursery and memorial plot in Boughmeet with propagated descendants of some older trees and replacements for others. Labels distinguish documented continuity from commemorative replanting. The associated collection keeps forwarding notes and recipes contributed by travelling households.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.boughmeet",
+      "original": true,
+      "x": 530,
+      "y": 690
+    },
+    "The Pear Walk": {
+      "id": "location.caldris.lore.the-pear-walk",
+      "name": "The Pear Walk",
+      "kind": "site",
+      "summary": "A quiet path through a younger orchard beside the library grounds. Aveline's stone was reset after later bank damage; records of that work preserve the connection to the original burial. The pear lineage has survived through grafting, replacement, and at least one disputed identification.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.sallowmere",
+      "original": true,
+      "x": 175,
+      "y": 440
+    },
+    "The Quiet Archive": {
+      "id": "location.caldris.lore.the-quiet-archive",
+      "name": "The Quiet Archive",
+      "kind": "site",
+      "summary": "A small archive and copying business in Leth Sarai, occupying repaired rooms above an ordinary shop. Its collections have moved within the district several times; custody lists explain the surviving material.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.leth-sarai",
+      "original": true,
+      "x": 575,
+      "y": 300
+    },
+    "The Seventh Hearth": {
+      "id": "location.caldris.lore.the-seventh-hearth",
+      "name": "The Seventh Hearth",
+      "kind": "site",
+      "summary": "Repeated repairs have replaced nearly every timber, while the original hearthstone and threshold remain. The road bypassed it long ago. Brambles obscure the approach; inside, ordinary dust lies beside a carefully swept place at the table. Whether its spirit has remained awake continuously is left for later history to establish.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.orchard-march",
+      "original": true,
+      "x": 210,
+      "y": 170
+    },
+    "The Shared Bank": {
+      "id": "location.caldris.lore.the-shared-bank",
+      "name": "The Shared Bank",
+      "kind": "site",
+      "summary": "A maintained riverbank work in the Penn's Reach district, repeatedly repaired since the wartime flood. A small marker records the shared labour, while local maintenance documents identify later alterations. Its present condition depends on inspection and repair.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.penns-reach",
+      "original": true,
+      "x": 650,
+      "y": 720
+    },
+    "The South Turning": {
+      "id": "location.caldris.lore.the-south-turning",
+      "name": "The South Turning",
+      "kind": "site",
+      "summary": "A much-rebuilt inn at a junction where visitors can choose the main road or the old local track toward the Seventh Hearth. A milestone in its yard gives a distance that ceased to be accurate centuries ago. Older inn cellars lie farther along the abandoned alignment.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.orchard-march",
+      "original": true,
+      "x": 385,
+      "y": 470
+    },
+    "The Twelve Windows": {
+      "id": "location.caldris.lore.the-twelve-windows",
+      "name": "The Twelve Windows",
+      "kind": "site",
+      "summary": "A rebuilt school and communal dining room in Highmead's Dunmere quarter. Successive windows preserve the tradition of mixed donated glass. Its early slates survive mainly as reused fragments and copied exercises.",
+      "visibility": "public",
+      "parentId": "location.caldris.alderwick.highmead",
+      "original": true,
+      "x": 295,
+      "y": 615
+    },
+    "The Unfinished Stair": {
+      "id": "location.caldris.lore.the-unfinished-stair",
+      "name": "The Unfinished Stair",
+      "kind": "site",
+      "summary": "A partly maintained ascent in the Veyr uplands, ending at abandoned gallery sockets above a ravine. The lower steps serve shepherds and surveyors. A sheltered burial shelf lies beyond the intended road alignment, and later walkers have marked a respectful route around its approach.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.roven-approaches",
+      "original": true,
+      "x": 845,
+      "y": 150
+    },
+    "The Violet Steps": {
+      "id": "location.caldris.lore.the-violet-steps",
+      "name": "The Violet Steps",
+      "kind": "site",
+      "summary": "A small stone landing beside a secondary channel at Penn's Reach. Mineral staining returns after cleaning. Its steps have been reset several times as the banks changed, and the water-level record is maintained on newer stones beside the oldest surviving marks.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.penns-reach",
+      "original": true,
+      "x": 370,
+      "y": 360
+    },
+    "The Winter Latch": {
+      "id": "location.caldris.lore.the-winter-latch",
+      "name": "The Winter Latch",
+      "kind": "site",
+      "summary": "A small maintained refuge near the lower approach to the Unfinished Stair in the Veyr uplands. Its walls incorporate stones placed during the old rescue. It serves a limited seasonal route and keeps an ordinary store of fuel, fodder, and food when local deliveries succeed.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.roven-approaches",
+      "original": true,
+      "x": 785,
+      "y": 245
+    },
+    "Thistlewood Arch": {
+      "id": "location.caldris.lore.thistlewood-arch",
+      "name": "Thistlewood Arch",
+      "kind": "site",
+      "summary": "Location: In wooded pasture beyond Wetherfold, away from the main road. Livelihood: Surrounding smallholdings; the arch itself supports no settlement. The visible arch was dismantled in Oren's time. Its foundations lie beneath a rectangular thicket that flowers oddly in exceptional years. No continuously open portal or convenient shortcut is established. A surviving fiddle and regional songs supply clues to the old crossing's cost.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.chalklands",
+      "original": true,
+      "x": 140,
+      "y": 770
+    },
+    "Three-Reed Bridge": {
+      "id": "location.caldris.lore.three-reed-bridge",
+      "name": "Three-Reed Bridge",
+      "kind": "site",
+      "summary": "A rebuilt crossing outside Willowrace, connecting workshops with grazing and reed beds. Stone abutments support later spans; annual music gatherings still raise a portion of maintenance costs. Three pipe-shaped posts commemorate the dedication.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.willowrace",
+      "original": true,
+      "x": 710,
+      "y": 480
+    },
+    "Vey Lowlands": {
+      "id": "location.caldris.lore.vey-lowlands",
+      "name": "Vey Lowlands",
+      "kind": "region",
+      "summary": "River and coastal country downstream of the Chalklands: Veymouth, Nacre Quay and Reedbank communities preserve the layered legacy of Low Vey and later local governments.",
+      "visibility": "public",
+      "parentId": "location.caldris.alderwick",
+      "original": true,
+      "x": 760,
+      "y": 785
+    },
+    "Veymouth": {
+      "id": "location.caldris.lore.veymouth",
+      "name": "Veymouth",
+      "kind": "settlement",
+      "summary": "A smaller working port beside the silted remains of a former harbour. Commercial importance has shifted elsewhere more than once. Inland families remember Ossa as a champion, while local tradition celebrates the otherwise obscure boat crews who brought the cargoes through.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.vey-lowlands",
+      "original": true,
+      "x": 540,
+      "y": 760
+    },
+    "Veyr's Lantern": {
+      "id": "location.caldris.lore.veyrs-lantern",
+      "name": "Veyr's Lantern",
+      "kind": "site",
+      "summary": "A rough landing, seabird cliffs, and partially buried foundations reached only in suitable conditions. Erosion has changed access and may uncover screened glass. No continuously inhabited lighthouse settlement is established by its name.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.serevan",
+      "original": true,
+      "x": 160,
+      "y": 325
+    },
+    "Wetherfold Common": {
+      "id": "location.caldris.lore.wetherfold-common",
+      "name": "Wetherfold Common",
+      "kind": "site",
+      "summary": "A smaller common surrounded by successive enclosures. Later grants renew parts of the original arrangement, giving the ancient settlement practical relevance without making it automatically binding. A boundary stone has been reused as the base of a roadside shrine.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.chalklands",
+      "original": true,
+      "x": 285,
+      "y": 650
+    },
+    "Whitewindow": {
+      "id": "location.caldris.lore.whitewindow",
+      "name": "Whitewindow",
+      "kind": "settlement",
+      "summary": "Location: Northern stone hills reached by a branch road from the Chalklands. Livelihood: Metal fittings, stonework, repair contracts, and upland husbandry. Pale mineral seams give the outer cliff the appearance of narrow lit windows. Most trade takes place in a rebuilt guest hall with a very old floor. Interior neighbourhoods are homes, not an invitation to explore ancestral rooms. The hold imports food in good years as well as bad and regards reliable contracts as part of its winter defences.",
+      "visibility": "public",
+      "parentId": "location.caldris.lornesse",
+      "original": true,
+      "x": 280,
+      "y": 275
+    },
+    "Willowrace": {
+      "id": "location.caldris.lore.willowrace",
+      "name": "Willowrace",
+      "kind": "settlement",
+      "summary": "A working mill occupying a repeatedly repaired site in the former Linden Corridor. Its oldest documented fittings are now displayed safely apart from the operating machinery. A memorial wall stands along the yard's quiet edge, while wagons continue arriving with grain.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.vey-lowlands",
+      "original": true,
+      "x": 260,
+      "y": 370
+    },
+    "Windowmere Garden": {
+      "id": "location.caldris.lore.windowmere-garden",
+      "name": "Windowmere Garden",
+      "kind": "site",
+      "summary": "A small teaching garden within the Boughmeet nursery district. The walls have been rebuilt and the original plants replaced or propagated. Successful and failed trials receive equally legible labels.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.boughmeet",
+      "original": true,
+      "x": 245,
+      "y": 385
+    },
+    "Lornesse": {
+      "id": "location.caldris.lornesse",
+      "name": "Lornesse",
+      "kind": "region",
+      "summary": "Lornesse is a kingdom of Eredane. Its present pressure: Mine closures expose older tunnels, unpaid obligations, and possible dragon signs.",
+      "visibility": "public",
+      "parentId": "location.caldris.eredane",
+      "original": true,
+      "x": 735,
+      "y": 310
+    },
+    "Copperdeep": {
+      "id": "location.caldris.lornesse.copperdeep",
+      "name": "Copperdeep",
+      "kind": "settlement",
+      "summary": "Copperdeep descends through terraces around ancient mine mouths, smelters, baths, chapels, and workers' halls. Upper galleries are active; lower levels have been sealed for generations.",
+      "visibility": "public",
+      "parentId": "location.caldris.lornesse",
+      "original": true,
+      "x": 450,
+      "y": 535
+    },
+    "Goatminster": {
+      "id": "location.caldris.lornesse.goatminster",
+      "name": "Goatminster",
+      "kind": "site",
+      "summary": "High pasture village whose elected goat judge settles grazing disputes beneath a painted canopy. Present pressure: Prize animals vanish and return wearing unfamiliar bells.",
+      "visibility": "public",
+      "parentId": "location.caldris.lornesse",
+      "original": true,
+      "x": 440,
+      "y": 295
+    },
+    "Hollow Bell Monastery": {
+      "id": "location.caldris.lornesse.hollow-bell-monastery",
+      "name": "Hollow Bell Monastery",
+      "kind": "site",
+      "summary": "ruined monastery in Lornesse. Bell rings without clapper when avalanches threaten—or when goats enter.",
+      "visibility": "public",
+      "parentId": "location.caldris.lornesse",
+      "original": true,
+      "x": 815,
+      "y": 150
+    },
+    "Kestrelwatch": {
+      "id": "location.caldris.lornesse.kestrelwatch",
+      "name": "Kestrelwatch",
+      "kind": "settlement",
+      "summary": "This pass city controls caravans, mountain rescue, and the safest eastern crossing. Houses cluster behind snow walls and connect through covered lanes.",
+      "visibility": "public",
+      "parentId": "location.caldris.lornesse",
+      "original": true,
+      "x": 820,
+      "y": 580
+    },
+    "Lorn": {
+      "id": "location.caldris.lornesse.lorn",
+      "name": "Lorn",
+      "kind": "settlement",
+      "summary": "Lorn fills a hanging valley beneath the royal monastery-fortress. Bells coordinate markets, avalanches, funerals, fire, court sessions, and lunch with patterns outsiders routinely confuse.",
+      "visibility": "public",
+      "parentId": "location.caldris.lornesse",
+      "original": true,
+      "x": 670,
+      "y": 280
+    },
+    "Seven Echo Quarry": {
+      "id": "location.caldris.lornesse.seven-echo-quarry",
+      "name": "Seven Echo Quarry",
+      "kind": "site",
+      "summary": "Slate quarry where each work call returns in a distinct echo used to measure the cliff. Present pressure: One echo has vanished, making blasting unsafe.",
+      "visibility": "public",
+      "parentId": "location.caldris.lornesse",
+      "original": true,
+      "x": 290,
+      "y": 450
+    },
+    "Stair of One Hundred Regrets": {
+      "id": "location.caldris.lornesse.stair-of-one-hundred-regrets",
+      "name": "Stair of One Hundred Regrets",
+      "kind": "site",
+      "summary": "pass stair in Lornesse. Actually 113 steps; travellers traditionally confess minor mistakes.",
+      "visibility": "public",
+      "parentId": "location.caldris.lornesse",
+      "original": true,
+      "x": 805,
+      "y": 785
+    },
+    "The Widow's Incline": {
+      "id": "location.caldris.lornesse.the-widows-incline",
+      "name": "The Widow's Incline",
+      "kind": "site",
+      "summary": "A steep freight railway of ropes, brakes, and timber sledges run by a cooperative of miners' families. Present pressure: Brake ropes have been cut three times.",
+      "visibility": "public",
+      "parentId": "location.caldris.lornesse",
+      "original": true,
+      "x": 480,
+      "y": 710
+    },
+    "Warmstone Baths": {
+      "id": "location.caldris.lornesse.warmstone-baths",
+      "name": "Warmstone Baths",
+      "kind": "site",
+      "summary": "Modest mineral baths used by miners, pilgrims, aching nobles, and relentless local gossips. Present pressure: The spring cools during the busiest healing season.",
+      "visibility": "public",
+      "parentId": "location.caldris.lornesse",
+      "original": true,
+      "x": 650,
+      "y": 635
+    },
+    "Namarra": {
+      "id": "location.caldris.namarra",
+      "name": "Namarra",
+      "kind": "region",
+      "summary": "Namarra is a kingdom of Solasca. Its present pressure: Delta villages vanish from tax rolls while their grain still appears in foreign markets.",
+      "visibility": "public",
+      "parentId": "location.caldris.solasca",
+      "original": true,
+      "x": 555,
+      "y": 755
+    },
+    "Drowned Door Orchard": {
+      "id": "location.caldris.namarra.drowned-door-orchard",
+      "name": "Drowned Door Orchard",
+      "kind": "site",
+      "summary": "Fruit trees grow on narrow levees around the upper frame of a submerged stone doorway. Present pressure: Divers seeking treasure destabilize the levee.",
+      "visibility": "public",
+      "parentId": "location.caldris.namarra",
+      "original": true,
+      "x": 260,
+      "y": 355
+    },
+    "Mosquito Abbey": {
+      "id": "location.caldris.namarra.mosquito-abbey",
+      "name": "Mosquito Abbey",
+      "kind": "site",
+      "summary": "Raised monastery studying fever seasons, drainage, and inexpensive nets amid relentless buzzing. Present pressure: Stored remedies are missing while nearby families fall ill.",
+      "visibility": "public",
+      "parentId": "location.caldris.namarra",
+      "original": true,
+      "x": 750,
+      "y": 425
+    },
+    "Namar": {
+      "id": "location.caldris.namarra.namar",
+      "name": "Namar",
+      "kind": "settlement",
+      "summary": "Namar rises on islands and embankments where the delta branches. Boats are ordinary transport; addresses include both street and nearest landing.",
+      "visibility": "public",
+      "parentId": "location.caldris.namarra",
+      "original": true,
+      "x": 505,
+      "y": 425
+    },
+    "Reed Graves": {
+      "id": "location.caldris.namarra.reed-graves",
+      "name": "Reed Graves",
+      "kind": "site",
+      "summary": "brackish basin in Namarra. Sable Annek's domain and perfectly preserved archive debris.",
+      "visibility": "gm",
+      "parentId": "location.caldris.namarra",
+      "original": true,
+      "x": 150,
+      "y": 770
+    },
+    "Reedcrown": {
+      "id": "location.caldris.namarra.reedcrown",
+      "name": "Reedcrown",
+      "kind": "settlement",
+      "summary": "Reedcrown guards royal granaries, seed stores, canal gates, and flood reserves behind immense reed and brick embankments.",
+      "visibility": "public",
+      "parentId": "location.caldris.namarra",
+      "original": true,
+      "x": 550,
+      "y": 190
+    },
+    "Saffron Quay": {
+      "id": "location.caldris.namarra.saffron-quay",
+      "name": "Saffron Quay",
+      "kind": "settlement",
+      "summary": "Saffron Quay is a warm-water export port for spice, cloth, rice, fish, and delta craft. Warehouses stand on pilings, and tide marks are painted as civic records.",
+      "visibility": "public",
+      "parentId": "location.caldris.namarra",
+      "original": true,
+      "x": 615,
+      "y": 795
+    },
+    "The Absent Villages": {
+      "id": "location.caldris.namarra.the-absent-villages",
+      "name": "The Absent Villages",
+      "kind": "site",
+      "summary": "delta settlements in Namarra. Living communities erased from records, linked by puppetry and trade.",
+      "visibility": "gm",
+      "parentId": "location.caldris.namarra",
+      "original": true,
+      "x": 785,
+      "y": 665
+    },
+    "The Saffron Ox": {
+      "id": "location.caldris.namarra.the-saffron-ox",
+      "name": "The Saffron Ox",
+      "kind": "site",
+      "summary": "Dry-season cattle market and dye stop with orange awnings visible for miles across the flats. Present pressure: A prized breeding ox apparently predicts which bidder will die.",
+      "visibility": "public",
+      "parentId": "location.caldris.namarra",
+      "original": true,
+      "x": 780,
+      "y": 200
+    },
+    "Three Spoon Village": {
+      "id": "location.caldris.namarra.three-spoon-village",
+      "name": "Three Spoon Village",
+      "kind": "site",
+      "summary": "Delta settlement famous for communal kitchens and three enormous wooden serving spoons carried during floods. Present pressure: One neighbourhood refuses the evacuation signal.",
+      "visibility": "public",
+      "parentId": "location.caldris.namarra",
+      "original": true,
+      "x": 340,
+      "y": 630
+    },
+    "North Bell Tower": {
+      "id": "location.caldris.north-bell-tower",
+      "name": "North Bell Tower",
+      "kind": "site",
+      "summary": "The civic bell, market clock, pigeon roost, and best view in town; its rope was cut before the noon bell rang thirteen times by itself, according to three mutually incompatible witnesses.",
+      "visibility": "public",
+      "parentId": "location.caldris.bramblebridge",
+      "original": true,
+      "x": 455,
+      "y": 220
+    },
+    "Ordelain": {
+      "id": "location.caldris.ordelain",
+      "name": "Ordelain",
+      "kind": "region",
+      "summary": "Ordelain is a kingdom of Solasca. Its present pressure: River law and royal law conflict after the Aur changes course around a wealthy estate.",
+      "visibility": "public",
+      "parentId": "location.caldris.solasca",
+      "original": true,
+      "x": 560,
+      "y": 500
+    },
+    "Aurent": {
+      "id": "location.caldris.ordelain.aurent",
+      "name": "Aurent",
+      "kind": "settlement",
+      "summary": "Aurent spans both banks of the Aur with broad quays, palaces, law schools, grain exchanges, shaded courts, and public fountains. River cases can make or end political careers.",
+      "visibility": "public",
+      "parentId": "location.caldris.ordelain",
+      "original": true,
+      "x": 510,
+      "y": 400
+    },
+    "Inkfish Wharf": {
+      "id": "location.caldris.ordelain.inkfish-wharf",
+      "name": "Inkfish Wharf",
+      "kind": "site",
+      "summary": "Mud-brick landing for scribes' ink, fish oil, reeds, and legal couriers, notorious for black-stained cats. Present pressure: Official documents fade to blank within days.",
+      "visibility": "public",
+      "parentId": "location.caldris.ordelain",
+      "original": true,
+      "x": 420,
+      "y": 575
+    },
+    "Malvar": {
+      "id": "location.caldris.ordelain.malvar",
+      "name": "Malvar",
+      "kind": "settlement",
+      "summary": "Malvar is the kingdom's granary city and cattle market, built around enormous brick storehouses and a temple distribution complex.",
+      "visibility": "public",
+      "parentId": "location.caldris.ordelain",
+      "original": true,
+      "x": 660,
+      "y": 220
+    },
+    "Old Aur Island": {
+      "id": "location.caldris.ordelain.old-aur-island",
+      "name": "Old Aur Island",
+      "kind": "site",
+      "summary": "exposed foundation in Ordelain. River shift reveals River Throne palace and modern property crisis.",
+      "visibility": "public",
+      "parentId": "location.caldris.ordelain",
+      "original": true,
+      "x": 375,
+      "y": 330
+    },
+    "Pomegranate Court": {
+      "id": "location.caldris.ordelain.pomegranate-court",
+      "name": "Pomegranate Court",
+      "kind": "site",
+      "summary": "Shaded caravan court where fruit sellers, petition writers, and musicians share a long cistern. Present pressure: The cistern tastes of copper and rumors blame a curse.",
+      "visibility": "public",
+      "parentId": "location.caldris.ordelain",
+      "original": true,
+      "x": 760,
+      "y": 525
+    },
+    "Reed Judge's Rest": {
+      "id": "location.caldris.ordelain.reed-judges-rest",
+      "name": "Reed Judge's Rest",
+      "kind": "site",
+      "summary": "Small island courthouse and ferry inn that hears cases when the Aur changes local boundaries. Present pressure: The island is drifting downstream faster than precedent allows.",
+      "visibility": "public",
+      "parentId": "location.caldris.ordelain",
+      "original": true,
+      "x": 595,
+      "y": 585
+    },
+    "The Bent Mile": {
+      "id": "location.caldris.ordelain.the-bent-mile",
+      "name": "The Bent Mile",
+      "kind": "site",
+      "summary": "Riverbank farming strip where every boundary curves around a channel that no longer exists. Present pressure: Surveyors arrive to straighten titles and displace tenant families.",
+      "visibility": "public",
+      "parentId": "location.caldris.ordelain",
+      "original": true,
+      "x": 325,
+      "y": 720
+    },
+    "The Court of Wet Feet": {
+      "id": "location.caldris.ordelain.the-court-of-wet-feet",
+      "name": "The Court of Wet Feet",
+      "kind": "site",
+      "summary": "seasonal tribunal in Ordelain. Judges hear flood claims standing ankle-deep to discourage abstraction.",
+      "visibility": "public",
+      "parentId": "location.caldris.ordelain",
+      "original": true,
+      "x": 735,
+      "y": 790
+    },
+    "Vessa": {
+      "id": "location.caldris.ordelain.vessa",
+      "name": "Vessa",
+      "kind": "settlement",
+      "summary": "Vessa makes paper from river reeds and houses private, royal, temple, and commercial archives. Its streets are shaded by cloth awnings and patrolled aggressively for fire.",
+      "visibility": "public",
+      "parentId": "location.caldris.ordelain",
+      "original": true,
+      "x": 545,
+      "y": 755
+    },
+    "Selucia": {
+      "id": "location.caldris.selucia",
+      "name": "Selucia",
+      "kind": "region",
+      "summary": "Selucia is a island kingdom of Solasca. Its present pressure: A royal wedding could settle maritime claims, if the families, sailors, weather, and missing cook cooperate.",
+      "visibility": "public",
+      "parentId": "location.caldris.solasca",
+      "original": true,
+      "x": 235,
+      "y": 775
+    },
+    "Borrowed Bell Isle": {
+      "id": "location.caldris.selucia.borrowed-bell-isle",
+      "name": "Borrowed Bell Isle",
+      "kind": "site",
+      "summary": "Tiny island where every household keeps a bell rescued from another ship or shore. Present pressure: One bell's original owners arrive with a royal order for its return.",
+      "visibility": "public",
+      "parentId": "location.caldris.selucia",
+      "original": true,
+      "x": 175,
+      "y": 325
+    },
+    "Candleport": {
+      "id": "location.caldris.selucia.candleport",
+      "name": "Candleport",
+      "kind": "settlement",
+      "summary": "Candleport climbs around a protected harbour beneath the royal citadel. Pilgrim bells, fishing boats, citrus markets, coffee houses, embassies, and parliament stairs crowd the waterfront.",
+      "visibility": "public",
+      "parentId": "location.caldris.selucia",
+      "original": true,
+      "x": 280,
+      "y": 675
+    },
+    "Mariselle": {
+      "id": "location.caldris.selucia.mariselle",
+      "name": "Mariselle",
+      "kind": "settlement",
+      "summary": "Mariselle is an artistic and commercial port of tile workshops, theatres, rope yards, music schools, and crowded hillside neighbourhoods.",
+      "visibility": "public",
+      "parentId": "location.caldris.selucia",
+      "original": true,
+      "x": 510,
+      "y": 430
+    },
+    "Needle Current": {
+      "id": "location.caldris.selucia.needle-current",
+      "name": "Needle Current",
+      "kind": "site",
+      "summary": "Narrow sea passage guided by shore needles, tide boards, and hereditary rowing pilots. Present pressure: The current reverses at the wrong hour.",
+      "visibility": "public",
+      "parentId": "location.caldris.selucia",
+      "original": true,
+      "x": 465,
+      "y": 680
+    },
+    "Orange Bell Island": {
+      "id": "location.caldris.selucia.orange-bell-island",
+      "name": "Orange Bell Island",
+      "kind": "site",
+      "summary": "orchard island in Selucia. Wedding venue, maritime claim, and bell tuned to warn of reef fog.",
+      "visibility": "public",
+      "parentId": "location.caldris.selucia",
+      "original": true,
+      "x": 820,
+      "y": 520
+    },
+    "Orangewake": {
+      "id": "location.caldris.selucia.orangewake",
+      "name": "Orangewake",
+      "kind": "site",
+      "summary": "Fishing village, citrus garden, and storm refuge where boats return through floating orange peels. Present pressure: Nets fill with carefully folded paper boats instead of fish.",
+      "visibility": "public",
+      "parentId": "location.caldris.selucia",
+      "original": true,
+      "x": 725,
+      "y": 755
+    },
+    "Saint Orro": {
+      "id": "location.caldris.selucia.saint-orro",
+      "name": "Saint Orro",
+      "kind": "settlement",
+      "summary": "Saint Orro surrounds a fortified pilgrimage monastery and the islands' largest repair dock. The saint is remembered for rescuing enemies and criticizing their knots.",
+      "visibility": "public",
+      "parentId": "location.caldris.selucia",
+      "original": true,
+      "x": 750,
+      "y": 290
+    },
+    "The Unfinished Lighthouse": {
+      "id": "location.caldris.selucia.the-unfinished-lighthouse",
+      "name": "The Unfinished Lighthouse",
+      "kind": "site",
+      "summary": "coastal tower in Selucia. Each generation adds a storey; it already works too well.",
+      "visibility": "public",
+      "parentId": "location.caldris.selucia",
+      "original": true,
+      "x": 250,
+      "y": 800
+    },
+    "The Unfinished Palace": {
+      "id": "location.caldris.selucia.the-unfinished-palace",
+      "name": "The Unfinished Palace",
+      "kind": "site",
+      "summary": "Roofless royal retreat abandoned after every architect disagreed, now used for weddings and public theatre. Present pressure: A noble claims one completed room as private property during festival week.",
+      "visibility": "public",
+      "parentId": "location.caldris.selucia",
+      "original": true,
+      "x": 555,
+      "y": 250
+    },
+    "Seven Lamps League": {
+      "id": "location.caldris.seven-lamps-league",
+      "name": "Seven Lamps League",
+      "kind": "region",
+      "summary": "Seven Lamps League is a merchant city league of Solasca. Its present pressure: The League's rotating chair has disappeared with the key to a sealed Concord archive.",
+      "visibility": "public",
+      "parentId": "location.caldris.solasca",
+      "original": true,
+      "x": 245,
+      "y": 390
+    },
+    "Aster Quay": {
+      "id": "location.caldris.seven-lamps-league.aster-quay",
+      "name": "Aster Quay",
+      "kind": "settlement",
+      "summary": "Aster Quay is the League's diplomatic and financial centre, built around seven harbour basins and the sealed hall where the Lantern Concord ended. Printing houses, embassies, insurers, warehouses, and cafes fill narrow streets.",
+      "visibility": "public",
+      "parentId": "location.caldris.seven-lamps-league",
+      "original": true,
+      "x": 165,
+      "y": 310
+    },
+    "Chairman's Nap": {
+      "id": "location.caldris.seven-lamps-league.chairmans-nap",
+      "name": "Chairman's Nap",
+      "kind": "site",
+      "summary": "Roadside inn founded where a League chair once slept through a vote; meetings there cannot exceed one hour. Present pressure: Delegates exploit the rule to prevent testimony from remote villages.",
+      "visibility": "public",
+      "parentId": "location.caldris.seven-lamps-league",
+      "original": true,
+      "x": 575,
+      "y": 260
+    },
+    "Glassharbor": {
+      "id": "location.caldris.seven-lamps-league.glassharbor",
+      "name": "Glassharbor",
+      "kind": "settlement",
+      "summary": "Glassharbor produces windows, mirrors, lenses, beads, bottles, and elaborate navigational lights. Its furnaces glow along a sheltered bay.",
+      "visibility": "public",
+      "parentId": "location.caldris.seven-lamps-league",
+      "original": true,
+      "x": 165,
+      "y": 585
+    },
+    "Halfprice Bridge": {
+      "id": "location.caldris.seven-lamps-league.halfprice-bridge",
+      "name": "Halfprice Bridge",
+      "kind": "site",
+      "summary": "Merchant-funded toll bridge whose fee drops at sunset, producing a daily race of carts and insults. Present pressure: The bridge keeper abolishes the discount without council authority.",
+      "visibility": "public",
+      "parentId": "location.caldris.seven-lamps-league",
+      "original": true,
+      "x": 630,
+      "y": 490
+    },
+    "Low Lantern": {
+      "id": "location.caldris.seven-lamps-league.low-lantern",
+      "name": "Low Lantern",
+      "kind": "settlement",
+      "summary": "Low Lantern occupies marshy islands at the northern strait. Warehouses, rope bridges, customs houses, and cheap lodging make it less grand and more useful than the other League cities.",
+      "visibility": "public",
+      "parentId": "location.caldris.seven-lamps-league",
+      "original": true,
+      "x": 165,
+      "y": 735
+    },
+    "Pepperglass Yard": {
+      "id": "location.caldris.seven-lamps-league.pepperglass-yard",
+      "name": "Pepperglass Yard",
+      "kind": "site",
+      "summary": "Courtyard where spice brokers use coloured glass tubes to compare powders without revealing recipes. Present pressure: Every sample smells faintly of smoke and buyers suspect adulteration.",
+      "visibility": "public",
+      "parentId": "location.caldris.seven-lamps-league",
+      "original": true,
+      "x": 755,
+      "y": 655
+    },
+    "The Fifth Warehouse": {
+      "id": "location.caldris.seven-lamps-league.the-fifth-warehouse",
+      "name": "The Fifth Warehouse",
+      "kind": "site",
+      "summary": "Neutral bonded store with four visible buildings and a famous joke about the missing fifth. Present pressure: Inventories show goods entering a warehouse no one can find.",
+      "visibility": "public",
+      "parentId": "location.caldris.seven-lamps-league",
+      "original": true,
+      "x": 510,
+      "y": 590
+    },
+    "Solasca": {
+      "id": "location.caldris.solasca",
+      "name": "Solasca",
+      "kind": "region",
+      "summary": "The eastern and southeastern continent: deltas, dry plateaus, terraced highlands, island chains, caravan rivers, shaded courts, white-stone ports, and societies shaped by canals, cisterns, sailing seasons, and river law.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas",
+      "original": true,
+      "x": 765,
+      "y": 490
+    },
+    "Tessarane": {
+      "id": "location.caldris.tessarane",
+      "name": "Tessarane",
+      "kind": "region",
+      "summary": "Tessarane is a kingdom of Solasca. Its present pressure: Astronomers predict an ordinary comet; the court insists it confirms three incompatible prophecies.",
+      "visibility": "public",
+      "parentId": "location.caldris.solasca",
+      "original": true,
+      "x": 770,
+      "y": 440
+    },
+    "Blue Step": {
+      "id": "location.caldris.tessarane.blue-step",
+      "name": "Blue Step",
+      "kind": "settlement",
+      "summary": "Blue Step sits where the plateau road descends through blue-grey cliffs toward the Lantern Sea. It is a caravan, customs, and animal-remount city.",
+      "visibility": "public",
+      "parentId": "location.caldris.tessarane",
+      "original": true,
+      "x": 280,
+      "y": 325
+    },
+    "Cloud Apricot Farm": {
+      "id": "location.caldris.tessarane.cloud-apricot-farm",
+      "name": "Cloud Apricot Farm",
+      "kind": "site",
+      "summary": "Sheltered highland orchard producing small pale fruit and hosting astronomers during clear winters. Present pressure: Every telescope points slightly wrong despite careful calibration.",
+      "visibility": "public",
+      "parentId": "location.caldris.tessarane",
+      "original": true,
+      "x": 680,
+      "y": 220
+    },
+    "Kitewife Mesa": {
+      "id": "location.caldris.tessarane.kitewife-mesa",
+      "name": "Kitewife Mesa",
+      "kind": "site",
+      "summary": "Windy plateau where couriers test signal kites and families dry cheese in woven cages. Present pressure: Kites return with extra knots that resemble military code.",
+      "visibility": "public",
+      "parentId": "location.caldris.tessarane",
+      "original": true,
+      "x": 380,
+      "y": 170
+    },
+    "Mare's Table": {
+      "id": "location.caldris.tessarane.mares-table",
+      "name": "Mare's Table",
+      "kind": "site",
+      "summary": "caravan well in Tessarane. Neutral negotiation site where weapons are stored in flour bins.",
+      "visibility": "public",
+      "parentId": "location.caldris.tessarane",
+      "original": true,
+      "x": 670,
+      "y": 780
+    },
+    "Orovant": {
+      "id": "location.caldris.tessarane.orovant",
+      "name": "Orovant",
+      "kind": "settlement",
+      "summary": "Orovant makes glass, lenses, instruments, and blue ceramics using desert-edge sand and caravan fuel.",
+      "visibility": "public",
+      "parentId": "location.caldris.tessarane",
+      "original": true,
+      "x": 505,
+      "y": 455
+    },
+    "Red Cup Spring": {
+      "id": "location.caldris.tessarane.red-cup-spring",
+      "name": "Red Cup Spring",
+      "kind": "site",
+      "summary": "Caravan water stop whose iron-rich spring stains every drinking cup rust-red. Present pressure: The flow dwindles as three caravans converge.",
+      "visibility": "public",
+      "parentId": "location.caldris.tessarane",
+      "original": true,
+      "x": 465,
+      "y": 710
+    },
+    "Tessa": {
+      "id": "location.caldris.tessarane.tessa",
+      "name": "Tessa",
+      "kind": "settlement",
+      "summary": "Tessa is a seasonal royal city of pale stone, wind courts, horse markets, observatories, and broad public cisterns. The court moves here for clear summer skies.",
+      "visibility": "public",
+      "parentId": "location.caldris.tessarane",
+      "original": true,
+      "x": 760,
+      "y": 620
+    },
+    "The Patient Stair": {
+      "id": "location.caldris.tessarane.the-patient-stair",
+      "name": "The Patient Stair",
+      "kind": "site",
+      "summary": "Thousands of shallow steps carry pilgrims, salt, and pack animals over a high pass. Present pressure: Sections have been rearranged, sending travelers in circles.",
+      "visibility": "public",
+      "parentId": "location.caldris.tessarane",
+      "original": true,
+      "x": 155,
+      "y": 575
+    },
+    "The Thirteen Shadows": {
+      "id": "location.caldris.tessarane.the-thirteen-shadows",
+      "name": "The Thirteen Shadows",
+      "kind": "site",
+      "summary": "standing stones in Tessarane. Cast twelve shadows except during one comet year.",
+      "visibility": "public",
+      "parentId": "location.caldris.tessarane",
+      "original": true,
+      "x": 850,
+      "y": 375
+    },
+    "Veyr Marches": {
+      "id": "location.caldris.veyr-marches",
+      "name": "Veyr Marches",
+      "kind": "region",
+      "summary": "Veyr Marches is a elective march confederacy of Eredane. Its present pressure: The High Warden is dying and the marches disagree whether one successor should command them all.",
+      "visibility": "public",
+      "parentId": "location.caldris.eredane",
+      "original": true,
+      "x": 500,
+      "y": 255
+    },
+    "Foxglove Relay": {
+      "id": "location.caldris.veyr-marches.foxglove-relay",
+      "name": "Foxglove Relay",
+      "kind": "site",
+      "summary": "Hilltop courier station breeding small hardy horses and drying purple flowers for safe medicinal trade. Present pressure: Messages arrive resealed but apparently unread.",
+      "visibility": "public",
+      "parentId": "location.caldris.veyr-marches",
+      "original": true,
+      "x": 660,
+      "y": 320
+    },
+    "Ninepost Field": {
+      "id": "location.caldris.veyr-marches.ninepost-field",
+      "name": "Ninepost Field",
+      "kind": "site",
+      "summary": "Neutral meadow where nine carved posts mark grazing, court, market, and muster rights for different marches. Present pressure: A tenth post appears overnight with convincing weathering.",
+      "visibility": "public",
+      "parentId": "location.caldris.veyr-marches",
+      "original": true,
+      "x": 420,
+      "y": 280
+    },
+    "Oakshield": {
+      "id": "location.caldris.veyr-marches.oakshield",
+      "name": "Oakshield",
+      "kind": "settlement",
+      "summary": "Oakshield guards forest passes with layered timber walls designed to be repaired, not admired. It exports horses, charcoal, leather, and excellent preserved mushrooms.",
+      "visibility": "public",
+      "parentId": "location.caldris.veyr-marches",
+      "original": true,
+      "x": 725,
+      "y": 635
+    },
+    "Redgate": {
+      "id": "location.caldris.veyr-marches.redgate",
+      "name": "Redgate",
+      "kind": "settlement",
+      "summary": "Redgate surrounds the rust-red stone arch where nine march roads meet. The High Warden's moot, escort market, banner court, and sprawling inns make it a capital only when everyone agrees.",
+      "visibility": "public",
+      "parentId": "location.caldris.veyr-marches",
+      "original": true,
+      "x": 480,
+      "y": 450
+    },
+    "The Courteous Ruin": {
+      "id": "location.caldris.veyr-marches.the-courteous-ruin",
+      "name": "The Courteous Ruin",
+      "kind": "site",
+      "summary": "Roofless border manor where travelers still follow elaborate guest customs preserved by its caretaker family. Present pressure: Armed claimants demand the keys to a house with no doors.",
+      "visibility": "public",
+      "parentId": "location.caldris.veyr-marches",
+      "original": true,
+      "x": 815,
+      "y": 430
+    },
+    "Vanner's Rest": {
+      "id": "location.caldris.veyr-marches.vanners-rest",
+      "name": "Vanner's Rest",
+      "kind": "settlement",
+      "summary": "Vanner's Rest grew around caravan fields and is famous for wheelwrights, horse doctors, roadside theatre, and the loudest inn signs in Eredane.",
+      "visibility": "public",
+      "parentId": "location.caldris.veyr-marches",
+      "original": true,
+      "x": 230,
+      "y": 655
+    },
+    "Wheelwife Hollow": {
+      "id": "location.caldris.veyr-marches.wheelwife-hollow",
+      "name": "Wheelwife Hollow",
+      "kind": "site",
+      "summary": "Wagon-repair settlement built around a spring and a circular common where axle-makers test their work. Present pressure: Travelers arrive with wheels failing in the same peculiar way.",
+      "visibility": "public",
+      "parentId": "location.caldris.veyr-marches",
+      "original": true,
+      "x": 350,
+      "y": 770
+    },
+    "Shepherd's Refusal": {
+      "id": "location.caldris.veyr.shepherds-refusal",
+      "name": "Shepherd's Refusal",
+      "kind": "site",
+      "summary": "hill and shrine in Veyr. Memorial to a commoner who declined three crowns and one very fine horse.",
+      "visibility": "public",
+      "parentId": "location.caldris.veyr-marches",
+      "original": true,
+      "x": 170,
+      "y": 450
+    },
+    "The Nine-Mile Inn": {
+      "id": "location.caldris.veyr.the-nine-mile-inn",
+      "name": "The Nine-Mile Inn",
+      "kind": "site",
+      "summary": "road complex in Veyr. Famous for being a different distance from every map origin.",
+      "visibility": "public",
+      "parentId": "location.caldris.veyr-marches",
+      "original": true,
+      "x": 485,
+      "y": 645
+    },
+    "Wren's Hollow": {
+      "id": "location.caldris.wrens-hollow",
+      "name": "Wren's Hollow",
+      "kind": "settlement",
+      "summary": "A quarry village beneath singing cliffs, supplying pale building stone and slate while warm air rises from a reopened face that intersects something built rather than natural.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.bramble-country",
+      "original": true,
+      "x": 785,
+      "y": 245
+    },
+    "Chalklands": {
+      "id": "location.caldris.atlas.chalklands",
+      "name": "Chalklands",
+      "kind": "region",
+      "summary": "The chalk uplands around Highmead and the Button Hills. Sheep tracks descend to the Lantern Road; older storehouses and commons survive beside working farms.",
+      "visibility": "public",
+      "parentId": "location.caldris.alderwick",
+      "original": false,
+      "x": 265,
+      "y": 250
+    },
+    "Bramble Country": {
+      "id": "location.caldris.atlas.bramble-country",
+      "name": "Bramble Country",
+      "kind": "region",
+      "summary": "The Weir valley around Bramblebridge, Candlefen and Wren's Hollow. The Lantern Road ends at Bramblebridge; separately named river roads continue toward Merecross and the Lower Vey.",
+      "visibility": "public",
+      "parentId": "location.caldris.alderwick",
+      "original": false,
+      "x": 510,
+      "y": 400
+    },
+    "Orchard March": {
+      "id": "location.caldris.atlas.orchard-march",
+      "name": "Orchard March",
+      "kind": "region",
+      "summary": "The southern orchard country of Harth, Boughmeet and Sallowmere. Grafting nurseries, lake fisheries and old hospitality houses connect by local cart roads.",
+      "visibility": "public",
+      "parentId": "location.caldris.alderwick",
+      "original": false,
+      "x": 260,
+      "y": 650
+    },
+    "Roven Approaches": {
+      "id": "location.caldris.atlas.roven-approaches",
+      "name": "Roven Approaches",
+      "kind": "region",
+      "summary": "Northern foothills where the Reth road divides between maintained shelters, Juniper Gate and the unfinished giant stair. The lower winter descent does not make the upper stair a through-road.",
+      "visibility": "public",
+      "parentId": "location.caldris.veyr-marches",
+      "original": false,
+      "x": 480,
+      "y": 150
+    },
+    "Lantern Sea": {
+      "id": "location.caldris.atlas.lantern-sea",
+      "name": "Lantern Sea",
+      "kind": "region",
+      "summary": "The sea between Eredane and Solasca. Coastal passages and open-water sailings require vessels, working harbours and suitable conditions; the sea is not a road.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas",
+      "original": false,
+      "x": 510,
+      "y": 570
+    },
+    "Morrow Strait": {
+      "id": "location.caldris.atlas.morrow-strait",
+      "name": "Morrow Strait",
+      "kind": "region",
+      "summary": "The crossing between the Lower Vey coast and historic Serevan, marked by the Halfway Light. Pilotage and weather shape passage between its opposing shores.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.lantern-sea",
+      "original": false,
+      "x": 510,
+      "y": 330
+    },
+    "Bramble Market": {
+      "id": "location.caldris.atlas.bramble-market",
+      "name": "Bramble Market",
+      "kind": "site",
+      "summary": "The central market square on the western approach to Bramblebridge's toll bridge, linking the road inns, weighing hall and civic lanes.",
+      "visibility": "public",
+      "parentId": "location.caldris.bramblebridge",
+      "original": false,
+      "x": 435,
+      "y": 520
+    },
+    "Weir Bridge": {
+      "id": "location.caldris.atlas.weir-bridge",
+      "name": "Weir Bridge",
+      "kind": "site",
+      "summary": "The working bridge over the narrow Weir, with Bridge House at its west approach. The old mill footbridge provides a smaller upstream crossing.",
+      "visibility": "public",
+      "parentId": "location.caldris.bramblebridge",
+      "original": false,
+      "x": 655,
+      "y": 505
+    },
+    "Reth Road Fork": {
+      "id": "location.caldris.atlas.reth-road-fork",
+      "name": "Reth Road Fork",
+      "kind": "site",
+      "summary": "A signed fork north of Reth Gate. The maintained winter route turns toward Hearthscar; the smaller Crowstep branch climbs toward the Winter Latch and ends below the unfinished stair.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.roven-approaches",
+      "original": false,
+      "x": 500,
+      "y": 500
+    },
+    "Bramble East Gate": {
+      "id": "location.caldris.atlas.bramble-east-gate",
+      "name": "Bramble East Gate",
+      "kind": "site",
+      "summary": "The eastern town approach where local lanes divide toward the quarry country and the lower river road. It is a gateway into town, not an extension of the Lantern Road name.",
+      "visibility": "public",
+      "parentId": "location.caldris.bramblebridge",
+      "original": false,
+      "x": 870,
+      "y": 565
+    },
+    "Lanternback Colossus": {
+      "id": "location.caldris.landmark.lanternback-colossus",
+      "name": "Lanternback Colossus",
+      "kind": "site",
+      "summary": "A hill-sized, kneeling stone figure shelters a spring and communal hearths inside its broken rib vault. Sheep graze on its bowed head; amber lanterns mark the safe shelters below. Its makers and original purpose remain uncertain. Shepherds maintain the approach, while travellers exchange fuel, gossip and repair work for a place by the fire. The lanterns visible today are maintained lights, not an inexhaustible ancient enchantment.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.chalklands",
+      "original": false,
+      "landmark": true,
+      "x": 125,
+      "y": 340
+    },
+    "Crownroot Cathedral": {
+      "id": "location.caldris.landmark.crownroot-cathedral",
+      "name": "Crownroot Cathedral",
+      "kind": "site",
+      "summary": "An immense living pear tree raises a vaulted courtyard between its exposed roots. Blossom shades grafting benches, modest stalls and a shared kitchen. The name cathedral describes its shape: no single temple owns it. A narrow strip of fallen fruit remains for birds and small animals, while careful coppicing keeps the working spaces light. The oldest trunk is hollow, but younger living columns continue to grow around it.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.orchard-march",
+      "original": false,
+      "landmark": true,
+      "x": 870,
+      "y": 835
+    },
+    "Skyharp of Roven": {
+      "id": "location.caldris.landmark.skyharp-of-roven",
+      "name": "Skyharp of Roven",
+      "kind": "site",
+      "summary": "Two enormous stone horns and the remains of a freight-hoist arch rise above a Roven gorge. Bronze cables and repaired resonators make the frame sing in mountain wind. A keeper tends the grounded work platform, warning bells and brazier. Beyond it is empty air: the Skyharp is a lookout and a former lifting station, never a bridge or a completed upper pass.",
+      "visibility": "public",
+      "parentId": "location.caldris.atlas.roven-approaches",
+      "original": false,
+      "landmark": true,
+      "x": 160,
+      "y": 205
+    },
+    "The Upward Fall": {
+      "id": "location.caldris.landmark.upward-fall",
+      "name": "The Upward Fall",
+      "kind": "site",
+      "summary": "A slender waterfall climbs from a spring bowl beside a broken aqueduct arch, then runs downhill through an open channel toward the reed beds. The old lifting enchantment operates only on this small diverted flow. Sluice workers maintain the receiving channel; tea sellers and mill apprentices gather on the safe bank platform. No part of the rising water is a stair, lift, or navigable route.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.vey-lowlands",
+      "original": false,
+      "landmark": true,
+      "x": 135,
+      "y": 240
+    },
+    "The Hanging Harbour": {
+      "id": "location.caldris.landmark.hanging-harbour",
+      "name": "The Hanging Harbour",
+      "kind": "site",
+      "summary": "Three retired ship hulls rest in immense chained cradles against a sea cliff, forming a stepped cooperative repair yard above a small landing. Patched sails shade benches; washing hangs beside drying rope. The landward path reaches only the inspected upper workshops. Working boats use the lower landing when conditions permit. The chains, masonry and hulls carry real loads and require constant care.",
+      "visibility": "public",
+      "parentId": "location.caldris.carrowmere",
+      "original": false,
+      "landmark": true,
+      "x": 285,
+      "y": 880
+    },
+    "Emberglass Whale": {
+      "id": "location.caldris.landmark.emberglass-whale",
+      "name": "Emberglass Whale",
+      "kind": "site",
+      "summary": "A cathedral-sized whale fashioned from smoky volcanic glass lies across a copper-coloured mountain terrace. Its hollow ribs cast amber patterns on the ground; the rising tail is visible from distant carrying paths. Assayers and guides work beside the jaw, while the brittle interior remains outside the ordinary visitor route. Tool marks and joined ribs identify it as a crafted structure, though its makers' intended meaning is disputed.",
+      "visibility": "public",
+      "parentId": "location.caldris.kethria",
+      "original": false,
+      "landmark": true,
+      "x": 180,
+      "y": 515
+    },
+    "Rain Crown of Orovant": {
+      "id": "location.caldris.landmark.rain-crown-of-orovant",
+      "name": "Rain Crown of Orovant",
+      "kind": "site",
+      "summary": "Seven enormous basalt fragments hover in a broken circle above an old cistern tower. Repaired copper-mesh veils gather dawn mist; fine threads of water fall into the public basin. The ancient hovering work gives the landmark its shape, while fog, mesh, cleaning and storage determine its modest water yield. A hillside path reaches the cistern, with no registered ascent to the suspended stones.",
+      "visibility": "public",
+      "parentId": "location.caldris.tessarane",
+      "original": false,
+      "landmark": true,
+      "x": 170,
+      "y": 815
+    },
+    "Glass-Tide Palace": {
+      "id": "location.caldris.landmark.glass-tide-palace",
+      "name": "Glass-Tide Palace",
+      "kind": "site",
+      "summary": "A great green-glass conservatory stands half immersed below the Serevan cliffs. Tides light its dome from beneath and carry fish through the flooded lower galleries. Ferries use an inspected upper landing; visiting traders occupy the raised arcade on agreed market days. Palace is a later visitor's name for a former communal receiving hall. There is no dry causeway or ordinary route through its lower rooms.",
+      "visibility": "public",
+      "parentId": "location.caldris.lore.serevan",
+      "original": false,
+      "landmark": true,
+      "x": 115,
+      "y": 835
+    },
+    "The Orchardback": {
+      "id": "location.caldris.landmark.orchardback",
+      "name": "The Orchardback",
+      "kind": "site",
+      "summary": "An island-sized sea tortoise rests in a warm Selucian bay with a small terraced orchard growing in the weathered hollows of its shell. A caretaker shelter, light retaining walls and a rope pontoon serve a few workers and visitors. Its head and flippers remain clear of moorings. The atlas marks its presently observed resting bay, not a permanent island or a schedule of future movement.",
+      "visibility": "public",
+      "parentId": "location.caldris.selucia",
+      "original": false,
+      "landmark": true,
+      "x": 490,
+      "y": 865
+    }
+  },
+  "maps": {
+    "Caldris Atlas": {
+      "name": "Caldris Atlas",
+      "terrain": "world",
+      "subtitle": "Two continents, twelve polities, and the Lantern Sea",
+      "features": [
+        "Eredane",
+        "Solasca",
+        "Lantern Sea"
+      ],
+      "river": null,
+      "coast": null
+    },
+    "Eredane": {
+      "name": "Eredane",
+      "terrain": "continent-west",
+      "subtitle": "Cold northern moors, eastern passes, and the southern river kingdoms",
+      "features": [
+        "Dunmarrow",
+        "Veyr Marches",
+        "Lornesse",
+        "Carrowmere",
+        "Alderwick",
+        "Bellafont"
+      ],
+      "river": null,
+      "coast": null
+    },
+    "Solasca": {
+      "name": "Solasca",
+      "terrain": "continent-east",
+      "subtitle": "Western ports, the Aur valley, high terraces and delta shores",
+      "features": [
+        "Kethria",
+        "Tessarane",
+        "Ordelain",
+        "Namarra",
+        "Seven Lamps League",
+        "Selucia"
+      ],
+      "river": null,
+      "coast": null
+    },
+    "Alderwick": {
+      "name": "Alderwick",
+      "terrain": "green",
+      "subtitle": "The Weir and Lark meet the Mere; the lower river is the Vey country",
+      "features": [
+        "Chalklands",
+        "Bramble Country",
+        "Orchard March",
+        "Merecross",
+        "Dunwarren",
+        "King's Patience Wood",
+        "Vey Lowlands",
+        "Mothglass Ruin"
+      ],
+      "river": {
+        "name": "Mere / Lower Vey",
+        "points": [
+          [
+            600,
+            150
+          ],
+          [
+            590,
+            390
+          ],
+          [
+            620,
+            570
+          ],
+          [
+            680,
+            660
+          ],
+          [
+            760,
+            785
+          ],
+          [
+            820,
+            960
+          ]
+        ]
+      },
+      "coast": "east"
+    },
+    "Chalklands": {
+      "name": "Chalklands",
+      "terrain": "chalk",
+      "subtitle": "Highmead ridge, sheep commons and the oldest storehouse hills",
+      "features": [
+        "Highmead",
+        "The Button Hills",
+        "The White Lamb Downs",
+        "Sevenpost Field",
+        "Ragman's Mile",
+        "Wetherfold Common",
+        "Thistlewood Arch",
+        "Bluecup Hollow",
+        "Lanternback Colossus"
+      ],
+      "river": null,
+      "coast": null
+    },
+    "The Button Hills": {
+      "name": "The Button Hills",
+      "terrain": "chalk",
+      "subtitle": "Working pasture over ancient communal stores",
+      "features": [
+        "Merebutton",
+        "Rusk Hollow"
+      ],
+      "river": null,
+      "coast": null
+    },
+    "Bramble Country": {
+      "name": "Bramble Country",
+      "terrain": "river",
+      "subtitle": "The Lantern Road ends at the Weir crossing",
+      "features": [
+        "Bramblebridge",
+        "Candlefen",
+        "Wren's Hollow",
+        "Mallow Abbey",
+        "Mallow Quay",
+        "Sourapple Ford",
+        "The Drowned Groves",
+        "Old Merecross",
+        "The Road That Forgets"
+      ],
+      "river": {
+        "name": "Weir",
+        "points": [
+          [
+            370,
+            120
+          ],
+          [
+            390,
+            285
+          ],
+          [
+            455,
+            450
+          ],
+          [
+            545,
+            595
+          ],
+          [
+            570,
+            755
+          ],
+          [
+            685,
+            915
+          ]
+        ]
+      },
+      "coast": null
+    },
+    "Orchard March": {
+      "name": "Orchard March",
+      "terrain": "orchard",
+      "subtitle": "Harth north of Boughmeet; Sallowmere beside the western lake",
+      "features": [
+        "Harth Orchard",
+        "Boughmeet",
+        "Sallowmere",
+        "Alderwake",
+        "Orrel Wood",
+        "Amberstile",
+        "Ribbon Bridge",
+        "Saint Meret's Rest",
+        "The South Turning",
+        "The Seventh Hearth",
+        "Crownroot Cathedral"
+      ],
+      "river": {
+        "name": "Lark",
+        "points": [
+          [
+            620,
+            140
+          ],
+          [
+            655,
+            290
+          ],
+          [
+            640,
+            455
+          ],
+          [
+            760,
+            610
+          ],
+          [
+            895,
+            700
+          ]
+        ]
+      },
+      "coast": null
+    },
+    "Vey Lowlands": {
+      "name": "Vey Lowlands",
+      "terrain": "delta",
+      "subtitle": "From Merecross downstream to the rival tidal harbours",
+      "features": [
+        "Redbank Reach",
+        "Penn's Reach",
+        "Willowrace",
+        "Rookwater",
+        "Reedminster",
+        "Doorhaven",
+        "Bellwade",
+        "Celandine House",
+        "Darnel Field",
+        "Low Fen Redoubt",
+        "Ash Salt",
+        "Veymouth",
+        "Nacre Quay",
+        "Brinefold",
+        "Lanterns' End",
+        "Morrowstep Sanctuary",
+        "The Upward Fall"
+      ],
+      "river": {
+        "name": "Lower Vey",
+        "points": [
+          [
+            315,
+            60
+          ],
+          [
+            340,
+            175
+          ],
+          [
+            475,
+            290
+          ],
+          [
+            530,
+            435
+          ],
+          [
+            575,
+            580
+          ],
+          [
+            540,
+            760
+          ],
+          [
+            575,
+            1000
+          ]
+        ]
+      },
+      "coast": "south"
+    },
+    "Bellafont": {
+      "name": "Bellafont",
+      "terrain": "orchard",
+      "subtitle": "Irrigated terraces, cloth canals and southern wine roads",
+      "features": [
+        "Bellafont City",
+        "Cresset",
+        "Vintner's Reach",
+        "Blue Apron Fair",
+        "Mothglass House",
+        "Quince Ladder",
+        "The Rain Parlour",
+        "Greywife Orchard",
+        "The Honey Parliament",
+        "Swallowwatch Orchard"
+      ],
+      "river": {
+        "name": "Cloth canals",
+        "points": [
+          [
+            690,
+            150
+          ],
+          [
+            630,
+            345
+          ],
+          [
+            540,
+            400
+          ],
+          [
+            635,
+            530
+          ],
+          [
+            740,
+            600
+          ],
+          [
+            800,
+            930
+          ]
+        ]
+      },
+      "coast": null
+    },
+    "Carrowmere": {
+      "name": "Carrowmere",
+      "terrain": "coast-west",
+      "subtitle": "Shipyards, tidal islands and western cliff harbours",
+      "features": [
+        "Penross",
+        "Gannet Mercy",
+        "Saltmere",
+        "Gullstrand",
+        "Brinewife's Steps",
+        "Mackerel Crown",
+        "The Dry Admiral",
+        "The Walking Dunes",
+        "Widow's Beam",
+        "The Hanging Harbour"
+      ],
+      "river": null,
+      "coast": "west"
+    },
+    "Dunmarrow": {
+      "name": "Dunmarrow",
+      "terrain": "moor",
+      "subtitle": "Peat rivers, iron uplands and the northern port",
+      "features": [
+        "Stonewake",
+        "Greyharrow",
+        "Moorwatch",
+        "Blackcap Fell",
+        "Latchwater",
+        "Rook Anvil",
+        "Saint Vey's Crutch",
+        "Cold Barrow",
+        "The Iron Choir"
+      ],
+      "river": {
+        "name": "Peatwater",
+        "points": [
+          [
+            645,
+            105
+          ],
+          [
+            620,
+            270
+          ],
+          [
+            430,
+            425
+          ],
+          [
+            320,
+            600
+          ],
+          [
+            235,
+            825
+          ]
+        ]
+      },
+      "coast": "north"
+    },
+    "Veyr Marches": {
+      "name": "Veyr Marches",
+      "terrain": "forest",
+      "subtitle": "Nine march roads meet at Redgate; the Roven branches climb north",
+      "features": [
+        "Redgate",
+        "Oakshield",
+        "Vanner's Rest",
+        "Foxglove Relay",
+        "Ninepost Field",
+        "The Courteous Ruin",
+        "Wheelwife Hollow",
+        "Shepherd's Refusal",
+        "The Nine-Mile Inn",
+        "Roven Approaches",
+        "The Lantern Hospice"
+      ],
+      "river": {
+        "name": "Reth water",
+        "points": [
+          [
+            520,
+            125
+          ],
+          [
+            555,
+            300
+          ],
+          [
+            480,
+            450
+          ],
+          [
+            580,
+            590
+          ],
+          [
+            720,
+            715
+          ]
+        ]
+      },
+      "coast": null
+    },
+    "Roven Approaches": {
+      "name": "Roven Approaches",
+      "terrain": "mountain",
+      "subtitle": "The maintained winter descent and the unfinished stair are different branches",
+      "features": [
+        "Tallow Ford",
+        "Reth Gate",
+        "Reth Road Fork",
+        "Hearthscar Shelter",
+        "Juniper Gate",
+        "Crowstep Shelter",
+        "The Winter Latch",
+        "The Unfinished Stair",
+        "Hazelstairs",
+        "Greyfold Ridge",
+        "Skyharp of Roven"
+      ],
+      "river": {
+        "name": "Roven streams",
+        "points": [
+          [
+            610,
+            120
+          ],
+          [
+            580,
+            320
+          ],
+          [
+            500,
+            500
+          ],
+          [
+            470,
+            665
+          ],
+          [
+            390,
+            805
+          ],
+          [
+            280,
+            960
+          ]
+        ]
+      },
+      "coast": null
+    },
+    "Lornesse": {
+      "name": "Lornesse",
+      "terrain": "mountain",
+      "subtitle": "Hanging valleys, worked stone and the Aunholt terraces",
+      "features": [
+        "Lorn",
+        "Copperdeep",
+        "Kestrelwatch",
+        "Goatminster",
+        "Seven Echo Quarry",
+        "The Widow's Incline",
+        "Warmstone Baths",
+        "Hollow Bell Monastery",
+        "Stair of One Hundred Regrets",
+        "Aunholt",
+        "Cairn Moss",
+        "Whitewindow",
+        "Glasswinter Tarn"
+      ],
+      "river": {
+        "name": "Lornspine meltwater",
+        "points": [
+          [
+            720,
+            105
+          ],
+          [
+            670,
+            280
+          ],
+          [
+            605,
+            445
+          ],
+          [
+            650,
+            635
+          ],
+          [
+            720,
+            950
+          ]
+        ]
+      },
+      "coast": null
+    },
+    "Aunholt": {
+      "name": "Aunholt",
+      "terrain": "terrace",
+      "subtitle": "Mountain loads change hands above the woodland hamlets",
+      "features": [
+        "Goat's Ledger",
+        "The Mile of Little Bridges",
+        "Seln"
+      ],
+      "river": {
+        "name": "Terrace channels",
+        "points": [
+          [
+            280,
+            140
+          ],
+          [
+            450,
+            360
+          ],
+          [
+            480,
+            590
+          ],
+          [
+            245,
+            735
+          ],
+          [
+            150,
+            945
+          ]
+        ]
+      },
+      "coast": null
+    },
+    "Seven Lamps League": {
+      "name": "Seven Lamps League",
+      "terrain": "coast-west",
+      "subtitle": "Commercial cities of the western Solascan shore",
+      "features": [
+        "Aster Quay",
+        "Glassharbor",
+        "Low Lantern",
+        "Chairman's Nap",
+        "Halfprice Bridge",
+        "Pepperglass Yard",
+        "The Fifth Warehouse",
+        "Brokers' Orchard",
+        "The Sealed Hall",
+        "Serevan"
+      ],
+      "river": null,
+      "coast": "west"
+    },
+    "Serevan": {
+      "name": "Serevan",
+      "terrain": "coast-west",
+      "subtitle": "Leth Sarai faces the Morrow crossing; Istravel rises inland",
+      "features": [
+        "Leth Sarai",
+        "Istravel",
+        "Veyr's Lantern",
+        "Glass-Tide Palace"
+      ],
+      "river": null,
+      "coast": "west"
+    },
+    "Ordelain": {
+      "name": "Ordelain",
+      "terrain": "river",
+      "subtitle": "The Aur plain, canal courts and the historic Selvar district",
+      "features": [
+        "Aurent",
+        "Malvar",
+        "Vessa",
+        "Inkfish Wharf",
+        "Pomegranate Court",
+        "Reed Judge's Rest",
+        "The Bent Mile",
+        "Old Aur Island",
+        "The Court of Wet Feet",
+        "Selvar"
+      ],
+      "river": {
+        "name": "Aur",
+        "points": [
+          [
+            670,
+            105
+          ],
+          [
+            660,
+            220
+          ],
+          [
+            510,
+            400
+          ],
+          [
+            595,
+            585
+          ],
+          [
+            545,
+            755
+          ],
+          [
+            475,
+            970
+          ]
+        ]
+      },
+      "coast": null
+    },
+    "Selvar": {
+      "name": "Selvar",
+      "terrain": "terrace",
+      "subtitle": "An inland carrying district east of Serevan",
+      "features": [
+        "Namar Vale"
+      ],
+      "river": null,
+      "coast": null
+    },
+    "Namarra": {
+      "name": "Namarra",
+      "terrain": "delta",
+      "subtitle": "The Namar channels divide below the royal granaries",
+      "features": [
+        "Reedcrown",
+        "Namar",
+        "Saffron Quay",
+        "Drowned Door Orchard",
+        "Mosquito Abbey",
+        "The Saffron Ox",
+        "Three Spoon Village",
+        "Reed Graves",
+        "The Absent Villages",
+        "Reedname Landing"
+      ],
+      "river": {
+        "name": "Namar channels",
+        "points": [
+          [
+            525,
+            70
+          ],
+          [
+            550,
+            190
+          ],
+          [
+            505,
+            425
+          ],
+          [
+            515,
+            625
+          ],
+          [
+            615,
+            795
+          ],
+          [
+            690,
+            970
+          ]
+        ]
+      },
+      "coast": "south"
+    },
+    "Kethria": {
+      "name": "Kethria",
+      "terrain": "mountain",
+      "subtitle": "Copper terraces, snow gates and guarded volcanic uplands",
+      "features": [
+        "Snowgate",
+        "Var Keth",
+        "Copperwell",
+        "Breadshield Monastery",
+        "Copper Rain Terrace",
+        "The Empty Saddle",
+        "Whisper Kiln",
+        "Karsh's Sleeping Ridge",
+        "The Door Valley",
+        "Emberglass Whale"
+      ],
+      "river": {
+        "name": "Snowmelt canals",
+        "points": [
+          [
+            470,
+            80
+          ],
+          [
+            440,
+            190
+          ],
+          [
+            505,
+            470
+          ],
+          [
+            620,
+            610
+          ],
+          [
+            710,
+            645
+          ],
+          [
+            790,
+            930
+          ]
+        ]
+      },
+      "coast": null
+    },
+    "Tessarane": {
+      "name": "Tessarane",
+      "terrain": "dry",
+      "subtitle": "High caravan roads, wells and astronomical sites",
+      "features": [
+        "Blue Step",
+        "Orovant",
+        "Tessa",
+        "Cloud Apricot Farm",
+        "Kitewife Mesa",
+        "Red Cup Spring",
+        "The Patient Stair",
+        "Mare's Table",
+        "The Thirteen Shadows",
+        "Rain Crown of Orovant"
+      ],
+      "river": null,
+      "coast": null
+    },
+    "Selucia": {
+      "name": "Selucia",
+      "terrain": "islands",
+      "subtitle": "Island roads end at harbours; crossings require boats",
+      "features": [
+        "Mariselle",
+        "Candleport",
+        "Saint Orro",
+        "Borrowed Bell Isle",
+        "Needle Current",
+        "Orangewake",
+        "The Unfinished Palace",
+        "Orange Bell Island",
+        "The Unfinished Lighthouse",
+        "The Orchardback"
+      ],
+      "river": null,
+      "coast": null
+    },
+    "Lantern Sea": {
+      "name": "Lantern Sea",
+      "terrain": "sea",
+      "subtitle": "Named sailing corridors between working harbours",
+      "features": [
+        "Morrow Strait"
+      ],
+      "river": null,
+      "coast": null
+    },
+    "Morrow Strait": {
+      "name": "Morrow Strait",
+      "terrain": "sea",
+      "subtitle": "Veymouth to Leth Sarai by the jointly maintained light",
+      "features": [
+        "The Halfway Light",
+        "Ilyr's Listening Caves"
+      ],
+      "river": null,
+      "coast": null
+    },
+    "Bramblebridge": {
+      "name": "Bramblebridge",
+      "terrain": "town-river",
+      "subtitle": "The Lantern Road approaches from the west; the Weir divides the town",
+      "features": [
+        "The Last Mile Porch",
+        "The Gilded Kettle",
+        "Bramble Market",
+        "Honest Weights Hall",
+        "Bramble Theatre Loft",
+        "The Bent Penny",
+        "North Bell Tower",
+        "Pike House",
+        "Bridge House",
+        "Weir Bridge",
+        "The Crooked Saint",
+        "Little Quay",
+        "Old Weir Mill",
+        "Tibb's Watch Post",
+        "Bramble East Gate"
+      ],
+      "river": {
+        "name": "Weir",
+        "points": [
+          [
+            610,
+            70
+          ],
+          [
+            635,
+            200
+          ],
+          [
+            675,
+            360
+          ],
+          [
+            655,
+            505
+          ],
+          [
+            645,
+            630
+          ],
+          [
+            600,
+            755
+          ],
+          [
+            630,
+            980
+          ]
+        ]
+      },
+      "coast": null
+    },
+    "Highmead": {
+      "name": "Highmead",
+      "terrain": "town-hill",
+      "subtitle": "The old Dunmere terraces below the Whitewall ridge",
+      "features": [
+        "House of the Ninth Angle",
+        "The Narrow Bell Foundry",
+        "The House of Paired Seals",
+        "The Open Ledger Room",
+        "The Hollow Mint",
+        "The Twelve Windows",
+        "Dunmere Steps"
+      ],
+      "river": null,
+      "coast": null
+    },
+    "House of the Ninth Angle": {
+      "name": "House of the Ninth Angle",
+      "terrain": "court",
+      "subtitle": "A monastic precinct within Highmead",
+      "features": [
+        "The Prediction Court"
+      ],
+      "river": null,
+      "coast": null
+    },
+    "Penn's Reach": {
+      "name": "Penn's Reach",
+      "terrain": "river",
+      "subtitle": "Inspection paths along the sluices; protected water passage remains open",
+      "features": [
+        "The Violet Steps",
+        "The Shared Bank"
+      ],
+      "river": {
+        "name": "Vey sluice channel",
+        "points": [
+          [
+            400,
+            90
+          ],
+          [
+            425,
+            300
+          ],
+          [
+            500,
+            500
+          ],
+          [
+            615,
+            720
+          ],
+          [
+            780,
+            950
+          ]
+        ]
+      },
+      "coast": null
+    },
+    "Boughmeet": {
+      "name": "Boughmeet",
+      "terrain": "orchard",
+      "subtitle": "Nursery lanes from the Harth road to the southern orchards",
+      "features": [
+        "The Copper Kettle",
+        "Windowmere Garden",
+        "Rainbell Orchard",
+        "Cinder Meadow",
+        "The Orchard of Departures"
+      ],
+      "river": null,
+      "coast": null
+    },
+    "Willowrace": {
+      "name": "Willowrace",
+      "terrain": "town-river",
+      "subtitle": "Workshops on the near bank; grazing across Three-Reed Bridge",
+      "features": [
+        "The Last Measure Workshop",
+        "The Open String Hall",
+        "Three-Reed Bridge"
+      ],
+      "river": {
+        "name": "Mill channel",
+        "points": [
+          [
+            730,
+            100
+          ],
+          [
+            660,
+            300
+          ],
+          [
+            710,
+            480
+          ],
+          [
+            650,
+            700
+          ],
+          [
+            710,
+            930
+          ]
+        ]
+      },
+      "coast": null
+    },
+    "Brinefold": {
+      "name": "Brinefold",
+      "terrain": "harbour",
+      "subtitle": "The active harbour stands inland of its drowned predecessor",
+      "features": [
+        "The Dry Exchange",
+        "The Evening Market",
+        "The Green Awning Yard"
+      ],
+      "river": null,
+      "coast": "east"
+    },
+    "Leth Sarai": {
+      "name": "Leth Sarai",
+      "terrain": "harbour",
+      "subtitle": "A western waterfront backed by workshops and archives",
+      "features": [
+        "Lastlight Pier",
+        "The House of Salt Letters",
+        "The Quiet Archive",
+        "Mothwatch Kiln",
+        "The Hall of Unsent Maps"
+      ],
+      "river": null,
+      "coast": "west"
+    },
+    "Istravel": {
+      "name": "Istravel",
+      "terrain": "town-hill",
+      "subtitle": "Upper glass terraces above older kilns and gardens",
+      "features": [
+        "Ashglass House",
+        "The House of Two Hands"
+      ],
+      "river": null,
+      "coast": null
+    },
+    "Namar Vale": {
+      "name": "Namar Vale",
+      "terrain": "court",
+      "subtitle": "Shared ovens and copying rooms beside the caravan yards",
+      "features": [
+        "Saffron Court",
+        "Seven Scripts Court"
+      ],
+      "river": null,
+      "coast": null
+    },
+    "Seln": {
+      "name": "Seln",
+      "terrain": "forest",
+      "subtitle": "Teaching houses at the edge of the managed singing woodland",
+      "features": [
+        "The Listening House",
+        "Sunborrow House"
+      ],
+      "river": null,
+      "coast": null
+    },
+    "Sallowmere": {
+      "name": "Sallowmere",
+      "terrain": "lake",
+      "subtitle": "The western lake and the surviving teaching gardens",
+      "features": [
+        "The Pear Walk"
+      ],
+      "river": null,
+      "coast": "west"
+    },
+    "Rusk Hollow": {
+      "name": "Rusk Hollow",
+      "terrain": "chalk",
+      "subtitle": "The living village lies above successive storehouse chambers",
+      "features": [
+        "The Chalk Stag Chamber"
+      ],
+      "river": null,
+      "coast": null
+    },
+    "Rookwater": {
+      "name": "Rookwater",
+      "terrain": "river",
+      "subtitle": "The ferry village and its search archive",
+      "features": [
+        "The Names House"
+      ],
+      "river": {
+        "name": "Ferry channel",
+        "points": [
+          [
+            650,
+            70
+          ],
+          [
+            580,
+            340
+          ],
+          [
+            610,
+            550
+          ],
+          [
+            680,
+            900
+          ]
+        ]
+      },
+      "coast": null
+    },
+    "Gullstrand": {
+      "name": "Gullstrand",
+      "terrain": "harbour",
+      "subtitle": "Harbour approaches and the civic waterfront",
+      "features": [
+        "The Closed Launch"
+      ],
+      "river": null,
+      "coast": "west"
+    },
+    "Aster Quay": {
+      "name": "Aster Quay",
+      "terrain": "harbour",
+      "subtitle": "Harbour approaches and the civic waterfront",
+      "features": [
+        "The Long Table Rooms"
+      ],
+      "river": null,
+      "coast": "west"
+    }
+  },
+  "connections": [
+    {
+      "a": "Merebutton",
+      "b": "The White Lamb Downs",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The White Lamb Downs",
+      "b": "Sevenpost Field",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Sevenpost Field",
+      "b": "Highmead",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Highmead",
+      "b": "Ragman's Mile",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The White Lamb Downs",
+      "b": "Wetherfold Common",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Wetherfold Common",
+      "b": "Thistlewood Arch",
+      "mode": "path",
+      "note": "A dead-end pasture path to buried foundations; no portal or onward crossing."
+    },
+    {
+      "a": "Sevenpost Field",
+      "b": "Bluecup Hollow",
+      "mode": "path",
+      "note": ""
+    },
+    {
+      "a": "Merebutton",
+      "b": "Rusk Hollow",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Mallow Abbey",
+      "b": "Bramblebridge",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Bramblebridge",
+      "b": "Wren's Hollow",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Bramblebridge",
+      "b": "Old Merecross",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Old Merecross",
+      "b": "Mallow Quay",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Mallow Abbey",
+      "b": "Sourapple Ford",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Sourapple Ford",
+      "b": "Candlefen",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Candlefen",
+      "b": "The Drowned Groves",
+      "mode": "path",
+      "note": "Raised paths end at the flooded grove edge; submerged trunks do not form a through-road."
+    },
+    {
+      "a": "Mallow Quay",
+      "b": "Candlefen",
+      "mode": "ferry",
+      "note": "Local ferry through the marsh channels; a boat is required."
+    },
+    {
+      "a": "Wren's Hollow",
+      "b": "The Road That Forgets",
+      "mode": "path",
+      "note": "Unreliable forest waymarks; no guaranteed shortcut beyond the recorded approach."
+    },
+    {
+      "a": "Saint Meret's Rest",
+      "b": "The South Turning",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The South Turning",
+      "b": "Harth Orchard",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Harth Orchard",
+      "b": "Ribbon Bridge",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Ribbon Bridge",
+      "b": "Alderwake",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The South Turning",
+      "b": "Boughmeet",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Boughmeet",
+      "b": "Amberstile",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Boughmeet",
+      "b": "Sallowmere",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The South Turning",
+      "b": "The Seventh Hearth",
+      "mode": "path",
+      "note": "Old hospitality track, bypassed by the present road; ends at the hearth."
+    },
+    {
+      "a": "Alderwake",
+      "b": "Orrel Wood",
+      "mode": "path",
+      "note": ""
+    },
+    {
+      "a": "Redbank Reach",
+      "b": "Penn's Reach",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Penn's Reach",
+      "b": "Rookwater",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Rookwater",
+      "b": "Reedminster",
+      "mode": "ferry",
+      "note": "River ferry requiring a boat; no permanent bridge or on-foot crossing is asserted."
+    },
+    {
+      "a": "Reedminster",
+      "b": "Veymouth",
+      "mode": "ferry",
+      "note": "River ferry requiring a boat; no permanent bridge or on-foot crossing is asserted."
+    },
+    {
+      "a": "Penn's Reach",
+      "b": "Willowrace",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Willowrace",
+      "b": "Low Fen Redoubt",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Rookwater",
+      "b": "Doorhaven",
+      "mode": "ferry",
+      "note": "River ferry requiring a boat; no permanent bridge or on-foot crossing is asserted."
+    },
+    {
+      "a": "Doorhaven",
+      "b": "Bellwade",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Doorhaven",
+      "b": "Celandine House",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Reedminster",
+      "b": "Darnel Field",
+      "mode": "ferry",
+      "note": "River ferry requiring a boat; no permanent bridge or on-foot crossing is asserted."
+    },
+    {
+      "a": "Darnel Field",
+      "b": "Ash Salt",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Ash Salt",
+      "b": "Brinefold",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Veymouth",
+      "b": "Nacre Quay",
+      "mode": "road",
+      "note": "",
+      "alternatives": [
+        {
+          "a": "Veymouth",
+          "b": "Nacre Quay",
+          "mode": "coastal",
+          "note": "Coastal sailing alternative to the shore road."
+        }
+      ]
+    },
+    {
+      "a": "Veymouth",
+      "b": "Lanterns' End",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Lanterns' End",
+      "b": "Morrowstep Sanctuary",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Veymouth",
+      "b": "Brinefold",
+      "mode": "coastal",
+      "note": "Coastal passage outside the shoals; not a land shortcut."
+    },
+    {
+      "a": "Rookwater",
+      "b": "Veymouth",
+      "mode": "road",
+      "note": "The west-bank road continues past the Reedminster ferry landing without entering the island."
+    },
+    {
+      "a": "The Rain Parlour",
+      "b": "Bellafont City",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Bellafont City",
+      "b": "Blue Apron Fair",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Blue Apron Fair",
+      "b": "Cresset",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Cresset",
+      "b": "Swallowwatch Orchard",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Bellafont City",
+      "b": "Quince Ladder",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Blue Apron Fair",
+      "b": "Greywife Orchard",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Greywife Orchard",
+      "b": "The Honey Parliament",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Honey Parliament",
+      "b": "Vintner's Reach",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Cresset",
+      "b": "Mothglass House",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Penross",
+      "b": "Gannet Mercy",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Gannet Mercy",
+      "b": "Saltmere",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Saltmere",
+      "b": "Brinewife's Steps",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Brinewife's Steps",
+      "b": "Gullstrand",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Gullstrand",
+      "b": "Mackerel Crown",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Mackerel Crown",
+      "b": "The Dry Admiral",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Gullstrand",
+      "b": "Widow's Beam",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Saltmere",
+      "b": "The Walking Dunes",
+      "mode": "path",
+      "note": ""
+    },
+    {
+      "a": "Stonewake",
+      "b": "Greyharrow",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Greyharrow",
+      "b": "Moorwatch",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Moorwatch",
+      "b": "Saint Vey's Crutch",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Greyharrow",
+      "b": "Latchwater",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Latchwater",
+      "b": "Rook Anvil",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Rook Anvil",
+      "b": "Blackcap Fell",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Greyharrow",
+      "b": "Cold Barrow",
+      "mode": "path",
+      "note": ""
+    },
+    {
+      "a": "Rook Anvil",
+      "b": "The Iron Choir",
+      "mode": "path",
+      "note": "Approach to the abandoned mine only; sealed workings are not an onward road."
+    },
+    {
+      "a": "Vanner's Rest",
+      "b": "The Nine-Mile Inn",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Nine-Mile Inn",
+      "b": "Redgate",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Redgate",
+      "b": "Ninepost Field",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Ninepost Field",
+      "b": "Foxglove Relay",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Foxglove Relay",
+      "b": "The Courteous Ruin",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Vanner's Rest",
+      "b": "Wheelwife Hollow",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Wheelwife Hollow",
+      "b": "The Nine-Mile Inn",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Nine-Mile Inn",
+      "b": "Oakshield",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Oakshield",
+      "b": "The Lantern Hospice",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Vanner's Rest",
+      "b": "Shepherd's Refusal",
+      "mode": "path",
+      "note": ""
+    },
+    {
+      "a": "Tallow Ford",
+      "b": "Reth Gate",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Reth Gate",
+      "b": "Reth Road Fork",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Reth Road Fork",
+      "b": "Hearthscar Shelter",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Hearthscar Shelter",
+      "b": "Juniper Gate",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Reth Road Fork",
+      "b": "Crowstep Shelter",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Crowstep Shelter",
+      "b": "The Winter Latch",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Tallow Ford",
+      "b": "Hazelstairs",
+      "mode": "path",
+      "note": ""
+    },
+    {
+      "a": "Reth Gate",
+      "b": "Greyfold Ridge",
+      "mode": "path",
+      "note": "Working surface approach only; deeper quarry passages remain sealed."
+    },
+    {
+      "a": "The Winter Latch",
+      "b": "The Unfinished Stair",
+      "mode": "path",
+      "note": "A terminal climb to the unfinished span; no through-pass."
+    },
+    {
+      "a": "Whitewindow",
+      "b": "Goatminster",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Goatminster",
+      "b": "Lorn",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Lorn",
+      "b": "Kestrelwatch",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Kestrelwatch",
+      "b": "Stair of One Hundred Regrets",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Goatminster",
+      "b": "Seven Echo Quarry",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Seven Echo Quarry",
+      "b": "Copperdeep",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Copperdeep",
+      "b": "Warmstone Baths",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Warmstone Baths",
+      "b": "Kestrelwatch",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Copperdeep",
+      "b": "The Widow's Incline",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Whitewindow",
+      "b": "Cairn Moss",
+      "mode": "path",
+      "note": ""
+    },
+    {
+      "a": "Lorn",
+      "b": "Glasswinter Tarn",
+      "mode": "path",
+      "note": "Shore observation path only; the tarn is not an ice crossing."
+    },
+    {
+      "a": "Lorn",
+      "b": "Hollow Bell Monastery",
+      "mode": "path",
+      "note": ""
+    },
+    {
+      "a": "Goat's Ledger",
+      "b": "The Mile of Little Bridges",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Mile of Little Bridges",
+      "b": "Seln",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Aster Quay",
+      "b": "Chairman's Nap",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Chairman's Nap",
+      "b": "Halfprice Bridge",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Halfprice Bridge",
+      "b": "The Fifth Warehouse",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Fifth Warehouse",
+      "b": "Low Lantern",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Halfprice Bridge",
+      "b": "Pepperglass Yard",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Pepperglass Yard",
+      "b": "Low Lantern",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Fifth Warehouse",
+      "b": "Glassharbor",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Chairman's Nap",
+      "b": "Brokers' Orchard",
+      "mode": "path",
+      "note": ""
+    },
+    {
+      "a": "Leth Sarai",
+      "b": "Istravel",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Leth Sarai",
+      "b": "Veyr's Lantern",
+      "mode": "path",
+      "note": "Headland path; the name recalls old carrying ties, not the Veyr Marches' political boundary."
+    },
+    {
+      "a": "Malvar",
+      "b": "Aurent",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Aurent",
+      "b": "Inkfish Wharf",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Inkfish Wharf",
+      "b": "Vessa",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Vessa",
+      "b": "The Court of Wet Feet",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Malvar",
+      "b": "Pomegranate Court",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Pomegranate Court",
+      "b": "Vessa",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Inkfish Wharf",
+      "b": "The Bent Mile",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Inkfish Wharf",
+      "b": "Reed Judge's Rest",
+      "mode": "ferry",
+      "note": ""
+    },
+    {
+      "a": "Aurent",
+      "b": "Old Aur Island",
+      "mode": "ferry",
+      "note": "Landing access depends on river conditions; no permanent bridge is asserted."
+    },
+    {
+      "a": "Reedcrown",
+      "b": "The Saffron Ox",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Saffron Ox",
+      "b": "Mosquito Abbey",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Reedcrown",
+      "b": "Namar",
+      "mode": "ferry",
+      "note": "A named channel passage requiring a boat and local pilotage."
+    },
+    {
+      "a": "Namar",
+      "b": "Reedname Landing",
+      "mode": "ferry",
+      "note": "A named channel passage requiring a boat and local pilotage."
+    },
+    {
+      "a": "Reedname Landing",
+      "b": "Saffron Quay",
+      "mode": "ferry",
+      "note": "A named channel passage requiring a boat and local pilotage."
+    },
+    {
+      "a": "Reedname Landing",
+      "b": "Three Spoon Village",
+      "mode": "ferry",
+      "note": "A named channel passage requiring a boat and local pilotage."
+    },
+    {
+      "a": "Namar",
+      "b": "Drowned Door Orchard",
+      "mode": "ferry",
+      "note": "A named channel passage requiring a boat and local pilotage."
+    },
+    {
+      "a": "Reedname Landing",
+      "b": "Mosquito Abbey",
+      "mode": "ferry",
+      "note": "A named channel passage requiring a boat and local pilotage."
+    },
+    {
+      "a": "Snowgate",
+      "b": "Breadshield Monastery",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Breadshield Monastery",
+      "b": "Var Keth",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Var Keth",
+      "b": "The Door Valley",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Door Valley",
+      "b": "Copperwell",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Copperwell",
+      "b": "Copper Rain Terrace",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Copper Rain Terrace",
+      "b": "The Empty Saddle",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Empty Saddle",
+      "b": "Snowgate",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Copperwell",
+      "b": "Whisper Kiln",
+      "mode": "path",
+      "note": ""
+    },
+    {
+      "a": "The Patient Stair",
+      "b": "Blue Step",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Blue Step",
+      "b": "Orovant",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Orovant",
+      "b": "Red Cup Spring",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Red Cup Spring",
+      "b": "Mare's Table",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Mare's Table",
+      "b": "Tessa",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Blue Step",
+      "b": "Kitewife Mesa",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Orovant",
+      "b": "Cloud Apricot Farm",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Tessa",
+      "b": "The Thirteen Shadows",
+      "mode": "path",
+      "note": ""
+    },
+    {
+      "a": "Mariselle",
+      "b": "The Unfinished Palace",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Candleport",
+      "b": "The Unfinished Lighthouse",
+      "mode": "path",
+      "note": ""
+    },
+    {
+      "a": "Candleport",
+      "b": "Needle Current",
+      "mode": "coastal",
+      "note": "Island passage; road continuity is not implied across water."
+    },
+    {
+      "a": "Needle Current",
+      "b": "Mariselle",
+      "mode": "coastal",
+      "note": "Island passage; road continuity is not implied across water."
+    },
+    {
+      "a": "Mariselle",
+      "b": "Saint Orro",
+      "mode": "coastal",
+      "note": "Island passage; road continuity is not implied across water."
+    },
+    {
+      "a": "Mariselle",
+      "b": "Orange Bell Island",
+      "mode": "coastal",
+      "note": "Island passage; road continuity is not implied across water."
+    },
+    {
+      "a": "Orange Bell Island",
+      "b": "Orangewake",
+      "mode": "coastal",
+      "note": "Island passage; road continuity is not implied across water."
+    },
+    {
+      "a": "Saint Orro",
+      "b": "Borrowed Bell Isle",
+      "mode": "coastal",
+      "note": "Island passage; road continuity is not implied across water."
+    },
+    {
+      "a": "Stonewake",
+      "b": "Penross",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Greyharrow",
+      "b": "Redgate",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Moorwatch",
+      "b": "Redgate",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Saint Vey's Crutch",
+      "b": "Whitewindow",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Juniper Gate",
+      "b": "Whitewindow",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Tallow Ford",
+      "b": "Redgate",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Kestrelwatch",
+      "b": "Dunwarren",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Oakshield",
+      "b": "Dunwarren",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Dunwarren",
+      "b": "Merecross",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Merecross",
+      "b": "Redbank Reach",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Ragman's Mile",
+      "b": "Mallow Abbey",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Sourapple Ford",
+      "b": "Alderwake",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Bluecup Hollow",
+      "b": "Saint Meret's Rest",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Amberstile",
+      "b": "Vintner's Reach",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Saltmere",
+      "b": "Sallowmere",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Gullstrand",
+      "b": "Vintner's Reach",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Bellafont City",
+      "b": "Merecross",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Alderwake",
+      "b": "Merecross",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Mothglass Ruin",
+      "b": "Highmead",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Goat's Ledger",
+      "b": "Copperdeep",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Aster Quay",
+      "b": "Leth Sarai",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Istravel",
+      "b": "Namar Vale",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Namar Vale",
+      "b": "Aurent",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Low Lantern",
+      "b": "Vessa",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Vessa",
+      "b": "Reedcrown",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Malvar",
+      "b": "Var Keth",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Copperwell",
+      "b": "Orovant",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Aurent",
+      "b": "Tessa",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Merecross",
+      "b": "Bramblebridge",
+      "mode": "road",
+      "note": "The Lower Weir road, separately named from the Lantern Road that ends at Bramblebridge."
+    },
+    {
+      "a": "Dunwarren",
+      "b": "King's Patience Wood",
+      "mode": "path",
+      "note": ""
+    },
+    {
+      "a": "Veymouth",
+      "b": "The Halfway Light",
+      "mode": "sea",
+      "note": "Registered sea passage between harbours; vessel, pilotage and weather are required. No on-foot route is created."
+    },
+    {
+      "a": "The Halfway Light",
+      "b": "Leth Sarai",
+      "mode": "sea",
+      "note": "Registered sea passage between harbours; vessel, pilotage and weather are required. No on-foot route is created."
+    },
+    {
+      "a": "Brinefold",
+      "b": "Glassharbor",
+      "mode": "sea",
+      "note": "Registered sea passage between harbours; vessel, pilotage and weather are required. No on-foot route is created."
+    },
+    {
+      "a": "Nacre Quay",
+      "b": "Aster Quay",
+      "mode": "sea",
+      "note": "Registered sea passage between harbours; vessel, pilotage and weather are required. No on-foot route is created."
+    },
+    {
+      "a": "Gullstrand",
+      "b": "Candleport",
+      "mode": "sea",
+      "note": "Registered sea passage between harbours; vessel, pilotage and weather are required. No on-foot route is created."
+    },
+    {
+      "a": "Saltmere",
+      "b": "Penross",
+      "mode": "sea",
+      "note": "Registered sea passage between harbours; vessel, pilotage and weather are required. No on-foot route is created."
+    },
+    {
+      "a": "Leth Sarai",
+      "b": "Low Lantern",
+      "mode": "sea",
+      "note": "Registered sea passage between harbours; vessel, pilotage and weather are required. No on-foot route is created."
+    },
+    {
+      "a": "Low Lantern",
+      "b": "Mariselle",
+      "mode": "sea",
+      "note": "Registered sea passage between harbours; vessel, pilotage and weather are required. No on-foot route is created."
+    },
+    {
+      "a": "Saffron Quay",
+      "b": "Orangewake",
+      "mode": "sea",
+      "note": "Registered sea passage between harbours; vessel, pilotage and weather are required. No on-foot route is created."
+    },
+    {
+      "a": "The Last Mile Porch",
+      "b": "The Gilded Kettle",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Gilded Kettle",
+      "b": "Bramble Market",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Bramble Market",
+      "b": "Bridge House",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Bridge House",
+      "b": "Weir Bridge",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Weir Bridge",
+      "b": "The Crooked Saint",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Crooked Saint",
+      "b": "Bramble East Gate",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Bramble Market",
+      "b": "Honest Weights Hall",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Honest Weights Hall",
+      "b": "Bramble Theatre Loft",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Bramble Market",
+      "b": "The Bent Penny",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Bent Penny",
+      "b": "Little Quay",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Honest Weights Hall",
+      "b": "North Bell Tower",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "North Bell Tower",
+      "b": "Old Weir Mill",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Old Weir Mill",
+      "b": "Pike House",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Pike House",
+      "b": "Tibb's Watch Post",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Tibb's Watch Post",
+      "b": "Bramble East Gate",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Bramble Market",
+      "b": "Little Quay",
+      "mode": "path",
+      "note": ""
+    },
+    {
+      "a": "Weir Bridge",
+      "b": "Tibb's Watch Post",
+      "mode": "path",
+      "note": "The east-bank watch lane begins at the working bridge."
+    },
+    {
+      "a": "Dunmere Steps",
+      "b": "The Twelve Windows",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Twelve Windows",
+      "b": "The Open Ledger Room",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Open Ledger Room",
+      "b": "The House of Paired Seals",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The House of Paired Seals",
+      "b": "House of the Ninth Angle",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Dunmere Steps",
+      "b": "The Hollow Mint",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Hollow Mint",
+      "b": "The Narrow Bell Foundry",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Narrow Bell Foundry",
+      "b": "The House of Paired Seals",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Violet Steps",
+      "b": "The Shared Bank",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Copper Kettle",
+      "b": "Windowmere Garden",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Windowmere Garden",
+      "b": "The Orchard of Departures",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Orchard of Departures",
+      "b": "Rainbell Orchard",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Rainbell Orchard",
+      "b": "The Copper Kettle",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Rainbell Orchard",
+      "b": "Cinder Meadow",
+      "mode": "path",
+      "note": ""
+    },
+    {
+      "a": "The Last Measure Workshop",
+      "b": "The Open String Hall",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Open String Hall",
+      "b": "Three-Reed Bridge",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Dry Exchange",
+      "b": "The Evening Market",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Evening Market",
+      "b": "The Green Awning Yard",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Green Awning Yard",
+      "b": "The Dry Exchange",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Lastlight Pier",
+      "b": "The House of Salt Letters",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The House of Salt Letters",
+      "b": "The Quiet Archive",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Quiet Archive",
+      "b": "Mothwatch Kiln",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The House of Salt Letters",
+      "b": "The Hall of Unsent Maps",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Ashglass House",
+      "b": "The House of Two Hands",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Saffron Court",
+      "b": "Seven Scripts Court",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "The Listening House",
+      "b": "Sunborrow House",
+      "mode": "road",
+      "note": ""
+    },
+    {
+      "a": "Bramblebridge",
+      "b": "The Last Mile Porch",
+      "mode": "approach",
+      "note": "Entrance between the wider map and the local street or landing. This is a scope transition, not a same-plane on-foot journey."
+    },
+    {
+      "a": "Highmead",
+      "b": "Dunmere Steps",
+      "mode": "approach",
+      "note": "Entrance between the wider map and the local street or landing. This is a scope transition, not a same-plane on-foot journey."
+    },
+    {
+      "a": "House of the Ninth Angle",
+      "b": "The Prediction Court",
+      "mode": "approach",
+      "note": "Entrance between the wider map and the local street or landing. This is a scope transition, not a same-plane on-foot journey."
+    },
+    {
+      "a": "Penn's Reach",
+      "b": "The Violet Steps",
+      "mode": "approach",
+      "note": "Entrance between the wider map and the local street or landing. This is a scope transition, not a same-plane on-foot journey."
+    },
+    {
+      "a": "Boughmeet",
+      "b": "The Copper Kettle",
+      "mode": "approach",
+      "note": "Entrance between the wider map and the local street or landing. This is a scope transition, not a same-plane on-foot journey."
+    },
+    {
+      "a": "Willowrace",
+      "b": "The Open String Hall",
+      "mode": "approach",
+      "note": "Entrance between the wider map and the local street or landing. This is a scope transition, not a same-plane on-foot journey."
+    },
+    {
+      "a": "Brinefold",
+      "b": "The Green Awning Yard",
+      "mode": "approach",
+      "note": "Entrance between the wider map and the local street or landing. This is a scope transition, not a same-plane on-foot journey."
+    },
+    {
+      "a": "Leth Sarai",
+      "b": "Lastlight Pier",
+      "mode": "approach",
+      "note": "Entrance between the wider map and the local street or landing. This is a scope transition, not a same-plane on-foot journey."
+    },
+    {
+      "a": "Istravel",
+      "b": "The House of Two Hands",
+      "mode": "approach",
+      "note": "Entrance between the wider map and the local street or landing. This is a scope transition, not a same-plane on-foot journey."
+    },
+    {
+      "a": "Namar Vale",
+      "b": "Saffron Court",
+      "mode": "approach",
+      "note": "Entrance between the wider map and the local street or landing. This is a scope transition, not a same-plane on-foot journey."
+    },
+    {
+      "a": "Seln",
+      "b": "The Listening House",
+      "mode": "approach",
+      "note": "Entrance between the wider map and the local street or landing. This is a scope transition, not a same-plane on-foot journey."
+    },
+    {
+      "a": "Sallowmere",
+      "b": "The Pear Walk",
+      "mode": "approach",
+      "note": "Entrance between the wider map and the local street or landing. This is a scope transition, not a same-plane on-foot journey."
+    },
+    {
+      "a": "Rookwater",
+      "b": "The Names House",
+      "mode": "approach",
+      "note": "Entrance between the wider map and the local street or landing. This is a scope transition, not a same-plane on-foot journey."
+    },
+    {
+      "a": "Gullstrand",
+      "b": "The Closed Launch",
+      "mode": "approach",
+      "note": "Entrance between the wider map and the local street or landing. This is a scope transition, not a same-plane on-foot journey."
+    },
+    {
+      "a": "Aster Quay",
+      "b": "The Long Table Rooms",
+      "mode": "approach",
+      "note": "Entrance between the wider map and the local street or landing. This is a scope transition, not a same-plane on-foot journey."
+    },
+    {
+      "a": "Lanternback Colossus",
+      "b": "The White Lamb Downs",
+      "mode": "path",
+      "note": "The shepherds' chalk path reaches the open rib shelter and ends there; it does not enter the buried chambers."
+    },
+    {
+      "a": "Lanternback Colossus",
+      "b": "Wetherfold Common",
+      "mode": "path",
+      "note": "The southern grazing track approaches the spring hand. Livestock and nesting seasons can require local detours."
+    },
+    {
+      "a": "Crownroot Cathedral",
+      "b": "Amberstile",
+      "mode": "path",
+      "note": "A signed graft-carriers' lane reaches the root court. Crownroot is a destination, with no registered onward road through the tree or its orchard boundary."
+    },
+    {
+      "a": "Skyharp of Roven",
+      "b": "Hearthscar Shelter",
+      "mode": "path",
+      "note": "A maintained ledge spur ends at the grounded harp platform. There is no crossing to Juniper Gate, Crowstep, or the Unfinished Stair from the monument."
+    },
+    {
+      "a": "The Upward Fall",
+      "b": "Redbank Reach",
+      "mode": "path",
+      "note": "The north-bank inspection path reaches the public viewing platform and the ordinary sluice works."
+    },
+    {
+      "a": "The Upward Fall",
+      "b": "Willowrace",
+      "mode": "path",
+      "note": "A mill-workers' embankment path follows maintained ground. It never passes through the rising water or the old aqueduct gallery."
+    },
+    {
+      "a": "The Hanging Harbour",
+      "b": "Gullstrand",
+      "mode": "path",
+      "note": "A maintained cliff-top path reaches the inspected upper yard. It grants no automatic access to moving cradles or the lower hoist."
+    },
+    {
+      "a": "The Hanging Harbour",
+      "b": "Saltmere",
+      "mode": "coastal",
+      "note": "A boat passage reaches the lower landing when the swell and the harbour keeper permit. No on-foot journey is registered for this water connection."
+    },
+    {
+      "a": "Emberglass Whale",
+      "b": "Var Keth",
+      "mode": "path",
+      "note": "The assayers' terrace path ends at the public jaw platform. The fragile rib interior and tail scaffold are not onward routes."
+    },
+    {
+      "a": "Rain Crown of Orovant",
+      "b": "Red Cup Spring",
+      "mode": "path",
+      "note": "A marked water-carriers' path reaches the cistern and ends there. No bridge, flight route, or climb to the floating crown is registered."
+    },
+    {
+      "a": "Glass-Tide Palace",
+      "b": "Leth Sarai",
+      "mode": "ferry",
+      "note": "A keeper-approved ferry reaches the raised landing. Tide and weather are checked locally; there is no dry causeway or on-foot journey across the water."
+    },
+    {
+      "a": "The Orchardback",
+      "b": "Mariselle",
+      "mode": "coastal",
+      "note": "A small-boat passage to the currently observed resting bay, subject to the keeper's daily invitation. This is not a permanent island crossing or a route aboard a controllable conveyance."
+    },
+    {
+      "a": "The Orchardback",
+      "b": "Orangewake",
+      "mode": "coastal",
+      "note": "Orchard tenders use a boat passage from Orangewake to the temporary pontoon. Access ceases when the animal stirs or leaves; no on-foot route is registered."
+    }
+  ],
+  "blocked": [
+    {
+      "a": "The Unfinished Stair",
+      "b": "Juniper Gate",
+      "note": "No completed upper gallery; the burial shelf is not a bypass."
+    },
+    {
+      "a": "Chairman's Nap",
+      "b": "The Sealed Hall",
+      "note": "The Concord hall is sealed; an apparent road does not grant entry."
+    },
+    {
+      "a": "The Empty Saddle",
+      "b": "Karsh's Sleeping Ridge",
+      "note": "Restricted climb; permits and current conditions must be resolved before access."
+    },
+    {
+      "a": "Rusk Hollow",
+      "b": "The Chalk Stag Chamber",
+      "note": "Restricted chamber; safe entry needs a current structural assessment. No open adjacency to deeper workings is registered."
+    },
+    {
+      "a": "Morrow Strait",
+      "b": "Ilyr's Listening Caves",
+      "note": "Exact entrance is uncertain and private; no navigable approach is asserted."
+    },
+    {
+      "a": "Reedname Landing",
+      "b": "The Absent Villages",
+      "note": "Household routes are not public. A local agreement and current guidance are required."
+    },
+    {
+      "a": "Three Spoon Village",
+      "b": "Reed Graves",
+      "note": "No confirmed safe onward channel is registered into this basin."
+    }
+  ],
+  "notes": [
+    "The lower Mere is called the Lower Vey in the historical river-country records; the Weir and Lark join it at Merecross.",
+    "Serevan is a historic district of the Seven Lamps League shore; Selvar is an inland historic district of Ordelain. These districts are not extra sovereign polities.",
+    "The Lantern Road ends at Bramblebridge. Roads continuing east and downstream have separate names.",
+    "The Unfinished Stair, Thistlewood Arch and sealed workings do not create shortcuts.",
+    "Anchors are display coordinates. Registered route durations are authored separately; water links never create on-foot routes."
+  ]
+}

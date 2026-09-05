@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="1500" viewBox="0 0 1000 750">
+    <defs><clipPath id="land"><path d="M 40.0,110.0 L 115.0,135.0 L 145.0,245.0 L 122.0,345.0 L 175.0,456.0 L 120.0,630.0 L 40.0,660.0 Z M 960.0,105.0 L 904.0,130.0 L 855.0,248.0 L 897.0,365.0 L 824.0,490.0 L 854.0,640.0 L 960.0,666.0 Z"/></clipPath><clipPath id="field"><rect x="45" y="92" width="910" height="598" rx="3"/></clipPath>
+    <pattern id="grain" width="37" height="31" patternUnits="userSpaceOnUse"><circle cx="4" cy="6" r=".6" fill="#6a6047" opacity=".15"/><circle cx="27" cy="23" r=".4" fill="#6a6047" opacity=".13"/></pattern>
+    <pattern id="waves" width="54" height="28" patternUnits="userSpaceOnUse"><path d="M 5 15 q 9 -3 18 0 t 18 0" fill="none" stroke="#547f80" stroke-width=".65" opacity=".35"/></pattern>
+    <linearGradient id="paper" x2="1" y2="1"><stop stop-color="#f6eed6"/><stop offset="1" stop-color="#ded2ae"/></linearGradient></defs>
+    <rect width="1000" height="750" fill="url(#paper)"/><rect x="15" y="15" width="970" height="720" rx="2" fill="none" stroke="#463e30" stroke-width="1.1"/>
+    <rect x="21" y="21" width="958" height="708" fill="none" stroke="#756d50" stroke-width=".5"/>
+    <g font-family="Georgia, 'Times New Roman', serif">
+<text x="500.0" y="49.0" text-anchor="middle" fill="#463e30" font-size="26" letter-spacing="3">LANTERN SEA</text>
+<text x="500.0" y="72.0" text-anchor="middle" fill="#756d50" font-size="11" >Named sailing corridors between working harbours</text>
+<g clip-path="url(#field)">
+<rect x="45" y="92" width="910" height="598" fill="#a2c2be"/>
+<rect x="45" y="92" width="910" height="598" fill="url(#waves)"/>
+<path d="M 40.0,110.0 L 115.0,135.0 L 145.0,245.0 L 122.0,345.0 L 175.0,456.0 L 120.0,630.0 L 40.0,660.0 Z" fill="none" stroke="#709a97" stroke-width="13" opacity=".25"/><path d="M 40.0,110.0 L 115.0,135.0 L 145.0,245.0 L 122.0,345.0 L 175.0,456.0 L 120.0,630.0 L 40.0,660.0 Z" fill="#e9dfbd" stroke="#62786a" stroke-width="1.8"/>
+<path d="M 960.0,105.0 L 904.0,130.0 L 855.0,248.0 L 897.0,365.0 L 824.0,490.0 L 854.0,640.0 L 960.0,666.0 Z" fill="none" stroke="#709a97" stroke-width="13" opacity=".25"/><path d="M 960.0,105.0 L 904.0,130.0 L 855.0,248.0 L 897.0,365.0 L 824.0,490.0 L 854.0,640.0 L 960.0,666.0 Z" fill="#e9dfbd" stroke="#62786a" stroke-width="1.8"/>
+<g clip-path="url(#land)">
+<ellipse cx="777.9" cy="262.6" rx="107.4" ry="28.7" fill="#aeb995" opacity=".14"/>
+<ellipse cx="597.8" cy="214.9" rx="98.7" ry="31.1" fill="#aeb995" opacity=".14"/>
+<ellipse cx="661.7" cy="293.9" rx="125.0" ry="75.6" fill="#aeb995" opacity=".14"/>
+<ellipse cx="204.9" cy="620.6" rx="46.2" ry="46.7" fill="#aeb995" opacity=".14"/>
+<ellipse cx="511.1" cy="350.4" rx="119.6" ry="77.6" fill="#aeb995" opacity=".14"/>
+<ellipse cx="757.6" cy="512.7" rx="81.4" ry="49.2" fill="#aeb995" opacity=".14"/>
+<ellipse cx="688.2" cy="631.7" rx="104.4" ry="67.4" fill="#aeb995" opacity=".14"/>
+<ellipse cx="525.9" cy="250.2" rx="121.8" ry="50.1" fill="#aeb995" opacity=".14"/>
+<rect x="45" y="92" width="910" height="598" fill="url(#grain)"/></g>
+<path d="M 510,239.5 l 8,8 -8,8 -8,-8 Z" fill="#f6eed5" stroke="#463e30" stroke-width="1.5"/>
+<text x="510.0" y="273.0" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round" font-weight="bold">Morrow Strait</text>
+<text x="110.0" y="670.0" text-anchor="middle" fill="#756d50" font-size="11" letter-spacing="2">EREDANE</text>
+<text x="870.0" y="670.0" text-anchor="middle" fill="#756d50" font-size="11" letter-spacing="2">SOLASCA</text>
+</g>
+<g transform="translate(934 122)"><path d="M 0 -12 L 5 8 L 0 4 L -5 8 Z" fill="#463e30"/><text x="0.0" y="-17.0" text-anchor="middle" fill="#463e30" font-size="9" >N</text></g>
+<path d="M 45 699 H 955" stroke="#a19673" stroke-width=".7"/>
+<path d="M 48 713 h 24" stroke="#a36b45" stroke-width="2"/>
+<text x="79.0" y="717.0" text-anchor="start" fill="#463e30" font-size="10" >road / path</text>
+<path d="M 182 713 h 24" stroke="#3e757d" stroke-width="1.8" stroke-dasharray="5 3"/>
+<text x="213.0" y="717.0" text-anchor="start" fill="#463e30" font-size="10" >boat passage</text>
+<path d="M 329 709 l 8 8 M 329 717 l 8 -8" stroke="#8e5450" stroke-width="1.5"/>
+<text x="344.0" y="717.0" text-anchor="start" fill="#463e30" font-size="10" >closed / uncertain</text>
+<text x="951.0" y="715.0" text-anchor="end" fill="#756d50" font-size="9" letter-spacing="1">TRAVELLER’S ATLAS  ·  PRESENT DAY</text>
+</g></svg>

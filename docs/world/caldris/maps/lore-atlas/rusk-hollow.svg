@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="1500" viewBox="0 0 1000 750">
+    <defs><clipPath id="land"><path d="M 45.0,92.0 L 955.0,92.0 L 955.0,690.0 L 45.0,690.0 Z"/></clipPath><clipPath id="field"><rect x="45" y="92" width="910" height="598" rx="3"/></clipPath>
+    <pattern id="grain" width="37" height="31" patternUnits="userSpaceOnUse"><circle cx="4" cy="6" r=".6" fill="#6a6047" opacity=".15"/><circle cx="27" cy="23" r=".4" fill="#6a6047" opacity=".13"/></pattern>
+    <pattern id="waves" width="54" height="28" patternUnits="userSpaceOnUse"><path d="M 5 15 q 9 -3 18 0 t 18 0" fill="none" stroke="#547f80" stroke-width=".65" opacity=".35"/></pattern>
+    <linearGradient id="paper" x2="1" y2="1"><stop stop-color="#f6eed6"/><stop offset="1" stop-color="#ded2ae"/></linearGradient></defs>
+    <rect width="1000" height="750" fill="url(#paper)"/><rect x="15" y="15" width="970" height="720" rx="2" fill="none" stroke="#463e30" stroke-width="1.1"/>
+    <rect x="21" y="21" width="958" height="708" fill="none" stroke="#756d50" stroke-width=".5"/>
+    <g font-family="Georgia, 'Times New Roman', serif">
+<text x="500.0" y="49.0" text-anchor="middle" fill="#463e30" font-size="26" letter-spacing="3">RUSK HOLLOW</text>
+<text x="500.0" y="72.0" text-anchor="middle" fill="#756d50" font-size="11" >The living village lies above successive storehouse chambers</text>
+<g clip-path="url(#field)">
+<rect x="45" y="92" width="910" height="598" fill="#e9dfbd"/>
+<path d="M 45.0,92.0 L 955.0,92.0 L 955.0,690.0 L 45.0,690.0 Z" fill="none" stroke="#709a97" stroke-width="13" opacity=".25"/><path d="M 45.0,92.0 L 955.0,92.0 L 955.0,690.0 L 45.0,690.0 Z" fill="#e9dfbd" stroke="#62786a" stroke-width="1.8"/>
+<g clip-path="url(#land)">
+<ellipse cx="423.2" cy="158.5" rx="71.3" ry="62.9" fill="#beb98b" opacity=".14"/>
+<ellipse cx="272.4" cy="533.9" rx="86.6" ry="71.9" fill="#beb98b" opacity=".14"/>
+<ellipse cx="632.4" cy="138.4" rx="114.0" ry="74.8" fill="#beb98b" opacity=".14"/>
+<ellipse cx="782.5" cy="150.5" rx="48.5" ry="37.7" fill="#beb98b" opacity=".14"/>
+<ellipse cx="326.8" cy="530.7" rx="118.8" ry="78.5" fill="#beb98b" opacity=".14"/>
+<ellipse cx="81.0" cy="126.6" rx="108.2" ry="57.3" fill="#beb98b" opacity=".14"/>
+<ellipse cx="739.3" cy="413.6" rx="61.2" ry="31.5" fill="#beb98b" opacity=".14"/>
+<ellipse cx="247.6" cy="374.4" rx="103.4" ry="66.9" fill="#beb98b" opacity=".14"/>
+<path d="M 878.3 292.6 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 769.8 660.8 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 690.8 640.6 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 514.9 276.5 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 678.2 257.0 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 893.6 365.7 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 661.8 135.6 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 869.8 602.9 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 922.2 429.9 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 337.6 478.8 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 880.6 583.5 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 860.6 245.6 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 917.3 432.6 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 361.4 163.0 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 359.0 220.8 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 198.9 259.8 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 289.9 475.3 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 523.0 192.5 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 554.4 602.0 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 754.1 543.1 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 862.7 517.6 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 66.5 170.7 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 818.2 564.8 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 854.4 179.5 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 364.8 650.0 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 378.4 312.9 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 850.3 629.7 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 277.3 481.7 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 246.8 518.0 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 288.4 555.5 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 385.1 618.5 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 147.6 518.4 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 336.2 419.3 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 638.0 170.4 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 740.5 133.5 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 325.8 162.1 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 807.1 342.5 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 162.9 585.8 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 518.6 484.0 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 163.8 655.4 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 289.4 220.1 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 483.5 261.0 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 584.1 142.3 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 440.8 542.1 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 499.6 155.7 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 850.6 574.0 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 624.5 447.1 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 902.2 165.8 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 62.0 332.7 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 122.1 492.3 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 901.1 443.3 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 253.8 395.4 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 215.7 392.7 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 582.3 202.4 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 446.5 431.2 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 268.2 401.8 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 904.2 611.3 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 97.4 352.1 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 769.7 110.7 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 235.1 199.0 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 196.6 410.4 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 475.5 385.8 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 233.6 590.0 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 923.0 681.0 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 575.1 243.0 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 577.6 191.6 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 561.0 473.9 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 564.0 524.2 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 866.7 595.3 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 755.9 307.4 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 562.4 237.0 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 711.8 487.5 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 461.0 628.1 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 571.9 570.3 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 693.6 151.4 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 472.4 416.4 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 147.6 174.6 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 109.0 264.0 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 346.1 392.3 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 207.3 191.1 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 904.4 325.3 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 93.3 557.5 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 557.4 558.9 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 634.2 368.2 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 378.9 258.8 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 363.3 247.5 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 81.0 536.7 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 914.7 159.5 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 617.9 608.4 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 854.5 164.9 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 859.7 133.3 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<path d="M 753.8 264.5 q 7 -4 14 0" fill="none" stroke="#a79d78" stroke-width=".6"/>
+<rect x="45" y="92" width="910" height="598" fill="url(#grain)"/></g>
+<circle cx="620" cy="337.5" r="4" fill="#463e30" stroke="#f8edcf" stroke-width="1.2"/>
+<path d="M 615 345.5 h 10" stroke="#8e5450" stroke-width="2"/>
+<text x="620.0" y="363.0" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round">The Chalk Stag Chamber</text>
+</g>
+<g transform="translate(934 122)"><path d="M 0 -12 L 5 8 L 0 4 L -5 8 Z" fill="#463e30"/><text x="0.0" y="-17.0" text-anchor="middle" fill="#463e30" font-size="9" >N</text></g>
+<path d="M 45 699 H 955" stroke="#a19673" stroke-width=".7"/>
+<path d="M 48 713 h 24" stroke="#a36b45" stroke-width="2"/>
+<text x="79.0" y="717.0" text-anchor="start" fill="#463e30" font-size="10" >road / path</text>
+<path d="M 182 713 h 24" stroke="#3e757d" stroke-width="1.8" stroke-dasharray="5 3"/>
+<text x="213.0" y="717.0" text-anchor="start" fill="#463e30" font-size="10" >boat passage</text>
+<path d="M 329 709 l 8 8 M 329 717 l 8 -8" stroke="#8e5450" stroke-width="1.5"/>
+<text x="344.0" y="717.0" text-anchor="start" fill="#463e30" font-size="10" >closed / uncertain</text>
+<text x="951.0" y="715.0" text-anchor="end" fill="#756d50" font-size="9" letter-spacing="1">TRAVELLER’S ATLAS  ·  PRESENT DAY</text>
+</g></svg>

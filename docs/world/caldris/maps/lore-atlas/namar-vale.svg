@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="1500" viewBox="0 0 1000 750">
+    <defs><clipPath id="land"><path d="M 45.0,92.0 L 955.0,92.0 L 955.0,690.0 L 45.0,690.0 Z"/></clipPath><clipPath id="field"><rect x="45" y="92" width="910" height="598" rx="3"/></clipPath>
+    <pattern id="grain" width="37" height="31" patternUnits="userSpaceOnUse"><circle cx="4" cy="6" r=".6" fill="#6a6047" opacity=".15"/><circle cx="27" cy="23" r=".4" fill="#6a6047" opacity=".13"/></pattern>
+    <pattern id="waves" width="54" height="28" patternUnits="userSpaceOnUse"><path d="M 5 15 q 9 -3 18 0 t 18 0" fill="none" stroke="#547f80" stroke-width=".65" opacity=".35"/></pattern>
+    <linearGradient id="paper" x2="1" y2="1"><stop stop-color="#f6eed6"/><stop offset="1" stop-color="#ded2ae"/></linearGradient></defs>
+    <rect width="1000" height="750" fill="url(#paper)"/><rect x="15" y="15" width="970" height="720" rx="2" fill="none" stroke="#463e30" stroke-width="1.1"/>
+    <rect x="21" y="21" width="958" height="708" fill="none" stroke="#756d50" stroke-width=".5"/>
+    <g font-family="Georgia, 'Times New Roman', serif">
+<text x="500.0" y="49.0" text-anchor="middle" fill="#463e30" font-size="26" letter-spacing="3">NAMAR VALE</text>
+<text x="500.0" y="72.0" text-anchor="middle" fill="#756d50" font-size="11" >Shared ovens and copying rooms beside the caravan yards</text>
+<g clip-path="url(#field)">
+<rect x="45" y="92" width="910" height="598" fill="#e9dfbd"/>
+<path d="M 45.0,92.0 L 955.0,92.0 L 955.0,690.0 L 45.0,690.0 Z" fill="none" stroke="#709a97" stroke-width="13" opacity=".25"/><path d="M 45.0,92.0 L 955.0,92.0 L 955.0,690.0 L 45.0,690.0 Z" fill="#e9dfbd" stroke="#62786a" stroke-width="1.8"/>
+<g clip-path="url(#land)">
+<ellipse cx="356.3" cy="343.2" rx="73.0" ry="49.0" fill="#aeb995" opacity=".14"/>
+<ellipse cx="487.2" cy="237.0" rx="77.0" ry="32.3" fill="#aeb995" opacity=".14"/>
+<ellipse cx="201.2" cy="633.6" rx="101.9" ry="56.6" fill="#aeb995" opacity=".14"/>
+<ellipse cx="595.6" cy="419.7" rx="110.5" ry="64.0" fill="#aeb995" opacity=".14"/>
+<ellipse cx="379.2" cy="382.8" rx="43.9" ry="61.7" fill="#aeb995" opacity=".14"/>
+<ellipse cx="734.4" cy="211.9" rx="97.7" ry="52.2" fill="#aeb995" opacity=".14"/>
+<ellipse cx="253.2" cy="484.3" rx="67.1" ry="52.8" fill="#aeb995" opacity=".14"/>
+<ellipse cx="398.0" cy="351.3" rx="62.7" ry="34.4" fill="#aeb995" opacity=".14"/>
+<rect x="369.7" y="394.0" width="9.4" height="7.8" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(18 369.7 394.0)"/>
+<rect x="373.2" y="390.1" width="11.7" height="7.7" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(10 373.2 390.1)"/>
+<rect x="297.4" y="439.9" width="14.4" height="7.3" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-9 297.4 439.9)"/>
+<rect x="370.4" y="403.8" width="8.3" height="7.7" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(5 370.4 403.8)"/>
+<rect x="388.3" y="436.0" width="13.7" height="7.2" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(2 388.3 436.0)"/>
+<rect x="309.8" y="448.4" width="7.8" height="5.5" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-14 309.8 448.4)"/>
+<rect x="308.3" y="412.6" width="8.9" height="7.5" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-8 308.3 412.6)"/>
+<rect x="311.3" y="418.8" width="8.7" height="5.9" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(17 311.3 418.8)"/>
+<rect x="681.6" y="296.4" width="12.1" height="6.5" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-2 681.6 296.4)"/>
+<rect x="629.1" y="242.4" width="10.0" height="7.3" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-20 629.1 242.4)"/>
+<rect x="665.9" y="246.2" width="11.2" height="8.5" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(16 665.9 246.2)"/>
+<rect x="721.8" y="232.9" width="8.5" height="5.2" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-2 721.8 232.9)"/>
+<rect x="727.7" y="283.7" width="13.3" height="5.5" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(10 727.7 283.7)"/>
+<rect x="634.7" y="263.1" width="6.6" height="5.5" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-15 634.7 263.1)"/>
+<rect x="667.9" y="251.3" width="9.2" height="7.7" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(-4 667.9 251.3)"/>
+<rect x="646.1" y="244.1" width="11.3" height="10.4" rx="1" fill="#baa98b" stroke="#867c62" stroke-width=".5" opacity=".65" transform="rotate(15 646.1 244.1)"/>
+<rect x="45" y="92" width="910" height="598" fill="url(#grain)"/></g>
+<path d="M 335.0,412.5 L 680.0,266.2" fill="none" stroke="#f4ebd1" stroke-width="7" stroke-linecap="round"/>
+<path d="M 335.0,412.5 L 680.0,266.2" fill="none" stroke="#a36b45" stroke-width="2.1" stroke-dasharray="none" stroke-linecap="round"/>
+<circle cx="335" cy="412.5" r="4" fill="#463e30" stroke="#f8edcf" stroke-width="1.2"/>
+<circle cx="680" cy="266.25" r="4" fill="#463e30" stroke="#f8edcf" stroke-width="1.2"/>
+<text x="335.0" y="438.0" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round">Saffron Court</text>
+<text x="680.0" y="291.8" text-anchor="middle" fill="#463e30" font-size="12.5" paint-order="stroke" stroke="#ece2c3" stroke-width="3.8" stroke-linejoin="round">Seven Scripts Court</text>
+</g>
+<g transform="translate(934 122)"><path d="M 0 -12 L 5 8 L 0 4 L -5 8 Z" fill="#463e30"/><text x="0.0" y="-17.0" text-anchor="middle" fill="#463e30" font-size="9" >N</text></g>
+<path d="M 45 699 H 955" stroke="#a19673" stroke-width=".7"/>
+<path d="M 48 713 h 24" stroke="#a36b45" stroke-width="2"/>
+<text x="79.0" y="717.0" text-anchor="start" fill="#463e30" font-size="10" >road / path</text>
+<path d="M 182 713 h 24" stroke="#3e757d" stroke-width="1.8" stroke-dasharray="5 3"/>
+<text x="213.0" y="717.0" text-anchor="start" fill="#463e30" font-size="10" >boat passage</text>
+<path d="M 329 709 l 8 8 M 329 717 l 8 -8" stroke="#8e5450" stroke-width="1.5"/>
+<text x="344.0" y="717.0" text-anchor="start" fill="#463e30" font-size="10" >closed / uncertain</text>
+<text x="951.0" y="715.0" text-anchor="end" fill="#756d50" font-size="9" letter-spacing="1">TRAVELLER’S ATLAS  ·  PRESENT DAY</text>
+</g></svg>
