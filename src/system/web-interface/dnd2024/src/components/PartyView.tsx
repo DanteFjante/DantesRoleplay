@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { InventoryReturnContext } from "../data/item-view-route";
 
 import type {
   PartyDossierEntry,
@@ -98,24 +99,41 @@ export function PartyView({
   loading = false,
   onRetry,
   party,
+  navigationCharacterId,
+  inventoryReturn,
+  onOpenItem,
 }: {
   loading?: boolean;
   onRetry?: () => void;
   party: PartyMemberReadModel[];
+  navigationCharacterId?: string;
+  inventoryReturn?: InventoryReturnContext | null;
+  onOpenItem?: (characterId: string, itemId: string, context: InventoryReturnContext) => void;
 }) {
-  const [selectedMemberId, setSelectedMemberId] = useState(party[0]?.id ?? "");
-  const [section, setSection] = useState<PartySectionId>("overview");
+  const [selectedMemberId, setSelectedMemberId] = useState(navigationCharacterId ?? party[0]?.id ?? "");
+  const [section, setSection] = useState<PartySectionId>(navigationCharacterId ? "inventory" : "overview");
+  const [expandedIds, setExpandedIds] = useState<string[]>(inventoryReturn?.expandedIds ?? []);
+  const restored = useRef(false);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    if (!party.some((member) => member.id === selectedMemberId)) {
+    if (!navigationCharacterId && !party.some((member) => member.id === selectedMemberId)) {
       setSelectedMemberId(party[0]?.id ?? "");
       setSection("overview");
       setQuery("");
     }
-  }, [party, selectedMemberId]);
+  }, [party, selectedMemberId, navigationCharacterId]);
 
-  const selectedMember = party.find((member) => member.id === selectedMemberId) ?? party[0];
+  const selectedMember = party.find((member) => member.id === selectedMemberId);
+  useLayoutEffect(() => {
+    if (restored.current || !inventoryReturn || section !== "inventory" || !selectedMember?.characterSheet) return;
+    const target = [...document.querySelectorAll<HTMLElement>("[data-item-open]")]
+      .find((element) => element.dataset.itemOpen === inventoryReturn.focusItemId);
+    if (!target) return;
+    restored.current = true;
+    target.focus({ preventScroll: true });
+    window.scrollTo(0, inventoryReturn.scrollY);
+  }, [inventoryReturn, section, selectedMember]);
   useEffect(() => {
     if (!loading && selectedMember?.sheetState.status === "ready" && selectedMember.sheetState.source === "canonical") {
       markCharacterReady(selectedMember.id);
@@ -148,7 +166,7 @@ export function PartyView({
   const selectSection = (next: PartySectionId) => { setSection(next); setQuery(""); };
   return (
     <CharacterShell
-      onSelectMember={(id) => { setSelectedMemberId(id); selectSection("overview"); }}
+      onSelectMember={(id) => { setSelectedMemberId(id); setExpandedIds([]); selectSection("overview"); }}
       onSelectSection={selectSection}
       party={party}
       section={section}
@@ -176,6 +194,13 @@ export function PartyView({
           ) : stateBlocksContent ? null : section === "inventory" && selectedMember.characterSheet ? (
             <div className="character-inventory-layout">
               <InventoryTree
+                key={selectedMember.id}
+                expandedIds={expandedIds}
+                onExpandedChange={(id, expanded) => setExpandedIds((previous) => expanded
+                  ? previous.includes(id) ? previous : [...previous, id] : previous.filter((value) => value !== id))}
+                onOpenItem={onOpenItem ? (itemId) => onOpenItem(selectedMember.id, itemId, {
+                  characterId: selectedMember.id, expandedIds, focusItemId: itemId, scrollY: window.scrollY,
+                }) : undefined}
                 definitions={selectedMember.characterSheet.dossier?.inventory.definitions ?? []}
                 items={selectedMember.characterSheet.inventory.items}
               />

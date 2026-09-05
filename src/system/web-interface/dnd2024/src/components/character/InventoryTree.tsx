@@ -27,11 +27,15 @@ function InventoryBranch({
   definitions,
   item,
   onDisclosure,
+  onOpenItem,
+  expandedIds,
 }: {
   childrenByParent: Map<string | null, CharacterInventoryItemV2[]>;
   definitions: Map<string, CharacterDossierDefinition>;
   item: CharacterInventoryItemV2;
   onDisclosure: (item: CharacterInventoryItemV2, expanded: boolean) => void;
+  onOpenItem?: (itemId: string) => void;
+  expandedIds?: string[];
 }) {
   const children = childrenByParent.get(item.id) ?? [];
   const canExpand = children.length > 0 || item.deeperContentsOmitted;
@@ -39,25 +43,36 @@ function InventoryBranch({
     <ul>
       {children.map((child) => (
         <li key={child.id}>
-          <InventoryBranch childrenByParent={childrenByParent} definitions={definitions} item={child} onDisclosure={onDisclosure} />
+          <InventoryBranch childrenByParent={childrenByParent} definitions={definitions} item={child} onDisclosure={onDisclosure} onOpenItem={onOpenItem} expandedIds={expandedIds} />
         </li>
       ))}
     </ul>
   ) : item.deeperContentsOmitted ? <p className="character-inventory__omission">Deeper contents were intentionally omitted.</p> : null;
 
-  if (!canExpand) return <div className="character-inventory__leaf"><ItemIdentity definition={definitions.get(item.definition.id)} item={item} /></div>;
+  const identity = <ItemIdentity definition={definitions.get(item.definition.id)} item={item} />;
+  const opening = onOpenItem ? <button type="button" className="character-inventory__open" data-item-open={item.id}
+    aria-label={`View ${item.name}`} onClick={() => onOpenItem(item.id)}>{identity}</button> : null;
+  if (!canExpand) return opening ? <div className="character-inventory__node">{opening}</div>
+    : <div className="character-inventory__leaf">{identity}</div>;
   return (
+    <div className={opening ? "character-inventory__node" : undefined}>
+    {opening}
     <details
       className="character-inventory__branch"
+      open={expandedIds?.includes(item.id)}
       onToggle={(event: SyntheticEvent<HTMLDetailsElement>) => onDisclosure(item, event.currentTarget.open)}
     >
-      <summary><ItemIdentity definition={definitions.get(item.definition.id)} item={item} /></summary>
+      <summary>{opening ? <span>Contents<span className="sr-only"> of {item.name}</span></span> : identity}</summary>
       {contents}
     </details>
+    </div>
   );
 }
 
-export function InventoryTree({ definitions: values, items }: { definitions: CharacterDossierDefinition[]; items: CharacterInventoryItemV2[] }) {
+export function InventoryTree({ definitions: values, items, onOpenItem, expandedIds, onExpandedChange }: {
+  definitions: CharacterDossierDefinition[]; items: CharacterInventoryItemV2[];
+  onOpenItem?: (itemId: string) => void; expandedIds?: string[]; onExpandedChange?: (itemId: string, expanded: boolean) => void;
+}) {
   const [announcement, setAnnouncement] = useState("");
   const definitions = useMemo(() => new Map(values.map((value) => [value.id, value])), [values]);
   const childrenByParent = useMemo(() => {
@@ -87,9 +102,11 @@ export function InventoryTree({ definitions: values, items }: { definitions: Cha
                 childrenByParent={childrenByParent}
                 definitions={definitions}
                 item={item}
-                onDisclosure={(changed, expanded) => setAnnouncement(
+                onOpenItem={onOpenItem}
+                expandedIds={expandedIds}
+                onDisclosure={(changed, expanded) => { onExpandedChange?.(changed.id, expanded); setAnnouncement(
                   `${changed.name} ${expanded ? "expanded" : "collapsed"}. ${changed.childCount} contained ${changed.childCount === 1 ? "item" : "items"}.`,
-                )}
+                ); }}
               />
             </li>
           ))}

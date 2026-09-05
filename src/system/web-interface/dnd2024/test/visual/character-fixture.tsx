@@ -1,8 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import type { NamedCharacterReference, PartyMemberReadModel } from "../../src/data/hub-types";
 import { PartyView } from "../../src/components/PartyView";
+import { ItemWorkspace } from "../../src/components/items/ItemWorkspace";
+import { ITEM_ROUTE_EVENT, navigateItemRoute, parseItemRoute } from "../../src/data/item-view-route";
 import "../../src/styles.css";
 import "../../src/character-page.css";
 
@@ -156,6 +158,15 @@ const party: PartyMemberReadModel[] = [{
 }];
 
 function Fixture() {
+  const items = new URLSearchParams(window.location.search).get("items") === "1";
+  const [route, setRoute] = useState(() => parseItemRoute(window.location.hash));
+  useEffect(() => {
+    if (!items) return;
+    const changed = () => setRoute(parseItemRoute(window.location.hash));
+    for (const event of [ITEM_ROUTE_EVENT, "popstate", "hashchange"]) window.addEventListener(event, changed);
+    if (route.kind === "none") navigateItemRoute({ kind: "inventory", characterId: party[0].id, campaignId: "campaign.fixture", perspective: "player" }, true);
+    return () => { for (const event of [ITEM_ROUTE_EVENT, "popstate", "hashchange"]) window.removeEventListener(event, changed); };
+  }, []);
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("section");
     const label = requested === "inventory" ? "Inventory" : requested === "character" ? "Character" : null;
@@ -179,7 +190,9 @@ function Fixture() {
       });
     });
   }, []);
-  return <main style={{ maxWidth: 1480, margin: "0 auto", padding: "28px clamp(12px, 3vw, 44px)" }}><PartyView party={party} /></main>;
+  return <main style={{ maxWidth: 1480, margin: "0 auto", padding: "28px clamp(12px, 3vw, 44px)" }}>{items
+    ? <ItemWorkspace route={route} party={party} campaignId="campaign.fixture" perspective="player" />
+    : <PartyView party={party} />}</main>;
 }
 
 createRoot(document.getElementById("root")!).render(<Fixture />);

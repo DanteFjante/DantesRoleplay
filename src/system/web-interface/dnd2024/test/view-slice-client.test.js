@@ -27,7 +27,7 @@ test("inactive high-cost views are lazy module boundaries", () => {
   for (const component of [
     "CampaignView",
     "InstalledContentView",
-    "PartyView",
+    "items/ItemWorkspace",
     "PlayConversationPanel",
     "PreviewViews",
     "RulesView",

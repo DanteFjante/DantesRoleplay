@@ -1,12 +1,12 @@
 # Item view implementation plan
 
-Version 1.4 · 5 September 2026
+Version 1.5 · 5 September 2026
 
 ## Purpose and delivery boundary
 
 Build a full item dossier that opens from a character's inventory. It has three tabs: **Details**, **Known recipes**, and **Known uses**. Recipes are split into **Makes this item** and **Uses this item**, as requested. The dossier describes the actual item instance and the knowledge of the selected character, while preserving the current character sheet, nested inventory, and DM and Player switch.
 
-This document specifies implementation work; it is not evidence that the published feature exists. IV00 contracts were approved by the user on 5 September 2026. IV01–IV03 are implemented within their documented supported boundaries; IV04–IV10 remain pending. Validation results and exclusions are recorded in the implementation commits. The concrete review packet is [item-view-contracts/README.md](item-view-contracts/README.md). The requested document does not itself authorize new runtime identities, catalog synchronization, or activation. Apply the repository working agreement at each concrete boundary, using authorization already present in the implementation task rather than repeatedly requesting it.
+This document specifies implementation work; it is not evidence that the published feature exists. IV00 contracts were approved by the user on 5 September 2026. IV01–IV04 are implemented within their documented supported boundaries; IV05–IV10 remain pending. Validation results and exclusions are recorded in the implementation commits. The concrete review packet is [item-view-contracts/README.md](item-view-contracts/README.md). The requested document does not itself authorize new runtime identities, catalog synchronization, or activation. Apply the repository working agreement at each concrete boundary, using authorization already present in the implementation task rather than repeatedly requesting it.
 
 The first release is read-only. Opening a tab must not equip, consume, identify, reveal, craft, advance time, or record a discovery. Use and Start crafting are explicitly deferred to follow-up slices after this release. Do not infer missing recipes, properties, or uses from prose or item names.
 
@@ -157,6 +157,8 @@ Execute sequentially by default. Dependencies allow independent preparation, but
 **Rollback and stop:** Restore the existing media path and neutral fallback. Never delete or rewrite live blobs as a rollback. Stop any path that would expose a GM-only image in Player preview.
 
 ## IV04 Item route and navigation shell
+
+**Status:** Implemented without live publication. Item identity buttons open the instance selection independently of native container disclosures. Bounded `#item?...` and `#inventory?...` fragments preserve the published pathname/query and carry character, campaign, requested perspective, item and tab selections. Existing authorized hub loading resolves requested campaign/perspective; URL values and return state grant no access. All three tabs remain explicitly unavailable in this slice, and even a valid deep link displays only the neutral “Item” heading until IV05 supplies validated Details. No inventory label, media or definition is reused as a header. Tab changes replace the current item entry; Back/Forward traverse item/inventory entries. Return state retains bounded expanded IDs, scroll and item focus, including after reload; Escape returns to inventory and tab arrows/Home/End follow tab semantics. Invalid selections fail safely. Mounted tests and a local browser fixture cover nested return, focus, reload and narrow layouts; the commit receipt distinguishes isolated web proof from failures caused by concurrent catalog changes in the full solution run.
 
 **Owner and files:** Web navigation owner; `InventoryTree.tsx`, `PartyView.tsx`, `DndInformationHub.tsx`, proposed item route and `ItemView.tsx`, and proposed `WEB/test/mounted/item-view-navigation.test.tsx`.
 

@@ -3,6 +3,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 import { resolveCampaignWorldTarget } from "../data/campaign-navigation";
+import { ITEM_ROUTE_EVENT, navigateItemRoute, parseItemRoute } from "../data/item-view-route";
 import { preserveLastGoodPartyData } from "../data/section-state";
 import { ViewReadError } from "../data/view-read-client";
 import type {
@@ -43,8 +44,8 @@ const CampaignView = lazy(() => import("./CampaignView")
   .then((module) => ({ default: module.CampaignView })));
 const InstalledContentView = lazy(() => import("./InstalledContentView")
   .then((module) => ({ default: module.InstalledContentView })));
-const PartyView = lazy(() => import("./PartyView")
-  .then((module) => ({ default: module.PartyView })));
+const ItemWorkspace = lazy(() => import("./items/ItemWorkspace")
+  .then((module) => ({ default: module.ItemWorkspace })));
 const PlayConversationPanel = lazy(() => import("./PlayConversationPanel")
   .then((module) => ({ default: module.PlayConversationPanel })));
 const CurrentViewPreview = lazy(() => import("./PreviewViews")
@@ -119,7 +120,18 @@ export function DndInformationHub({
   loadContent: ContentLoader;
 }) {
   const [envelope, setEnvelope] = useState(initialEnvelope);
-  const [activeTab, setActiveTab] = useState<MainTabId>("world");
+  const [itemRoute, setItemRoute] = useState(() => parseItemRoute(window.location.hash));
+  const [activeTab, setActiveTab] = useState<MainTabId>(() => parseItemRoute(window.location.hash).kind === "none" ? "world" : "party");
+  useEffect(() => {
+    const changed = () => {
+      const next = parseItemRoute(window.location.hash);
+      setItemRoute(next);
+      if (next.kind !== "none") setActiveTab("party");
+      else if (window.history.state?.itemMainTab) setActiveTab(normalizeMainTab(window.history.state.itemMainTab) as MainTabId);
+    };
+    for (const event of ["popstate", "hashchange", ITEM_ROUTE_EVENT]) window.addEventListener(event, changed);
+    return () => { for (const event of ["popstate", "hashchange", ITEM_ROUTE_EVENT]) window.removeEventListener(event, changed); };
+  }, []);
   const [campaignSection, setCampaignSection] = useState<CampaignSectionId>("overview");
   const [worldSection, setWorldSection] = useState<WorldSectionId>("overview");
   const [locationSection, setLocationSection] = useState<LocationSectionId>("details");
@@ -266,14 +278,20 @@ export function DndInformationHub({
   }
 
   async function requestPerspective(nextPerspective: Perspective, announce = true) {
+    if ((itemRoute.kind === "item" || itemRoute.kind === "inventory") && envelope.audience.allowedPerspectives.includes(nextPerspective)) {
+      navigateItemRoute({ ...itemRoute, perspective: nextPerspective }, false, null);
+      return;
+    }
     await requestHub(nextPerspective, contextSelection.selectedCampaignId, announce);
   }
 
   async function requestCampaign(nextCampaignId: string) {
+    if (itemRoute.kind !== "none") navigateItemRoute(null, true);
     await requestHub(perspective, nextCampaignId, true);
   }
 
   useEffect(() => {
+    if (parseItemRoute(window.location.hash).kind !== "none") return;
     const storedPerspective = loadRequestedPerspective();
     const storedCampaign = loadRequestedCampaignId();
     const requestedCampaign = storedCampaign && contextSelection.worlds.some((world) =>
@@ -294,6 +312,21 @@ export function DndInformationHub({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const requestedItemScope = itemRoute.kind === "item" || itemRoute.kind === "inventory"
+    ? `${itemRoute.campaignId}:${itemRoute.perspective}` : itemRoute.kind;
+  useEffect(() => {
+    if (itemRoute.kind === "none") return;
+    ++hubRequestSequence.current;
+    setHubBusy(false);
+    if ((itemRoute.kind !== "item" && itemRoute.kind !== "inventory") ||
+        !envelope.audience.allowedPerspectives.includes(itemRoute.perspective) ||
+        !contextSelection.worlds.some((world) => world.campaigns.some((campaign) => campaign.id === itemRoute.campaignId))) return;
+    void requestHub(itemRoute.perspective, itemRoute.campaignId, false);
+    // A fragment requests a scope through the existing authorized loader; it
+    // never changes the host seat or supplies authoritative character bindings.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedItemScope]);
+
   useEffect(() => {
     markActiveViewReady(activeTab);
   }, [activeTab]);
@@ -305,6 +338,7 @@ export function DndInformationHub({
   function selectTab(tab: MainTabId) {
     const nextTab = normalizeMainTab(tab) as MainTabId;
     if (nextTab === activeTab) return;
+    if (itemRoute.kind !== "none") navigateItemRoute(null, false, null, nextTab);
     setActiveTab(nextTab);
     setAnnouncement(`${nextTab === "current" ? "Current view" : nextTab} opened`);
     focusViewHeading();
@@ -374,7 +408,11 @@ export function DndInformationHub({
           />
         );
       case "party":
-        return <PartyView
+        return <ItemWorkspace
+          key={`${envelope.applicationId}:${envelope.stateSpaceId}:${contextSelection.selectedCampaignId}:${envelope.audience.seat}:${perspective}`}
+          route={itemRoute}
+          campaignId={contextSelection.selectedCampaignId}
+          perspective={perspective}
           loading={hubBusy}
           onRetry={() => void requestHub(perspective, contextSelection.selectedCampaignId, false, true)}
           party={envelope.party}
