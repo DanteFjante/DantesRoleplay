@@ -117,6 +117,7 @@ test("development ledger records bounded party-read status without component val
 test("production component paths emit every readiness mark", () => {
   const source = [
     "../src/server-host/main.tsx",
+    "../src/components/BootstrapShell.tsx",
     "../src/components/DndInformationHub.tsx",
     "../src/components/RulesOnlyHub.tsx",
     "../src/components/PartyView.tsx",
@@ -133,4 +134,26 @@ test("production component paths emit every readiness mark", () => {
     "markCombatBoardReady(",
   ]) assert.match(source, new RegExp(call.replace("(", "\\(")));
   assert.match(source, /process\.env\.NODE_ENV !== "production"\) installDevelopmentRequestLedger\(\)/);
+});
+
+test("ledger bounds, overlapping interaction attribution and fetch restoration are honest", async () => {
+  const fetch = async () => new Response(null, { status: 204 });
+  const target = { fetch };
+  assert.throws(() => installDevelopmentRequestLedger({ target, maximumEntries: 0 }), RangeError);
+  const ledger = installDevelopmentRequestLedger({ target, maximumEntries: 2 });
+  const first = ledger.beginInteraction("first");
+  const second = ledger.beginInteraction("second");
+  await target.fetch("/overlapping");
+  ledger.endInteraction(first);
+  await target.fetch("/second");
+  ledger.endInteraction(second);
+  await target.fetch("/outside");
+  const requests = ledger.snapshot().requests;
+  assert.equal(ledger.snapshot().totalRequests, 3);
+  assert.equal(ledger.snapshot().droppedRequests, 1);
+  assert.equal(requests.length, 2);
+  assert.equal(requests[0].parentInteraction, second.id);
+  assert.equal(requests[1].parentInteraction, null);
+  ledger.restore();
+  assert.equal(target.fetch, fetch);
 });

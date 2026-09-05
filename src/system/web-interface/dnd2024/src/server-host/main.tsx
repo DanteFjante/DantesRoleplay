@@ -10,7 +10,7 @@ import { readGameServerContext } from "../server/game-server-context.js";
 import { readInstalledContent } from "../server/effective-content";
 import { readRulesReference } from "../server/rules-reference";
 import { isReadyHubEnvelope } from "../state.js";
-import { markBootstrapResponse, markShellReady } from "../observability/performance.js";
+import { markBootstrapResponse } from "../observability/performance.js";
 import {
   installDevelopmentRequestLedger,
   recordDevelopmentDiagnostic,
@@ -150,7 +150,6 @@ root.render(
     <BootstrapShell />
   </StrictMode>,
 );
-markShellReady();
 
 try {
   const initialEnvelope = await loadEnvelope("player");

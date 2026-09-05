@@ -33,10 +33,14 @@ function boundedPush(values, value, maximum) {
 }
 
 export function installDevelopmentRequestLedger({ target = globalThis, maximumEntries = 1000 } = {}) {
+  if (!Number.isSafeInteger(maximumEntries) || maximumEntries < 1 || maximumEntries > 10000) {
+    throw new RangeError("Request ledger limit must be between 1 and 10000.");
+  }
   if (target[DEVELOPMENT_OBSERVABILITY_KEY]) return target[DEVELOPMENT_OBSERVABILITY_KEY];
   if (typeof target.fetch !== "function") return null;
 
-  const originalFetch = target.fetch.bind(target);
+  const originalFetch = target.fetch;
+  const activeInteractions = [];
   let requestSequence = 0;
   let interactionSequence = 0;
   const state = {
@@ -50,6 +54,7 @@ export function installDevelopmentRequestLedger({ target = globalThis, maximumEn
     beginInteraction(kind) {
       const id = `${kind}:${++interactionSequence}`;
       const previousId = state.activeInteractionId;
+      activeInteractions.push(id);
       state.activeInteractionId = id;
       boundedPush(state.interactions, {
         id,
@@ -59,7 +64,9 @@ export function installDevelopmentRequestLedger({ target = globalThis, maximumEn
       return { id, previousId };
     },
     endInteraction(handle) {
-      if (state.activeInteractionId === handle.id) state.activeInteractionId = handle.previousId;
+      const index = activeInteractions.indexOf(handle.id);
+      if (index >= 0) activeInteractions.splice(index, 1);
+      state.activeInteractionId = activeInteractions.at(-1) ?? null;
     },
     recordDiagnostic(kind, detail) {
       boundedPush(state.diagnostics, {
@@ -75,6 +82,8 @@ export function installDevelopmentRequestLedger({ target = globalThis, maximumEn
     },
     snapshot() {
       return JSON.parse(JSON.stringify({
+        totalRequests: requestSequence,
+        droppedRequests: Math.max(0, requestSequence - state.requests.length),
         diagnostics: state.diagnostics,
         interactions: state.interactions,
         requests: state.requests,
@@ -86,7 +95,8 @@ export function installDevelopmentRequestLedger({ target = globalThis, maximumEn
     const started = target.performance?.now?.() ?? Date.now();
     const entry = {
       id: ++requestSequence,
-      parentInteraction: state.activeInteractionId,
+      // Overlapping asynchronous interactions have no trustworthy implicit parent.
+      parentInteraction: activeInteractions.length === 1 ? state.activeInteractionId : null,
       path: requestPath(input, target),
       method: requestMethod(input, init),
       durationMs: null,
@@ -98,16 +108,28 @@ export function installDevelopmentRequestLedger({ target = globalThis, maximumEn
     boundedPush(state.requests, entry, maximumEntries);
 
     try {
-      const response = await originalFetch(input, init);
+      const response = await originalFetch.call(target, input, init);
       entry.durationMs = Math.max(0, (target.performance?.now?.() ?? Date.now()) - started);
       entry.status = response.status;
       entry.payloadBytes = contentLength(response);
       entry.cacheResult = cacheResult(response);
       entry.outcome = "response";
       if (entry.payloadBytes === null && typeof response.clone === "function") {
-        void response.clone().arrayBuffer()
-          .then((payload) => { entry.payloadBytes = payload.byteLength; })
-          .catch(() => {});
+        // Count transient chunks; never retain or concatenate private response bodies.
+        // Stop large/streaming responses so development diagnostics cannot exhaust memory.
+        void (async () => {
+          const reader = response.clone().body?.getReader();
+          if (!reader) { entry.payloadBytes = 0; return; }
+          let bytes = 0;
+          try {
+            while (true) {
+              const chunk = await reader.read();
+              if (chunk.done) { entry.payloadBytes = bytes; break; }
+              bytes += chunk.value.byteLength;
+              if (bytes > 8 * 1024 * 1024) { void reader.cancel(); break; }
+            }
+          } finally { reader.releaseLock(); }
+        })().catch(() => {});
       }
       return response;
     } catch (error) {

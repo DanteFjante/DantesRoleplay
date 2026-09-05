@@ -7,6 +7,8 @@
   },
   "scripts": {
     "build:server": "vite build --config vite.server.config.ts",
+    "baseline:browser": "node scripts/sample-browser-baseline.mjs",
+    "baseline:collect": "node scripts/collect-baseline.mjs",
     "release:manifest": "node scripts/create-release-manifest.mjs",
     "release:verify-live": "node scripts/verify-live-release.mjs",
     "typecheck": "tsc --noEmit",

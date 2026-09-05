@@ -28,6 +28,7 @@ import {
   type MapViewportState,
 } from "../../src/components/MapCanvas";
 import { TacticalBoard } from "../../src/components/TacticalBoard";
+import { PERFORMANCE_MARKS, resetPerformanceMarksForTests } from "../../src/observability/performance.js";
 
 const dmPrincipal = "principal.dm.fixture";
 
@@ -444,6 +445,11 @@ test("mounted Party view distinguishes loading, ready, empty, stale, forbidden, 
       expected: "Confirmed Ranger",
     },
     {
+      name: "provisional is not canonical readiness",
+      state: { status: "ready", source: "provisional", data: confirmedEntry },
+      expected: "Confirmed Ranger",
+    },
+    {
       name: "empty",
       state: { status: "empty", source: "canonical", data: [] },
       expected: "No canonical character sheet is recorded",
@@ -491,12 +497,17 @@ test("mounted Party view distinguishes loading, ready, empty, stale, forbidden, 
 
   for (const scenario of cases) {
     await t.test(scenario.name, async () => {
+      resetPerformanceMarksForTests();
+      performance.clearMarks(PERFORMANCE_MARKS.characterReady);
       const member = partyMember(scenario.state);
       member.inventoryState = scenario.state;
       const mounted = await mount(
         <PartyView loading={scenario.loading} party={[member]} />,
       );
       try {
+        assert.equal(performance.getEntriesByName(PERFORMANCE_MARKS.characterReady).length,
+          scenario.state.status === "ready" && scenario.state.source === "canonical" && !scenario.loading ? 1 : 0,
+          "Only a ready canonical character may emit the ready timing");
         await click(button(mounted.container, "Character"));
         const text = mounted.container.textContent ?? "";
         assert.match(text, new RegExp(scenario.expected, "i"));

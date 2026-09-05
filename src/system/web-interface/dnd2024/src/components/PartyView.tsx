@@ -116,8 +116,10 @@ export function PartyView({
 
   const selectedMember = party.find((member) => member.id === selectedMemberId) ?? party[0];
   useEffect(() => {
-    if (selectedMember) markCharacterReady(selectedMember.id);
-  }, [selectedMember]);
+    if (!loading && selectedMember?.sheetState.status === "ready" && selectedMember.sheetState.source === "canonical") {
+      markCharacterReady(selectedMember.id);
+    }
+  }, [loading, selectedMember]);
 
   const entries = selectedMember ? sectionEntries(selectedMember, section) : [];
   const state = selectedMember && (section === "sheet" || section === "inventory")

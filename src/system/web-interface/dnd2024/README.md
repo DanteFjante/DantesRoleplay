@@ -20,19 +20,47 @@ and authored content live under `catalog/applications/dnd2024`; live game state 
 
 ## Reproducible baseline
 
-Run the test, typecheck, and server-build gates independently, then generate the Slice 0 report:
+The Slice 0 tools inspect current source and the exact live release separately. They never publish
+a page, activate a catalog, restart the server, or edit game state. The historical
+baseline/slice-0-baseline.json retains the original eight TypeScript diagnostics; it is not current
+acceptance evidence.
+
+Run from this package directory with an installed Chromium-family browser and Playwright:
 
 ```powershell
-node --test
-node node_modules/typescript/bin/tsc --noEmit
-node node_modules/vite/bin/vite.js build --config vite.server.config.ts
-node scripts/collect-baseline.mjs --browser-name "Google Chrome" --browser-version "<version>" --output baseline/slice-0-baseline.json
+npm run baseline:browser -- --listener http://localhost:6217 --playwright-module "<absolute-path-to-playwright/index.mjs>" --browser-executable "<absolute-path-to-chrome.exe>" --output .tmp/website-slice-0/browser.json
+npm run baseline:collect -- --listener http://localhost:6217 --browser-results .tmp/website-slice-0/browser.json --output .tmp/website-slice-0/baseline.json
 ```
 
-The collector fingerprints the commit and dirty worktree, repeats the three gates, hashes the
-built bundle, and probes the configured HTTP and HTTPS listeners. If neither listener is running,
-the report records live revision, live bundle, and browser sampling as blocked instead of deriving
-them from build timings.
+Omit --playwright-module if Playwright is already resolvable in the local Node environment.
+The sampler uses a separate headless browser and disposable contexts, never the user's profile or
+open tab. Its default is 20 pairs: a fresh context with cleared HTTP cache, then a second navigation
+through World, Character sheet, Map and Current View in that same context. The server stays warm;
+private API reads still obey no-store. The target records browser version, viewport, CPU, OS, memory,
+perspective and listener. A GM binding is measured in the normal initial Player-preview perspective.
+Run without competing tests/builds for a comparable local performance baseline.
+
+The collector runs node tests, mounted tests, typecheck, and production build as independent gates
+and retains their exit status and diagnostics. It hashes the dirty worktree without changing it
+(excluding its own evidence files), checks for changes during the gates, records raw/gzip source
+bundle sizes, and verifies the active revision plus every published asset, including lazy chunks.
+Source bundle measurements are never attributed to the unchanged live release.
+
+Browser evidence must match the exact listener, machine, browser, audience/runtime fingerprint and
+active page before and after sampling. Missing metrics, duplicate IDs, short runs and drift cannot
+pass. Readiness timing summaries retain sample count, p50 and p95. Request summaries retain path,
+parent interaction, response status, transferred payload size and browser/server cache evidence;
+unknown lengths or cache results remain unknown. An unavailable character/map is recorded as a
+known baseline failure with no invented ready latency. An absent combat board is not applicable,
+not zero milliseconds. This can complete baseline collection without claiming that the website
+itself is healthy.
+
+The browser blocks writes (including background beacons), records blocked operation paths, and
+stores no private payload bodies, query values, cookies, DOM text or console messages. No routing
+interception disables the warm browser cache. The complete report is local ignored evidence; it
+must not be published with the website. If no listener is available, collection records live checks
+as blocked rather than deriving them from build time. Failed gates, invalid/missing browser
+evidence, or worktree drift return a nonzero exit status while preserving the report.
 
 Development builds expose a bounded `__DND2024_DEVELOPMENT_OBSERVABILITY__` snapshot containing
 request path, duration, status, payload byte count, cache result, and parent interaction. It never

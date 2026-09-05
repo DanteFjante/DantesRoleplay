@@ -72,7 +72,7 @@ export function CurrentViewPreview({
   situation: CurrentSituationReadModel;
 }) {
   useEffect(() => {
-    if (situation.status === "ready" && situation.kind === "combat") {
+    if (situation.status === "ready" && situation.kind === "combat" && situation.combat.board) {
       markCombatBoardReady(situation.combat.id);
     }
   }, [situation]);

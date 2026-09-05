@@ -1,6 +1,9 @@
 import { MainNavigation } from "./MainNavigation";
+import { useEffect } from "react";
+import { markShellReady } from "../observability/performance.js";
 
 export function BootstrapShell() {
+  useEffect(() => { markShellReady(); }, []);
   return (
     <div aria-busy="true" className="information-hub bootstrap-shell">
       <a className="skip-link" href="#information-content">Skip to information</a>
