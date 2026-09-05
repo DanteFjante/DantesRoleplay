@@ -24,7 +24,19 @@ export function CharacterSectionState({
   onRetry?: () => void;
   state: SectionState<PartyDossierEntry[]>;
 }) {
-  if (loading) return <CharacterLoadingSkeleton label={label} />;
+  if (loading || state.status === "loading") return <CharacterLoadingSkeleton label={label} />;
+  if (state.status === "idle") {
+    return (
+      <div className="character-state character-state--idle" role="status">
+        <Icon name="BookOpen" size={18} />
+        <div>
+          <strong>{label} not loaded</strong>
+          <p>This section has not been requested yet; its contents are not known.</p>
+        </div>
+        {onRetry ? <button onClick={onRetry} type="button">Load {label}</button> : null}
+      </div>
+    );
+  }
   if (state.status === "empty") {
     return (
       <div className="character-state character-state--empty" role="status">
@@ -82,7 +94,7 @@ export function CharacterSectionState({
               ? `${label} is temporarily unavailable. Try again after the service recovers.`
               : `${label} could not be loaded; no provisional values were substituted. Check the diagnostic and try again.`;
     return (
-      <div className="character-state character-state--error" role="alert">
+      <div className={`character-state character-state--error${state.status === "forbidden" ? " character-state--forbidden" : ""}`} role="alert">
         <Icon name="Shield" size={18} />
         <div>
           <strong>{title}</strong>

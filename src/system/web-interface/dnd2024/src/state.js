@@ -958,12 +958,12 @@ function isDossierSectionState(value) {
   }
   if (value.status === "stale") {
     return Array.isArray(value.data) && ["canonical", "provisional"].includes(value.source) &&
-      ["transport", "http", "incompatible-data", "unknown"].includes(value.failureCategory) &&
+      ["transport", "http", "stale-data", "incompatible-data", "unknown"].includes(value.failureCategory) &&
       typeof value.diagnosticId === "string";
   }
   if (value.status === "error") {
     return value.data === null &&
-      ["transport", "http", "incompatible-data", "unknown"].includes(value.failureCategory) &&
+      ["transport", "http", "stale-data", "incompatible-data", "unknown"].includes(value.failureCategory) &&
       typeof value.diagnosticId === "string";
   }
   return value.data === null && value.failureCategory === "authorization" &&

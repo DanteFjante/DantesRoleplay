@@ -390,7 +390,7 @@ function partyMember(sheetState: SectionState<PartyMemberReadModel["sheet"]>): P
   member.sheet = "data" in sheetState && Array.isArray(sheetState.data) ? sheetState.data : [];
   member.sheetStatus = sheetState.status === "error" || sheetState.status === "forbidden"
     ? "unavailable"
-    : sheetState.source === "canonical" ? "canonical" : "provisional";
+    : "source" in sheetState && sheetState.source === "canonical" ? "canonical" : "provisional";
   member.recordStatus = member.sheetStatus === "canonical"
     ? "Canonical character state"
     : member.sheetStatus === "unavailable" ? "Canonical character unavailable" : member.recordStatus;
@@ -439,6 +439,24 @@ test("mounted Party view distinguishes loading, ready, empty, stale, forbidden, 
     expected: string;
     excluded?: string;
   }> = [
+    {
+      name: "idle is not empty",
+      state: { status: "idle", data: null },
+      expected: "section has not been requested yet",
+      excluded: "No sheet recorded|No canonical character sheet is recorded|0 recorded entries",
+    },
+    {
+      name: "first load is not empty",
+      state: { status: "loading", data: null },
+      expected: "Refreshing character sheet",
+      excluded: "No sheet recorded|No canonical character sheet is recorded|0 recorded entries",
+    },
+    {
+      name: "first-read HTTP 500 is not empty or provisional",
+      state: { status: "error", data: null, failureCategory: "http", httpStatus: 500, diagnosticId: "first-read-500" },
+      expected: "Character service unavailable",
+      excluded: "No sheet recorded|No canonical character sheet is recorded|Confirmed Ranger",
+    },
     {
       name: "ready",
       state: { status: "ready", source: "canonical", data: confirmedEntry },
@@ -512,7 +530,8 @@ test("mounted Party view distinguishes loading, ready, empty, stale, forbidden, 
         const text = mounted.container.textContent ?? "";
         assert.match(text, new RegExp(scenario.expected, "i"));
         if (scenario.excluded) assert.doesNotMatch(text, new RegExp(scenario.excluded, "i"));
-        if (scenario.state.status === "error" || scenario.state.status === "forbidden") {
+        if (scenario.state.status === "error" || scenario.state.status === "forbidden" ||
+            scenario.state.status === "idle" || scenario.state.status === "loading") {
           assert.match(text, /Record count unavailable/);
           assert.doesNotMatch(text, /0 recorded entries/);
           await click(button(mounted.container, "Inventory"));
@@ -698,6 +717,11 @@ test("mounted hub retry replaces a stale character warning with Ready canonical 
   });
   const recovered = structuredClone(initial);
   recovered.party[0] = partyMember({ status: "ready", source: "canonical", data: confirmedEntry });
+  const failedRefresh = structuredClone(initial);
+  failedRefresh.party[0] = partyMember({
+    status: "error", data: null, failureCategory: "stale-data",
+    diagnosticId: "diag-revision-changed", errorCode: "READ_MODEL_STATE_SPACE_STALE", httpStatus: 409,
+  });
   let calls = 0;
 
   const mounted = await mount(
@@ -706,7 +730,7 @@ test("mounted hub retry replaces a stale character warning with Ready canonical 
       loadContent={async () => { throw new Error("not used"); }}
       loadEnvelope={async () => {
         calls += 1;
-        return recovered;
+        return calls === 1 ? failedRefresh : recovered;
       }}
     />,
   );
@@ -716,11 +740,55 @@ test("mounted hub retry replaces a stale character warning with Ready canonical 
     assert.match(mounted.container.textContent ?? "", /existing canonical information remains visible/i);
     await click(button(mounted.container, "Retry character sheet"));
     assert.equal(calls, 1);
+    assert.match(mounted.container.textContent ?? "", /source revision changed/i);
+    assert.match(mounted.container.textContent ?? "", /Last confirmed sheet/i);
+    assert.match(mounted.container.textContent ?? "", /diag-revision-changed/);
+    await click(button(mounted.container, "Retry character sheet"));
+    assert.equal(calls, 2);
     assert.doesNotMatch(mounted.container.textContent ?? "", /existing canonical information remains visible/i);
+    assert.equal(mounted.container.querySelector(".character-state--stale"), null);
     assert.match(mounted.container.textContent ?? "", /Last confirmed sheet/i);
   } finally {
     await mounted.cleanup();
   }
+});
+
+test("mounted hub first-read failures remain explicit until a successful retry", async (t) => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const failures: Array<SectionState<PartyMemberReadModel["sheet"]>> = [
+    { status: "error", data: null, failureCategory: "http", httpStatus: 500, diagnosticId: "first-read-500" },
+    { status: "error", data: null, failureCategory: "incompatible-data", diagnosticId: "first-read-malformed" },
+    { status: "forbidden", data: null, failureCategory: "authorization", diagnosticId: "first-read-forbidden" },
+  ];
+  for (const failure of failures) await t.test(failure.status === "error" ? failure.failureCategory : failure.status, async () => {
+    const initial = envelope("player");
+    initial.party = [partyMember(failure)];
+    initial.party[0].inventoryState = failure;
+    const recovered = structuredClone(initial);
+    const confirmed = [{ id: "sheet.retry", kind: "class", title: "Recovered canonical sheet", detail: "Confirmed after retry" }];
+    recovered.party = [partyMember({ status: "ready", source: "canonical", data: confirmed })];
+    let completeRead: (value: ReadyHubEnvelope) => void = () => { throw new Error("Retry not started"); };
+    const mounted = await mount(<DndInformationHub
+      initialEnvelope={initial}
+      loadContent={async () => { throw new Error("not used"); }}
+      loadEnvelope={() => new Promise(resolve => { completeRead = resolve; })}
+    />);
+    try {
+      await click(button(mounted.container, "Party"));
+      await click(button(mounted.container, "Character"));
+      assert.ok(mounted.container.querySelector(".character-state[role=alert]"));
+      assert.doesNotMatch(mounted.container.textContent ?? "", /No sheet recorded|0 recorded entries|Recovered canonical sheet/);
+      await click(button(mounted.container, "Retry character sheet"));
+      assert.ok(mounted.container.querySelector(".character-skeleton"));
+      assert.doesNotMatch(mounted.container.textContent ?? "", /No sheet recorded|Recovered canonical sheet/);
+      await act(async () => { completeRead(recovered); });
+      assert.equal(mounted.container.querySelector(".character-state[role=alert], .character-skeleton"), null);
+      assert.match(mounted.container.textContent ?? "", /Recovered canonical sheet/);
+      for (const canary of [...SECRET_CANARIES, ...DM_ONLY_BASE_CANARIES, ...DM_ONLY_LAYER_CANARIES, ...HIDDEN_MAP_CANARIES]) {
+        assert.equal(mounted.container.innerHTML.includes(canary), false, `Player retry leaked ${canary}`);
+      }
+    } finally { await mounted.cleanup(); }
+  });
 });
 
 test("mounted hub switches Player to DM to Player without retaining DM-only data", async () => {

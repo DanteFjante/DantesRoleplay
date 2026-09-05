@@ -83,7 +83,8 @@ function SectionHeader({ count, member, section }: {
 }) {
   const state = section === "sheet" ? member.sheetState
     : section === "inventory" ? member.inventoryState : null;
-  const unavailable = state?.status === "error" || state?.status === "forbidden";
+  const unavailable = state?.status === "error" || state?.status === "forbidden" ||
+    state?.status === "idle" || state?.status === "loading" && state.data === null;
   return (
     <header className="character-section-heading">
       <div><span className="eyebrow">{member.name}</span><h2>{CHARACTER_SECTIONS.find((candidate) => candidate.id === section)?.label}</h2></div>
@@ -125,7 +126,9 @@ export function PartyView({
   const state = selectedMember && (section === "sheet" || section === "inventory")
     ? (section === "sheet" ? selectedMember.sheetState : selectedMember.inventoryState)
     : null;
-  const stateBlocksContent = state?.status === "empty" || state?.status === "error" || state?.status === "forbidden";
+  const stateBlocksContent = state?.status === "empty" || state?.status === "error" ||
+    state?.status === "forbidden" || state?.status === "idle" ||
+    state?.status === "loading" && state.data === null;
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const filteredEntries = useMemo(() => entries.filter((entry) => {
     if (!normalizedQuery) return true;
