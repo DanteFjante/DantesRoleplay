@@ -47,7 +47,8 @@ public sealed record AuthorizedSourceSets
         .Append(Selection.DefinitionLinkComponentId)
         .Concat(Discovery is null ? [] : new[] { Discovery.ComponentId })
         .Concat(Associations is null ? [] : new[] { Associations.CandidateComponentId })
-        .Concat(Activities is null ? [] : new[] { Activities.ComponentId });
+        .Concat(Activities is null ? [] : new[] { Activities.ComponentId })
+        .Concat(Activities?.Linked is { } linked ? linked.TargetComponentIds.Append(linked.ComponentId) : []);
 
     [JsonIgnore]
     public bool Valid => Token(Selection.ItemInputField) && Token(Selection.DefinitionLinkComponentId) &&
@@ -63,7 +64,12 @@ public sealed record AuthorizedSourceSets
         (Media is null || Media.Owners is not null && Media.Owners.SequenceEqual(["selected-item", "selected-definition"])) &&
         (Activities is null || Token(Activities.ComponentId) && Token(Activities.Field) &&
             !Activities.AllowNameInference && Activities.Owners is not null &&
-            Activities.Owners.SequenceEqual(["selected-item", "selected-definition"]));
+            Activities.Owners.SequenceEqual(["selected-item", "selected-definition"]) &&
+            (Activities.Linked is not { } linked || Token(linked.ComponentId) && Token(linked.Field) &&
+                linked.TargetComponentIds.Count is >= 1 and <= 32 && linked.TargetComponentIds.All(Token) &&
+                linked.TargetComponentIds.Distinct(StringComparer.Ordinal).Count() == linked.TargetComponentIds.Count &&
+                linked.ReferencePaths.Count <= 16 && linked.ReferencePaths.All(pair => linked.TargetComponentIds.Contains(pair.Key) &&
+                    pair.Value is { Count: >= 1 and <= 8 } && pair.Value.All(Token))));
     private static bool Token(string? value) => value is { Length: >= 1 and <= 200 } &&
         value == value.Trim() && !value.Any(char.IsWhiteSpace);
 }
@@ -90,7 +96,20 @@ public sealed record AuthorizedAssociationSource
 }
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record AuthorizedActivitySource(string ComponentId = "", string Field = "",
-    IReadOnlyList<string>? Owners = null, bool AllowNameInference = false);
+    IReadOnlyList<string>? Owners = null, bool AllowNameInference = false)
+{
+    public AuthorizedActivityReferences? Linked { get; init; }
+}
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record AuthorizedActivityReferences
+{
+    public string ComponentId { get; init; } = "";
+    public string Field { get; init; } = "";
+    public IReadOnlyList<string> TargetComponentIds { get; init; } = [];
+    // Keys are declared component IDs; values are bounded reference paths within them.
+    public Dictionary<string, IReadOnlyList<string>> ReferencePaths { get; init; } = [];
+}
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record AuthorizedMediaSource

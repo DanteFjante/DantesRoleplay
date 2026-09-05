@@ -1,3 +1,4 @@
+import { readItemUses, usesKey, type ItemUsesRequest, type ItemUsesResult } from "./item-uses-client";
 import { boundedJson } from "./item-read-response";
 import { readItemRecipes, recipesKey, type ItemRecipesRequest, type ItemRecipesResult } from "./item-recipes-client";
 import validate, { contract } from "./item-details-validator.js";
@@ -56,12 +57,18 @@ let nextClient = 0;
 export class ItemViewClient {
   readonly identity = ++nextClient;
   readonly maximumAgeMs: number;
+  readonly uses: ViewReadClient<ItemUsesRequest, ItemUsesResult>;
   readonly recipes: ViewReadClient<ItemRecipesRequest, ItemRecipesResult>;
   readonly reads: ViewReadClient<ItemDetailsRequest, ItemDetailsResult>;
   #revision = 0;
   #listeners = new Set<() => void>();
   constructor(fetchImpl: typeof fetch = fetch, maximumAgeMs = 30_000) {
     this.maximumAgeMs = maximumAgeMs;
+    this.uses = new ViewReadClient({ read: async (request, signal) => {
+      const value = await readItemUses(request, signal, fetchImpl);
+      return value.status === "ready" ? { ...value, expiresAt: Date.now() + maximumAgeMs } : value;
+    }, cacheKey: (request) => usesKey(this.identity, request), maximumCachedScopes: 8, maximumCacheAgeMs: maximumAgeMs,
+      validate: (value): value is ItemUsesResult => Boolean(value && typeof value === "object" && "status" in value) });
     this.recipes = new ViewReadClient({ read: async (request, signal) => {
       const value = await readItemRecipes(request, signal, fetchImpl);
       return value.status === "ready" ? { ...value, expiresAt: Date.now() + maximumAgeMs } : value;
@@ -79,5 +86,5 @@ export class ItemViewClient {
   key(request: ItemDetailsRequest) { return JSON.stringify([this.identity, contract.contentHash, request.applicationId, request.stateSpaceId, request.campaignId, request.observerId, request.perspective, request.itemId, request.contextRevision]); }
   snapshot = () => this.#revision;
   subscribe = (listener: () => void) => { this.#listeners.add(listener); return () => { this.#listeners.delete(listener); }; };
-  invalidate = () => { this.reads.invalidate(); this.recipes.invalidate(); this.#revision++; for (const listener of this.#listeners) listener(); };
+  invalidate = () => { this.reads.invalidate(); this.recipes.invalidate(); this.uses.invalidate(); this.#revision++; for (const listener of this.#listeners) listener(); };
 }

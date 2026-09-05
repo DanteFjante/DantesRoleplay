@@ -188,6 +188,26 @@ public sealed class ApplicationAuthorizedProjectionResolver(
 
             var candidateIds = new HashSet<string>(StringComparer.Ordinal) { selectedId };
             if (definitionId is not null) candidateIds.Add(definitionId);
+            var linkedIds = new HashSet<string>(StringComparer.Ordinal);
+            if (sources.Activities?.Linked is { } linkedSource)
+            {
+                foreach (var owner in new[] { selectedId, definitionId }.Where(id => id is not null).Distinct())
+                {
+                    var values = await Components(owner!, [linkedSource.ComponentId]);
+                    if (!values.TryGetValue(linkedSource.ComponentId, out var json)) continue;
+                    using var document = JsonDocument.Parse(json);
+                    foreach (var id in ReferenceTargets(document.RootElement, linkedSource.Field + "[]"))
+                    {
+                        linkedIds.Add(id);
+                        if (linkedIds.Count > declared.MaxKnowledgeCandidates) return Unavailable();
+                    }
+                    if (owner == selectedId) selectedComponents[linkedSource.ComponentId] = json;
+                    else if (snapshot.References.TryGetValue(owner!, out var reference))
+                        snapshot.References[owner!] = reference with { Components = reference.Components
+                            .Append(new KeyValuePair<string, string>(linkedSource.ComponentId, json)).ToDictionary() };
+                }
+                candidateIds.UnionWith(linkedIds);
+            }
             if (sources.Associations is { } associations)
             {
                 if (!request.Mapping.Components.TryGetValue(associations.CandidateComponentId, out var mapping)) return Unavailable();
@@ -202,7 +222,7 @@ public sealed class ApplicationAuthorizedProjectionResolver(
                     targets.Contains(row.ToEntityId)).Select(row => row.FromEntityId).Distinct().OrderBy(value => value)
                 .Take(declared.MaxKnowledgeCandidates + 1).ToArrayAsync(cancellationToken);
             if (knowledgeIds.Length > declared.MaxKnowledgeCandidates) return Unavailable();
-            var stateIds = knowledgeIds.Append(selectedId).Concat(definitionId is null ? [] : new[] { definitionId })
+            var stateIds = knowledgeIds.Append(selectedId).Concat(definitionId is null ? [] : new[] { definitionId }).Concat(linkedIds)
                 .Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
             if (stateIds.Length > declared.MaxKnowledgeCandidates) return Unavailable();
             var effective = await states.ResolveAllAsync(binding, observer, scope.WorldId, stateIds, cancellationToken);
@@ -267,7 +287,43 @@ public sealed class ApplicationAuthorizedProjectionResolver(
                         snapshot.References[id] = new(id, new Dictionary<string, string>(), entity.Name);
                 }
             }
-            // Activities are canonical source records; selection/eligibility remains catalog-owned.
+            // A statement about a linked record never grants its raw components. Only
+            // effective baseline knowledge of the record itself (or DM) permits hydration.
+            if (sources.Activities?.Linked is { } linked)
+            {
+                var labelIds = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var id in linkedIds.Order(StringComparer.Ordinal))
+                {
+                    if (request.Audience.Perspective != "dm" && effective[id].State != binding.BaselineState) continue;
+                    var entity = await entityQuery.SingleOrDefaultAsync(row => row.Id == id, cancellationToken);
+                    observed.Add(new { id, revision = entity?.Revision });
+                    if (entity is null) continue;
+                    var values = await Components(id, linked.TargetComponentIds);
+                    snapshot.References[id] = new(id, values, entity.Name);
+                    foreach (var path in linked.ReferencePaths)
+                    {
+                        if (!values.TryGetValue(path.Key, out var json)) continue;
+                        using var document = JsonDocument.Parse(json);
+                        foreach (var target in path.Value.SelectMany(value => ReferenceTargets(document.RootElement, value)))
+                        {
+                            labelIds.Add(target);
+                            if (labelIds.Count > declared.MaxKnowledgeCandidates) return Unavailable();
+                        }
+                    }
+                }
+                var labelStates = await states.ResolveAllAsync(binding, observer, scope.WorldId, labelIds.ToArray(), cancellationToken);
+                if (labelStates.Count != labelIds.Count || labelStates.Values.Any(value => value.WorldId != scope.WorldId)) return Unavailable();
+                effective = effective.Concat(labelStates.Where(pair => !effective.ContainsKey(pair.Key))).ToDictionary(pair => pair.Key, pair => pair.Value);
+                foreach (var id in labelIds.Order(StringComparer.Ordinal))
+                {
+                    if (request.Audience.Perspective != "dm" && labelStates[id].State != binding.BaselineState) continue;
+                    var entity = await entityQuery.SingleOrDefaultAsync(row => row.Id == id, cancellationToken);
+                    observed.Add(new { id, revision = entity?.Revision });
+                    if (entity is not null && !snapshot.References.ContainsKey(id))
+                        snapshot.References[id] = new(id, new Dictionary<string, string>(), entity.Name);
+                }
+            }
+            // Inline records retain the existing DM-only raw-component boundary.
             if (sources.Activities is { } activity && request.Audience.Perspective == "dm")
             {
                 foreach (var pair in await Components(selectedId, [activity.ComponentId])) selectedComponents[pair.Key] = pair.Value;

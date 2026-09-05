@@ -1,3 +1,4 @@
+import { ItemUses } from "./ItemUses";
 import { useEffect, useState, useSyncExternalStore, type ComponentProps } from "react";
 import { ViewReadError } from "../../data/view-read-client";
 import type { ItemDetailsRequest, ItemDetailsResult, ItemViewClient } from "../../server/item-view-client";
@@ -39,7 +40,7 @@ export function ConnectedItemView({ client, request, ...navigation }: ComponentP
   const data = result?.status === "ready" && result.expiresAt > Date.now() ? result.data : null;
   const state = result?.status ?? "loading";
   const refresh = () => { client.reads.invalidate(request); setLoaded(null); setRetry((value) => value + 1); };
-  return <ItemView {...navigation} name={data?.name} recipes={<ItemRecipes key={key} client={client} request={request} active={navigation.tab === "recipes"} />} details={data ? <ItemDetails data={data} scopeKey={key} /> :
+  return <ItemView {...navigation} name={data?.name} uses={<ItemUses key={key} client={client} request={request} active={navigation.tab === "uses"} />} recipes={<ItemRecipes key={key} client={client} request={request} active={navigation.tab === "recipes"} />} details={data ? <ItemDetails data={data} scopeKey={key} /> :
     <div role="status" aria-busy={state === "loading"}>
       <h2>{state === "loading" ? "Loading item details" : state === "stale" ? "Item details need a refresh" : state === "forbidden" ? "Item details unavailable in this perspective" : "Item details unavailable"}</h2>
       <p>{state === "loading" ? "Reading the selected character’s authorized information…" : state === "stale" ? "Refresh to see the current information." : "This item could not be read. Its previous details are no longer shown."}</p>

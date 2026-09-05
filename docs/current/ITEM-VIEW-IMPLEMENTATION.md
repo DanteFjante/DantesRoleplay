@@ -1,12 +1,12 @@
 # Item view implementation plan
 
-Version 1.8 · 5 September 2026
+Version 1.9 · 5 September 2026
 
 ## Purpose and delivery boundary
 
 Build a full item dossier that opens from a character's inventory. It has three tabs: **Details**, **Known recipes**, and **Known uses**. Recipes are split into **Makes this item** and **Uses this item**, as requested. The dossier describes the actual item instance and the knowledge of the selected character, while preserving the current character sheet, nested inventory, and DM and Player switch.
 
-This document specifies implementation work; it is not evidence that the published feature exists. IV00 contracts were approved by the user on 5 September 2026. IV01–IV07 are complete within their documented supported boundaries, including IV06 association review and disposable fixtures; IV08–IV10 remain pending. Validation results and exclusions are recorded in the implementation commits. The concrete review packet is [item-view-contracts/README.md](item-view-contracts/README.md). The requested document does not itself authorize new runtime identities, catalog synchronization, or activation. Apply the repository working agreement at each concrete boundary, using authorization already present in the implementation task rather than repeatedly requesting it.
+This document specifies implementation work; it is not evidence that the published feature exists. IV00 contracts were approved by the user on 5 September 2026. IV01–IV08 are implemented within their documented supported boundaries, including IV06 association review and disposable fixtures; IV09–IV10 remain pending. Validation results and exclusions are recorded in the implementation commits. The concrete review packet is [item-view-contracts/README.md](item-view-contracts/README.md). The requested document does not itself authorize new runtime identities, catalog synchronization, or activation. Apply the repository working agreement at each concrete boundary, using authorization already present in the implementation task rather than repeatedly requesting it.
 
 The first release is read-only. Opening a tab must not equip, consume, identify, reveal, craft, advance time, or record a discovery. Use and Start crafting are explicitly deferred to follow-up slices after this release. Do not infer missing recipes, properties, or uses from prose or item names.
 
@@ -211,6 +211,10 @@ Current recipe predicates have no complete canonical eligibility evaluator. Prod
 **Rollback and stop:** Return the Recipes tab to its explicit unavailable state without affecting Details. Stop on client-calculated crafting rules or any new live recipe/discovery created solely for acceptance.
 
 ## IV08 Known uses projection and tab
+
+**Status:** Implemented in source and the authored catalog without live synchronization or publication. The binding-only Uses query pins the effect-free projection and reviewed closed output schema. Linked activities from instance/definition membership are deduplicated and require knowledge of the activity itself before Player content hydration. Knowing a statement about an activity grants that statement only. The generic optional `activities.linked` declaration supplies membership fields, target components and bounded label-reference paths; the host performs authorization and fingerprinting while catalog JavaScript owns interpretation. Hidden identity suppresses canonical associations, and unknown reference labels stay neutral.
+
+The tab loads on first visit, preserves its page across tab changes, clears retired data on selection/perspective/invalidation/expiry, and requires a matching source revision for continuation. It displays literal activation/resource costs, supported attack/damage/healing/check/effect information, requirements, provenance and uncertainty. Recorded item/definition statements remain descriptive and require DM adjudication; no prose becomes a cost, effect or action. Rows never execute mechanics. Inline consume-and-grant activities retain the established DM-only raw boundary because they have no distinct per-activity knowledge identity. Their existing execution support is distinguished from unmet stack/quantity requirements. Linked activity descriptors have no evaluated execution binding or complete eligibility evaluation, so these remain unsupported/not-evaluated rather than inventing readiness. Dynamic expressions, unresolved references, complex activation predicates and other unsupported facets remain partial supporting data. Missing authored tool or consumable activities are not invented. Browser and test evidence is recorded in the slice commit; IV09 owns the wider integrated matrix.
 
 **Owner and files:** Catalog item-activity and knowledge owners; proposed uses query/mechanic, existing item-activity records and procedure, `ItemUses.tsx`, and proposed `WEB/test/mounted/item-uses.test.tsx`.
 
