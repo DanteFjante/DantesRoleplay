@@ -210,7 +210,7 @@ public sealed class ItemViewAudienceTests
             Microsoft.EntityFrameworkCore.EntityState.Added or Microsoft.EntityFrameworkCore.EntityState.Modified or Microsoft.EntityFrameworkCore.EntityState.Deleted);
     }
 
-    private sealed class Policy(KnowledgeAudienceGrant grant) : IAuthorizedKnowledgeAudiencePolicy
+    internal sealed class Policy(KnowledgeAudienceGrant grant) : IAuthorizedKnowledgeAudiencePolicy
     {
         public KnowledgeAudienceGrant Grant = grant;
         public bool ChangeAfterFirstRead;
@@ -221,12 +221,12 @@ public sealed class ItemViewAudienceTests
             return Task.FromResult(new KnowledgeAudienceResolution(Grant));
         }
     }
-    private sealed class Binding(KnowledgeApplicationBinding value) : IKnowledgeApplicationBindingResolver
+    internal sealed class Binding(KnowledgeApplicationBinding value) : IKnowledgeApplicationBindingResolver
     {
         public KnowledgeApplicationBinding Value = value;
         public Task<KnowledgeApplicationBinding?> ResolveAsync(string campaignId, CancellationToken cancellationToken = default) => Task.FromResult<KnowledgeApplicationBinding?>(Value);
     }
-    private sealed class Fixture : IDisposable
+    internal sealed class Fixture : IDisposable
     {
         public KnowledgeCoreTests.KnowledgeFixture Game { get; } = new();
         public string Item => "item.first";
@@ -234,21 +234,25 @@ public sealed class ItemViewAudienceTests
         public string LinkType => "fixture-knowledge.definition-link";
         public string DiscoveryType => "fixture-knowledge.discovery";
         public string PrivateType => "fixture-knowledge.private-facet";
+        public string AssociationType => "fixture-knowledge.association";
         public Policy Policy { get; }
         public Binding Binding { get; }
         public MechanicRequirements Requirements { get; set; }
         private readonly ApplicationAuthorizedProjectionResolver resolver;
         private readonly ApplicationMechanicProjectionMapping mapping;
-        private Fixture()
+        private Fixture(AuthorizedAssociationSource? associations)
         {
             Policy = new(new("principal", Game.Campaign, KnowledgeAudienceRole.Actor, Game.Actor, "policy.1"));
             Binding = new(Game.Binding);
-            mapping = new(new Dictionary<string, EcsComponentReference>
+            var componentMappings = new Dictionary<string, EcsComponentReference>
             {
                 [LinkType] = Game.DefineComponent(LinkType),
                 [DiscoveryType] = Game.DefineComponent(DiscoveryType),
                 [PrivateType] = Game.DefineComponent(PrivateType)
-            }, new Dictionary<string, string>());
+            };
+            if (associations is not null)
+                componentMappings.Add(associations.CandidateComponentId, Game.DefineComponent(AssociationType));
+            mapping = new(componentMappings, new Dictionary<string, string>());
             Requirements = new()
             {
                 Roles = new() { ["subject"] = new([], IncludeContents: true, ContentsDepth: 4, ContentComponentIds: [LinkType]), ["campaign"] = new([]) },
@@ -262,15 +266,16 @@ public sealed class ItemViewAudienceTests
                         Selection = new("itemId", "subject", LinkType, "definition"),
                         Knowledge = new("application-metadata") { SubjectSources = ["selected-item", "selected-definition"], FilterBeforeContent = true },
                         Discovery = new(DiscoveryType, "knowledgeRelationship", "knownProperties", true),
+                        Associations = associations,
                         OptionalSelectedItemComponents = [DiscoveryType, PrivateType]
                     }
                 }
             };
             resolver = new(Game.Db, Policy, Binding, new ApplicationKnowledgeActorParticipationVerifier(Game.Entities, Game.Edges), Game.Source, Game.States);
         }
-        public static async Task<Fixture> Create(string participation = "ready")
+        public static async Task<Fixture> Create(string participation = "ready", AuthorizedAssociationSource? associations = null)
         {
-            var fixture = new Fixture();
+            var fixture = new Fixture(associations);
             await fixture.Game.AddCoreAsync();
             if (participation != "missing") await fixture.Game.AddParticipationAsync(participation);
             await fixture.Game.AddEntityAsync(fixture.Item, "Carried instance");

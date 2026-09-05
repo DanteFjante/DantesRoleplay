@@ -1,12 +1,12 @@
 # Item view implementation plan
 
-Version 1.6 · 5 September 2026
+Version 1.7 · 5 September 2026
 
 ## Purpose and delivery boundary
 
 Build a full item dossier that opens from a character's inventory. It has three tabs: **Details**, **Known recipes**, and **Known uses**. Recipes are split into **Makes this item** and **Uses this item**, as requested. The dossier describes the actual item instance and the knowledge of the selected character, while preserving the current character sheet, nested inventory, and DM and Player switch.
 
-This document specifies implementation work; it is not evidence that the published feature exists. IV00 contracts were approved by the user on 5 September 2026. IV01–IV05 are implemented within their documented supported boundaries; IV06–IV10 remain pending. Validation results and exclusions are recorded in the implementation commits. The concrete review packet is [item-view-contracts/README.md](item-view-contracts/README.md). The requested document does not itself authorize new runtime identities, catalog synchronization, or activation. Apply the repository working agreement at each concrete boundary, using authorization already present in the implementation task rather than repeatedly requesting it.
+This document specifies implementation work; it is not evidence that the published feature exists. IV00 contracts were approved by the user on 5 September 2026. IV01–IV05 are implemented within their documented supported boundaries; IV06 association review and disposable fixtures are complete; IV07–IV10 remain pending. Validation results and exclusions are recorded in the implementation commits. The concrete review packet is [item-view-contracts/README.md](item-view-contracts/README.md). The requested document does not itself authorize new runtime identities, catalog synchronization, or activation. Apply the repository working agreement at each concrete boundary, using authorization already present in the implementation task rather than repeatedly requesting it.
 
 The first release is read-only. Opening a tab must not equip, consume, identify, reveal, craft, advance time, or record a discovery. Use and Start crafting are explicitly deferred to follow-up slices after this release. Do not infer missing recipes, properties, or uses from prose or item names.
 
@@ -181,6 +181,10 @@ Execute sequentially by default. Dependencies allow independent preparation, but
 **Rollback and stop:** Disable only item navigation and leave the existing inventory available. Stop if a render fallback turns missing data into fabricated properties or stale private content.
 
 ## IV06 Reviewed recipe and discovery associations
+
+**Status:** Reviewed and covered by executable disposable fixtures using the unchanged recipe schema and IV01 authorization materializer. Exact definition references in `outputs` and `materialRequirements` establish independent Makes and Uses associations. A knowledge record must have one unambiguous recipe subject and an effective content-bearing state for the selected observer; uncertainty stays qualified. Knowing or carrying an item does not teach its recipe. Tests cover both groups, deduplication, unknown/familiar records, different observers, ambiguous subjects, learned/forgotten knowledge, changed material links and known incomplete recipes. No new schema meaning, IDs, catalog content or production code was needed. IV07 owns actual association projection, completeness states and rendering.
+
+All twelve currently authored crafting records have empty outputs, absent material requirements and empty tool/crafter predicate arguments. The nonmagical and scroll templates have no canonical recipe-parameter resolution contract in the current downtime owner, which consumes a separately authored `dnd2024.downtime.definition`. They remain unresolved; the healing-potion record remains incomplete. Do not repair these records from their names, source locators, possession or tool proficiency. A known incomplete recipe with an explicit ingredient link can appear in Uses with `definition-incomplete`; an incomplete record with no explicit link cannot establish either group. Supported concrete links can proceed into IV07 without fabricating template expansion. The review packet records the exact supported boundary; the commit contains verification results.
 
 **Owner and files:** D&D crafting and knowledge owners; existing recipe schema and records, authorized-knowledge declarations, relevant shared knowledge relationships, and proposed `DantesRoleplay.Tests/ItemRecipeAssociationTests.cs`.
 
