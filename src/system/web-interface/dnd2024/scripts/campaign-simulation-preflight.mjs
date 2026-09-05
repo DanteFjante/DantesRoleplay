@@ -54,17 +54,20 @@ async function command(file, args, cwd, env = process.env, onText = () => {}) {
   return { child, done };
 }
 
-export async function run() {
+export async function run({ scenario, prepareCatalog, modelDriver } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'dnd-slice19-simulation-'));
   console.log(`Evidence: ${root}`);
-  const report = { schemaVersion: 1, scope: 'slice19-public-bootstrap-preflight', status: 'running', startedAt: new Date().toISOString(),
+  const report = { schemaVersion: 1, evidenceDirectory: root, scope: scenario ? 'slice19-public-campaign-flow' : 'slice19-public-bootstrap-preflight', status: 'running', startedAt: new Date().toISOString(),
     stages: Object.fromEntries(stages.map(stage => [stage, 'not-run'])), evidence: [] };
   let server;
+  let model;
+  let evidenceIndex = 0;
   let requestId = 0;
   let origin;
-  const stage = 'bootstrap';
+  let lastWebWriteAt = 0;
+  let stage = 'bootstrap';
   async function evidence(label, value) {
-    const name = `${String(report.evidence.length).padStart(4, '0')}-${label.replaceAll(/[^a-z0-9.-]/gi, '-')}.json`;
+    const name = `${String(evidenceIndex++).padStart(4, '0')}-${label.replaceAll(/[^a-z0-9.-]/gi, '-')}.json`;
     const bytes = JSON.stringify(value, null, 2) + '\n';
     await writeFile(join(root, name), bytes);
     assert.equal(hash(await readFile(join(root, name))), hash(bytes));
@@ -85,6 +88,25 @@ export async function run() {
     assert.ok(envelope.ok === true && !envelope.error, JSON.stringify(envelope));
     return envelope.data;
   }
+  async function http(path, body, expectedStatus = 200) {
+    assert.ok(path.startsWith('/api/'), 'Use a public web contract');
+    // Exercise the production ten-writes-per-minute policy instead of disabling it for tests.
+    // Every confirmation and replay retains its original request and idempotency key.
+    if (body !== undefined) {
+      const delay = Math.max(0, lastWebWriteAt + 6500 - Date.now());
+      if (delay) await new Promise(resolve => setTimeout(resolve, delay));
+      lastWebWriteAt = Date.now();
+    }
+    const response = await fetch(requireIsolatedOrigin(origin) + path, {
+      method: body === undefined ? 'GET' : 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: origin },
+      body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(120000),
+    });
+    const raw = await response.text();
+    await evidence(`${stage}-web`, { path, body, status: response.status, response: raw });
+    assert.equal(response.status, expectedStatus, `HTTP ${response.status}: ${raw.slice(0, 2000)}`);
+    return JSON.parse(raw);
+  }
   try {
     for (const [project, directory] of [['DantesRoleplay.Tools', 'tools'], ['DantesRoleplay.MCPServer', 'server']]) {
       const build = await command('dotnet', ['build', join(repo, project, `${project}.csproj`), '--no-restore', '--output', join(root, directory)], repo);
@@ -99,6 +121,7 @@ export async function run() {
     await writeFile(join(catalog, 'namespaces/_root.json'), JSON.stringify({ id: 'catalog-root', owner: 'slice19-fixture', description: 'Disposable synthetic fixture identity only.', allowedKinds: ['entity'], aliases: [], enabled: true, reviewStatus: 'reviewed', reviewNote: 'Synthetic test fixture; never imported into live storage.' }));
     await writeFile(join(catalog, 'manifest.json'), JSON.stringify({ schemaVersion: 2, exportedAt: '2026-09-05T00:00:00Z', sourceDatabase: 'synthetic-fixture-only', includesWorld: true, records: [] }));
     await writeFile(join(catalog, 'world/entities/slice19-world.json'), JSON.stringify({ id: worldId, name: 'Slice 19 disposable world', components: {} }));
+    if (prepareCatalog) await prepareCatalog({ catalog, repo });
     const setup = await command('dotnet', [join(root, 'tools/roleplay.dll'), 'setup', catalog, '--database', join(root, 'runtime.db')], root);
     const setupResult = await setup.done;
     await evidence('catalog-setup', setupResult);
@@ -106,16 +129,23 @@ export async function run() {
     const env = { ...process.env, ASPNETCORE_ENVIRONMENT: 'Production',
       ConnectionStrings__Kernel: join(root, 'runtime.db'), BlobStorage__Root: join(root, 'blobs'),
       Sources__AllowedRoots__repository: repo, Catalogs__PublishedApplications__0: applicationId,
-      Knowledge__LocalPlayer__Enabled: 'true', Knowledge__LocalPlayer__Role: 'GM',
+      Knowledge__LocalPlayer__Enabled: 'true', Knowledge__LocalPlayer__Role: 'GameMaster',
       Knowledge__LocalPlayer__PrincipalId: 'slice19.operator', Knowledge__LocalPlayer__ApplicationId: applicationId,
-      Knowledge__LocalPlayer__CampaignId: 'fixture.slice19.campaign', Knowledge__LocalPlayer__ActorId: 'fixture.slice19.actor',
+      Knowledge__LocalPlayer__CampaignId: 'slice19-campaign', Knowledge__LocalPlayer__ActorId: 'slice19-actor',
       Logging__LogLevel__Default: 'Warning', Logging__LogLevel__Microsoft_Hosting_Lifetime: 'Information',
       Retrieval__Embedding__Enabled: 'false', Knowledge__Completion__Enabled: 'false',
+      Retrieval__DerivedDataDirectory: join(root, 'derived'),
       InteractionOuter__Local__Enabled: 'false', InteractionPlanning__Remote__Enabled: 'false' };
     delete env.OPENAI_API_KEY;
-    // A true process restart against the same disposable database checks bootstrap idempotency.
-    // This is not a campaign resume: gameplay and its durability assertions remain not-run.
-    for (const phase of ['cold-start', 'bootstrap-restart']) {
+    if (modelDriver) { model = await modelDriver(evidence); Object.assign(env, model.env); }
+    // Bootstrap restarts alone do not imply campaign resume. The scenario must compare
+    // persisted gameplay, conversation, and read-model state after an additional true restart.
+    async function start(phase) {
+      if (server) {
+        server.child.kill();
+        await evidence('server-process-before-restart', await server.done);
+        server = null;
+      }
       let readyResolve;
       const ready = new Promise(accept => { readyResolve = accept; });
       let startup = '';
@@ -131,11 +161,13 @@ export async function run() {
       } finally { clearTimeout(timer); }
       console.log(`${phase} listener: ${origin}`);
       await tool('query', { kind: 'capabilities' });
-      server.child.kill();
-      await evidence(`server-process-${phase}`, await server.done);
-      server = null;
     }
+    await start('cold-start');
+    await start('bootstrap-restart');
     report.stages.bootstrap = 'passed';
+    if (scenario) await scenario({ tool, http, evidence, repo, root, report, restart: (overrides = {}) => { Object.assign(env, overrides); return start('campaign-resume'); },
+      begin(name) { assert.ok(stages.includes(name)); stage = name; console.log(`Stage: ${name}`); },
+      pass(name) { assert.ok(stages.includes(name)); report.stages[name] = 'passed'; } });
   } catch (error) {
     report.status = 'blocked';
     report.stages[stage] = 'failed';
@@ -147,13 +179,14 @@ export async function run() {
       server.child.kill();
       await evidence('server-process', await server.done);
     }
+    if (model) await model.close();
     report.status = acceptanceStatus(report.stages);
     report.preflightStatus = report.stages.bootstrap;
-    process.exitCode = preflightExitCode(report.stages);
+    process.exitCode = scenario ? (report.status === 'passed' ? 0 : 1) : preflightExitCode(report.stages);
     report.finishedAt = new Date().toISOString();
     for (const item of report.evidence) assert.equal(hash(await readFile(join(root, item.name))), item.sha256);
     await writeFile(join(root, 'report.json'), JSON.stringify(report, null, 2) + '\n');
-    console.log(`Preflight: ${report.preflightStatus}; full Slice 19: ${report.status}; retained evidence and disposable database: ${root}`);
+    console.log(`Preflight: ${report.preflightStatus}; campaign flow: ${report.status}; retained evidence and disposable database: ${root}`);
   }
   return report;
 }

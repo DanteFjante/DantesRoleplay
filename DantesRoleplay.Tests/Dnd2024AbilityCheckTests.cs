@@ -7561,14 +7561,19 @@ public sealed class Dnd2024AbilityCheckTests
             (await harness.EventsAsync(disarmed.OperationId)).Count);
     }
 
-    [Fact]
-    public async Task Trap_trigger_reset_clear_and_replay_preserve_one_authoritative_history()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Trap_trigger_reset_clear_and_replay_preserve_one_authoritative_history(bool canonicalInput)
     {
         await using var harness = await DndHarness.CreateAsync();
         await harness.AddHazardFixturesAsync();
+        var triggerInput = "{\"expectedDefinitionRevision\":1,\"saveCheck\":{\"ability\":\"dex\",\"dc\":100},\"damageEffects\":[{\"amount\":3,\"damageType\":\"piercing\",\"saveSucceeded\":false,\"successfulSaveBehavior\":\"none\"}],\"conditionEffects\":[{\"mode\":\"apply\",\"conditions\":[\"prone\"]}]}";
+        if (canonicalInput)
+            triggerInput = DantesRoleplay.Interactions.InteractionCanonicalJson.CanonicalizeObject(triggerInput);
         var trigger = harness.ActionForRoles(
             "dnd2024.mechanic.trap.trigger", TrapTriggerRoles(),
-            "{\"expectedDefinitionRevision\":1,\"saveCheck\":{\"ability\":\"dex\",\"dc\":100},\"damageEffects\":[{\"amount\":3,\"damageType\":\"piercing\",\"saveSucceeded\":false,\"successfulSaveBehavior\":\"none\"}],\"conditionEffects\":[{\"mode\":\"apply\",\"conditions\":[\"prone\"]}]}",
+            triggerInput,
             17, "53000000000000000000000000000001");
 
         var first = await harness.Runner.RunAsync(trigger);

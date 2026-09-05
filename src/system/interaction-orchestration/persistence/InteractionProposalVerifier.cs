@@ -82,15 +82,11 @@ internal sealed class InteractionProposalVerifier(
             InteractionQueryContractReference? queryContract = null;
             if (draft.Kind == InteractionPlanStepKind.Query)
             {
-                if (projections is null)
-                    return Unsupported("QUERY_EXECUTOR_UNAVAILABLE", "The read-only query executor is unavailable.");
                 ApplicationQueryContract query;
-                RegisteredProjectionDefinition? projection;
                 try
                 {
                     query = ApplicationQueryContract.Parse(record.ContentJson,
                         envelope.Host.ApplicationRevision.ApplicationId);
-                    projection = projections.Get(query.ProjectionQualifiedId, query.ProjectionVersion);
                 }
                 catch (Exception exception) when (exception is ArgumentException or JsonException)
                 {
@@ -98,15 +94,43 @@ internal sealed class InteractionProposalVerifier(
                 }
                 if (query.Status != "active")
                     return Unsupported("QUERY_CONTRACT_NOT_ACTIVE", "The proposed query contract is not active.");
-                if (query.Executor != ApplicationQueryContract.ProjectionExecutor || projection is null)
-                    return Unsupported("QUERY_EXECUTOR_UNAVAILABLE", "The query projection executor is unavailable.");
-                if (projection.Owner != envelope.Host.ApplicationRevision.ApplicationId
-                    || projection.ContentHash != query.ProjectionContentHash
-                    || projection.OutputSchemaHash != query.OutputSchemaHash
-                    || !JsonNode.DeepEquals(JsonNode.Parse(projection.OutputSchemaJson), JsonNode.Parse(query.OutputSchemaJson))
-                    || !projection.EntityRoles.Order(StringComparer.Ordinal)
-                        .SequenceEqual(query.Roles.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal))
-                    return Stale("QUERY_PROJECTION_STALE", "The query contract does not match its exact registered projection.");
+                if (query.Executor == ApplicationQueryContract.ProjectionExecutor)
+                {
+                    var projection = projections?.Get(query.ProjectionQualifiedId, query.ProjectionVersion);
+                    if (projection is null)
+                        return Unsupported("QUERY_EXECUTOR_UNAVAILABLE", "The query projection executor is unavailable.");
+                    if (projection.Owner != envelope.Host.ApplicationRevision.ApplicationId
+                        || projection.ContentHash != query.ProjectionContentHash
+                        || projection.OutputSchemaHash != query.OutputSchemaHash
+                        || !JsonNode.DeepEquals(JsonNode.Parse(projection.OutputSchemaJson), JsonNode.Parse(query.OutputSchemaJson))
+                        || !projection.EntityRoles.Order(StringComparer.Ordinal)
+                            .SequenceEqual(query.Roles.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal))
+                        return Stale("QUERY_PROJECTION_STALE", "The query contract does not match its exact registered projection.");
+                }
+                else if (query.Executor == ApplicationQueryContract.MechanicProjectionExecutor)
+                {
+                    if (!trustedCurrent.TryGetValue(query.ProjectionQualifiedId, out var mechanic)
+                        || mechanic.Kind != "mechanic" || mechanic.Status != "active"
+                        || mechanic.Version != query.ProjectionVersion
+                        || mechanic.ContentFingerprint != query.ProjectionContentHash)
+                        return Stale("QUERY_PROJECTION_STALE", "The query does not pin an exact active trusted mechanic.");
+                    try
+                    {
+                        using var document = JsonDocument.Parse(mechanic.ContentJson);
+                        var requirements = MechanicRequirements.Parse(document.RootElement.GetProperty("requirements").GetString()!);
+                        if (requirements.Event is not null || requirements.ProjectionProblems().Count > 0
+                            || requirements.CompositionProblems().Count > 0 || requirements.Roles is null
+                            || !requirements.Roles.Keys.Order(StringComparer.Ordinal)
+                                .SequenceEqual(query.Roles.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal))
+                            return Unsafe("QUERY_PROJECTION_INVALID", "The mechanic projection requirements do not match the query.");
+                    }
+                    catch (Exception exception) when (exception is JsonException or InvalidOperationException or KeyNotFoundException or ArgumentException)
+                    {
+                        return Unsafe("QUERY_PROJECTION_INVALID", "The mechanic projection requirements are invalid.");
+                    }
+                }
+                else
+                    return Unsupported("QUERY_EXECUTOR_UNAVAILABLE", "The query executor is unavailable.");
                 if (InteractionCanonicalJson.CanonicalizeObject(draft.InputJson) != "{}")
                     return Unsafe("QUERY_INPUT_FORBIDDEN", "Projection queries do not accept free-form input.");
                 authoritativeId = query.Id;

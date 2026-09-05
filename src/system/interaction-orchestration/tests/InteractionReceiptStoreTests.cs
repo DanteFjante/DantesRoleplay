@@ -258,6 +258,21 @@ public sealed class InteractionReceiptStoreTests : IDisposable
         Assert.Equal("INTERACTION_AUTHORIZATION_NOT_CONFIGURED", decision.Code);
     }
 
+    [Fact]
+    public void Default_composition_registers_both_query_executor_kinds_once()
+    {
+        var services = new ServiceCollection();
+        services.AddDantesRoleplayDataAccess("Filename=:memory:");
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+        var executors = scope.ServiceProvider.GetServices<IInteractionQueryExecutor>().ToArray();
+        Assert.Equal(new[] { ApplicationQueryContract.MechanicProjectionExecutor, ApplicationQueryContract.ProjectionExecutor },
+            executors.Select(value => value.Kind).Order(StringComparer.Ordinal));
+        var registry = scope.ServiceProvider.GetRequiredService<IInteractionQueryExecutorRegistry>();
+        foreach (var executor in executors)
+            Assert.True(registry.TryGet(executor.Kind, out _));
+    }
+
     private static InteractionResolutionReceiptDraft Resolution(string key, string intent)
     {
         var envelope = Envelope(key, intent);

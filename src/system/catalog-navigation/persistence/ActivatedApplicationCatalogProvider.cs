@@ -107,6 +107,7 @@ public sealed class ActivatedApplicationCatalogMaterializer(
             }).ToArray();
             return new ActiveCatalogFeatureSnapshot(manifest, documents)
             {
+                EffectiveSetFingerprint = activation.ActivationFingerprint,
                 Resolution = CatalogExtensionResolutionContext.Create(applicationId,
                     activation.ResolutionFingerprint,
                     activation.Extensions.Select(value =>

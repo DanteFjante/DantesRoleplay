@@ -359,6 +359,7 @@ public sealed class InteractionTaskContextMaterializer(
     {
         if (!snapshots.TryGetSnapshot(envelope.Host.ApplicationRevision.ApplicationId, out var after)
             || after.Manifest.Fingerprint != before.Manifest.Fingerprint
+            || after.EffectiveSetFingerprint != before.EffectiveSetFingerprint
             || (after.Resolution?.Fingerprint ?? after.Manifest.Fingerprint)
                 != (before.Resolution?.Fingerprint ?? before.Manifest.Fingerprint))
             throw Failure("TASK_CONTEXT_CATALOG_STALE",
@@ -371,7 +372,7 @@ public sealed class InteractionTaskContextMaterializer(
         ActiveCatalogFeatureSnapshot snapshot)
     {
         if (snapshot.Manifest.ApplicationId != envelope.Host.ApplicationRevision.ApplicationId
-            || snapshot.Manifest.Fingerprint != envelope.Host.EffectiveSetFingerprint
+            || snapshot.EffectiveSetFingerprint != envelope.Host.EffectiveSetFingerprint
             || (snapshot.Resolution?.Fingerprint ?? snapshot.Manifest.Fingerprint)
                 != envelope.Host.ResolutionFingerprint)
             throw Failure("TASK_CONTEXT_CATALOG_STALE",

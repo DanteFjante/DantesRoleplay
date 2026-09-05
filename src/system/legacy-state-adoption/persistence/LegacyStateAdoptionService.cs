@@ -66,7 +66,8 @@ public sealed class LegacyStateAdoptionService(
                 candidate.Inventory.EvidenceFingerprint);
 
             var stateSpace = stateSpaces.Create(new(
-                request.StateSpaceId, candidate.Application, candidate.Active.ActivationFingerprint));
+                request.StateSpaceId, candidate.Application, candidate.Active.ActivationFingerprint,
+                candidate.Active.ResolutionFingerprint));
             var now = DateTime.UtcNow;
 
             db.AddRange(candidate.Entities.Select(value => new ApplicationEcsEntityRecord

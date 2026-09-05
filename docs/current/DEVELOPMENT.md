@@ -46,6 +46,9 @@ current capability descriptors, executable model-visible read views whose exact 
 bound, authorized knowledge candidates, play-record facts and continuity, and recent receipts from
 the same session and revision. Every included item carries a canonical reference, revision, and
 fingerprint, and the complete pack has its own fingerprint that is recorded in planning evidence.
+Keep the active ruleset fingerprint and extension-resolution fingerprint distinct from the derived
+navigation fingerprint (which also includes the catalog materializer version). State adoption must
+preserve both authority fingerprints; task-context freshness must compare like identities.
 Authorize before any retrieval, apply structural scope filters before ranking, rank lexically with
 optional vector fusion, rehydrate from the canonical owner, then recheck authorization and source
 revisions before returning the pack. Vector results select candidates only; they never establish

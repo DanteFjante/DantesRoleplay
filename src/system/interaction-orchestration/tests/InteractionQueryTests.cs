@@ -103,6 +103,33 @@ public sealed class InteractionQueryTests
             "coverage-v1", true, [], [], "operation.activation", DateTime.UtcNow);
         var state = new StateSpaceView("space.1", revision, activationFingerprint, 1,
             DateTime.UtcNow, DateTime.UtcNow);
+        var planRequest = new InteractionAuthorizationRequest(Principal(), App, state.StateSpaceId,
+            InteractionCapability.Plan, "plan.mechanic-query");
+        var host = new InteractionHostContext(planRequest.Principal, revision, state.StateSpaceId,
+            "session.1", "revision.1", activationFingerprint, InteractionRoleProfile.Inner,
+            new(4, 4096, 4096), InteractionAuthorizationDecision.Allow(planRequest, "plan.evidence"));
+        var envelope = AuthorizedInteractionEnvelope.Create(InteractionIntent.Parse(
+            "{\"idempotencyKey\":\"plan.mechanic-query\",\"intentText\":\"Inspect the character\",\"maximumPlanSteps\":1}"), host);
+        var reference = InteractionFeatureReference.Create(App, InteractionRetrievalLane.TrustedFeature, manifest.Fingerprint, query);
+        var inspected = new[] { new InteractionInspectedFeature(
+            InteractionFeatureHit.Create(reference, query, null, null, true), query.ContentJson) };
+        var draft = new InteractionPlannerProposalCommand([new("query.1", InteractionPlanStepKind.Query,
+            query.QualifiedId, query.Version, query.ContentFingerprint, [],
+            new Dictionary<string, string> { ["subject"] = "orban" }, "{}")]);
+        InteractionResolutionResult Verify(CatalogRecordDefinition currentMechanic, SourceTrust trust) =>
+            new InteractionProposalVerifier(applications, new Activation(activation), new Snapshots(
+                new ActiveCatalogFeatureSnapshot(CatalogNavigationManifest.Create(App, manifest.Fingerprint,
+                    manifest.SortVersion, manifest.Collections, manifest.Nodes, [query, currentMechanic]),
+                    [new(query, SourceTrust.Trusted), new(currentMechanic, trust)]))).Verify(new(envelope, inspected, draft));
+        Assert.Equal(InteractionResolutionStatus.Resolved, Verify(mechanic, SourceTrust.Trusted).Status);
+        var changed = mechanicContent.Replace("score: 16", "score: 17");
+        Assert.Equal("QUERY_PROJECTION_STALE", Verify(mechanic with { ContentJson = changed, ContentFingerprint = Hash(changed) }, SourceTrust.Trusted).Code);
+        Assert.Equal("QUERY_PROJECTION_STALE", Verify(mechanic with { Version = 2 }, SourceTrust.Trusted).Code);
+        Assert.Equal("QUERY_PROJECTION_STALE", Verify(mechanic, SourceTrust.Untrusted).Code);
+        var wrongRoles = mechanicContent.Replace("subject", "other");
+        var wrongRoleRecord = mechanic with { ContentJson = wrongRoles, ContentFingerprint = Hash(wrongRoles) };
+        // An altered contract fails its pin before any changed role shape can be trusted.
+        Assert.Equal("QUERY_PROJECTION_STALE", Verify(wrongRoleRecord, SourceTrust.Trusted).Code);
         var projection = new MechanicProjection
         {
             StateSpaceId = state.StateSpaceId,

@@ -82,6 +82,31 @@ public sealed class InteractionTaskContextTests
         Assert.Equal(0, retriever.Calls);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Navigation_materialization_fingerprint_is_distinct_from_activation_authority(bool staleActivation)
+    {
+        var mechanic = Mechanic("sample-app.mechanic.act", "Act", "Apply an action.");
+        var derived = Snapshot([mechanic], Hash("navigation-materializer-version"));
+        var snapshot = new ActiveCatalogFeatureSnapshot(derived.Manifest, derived.Documents)
+        {
+            EffectiveSetFingerprint = staleActivation ? Hash("stale-activation") : CatalogFingerprint,
+            Resolution = CatalogExtensionResolutionContext.Create(App, CatalogFingerprint, [])
+        };
+        var policy = new RecordingAuthorization();
+        var materializer = new InteractionTaskContextMaterializer(policy,
+            new RecordingRetriever(policy, snapshot, [mechanic]), new FixedSnapshots(snapshot), new ReadModels());
+        var (envelope, request) = Envelope(includeFactReference: false);
+        if (staleActivation)
+        {
+            var error = await Assert.ThrowsAsync<InteractionTaskContextException>(() => materializer.MaterializeAsync(envelope, request));
+            Assert.Equal("TASK_CONTEXT_CATALOG_STALE", error.Code);
+        }
+        else
+            Assert.Matches("^[0-9A-F]{64}$", (await materializer.MaterializeAsync(envelope, request)).Fingerprint);
+    }
+
     [Fact]
     public async Task Catalog_change_during_assembly_fails_closed()
     {

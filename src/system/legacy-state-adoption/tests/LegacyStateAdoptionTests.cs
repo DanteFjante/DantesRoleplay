@@ -57,6 +57,11 @@ public sealed class LegacyStateAdoptionTests : IDisposable
         Assert.Equal("{\"strength\":2}", edge.Data);
 
         var stateSpaces = new SqliteStateSpaceRegistry(db, setup.Applications);
+        var binding = stateSpaces.Get("adopted-space")!;
+        var retainedBinding = await db.Set<DantesRoleplay.StateSpaceAdministration.StateSpaceBindingRevisionRecord>()
+            .AsNoTracking().SingleAsync();
+        Assert.False(string.IsNullOrWhiteSpace(binding.ResolutionFingerprint));
+        Assert.Equal(retainedBinding.ResolutionFingerprint, binding.ResolutionFingerprint);
         var entityStore = new SqliteEntityComponentStore(db, setup.Registry, setup.Schema);
         var edgeStore = new SqliteStateSpaceEdgeStore(db, stateSpaces);
         var entities = await entityStore.ListEntitiesAsync("adopted-space", null, 10);
@@ -225,7 +230,8 @@ public sealed class LegacyStateAdoptionTests : IDisposable
         var application = applications.Register(new(app, "Fixture", "Neutral adoption fixture.", []));
         var active = new ActiveApplicationManifest(app, 1, application.Revision, application.Fingerprint,
             new string('B', 64), new string('C', 64), new string('D', 64), new string('E', 64),
-            new string('F', 64), "coverage-v1", true, [], [], "activation-operation", DateTime.UtcNow);
+            new string('F', 64), "coverage-v1", true, [], [], "activation-operation", DateTime.UtcNow)
+        { ResolutionFingerprint = new string('A', 64) };
         var schema = new BoundedJsonSchemaValidator();
         var registry = new SqliteComponentTypeRegistry(db, schema);
         var type = registry.Define(new(app, "fixture.stats",

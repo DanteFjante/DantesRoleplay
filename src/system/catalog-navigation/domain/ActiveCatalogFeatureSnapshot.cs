@@ -28,10 +28,14 @@ public sealed class ActiveCatalogFeatureSnapshot
                 || record.ContentJson != value.Record.ContentJson))
             throw new ArgumentException("The active feature snapshot has invalid provenance.", nameof(documents));
         Manifest = manifest;
+        EffectiveSetFingerprint = manifest.Fingerprint;
         Documents = Array.AsReadOnly(copied);
     }
 
     public CatalogNavigationManifest Manifest { get; }
+    // The navigation manifest also hashes the materializer version. Keep the activation identity
+    // separate so planning does not mistake that derived cache identity for the active rules set.
+    public string EffectiveSetFingerprint { get; init; }
     public IReadOnlyList<ActiveCatalogFeatureDocument> Documents { get; }
     public CatalogExtensionResolutionContext? Resolution { get; init; }
 }
