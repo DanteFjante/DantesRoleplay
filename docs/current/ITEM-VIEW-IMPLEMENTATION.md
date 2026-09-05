@@ -1,12 +1,12 @@
 # Item view implementation plan
 
-Version 1.5 · 5 September 2026
+Version 1.6 · 5 September 2026
 
 ## Purpose and delivery boundary
 
 Build a full item dossier that opens from a character's inventory. It has three tabs: **Details**, **Known recipes**, and **Known uses**. Recipes are split into **Makes this item** and **Uses this item**, as requested. The dossier describes the actual item instance and the knowledge of the selected character, while preserving the current character sheet, nested inventory, and DM and Player switch.
 
-This document specifies implementation work; it is not evidence that the published feature exists. IV00 contracts were approved by the user on 5 September 2026. IV01–IV04 are implemented within their documented supported boundaries; IV05–IV10 remain pending. Validation results and exclusions are recorded in the implementation commits. The concrete review packet is [item-view-contracts/README.md](item-view-contracts/README.md). The requested document does not itself authorize new runtime identities, catalog synchronization, or activation. Apply the repository working agreement at each concrete boundary, using authorization already present in the implementation task rather than repeatedly requesting it.
+This document specifies implementation work; it is not evidence that the published feature exists. IV00 contracts were approved by the user on 5 September 2026. IV01–IV05 are implemented within their documented supported boundaries; IV06–IV10 remain pending. Validation results and exclusions are recorded in the implementation commits. The concrete review packet is [item-view-contracts/README.md](item-view-contracts/README.md). The requested document does not itself authorize new runtime identities, catalog synchronization, or activation. Apply the repository working agreement at each concrete boundary, using authorization already present in the implementation task rather than repeatedly requesting it.
 
 The first release is read-only. Opening a tab must not equip, consume, identify, reveal, craft, advance time, or record a discovery. Use and Start crafting are explicitly deferred to follow-up slices after this release. Do not infer missing recipes, properties, or uses from prose or item names.
 
@@ -169,6 +169,8 @@ Execute sequentially by default. Dependencies allow independent preparation, but
 **Rollback and stop:** Remove the opening affordance while retaining the existing inventory. Do not replace the working character page navigation wholesale. Pause integration if unrelated navigation changes conflict.
 
 ## IV05 Connected Details tab
+
+**Status:** Implemented in source without live publication or catalog synchronization. The item route makes one bounded, actor-scoped Details read and validates the exact envelope, selection, output schema and scoped media links before showing its name or contents. Details renders authorized description, media, quantity, containment, equipment, properties, source disclosures and knowledge qualifiers; missing values remain absent and recorded zero/false values survive. The reusable client keeps at most eight selections for thirty seconds within one authorized hub-envelope lifetime. Context changes and view-invalidation, focus, page-hide and visibility events clear cached content; slow or failed reads cannot restore retired selections. Display expiry clears details and offers an explicit refresh without polling. Server changes without a delivered invalidation are detected on the next authorized refresh or bounded expiry, not instantaneously. Mounted tests and a disposable browser preview cover ordinary, special, container and unidentified items, including narrow screens. Recipes and Uses remain unavailable. See the implementation commit for the complete verification receipt.
 
 **Owner and files:** Web item-view owner; proposed `item-view-client.ts`, `ItemDetails.tsx`, `item-page.css`, `hub-types.ts`, and focused mounted tests. Reuse current read-client and section-state owners.
 

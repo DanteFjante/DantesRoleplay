@@ -426,6 +426,7 @@ export function DndInformationHub({
         return <ItemWorkspace
           key={`${envelope.applicationId}:${envelope.stateSpaceId}:${contextSelection.selectedCampaignId}:${envelope.audience.seat}:${perspective}`}
           route={itemRoute}
+          context={envelope}
           campaignId={contextSelection.selectedCampaignId}
           perspective={perspective}
           loadCharacter={loadCharacter ? readCharacter : undefined}

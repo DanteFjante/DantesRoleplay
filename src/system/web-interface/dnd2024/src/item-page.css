@@ -11,3 +11,23 @@
 .character-inventory__node > .character-inventory__branch { border: 0; background: transparent; }
 .character-inventory__node > .character-inventory__branch > summary { min-height: 44px; padding: 8px 14px; color: var(--character-gold); }
 @media (max-width: 390px) { .item-page__tabs button { flex: 1 1 90px; padding-inline: 8px; } }
+.item-details__lead { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 24px; align-items: start; }
+.item-details__lead--text { grid-template-columns: 1fr; gap: 14px; }
+.item-details__media { min-width: 0; border-radius: 10px; background: rgba(0,0,0,.16); }
+.item-details__media .entity-media-gallery { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.item-details__media figure { margin: 0; }
+.item-details__media img { display: block; width: 100%; max-height: 480px; height: auto; object-fit: contain; border-radius: 10px; }
+.item-details__media figcaption, .item-details__media .media-fallback { padding: 14px; color: var(--muted); }
+.item-details__description { white-space: pre-wrap; line-height: 1.65; margin-top: 0; }
+.item-details__facts, .item-details__properties { margin: 18px 0; display: grid; gap: 12px; }
+.item-details__facts { grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
+.item-details__facts > div, .item-details__properties > div { min-width: 0; padding: 12px; background: rgba(255,255,255,.025); border-radius: 8px; }
+.item-details dt { color: var(--muted); font-size: .85rem; margin-bottom: 5px; }
+.item-details dd { margin: 0; white-space: pre-wrap; }
+.item-details__properties { grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+.item-details__knowledge { display: block; color: var(--gold-bright); margin-block: 8px; }
+.item-details__sources { margin-top: 12px; color: var(--muted); font-size: .85rem; }
+.item-details__sources summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.item-details__sources ul { padding-left: 20px; }
+.item-details__notice { padding: 14px; margin-bottom: 20px; border: 1px solid var(--gold-soft); border-radius: 8px; }
+@media (max-width: 700px) { .item-details__lead { grid-template-columns: 1fr; } .item-details__media img { max-height: 320px; } }
