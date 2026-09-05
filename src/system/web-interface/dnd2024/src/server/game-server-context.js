@@ -39,8 +39,6 @@ const COMBAT_INITIATIVE_COMPONENT_TYPE_ID = "dnd2024.combat.initiative";
 const ENCOUNTER_ROUND_COMPONENT_TYPE_ID = "dnd2024.encounter.round";
 const ENCOUNTER_TURN_COMPONENT_TYPE_ID = "dnd2024.encounter.turn";
 const COMBAT_TURN_BUDGET_COMPONENT_TYPE_ID = "dnd2024.combat.turn-budget";
-const ENCOUNTER_BOARD_COMPONENT_TYPE_ID = "dnd2024.encounter.board";
-const COMBAT_POSITION_COMPONENT_TYPE_ID = "dnd2024.combat.position";
 const ENCOUNTER_RELATIONSHIP_KINDS = {
   participants: "dnd2024.encounter.has-participation",
   actor: "dnd2024.encounter.participation.for-actor",
@@ -1552,68 +1550,13 @@ function normalizedTurnBudget(value, turnId) {
   };
 }
 
-function validBoardArea(value, columns, rows) {
-  return hasExactKeys(value, ["x", "y", "width", "height"]) &&
-    Number.isInteger(value.x) && value.x >= 0 && Number.isInteger(value.y) && value.y >= 0 &&
-    Number.isInteger(value.width) && value.width > 0 && Number.isInteger(value.height) && value.height > 0 &&
-    value.x + value.width <= columns && value.y + value.height <= rows;
-}
-
-function normalizedEncounterBoard(value) {
-  if (!hasExactKeys(value, ["revision", "status", "visibility", "columns", "rows", "feetPerSquare", "terrain", "obstacles"]) ||
-      !Number.isInteger(value.revision) || value.revision < 1 || value.revision > 2147483647 ||
-      value.status !== "active" || !["public", "dm"].includes(value.visibility) ||
-      !Number.isInteger(value.columns) || value.columns < 1 || value.columns > 64 ||
-      !Number.isInteger(value.rows) || value.rows < 1 || value.rows > 64 ||
-      !Number.isInteger(value.feetPerSquare) || value.feetPerSquare < 1 || value.feetPerSquare > 30 ||
-      !Array.isArray(value.terrain) || value.terrain.length > 256 ||
-      !Array.isArray(value.obstacles) || value.obstacles.length > 256) return null;
-  const ids = new Set();
-  const terrain = [];
-  for (const item of value.terrain) {
-    const id = token(item?.id);
-    if (!hasExactKeys(item, ["id", "label", "area", "movementCost", "visibility"]) || !id || ids.has(id) ||
-        typeof item.label !== "string" || item.label.length === 0 || item.label.length > 200 ||
-        !validBoardArea(item.area, value.columns, value.rows) || !Number.isInteger(item.movementCost) ||
-        item.movementCost < 1 || item.movementCost > 4 || !["public", "dm"].includes(item.visibility)) return null;
-    ids.add(id);
-    terrain.push(item);
-  }
-  const obstacles = [];
-  for (const item of value.obstacles) {
-    const id = token(item?.id);
-    if (!hasExactKeys(item, ["id", "label", "area", "blocksMovement", "visibility"]) || !id || ids.has(id) ||
-        typeof item.label !== "string" || item.label.length === 0 || item.label.length > 200 ||
-        !validBoardArea(item.area, value.columns, value.rows) || item.blocksMovement !== true ||
-        !["public", "dm"].includes(item.visibility)) return null;
-    ids.add(id);
-    obstacles.push(item);
-  }
-  return { ...value, terrain, obstacles };
-}
-
-function normalizedCombatPosition(value, encounterId) {
-  const allowed = value && Object.hasOwn(value, "updatedByOperation")
-    ? ["encounter", "anchor", "footprint", "elevationFeet", "visibility", "revision", "updatedByOperation"]
-    : ["encounter", "anchor", "footprint", "elevationFeet", "visibility", "revision"];
-  if (!hasExactKeys(value, allowed) || exactEntityReference(value.encounter)?.entityId !== encounterId ||
-      !hasExactKeys(value.anchor, ["x", "y"]) || !Number.isInteger(value.anchor.x) || value.anchor.x < 0 || value.anchor.x > 63 ||
-      !Number.isInteger(value.anchor.y) || value.anchor.y < 0 || value.anchor.y > 63 ||
-      !hasExactKeys(value.footprint, ["width", "height"]) || !Number.isInteger(value.footprint.width) ||
-      value.footprint.width < 1 || value.footprint.width > 8 || !Number.isInteger(value.footprint.height) ||
-      value.footprint.height < 1 || value.footprint.height > 8 || !Number.isInteger(value.elevationFeet) ||
-      value.elevationFeet < -1000 || value.elevationFeet > 1000 || !["public", "dm"].includes(value.visibility) ||
-      !Number.isInteger(value.revision) || value.revision < 1 || value.revision > 2147483647) return null;
-  return value;
-}
 
 async function readCombatParticipant({
   fetchImpl, origin, entityRoot, encounterId, participationId, stateSpaceId,
 }) {
-  const [participation, initiative, positionValue, actorIds] = await Promise.all([
+  const [participation, initiative, actorIds] = await Promise.all([
     readExactComponent(fetchImpl, origin, entityRoot, participationId, ENCOUNTER_PARTICIPATION_COMPONENT_TYPE_ID),
     readExactComponent(fetchImpl, origin, entityRoot, participationId, COMBAT_INITIATIVE_COMPONENT_TYPE_ID),
-    readExactComponent(fetchImpl, origin, entityRoot, participationId, COMBAT_POSITION_COMPONENT_TYPE_ID),
     readExactRelationshipTargets(
       fetchImpl, origin, entityRoot, participationId, ENCOUNTER_RELATIONSHIP_KINDS.actor,
     ),
@@ -1626,7 +1569,6 @@ async function readCombatParticipant({
     actor,
     initiative: initiative.result,
     order: initiative.tieBreakOrder,
-    position: normalizedCombatPosition(positionValue, encounterId),
   } : null;
 }
 
@@ -1634,10 +1576,16 @@ export async function readCombatCurrentScene({
   fetchImpl, origin, entityRoot, encounterId, stateSpaceId, perspective, authorizedActorIds,
   mediaAssetBaseUrl,
 }) {
-  const [encounter, definition, boardValue, participantIds, activeRoundIds, activeTurnIds, sceneMediaValue] = await Promise.all([
+  const boardRead = import("./encounter-board.js")
+    .then(({ readEncounterBoard }) => readEncounterBoard({ fetchImpl, origin, entityRoot, encounterId, perspective }))
+    .catch((error) => {
+      if (error?.name === "AbortError") throw error;
+      return null;
+    });
+  const [encounter, definition, projectedBoard, participantIds, activeRoundIds, activeTurnIds, sceneMediaValue] = await Promise.all([
     readNamedEntity(fetchImpl, origin, entityRoot, encounterId),
     readExactComponent(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_DEFINITION_COMPONENT_TYPE_ID),
-    readExactComponent(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_BOARD_COMPONENT_TYPE_ID),
+    boardRead,
     readExactRelationshipTargets(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_RELATIONSHIP_KINDS.participants),
     readExactRelationshipTargets(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_RELATIONSHIP_KINDS.activeRound),
     readExactRelationshipTargets(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_RELATIONSHIP_KINDS.activeTurn),
@@ -1697,43 +1645,6 @@ export async function readCombatCurrentScene({
   const sceneMedia = sceneMediaValue
     ? projectMediaVisual(sceneMediaValue)
     : null;
-  const board = normalizedEncounterBoard(boardValue);
-  const boardVisible = board && (perspective === "dm" || board.visibility === "public");
-  const boardParticipants = boardVisible
-    ? visibleRows.filter((row) => row.position && (perspective === "dm" || row.position.visibility === "public"))
-      .map((row) => ({
-        id: row.actor.id,
-        name: row.actor.name,
-        initiative: row.initiative,
-        active: turn?.participationId === row.participationId,
-        position: {
-          x: row.position.anchor.x,
-          y: row.position.anchor.y,
-          width: row.position.footprint.width,
-          height: row.position.footprint.height,
-          elevationFeet: row.position.elevationFeet,
-          revision: row.position.revision,
-        },
-      }))
-    : [];
-  const projectedBoard = boardVisible ? {
-    revision: board.revision,
-    columns: board.columns,
-    rows: board.rows,
-    feetPerSquare: board.feetPerSquare,
-    terrain: board.terrain.filter((item) => perspective === "dm" || item.visibility === "public")
-      .map((item) => ({ id: item.id, label: item.label, area: item.area, movementCost: item.movementCost })),
-    obstacles: board.obstacles.filter((item) => perspective === "dm" || item.visibility === "public")
-      .map((item) => ({ id: item.id, label: item.label, area: item.area })),
-    participants: boardParticipants,
-    ...(turn && (perspective === "dm" || authorizedActorIds.has(turn.actorId)) ? { turn: {
-      id: turn.id,
-      participationId: turn.participationId,
-      actorId: turn.actorId,
-      actorName: turn.actorName,
-      ordinal: turn.ordinal,
-    } } : {}),
-  } : null;
   return {
     status: "ready",
     kind: "combat",

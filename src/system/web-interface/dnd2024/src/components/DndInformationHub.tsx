@@ -386,6 +386,7 @@ export function DndInformationHub({
               image={currentSceneImage}
               location={currentSceneLocation}
               situation={currentSituation}
+              perspective={perspective}
             />
             <PlayConversationPanel
               applicationId={envelope.applicationId}

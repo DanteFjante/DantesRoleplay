@@ -3617,8 +3617,9 @@ strong {
 }
 
 .tactical-board-viewport {
+  --board-height: clamp(360px, 56vw, 680px);
   position: relative;
-  height: clamp(360px, 56vw, 680px);
+  height: var(--board-height);
   overflow: hidden;
   background: #0d1714;
   cursor: grab;
@@ -3637,8 +3638,7 @@ strong {
 
 .tactical-board-stage {
   position: relative;
-  width: 100%;
-  min-width: 480px;
+  width: min(100%, calc(var(--board-height) * var(--board-columns) / var(--board-rows)));
   overflow: hidden;
   background-color: #17211d;
   background-image:
@@ -3677,8 +3677,10 @@ strong {
 .tactical-board-token {
   z-index: 4;
   display: grid;
-  min-width: 28px;
-  min-height: 28px;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   place-items: center;
   padding: 3px;
   border: 2px solid #9aaea3;
@@ -3687,8 +3689,24 @@ strong {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
   color: var(--ink);
   cursor: pointer;
-  font: 700 0.72rem/1 var(--serif);
+  font: 700 0.4px/1 var(--serif);
 }
+
+.tactical-board-svg { display: block; width: 100%; height: 100%; }
+.tactical-board-svg foreignObject { overflow: hidden; }
+.tactical-board-svg .tactical-board-token { position: static; padding: 0; border: 0; background: transparent; box-shadow: none; }
+.tactical-board-svg .tactical-board-token small { display: none; }
+.tactical-board-svg .tactical-board-token:is(:focus-visible, .is-selected, .is-active) { outline: 0; border: 0; background: transparent; box-shadow: none; }
+.tactical-board-description, .tactical-board-fallback { padding: 16px 20px; overflow-wrap: anywhere; }
+.tactical-board-description { color: var(--ink); }
+.tactical-board-description h3 { font-family: var(--serif); }
+.tactical-board-description p, .tactical-board-description li { font-size: 0.85rem; line-height: 1.6; }
+.tactical-board-description ul, .tactical-board-description ol { padding-left: 20px; }
+.tactical-board-description li { margin: 12px 0; }
+.tactical-board-description li span { display: block; }
+.tactical-board-description button, .tactical-board-fallback button { min-height: 44px; padding: 8px 12px; max-width: 100%; white-space: normal; color: var(--ink); background: #20342c; border: 1px solid #9aaea3; border-radius: 6px; }
+.tactical-board-description button:focus-visible { outline: 2px solid #ffe1a6; outline-offset: 2px; }
+.tactical-board-description button[aria-pressed="true"] { border-color: #ffe1a6; background: #71532c; }
 
 .tactical-board-token small {
   position: absolute;
@@ -5432,7 +5450,7 @@ button.campaign-link:hover {
   }
 
   .tactical-board-viewport {
-    height: clamp(340px, 66vh, 540px);
+    --board-height: clamp(340px, 66vh, 540px);
   }
 
   .top-bar {

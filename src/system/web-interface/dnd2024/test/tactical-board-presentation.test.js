@@ -7,14 +7,14 @@ const preview = readFileSync(new URL("../src/components/PreviewViews.tsx", impor
 const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 
 test("tactical board renders only projected geometry and authoritative labels", () => {
-  assert.match(preview, /combat\.board \? <TacticalBoard board=\{combat\.board\}/u);
+  assert.match(preview, /<CombatBoard key=\{combat\.id\} board=\{combat\.board\}/u);
   assert.match(component, /board\.terrain\.map/u);
   assert.match(component, /board\.obstacles\.map/u);
   assert.match(component, /board\.participants\.map/u);
   assert.match(component, /Current turn:/u);
   assert.match(component, /Movement legality comes from the\s*encounter mechanics, not this display/iu);
   assert.doesNotMatch(component, /movementSpeed|collision|pathfinding|difficultTerrain/iu);
-  assert.match(styles, /background-size:[\s\S]*--board-columns[\s\S]*--board-rows/u);
+  assert.match(component, /viewBox=\{`0 0 \$\{board.columns\} \$\{board.rows\}`\}/u);
 });
 
 test("tactical board styles permit native vertical scrolling and browser pinch", () => {

@@ -22,11 +22,14 @@ const map: MapDocument = {
   scopeLinks: [],
 };
 const board: TacticalEncounterBoard = {
-  revision: 1, columns: 12, rows: 8, feetPerSquare: 5, terrain: [], obstacles: [],
+  revision: 1, columns: 12, rows: 8, feetPerSquare: 5,
+  terrain: [{ id: "terrain.test", label: "Rubble", area: { x: 1, y: 1, width: 2, height: 2 }, movementCost: 2 }],
+  obstacles: [{ id: "obstacle.test", label: "Stone wall", area: { x: 9, y: 0, width: 1, height: 4 } }],
   participants: [{
     id: "actor.test", name: "Test Hero", initiative: 10, active: true,
-    position: { x: 4, y: 3, width: 1, height: 1, elevationFeet: 0, revision: 1 },
+    position: { x: 4, y: 3, width: 2, height: 3, elevationFeet: 0, revision: 1 },
   }],
+  turn: { id: "turn.test", participationId: "actor.test", actorName: "Test Hero", ordinal: 0 },
 };
 
 function Fixture() {

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { boardEnvelope } from "./fixtures/encounter-board.js";
 
 import {
   inheritMediaVisual,
@@ -544,27 +545,9 @@ test("combat current scene reads exact locked Initiative without inventing a tur
           valueJson: JSON.stringify({ environment: { entityId: "location.thalorien.brackenford" } }),
         });
       }
-      if (requested.pathname.endsWith(`/entities/${encounterId}/components/dnd2024.encounter.board`)) {
-        return response(200, {
-          entityId: encounterId,
-          qualifiedTypeId: "dnd2024.encounter.board",
-          valueJson: JSON.stringify({
-            revision: 7,
-            status: "active",
-            visibility: "public",
-            columns: 12,
-            rows: 8,
-            feetPerSquare: 5,
-            terrain: [
-              { id: "terrain.rubble", label: "Rubble", area: { x: 4, y: 2, width: 2, height: 1 }, movementCost: 2, visibility: "public" },
-              { id: "terrain.secret", label: "Hidden sinkhole", area: { x: 8, y: 3, width: 1, height: 1 }, movementCost: 3, visibility: "dm" },
-            ],
-            obstacles: [
-              { id: "obstacle.wall", label: "Wall", area: { x: 6, y: 1, width: 1, height: 3 }, blocksMovement: true, visibility: "public" },
-              { id: "obstacle.secret", label: "Illusory barrier", area: { x: 9, y: 4, width: 1, height: 1 }, blocksMovement: true, visibility: "dm" },
-            ],
-          }),
-        });
+      if (requested.pathname.endsWith(`/entities/${encounterId}/read-models/dnd2024.query.encounter-board`)) {
+        assert.equal(requested.searchParams.get("perspective"), "player");
+        return response(200, boardEnvelope());
       }
       if (requested.pathname.endsWith("/relationships") && kind === "dnd2024.encounter.has-participation") {
         return response(200, { items: [{
@@ -650,7 +633,7 @@ test("combat current scene reads exact locked Initiative without inventing a tur
         terrain: [{ id: "terrain.rubble", label: "Rubble", area: { x: 4, y: 2, width: 2, height: 1 }, movementCost: 2 }],
         obstacles: [{ id: "obstacle.wall", label: "Wall", area: { x: 6, y: 1, width: 1, height: 3 } }],
         participants: [{
-          id: "actor.hero",
+          id: participationId,
           name: "Hero",
           initiative: 17,
           active: false,

@@ -28,6 +28,7 @@ import {
   type MapViewportState,
 } from "../../src/components/MapCanvas";
 import { TacticalBoard } from "../../src/components/TacticalBoard";
+import { CombatBoard } from "../../src/components/CombatBoard";
 import { PERFORMANCE_MARKS, resetPerformanceMarksForTests } from "../../src/observability/performance.js";
 
 const dmPrincipal = "principal.dm.fixture";
@@ -274,6 +275,48 @@ test("mounted tactical board leaves wheel events uncancelled and zooms only thro
   } finally {
     await mounted.cleanup();
   }
+});
+
+test("board SVG and text alternative share exact geometry and focus never changes zoom", async () => {
+  const board = { ...mountedBoard, participants: [{ ...mountedBoard.participants[0],
+    position: { ...mountedBoard.participants[0].position, width: 2, height: 3 } }] };
+  const mounted = await mount(<TacticalBoard board={board} />);
+  try {
+    const svg = mounted.container.querySelector(".tactical-board-svg");
+    assert.equal(svg?.getAttribute("viewBox"), "0 0 12 8");
+    assert.deepEqual([...svg!.querySelectorAll("g[data-layer]")].map(node => node.getAttribute("data-layer")),
+      ["background", "terrain", "obstacles", "grid", "tokens", "interaction"]);
+    const token = svg!.querySelector("foreignObject")!;
+    for (const [key, expected] of Object.entries({ x: "2", y: "3", width: "2", height: "3" })) assert.equal(token.getAttribute(key), expected);
+    const description = mounted.container.querySelector("[aria-label='Board text alternative']")!;
+    assert.match(description.textContent!, /Column 3, row 4\. Footprint 2 × 3 squares/u);
+    assert.match(description.textContent!, /Stone wall.*Column 9, row 1; 1 × 4 squares\. Blocks movement/u);
+    assert.match(description.textContent!, /Rubble.*Movement cost 2/u);
+    assert.match(description.textContent!, /Current turn: Hero/u);
+    const viewport = mounted.container.querySelector(".tactical-board-viewport")!;
+    const stage = mounted.container.querySelector(".tactical-board-stage")!;
+    Object.defineProperties(viewport, { clientWidth: { value: 400 }, clientHeight: { value: 300 } });
+    Object.defineProperties(stage, { offsetWidth: { value: 800 }, offsetHeight: { value: 600 } });
+    await click(button(mounted.container, "Focus Hero"));
+    assert.equal(button(mounted.container, "Focus Hero").getAttribute("aria-pressed"), "true");
+    assert.equal(mounted.container.querySelector("[aria-label='Current tactical board zoom']")?.textContent, "100%");
+    assert.match(stage.getAttribute("style")!, /translate3d\(0px, -187.5px, 0\)/u);
+    assert.equal(mounted.container.querySelectorAll("img").length, 0);
+  } finally { await mounted.cleanup(); }
+});
+
+for (const perspective of ["dm", "player"] as const) test(`missing board has an honest image-free ${perspective} fallback`, async () => {
+  const mounted = await mount(<CombatBoard perspective={perspective} />);
+  try {
+    assert.match(mounted.container.textContent!, /visual placeholder/u);
+    assert.match(mounted.container.textContent!, /no recorded scale/u);
+    assert.equal(mounted.container.querySelector(".tactical-board-svg")?.getAttribute("viewBox"), "0 0 20 20");
+    assert.equal(mounted.container.querySelectorAll("foreignObject").length, 0);
+    const generation = [...mounted.container.querySelectorAll("button")].find(node => node.textContent === "Generate combat map");
+    assert.equal(Boolean(generation), perspective === "dm");
+    if (generation) assert.equal(generation.disabled, true);
+    if (perspective === "player") assert.doesNotMatch(mounted.container.textContent!, /generation|draft review/iu);
+  } finally { await mounted.cleanup(); }
 });
 
 test("mounted map changes zoom only through buttons and retains its non-zoom interactions", async () => {

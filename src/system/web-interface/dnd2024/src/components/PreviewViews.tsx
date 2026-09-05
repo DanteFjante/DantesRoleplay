@@ -3,12 +3,13 @@ import type {
   CurrentSituationReadModel,
   VisualMedia,
   WorldLocation,
+  Perspective,
 } from "../data/hub-types";
 import { useEffect } from "react";
 import { Icon } from "./Icon";
 import { MediaImage } from "./MediaImage";
 import { markCombatBoardReady } from "../observability/performance.js";
-import { TacticalBoard } from "./TacticalBoard";
+import { CombatBoard } from "./CombatBoard";
 
 function ViewIntro({ eyebrow, title, copy }: { eyebrow: string; title: string; copy: string }) {
   return (
@@ -66,10 +67,12 @@ export function CurrentViewPreview({
   image,
   location,
   situation,
+  perspective = "player",
 }: {
   image: VisualMedia | null;
   location: WorldLocation | null;
   situation: CurrentSituationReadModel;
+  perspective?: Perspective;
 }) {
   useEffect(() => {
     if (situation.status === "ready" && situation.kind === "combat" && situation.combat.board) {
@@ -214,7 +217,7 @@ export function CurrentViewPreview({
             </div>
           </div>
         </section>
-        {combat.board ? <TacticalBoard board={combat.board} /> : null}
+        <CombatBoard key={combat.id} board={combat.board} perspective={perspective} />
         <div className="current-scene-grid current-combat-grid">
           <section className="current-scene-panel" aria-labelledby="current-initiative-title">
             <header><Icon name="Swords" size={18} /><h2 id="current-initiative-title">Initiative</h2></header>

@@ -754,7 +754,7 @@ export type TacticalEncounterBoard = {
     active: boolean;
     position: { x: number; y: number; width: number; height: number; elevationFeet: number; revision: number };
   }>;
-  turn?: { id: string; participationId: string; actorId: string; actorName: string; ordinal: number };
+  turn?: { id: string; participationId: string; actorId?: string; actorName: string; ordinal: number };
 };
 
 export type CurrentSituationReadModel =

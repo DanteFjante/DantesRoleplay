@@ -4,6 +4,8 @@ import {
   type PointerEvent as ReactPointerEvent,
   useRef,
   useState,
+  useEffect,
+  useId,
 } from "react";
 import type { TacticalEncounterBoard } from "../data/hub-types";
 import { Icon } from "./Icon";
@@ -22,19 +24,8 @@ function clampZoom(value: number) {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
 }
 
-function placement(
-  area: { x: number; y: number; width: number; height: number },
-  board: TacticalEncounterBoard,
-): CSSProperties {
-  return {
-    left: `${(area.x / board.columns) * 100}%`,
-    top: `${(area.y / board.rows) * 100}%`,
-    width: `${(area.width / board.columns) * 100}%`,
-    height: `${(area.height / board.rows) * 100}%`,
-  };
-}
-
-export function TacticalBoard({ board }: { board: TacticalEncounterBoard }) {
+export function TacticalBoard({ board, placeholder = false }: { board: TacticalEncounterBoard; placeholder?: boolean }) {
+  const gridId = useId();
   const viewportRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<Drag | null>(null);
@@ -70,6 +61,30 @@ export function TacticalBoard({ board }: { board: TacticalEncounterBoard }) {
       y: 0,
     });
   };
+  const focusParticipant = (id: string) => {
+    const participant = board.participants.find((entry) => entry.id === id);
+    const element = viewportRef.current;
+    const stage = stageRef.current;
+    if (!participant || !element || !stage) return;
+    setSelectedId(id);
+    update({
+      zoom: viewport.zoom,
+      x: element.clientWidth / 2 - (participant.position.x + participant.position.width / 2) / board.columns * stage.offsetWidth * viewport.zoom,
+      y: element.clientHeight / 2 - (participant.position.y + participant.position.height / 2) / board.rows * stage.offsetHeight * viewport.zoom,
+    });
+  };
+  useEffect(() => {
+    setSelectedId("");
+    setViewport(DEFAULT_VIEW);
+    dragRef.current = null;
+  }, [board]);
+  useEffect(() => {
+    const element = viewportRef.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => setViewport((current) => constrain(current)));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
   const localPoint = (event: ReactPointerEvent<HTMLDivElement>): Point => {
     const bounds = viewportRef.current?.getBoundingClientRect();
     return bounds
@@ -77,9 +92,9 @@ export function TacticalBoard({ board }: { board: TacticalEncounterBoard }) {
       : { x: event.clientX, y: event.clientY };
   };
   const beginDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if ((event.target as Element).closest("button")) return;
+    if (event.pointerType === "touch" || event.button !== 0 || (event.target as Element).closest("button")) return;
     const point = localPoint(event);
-    if (event.pointerType !== "touch") event.currentTarget.setPointerCapture(event.pointerId);
+    event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = { pointerId: event.pointerId, point, view: viewport };
   };
   const moveDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -93,6 +108,7 @@ export function TacticalBoard({ board }: { board: TacticalEncounterBoard }) {
     if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
   };
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
     const handled = () => { event.preventDefault(); event.stopPropagation(); };
     if (event.key === "ArrowLeft") { handled(); update({ ...viewport, x: viewport.x + PAN_STEP }); }
     else if (event.key === "ArrowRight") { handled(); update({ ...viewport, x: viewport.x - PAN_STEP }); }
@@ -105,14 +121,14 @@ export function TacticalBoard({ board }: { board: TacticalEncounterBoard }) {
     <section className="tactical-board-panel" aria-labelledby="tactical-board-title">
       <header className="tactical-board-heading">
         <div><span className="eyebrow">Tactical board</span><h2 id="tactical-board-title">Encounter positions</h2></div>
-        <p>{board.columns} by {board.rows} squares · {board.feetPerSquare} feet per square</p>
+        <p>{board.columns} by {board.rows} squares · {placeholder ? "Illustrative placeholder; no recorded scale" : `${board.feetPerSquare} feet per square`}</p>
       </header>
       <div className="map-viewport-toolbar" role="toolbar" aria-label="Tactical board view controls">
         <button aria-label="Zoom tactical board out" disabled={viewport.zoom <= MIN_ZOOM} onClick={() => zoom(-ZOOM_STEP)} type="button"><Icon name="ZoomOut" size={17} /></button>
         <output aria-live="polite" aria-label="Current tactical board zoom">{zoomPercent}%</output>
         <button aria-label="Zoom tactical board in" disabled={viewport.zoom >= MAX_ZOOM} onClick={() => zoom(ZOOM_STEP)} type="button"><Icon name="ZoomIn" size={17} /></button>
         <button onClick={fit} type="button"><Icon name="Maximize2" size={16} /> Fit board</button>
-        <button onClick={() => setViewport(DEFAULT_VIEW)} type="button"><Icon name="RotateCcw" size={16} /> Reset view</button>
+        <button onClick={() => update(DEFAULT_VIEW)} type="button"><Icon name="RotateCcw" size={16} /> Reset view</button>
       </div>
       <div
         aria-describedby="tactical-board-help"
@@ -137,25 +153,33 @@ export function TacticalBoard({ board }: { board: TacticalEncounterBoard }) {
             transform: `translate3d(${viewport.x}px, ${viewport.y}px, 0) scale(${viewport.zoom})`,
           } as CSSProperties}
         >
-          {board.terrain.map((item) => <span aria-label={`${item.label} terrain. Movement cost ${item.movementCost}.`} className="tactical-board-terrain" key={item.id} role="img" style={placement(item.area, board)} />)}
-          {board.obstacles.map((item) => <span aria-label={`${item.label}. Blocks movement.`} className="tactical-board-obstacle" key={item.id} role="img" style={placement(item.area, board)} />)}
-          {board.participants.map((participant) => {
-            const area = { x: participant.position.x, y: participant.position.y, width: participant.position.width, height: participant.position.height };
-            return (
+          <svg className="tactical-board-svg" viewBox={`0 0 ${board.columns} ${board.rows}`} aria-label="Encounter grid" role="group">
+            <defs><pattern id={gridId} width="1" height="1" patternUnits="userSpaceOnUse"><path d="M 1 0 L 0 0 0 1" fill="none" stroke="#748578" strokeWidth="0.025" /></pattern></defs>
+            <g data-layer="background"><rect width={board.columns} height={board.rows} fill="#17211d" /></g>
+            <g data-layer="terrain" aria-hidden="true">{board.terrain.map((item) => <rect key={item.id} {...item.area} fill="#344e32" stroke="#aac494" strokeWidth="0.03" strokeDasharray="0.1 0.07" />)}</g>
+            <g data-layer="obstacles" aria-hidden="true">{board.obstacles.map((item) => <rect key={item.id} {...item.area} fill="#754d39" stroke="#d4a06f" strokeWidth="0.04" />)}</g>
+            <g data-layer="grid" aria-hidden="true"><rect width={board.columns} height={board.rows} fill={`url(#${gridId})`} /></g>
+            <g data-layer="tokens">{board.participants.map((participant) => (
+              <g key={participant.id}>
+              <rect aria-hidden="true" x={participant.position.x + 0.04} y={participant.position.y + 0.04} width={participant.position.width - 0.08} height={participant.position.height - 0.08} rx="0.45" fill={participant.active ? "#71532c" : "#20342c"} stroke={participant.active ? "#ffe1a6" : "#9aaea3"} strokeWidth="0.04" />
+              <foreignObject x={participant.position.x} y={participant.position.y} width={participant.position.width} height={participant.position.height}>
               <button
                 aria-label={`${participant.name}. ${participant.active ? "Current turn. " : ""}Grid ${participant.position.x + 1}, ${participant.position.y + 1}. Footprint ${participant.position.width} by ${participant.position.height}. Elevation ${participant.position.elevationFeet} feet.`}
                 aria-pressed={selectedId === participant.id}
                 className={`tactical-board-token${participant.active ? " is-active" : ""}${selectedId === participant.id ? " is-selected" : ""}`}
                 key={participant.id}
                 onClick={() => setSelectedId(selectedId === participant.id ? "" : participant.id)}
-                style={placement(area, board)}
+                onFocus={() => focusParticipant(participant.id)}
                 type="button"
               >
                 <span aria-hidden="true">{participant.name.slice(0, 2).toUpperCase()}</span>
                 <small aria-hidden="true">{participant.name}</small>
               </button>
-            );
-          })}
+              </foreignObject>
+              </g>
+            ))}</g>
+            <g data-layer="interaction" pointerEvents="none" aria-hidden="true">{board.participants.filter((participant) => participant.id === selectedId).map((participant) => <rect key={participant.id} x={participant.position.x} y={participant.position.y} width={participant.position.width} height={participant.position.height} fill="none" stroke="#ffe1a6" strokeWidth="0.06" />)}</g>
+          </svg>
         </div>
       </div>
       <p className="world-map-panel__note" id="tactical-board-help">
@@ -163,6 +187,19 @@ export function TacticalBoard({ board }: { board: TacticalEncounterBoard }) {
         Page scrolling never changes board zoom. Movement legality comes from the
         encounter mechanics, not this display.
       </p>
+      <section className="tactical-board-description" aria-label="Board text alternative">
+        <h3>Combatants and coordinates</h3>
+        <p aria-live="polite">{board.turn ? `Current turn: ${board.turn.actorName}.` : "No visible active turn on this board."}</p>
+        <p>Coordinates start at column 1, row 1 in the top-left corner. Focus pans to a token without changing zoom or moving it.</p>
+        {board.participants.length ? <ol>{board.participants.map((participant) => <li key={participant.id}>
+          <button type="button" onClick={() => focusParticipant(participant.id)} aria-pressed={selectedId === participant.id}>Focus {participant.name}</button>
+          <span>Initiative {participant.initiative}. Column {participant.position.x + 1}, row {participant.position.y + 1}. Footprint {participant.position.width} × {participant.position.height} squares. Elevation {participant.position.elevationFeet} feet.{participant.active ? " Current turn." : ""}</span>
+        </li>)}</ol> : <p>No visible recorded token positions. The Initiative list remains available below.</p>}
+        <h3>Obstacle legend</h3>
+        <p>Brown areas are accepted movement-blocking obstacles; green areas are accepted terrain.</p>
+        {board.obstacles.length ? <ul>{board.obstacles.map((item) => <li key={item.id}><strong>{item.label}</strong><span>Column {item.area.x + 1}, row {item.area.y + 1}; {item.area.width} × {item.area.height} squares. Blocks movement.</span></li>)}</ul> : <p>No visible recorded obstacles.</p>}
+        {board.terrain.length ? <ul>{board.terrain.map((item) => <li key={item.id}><strong>{item.label}</strong><span>Column {item.area.x + 1}, row {item.area.y + 1}; {item.area.width} × {item.area.height} squares. Movement cost {item.movementCost}.</span></li>)}</ul> : <p>No visible recorded terrain.</p>}
+      </section>
     </section>
   );
 }

@@ -34,7 +34,9 @@ try {
   report.browser = { name: 'Chromium', version: browser.version() };
   report.listener = server.resolvedUrls.local[0];
   for (const profile of [
-    { mobile: false, width: 1280, height: 900 },
+    { mobile: false, width: 1440, height: 900 },
+    { mobile: false, width: 1024, height: 768 },
+    { mobile: true, width: 820, height: 1180 },
     { mobile: true, width: 390, height: 844 },
     { mobile: true, width: 320, height: 740 },
   ]) for (const surface of ['map', 'board']) {
@@ -135,6 +137,38 @@ try {
         assert.ok(control.left >= 0 && control.right <= width, 'Controls must fit the viewport');
       }
       result.controls = controls;
+      if (surface === 'board') {
+        for (const target of [50, 100, 200, 400]) {
+          while (parseInt(await zoom.textContent()) < target) await zoomIn.click();
+          while (parseInt(await zoom.textContent()) > target) await zoomOut.click();
+          const geometry = await page.locator('.tactical-board-svg').evaluate(svg => {
+            const bounds = svg.getBoundingClientRect();
+            const token = svg.querySelector('foreignObject').getBoundingClientRect();
+            const obstacle = svg.querySelector('[data-layer="obstacles"] rect').getBoundingClientRect();
+            return { cellX: bounds.width / 12, cellY: bounds.height / 8,
+              tokenWidth: token.width, tokenHeight: token.height, x: token.x - bounds.x, y: token.y - bounds.y,
+              obstacleWidth: obstacle.width, obstacleHeight: obstacle.height };
+          });
+          const near = (actual, expected) => assert.ok(Math.abs(actual - expected) < .2, `${actual} must align with ${expected}`);
+          near(geometry.cellX, geometry.cellY);
+          near(geometry.tokenWidth, geometry.cellX * 2); near(geometry.tokenHeight, geometry.cellY * 3);
+          near(geometry.x, geometry.cellX * 4); near(geometry.y, geometry.cellY * 3);
+          near(geometry.obstacleWidth, geometry.cellX); near(geometry.obstacleHeight, geometry.cellY * 4);
+        }
+        await page.getByRole('button', { name: 'Focus Test Hero', exact: true }).click();
+        assert.equal(await zoom.textContent(), '400%');
+        assert.equal(await page.getByRole('button', { name: 'Focus Test Hero', exact: true }).getAttribute('aria-pressed'), 'true');
+        // CSS borders round up to whole user-space pixels inside foreignObject; only SVG
+        // paints the token stroke, otherwise a one-square token becomes a solid border.
+        assert.equal(await page.locator('.tactical-board-token').evaluate(element => getComputedStyle(element).borderTopWidth), '0px');
+        assert.ok((await page.getByRole('region', { name: 'Board text alternative' }).textContent()).includes('Stone wall'));
+        await reset.click();
+        await center();
+        await mkdir(dirname(options.output), { recursive: true });
+        await page.locator('.tactical-board-panel').screenshot({ path: resolve(dirname(options.output), `board-${width}.png`) });
+        result.svgGeometryAtFourZooms = true;
+        result.textAlternativeAndFocus = true;
+      }
       if (mobile) {
         await reset.click();
         const touch = await center();

@@ -1075,9 +1075,9 @@ function validTacticalBoard(value) {
     participantIds.add(participant.id);
   }
   return value.turn === undefined || (
-    value.turn && hasExactBoardKeys(value.turn, ["id", "participationId", "actorId", "actorName", "ordinal"]) &&
+    value.turn && hasExactBoardKeys(value.turn, ["id", "participationId", "actorName", "ordinal", ...(value.turn.actorId === undefined ? [] : ["actorId"])]) &&
     typeof value.turn.id === "string" && typeof value.turn.participationId === "string" &&
-    typeof value.turn.actorId === "string" && typeof value.turn.actorName === "string" &&
+    (value.turn.actorId === undefined || typeof value.turn.actorId === "string") && typeof value.turn.actorName === "string" &&
     boundedBoardInteger(value.turn.ordinal, 0, 99)
   );
 }
