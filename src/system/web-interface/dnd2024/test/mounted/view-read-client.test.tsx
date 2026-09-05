@@ -6,6 +6,27 @@ import { ViewReadClient, ViewReadError } from "../../src/data/view-read-client";
 type Request = { scope: string };
 type Result = { version: 1; value: string };
 
+test("expired private view entries are not reused", async () => {
+  const client = new ViewReadClient<Request, Result>({
+    cacheKey: ({ scope }) => scope, maximumCacheAgeMs: 0,
+    read: async () => ({ version: 1, value: "ready" }), validate: isResult,
+  });
+  await client.load({ scope: "campaign-a" });
+  assert.equal(client.peek({ scope: "campaign-a" }), null);
+});
+
+test("invalidation prevents an in-flight obsolete response from refilling the cache", async () => {
+  let finish!: (value: Result) => void;
+  const client = new ViewReadClient<Request, Result>({
+    cacheKey: ({ scope }) => scope, read: () => new Promise((resolve) => { finish = resolve; }), validate: isResult,
+  });
+  const read = client.load({ scope: "campaign-a" });
+  client.invalidate();
+  finish({ version: 1, value: "obsolete" });
+  await assert.rejects(read, (error) => error instanceof ViewReadError && error.category === "cancelled");
+  assert.equal(client.peek({ scope: "campaign-a" }), null);
+});
+
 function isResult(value: unknown): value is Result {
   return Boolean(value && typeof value === "object" &&
     (value as Result).version === 1 && typeof (value as Result).value === "string");

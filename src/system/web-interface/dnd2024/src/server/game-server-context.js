@@ -728,14 +728,15 @@ function validCharacterDossier(value, actorId) {
     value.sheet.origin?.background?.id === value.origin.background.id;
 }
 
-export async function readCanonicalCharacter({ fetchImpl, origin, applicationId, stateSpaceId, actorId }) {
+export async function readCanonicalCharacter({ fetchImpl, origin, applicationId, stateSpaceId, actorId, perspective }) {
   const applicationRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
     `/state-spaces/${encodeURIComponent(stateSpaceId)}`;
   const entityRoot = `${applicationRoot}/entities`;
   const headers = { Accept: "application/json" };
   try {
     const response = await fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(actorId)}` +
-      `/read-models/${encodeURIComponent("dnd2024.query.character-dossier-v1")}`), {
+      `/read-models/${encodeURIComponent("dnd2024.query.character-dossier-v1")}` +
+      (perspective ? `?perspective=${encodeURIComponent(perspective)}` : "")), {
       headers,
       cache: "no-store",
     });
@@ -765,20 +766,34 @@ export async function readCanonicalCharacter({ fetchImpl, origin, applicationId,
       failureCategory: "incompatible-data",
       diagnosticId: canonicalCharacterDiagnosticId(response, actorId, "incompatible-data"),
     };
-    const inventory = (await Promise.all(projected.sheet.inventory.items.map(async (item) => {
+    const mediaOwners = [...new Set(projected.sheet.inventory.items.flatMap(item => [item.id, item.definition.id]))];
+    const inventoryMedia = new Map();
+    if (perspective !== "player" && mediaOwners.length > 0 && mediaOwners.length <= 256) {
+      try {
+        const mediaResponse = await fetchImpl(url(origin, `${applicationRoot}/media-batch`), {
+          method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
+          cache: "no-store", body: JSON.stringify({ entityIds: mediaOwners, perspective: perspective ?? null }),
+        });
+        const media = mediaResponse?.ok ? await json(mediaResponse) : null;
+        if (media?.applicationId === applicationId && media.stateSpaceId === stateSpaceId &&
+            Array.isArray(media.items) && media.items.length <= mediaOwners.length &&
+            new Set(media.items.map(item => item.entityId)).size === media.items.length &&
+            media.items.every(item => mediaOwners.includes(item.entityId)))
+          for (const item of media.items) inventoryMedia.set(item.entityId, projectMediaVisual(item));
+      } catch (error) { if (error?.name === "AbortError") throw error; }
+    }
+    const inventory = projected.sheet.inventory.items.map((item) => {
+      // Preview data is filtered by the mechanic. Media still uses the ambient host grant,
+      // so omit that optional enrichment when previewing a player's dossier as a GM.
+      if (perspective === "player") return item;
       const itemId = token(item?.id);
       const definitionId = token(item?.definition?.id);
       if (!itemId || !definitionId) return null;
-      const [instanceMediaValue, definitionMediaValue] = await Promise.all([
-        readEntityMedia(fetchImpl, origin, entityRoot, itemId),
-        readEntityMedia(fetchImpl, origin, entityRoot, definitionId),
-      ]);
       const inheritedMedia = inheritMediaVisual(
-        instanceMediaValue ? projectMediaVisual(instanceMediaValue) : null,
-        definitionMediaValue ? projectMediaVisual(definitionMediaValue) : null,
+        inventoryMedia.get(itemId), inventoryMedia.get(definitionId),
       );
       return inheritedMedia ? { ...item, media: inheritedMedia } : item;
-    }))).filter(Boolean);
+    }).filter(Boolean);
     return {
       status: "ready",
       diagnosticId: canonicalCharacterDiagnosticId(response, actorId, "ready"),
@@ -1314,10 +1329,10 @@ async function readExactComponent(fetchImpl, origin, entityRoot, entityId, compo
   }
 }
 
-async function readEntityMedia(fetchImpl, origin, entityRoot, entityId) {
+async function readEntityMedia(fetchImpl, origin, entityRoot, entityId, perspective) {
   try {
     const response = await fetchImpl(url(origin,
-      `${entityRoot}/${encodeURIComponent(entityId)}/media`), {
+      `${entityRoot}/${encodeURIComponent(entityId)}/media${perspective ? `?perspective=${perspective}` : ""}`), {
       headers: { Accept: "application/json" }, cache: "no-store",
     });
     return response?.ok ? await json(response) : null;
@@ -1573,11 +1588,11 @@ async function readCombatParticipant({
 }
 
 export async function readCombatCurrentScene({
-  fetchImpl, origin, entityRoot, encounterId, stateSpaceId, perspective, authorizedActorIds,
+  fetchImpl, origin, entityRoot, encounterId, stateSpaceId, perspective, authorizedActorIds, campaignId,
   mediaAssetBaseUrl,
 }) {
   const boardRead = import("./encounter-board.js")
-    .then(({ readEncounterBoard }) => readEncounterBoard({ fetchImpl, origin, entityRoot, encounterId, perspective }))
+    .then(({ readEncounterBoard }) => readEncounterBoard({ fetchImpl, origin, entityRoot, encounterId, perspective, campaignId }))
     .catch((error) => {
       if (error?.name === "AbortError") throw error;
       return null;
@@ -1589,7 +1604,7 @@ export async function readCombatCurrentScene({
     readExactRelationshipTargets(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_RELATIONSHIP_KINDS.participants),
     readExactRelationshipTargets(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_RELATIONSHIP_KINDS.activeRound),
     readExactRelationshipTargets(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_RELATIONSHIP_KINDS.activeTurn),
-    readEntityMedia(fetchImpl, origin, entityRoot, encounterId),
+    readEntityMedia(fetchImpl, origin, entityRoot, encounterId, perspective),
   ]);
   if (!encounter || !definition || participantIds === null || activeRoundIds === null || activeTurnIds === null ||
       activeRoundIds.length > 1 || activeTurnIds.length > 1) return null;
@@ -1654,6 +1669,10 @@ export async function readCombatCurrentScene({
       name: encounter.name,
       participants: visibleParticipants,
       ...(projectedBoard ? { board: projectedBoard } : {}),
+      ...(projectedBoard?.backgroundMediaOrder != null && sceneMediaValue?.attachments ? {
+        background: projectMediaVisual({ attachments: sceneMediaValue.attachments.filter((entry) =>
+          entry.role === "map" && entry.order === projectedBoard.backgroundMediaOrder) })?.map,
+      } : {}),
       ...(round ? { round } : {}),
       ...(turn && (perspective === "dm" || authorizedActorIds.has(turn.actorId)) ? { turn } : {}),
     },
@@ -1751,6 +1770,7 @@ async function readPartyRoster({
   boundActor,
   boundActorDetails,
   boundCanonicalResult,
+  deferCharacterDetails = false,
 }) {
   if (perspective === "player" && boundActor) {
     const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
@@ -1761,6 +1781,7 @@ async function readPartyRoster({
       ...boundActor,
       ...boundActorDetails,
       canonicalResult: boundCanonicalResult,
+      ...(deferCharacterDetails ? { detailsDeferred: true } : {}),
       ...(boundCanonicalResult?.status === "ready" ? { canonical: boundCanonicalResult.data } : {}),
       ...(media ? { media } : {}),
       current: true,
@@ -1827,7 +1848,7 @@ async function readPartyRoster({
           headers,
           cache: "no-store",
         }),
-        perspective === "dm"
+        perspective === "dm" && !deferCharacterDetails
           ? fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(actorId)}` +
             `/components/${PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID}`), {
             headers,
@@ -1842,15 +1863,10 @@ async function readPartyRoster({
       ]);
       const actor = entity(actorPayload, actorId);
       if (!actor) return null;
-      // A GM's Player preview may use the authoritative participation graph to keep party
-      // identity stable, but it must not reuse GM-authorized character records, media, or query
-      // results. A real Actor seat takes the bound-actor path above and receives its own
-      // authorized canonical dossier.
+      if (deferCharacterDetails) return { ...actor, state: null, entries: [], detailsDeferred: true, current: false };
+      // A GM's Player preview retains identity only; the selected dossier is read separately.
       if (perspective === "player") return {
-        ...actor,
-        state: actor.state ?? null,
-        entries: actor.entries ?? [],
-        current: false,
+        ...actor, state: actor.state ?? null, entries: actor.entries ?? [], current: false,
       };
       const [canonicalResult, mediaValue] = await Promise.all([
         readCanonicalCharacter({ fetchImpl, origin, applicationId, stateSpaceId, actorId }),
@@ -2217,6 +2233,7 @@ async function readCampaignStructure({
  *   requestedCampaignId?: string | null,
  *   localSeat?: string, // Legacy option accepted but never used to override the server seat.
  *   mediaAssetBaseUrl?: string,
+ *   deferCharacterDetails?: boolean,
  * }} options
  */
 export async function readGameServerContext({
@@ -2225,6 +2242,7 @@ export async function readGameServerContext({
   requestedPerspective = "dm",
   requestedCampaignId = null,
   mediaAssetBaseUrl = "/ui/dnd2024-play/assets/",
+  deferCharacterDetails = false,
 }) {
   const normalizedRequestedPerspective = requestedPerspective === null ? "dm" : requestedPerspective;
   const origin = normalizeGameServerOrigin(serverOrigin);
@@ -2321,7 +2339,7 @@ export async function readGameServerContext({
         `/components/${CAMPAIGN_CURRENT_SCENE_COMPONENT_TYPE_ID}`), {
         headers: { Accept: "application/json" }, cache: "no-store",
       }).catch(() => null),
-      shouldReadBoundActor
+      shouldReadBoundActor && !deferCharacterDetails
         ? fetchImpl(url(origin, `${root}/${encodeURIComponent(binding.actorId)}` +
           `/components/${PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID}`), {
           headers: { Accept: "application/json" }, cache: "no-store",
@@ -2376,7 +2394,7 @@ export async function readGameServerContext({
     && shouldReadBoundActor
     ? componentValue(actorComponent, binding.actorId, PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID)
     : null);
-  const boundCanonicalResult = shouldReadBoundActor
+  const boundCanonicalResult = shouldReadBoundActor && !deferCharacterDetails
     ? await readCanonicalCharacter({
       fetchImpl,
       origin,
@@ -2396,6 +2414,7 @@ export async function readGameServerContext({
     boundActor: boundActorEntity,
     boundActorDetails,
     boundCanonicalResult,
+    deferCharacterDetails,
   });
   let projectedKnowledge = knowledgeResponse?.ok
     ? knowledge(knowledgeEnvelope)
@@ -2489,6 +2508,7 @@ export async function readGameServerContext({
         origin,
         entityRoot: root,
         encounterId: sceneRecord.encounterId,
+        campaignId: selectedCampaignId,
         stateSpaceId: binding.stateSpaceId,
         perspective: contextAudience.perspective,
         authorizedActorIds,

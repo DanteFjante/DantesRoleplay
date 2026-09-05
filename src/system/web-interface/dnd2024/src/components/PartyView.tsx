@@ -99,6 +99,7 @@ export function PartyView({
   loading = false,
   onRetry,
   party,
+  loadCharacter,
   navigationCharacterId,
   inventoryReturn,
   onOpenItem,
@@ -106,6 +107,7 @@ export function PartyView({
   loading?: boolean;
   onRetry?: () => void;
   party: PartyMemberReadModel[];
+  loadCharacter?: (id: string, signal: AbortSignal) => Promise<PartyMemberReadModel>;
   navigationCharacterId?: string;
   inventoryReturn?: InventoryReturnContext | null;
   onOpenItem?: (characterId: string, itemId: string, context: InventoryReturnContext) => void;
@@ -115,6 +117,25 @@ export function PartyView({
   const [expandedIds, setExpandedIds] = useState<string[]>(inventoryReturn?.expandedIds ?? []);
   const restored = useRef(false);
   const [query, setQuery] = useState("");
+  const [detail, setDetail] = useState<PartyMemberReadModel | null>(null);
+  const [detailBusy, setDetailBusy] = useState(false);
+  const [detailError, setDetailError] = useState(false);
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    if (!loadCharacter || !selectedMemberId || !party.some((member) => member.id === selectedMemberId)) return;
+    const controller = new AbortController();
+    setDetail(null);
+    setDetailError(false);
+    setDetailBusy(true);
+    void loadCharacter(selectedMemberId, controller.signal).then((value) => {
+      if (!controller.signal.aborted && value.id === selectedMemberId) setDetail(value);
+    }).catch(() => {
+      if (!controller.signal.aborted) setDetailError(true);
+    }).finally(() => {
+      if (!controller.signal.aborted) setDetailBusy(false);
+    });
+    return () => controller.abort();
+  }, [loadCharacter, selectedMemberId, retry]);
 
   useEffect(() => {
     if (!navigationCharacterId && !party.some((member) => member.id === selectedMemberId)) {
@@ -124,16 +145,17 @@ export function PartyView({
     }
   }, [party, selectedMemberId, navigationCharacterId]);
 
-  const selectedMember = party.find((member) => member.id === selectedMemberId);
+  const selectedMember = detail?.id === selectedMemberId ? detail
+    : party.find((member) => member.id === selectedMemberId);
   useLayoutEffect(() => {
-    if (restored.current || !inventoryReturn || section !== "inventory" || !selectedMember?.characterSheet) return;
+    if (restored.current || !inventoryReturn || detailBusy || section !== "inventory" || !selectedMember?.characterSheet) return;
     const target = [...document.querySelectorAll<HTMLElement>("[data-item-open]")]
       .find((element) => element.dataset.itemOpen === inventoryReturn.focusItemId);
     if (!target) return;
     restored.current = true;
     target.focus({ preventScroll: true });
     window.scrollTo(0, inventoryReturn.scrollY);
-  }, [inventoryReturn, section, selectedMember]);
+  }, [inventoryReturn, detailBusy, section, selectedMember]);
   useEffect(() => {
     if (!loading && selectedMember?.sheetState.status === "ready" && selectedMember.sheetState.source === "canonical") {
       markCharacterReady(selectedMember.id);
@@ -172,6 +194,9 @@ export function PartyView({
       section={section}
       selectedMember={selectedMember}
     >
+      {detailBusy ? <p role="status">Loading this character’s authorized dossier…</p> : null}
+      {detailError ? <div role="alert"><p>This character could not be loaded. No empty inventory or wallet is inferred.</p>
+        <button type="button" onClick={() => setRetry((value) => value + 1)}>Retry character</button></div> : null}
       {section === "overview" ? (
         <CharacterOverview member={selectedMember} onOpenSection={selectSection} />
       ) : (
@@ -179,7 +204,7 @@ export function PartyView({
           <SectionHeader count={entries.length} member={selectedMember} section={section} />
           {state ? <CharacterSectionState
             label={section === "sheet" ? "character sheet" : "inventory"}
-            loading={loading}
+            loading={loading || detailBusy}
             onRetry={onRetry}
             state={state}
           /> : null}

@@ -27,7 +27,8 @@ public static class ApplicationReadModelWebEndpoint
         context.Response.Headers.CacheControl = "private, no-store";
         var inputAware = context.Request.Query.ContainsKey("input") || context.Request.Query.ContainsKey("campaignId");
         var seat = seats.Current();
-        if (!Authorized(seat, applicationId, entityId, out var application))
+        if (!Authorized(seat, applicationId, entityId, out var application) ||
+            catalogs is null && seat.Role == KnowledgeAudienceRole.Actor && seat.ActorId != entityId)
         {
             if (inputAware) return SafeError("READ_MODEL_FORBIDDEN");
             return Results.Json(new
@@ -57,22 +58,40 @@ public static class ApplicationReadModelWebEndpoint
 
         try
         {
+            var crossEntity = seat.Role == KnowledgeAudienceRole.Actor && seat.ActorId != entityId;
+            ApplicationQueryContract? queryContract = null;
+            if (catalogs is not null && catalogs.TryGet(application!, out var catalog))
+                queryContract = ApplicationQueryContract.Parse(catalog.Inspect(new(application!, application!.Value,
+                    qualifiedQueryId)).ContentJson, application!);
+            if (crossEntity && queryContract?.CampaignSelection is null) return SafeError("READ_MODEL_FORBIDDEN");
+            inputAware |= queryContract?.CampaignSelection is not null;
             var suppliedInput = context.Request.Query["input"];
             var suppliedCampaign = context.Request.Query["campaignId"];
             if (suppliedInput.Count > 1 || suppliedCampaign.Count > 1)
                 return SafeError("READ_MODEL_INPUT_INVALID");
             var input = ApplicationReadModelInput.Normalize(suppliedInput.Count == 0 ? "{}" : suppliedInput[0]!);
-            if (suppliedCampaign.Count == 1)
+            if (suppliedCampaign.Count == 1 || queryContract?.CampaignSelection is not null)
             {
-                var campaignId = suppliedCampaign[0];
+                var campaignId = suppliedCampaign.Count == 1 ? suppliedCampaign[0] : seat.CampaignId;
                 var authorized = await SystemAudienceContextHandler.ResolveAsync(
                     seats, audiences, bindings, participation, campaignId, cancellationToken);
-                if (authorized.Error is not null || bindings is null) return SafeError("READ_MODEL_FORBIDDEN");
+                var authorization = JsonSerializer.SerializeToElement(authorized.Data);
+                if (authorized.Error is not null || bindings is null ||
+                    authorization.ValueKind != JsonValueKind.Object ||
+                    !authorization.TryGetProperty("status", out var status) || status.GetString() != "bound")
+                    return SafeError("READ_MODEL_FORBIDDEN");
                 var binding = await bindings.ResolveAsync(campaignId!, cancellationToken);
                 if (binding is null || binding.ApplicationId != applicationId || binding.StateSpaceId != stateSpaceId ||
                     binding.CampaignEntityId != campaignId) return SafeError("READ_MODEL_FORBIDDEN");
                 // This local value binds roles; it never changes the ambient host seat.
                 seat = seat with { CampaignId = campaignId! };
+            }
+            ApplicationReadModelResult? selectionResult = null;
+            if (queryContract?.CampaignSelection is { } selection)
+            {
+                selectionResult = await ReadSelectionAsync(selection, catalogs!, readModels, application!,
+                    stateSpaceId, seat.CampaignId, audience, cancellationToken);
+                if (!SelectionMatches(selectionResult, selection.EntityIdField, entityId)) return SafeError("READ_MODEL_FORBIDDEN");
             }
             var roleBindings = ResolveRoleBindings(
                 catalogs, application!, qualifiedQueryId, entityId, seat);
@@ -88,6 +107,13 @@ public static class ApplicationReadModelWebEndpoint
                 qualifiedQueryId,
                 roleBindings,
                 audience, input), cancellationToken);
+            if (selectionResult is not null && queryContract?.CampaignSelection is { } recheck)
+            {
+                var current = await ReadSelectionAsync(recheck, catalogs!, readModels, application!,
+                    stateSpaceId, seat.CampaignId, audience, cancellationToken);
+                if (current.SourceRevisionFingerprint != selectionResult.SourceRevisionFingerprint ||
+                    !SelectionMatches(current, recheck.EntityIdField, entityId)) return SafeError("READ_MODEL_SOURCE_STALE");
+            }
             using var data = JsonDocument.Parse(result.DataJson);
             return Results.Json(new
             {
@@ -126,6 +152,8 @@ public static class ApplicationReadModelWebEndpoint
                 statusCode: status);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch (Exception exception) when (exception is ArgumentException or KeyNotFoundException or JsonException)
+        { return SafeError("READ_MODEL_UNAVAILABLE"); }
         catch (Exception) when (inputAware) { return SafeError("READ_MODEL_UNAVAILABLE"); }
     }
 
@@ -170,7 +198,7 @@ public static class ApplicationReadModelWebEndpoint
                     "actor" when !string.IsNullOrWhiteSpace(seat.ActorId) => seat.ActorId,
                     "actor" => entityId,
                     "subject" => entityId,
-                    _ when contract.Roles.Count == 1 => entityId,
+                    _ when contract.Roles.Count == 1 || contract.Roles.Count == 2 && contract.Roles.ContainsKey("campaign") => entityId,
                     _ => null
                 };
                 if (string.IsNullOrWhiteSpace(value)) return null;
@@ -193,9 +221,8 @@ public static class ApplicationReadModelWebEndpoint
         applicationId = null;
         if (!seat.Enabled || seat.ApplicationId != requestedApplicationId
             || seat.Role is not (KnowledgeAudienceRole.Actor or KnowledgeAudienceRole.GameMaster)
-            || string.IsNullOrWhiteSpace(entityId) || entityId.Length > 200)
-            return false;
-        if (seat.Role == KnowledgeAudienceRole.Actor && seat.ActorId != entityId)
+            || string.IsNullOrWhiteSpace(entityId) || entityId.Length > 200
+            || seat.Role == KnowledgeAudienceRole.Actor && string.IsNullOrWhiteSpace(seat.ActorId))
             return false;
         try
         {
@@ -206,5 +233,28 @@ public static class ApplicationReadModelWebEndpoint
         {
             return false;
         }
+    }
+
+    private static async Task<ApplicationReadModelResult> ReadSelectionAsync(
+        ApplicationQueryCampaignSelection selection, IPublicApplicationCatalogProvider catalogs,
+        IApplicationReadModelService readModels, ApplicationIdentifier application, string stateSpaceId,
+        string campaignId, MechanicAudienceContext audience, CancellationToken cancellationToken)
+    {
+        if (!catalogs.TryGet(application, out var catalog))
+            throw new ApplicationReadModelException("READ_MODEL_FORBIDDEN", "Selection is unavailable.");
+        var contract = ApplicationQueryContract.Parse(catalog.Inspect(new(application, application.Value,
+            selection.QueryId)).ContentJson, application);
+        if (contract.CampaignSelection is not null || contract.Roles.Count != 1 || !contract.Roles.ContainsKey("campaign"))
+            throw new ApplicationReadModelException("READ_MODEL_FORBIDDEN", "Selection is unavailable.");
+        return await readModels.ReadAsync(new(stateSpaceId, application, selection.QueryId,
+            new Dictionary<string, string> { ["campaign"] = campaignId }, audience), cancellationToken);
+    }
+
+    private static bool SelectionMatches(ApplicationReadModelResult result, string field, string entityId)
+    {
+        using var data = JsonDocument.Parse(result.DataJson);
+        return data.RootElement.ValueKind == JsonValueKind.Object &&
+            data.RootElement.TryGetProperty(field, out var selected) && selected.ValueKind == JsonValueKind.String
+            && selected.GetString() == entityId;
     }
 }

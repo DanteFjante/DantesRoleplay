@@ -3,6 +3,9 @@
 ###############################################################################
 * text=auto
 
+# Catalog fingerprints include JavaScript source bytes; preserve them on Windows too.
+catalog/**/*.js text eol=lf
+
 # This application query pins the exact multiline JavaScript bytes across checkouts.
 catalog/applications/dnd2024/mechanics/data/dnd2024.mechanic.inventory-item-details.project.js text eol=lf
 

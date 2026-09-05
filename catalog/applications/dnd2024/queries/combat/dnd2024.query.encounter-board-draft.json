@@ -1,0 +1,331 @@
+{
+  "id": "dnd2024.query.encounter-board-draft",
+  "category": "dnd2024.ruleset.core.combat.tactical-board.read-model",
+  "name": "Preview a GM combat-map draft",
+  "description": "Read-only deterministic layout and aligned background request for explicit GM review.",
+  "matches": [
+    "generate a combat map"
+  ],
+  "roles": {
+    "campaign": "The authorized campaign.",
+    "encounter": "The exact selected encounter."
+  },
+  "executor": "mechanic-projection",
+  "campaignSelection": {
+    "queryId": "dnd2024.query.current-scene",
+    "entityIdField": "encounterId"
+  },
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.encounter.board.draft",
+    "version": 1,
+    "contentHash": "9DF4F8FFA8163B1E6292989C6E55F5397AB41F93D3E3B6FECD8A4C03E1C788D2",
+    "outputSchemaHash": "92EEF98F92BF2AF46440D37790B6B735CB3EEBAF84E9FC8449618C719470CCC0"
+  },
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "columns",
+      "rows",
+      "obstacleCount",
+      "seed",
+      "setting",
+      "prompt"
+    ],
+    "properties": {
+      "columns": {
+        "type": "integer",
+        "minimum": 4,
+        "maximum": 64
+      },
+      "rows": {
+        "type": "integer",
+        "minimum": 4,
+        "maximum": 64
+      },
+      "obstacleCount": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 32
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647
+      },
+      "setting": {
+        "enum": [
+          "woodland",
+          "ruin",
+          "chamber"
+        ]
+      },
+      "prompt": {
+        "type": "string",
+        "maxLength": 600
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "version",
+      "campaignId",
+      "encounterId",
+      "locationId",
+      "expectedBoardRevision",
+      "board",
+      "backgroundRequest",
+      "provider",
+      "model",
+      "seed"
+    ],
+    "properties": {
+      "version": {
+        "const": 1
+      },
+      "campaignId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "encounterId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "locationId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "expectedBoardRevision": {
+        "anyOf": [
+          {
+            "type": "null"
+          },
+          {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483646
+          }
+        ]
+      },
+      "board": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "status",
+          "visibility",
+          "columns",
+          "rows",
+          "feetPerSquare",
+          "terrain",
+          "obstacles"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "status": {
+            "enum": [
+              "active",
+              "archived"
+            ]
+          },
+          "visibility": {
+            "enum": [
+              "public",
+              "dm"
+            ]
+          },
+          "columns": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "rows": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "feetPerSquare": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30
+          },
+          "terrain": {
+            "type": "array",
+            "maxItems": 256,
+            "items": {
+              "$ref": "#/$defs/terrain"
+            }
+          },
+          "obstacles": {
+            "type": "array",
+            "maxItems": 256,
+            "items": {
+              "$ref": "#/$defs/obstacle"
+            }
+          }
+        }
+      },
+      "backgroundRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "prompt",
+          "width",
+          "height",
+          "mimeType"
+        ],
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 256,
+            "maximum": 4096
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 256,
+            "maximum": 4096
+          },
+          "mimeType": {
+            "const": "image/png"
+          }
+        }
+      },
+      "provider": {
+        "const": "catalog-deterministic"
+      },
+      "model": {
+        "const": "square-layout-v1"
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647
+      }
+    },
+    "$defs": {
+      "id": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$",
+        "maxLength": 200
+      },
+      "label": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "\\S",
+        "maxLength": 200
+      },
+      "rect": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "x",
+          "y",
+          "width",
+          "height"
+        ],
+        "properties": {
+          "x": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 63
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 63
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          }
+        }
+      },
+      "terrain": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "label",
+          "area",
+          "movementCost",
+          "visibility"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "label": {
+            "$ref": "#/$defs/label"
+          },
+          "area": {
+            "$ref": "#/$defs/rect"
+          },
+          "movementCost": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "visibility": {
+            "enum": [
+              "public",
+              "dm"
+            ]
+          }
+        }
+      },
+      "obstacle": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "label",
+          "area",
+          "blocksMovement",
+          "visibility"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "label": {
+            "$ref": "#/$defs/label"
+          },
+          "area": {
+            "$ref": "#/$defs/rect"
+          },
+          "blocksMovement": {
+            "const": true
+          },
+          "visibility": {
+            "enum": [
+              "public",
+              "dm"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "exposure": "model-visible",
+  "status": "active"
+}

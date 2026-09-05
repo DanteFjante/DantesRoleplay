@@ -23,7 +23,9 @@ export function CharacterOverview({
         <div>
           <span className="eyebrow">Character dossier</span>
           <h3>{sheet?.classes?.[0]?.class.label ?? member.name}</h3>
-          <p>{biography ?? "This character is an active participant, but no biography has been recorded."}</p>
+          <p>{biography ?? (member.sheetState.status === "idle" || member.sheetState.status === "loading"
+            ? "Character details have not been loaded yet."
+            : "This character is an active participant, but no biography has been recorded.")}</p>
         </div>
         <div className="character-overview__actions">
           <button onClick={() => onOpenSection("sheet")} type="button"><Icon name="Shield" size={17} /> Character sheet</button>

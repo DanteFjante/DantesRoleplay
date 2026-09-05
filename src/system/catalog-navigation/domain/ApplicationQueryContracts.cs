@@ -11,6 +11,9 @@ public enum ApplicationQueryExposure
     BindingOnly
 }
 
+/// <summary>A catalog-owned selection from the currently authorized campaign, not a caller-supplied role.</summary>
+public sealed record ApplicationQueryCampaignSelection(string QueryId, string EntityIdField);
+
 /// <summary>
 /// Strict application-authored metadata for one host-executed read-only query. The executable
 /// implementation remains an exact registered projection; this record only makes that projection
@@ -31,7 +34,8 @@ public sealed record ApplicationQueryContract(
     string OutputSchemaJson,
     ApplicationQueryExposure Exposure,
     string Status,
-    string? InputSchemaJson = null)
+    string? InputSchemaJson = null,
+    ApplicationQueryCampaignSelection? CampaignSelection = null)
 {
     public const string CatalogKind = "query";
     public const string ProjectionExecutor = "projection";
@@ -54,8 +58,10 @@ public sealed record ApplicationQueryContract(
             throw Invalid("A query contract must be an object.");
         var fields = new[] { "id", "category", "name", "description", "matches", "roles", "executor",
             "projection", "outputSchema", "exposure", "status" };
-        Exact(root, root.TryGetProperty("inputSchema", out var inputSchema)
-            ? [.. fields, "inputSchema"] : fields);
+        var hasInput = root.TryGetProperty("inputSchema", out var inputSchema);
+        var hasSelection = root.TryGetProperty("campaignSelection", out var selection);
+        Exact(root, [.. fields, .. (hasInput ? new[] { "inputSchema" } : []),
+            .. (hasSelection ? new[] { "campaignSelection" } : [])]);
         if (inputSchema.ValueKind != JsonValueKind.Undefined &&
             (inputSchema.ValueKind != JsonValueKind.Object
              || Encoding.UTF8.GetByteCount(inputSchema.GetRawText()) > 65_536
@@ -74,6 +80,21 @@ public sealed record ApplicationQueryContract(
         var description = Text(root, "description", CatalogNavigationLimits.MaximumTextLength);
         var matches = Strings(root, "matches", CatalogNavigationLimits.MaximumAliasesPerRecord, 200);
         var roles = StringMap(root, "roles", 32, 1_000);
+        ApplicationQueryCampaignSelection? campaignSelection = null;
+        if (hasSelection)
+        {
+            if (selection.ValueKind != JsonValueKind.Object ||
+                !(roles.Count == 1 || roles.Count == 2 && roles.ContainsKey("campaign")))
+                throw Invalid("A campaign-selected query must declare exactly one target role.");
+            Exact(selection, "queryId", "entityIdField");
+            var selectionQuery = String(selection, "queryId", 200);
+            var field = String(selection, "entityIdField", 100);
+            if (!selectionQuery.StartsWith(owner.Value + ".", StringComparison.Ordinal)
+                || !Segments(selectionQuery[(owner.Value.Length + 1)..], '.') || selectionQuery == id
+                || !char.IsAsciiLetter(field[0]) || !field.All(character => char.IsAsciiLetterOrDigit(character) || character == '_'))
+                throw Invalid("Campaign selection must name another query of this application and one top-level field.");
+            campaignSelection = new(selectionQuery, field);
+        }
         var executor = String(root, "executor", 63);
         if (executor is not (ProjectionExecutor or MechanicProjectionExecutor))
             throw Invalid("The query executor kind is not supported.");
@@ -107,7 +128,7 @@ public sealed record ApplicationQueryContract(
 
         return new(id, category, name, description, matches, roles, executor, projectionId, version,
             contentHash, schemaHash, schema.GetRawText(), exposure, status,
-            inputSchema.ValueKind == JsonValueKind.Undefined ? null : inputSchema.GetRawText());
+            inputSchema.ValueKind == JsonValueKind.Undefined ? null : inputSchema.GetRawText(), campaignSelection);
     }
 
     private static void Exact(JsonElement value, params string[] names)

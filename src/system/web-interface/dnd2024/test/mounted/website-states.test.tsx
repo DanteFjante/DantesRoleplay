@@ -448,6 +448,31 @@ function partyMember(sheetState: SectionState<PartyMemberReadModel["sheet"]>): P
   return member;
 }
 
+test("party fetches only the selected dossier and ignores an obsolete completion", async () => {
+  const { PartyView } = await import("../../src/components/PartyView");
+  const first = { ...partyMember({ status: "idle", data: null }), id: "actor.first", name: "First" };
+  const second = { ...first, id: "actor.second", name: "Second" };
+  const calls: string[] = [];
+  const pending = new Map<string, (value: PartyMemberReadModel) => void>();
+  const loadCharacter = (id: string) => {
+    calls.push(id);
+    return new Promise<PartyMemberReadModel>((resolve) => pending.set(id, resolve));
+  };
+  const mounted = await mount(<PartyView party={[first, second]} loadCharacter={loadCharacter} />);
+  try {
+    assert.deepEqual(calls, [first.id]);
+    const chooseSecond = [...mounted.container.querySelectorAll<HTMLButtonElement>(".character-roster__member")]
+      .find((control) => control.textContent?.includes("Second"));
+    assert.ok(chooseSecond);
+    await click(chooseSecond);
+    assert.deepEqual(calls, [first.id, second.id]);
+    await act(async () => pending.get(second.id)?.({ ...second, recordStatus: "Second loaded" }));
+    await act(async () => pending.get(first.id)?.({ ...first, recordStatus: "OBSOLETE_PRIVATE_DOSSIER" }));
+    assert.ok(mounted.container.textContent?.includes("Second loaded"));
+    assert.ok(!mounted.container.textContent?.includes("OBSOLETE_PRIVATE_DOSSIER"));
+  } finally { await mounted.cleanup(); }
+});
+
 function envelope(perspective: Perspective): ReadyHubEnvelope {
   const projected = projectHubEnvelope(
     hubSource,

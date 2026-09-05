@@ -171,6 +171,9 @@ app.MapMcp(ServerConfiguration.McpEndpoint);
 app.MapPut("/api/blob-uploads/{uploadId}", BlobTransferWebEndpoints.UploadAsync)
     .AddEndpointFilter<WebInterfaceSecurityFilter>()
     .RequireRateLimiting(WebInterfaceSecurity.UploadRateLimitPolicy);
+app.MapPost("/api/applications/{applicationId}/visual-drafts", VisualDraftUploadWebEndpoint.UploadAsync)
+    .AddEndpointFilter<WebInterfaceSecurityFilter>()
+    .RequireRateLimiting(WebInterfaceSecurity.UploadRateLimitPolicy);
 app.MapGet("/api/blobs/sha256/{sha256}", BlobTransferWebEndpoints.DownloadAsync)
     .AddEndpointFilter<WebInterfaceSecurityFilter>()
     .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
@@ -183,6 +186,9 @@ app.MapGet("/api/readiness/applications/{applicationId}", ApplicationReadinessWe
 app.MapGet(
         "/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/media",
         EntityMediaWebEndpoints.DiscoverAsync)
+    .AddEndpointFilter<WebInterfaceSecurityFilter>()
+    .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
+app.MapPost("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/media-batch", EntityMediaWebEndpoints.DiscoverBatchAsync)
     .AddEndpointFilter<WebInterfaceSecurityFilter>()
     .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
 app.MapGet(

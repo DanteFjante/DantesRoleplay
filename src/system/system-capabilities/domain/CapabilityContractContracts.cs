@@ -184,7 +184,7 @@ public static class CapabilityContractBuilder
     {
         var root = JsonNode.Parse(schemaJson) as JsonObject
             ?? throw new ArgumentException("A capability schema must be a JSON object.", nameof(schemaJson));
-        return Example(root, root, 0, 0).ToJsonString(new JsonSerializerOptions { WriteIndented = false });
+        return Example(root, root, 0, 0)?.ToJsonString(new JsonSerializerOptions { WriteIndented = false }) ?? "null";
     }
 
     public static string MinimalInvalidExample(string schemaJson)
@@ -257,7 +257,7 @@ public static class CapabilityContractBuilder
         return new(profile, normalized, hash, status);
     }
 
-    private static JsonNode Example(JsonObject schema, JsonObject root, int variant, int depth)
+    private static JsonNode? Example(JsonObject schema, JsonObject root, int variant, int depth)
     {
         if (depth > 64)
             throw new ArgumentException("A capability schema has a cyclic or excessively deep local reference.", nameof(schema));
@@ -270,6 +270,7 @@ public static class CapabilityContractBuilder
         if (schema["anyOf"] is JsonArray alternatives && alternatives.Count > 0
             && alternatives[0] is JsonObject firstAlternative) return Example(firstAlternative, root, variant, depth + 1);
         var type = schema["type"]?.GetValue<string>();
+        if (type == "null") return null;
         if (type == "object" || schema["properties"] is JsonObject)
         {
             var result = new JsonObject();

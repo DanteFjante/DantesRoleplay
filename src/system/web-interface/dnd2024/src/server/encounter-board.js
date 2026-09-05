@@ -5,9 +5,11 @@ const fingerprint = (value) => typeof value === "string" && /^[a-f0-9]{64}$/iu.t
 
 // The catalog owns tactical rules and audience filtering. This adapter only validates the
 // closed response, binds it to the requested encounter/perspective, and formats its view.
-export async function readEncounterBoard({ fetchImpl, origin, entityRoot, encounterId, perspective }) {
+export async function readEncounterBoard({ fetchImpl, origin, entityRoot, encounterId, perspective, campaignId }) {
   try {
-    const response = await fetchImpl(new URL(`${entityRoot}/${encodeURIComponent(encounterId)}/read-models/${query.id}?perspective=${perspective}`, origin), {
+    const parameters = new URLSearchParams({ perspective });
+    if (campaignId) parameters.set("campaignId", campaignId);
+    const response = await fetchImpl(new URL(`${entityRoot}/${encodeURIComponent(encounterId)}/read-models/${query.id}?${parameters}`, origin), {
       headers: { Accept: "application/json" }, cache: "no-store",
     });
     if (!response.ok) return null;

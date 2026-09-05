@@ -22,6 +22,7 @@ type ViewReadClientOptions<TRequest, TResponse> = {
   validate: (value: unknown) => value is TResponse;
   retryDelayMs?: number;
   maximumCachedScopes?: number;
+  maximumCacheAgeMs?: number;
 };
 
 export type ViewReadResult<TResponse> = {
@@ -32,6 +33,7 @@ export type ViewReadResult<TResponse> = {
 
 type CacheEntry<TResponse> = ViewReadResult<TResponse> & {
   scopeKey: string;
+  storedAt: number;
 };
 
 function cancelledError(cause?: unknown) {
@@ -66,6 +68,7 @@ export class ViewReadClient<TRequest, TResponse> {
   readonly #validate: (value: unknown) => value is TResponse;
   readonly #retryDelayMs: number;
   readonly #maximumCachedScopes: number;
+  readonly #maximumCacheAgeMs: number;
   readonly #cache = new Map<string, CacheEntry<TResponse>>();
   #requestId = 0;
   #controller: AbortController | null = null;
@@ -76,6 +79,7 @@ export class ViewReadClient<TRequest, TResponse> {
     this.#validate = options.validate;
     this.#retryDelayMs = options.retryDelayMs ?? 25;
     this.#maximumCachedScopes = options.maximumCachedScopes ?? 8;
+    this.#maximumCacheAgeMs = options.maximumCacheAgeMs ?? 30_000;
   }
 
   async load(request: TRequest): Promise<ViewReadResult<TResponse>> {
@@ -118,18 +122,23 @@ export class ViewReadClient<TRequest, TResponse> {
     const fingerprint = await sha256(value);
     if (controller.signal.aborted || requestId !== this.#requestId) throw cancelledError();
     const result = { requestId, fingerprint, value };
-    this.#remember({ ...result, scopeKey });
+    this.#remember({ ...result, scopeKey, storedAt: Date.now() });
     return result;
   }
 
   peek(request: TRequest): ViewReadResult<TResponse> | null {
     const entry = this.#cache.get(this.#cacheKey(request));
+    if (entry && Date.now() - entry.storedAt >= this.#maximumCacheAgeMs) {
+      this.#cache.delete(entry.scopeKey);
+      return null;
+    }
     return entry
       ? { requestId: entry.requestId, fingerprint: entry.fingerprint, value: entry.value }
       : null;
   }
 
   invalidate(request?: TRequest) {
+    this.cancel();
     if (request === undefined) {
       this.#cache.clear();
       return;

@@ -1,6 +1,6 @@
 "use client";
 
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 import { resolveCampaignWorldTarget } from "../data/campaign-navigation";
 import { ITEM_ROUTE_EVENT, navigateItemRoute, parseItemRoute } from "../data/item-view-route";
@@ -113,13 +113,19 @@ export function DndInformationHub({
   loadEnvelope,
   loadRules,
   loadContent,
+  loadCharacter,
 }: {
   initialEnvelope: ReadyHubEnvelope;
   loadEnvelope?: HubEnvelopeLoader;
   loadRules?: RulesLoader;
   loadContent: ContentLoader;
+  loadCharacter?: (envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) => Promise<import("../data/hub-types").PartyMemberReadModel>;
 }) {
   const [envelope, setEnvelope] = useState(initialEnvelope);
+  const readCharacter = useCallback((id: string, signal: AbortSignal) => {
+    if (!loadCharacter) throw new Error("Character loading is unavailable.");
+    return loadCharacter(envelope, id, signal);
+  }, [envelope, loadCharacter]);
   const [itemRoute, setItemRoute] = useState(() => parseItemRoute(window.location.hash));
   const [activeTab, setActiveTab] = useState<MainTabId>(() => parseItemRoute(window.location.hash).kind === "none" ? "world" : "party");
   useEffect(() => {
@@ -146,6 +152,12 @@ export function DndInformationHub({
   const [announcement, setAnnouncement] = useState("World view ready");
   const [hubBusy, setHubBusy] = useState(false);
   const [hubError, setHubError] = useState("");
+  const [serverChanged, setServerChanged] = useState(false);
+  useEffect(() => {
+    const invalidate = () => setServerChanged(true);
+    window.addEventListener("dnd2024-view-invalidated", invalidate);
+    return () => window.removeEventListener("dnd2024-view-invalidated", invalidate);
+  }, []);
   const hubRequestSequence = useRef(0);
 
   const perspective = envelope.audience.perspective;
@@ -229,6 +241,7 @@ export function DndInformationHub({
         ? loadedEnvelope
         : preserveLastGoodPartyData(envelope, loadedEnvelope);
       setEnvelope(readyEnvelope);
+      setServerChanged(false);
       setLocationSection(
         normalizeLocationSection(
           locationSection,
@@ -413,6 +426,7 @@ export function DndInformationHub({
           route={itemRoute}
           campaignId={contextSelection.selectedCampaignId}
           perspective={perspective}
+          loadCharacter={loadCharacter ? readCharacter : undefined}
           loading={hubBusy}
           onRetry={() => void requestHub(perspective, contextSelection.selectedCampaignId, false, true)}
           party={envelope.party}
@@ -425,6 +439,10 @@ export function DndInformationHub({
               location={currentSceneLocation}
               situation={currentSituation}
               perspective={perspective}
+              draftScope={envelope.audience.seat === "dm" && perspective === "dm" ? {
+                applicationId: envelope.applicationId, stateSpaceId: envelope.stateSpaceId, campaignId: contextSelection.selectedCampaignId,
+              } : undefined}
+              onBoardAccepted={() => void requestHub(perspective, contextSelection.selectedCampaignId, false, true)}
             />
             <PlayConversationPanel
               applicationId={envelope.applicationId}
@@ -526,6 +544,10 @@ export function DndInformationHub({
         onPerspectiveChange={(nextPerspective) => void requestPerspective(nextPerspective)}
       />
       {hubError ? <p className="perspective-notice" role="alert">{hubError}</p> : null}
+      {serverChanged ? <div className="perspective-notice" role="status">
+        The server changed or the live connection was interrupted. Showing the last loaded view.
+        <button type="button" disabled={hubBusy} onClick={() => void requestHub(perspective, contextSelection.selectedCampaignId, false, true)}>Refresh view</button>
+      </div> : null}
       <div className="information-hub__body">
         <MainNavigation
           activeTab={activeTab}

@@ -2114,6 +2114,15 @@ test("projects only exact active campaign participation into the DM party roster
   assert.ok(worldDirectoryIndex >= 0);
   assert.ok(partyReadIndex < worldDirectoryIndex,
     "The authoritative party graph must be read before the optional World directory fan-out.");
+
+  calls.length = 0;
+  const rosterOnly = await readGameServerContext({
+    serverOrigin: "http://localhost:6217", fetchImpl, requestedPerspective: "dm", deferCharacterDetails: true,
+  });
+  assert.deepEqual(rosterOnly.party.map(({ id, detailsDeferred }) => ({ id, detailsDeferred })),
+    [{ id: "actor.thalorien.brackenford.orban", detailsDeferred: true }]);
+  assert.equal(calls.filter(({ path }) => path.includes("/read-models/")).length, 0,
+    "Opening World must not read any character dossier.");
 });
 
 test("reads the registered character projection and enriches its bounded inventory media", async () => {
@@ -2263,6 +2272,12 @@ test("reads the registered character projection and enriches its bounded invento
       }
       if (path.endsWith(`/${itemId}/components/dnd2024.item.equipment`)) return response(404, {});
       if (path.endsWith(`/${itemId}/media`)) return response(404, {});
+      if (path.endsWith("/media-batch")) return response(200, {
+        applicationId: "dnd2024", stateSpaceId: "dnd2024-main", items: [{ ...mediaRecord({
+          ...mediaAttachment("illustration", "Gold pieces", "visual-0"),
+          contentUrl: `/api/applications/dnd2024/state-spaces/dnd2024-main/entities/${definitionId}/media/visual-0/content`,
+        }), entityId: definitionId }],
+      });
       if (path.endsWith(`/${definitionId}/media`)) return response(200, mediaRecord({
         ...mediaAttachment("illustration", "Gold pieces", "visual-0"),
         contentUrl: `/api/applications/dnd2024/state-spaces/dnd2024-main/entities/${definitionId}/media/visual-0/content`,

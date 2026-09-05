@@ -17,6 +17,7 @@ public sealed class Dnd2024ApplicationReadViewTests
 
     public static TheoryData<string, string> ReadViews => new()
     {
+        { "combat/dnd2024.query.encounter-board-draft.json", "combat/dnd2024.mechanic.encounter.board.draft" },
         { "campaign/dnd2024.query.campaign-resume.json", "campaign/dnd2024.mechanic.campaign.resume.project" },
         { "campaign/dnd2024.query.current-scene.json", "campaign/dnd2024.mechanic.campaign.current-scene.project" },
         { "campaign/dnd2024.query.actor-context.json", "campaign/dnd2024.mechanic.campaign.actor-context.project" },

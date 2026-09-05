@@ -6,6 +6,50 @@ namespace DantesRoleplay.MCPServer;
 
 public static class EntityMediaWebEndpoints
 {
+    public sealed record BatchRequest(string[] EntityIds, string? Perspective);
+
+    // Read-only batching retains the ordinary owner authorization and never exposes raw blob IDs.
+    public static async Task<IResult> DiscoverBatchAsync(string applicationId, string stateSpaceId,
+        BatchRequest request, HttpContext context, ILocalKnowledgeSeatProvider seats,
+        IEntityMediaService media, CancellationToken cancellationToken)
+    {
+        context.Response.Headers.CacheControl = "private, no-store";
+        if (!TryAudience(seats.Current(), applicationId, out var application, out var audience)) return Denied();
+        if (request.EntityIds is null || request.EntityIds.Length is < 1 or > 256 ||
+            request.EntityIds.Any(id => string.IsNullOrWhiteSpace(id) || id.Length > 200 || id.Any(char.IsControl)) ||
+            request.EntityIds.Distinct(StringComparer.Ordinal).Count() != request.EntityIds.Length ||
+            request.Perspective is not (null or "player" or "dm"))
+            return Results.BadRequest(new { code = "MEDIA_BATCH_INVALID" });
+        if (request.Perspective == "dm" && audience != EntityMediaAudience.GameMaster) return Denied();
+        if (request.Perspective == "player") audience = EntityMediaAudience.Player;
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(TimeSpan.FromSeconds(5));
+        var items = new List<object>();
+        try
+        {
+            foreach (var entityId in request.EntityIds)
+            {
+                try
+                {
+                    var result = await media.DiscoverAsync(application!, stateSpaceId, entityId, audience,
+                        diagnostics: false, deadline.Token);
+                    items.Add(new { entityId, attachments = result.Attachments.Select(value => new {
+                        value.MediaId, value.Role, value.MediaType, value.Width, value.Height, value.Alt,
+                        value.Caption, value.Order, contentUrl = ContentPath(applicationId, stateSpaceId, entityId, value.MediaId)
+                    }).ToArray() });
+                }
+                catch (EntityMediaException) { items.Add(new { entityId, attachments = Array.Empty<object>() }); }
+            }
+            var resultBytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(new { applicationId, stateSpaceId, items },
+                new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+            return resultBytes.Length > 2 * 1024 * 1024
+                ? Results.Json(new { code = "MEDIA_BATCH_TOO_LARGE" }, statusCode: 413)
+                : Results.Bytes(resultBytes, "application/json");
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        { return Results.Json(new { code = "MEDIA_BATCH_TIMEOUT" }, statusCode: 504); }
+    }
+
     public static async Task<IResult> DiscoverAsync(
         string applicationId,
         string stateSpaceId,
@@ -18,6 +62,11 @@ public static class EntityMediaWebEndpoints
         context.Response.Headers.CacheControl = "private, no-store";
         if (!TryAudience(seats.Current(), applicationId, out var application, out var audience))
             return Denied();
+        var perspective = context.Request.Query["perspective"];
+        if (perspective.Count > 1 || perspective.Count == 1 && perspective[0] is not ("player" or "dm"))
+            return Results.BadRequest(new { code = "MEDIA_PERSPECTIVE_INVALID" });
+        if (perspective == "dm" && audience != EntityMediaAudience.GameMaster) return Denied();
+        if (perspective == "player") audience = EntityMediaAudience.Player;
         try
         {
             var result = await media.DiscoverAsync(

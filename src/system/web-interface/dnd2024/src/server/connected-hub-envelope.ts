@@ -228,7 +228,7 @@ function failedSectionState(result: Extract<
       };
 }
 
-function projectParty(connection: ConnectedCampaignEnvelope): PartyMemberReadModel[] {
+export function projectParty(connection: ConnectedCampaignEnvelope): PartyMemberReadModel[] {
   const members: ConnectedPartyMember[] = connection.party ?? [{
     ...connection.actor,
     current: true,
@@ -268,14 +268,14 @@ function projectParty(connection: ConnectedCampaignEnvelope): PartyMemberReadMod
     const inventory = inventoryIsCanonical
       ? projectedInventory
       : (canonicalFailed ? [] : provisionalInventory);
-    const sheetState = canonicalFailed
+    const sheetState = member.detailsDeferred ? { status: "idle" as const, data: null } : canonicalFailed
       ? failedSectionState(canonicalFailure)
       : {
           status: sheet.length > 0 ? "ready" as const : "empty" as const,
           data: sheet,
           source: member.canonical ? "canonical" as const : "provisional" as const,
         };
-    const inventoryState = canonicalFailed
+    const inventoryState = member.detailsDeferred ? { status: "idle" as const, data: null } : canonicalFailed
       ? failedSectionState(canonicalFailure)
       : {
           status: inventory.length > 0 ? "ready" as const : "empty" as const,

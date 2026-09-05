@@ -1043,7 +1043,8 @@ function boundedBoardInteger(value, minimum, maximum) {
 }
 
 function validTacticalBoard(value) {
-  if (!value || !hasExactBoardKeys(value, ["revision", "columns", "rows", "feetPerSquare", "terrain", "obstacles", "participants", ...(value.turn === undefined ? [] : ["turn"])]) ||
+  if (!value || !hasExactBoardKeys(value, ["revision", "columns", "rows", "feetPerSquare", "terrain", "obstacles", "participants", ...(value.turn === undefined ? [] : ["turn"]), ...(value.backgroundMediaOrder === undefined ? [] : ["backgroundMediaOrder"])]) ||
+      value.backgroundMediaOrder != null && !boundedBoardInteger(value.backgroundMediaOrder, 0, 10000) ||
       !boundedBoardInteger(value.revision, 1, 2147483647) || !boundedBoardInteger(value.columns, 1, 64) ||
       !boundedBoardInteger(value.rows, 1, 64) || !boundedBoardInteger(value.feetPerSquare, 1, 30) ||
       !Array.isArray(value.terrain) || value.terrain.length > 256 ||
@@ -1143,7 +1144,8 @@ function isCurrentSituation(value, locations) {
       value.combat.turn.ordinal >= 0 && (value.combat.turn.budget === undefined ||
         (value.combat.turn.budget && ["actions", "bonusActions", "reactions"].every((key) =>
           Number.isInteger(value.combat.turn.budget[key]) && value.combat.turn.budget[key] >= 0))))) &&
-    (value.combat.board === undefined || validTacticalBoard(value.combat.board));
+    (value.combat.board === undefined || validTacticalBoard(value.combat.board)) &&
+    (value.combat.background === undefined || isVisualMedia(value.combat.background));
 }
 
 export function isReadyHubEnvelope(value) {

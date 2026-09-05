@@ -3,12 +3,8 @@ import { createRoot } from "react-dom/client";
 
 import { BootstrapShell } from "../components/BootstrapShell";
 import { resolveHubSurface } from "../data/hub-availability.js";
-import type { HubEnvelope, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
+import type { CanonicalCharacterResult, ConnectedCampaignEnvelope, HubEnvelope, PartyMemberReadModel, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
 import { ViewReadClient } from "../data/view-read-client";
-import { connectedCampaignToHubEnvelope } from "../server/connected-hub-envelope";
-import { readGameServerContext } from "../server/game-server-context.js";
-import { readInstalledContent } from "../server/effective-content";
-import { readRulesReference } from "../server/rules-reference";
 import { isReadyHubEnvelope } from "../state.js";
 import { markBootstrapResponse } from "../observability/performance.js";
 import {
@@ -18,8 +14,11 @@ import {
 } from "../observability/request-ledger.js";
 import "../styles.css";
 import "../character-page.css";
+import "../board-draft.css";
 
 const PAGE_ASSET_BASE = "/ui/dnd2024-play/assets/";
+const characterSources = new Map<string, ConnectedCampaignEnvelope>();
+const characterScope = (state: string, campaign: string, perspective?: Perspective) => `${state}:${campaign}:${perspective ?? "player"}`;
 const DndInformationHub = lazy(() => import("../components/DndInformationHub")
   .then((module) => ({ default: module.DndInformationHub })));
 const RulesOnlyHub = lazy(() => import("../components/RulesOnlyHub")
@@ -53,6 +52,10 @@ async function readEnvelope(
   campaignId: string | undefined,
   signal: AbortSignal,
 ): Promise<HubEnvelope> {
+  const [{ readGameServerContext }, { connectedCampaignToHubEnvelope }] = await Promise.all([
+    import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
+  ]);
+  if (signal.aborted) throw new DOMException("View replaced", "AbortError");
   const fetchWithSignal: typeof fetch = (input, init = {}) => fetch(input, { ...init, signal });
   const sourceEnvelope = await withinDevelopmentInteraction("hub-load", () => readGameServerContext({
     serverOrigin: window.location.origin,
@@ -60,9 +63,16 @@ async function readEnvelope(
     requestedPerspective: perspective,
     requestedCampaignId: campaignId ?? null,
     mediaAssetBaseUrl: PAGE_ASSET_BASE,
+    deferCharacterDetails: true,
   })) as HubEnvelope;
 
   if (sourceEnvelope.status !== "connected") return sourceEnvelope;
+  if (signal.aborted) throw new DOMException("View replaced", "AbortError");
+  const scope = characterScope(sourceEnvelope.stateSpaceId, sourceEnvelope.campaign.id, sourceEnvelope.audience.perspective);
+  characterSources.delete(scope);
+  characterSources.set(scope, sourceEnvelope);
+  if (characterSources.size > 8) characterSources.delete(characterSources.keys().next().value!);
+  characterClient.invalidate();
 
   const projected = connectedCampaignToHubEnvelope(
     { ...sourceEnvelope, rules: [] },
@@ -102,6 +112,52 @@ const hubClient = new ViewReadClient<{
   validate: isHubEnvelope,
 });
 
+const characterClient = new ViewReadClient<{
+  source: ConnectedCampaignEnvelope; actorId: string;
+}, PartyMemberReadModel>({
+  cacheKey: ({ source, actorId }) => `${source.stateSpaceId}:${source.campaign.id}:${source.audience.perspective}:${actorId}`,
+  validate: (value): value is PartyMemberReadModel => Boolean(value && typeof value === "object" && "sheetState" in value),
+  read: async ({ source, actorId }, signal) => {
+    const [{ readCanonicalCharacter }, { projectParty }] = await Promise.all([
+      import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
+    ]);
+    if (signal.aborted) throw new DOMException("Character replaced", "AbortError");
+    const member = source.party?.find((candidate) => candidate.id === actorId);
+    if (!member) throw new Error("This character is not in the authorized roster.");
+    const request = {
+      fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => {
+        const target = new URL(input instanceof Request ? input.url : input.toString(), window.location.origin);
+        if (target.pathname.includes("/read-models/")) target.searchParams.set("perspective", source.audience.perspective ?? "player");
+        // Media discovery currently uses the ambient host seat, not the narrower preview.
+        if (source.audience.perspective === "player" && target.pathname.endsWith("/media"))
+          return Promise.resolve(new Response(null, { status: 404 }));
+        return fetch(target, { ...init, signal });
+      },
+      origin: window.location.origin, applicationId: source.applicationId, stateSpaceId: source.stateSpaceId,
+      actorId, perspective: source.audience.perspective,
+    };
+    const canonicalResult = await readCanonicalCharacter(request) as CanonicalCharacterResult;
+    return projectParty({ ...source, party: [{ ...member, detailsDeferred: false, canonicalResult,
+      ...(canonicalResult.status === "ready" ? { canonical: canonicalResult.data } : {}),
+    }] })[0];
+  },
+});
+
+async function loadCharacter(envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) {
+  const source = characterSources.get(characterScope(envelope.stateSpaceId,
+    envelope.contextSelection?.selectedCampaignId ?? "", envelope.audience.perspective));
+  if (!source || source.campaign.id !== envelope.contextSelection?.selectedCampaignId ||
+      source.audience.perspective !== envelope.audience.perspective || signal.aborted)
+    throw new Error("Refresh this view before opening a character.");
+  const request = { source, actorId };
+  const cached = characterClient.peek(request);
+  if (cached && cached.value.sheetState.status !== "error" && cached.value.sheetState.status !== "forbidden") return cached.value;
+  const cancel = () => characterClient.cancel();
+  signal.addEventListener("abort", cancel, { once: true });
+  try { return (await characterClient.load(request)).value; }
+  finally { signal.removeEventListener("abort", cancel); }
+}
+
 async function loadEnvelope(
   perspective: Perspective,
   campaignId?: string,
@@ -110,6 +166,7 @@ async function loadEnvelope(
 }
 
 async function loadRulesReference(): Promise<RuleReadModel[]> {
+  const { readRulesReference } = await import("../server/rules-reference");
   return withinDevelopmentInteraction("rules-load", () => readRulesReference({
     serverOrigin: window.location.origin,
     applicationId: "dnd2024",
@@ -117,6 +174,7 @@ async function loadRulesReference(): Promise<RuleReadModel[]> {
 }
 
 async function loadInstalledContent() {
+  const { readInstalledContent } = await import("../server/effective-content");
   return withinDevelopmentInteraction("content-load", () =>
     readInstalledContent({ serverOrigin: window.location.origin, applicationId: "dnd2024" }));
 }
@@ -153,6 +211,25 @@ root.render(
 
 try {
   const initialEnvelope = await loadEnvelope("player");
+  if (typeof EventSource !== "undefined") {
+    const changes = new EventSource("/api/changes?page=dnd2024-play");
+    let connected = false;
+    const invalidate = () => {
+      hubClient.invalidate();
+      characterClient.invalidate();
+      window.dispatchEvent(new Event("dnd2024-view-invalidated"));
+    };
+    changes.addEventListener("invalidate", (event) => {
+      try {
+        const firstConnection = !connected && JSON.parse(event.data).reason === "connected";
+        connected = true;
+        if (firstConnection) return;
+      } catch { /* An unreadable event invalidates rather than reusing private data. */ }
+      invalidate();
+    });
+    changes.addEventListener("error", invalidate);
+    window.addEventListener("pagehide", () => { changes.close(); invalidate(); }, { once: true });
+  }
   markBootstrapResponse(initialEnvelope.status);
   const surface = resolveHubSurface(initialEnvelope);
   root.render(
@@ -162,6 +239,7 @@ try {
           <DndInformationHub
             initialEnvelope={initialEnvelope}
             loadEnvelope={loadReadyEnvelope}
+            loadCharacter={loadCharacter}
             loadRules={loadRulesReference}
             loadContent={loadInstalledContent}
           />

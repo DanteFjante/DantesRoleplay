@@ -733,6 +733,7 @@ export type CurrentSceneAffordance = {
 
 export type TacticalEncounterBoard = {
   revision: number;
+  backgroundMediaOrder?: number | null;
   columns: number;
   rows: number;
   feetPerSquare: number;
@@ -807,6 +808,7 @@ export type CurrentSituationReadModel =
         id: string;
         name: string;
         board?: TacticalEncounterBoard;
+        background?: VisualMedia;
         round?: { id: string; number: number };
         turn?: {
           id: string;
@@ -945,6 +947,7 @@ export type ConnectedCampaignEnvelope = {
     entries: Array<{ kind: string; key: string; label: string; details?: string }>;
     canonical?: CanonicalCharacterData;
     canonicalResult?: CanonicalCharacterResult;
+    detailsDeferred?: boolean;
   }>;
   knowledge: {
     status: "ready" | "empty" | "unavailable";

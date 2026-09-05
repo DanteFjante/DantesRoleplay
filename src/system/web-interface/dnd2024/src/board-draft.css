@@ -1,0 +1,8 @@
+.board-draft-workshop { display: grid; gap: 1rem; min-width: 0; }
+.board-draft-workshop fieldset { min-width: 0; border: 1px solid var(--color-border, #647268); border-radius: .6rem; padding: 1rem; }
+.board-draft-workshop label { display: grid; gap: .4rem; min-width: 0; }
+.board-draft-fields, .board-draft-obstacle { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: .8rem; margin-bottom: 1rem; }
+.board-draft-workshop input:not([type=checkbox]), .board-draft-workshop textarea, .board-draft-workshop select { box-sizing: border-box; width: 100%; min-width: 0; color: #f5ecd8; background: #13211b; border: 1px solid #87958b; padding: .7rem; border-radius: .3rem; }
+.board-draft-workshop textarea { min-height: 6rem; resize: vertical; }
+.board-draft-workshop button { min-height: 44px; margin: .5rem .5rem .5rem 0; padding: .6rem .8rem; }
+.board-draft-workshop :focus-visible { outline: 3px solid #ffdf94; outline-offset: 3px; }

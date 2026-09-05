@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Interactions;
@@ -169,7 +170,8 @@ public sealed class ApplicationReadModelWebEndpointTests
         ReadModels service,
         IPublicApplicationCatalogProvider? catalogs = null,
         string? perspective = null,
-        string? query = null)
+        string? query = null,
+        bool? active = null)
     {
         var context = new DefaultHttpContext();
         if (perspective is not null) context.Request.QueryString = new QueryString("?perspective=" + perspective);
@@ -183,7 +185,9 @@ public sealed class ApplicationReadModelWebEndpointTests
             .BuildServiceProvider();
         var result = await ApplicationReadModelWebEndpoint.ReadAsync(
             "dnd2024", "dnd2024-main", entityId, "dnd2024.query.character-sheet",
-            context, new Seats(seat), service, CancellationToken.None, catalogs);
+            context, new Seats(seat), service, CancellationToken.None, catalogs,
+            active is null ? null : new Audience(seat), active is null ? null : new Bindings(),
+            active is null ? null : new Participation(active.Value));
         await result.ExecuteAsync(context);
         context.Response.Body.Position = 0;
         using var document = await JsonDocument.ParseAsync(context.Response.Body);
@@ -200,6 +204,8 @@ public sealed class ApplicationReadModelWebEndpointTests
         public int Calls { get; private set; }
         public ApplicationReadModelRequest? LastRequest { get; private set; }
         public string? FailureCode { get; init; }
+        public string SelectedId { get; init; } = "encounter.1";
+        public bool ChangeSelection { get; init; }
 
         public Task<ApplicationReadModelResult> ReadAsync(
             ApplicationReadModelRequest request,
@@ -208,7 +214,9 @@ public sealed class ApplicationReadModelWebEndpointTests
             Calls++;
             LastRequest = request;
             if (FailureCode is not null) throw new ApplicationReadModelException(FailureCode, "SECRET source detail");
-            var data = request.RoleBindings.TryGetValue("subject", out var subject)
+            var data = request.QualifiedQueryId == "dnd2024.query.current-scene"
+                ? JsonSerializer.Serialize(new { encounterId = ChangeSelection && Calls > 1 ? "encounter.changed" : SelectedId })
+                : request.RoleBindings.TryGetValue("subject", out var subject)
                 ? JsonSerializer.Serialize(new { subject = new { id = subject } })
                 : JsonSerializer.Serialize(new { roles = request.RoleBindings });
             return Task.FromResult(new ApplicationReadModelResult(
@@ -260,6 +268,18 @@ public sealed class ApplicationReadModelWebEndpointTests
                 exposure = "model-visible",
                 status = "active"
             });
+            if (queryId == "dnd2024.query.selected")
+            {
+                var node = JsonNode.Parse(json)!;
+                node["id"] = request.QualifiedId;
+                if (request.QualifiedId == "dnd2024.query.current-scene")
+                    node["roles"] = new JsonObject { ["campaign"] = "Trusted campaign." };
+                else node["campaignSelection"] = new JsonObject
+                {
+                    ["queryId"] = "dnd2024.query.current-scene", ["entityIdField"] = "encounterId"
+                };
+                json = node.ToJsonString();
+            }
             return new(new("dnd2024", "query", queryId, "Test query", "Test query.", "", "active", 1,
                 new string('C', 64), "test", "test.json"), json);
         }
@@ -271,5 +291,74 @@ public sealed class ApplicationReadModelWebEndpointTests
         public EffectiveApplicationContentResult EffectiveContent(EffectiveApplicationContentRequest request) =>
             throw new NotSupportedException();
         public ReadableRulesResult ReadableRules(ReadableRulesRequest request) => throw new NotSupportedException();
+    }
+
+    [Theory]
+    [InlineData("encounter.1", true, false, 200, 3)]
+    [InlineData("encounter.foreign", true, false, 403, 1)]
+    [InlineData("encounter.1", false, false, 403, 0)]
+    [InlineData("encounter.1", true, true, 409, 3)]
+    public async Task Campaign_selected_read_is_bound_to_active_participation_and_current_selection(
+        string target, bool active, bool changed, int expectedStatus, int expectedCalls)
+    {
+        var reads = new ReadModels { ChangeSelection = changed };
+        var result = await ReadAsync(new(true, "player", "dnd2024", "campaign.1", "actor.aric"),
+            target, reads, new QueryCatalog("dnd2024.query.selected", "encounter"), active: active);
+        Assert.Equal(expectedStatus, result.StatusCode);
+        Assert.Equal(expectedCalls, reads.Calls);
+        if (expectedStatus == 200) Assert.Equal(MechanicAudienceContext.Player, reads.LastRequest!.Audience);
+        else Assert.DoesNotContain("encounter.changed", result.Body.GetRawText());
+    }
+
+    [Fact]
+    public async Task Selected_read_rejects_a_foreign_campaign_before_projection()
+    {
+        var reads = new ReadModels();
+        var result = await ReadAsync(new(true, "player", "dnd2024", "campaign.1", "actor.aric"),
+            "encounter.1", reads, new QueryCatalog("dnd2024.query.selected", "encounter"),
+            query: "campaignId=campaign.foreign", active: true);
+        Assert.Equal(403, result.StatusCode);
+        Assert.Equal(0, reads.Calls);
+    }
+
+    [Theory]
+    [InlineData("dnd2024.query.character-sheet", "encounterId")]
+    [InlineData("other.query.scene", "encounterId")]
+    [InlineData("dnd2024.query.current-scene", "location.id")]
+    [InlineData("dnd2024.query.current-scene", "")]
+    public void Selection_metadata_rejects_self_cross_owner_and_nested_paths(string queryId, string field)
+    {
+        var app = ApplicationIdentifier.Parse("dnd2024");
+        var node = JsonNode.Parse(new QueryNavigator("dnd2024.query.character-sheet", ["subject"])
+            .Inspect(new(app, app.Value, "dnd2024.query.character-sheet")).ContentJson)!;
+        node["campaignSelection"] = new JsonObject { ["queryId"] = queryId, ["entityIdField"] = field };
+        Assert.Throws<ArgumentException>(() => ApplicationQueryContract.Parse(node.ToJsonString(), app));
+    }
+
+    private sealed class Audience(LocalKnowledgeSeatSnapshot seat) : IAuthorizedKnowledgeAudiencePolicy
+    {
+        public Task<KnowledgeAudienceResolution> ResolveAsync(string campaignId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new KnowledgeAudienceResolution(new(seat.PrincipalId, campaignId, seat.Role,
+                seat.ActorId, "policy.1")));
+    }
+
+    private sealed class Participation(bool active) : IKnowledgeActorParticipationVerifier
+    {
+        public Task<KnowledgeParticipationResolution> ResolveAsync(KnowledgeApplicationBinding binding,
+            string actorId, CancellationToken cancellationToken = default) => Task.FromResult(active
+                ? new KnowledgeParticipationResolution(true, "participation.1")
+                : KnowledgeParticipationResolution.MissingActor());
+    }
+
+    private sealed class Bindings : IKnowledgeApplicationBindingResolver
+    {
+        public Task<KnowledgeApplicationBinding?> ResolveAsync(string campaignId, CancellationToken cancellationToken = default)
+        {
+            var directory = new DirectoryInfo(AppContext.BaseDirectory);
+            while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "AGENTS.md"))) directory = directory.Parent;
+            var json = File.ReadAllText(Path.Combine(directory!.FullName, "catalog", "applications", "dnd2024", "metadata", "authorized-knowledge.json"));
+            Assert.True(KnowledgeApplicationBindingDocument.TryParse(json, "dnd2024", out var document));
+            return Task.FromResult<KnowledgeApplicationBinding?>(document.Bind("dnd2024", "dnd2024-main", "campaign.1", "binding.1"));
+        }
     }
 }

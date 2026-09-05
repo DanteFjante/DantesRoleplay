@@ -7,7 +7,7 @@ import {
   useEffect,
   useId,
 } from "react";
-import type { TacticalEncounterBoard } from "../data/hub-types";
+import type { TacticalEncounterBoard, VisualMedia } from "../data/hub-types";
 import { Icon } from "./Icon";
 
 type Viewport = { zoom: number; x: number; y: number };
@@ -24,8 +24,9 @@ function clampZoom(value: number) {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
 }
 
-export function TacticalBoard({ board, placeholder = false }: { board: TacticalEncounterBoard; placeholder?: boolean }) {
+export function TacticalBoard({ board, placeholder = false, background, title = "Encounter positions" }: { board: TacticalEncounterBoard; placeholder?: boolean; background?: VisualMedia; title?: string }) {
   const gridId = useId();
+  const headingId = useId();
   const viewportRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<Drag | null>(null);
@@ -118,9 +119,9 @@ export function TacticalBoard({ board, placeholder = false }: { board: TacticalE
 
   const zoomPercent = Math.round(viewport.zoom * 100);
   return (
-    <section className="tactical-board-panel" aria-labelledby="tactical-board-title">
+    <section className="tactical-board-panel" aria-labelledby={headingId}>
       <header className="tactical-board-heading">
-        <div><span className="eyebrow">Tactical board</span><h2 id="tactical-board-title">Encounter positions</h2></div>
+        <div><span className="eyebrow">Tactical board</span><h2 id={headingId}>{title}</h2></div>
         <p>{board.columns} by {board.rows} squares · {placeholder ? "Illustrative placeholder; no recorded scale" : `${board.feetPerSquare} feet per square`}</p>
       </header>
       <div className="map-viewport-toolbar" role="toolbar" aria-label="Tactical board view controls">
@@ -155,7 +156,10 @@ export function TacticalBoard({ board, placeholder = false }: { board: TacticalE
         >
           <svg className="tactical-board-svg" viewBox={`0 0 ${board.columns} ${board.rows}`} aria-label="Encounter grid" role="group">
             <defs><pattern id={gridId} width="1" height="1" patternUnits="userSpaceOnUse"><path d="M 1 0 L 0 0 0 1" fill="none" stroke="#748578" strokeWidth="0.025" /></pattern></defs>
-            <g data-layer="background"><rect width={board.columns} height={board.rows} fill="#17211d" /></g>
+            <g data-layer="background"><rect width={board.columns} height={board.rows} fill="#17211d" />
+              {background && background.width * board.rows === background.height * board.columns ?
+                <image href={background.imageUrl} width={board.columns} height={board.rows} preserveAspectRatio="none" aria-label={background.alt} /> : null}
+            </g>
             <g data-layer="terrain" aria-hidden="true">{board.terrain.map((item) => <rect key={item.id} {...item.area} fill="#344e32" stroke="#aac494" strokeWidth="0.03" strokeDasharray="0.1 0.07" />)}</g>
             <g data-layer="obstacles" aria-hidden="true">{board.obstacles.map((item) => <rect key={item.id} {...item.area} fill="#754d39" stroke="#d4a06f" strokeWidth="0.04" />)}</g>
             <g data-layer="grid" aria-hidden="true"><rect width={board.columns} height={board.rows} fill={`url(#${gridId})`} /></g>
