@@ -14,7 +14,13 @@ public sealed record CanonicalKnowledgeDocument(
     string DisplayText,
     string SearchText,
     string PresentationKind,
-    string Revision);
+    string Revision)
+{
+    // Proposition text without retrieval labels. New dossier consumers must not recover it
+    // by splitting DisplayText, which can contain names whose identity is undisclosed.
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string? Summary { get; init; }
+}
 
 public sealed record KnowledgeCampaignScope(
     string CampaignId,

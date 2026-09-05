@@ -209,7 +209,7 @@ public sealed class ApplicationKnowledgeCanonicalSource(
         return new(entity.EntityId, worldId, kind.Kind, status,
             kind.ArchivedStatuses.Contains(status, StringComparer.Ordinal), subject.EntityId,
             subject.Name, subjectIsActiveLocation,
-            validFrom, validUntil, display, search, kind.PresentationKind, revision);
+            validFrom, validUntil, display, search, kind.PresentationKind, revision) { Summary = summary };
     }
 
     private async Task<IReadOnlyList<EcsComponentView>?> ReadComponentsAsync(

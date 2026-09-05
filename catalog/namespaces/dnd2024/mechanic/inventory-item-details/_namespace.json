@@ -1,0 +1,10 @@
+{
+  "id": "dnd2024.mechanic.inventory-item-details",
+  "owner": "dnd2024",
+  "description": "Namespace for the approved read-only inventory item Details projection.",
+  "allowedKinds": ["mechanic"],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "IV00 approved inventory-item-details.project on 5 September 2026. This registration supports authored catalog discovery; live synchronization and publication remain IV10."
+}

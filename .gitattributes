@@ -3,6 +3,9 @@
 ###############################################################################
 * text=auto
 
+# This application query pins the exact multiline JavaScript bytes across checkouts.
+catalog/applications/dnd2024/mechanics/data/dnd2024.mechanic.inventory-item-details.project.js text eol=lf
+
 ###############################################################################
 # Set default behavior for command prompt diff.
 #

@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.Mechanics;
@@ -31,7 +32,7 @@ public static class ApplicationCatalogRecordContent
     {
         ArgumentNullException.ThrowIfNull(query);
         using var schema = JsonDocument.Parse(query.OutputSchemaJson);
-        return JsonSerializer.Serialize(new
+        var content = JsonSerializer.Serialize(new
         {
             id = query.Id,
             category = query.Category,
@@ -52,6 +53,12 @@ public static class ApplicationCatalogRecordContent
                 ? "model-visible" : "binding-only",
             status = query.Status
         });
+        // Preserve legacy fingerprints byte-for-byte while retaining the opt-in input
+        // contract when importing a parameterized query into the canonical catalog.
+        if (query.InputSchemaJson is null) return content;
+        var document = JsonNode.Parse(content)!.AsObject();
+        document["inputSchema"] = JsonNode.Parse(query.InputSchemaJson);
+        return document.ToJsonString();
     }
 
     public static string Fingerprint(string contentJson)

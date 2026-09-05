@@ -110,22 +110,25 @@ public static class ApplicationCapabilityContractAdapter
         var roles = query.Roles.OrderBy(value => value.Key, StringComparer.Ordinal)
             .Select(value => new CapabilityRoleContract(value.Key, true, value.Value, []))
             .ToArray();
+        var inputSchema = query.InputSchemaJson ?? EmptyInputSchema;
+        var example = query.InputSchemaJson is null ? "{}" : CapabilityContractBuilder.MinimalExample(inputSchema);
+        var invalidExample = query.InputSchemaJson is null ? "{\"__unexpected\":true}" : CapabilityContractBuilder.MinimalInvalidExample(inputSchema);
         return CapabilityContractBuilder.Create(
             query.Id, record.Version, "application-query", record.ContentFingerprint,
             applicationId.Value, query.Name, query.Description, Lifecycle(query.Status),
-            new(true, false, false), EmptyInputSchema, CapabilityContractSchemaStatus.Authored,
+            new(true, false, false), inputSchema, CapabilityContractSchemaStatus.Authored,
             query.OutputSchemaJson, CapabilityContractSchemaStatus.Authored,
             Scope(stateSpaceId), roles,
             new(query.Exposure == ApplicationQueryExposure.ModelVisible ? "model-visible-query" : "binding-only-query",
                 "read-application-state", "application-state"),
             false, false, ["procedure.system.inspect"],
             [
-                new("valid-read", "{}"),
-                new("invalid-unknown-property", "{\"__unexpected\":true}", ExpectedValid: false)
+                new("valid-read", example),
+                new("invalid-unknown-property", invalidExample, ExpectedValid: false)
             ],
             [new("APPLICATION_QUERY_STALE", "The selected query no longer matches the active application catalog.",
                 "Rediscover the current query and retry the read.")],
-            [new(query.Id, "Rediscover and run the current query contract.", "{}")]);
+            [new(query.Id, "Rediscover and run the current query contract.", example)]);
     }
 
     private static CapabilityScopeContract Scope(string? stateSpaceId) => new(

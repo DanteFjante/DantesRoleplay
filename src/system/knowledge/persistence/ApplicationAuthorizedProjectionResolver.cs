@@ -217,12 +217,13 @@ public sealed class ApplicationAuthorizedProjectionResolver(
                 if (document is null) return Unavailable();
                 if (document.Archived || document.ValidFromMinute > scope.CurrentMinute ||
                     document.ValidUntilMinute <= scope.CurrentMinute) continue;
+                if (string.IsNullOrWhiteSpace(document.Summary) || document.Summary.Length > 1500) return Unavailable();
                 documents.Add(document);
                 materializedBytes += Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(document, Json));
                 if (materializedBytes > 1_048_576) return Unavailable();
                 snapshot.References[id] = new(id, new Dictionary<string, string>
                 {
-                    ["authorized-knowledge"] = JsonSerializer.Serialize(new { document.SubjectId, document.DisplayText,
+                    ["authorized-knowledge"] = JsonSerializer.Serialize(new { document.SubjectId, displayText = document.Summary,
                         document.PresentationKind, state = effective[id].State }, Json)
                 });
             }

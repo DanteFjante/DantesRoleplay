@@ -1,12 +1,12 @@
 # Item view implementation plan
 
-Version 1.2 · 5 September 2026
+Version 1.3 · 5 September 2026
 
 ## Purpose and delivery boundary
 
 Build a full item dossier that opens from a character's inventory. It has three tabs: **Details**, **Known recipes**, and **Known uses**. Recipes are split into **Makes this item** and **Uses this item**, as requested. The dossier describes the actual item instance and the knowledge of the selected character, while preserving the current character sheet, nested inventory, and DM and Player switch.
 
-This document specifies implementation work; it is not evidence that the feature exists or has passed acceptance. IV00 contracts were approved by the user on 5 September 2026. IV01 is implemented with focused validation; full-suite and published-feature acceptance are not claimed. IV02–IV10 remain pending. The concrete review packet is [item-view-contracts/README.md](item-view-contracts/README.md). The requested document does not itself authorize new runtime identities, catalog synchronization, or activation. Apply the repository working agreement at each concrete boundary, using authorization already present in the implementation task rather than repeatedly requesting it.
+This document specifies implementation work; it is not evidence that the published feature exists. IV00 contracts were approved by the user on 5 September 2026. IV01 and the supported IV02 Details projection are implemented; IV03–IV10 remain pending. Validation results and exclusions are recorded in the implementation commits. The concrete review packet is [item-view-contracts/README.md](item-view-contracts/README.md). The requested document does not itself authorize new runtime identities, catalog synchronization, or activation. Apply the repository working agreement at each concrete boundary, using authorization already present in the implementation task rather than repeatedly requesting it.
 
 The first release is read-only. Opening a tab must not equip, consume, identify, reveal, craft, advance time, or record a discovery. Use and Start crafting are explicitly deferred to follow-up slices after this release. Do not infer missing recipes, properties, or uses from prose or item names.
 
@@ -122,7 +122,7 @@ Execute sequentially by default. Dependencies allow independent preparation, but
 
 ## IV01 Authorized observer and effective item knowledge
 
-**Status:** Implemented and focused checks passed. The generic input, authorization, bounded materialization and knowledge-context foundation is available in source. No item query is registered yet; field disclosure and rendering remain with IV02–IV08. Full-suite acceptance remains pending while other tasks own active full runners. See the implementation commit message for the validation receipt.
+**Status:** Implemented and focused checks passed. The generic input, authorization, bounded materialization and knowledge-context foundation is available in source. IV01 itself registered no item query; IV02 adds Details, while rendering and the remaining tabs stay with IV03–IV08. See the implementation commit messages for validation results and acceptance boundaries.
 
 **Owner and files:** Generic authorization and knowledge owner; existing read-model endpoint, `READMODELS` contracts/materialization, `KNOWLEDGE` resolver and participation owners, and catalog knowledge declarations. Proposed focused test: `DantesRoleplay.Tests/ItemViewAudienceTests.cs`.
 
@@ -134,7 +134,9 @@ Execute sequentially by default. Dependencies allow independent preparation, but
 
 ## IV02 Canonical item Details projection
 
-**Owner and files:** D&D catalog owner; proposed Details query and mechanic under `APP/queries/data/` and `APP/mechanics/data/`, existing item schemas, and proposed `DantesRoleplay.Tests/ItemDetailsProjectionTests.cs`.
+**Status:** Implemented in the authored catalog, without live activation. The closed binding-only Details query pins its exact mechanic and output schema. Supported definition measurements/facets, instance quantity/equipment, DM durability/attunement and authorized statements are covered by real database/sandbox tests. Raw private facets remain DM-only; unsupported rule references and charges report unavailable dependencies. No quantity-zero migration is introduced: the current quantity schema requires a positive integer, while missing quantity is null and authored zero measurements/durability remain zero. The implementation commit contains the verification receipt.
+
+**Owner and files:** D&D catalog owner; Details query and mechanic under `APP/queries/data/` and `APP/mechanics/data/`, existing item schemas, and `DantesRoleplay.Tests/ItemDetailsProjectionTests.cs`.
 
 **Work:** Materialize the subject's bounded inventory and referenced definitions. Return known instance identity and applicable property groups. Use each field's existing precedence rule; do not introduce a blanket JSON merge between instance and definition. Include quantity, containment, equipment, physical properties, and applicable rule facets only when authored and authorized. Preserve units and distinguish unknown from zero. Return display-safe provenance and structured omission information. Reuse canonical calculations and child mechanics; do not calculate weapon or crafting rules in React or C#.
 
