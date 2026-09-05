@@ -10,7 +10,7 @@ namespace DantesRoleplay.Tests;
 public sealed class CatalogWorldMapVisualTests : IDisposable
 {
     private const string Visual = "game.core.world.map.visual";
-    private const string Hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    private const string AssetKey = "fixture-map-v1";
     private readonly SqliteFixture _fixture = new();
     private readonly string _copy = Path.Combine(Path.GetTempPath(), $"world-map-visual-{Guid.NewGuid():n}");
 
@@ -55,11 +55,11 @@ public sealed class CatalogWorldMapVisualTests : IDisposable
 
         AssertSchema(component.Schema, playerOnly, SchemaValueStatus.Valid);
         AssertSchema(component.Schema, dmOnly, SchemaValueStatus.Valid);
-        Assert.Equal(Hash, SelectBlob(playerOnly, "player"));
-        Assert.Null(SelectBlob(playerOnly, "dm"));
-        Assert.Equal(Hash, SelectBlob(dmOnly, "dm"));
-        Assert.Null(SelectBlob(dmOnly, "player"));
-        Assert.Null(SelectBlob(dmOnly, "spectator"));
+        Assert.Equal(AssetKey, SelectAsset(playerOnly, "player"));
+        Assert.Null(SelectAsset(playerOnly, "dm"));
+        Assert.Equal(AssetKey, SelectAsset(dmOnly, "dm"));
+        Assert.Null(SelectAsset(dmOnly, "player"));
+        Assert.Null(SelectAsset(dmOnly, "spectator"));
     }
 
     [Theory]
@@ -100,13 +100,13 @@ public sealed class CatalogWorldMapVisualTests : IDisposable
             validator.Validate(compilation.ProfileId, compilation.NormalizedSchema, value).Status);
     }
 
-    private static string? SelectBlob(string value, string audience)
+    private static string? SelectAsset(string value, string audience)
     {
         if (audience is not ("player" or "dm")) return null;
         using var document = System.Text.Json.JsonDocument.Parse(value);
         return document.RootElement.GetProperty("status").GetString() == "active"
             && document.RootElement.GetProperty("variants").TryGetProperty(audience, out var variant)
-                ? variant.GetProperty("sha256").GetString()
+                ? variant.GetProperty("assetKey").GetString()
                 : null;
     }
 
@@ -118,21 +118,8 @@ public sealed class CatalogWorldMapVisualTests : IDisposable
             {
                 [audience] = new
                 {
-                    sha256 = Hash,
-                    mimeType = "image/png",
-                    width = 1448,
-                    height = 1086,
-                    alt,
-                    caption = "",
-                    order = 0,
-                    provenance = new
-                    {
-                        kind = "original",
-                        credit = "DantesRoleplay",
-                        source = "reviewed map",
-                        reviewedOn = "2026-09-01",
-                        version = 1
-                    }
+                    assetKey = AssetKey,
+                    alt
                 }
             }
         });

@@ -274,7 +274,7 @@ public sealed class Dnd2024WeaponActivityRepairTests
                 ["armorClass"] =
                 [
                     Child("dnd2024.mechanic.armor-class.read", "subject", target.Id,
-                        "{\"test\":\"armor-class-read\",\"subjectId\":\"target\",\"sourceEntityId\":\"target\",\"armorClass\":15,\"calculationMechanicId\":\"dnd2024.mechanic.armor-class.read\"}")
+                        "{\"test\":\"armor-class-read\",\"subjectId\":\"target\",\"sourceEntityId\":\"target\",\"armorClass\":15,\"calculationMechanicId\":\"dnd2024.mechanic.armor-class.read\",\"legacySourcePendingMigration\":false,\"monkUnarmoredDefenseSelected\":false}")
                 ]
             }
         });

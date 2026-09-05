@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Security.Cryptography;
+using System.Text;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
@@ -166,7 +168,10 @@ public sealed class ApplicationReadinessService(
         {
             var available = await db.Database.CanConnectAsync(cancellationToken);
             checks.Add(available
-                ? Ready("database", "DATABASE_AVAILABLE", "The authoritative database is available.")
+                ? Ready("database", "DATABASE_AVAILABLE", "The authoritative database is available.",
+                    fingerprint: Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
+                        db.Database.ProviderName + "\n" + db.Database.GetDbConnection().DataSource))),
+                    detail: "Provider and data-source identity; not a mutable database-content hash.")
                 : Failed("database", "DATABASE_UNAVAILABLE", "The authoritative database is unavailable.",
                     "restore-database", "Restore the configured database and request readiness again."));
         }

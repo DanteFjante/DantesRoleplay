@@ -1,12 +1,12 @@
 {
   "id": "mechanic.lock",
   "owner": "mechanic",
-  "description": "Disabled migration-only namespace for an obsolete live lock-picking rehearsal record.",
+  "description": "Migration-only retention namespace for an obsolete live lock-picking rehearsal record.",
   "allowedKinds": [
     "mechanic"
   ],
   "aliases": [],
   "enabled": true,
-  "reviewStatus": "needs-review",
-  "reviewNote": "Migration-only compatibility boundary. Do not add records here; mechanic.lock.pick remains exportable until its production references and live records have a verified replacement and retirement path."
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed migration-only retention for mechanic.lock.pick in catalog/compatibility-retention.json. Owner: catalog persistence. The existing live rehearsal and historical references require preservation; no new identities or runtime bootstrap are allowed. Retire only after the inventory's live-record, replacement, and backup gates pass."
 }

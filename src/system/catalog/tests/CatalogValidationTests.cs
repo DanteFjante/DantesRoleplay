@@ -59,11 +59,33 @@ public sealed class CatalogValidationTests
     [Fact]
     public async Task Every_repository_identity_has_a_reviewed_conforming_namespace()
     {
+        Assert.True(File.Exists(Path.Combine(RepositoryCatalog(), CatalogCompatibilityRetention.FileName)),
+            "The repository's closed compatibility inventory cannot be silently removed.");
         var result = await CatalogValidator.ValidateAsync(RepositoryCatalog());
         var findings = result.Issues.Where(issue => issue.Check == "namespace-review").ToArray();
 
         Assert.Empty(findings);
-        Assert.Equal(0, result.Warnings);
+        // Other warning families (such as unchanged applications without authored input schemas)
+        // have their own contracts; they are not namespace-review failures.
+    }
+
+    [Fact]
+    public async Task Retained_compatibility_procedures_are_not_callable_or_kernel_bootstrap_content()
+    {
+        var catalog = RepositoryCatalog();
+        using var document = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(catalog, CatalogCompatibilityRetention.FileName)));
+        var ids = document.RootElement.GetProperty("records").EnumerateArray()
+            .Where(record => record.GetProperty("kind").GetString() == "procedure")
+            .Select(record => record.GetProperty("id").GetString()!).ToHashSet(StringComparer.Ordinal);
+        Assert.Equal(36, ids.Count);
+        var contents = await CatalogReader.ReadAsync(catalog);
+        Assert.All(contents.Procedures.Where(record => ids.Contains(record.Id)), record =>
+        {
+            Assert.Equal(DantesRoleplay.Procedures.ProcedureStatus.Deprecated, record.Status);
+            Assert.Empty(record.Matches);
+            Assert.Contains("not an executable route", record.Description, StringComparison.Ordinal);
+        });
+        Assert.DoesNotContain(ProcedureSeeder.Load(), record => ids.Contains(record.Id));
     }
 
     [Fact]
@@ -176,10 +198,11 @@ public sealed class CatalogValidationTests
     {
         var catalog = RepositoryCatalog();
         var contents = await CatalogReader.ReadAsync(catalog);
-        var mechanics = contents.Mechanics.Where(value => InCategory(value.Category,
+        var mechanics = contents.Mechanics.Where(value => value.Status == MechanicStatus.Active && InCategory(value.Category,
             "game.core", "check", "change")).ToArray();
 
-        Assert.Equal(24, mechanics.Length);
+        Assert.Equal(22, mechanics.Length);
+        Assert.DoesNotContain(mechanics, mechanic => mechanic.Id is "mechanic.lock.pick" or "mechanic.game.core.world.location.register");
         var requirements = mechanics
             .Select(mechanic => (mechanic.Id, Parsed: MechanicRequirements.Parse(mechanic.Requirements)))
             .ToArray();

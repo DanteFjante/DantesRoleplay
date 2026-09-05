@@ -146,7 +146,7 @@ public sealed class CatalogWorldFeature19Tests : IDisposable
         var after = await ChronologyStateAsync(db);
 
         Assert.Equal(before, after);
-        Assert.Equal(4, after.Count);
+        Assert.Equal(before.Count, after.Count);
     }
 
     private static void AssertCatalogContract(CatalogContents contents)
@@ -162,6 +162,7 @@ public sealed class CatalogWorldFeature19Tests : IDisposable
         var relationships = Assert.IsType<RelationshipsFile>(contents.Relationships).Relationships;
         var records = contents.Entities
             .Where(entity => entity.Components.Any(component => component.DefinitionId == Component))
+            .Where(entity => relationships.Any(link => link.From == entity.Id && link.To == Root && link.Kind == InWorld))
             .OrderBy(entity => entity.Id, StringComparer.Ordinal)
             .ToArray();
         Assert.Equal(4, records.Length);
@@ -293,6 +294,8 @@ public sealed class CatalogWorldFeature19Tests : IDisposable
             Directory.CreateDirectory(Path.Combine(target, Path.GetRelativePath(source, directory)));
         foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
             File.Copy(file, Path.Combine(target, Path.GetRelativePath(source, file)));
+
+        WorldFeatureFixture.RestoreRelationships(source, target);
     }
 
     private sealed record ChronologyState(string Status, string Title, string Summary, string CalendarId,

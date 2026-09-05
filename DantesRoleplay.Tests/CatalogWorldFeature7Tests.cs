@@ -146,6 +146,8 @@ public sealed class CatalogWorldFeature7Tests : IDisposable
         Directory.CreateDirectory(target);
         foreach (var directory in Directory.EnumerateDirectories(source, "*", SearchOption.AllDirectories)) Directory.CreateDirectory(Path.Combine(target, Path.GetRelativePath(source, directory)));
         foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories)) File.Copy(file, Path.Combine(target, Path.GetRelativePath(source, file)));
+
+        WorldFeatureFixture.RestoreRelationships(source, target);
     }
 
     private sealed record WorldCounts(int Entities, int Components, int Containments, int Relationships, int Events, int Notifications);

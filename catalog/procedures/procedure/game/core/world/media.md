@@ -2,7 +2,7 @@
 id: procedure.game.core.world.media
 category: game.core.world.media
 name: Govern reviewed entity visual media
-governs: commit(kind: "component") declaring game.core.world.media.visual; commit(kind: "effects") adding, replacing, or removing reviewed visual-media bindings on existing entities; commit(kind: "system.blob-upload.begin"); commit(kind: "system.blob-upload.finalize"); query(kind: "system.blobs")
+governs: commit(kind: "system.component-type.register") registering the existing owner schema; commit(kind: "system.world-state.sync") synchronizing reviewed visual-media bindings on existing entities; commit(kind: "system.blob-upload.begin"); commit(kind: "system.blob-upload.finalize"); query(kind: "system.blobs")
 status: active
 createdBy: "seed"
 changeNote: "Re-seeded: the bootstrap file changed."
@@ -42,6 +42,8 @@ presentation metadata only.
    infer a selector or participant from prose.
 8. Replace the complete component after reading the current entity revision. Use `draft`, `active`,
    and `archived` only for media lifecycle; component revisions retain history and rollback evidence.
+   Use the owner's exact application/state-space synchronization contract, with expected revisions
+   and a reviewed dry run; never bypass it through retired loose component or effects calls.
 
 ## Constraints
 - The component contains no owner/entity/campaign ID, URL, path, map geometry, coordinates,

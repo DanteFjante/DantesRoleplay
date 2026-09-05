@@ -1,0 +1,439 @@
+{
+  "schemaVersion": 1,
+  "owner": "D&D catalog maintenance and catalog persistence",
+  "classification": "migration-only",
+  "reason": "These legacy-store records and the obsolete rehearsal still exist in the live catalog export. Active gameplay uses application catalogs and registered optional extensions, not these legacy-store routes.",
+  "retirementCondition": "Remove only after an exact live export proves no retained record, historical operation or source dependency requires the identity, replacement public contracts pass, and database plus blob backup readback succeeds.",
+  "namespacePolicy": "Reviewed only for the exact retained record inventory below. New legacy identities are forbidden by the catalog conformance gate. No approval to reactivate old commit routes or expose these records in ordinary application discovery.",
+  "evidence": "Live export and consistent SQLite-plus-blobs backup verified during Slice 20; original source is recoverable in version control before this change.",
+  "namespaces": ["dnd2024", "mechanic.dnd2024", "procedure.mechanic.dnd2024", "source.dnd2024", "weapon.dnd2024", "item.dnd2024", "mechanic.lock"],
+  "recordKinds": ["mechanic", "procedure", "entity", "component-definition"],
+  "records": [
+    { "id": "mechanic.lock.pick", "path": "mechanics/mechanic/lock/pick.md", "kind": "mechanic" },
+    {
+      "id": "dnd2024.abilities",
+      "path": "components/dnd2024/abilities.json",
+      "kind": "component-definition"
+    },
+    {
+      "id": "dnd2024.armor-class",
+      "path": "components/dnd2024/armor-class.json",
+      "kind": "component-definition"
+    },
+    {
+      "id": "dnd2024.character-level",
+      "path": "components/dnd2024/character-level.json",
+      "kind": "component-definition"
+    },
+    {
+      "id": "dnd2024.encounter-initiative-order",
+      "path": "components/dnd2024/encounter-initiative-order.json",
+      "kind": "component-definition"
+    },
+    {
+      "id": "dnd2024.hit-points",
+      "path": "components/dnd2024/hit-points.json",
+      "kind": "component-definition"
+    },
+    {
+      "id": "dnd2024.mechanic.armor-class.write",
+      "path": "mechanics/dnd2024/mechanic/armor-class/write.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "dnd2024.mechanic.character-level.record",
+      "path": "mechanics/dnd2024/mechanic/character-level/record.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "dnd2024.mechanic.check.ability",
+      "path": "mechanics/dnd2024/mechanic/check/ability.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "dnd2024.mechanic.dice",
+      "path": "mechanics/dnd2024/mechanic/dice.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "dnd2024.mechanic.encounter-initiative-order",
+      "path": "mechanics/dnd2024/mechanic/encounter-initiative-order.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "dnd2024.mechanic.hit-points.write",
+      "path": "mechanics/dnd2024/mechanic/hit-points/write.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "dnd2024.mechanic.initiative.roll",
+      "path": "mechanics/dnd2024/mechanic/initiative/roll.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "dnd2024.mechanic.saving-throw",
+      "path": "mechanics/dnd2024/mechanic/saving-throw.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "dnd2024.mechanic.saving-throw-proficiencies.record",
+      "path": "mechanics/dnd2024/mechanic/saving-throw-proficiencies/record.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "dnd2024.mechanic.skill-proficiencies.record",
+      "path": "mechanics/dnd2024/mechanic/skill-proficiencies/record.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "dnd2024.mechanic.weapon-attack",
+      "path": "mechanics/dnd2024/mechanic/weapon-attack.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "dnd2024.mechanic.weapon-damage.apply",
+      "path": "mechanics/dnd2024/mechanic/weapon-damage/apply.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "dnd2024.mechanic.weapon-damage.roll",
+      "path": "mechanics/dnd2024/mechanic/weapon-damage/roll.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "dnd2024.mechanic.weapon-proficiencies.write",
+      "path": "mechanics/dnd2024/mechanic/weapon-proficiencies/write.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "dnd2024.mechanic.weapon-profile.write",
+      "path": "mechanics/dnd2024/mechanic/weapon-profile/write.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "dnd2024.playtest-character-record",
+      "path": "components/dnd2024/playtest-character-record.json",
+      "kind": "component-definition"
+    },
+    {
+      "id": "dnd2024.procedure.mechanic.abilities",
+      "path": "procedures/dnd2024/procedure/mechanic/abilities.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "dnd2024.procedure.mechanic.armor-class",
+      "path": "procedures/dnd2024/procedure/mechanic/armor-class.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "dnd2024.procedure.mechanic.character-level",
+      "path": "procedures/dnd2024/procedure/mechanic/character-level.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "dnd2024.procedure.mechanic.check.ability",
+      "path": "procedures/dnd2024/procedure/mechanic/check/ability.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "dnd2024.procedure.mechanic.dice",
+      "path": "procedures/dnd2024/procedure/mechanic/dice.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "dnd2024.procedure.mechanic.encounter-initiative-order",
+      "path": "procedures/dnd2024/procedure/mechanic/encounter-initiative-order.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "dnd2024.procedure.mechanic.hit-points",
+      "path": "procedures/dnd2024/procedure/mechanic/hit-points.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "dnd2024.procedure.mechanic.initiative",
+      "path": "procedures/dnd2024/procedure/mechanic/initiative.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "dnd2024.procedure.mechanic.play",
+      "path": "procedures/dnd2024/procedure/mechanic/play.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "dnd2024.procedure.mechanic.ruleset",
+      "path": "procedures/dnd2024/procedure/mechanic/ruleset.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "dnd2024.procedure.mechanic.saving-throw",
+      "path": "procedures/dnd2024/procedure/mechanic/saving-throw.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "dnd2024.procedure.mechanic.skill-proficiencies",
+      "path": "procedures/dnd2024/procedure/mechanic/skill-proficiencies.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "dnd2024.procedure.mechanic.source-registry",
+      "path": "procedures/dnd2024/procedure/mechanic/source-registry.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "dnd2024.procedure.mechanic.weapon-attack",
+      "path": "procedures/dnd2024/procedure/mechanic/weapon-attack.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "dnd2024.procedure.mechanic.weapon-damage.apply",
+      "path": "procedures/dnd2024/procedure/mechanic/weapon-damage/apply.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "dnd2024.procedure.mechanic.weapon-damage.roll",
+      "path": "procedures/dnd2024/procedure/mechanic/weapon-damage/roll.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "dnd2024.procedure.mechanic.weapon-proficiencies",
+      "path": "procedures/dnd2024/procedure/mechanic/weapon-proficiencies.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "dnd2024.procedure.mechanic.weapon-profile",
+      "path": "procedures/dnd2024/procedure/mechanic/weapon-profile.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "dnd2024.saving-throw-proficiencies",
+      "path": "components/dnd2024/saving-throw-proficiencies.json",
+      "kind": "component-definition"
+    },
+    {
+      "id": "dnd2024.skill-proficiencies",
+      "path": "components/dnd2024/skill-proficiencies.json",
+      "kind": "component-definition"
+    },
+    {
+      "id": "dnd2024.source",
+      "path": "components/dnd2024/source.json",
+      "kind": "component-definition"
+    },
+    {
+      "id": "dnd2024.source.srd-5.2.1",
+      "path": "world/entities/dnd2024/source/srd-5/2/1.json",
+      "kind": "entity"
+    },
+    {
+      "id": "dnd2024.weapon-proficiencies",
+      "path": "components/dnd2024/weapon-proficiencies.json",
+      "kind": "component-definition"
+    },
+    {
+      "id": "dnd2024.weapon-profile",
+      "path": "components/dnd2024/weapon-profile.json",
+      "kind": "component-definition"
+    },
+    {
+      "id": "dnd2024.weapon.battleaxe",
+      "path": "world/entities/dnd2024/weapon/battleaxe.json",
+      "kind": "entity"
+    },
+    {
+      "id": "dnd2024.weapon.dagger",
+      "path": "world/entities/dnd2024/weapon/dagger.json",
+      "kind": "entity"
+    },
+    {
+      "id": "dnd2024.weapon.shortbow",
+      "path": "world/entities/dnd2024/weapon/shortbow.json",
+      "kind": "entity"
+    },
+    {
+      "id": "mechanic.dnd2024.armor-class.write",
+      "path": "mechanics/mechanic/dnd2024/armor-class/write.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "mechanic.dnd2024.character-level.record",
+      "path": "mechanics/mechanic/dnd2024/character-level/record.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "mechanic.dnd2024.check.ability",
+      "path": "mechanics/mechanic/dnd2024/check/ability.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "mechanic.dnd2024.dice",
+      "path": "mechanics/mechanic/dnd2024/dice.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "mechanic.dnd2024.encounter-initiative-order",
+      "path": "mechanics/mechanic/dnd2024/encounter-initiative-order.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "mechanic.dnd2024.hit-points.write",
+      "path": "mechanics/mechanic/dnd2024/hit-points/write.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "mechanic.dnd2024.initiative.roll",
+      "path": "mechanics/mechanic/dnd2024/initiative/roll.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "mechanic.dnd2024.saving-throw",
+      "path": "mechanics/mechanic/dnd2024/saving-throw.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "mechanic.dnd2024.saving-throw-proficiencies.record",
+      "path": "mechanics/mechanic/dnd2024/saving-throw-proficiencies/record.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "mechanic.dnd2024.skill-proficiencies.record",
+      "path": "mechanics/mechanic/dnd2024/skill-proficiencies/record.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "mechanic.dnd2024.weapon-attack",
+      "path": "mechanics/mechanic/dnd2024/weapon-attack.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "mechanic.dnd2024.weapon-damage.apply",
+      "path": "mechanics/mechanic/dnd2024/weapon-damage/apply.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "mechanic.dnd2024.weapon-damage.roll",
+      "path": "mechanics/mechanic/dnd2024/weapon-damage/roll.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "mechanic.dnd2024.weapon-proficiencies.write",
+      "path": "mechanics/mechanic/dnd2024/weapon-proficiencies/write.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "mechanic.dnd2024.weapon-profile.write",
+      "path": "mechanics/mechanic/dnd2024/weapon-profile/write.md",
+      "kind": "mechanic"
+    },
+    {
+      "id": "procedure.mechanic.dnd2024.abilities",
+      "path": "procedures/procedure/mechanic/dnd2024/abilities.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "procedure.mechanic.dnd2024.armor-class",
+      "path": "procedures/procedure/mechanic/dnd2024/armor-class.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "procedure.mechanic.dnd2024.character-level",
+      "path": "procedures/procedure/mechanic/dnd2024/character-level.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "procedure.mechanic.dnd2024.check.ability",
+      "path": "procedures/procedure/mechanic/dnd2024/check/ability.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "procedure.mechanic.dnd2024.dice",
+      "path": "procedures/procedure/mechanic/dnd2024/dice.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "procedure.mechanic.dnd2024.encounter-initiative-order",
+      "path": "procedures/procedure/mechanic/dnd2024/encounter-initiative-order.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "procedure.mechanic.dnd2024.hit-points",
+      "path": "procedures/procedure/mechanic/dnd2024/hit-points.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "procedure.mechanic.dnd2024.initiative",
+      "path": "procedures/procedure/mechanic/dnd2024/initiative.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "procedure.mechanic.dnd2024.play",
+      "path": "procedures/procedure/mechanic/dnd2024/play.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "procedure.mechanic.dnd2024.ruleset",
+      "path": "procedures/procedure/mechanic/dnd2024/ruleset.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "procedure.mechanic.dnd2024.saving-throw",
+      "path": "procedures/procedure/mechanic/dnd2024/saving-throw.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "procedure.mechanic.dnd2024.skill-proficiencies",
+      "path": "procedures/procedure/mechanic/dnd2024/skill-proficiencies.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "procedure.mechanic.dnd2024.source-registry",
+      "path": "procedures/procedure/mechanic/dnd2024/source-registry.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "procedure.mechanic.dnd2024.weapon-attack",
+      "path": "procedures/procedure/mechanic/dnd2024/weapon-attack.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "procedure.mechanic.dnd2024.weapon-damage.apply",
+      "path": "procedures/procedure/mechanic/dnd2024/weapon-damage/apply.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "procedure.mechanic.dnd2024.weapon-damage.roll",
+      "path": "procedures/procedure/mechanic/dnd2024/weapon-damage/roll.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "procedure.mechanic.dnd2024.weapon-proficiencies",
+      "path": "procedures/procedure/mechanic/dnd2024/weapon-proficiencies.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "procedure.mechanic.dnd2024.weapon-profile",
+      "path": "procedures/procedure/mechanic/dnd2024/weapon-profile.md",
+      "kind": "procedure"
+    },
+    {
+      "id": "source.dnd2024.srd-5.2.1",
+      "path": "world/entities/source/dnd2024/srd-5/2/1.json",
+      "kind": "entity"
+    },
+    {
+      "id": "weapon.dnd2024.battleaxe",
+      "path": "world/entities/weapon/dnd2024/battleaxe.json",
+      "kind": "entity"
+    },
+    {
+      "id": "weapon.dnd2024.dagger",
+      "path": "world/entities/weapon/dnd2024/dagger.json",
+      "kind": "entity"
+    },
+    {
+      "id": "weapon.dnd2024.shortbow",
+      "path": "world/entities/weapon/dnd2024/shortbow.json",
+      "kind": "entity"
+    }
+  ]
+}

@@ -41,7 +41,7 @@ async function walk(root, current = root) {
 }
 
 async function sourceFingerprint() {
-  const ignored = new Set(["node_modules", "server-dist", "baseline"]);
+  const ignored = new Set(["node_modules", "server-dist", "baseline", ".tmp"]);
   const inputs = [];
   async function visit(current) {
     for (const entry of await readdir(current, { withFileTypes: true })) {
@@ -62,7 +62,7 @@ function git(...args) {
   return execFileSync("git", args, { cwd: repositoryRoot, encoding: "utf8" }).trim();
 }
 
-export async function createReleaseManifest({ dist = resolve(webRoot, "server-dist"), output }) {
+export async function createReleaseManifest({ dist = resolve(webRoot, "server-dist"), output, expectedRuntime, signingKey }) {
   const source = await readFile(resolve(webRoot, "src/components/MapCanvas.tsx"), "utf8");
   if (/onWheel=/.test(source) || /addEventListener\(\s*["']wheel["']/.test(source)) {
     throw new Error("MapCanvas still installs a wheel zoom handler.");
@@ -99,8 +99,8 @@ export async function createReleaseManifest({ dist = resolve(webRoot, "server-di
   }
   const packageDocument = JSON.parse(await readFile(resolve(webRoot, "package.json"), "utf8"));
   const status = git("status", "--porcelain=v1", "--", "src/system/web-interface/dnd2024");
-  const manifest = {
-    schemaVersion: 1,
+  let manifest = {
+    schemaVersion: 2,
     pageId: "dnd2024-play",
     generatedAtUtc: new Date().toISOString(),
     source: {
@@ -124,6 +124,12 @@ export async function createReleaseManifest({ dist = resolve(webRoot, "server-di
     retiredSignatureMatches,
     files,
   };
+  if (expectedRuntime) manifest.expectedRuntime = expectedRuntime;
+  if (signingKey) {
+    if (!expectedRuntime) throw new Error("Signing requires a reviewed runtime target.");
+    const { signManifest } = await import('./release-signature.mjs');
+    manifest = signManifest(manifest, signingKey);
+  }
   await mkdir(dirname(output), { recursive: true });
   await writeFile(output, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
   return manifest;
@@ -134,9 +140,13 @@ function argument(name, fallback) {
   return position < 0 ? fallback : process.argv[position + 1];
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const output = resolve(argument("--output", resolve(webRoot, ".tmp/release-manifest.json")));
   const dist = resolve(argument("--dist", resolve(webRoot, "server-dist")));
-  const manifest = await createReleaseManifest({ dist, output });
+  const target = argument("--runtime-target");
+  const key = argument("--signing-key");
+  const manifest = await createReleaseManifest({ dist, output,
+    expectedRuntime: target ? JSON.parse(await readFile(target, 'utf8')) : undefined,
+    signingKey: key ? await readFile(key, 'utf8') : undefined });
   process.stdout.write(`${JSON.stringify({ output, files: manifest.files.length, source: manifest.source }, null, 2)}\n`);
 }

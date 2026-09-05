@@ -193,7 +193,9 @@ public sealed class CatalogWorldFeature3Tests : IDisposable
         AssertFactionData(faction.Components.Single(component => component.DefinitionId == FactionComponent).Data);
         AssertMotiveData(mara.Components.Single(component => component.DefinitionId == MotiveComponent).Data);
         AssertMotiveData(oren.Components.Single(component => component.DefinitionId == MotiveComponent).Data);
-        AssertFactionConventions(contents.Relationships!.Relationships.Where(link => link.Kind is Member or Controls or AlliedWith or OpposedTo).Select(ToLink), [Faction]);
+        AssertFactionConventions(contents.Relationships!.Relationships
+            .Where(link => link.From == Faction || link.To == Faction)
+            .Where(link => link.Kind is Member or Controls or AlliedWith or OpposedTo).Select(ToLink), [Faction]);
     }
 
     private static async Task AssertFeatureOneUnchangedAsync(IWorldStore world, CatalogContents contents)
@@ -400,6 +402,8 @@ public sealed class CatalogWorldFeature3Tests : IDisposable
             Directory.CreateDirectory(Path.Combine(destination, Path.GetRelativePath(source, directory)));
         foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
             File.Copy(file, Path.Combine(destination, Path.GetRelativePath(source, file)));
+
+        WorldFeatureFixture.RestoreRelationships(source, destination);
     }
 
     private sealed record Link(string From, string To, string Kind, string Data);

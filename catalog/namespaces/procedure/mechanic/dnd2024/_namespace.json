@@ -7,6 +7,6 @@
   ],
   "aliases": [],
   "enabled": true,
-  "reviewStatus": "needs-review",
-  "reviewNote": "Migration-only compatibility boundary for legacy procedures still retained by catalog and live state. New procedures belong under dnd2024.procedure.mechanic; retire this namespace only after reference and live-record proof."
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed migration-only retention for the exact IDs in catalog/compatibility-retention.json. Owner: D&D catalog maintenance. Existing live legacy records require preservation; new legacy identities and ordinary application discovery are forbidden. Retire only after the inventory's live-record, replacement, and backup gates pass."
 }

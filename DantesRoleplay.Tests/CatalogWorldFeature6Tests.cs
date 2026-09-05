@@ -187,5 +187,7 @@ public sealed class CatalogWorldFeature6Tests : IDisposable
         return document.RootElement.GetProperty("agenda").GetProperty("state").GetString()!;
     }
     private static string Catalog(){for(var d=new DirectoryInfo(AppContext.BaseDirectory);d is not null;d=d.Parent)if(File.Exists(Path.Combine(d.FullName,"DantesRoleplay.slnx")))return Path.Combine(d.FullName,"catalog");throw new DirectoryNotFoundException();}
-    private static void Copy(string s,string t){Directory.CreateDirectory(t);foreach(var d in Directory.EnumerateDirectories(s,"*",SearchOption.AllDirectories))Directory.CreateDirectory(Path.Combine(t,Path.GetRelativePath(s,d)));foreach(var f in Directory.EnumerateFiles(s,"*",SearchOption.AllDirectories))File.Copy(f,Path.Combine(t,Path.GetRelativePath(s,f)));}
+    private static void Copy(string s,string t){Directory.CreateDirectory(t);foreach(var d in Directory.EnumerateDirectories(s,"*",SearchOption.AllDirectories))Directory.CreateDirectory(Path.Combine(t,Path.GetRelativePath(s,d)));foreach(var f in Directory.EnumerateFiles(s,"*",SearchOption.AllDirectories))File.Copy(f,Path.Combine(t,Path.GetRelativePath(s,f)));
+        WorldFeatureFixture.RestoreRelationships(s, t);
+    }
 }

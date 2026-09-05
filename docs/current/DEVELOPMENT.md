@@ -106,6 +106,13 @@ Export-only compatibility records must not be embedded as fresh-start bootstrap 
 their build resources preserves catalog export and existing runtime revisions; it is not retirement
 of their storage or approval of their namespace.
 
+Reviewed compatibility namespaces are retention boundaries, not new authoring space. The exact
+kind/identity/path set in `catalog/compatibility-retention.json` is checked by catalog validation;
+new, missing, or moved records fail until the ownership and retirement review is updated explicitly.
+Retained procedure prose must not advertise retired calls, match new gameplay requests, or seed
+the kernel. Dedicated world-feature test relationships belong in the test fixture and are merged
+only into disposable catalog copies; a live world export must never supply their test topology.
+
 Orientation is a runtime projection, not authored capability prose. It combines only the current
 dispatcher-backed MCP descriptors, authorization-scoped in-process capability discovery, the
 current private principal decision, the ambient audience binding, and authorized application and
@@ -252,6 +259,16 @@ route with the expected current active revision. The routes resolve the versione
 from `system.web.page`; they never accept a raw content-page ID. The previous revision remains an
 exact rollback target. Mutable HTML is served with `private, no-store`; content-addressed assets
 use a private immutable cache policy, while unhashed assets remain `private, no-store`.
+
+For release acceptance, create a version-2 manifest with `--runtime-target` and `--signing-key`.
+The reviewed target pins database connection identity (not mutable database bytes), application,
+activation, extension-resolution and page revisions/fingerprints, audience binding, executable
+query result/source fingerprints, and action contract fingerprints. Keep the Ed25519 private key
+outside source control and pin the public key independently of the manifest. Run
+`release:verify-live` with `--trusted-public-key` and `--browser-evidence`; it rejects unsigned or
+tampered manifests, runtime or asset drift, cache-policy failures, missing live browser observations,
+and changes during verification. Browser evidence is bound to the signed manifest, exact listener,
+and seat; source tests alone cannot satisfy the wheel behavior and player/DM dossier checks.
 
 ## Changes needing confirmation
 

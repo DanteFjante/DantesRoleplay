@@ -246,6 +246,8 @@ public sealed class CatalogWorldFeature2Tests : IDisposable
         Directory.CreateDirectory(destination);
         foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
             File.Copy(file, Path.Combine(destination, Path.GetRelativePath(source, file)));
+
+        WorldFeatureFixture.RestoreRelationships(source, destination);
     }
 
     private sealed record FixtureState(string? TravellerContainer, string TravellerSlot, string TravellerComponent, string[] GateRelationships);

@@ -38,6 +38,11 @@ public sealed class ApplicationReadinessTests : IDisposable
         var report = await service.ReadAsync("dnd2024");
 
         Assert.Equal("ready", report.Status);
+        var database = report.Checks.Single(value => value.Name == "database");
+        Assert.Matches("^[0-9A-F]{64}$", database.Evidence!.Fingerprint);
+        Assert.DoesNotContain("Data Source=", JsonSerializer.Serialize(database), StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(database.Evidence.Fingerprint, (await service.ReadAsync("dnd2024")).Checks
+            .Single(value => value.Name == "database").Evidence!.Fingerprint);
         Assert.Equal([
             "database",
             "application-registration",
