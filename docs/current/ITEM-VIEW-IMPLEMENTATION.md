@@ -1,12 +1,12 @@
 # Item view implementation plan
 
-Version 1.3 · 5 September 2026
+Version 1.4 · 5 September 2026
 
 ## Purpose and delivery boundary
 
 Build a full item dossier that opens from a character's inventory. It has three tabs: **Details**, **Known recipes**, and **Known uses**. Recipes are split into **Makes this item** and **Uses this item**, as requested. The dossier describes the actual item instance and the knowledge of the selected character, while preserving the current character sheet, nested inventory, and DM and Player switch.
 
-This document specifies implementation work; it is not evidence that the published feature exists. IV00 contracts were approved by the user on 5 September 2026. IV01 and the supported IV02 Details projection are implemented; IV03–IV10 remain pending. Validation results and exclusions are recorded in the implementation commits. The concrete review packet is [item-view-contracts/README.md](item-view-contracts/README.md). The requested document does not itself authorize new runtime identities, catalog synchronization, or activation. Apply the repository working agreement at each concrete boundary, using authorization already present in the implementation task rather than repeatedly requesting it.
+This document specifies implementation work; it is not evidence that the published feature exists. IV00 contracts were approved by the user on 5 September 2026. IV01–IV03 are implemented within their documented supported boundaries; IV04–IV10 remain pending. Validation results and exclusions are recorded in the implementation commits. The concrete review packet is [item-view-contracts/README.md](item-view-contracts/README.md). The requested document does not itself authorize new runtime identities, catalog synchronization, or activation. Apply the repository working agreement at each concrete boundary, using authorization already present in the implementation task rather than repeatedly requesting it.
 
 The first release is read-only. Opening a tab must not equip, consume, identify, reveal, craft, advance time, or record a discovery. Use and Start crafting are explicitly deferred to follow-up slices after this release. Do not infer missing recipes, properties, or uses from prose or item names.
 
@@ -145,6 +145,8 @@ Execute sequentially by default. Dependencies allow independent preparation, but
 **Rollback and stop:** Revert only the new unactivated query/mechanic records and their owned manifest entries. Do not replace live item records. Stop on unresolved precedence, missing required references, or contract/hash disagreement.
 
 ## IV03 Safe item media
+
+**Status:** Implemented without live publication. Details now returns opaque, view-bound image links after catalog identity and inheritance checks. Each content request replays the registered view and rechecks current media visibility/metadata and the caller's grant. Instance roles take precedence; only definition illustrations/icons inherit. Missing, unknown, oversized or unavailable media uses a neutral fallback. The reusable item gallery removes stale image/caption elements synchronously on scope changes and accepts only these links. Route wiring and the connected item page remain IV04/IV05; this slice does not add an inventory click target. See the implementation commit for focused, web, protocol and catalog results and any full-suite limitation.
 
 **Owner and files:** Entity-media owner; existing media service and endpoint, `WEB/src/components/EntityMediaGallery.tsx`, media projection helpers, and `src/system/entity-media/tests/EntityMediaTests.cs`.
 

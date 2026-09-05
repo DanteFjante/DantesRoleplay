@@ -10,6 +10,12 @@ using DantesRoleplay.Knowledge;
 using DantesRoleplay.Knowledge.Tests;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.SchemaValidation;
+using DantesRoleplay.Blobs;
+using DantesRoleplay.Interactions;
+using DantesRoleplay.Media;
+using DantesRoleplay.MCPServer;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DantesRoleplay.Tests;
 
@@ -341,23 +347,179 @@ public sealed class ItemDetailsProjectionTests
         return JsonDocument.Parse(run.Output.Data);
     }
 
+    [Fact]
+    public async Task Media_uses_instance_roles_before_permitted_definition_inheritance_and_Player_preview_matches_Actor()
+    {
+        using var fixture = await Fixture.Create();
+        fixture.Media.Add(fixture.ItemId, "instance", "illustration", "Instance illustration");
+        fixture.Media.Add(fixture.ItemId, "secret", "handout", "Secret caption and image", player: false);
+        fixture.Media.Add(fixture.Definition, "inherited", "illustration", "Definition illustration");
+        fixture.Media.Add(fixture.Definition, "icon", "icon", "Definition icon");
+        fixture.Media.Add(fixture.Definition, "handout", "handout", "Definition handout");
+        using var unknown = await fixture.Details();
+        Assert.Empty(unknown.RootElement.GetProperty("media").EnumerateArray());
+        Assert.DoesNotContain("illustration", unknown.RootElement.GetRawText());
+        await fixture.Know(fixture.ItemId);
+        await fixture.Know(fixture.Definition);
+        using var actor = await fixture.Details();
+        Assert.Equal(["Instance illustration", "Definition icon"], actor.RootElement.GetProperty("media").EnumerateArray().Select(value => value.GetProperty("alt").GetString()));
+        fixture.Policy.IsDm = true;
+        using var preview = await fixture.Details();
+        Assert.Equal(actor.RootElement.GetRawText(), preview.RootElement.GetRawText());
+        Assert.DoesNotContain("Secret", preview.RootElement.GetRawText());
+        Assert.DoesNotContain(new string('a', 64), preview.RootElement.GetRawText());
+        Assert.DoesNotContain("private/source", preview.RootElement.GetRawText());
+        fixture.Media.Items[fixture.ItemId].Clear();
+        using var inherited = await fixture.Details();
+        Assert.Equal(["Definition illustration", "Definition icon"], inherited.RootElement.GetProperty("media").EnumerateArray().Select(value => value.GetProperty("alt").GetString()));
+    }
+
+    [Fact]
+    public async Task View_bound_image_reauthorizes_knowledge_possession_and_visibility_without_ambient_GM_enrichment()
+    {
+        using var fixture = await Fixture.Create();
+        fixture.Media.Add(fixture.ItemId, "instance", "illustration", "Safe art");
+        fixture.Media.Add(fixture.ItemId, "secret", "illustration", "Private art", player: false);
+        await fixture.Know(fixture.ItemId);
+        using var actor = await fixture.Details();
+        var playerUrl = actor.RootElement.GetProperty("media")[0].GetProperty("contentUrl").GetString()!;
+        Assert.Equal(200, await fixture.OpenImage(playerUrl));
+        Assert.Equal(EntityMediaAudience.Player, fixture.Media.LastOpenedAudience);
+        fixture.Policy.IsDm = true;
+        Assert.Equal(200, await fixture.OpenImage(playerUrl));
+        Assert.Equal(EntityMediaAudience.Player, fixture.Media.LastOpenedAudience);
+        using var dm = await fixture.Details(dm: true);
+        var dmUrl = dm.RootElement.GetProperty("media")[1].GetProperty("contentUrl").GetString()!;
+        fixture.Policy.IsDm = false;
+        Assert.Equal(404, await fixture.OpenImage(dmUrl));
+        Assert.Equal(404, await fixture.OpenImage(playerUrl, "actor.other"));
+        Assert.Equal(404, await fixture.OpenImage(playerUrl, query: "?perspective=dm"));
+        fixture.Media.Items[fixture.ItemId][0] = fixture.Media.Items[fixture.ItemId][0] with { Visibility = [EntityMediaAudience.GameMaster] };
+        Assert.Equal(404, await fixture.OpenImage(playerUrl));
+        fixture.Media.Items[fixture.ItemId][0] = fixture.Media.Items[fixture.ItemId][0] with { Visibility = [EntityMediaAudience.Player, EntityMediaAudience.GameMaster] };
+        await fixture.Game.Edges.SetRelationshipAsync(fixture.Game.Campaign, fixture.Game.Actor, fixture.ItemId,
+            fixture.Game.Binding.ExplicitStateRelationshipKind, "{\"stance\":\"unknown\"}", 1);
+        fixture.Policy.IsDm = true;
+        Assert.Equal(404, await fixture.OpenImage(playerUrl));
+        await fixture.Game.Edges.MoveContainmentAsync(fixture.Game.Campaign, fixture.ItemId, fixture.Game.World, "elsewhere", 1);
+        Assert.Equal(404, await fixture.OpenImage(dmUrl));
+    }
+
+    [Fact]
+    public async Task Missing_assets_and_changed_metadata_do_not_leave_a_usable_old_content_link()
+    {
+        using var fixture = await Fixture.Create();
+        fixture.Media.Add(fixture.ItemId, "instance", "illustration", "Safe art");
+        await fixture.Know(fixture.ItemId);
+        using var view = await fixture.Details();
+        var url = view.RootElement.GetProperty("media")[0].GetProperty("contentUrl").GetString()!;
+        fixture.Media.Missing = true;
+        using var missing = await fixture.Details();
+        Assert.Empty(missing.RootElement.GetProperty("media").EnumerateArray());
+        Assert.Equal(404, await fixture.OpenImage(url));
+        fixture.Media.Missing = false;
+        fixture.Media.Items[fixture.ItemId][0] = fixture.Media.Items[fixture.ItemId][0] with { Caption = "Changed caption" };
+        Assert.Equal(404, await fixture.OpenImage(url));
+        using var refreshed = await fixture.Details();
+        var fresh = refreshed.RootElement.GetProperty("media")[0].GetProperty("contentUrl").GetString()!;
+        Assert.NotEqual(url, fresh);
+        Assert.Equal(200, await fixture.OpenImage(fresh));
+        fixture.Media.Unavailable = true;
+        using var unavailable = await fixture.Details();
+        Assert.Empty(unavailable.RootElement.GetProperty("media").EnumerateArray());
+        Assert.Equal("Personal keepsake", unavailable.RootElement.GetProperty("name").GetString());
+        Assert.Equal(404, await fixture.OpenImage(fresh));
+    }
+
+    [Fact]
+    public async Task Permission_change_during_content_open_denies_the_stream_and_disposes_it()
+    {
+        using var fixture = await Fixture.Create();
+        fixture.Media.Add(fixture.ItemId, "instance", "illustration", "Safe art");
+        await fixture.Know(fixture.ItemId);
+        using var view = await fixture.Details();
+        var url = view.RootElement.GetProperty("media")[0].GetProperty("contentUrl").GetString()!;
+        fixture.Media.OnOpen = () => fixture.Policy.Revision = "changed";
+        Assert.Equal(404, await fixture.OpenImage(url));
+        Assert.False(fixture.Media.LastStream!.CanRead);
+    }
+
+    [Fact]
+    public void Media_links_expire_and_remain_bounded_without_becoming_blob_addresses()
+    {
+        var clock = new Clock();
+        var links = new ReadModelMediaLinkStore(clock);
+        var request = new ApplicationReadModelRequest("space", ApplicationIdentifier.Parse("fixture"), "fixture.query.details",
+            new Dictionary<string, string> { ["subject"] = "actor" }, new("player"), "{\"itemId\":\"item\"}");
+        var ticket = new ReadModelMediaTicket(request, "campaign", "actor", "item", "visual-0", "hash");
+        var first = links.GetOrCreate(ticket);
+        Assert.Equal(first, links.GetOrCreate(ticket));
+        Assert.NotNull(links.Find(first.Split('/')[3]));
+        clock.Now = clock.Now.AddMinutes(11);
+        Assert.Null(links.Find(first.Split('/')[3]));
+        var next = links.GetOrCreate(ticket);
+        Assert.NotEqual(first, next);
+        for (var i = 0; i < 4096; i++) links.GetOrCreate(ticket with { MediaId = "image." + i });
+        Assert.Null(links.Find(next.Split('/')[3]));
+        Assert.Null(links.Find("../private"));
+    }
+
+    private sealed class Clock : TimeProvider
+    {
+        public DateTimeOffset Now = DateTimeOffset.Parse("2026-09-05T00:00:00Z");
+        public override DateTimeOffset GetUtcNow() => Now;
+    }
+
+    private sealed class MediaSource : IEntityMediaService
+    {
+        public Dictionary<string, List<EntityMediaAttachment>> Items = [];
+        public bool Missing;
+        public bool Unavailable;
+        public EntityMediaAudience? LastOpenedAudience;
+        public Action? OnOpen;
+        public MemoryStream? LastStream;
+        public void Add(string owner, string id, string role, string alt, bool player = true)
+        {
+            if (!Items.TryGetValue(owner, out var items)) Items[owner] = items = [];
+            items.Add(new(id, role, player ? [EntityMediaAudience.Player, EntityMediaAudience.GameMaster] : [EntityMediaAudience.GameMaster],
+                new string('a', 64), "image/png", 1, 1, alt, alt, items.Count, new("original", "Private credit", "private/source", "2026-09-05", 1)));
+        }
+        public Task<EntityMediaDiscoveryResult> DiscoverAsync(ApplicationIdentifier applicationId, string stateSpaceId, string entityId,
+            EntityMediaAudience audience, bool diagnostics = false, CancellationToken cancellationToken = default) =>
+            Unavailable ? throw new IOException("Private storage location must not escape.") : Task.FromResult(new EntityMediaDiscoveryResult(applicationId.Value, stateSpaceId, entityId, "resolution",
+                Missing ? [] : (Items.GetValueOrDefault(entityId) ?? []).Where(value => value.Visibility.Contains(audience)).ToArray(), []));
+        public async Task<EntityMediaReadResult?> OpenReadAsync(ApplicationIdentifier applicationId, string stateSpaceId, string entityId,
+            string mediaId, EntityMediaAudience audience, CancellationToken cancellationToken = default)
+        {
+            LastOpenedAudience = audience;
+            var attachment = (await DiscoverAsync(applicationId, stateSpaceId, entityId, audience)).Attachments.SingleOrDefault(value => value.MediaId == mediaId);
+            if (attachment is null) return null;
+            OnOpen?.Invoke();
+            LastStream = new MemoryStream([137, 80, 78, 71, 13, 10, 26, 10]);
+            return new(attachment, new(new(attachment.Sha256, "image/png", 8, DateTimeOffset.UtcNow), LastStream));
+        }
+    }
+
     private sealed class Policy(KnowledgeCoreTests.KnowledgeFixture game) : IAuthorizedKnowledgeAudiencePolicy
     {
         public bool IsDm;
+        public string Revision = "policy";
         public Task<KnowledgeAudienceResolution> ResolveAsync(string campaignId, CancellationToken cancellationToken = default) =>
             Task.FromResult(new KnowledgeAudienceResolution(new("principal", game.Campaign,
-                IsDm ? KnowledgeAudienceRole.GameMaster : KnowledgeAudienceRole.Actor, IsDm ? null : game.Actor, "policy")));
+                IsDm ? KnowledgeAudienceRole.GameMaster : KnowledgeAudienceRole.Actor, IsDm ? null : game.Actor, Revision)));
     }
     private sealed class Binding(KnowledgeApplicationBinding value) : IKnowledgeApplicationBindingResolver
     {
         public Task<KnowledgeApplicationBinding?> ResolveAsync(string campaignId, CancellationToken cancellationToken = default) => Task.FromResult<KnowledgeApplicationBinding?>(value);
     }
-    private sealed class Fixture : IDisposable
+    private sealed class Fixture : IDisposable, IApplicationReadModelService
     {
         public KnowledgeCoreTests.KnowledgeFixture Game { get; } = new();
         public string ItemId => "item.first";
         public string Definition => "definition.shared";
         public Policy Policy { get; }
+        public MediaSource Media { get; } = new();
+        public ReadModelMediaLinkStore Links { get; } = new();
         private readonly Dictionary<string, string> types = [];
         private readonly MechanicRequirements requirements = MechanicRequirements.Parse(Mechanic.Requirements);
         private readonly ApplicationMechanicProjectionMapping mapping;
@@ -373,7 +535,7 @@ public sealed class ItemDetailsProjectionTests
                 components[id] = Game.DefineComponent(type);
             }
             mapping = new(components, new Dictionary<string, string>());
-            resolver = new(Game.Db, Policy, new Binding(Game.Binding), new ApplicationKnowledgeActorParticipationVerifier(Game.Entities, Game.Edges), Game.Source, Game.States);
+            resolver = new(Game.Db, Policy, new Binding(Game.Binding), new ApplicationKnowledgeActorParticipationVerifier(Game.Entities, Game.Edges), Game.Source, Game.States, Media, Links);
         }
         public static object Weight(int numerator) => new { dimension = "mass", value = new { numerator, denominator = 2 }, unit = Ref("dnd2024.vocabulary.mass-unit.kilogram") };
         public static async Task<Fixture> Create(int weightNumerator = 1)
@@ -407,7 +569,7 @@ public sealed class ItemDetailsProjectionTests
             if (dm) Policy.IsDm = true;
             return resolver.ResolveAsync(new(Game.Campaign, ApplicationIdentifier.Parse(Game.ApplicationId), MechanicId, new string('A', 64), mapping,
                 new Dictionary<string, string> { ["subject"] = Game.Actor, ["campaign"] = Game.Campaign },
-                Json(new { itemId = item ?? ItemId }), 0, Audience: new(dm ? "dm" : "player")), requirements);
+                Json(new { itemId = item ?? ItemId }), 0, Audience: new(dm ? "dm" : "player"), ReadModelQueryId: QueryId), requirements);
         }
         public async Task<JsonDocument> Details(string? item = null, bool dm = false)
         {
@@ -420,5 +582,30 @@ public sealed class ItemDetailsProjectionTests
             return data;
         }
         public void Dispose() => Game.Dispose();
+        public async Task<ApplicationReadModelResult> ReadAsync(ApplicationReadModelRequest request, CancellationToken cancellationToken = default)
+        {
+            using var input = JsonDocument.Parse(request.InputJson);
+            using var data = await Details(input.RootElement.GetProperty("itemId").GetString(), request.Audience?.Perspective == "dm");
+            return new(Game.ApplicationId, Game.Campaign, QueryId, "state", "resolution", Query.OutputSchemaHash, "result", "source", data.RootElement.GetRawText());
+        }
+        public async Task<int> OpenImage(string url, string? actor = null, string query = "")
+        {
+            var context = new DefaultHttpContext();
+            context.Request.QueryString = new QueryString(query);
+            context.Response.Body = new MemoryStream();
+            using var services = new ServiceCollection().AddLogging().AddOptions().BuildServiceProvider();
+            context.RequestServices = services;
+            var seat = new Seats(new(true, "principal", Game.ApplicationId, Game.Campaign, Policy.IsDm ? null : actor ?? Game.Actor,
+                Policy.IsDm ? KnowledgeAudienceRole.GameMaster : KnowledgeAudienceRole.Actor, ["fixture-source"]));
+            var result = await ReadModelMediaWebEndpoint.ReadAsync(url.Split('/')[3], context, seat, Links, this, Policy, Media, CancellationToken.None);
+            await result.ExecuteAsync(context);
+            Assert.Equal("private, no-store", context.Response.Headers.CacheControl.ToString());
+            Assert.Equal("nosniff", context.Response.Headers.XContentTypeOptions.ToString());
+            return context.Response.StatusCode;
+        }
+    }
+    private sealed class Seats(LocalKnowledgeSeatSnapshot seat) : ILocalKnowledgeSeatProvider
+    {
+        public LocalKnowledgeSeatSnapshot Current() => seat with { SourceIds = seat.SourceIds?.ToArray() };
     }
 }

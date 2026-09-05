@@ -191,6 +191,11 @@ app.MapGet(
     .AddEndpointFilter<WebInterfaceSecurityFilter>()
     .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
 app.MapGet(
+        "/api/read-model-media/{token}/content",
+        ReadModelMediaWebEndpoint.ReadAsync)
+    .AddEndpointFilter<WebInterfaceSecurityFilter>()
+    .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
+app.MapGet(
         "/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/read-models/{qualifiedQueryId}",
         ApplicationReadModelWebEndpoint.ReadAsync)
     .AddEndpointFilter<WebInterfaceSecurityFilter>()

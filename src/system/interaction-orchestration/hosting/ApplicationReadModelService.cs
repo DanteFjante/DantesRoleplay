@@ -146,7 +146,7 @@ internal sealed class ApplicationReadModelService(
             request.RoleBindings,
             input,
             0,
-            Audience: request.Audience), cancellationToken);
+            Audience: request.Audience, ReadModelQueryId: request.QualifiedQueryId), cancellationToken);
         if (!evaluation.Ok || evaluation.Run is null || evaluation.Projection is null)
         {
             var safeCode = evaluation.Problems.FirstOrDefault();

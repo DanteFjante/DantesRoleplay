@@ -13,6 +13,7 @@ public static class BlobStorageServiceCollectionExtensions
         services.AddSingleton(new BlobStorageOptions(Path.GetFullPath(rootPath)));
         services.AddScoped<IBlobTransferService, FileBlobTransferService>();
         services.AddScoped<IEntityMediaService, EntityMediaService>();
+        services.AddSingleton<IReadModelMediaLinkStore, ReadModelMediaLinkStore>();
         services.AddScoped<ISystemAiToolSource, EntityMediaAiToolSource>();
         return services;
     }

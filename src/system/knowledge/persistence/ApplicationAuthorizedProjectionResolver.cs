@@ -5,6 +5,8 @@ using DantesRoleplay.ApplicationExecution;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.Media;
+using DantesRoleplay.Interactions;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.Knowledge;
@@ -19,7 +21,9 @@ public sealed class ApplicationAuthorizedProjectionResolver(
     IKnowledgeApplicationBindingResolver bindings,
     IKnowledgeActorParticipationVerifier participation,
     IKnowledgeCanonicalSource source,
-    IKnowledgeEffectiveStateResolver states) : IApplicationAuthorizedProjectionResolver
+    IKnowledgeEffectiveStateResolver states,
+    IEntityMediaService? media = null,
+    IReadModelMediaLinkStore? mediaLinks = null) : IApplicationAuthorizedProjectionResolver
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private static readonly byte[] RevisionKey = RandomNumberGenerator.GetBytes(32);
@@ -244,6 +248,43 @@ public sealed class ApplicationAuthorizedProjectionResolver(
                 if (definitionId is not null && snapshot.References.TryGetValue(definitionId, out var reference))
                     snapshot.References[definitionId] = reference with { Components = reference.Components
                         .Concat(await Components(definitionId, [activity.ComponentId])).ToDictionary(pair => pair.Key, pair => pair.Value) };
+            }
+
+            // Media remains application-shaped in the sandbox. Only audience-filtered,
+            // finalized images receive opaque links; every content request replays this view.
+            if (sources.Media is not null && media is not null && mediaLinks is not null && request.ReadModelQueryId is not null)
+            {
+                var mediaAudience = request.Audience.Perspective == "dm" ? EntityMediaAudience.GameMaster : EntityMediaAudience.Player;
+                var viewRequest = new ApplicationReadModelRequest(request.StateSpaceId, request.ApplicationId,
+                    request.ReadModelQueryId, request.RoleEntityIds, request.Audience, request.InputJson);
+                foreach (var owner in new[] { selectedId, definitionId }.Where(id => id is not null).Distinct())
+                {
+                    EntityMediaDiscoveryResult discoveryResult;
+                    try
+                    {
+                        discoveryResult = await media.DiscoverAsync(request.ApplicationId, request.StateSpaceId, owner!, mediaAudience,
+                            diagnostics: false, cancellationToken);
+                    }
+                    catch (Exception exception) when (exception is EntityMediaException or IOException or DantesRoleplay.Blobs.BlobTransferException)
+                    {
+                        // An unavailable image is a neutral fallback, not a failed character view.
+                        observed.Add(new { owner, media = "unavailable" });
+                        continue;
+                    }
+                    var images = discoveryResult.Attachments.Where(value => value.MediaType is "image/png" or "image/jpeg" or "image/webp").Take(64).ToArray();
+                    observed.Add(new { owner, media = Hash(images) });
+                    var descriptors = images.Select(value => new
+                    {
+                        value.Role, value.Alt, value.Caption,
+                        contentUrl = mediaLinks.GetOrCreate(new(viewRequest, campaign, observer, owner!, value.MediaId,
+                            ReadModelMediaLinkStore.Fingerprint(value)))
+                    }).ToArray();
+                    var json = JsonSerializer.Serialize(new { attachments = descriptors }, Json);
+                    if (owner == selectedId) selectedComponents["authorized-media"] = json;
+                    else if (snapshot.References.TryGetValue(owner!, out var reference))
+                        snapshot.References[owner!] = reference with { Components = reference.Components
+                            .Append(new KeyValuePair<string, string>("authorized-media", json)).ToDictionary() };
+                }
             }
 
             IReadOnlyList<ContainedProjection> Tree(string container) => descendants.Where(row => row.ContainerEntityId == container &&

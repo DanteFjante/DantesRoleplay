@@ -21,7 +21,9 @@ public static class KnowledgeComponentRegistration
                     provider.GetRequiredService<IKnowledgeApplicationBindingResolver>(),
                     provider.GetRequiredService<IKnowledgeActorParticipationVerifier>(),
                     provider.GetRequiredService<IKnowledgeCanonicalSource>(),
-                    provider.GetRequiredService<IKnowledgeEffectiveStateResolver>())
+                    provider.GetRequiredService<IKnowledgeEffectiveStateResolver>(),
+                    provider.GetService<DantesRoleplay.Media.IEntityMediaService>(),
+                    provider.GetService<DantesRoleplay.Media.IReadModelMediaLinkStore>())
                 : new UnavailableAuthorizedProjectionResolver());
         services.AddSingleton<IKnowledgeLexicalRetriever, DeterministicKnowledgeLexicalRetriever>();
         services.AddScoped<IAuthorizedKnowledgeCandidateResolver, AuthorizedKnowledgeCandidateResolver>();

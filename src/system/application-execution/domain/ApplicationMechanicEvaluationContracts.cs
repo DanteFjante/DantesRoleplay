@@ -42,7 +42,8 @@ public sealed record ApplicationMechanicEvaluationRequest(
     string InputJson,
     long Seed,
     MechanicExecutionContext? Execution = null,
-    MechanicAudienceContext? Audience = null);
+    MechanicAudienceContext? Audience = null,
+    string? ReadModelQueryId = null);
 
 public sealed record ApplicationMechanicEvaluationResult(
     string QualifiedMechanicId,

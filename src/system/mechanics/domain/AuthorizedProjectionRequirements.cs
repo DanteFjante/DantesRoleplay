@@ -42,6 +42,7 @@ public sealed record AuthorizedSourceSets
     public AuthorizedDiscoverySource? Discovery { get; init; }
     public AuthorizedAssociationSource? Associations { get; init; }
     public AuthorizedActivitySource? Activities { get; init; }
+    public AuthorizedMediaSource? Media { get; init; }
     public IEnumerable<string> ComponentIds() => OptionalSelectedItemComponents
         .Append(Selection.DefinitionLinkComponentId)
         .Concat(Discovery is null ? [] : new[] { Discovery.ComponentId })
@@ -59,6 +60,7 @@ public sealed record AuthorizedSourceSets
         (Associations is null || Token(Associations.CandidateComponentId) && Associations.RequireKnownCandidate &&
             Associations.Target == "selected-definition" && Associations.ReferencePaths.Count is >= 1 and <= 8 &&
             Associations.ReferencePaths.All(pair => Token(pair.Key) && Token(pair.Value))) &&
+        (Media is null || Media.Owners is not null && Media.Owners.SequenceEqual(["selected-item", "selected-definition"])) &&
         (Activities is null || Token(Activities.ComponentId) && Token(Activities.Field) &&
             !Activities.AllowNameInference && Activities.Owners is not null &&
             Activities.Owners.SequenceEqual(["selected-item", "selected-definition"]));
@@ -89,3 +91,9 @@ public sealed record AuthorizedAssociationSource
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record AuthorizedActivitySource(string ComponentId = "", string Field = "",
     IReadOnlyList<string>? Owners = null, bool AllowNameInference = false);
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record AuthorizedMediaSource
+{
+    public IReadOnlyList<string> Owners { get; init; } = [];
+}

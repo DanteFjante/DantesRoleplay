@@ -49,6 +49,18 @@ public sealed class EntityMediaTests
     }
 
     [Fact]
+    public async Task Missing_blob_exposes_no_attachment_metadata_and_cannot_be_opened()
+    {
+        var service = Service(Visual("""
+          {"role":"illustration","visibility":["player","dm"],"sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","mimeType":"image/png","width":1,"height":1,"alt":"Missing art","caption":"Missing caption","order":0,"provenance":{"kind":"original","credit":"Artist","source":"private-source","reviewedOn":"2026-09-01","version":1}}
+        """));
+        var result = await service.DiscoverAsync(Application, "space", "hero", EntityMediaAudience.Player);
+        Assert.Empty(result.Attachments);
+        Assert.Empty(result.Diagnostics);
+        Assert.Null(await service.OpenReadAsync(Application, "space", "hero", "visual-0", EntityMediaAudience.Player));
+    }
+
+    [Fact]
     public async Task Discovery_rejects_cross_application_state_space()
     {
         var service = Service(Visual("""

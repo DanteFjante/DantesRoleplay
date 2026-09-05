@@ -240,6 +240,26 @@ if (dm) {
     if (attunement) property('Attunement active', attunement.active, null, recorded, 'unknown');
     if (read(item.components, 'dnd2024.magic-item.charges') || read(item.components, 'dnd2024.magic-item.curse')) reason('dependency-unavailable');
 }
+// Instance art wins for each role. Only illustration/icon roles may be inherited;
+// a definition handout or scene is not automatically an image of the carried instance.
+var mediaRoles = Object.create(null);
+function addMedia(components, inherited) {
+    var gallery = read(components, 'authorized-media');
+    if (!gallery || !Array.isArray(gallery.attachments)) return;
+    var inheritedRoles = { illustration: true, icon: true };
+    gallery.attachments.forEach(function (image) {
+        if (inherited && (!inheritedRoles[image.role] || mediaRoles[image.role])) return;
+        if (typeof image.contentUrl !== 'string' || !/^\/api\/read-model-media\/[a-f0-9]{64}\/content$/.test(image.contentUrl) ||
+            typeof image.alt !== 'string' || !image.alt.trim() || image.alt.length > 240 ||
+            typeof image.caption !== 'string' || image.caption.length > 240) return;
+        if (result.media.length >= 8) { reason('page-limit'); return; }
+        result.media.push({ contentUrl: image.contentUrl, alt: image.alt, caption: image.caption || null });
+        if (!inherited) mediaRoles[image.role] = true;
+    });
+}
+if (identity) addMedia(item.components, false);
+if (definition && definitionVisible) addMedia(definition.components, true);
+
 Object.keys(ctx.references || {}).sort().forEach(function (id) {
     var statement = read(ctx.references[id].components, 'authorized-knowledge');
     if (!statement) return;
