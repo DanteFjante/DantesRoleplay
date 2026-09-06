@@ -48,7 +48,7 @@ acceptance evidence.
 Run from this package directory with an installed Chromium-family browser and Playwright:
 
 ```powershell
-npm run baseline:browser -- --listener http://localhost:6217 --playwright-module "<absolute-path-to-playwright/index.mjs>" --browser-executable "<absolute-path-to-chrome.exe>" --output .tmp/website-slice-0/browser.json
+npm run baseline:browser -- --listener http://localhost:6217 --perspective player --playwright-module "<absolute-path-to-playwright/index.mjs>" --browser-executable "<absolute-path-to-chrome.exe>" --output .tmp/website-slice-0/browser.json
 npm run baseline:collect -- --listener http://localhost:6217 --browser-results .tmp/website-slice-0/browser.json --output .tmp/website-slice-0/baseline.json
 ```
 
@@ -57,7 +57,10 @@ The sampler uses a separate headless browser and disposable contexts, never the 
 open tab. Its default is 20 pairs: a fresh context with cleared HTTP cache, then a second navigation
 through World, Character sheet, Map and Current View in that same context. The server stays warm;
 private API reads still obey no-store. The target records browser version, viewport, CPU, OS, memory,
-perspective and listener. A GM binding is measured in the normal initial Player-preview perspective.
+perspective and listener. Run the GM listener once with `--perspective dm` and once with
+`--perspective player`; the latter is labelled GM-as-Player preview. Run a separately bound Actor
+listener with `--perspective player` for the actual Actor profile. The evidence validator rejects a
+GM preview labelled as Actor evidence and rejects DM perspective for an Actor seat.
 Run without competing tests/builds for a comparable local performance baseline.
 
 The collector runs node tests, mounted tests, typecheck, and production build as independent gates

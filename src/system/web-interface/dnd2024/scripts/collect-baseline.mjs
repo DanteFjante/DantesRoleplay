@@ -25,6 +25,19 @@ export function normalizeListener(value) {
   return url.origin;
 }
 
+export function audienceViewFor(audience, perspective) {
+  assert.ok(['player', 'dm'].includes(perspective), 'Perspective must be player or dm');
+  if (audience?.role === 'game-master') {
+    assert.equal(audience.actorId ?? null, null, 'A GameMaster baseline must not bind an actor');
+    return perspective === 'dm' ? 'game-master' : 'gm-player-preview';
+  }
+  assert.equal(audience?.role, 'actor', 'Baseline requires an Actor or GameMaster audience');
+  assert.ok(typeof audience.actorId === 'string' && audience.actorId.length > 0,
+    'An Actor baseline requires an actual bound actor');
+  assert.equal(perspective, 'player', 'An Actor baseline cannot request DM perspective');
+  return 'actor';
+}
+
 export function worktreeEvidence(excludedPaths = []) {
   const git = (...args) => execFileSync(process.env.GIT_EXECUTABLE || 'git', args, {
     cwd: repositoryRoot, maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'],
@@ -186,6 +199,10 @@ export function browserEvidence(source, live) {
     problems.push('An exact listener and browser identity are required.');
   if (JSON.stringify(source.machine) !== JSON.stringify(machineProfile())) problems.push('Target machine differs.');
   if (source.readOnly !== true) problems.push('Read-only browser guard was not enabled.');
+  try {
+    if (source.audienceView !== audienceViewFor(live?.audience, source.perspective))
+      problems.push('Audience workflow label does not match the bound seat and perspective.');
+  } catch (error) { problems.push(error.message); }
   const metrics = {};
   const requests = {};
   const viewFailures = [];

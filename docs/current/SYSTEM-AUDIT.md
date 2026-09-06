@@ -477,13 +477,61 @@ Execute exactly in the order below. Slice 0 has no predecessor; each later slice
 
 ### Slice 0 (SC00) — Baseline and contract decisions
 
-**Status:** Not started. **Finding coverage:** P01, P02, P03, P11; establish dispositions for all findings.
+**Status:** Blocked. **Finding coverage:** P01, P02, P03, P11; dispositions established for all findings. **Outcome:** the checkout and frozen contracts/budgets are recorded, an executable 2,638/5,276-entity disposable scaling fixture now reports SQL, allocation and cold/warm timing evidence, and browser evidence now distinguishes an actual Actor from GM and GM-as-Player-preview. The audited runtime database, listener, active page and Playwright were absent from this checkout, so current live HTTP/body/source-read/allocation samples for all three audiences could not be captured. Historical samples remain observations only; no runtime identity was registered and no later slice may start while this evidence gap remains.
 
 Identify the current checkout, listener, database, audience binding and active revisions. Build disposable fixtures representing the observed main state space and larger unrelated catalog populations. Measure HTTP requests, SQL commands, source-file reads, body bytes, allocations and separate cold/warm durations. Include actual actor, GM and GM-as-player-preview workflows. Do not infer actor results from preview.
 
 Choose, review and record the exact registration/query/write vocabulary and owner changes under the unattended authorization. Settle whether existing projection records can be extended compatibly, how write commands are declared, and which existing event evidence supports reliable dispatch. Establish benchmark ceilings from the budget proposal below and select the existing mechanic to migrate in slice 7. No runtime identity is registered in this slice. Map each intended removal to its replacement or retention reason. Carry these concrete decisions into later slices without asking the user to reconfirm them.
 
 **Exit:** reproducible baseline, executable correctness/performance measurements, concrete contract decisions and frozen acceptance budgets. Preserve the original two DM samples as historical observations, not a new p95 baseline.
+
+#### Decisions and evidence frozen by SC00
+
+**Checkout and fixture.** Work began from clean `master` at `a0deb02cc541040b6547f0f93ccc378a9466d75d`. Neither `DantesRoleplay.MCPServer/data/dantesroleplay.db` nor a listener on port 6217 existed, and the earlier checkout named by the audit was not present. `SystemAuditBaselineFixtureTests` is therefore the reproducible non-live baseline: it creates a private in-memory state space with the observed 2,638 total entities, including 259 locations, 124 people, 35 factions and one campaign marker, then creates a second profile with 2,638 unrelated entities added. The focused measurement emits a versioned JSON line with SQL commands, returned rows, allocated bytes and separate first/repeated durations. Its source-file read count is zero by construction; it is not evidence for catalog materialization. Run it with:
+
+```powershell
+dotnet test DantesRoleplay.Tests/DantesRoleplay.Tests.csproj --filter FullyQualifiedName~SystemAuditBaselineFixtureTests --logger "console;verbosity=detailed"
+```
+
+Verification for this receipt: the three fixture/measurement cases pass; the full web Node suite passes 243/243 under the bundled Node 24 runtime; TypeScript checking passes; and the solution build succeeds with zero warnings and zero errors. Live browser sampling remains unavailable for the blocker above.
+
+The existing local-only browser sampler remains the live HTTP/body/readiness owner. It now accepts `--perspective player|dm`, requires an unbound GameMaster for DM/preview, requires a bound actor for Actor evidence, and rejects Actor-DM or relabelled preview evidence. A complete rerun requires 20 cold and 20 warm samples for each of: GameMaster DM, the same GameMaster in Player preview, and a separately bound actual Actor. Server-side instrumentation must add SQL-command, source-file-read and allocation counts for the same request correlation without recording private bodies. Missing tools or runtime data are recorded as blocked, never as zero.
+
+**Registration and read vocabulary.** SC02 will extend the existing versioned projection owner (`RegisteredProjectionDefinition` and `SqliteProjectionDefinitionRegistry`); it will not create a parallel object registry. Catalog object documents under an application's `objects/` tree activate into that owner with profile `application-object/v1`. Their closed top-level vocabulary is `id`, `version`, `schema`, `roles`, `sources`, `relationships`, `references`, `mappings`, `collections`, `limits`, `access`, and optional `writes`. Component references always carry qualified ID, version and schema hash; object references carry ID, version and content fingerprint. Required and optional relationship endpoint components remain distinct. Collection declarations require `pageSize`, `maximumPageSize`, `order`, and a source-revision-bound cursor. Limits declare traversal depth, item count, output bytes and SQL ceiling. The first planned IDs are `dnd2024.object.campaign-summary` and `dnd2024.object.faction-directory-page`; these names are reserved decisions, not registrations made in SC00.
+
+Application query contracts retain their existing response envelope and discovery/authorization owner. An object-backed query uses executor `object-projection` and an exact `object` reference; it may bind roles and one declared collection page. Existing `mechanic-projection` contracts remain unchanged until their consumers migrate. One request pins the activated declaration plus all transitive schema/component/source fingerprints. Prepared plans are shared only when audience-neutral and are bounded to 256 plans, 2 MiB of canonical declaration text and 32,000 mapping nodes. Warm unchanged definitions perform zero source-file reads; a changed definition or transitive dependency creates a new key and still passes allowed-root, source-registration and drift checks. Result data is not cached by this plan owner.
+
+**Write vocabulary.** The direct structural edit command is `application.object.save`. Its closed request carries application/state-space IDs, the exact object reference, role bindings, perspective, expected source revisions, idempotency key, and a non-empty `changes` array. Initial operations are `set`, `clear`, `relationship.add`, and `relationship.remove`. Every change names a registered object path; relationship operations also name the target entity and expected relationship revision. Omission preserves state, `clear` is explicit deletion, and unchanged `set` is a no-op. Registrations reject calculated/aggregate paths, ambiguous targets and cross-owner conflicts. Translation produces only current typed effects and enters `ApplicationActionRunner`; there is no direct SQL or second transaction path. Gameplay changes continue through an exact active mechanic before the same translation/commit owner.
+
+**Reducer and dispatch decisions.** SC07 will migrate `dnd2024.mechanic.rest.begin`: it is active application content with bounded input, three meaningful object roles, rule validation, component/relationship effects, a semantic event and focused success/failure/transaction tests. Its reducer remains pure and deterministic; the host supplies the pinned objects and context. SC08 will use the committed structural events and root operation identity as change inputs, but the current SQLite `data_version` polling is not durable or dependency-scoped. A transactionally staged `object-change/v1` delivery row with a monotonic cursor is therefore required for migrated mutations; dispatch occurs after commit, and continuity gaps fall back to audience-scoped invalidation. Raw component/entity IDs that are not authorized for the subscriber never enter notices.
+
+**Removal and retention map.** Every removal still follows side-by-side parity and the cutover rule.
+
+| Finding | Replacement or retained disposition | Owning slice |
+| --- | --- | ---: |
+| P01 | Campaign/Faction, Character and Item object queries replace migrated eager loader branches; the eight-read queue remains | 4, 10 |
+| P02 | Declared knowledge selection and shared bounded graph hydration replace whole-world projection/reload loops; the disclosure recheck remains | 5 |
+| P03 | Component-type discovery and bounded chronology hydration replace the entity-wide component probe | 5 |
+| P04 | Measured immutable prepared metadata replaces repeated parsing only where drift-safe; no speculative cache | 12 |
+| P05 | Reused immutable constraint metadata may replace repeat parsing; whole-state safety remains until equivalent indexed proof | 12 |
+| P06 | Only measured schema serialization is replaced; bounded validator limits remain | 12 |
+| P07 | Only measured over-broad play-write serialization is narrowed; transactional conversation correctness remains | 12 |
+| P08 | A bounded, recoverable worker replaces the selected serial batch path | 15 |
+| P09 | Shared immutable payload ownership replaces repeated asset bytes; every revision remains addressable | 14 |
+| P10 | Shared immutable activation evidence replaces justified duplicate storage; activation/event history remains | 14 |
+| P11 | First-ready-view and matched-workload gates below replace the initial-JavaScript-only acceptance claim | 4, 5, 9, 10 |
+| P12 | Object/query state plus targeted committed notices replace migrated load-scoped refetches; bounded cache rules remain | 8, 9 |
+| C01 | Bounded advancing cursor consumption or explicit incomplete state replaces silent first-page use | 1 |
+| O01 | Exact five tracked output directories are removed after clean-checkout proof; precise ignores replace accidental tracking | 11 |
+| O02 | Each of 14 excluded files gets a replacement-test or retained-history disposition; protocol walk remains | 11, 16 |
+| O03 | Two unreferenced components and only proven unused selectors are removed after mounted/build proof | 11 |
+| O04 | Retained until fixture/live/page/blob ownership and hash readback are established | 13 |
+| O05 | Retained until the root database is proved seed or obsolete; never merged by filename | 13 |
+| O06 | Volatile dated status is refreshed or removed from the entry guide using actual acceptance evidence | 11 |
+| R01 | All 86 manifest records and 15 mechanic pairs remain until identity/history checks permit selected retirement | 16 |
+| R02 | Fixture-only projection sources move to test support after connected-path parity; fixtures themselves remain | 10, 11 |
+| R03 | One strict contract-bound item envelope adapter replaces the three invariant copies; feature pagination/media checks remain | 10 |
+| R04 | Files split only along owners touched by delivered migrations; no size-only rewrite | 4–12 |
 
 ### Slice 1 (SC01) — Complete pagination
 
@@ -621,18 +669,24 @@ Verify the final source and served application, not just fixtures. Run the full 
 
 **Exit:** every preceding slice is complete with its mandatory implementation and checks delivered; every original finding maps to evidence. Candidate optimizations/retirements may have an evidence-backed retained disposition under the execution contract, but required architecture cannot be deferred to manufacture completion. Report HTTP/SQL/latency/allocation/storage outcomes against SC00 and preserve the original audit measurements. Update the current architecture guide only for behavior actually delivered. Close the document and commit the final receipt without another user confirmation only when these conditions pass. A missing required implementation, blocked slice or failed performance/correctness gate keeps it open.
 
-## Performance gates to freeze in slice 0
+## Performance gates frozen in slice 0
 
-These are proposed engineering targets for the pinned local fixture, not measured improvements or a public SLA. Confirm fixture sizes and accounting in SC00; any necessary adjustment must retain a quantitative target and a recorded reason.
+These are engineering targets for the pinned local fixture, not measured improvements or a public SLA. SC00 fixed the observed and doubled-unrelated fixture sizes above. A later adjustment requires measured evidence, must retain a quantitative target and must be recorded in the owning slice.
 
-| Gate | Proposed acceptance target |
+| Gate | Acceptance target |
 | --- | --- |
 | Initial selected Campaign view | At most 8 application-data HTTP reads, including audience/binding reads; no eager full-world/notebook/history fetch |
 | Opening one Factions page after bootstrap | One object-page data read; at most one additional binding recheck when required |
 | Equivalent complete baseline workload | At most 200 data HTTP requests to obtain the same authorized records as the original 2,096-request DM workload, with no truncation or omitted feature disguised as an optimization |
 | Underlying reads | No per-output-field/row database lookup in a batched mapper; record per-view SQL ceilings in SC00 and prove bounded scaling when unrelated entities double |
+| Campaign SQL | At most 12 SQL commands for the selected Campaign object read |
+| Factions SQL | At most 12 SQL commands for one Factions page, including membership and authorized media metadata |
+| Knowledge SQL | At most 16 SQL commands for one bounded notebook page including the disclosure recheck |
+| Chronology SQL | At most 12 SQL commands for one bounded chronology page including graph/visibility evidence |
+| Equivalent workload SQL | At most 80 SQL commands for the matched complete authorized workload |
 | Latency | At least 50% lower median loader time for the matched workload; report at least 20 sequential cold/warm samples per declared profile, separately from browser first-ready-view measurements |
 | Plan reuse | Unchanged definitions reuse prepared plans; mapping update, eviction, source drift and first-request costs measured explicitly |
+| Source reads and scaling | Zero source-file reads for a warm unchanged prepared plan; doubling unrelated entities adds at most two SQL commands and no more than 10% allocation or median-duration growth to Campaign/Factions reads |
 | Correctness and recovery | No unauthorized disclosure, silent incomplete result, stale overwrite, partial commit or notification for a rolled-back change |
 
 Track script/style/image transfer separately from data requests; report all exclusions. Do not compare an empty shell with a fully loaded old hub. In-process component/SQL/file reads remain visible in the measurement even when HTTP request count falls. Performance acceptance cannot be obtained by raising rate limits or disabling validation.

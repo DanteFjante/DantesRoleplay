@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { livePageEvidence, machineProfile, normalizeListener, sameLivePage, sha256, webRoot } from './collect-baseline.mjs';
+import { audienceViewFor, livePageEvidence, machineProfile, normalizeListener, sameLivePage, sha256, webRoot } from './collect-baseline.mjs';
 
 // Private bodies, query values, cookies, console messages and DOM text never enter the report.
 export function requestMetadata(request, parentInteraction, started) {
@@ -241,7 +241,8 @@ async function sample(page, client, cacheState, index) {
 }
 
 async function main() {
-  const options = { listener: 'http://localhost:6217', output: resolve(webRoot, '.tmp/website-slice-0/browser.json'), pairs: 20 };
+  const options = { listener: 'http://localhost:6217', output: resolve(webRoot, '.tmp/website-slice-0/browser.json'), pairs: 20,
+    perspective: 'player' };
   for (let i = 2; i < process.argv.length; i++) {
     const name = process.argv[i]; const value = process.argv[++i];
     assert.ok(value);
@@ -250,9 +251,11 @@ async function main() {
     else if (name === '--playwright-module') options.module = pathToFileURL(resolve(value)).href;
     else if (name === '--browser-executable') options.executable = resolve(value);
     else if (name === '--pairs') options.pairs = Number(value);
+    else if (name === '--perspective') options.perspective = value;
     else throw new Error('Unknown option ' + name);
   }
   assert.ok(Number.isInteger(options.pairs) && options.pairs >= 1 && options.pairs <= 100);
+  assert.ok(['player', 'dm'].includes(options.perspective), 'Perspective must be player or dm');
   const { chromium } = await import(options.module ?? 'playwright');
   const browser = await chromium.launch({ headless: true, ...(options.executable ? { executablePath: options.executable } : {}) });
   const report = {
@@ -285,9 +288,8 @@ async function main() {
   };
   try {
     report.liveBefore = await livePageEvidence(options.listener);
-    // Baseline the normal initial view. A GM binding is explicitly labelled Player preview.
-    report.perspective = 'player';
-    report.audienceView = report.liveBefore.audience.role === 'game-master' ? 'gm-player-preview' : 'player';
+    report.perspective = options.perspective;
+    report.audienceView = audienceViewFor(report.liveBefore.audience, report.perspective);
     for (let index = 1; index <= options.pairs; index++) {
       const context = await browser.newContext({ viewport: report.protocol.viewport, deviceScaleFactor: 1, serviceWorkers: 'block' });
       try {
