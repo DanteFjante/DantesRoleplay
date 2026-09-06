@@ -1,0 +1,11 @@
+{
+  "id": "fixture.legacy.orban",
+  "name": "Orban",
+  "components": {
+    "fixture.legacy.stats": {
+      "strength": 12,
+      "agility": 10,
+      "role": "character"
+    }
+  }
+}

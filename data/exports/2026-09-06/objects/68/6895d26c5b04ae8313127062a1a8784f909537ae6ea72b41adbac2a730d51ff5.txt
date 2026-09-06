@@ -1,0 +1,1384 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dante's Roleplay — Control Center</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #121622; color: #e8ebf4; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; }
+    .app-shell { display: grid; grid-template-columns: 16rem minmax(0, 1fr); min-height: 100vh; }
+    .sidebar { background: #181e2e; border-right: 1px solid #2c344a; display: flex; flex-direction: column; gap: 1.25rem; height: 100vh; padding: 1.25rem 1rem; position: sticky; top: 0; }
+    .brand { display: grid; gap: .35rem; padding-inline: .35rem; }
+    .brand p, .sidebar-note { color: #98a6c3; font-size: .82rem; line-height: 1.45; }
+    .sidebar-note { border-top: 1px solid #2c344a; margin-top: auto; padding: 1rem .35rem 0; }
+    .sidebar nav { display: grid; gap: .35rem; }
+    .nav-item { border: 1px solid transparent; border-radius: .55rem; color: #c9d6ef; display: grid; gap: .1rem; padding: .65rem .75rem; text-decoration: none; }
+    .nav-item:hover { background: #20283b; border-color: #303a53; }
+    .nav-item[aria-current="page"] { background: #293653; border-color: #526a99; color: #f4f7ff; }
+    .nav-item small { color: #8fa2c7; font-size: .75rem; }
+    .shell-content { min-width: 0; }
+    .workspace-bar { align-items: center; background: rgba(18, 22, 34, .94); border-bottom: 1px solid #2c344a; display: flex; gap: 1rem; justify-content: space-between; min-height: 4.75rem; padding: .85rem clamp(1rem, 3vw, 2.25rem); position: sticky; top: 0; z-index: 1; }
+    .workspace-copy { display: grid; gap: .2rem; }
+    .workspace-status { align-items: center; display: flex; gap: .6rem; min-width: 0; }
+    .workspace-status p { color: #aeb9d1; font-size: .82rem; max-width: 34rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    main { display: grid; gap: 1rem; margin: 0 auto; max-width: 1240px; padding: 1.5rem clamp(1rem, 3vw, 2.25rem) 3rem; }
+    h1, h2, p { margin: 0; }
+    h1 { font-size: 1.1rem; } h2 { font-size: 1rem; }
+    a { color: #a9c7ff; text-underline-offset: 3px; }
+    .panel { background: #1a2132; border: 1px solid #303a53; border-radius: .75rem; padding: 1rem; }
+    .eyebrow { color: #aeb9d1; font-size: .8rem; letter-spacing: .07em; text-transform: uppercase; }
+    .status { display: inline-flex; width: fit-content; padding: .18rem .55rem; border-radius: 999px; background: #27324b; color: #dce8ff; font-size: .85rem; }
+    .panel { scroll-margin-top: 5rem; }
+    .panel-head { display: flex; align-items: start; gap: .75rem; justify-content: space-between; }
+    .panel-body { margin-top: .75rem; color: #c7cede; line-height: 1.5; }
+    button { color: #101523; background: #b9ceff; border: 0; border-radius: .4rem; cursor: pointer; font: inherit; padding: .45rem .7rem; }
+    button:hover { background: #d4e1ff; }
+    .history-group { border-top: 1px solid #303a53; margin-top: .8rem; padding-top: .8rem; }
+    .history-list { display: grid; gap: .4rem; margin-top: .45rem; }
+    .history-event { background: transparent; border: 1px solid #4b5877; color: #dce8ff; text-align: left; width: 100%; }
+    .history-event small { color: #aeb9d1; display: block; margin-top: .15rem; }
+    .history-detail { background: #121622; border: 1px solid #303a53; border-radius: .45rem; margin-top: .7rem; padding: .7rem; }
+    .explorer-grid { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: .75rem; }
+    .explorer-section { background: #121622; border: 1px solid #303a53; border-radius: .55rem; padding: .75rem; min-width: 0; }
+    .explorer-section h3 { font-size: .9rem; margin: 0 0 .5rem; }
+    .explorer-list { display: grid; gap: .4rem; }
+    .explorer-choice { background: transparent; border: 1px solid #4b5877; color: #dce8ff; text-align: left; width: 100%; }
+    .explorer-choice small { color: #aeb9d1; display: block; margin-top: .15rem; }
+    .explorer-search { display: flex; gap: .4rem; margin-top: .5rem; }
+    .explorer-search input { background: #0e121c; border: 1px solid #4b5877; border-radius: .4rem; color: #e8ebf4; font: inherit; min-width: 0; padding: .45rem; width: 100%; }
+    .editor-area { background: #0e121c; border: 1px solid #4b5877; border-radius: .45rem; color: #e8ebf4; font: ui-monospace, SFMono-Regular, Consolas, monospace; min-height: 22rem; padding: .7rem; resize: vertical; width: 100%; }
+    .editor-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .65rem; }
+    .editor-actions a { border: 1px solid #4b5877; border-radius: .4rem; color: #dce8ff; padding: .42rem .65rem; text-decoration: none; }
+    .preview-frame { background: white; border: 1px solid #4b5877; border-radius: .45rem; height: 28rem; margin-top: .75rem; width: 100%; }
+    .recovery-note { border-left: 3px solid #b9ceff; color: #c7cede; margin-top: .6rem; padding-left: .7rem; }
+    .setting-field { display: grid; gap: .35rem; margin: .7rem 0; }
+    .setting-field input { background: #0e121c; border: 1px solid #4b5877; border-radius: .4rem; color: #dce8ff; padding: .55rem; }
+    pre { max-height: 22rem; margin: .55rem 0 0; overflow: auto; white-space: pre-wrap; word-break: break-word; }
+    [hidden] { display: none !important; }
+    .error { color: #ffb7bd; }
+    :focus-visible { outline: 2px solid #a9c7ff; outline-offset: 2px; }
+    @media (max-width: 760px) {
+      .app-shell { grid-template-columns: minmax(0, 1fr); }
+      .sidebar { border-bottom: 1px solid #2c344a; border-right: 0; display: grid; gap: .65rem; height: auto; padding: .7rem .9rem; z-index: 3; }
+      .brand { display: flex; gap: .6rem; justify-content: space-between; }
+      .brand p, .sidebar-note { display: none; }
+      .sidebar nav { display: flex; gap: .35rem; overflow-x: auto; padding-bottom: .15rem; scrollbar-width: thin; }
+      .nav-item { flex: 0 0 auto; padding: .5rem .65rem; }
+      .nav-item small { display: none; }
+      .workspace-bar { position: static; }
+      .workspace-status p { display: none; }
+      main { padding-inline: .9rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Control center navigation">
+      <div class="brand">
+        <h1>Control Center</h1>
+        <p>Operate this local roleplay server without leaving the workspace.</p>
+      </div>
+      <nav aria-label="Control center functions">
+        <a class="nav-item" href="#/settings" data-route="settings" aria-current="page">Settings<small>Server startup configuration</small></a>
+        <a class="nav-item" href="#/effects" data-route="effects">Effects<small>Committed activity history</small></a>
+        <a class="nav-item" href="#/assistants" data-route="assistants">Assistants<small>Local model and Codex</small></a>
+        <a class="nav-item" href="#/applications" data-route="applications">Applications<small>ECS, schemas, and contracts</small></a>
+        <a class="nav-item" href="#/site-editor" data-route="site-editor">Site editor<small>Pages, previews, and publishing</small></a>
+      </nav>
+      <p class="sidebar-note">Navigation remains available while each workspace loads independently.</p>
+    </aside>
+    <div class="shell-content">
+      <header class="workspace-bar">
+        <div class="workspace-copy">
+          <p class="eyebrow">Current workspace</p>
+          <h2 id="workspace-title">Server settings</h2>
+        </div>
+        <div class="workspace-status" aria-labelledby="overview-heading">
+          <p id="overview-detail">The shell will keep working while this workspace loads.</p>
+          <span class="status" id="overview-state">loading</span>
+          <span id="overview-heading" hidden>Loading control status…</span>
+        </div>
+      </header>
+      <main id="workspace">
+        <server-settings-panel id="server-settings" data-workspace></server-settings-panel>
+        <effect-history-panel id="effect-history" data-workspace hidden></effect-history-panel>
+        <assistant-panel id="assistant" data-workspace hidden></assistant-panel>
+        <ecs-explorer id="ecs-explorer" data-workspace hidden></ecs-explorer>
+        <site-editor id="site-editor" data-workspace hidden></site-editor>
+      </main>
+    </div>
+  </div>
+  <script>
+    (() => {
+      "use strict";
+
+      const panels = {
+        "server-settings": { title: "Server settings", waiting: "Loading settings availability…" },
+        "effect-history": { title: "Past effects", waiting: "Loading effect-history availability…" },
+        "assistant": { title: "Assistants", waiting: "Loading assistant availability…" },
+        "ecs-explorer": { title: "ECS & contracts", waiting: "Loading ECS availability…" },
+        "site-editor": { title: "Site editor", waiting: "Loading site-editor availability…" }
+      };
+      const workspaceRoutes = Object.freeze({
+        settings: { panelId: "server-settings", title: "Server settings", navRoute: "settings" },
+        effects: { panelId: "effect-history", title: "Past effects", navRoute: "effects" },
+        assistants: { panelId: "assistant", title: "Assistants", navRoute: "assistants" },
+        applications: { panelId: "ecs-explorer", title: "Applications", navRoute: "applications" },
+        "site-editor": { panelId: "site-editor", title: "Site editor", navRoute: "site-editor" }
+      });
+      let statusRequest;
+
+      function parseWorkspaceRoute(hash) {
+        if (typeof hash !== "string" || !hash.startsWith("#/") || hash.length > 640) return null;
+        const routeText = hash.slice(2);
+        if (workspaceRoutes[routeText]) return { ...workspaceRoutes[routeText], applicationId: null };
+        if (!routeText.startsWith("applications/")) return null;
+        const encodedId = routeText.slice("applications/".length);
+        if (!encodedId || encodedId.includes("/")) return null;
+        try {
+          const applicationId = decodeURIComponent(encodedId);
+          if (!applicationId || applicationId.length > 200 || applicationId.includes("/") ||
+              applicationId.includes("\\") || Array.from(applicationId).some(character =>
+                character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)) return null;
+          return {
+            ...workspaceRoutes.applications,
+            title: "Application · " + applicationId,
+            applicationId
+          };
+        } catch (_) { return null; }
+      }
+
+      function navigateToApplication(applicationId) {
+        const target = "#/applications/" + encodeURIComponent(applicationId);
+        if (window.location.hash === target) renderRoute();
+        else window.location.hash = target;
+      }
+
+      function renderRoute() {
+        let route = parseWorkspaceRoute(window.location.hash);
+        if (!route) {
+          route = { ...workspaceRoutes.settings, applicationId: null };
+          if (window.location.hash !== "#/settings") history.replaceState(null, "", "#/settings");
+        }
+        document.querySelectorAll("[data-workspace]").forEach(workspace => {
+          workspace.hidden = workspace.id !== route.panelId;
+        });
+        document.querySelectorAll("[data-route]").forEach(link => {
+          if (link.dataset.route === route.navRoute) link.setAttribute("aria-current", "page");
+          else link.removeAttribute("aria-current");
+        });
+        document.getElementById("workspace-title").textContent = route.title;
+        document.title = route.title + " — Dante's Roleplay Control Center";
+        const explorer = document.getElementById("ecs-explorer");
+        if (route.panelId === "ecs-explorer" && route.applicationId)
+          explorer.openApplicationFromRoute(route.applicationId);
+        else if (route.panelId === "ecs-explorer")
+          explorer.showApplicationListFromRoute();
+      }
+
+      function loadStatus(retry) {
+        if (retry || !statusRequest) {
+          statusRequest = fetch("/api/control/status", { cache: "no-store", credentials: "same-origin" })
+            .then(async response => {
+              if (!response.ok) throw new Error(response.status === 403 ? "forbidden" : "unavailable");
+              const document = await response.json();
+              if (!document || document.status !== "ready" || !Array.isArray(document.panels)) {
+                throw new Error("malformed");
+              }
+              return document;
+            });
+        }
+        return statusRequest;
+      }
+
+      function setOverview(status, failure) {
+        const heading = window.document.getElementById("overview-heading");
+        const detail = window.document.getElementById("overview-detail");
+        const state = window.document.getElementById("overview-state");
+        if (failure) {
+          heading.textContent = failure === "forbidden" ? "Control access is not available" : "Control status is unavailable";
+          detail.textContent = "Panel navigation remains available. Retry an individual panel when access is restored.";
+          state.textContent = failure;
+          state.classList.add("error");
+          return;
+        }
+        heading.textContent = "Control boundary ready";
+        detail.textContent = status.access.mode === "tailscale"
+          ? "Connected through the approved private Tailscale web route."
+          : "Connected from this computer through the local web route.";
+        state.textContent = status.access.mode;
+      }
+
+      class ControlPanel extends HTMLElement {
+        connectedCallback() {
+          if (this.dataset.initialized) return;
+          this.dataset.initialized = "true";
+          this.kind = this.id;
+          const copy = panels[this.kind];
+          this.innerHTML = '<section class="panel" aria-labelledby="' + this.kind + '-heading">' +
+            '<div class="panel-head"><div><p class="eyebrow">Control panel</p><h2 id="' + this.kind + '-heading"></h2></div>' +
+            '<span class="status" data-state>loading</span></div><p class="panel-body" data-message></p>' +
+            '<button type="button" data-retry hidden>Retry</button></section>';
+          this.querySelector("h2").textContent = copy.title;
+          this.querySelector("[data-retry]").addEventListener("click", () => this.refresh(true));
+          this.refresh(false);
+        }
+
+        async refresh(retry) {
+          const copy = panels[this.kind];
+          this.render("loading", copy.waiting, false);
+          try {
+            const document = await loadStatus(retry);
+            const panel = document.panels.find(candidate => candidate && candidate.id === this.kind);
+            if (!panel || typeof panel.state !== "string" || typeof panel.message !== "string") {
+              throw new Error("malformed");
+            }
+            this.render(panel.state, panel.message, false);
+            setOverview(document, null);
+          } catch (error) {
+            const state = error && error.message === "forbidden" ? "forbidden" : "unavailable";
+            const message = state === "forbidden"
+              ? "This browser is not authorized to read control status."
+              : "Control status could not be loaded. This panel can be retried without affecting the others.";
+            this.render(state, message, true);
+            setOverview(document, state);
+          }
+        }
+
+        render(state, message, showRetry) {
+          this.querySelector("[data-state]").textContent = state;
+          this.querySelector("[data-message]").textContent = message;
+          this.querySelector("[data-retry]").hidden = !showRetry;
+        }
+      }
+
+      class ServerSettingsPanel extends ControlPanel {
+        async refresh(retry) {
+          this.render("loading", "Loading host setting definitions…", false);
+          try {
+            const status = await loadStatus(retry);
+            const response = await fetch("/api/control/settings", {
+              cache: "no-store", credentials: "same-origin"
+            });
+            if (!response.ok) throw new Error(response.status === 403 ? "forbidden" : "unavailable");
+            const page = await response.json();
+            if (!page || !Array.isArray(page.items)) throw new Error("malformed");
+            this.renderSettings(page);
+            setOverview(status, null);
+          } catch (error) {
+            const state = error && error.message === "forbidden" ? "forbidden" : "unavailable";
+            this.render(state, state === "forbidden"
+              ? "This browser is not authorized to read server settings."
+              : "Server settings could not be loaded. This panel can be retried without affecting the others.", true);
+          }
+        }
+
+        renderSettings(page) {
+          const body = this.querySelector("[data-message]");
+          body.replaceChildren();
+          this.querySelector("[data-state]").textContent = page.state || "ready";
+          this.querySelector("[data-retry]").hidden = true;
+          body.append(this.text(page.message || "Host setting definitions are available."));
+          body.append(this.text("Changes are staged safely and take effect the next time the server starts."));
+          const list = this.section(body, "Local completion startup settings");
+          (page.items || []).forEach(item => list.append(this.choice(
+            item.displayName,
+            this.valueLabel(item) + " · " + item.source + " · " + item.mutability,
+            () => this.inspect(item.key, body))));
+          if (!page.items || page.items.length === 0) list.append(this.text("No host settings are registered."));
+        }
+
+        async inspect(key, body) {
+          body.querySelectorAll("[data-setting-detail]").forEach(node => node.closest("section")?.remove());
+          const detail = this.section(body, "Setting detail");
+          detail.dataset.settingDetail = "true";
+          detail.append(this.text("Loading exact definition…"));
+          try {
+            const response = await fetch("/api/control/settings/" + encodeURIComponent(key), {
+              cache: "no-store", credentials: "same-origin"
+            });
+            if (!response.ok) throw new Error("unavailable");
+            const exact = await response.json();
+            const item = exact.summary;
+            detail.replaceChildren();
+            const label = document.createElement("label");
+            label.className = "setting-field";
+            const caption = document.createElement("span");
+            caption.textContent = item.displayName;
+            const input = document.createElement("input");
+            input.disabled = item.sensitivity !== "public-value" || item.mutability === "read-only";
+            input.value = this.editValue(item.pendingValue ?? item.value);
+            label.append(caption, input);
+            const actions = document.createElement("div");
+            actions.className = "toolbar";
+            const save = document.createElement("button");
+            save.type = "button";
+            save.textContent = "Stage change";
+            save.disabled = input.disabled;
+            save.addEventListener("click", () => this.mutate(key, "", "PUT", {
+              expectedRevision: item.revision, value: this.parseValue(input.value, exact.schema)
+            }, detail));
+            const reset = document.createElement("button");
+            reset.type = "button";
+            reset.textContent = "Reset to startup value";
+            reset.disabled = input.disabled || item.revision === 0;
+            reset.addEventListener("click", () => this.mutate(key, "/reset", "POST", {
+              expectedRevision: item.revision
+            }, detail));
+            const history = document.createElement("button");
+            history.type = "button";
+            history.textContent = "Show history";
+            history.addEventListener("click", () => this.history(key, item, detail));
+            actions.append(save, reset, history);
+            detail.append(
+              label,
+              actions,
+              this.text(item.description),
+              this.text("Sensitivity: " + item.sensitivity + " · Mutability: " + item.mutability +
+                " · Disruption: " + item.disruption + " · Revision: " + item.revision +
+                " · Applied: " + item.appliedRevision + " · Restart pending: " + (item.restartRequired ? "yes" : "no")),
+              this.pre("JSON Schema\n" + JSON.stringify(exact.schema, null, 2)));
+          } catch (_) {
+            detail.replaceChildren(this.text("The exact setting definition is unavailable. Select it again to retry."));
+          }
+        }
+
+        valueLabel(item) {
+          if (item.sensitivity === "configured-only") return item.configured ? "Configured" : "Not configured";
+          if (item.value === null || typeof item.value === "undefined") return "No exposed value";
+          return typeof item.value === "string" ? item.value : JSON.stringify(item.value);
+        }
+
+        editValue(value) {
+          if (value === null || typeof value === "undefined") return "";
+          return typeof value === "string" ? value : JSON.stringify(value);
+        }
+
+        parseValue(raw, schema) {
+          if (schema.type === "boolean") {
+            if (raw === "true") return true;
+            if (raw === "false") return false;
+            throw new Error("Enter true or false.");
+          }
+          if (schema.type === "integer") {
+            const value = Number(raw);
+            if (!Number.isInteger(value)) throw new Error("Enter a whole number.");
+            return value;
+          }
+          return raw;
+        }
+
+        async mutate(key, suffix, method, body, detail) {
+          try {
+            const response = await fetch("/api/control/settings/" + encodeURIComponent(key) + suffix, {
+              method, credentials: "same-origin", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body)
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || "The setting change was rejected.");
+            detail.append(this.text("Revision " + result.revision + " staged. Restart the server when convenient."));
+            await this.refresh(true);
+          } catch (error) {
+            detail.append(this.text(error.message || "The setting change failed."));
+          }
+        }
+
+        async history(key, item, detail) {
+          try {
+            const response = await fetch("/api/control/settings/" + encodeURIComponent(key) + "/versions", {
+              cache: "no-store", credentials: "same-origin"
+            });
+            if (!response.ok) throw new Error("Setting history is unavailable.");
+            const page = await response.json();
+            const section = this.section(detail, "Revision history");
+            (page.items || []).forEach(version => {
+              const row = document.createElement("div");
+              row.className = "explorer-choice";
+              const summary = document.createElement("span");
+              summary.textContent = "Revision " + version.version + " · " + version.state + " · " +
+                (version.isReset ? "startup value" : this.editValue(version.value)) + " · " + version.createdBy;
+              row.append(summary);
+              if (version.version < item.revision) {
+                const rollback = document.createElement("button");
+                rollback.type = "button";
+                rollback.textContent = "Roll back to this revision";
+                rollback.addEventListener("click", event => {
+                  event.stopPropagation();
+                  if (confirm("Stage revision " + version.version + " as the next setting value?"))
+                    this.mutate(key, "/rollback", "POST", {
+                      expectedRevision: item.revision, targetRevision: version.version
+                    }, detail);
+                });
+                row.append(rollback);
+              }
+              section.append(row);
+            });
+            if (!page.items || page.items.length === 0) section.append(this.text("No override history yet."));
+          } catch (error) { detail.append(this.text(error.message || "Setting history is unavailable.")); }
+        }
+
+        section(parent, title) {
+          const wrapper = document.createElement("section");
+          wrapper.className = "history-group";
+          const heading = document.createElement("h3");
+          heading.textContent = title;
+          wrapper.append(heading);
+          const content = document.createElement("div");
+          content.className = "explorer-list";
+          wrapper.append(content);
+          parent.append(wrapper);
+          return content;
+        }
+
+        choice(label, metaText, action) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "explorer-choice";
+          button.textContent = label;
+          const meta = document.createElement("small");
+          meta.textContent = metaText;
+          button.append(meta);
+          button.addEventListener("click", action);
+          return button;
+        }
+
+        text(value) { const node = document.createElement("p"); node.textContent = value; return node; }
+        pre(value) { const node = document.createElement("pre"); node.textContent = value; return node; }
+      }
+
+      class EffectHistoryPanel extends ControlPanel {
+        connectedCallback() {
+          super.connectedCallback();
+          this.cursor = null;
+        }
+
+        async refresh(retry) {
+          if (retry) this.cursor = null;
+          this.render("loading", "Loading committed effects…", false);
+          try {
+            const status = await loadStatus(retry);
+            const response = await fetch("/api/control/effects" + (this.cursor ? "?cursor=" + encodeURIComponent(this.cursor) : ""), {
+              cache: "no-store", credentials: "same-origin"
+            });
+            if (!response.ok) throw new Error(response.status === 403 ? "forbidden" : "unavailable");
+            const page = await response.json();
+            if (!page || !Array.isArray(page.groups)) throw new Error("malformed");
+            this.renderHistory(page);
+            setOverview(status, null);
+          } catch (error) {
+            const state = error && error.message === "forbidden" ? "forbidden" : "unavailable";
+            this.render(state, state === "forbidden"
+              ? "This browser is not authorized to read past effects."
+              : "Effect history could not be loaded. This panel can be retried without affecting the others.", true);
+          }
+        }
+
+        renderHistory(page) {
+          const body = this.querySelector("[data-message]");
+          const retry = this.querySelector("[data-retry]");
+          body.replaceChildren();
+          this.querySelector("[data-state]").textContent = "ready";
+          retry.hidden = true;
+          if (page.groups.length === 0) {
+            body.textContent = "No accepted effects have been recorded yet.";
+            return;
+          }
+          page.groups.forEach(group => {
+            const section = document.createElement("section");
+            section.className = "history-group";
+            const label = document.createElement("p");
+            label.textContent = "Operation " + group.rootOperationId;
+            section.append(label);
+            const list = document.createElement("div");
+            list.className = "history-list";
+            (group.events || []).forEach(event => {
+              const button = document.createElement("button");
+              button.type = "button";
+              button.className = "history-event";
+              button.textContent = event.typeId || "Accepted effect";
+              const meta = document.createElement("small");
+              meta.textContent = new Date(event.timestamp).toLocaleString() + " · " + (event.entityIds || []).join(", ");
+              button.append(meta);
+              button.addEventListener("click", () => this.loadDetail(event.id, section));
+              list.append(button);
+            });
+            section.append(list);
+            body.append(section);
+          });
+          if (page.nextCursor) {
+            const older = document.createElement("button");
+            older.type = "button";
+            older.textContent = "Load older effects";
+            older.addEventListener("click", () => { this.cursor = page.nextCursor; this.refresh(false); });
+            body.append(older);
+          }
+        }
+
+        async loadDetail(eventId, container) {
+          const previous = container.querySelector(".history-detail");
+          if (previous) previous.remove();
+          const detail = document.createElement("div");
+          detail.className = "history-detail";
+          detail.textContent = "Loading accepted evidence…";
+          container.append(detail);
+          try {
+            const response = await fetch("/api/control/effects/" + encodeURIComponent(eventId), {
+              cache: "no-store", credentials: "same-origin"
+            });
+            if (!response.ok) throw new Error("detail unavailable");
+            const document = await response.json();
+            detail.replaceChildren();
+            const heading = document.createElement("strong");
+            heading.textContent = "Accepted event evidence";
+            const payload = document.createElement("pre");
+            payload.textContent = prettyJson(document.event.payloadJson);
+            detail.append(heading, payload);
+            if (document.operation) {
+              const operation = document.createElement("p");
+              operation.textContent = "Operation: " + document.operation.summary + " (" + document.operation.tool + ")";
+              detail.append(operation);
+            }
+          } catch (_) {
+            detail.textContent = "The selected event detail is unavailable. Refresh the panel to try again.";
+          }
+        }
+      }
+
+      class AssistantPanel extends ControlPanel {
+        connectedCallback() {
+          super.connectedCallback();
+          this.selectedConversation = null;
+          this.pendingKey = null;
+          this.providerName = "local";
+          this.liveOutput = "";
+        }
+
+        async refresh(retry) {
+          this.render("loading", "Loading assistant conversations…", false);
+          try {
+            const status = await loadStatus(retry);
+            const providerName = this.providerName;
+            const [provider, conversations] = await Promise.all([
+              this.read("/api/control/assistants/" + providerName + "/status"),
+              this.read("/api/control/conversations?provider=" + providerName)
+            ]);
+            this.renderAssistant(providerName, provider, conversations);
+            setOverview(status, null);
+          } catch (error) {
+            const state = error && error.message === "forbidden" ? "forbidden" : "unavailable";
+            this.render(state, state === "forbidden"
+              ? "This browser is not authorized to use assistants."
+              : "Assistant conversations could not be loaded. Retry this panel independently.", true);
+          }
+        }
+
+        async read(path) {
+          const response = await fetch(path, { cache: "no-store", credentials: "same-origin" });
+          if (!response.ok) throw new Error(response.status === 403 ? "forbidden" : "unavailable");
+          return response.json();
+        }
+
+        renderAssistant(providerName, provider, page) {
+          const body = this.querySelector("[data-message]");
+          body.replaceChildren();
+          this.querySelector("[data-state]").textContent = provider.ready ? "ready" : "unavailable";
+          this.querySelector("[data-retry]").hidden = true;
+          const switcher = document.createElement("div");
+          switcher.className = "editor-actions";
+          ["local", "codex"].forEach(name => {
+            const button = this.choice(name === "local" ? "Local assistant" : "Codex", name === providerName ? "selected" : "open", async () => {
+              this.providerName = name;
+              this.selectedConversation = null;
+              this.liveOutput = "";
+              await this.refresh(false);
+            });
+            button.disabled = name === providerName;
+            switcher.append(button);
+          });
+          body.append(switcher);
+          if (providerName === "codex") {
+            body.append(this.text(provider.ready
+              ? "Codex ready · version " + provider.observedVersion + " · read-only/no-network baseline · " + provider.repositoryRoot
+              : "Codex unavailable: " + (provider.errorMessage || provider.errorCode || "not ready")));
+            body.append(this.text("Codex can inspect this repository and answer coding questions. A command, repository file change, or network/permission request pauses for a visible one-time decision. Nothing can be approved for the whole session, and the path, model, or request cannot be edited here."));
+          } else {
+            body.append(this.text(provider.ready
+              ? "Local model ready: " + provider.model + " · " + provider.profile
+              : "Local model unavailable: " + (provider.errorMessage || provider.errorCode || "not ready")));
+          }
+          const label = providerName === "codex" ? "Start a Codex conversation" : "Start a new local conversation";
+          const create = this.composer(label, "Send first message", providerName, async (message, progress) => {
+            const key = this.pendingKey || this.newKey();
+            this.pendingKey = key;
+            const request = { provider: providerName, message, idempotencyKey: key };
+            const document = providerName === "codex"
+              ? await this.writeStream("/api/control/conversations", request, event => this.showCodexEvent(event, body, progress))
+              : await this.write("/api/control/conversations", request);
+            this.pendingKey = null;
+            const exact = providerName === "codex" && document
+              ? await this.read("/api/control/conversations/" + encodeURIComponent(document.summary.id))
+              : document;
+            this.selectedConversation = exact;
+            this.renderConversation(exact, body);
+          });
+          body.append(create);
+          const list = this.section(body, providerName === "codex" ? "Past Codex conversations" : "Past local conversations");
+          (page.items || []).forEach(item => list.append(this.choice(
+            item.title, item.status + " · revision " + item.revision,
+            async () => {
+              const document = await this.read("/api/control/conversations/" + encodeURIComponent(item.id));
+              this.selectedConversation = document;
+              this.renderConversation(document, body);
+            })));
+          if (!page.items || page.items.length === 0) list.append(this.text(
+            providerName === "codex" ? "No Codex conversations yet." : "No local conversations yet."));
+        }
+
+        renderConversation(conversation, body) {
+          this.selectedConversation = conversation;
+          body.querySelectorAll("[data-conversation-detail]").forEach(node => node.remove());
+          const wrapper = document.createElement("section");
+          wrapper.dataset.conversationDetail = "true";
+          wrapper.className = "history-group";
+          const heading = document.createElement("h3");
+          heading.textContent = this.selectedConversation.summary.title;
+          wrapper.append(heading);
+          (this.selectedConversation.messages || []).forEach(message => {
+            const bubble = document.createElement("article");
+            bubble.className = "history-detail";
+            const role = document.createElement("strong");
+            role.textContent = message.role === "assistant"
+              ? (this.selectedConversation.summary.provider === "codex" ? "Codex" : "Local assistant") : "You";
+            const content = document.createElement("p");
+            content.textContent = message.content;
+            bubble.append(role, content);
+            wrapper.append(bubble);
+          });
+          (this.selectedConversation.turns || []).forEach(turn => {
+            const detail = ["Turn " + turn.turnNumber, turn.status];
+            if (turn.model) detail.push(turn.model + (turn.modelProfile ? " / " + turn.modelProfile : ""));
+            if (turn.elapsedMilliseconds) detail.push(turn.elapsedMilliseconds + " ms");
+            if (turn.promptTokens || turn.outputTokens)
+              detail.push(turn.promptTokens + " input / " + turn.outputTokens + " output tokens");
+            if (turn.errorMessage) detail.push(turn.errorMessage);
+            wrapper.append(this.text(detail.join(" · ")));
+          });
+          if ((this.selectedConversation.activities || []).length) {
+            const activities = this.section(wrapper, "Codex activity summaries");
+            this.selectedConversation.activities.forEach(activity => activities.append(
+              this.text(activity.kind + " · " + activity.status + " · " + activity.summary)));
+          }
+          if ((this.selectedConversation.approvals || []).length) {
+            const approvals = this.section(wrapper, "Codex approval requests");
+            this.selectedConversation.approvals.forEach(approval => {
+              const card = document.createElement("article");
+              card.className = "history-detail";
+              const title = document.createElement("strong");
+              title.textContent = approval.kind + " · " + approval.status;
+              card.append(title, this.text(approval.summary));
+              const details = approval.details || {};
+              const detailLines = [];
+              if (details.reason) detailLines.push("Reason: " + details.reason);
+              if (details.command) detailLines.push("Command: " + details.command);
+              if (details.workingDirectory) detailLines.push("Working directory: " + details.workingDirectory);
+              if ((details.paths || []).length) detailLines.push("Paths: " + details.paths.join(", "));
+              if (details.networkHost) detailLines.push("Network: " + details.networkProtocol + "://" + details.networkHost);
+              if ((details.permissions || []).length) detailLines.push("Permissions: " + details.permissions.join(", "));
+              detailLines.forEach(line => card.append(this.text(line)));
+              if (approval.decision) card.append(this.text("Decision: " + approval.decision));
+              if (approval.status === "pending") {
+                const actions = document.createElement("div");
+                actions.className = "editor-actions";
+                if (approval.canAccept) actions.append(this.choice("Accept once", "Only this displayed request", async () => {
+                  if (!confirm("Allow this one Codex " + approval.kind + " request?")) return;
+                  await this.decideApproval(approval, "accept", body);
+                }));
+                else actions.append(this.text("This request cannot be accepted within the repository safety boundary."));
+                actions.append(this.choice("Decline", "Codex may continue without it", async () => {
+                  await this.decideApproval(approval, "decline", body);
+                }));
+                actions.append(this.choice("Cancel turn", "Decline and interrupt this turn", async () => {
+                  await this.decideApproval(approval, "cancel", body);
+                }));
+                card.append(actions, this.text("This request expires automatically. There is no session-wide approval."));
+              }
+              approvals.append(card);
+            });
+          }
+          if (this.selectedConversation.summary.provider === "codex" && this.liveOutput) {
+            const live = document.createElement("pre");
+            live.dataset.codexLive = "true";
+            live.textContent = this.liveOutput;
+            wrapper.append(live);
+          }
+          const active = this.selectedConversation.summary.provider === "codex"
+            ? (this.selectedConversation.turns || []).find(turn => turn.status === "pending" || turn.status === "running" || turn.status === "awaiting-approval")
+            : null;
+          if (active) {
+            wrapper.append(this.choice("Cancel active Codex turn", "Interrupts this turn without replaying it", async () => {
+              await this.write(
+                "/api/control/conversations/" + encodeURIComponent(this.selectedConversation.summary.id) +
+                "/turns/" + encodeURIComponent(active.id) + "/cancel", {});
+            }));
+          }
+          wrapper.append(this.composer("Continue conversation", "Send", this.selectedConversation.summary.provider, async (message, progress) => {
+            const key = this.pendingKey || this.newKey();
+            this.pendingKey = key;
+            const path = "/api/control/conversations/" + encodeURIComponent(this.selectedConversation.summary.id) + "/turns";
+            const request = { expectedRevision: this.selectedConversation.summary.revision, message, idempotencyKey: key };
+            const updated = this.selectedConversation.summary.provider === "codex"
+              ? await this.writeStream(path, request, event => this.showCodexEvent(event, body, progress))
+              : await this.write(path, request);
+            this.pendingKey = null;
+            const exact = this.selectedConversation.summary.provider === "codex" && updated
+              ? await this.read("/api/control/conversations/" + encodeURIComponent(updated.summary.id))
+              : updated;
+            this.selectedConversation = exact;
+            this.renderConversation(exact, body);
+          }));
+          body.append(wrapper);
+        }
+
+        composer(label, buttonText, providerName, send) {
+          const form = document.createElement("form");
+          form.className = "setting-field";
+          const caption = document.createElement("label");
+          caption.textContent = label;
+          const input = document.createElement("textarea");
+          input.maxLength = 8000;
+          input.required = true;
+          const button = document.createElement("button");
+          button.type = "submit";
+          button.textContent = buttonText;
+          const result = this.text("");
+          form.append(caption, input, button, result);
+          form.addEventListener("submit", async event => {
+            event.preventDefault();
+            if (!input.value.trim()) return;
+            button.disabled = true;
+            result.textContent = providerName === "codex" ? "Starting Codex with a read-only/no-network baseline…" : "Waiting for the local assistant…";
+            try { await send(input.value, value => { result.textContent = value; }); input.value = ""; }
+            catch (error) { result.textContent = error.message || "The assistant request failed."; }
+            finally { button.disabled = false; }
+          });
+          return form;
+        }
+
+        showCodexEvent(event, body, progress) {
+          if (event.conversation) {
+            this.selectedConversation = event.conversation;
+            if (event.type === "accepted") {
+              this.liveOutput = "";
+              this.renderConversation(event.conversation, body);
+              progress("Codex is working with a read-only/no-network baseline…");
+            }
+            if (event.type === "approval") {
+              this.renderConversation(event.conversation, body);
+              progress("Codex is waiting for your one-time approval decision…");
+            }
+          }
+          if (event.type === "delta" && event.delta) {
+            this.liveOutput = (this.liveOutput + event.delta).slice(-8000);
+            const live = body.querySelector("[data-codex-live]");
+            if (live) live.textContent = this.liveOutput;
+            progress("Codex is responding…");
+          }
+          if (event.type === "activity" && event.activity) {
+            if (this.selectedConversation) {
+              this.selectedConversation.activities = this.selectedConversation.activities || [];
+              this.selectedConversation.activities.push(event.activity);
+            }
+            progress("Codex activity: " + event.activity.summary);
+          }
+          if (event.type === "completed") progress("Codex turn finished.");
+        }
+
+        async decideApproval(approval, decision, body) {
+          if (!this.selectedConversation) throw new Error("The Codex conversation is unavailable.");
+          const path = "/api/control/conversations/" + encodeURIComponent(this.selectedConversation.summary.id) +
+            "/turns/" + encodeURIComponent(approval.turnId) + "/approvals/" + encodeURIComponent(approval.id);
+          const result = await this.write(path, { expectedRevision: approval.revision, decision });
+          this.selectedConversation = result.conversation;
+          this.renderConversation(result.conversation, body);
+        }
+
+        async write(path, body) {
+          const response = await fetch(path, {
+            method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+          });
+          const document = await response.json();
+          if (!response.ok) throw new Error(document.message || "The assistant request was rejected.");
+          return document;
+        }
+
+        async writeStream(path, body, onEvent) {
+          const response = await fetch(path, {
+            method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+          });
+          if (!response.ok) {
+            const failure = await response.json().catch(() => ({}));
+            throw new Error(failure.message || "The Codex request was rejected.");
+          }
+          if (!response.body) throw new Error("The Codex stream is unavailable.");
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+          let finalDocument = null;
+          while (true) {
+            const part = await reader.read();
+            buffer += decoder.decode(part.value || new Uint8Array(), { stream: !part.done });
+            if (buffer.length > 300000) throw new Error("A Codex stream event exceeded its bound.");
+            let newline;
+            while ((newline = buffer.indexOf("\n")) >= 0) {
+              const line = buffer.slice(0, newline).trim();
+              buffer = buffer.slice(newline + 1);
+              if (!line) continue;
+              const event = JSON.parse(line);
+              onEvent(event);
+              if (event.conversation) finalDocument = event.conversation;
+            }
+            if (part.done) break;
+          }
+          if (buffer.trim()) {
+            const event = JSON.parse(buffer);
+            onEvent(event);
+            if (event.conversation) finalDocument = event.conversation;
+          }
+          if (!finalDocument) throw new Error("Codex ended without a conversation result.");
+          return finalDocument;
+        }
+
+        newKey() {
+          return "web:" + (crypto.randomUUID ? crypto.randomUUID() : Date.now() + ":" + Math.random());
+        }
+        section(parent, title) { const section = document.createElement("section"); section.className = "history-group"; const heading = document.createElement("h3"); heading.textContent = title; section.append(heading); parent.append(section); return section; }
+        choice(label, meta, action) { const button = document.createElement("button"); button.type = "button"; button.className = "explorer-choice"; button.textContent = label; const small = document.createElement("small"); small.textContent = meta; button.append(small); button.addEventListener("click", action); return button; }
+        text(value) { const node = document.createElement("p"); node.textContent = value; return node; }
+      }
+
+      class EcsExplorerPanel extends ControlPanel {
+        async refresh(retry) {
+          this.render("loading", "Loading applications and their contracts…", false);
+          try {
+            const status = await loadStatus(retry);
+            const applications = await this.read("/api/control/structure/applications");
+            this.applicationsPage = applications;
+            this.renderApplications(applications);
+            if (this.routedApplicationId)
+              await this.selectApplication(this.routedApplicationId, this.querySelector("[data-message]"));
+            setOverview(status, null);
+          } catch (error) {
+            const state = error && error.message === "forbidden" ? "forbidden" : "unavailable";
+            this.render(state, state === "forbidden"
+              ? "This browser is not authorized to read ECS structure."
+              : "The ECS structure could not be loaded. This panel can be retried without affecting the others.", true);
+          }
+        }
+
+        async read(path) {
+          const response = await fetch(path, { cache: "no-store", credentials: "same-origin" });
+          if (!response.ok) throw new Error(response.status === 403 ? "forbidden" : "unavailable");
+          return response.json();
+        }
+
+        openApplicationFromRoute(applicationId) {
+          this.routedApplicationId = applicationId;
+          if (this.applicationsPage)
+            this.selectApplication(applicationId, this.querySelector("[data-message]"));
+        }
+
+        showApplicationListFromRoute() {
+          this.routedApplicationId = null;
+          if (this.applicationsPage) this.renderApplications(this.applicationsPage);
+        }
+
+        renderApplications(page) {
+          const body = this.querySelector("[data-message]");
+          body.replaceChildren();
+          delete body.dataset.applicationId;
+          this.querySelector("[data-state]").textContent = "ready";
+          this.querySelector("[data-retry]").hidden = true;
+          const intro = document.createElement("p");
+          intro.textContent = "Choose an application to inspect its state spaces, live entities, component values, exact schemas, and published catalog.";
+          body.append(intro);
+          const list = this.section(body, "Applications");
+          if (!page.items || page.items.length === 0) {
+            list.append(this.empty("No applications are registered."));
+            return;
+          }
+          page.items.forEach(application => list.append(this.choice(
+            application.displayName || application.id,
+            application.id,
+            () => navigateToApplication(application.id))));
+        }
+
+        async selectApplication(applicationId, body) {
+          if (!body || this.routedApplicationId !== applicationId) return;
+          if (body.dataset.applicationId === applicationId && body.querySelector(".explorer-grid")) return;
+          body.dataset.applicationId = applicationId;
+          this.clearDetails(body);
+          const loading = this.section(body, "Application detail");
+          loading.append(this.empty("Loading structure…"));
+          try {
+            const root = "/api/control/structure/applications/" + encodeURIComponent(applicationId);
+            const [application, spaces, types, catalog] = await Promise.all([
+              this.read(root), this.read(root + "/state-spaces"),
+              this.read(root + "/component-types"), this.read(root + "/catalog")
+            ]);
+            if (this.routedApplicationId !== applicationId) return;
+            this.clearDetails(body);
+            const detail = this.section(body, application.displayName || application.id);
+            const copy = document.createElement("p");
+            copy.textContent = application.description || "No application description.";
+            detail.append(copy);
+            const grid = document.createElement("div");
+            grid.className = "explorer-grid";
+            body.append(grid);
+            const spaceList = this.section(grid, "State spaces", true);
+            (spaces.items || []).forEach(space => spaceList.append(this.choice(
+              space.stateSpaceId,
+              "application revision " + space.applicationRevision,
+              () => this.selectSpace(space.stateSpaceId, body))));
+            if (!spaces.items || spaces.items.length === 0) spaceList.append(this.empty("No state spaces."));
+            const typeList = this.section(grid, "Component contracts", true);
+            (types.items || []).forEach(type => typeList.append(this.choice(
+              type.qualifiedId,
+              "version " + type.version,
+              () => this.inspectType(type.qualifiedId, type.version, body))));
+            if (!types.items || types.items.length === 0) typeList.append(this.empty("No component contracts."));
+            const catalogBox = this.section(grid, "Public catalog", true);
+            if (catalog.status === "unavailable") {
+              catalogBox.append(this.empty("No public catalog is active. Private files are not inferred."));
+            } else if (catalog.status === "empty") {
+              catalogBox.append(this.empty("The public catalog is active but empty."));
+            } else {
+              (catalog.collections || []).forEach(collection => catalogBox.append(this.choice(
+                collection.title || collection.id,
+                collection.recordCount + " record(s)",
+                () => this.browseCatalog(applicationId, collection.id, "", body))));
+              const search = document.createElement("div");
+              search.className = "explorer-search";
+              const input = document.createElement("input");
+              input.type = "search";
+              input.maxLength = 256;
+              input.placeholder = "Search public contracts";
+              input.setAttribute("aria-label", "Search public contracts");
+              const submit = document.createElement("button");
+              submit.type = "button";
+              submit.textContent = "Search";
+              submit.addEventListener("click", () => {
+                if (input.value.trim()) this.searchCatalog(applicationId, input.value.trim(), body);
+              });
+              search.append(input, submit);
+              catalogBox.append(search);
+            }
+          } catch (_) {
+            if (this.routedApplicationId !== applicationId) return;
+            loading.replaceChildren(this.empty("This application structure is unavailable. Choose the application again to retry."));
+          }
+        }
+
+        async selectSpace(stateSpaceId, body) {
+          this.removeAfter(body, "entities");
+          const list = this.section(body, "Live entities in " + stateSpaceId);
+          list.dataset.detail = "entities";
+          list.append(this.empty("Loading entities…"));
+          try {
+            const page = await this.read("/api/control/structure/state-spaces/" + encodeURIComponent(stateSpaceId) + "/entities");
+            list.replaceChildren();
+            (page.items || []).forEach(entity => list.append(this.choice(
+              entity.name || entity.entityId,
+              entity.entityId + " · revision " + entity.revision,
+              () => this.selectEntity(stateSpaceId, entity.entityId, body))));
+            if (!page.items || page.items.length === 0) list.append(this.empty("No live entities."));
+          } catch (_) { list.replaceChildren(this.empty("Entities are unavailable. Select the state space again to retry.")); }
+        }
+
+        async selectEntity(stateSpaceId, entityId, body) {
+          this.removeAfter(body, "components");
+          const list = this.section(body, "Components on " + entityId);
+          list.dataset.detail = "components";
+          list.append(this.empty("Loading components…"));
+          try {
+            const root = "/api/control/structure/state-spaces/" + encodeURIComponent(stateSpaceId) +
+              "/entities/" + encodeURIComponent(entityId);
+            const [entity, page] = await Promise.all([this.read(root), this.read(root + "/components")]);
+            list.replaceChildren();
+            const meta = document.createElement("p");
+            meta.textContent = (entity.name || entity.entityId) + " · revision " + entity.revision;
+            list.append(meta);
+            (page.items || []).forEach(component => list.append(this.choice(
+              component.qualifiedTypeId,
+              "type version " + component.typeVersion + " · value revision " + component.revision,
+              () => this.inspectComponent(stateSpaceId, entityId, component, body))));
+            if (!page.items || page.items.length === 0) list.append(this.empty("This entity has no components."));
+          } catch (_) { list.replaceChildren(this.empty("Components are unavailable. Select the entity again to retry.")); }
+        }
+
+        async inspectType(qualifiedId, version, body) {
+          const detail = this.detail(body, "Exact component schema");
+          try {
+            const type = await this.read("/api/control/structure/component-types/" + encodeURIComponent(qualifiedId) + "/versions/" + version);
+            detail.replaceChildren(this.pre("Schema hash: " + type.schemaHash + "\n\n" + prettyJson(type.schemaJson)));
+          } catch (_) { detail.replaceChildren(this.empty("The exact schema is unavailable. Select the contract again to retry.")); }
+        }
+
+        async inspectComponent(stateSpaceId, entityId, summary, body) {
+          const detail = this.detail(body, "Component value and contract");
+          try {
+            const componentPath = "/api/control/structure/state-spaces/" + encodeURIComponent(stateSpaceId) +
+              "/entities/" + encodeURIComponent(entityId) + "/components/" + encodeURIComponent(summary.qualifiedTypeId);
+            const schemaPath = "/api/control/structure/component-types/" + encodeURIComponent(summary.qualifiedTypeId) +
+              "/versions/" + summary.typeVersion;
+            const [component, schema] = await Promise.all([this.read(componentPath), this.read(schemaPath)]);
+            detail.replaceChildren(this.pre(
+              "Value (revision " + component.revision + ")\n" + prettyJson(component.valueJson) +
+              "\n\nSchema (version " + schema.version + ", hash " + schema.schemaHash + ")\n" + prettyJson(schema.schemaJson)));
+          } catch (_) { detail.replaceChildren(this.empty("The component evidence is unavailable. Select it again to retry.")); }
+        }
+
+        async browseCatalog(applicationId, collection, branch, body) {
+          const detail = this.catalogDetail(body, "Published contracts");
+          try {
+            const path = "/api/control/structure/applications/" + encodeURIComponent(applicationId) +
+              "/catalog/browse?collection=" + encodeURIComponent(collection) +
+              "&branch=" + encodeURIComponent(branch);
+            const page = await this.read(path);
+            detail.replaceChildren();
+            (page.entries || []).forEach(entry => {
+              if (entry.node) {
+                detail.append(this.choice(
+                  entry.node.title || entry.node.path,
+                  "Collection branch",
+                  () => this.browseCatalog(applicationId, collection, entry.node.path, body)));
+              } else if (entry.record) {
+                detail.append(this.choice(
+                  entry.record.name || entry.record.qualifiedId,
+                  entry.record.kind + " · " + entry.record.qualifiedId,
+                  () => this.inspectCatalog(applicationId, collection, entry.record.qualifiedId, body)));
+              }
+            });
+            if (!page.entries || page.entries.length === 0) detail.append(this.empty("This public branch is empty."));
+          } catch (_) { detail.replaceChildren(this.empty("Published contracts are unavailable. Choose the collection again to retry.")); }
+        }
+
+        async searchCatalog(applicationId, query, body) {
+          const detail = this.catalogDetail(body, "Public catalog search");
+          try {
+            const path = "/api/control/structure/applications/" + encodeURIComponent(applicationId) +
+              "/catalog/search?q=" + encodeURIComponent(query);
+            const page = await this.read(path);
+            detail.replaceChildren();
+            (page.records || []).forEach(hit => detail.append(this.choice(
+              hit.record.name || hit.record.qualifiedId,
+              hit.record.kind + " · " + hit.record.qualifiedId,
+              () => this.inspectCatalog(applicationId, hit.record.collection, hit.record.qualifiedId, body))));
+            if (!page.records || page.records.length === 0) detail.append(this.empty("No public contracts matched."));
+          } catch (_) { detail.replaceChildren(this.empty("Catalog search is unavailable. Try the search again.")); }
+        }
+
+        async inspectCatalog(applicationId, collection, qualifiedId, body) {
+          const detail = this.catalogDetail(body, "Published contract detail");
+          try {
+            const path = "/api/control/structure/applications/" + encodeURIComponent(applicationId) +
+              "/catalog/records/" + encodeURIComponent(qualifiedId) + "?collection=" + encodeURIComponent(collection);
+            const record = await this.read(path);
+            detail.replaceChildren(this.pre(
+              record.summary.name + " · version " + record.summary.version +
+              "\n" + record.summary.description + "\n\n" + prettyJson(record.contentJson)));
+          } catch (_) { detail.replaceChildren(this.empty("The published contract is unavailable. Select it again to retry.")); }
+        }
+
+        section(parent, title, nested) {
+          const wrapper = document.createElement("section");
+          wrapper.className = nested ? "explorer-section" : "history-group";
+          const heading = document.createElement("h3");
+          heading.textContent = title;
+          wrapper.append(heading);
+          const list = document.createElement("div");
+          list.className = "explorer-list";
+          wrapper.append(list);
+          parent.append(wrapper);
+          return list;
+        }
+
+        choice(label, metaText, action) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "explorer-choice";
+          button.textContent = label;
+          const meta = document.createElement("small");
+          meta.textContent = metaText;
+          button.append(meta);
+          button.addEventListener("click", action);
+          return button;
+        }
+
+        empty(message) { const node = document.createElement("p"); node.textContent = message; return node; }
+        pre(value) { const node = document.createElement("pre"); node.textContent = value; return node; }
+        clearDetails(body) { body.querySelectorAll("[data-detail], .explorer-grid, .history-group:not(:first-of-type)").forEach(node => node.remove()); }
+        removeAfter(body, marker) {
+          const targets = marker === "entities"
+            ? ["entities", "components", "component-detail"]
+            : ["components", "component-detail"];
+          body.querySelectorAll("[data-detail]").forEach(node => {
+            if (targets.includes(node.dataset.detail)) node.closest("section")?.remove();
+          });
+        }
+        detail(body, title) {
+          body.querySelectorAll("[data-detail='component-detail']").forEach(node => node.closest("section")?.remove());
+          const list = this.section(body, title);
+          list.dataset.detail = "component-detail";
+          list.append(this.empty("Loading exact evidence…"));
+          return list;
+        }
+        catalogDetail(body, title) {
+          body.querySelectorAll("[data-detail='catalog-detail']").forEach(node => node.closest("section")?.remove());
+          const list = this.section(body, title);
+          list.dataset.detail = "catalog-detail";
+          list.append(this.empty("Loading public catalog…"));
+          return list;
+        }
+      }
+
+      class SiteEditorPanel extends ControlPanel {
+        async refresh(retry) {
+          this.render("loading", "Loading editable pages…", false);
+          try {
+            const status = await loadStatus(retry);
+            const page = await this.read("/api/control/pages");
+            this.renderPages(page);
+            setOverview(status, null);
+          } catch (error) {
+            const state = error && error.message === "forbidden" ? "forbidden" : "unavailable";
+            this.render(state, state === "forbidden"
+              ? "This browser is not authorized to edit pages."
+              : "The page editor could not be loaded. This panel can be retried without affecting the others.", true);
+          }
+        }
+
+        async read(path) {
+          const response = await fetch(path, { cache: "no-store", credentials: "same-origin" });
+          if (!response.ok) throw new Error(response.status === 403 ? "forbidden" : "unavailable");
+          return response.json();
+        }
+
+        async write(path, method, body) {
+          const response = await fetch(path, {
+            method,
+            cache: "no-store",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+          });
+          if (!response.ok) {
+            let error;
+            try { error = await response.json(); } catch (_) { error = null; }
+            const failure = new Error(error && error.message ? error.message : "The page change was rejected.");
+            failure.code = error && error.error ? error.error : "unavailable";
+            throw failure;
+          }
+          return response.json();
+        }
+
+        renderPages(page) {
+          const body = this.querySelector("[data-message]");
+          body.replaceChildren();
+          this.querySelector("[data-state]").textContent = "ready";
+          this.querySelector("[data-retry]").hidden = true;
+          const intro = document.createElement("p");
+          intro.textContent = "Choose an existing page. Saving creates an inactive revision; preview and publishing are separate actions.";
+          body.append(intro);
+          const list = this.section(body, "Pages");
+          if (!page.items || page.items.length === 0) {
+            list.append(this.text("No pages exist yet. Create the first revision through the direct upload route."));
+            return;
+          }
+          page.items.forEach(item => list.append(this.choice(
+            item.id,
+            "active " + item.activeRevision + " · latest " + item.latestRevision,
+            () => this.selectPage(item.id, body))));
+        }
+
+        async selectPage(pageId, body) {
+          this.clearPage(body);
+          const loading = this.section(body, "Page detail");
+          loading.dataset.siteDetail = "page";
+          loading.append(this.text("Loading immutable revisions…"));
+          try {
+            const root = "/api/control/pages/" + encodeURIComponent(pageId);
+            const [page, revisions] = await Promise.all([this.read(root), this.read(root + "/revisions")]);
+            this.clearPage(body);
+            const header = this.section(body, page.id);
+            header.dataset.siteDetail = "page";
+            header.append(this.text("Active revision " + page.activeRevision + "; latest revision " + page.latestRevision + "."));
+            if (page.id === "control-center") {
+              const recovery = this.text("Recovery: keep a local copy. If this editor becomes unusable, upload it directly through /api/pages/control-center or /api/pages/control-center/bundle.");
+              recovery.className = "recovery-note";
+              header.append(recovery);
+            }
+            const list = this.section(body, "Immutable revisions");
+            list.dataset.siteDetail = "revisions";
+            (revisions.items || []).forEach(revision => list.append(this.choice(
+              "Revision " + revision.revision + (revision.isActive ? " · active" : " · draft/history"),
+              new Date(revision.createdAtUtc).toLocaleString() + " · " + revision.assetCount + " asset(s)",
+              () => this.selectRevision(page, revision.revision, body))));
+            if (!revisions.items || revisions.items.length === 0) list.append(this.text("No revisions are available."));
+          } catch (_) {
+            loading.replaceChildren(this.text("This page is unavailable. Choose it again to retry."));
+          }
+        }
+
+        async selectRevision(page, revision, body) {
+          this.clearEditor(body);
+          const editor = this.section(body, "Edit revision " + revision);
+          editor.dataset.siteDetail = "editor";
+          editor.append(this.text("Loading exact HTML…"));
+          try {
+            const root = "/api/control/pages/" + encodeURIComponent(page.id) + "/revisions/" + revision;
+            const detail = await this.read(root);
+            editor.replaceChildren();
+            const metadata = this.text(
+              "HTML hash " + detail.summary.contentHash + " · " + detail.assets.length + " asset(s). Saving preserves this exact asset set.");
+            const textarea = document.createElement("textarea");
+            textarea.className = "editor-area";
+            textarea.setAttribute("aria-label", "Page HTML");
+            textarea.spellcheck = false;
+            textarea.value = detail.html;
+            const state = this.text("");
+            state.setAttribute("aria-live", "polite");
+            const actions = document.createElement("div");
+            actions.className = "editor-actions";
+            const save = this.button("Save inactive draft", () => this.saveDraft(page, revision, textarea.value, body, state));
+            const preview = this.button("Preview", () => this.preview(page.id, revision, body));
+            actions.append(save, preview);
+            if (revision !== page.activeRevision) {
+              actions.append(this.button(
+                revision < page.activeRevision ? "Roll back to this revision" : "Publish this revision",
+                () => this.activate(page, revision, body, state)));
+            }
+            const download = document.createElement("a");
+            download.href = root + "/bundle";
+            download.download = page.id + "-revision-" + revision + ".zip";
+            download.textContent = "Download ZIP";
+            actions.append(download);
+            editor.append(metadata, textarea, actions, state);
+          } catch (_) {
+            editor.replaceChildren(this.text("The selected revision is unavailable. Select it again to retry."));
+          }
+        }
+
+        async saveDraft(page, baseRevision, html, body, state) {
+          state.className = "";
+          state.textContent = "Saving an inactive revision…";
+          try {
+            const detail = await this.write(
+              "/api/control/pages/" + encodeURIComponent(page.id) + "/drafts",
+              "POST",
+              { expectedLatestRevision: page.latestRevision, baseRevision, html });
+            state.textContent = "Draft revision " + detail.summary.revision + " saved. The active page did not change.";
+            await this.selectPage(page.id, body);
+          } catch (error) {
+            state.className = "error";
+            state.textContent = error && error.code && error.code.includes("STALE")
+              ? "The page changed elsewhere. Reload the page and apply your edit to the latest revision."
+              : (error.message || "The draft could not be saved.");
+          }
+        }
+
+        async activate(page, revision, body, state) {
+          const action = revision < page.activeRevision ? "roll back" : "publish";
+          if (!window.confirm("Confirm " + action + " of " + page.id + " revision " + revision + "?")) return;
+          state.className = "";
+          state.textContent = "Updating the active revision…";
+          try {
+            await this.write(
+              "/api/control/pages/" + encodeURIComponent(page.id) + "/active",
+              "PUT",
+              { expectedActiveRevision: page.activeRevision, revision });
+            await this.selectPage(page.id, body);
+          } catch (error) {
+            state.className = "error";
+            state.textContent = error && error.code && error.code.includes("STALE")
+              ? "The active page changed elsewhere. Reload before trying again."
+              : (error.message || "The active revision could not be changed.");
+          }
+        }
+
+        preview(pageId, revision, body) {
+          body.querySelectorAll("[data-site-detail='preview']").forEach(node => node.closest("section")?.remove());
+          const preview = this.section(body, "Isolated preview");
+          preview.dataset.siteDetail = "preview";
+          const note = this.text("Preview scripts run without a same-origin identity and cannot connect to control APIs or external services.");
+          const frame = document.createElement("iframe");
+          frame.className = "preview-frame";
+          frame.title = "Isolated page preview";
+          frame.setAttribute("sandbox", "allow-scripts");
+          frame.src = "/api/control/pages/" + encodeURIComponent(pageId) + "/revisions/" + revision + "/preview/index.html";
+          preview.append(note, frame);
+        }
+
+        section(parent, title) {
+          const wrapper = document.createElement("section");
+          wrapper.className = "history-group";
+          const heading = document.createElement("h3");
+          heading.textContent = title;
+          wrapper.append(heading);
+          const content = document.createElement("div");
+          content.className = "explorer-list";
+          wrapper.append(content);
+          parent.append(wrapper);
+          return content;
+        }
+
+        choice(label, metaText, action) {
+          const button = this.button(label, action);
+          button.className = "explorer-choice";
+          const meta = document.createElement("small");
+          meta.textContent = metaText;
+          button.append(meta);
+          return button;
+        }
+
+        button(label, action) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = label;
+          button.addEventListener("click", action);
+          return button;
+        }
+
+        text(value) { const node = document.createElement("p"); node.textContent = value; return node; }
+        clearPage(body) { body.querySelectorAll("[data-site-detail]").forEach(node => node.closest("section")?.remove()); }
+        clearEditor(body) { body.querySelectorAll("[data-site-detail='editor'], [data-site-detail='preview']").forEach(node => node.closest("section")?.remove()); }
+      }
+
+      function prettyJson(value) {
+        try { return JSON.stringify(JSON.parse(value), null, 2); }
+        catch (_) { return value || ""; }
+      }
+
+      [
+        "server-settings-panel",
+        "effect-history-panel",
+        "assistant-panel",
+        "ecs-explorer",
+        "site-editor"
+      ].forEach(tag => {
+        customElements.define(tag,
+          tag === "server-settings-panel" ? ServerSettingsPanel :
+          tag === "effect-history-panel" ? EffectHistoryPanel :
+          tag === "assistant-panel" ? AssistantPanel :
+          tag === "ecs-explorer" ? EcsExplorerPanel :
+          tag === "site-editor" ? SiteEditorPanel : class extends ControlPanel {});
+      });
+      window.addEventListener("hashchange", renderRoute);
+      renderRoute();
+    })();
+  </script>
+</body>
+</html>

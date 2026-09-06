@@ -1,0 +1,47 @@
+C:\Users\dante\source\repos\DantesRoleplay\catalog
+
+  edited in database      2
+       item.caldris.ganjis-carving-knife
+       item.caldris.ganjis-quarterstaff
+       — Authored live since the last export. Left alone — run export to capture it.
+  new in files           33
+       game.core.world.location.furnishing
+       dnd2024.downtime.cancelled
+       dnd2024.downtime.completed
+       dnd2024.downtime.progressed
+       dnd2024.downtime.started
+       dnd2024.hazard.contagion-exposed
+       dnd2024.hazard.contagion-progressed
+       dnd2024.hazard.contagion-recovered
+       dnd2024.hazard.contagion-transmitted
+       dnd2024.hazard.curse-bound
+       dnd2024.hazard.curse-discovered
+       dnd2024.hazard.curse-removed
+       dnd2024.hazard.exposure-recovered
+       dnd2024.hazard.exposure-resolved
+       dnd2024.hazard.exposure-started
+       dnd2024.hazard.poison-applied
+       dnd2024.hazard.poison-progressed
+       dnd2024.hazard.poison-recovered
+       dnd2024.hazard.trap-cleared
+       dnd2024.hazard.trap-detected
+       dnd2024.hazard.trap-disarmed
+       dnd2024.hazard.trap-reset
+       dnd2024.hazard.trap-triggered
+       dnd2024.object.damaged
+       dnd2024.object.destroyed
+       dnd2024.object.repaired
+       dnd2024.rest.completed
+       dnd2024.rest.interrupted
+       dnd2024.rest.progressed
+       dnd2024.rest.started
+       dnd2024.social.attitude-changed
+       dnd2024.travel.arrived
+       dnd2024.travel.journey-recorded
+       — In the catalog, not in the database. Will be created.
+  new in database         3
+       lock
+       stats
+       f5-natural-probe
+       — Authored live and never exported. Left alone — run export to capture it.
+  unchanged             531

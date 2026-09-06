@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.thalmon.monster-hunt",
+  "name": "Thalmon's Monster Hunt",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "During the monster outbreak, Thalmon travelled the world and slew the monsters.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "event",
+      "sensitivity": "open"
+    }
+  }
+}

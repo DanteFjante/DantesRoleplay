@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.thalmon.minevron",
+  "name": "Princess Minevron",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Princess Minevron, Thalmon's first daughter and third child, was trained in scholarship and magic.",
+      "provenance": "Approved ancient-language naming revision from the world-creation conversation (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "identity",
+      "sensitivity": "open"
+    }
+  }
+}

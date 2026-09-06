@@ -1,0 +1,12 @@
+{
+  "id": "procedure.subscription",
+  "owner": "procedure",
+  "description": "Namespace for procedure subscription catalog records.",
+  "allowedKinds": [
+    "procedure"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

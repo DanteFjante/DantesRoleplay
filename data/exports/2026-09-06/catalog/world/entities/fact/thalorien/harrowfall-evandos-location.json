@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.harrowfall-evandos-location",
+  "name": "Harrowfall's Location in Evandos",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Harrowfall is the ruined northern trade city of Evandos, beside the distinct Northern Cold Highlands.",
+      "provenance": "Approved as a Slice S3 location proposal during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "location",
+      "sensitivity": "open"
+    }
+  }
+}

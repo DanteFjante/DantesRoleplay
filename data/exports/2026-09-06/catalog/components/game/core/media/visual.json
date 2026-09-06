@@ -1,0 +1,5 @@
+{
+  "id": "game.core.media.visual",
+  "name": "Entity Visual Media",
+  "description": "Ordered blob-backed visual attachments owned by any existing entity. Roles and Player/DM visibility are explicit; bytes remain in verified content-addressed blob storage. Governed by procedure.game.core.media."
+}

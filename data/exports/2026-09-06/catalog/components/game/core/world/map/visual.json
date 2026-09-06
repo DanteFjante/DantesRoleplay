@@ -1,0 +1,5 @@
+{
+  "id": "game.core.world.map.visual",
+  "name": "World Map Visual",
+  "description": "Closed presentation metadata selecting reviewed Player and DM map assets for the world root or location that owns the depicted plane. It contains no URL, geometry, topology, travel, discovery, or rule state. Governed by procedure.game.core.world.spatial."
+}

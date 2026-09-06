@@ -1,0 +1,12 @@
+{
+  "id": "dnd2024.source.srd-5",
+  "owner": "dnd2024",
+  "description": "D\u0026D 2024 SRD 5 source family.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed as application-owned source family."
+}

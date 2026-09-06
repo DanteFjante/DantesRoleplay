@@ -1,0 +1,16 @@
+{
+  "id": "location.caldris.bramblebridge",
+  "name": "Bramblebridge",
+  "container": {
+    "id": "region.caldris.chalklands",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "settlement",
+      "status": "active",
+      "summary": "A frontier village built around a toll bridge, currently uneasy over a new toll order and an empty tax wagon that reached market. The Lantern Road ends here.",
+      "visibility": "public"
+    }
+  }
+}

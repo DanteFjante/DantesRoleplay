@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.valeros-tower-destroyed",
+  "name": "The Destruction of Valeros's Magic Tower",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The magic tower of Valeros was destroyed during the great Thalos war.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "event",
+      "sensitivity": "open"
+    }
+  }
+}

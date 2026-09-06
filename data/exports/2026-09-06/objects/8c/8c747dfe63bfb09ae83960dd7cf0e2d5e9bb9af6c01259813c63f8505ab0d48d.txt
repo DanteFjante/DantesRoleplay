@@ -1,0 +1,27 @@
+1. Attach `game.core.world.media.visual` only to an existing entity governed by its normal owner.
+   Never create an actor, location, clue, interaction, encounter, session, or item merely to carry
+   an image.
+2. Use `portrait` for a person or creature likeness, `setting` for general location atmosphere,
+   `scene` for artwork specific to an existing selectable situation, and `handout` for reviewed
+   evidence or a player-facing document/object plate. A geographical map remains exclusively under
+   `game.core.world.map.visual`.
+3. Each slot has one closed `variants` object. Select only the exact requested `player` or `dm`
+   variant. Never fall back between audiences and never reveal that another variant exists.
+4. Each variant records only a bounded asset key, useful alt text, MIME type, pixel dimensions, and
+   lowercase SHA-256. Admit new bytes with `commit(kind: "system.blob-upload.begin")`, transfer the
+   raw body through its short-lived HTTP capability, and complete admission with
+   `commit(kind: "system.blob-upload.finalize")`. The component never stores a URL, upload token,
+   or filesystem path.
+5. Record review evidence once per slot in `provenance`: origin kind, credit, authored source
+   reference, review date, and positive version. Provenance and hashes are audit material and are
+   not part of the ordinary Player read model.
+6. Project media only after the owning entity and slot are authorized by the existing audience
+   owner. An unrevealed clue, hidden person, denied location, or unauthorized scene contributes no
+   URL, asset key, alt text, hash, identifier, count, placeholder, or existence signal.
+7. For a current situation, prefer an authorized `scene` slot on the exact selected conversation or
+   encounter, then a `scene` slot on the exact location, then that location's `setting` slot. Never
+   infer a selector or participant from prose.
+8. Replace the complete component after reading the current entity revision. Use `draft`, `active`,
+   and `archived` only for media lifecycle; component revisions retain history and rollback evidence.
+   Use the owner's exact application/state-space synchronization contract, with expected revisions
+   and a reviewed dry run; never bypass it through retired loose component or effects calls.

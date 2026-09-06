@@ -1,0 +1,9 @@
+{
+  "id": "fixture.legacy.lantern",
+  "name": "Lantern",
+  "container": {
+    "id": "fixture.legacy.orban",
+    "slot": "carried"
+  },
+  "components": {}
+}

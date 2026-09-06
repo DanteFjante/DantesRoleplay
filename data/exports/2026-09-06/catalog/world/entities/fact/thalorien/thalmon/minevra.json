@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.thalmon.minevra",
+  "name": "Princess Minevra",
+  "components": {
+    "game.core.world.fact": {
+      "status": "archived",
+      "summary": "Princess Minevra, Thalmon's first daughter and third child, was trained in scholarship and magic.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22). Superseded by the approved ancient-name revision.",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "identity",
+      "sensitivity": "open"
+    }
+  }
+}

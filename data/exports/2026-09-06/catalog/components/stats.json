@@ -1,0 +1,5 @@
+{
+  "id": "stats",
+  "name": "Stats",
+  "description": "Reusable numeric and descriptive attributes for an entity."
+}

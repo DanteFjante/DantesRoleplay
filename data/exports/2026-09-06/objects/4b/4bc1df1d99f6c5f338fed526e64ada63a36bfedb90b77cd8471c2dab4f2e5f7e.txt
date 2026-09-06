@@ -1,0 +1,26 @@
+- A reaction cannot return a guard decision. Deciding whether a change is permitted is a guard's
+  job, and a mechanic that does both has been registered in the wrong mode.
+- A reaction's effects are not applied by the router. They are proposed like any other change, so
+  they propose their own events, face the same guards, and count against the same chain budget one
+  level deeper.
+- Any failure aborts the entire root change: an unavailable or inactive mechanic, a mechanic that
+  no longer declares the type, corrupt bindings, a projection failure, a throw, a timeout, or an
+  invalid effect. There is no partial reaction.
+- Reactions run in ascending declared order, then by subscription id, over events in ledger
+  sequence order. The tiebreak is what makes a chain reproducible rather than dependent on what
+  the database happened to return first.
+- Only committed successful executions are kept. A chain that rolls back leaves no execution rows
+  behind, because an execution is evidence that a rule ran and its work stood.
+- A rule cannot declare a `world.*` event. Those are the kernel's own record of what it did, and a
+  rule able to forge one could claim a component was replaced that never was — in the one place
+  whose entire value is that it can be believed. Propose the effect; the event follows from it.
+- A declared event that names an unregistered or inactive type, carries a payload its schema
+  rejects, or points at an entity that is not there fails the WHOLE root change with
+  `SUBSCRIBER_INVALID_EVENT`. A false statement in an audit trail is worse than a missing one.
+- A declared event is guarded like any other proposal, at its own depth, and counts against the
+  chain's event budget whether or not a guard allows it.
+- Each declared event records the execution that asserted it, so a reader can always ask which rule
+  made the claim. Causation alone cannot answer that — two rules answering one event both name it.
+- A notification's content and links are written once and are never editable. Nothing delivers
+  them: they wait until somebody asks. A notice with no topic, no subject, or naming an entity that
+  is not there fails the whole root change, exactly as a bad declared event does.

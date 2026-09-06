@@ -1,0 +1,5 @@
+{
+  "id": "game.core.world.chronology",
+  "name": "World Chronology Entry",
+  "description": "Closed dated setting history with an explicit calendar coordinate, authored display date, descriptive visibility, World scope, and optional subjects. Governed by procedure.game.core.world.chronology."
+}

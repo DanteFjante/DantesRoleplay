@@ -1,0 +1,56 @@
+// Fixed clock-driven reconciliation for the reviewed Feature 10 route closure.
+var condition = ctx.roles.condition, route = ctx.roles.route;
+var conditionId = 'game.core.world.condition', routeId = 'game.core.world.route', availabilityId = 'game.core.world.route.availability';
+var clockId = 'game.core.world.clock', scopeKind = 'game.core.world.condition.in-world', affectsKind = 'game.core.world.condition.affects';
+var routeScopeKind = 'game.core.world.route.in-world', routeFromKind = 'game.core.world.route.from', routeToKind = 'game.core.world.route.to';
+
+function closed(value, keys) { if (value === null || Array.isArray(value) || typeof value !== 'object') return false; var actual = Object.keys(value).sort(); if (actual.length !== keys.length) return false; for (var i = 0; i < keys.length; i++) if (actual[i] !== keys[i]) return false; return true; }
+function value(raw, name) { if (typeof raw === 'string') { try { return JSON.parse(raw); } catch (error) { throw new Error(name + ' is corrupt.'); } } if (raw !== null && typeof raw === 'object' && !Array.isArray(raw)) return raw; throw new Error(name + ' is corrupt.'); }
+function text(raw, maximum) { return typeof raw === 'string' && raw.length >= 1 && raw.trim() === raw && Array.from(raw).length <= maximum; }
+function integer(raw, minimum, maximum) { return typeof raw === 'number' && Number.isSafeInteger(raw) && raw >= minimum && raw <= maximum; }
+function edge(raw) { return closed(raw, ['data', 'fromEntityId', 'kind', 'toEntityId']) && typeof raw.data === 'string' && typeof raw.fromEntityId === 'string' && typeof raw.kind === 'string' && typeof raw.toEntityId === 'string'; }
+function empty(raw, name) { return closed(value(raw, name), []); }
+function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+
+if (!condition || !route || !condition.components || !route.components || !condition.components[conditionId] || !route.components[routeId] || !route.components[availabilityId]) throw new Error('Fixed condition or route is unavailable.');
+if (!Array.isArray(condition.relationships) || !Array.isArray(route.relationships)) throw new Error('Condition or route scope projection is missing.');
+var current = value(condition.components[conditionId], 'Condition state');
+var availability = value(route.components[availabilityId], 'Route availability');
+var routeState = value(route.components[routeId], 'Route state');
+if (!closed(current, ['endMinute', 'kind', 'source', 'startMinute', 'status', 'summary', 'visibility']) || current.kind !== 'route-closure' || (current.status !== 'scheduled' && current.status !== 'active' && current.status !== 'expired') || !text(current.summary, 1000) || !text(current.source, 500) || (current.visibility !== 'public' && current.visibility !== 'party' && current.visibility !== 'gm') || !integer(current.startMinute, 0, 1000000000) || !integer(current.endMinute, 1, 1000000000) || current.startMinute >= current.endMinute) throw new Error('Fixed condition state is corrupt.');
+if (!closed(availability, ['status']) || (availability.status !== 'open' && availability.status !== 'closed')) throw new Error('Fixed route availability is corrupt.');
+if (!closed(routeState, ['durationMinutes', 'mode', 'status', 'summary', 'visibility']) || routeState.status !== 'active' || routeState.mode !== 'on-foot') throw new Error('Fixed route state is corrupt.');
+
+var payload = ctx.event && ctx.event.payload;
+if (!payload || payload.entityId !== 'world.feature-01.fixture' || payload.definitionId !== clockId) return { effects: [] };
+var before = value(payload.before, 'Previous clock'); var after = value(payload.after, 'Resulting clock');
+if (!closed(before, ['calendarId', 'currentMinute', 'revision']) || !closed(after, ['calendarId', 'currentMinute', 'revision']) || !text(before.calendarId, 100) || !text(after.calendarId, 100) || !integer(before.currentMinute, 0, 1000000000) || !integer(after.currentMinute, 0, 1000000000) || !integer(before.revision, 0, 2147483647) || !integer(after.revision, 0, 2147483647)) throw new Error('Clock replacement payload is corrupt.');
+
+var conditionScope = 0, affects = 0;
+for (var i = 0; i < condition.relationships.length; i++) {
+  var link = condition.relationships[i];
+  if (!edge(link) || link.fromEntityId !== condition.id || !empty(link.data, 'Condition relationship data')) throw new Error('Condition scope links are corrupt.');
+  if (link.kind === scopeKind && link.toEntityId === payload.entityId) conditionScope++;
+  else if (link.kind === affectsKind && link.toEntityId === route.id) affects++;
+  else throw new Error('Condition scope does not bind the fixed world and route.');
+}
+if (conditionScope !== 1 || affects !== 1 || condition.relationships.length !== 2) throw new Error('Condition must have exactly one world scope and one affected route.');
+
+var routeScope = 0, routeFrom = 0, routeTo = 0;
+for (var j = 0; j < route.relationships.length; j++) {
+  var routeLink = route.relationships[j];
+  if (!edge(routeLink)) throw new Error('Route relationship projection is corrupt.');
+  if (routeLink.fromEntityId !== route.id) continue;
+  if (!empty(routeLink.data, 'Route relationship data')) throw new Error('Route scope links are corrupt.');
+  if (routeLink.kind === routeScopeKind && routeLink.toEntityId === payload.entityId) routeScope++;
+  else if (routeLink.kind === routeFromKind || routeLink.kind === routeToKind) { if (routeLink.toEntityId === route.id) throw new Error('Route cannot point to itself.'); if (routeLink.kind === routeFromKind) routeFrom++; else routeTo++; }
+  else throw new Error('Route scope does not bind the fixed world.');
+}
+if (routeScope !== 1 || routeFrom !== 1 || routeTo !== 1 || routeScope + routeFrom + routeTo !== 3) throw new Error('Fixed route scope is corrupt.');
+
+var status = after.currentMinute < current.startMinute ? 'scheduled' : after.currentMinute < current.endMinute ? 'active' : 'expired';
+var availabilityStatus = status === 'active' ? 'closed' : 'open';
+var nextCondition = { kind: current.kind, status: status, summary: current.summary, source: current.source, visibility: current.visibility, startMinute: current.startMinute, endMinute: current.endMinute };
+var nextAvailability = { status: availabilityStatus };
+if (same(current, nextCondition) && same(availability, nextAvailability)) return { effects: [] };
+return { narration: route.name + ' availability is reconciled with the world clock.', effects: [{ type: 'component.set', entityId: condition.id, definitionId: conditionId, data: JSON.stringify(nextCondition) }, { type: 'component.set', entityId: route.id, definitionId: availabilityId, data: JSON.stringify(nextAvailability) }], data: { test: 'clock-driven-route-closure', conditionId: condition.id, routeId: route.id, minute: after.currentMinute, status: status, availability: availabilityStatus } };

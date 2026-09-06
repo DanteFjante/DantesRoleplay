@@ -1,0 +1,16 @@
+{
+  "id": "location.shardwake.crownward",
+  "name": "Crownward Reach",
+  "container": {
+    "id": "world.shardwake",
+    "slot": "region"
+  },
+  "components": {
+    "game.core.world.location": {
+      "status": "active",
+      "summary": "A windward chain of inhabited islands governed through beacon law, ship registries, and uneasy mutual defense.",
+      "kind": "region",
+      "visibility": "public"
+    }
+  }
+}

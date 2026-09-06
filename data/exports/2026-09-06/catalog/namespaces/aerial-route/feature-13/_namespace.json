@@ -1,0 +1,12 @@
+{
+  "id": "aerial-route.feature-13",
+  "owner": "aerial-route",
+  "description": "Namespace for aerial-route feature-13 catalog records.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

@@ -1,0 +1,16 @@
+{
+  "id": "fact.caldris.ganji-unbidden-eye",
+  "name": "The Unbidden Eye",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The Tensor Sect named Ganji 'the Unbidden Eye,' believing his birth fulfilled an old teaching about a student who sees before learning how to look.",
+      "provenance": "Tensor Sect internal teaching, known to Ganji and sect members",
+      "visibility": "party"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "identity",
+      "sensitivity": "discreet"
+    }
+  }
+}

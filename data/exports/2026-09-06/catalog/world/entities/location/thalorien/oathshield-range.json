@@ -1,0 +1,16 @@
+{
+  "id": "location.thalorien.oathshield-range",
+  "name": "The Oathshield Range",
+  "container": {
+    "id": "location.thalorien.valeros",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "site",
+      "status": "draft",
+      "summary": "Valeros's southeastern mountain range, marked by high passes and old watch paths where safety and isolation meet.",
+      "visibility": "public"
+    }
+  }
+}

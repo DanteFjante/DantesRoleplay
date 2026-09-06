@@ -1,0 +1,32 @@
+1. Declare `game.core.world.faction` and `game.core.world.motive` once. Both are complete closed
+   objects; use the entity name as the display name and do not duplicate it in component data.
+2. A faction record contains status, summary, visibility, 1–5 goals, 1–5 methods, 0–10 descriptive
+   assets, and one agenda with state `ready` or `advanced`. Assets are descriptions, not entity IDs.
+   A motive record contains only status, summary, and descriptive visibility.
+3. Set up reviewed world state with one previewed `commit(kind: "system.world-state.sync")` manifest, with entities
+   creation, complete component additions or replacements, then relationship creation. Correct a
+   closed component as a complete replacement; do not merge a partial motive or agenda.
+4. Use exact empty object data `{}` for all faction links. `game.core.world.faction.member` is
+   directed faction → actor; `game.core.world.faction.controls` is directed faction → claimed
+   world entity. Neither asserts exclusive loyalty or control.
+5. `game.core.world.faction.allied-with` and `game.core.world.faction.opposed-to` connect two
+   faction entities. Store either one once in lexical entity-ID orientation. The two kinds cannot
+   coexist for the same unordered pair.
+6. Read the resulting entities and all relevant incoming/outgoing links back after authoring.
+   `mechanic.game.core.world.faction.agenda` is the only path that advances an agenda. Supply one
+   active faction as role `faction` and input `{}`; it replaces the complete component only when
+   its agenda is exactly `ready`, making it `advanced` while preserving all other state.
+7. A world-scoped faction has exactly one empty-data `game.core.world.faction.in-world` link to
+   its active root. `game.core.world.faction.territory-controls` is an empty-data faction → active
+   location link in that same root, with at most one faction controller per location. It is a
+   narrow exclusive territorial controller, while `controls` stays a broad nonexclusive claim.
+8. A front entity has exactly one closed `game.core.world.faction.front` record and exactly one
+   each empty-data `front.in-world`, `front.for-faction`, and `front.contests` link. The linked
+   active faction and contested active location must share the front's root scope. The reviewed
+   front begins `active`, `quiet`, and at root minute zero; it does not transfer territory.
+9. `mechanic.game.core.world.faction.front.advance` is the only manual front-advance path. Supply
+   exact roles `front`, `faction`, `location`, and `world` with exactly
+   `{ "expectedPhase": "quiet" | "rising" }`. It proves all scope links and writes one complete
+   front replacement: `quiet → rising` or `rising → pressing`, preserving the closed front record
+   except for phase and the root clock's current minute. A pressing, inactive, malformed, or stale
+   front rejects without effects.

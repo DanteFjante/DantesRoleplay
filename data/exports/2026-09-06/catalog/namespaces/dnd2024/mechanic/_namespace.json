@@ -1,0 +1,12 @@
+{
+  "id": "dnd2024.mechanic",
+  "owner": "dnd2024",
+  "description": "D\u0026D 2024 executable rule identities.",
+  "allowedKinds": [
+    "mechanic"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed as application-owned D\u0026D 2024 mechanic identity."
+}

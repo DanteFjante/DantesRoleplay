@@ -1,0 +1,12 @@
+{
+  "id": "mechanic.game.core.world.teleport-gate",
+  "owner": "mechanic",
+  "description": "Namespace for mechanic game core world teleport-gate catalog records.",
+  "allowedKinds": [
+    "mechanic"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

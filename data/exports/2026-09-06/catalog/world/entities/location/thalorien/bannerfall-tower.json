@@ -1,0 +1,16 @@
+{
+  "id": "location.thalorien.bannerfall-tower",
+  "name": "The Bannerfall Tower",
+  "container": {
+    "id": "location.thalorien.valeros",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "site",
+      "status": "draft",
+      "summary": "The forbidden, dangerous ruins of Valeros's destroyed magic tower, in the Oathshield Range. It is not sealed beyond all access.",
+      "visibility": "public"
+    }
+  }
+}

@@ -1,0 +1,56 @@
+Source and attribution
+- Rule source: source.dnd2024.srd-5.2.1, locator "Playing the Game > Proficiency > Skill Proficiencies and Skills" in System Reference Document 5.2.1.
+- The source registry stores the required Wizards of the Coast LLC CC-BY-4.0 attribution and official URLs.
+
+Purpose and SRD explanation
+A skill identifies a category of ability checks. A creature proficient in a skill adds its Proficiency Bonus to an ability check involving that skill; a creature without that proficiency can still make the check without the bonus. The ability listed for a skill is the one it most often uses, not an exclusive pairing; the GM still names the ability for a check.
+
+Stable skill vocabulary and advisory defaults
+- acrobatics: dex
+- animal-handling: wis
+- arcana: int
+- athletics: str
+- deception: cha
+- history: int
+- insight: wis
+- intimidation: cha
+- investigation: int
+- medicine: wis
+- nature: int
+- perception: wis
+- performance: cha
+- persuasion: cha
+- religion: int
+- sleight-of-hand: dex
+- stealth: dex
+- survival: wis
+
+Dependencies
+- procedure.mechanic.dnd2024.source-registry and entity source.dnd2024.srd-5.2.1.
+- Character-level Slice 2 is verified, but this component neither reads nor stores level or Proficiency Bonus.
+- No class, background, ability-check, tool, saving-throw or Expertise component.
+
+Creation order and data
+1. Create this contract.
+2. Declare dnd2024.skill-proficiencies as a closed object containing exactly skills and sourceRef.
+3. skills is a unique, alphabetically sorted array containing only the 18 lowercase kebab-case ids above. An empty array explicitly means the character is known to have no skill proficiencies in this scope; a missing component means unknown state.
+4. sourceRef is fixed to {"sourceId":"source.dnd2024.srd-5.2.1","locator":"Playing the Game > Proficiency > Skill Proficiencies and Skills"}.
+5. Create mechanic.dnd2024.skill-proficiencies.record in scope dnd2024-srd-5.2.1. It may see the existing component on subject and is the normal creation/correction path.
+6. Run the mechanic through commit(kind: "action"). It adds the component when absent or replaces the whole closed object when present.
+
+Action input and output
+- Input is exactly {"skills":[<zero or more stable skill ids>]}. Missing, null, non-array, non-string, unknown, wrong-case, display-name, duplicate, or extra input fails before effects.
+- The mechanic canonicalizes valid input to alphabetical order and fixes sourceRef. Callers cannot supply sourceRef, a bonus, or an ability mapping.
+- It returns one component.add or component.set effect and data containing canonical skills, previousSkills (null when absent), defaultAbilities for the selected skills, and sourceRef. Default abilities are derived from the vocabulary and never stored.
+- It uses no randomness.
+
+Deterministic verification
+- Record all 18 ids in reverse order; stored ids must be canonical alphabetical order and every returned default ability must match the table above.
+- Record an empty list and a multi-skill list; both must succeed.
+- Reject an unknown id, duplicate id, wrong-case id, display name with spaces, non-array, null, non-string member, and an extra field.
+- After every rejection, query the character and prove its stored component bytes are unchanged.
+- Final test state is ["perception","stealth"]. Query it back and prove the component stores exactly skills and sourceRef: no ability mapping, level, modifier, Proficiency Bonus, Expertise or acquisition data.
+- Query the contract and mechanic back and confirm scoped intent search selects only the recording rule.
+
+Non-goals, revision and retirement
+This slice does not grant proficiencies from a class/background, record acquisition provenance, derive a bonus, resolve a check, implement Expertise, or cover tools/saves/weapons. Those require later contracts. Component id and skill ids are permanent. A vocabulary correction requires versioned contract and mechanic revisions plus migration analysis before stored state changes. If an advancement workflow supersedes administrative recording, deprecate the recording mechanic after migrating callers but retain the component and history.

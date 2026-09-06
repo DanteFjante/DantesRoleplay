@@ -1,0 +1,28 @@
+1. Use `game.core.world.map.anchor` only on an active `game.core.world.location` directly
+   contained by an active map plane. A plane is an active `game.core.world.root` or an active
+   `game.core.world.location` whose kind is `region` or `settlement`. Existing topology still owns
+   the child slot: a child region uses `region`; a child settlement, site, or interior uses
+   `location`. The direct container is the anchor's only map plane; never store a plane, region,
+   settlement, or map ID in the component.
+2. Its complete closed data is exactly integer `x` and `y`, each 0–1,000. `(0, 0)` is the
+   top-left and `(1000, 1000)` the bottom-right of a consumer's available region plane. A renderer
+   may scale the plane proportionally, but must not derive distance, heading, time, terrain, or
+   travel rules from it.
+3. For one reviewed plane layout, anchor every direct active child location presented by that
+   layout and keep each `(x, y)` pair unique within that plane. The same pair may be reused on a
+   different plane. Correct an anchor as a complete replacement after reading its location and
+   direct containing plane.
+4. The first fixture anchors are gate `(150, 650)`, market `(500, 500)`, and observatory
+   `(850, 250)`. They are display choices only; they neither create nor alter an adjacency or
+   route.
+5. Use `game.core.world.map.visual` only on an entity carrying an active
+   `game.core.world.root` or active `game.core.world.location`. The owning entity is the depicted
+   map plane. Its complete closed data is exactly status plus a nonempty closed `variants` object.
+   Each optional `player` or `dm` variant records a finalized blob hash, MIME type, dimensions,
+   nonempty alt text, optional caption, order, and reviewed provenance.
+6. Select only the exact requested audience variant. A missing Player variant exposes no DM blob
+   metadata or alt text, and a missing DM variant does not fall back to Player. Delivery re-resolves
+   the map through its owning entity before opening the verified blob.
+7. Correct a visual as a complete replacement after reading its owner. Visual status controls only
+   whether that illustration is current; removing or archiving it must not remove the World node or
+   any information view for that node.

@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.rebellion",
+  "name": "The Rebellion Against the Council",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Public frustration eventually developed into an organized rebellion against the eight-sibling government.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "event",
+      "sensitivity": "open"
+    }
+  }
+}

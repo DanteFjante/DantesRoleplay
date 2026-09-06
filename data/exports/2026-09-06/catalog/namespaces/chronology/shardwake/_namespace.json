@@ -1,0 +1,12 @@
+{
+  "id": "chronology.shardwake",
+  "owner": "chronology",
+  "description": "Dated history of the Shardwake Isles. Entries must use the governed chronology contract, the shardwake-reckoning calendar, and explicit world and subject relationships.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for durable Shardwake history separate from campaign recap and structural events."
+}

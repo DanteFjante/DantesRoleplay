@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.knot-and-musical-magic",
+  "name": "Knot Magic and Magical Music",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Alongside standard D&D magic, Thalorien has local magical traditions known as knot magic and magical music. Their methods, limits, cultural origins, and relationship to university magic remain open questions for later exploration.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "capability",
+      "sensitivity": "open"
+    }
+  }
+}

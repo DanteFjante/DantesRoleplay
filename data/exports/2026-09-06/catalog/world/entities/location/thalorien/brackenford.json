@@ -1,0 +1,16 @@
+{
+  "id": "location.thalorien.brackenford",
+  "name": "Brackenford",
+  "container": {
+    "id": "location.thalorien.valeros",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "settlement",
+      "status": "active",
+      "summary": "A cozy Valeros frontier village on the settled edge of a smaller, ancient forest, where an old stone ford carries the road between farm country and forest patrols.",
+      "visibility": "public"
+    }
+  }
+}

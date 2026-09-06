@@ -1,0 +1,12 @@
+{
+  "id": "fact.caldris.mystery-sealed-alcove",
+  "name": "The Sealed Alcove",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Set into the base of one of Bramblebridge's bridge piers is a small stone alcove, sealed by a door bearing a faded royal crest nobody currently living can place. Since the new toll order arrived, guards have been quietly posted to keep people away from it -- and get oddly tense if asked why.",
+      "provenance": "Observable in Bramblebridge; the guards' behavior is common gossip",
+      "visibility": "party"
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "id": "game.core.world.rumour",
+  "name": "World Rumour",
+  "description": "Closed attributed world claim with explicit resolution state, descriptive visibility, and authored provenance. It never silently becomes a fact. Governed by procedure.game.core.world.knowledge."
+}

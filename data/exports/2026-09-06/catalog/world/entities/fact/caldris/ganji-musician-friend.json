@@ -1,0 +1,12 @@
+{
+  "id": "fact.caldris.ganji-musician-friend",
+  "name": "The Old Musician",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "An old traveling musician once stayed at the Tensor Sect for a short time. Music wasn't permitted within the Sect's walls, so he played just outside them instead -- where Ganji, sneaking out from his required hours of solitary religious study, heard him. The two struck a quiet bargain not to tell on each other, became friends over the musician's short stay, and Ganji learned to play the flute from him. It was Ganji's first real experience of music, and part of why he later carved his quarterstaff to double as one.",
+      "provenance": "Witnessed by Ganji himself",
+      "visibility": "party"
+    }
+  }
+}

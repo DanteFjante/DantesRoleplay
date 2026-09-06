@@ -1,0 +1,16 @@
+{
+  "id": "location.thalorien.merceros",
+  "name": "Merceros",
+  "container": {
+    "id": "world.thalorien",
+    "slot": "region"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "region",
+      "status": "draft",
+      "summary": "Merceros is the southern kingdom of Thalorien, founded by Merceron and associated with commerce and trade.",
+      "visibility": "public"
+    }
+  }
+}

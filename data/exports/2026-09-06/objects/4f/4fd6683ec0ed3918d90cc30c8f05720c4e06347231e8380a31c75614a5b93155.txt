@@ -1,0 +1,35 @@
+Source: *System Reference Document 5.2.1*, "Playing the Game — D20 Tests / Ability Checks",
+Wizards of the Coast, CC-BY-4.0, <https://www.dndbeyond.com/srd>.
+
+1. An ability check is `1d20 + the relevant ability modifier` compared to a Difficulty Class. The
+   check succeeds when the total is EQUAL TO or greater than the DC.
+2. Read the score from `dnd2024.abilities` and derive the modifier — see
+   `procedure.mechanic.dnd2024.abilities`. Never accept a modifier as an input; a caller-supplied
+   modifier is a caller-decided outcome.
+3. The DC is chosen by the GM before the roll, from the SRD's Typical Difficulty Classes:
+   very easy 5, easy 10, medium 15, hard 20, very hard 25, nearly impossible 30. It is an input to
+   the rule, never something the rule invents.
+4. **A natural 20 is NOT an automatic success on an ability check, and a natural 1 is NOT an
+   automatic failure.** The SRD reserves that for attack rolls and death saving throws; on a check
+   or a save an exceptional roll is colour for the GM to narrate, not a mechanic. Do not write it
+   in.
+5. Every d20 test in this ruleset returns this envelope in `data`, so one reader can explain any
+   ruling:
+
+   ```json
+   {"test":"ability-check","ability":"dex","dc":15,"die":"1d20","roll":14,
+    "modifiers":[{"source":"dex 16","value":3}],"total":17,"succeeded":true,
+    "source":"SRD 5.2.1 - Ability Checks"}
+   ```
+
+   `modifiers` is a LIST of `{source, value}`, even when there is one. Proficiency, advantage and
+   situational bonuses each append an entry rather than changing the arithmetic, so a later rule
+   extends this shape instead of replacing it, and "why that total?" is always answerable.
+6. Roll with `ctx.randomInt(1, 20)`. Never `Math.random()` — the seed is recorded so a ruling
+   stays reproducible, and an unreproducible roll is an unreviewable one.
+7. A check proposes **zero effects**. It answers "did it work?"; changing the world in consequence
+   is a separate action. Narration only is a legitimate success.
+8. Set `scope` to `dnd2024-srd-5.2.1` on every mechanic governed by this contract. A scope-specific
+   rule outranks a shared one, and the shipped generic `mechanic.check.threshold` answers to
+   "check" and "roll for" too. Without the scope, it may answer instead.
+9. Narrate only what the envelope carries. If the narration says "barely", the data must show it.

@@ -1,0 +1,73 @@
+1. Call `orient()` first. It states what this system is, what exists in it right now, what is not
+   built, and which call to make next. Call it again whenever you lose track — it is cheap.
+2. Read with `query(kind: ...)`. The kinds are `capabilities`, `procedures`, `categories`, `world`, `entities`,
+   `graph`, `journey-plan`, `itinerary-plan`, `campaign-resume`, `session-recap`, `quest-summary`, `knowledge-answer`, `information-answer`, `information-actions`, `story-plan`, `mechanics`, `event-types`, `events`, `subscriptions`, `notifications`, `feedback`, `system.applications`, `system.sources`, `system.application-preview`, `system.dependencies`, `system.catalogs`, `system.catalog.browse`, `system.catalog.search`, `system.catalog.record`, `history`. No `id` returns a list or search; `id` returns one record in full; fixed planning/summary kinds state their required ID and reject unrelated filters in their own contract.
+   `version` with `id` returns an older revision. Read the full record before revising anything —
+   a summary is not the thing itself.
+   Use `query(kind: "categories", catalog: "procedures")` or
+   `query(kind: "categories", catalog: "mechanics")` to browse one category level at a time.
+   Its `category` is a branch — the selected path and its descendants — and the record lists
+   accept the same branch filter.
+   Private-host administrators can inspect immutable registrations with
+   `query(kind: "system.applications")`, then inspect one application's relative source stack and
+   latest scan evidence with `query(kind: "system.sources", applicationId: "...")`. These calls
+   authenticate from the MCP transport; never place a principal, role, or credential in tool input.
+   Before activation work, use
+   `query(kind: "system.application-preview", applicationId: "...")` to scan the registered
+   allowed-root-relative paths/globs and inspect the candidate fingerprint, winners, shadows, and
+   closed problems. Canonical root paths come only from host configuration and never from this call.
+   Use `query(kind: "system.dependencies", applicationId: "...")` to inventory declared exact
+   component-field and projection dependencies. Supply a returned canonical node `id` to traverse
+   its direct or transitive dependents. The response names consumer kinds not yet indexed; the
+   system never guesses dependencies by parsing JavaScript or filenames.
+   For an application catalog, start with
+   `query(kind: "system.catalogs", applicationId: "...")`, browse one described logical node with
+   `system.catalog.browse`, search without vectors using `system.catalog.search`, then inspect the
+   exact effective contract using `system.catalog.record`. Continue pages only with the returned
+   cursor; restart at the root if the cursor is stale.
+3. When you do not know a payload shape or which parameters a kind reads, call
+   `query(kind: "capabilities")`. It is the exact catalog, and it is generated from the same
+   structure the two dispatchers switch on, so it cannot describe a kind that does not work.
+   Never guess a kind or a shape.
+4. Before any `commit`, find and read the contract governing it:
+   `query(kind: "procedures")` lists the manual, and each entry states what it governs — match
+   that against the commit you are about to make. Then cite what you read in `proceduresUsed` and
+   say what you are doing in `intent`, in your own words. The audit records both, and records
+   separately which contracts you actually opened.
+5. Change with `commit(kind: ..., payload: ...)`. The generic-host kinds are `component`,
+   `effects`, `mechanic`, `action`, `system.application.register`, `system.component-type.register`, `system.source.register`, and
+   `system.application.activate`, `system.state-space.create`, and `system.state-space.upgrade`. The administrative `system.*` kinds authenticate from the transport and require a 32-character
+   lowercase hexadecimal `requestToken`. Application and source registration require
+   `expectedFingerprint`: use `null` only when the target must be absent, otherwise use the exact
+   current fingerprint from the corresponding `system.applications` or `system.sources` query.
+   `system.component-type.register` accepts only an already registered application, an owner-qualified
+   type ID, its raw JSON schema, and `expectedSchemaHash`: use `null` only when that type is absent,
+   otherwise use the latest exact schema hash returned by the registration receipt. It derives the
+   profile, normalized schema, version, and hash itself; old schemas cannot roll a type backward.
+   Register sources only beneath a configured
+   `allowedRootId` using a relative path or glob; registration never creates or scans a directory.
+   Activate only the exact valid `previewFingerprint` returned by `system.application-preview`.
+   Supply `expectedActiveFingerprint: null` only when no overlay is active; otherwise copy the
+   exact current activation fingerprint from `system.applications`. Activation retains redacted
+   source/winner hashes but neither imports nor makes source files executable, and its dependency
+   coverage remains explicitly incomplete.
+   Create a state space only after activation, using the exact `activeFingerprint` returned by
+   `system.applications`, a new globally unique `stateSpaceId`, and `expectedFingerprint: null`.
+   Creation binds one empty isolated runtime instance to that immutable application evidence; it
+   does not create entities/components, upgrade an existing space, or migrate legacy state.
+   Upgrade only an empty state space using the exact current `activeFingerprint` and the space's
+   current `bindingFingerprint` from `system.applications`. The system records zero entity and
+   component counts as compatibility evidence. Any non-empty space returns `MIGRATION_REQUIRED`;
+   there is no caller-supplied migration or compatibility override.
+   Dry-run the identical administrative payload first, then confirm it through the matching query
+   where a query exists; component-type registration returns its immutable receipt directly.
+   Retained application adapters may additionally expose `procedure`,
+   `effects`, `mechanic`, `event-type`, `subscription`, `action`, `itinerary-advance`, `campaign`, `quest`, `notification`, `feedback`, `information-source`, `information-record`, `information-action-contract`, `information-action`, `story-plan`. `campaign` validates or creates a closed existing-world campaign blueprint; `quest` creates one closed campaign-scoped draft quest. Neither accepts caller-supplied effects. `event-type` registers a schema only; a `subscription` registers middleware. `information-source` and `information-record` store neutral scoped material; `information-action-contract` declares a schema-validated host executor, and `information-action` runs that declared contract. Registered guards run before a world change commits and can veto it, an accepted change records structural events readable with `query(kind: "events")`, and registered reactions run on those events with their effects committing in the same transaction, and may declare an event or raise a notification. `notification` moves one notice between `unread`, `read` and `archived` and cannot change what it says. `feedback` records append-only testing feedback about the host system and never changes game state. `story-plan` starts/cancels one development-GM bounded semantic plan; its backend executes context, knowledge, and action steps serially. `payload` is a JSON object encoded as a string — the whole
+   object in one argument, not loose named arguments. Where `dryRun` is supported, ALWAYS call
+   with `dryRun: true` first and read every named check or problem that comes back; then commit
+   the identical payload. A dry run you did not read is worse than none.
+6. Treat every failure as an instruction: the `fix` field names the literal next call, and a
+   rejected payload comes back with the shape you needed inside the error. Make that call rather
+   than retrying blind or giving up.
+7. After a commit, confirm: query back what you wrote, and quote the returned `operationId` when
+   reporting what you did.

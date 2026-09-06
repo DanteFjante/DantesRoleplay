@@ -1,0 +1,12 @@
+{
+  "id": "dnd2024.mechanic.character-level",
+  "owner": "dnd2024",
+  "description": "D\u0026D 2024 character-level mechanics.",
+  "allowedKinds": [
+    "mechanic"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed as application-owned character-level behavior."
+}

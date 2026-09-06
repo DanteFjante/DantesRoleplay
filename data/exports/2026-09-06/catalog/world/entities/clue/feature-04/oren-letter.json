@@ -1,0 +1,16 @@
+{
+  "id": "clue.feature-04.oren-letter",
+  "name": "Oren's Unsent Letter",
+  "components": {
+    "game.core.world.clue": {
+      "status": "unrevealed",
+      "summary": "An unsent letter names the observatory and asks Oren to keep a family promise.",
+      "provenance": "A folded letter hidden among Oren's papers.",
+      "visibility": "gm"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "relationship",
+      "sensitivity": "secret"
+    }
+  }
+}

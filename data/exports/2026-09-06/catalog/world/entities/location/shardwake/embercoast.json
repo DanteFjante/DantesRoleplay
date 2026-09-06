@@ -1,0 +1,16 @@
+{
+  "id": "location.shardwake.embercoast",
+  "name": "Embercoast",
+  "container": {
+    "id": "world.shardwake",
+    "slot": "region"
+  },
+  "components": {
+    "game.core.world.location": {
+      "status": "active",
+      "summary": "A volcanic southern coast of black beaches, red-glass kilns, ash orchards, and ambitious merchant houses.",
+      "kind": "region",
+      "visibility": "public"
+    }
+  }
+}

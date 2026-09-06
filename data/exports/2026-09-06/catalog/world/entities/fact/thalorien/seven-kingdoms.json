@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.seven-kingdoms",
+  "name": "The Seven Kingdoms of Thalorien",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The known continent of Thalos contains the seven kingdoms of Thalorien.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "quantity",
+      "sensitivity": "open"
+    }
+  }
+}

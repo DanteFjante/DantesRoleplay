@@ -1,0 +1,5 @@
+{
+  "id": "game.core.rules.readable",
+  "name": "Readable Game Rule",
+  "description": "A presentation-only, sectioned explanation of a game rule with citations and links to authoritative mechanics and procedures."
+}

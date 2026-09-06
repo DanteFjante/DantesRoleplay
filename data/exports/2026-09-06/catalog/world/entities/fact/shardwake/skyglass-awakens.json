@@ -1,0 +1,16 @@
+{
+  "id": "fact.shardwake.skyglass-awakens",
+  "name": "The Skyglass Awakens",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Dormant skyglass structures across the archipelago have begun emitting light and harmonic vibration for the first time in three centuries.",
+      "visibility": "public",
+      "provenance": "Authored during the autonomous MCP machine-simulation world-creation session on 2026-09-01."
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "event",
+      "sensitivity": "open"
+    }
+  }
+}

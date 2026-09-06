@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.dwarven-historical-memory",
+  "name": "Dwarven Historical Protection",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Dwarves live mostly in the mountains and were better equipped to protect themselves and their history from the monster invasion.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "capability",
+      "sensitivity": "open"
+    }
+  }
+}

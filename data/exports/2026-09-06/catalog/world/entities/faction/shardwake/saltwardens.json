@@ -1,0 +1,28 @@
+{
+  "id": "faction.shardwake.saltwardens",
+  "name": "The Saltwardens",
+  "components": {
+    "game.core.world.faction": {
+      "visibility": "public",
+      "assets": [
+        "Fast cutters",
+        "Signal crews",
+        "Storm shelters"
+      ],
+      "goals": [
+        "Keep travelers alive through the storm season.",
+        "Contain whatever is waking beneath the Hollow Sea."
+      ],
+      "summary": "A disciplined rescue and patrol service that guards wreck roads, quarantine lines, and storm shelters across Crownward Reach.",
+      "status": "active",
+      "methods": [
+        "Escort ships and overland caravans.",
+        "Close routes when omens or tide reports become dangerous."
+      ],
+      "agenda": {
+        "summary": "Investigate the black tide without abandoning exposed outer islands.",
+        "state": "ready"
+      }
+    }
+  }
+}

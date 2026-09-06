@@ -1,0 +1,16 @@
+{
+  "id": "location.shardwake.cinder-quay",
+  "name": "Cinder Quay",
+  "container": {
+    "id": "location.shardwake.embercoast",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "status": "active",
+      "summary": "A prosperous Embercoast port of kiln guilds, auction halls, and quiet Ash Court patronage.",
+      "kind": "settlement",
+      "visibility": "public"
+    }
+  }
+}

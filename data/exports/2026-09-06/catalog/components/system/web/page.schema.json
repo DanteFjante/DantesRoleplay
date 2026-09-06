@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "navigationLabel",
+    "slug",
+    "order",
+    "visibility",
+    "activeContentReference"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "navigationLabel": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "order": {
+      "type": "integer",
+      "minimum": -1000000,
+      "maximum": 1000000
+    },
+    "visibility": {
+      "type": "string",
+      "enum": [
+        "public",
+        "hidden"
+      ]
+    },
+    "activeContentReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pageId"
+      ],
+      "properties": {
+        "pageId": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 100
+        }
+      }
+    }
+  },
+  "x-dantes-entity-roles": [
+    "page"
+  ],
+  "x-dantes-role-constraints": [
+    {
+      "id": "system.web.page.slug.unique",
+      "scope": "application-publication",
+      "selector": {
+        "semanticRole": "page"
+      },
+      "minimumEnabled": 0,
+      "maximumEnabled": null,
+      "requires": [],
+      "uniqueKeys": [
+        {
+          "name": "slug",
+          "source": {
+            "semanticRole": "page"
+          },
+          "jsonPointer": "/slug"
+        }
+      ]
+    }
+  ]
+}

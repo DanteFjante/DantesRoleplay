@@ -1,0 +1,74 @@
+1. Declare `game.core.world.traveller` once. Its data is exactly `{ "status": "active" }` and it
+   marks only that the entity may use this movement capability.
+2. Record or remove the marker with an inspected `commit(kind: "effects")` list. A fixture traveller
+   is placed directly in an active location using containment slot `presence`; do not store origin
+   or destination in component data.
+3. A route entity has one closed `game.core.world.route` record: active/archived lifecycle,
+   summary, descriptive visibility, exactly `on-foot` mode, and a fixed 1–1,440 minute duration.
+   It has exactly one empty-data `game.core.world.route.in-world` link to an active root, one
+   `game.core.world.route.from` link to its active origin location, and one
+   `game.core.world.route.to` link to its distinct active destination location. The two endpoints
+   are active sibling `location` entities with exactly one canonical adjacency. Direction is from
+   the two distinct link kinds; adjacency never grants a reverse route.
+   A reviewed condition-scoped route may additionally carry the condition-owned closed
+   `game.core.world.route.availability` record; the Feature 10 reaction, rather than travel,
+   reconciles that record from the root clock.
+4. Before resolving a local move, read the active movement mechanic and inspect the traveller, claimed
+   origin, and claimed destination. Supply those exact entity IDs in roles `traveller`, `origin`,
+   and `destination`, with input `{}`.
+5. `mechanic.game.core.world.location.move` proves the traveller is currently in origin, both
+   locations are active siblings, and the stored canonical adjacency connects them. It returns one
+   `containment.move` effect to destination slot `presence` or rejects without effects.
+6. `mechanic.game.core.world.route.travel-on-foot` is the only route journey path. Supply exact
+   roles `traveller`, `origin`, `destination`, `route`, and `world` with input `{}`. It proves the
+   route direction/scope and condition-owned `open` availability before moving the traveller to
+   `presence` while replacing the same root clock from the route's declared duration in one
+   transaction. Missing, malformed, or `closed` availability rejects with no effects.
+7. Read back the traveller after a successful action. Its current location is the resulting
+   containment; `world.containment.moved` is the existing structural evidence. A repeated request
+   using the old origin is stale and rejects.
+8. A generic ground conveyance has one closed `game.core.world.conveyance` record and is directly
+   contained at an active location in `presence`. A distinct ground conveyance route has one closed
+   `game.core.world.conveyance-route` record plus exactly one empty-data `.in-world`, `.from`, and
+   `.to` link. It is not the Feature 8 on-foot route and stores distance rather than duration;
+   conveyance speed and route distance derive time only in the named action below.
+9. `mechanic.game.core.world.conveyance.travel-ground` is the only ground-conveyance journey
+   path. Supply exact roles `driver`, `conveyance`, `origin`, `destination`, `conveyanceRoute`,
+   and `world` with input `{}`. It proves that active driver and conveyance share origin/
+   `presence`, validates the route's direction, scope, and canonical adjacency, derives minutes as
+   `ceiling(distanceUnits / speedUnitsPerMinute)`, then moves conveyance, moves driver, and
+   replaces the same root clock in that order in one transaction. Missing, malformed, archived,
+   mismatched, stale, or overflow state rejects with no effects.
+10. A generic aerial conveyance has one closed `game.core.world.aerial-conveyance` record and is
+   directly contained at an active launch/landing location in `presence`. A distinct aerial route
+   has one closed `game.core.world.aerial-route` record plus exactly one empty-data `.in-world`,
+   `.from`, and `.to` link. Its endpoints need not be ground-adjacent and it stores distance rather
+   than duration; its dedicated aerial action derives time from its speed and distance.
+11. `mechanic.game.core.world.aerial-conveyance.travel` is the only aerial-conveyance journey
+   path. Supply exact roles `rider`, `conveyance`, `origin`, `destination`, `aerialRoute`, and
+   `world` with input `{}`. It proves that active rider and conveyance share origin/`presence`,
+   validates the aerial route's direction and scope, derives minutes as
+   `ceiling(distanceUnits / speedUnitsPerMinute)`, then moves conveyance, moves rider, and
+   replaces the same root clock in that order in one transaction. It never reads ground adjacency,
+   roads, ground routes, or map connectors. Missing, malformed, archived, mismatched, stale, or
+   overflow state rejects with no effects.
+12. On-foot journey planning is a trusted-GM, read-only path with no query kind of its own; an
+   application supplies it as a mechanic. Supply only
+   `worldId`, `travellerId`, and `destinationId`; origin is derived from traveller containment. It
+   selects only active/open, correctly scoped Feature 8 on-foot routes with valid canonical
+   adjacency and active sibling endpoints. It returns a shortest-total-duration sequence of at
+   most 20 legs and 14,400 minutes, breaking equal totals by lexicographic route-ID sequence then
+   destination IDs. Its closed result is `ready`, `already-there`, `unreachable`, `blocked`, or
+   `too-long`, with no partial legs for an empty status. Clock revision is advisory only: execute
+   at most the first ready leg through Feature 8, then request a fresh plan from actual
+   containment.
+13. A fixed teleport gate has one closed `game.core.world.teleport-gate` record and is directly
+   contained at its active origin location in `presence`. It has exactly one empty-data `.in-world`
+   link and one empty-data `.to` link to a distinct active destination in the same world. It is
+   neither a route nor a journey: its dedicated action moves only one co-located traveller
+   instantly and never changes the root clock.
+14. `mechanic.game.core.world.teleport-gate.teleport` is the only fixed-portal path. Supply exact
+   roles `traveller`, `portal`, `origin`, `destination`, and `world` with input `{}`. It proves
+   active co-location, exact portal scope/destination, and valid unchanged clock state, then
+   returns exactly one traveller containment move. It never reads routes, adjacency, maps, or
+   itinerary plans and never changes the clock.

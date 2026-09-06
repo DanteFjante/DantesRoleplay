@@ -1,0 +1,12 @@
+{
+  "id": "fact.caldris.tensor-sect-pursuit",
+  "name": "The Sect's Reach",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The Tensor Sect raised Ganji as a prodigy and does not easily let go of what it considers its own. If Ganji ever makes a serious, lasting break from them, the Sect may dispatch monks to retrieve him. This is a live, unresolved threat for the GM to invoke at a dramatically appropriate moment, not a scheduled event.",
+      "provenance": "GM worldbuilding note, from player-provided character background",
+      "visibility": "gm"
+    }
+  }
+}

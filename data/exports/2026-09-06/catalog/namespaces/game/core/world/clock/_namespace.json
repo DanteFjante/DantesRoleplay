@@ -1,0 +1,12 @@
+{
+  "id": "game.core.world.clock",
+  "owner": "game",
+  "description": "Namespace for game core world clock catalog records.",
+  "allowedKinds": [
+    "event-type"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

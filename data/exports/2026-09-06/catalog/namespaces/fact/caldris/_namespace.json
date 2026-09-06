@@ -1,0 +1,12 @@
+{
+  "id": "fact.caldris",
+  "owner": "fact",
+  "description": "Namespace for fact caldris catalog records.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

@@ -1,0 +1,15 @@
+{
+  "id": "game.core.rules",
+  "owner": "game",
+  "description": "Generic explanatory rule-presentation contracts; executable behavior remains owned by catalog mechanics.",
+  "allowedKinds": [
+    "component-definition",
+    "component-type"
+  ],
+  "aliases": [
+    "readable game rules"
+  ],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed as a presentation-only component namespace shared by applications and extensions."
+}

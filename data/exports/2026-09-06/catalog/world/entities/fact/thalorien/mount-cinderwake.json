@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.mount-cinderwake",
+  "name": "Mount Cinderwake",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Mount Cinderwake is the great volcano of Waylos's Southwestern Volcanic Region.",
+      "provenance": "Approved as a Slice S4 regional proposal during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "location",
+      "sensitivity": "open"
+    }
+  }
+}

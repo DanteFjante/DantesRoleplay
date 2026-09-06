@@ -1,0 +1,26 @@
+- Status is exactly draft, active, or archived. Visibility is exactly public, party, or gm. Every
+  summary, goal, method, and asset is trimmed, nonempty text within its declared schema limit.
+- Faction/motive data contains no entity-ID lists, parent/location/current-position fields,
+  campaign state, quest state, NPC/character classifier, clock, history, or derived relationship
+  list.
+- Member/control links reject self links, reverse orientation, non-faction source, and nonempty
+  data as this feature's authoring convention. Multiple affiliations and broad `controls` claims
+  are intentionally permitted and are not silently treated as exclusive.
+- Faction root scope, territorial controller, and all front links are directed, non-self, exact
+  `{}` records. Missing, duplicate, reversed, nonempty, inactive, non-faction, non-location, or
+  cross-world endpoints violate this feature convention. A second territorial controller for one
+  active location is invalid; this feature never resolves a conflict by choosing or transferring a
+  controller.
+- Allied/opposed links reject self links, reverse/duplicate orientation, non-faction endpoints,
+  nonempty data, and a contradictory kind for the same unordered pair.
+- The agenda action accepts no caller-supplied outcome, summary, state, transition, effect, or
+  reason. Draft, archived, malformed, missing, unknown, or already-advanced faction state rejects
+  without a component replacement. Its existing `world.component.replaced` structural event and
+  action audit are the success evidence.
+- The front action accepts no caller-supplied next phase, minute, effect, cause, target, territory
+  result, or decision. It changes no agenda, broad control claim, territorial controller, clock,
+  route, condition, location/topology, map, knowledge, campaign, quest, notification, or
+  subscription. Its existing structural replacement event and action audit are its only evidence.
+- This contract creates no semantic faction/front event, subscription, notification, campaign,
+  quest, player-safe visibility projection, map, clock, autonomous faction simulation, or MCP
+  surface.

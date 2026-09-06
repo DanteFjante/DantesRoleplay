@@ -1,0 +1,13 @@
+{
+  "id": "game.core.media",
+  "owner": "game",
+  "description": "Reviewed generic media component contracts usable by any entity owner.",
+  "allowedKinds": [
+    "component-definition",
+    "component-type"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed as the generic entity-media namespace; world-specific ownership remains on the entity."
+}

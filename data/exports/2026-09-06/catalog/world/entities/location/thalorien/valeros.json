@@ -1,0 +1,16 @@
+{
+  "id": "location.thalorien.valeros",
+  "name": "Valeros",
+  "container": {
+    "id": "world.thalorien",
+    "slot": "region"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "region",
+      "status": "draft",
+      "summary": "Valeros is the southeastern kingdom of Thalorien, founded by Valeron and associated with warfare and defence.",
+      "visibility": "public"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.towers-present-state",
+  "name": "Three Towers Remain",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "In the present day, three of the four magical towers remain active and one has fallen. The circumstances and consequences of the fallen tower remain unresolved.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

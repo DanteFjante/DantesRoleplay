@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.veiled-age",
+  "name": "The Veiled Age",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The Veiled Age is the modern scholarly name for the final pre-Thalmos age. Its original name may be lost because the monster invasion destroyed much of its history and the settlements that preserved the most knowledge began guarding their records closely.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "event",
+      "sensitivity": "open"
+    }
+  }
+}

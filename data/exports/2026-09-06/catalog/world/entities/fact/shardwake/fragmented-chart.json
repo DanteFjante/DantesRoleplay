@@ -1,0 +1,16 @@
+{
+  "id": "fact.shardwake.fragmented-chart",
+  "name": "The Fragmented Chart",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Mara Vale owns half of a route chart showing a safe approach to the Drowned Observatory at the lowest black tide.",
+      "visibility": "party",
+      "provenance": "Authored during the autonomous MCP machine-simulation world-creation session on 2026-09-01."
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "capability",
+      "sensitivity": "discreet"
+    }
+  }
+}

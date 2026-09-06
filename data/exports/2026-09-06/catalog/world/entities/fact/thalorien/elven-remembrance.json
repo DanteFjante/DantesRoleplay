@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.elven-remembrance",
+  "name": "Elven Remembrance of Thalmon's Ideals",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "After the great Thalos war, the settlements—especially the elves—reminded the kingdoms of Thalmon's dream, his wisdom, and the old constitution that had been meant to guard peace.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "relationship",
+      "sensitivity": "open"
+    }
+  }
+}

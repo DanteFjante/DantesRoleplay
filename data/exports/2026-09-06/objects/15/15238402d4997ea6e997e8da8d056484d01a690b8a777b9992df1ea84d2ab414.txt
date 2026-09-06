@@ -1,0 +1,36 @@
+1. Use exactly one knowledge component on a knowledge entity. All records have complete status,
+   summary, provenance, and descriptive visibility; provenance is text, never an entity ID.
+2. Every knowledge entity has one empty-data `game.core.world.knowledge.in-world` link to its
+   world root and one empty-data `game.core.world.knowledge.about` link to the entity it concerns.
+   It also has one closed `game.core.world.knowledge.classification` companion component with a
+   subject kind and descriptive sensitivity.
+3. Every clue additionally has one empty-data `game.core.world.clue.supports` link to one fact or
+   secret in that same world. It is evidence, not a copied truth or automatic reveal.
+4. Facts are active/archived; rumours are unconfirmed/confirmed/disproved/archived; secrets are
+   active/archived and always `gm`; clues are unrevealed/`gm` or revealed/`party`.
+5. Record reviewed setting knowledge in one effects list ordered entity creation, components, then
+   links. Only `mechanic.game.core.world.clue.reveal` and
+   `mechanic.game.core.world.rumour.confirm` change reveal/confirmation state. Each receives the
+   record and its claimed world in roles plus input `{}`, and proves the stored scope link itself.
+6. Slice 1 records dissemination through a `game.core.world.knowledge.baseline` relationship from
+   a world, region, or faction to one knowledge record with exact
+   `{"inheritance":"current-scope"}` data. It records one actor's current explicit epistemic
+   position through `game.core.world.knowledge.state` with exact `{"state":...}` data. The only
+   initial states are `known`, `familiar`, `suspected`, `believed`, `doubted`, `disbelieved`, and
+   `unknown`; `unknown` explicitly overrides a baseline. The trusted host must use the Slice 1
+   knowledge coordinator to validate scope, endpoints, and precedence before writing either link.
+7. Slice 2 records learning only through an accepted `game.core.world.interaction` with one empty
+   `interaction.in-world` link and zero or more empty `interaction.participant` links. Each learned
+   result is a separate `game.core.world.knowledge.acquisition` entity with exact closed method and
+   resulting-state data, plus one empty-data link each to its world, actor knower, knowledge record,
+   and source interaction. The trusted host must use the knowledge-acquisition coordinator so that
+   interaction and acquisitions commit atomically and the `(source, knower, knowledge)` triple is
+   replay-safe.
+8. Slice 3 optionally records one closed `game.core.world.knowledge.validity` companion with
+   inclusive `validFromMinute` and optional exclusive `validUntilMinute`, both measured against the
+   scoped world root's existing clock. A timed successor may supersede exactly one timed prior
+   through `game.core.world.knowledge.supersedes` only when both scoped world and `about` subject
+   match and the prior end exactly equals the successor start. A contradiction is one empty-data
+   `game.core.world.knowledge.contradicts` link stored in lexical stable-ID order between two
+   same-world/same-subject knowledge records. The trusted host timeline coordinator validates all
+   interval, endpoint, ordering, branching, and cycle rules before it writes.

@@ -1,0 +1,15 @@
+{
+  "id": "dnd2024.game.core.campaign",
+  "owner": "dnd2024",
+  "description": "Retired duplicate campaign prefix retained only for migration diagnostics; canonical contracts are owned by game.core.campaign.",
+  "allowedKinds": [
+    "component-type"
+  ],
+  "aliases": [
+    "legacy campaign state",
+    "legacy D\u0026D campaign contracts"
+  ],
+  "enabled": false,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Disabled after live campaign components and relationship kinds migrated to game.core.campaign."
+}

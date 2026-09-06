@@ -1,0 +1,12 @@
+{
+  "id": "procedure.authoring",
+  "owner": "procedure",
+  "description": "Namespace for procedure authoring catalog records. These state what a place, quest, or campaign needs to be complete, and route each part to the contract that owns it.",
+  "allowedKinds": [
+    "procedure"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

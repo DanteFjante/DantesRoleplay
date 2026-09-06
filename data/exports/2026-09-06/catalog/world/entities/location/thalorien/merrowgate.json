@@ -1,0 +1,16 @@
+{
+  "id": "location.thalorien.merrowgate",
+  "name": "Merrowgate",
+  "container": {
+    "id": "location.thalorien.merceros",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "settlement",
+      "status": "draft",
+      "summary": "The surviving southern trade city of Merceros, known for its quays, warehouses, tollhouses, and merchant houses.",
+      "visibility": "public"
+    }
+  }
+}

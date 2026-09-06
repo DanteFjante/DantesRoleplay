@@ -1,0 +1,11 @@
+{
+  "id": "actor.shardwake.nem-vask",
+  "name": "Nem Vask",
+  "components": {
+    "game.core.world.motive": {
+      "status": "active",
+      "summary": "Nem wants to deliver a working skyglass instrument to the Ash Court and earn a place among patrons who currently treat him as expendable.",
+      "visibility": "gm"
+    }
+  }
+}

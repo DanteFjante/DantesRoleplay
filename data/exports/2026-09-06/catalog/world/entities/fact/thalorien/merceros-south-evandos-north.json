@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.merceros-south-evandos-north",
+  "name": "Merceros South and Evandos North",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Merceros lies to the south of the World Tree region, while Evandos lies to its north.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "relationship",
+      "sensitivity": "open"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "fixture",
+  "owner": "fixture",
+  "description": "Non-production fixtures used to exercise generic catalog behavior.",
+  "allowedKinds": [
+    "component-definition",
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed as isolated non-production fixture ownership."
+}

@@ -1,0 +1,12 @@
+{
+  "id": "dnd2024.procedure.authoring",
+  "owner": "dnd2024",
+  "description": "Procedures governing what a place, quest, or campaign needs before it can be played in.",
+  "allowedKinds": [
+    "procedure"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed as application-owned authoring procedure identity."
+}

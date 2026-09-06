@@ -1,0 +1,5 @@
+{
+  "id": "game.core.world.knowledge.acquisition",
+  "name": "Knowledge Acquisition",
+  "description": "An auditable, interaction-sourced learning consequence for one knower and one fact, rumour, secret, or clue. It records how the knowledge was acquired and the state it could establish, but never grants retrieval access. Governed by procedure.game.core.world.knowledge."
+}

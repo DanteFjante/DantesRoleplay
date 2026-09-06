@@ -1,0 +1,12 @@
+{
+  "id": "subscription",
+  "owner": "subscription",
+  "description": "Namespace for subscription catalog records.",
+  "allowedKinds": [
+    "subscription"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

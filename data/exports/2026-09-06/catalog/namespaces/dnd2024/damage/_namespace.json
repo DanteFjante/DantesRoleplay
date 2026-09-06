@@ -1,0 +1,12 @@
+{
+  "id": "dnd2024.damage",
+  "owner": "dnd2024",
+  "description": "Namespace for dnd2024 damage catalog records.",
+  "allowedKinds": [
+    "event-type"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

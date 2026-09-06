@@ -1,0 +1,55 @@
+1. Use the extension seam that already exists; do not invent a source or id convention. An
+   application that supports extensions has `catalog/extensions/<applicationId>/` with an
+   `extension-package.schema.json`. Author `catalog/extensions/<app>/<name>/extension-package.json`
+   against it: `classification` is one of `compatibility`, `homebrew`, `third-party`, and that
+   field plus `sourceId` is how the content stays distinguishable. Read an existing package first
+   and copy its shape.
+2. Give extension records CORE-STYLE ids. Provenance belongs in `sourceRef.sourceId`
+   (`<app>-extension.<name>`) and in the record's display name, not in the entity id. An id like
+   `...species.half-elf.homebrew-v1` fights every convention around it and buys nothing that
+   the source id does not already say.
+3. BEFORE authoring anything, read the registered schema of every component the content needs:
+   `query(kind: "capabilities")` names the types, and the registered schema is what
+   `system.world-state.sync` validates against — the catalog `.schema.json` file is the authored
+   copy, not the authority. Expect `sourceRef.sourceId` to be pinned with
+   `{"const": "<core source>"}` on content types that were written when only core content existed.
+   A const there makes extension provenance literally unrepresentable, and no amount of correct
+   authoring gets past it.
+4. If a schema must be relaxed, PROVE the relaxation first and register the widening second.
+   Extract every existing record of that type — catalog files and live components both — and
+   validate them against the proposed schema. A widening that every existing record still
+   satisfies is a strict relaxation and is safe; anything else is a redesign and needs its own
+   decision. Then `commit(kind: "system.component-type.register")` with the current hash as
+   `expectedSchemaHash`; the host derives version, profile and hash itself, so a minified payload
+   is fine.
+5. Plan the RETYPE in the same pass as the widening. Registering a new type version does not
+   migrate anything: the synchronizer always writes the newest registered version, and a stored
+   component cannot change its type contract in place, so every component still stored at the old
+   version becomes un-updatable the moment the new version is registered. Count the affected rows
+   before you register, and know how they will be moved to the new version.
+6. Register the content as its own source: `commit(kind: "system.source.register")` with
+   `relativePathOrGlob` covering the package's `content/` subtree ONLY, a distinct
+   `logicalIdentity`, and `precedence: 0` so it cannot shadow core. Pointing the glob at the whole
+   package sweeps the manifest into the scanned document set, which is not catalog data.
+7. Preview, then activate. `query(kind: "system.application-preview", applicationId: "...")` —
+   pass a small `limit`, the response carries every winner otherwise — and check `isValid`,
+   `problems`, `shadows`, and that `winners` rose by exactly the number of records you authored.
+   Then `commit(kind: "system.application.activate")` with that exact `previewFingerprint`, the
+   current `activationFingerprint` as `expectedActiveFingerprint`, and every source id including
+   the new one.
+8. Project the content into the live state space with `commit(kind: "system.world-state.sync")`,
+   containing it where its peers are contained. Activation publishes to the catalog; it does not
+   put entities in a state space, and the two are easy to confuse.
+9. Know the difference between a DEFINITION and an INSTANCE, and create both when a character owns
+   something. A definition says what a kind of thing IS — `dnd2024.item-definition` on
+   `dnd2024.item.<name>.v1`, contained with its peers under the world root. An instance says a
+   particular one EXISTS and who holds it: its own entity carrying `dnd2024.core.definition-link`
+   (plus `dnd2024.item.quantity` for items), contained under its owner in the `carried` slot, with
+   an owner-scoped id such as `item.caldris.ganji.quarterstaff`. A definition on its own puts a
+   thing in the world's catalogue and gives it to nobody.
+10. To edit an entity that is NOT contained beneath the world root, pass that entity's own id as
+   `rootEntityId`. The root only has to exist, and an entity is trivially inside itself, so this
+   scopes the manifest to exactly that entity. It does not let you place the entity: a containment
+   target must itself be inside the selected root.
+11. Verify by reading back through `query`, never from the database file. Confirm the entity, and
+    confirm the catalog record carries the extension `sourceId` and its path.

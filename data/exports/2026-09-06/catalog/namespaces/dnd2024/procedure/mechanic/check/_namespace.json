@@ -1,0 +1,12 @@
+{
+  "id": "dnd2024.procedure.mechanic.check",
+  "owner": "dnd2024",
+  "description": "Procedures governing D\u0026D 2024 checks.",
+  "allowedKinds": [
+    "procedure"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed as application-owned check procedure."
+}

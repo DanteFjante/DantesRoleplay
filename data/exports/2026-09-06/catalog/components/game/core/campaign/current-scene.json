@@ -1,0 +1,5 @@
+{
+  "id": "game.core.campaign.current-scene",
+  "name": "Campaign Current Scene",
+  "description": "Selects one campaign-owned current location and optional active conversation or encounter without copying their state. Governed by procedure.campaign.current-scene."
+}

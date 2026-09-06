@@ -1,0 +1,5 @@
+{
+  "id": "game.core.campaign.location-visit",
+  "name": "Campaign Location Visit",
+  "description": "Closed campaign-owned aggregate memory for explicit visits to one World location. Campaign ownership and the exact location target are empty-data relationships; this component never derives visits from presence, maps, prose, or references."
+}

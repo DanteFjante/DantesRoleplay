@@ -1,0 +1,15 @@
+{
+  "id": "dnd2024.extension",
+  "owner": "dnd2024",
+  "description": "Root for records owned by installed D\u0026D 2024 extensions; records resolve against base content by their suffix and kind.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [
+    "extensions",
+    "installed content"
+  ],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed as the application-owned boundary for first-class extension content."
+}

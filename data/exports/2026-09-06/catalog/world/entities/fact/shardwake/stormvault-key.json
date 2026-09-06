@@ -1,0 +1,16 @@
+{
+  "id": "fact.shardwake.stormvault-key",
+  "name": "The Stormvault Key",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The brass-and-glass key that opens the Stormvault is currently hidden inside Sable Reeve's false-bottom chart case.",
+      "visibility": "gm",
+      "provenance": "Authored during the autonomous MCP machine-simulation world-creation session on 2026-09-01."
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "location",
+      "sensitivity": "secret"
+    }
+  }
+}

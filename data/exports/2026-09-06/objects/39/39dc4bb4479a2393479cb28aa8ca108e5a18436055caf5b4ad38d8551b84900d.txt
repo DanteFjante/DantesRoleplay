@@ -1,0 +1,22 @@
+Source and purpose
+- Rule source: source.dnd2024.srd-5.2.1, "Playing the Game > Ability Checks" and "Playing the Game > Proficiency > Skill Proficiencies and Skills" in SRD 5.2.1.
+- A check is 1d20 plus its relevant ability modifier against the GM's DC. A proficient named skill adds the Proficiency Bonus once. The default ability for a skill is advisory; the GM may name another ability.
+- This v2 revision is the definitive rule. A raw check without skill remains because D&D allows an ability check with no named skill, not for v1 compatibility.
+
+Input and readable state
+- Input is closed: exactly ability, dc, and optional skill. ability is exact lowercase str, dex, con, int, wis, or cha. dc is a finite nonnegative integer. skill, when present, is one exact stable id defined by procedure.mechanic.dnd2024.skill-proficiencies.
+- Reject missing, null, wrong-type, wrong-case, unknown, duplicate, derived, or extra input before rolling. In particular reject modifier, proficiencyBonus, total, outcome, sourceRef, Expertise, advantage, disadvantage, tool, save, monster, and every other extra key.
+- Read dnd2024.abilities. For a named skill, also read dnd2024.character-level and dnd2024.skill-proficiencies on subject. Level must be integer 1..20 and carry the fixed Character Advancement source reference. Skills must be a unique stable-id array carrying the fixed Skill Proficiencies and Skills source reference. Missing skill state is unknown and fails; an explicit empty array means known nonproficiency.
+
+Resolution
+- Validate all inputs and state before ctx.randomInt(1, 20). Derive ability modifier as floor((score - 10) / 2).
+- For a named skill, derive Proficiency Bonus as 2 + floor((level - 1) / 4). Add one modifier with source "proficiency (level <level>; <skill>)" only when the exact skill id is in the explicit list. Do not store or accept a bonus.
+- Natural 20 and natural 1 never override an ability-check total. Checks return no effects.
+- Return one seeded envelope: test "ability-check", ability, skill/null, defaultAbility/null, usedDefaultAbility/null, proficient/null, dc, die "1d20", roll, modifiers, total, succeeded, and source. Default ability is reported only; it never remaps the chosen ability.
+
+Mechanic and verification
+- Revise mechanic.dnd2024.check.ability in scope dnd2024-srd-5.2.1; declare abilities, character-level, and skill-proficiencies. Do not create skill-specific rules. Add stable "<skill> check" phrases only after overlap search.
+- With the same seed, ability and DC, proficient Stealth and nonproficient Acrobatics must differ by exactly the derived bonus. Verify bands 4:+2, 5:+3, 16:+5, 17:+6; alternate Strength (Intimidation); explicit empty skill list; malformed/missing skill and state; derived/unsupported input; natural 20/1; intent routing; replay; and zero effects. Restore test state afterwards.
+
+Revision and non-goals
+No data migration is required; v1 audit entries remain historical. This does not implement advantage/disadvantage, Expertise, half proficiency, tools, saves, attacks, contested/passive checks, class/background grants, or check consequences.

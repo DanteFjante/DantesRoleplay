@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.harrowfall-cold-storage-advantage",
+  "name": "Harrowfall's Cold-Weather Trade Advantage",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Harrowfall's access to the mountain range and cold weather allowed it to freeze and preserve much more of its supplies for sale during the off-season, giving it a major advantage over Merrowgate.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "capability",
+      "sensitivity": "open"
+    }
+  }
+}

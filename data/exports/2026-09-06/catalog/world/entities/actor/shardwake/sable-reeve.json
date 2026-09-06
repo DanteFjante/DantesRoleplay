@@ -1,0 +1,11 @@
+{
+  "id": "actor.shardwake.sable-reeve",
+  "name": "Sable Reeve",
+  "components": {
+    "game.core.world.motive": {
+      "status": "active",
+      "summary": "Sable wants the Stormvault key sold before either the Concord or Ash Court can trap him in obligations he cannot survive.",
+      "visibility": "gm"
+    }
+  }
+}

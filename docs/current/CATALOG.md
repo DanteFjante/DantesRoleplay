@@ -160,6 +160,20 @@ then let export produce the canonical path.
 
 Export overwrites matching files in its destination but does not delete extra destination files or modify the source database. That makes a clean review directory important.
 
+### Complete runtime capture
+
+`roleplay export` covers the legacy catalog/world tables and optional operation
+history. It does **not** export the current `system_ecs_*` state, application
+activation/binding tables, stored websites or external blob bytes. Its drift
+report is therefore not proof that the complete running game matches the files.
+
+The user-requested [6 September 2026 complete capture](../../data/exports/2026-09-06/README.md)
+preserves all database tables, schema and blobs in files suitable for Git, together
+with an offline restore script and a manifest of hashes. Its separate `catalog/`
+folder captures the database side of the comparison; it does not replace this
+repository's authored catalog. Restore only into a new directory and inspect its
+recorded discrepancies before any deliberate live synchronization.
+
 ## Import workflow
 
 Preview first:

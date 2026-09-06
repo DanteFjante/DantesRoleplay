@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.thalmon.name-echoes.revised",
+  "name": "The Revised Echoes of the Imperial Children's Names",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The early Thalmos royal dynasty includes Aldron, Evandon, Minevron, Valeron, Oberon, Rhiannon, Merceron, and Waylon. Their historical or mythological echoes are not canonically literal derivations; Thalmon named his children before their later specialties were known, though later historians and storytellers associate their names with their fields. The earlier forms remain preserved in the archived superseded records.",
+      "provenance": "Approved ancient-language naming revision from the world-creation conversation (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "identity",
+      "sensitivity": "open"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "fixture.legacy",
+  "owner": "fixture",
+  "description": "Legacy fixtures retained only for compatibility and focused tests.",
+  "allowedKinds": [
+    "component-definition",
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed as isolated legacy fixture content, not world canon."
+}

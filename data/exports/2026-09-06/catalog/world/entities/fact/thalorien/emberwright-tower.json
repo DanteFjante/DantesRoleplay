@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.emberwright-tower",
+  "name": "The Emberwright Tower",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The Emberwright Tower is Waylos's active magic tower, associated with engineering, craft, and the careful creation of useful things.",
+      "provenance": "Approved as a Slice S4 regional proposal during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "location",
+      "sensitivity": "open"
+    }
+  }
+}

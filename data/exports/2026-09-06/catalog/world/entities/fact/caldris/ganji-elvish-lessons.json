@@ -1,0 +1,16 @@
+{
+  "id": "fact.caldris.ganji-elvish-lessons",
+  "name": "An Improper Silence",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "An elven sect-brother felt it improper that Ganji didn't speak Elvish, and privately taught him the language during free hours.",
+      "provenance": "Ganji's own account",
+      "visibility": "party"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "relationship",
+      "sensitivity": "discreet"
+    }
+  }
+}

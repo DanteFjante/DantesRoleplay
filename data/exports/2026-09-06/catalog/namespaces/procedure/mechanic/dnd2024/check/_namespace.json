@@ -1,0 +1,12 @@
+{
+  "id": "procedure.mechanic.dnd2024.check",
+  "owner": "procedure",
+  "description": "Namespace for procedure mechanic dnd2024 check catalog records.",
+  "allowedKinds": [
+    "procedure"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed migration-only retention for the exact IDs in catalog/compatibility-retention.json. Owner: D\u0026D catalog maintenance. Existing live legacy records require preservation; new legacy identities and ordinary application discovery are forbidden. Retire only after the inventory\u0027s live-record, replacement, and backup gates pass."
+}

@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.churches-and-clerics",
+  "name": "Church Authority and Clerical Healing",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Churches possessed authority of their own in relation to the gods. The gods are the gods that exist in D&D 5e; which are prominent in Thalos and how worship varies remain to be detailed. Churches often trained clerics who helped heal the sick, and this religious healing network was institutionally distinct from expensive university-trained arcane magicians.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "capability",
+      "sensitivity": "open"
+    }
+  }
+}

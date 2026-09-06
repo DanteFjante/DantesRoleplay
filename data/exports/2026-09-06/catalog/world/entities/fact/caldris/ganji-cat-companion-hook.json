@@ -1,0 +1,12 @@
+{
+  "id": "fact.caldris.ganji-cat-companion-hook",
+  "name": "A Cat With Its Own Will",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Ganji has a natural affinity for cats. A planned future story hook: he may cross paths with a cat of unusual, independent will that can understand him -- a possible companion, given his affinity, playable as a small optional thread rather than a major plot point.",
+      "provenance": "GM worldbuilding note, from player-provided character background",
+      "visibility": "gm"
+    }
+  }
+}

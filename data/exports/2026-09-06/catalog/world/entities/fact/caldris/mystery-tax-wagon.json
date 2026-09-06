@@ -1,0 +1,12 @@
+{
+  "id": "fact.caldris.mystery-tax-wagon",
+  "name": "The Empty Tax Wagon",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The season's royal tax wagon arrived at Bramblebridge's market completely empty -- seals unbroken, locks untouched, no sign of a break-in anywhere along the road. The crown's collectors are furious and looking for someone local to blame before word reaches the capital.",
+      "provenance": "Common knowledge in Bramblebridge",
+      "visibility": "party"
+    }
+  }
+}

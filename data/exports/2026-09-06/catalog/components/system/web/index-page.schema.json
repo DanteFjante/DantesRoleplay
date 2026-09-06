@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "x-dantes-entity-roles": [
+    "index-page"
+  ],
+  "x-dantes-role-constraints": [
+    {
+      "id": "system.web.index-page.cardinality",
+      "scope": "application-publication",
+      "selector": {
+        "semanticRole": "index-page"
+      },
+      "minimumEnabled": 0,
+      "maximumEnabled": 1,
+      "requires": [
+        {
+          "semanticRole": "page"
+        }
+      ],
+      "uniqueKeys": []
+    }
+  ]
+}

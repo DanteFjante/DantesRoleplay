@@ -1,0 +1,28 @@
+- Summary and provenance are trimmed nonempty bounded text. Knowledge data contains no root,
+  target, support, campaign, quest, player-belief, transcript, confidence, or access-control field.
+- Scope/about/support links are directed, non-self, exact `{}` records. A clue supports only a fact
+  or secret in its scoped world. Reverse, duplicate, cross-world, wrong-endpoint, and nonempty-data
+  links violate this feature convention.
+- Visibility is descriptive trusted-GM metadata only. It never authorizes a caller. Player-safe
+  filtering and prose generation exist only through the separately bounded `knowledge-answer`
+  query and its configured audience policy; this contract does not create an event, subscription,
+  notification, campaign, quest, or automatic discovery system.
+- Reveal changes only `unrevealed`/`gm` to `revealed`/`party`; confirmation changes only
+  `unconfirmed` to `confirmed`. Neither action accepts a caller-supplied result, rewrites a secret,
+  fact, support/about/scope link, summary, provenance, or visibility beyond the clue transition.
+- Effective state is resolved as explicit actor state, then applicable faction or containing-region
+  baseline, then world baseline, then derived `unknown`. Baselines do not materialize actor rows.
+  Interaction acquisition is trusted-host-only: it does not introduce a dialogue, combat, quest,
+  discovery engine, transcript, event-ledger inference, world clock, player authorization, public
+  querying, or search surface. A participant never automatically learns every interaction result.
+  Timed historical/current and contested projections are trusted-host-only. Validity never changes
+  whether an actor knows a record, which canonical claim wins, rumour confirmation, secret
+  sensitivity, or authorization. Scheduled future truth and acquisition timestamps remain outside
+  this contract; the only player-safe read is the bounded perspective-safe answer surface.
+- The perspective-safe answer is a separate bounded read surface with no query kind of its own;
+  `query(kind: "system.audience-context")` reports the audience binding it requires. It
+  accepts campaign ID, question, optional kind/subject filters, and optional world minute only;
+  it never accepts a principal, actor, role, world ID, visibility override, canonical knowledge ID,
+  or include-hidden flag. A host must supply an audience policy before this query can answer. The
+  temporary development policy is disabled by default, permits one configured GM or actor seat,
+  and must run only over loopback; it is not authentication and must be replaced before publishing.

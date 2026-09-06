@@ -1,0 +1,12 @@
+{
+  "id": "mount.feature-13",
+  "owner": "mount",
+  "description": "Namespace for mount feature-13 catalog records.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

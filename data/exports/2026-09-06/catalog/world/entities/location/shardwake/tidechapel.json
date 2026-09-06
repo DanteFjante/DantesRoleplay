@@ -1,0 +1,16 @@
+{
+  "id": "location.shardwake.tidechapel",
+  "name": "The Tidechapel",
+  "container": {
+    "id": "location.shardwake.drowned-observatory",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "status": "active",
+      "summary": "A dry chamber inside the Drowned Observatory whose mosaic stars move when the sea above turns black.",
+      "kind": "interior",
+      "visibility": "gm"
+    }
+  }
+}

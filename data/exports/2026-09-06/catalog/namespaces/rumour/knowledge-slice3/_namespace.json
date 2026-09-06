@@ -1,0 +1,12 @@
+{
+  "id": "rumour.knowledge-slice3",
+  "owner": "rumour",
+  "description": "Namespace for rumour knowledge-slice3 catalog records.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

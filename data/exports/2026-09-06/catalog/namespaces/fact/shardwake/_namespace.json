@@ -1,0 +1,12 @@
+{
+  "id": "fact.shardwake",
+  "owner": "fact",
+  "description": "Durable Shardwake truths and reviewed world-creation requirements. Each record must use the governed fact and knowledge-classification components with explicit in-world and about relationships.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed so machine-authored setting truths are stored explicitly and can be checked before later narration."
+}

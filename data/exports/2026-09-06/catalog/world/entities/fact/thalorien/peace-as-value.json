@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.peace-as-value",
+  "name": "Peace as a Central Value",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Peace is a central value of Thalorien.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

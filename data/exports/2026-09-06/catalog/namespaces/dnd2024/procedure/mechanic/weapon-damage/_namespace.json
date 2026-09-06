@@ -1,0 +1,12 @@
+{
+  "id": "dnd2024.procedure.mechanic.weapon-damage",
+  "owner": "dnd2024",
+  "description": "Procedures governing D\u0026D 2024 weapon damage.",
+  "allowedKinds": [
+    "procedure"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed as application-owned weapon-damage procedure."
+}

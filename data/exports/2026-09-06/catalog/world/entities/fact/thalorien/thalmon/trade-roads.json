@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.thalmon.trade-roads",
+  "name": "Thalmon's Trade Roads",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Thalmon reorganized imperial infrastructure around major trade routes. The empire had two major trading hubs, while provinces had smaller trading hubs connected by good roads designed to channel travel and commerce through these hubs.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.ancient-dungeons",
+  "name": "The Ancient Defensive Dungeons",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The ancient defensive dungeons were created during an era that flourished roughly 4,000–6,000 years ago. There is not enough research to establish that any surviving dungeon is older than that range. The builders were aware of the monsters beneath the ground and built the complexes as a defensive measure against them.",
+      "provenance": "Corrected during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

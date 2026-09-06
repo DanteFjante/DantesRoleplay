@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.postwar-guardrails",
+  "name": "Postwar Guardrails",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "After the great Thalos war, the kingdoms established additional constitutional and political guardrails intended to prevent another war from arising among them.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "rule",
+      "sensitivity": "open"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "id": "dnd2024.source",
+  "owner": "dnd2024",
+  "description": "D\u0026D 2024 source identities.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed as application-owned source identity."
+}

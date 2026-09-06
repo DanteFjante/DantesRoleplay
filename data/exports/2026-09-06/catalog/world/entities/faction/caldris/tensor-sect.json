@@ -1,0 +1,28 @@
+{
+  "id": "faction.caldris.tensor-sect",
+  "name": "The Tensor Sect",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "A small, militant philosophical order that trains perception and prediction, believing total awareness of the world's invisible tension will let a sufficiently disciplined mind finally 'see' the divine source behind Caldris's Nine Lamps.",
+      "visibility": "party",
+      "goals": [
+        "Achieve perfect, unified perception of the world's invisible tension",
+        "Understand the true nature of Caldris's Nine Lamps through disciplined observation"
+      ],
+      "methods": [
+        "Merciless physical and mental discipline",
+        "Study of stillness, breath, and reflex under the Prediction Court's bells",
+        "Strict isolation from outside distraction"
+      ],
+      "assets": [
+        "The House of the Ninth Angle monastery in Highmead",
+        "The Prediction Court, a garden of suspended bells used to test perception"
+      ],
+      "agenda": {
+        "state": "advanced",
+        "summary": "Three monks have been sent down the Lantern Road to bring Ganji home before his absence becomes a crisis of faith within the sect."
+      }
+    }
+  }
+}

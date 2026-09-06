@@ -1,0 +1,16 @@
+{
+  "id": "location.thalorien.world-tree-elven-enclave",
+  "name": "World Tree Elven Enclave",
+  "container": {
+    "id": "location.thalorien.world-tree-grounds",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "settlement",
+      "status": "draft",
+      "summary": "The largest Elven settlement, built around the sacred World Tree at the center of the continent.",
+      "visibility": "public"
+    }
+  }
+}

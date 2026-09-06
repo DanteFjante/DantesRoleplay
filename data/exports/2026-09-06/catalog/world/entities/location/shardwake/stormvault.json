@@ -1,0 +1,16 @@
+{
+  "id": "location.shardwake.stormvault",
+  "name": "The Stormvault",
+  "container": {
+    "id": "location.shardwake.crownward",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "status": "active",
+      "summary": "A sealed skyglass observatory beneath Crownward cliffs, opened only by a missing brass-and-glass key.",
+      "kind": "site",
+      "visibility": "party"
+    }
+  }
+}

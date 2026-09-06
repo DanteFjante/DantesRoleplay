@@ -1,0 +1,30 @@
+{
+  "id": "faction.thalorien.gilded-concord",
+  "name": "The Gilded Concord",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "A secret Merrowgate-centered network of merchant houses, factors, lenders, warehouse owners, and shipping agents. Its ordinary business connections are visible; its coordinated market manipulation and political purpose are not.",
+      "visibility": "gm",
+      "goals": [
+        "Weaken the Book of Truth's civic influence.",
+        "Make consumers easier to steer toward worse bargains.",
+        "Increase the Concord's influence over trade and public policy."
+      ],
+      "methods": [
+        "Coordinate prices, supply, credit, and market information through private networks.",
+        "Present the Book of Truth as obsolete indoctrination in private audiences with rulers.",
+        "Trade favors through counting houses, warehouses, ships' offices, and private dining rooms."
+      ],
+      "assets": [
+        "Merchant houses and private lenders.",
+        "Merrowgate counting houses, warehouses, and shipping offices.",
+        "Commercial intelligence, credit arrangements, and favors across the city."
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Win broad royal support for reducing or ending Book of Truth education before opposition recognizes the coordinated effort."
+      }
+    }
+  }
+}

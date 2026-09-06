@@ -1,0 +1,11 @@
+{
+  "id": "campaign.thalorien.brackenford.arc.the-waking-depths",
+  "name": "The Waking Depths",
+  "components": {
+    "game.core.campaign.arc": {
+      "status": "active",
+      "title": "The Waking Depths",
+      "partyStake": "The village's peace and the fragile trust between its people, patrols, and the forest depend on understanding what is waking before it reaches the surface."
+    }
+  }
+}

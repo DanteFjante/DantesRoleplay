@@ -1,0 +1,12 @@
+{
+  "id": "teleport-gate.feature-15",
+  "owner": "teleport-gate",
+  "description": "Namespace for teleport-gate feature-15 catalog records.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

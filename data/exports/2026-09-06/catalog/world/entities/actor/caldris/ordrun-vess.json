@@ -1,0 +1,15 @@
+{
+  "id": "actor.caldris.ordrun-vess",
+  "name": "Master Ordrun Vess",
+  "container": {
+    "id": "location.caldris.house-of-the-ninth-angle",
+    "slot": "presence"
+  },
+  "components": {
+    "game.core.world.motive": {
+      "status": "active",
+      "summary": "Headmaster of the Tensor Sect and the warrior who trained Ganji personally. He genuinely loves Ganji but cannot accept his right to leave, and has sent monks down the Lantern Road to bring him home.",
+      "visibility": "party"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.church-peace-mandate",
+  "name": "The Churches' Independent Peace Mandate",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Churches, clerics, and priests were entrusted with spreading the Book of Wisdom as a civic peace duty separate from their religious responsibilities. In return, the kingdoms granted the churches greater authority and freedom.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "capability",
+      "sensitivity": "open"
+    }
+  }
+}

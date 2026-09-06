@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.elaris-long-remembrance",
+  "name": "Elaris and the Long Remembrance",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Elaris is the great Elven settlement around the World Tree. Its historians, called the Keepers of the Long Remembrance, preserve living recollections and guarded records reaching farther back than any human kingdom's history.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "identity",
+      "sensitivity": "open"
+    }
+  }
+}

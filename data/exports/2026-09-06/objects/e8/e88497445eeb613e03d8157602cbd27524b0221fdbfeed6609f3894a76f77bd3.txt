@@ -1,0 +1,12 @@
+var world=ctx.roles.world, rootId='game.core.world.root', clockId='game.core.world.clock';
+function closed(v,k){if(v===null||Array.isArray(v)||typeof v!=='object')return false;var a=Object.keys(v).sort();if(a.length!==k.length)return false;for(var i=0;i<k.length;i++)if(a[i]!==k[i])return false;return true;}
+function parse(v,n){if(typeof v!=='string')throw new Error(n+' is corrupt.');try{return JSON.parse(v);}catch(e){throw new Error(n+' is corrupt.');}}
+function integer(v,min,max){return typeof v==='number'&&Number.isSafeInteger(v)&&v>=min&&v<=max;}
+if(!closed(ctx.input,['minutes'])||!integer(ctx.input.minutes,1,1440))throw new Error('Clock advance input requires exactly integer minutes from 1 to 1440.');
+if(!world||!world.components||!world.components[rootId]||!world.components[clockId])throw new Error('Clock advance requires an active world root with its clock.');
+var root=parse(world.components[rootId],'World root'), clock=parse(world.components[clockId],'World clock');
+if(!closed(root,['status','summary','visibility'])||root.status!=='active')throw new Error('World root is not active.');
+if(!closed(clock,['calendarId','currentMinute','revision'])||typeof clock.calendarId!=='string'||clock.calendarId.length<1||clock.calendarId.trim()!==clock.calendarId||Array.from(clock.calendarId).length>100||!integer(clock.currentMinute,0,1000000000)||!integer(clock.revision,0,2147483647))throw new Error('World clock is corrupt.');
+if(clock.currentMinute>1000000000-ctx.input.minutes||clock.revision===2147483647)throw new Error('Clock cannot advance beyond its confirmed bounds.');
+var next={calendarId:clock.calendarId,currentMinute:clock.currentMinute+ctx.input.minutes,revision:clock.revision+1};
+return {narration:world.name+' advances by '+ctx.input.minutes+' minutes.',effects:[{type:'component.set',entityId:world.id,definitionId:clockId,data:JSON.stringify(next)}],data:{test:'world-clock-advance',worldId:world.id,minutes:ctx.input.minutes,previousMinute:clock.currentMinute,currentMinute:next.currentMinute,previousRevision:clock.revision,currentRevision:next.revision}};

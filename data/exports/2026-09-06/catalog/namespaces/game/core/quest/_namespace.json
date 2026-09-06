@@ -1,0 +1,13 @@
+{
+  "id": "game.core.quest",
+  "owner": "game",
+  "description": "Namespace for game core quest catalog records.",
+  "allowedKinds": [
+    "component-definition",
+    "component-type"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

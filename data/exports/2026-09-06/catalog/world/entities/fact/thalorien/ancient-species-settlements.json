@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.ancient-species-settlements",
+  "name": "The Elder Non-Human Settlements",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Across Thalos, settlements inhabited by species other than humans are older than recorded history and did not form with the Thalmos Empire. Some survived the monster invasion better than later civilizations and became important keepers of guarded historical memory.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

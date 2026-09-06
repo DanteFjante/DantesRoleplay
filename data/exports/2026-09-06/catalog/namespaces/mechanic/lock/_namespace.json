@@ -1,0 +1,12 @@
+{
+  "id": "mechanic.lock",
+  "owner": "mechanic",
+  "description": "Migration-only retention namespace for an obsolete live lock-picking rehearsal record.",
+  "allowedKinds": [
+    "mechanic"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed migration-only retention for mechanic.lock.pick in catalog/compatibility-retention.json. Owner: catalog persistence. The existing live rehearsal and historical references require preservation; no new identities or runtime bootstrap are allowed. Retire only after the inventory\u0027s live-record, replacement, and backup gates pass."
+}

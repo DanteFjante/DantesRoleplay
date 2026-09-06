@@ -1,0 +1,12 @@
+{
+  "id": "conveyance-route",
+  "owner": "conveyance-route",
+  "description": "Namespace for conveyance-route catalog records.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.university-specialist-competition",
+  "name": "University and Specialist Schools",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The University remained broad and taught across recognized fields, while specialist schools concentrated on their disciplines and charged tuition. The specialist schools regularly held contests and demonstrations against the University to prove focused tuition was worthwhile, pressuring the University to improve its courses.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

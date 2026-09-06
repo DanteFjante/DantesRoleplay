@@ -1,0 +1,28 @@
+{
+  "id": "faction.shardwake.ash-court",
+  "name": "The Ash Court",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "A secretive Embercoast circle of kiln magnates and antiquarians who believe awakened skyglass can restore the lost imperial weather engines.",
+      "visibility": "gm",
+      "goals": [
+        "Control recoverable skyglass.",
+        "Rebuild one working weather engine."
+      ],
+      "methods": [
+        "Buy discoveries through proxies.",
+        "Sabotage expeditions that will not sell."
+      ],
+      "assets": [
+        "Kiln guild credit",
+        "Salvage crews",
+        "Hidden pre-Shattering texts"
+      ],
+      "agenda": {
+        "state": "advanced",
+        "summary": "Acquire the Stormvault key and reach the Drowned Observatory first."
+      }
+    }
+  }
+}

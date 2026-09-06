@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.military-school",
+  "name": "The Crown Military School",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "The royal family maintained a Military School as an extension of the University. The University educated commanders in the art of warfare, including command and strategy, while the Military School focused on practical fighting techniques and martial training.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

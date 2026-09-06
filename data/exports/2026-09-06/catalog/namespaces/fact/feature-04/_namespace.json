@@ -1,0 +1,12 @@
+{
+  "id": "fact.feature-04",
+  "owner": "fact",
+  "description": "Namespace for fact feature-04 catalog records.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

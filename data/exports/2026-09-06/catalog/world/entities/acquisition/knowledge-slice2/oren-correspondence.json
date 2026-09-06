@@ -1,0 +1,10 @@
+{
+  "id": "acquisition.knowledge-slice2.oren-correspondence",
+  "name": "Learner's Correspondence Acquisition",
+  "components": {
+    "game.core.world.knowledge.acquisition": {
+      "method": "told",
+      "resultingState": "believed"
+    }
+  }
+}

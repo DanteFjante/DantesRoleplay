@@ -1,0 +1,16 @@
+{
+  "id": "fact.caldris.prediction-court-legend",
+  "name": "No One Crosses Unheard",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Sect doctrine holds that nobody can cross the Prediction Court's suspended bells without ringing one — until Ganji did it on the night he escaped.",
+      "provenance": "Tensor Sect legend, now spreading among the monks",
+      "visibility": "party"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "capability",
+      "sensitivity": "discreet"
+    }
+  }
+}

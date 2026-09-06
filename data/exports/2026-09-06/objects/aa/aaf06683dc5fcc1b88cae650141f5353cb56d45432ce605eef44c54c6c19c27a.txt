@@ -1,0 +1,29 @@
+1. Call `orient()` first. It states what this system is, what exists in it right now, what is not
+   built, and which call to make next. Call it again whenever you lose track — it is cheap.
+2. Read with `query(kind: ...)`. The kinds are `capabilities`, `procedures`, `categories`, `world`, `entities`,
+   `graph`, `journey-plan`, `itinerary-plan`, `campaign-resume`, `session-recap`, `quest-summary`, `knowledge-answer`, `information-answer`, `information-actions`, `story-plan`, `mechanics`, `event-types`, `events`, `subscriptions`, `notifications`, `feedback`, `history`. No `id` returns a list or search; `id` returns one record in full; fixed planning/summary kinds state their required ID and reject unrelated filters in their own contract.
+   `version` with `id` returns an older revision. Read the full record before revising anything —
+   a summary is not the thing itself.
+   Use `query(kind: "categories", catalog: "procedures")` or
+   `query(kind: "categories", catalog: "mechanics")` to browse one category level at a time.
+   Its `category` is a branch — the selected path and its descendants — and the record lists
+   accept the same branch filter.
+3. When you do not know a payload shape or which parameters a kind reads, call
+   `query(kind: "capabilities")`. It is the exact catalog, and it is generated from the same
+   structure the two dispatchers switch on, so it cannot describe a kind that does not work.
+   Never guess a kind or a shape.
+4. Before any `commit`, find and read the contract governing it:
+   `query(kind: "procedures")` lists the manual, and each entry states what it governs — match
+   that against the commit you are about to make. Then cite what you read in `proceduresUsed` and
+   say what you are doing in `intent`, in your own words. The audit records both, and records
+   separately which contracts you actually opened.
+5. Change with `commit(kind: ..., payload: ...)`. The kinds are `procedure`, `component`,
+   `effects`, `mechanic`, `event-type`, `subscription`, `action`, `itinerary-advance`, `campaign`, `quest`, `notification`, `feedback`, `information-source`, `information-record`, `information-action-contract`, `information-action`, `story-plan`. `campaign` validates or creates a closed existing-world campaign blueprint; `quest` creates one closed campaign-scoped draft quest. Neither accepts caller-supplied effects. `event-type` registers a schema only; a `subscription` registers middleware. `information-source` and `information-record` store neutral scoped material; `information-action-contract` declares a schema-validated host executor, and `information-action` runs that declared contract. Registered guards run before a world change commits and can veto it, an accepted change records structural events readable with `query(kind: "events")`, and registered reactions run on those events with their effects committing in the same transaction, and may declare an event or raise a notification. `notification` moves one notice between `unread`, `read` and `archived` and cannot change what it says. `feedback` records append-only testing feedback about the host system and never changes game state. `story-plan` starts/cancels one development-GM bounded semantic plan; its backend executes context, knowledge, and action steps serially. `payload` is a JSON object encoded as a string — the whole
+   object in one argument, not loose named arguments. Where `dryRun` is supported, ALWAYS call
+   with `dryRun: true` first and read every named check or problem that comes back; then commit
+   the identical payload. A dry run you did not read is worse than none.
+6. Treat every failure as an instruction: the `fix` field names the literal next call, and a
+   rejected payload comes back with the shape you needed inside the error. Make that call rather
+   than retrying blind or giving up.
+7. After a commit, confirm: query back what you wrote, and quote the returned `operationId` when
+   reporting what you did.

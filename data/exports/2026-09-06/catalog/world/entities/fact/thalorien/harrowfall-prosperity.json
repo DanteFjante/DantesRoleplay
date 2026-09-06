@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.harrowfall-prosperity",
+  "name": "Harrowfall Surpassed Merrowgate",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Before its destruction, Harrowfall had become much more prosperous than Merrowgate. This embarrassed Merceros, a commerce-oriented kingdom, while Evandos was known for being founded on law and order.",
+      "provenance": "Confirmed during the world-creation interview (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "state",
+      "sensitivity": "open"
+    }
+  }
+}

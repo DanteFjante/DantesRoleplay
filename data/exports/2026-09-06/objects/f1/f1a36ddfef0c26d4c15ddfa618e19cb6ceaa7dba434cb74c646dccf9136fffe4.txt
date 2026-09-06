@@ -1,0 +1,74 @@
+// Administrative final Armor Class recording for D&D 2024 creatures.
+// Governed by dnd2024.procedure.mechanic.armor-class.
+var subject = ctx.roles.subject;
+var keys = Object.keys(ctx.input).sort();
+
+if (keys.length !== 2 || keys[0] !== 'mode' || keys[1] !== 'value') {
+  throw new Error('Input must contain exactly {"mode":"record"|"correct","value":<positive safe integer>}. Do not supply sourceRef, armor inputs, modifiers, or effects.');
+}
+
+var mode = ctx.input.mode;
+if (mode !== 'record' && mode !== 'correct') {
+  throw new Error('input.mode must be exactly "record" or "correct".');
+}
+
+var value = ctx.input.value;
+if (typeof value !== 'number' || !isFinite(value) || Math.floor(value) !== value || value < 1 || value > 9007199254740991) {
+  throw new Error('input.value must be a positive safe integer from 1 through 9007199254740991. It is never rounded, parsed, or derived.');
+}
+
+var sourceRef = {
+  sourceId: 'dnd2024.source.srd-5.2.1',
+  locator: 'Playing the Game > D20 Tests > Attack Rolls > Armor Class'
+};
+var raw = subject.components['dnd2024.armor-class'];
+var previousValue = null;
+
+if (raw) {
+  var previous;
+  try {
+    previous = JSON.parse(raw);
+  } catch (error) {
+    throw new Error('The existing Armor Class component is corrupt and cannot be corrected by this rule. Use a governed migration.');
+  }
+
+  if (previous === null || Array.isArray(previous) || Object.keys(previous).length !== 2 ||
+      !Object.prototype.hasOwnProperty.call(previous, 'value') ||
+      !Object.prototype.hasOwnProperty.call(previous, 'sourceRef') ||
+      typeof previous.value !== 'number' || !isFinite(previous.value) ||
+      Math.floor(previous.value) !== previous.value || previous.value < 1 || previous.value > 9007199254740991 ||
+      previous.sourceRef === null || Array.isArray(previous.sourceRef) ||
+      previous.sourceRef.sourceId !== sourceRef.sourceId || previous.sourceRef.locator !== sourceRef.locator ||
+      Object.keys(previous.sourceRef).length !== 2) {
+    throw new Error('The existing Armor Class component has an invalid shape and cannot be corrected by this rule. Use a governed migration.');
+  }
+
+  previousValue = previous.value;
+}
+
+if (mode === 'record' && raw) {
+  throw new Error('Armor Class is already recorded. Use mode "correct" to replace the authoritative final value.');
+}
+if (mode === 'correct' && !raw) {
+  throw new Error('Armor Class is absent. Use mode "record" to create its first authoritative value.');
+}
+
+var record = { value: value, sourceRef: sourceRef };
+var effectType = mode === 'record' ? 'component.add' : 'component.set';
+ctx.log(mode + ' Armor Class ' + value + '.');
+
+return {
+  narration: subject.name + "'s Armor Class is " + (mode === 'record' ? 'recorded' : 'corrected') + ' as ' + value + '.',
+  effects: [{
+    type: effectType,
+    entityId: subject.id,
+    definitionId: 'dnd2024.armor-class',
+    data: JSON.stringify(record)
+  }],
+  data: {
+    mode: mode,
+    value: value,
+    previousValue: previousValue,
+    sourceRef: sourceRef
+  }
+};

@@ -1,0 +1,5 @@
+{
+  "id": "game.core.campaign.session-checkpoint",
+  "name": "Campaign Session Evidence Checkpoint",
+  "description": "Immutable S4 evidence-only pointer from one ended session to one verified SP1 package. It stores byte-free provenance only and is governed by procedure.campaign.session."
+}

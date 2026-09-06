@@ -1,0 +1,12 @@
+{
+  "id": "mechanic.check",
+  "owner": "mechanic",
+  "description": "Namespace for mechanic check catalog records.",
+  "allowedKinds": [
+    "mechanic"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

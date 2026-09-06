@@ -1,0 +1,12 @@
+{
+  "id": "mechanic.dnd2024.armor-class",
+  "owner": "mechanic",
+  "description": "Namespace for mechanic dnd2024 armor-class catalog records.",
+  "allowedKinds": [
+    "mechanic"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed migration-only retention for the exact IDs in catalog/compatibility-retention.json. Owner: D\u0026D catalog maintenance. Existing live legacy records require preservation; new legacy identities and ordinary application discovery are forbidden. Retire only after the inventory\u0027s live-record, replacement, and backup gates pass."
+}

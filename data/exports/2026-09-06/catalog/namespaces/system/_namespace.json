@@ -1,0 +1,15 @@
+{
+  "id": "system",
+  "owner": "system",
+  "description": "Generic kernel-owned catalog contracts that can be used by every installed application.",
+  "allowedKinds": [
+    "component-definition",
+    "component-type"
+  ],
+  "aliases": [
+    "kernel contracts"
+  ],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reserved for ruleset-neutral system contracts; it is not an installed application."
+}

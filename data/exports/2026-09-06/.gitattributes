@@ -1,0 +1,4 @@
+# Hashes and captured text/blob bytes must survive clone on every platform.
+* -text whitespace=cr-at-eol
+# Whitespace inside captured payloads is original database content.
+objects/** -whitespace

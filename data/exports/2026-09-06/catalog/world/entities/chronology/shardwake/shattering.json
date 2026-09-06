@@ -1,0 +1,16 @@
+{
+  "id": "chronology.shardwake.shattering",
+  "name": "The Shattering",
+  "components": {
+    "game.core.world.chronology": {
+      "calendarId": "shardwake-reckoning",
+      "precision": "era",
+      "title": "The Shattering",
+      "summary": "A chain of skyglass weather engines failed, breaking the old island empire and drowning the central observatories.",
+      "dateLabel": "Year 0 SR",
+      "occurredAtMinute": 0,
+      "status": "active",
+      "visibility": "public"
+    }
+  }
+}

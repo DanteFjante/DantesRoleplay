@@ -1,0 +1,87 @@
+// Ability check, SRD 5.2.1: 1d20 + one ability modifier against a Difficulty Class.
+// Governed by procedure.mechanic.dnd2024.check.ability.
+var NAMES = { str: 'Strength', dex: 'Dexterity', con: 'Constitution',
+              int: 'Intelligence', wis: 'Wisdom', cha: 'Charisma' };
+var ORDER = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+
+var subject = ctx.roles.subject;
+var raw = subject.components['dnd2024.abilities'];
+
+if (!raw) {
+  throw new Error(
+    subject.name + ' has no "dnd2024.abilities" component, so there are no ability scores to ' +
+    'check. Attach one with commit(kind: "effects") using component.add - see ' +
+    'procedure.mechanic.dnd2024.abilities.');
+}
+
+var scores = JSON.parse(raw);
+var ability = ctx.input.ability;
+
+if (!ability) {
+  throw new Error(
+    'input.ability is required - name which ability is being tested, one of: ' +
+    ORDER.join(', ') + '. Example input: {"ability":"dex","dc":15}');
+}
+
+ability = String(ability).toLowerCase();
+
+if (ORDER.indexOf(ability) === -1) {
+  throw new Error('"' + ability + '" is not an ability. Use one of: ' + ORDER.join(', ') + '.');
+}
+
+if (typeof scores[ability] !== 'number') {
+  throw new Error(
+    subject.name + ' has no ' + ability + ' score. Present: ' + Object.keys(scores).join(', ') +
+    '. Fix the component with commit(kind: "effects") using component.merge.');
+}
+
+if (typeof ctx.input.dc !== 'number') {
+  throw new Error(
+    'input.dc is required and must be a number. The GM sets the Difficulty Class BEFORE the ' +
+    'roll; this rule will not invent one. SRD typical DCs: very easy 5, easy 10, medium 15, ' +
+    'hard 20, very hard 25, nearly impossible 30.');
+}
+
+var score = scores[ability];
+
+// floor() rather than trunc(): it rounds toward negative infinity, so a score of 7 gives -2
+// rather than -1. Math.trunc here would quietly make weak creatures better at everything.
+var modifier = Math.floor((score - 10) / 2);
+var dc = ctx.input.dc;
+
+// Seeded. Never Math.random(): the seed is recorded, and a roll nobody can reproduce is a
+// ruling nobody can review.
+var roll = ctx.randomInt(1, 20);
+
+// A list even with one entry, so proficiency and advantage append rather than rewrite, and
+// "why that total?" stays answerable. See the envelope in the governing contract.
+var modifiers = [{ source: ability + ' ' + score, value: modifier }];
+
+var total = roll;
+for (var i = 0; i < modifiers.length; i++) { total = total + modifiers[i].value; }
+
+var succeeded = total >= dc;
+var signed = (modifier >= 0 ? '+' : '') + modifier;
+
+ctx.log('d20 ' + roll + ' ' + signed + ' (' + ability + ' ' + score + ') = ' + total +
+        ' vs DC ' + dc);
+
+// No automatic success on a natural 20 and no automatic failure on a natural 1. The SRD
+// reserves those for attack rolls and death saves; on a check the total is the whole answer.
+return {
+  narration: subject.name + ' makes a ' + NAMES[ability] + ' check: ' + roll + ' ' + signed +
+             ' = ' + total + ' against DC ' + dc + ' - ' +
+             (succeeded ? 'success' : 'failure') + '.',
+  effects: [],
+  data: {
+    test: 'ability-check',
+    ability: ability,
+    dc: dc,
+    die: '1d20',
+    roll: roll,
+    modifiers: modifiers,
+    total: total,
+    succeeded: succeeded,
+    source: 'SRD 5.2.1 - Playing the Game: Ability Checks'
+  }
+};

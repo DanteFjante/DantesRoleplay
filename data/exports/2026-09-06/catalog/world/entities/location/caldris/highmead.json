@@ -1,0 +1,16 @@
+{
+  "id": "location.caldris.highmead",
+  "name": "Highmead",
+  "container": {
+    "id": "region.caldris.chalklands",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "settlement",
+      "status": "active",
+      "summary": "A hill-city of narrow chalk-white streets, its Whitewall district overlooked by the Tensor Sect's monastery. Ganji grew up hearing its bells and market noise from behind monastery walls.",
+      "visibility": "public"
+    }
+  }
+}

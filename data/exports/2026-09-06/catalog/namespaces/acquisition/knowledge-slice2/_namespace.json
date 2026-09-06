@@ -1,0 +1,12 @@
+{
+  "id": "acquisition.knowledge-slice2",
+  "owner": "acquisition",
+  "description": "Namespace for acquisition knowledge-slice2 catalog records.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for current catalog ownership, hierarchy, and allowed record kinds."
+}

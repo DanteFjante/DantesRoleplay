@@ -1,0 +1,2383 @@
+{
+  "relationships": [
+    {
+      "from": "actor.caldris.ilvaeril",
+      "to": "faction.caldris.tensor-sect",
+      "kind": "member-of",
+      "data": {}
+    },
+    {
+      "from": "actor.caldris.ordrun-vess",
+      "to": "faction.caldris.tensor-sect",
+      "kind": "leads",
+      "data": {}
+    },
+    {
+      "from": "campaign.thalorien.brackenford",
+      "to": "actor.thalorien.brackenford.elian-voss",
+      "kind": "game.core.campaign.references",
+      "data": {
+        "role": "npc",
+        "audience": "party"
+      }
+    },
+    {
+      "from": "campaign.thalorien.brackenford",
+      "to": "actor.thalorien.brackenford.sella-bramble",
+      "kind": "game.core.campaign.references",
+      "data": {
+        "role": "npc",
+        "audience": "party"
+      }
+    },
+    {
+      "from": "campaign.thalorien.brackenford",
+      "to": "campaign.thalorien.brackenford.arc.the-waking-depths",
+      "kind": "game.core.campaign.has-arc",
+      "data": {}
+    },
+    {
+      "from": "campaign.thalorien.brackenford",
+      "to": "campaign.thalorien.brackenford.chapter.brackenford-arrivals",
+      "kind": "game.core.campaign.has-chapter",
+      "data": {}
+    },
+    {
+      "from": "campaign.thalorien.brackenford",
+      "to": "campaign.thalorien.brackenford.participation.actor.thalorien.brackenford.orban",
+      "kind": "game.core.campaign.has-character-participation",
+      "data": {}
+    },
+    {
+      "from": "campaign.thalorien.brackenford",
+      "to": "fact.thalorien.brackenford",
+      "kind": "game.core.campaign.references",
+      "data": {
+        "role": "knowledge",
+        "audience": "party"
+      }
+    },
+    {
+      "from": "campaign.thalorien.brackenford",
+      "to": "faction.thalorien.gilded-concord",
+      "kind": "game.core.campaign.references",
+      "data": {
+        "role": "faction-stake",
+        "audience": "gm"
+      }
+    },
+    {
+      "from": "campaign.thalorien.brackenford",
+      "to": "location.thalorien.brackenford",
+      "kind": "game.core.campaign.references",
+      "data": {
+        "role": "start",
+        "audience": "party"
+      }
+    },
+    {
+      "from": "campaign.thalorien.brackenford",
+      "to": "world.thalorien",
+      "kind": "game.core.campaign.in-world",
+      "data": {}
+    },
+    {
+      "from": "campaign.thalorien.brackenford.chapter.brackenford-arrivals",
+      "to": "campaign.thalorien.brackenford.arc.the-waking-depths",
+      "kind": "game.core.campaign.chapter.in-arc",
+      "data": {}
+    },
+    {
+      "from": "campaign.thalorien.brackenford.participation.actor.thalorien.brackenford.orban",
+      "to": "actor.thalorien.brackenford.orban",
+      "kind": "game.core.campaign.character-participation.for-actor",
+      "data": {}
+    },
+    {
+      "from": "chronology.shardwake.black-tide",
+      "to": "location.shardwake.drowned-observatory",
+      "kind": "game.core.world.chronology.about",
+      "data": {}
+    },
+    {
+      "from": "chronology.shardwake.black-tide",
+      "to": "world.shardwake",
+      "kind": "game.core.world.chronology.in-world",
+      "data": {}
+    },
+    {
+      "from": "chronology.shardwake.concord-founded",
+      "to": "faction.shardwake.tidebound-concord",
+      "kind": "game.core.world.chronology.about",
+      "data": {}
+    },
+    {
+      "from": "chronology.shardwake.concord-founded",
+      "to": "world.shardwake",
+      "kind": "game.core.world.chronology.in-world",
+      "data": {}
+    },
+    {
+      "from": "chronology.shardwake.shattering",
+      "to": "world.shardwake",
+      "kind": "game.core.world.chronology.about",
+      "data": {}
+    },
+    {
+      "from": "chronology.shardwake.shattering",
+      "to": "world.shardwake",
+      "kind": "game.core.world.chronology.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.shardwake.creation-requirements",
+      "to": "world.shardwake",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.shardwake.creation-requirements",
+      "to": "world.shardwake",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.shardwake.fragmented-chart",
+      "to": "actor.shardwake.mara-vale",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.shardwake.fragmented-chart",
+      "to": "world.shardwake",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.shardwake.opening-signal",
+      "to": "location.shardwake.lantern-harbor",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.shardwake.opening-signal",
+      "to": "world.shardwake",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.shardwake.rising-tides",
+      "to": "location.shardwake.drowned-observatory",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.shardwake.rising-tides",
+      "to": "world.shardwake",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.shardwake.skyglass-awakens",
+      "to": "world.shardwake",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.shardwake.skyglass-awakens",
+      "to": "world.shardwake",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.shardwake.stormvault-key",
+      "to": "location.shardwake.stormvault",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.shardwake.stormvault-key",
+      "to": "world.shardwake",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.age.thalmos-foundation",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.age.thalmos-foundation",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.ages-two-thousand-years",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.ages-two-thousand-years",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.amnesty-settlements",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.amnesty-settlements",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.ancestral-war-stories",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.ancestral-war-stories",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.ancient-dungeons",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.ancient-dungeons",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.ancient-language.name-endings",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.ancient-language.name-endings",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.ancient-species-settlements",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.ancient-species-settlements",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.annual-council",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.annual-council",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.arts-school-destruction",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.arts-school-destruction",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.ashen-crown-isles",
+      "to": "location.thalorien.volcanic-island-chain",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.ashen-crown-isles",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.bannerfall-tower",
+      "to": "location.thalorien.bannerfall-tower",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.bannerfall-tower",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.beyond-thalos-unknown",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.beyond-thalos-unknown",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.book-of-truth",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.book-of-truth",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.book-of-truth-as-obstacle",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.book-of-truth-as-obstacle",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.book-of-wisdom",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.book-of-wisdom",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.brackenford",
+      "to": "location.thalorien.brackenford",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.brackenford",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.cave-sealing-pattern",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.cave-sealing-pattern",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.church-peace-mandate",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.church-peace-mandate",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.churches-and-clerics",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.churches-and-clerics",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.civic-peace-education",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.civic-peace-education",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.continent.thalos",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.continent.thalos",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.creatures-of-legend",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.creatures-of-legend",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.crownmere-capital",
+      "to": "location.thalorien.crownmere",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.crownmere-capital",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.current-age-question",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.current-age-question",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.dark-market-origin",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.dark-market-origin",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.dawnbell-tower",
+      "to": "location.thalorien.dawnbell-tower",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.dawnbell-tower",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.distinct-kingdom-cultures",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.distinct-kingdom-cultures",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.dungeon-design",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.dungeon-design",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.dungeon-monster-growth",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.dungeon-monster-growth",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.dwarven-historical-memory",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.dwarven-historical-memory",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.eight-sibling-council",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.eight-sibling-council",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.elaris-long-remembrance",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.elaris-long-remembrance",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.elven-historical-memory",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.elven-historical-memory",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.elven-remembrance",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.elven-remembrance",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.emberwright-tower",
+      "to": "location.thalorien.emberwright-tower",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.emberwright-tower",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.fallen-tower-magicians",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.fallen-tower-magicians",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.four-magic-towers",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.four-magic-towers",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.four-magic-towers-authority",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.four-magic-towers-authority",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.four-towers-battle-magic",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.four-towers-battle-magic",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.fragmentary-pre-empire-history",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.fragmentary-pre-empire-history",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.frontier-watch",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.frontier-watch",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.great-invasion-origin",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.great-invasion-origin",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.great-seven-kingdom-war",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.great-seven-kingdom-war",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.great-thalos-war-ended",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.great-thalos-war-ended",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.greenmantle",
+      "to": "location.thalorien.greenmantle",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.greenmantle",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.harrowfall-cold-storage-advantage",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.harrowfall-cold-storage-advantage",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.harrowfall-destruction",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.harrowfall-destruction",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.harrowfall-evandos-location",
+      "to": "location.thalorien.harrowfall",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.harrowfall-evandos-location",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.harrowfall-inaccessible",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.harrowfall-inaccessible",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.harrowfall-massacre",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.harrowfall-massacre",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.harrowfall-northern-highlands",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.harrowfall-northern-highlands",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.harrowfall-prosperity",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.harrowfall-prosperity",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.harrowfall-spirits",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.harrowfall-spirits",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.hexagonal-kingdom-ring",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.hexagonal-kingdom-ring",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.hidden-networks",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.hidden-networks",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.hunted-magicians",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.hunted-magicians",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.imperial-stagnation",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.imperial-stagnation",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.imperial-welfare",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.imperial-welfare",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.independent-settlements",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.independent-settlements",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.kharad-veyr-deep-ledger",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.kharad-veyr-deep-ledger",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.kingdom-allocation",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.kingdom-allocation",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.kingdom-relationships",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.kingdom-relationships",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.kingdom-tensions",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.kingdom-tensions",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.knot-and-musical-magic",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.knot-and-musical-magic",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.known-world-limit",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.known-world-limit",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.larkspire-university",
+      "to": "location.thalorien.larkspire-university",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.larkspire-university",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.layered-history",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.layered-history",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.leaders-consider-merchant-proposal",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.leaders-consider-merchant-proposal",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.long-peace",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.long-peace",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.lost-history",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.lost-history",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.magic-cultural-traditions",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.magic-cultural-traditions",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.magic-known-uncommon",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.magic-known-uncommon",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.magic-rare-settlements",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.magic-rare-settlements",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.magic.costly-education",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.magic.costly-education",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.medieval-material-life",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.medieval-material-life",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merceron-king-embarrassment",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merceron-king-embarrassment",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merceron-trade-monopoly-motive",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merceron-trade-monopoly-motive",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merceros-south-evandos-north",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merceros-south-evandos-north",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merceros-valeros-war-alliance",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merceros-valeros-war-alliance",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merchant-coalition",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merchant-coalition",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merchant-consumer-influence",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merchant-consumer-influence",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merchant-market-manipulation",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merchant-market-manipulation",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merchant-political-argument",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merchant-political-argument",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merchant-threat-to-peace",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merchant-threat-to-peace",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merrowgate-trade-city",
+      "to": "location.thalorien.merrowgate",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.merrowgate-trade-city",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.military-school",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.military-school",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.modern-national-balance",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.modern-national-balance",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.monster-caves",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.monster-caves",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.monster-wards",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.monster-wards",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.mount-cinderwake",
+      "to": "location.thalorien.southwestern-volcano",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.mount-cinderwake",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.nethravai-wardens",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.nethravai-wardens",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.northeastern-forests-and-cold-mountains",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.northeastern-forests-and-cold-mountains",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.oathshield-range",
+      "to": "location.thalorien.oathshield-range",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.oathshield-range",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.oberon-slain",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.oberon-slain",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.peace-as-value",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.peace-as-value",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.peace-generations",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.peace-generations",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.peace-not-guaranteed",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.peace-not-guaranteed",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.postwar-guardrails",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.postwar-guardrails",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.postwar-losses-and-humility",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.postwar-losses-and-humility",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.present-dangers",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.present-dangers",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.previous-age-extinction",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.previous-age-extinction",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.previous-age.monster-outbreak",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.previous-age.monster-outbreak",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.rebellion",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.rebellion",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.rune-enchanted-items",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.rune-enchanted-items",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.school-arts",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.school-arts",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.school-business",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.school-business",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.school-engineering",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.school-engineering",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.sea-shore-monsters",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.sea-shore-monsters",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.secret-magic-schools",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.secret-magic-schools",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.settlement-hospitality",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.settlement-hospitality",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.settlement-patterns",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.settlement-patterns",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.seven-kingdom-names",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.seven-kingdom-names",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.seven-kingdoms",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.seven-kingdoms",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.seven-local-currencies",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.seven-local-currencies",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.seven-way-division",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.seven-way-division",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.sibling-conflict",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.sibling-conflict",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.southeastern-agricultural-belt",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.southeastern-agricultural-belt",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.southeastern-tropical-cliffs-and-jungles",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.southeastern-tropical-cliffs-and-jungles",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.southwestern-volcanic-region-waylos",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.southwestern-volcanic-region-waylos",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.southwestern-volcano-and-islands",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.southwestern-volcano-and-islands",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.standard-cosmology",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.standard-cosmology",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.starwell-tower",
+      "to": "location.thalorien.starwell-tower",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.starwell-tower",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.sudden-calamity",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.sudden-calamity",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon-beloved",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon-beloved",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon-constitution",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon-constitution",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon-eight-children",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon-eight-children",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon-names",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon-names",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon-peace-project",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon-peace-project",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon-university",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon-university",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon-utopia-qualified",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon-utopia-qualified",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.aldren",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.aldren",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.aldron",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.aldron",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.evandon",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.evandon",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.evandor",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.evandor",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.merceran",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.merceran",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.merceron",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.merceron",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.minevra",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.minevra",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.minevron",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.minevron",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.monster-hunt",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.monster-hunt",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.name-echoes",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.name-echoes",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.name-echoes.revised",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.name-echoes.revised",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.oberon",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.oberon",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.rhiannon",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.rhiannon",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.trade-roads",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.trade-roads",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.valerian",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.valerian",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.valeron",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.valeron",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.wayland",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.wayland",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.waylon",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmon.waylon",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmos-defense",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.thalmos-defense",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.towers-present-state",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.towers-present-state",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.traveling-troupes",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.traveling-troupes",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.university-civil-service",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.university-civil-service",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.university-specialist-competition",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.university-specialist-competition",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.valeros-southeastern-mountains",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.valeros-southeastern-mountains",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.valeros-tower-destroyed",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.valeros-tower-destroyed",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.veiled-age",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.veiled-age",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.warm-high-fantasy",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.warm-high-fantasy",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.wilderness-danger",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.wilderness-danger",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.world-tree",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.world-tree",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.world-tree-elven-enclave",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.world-tree-elven-enclave",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.world-tree-neutral-territory",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "fact.thalorien.world-tree-neutral-territory",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "faction.shardwake.ash-court",
+      "to": "actor.shardwake.nem-vask",
+      "kind": "game.core.world.faction.member",
+      "data": {}
+    },
+    {
+      "from": "faction.shardwake.ash-court",
+      "to": "actor.shardwake.sable-reeve",
+      "kind": "game.core.world.faction.member",
+      "data": {}
+    },
+    {
+      "from": "faction.shardwake.ash-court",
+      "to": "faction.shardwake.saltwardens",
+      "kind": "game.core.world.faction.opposed-to",
+      "data": {}
+    },
+    {
+      "from": "faction.shardwake.ash-court",
+      "to": "faction.shardwake.tidebound-concord",
+      "kind": "game.core.world.faction.opposed-to",
+      "data": {}
+    },
+    {
+      "from": "faction.shardwake.ash-court",
+      "to": "location.shardwake.cinder-quay",
+      "kind": "game.core.world.faction.territory-controls",
+      "data": {}
+    },
+    {
+      "from": "faction.shardwake.ash-court",
+      "to": "world.shardwake",
+      "kind": "game.core.world.faction.in-world",
+      "data": {}
+    },
+    {
+      "from": "faction.shardwake.saltwardens",
+      "to": "actor.shardwake.captain-oren-thatch",
+      "kind": "game.core.world.faction.member",
+      "data": {}
+    },
+    {
+      "from": "faction.shardwake.saltwardens",
+      "to": "location.shardwake.stormvault",
+      "kind": "game.core.world.faction.territory-controls",
+      "data": {}
+    },
+    {
+      "from": "faction.shardwake.saltwardens",
+      "to": "world.shardwake",
+      "kind": "game.core.world.faction.in-world",
+      "data": {}
+    },
+    {
+      "from": "faction.shardwake.tidebound-concord",
+      "to": "actor.shardwake.abbess-iora",
+      "kind": "game.core.world.faction.member",
+      "data": {}
+    },
+    {
+      "from": "faction.shardwake.tidebound-concord",
+      "to": "actor.shardwake.mara-vale",
+      "kind": "game.core.world.faction.member",
+      "data": {}
+    },
+    {
+      "from": "faction.shardwake.tidebound-concord",
+      "to": "location.shardwake.lantern-harbor",
+      "kind": "game.core.world.faction.territory-controls",
+      "data": {}
+    },
+    {
+      "from": "faction.shardwake.tidebound-concord",
+      "to": "world.shardwake",
+      "kind": "game.core.world.faction.in-world",
+      "data": {}
+    },
+    {
+      "from": "faction.thalorien.gilded-concord",
+      "to": "world.thalorien",
+      "kind": "game.core.world.faction.in-world",
+      "data": {}
+    },
+    {
+      "from": "location.shardwake.cinder-quay",
+      "to": "location.shardwake.glassfen",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "location.shardwake.cinder-quay",
+      "to": "location.shardwake.lantern-harbor",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "location.shardwake.drowned-observatory",
+      "to": "location.shardwake.lantern-harbor",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "location.shardwake.lantern-harbor",
+      "to": "location.shardwake.stormvault",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "location.thalorien.aldros",
+      "to": "location.thalorien.evandos",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "location.thalorien.aldros",
+      "to": "location.thalorien.merceros",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "location.thalorien.aldros",
+      "to": "location.thalorien.minevros",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "location.thalorien.aldros",
+      "to": "location.thalorien.rhiannos",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "location.thalorien.aldros",
+      "to": "location.thalorien.valeros",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "location.thalorien.aldros",
+      "to": "location.thalorien.waylos",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "location.thalorien.aldros",
+      "to": "location.thalorien.world-tree-grounds",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "location.thalorien.evandos",
+      "to": "location.thalorien.minevros",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "location.thalorien.evandos",
+      "to": "location.thalorien.rhiannos",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "location.thalorien.merceros",
+      "to": "location.thalorien.valeros",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "location.thalorien.merceros",
+      "to": "location.thalorien.waylos",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "location.thalorien.minevros",
+      "to": "location.thalorien.waylos",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "location.thalorien.rhiannos",
+      "to": "location.thalorien.valeros",
+      "kind": "game.core.world.location.connected-to",
+      "data": {}
+    },
+    {
+      "from": "secret.thalorien.brackenford-goblin-migration",
+      "to": "location.thalorien.brackenford",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "secret.thalorien.brackenford-goblin-migration",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "secret.thalorien.brackenford-waystone-cellar",
+      "to": "location.thalorien.brackenford",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "secret.thalorien.brackenford-waystone-cellar",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "secret.thalorien.gilded-concord-conspiracy",
+      "to": "faction.thalorien.gilded-concord",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "secret.thalorien.gilded-concord-conspiracy",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "secret.thalorien.gilded-concord-merrowgate-network",
+      "to": "location.thalorien.merrowgate",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "secret.thalorien.gilded-concord-merrowgate-network",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "secret.thalorien.gilded-concord-ruler-pressure",
+      "to": "faction.thalorien.gilded-concord",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "secret.thalorien.gilded-concord-ruler-pressure",
+      "to": "world.thalorien",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    }
+  ]
+}

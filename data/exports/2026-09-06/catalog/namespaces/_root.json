@@ -1,0 +1,13 @@
+{
+  "id": "catalog-root",
+  "owner": "legacy",
+  "description": "Namespace for catalog-root catalog records.",
+  "allowedKinds": [
+    "component-definition",
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": false,
+  "reviewStatus": "needs-review",
+  "reviewNote": "Contains unqualified legacy IDs; move each record into an owned namespace before approval."
+}

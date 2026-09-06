@@ -1,0 +1,16 @@
+{
+  "id": "location.thalorien.world-tree",
+  "name": "The World Tree",
+  "container": {
+    "id": "location.thalorien.world-tree-grounds",
+    "slot": "location"
+  },
+  "components": {
+    "game.core.world.location": {
+      "kind": "site",
+      "status": "draft",
+      "summary": "A sacred tree growing at the absolute center of the continent. It is approximately 2,000 meters high and 50 meters wide.",
+      "visibility": "public"
+    }
+  }
+}

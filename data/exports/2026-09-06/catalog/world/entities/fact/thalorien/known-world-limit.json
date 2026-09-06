@@ -1,0 +1,16 @@
+{
+  "id": "fact.thalorien.known-world-limit",
+  "name": "Thalos as the Known-World Limit",
+  "components": {
+    "game.core.world.fact": {
+      "status": "active",
+      "summary": "Thalos is the limit of the known world, not necessarily the limit of Thalorien. No confirmed lands beyond Thalos are known and the oceans beyond the continent remain largely uncharted.",
+      "provenance": "Imported from updated World_Creation_Ledger.md (2026-08-22).",
+      "visibility": "public"
+    },
+    "game.core.world.knowledge.classification": {
+      "subjectKind": "location",
+      "sensitivity": "open"
+    }
+  }
+}

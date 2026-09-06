@@ -1,0 +1,16 @@
+{
+  "id": "teleport-gate.feature-15.gate-to-observatory",
+  "name": "Gate-to-Observatory Portal",
+  "container": {
+    "id": "location.feature-01.gate",
+    "slot": "presence"
+  },
+  "components": {
+    "game.core.world.teleport-gate": {
+      "kind": "fixed-portal",
+      "status": "active",
+      "summary": "A reviewed one-way portal from the fixture gate to the fixture observatory.",
+      "visibility": "party"
+    }
+  }
+}

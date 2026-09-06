@@ -1,0 +1,15 @@
+{
+  "id": "actor.caldris.nettle",
+  "name": "Nettle",
+  "container": {
+    "id": "location.caldris.bramblebridge",
+    "slot": "presence"
+  },
+  "components": {
+    "game.core.world.motive": {
+      "status": "active",
+      "summary": "A free, sharp-witted stray cat with a will very much her own. She takes an immediate liking to Ganji when their paths cross in Bramblebridge.",
+      "visibility": "party"
+    }
+  }
+}

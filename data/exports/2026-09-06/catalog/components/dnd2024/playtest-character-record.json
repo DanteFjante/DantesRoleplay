@@ -1,0 +1,5 @@
+{
+  "id": "dnd2024.playtest-character-record",
+  "name": "D&D 2024 Playtest Character Record",
+  "description": "One explicitly provisional, non-executable record attached to a playtest actor. It holds only declared labels/details for material whose rules are not implemented. It grants no class, spell, item, feat, trait, campaign scope, or rule result. Governed by procedure.character.playtest-bootstrap."
+}

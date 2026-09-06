@@ -1,0 +1,12 @@
+{
+  "id": "faction.shardwake",
+  "owner": "faction",
+  "description": "Factions scoped to the Shardwake Isles. Records must use the governed world-faction contract and explicit in-world, membership, control, alliance, or opposition relationships.",
+  "allowedKinds": [
+    "entity"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for Shardwake faction identities and their governed relationship model."
+}
