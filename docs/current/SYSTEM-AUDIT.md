@@ -1,8 +1,10 @@
-# System audit: redundancy, obsolete files, and performance
+# System audit and cleanup implementation plan
 
 **Audit date:** 6 September 2026. **Source baseline:** `017ed8fec13a54b22b50ef6fa14f04b1cf414c09`.
 
-**Purpose:** a backlog for investigation and later repairs. This document records findings; it does not authorize deletion, migration, changed public contracts, or feature acceptance. No implementation, catalog, configuration, or live game-state changes were made during this audit.
+**Plan updated:** 6 September 2026, following the user's request to integrate registered application objects, efficient C# mappings, JavaScript reducers, and change broadcasting into the cleanup work.
+
+**Purpose:** preserve the audit evidence and provide one coordinated implementation plan. The requested architecture is the planned direction; the slices below have not been implemented. Exact new runtime identities, public contracts, schema changes and migrations must be made concrete and reviewed at their owning slice under the repository agreement. Routine work inside an approved slice does not require repeated confirmation. No implementation, catalog, configuration, or live game-state changes were made during the audit or this planning update.
 
 ## What deserves attention first
 
@@ -11,6 +13,10 @@ The largest confirmed user-facing cost is loading the connected D&D hub. Two ord
 The clearest repository cleanup is **678 tracked build-output files occupying 261.00 MiB** in five old verification directories. These include obsolete assembly copies and third-party binaries. The clearest runtime storage opportunity is repeated web assets: **591 stored asset rows contain 184.13 MiB of bytes, while their 179 distinct content hashes represent 26.51 MiB**. The remaining **157.62 MiB** is repeated payload by stored hash. A storage redesign could preserve every page revision while sharing identical bytes; deleting revision history is a separate decision.
 
 There are also real sources of future regressions: unconsumed pagination cursors, three copies of the item response-envelope checks, excluded former-host sources and tests, and large mixed-purpose files. Some apparent duplication is deliberate: 86 compatibility catalog records have explicit retention requirements, and several large frontend modules are still used by tests.
+
+The implementation approach is to replace repeated application-side ECS assembly with **registered application object contracts**, executed by a generic C# mapping engine. Catalog JavaScript will retain game behavior through pure reducer-style mechanics. Validated changes will use the existing transaction/effect path, followed by authorized object/view notifications. Each replacement will retire its superseded loading or mapping code as part of the same cleanup program. The original 23 findings and measured baseline below remain unchanged; the integrated SC00–SC17 slices supersede the earlier suggested A–K sequence.
+
+For implementation, start with [the target design](#target-design-registered-objects-and-controlled-state-changes), then [the slice register](#integrated-implementation-slices). Consult the finding details for evidence and retirement constraints.
 
 ## Scope and evidence standard
 
@@ -363,23 +369,242 @@ The import graph reaches 97 non-generated project modules from the production en
 - The eight-request hub queue, 32-page/2-MiB within-load listing cache and bounded schema cache: observed or inspected protections to preserve during optimization.
 - Synchronous compatibility wrappers in `ControlSettingsExplorer`: they exist, but live HTTP endpoints use `ListAsync`/`GetAsync`. Their presence alone does not establish a blocking HTTP hot path.
 
-## Suggested later slices
+## Target design: registered objects and controlled state changes
 
-These are proposed work packages, not approved changes. Keep completeness and disclosure checks independent from performance goals.
+**Decision:** applications may define object schemas suited to their own mechanics and clients. Those schemas do not need to mirror the ECS component layout. ECS and SQLite remain authoritative for stored game state; mapped objects are versioned reads and validated edit interfaces over that state.
 
-| Slice | Findings | Reviewable deliverable | Required proof before acceptance |
+The initial examples are a Campaign summary and a paged Faction directory. Character and Item objects follow after the path is proven. These names describe planned application concepts, not already-registered public IDs. Avoid one enormous Campaign object that recursively loads the entire world: collections are bounded and paginated, and deeper objects require explicit expansion or separate reads.
+
+### Execution ownership
+
+| Concern | Planned owner | Boundary |
+| --- | --- | --- |
+| Application object schema and identity declaration | Catalog application | Owns shape, source bindings, versions and permitted expansions |
+| Read mapping and query plan | Generic C# projection engine | Batches direct store reads, assembles objects, validates schemas and records dependencies |
+| Game action/reducer | Catalog JavaScript mechanic | Receives declared objects and action input; returns proposed changes using supplied deterministic context |
+| Reverse mapping | Registered declaration executed in C# | Translates explicitly writable fields/operations to typed effects; contains no D&D formulas or eligibility rules |
+| Validation, persistence and audit | Existing C# action/effect pipeline | Rechecks authorization and source revisions; commits changes atomically and idempotently |
+| Change dispatch | Generic C# notification service | Publishes committed, audience-safe invalidation evidence with recovery for missed delivery |
+| Browser data state | Redux-style object/query cache | Holds authorized server results, UI state and pending edits; has no authority to confirm gameplay |
+
+```mermaid
+flowchart LR
+    Q[Object or view request] --> P[C# prepares authorized batched read]
+    P --> O[Application objects]
+    O --> V[Website or mechanic]
+    V --> A[Action or explicit edit]
+    A --> R[JavaScript reducer when rules are needed]
+    A --> W[Registered write mapping]
+    R --> W
+    W --> T[Validate and commit typed effects]
+    T --> N[Dispatch authorized change notice]
+    N --> V
+```
+
+The two paths out of Action are intentional: a permitted structural edit such as changing a campaign premise can use a registered write mapping directly; gameplay actions must pass through their mechanic. Reducers perform no HTTP/database I/O or broadcasting. Seed, time, actor and other execution context are supplied by the host; JavaScript must not obtain ambient randomness/time to make an authoritative decision. Persistence and external notifications are effectful operations outside the reducer. A computed field is read-only unless a separately registered action owns its change.
+
+### Extend the existing owners
+
+| Existing implementation | Reuse or extend | Consolidation required |
+| --- | --- | --- |
+| `src/system/projection-materialization/domain/VersionedProjectionContracts.cs` and `persistence/SqliteProjectionDefinitionRegistry.cs` | Versioned definitions, output schemas, exact references and source evidence | Establish one object/projection contract owner; do not create another independent registry with overlapping semantics |
+| `src/system/projection-materialization/persistence/ProjectionMaterializer.cs` | Dependency planning and deduplicated `GetComponentsAsync` reads | Extend bounded entity/relationship selection; prepare reusable plans instead of rebuilding structural work per request |
+| `src/system/application-execution/persistence/ApplicationMechanicProjectionMappingResolver.cs` | Exact component/relationship mapping and owner resolution | Adapt existing mechanic inputs to registered objects; retire superseded translation branches after parity |
+| `src/system/interaction-orchestration/hosting/ApplicationReadModelService.cs` | Application queries, schemas, audience and exact projection pins | Expose object/view reads through the established discovery model and transport boundary |
+| `src/system/application-execution/persistence/ApplicationActionRunner.cs` | Version checks, idempotent actions, effect translation and audit | Add explicit object-change translation before the same effect/transaction owner |
+| `src/system/knowledge/persistence/ApplicationAuthorizedProjectionResolver.cs` | Observer-bound authorization, bounded reads and snapshot handling | Retain knowledge policy; share structural batching without leaking or duplicating application semantics |
+| `DantesRoleplay.Web/Live/WebChangeFeed.cs` and `src/system/web-interface/dnd2024/src/server-host/main.tsx` | Existing SSE transport and reconnect handling | Replace broad database-commit invalidation with scoped dependency notices where supported; keep page-activation handling |
+
+The current projection materializer already batches known component locators, but it does not provide the complete object/reducer/write/subscription design. The current change feed polls SQLite data version and reports broad invalidation; it is not already a durable object-event stream. These are extension points, not claims of delivered features.
+
+### Registration and efficient C# execution
+
+An object registration must describe identity/owner, object schema, exact source component versions, field mappings, relationship selectors, nested references, cardinality, required/optional fields, calculated/read-only fields, permitted edits, access requirements and output/read budgets. Use simple declarative structural operations initially. Complex game calculations stay in catalog JavaScript; an unrestricted mapping language would recreate a second rules engine.
+
+Load and validate definitions through the existing catalog/activation lifecycle. Prepare immutable C# execution plans on activation or first use, cache them with explicit count/byte bounds, and optionally warm common plans at startup. Field accessors and selectors can be compiled to delegates where profiling justifies it; they need not be generated C# source or separately loaded assemblies. Mapping declarations can be updated after startup without rebuilding the host.
+
+Each request pins an exact mapping version/fingerprint for its lifetime. Atomically publish a validated replacement for new requests; in-flight reads finish with their pinned plan, and writes recheck relevant activation/source revisions before committing. Reject invalid replacements while keeping the current valid registration available. Cache identities include the declaration and transitive schema/source dependencies. Preserve file-drift, source-registration, allowed-root and activation guarantees; a matching cache key alone must not bypass those checks.
+
+Keep prepared plans separate from private result caches. Plans may be shared when they contain no actor-specific data; results must bind verified principal, application, state space, campaign, perspective/observer, mapping version, source revisions and request input. Authorization occurs before materializing private data, and revocation retires affected cached results.
+
+The engine accesses stores directly. One object/view HTTP response may use several bounded SQL queries; it must not issue internal loopback HTTP calls or one SQL query per displayed field/row. Deduplicate source reads across composed objects, index graph relationships once per snapshot, parse a source JSON value once where practical, and measure allocations as well as elapsed time. Restrict traversal depth, collection size, bytes and SQL work, with explicit continuation or incomplete state.
+
+**Deferred option:** trusted compiled C# mapping extensions can be considered only for a measured remaining bottleneck. Dynamic DLL loading, assembly unloading and arbitrary C# source compilation are outside the initial implementation. The initial design gets native execution from the generic engine while retaining editable definitions and JavaScript mechanics.
+
+### Saving mapped objects
+
+Reverse mapping is an explicit write contract. Simple one-to-one editable field mappings may generate a proposed reverse mapping at registration, but registration must reject ambiguous targets, conflicting paths and unsupported transformations. Do not infer writes for calculated values, aggregates or relationship collections.
+
+Save requests carry explicit changed fields or declared collection operations, an idempotency identity, and the expected mapping/source revisions. A convenient object-edit API may compute a change set, but it cannot trust a caller-supplied old object as authoritative state. Omitted, hidden, unloaded or paginated-out fields are preserved. Absence is not deletion; clearing a value or removing a relationship is explicit. Object schemas, field permissions, component schemas, graph constraints and mechanic rules are all enforced at their owning boundary.
+
+An unchanged edit produces no state mutation. A stale edit is rejected or returned for a deliberate retry; it never silently overwrites concurrent work. A save spanning several components/relationships either commits completely or leaves them unchanged. Mapping/reducer failures produce no committed effects or change broadcast. Preserve operation replay and existing historical contract resolution.
+
+### Reducers, effects and client state
+
+Use a Redux-style action/state flow without introducing a global in-memory copy of the entire ECS world. A server mechanic receives only its authorized, declared object inputs and returns bounded proposed object changes/effects. The frontend can use reducers for local selections, edit drafts, loading states and committed object updates; it must not duplicate authoritative game reducers to decide final outcomes.
+
+For the browser, evaluate Redux Toolkit with RTK Query as the default integration candidate in SC09. Use one query cache for each migrated feature and small reducers for UI state. Preserve exact contract validation, request cancellation, source-revision checks, actor/DM separation and the existing bundle budget. The backend object contracts remain usable without a particular browser library. If the pilot shows that retaining the current cache meets these requirements with less duplication, record that choice and its evidence rather than maintaining both stacks for the same feature.
+
+Committed writes record enough durable change evidence to dispatch after commit and recover after interruption. Reuse the existing event/operation infrastructure where its contract fits; introduce a transactional delivery record only if the gap analysis requires it. Notifications identify authorized object/view dependencies and revisions, without exposing hidden entity IDs or raw components. Cover edits, inserts/deletes affecting list membership, relationship changes, calculated dependencies and changes made through every supported write path, not only object saves.
+
+Begin with targeted invalidation and refetch. Coalesce related notices; duplicate or out-of-order delivery is harmless. Reconnect uses a bounded replay cursor or invalidates the authorized scope if continuity cannot be established. Permission/observer changes clear the relevant cache immediately. Field-level pushed patches and optimistic gameplay updates are later optimizations, not requirements for the first release. Preserve page-version notifications separately from game-object changes.
+
+## Integrated implementation slices
+
+**Status:** all SC00–SC17 slices are **Not started**. This update plans the work; it does not start SC00. Slice references replace the earlier A–K sequence. Dependencies identify prerequisites, not a requirement to block independent source hygiene behind the whole architecture.
+
+| Slice | Depends on | Finding coverage | Deliverable |
 | --- | --- | --- | --- |
-| A — Reproducible baseline | P01–P03, P11 | Bounded benchmark fixture and actual actor/GM workflow measurements | Database/binding identified; request, SQL, bytes, time and allocation metrics; agreed budgets |
-| B — Paging correctness | C01 | Advancing bounded cursors and explicit incomplete states | 99/100/101 and malformed/repeated/failing-page cases; complete output |
-| C — Knowledge and chronology reads | P02–P03 | Generic filtered/batched reads with preserved authorization and evidence | Output/revision equivalence, actor secrecy, source changes, query-count scaling |
-| D — Hub loading | P01, P11–P12 | Minimal bootstrap and demand-loaded world sections | First usable view, bounded requests, cancellations, actor/DM and large-world browser checks |
-| E — Source hygiene | O01–O03, O06, R02 | Reviewed removal/relocation list and precise ignore rules | Fresh checkout build; replacement test ownership; no source or fixture loss |
-| F — Media/database ownership | O04–O05 | Asset and database disposition list | Live/historical references and source provenance; no mistaken runtime-store replacement |
-| G — Repeated validation/catalog work | P04–P07, R03 | Profile-guided caching/coordination and a narrow shared item envelope helper | Drift, concurrency, bounded memory, transaction and forged-envelope tests |
-| H — Durable storage | P09–P10 | Migration proposal preserving immutable revision/history contracts | Backup/restore rehearsal, old revision readback and exact hashes; explicit migration approval |
-| I — Background scheduling | P08 | Queue-age visibility and bounded execution proposal | Provider delays, cancellation, claiming and audit behavior on a disposable runtime |
-| J — Retained compatibility | R01, remaining O02 | Exact retirement packet for selected identities/files | Governed live export/reference evidence, replacement contracts and retention-gate updates |
-| K — Ownership refactoring | R04 | Small owner-aligned splits during related fixes | No duplicate owner, no semantic drift, relevant build/tests |
+| SC00 — Baseline and contract decisions | None | P01, P02, P03, P11, all dispositions | Reproducible performance/correctness harness, agreed budgets and existing-owner map |
+| SC01 — Complete pagination | SC00 | C01 | Advancing bounded cursors and explicit incomplete results |
+| SC02 — Registered object contracts | SC00 | P04, R03, R04 | Versioned application schemas, read/write declarations and one registration owner |
+| SC03 — Prepared C# batch-read engine | SC02 | P01, P04, P12, R04 | Bounded reusable plans, snapshot reads and runtime version replacement |
+| SC04 — Campaign/Factions vertical slice | SC01, SC03 | P01, P11, P12, O03, R04 | Minimal hub bootstrap and mapped Campaign/Faction reads used by the live website |
+| SC05 — Knowledge and chronology migration | SC01, SC03, SC04 | P02, P03, P11 | Authorized batched projections replacing full-entity discovery and repeated hydration |
+| SC06 — Explicit reverse mappings | SC02, SC03, SC04 | R03, R04 | Atomic, revision-checked mapped edits through existing effects |
+| SC07 — Object-based JavaScript reducers | SC06 | R01, R04 | One existing mechanic migrated to declared objects with equivalent effects |
+| SC08 — Targeted committed-change delivery | SC06 | P01, P12 | Durable post-commit invalidation, dependency tracking and reconnect recovery |
+| SC09 — Browser object/query state | SC04, SC08 | P11, P12, O03, R03 | One cache owner per migrated view, reducer-driven UI state and selective refresh |
+| SC10 — Character and Item migration | SC05, SC07, SC09 | P01, R02, R03, R04 | Existing dossiers/tabs use shared object contracts; superseded assembly/validation code retired |
+| SC11 — Source and documentation hygiene | SC00; consumer removals follow their migration | O01, O02, O03, O06, R02, R04 | Reviewed output removal, fixture relocation, exclusions/test ownership and updated guidance |
+| SC12 — Profile remaining host costs | SC03, SC05, SC06 | P04, P05, P06, P07 | Evidence-based catalog/schema/constraint/transaction optimizations |
+| SC13 — Media and database ownership | SC00 | O04, O05 | File-by-file disposition and verified seed/live/history owners |
+| SC14 — Durable storage deduplication | SC13; migration design reviewed | P09, P10 | Shared immutable storage or archival design preserving complete revision/history contracts |
+| SC15 — Scheduled work throughput | SC00 | P08 | Queue-age visibility, recoverable claims and bounded provider execution |
+| SC16 — Retained compatibility retirement | Relevant SC07/SC10/SC11 replacements; SC13 | R01, remaining O02 | Exact selected retirement packet and conformance updates |
+| SC17 — Acceptance and closeout | SC01–SC16 dispositions complete | All findings | Published verification, rollback proof and honest remaining-work disposition |
+
+### SC00 — Baseline and contract decisions
+
+Identify the current checkout, listener, database, audience binding and active revisions. Build disposable fixtures representing the observed main state space and larger unrelated catalog populations. Measure HTTP requests, SQL commands, source-file reads, body bytes, allocations and separate cold/warm durations. Include actual actor, GM and GM-as-player-preview workflows. Do not infer actor results from preview.
+
+Prepare the exact registration/query/write vocabulary and owner changes for review. Settle whether existing projection records can be extended compatibly, how write commands are declared, and which existing event evidence supports reliable dispatch. Establish benchmark ceilings from the budget proposal below. No runtime identity is registered in this slice. Map each intended removal to its replacement or retention reason.
+
+**Exit:** reproducible baseline, executable correctness/performance measurements, concrete contract decisions and frozen acceptance budgets. Preserve the original two DM samples as historical observations, not a new p95 baseline.
+
+### SC01 — Complete pagination
+
+Repair the adjacent containment, relationship and campaign loops identified by C01 before using them as comparison truth. Cover 99/100/101 entries, repeated cursors, failures after a successful first page and oversized/malformed pages. Keep traversal bounded and make incomplete reads visible. Do not raise shared rate limits to pass this slice.
+
+**Cleanup and exit:** converge duplicate cursor handling where semantics match; demonstrate full expected records or explicit incompleteness in both current loaders and future fixtures. No public response change is hidden inside a helper refactor.
+
+### SC02 — Registered object contracts
+
+Extend the established projection/catalog owner with object identity, independent output schema, exact source dependencies, relationship/collection declarations, explicit edit schema and read/write capabilities. Validate cycles, ambiguous mappings, computed writes, ownership and resource limits. Define generated simple reverse mappings as validated registration output, not runtime guesses. Expose discovery through existing capability/query mechanisms; enumerate any new IDs and schema meanings in this slice's review.
+
+**Cleanup and exit:** one registration authority; existing projections still resolve unchanged. Registration/readback/version tests, unsupported-mapping errors, cross-owner tests and an exact compatibility strategy pass. Record which current mapping types are adapters and when they retire.
+
+### SC03 — Prepared C# batch-read engine
+
+Implement plan preparation/cache and bounded direct-store execution over one consistent read snapshot where required. Support declared source selection and bounded graph expansion, deduplicate shared components, validate results and retain source dependency evidence. Prepare plans once per exact version; enable replacement after startup with bounded retention and atomic publication. Test file/registration/schema drift and activation changes, not only cache hits.
+
+**Cleanup and exit:** current structural projections run through the shared engine where equivalent. Compare result parity, SQL counts, allocations and plan reuse. Prove that doubling unrelated ECS entities does not double source lookups for a fixed selected object. Invalid replacement leaves the current valid plan usable, while stale writes cannot commit under an obsolete definition.
+
+### SC04 — Campaign/Factions vertical slice
+
+Author a minimal Campaign summary and paginated Faction directory through the new registration. Use existing query transport where possible. The website loads only its initial selected view, with deeper sections requested explicitly. Preserve faction search, selection, count/completeness, media and GM/private field handling. Initially, party references and faction membership are read-only.
+
+**Cleanup and exit:** remove the replaced campaign/faction assembly branches from the active loader after side-by-side read parity. Retain only explicitly required compatibility adapters. Verify all 35 baseline Caldris factions in a pinned fixture/live comparison, actor/DM separation, mobile/keyboard behavior and the view request budget. Reading one Factions page must not load every character inventory or the entire knowledge notebook.
+
+### SC05 — Knowledge and chronology migration
+
+Use declared component selection, shared graph indexes and bounded batched hydration. Preserve existing notebook and chronology authorization owners, familiar/unknown behavior, calendar rules, exact revisions and revalidation under a consistent snapshot. Keep the visible API shape unless an explicitly reviewed version replaces it. Loading Campaign/Factions must not eagerly fetch the full notebook/history.
+
+**Cleanup and exit:** retire the replaced full-entity scan and repeated graph/hydration loops once equivalence is proved. Benchmark actual actor and GM reads, larger unrelated catalogs, stale knowledge and source changes. Meet the agreed SQL/latency ceilings without removing the second-check invariant that protected disclosure.
+
+### SC06 — Explicit reverse mappings
+
+Start with a permitted Campaign premise edit; extend to one explicit relationship operation only after field-save behavior is proven. Translate changed fields/operations to the current typed effects and commit path. Preserve component/graph validation, authorization, expected revisions, idempotency and transaction scope. Map fields owned by different components atomically.
+
+**Cleanup and exit:** no parallel direct-database save path. Tests prove unchanged save is a no-op; partial/hidden fields survive; calculated/unauthorized edits fail; explicit deletion differs from omission; stale and duplicate requests behave correctly; failure on one mapped effect rolls back every effect. Re-read the resulting object with fresh source evidence.
+
+### SC07 — Object-based JavaScript reducers
+
+Select one currently supported mechanic with meaningful rules and existing tests in SC00; migrate its input declarations to object contracts while preserving its public action semantics, supplied seed/context, effects and audit. A pure reducer returns a bounded proposed change set. It does not load data, save, broadcast or call CLR services. Structural changes with gameplay meaning remain reachable only through their authorized mechanic.
+
+**Cleanup and exit:** remove the selected mechanic's duplicate ECS-to-object and object-to-effect translation after differential tests demonstrate equivalent outcomes. Preserve supported legacy action callers through one adapter where required. Do not clone the entire mechanic catalog or silently move D&D formulas into C# to pass performance checks.
+
+### SC08 — Targeted committed-change delivery
+
+Track object and list dependencies, including membership changes and authorization dependencies. Stage durable change evidence in the same transaction as state writes and dispatch only after commit. Integrate every supported mutation path or deliberately fall back to scoped invalidation for paths whose exact dependencies cannot yet be identified. Reuse SSE transport and preserve page-activation events.
+
+**Cleanup and exit:** replace broad invalidation for migrated scopes; retain an explicit recovery path for continuity gaps. Tests cover rollback, crash between commit and dispatch, duplicate/out-of-order notices, reconnect, deletion/list membership, visibility revocation and a source changed outside the object-save API. One unrelated edit must not refetch the entire world, and private object identities must not appear in another audience's events.
+
+### SC09 — Browser object/query state
+
+Pilot Redux Toolkit/RTK Query for Campaign/Factions object reads and local reducers for selections/edit state. Compare with the current `ViewReadClient` before choosing the single retained owner. Whichever implementation is selected must preserve strict response validation, cancellation, bounded retention, mapping/source revisions, audience isolation and targeted notifications. Game writes remain pending until the server confirms their result.
+
+**Cleanup and exit:** no duplicate cache for the same migrated feature; remove its old hand-managed fetching/invalidation code. Test in-flight perspective changes, denied/stale responses, reconnect, rapid navigation, failed writes and cache expiry. Keep the initial bundle gate and measure mandatory feature chunks and first-ready-view latency. Record the library decision without making the backend dependent on it.
+
+### SC10 — Character and Item migration
+
+Extend registered objects to the existing character dossier and item Details/Recipes/Uses boundaries, with explicit references and paged recipe/use collections. Preserve both recipe groups, observer knowledge, media validation, source-revision-pinned pagination, character abilities/layout and inventory navigation. Migrate read assembly incrementally; gameplay writes require SC06/SC07 ownership.
+
+**Cleanup and exit:** replace the repeated item-envelope logic with one contract-bound adapter; consolidate compatible mapping paths; relocate fixture-only sources and retire active loader branches only after parity. Keep existing published contracts and generated validators available until their consumers migrate. Mounted/browser, authorization, forged-response, pagination, item and mechanic tests pass with improved request/SQL counts.
+
+### SC11 — Source and documentation hygiene
+
+Begin safe tracked-output review after SC00, independently of the object implementation. Inventory all O02 excluded tests against current coverage; preserve the opt-in protocol walk. Remove reviewed build outputs from tracking with precise ignore rules; verify a clean checkout builds. Relocate test-only projections/assets to their proper owners. Remove O03 components/selectors after confirming consumer absence and update dated contributor guidance from actual results.
+
+**Cleanup and exit:** file-by-file disposition and replacement test ownership, no unrelated file removal, no dependency on stale binaries. Feature-specific deletion waits for its migration even when general hygiene proceeds early. `_to_delete/` remains excluded. No Git-history rewrite is part of this slice.
+
+### SC12 — Profile remaining host costs
+
+Re-profile catalog materialization, role constraints, schema locks and play-write coordination after the batching work. Reuse prepared metadata where immutable; keep actor-specific results scoped. Optimize only measured remaining costs, preserving source drift, cross-entity constraints, schema safety, SQLite transactions and concurrent conversation correctness.
+
+**Cleanup and exit:** remove superseded cache/mapping owners instead of stacking caches. Record before/after allocation, I/O, SQL and lock-wait evidence; existing invariant and concurrency tests pass. Do not lift bounds or remove serialization solely to make a benchmark faster.
+
+### SC13 — Media and database ownership
+
+Resolve each fixture/source image, historical page asset and candidate root database to an owner and retention purpose. Distinguish live SQLite/blob data from authored catalog/source files. Confirm supported launch/setup behavior with explicit database paths; establish a maintained seed contract if a seed is retained.
+
+**Cleanup and exit:** reviewed disposition with live/historical references and backup/readback needs. No merge, overwrite or deletion based on matching filenames or missing text-search references. This slice supplies the prerequisites for storage work and selected retirement.
+
+### SC14 — Durable storage deduplication
+
+Prepare and review web-asset and activation-evidence storage proposals separately, then implement each as a contained migration if justified. Prefer sharing identical immutable bytes/evidence while retaining revision identity, exact hashes, old page resolution and activation history. Blob storage reuse must respect its different media/security contract.
+
+**Cleanup and exit:** rehearsal on a copy, pre-migration database/blob backup, exact old/new revision readback, restore and application-readiness proof. Report actual reclaimed/storage-growth measurements separately from theoretical duplicate bytes. Do not discard historical events or migration records to hit a storage target.
+
+### SC15 — Scheduled work throughput
+
+Measure queue age, provider duration, claiming/recovery and failure visibility. Add bounded concurrency or provider isolation only where it improves observed delays. Coordinate event/change delivery through established transaction owners; scheduled models do not approve their own writes.
+
+**Cleanup and exit:** deterministic disposable-runtime tests for slow providers, cancellation, duplicate delivery and interruption. Replace the selected serial/hidden-failure path with one maintained worker implementation; preserve audit and recovery semantics.
+
+### SC16 — Retained compatibility retirement
+
+Select exact old mechanic/source/test identities whose replacements are accepted. Follow `catalog/compatibility-retention.json`, reviewed live export, historical-operation/source references and backup/readback requirements. Update conformance inventory only for the reviewed retirement; retain any identities still needed to interpret history.
+
+**Cleanup and exit:** selected duplicate owners removed or explicitly retained with reason, current contracts still pass and live state is unchanged except for the approved synchronization. An unresolved historical dependency is a retained disposition, not permission to invent a replacement or bulk-delete the 86 records.
+
+### SC17 — Acceptance and closeout
+
+Verify the final source and served application, not just fixtures. Run the full relevant solution/web suites, catalog validation after catalog changes, and the protocol walk when MCP contracts or dependency registration changed. Compare actor/GM workflows, startup/reload, object edits, reducer execution, subscriptions/reconnect, pagination, character/item regressions and responsive accessibility. Verify current database/binding, signed served assets where applicable, and rollback to retained compatible versions.
+
+**Exit:** each SC slice has an accepted implementation or an explicit, agreed retained/deferred disposition; every original finding maps to evidence. Report HTTP/SQL/latency/allocation/storage outcomes against SC00 and preserve the original audit measurements. Update the current architecture guide only for behavior actually delivered. Do not close the document while required work is silently unfinished or a performance/correctness gate still fails.
+
+### Performance gates to freeze in SC00
+
+These are proposed engineering targets for the pinned local fixture, not measured improvements or a public SLA. Confirm fixture sizes and accounting in SC00; any necessary adjustment must retain a quantitative target and a recorded reason.
+
+| Gate | Proposed acceptance target |
+| --- | --- |
+| Initial selected Campaign view | At most 8 application-data HTTP reads, including audience/binding reads; no eager full-world/notebook/history fetch |
+| Opening one Factions page after bootstrap | One object-page data read; at most one additional binding recheck when required |
+| Equivalent complete baseline workload | At most 200 data HTTP requests to obtain the same authorized records as the original 2,096-request DM workload, with no truncation or omitted feature disguised as an optimization |
+| Underlying reads | No per-output-field/row database lookup in a batched mapper; record per-view SQL ceilings in SC00 and prove bounded scaling when unrelated entities double |
+| Latency | At least 50% lower median loader time for the matched workload; report at least 20 sequential cold/warm samples per declared profile, separately from browser first-ready-view measurements |
+| Plan reuse | Unchanged definitions reuse prepared plans; mapping update, eviction, source drift and first-request costs measured explicitly |
+| Correctness and recovery | No unauthorized disclosure, silent incomplete result, stale overwrite, partial commit or notification for a rolled-back change |
+
+Track script/style/image transfer separately from data requests; report all exclusions. Do not compare an empty shell with a fully loaded old hub. In-process component/SQL/file reads remain visible in the measurement even when HTTP request count falls. Performance acceptance cannot be obtained by raising rate limits or disabling validation.
+
+### Cutover and removal rule for every slice
+
+For each migrated view or mechanic, record the existing owner, replacement, parity evidence, remaining callers and exact removal list. Introduce the replacement behind a versioned boundary, compare on a disposable/pinned dataset, switch one consumer, then retire superseded active code when all intended consumers are covered. A retained adapter has one stated compatibility purpose and an exit condition. Source differences must not be silently hidden by falling back to old data when the new contract rejects a request.
+
+Preserve the previous mapping/action/page version until recovery is proven. Read-version rollback does not guarantee write/schema rollback; verify compatibility with writes committed since cutover. Backups, migrations and live catalog synchronization keep their existing explicit boundaries. Stage only the slice's reviewed changes and include what changed, verification and remaining limitations in its commit message, following the user's receipt preference.
 
 ## Measurement record
 
