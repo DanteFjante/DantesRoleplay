@@ -24,7 +24,9 @@ public sealed record ProjectionDefinitionRequest(
     string OutputSchemaJson,
     IReadOnlyList<ProjectionComponentInput> ComponentInputs,
     IReadOnlyList<ProjectionDependencyInput> DependencyInputs,
-    IReadOnlyList<StructuralProjectionMapping> Mappings);
+    IReadOnlyList<StructuralProjectionMapping> Mappings,
+    ApplicationObjectContractRequest? ObjectContract = null,
+    int? DeclaredVersion = null);
 
 public sealed record RegisteredProjectionDefinition(
     ApplicationIdentifier Owner,
@@ -37,11 +39,15 @@ public sealed record RegisteredProjectionDefinition(
     IReadOnlyList<ProjectionComponentInput> ComponentInputs,
     IReadOnlyList<ProjectionDependencyInput> DependencyInputs,
     IReadOnlyList<StructuralProjectionMapping> Mappings,
-    DateTime CreatedAtUtc)
+    DateTime CreatedAtUtc,
+    RegisteredApplicationObjectContract? ObjectContract = null)
 {
     public ProjectionReference Reference => new(QualifiedId, Version, ContentHash);
-    public IReadOnlyList<string> EntityRoles => Array.AsReadOnly(ComponentInputs.Select(x => x.EntityRole)
-        .Concat(DependencyInputs.SelectMany(x => x.RoleBindings.Values)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray());
+    public IReadOnlyList<string> EntityRoles => ObjectContract is not null
+        ? Array.AsReadOnly(ObjectContract.Roles.Select(x => x.RoleId).Order(StringComparer.Ordinal).ToArray())
+        : Array.AsReadOnly(ComponentInputs.Select(x => x.EntityRole)
+            .Concat(DependencyInputs.SelectMany(x => x.RoleBindings.Values)).Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal).ToArray());
 }
 
 public sealed record ProjectionMaterializationRequest(string StateSpaceId, ProjectionReference Projection, IReadOnlyDictionary<string, string> RoleEntityIds);

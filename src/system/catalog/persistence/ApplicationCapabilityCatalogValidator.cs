@@ -6,6 +6,7 @@ using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.SystemCapabilities;
+using DantesRoleplay.Projections;
 
 namespace DantesRoleplay.DataAccess.Catalog;
 
@@ -85,6 +86,29 @@ public static class ApplicationCapabilityCatalogValidator
         foreach (var (qualifiedId, mechanic) in mechanics.OrderBy(value => value.Key, StringComparer.Ordinal))
             ValidateMechanic(applicationId, qualifiedId, mechanic, mechanics, schemas, issues, authoredBoundary);
 
+        var objects = new Dictionary<string, ProjectionDefinitionRequest>(StringComparer.Ordinal);
+        var objectsRoot = Path.Combine(applicationDirectory, "objects");
+        if (Directory.Exists(objectsRoot))
+        {
+            foreach (var path in Directory.EnumerateFiles(objectsRoot, "*.json", SearchOption.AllDirectories)
+                         .Order(StringComparer.Ordinal))
+            {
+                try
+                {
+                    var definition = ApplicationObjectDocument.Parse(File.ReadAllText(path), applicationId);
+                    if (!objects.TryAdd(definition.QualifiedId, definition))
+                        issues.Add(Issue("object", definition.QualifiedId, "capability-duplicate",
+                            "The application contains more than one object with this identity."));
+                }
+                catch (Exception exception) when (exception is ArgumentException or JsonException
+                    or IOException or UnauthorizedAccessException)
+                {
+                    issues.Add(Issue("object", Path.GetFileNameWithoutExtension(path),
+                        "capability-contract", exception.Message));
+                }
+            }
+        }
+
         var queriesRoot = Path.Combine(applicationDirectory, "queries");
         if (!Directory.Exists(queriesRoot)) return;
         foreach (var path in Directory.EnumerateFiles(queriesRoot, "*.json", SearchOption.AllDirectories)
@@ -96,13 +120,29 @@ public static class ApplicationCapabilityCatalogValidator
                 var content = ApplicationCatalogRecordContent.QueryJson(query);
                 var qualifiedId = Qualify(applicationId, query.Id);
                 var projectionId = Qualify(applicationId, query.ProjectionQualifiedId);
-                if (!mechanics.TryGetValue(projectionId, out var projection))
-                    issues.Add(Issue("query", qualifiedId, "capability-projection-missing",
-                        $"The query projects unavailable mechanic '{projectionId}'."));
-                else if (query.ProjectionVersion != 1 || !string.Equals(query.ProjectionContentHash,
-                             projection.Fingerprint, StringComparison.Ordinal))
-                    issues.Add(Issue("query", qualifiedId, "capability-projection-stale",
-                        $"The query must pin projection version 1 and fingerprint {projection.Fingerprint}."));
+                if (query.Executor == ApplicationQueryContract.ObjectProjectionExecutor)
+                {
+                    if (!objects.TryGetValue(projectionId, out var definition))
+                        issues.Add(Issue("query", qualifiedId, "capability-object-missing",
+                            $"The query references unavailable object '{projectionId}'."));
+                    else if (definition.DeclaredVersion != query.ProjectionVersion)
+                        issues.Add(Issue("query", qualifiedId, "capability-object-version",
+                            $"The query must pin authored object version {definition.DeclaredVersion}."));
+                    else if (definition.ObjectContract?.Collections.All(value =>
+                                 value.CollectionId != query.ObjectCollectionId) != false)
+                        issues.Add(Issue("query", qualifiedId, "capability-object-collection",
+                            $"The query references unavailable object collection '{query.ObjectCollectionId}'."));
+                }
+                else if (query.Executor == ApplicationQueryContract.MechanicProjectionExecutor)
+                {
+                    if (!mechanics.TryGetValue(projectionId, out var projection))
+                        issues.Add(Issue("query", qualifiedId, "capability-projection-missing",
+                            $"The query projects unavailable mechanic '{projectionId}'."));
+                    else if (query.ProjectionVersion != 1 || !string.Equals(query.ProjectionContentHash,
+                                 projection.Fingerprint, StringComparison.Ordinal))
+                        issues.Add(Issue("query", qualifiedId, "capability-projection-stale",
+                            $"The query must pin projection version 1 and fingerprint {projection.Fingerprint}."));
+                }
                 var record = Record(applicationId, ApplicationQueryContract.CatalogKind, qualifiedId,
                     query.Name, query.Description, query.Status, content, path);
                 ValidateDescriptor(ApplicationCapabilityContractAdapter.Create(applicationId, record), schemas,

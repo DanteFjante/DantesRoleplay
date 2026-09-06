@@ -7,6 +7,7 @@ using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.Sources;
+using DantesRoleplay.Projections;
 
 namespace DantesRoleplay.CatalogNavigation;
 
@@ -27,9 +28,10 @@ public sealed class ActivatedApplicationCatalogMaterializer(
     IApplicationActivationReader activations,
     ISourceRegistry sources,
     IAllowedSourceRootResolver allowedRoots,
-    IApplicationExtensionRegistry? extensions = null)
+    IApplicationExtensionRegistry? extensions = null,
+    IProjectionDefinitionRegistry? projections = null)
 {
-    private const string MaterializerVersion = "activated-application-catalog-v2";
+    private const string MaterializerVersion = "activated-application-catalog-v3";
     private const string SearchSortVersion = "catalog-lexical-v1";
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
 
@@ -59,6 +61,7 @@ public sealed class ActivatedApplicationCatalogMaterializer(
         }
 
         var winners = activation.Winners.ToDictionary(value => value.RelativePath, StringComparer.Ordinal);
+        RegisterObjects(applicationId, activation.Winners, registrations);
         var records = new List<CatalogRecordDefinition>();
         foreach (var winner in activation.Winners.OrderBy(value => value.RelativePath, StringComparer.Ordinal))
         {
@@ -125,6 +128,43 @@ public sealed class ActivatedApplicationCatalogMaterializer(
         catch (ArgumentException exception)
         {
             throw Failure("CATALOG_MANIFEST_INVALID", "The active catalog could not form one bounded immutable manifest.", exception);
+        }
+    }
+
+    private void RegisterObjects(ApplicationIdentifier applicationId,
+        IReadOnlyList<ActivatedApplicationDocument> winners,
+        IReadOnlyDictionary<string, SourceRegistration> registrations)
+    {
+        var objectWinners = winners.Where(value => IsObjectDocument(value.RelativePath))
+            .OrderBy(value => value.RelativePath, StringComparer.Ordinal).ToArray();
+        if (objectWinners.Length == 0) return;
+        if (projections is null)
+            throw Failure("OBJECT_REGISTRY_UNAVAILABLE", "The active catalog contains objects but the object registry is unavailable.");
+        var pending = new Dictionary<string, ProjectionDefinitionRequest>(StringComparer.Ordinal);
+        foreach (var value in objectWinners)
+        {
+            ProjectionDefinitionRequest request;
+            try { request = ApplicationObjectDocument.Parse(ReadText(value, registrations), applicationId); }
+            catch (Exception exception) when (exception is ArgumentException or JsonException)
+            { throw Failure("CATALOG_OBJECT_INVALID", "An active application object could not be parsed.", exception); }
+            if (!pending.TryAdd(request.QualifiedId, request))
+                throw Failure("CATALOG_OBJECT_DUPLICATE", "Active application objects must have unique qualified identities.");
+        }
+        while (pending.Count != 0)
+        {
+            var ready = pending.Values.Where(value => value.DependencyInputs.All(dependency =>
+                !pending.ContainsKey(dependency.Projection.QualifiedId)
+                || projections.Get(dependency.Projection.QualifiedId, dependency.Projection.Version) is not null))
+                .OrderBy(value => value.QualifiedId, StringComparer.Ordinal).ToArray();
+            if (ready.Length == 0)
+                throw Failure("CATALOG_OBJECT_CYCLE", "Active application objects contain a dependency cycle.");
+            foreach (var request in ready)
+            {
+                try { projections.Define(request); }
+                catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
+                { throw Failure("CATALOG_OBJECT_INVALID", "An active application object could not be registered.", exception); }
+                pending.Remove(request.QualifiedId);
+            }
         }
     }
 
@@ -307,6 +347,9 @@ public sealed class ActivatedApplicationCatalogMaterializer(
         if (segments.Contains("mechanics", StringComparer.Ordinal)) { kind = "mechanic"; return true; }
         return false;
     }
+
+    private static bool IsObjectDocument(string path) => path.EndsWith(".json", StringComparison.Ordinal)
+        && path.Split('/').Contains("objects", StringComparer.Ordinal);
 
     private static int ContentEntityIndex(IReadOnlyList<string> segments)
     {

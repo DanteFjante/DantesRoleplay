@@ -1088,7 +1088,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
                 table.HasCheckConstraint("CK_system_projection_definition_version_content_hash", "length(\"ContentHash\") = 64 AND \"ContentHash\" NOT GLOB '*[^0-9A-F]*'");
                 table.HasCheckConstraint("CK_system_projection_definition_version_schema", "json_valid(\"OutputSchemaJson\")");
             });
-            entity.HasKey(x => new { x.QualifiedId, x.Version }); entity.Property(x => x.QualifiedId).HasMaxLength(200); entity.Property(x => x.ProfileId).HasMaxLength(64).IsRequired(); entity.Property(x => x.OutputSchemaJson).HasMaxLength(SystemJsonSchemaProfile.MaximumSchemaBytes).IsRequired(); entity.Property(x => x.OutputSchemaHash).HasMaxLength(64).IsRequired(); entity.Property(x => x.ContentHash).HasMaxLength(64).IsRequired();
+            entity.HasKey(x => new { x.QualifiedId, x.Version }); entity.Property(x => x.QualifiedId).HasMaxLength(200); entity.Property(x => x.ProfileId).HasMaxLength(64).IsRequired(); entity.Property(x => x.OutputSchemaJson).HasMaxLength(SystemJsonSchemaProfile.MaximumSchemaBytes).IsRequired(); entity.Property(x => x.OutputSchemaHash).HasMaxLength(64).IsRequired(); entity.Property(x => x.ContentHash).HasMaxLength(64).IsRequired(); entity.Property(x => x.ObjectContractJson).HasMaxLength(2 * 1024 * 1024);
             entity.HasIndex(x => new { x.QualifiedId, x.ContentHash }).IsUnique(); entity.HasOne<ProjectionDefinitionRecord>().WithMany().HasForeignKey(x => x.QualifiedId).OnDelete(DeleteBehavior.Restrict);
         });
         modelBuilder.Entity<ProjectionComponentInputRecord>(entity =>

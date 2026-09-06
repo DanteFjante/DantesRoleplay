@@ -32,6 +32,30 @@ public static class ApplicationCatalogRecordContent
     {
         ArgumentNullException.ThrowIfNull(query);
         using var schema = JsonDocument.Parse(query.OutputSchemaJson);
+        if (query.IsObjectProjection)
+        {
+            return JsonSerializer.Serialize(new
+            {
+                id = query.Id,
+                category = query.Category,
+                name = query.Name,
+                description = query.Description,
+                matches = query.Matches,
+                roles = query.Roles,
+                executor = query.Executor,
+                @object = new
+                {
+                    qualifiedId = query.ProjectionQualifiedId,
+                    version = query.ProjectionVersion,
+                    contentFingerprint = query.ProjectionContentHash
+                },
+                collection = query.ObjectCollectionId,
+                outputSchema = schema.RootElement,
+                exposure = query.Exposure == ApplicationQueryExposure.ModelVisible
+                    ? "model-visible" : "binding-only",
+                status = query.Status
+            });
+        }
         var content = JsonSerializer.Serialize(new
         {
             id = query.Id,

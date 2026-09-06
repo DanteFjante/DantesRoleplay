@@ -40,6 +40,9 @@ public sealed record ApplicationQueryContract(
     public const string CatalogKind = "query";
     public const string ProjectionExecutor = "projection";
     public const string MechanicProjectionExecutor = "mechanic-projection";
+    public const string ObjectProjectionExecutor = "object-projection";
+    public string? ObjectCollectionId { get; init; }
+    public bool IsObjectProjection => Executor == ObjectProjectionExecutor;
 
     public static ApplicationQueryContract Parse(string json, ApplicationIdentifier owner)
     {
@@ -56,12 +59,22 @@ public sealed record ApplicationQueryContract(
         var root = document.RootElement;
         if (root.ValueKind != JsonValueKind.Object)
             throw Invalid("A query contract must be an object.");
+        var executor = String(root, "executor", 63);
+        if (executor is not (ProjectionExecutor or MechanicProjectionExecutor or ObjectProjectionExecutor))
+            throw Invalid("The query executor kind is not supported.");
+        var referenceName = executor == ObjectProjectionExecutor ? "object" : "projection";
         var fields = new[] { "id", "category", "name", "description", "matches", "roles", "executor",
-            "projection", "outputSchema", "exposure", "status" };
+            referenceName, "outputSchema", "exposure", "status" };
         var hasInput = root.TryGetProperty("inputSchema", out var inputSchema);
         var hasSelection = root.TryGetProperty("campaignSelection", out var selection);
+        var hasCollection = root.TryGetProperty("collection", out var collection);
         Exact(root, [.. fields, .. (hasInput ? new[] { "inputSchema" } : []),
-            .. (hasSelection ? new[] { "campaignSelection" } : [])]);
+            .. (hasSelection ? new[] { "campaignSelection" } : []),
+            .. (hasCollection ? new[] { "collection" } : [])]);
+        if (executor == ObjectProjectionExecutor != hasCollection)
+            throw Invalid("An object-projection query requires exactly one collection declaration.");
+        if (executor == ObjectProjectionExecutor && hasInput)
+            throw Invalid("Object-projection queries use their registered collection contract and do not accept a separate input schema.");
         if (inputSchema.ValueKind != JsonValueKind.Undefined &&
             (inputSchema.ValueKind != JsonValueKind.Object
              || Encoding.UTF8.GetByteCount(inputSchema.GetRawText()) > 65_536
@@ -95,13 +108,11 @@ public sealed record ApplicationQueryContract(
                 throw Invalid("Campaign selection must name another query of this application and one top-level field.");
             campaignSelection = new(selectionQuery, field);
         }
-        var executor = String(root, "executor", 63);
-        if (executor is not (ProjectionExecutor or MechanicProjectionExecutor))
-            throw Invalid("The query executor kind is not supported.");
-
-        if (!root.TryGetProperty("projection", out var projection) || projection.ValueKind != JsonValueKind.Object)
-            throw Invalid("A query requires an exact projection reference.");
-        Exact(projection, "qualifiedId", "version", "contentHash", "outputSchemaHash");
+        if (!root.TryGetProperty(referenceName, out var projection) || projection.ValueKind != JsonValueKind.Object)
+            throw Invalid("A query requires an exact registered reference.");
+        Exact(projection, executor == ObjectProjectionExecutor
+            ? ["qualifiedId", "version", "contentFingerprint"]
+            : ["qualifiedId", "version", "contentHash", "outputSchemaHash"]);
         var projectionId = String(projection, "qualifiedId", 200);
         if (!projectionId.StartsWith(owner.Value + ".", StringComparison.Ordinal)
             || !Segments(projectionId[(owner.Value.Length + 1)..], '.'))
@@ -109,8 +120,9 @@ public sealed record ApplicationQueryContract(
         if (!projection.TryGetProperty("version", out var versionElement)
             || !versionElement.TryGetInt32(out var version) || version < 1)
             throw Invalid("A query projection version must be positive.");
-        var contentHash = Hash(String(projection, "contentHash", 64));
-        var schemaHash = Hash(String(projection, "outputSchemaHash", 64));
+        var contentHash = Hash(String(projection,
+            executor == ObjectProjectionExecutor ? "contentFingerprint" : "contentHash", 64));
+        var schemaHash = executor == ObjectProjectionExecutor ? "" : Hash(String(projection, "outputSchemaHash", 64));
         if (!root.TryGetProperty("outputSchema", out var schema) || schema.ValueKind != JsonValueKind.Object)
             throw Invalid("A query output schema must be a JSON object.");
         if (Encoding.UTF8.GetByteCount(schema.GetRawText()) > 65_536)
@@ -128,7 +140,10 @@ public sealed record ApplicationQueryContract(
 
         return new(id, category, name, description, matches, roles, executor, projectionId, version,
             contentHash, schemaHash, schema.GetRawText(), exposure, status,
-            inputSchema.ValueKind == JsonValueKind.Undefined ? null : inputSchema.GetRawText(), campaignSelection);
+            inputSchema.ValueKind == JsonValueKind.Undefined ? null : inputSchema.GetRawText(), campaignSelection)
+        {
+            ObjectCollectionId = hasCollection ? String(root, "collection", 200) : null
+        };
     }
 
     private static void Exact(JsonElement value, params string[] names)

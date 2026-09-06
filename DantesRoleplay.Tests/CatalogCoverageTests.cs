@@ -736,6 +736,7 @@ public sealed class CatalogCoverageTests : IDisposable
         ["system_projection_definition_version.OutputSchemaJson"] = "Validated projection output schema, not carried by the catalog.",
         ["system_projection_definition_version.OutputSchemaHash"] = "Projection output schema fingerprint, not carried by the catalog.",
         ["system_projection_definition_version.ContentHash"] = "Projection definition fingerprint, not carried by the catalog.",
+        ["system_projection_definition_version.ObjectContractJson"] = "Validated materialization of an active authored object document, regenerated during activation; immutable registration history is not round-tripped.",
         ["system_projection_definition_version.CreatedAtUtc"] = "Projection registration evidence, not carried by the catalog.",
         ["system_projection_component_input.QualifiedId"] = "Projection input owner, not carried by the catalog.",
         ["system_projection_component_input.Version"] = "Projection input version, not carried by the catalog.",

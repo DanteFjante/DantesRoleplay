@@ -94,6 +94,8 @@ internal sealed class InteractionProposalVerifier(
                 }
                 if (query.Status != "active")
                     return Unsupported("QUERY_CONTRACT_NOT_ACTIVE", "The proposed query contract is not active.");
+                var effectiveOutputSchemaHash = query.OutputSchemaHash;
+                IReadOnlySet<string>? objectRequiredRoles = null;
                 if (query.Executor == ApplicationQueryContract.ProjectionExecutor)
                 {
                     var projection = projections?.Get(query.ProjectionQualifiedId, query.ProjectionVersion);
@@ -106,6 +108,23 @@ internal sealed class InteractionProposalVerifier(
                         || !projection.EntityRoles.Order(StringComparer.Ordinal)
                             .SequenceEqual(query.Roles.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal))
                         return Stale("QUERY_PROJECTION_STALE", "The query contract does not match its exact registered projection.");
+                }
+                else if (query.Executor == ApplicationQueryContract.ObjectProjectionExecutor)
+                {
+                    var projection = projections?.Get(query.ProjectionQualifiedId, query.ProjectionVersion);
+                    if (projection?.ObjectContract is null)
+                        return Unsupported("QUERY_EXECUTOR_UNAVAILABLE", "The query object executor is unavailable.");
+                    if (projection.Owner != envelope.Host.ApplicationRevision.ApplicationId
+                        || projection.ContentHash != query.ProjectionContentHash
+                        || !JsonNode.DeepEquals(JsonNode.Parse(projection.OutputSchemaJson), JsonNode.Parse(query.OutputSchemaJson))
+                        || !projection.EntityRoles.Order(StringComparer.Ordinal)
+                            .SequenceEqual(query.Roles.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal)
+                        || query.ObjectCollectionId is null
+                        || !projection.ObjectContract.Collections.Any(value => value.CollectionId == query.ObjectCollectionId))
+                        return Stale("QUERY_PROJECTION_STALE", "The query contract does not match its exact registered object.");
+                    effectiveOutputSchemaHash = projection.OutputSchemaHash;
+                    objectRequiredRoles = projection.ObjectContract.Roles.Where(value => value.Required)
+                        .Select(value => value.RoleId).ToHashSet(StringComparer.Ordinal);
                 }
                 else if (query.Executor == ApplicationQueryContract.MechanicProjectionExecutor)
                 {
@@ -135,11 +154,11 @@ internal sealed class InteractionProposalVerifier(
                     return Unsafe("QUERY_INPUT_FORBIDDEN", "Projection queries do not accept free-form input.");
                 authoritativeId = query.Id;
                 declaredRoles = query.Roles.Keys.ToHashSet(StringComparer.Ordinal);
-                requiredRoles = declaredRoles;
+                requiredRoles = objectRequiredRoles ?? declaredRoles;
                 try
                 {
                     queryContract = new(query.Executor, query.ProjectionQualifiedId, query.ProjectionVersion,
-                        query.ProjectionContentHash, query.OutputSchemaHash, query.OutputSchemaJson,
+                        query.ProjectionContentHash, effectiveOutputSchemaHash, query.OutputSchemaJson,
                         query.Exposure, query.Roles.Keys);
                 }
                 catch (InteractionContractException)
