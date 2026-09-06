@@ -156,6 +156,11 @@ public sealed class ApplicationActionRunner(
             Intent = "Execute one verified application interaction step.",
             ProceduresUsed = [],
             ExecutionIdentity = request.ExecutionIdentity,
+            ComponentExpectations = evaluation.Projection!.ObservedComponents
+                .Select(value => new ApplicationEcsComponentExpectation(value.EntityId,
+                    new EcsComponentReference(value.QualifiedTypeId, value.TypeVersion, value.SchemaHash),
+                    value.Revision))
+                .ToArray(),
             ContainmentExpectations = evaluation.Projection!.ContainmentRevisions
                 .OrderBy(pair => pair.Key, StringComparer.Ordinal)
                 .Select(pair => new ApplicationEcsContainmentExpectation(pair.Key,
@@ -360,10 +365,20 @@ public sealed class ApplicationActionRunner(
                 {
                     var qualified = QualifiedRelationship(owners, mapping, effect.Kind);
                     if (qualified is null) return TranslationResult.Failed("RELATIONSHIP_MAPPING_MISSING", "An affected relationship has no exact mapping.");
-                    var current = await edges.GetRelationshipAsync(stateSpace.StateSpaceId, effect.EntityId,
-                        effect.ToEntityId, qualified, cancellationToken);
+                    var snapshot = projection.RelationshipCollections.SingleOrDefault(value =>
+                        value.QualifiedKind == qualified &&
+                        ((!value.Incoming && value.AnchorEntityId == effect.EntityId) ||
+                         (value.Incoming && value.AnchorEntityId == effect.ToEntityId)));
+                    var observed = snapshot?.Relationships.SingleOrDefault(value =>
+                        value.FromEntityId == effect.EntityId && value.ToEntityId == effect.ToEntityId &&
+                        value.QualifiedKind == qualified);
+                    var current = snapshot is null
+                        ? await edges.GetRelationshipAsync(stateSpace.StateSpaceId, effect.EntityId,
+                            effect.ToEntityId, qualified, cancellationToken)
+                        : null;
                     var remove = effect.Type == EffectType.RelationshipRemove;
-                    if (remove && current is null) return TranslationResult.StaleFailure("RELATIONSHIP_STALE", "The affected relationship is unavailable.");
+                    if (remove && observed is null && current is null)
+                        return TranslationResult.StaleFailure("RELATIONSHIP_STALE", "The affected relationship is unavailable.");
                     result.Add(new()
                     {
                         Type = remove ? ApplicationEcsEffectType.RelationshipRemove : ApplicationEcsEffectType.RelationshipSet,
@@ -371,7 +386,7 @@ public sealed class ApplicationActionRunner(
                         TargetEntityId = effect.ToEntityId,
                         QualifiedRelationshipKind = qualified,
                         DataJson = remove ? "" : effect.Data,
-                        ExpectedRevision = current?.Revision ?? 0
+                        ExpectedRevision = observed?.Revision ?? current?.Revision ?? 0
                     });
                     break;
                 }

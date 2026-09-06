@@ -83,9 +83,6 @@ public static class ApplicationCapabilityCatalogValidator
 
         var authoredBoundary = mechanics.Values.Any(value =>
             MechanicRequirements.Parse(value.File.Requirements).InputSchema is not null);
-        foreach (var (qualifiedId, mechanic) in mechanics.OrderBy(value => value.Key, StringComparer.Ordinal))
-            ValidateMechanic(applicationId, qualifiedId, mechanic, mechanics, schemas, issues, authoredBoundary);
-
         var objects = new Dictionary<(string QualifiedId, int Version), ProjectionDefinitionRequest>();
         var objectsRoot = Path.Combine(applicationDirectory, "objects");
         if (Directory.Exists(objectsRoot))
@@ -117,6 +114,10 @@ public static class ApplicationCapabilityCatalogValidator
                 issues.Add(Issue("object", history.Key, "capability-version-history",
                     "Application object versions must form one contiguous history beginning at version one."));
         }
+
+        foreach (var (qualifiedId, mechanic) in mechanics.OrderBy(value => value.Key, StringComparer.Ordinal))
+            ValidateMechanic(applicationId, qualifiedId, mechanic, mechanics, objects, schemas, issues,
+                authoredBoundary);
 
         var queriesRoot = Path.Combine(applicationDirectory, "queries");
         if (!Directory.Exists(queriesRoot)) return;
@@ -168,6 +169,7 @@ public static class ApplicationCapabilityCatalogValidator
         string qualifiedId,
         MechanicContract mechanic,
         IReadOnlyDictionary<string, MechanicContract> mechanics,
+        IReadOnlyDictionary<(string QualifiedId, int Version), ProjectionDefinitionRequest> objects,
         BoundedJsonSchemaValidator schemas,
         List<CatalogValidationIssue> issues,
         bool authoredBoundary)
@@ -199,6 +201,29 @@ public static class ApplicationCapabilityCatalogValidator
                     target.Fingerprint, StringComparison.Ordinal))
                 issues.Add(Issue("mechanic", qualifiedId, "capability-child-stale",
                     $"Child '{resultKey}' must pin version 1 and fingerprint {target.Fingerprint}."));
+        }
+
+        foreach (var (name, objectRole) in requirements.ObjectRoles.OrderBy(value => value.Key, StringComparer.Ordinal))
+        {
+            if (!objects.TryGetValue((objectRole.QualifiedId, objectRole.Version), out var definition)
+                || definition.ObjectContract is null)
+            {
+                issues.Add(Issue("mechanic", qualifiedId, "capability-object-missing",
+                    $"Object role '{name}' references unavailable object '{objectRole.QualifiedId}' version {objectRole.Version}."));
+                continue;
+            }
+            var declaredRoles = definition.ObjectContract.Roles.Select(value => value.RoleId)
+                .ToHashSet(StringComparer.Ordinal);
+            var requiredRoles = definition.ObjectContract.Roles.Where(value => value.Required)
+                .Select(value => value.RoleId).ToHashSet(StringComparer.Ordinal);
+            if (!objectRole.RoleBindings.Keys.ToHashSet(StringComparer.Ordinal).IsSubsetOf(declaredRoles)
+                || !requiredRoles.IsSubsetOf(objectRole.RoleBindings.Keys.ToHashSet(StringComparer.Ordinal)))
+                issues.Add(Issue("mechanic", qualifiedId, "capability-object-roles",
+                    $"Object role '{name}' must bind exactly declared object roles and all required roles."));
+            if (objectRole.CollectionId is not null && definition.ObjectContract.Collections.All(value =>
+                    value.CollectionId != objectRole.CollectionId))
+                issues.Add(Issue("mechanic", qualifiedId, "capability-object-collection",
+                    $"Object role '{name}' references unavailable collection '{objectRole.CollectionId}'."));
         }
 
         try

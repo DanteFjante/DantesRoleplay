@@ -88,6 +88,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
                     audience = projection.Audience,
                     authorizedObserver = projection.AuthorizedObserver,
                     roles = projection.Roles,
+                    objects = projection.Objects,
                     references = projection.References,
                     input = projection.Input,
                     seed = projection.Seed,
@@ -301,6 +302,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
               audience: payload.audience === null || payload.audience === undefined
                 ? null : freezeDeep(payload.audience),
               roles: freezeDeep(payload.roles || {}),
+              objects: freezeDeep(payload.objects || {}),
               references: freezeDeep(payload.references || {}),
               input: freezeDeep(JSON.parse(payload.input || '{}')),
               seed: payload.seed,
@@ -322,9 +324,9 @@ public sealed class JintMechanicEngine : IMechanicEngine
                 if (log.length < __maxLog) { log.push(String(message)); }
               },
 
-              // Everything a mechanic may read is already in ctx.roles. There is no fetch, no
-              // query and no store here on purpose: that absence is what makes a mechanic a pure
-              // function of what it declared, and therefore reviewable.
+              // Everything a mechanic may read is already in its declared roles and objects.
+              // There is no fetch, query or store here: that absence makes a mechanic a pure
+              // function of its frozen inputs, and therefore reviewable.
               effects: []
             };
 

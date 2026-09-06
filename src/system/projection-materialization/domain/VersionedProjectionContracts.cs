@@ -65,7 +65,16 @@ public sealed record ProjectionCollectionMaterializationResult(
     ProjectionReference Projection,
     string OutputJson,
     IReadOnlyList<ProjectionSourceRevision> SourceRevisions,
-    string SourceRevisionFingerprint);
+    string SourceRevisionFingerprint)
+{
+    public IReadOnlyList<ProjectionRelationshipRevision> RelationshipRevisions { get; init; } = [];
+    public bool Complete { get; init; } = true;
+}
+public sealed record ProjectionRelationshipRevision(
+    string FromEntityId,
+    string ToEntityId,
+    string QualifiedKind,
+    int Revision);
 public sealed record ProjectionImpactGraph(IReadOnlyDictionary<string, IReadOnlyList<string>> Forward, IReadOnlyDictionary<string, IReadOnlyList<string>> Reverse);
 public sealed record ProjectionSourceSnapshot(
     StateSpaceView StateSpace,

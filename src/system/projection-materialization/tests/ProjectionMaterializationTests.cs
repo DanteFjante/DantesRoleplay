@@ -137,6 +137,11 @@ public sealed class ProjectionMaterializationTests : IDisposable
         Assert.NotNull(countedRegistry.Get(definition.QualifiedId, definition.Version));
         counter.Reset();
         var first = await materializer.MaterializeAsync(request);
+        Assert.False(first.Complete);
+        Assert.Equal(3, first.RelationshipRevisions.Count);
+        Assert.Contains(first.RelationshipRevisions, value => value.FromEntityId == "item.a" &&
+            value.ToEntityId == "root" && value.QualifiedKind == "collection-projection.includes" &&
+            value.Revision == 1);
         Assert.True(counter.Count is >= 1 && counter.Count <= definition.ObjectContract!.Limits.SqlQueries,
             $"Collection read used {counter.Count} SQL commands:{Environment.NewLine}{string.Join(Environment.NewLine, counter.Commands)}");
         using var firstJson = System.Text.Json.JsonDocument.Parse(first.OutputJson);
@@ -147,6 +152,7 @@ public sealed class ProjectionMaterializationTests : IDisposable
         Assert.False(firstJson.RootElement.GetProperty("complete").GetBoolean());
         var cursor = firstJson.RootElement.GetProperty("nextCursor").GetString();
         var second = await materializer.MaterializeAsync(request with { Cursor = cursor });
+        Assert.True(second.Complete);
         using var secondJson = System.Text.Json.JsonDocument.Parse(second.OutputJson);
         Assert.Equal("Bravo", secondJson.RootElement.GetProperty("items")[0].GetProperty("name").GetString());
         Assert.Empty(secondJson.RootElement.GetProperty("items")[0].GetProperty("members").EnumerateArray());

@@ -3576,6 +3576,8 @@ public sealed class Dnd2024AbilityCheckTests
             DndHarness.StateSpaceId, "world.rest.fixture", "subject.high", "dnd2024.rest.world");
 
         Assert.True(evaluated.Ok, evaluated.Run?.Error ?? string.Join("; ", evaluated.Problems));
+        Assert.Equal(3, evaluated.Projection!.Objects.Count);
+        Assert.All(evaluated.Projection.Roles.Values, role => Assert.Empty(role.Components));
         Assert.Equal(2, evaluated.Run!.Output.Effects.Count);
         Assert.Single(evaluated.Run.Output.Events);
         Assert.Empty(evaluated.Run.Output.Notifications);
@@ -3634,6 +3636,24 @@ public sealed class Dnd2024AbilityCheckTests
             DndHarness.StateSpaceId, "world.rest.fixture", "subject.high", "dnd2024.rest.world"));
     }
 
+    [Fact]
+    public async Task Character_creation_rest_begin_rolls_back_object_reducer_effects_and_event_on_late_failure()
+    {
+        await using var harness = await DndHarness.CreateAsync(failTransactionAfterEffects: true);
+        await harness.AddRestBeginFixturesAsync(currentHitPoints: 1, currentMinute: 321);
+
+        var failed = await harness.Runner.RunAsync(harness.ActionForRoles(
+            "dnd2024.mechanic.rest.begin", RestBeginRoles(), "{\"kind\":\"short\"}", 0,
+            "f223456789abcdef0123456789abcdee"));
+
+        Assert.Equal(ApplicationActionExecutionDisposition.Failed, failed.Disposition);
+        Assert.Null(await harness.Entities.GetComponentAsync(
+            DndHarness.StateSpaceId, "subject.high", "dnd2024.rest-episode"));
+        Assert.Null(await harness.Edges.GetRelationshipAsync(
+            DndHarness.StateSpaceId, "world.rest.fixture", "subject.high", "dnd2024.rest.world"));
+        Assert.Empty(await harness.EventsAsync(failed.OperationId));
+    }
+
     [Theory]
     [InlineData("zero-hp")]
     [InlineData("inactive-world")]
@@ -3663,13 +3683,14 @@ public sealed class Dnd2024AbilityCheckTests
             "dnd2024.mechanic.rest.begin", RestBeginRoles(), "{\"kind\":\"long\"}", 0);
 
         Assert.False(result.Ok);
-        Assert.Empty(result.Run!.Output.Effects);
+        if (result.Run is not null)
+            Assert.Empty(result.Run.Output.Effects);
         Assert.Null(await harness.Entities.GetComponentAsync(
             DndHarness.StateSpaceId, "subject.high", "dnd2024.rest-episode"));
     }
 
     [Fact]
-    public async Task Character_creation_rest_begin_requires_explicit_game_base_component_mapping()
+    public async Task Character_creation_rest_begin_no_longer_requires_legacy_component_projection_mapping()
     {
         await using var harness = await DndHarness.CreateAsync();
         await harness.AddRestBeginFixturesAsync();
@@ -3677,9 +3698,9 @@ public sealed class Dnd2024AbilityCheckTests
         var result = await harness.EvaluateRolesWithoutGameBaseMappingAsync(
             "dnd2024.mechanic.rest.begin", RestBeginRoles(), "{\"kind\":\"short\"}", 0);
 
-        Assert.False(result.Ok);
-        Assert.Contains(result.Problems,
-            problem => problem.Contains("COMPONENT_MAPPING_MISSING", StringComparison.Ordinal));
+        Assert.True(result.Ok, result.Run?.Error ?? string.Join("; ", result.Problems));
+        Assert.Equal(3, result.Projection!.Objects.Count);
+        Assert.All(result.Projection.Roles.Values, role => Assert.Empty(role.Components));
         Assert.Null(await harness.Entities.GetComponentAsync(
             DndHarness.StateSpaceId, "subject.high", "dnd2024.rest-episode"));
     }
@@ -8967,16 +8988,26 @@ public sealed class Dnd2024AbilityCheckTests
             var schemas = new BoundedJsonSchemaValidator();
             var types = new SqliteComponentTypeRegistry(db, schemas);
             var entities = new SqliteEntityComponentStore(db, types, schemas);
+            var projectionRegistry = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications);
             var materializer = new ActivatedApplicationCatalogMaterializer(applications, activations, sources, roots,
-                projections: new SqliteProjectionDefinitionRegistry(db, types, schemas, applications));
+                projections: projectionRegistry);
             _ = materializer.BuildFeatureSnapshot(Application);
             var catalogs = new ActivatedApplicationCatalogProvider(
                 new ConfiguredPublicApplicationCatalogPolicy([Application.Value]),
                 materializer,
                 new CatalogCursorCodec(Encoding.UTF8.GetBytes("dnd2024-ability-check-cursor-key")));
-            var evaluator = new ApplicationMechanicEvaluator(
-                catalogs, new ApplicationMechanicProjectionResolver(db, stateSpaces), new JintMechanicEngine());
             var edges = new SqliteStateSpaceEdgeStore(db, stateSpaces);
+            var projectionTransactions = new SqliteProjectionReadTransaction(db);
+            var sourceSnapshots = new SqliteProjectionSourceSnapshotReader(db, stateSpaces, entities);
+            var objectMaterializer = new ProjectionMaterializer(projectionRegistry, entities,
+                stateSpaces, schemas, snapshots: sourceSnapshots);
+            var objectCollections = new ProjectionCollectionMaterializer(projectionRegistry,
+                objectMaterializer, edges, entities, entities, schemas, projectionTransactions);
+            var objectProjections = new ApplicationMechanicObjectProjectionResolver(
+                projectionRegistry, objectMaterializer, objectCollections, entities);
+            var evaluator = new ApplicationMechanicEvaluator(
+                catalogs, new ApplicationMechanicProjectionResolver(db, stateSpaces),
+                new JintMechanicEngine(), objectProjections: objectProjections);
             var mappings = new ApplicationMechanicProjectionMappingResolver(
                 catalogs, stateSpaces, types, edges);
             var clockParticipant = new ApplicationClockEventTransactionParticipant(
@@ -9255,10 +9286,21 @@ public sealed class Dnd2024AbilityCheckTests
                     ["hazard.exposure.schedule"] = "dnd2024.hazard.exposure.schedule",
                     ["hazard.exposure.recovered"] = "dnd2024.hazard.exposure.recovered"
                 });
+            var applications = new SqliteApplicationRegistry(_db);
+            var stateSpaces = new SqliteStateSpaceRegistry(_db, applications);
+            var schemas = new BoundedJsonSchemaValidator();
+            var types = new SqliteComponentTypeRegistry(_db, schemas);
+            var registry = new SqliteProjectionDefinitionRegistry(_db, types, schemas, applications);
+            var transactions = new SqliteProjectionReadTransaction(_db);
+            var materializer = new ProjectionMaterializer(registry, Entities, stateSpaces, schemas,
+                snapshots: new SqliteProjectionSourceSnapshotReader(_db, stateSpaces, Entities));
+            var collections = new ProjectionCollectionMaterializer(registry, materializer, Edges,
+                Entities, Entities, schemas, transactions);
+            var objectResolver = new ApplicationMechanicObjectProjectionResolver(
+                registry, materializer, collections, Entities);
             return await new ApplicationMechanicEvaluator(
-                _catalogs, new ApplicationMechanicProjectionResolver(_db,
-                    new SqliteStateSpaceRegistry(_db, new SqliteApplicationRegistry(_db))),
-                new JintMechanicEngine()).EvaluateAsync(new(
+                _catalogs, new ApplicationMechanicProjectionResolver(_db, stateSpaces),
+                new JintMechanicEngine(), objectProjections: objectResolver).EvaluateAsync(new(
                     StateSpaceId, Application, record.Summary.QualifiedId, record.Summary.ContentFingerprint,
                 mapping, roles, input, seed));
         }

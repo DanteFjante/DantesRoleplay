@@ -22,6 +22,12 @@ public sealed record MechanicRequirements
     public Dictionary<string, RoleRequirement> Roles { get; init; } = [];
 
     /// <summary>
+    /// Exact registered application objects supplied to a reducer. Dictionary keys are authored
+    /// sandbox names; role bindings map each object's opaque role names to this mechanic's roles.
+    /// </summary>
+    public Dictionary<string, MechanicObjectRoleRequirement> ObjectRoles { get; init; } = [];
+
+    /// <summary>
     /// Optional authored JSON Schema for the mechanic's input object. Discovery surfaces expose
     /// this contract before execution; JavaScript still performs semantic checks that depend on
     /// projected state.
@@ -328,6 +334,18 @@ public sealed record MechanicRequirements
             EffectComponentIds.Any(string.IsNullOrWhiteSpace) ||
             EffectComponentIds.Distinct(StringComparer.Ordinal).Count() != EffectComponentIds.Count)
             problems.Add("effectComponentIds must be a bounded distinct list of component identities.");
+        if (ObjectRoles.Count > ProjectionLimits.MaxObjectRoles)
+            problems.Add($"A mechanic may declare at most {ProjectionLimits.MaxObjectRoles} object roles.");
+        if (ObjectRoles.Count > 0 && Children.Count > 0)
+            problems.Add("An object-based reducer cannot declare child mechanics.");
+        if (ObjectRoles.Count > 0 && AuthorizedContext is not null)
+            problems.Add("An object-based reducer cannot declare an authorized read context.");
+        foreach (var (name, declaration) in ObjectRoles)
+        {
+            if (!MechanicObjectRoleRequirement.Token(name, 100) || declaration is null ||
+                !declaration.Valid(Roles))
+                problems.Add($"Object role '{name}' must pin one bounded exact object and closed mechanic-role bindings.");
+        }
         foreach (var (role, requirement) in Roles)
         {
             var optionalComponents = requirement.OptionalComponents ?? [];
@@ -513,6 +531,33 @@ public sealed record RoleRequirement(
     IReadOnlyList<string>? OptionalComponents = null,
     IReadOnlyList<string>? ContentsRelevantToRoles = null);
 
+/// <summary>One exact application-object input for a pure catalog reducer.</summary>
+public sealed record MechanicObjectRoleRequirement
+{
+    public string QualifiedId { get; init; } = string.Empty;
+    public int Version { get; init; }
+    public string ContentFingerprint { get; init; } = string.Empty;
+    public IReadOnlyDictionary<string, string> RoleBindings { get; init; } =
+        new Dictionary<string, string>(StringComparer.Ordinal);
+    public string? CollectionId { get; init; }
+    public string Perspective { get; init; } = "dm";
+
+    internal bool Valid(IReadOnlyDictionary<string, RoleRequirement> mechanicRoles) =>
+        Token(QualifiedId, 200) && Version > 0 && IsUpperSha256(ContentFingerprint) &&
+        RoleBindings is { Count: > 0 and <= 32 } &&
+        RoleBindings.All(value => Token(value.Key, 200) && Token(value.Value, 200) &&
+            mechanicRoles.ContainsKey(value.Value)) &&
+        RoleBindings.Keys.Distinct(StringComparer.Ordinal).Count() == RoleBindings.Count &&
+        (CollectionId is null || Token(CollectionId, 200)) &&
+        Perspective is "player" or "dm";
+
+    internal static bool Token(string? value, int maximum) => value is { Length: > 0 } &&
+        value.Length <= maximum && value == value.Trim() && !value.Any(char.IsWhiteSpace);
+
+    private static bool IsUpperSha256(string value) => value is { Length: 64 } &&
+        value.All(character => char.IsAsciiDigit(character) || character is >= 'A' and <= 'F');
+}
+
 /// <summary>A declared entity-id field inside a declared component, and the target components it may reveal.</summary>
 public sealed record ComponentReferenceRequirement(
     string SourceComponentId,
@@ -537,6 +582,7 @@ public static class ProjectionLimits
     public const int MaxRelationshipComponentDeclarations = 12;
     public const int MaxRelatedNodes = 100;
     public const int MaxReferencedEntities = 512;
+    public const int MaxObjectRoles = 32;
 }
 
 /// <summary>
@@ -656,6 +702,17 @@ public sealed record MechanicProjection
     /// <summary>Role name to the entity filling it. A missing optional role is simply absent.</summary>
     public Dictionary<string, EntityProjection> Roles { get; init; } = [];
 
+    /// <summary>Exact registered object values supplied to an object-based reducer.</summary>
+    public Dictionary<string, MechanicObjectProjection> Objects { get; init; } = [];
+
+    /// <summary>Host-only exact component evidence carried from registered object materialization.</summary>
+    [JsonIgnore]
+    public IReadOnlyList<MechanicComponentRevision> ObservedComponents { get; init; } = [];
+
+    /// <summary>Host-only complete relationship collections used for stale effect translation.</summary>
+    [JsonIgnore]
+    public IReadOnlyList<MechanicRelationshipCollectionSnapshot> RelationshipCollections { get; init; } = [];
+
     /// <summary>Host-only component revisions observed while materialising the immutable projection.</summary>
     [JsonIgnore]
     public Dictionary<string, Dictionary<string, int?>> ComponentRevisions { get; init; } = [];
@@ -713,6 +770,35 @@ public sealed record EntityProjection(
     IReadOnlyList<RelationshipProjection>? Relationships = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     IReadOnlyList<RelatedEntityProjection>? Related = null);
+
+public sealed record MechanicObjectEntity(string Id, string Name);
+
+/// <summary>Sandbox-safe immutable application object with its exact declaration and bound identities.</summary>
+public sealed record MechanicObjectProjection(
+    string QualifiedId,
+    int Version,
+    string ContentFingerprint,
+    IReadOnlyDictionary<string, MechanicObjectEntity> Roles,
+    JsonElement Value);
+
+public sealed record MechanicComponentRevision(
+    string EntityId,
+    string QualifiedTypeId,
+    int TypeVersion,
+    string SchemaHash,
+    int Revision);
+
+public sealed record MechanicRelationshipRevision(
+    string FromEntityId,
+    string ToEntityId,
+    string QualifiedKind,
+    int Revision);
+
+public sealed record MechanicRelationshipCollectionSnapshot(
+    string QualifiedKind,
+    string AnchorEntityId,
+    bool Incoming,
+    IReadOnlyList<MechanicRelationshipRevision> Relationships);
 
 public sealed record ContainedProjection(
     string Id,

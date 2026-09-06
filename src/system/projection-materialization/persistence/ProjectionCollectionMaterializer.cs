@@ -146,7 +146,18 @@ public sealed class ProjectionCollectionMaterializer(
                 new ProjectionSourceRevision(value.EntityId, value.Type, value.Revision)))
             .Distinct().OrderBy(value => value.EntityId, StringComparer.Ordinal)
             .ThenBy(value => value.Type.QualifiedTypeId, StringComparer.Ordinal).ToArray();
-        return new(definition.Reference, outputJson, Array.AsReadOnly(revisions), sourceFingerprint);
+        return new(definition.Reference, outputJson, Array.AsReadOnly(revisions), sourceFingerprint)
+        {
+            Complete = nextCursor is null,
+            RelationshipRevisions = firstEdges.Concat(firstNestedEdges)
+                .DistinctBy(value => (value.FromEntityId, value.ToEntityId, value.QualifiedKind))
+                .OrderBy(value => value.FromEntityId, StringComparer.Ordinal)
+                .ThenBy(value => value.ToEntityId, StringComparer.Ordinal)
+                .ThenBy(value => value.QualifiedKind, StringComparer.Ordinal)
+                .Select(value => new ProjectionRelationshipRevision(
+                    value.FromEntityId, value.ToEntityId, value.QualifiedKind, value.Revision))
+                .ToArray()
+        };
     }
 
     private static JsonObject Item(EcsEntityView entity,

@@ -1,0 +1,21 @@
+{
+  "id": "dnd2024.object.rest-begin-policy",
+  "version": 1,
+  "schema": {
+    "type": "object", "additionalProperties": false,
+    "required": ["policyKey", "policyVersion", "sourceRef", "shortRest", "longRest"],
+    "properties": {
+      "policyKey": { "const": "standard" }, "policyVersion": { "const": 1 },
+      "sourceRef": { "type": "object", "additionalProperties": false, "required": ["sourceId", "locator"], "properties": { "sourceId": { "const": "dnd2024.source.srd-5.2.1" }, "locator": { "const": "Rules Glossary > Long Rest and Short Rest, PDF pages 185 and 187" } } },
+      "shortRest": { "type": "object", "additionalProperties": false, "required": ["minimumMinutes", "minimumHitPoints", "permittedActivity", "interruptions", "benefits"], "properties": { "minimumMinutes": { "const": 60 }, "minimumHitPoints": { "const": 1 }, "permittedActivity": { "const": "light" }, "interruptions": { "const": ["initiative", "non-cantrip-spell", "damage"] }, "benefits": { "const": ["spend-hit-point-dice", "source-specific-recharge"] } } },
+      "longRest": { "type": "object", "additionalProperties": false, "required": ["minimumMinutes", "minimumSleepMinutes", "maximumLightActivityMinutes", "minimumHitPoints", "restartWaitMinutes", "partialShortRestMinutes", "additionalMinutesPerInterruption", "permittedActivity", "interruptions", "benefits"], "properties": { "minimumMinutes": { "const": 480 }, "minimumSleepMinutes": { "const": 360 }, "maximumLightActivityMinutes": { "const": 120 }, "minimumHitPoints": { "const": 1 }, "restartWaitMinutes": { "const": 960 }, "partialShortRestMinutes": { "const": 60 }, "additionalMinutesPerInterruption": { "const": 60 }, "permittedActivity": { "const": "light" }, "interruptions": { "const": ["initiative", "non-cantrip-spell", "damage", "walking-or-physical-exertion"] }, "benefits": { "const": ["restore-hit-points", "restore-hit-point-dice", "restore-hit-point-maximum", "restore-ability-scores", "reduce-exhaustion", "source-specific-recharge"] } } }
+    }
+  },
+  "roles": { "policy": { "required": true } },
+  "sources": [ { "id": "policy", "role": "policy", "component": { "qualifiedId": "dnd2024.rest-policy", "version": 1, "schemaHash": "0BEC9AB5C65EDFB8EB1F1CC5912A8695FA4BDF8422C47517703BD748A4407C67" }, "required": true } ],
+  "relationships": [], "references": [],
+  "mappings": [ { "inputId": "policy", "sourcePointer": "", "targetPointer": "" } ],
+  "collections": [],
+  "limits": { "traversalDepth": 1, "itemCount": 1, "outputBytes": 65536, "sqlQueries": 4 },
+  "access": { "read": ["dm"], "write": [] }
+}

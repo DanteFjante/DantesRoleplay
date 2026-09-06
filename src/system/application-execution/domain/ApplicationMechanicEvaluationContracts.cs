@@ -72,6 +72,20 @@ public interface IApplicationMechanicProjectionResolver
         CancellationToken cancellationToken = default);
 }
 
+/// <summary>Materializes exact registered application objects for an object-based reducer.</summary>
+public interface IApplicationMechanicObjectProjectionResolver
+{
+    Task<ProjectionResult> ResolveAsync(
+        string stateSpaceId,
+        ApplicationIdentifier applicationId,
+        MechanicRequirements requirements,
+        ApplicationMechanicProjectionMapping mapping,
+        IReadOnlyDictionary<string, string> roleAssignments,
+        string inputJson,
+        long seed,
+        CancellationToken cancellationToken = default);
+}
+
 public interface IApplicationAuthorizedProjectionResolver
 {
     Task<ProjectionResult> ResolveAsync(ApplicationMechanicEvaluationRequest request,

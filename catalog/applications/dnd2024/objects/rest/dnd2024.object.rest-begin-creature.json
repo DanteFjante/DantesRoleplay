@@ -1,0 +1,79 @@
+{
+  "id": "dnd2024.object.rest-begin-creature",
+  "version": 1,
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["hitPoints"],
+    "properties": {
+      "hitPoints": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["current", "maximum"],
+        "properties": {
+          "current": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+          "maximum": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+          "maximumReduction": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }
+        }
+      },
+      "restEpisode": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["policyEntityId", "kind", "worldId", "startedAtMinute", "observedAtMinute", "observedClockRevision", "requiredMinutes", "lightActivityMinutes", "status", "sourceRef"],
+            "properties": {
+              "policyEntityId": { "const": "dnd2024.content.rest-policy.standard.v1" },
+              "kind": { "const": "short" },
+              "worldId": { "type": "string", "minLength": 1, "maxLength": 200 },
+              "startedAtMinute": { "type": "integer", "minimum": 0, "maximum": 1000000000 },
+              "observedAtMinute": { "type": "integer", "minimum": 0, "maximum": 1000000000 },
+              "observedClockRevision": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+              "requiredMinutes": { "const": 60 },
+              "lightActivityMinutes": { "type": "integer", "minimum": 0, "maximum": 1000000000 },
+              "status": { "enum": ["active", "ready"] },
+              "sourceRef": { "$ref": "#/$defs/shortSource" }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["policyEntityId", "kind", "worldId", "startedAtMinute", "observedAtMinute", "observedClockRevision", "requiredMinutes", "sleepMinutes", "lightActivityMinutes", "interruptionCount", "status", "sourceRef"],
+            "properties": {
+              "policyEntityId": { "const": "dnd2024.content.rest-policy.standard.v1" },
+              "kind": { "const": "long" },
+              "worldId": { "type": "string", "minLength": 1, "maxLength": 200 },
+              "startedAtMinute": { "type": "integer", "minimum": 0, "maximum": 1000000000 },
+              "observedAtMinute": { "type": "integer", "minimum": 0, "maximum": 1000000000 },
+              "observedClockRevision": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+              "requiredMinutes": { "type": "integer", "minimum": 480, "maximum": 1000000000 },
+              "sleepMinutes": { "type": "integer", "minimum": 0, "maximum": 1000000000 },
+              "lightActivityMinutes": { "type": "integer", "minimum": 0, "maximum": 120 },
+              "interruptionCount": { "type": "integer", "minimum": 0, "maximum": 16666658 },
+              "status": { "enum": ["active", "ready"] },
+              "sourceRef": { "$ref": "#/$defs/longSource" }
+            }
+          }
+        ]
+      }
+    },
+    "$defs": {
+      "shortSource": { "type": "object", "additionalProperties": false, "required": ["sourceId", "locator"], "properties": { "sourceId": { "const": "dnd2024.source.srd-5.2.1" }, "locator": { "const": "Rules Glossary > Short Rest, PDF page 187" } } },
+      "longSource": { "type": "object", "additionalProperties": false, "required": ["sourceId", "locator"], "properties": { "sourceId": { "const": "dnd2024.source.srd-5.2.1" }, "locator": { "const": "Rules Glossary > Long Rest, PDF page 185" } } }
+    }
+  },
+  "roles": { "creature": { "required": true } },
+  "sources": [
+    { "id": "hitPoints", "role": "creature", "component": { "qualifiedId": "dnd2024.creature.hit-points", "version": 1, "schemaHash": "669D48C00041FF1C8EA1456DD4138072E7F24782EDBF11A1C4DBC83E8C518AC4" }, "required": true },
+    { "id": "restEpisode", "role": "creature", "component": { "qualifiedId": "dnd2024.rest-episode", "version": 1, "schemaHash": "4C98C39F20B604DFD07274E53CBF2A36C174078727C4E70645DE4E3814CEB95A" }, "required": false }
+  ],
+  "relationships": [],
+  "references": [],
+  "mappings": [
+    { "inputId": "hitPoints", "sourcePointer": "", "targetPointer": "/hitPoints" },
+    { "inputId": "restEpisode", "sourcePointer": "", "targetPointer": "/restEpisode" }
+  ],
+  "collections": [],
+  "limits": { "traversalDepth": 1, "itemCount": 1, "outputBytes": 65536, "sqlQueries": 4 },
+  "access": { "read": ["dm"], "write": [] }
+}

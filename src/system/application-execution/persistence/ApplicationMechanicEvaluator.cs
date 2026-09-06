@@ -15,7 +15,8 @@ public sealed class ApplicationMechanicEvaluator(
     IPublicApplicationCatalogProvider catalogs,
     IApplicationMechanicProjectionResolver projections,
     IMechanicEngine engine,
-    IApplicationAuthorizedProjectionResolver? authorizedProjections = null) : IApplicationMechanicEvaluator
+    IApplicationAuthorizedProjectionResolver? authorizedProjections = null,
+    IApplicationMechanicObjectProjectionResolver? objectProjections = null) : IApplicationMechanicEvaluator
 {
     private const int MaxDepth = 8;
     private const int MaxChildrenPerDeclaration = 100;
@@ -60,12 +61,18 @@ public sealed class ApplicationMechanicEvaluator(
         catch (JsonException) { return Failed(request, "MECHANIC_INVALID: The active mechanic requirements are malformed."); }
         if (requirements.ProjectionProblems().Count > 0 || requirements.CompositionProblems().Count > 0)
             return Failed(request, "MECHANIC_INVALID: The active mechanic requirements are invalid.");
-        var projection = requirements.AuthorizedContext is null
-            ? await projections.ResolveAsync(request.StateSpaceId, request.ApplicationId,
+        var projection = requirements.ObjectRoles.Count > 0
+            ? objectProjections is null
+                ? ProjectionResult.Failed("OBJECT_PROJECTION_UNAVAILABLE")
+                : await objectProjections.ResolveAsync(request.StateSpaceId, request.ApplicationId,
+                    requirements, request.Mapping, request.RoleEntityIds, request.InputJson, request.Seed,
+                    cancellationToken)
+            : requirements.AuthorizedContext is null
+                ? await projections.ResolveAsync(request.StateSpaceId, request.ApplicationId,
                 requirements, request.Mapping, request.RoleEntityIds, request.InputJson, request.Seed, cancellationToken)
-            : authorizedProjections is null
-                ? ProjectionResult.Failed("READ_MODEL_UNAVAILABLE")
-                : await authorizedProjections.ResolveAsync(request, requirements, cancellationToken);
+                : authorizedProjections is null
+                    ? ProjectionResult.Failed("READ_MODEL_UNAVAILABLE")
+                    : await authorizedProjections.ResolveAsync(request, requirements, cancellationToken);
         if (!projection.Ok)
             return new(request.QualifiedMechanicId, request.ContentFingerprint, null, null, projection.Problems);
         var exactProjection = projection.Projection! with

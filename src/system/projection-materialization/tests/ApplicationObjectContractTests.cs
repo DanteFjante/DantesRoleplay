@@ -109,6 +109,14 @@ public sealed class ApplicationObjectContractTests : IDisposable
             File.ReadAllText(Path.Combine(Catalog(), "components", "game", "core", "world", "faction.schema.json"))));
         types.Define(new(game, "game.core.world.root",
             File.ReadAllText(Path.Combine(Catalog(), "components", "game", "core", "world", "root.schema.json"))));
+        var clockType = types.Define(new(game, "game.core.world.clock",
+            File.ReadAllText(Path.Combine(Catalog(), "components", "game", "core", "world", "clock.schema.json"))));
+        var hpType = types.Define(new(application, "dnd2024.creature.hit-points",
+            File.ReadAllText(Path.Combine(Catalog(), "applications", "dnd2024", "components", "dnd2024.creature.hit-points.schema.json"))));
+        var episodeType = types.Define(new(application, "dnd2024.rest-episode",
+            File.ReadAllText(Path.Combine(Catalog(), "applications", "dnd2024", "components", "dnd2024.rest-episode.schema.json"))));
+        var policyType = types.Define(new(application, "dnd2024.rest-policy",
+            File.ReadAllText(Path.Combine(Catalog(), "applications", "dnd2024", "components", "dnd2024.rest-policy.schema.json"))));
         var registry = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications);
         var objects = Path.Combine(Catalog(), "applications", "dnd2024", "objects");
         var campaignV1 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
@@ -117,6 +125,12 @@ public sealed class ApplicationObjectContractTests : IDisposable
             objects, "campaign", "dnd2024.object.campaign-summary.json")), application));
         var factions = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
             objects, "world", "dnd2024.object.faction-directory-page.json")), application));
+        var restCreature = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+            objects, "rest", "dnd2024.object.rest-begin-creature.json")), application));
+        var restWorld = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+            objects, "rest", "dnd2024.object.rest-begin-world.json")), application));
+        var restPolicy = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+            objects, "rest", "dnd2024.object.rest-begin-policy.json")), application));
 
         Assert.Equal("3AE6FD831B4319BA96E15A1501896549030C80FDBFA49D5503D0568DB9B61DEB", campaignV1.ContentHash);
         Assert.Equal(2, campaign.Version);
@@ -133,6 +147,9 @@ public sealed class ApplicationObjectContractTests : IDisposable
             value.ObjectPointer == "/party" && value.Operation == "relationship.remove" &&
             value.RelationshipId == "party");
         Assert.Equal("867C1B1567F1801F34528A3AC7DD8DA2DB72BF69F24A086A3F5FC7F99AD31B3C", factions.ContentHash);
+        Assert.Equal("858D347ED0CB9ADD8F937647703CD89F08F3AE313379037CFDD71B641F670F0C", restCreature.ContentHash);
+        Assert.Equal("6D22CE1103C1E66FC163C8AEF2DF8FAB0C106D21C3EDA0D6A95D0984210B83A9", restWorld.ContentHash);
+        Assert.Equal("4B1B67101E0CE06088AD997A3B8DAFED335EFEB3040851226E08D593A3EE19AD", restPolicy.ContentHash);
     }
 
     [Fact]
