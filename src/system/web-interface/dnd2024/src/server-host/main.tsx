@@ -2,8 +2,13 @@ import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 
 import { BootstrapShell } from "../components/BootstrapShell";
+import {
+  BrowserObjectQueryState,
+  CAMPAIGN_SUMMARY_OBJECT_ID,
+  type FactionObjectRequest,
+} from "../data/browser-object-state";
 import { resolveHubSurface } from "../data/hub-availability.js";
-import type { CampaignReadModel, CanonicalCharacterResult, ConnectedCampaignEnvelope, HubEnvelope, PartyMemberReadModel, Perspective, ReadyHubEnvelope, RuleReadModel, WorldFaction } from "../data/hub-types";
+import type { CampaignReadModel, CanonicalCharacterResult, ConnectedCampaignEnvelope, HubEnvelope, PartyMemberReadModel, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
 import { ViewReadClient, ViewReadError } from "../data/view-read-client";
 import { loadInitialHub } from "../data/hub-preferences";
 import { parseCursorCheckpoint, parseObjectChange } from "../data/object-change.js";
@@ -35,7 +40,13 @@ function envelopeMessage(envelope: HubEnvelope): string {
 }
 
 function isHubEnvelope(value: unknown): value is HubEnvelope {
-  if (isReadyHubEnvelope(value)) return true;
+  if (isReadyHubEnvelope(value)) {
+    const projection = (value as ReadyHubEnvelope).objectQueries?.campaignSummary;
+    return Boolean(projection && projection.qualifiedQueryId === "dnd2024.query.campaign-summary" &&
+      [projection.stateSpaceFingerprint, projection.resolutionFingerprint, projection.outputSchemaHash,
+        projection.resultFingerprint, projection.sourceRevisionFingerprint]
+        .every((fingerprint) => /^[0-9A-F]{64}$/iu.test(fingerprint)));
+  }
   if (!value || typeof value !== "object") return false;
   const envelope = value as Record<string, unknown>;
   if (envelope.version !== 1 || typeof envelope.status !== "string") return false;
@@ -108,13 +119,10 @@ async function readEnvelope(
   return projected;
 }
 
-const hubClient = new ViewReadClient<{
-  perspective: Perspective;
-  campaignId?: string;
-}, HubEnvelope>({
-  cacheKey: ({ perspective, campaignId }) => `${perspective}:${campaignId ?? "bound"}`,
-  read: ({ perspective, campaignId }, signal) => readEnvelope(perspective, campaignId, signal),
-  validate: isHubEnvelope,
+const browserObjectState = new BrowserObjectQueryState({
+  readCampaign: ({ perspective, campaignId }, signal) => readEnvelope(perspective, campaignId, signal),
+  readFactionPage: readFactionObjectPage,
+  validateCampaign: isHubEnvelope,
 });
 
 const characterClient = new ViewReadClient<{
@@ -163,11 +171,10 @@ async function loadCharacter(envelope: ReadyHubEnvelope, actorId: string, signal
   finally { signal.removeEventListener("abort", cancel); }
 }
 
-async function loadFactionPage(
-  envelope: ReadyHubEnvelope,
-  cursor: string | null,
+async function readFactionObjectPage(
+  { envelope, cursor }: FactionObjectRequest,
   signal: AbortSignal,
-): Promise<{ factions: WorldFaction[]; totalCount: number; complete: boolean; nextCursor: string | null; sourceRevisionFingerprint: string | null }> {
+) {
   const source = characterSources.get(characterScope(envelope.stateSpaceId,
     envelope.contextSelection?.selectedCampaignId ?? "", envelope.audience.perspective));
   if (!source || source.audience.seat !== "dm" || source.audience.perspective !== "dm" || signal.aborted)
@@ -194,7 +201,12 @@ async function loadFactionPage(
     complete: page.complete,
     nextCursor: page.nextCursor,
     sourceRevisionFingerprint: page.sourceRevisionFingerprint ?? null,
+    projection: page.projection,
   };
+}
+
+async function loadFactionPage(envelope: ReadyHubEnvelope, cursor: string | null, signal: AbortSignal) {
+  return browserObjectState.loadFactionPage({ envelope, cursor }, signal);
 }
 
 async function loadCampaignDetails(
@@ -221,7 +233,7 @@ async function loadEnvelope(
   perspective: Perspective,
   campaignId?: string,
 ): Promise<HubEnvelope> {
-  return (await hubClient.load({ perspective, campaignId })).value;
+  return browserObjectState.loadCampaign({ perspective, campaignId });
 }
 
 async function loadRulesReference(): Promise<RuleReadModel[]> {
@@ -244,9 +256,9 @@ async function loadReadyEnvelope(
   preferCached = false,
 ): Promise<ReadyHubEnvelope> {
   const request = { perspective, campaignId };
-  const explicit = preferCached ? hubClient.peek(request) : null;
+  const explicit = preferCached ? browserObjectState.peekCampaign(request) : null;
   const bound = preferCached && explicit === null
-    ? hubClient.peek({ perspective })
+    ? browserObjectState.peekCampaign({ perspective })
     : null;
   const cached = explicit ?? (bound?.value.status === "ready" &&
     bound.value.contextSelection?.selectedCampaignId === campaignId
@@ -287,7 +299,7 @@ try {
     let connected = false;
     let lastCursor = 0;
     const invalidate = () => {
-      hubClient.invalidate();
+      browserObjectState.invalidateAll();
       characterClient.invalidate();
       window.dispatchEvent(new Event("dnd2024-view-invalidated"));
     };
@@ -310,12 +322,11 @@ try {
         lastCursor = notice.cursor;
         // These are application-client dependencies, never kernel rule branches. Other object
         // notices only wake their own consumers through the targeted event.
-        if (notice.object.qualifiedId === "dnd2024.object.campaign-summary") {
-          hubClient.invalidate();
+        const migrated = browserObjectState.invalidateObject(notice.object.qualifiedId);
+        if (migrated && notice.object.qualifiedId === CAMPAIGN_SUMMARY_OBJECT_ID) {
           characterClient.invalidate();
         }
         window.dispatchEvent(new CustomEvent("dnd2024-object-changed", { detail: notice }));
-        window.dispatchEvent(new Event("dnd2024-view-invalidated"));
       } catch { invalidate(); }
     });
     changes.addEventListener("cursor", (event) => {

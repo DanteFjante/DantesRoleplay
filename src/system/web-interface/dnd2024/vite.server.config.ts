@@ -13,8 +13,12 @@ export default defineConfig({
   plugins: [react(), {
     name: "website-initial-javascript-budget",
     generateBundle(_options, bundle) {
-      const report = measureJavaScriptBundle(bundle);
-      this.info(`Initial JavaScript: ${report.initialGzipBytes} gzip bytes; all feature chunks: ${report.totalGzipBytes} gzip bytes.`);
+      const report = measureJavaScriptBundle(bundle, { mandatoryModuleSuffixes: [
+        "/src/server/game-server-context.js",
+        "/src/server/connected-hub-envelope.ts",
+        "/src/components/DndInformationHub.tsx",
+      ] });
+      this.info(`Initial JavaScript: ${report.initialGzipBytes} gzip bytes; mandatory first-ready-view chunks: ${report.mandatoryFeatureGzipBytes} gzip bytes; first ready view total: ${report.firstReadyViewGzipBytes} gzip bytes; all feature chunks: ${report.totalGzipBytes} gzip bytes.`);
       if (report.initialGzipBytes > 90_000) this.error("The website exceeds its 90 kB initial JavaScript budget.");
     },
   }],

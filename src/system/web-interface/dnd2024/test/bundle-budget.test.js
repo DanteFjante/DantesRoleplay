@@ -20,3 +20,19 @@ test('bundle accounting fails closed on missing entries or static dependencies',
   assert.throws(() => measureJavaScriptBundle({}), /No JavaScript entry/);
   assert.throws(() => measureJavaScriptBundle({ 'entry.js': { type: 'chunk', isEntry: true, code: 'entry', imports: ['missing.js'] } }), /unavailable/);
 });
+
+test('first-ready-view accounting includes mandatory lazy modules and their shared imports once', () => {
+  const report = measureJavaScriptBundle({
+    'entry.js': { type: 'chunk', isEntry: true, code: 'entry', imports: ['shared.js'], modules: { '/src/main.tsx': {} } },
+    'shared.js': { type: 'chunk', code: 'shared', imports: [], modules: {} },
+    'hub.js': { type: 'chunk', code: 'hub', imports: ['shared.js'], modules: { 'C:\\repo\\src\\components\\Hub.tsx': {} } },
+    'optional.js': { type: 'chunk', code: 'optional', imports: [], modules: { '/src/components/Optional.tsx': {} } },
+  }, { mandatoryModuleSuffixes: ['/src/components/Hub.tsx'] });
+  assert.equal(report.mandatoryFeatureGzipBytes, gzipSync('hub').byteLength);
+  assert.equal(report.firstReadyViewGzipBytes,
+    ['entry', 'shared', 'hub'].reduce((sum, code) => sum + gzipSync(code).byteLength, 0));
+  assert.equal(report.chunks.find(chunk => chunk.file === 'optional.js').firstReady, false);
+  assert.throws(() => measureJavaScriptBundle({
+    'entry.js': { type: 'chunk', isEntry: true, code: 'entry', imports: [], modules: {} },
+  }, { mandatoryModuleSuffixes: ['/missing.ts'] }), /Mandatory first-ready-view module is unavailable/);
+});

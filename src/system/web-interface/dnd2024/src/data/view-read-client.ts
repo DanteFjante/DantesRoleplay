@@ -1,4 +1,4 @@
-export type ViewReadErrorCategory = "cancelled" | "incompatible-data" | "transport";
+export type ViewReadErrorCategory = "cancelled" | "incompatible-data" | "stale-data" | "transport";
 
 export class ViewReadError extends Error {
   constructor(

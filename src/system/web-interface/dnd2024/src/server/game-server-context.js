@@ -2385,7 +2385,7 @@ async function readGameServerContextCore({
   ]);
   const campaignEntity = campaignResponse?.ok ? entity(campaign, selectedCampaignId) : null;
   const registeredCampaign = useRegisteredCampaignSummary && campaignComponentResponse?.ok
-    ? registeredCampaignSummary(campaignComponent) : null;
+    ? registeredCampaignSummary(campaignComponent, binding.applicationId, binding.stateSpaceId) : null;
   const boundActorEntity = shouldReadBoundActor && actorResponse?.ok
     ? entity(actor, binding.actorId)
     : null;
@@ -2654,7 +2654,29 @@ async function readGameServerContextCore({
   };
 }
 
-function registeredCampaignSummary(payload) {
+function registeredReadEvidence(payload, applicationId, stateSpaceId, qualifiedQueryId) {
+  const keys = ["applicationId", "stateSpaceId", "qualifiedQueryId", "stateSpaceFingerprint",
+    "resolutionFingerprint", "outputSchemaHash", "resultFingerprint", "sourceRevisionFingerprint", "data"];
+  const hash = (value) => typeof value === "string" && /^[0-9A-F]{64}$/iu.test(value);
+  if (!hasExactKeys(payload, keys) || payload.applicationId !== applicationId ||
+      payload.stateSpaceId !== stateSpaceId || payload.qualifiedQueryId !== qualifiedQueryId ||
+      ![payload.stateSpaceFingerprint, payload.resolutionFingerprint, payload.outputSchemaHash,
+        payload.resultFingerprint, payload.sourceRevisionFingerprint].every(hash)) return null;
+  return {
+    qualifiedQueryId,
+    stateSpaceFingerprint: payload.stateSpaceFingerprint,
+    resolutionFingerprint: payload.resolutionFingerprint,
+    outputSchemaHash: payload.outputSchemaHash,
+    resultFingerprint: payload.resultFingerprint,
+    sourceRevisionFingerprint: payload.sourceRevisionFingerprint,
+  };
+}
+
+function registeredCampaignSummary(payload, applicationId, stateSpaceId) {
+  const projection = registeredReadEvidence(
+    payload, applicationId, stateSpaceId, "dnd2024.query.campaign-summary",
+  );
+  if (!projection) return null;
   const data = payload?.data;
   if (!hasExactKeys(data, ["status", "title", "premise", "partyGoals", "toneAndBoundaries", "party",
     "totalCount", "complete", "nextCursor"]) || data.status !== "active") return null;
@@ -2672,7 +2694,7 @@ function registeredCampaignSummary(payload) {
   if (party.some((entry) => entry === null) || new Set(party.map((entry) => entry.id)).size !== party.length)
     return null;
   return { status: data.status, title, premise, partyGoals, toneAndBoundaries, party,
-    totalCount: data.totalCount, complete: data.complete, nextCursor: data.nextCursor };
+    totalCount: data.totalCount, complete: data.complete, nextCursor: data.nextCursor, projection };
 }
 
 /** Reads the registered Campaign summary without loading its deeper narrative records. */
@@ -2687,7 +2709,9 @@ export async function readRegisteredCampaignSummary({
     `/read-models/${encodeURIComponent("dnd2024.query.campaign-summary")}?${parameters}`), {
     headers: { Accept: "application/json" }, cache: "no-store",
   });
-  return response?.ok ? registeredCampaignSummary(await json(response)) : null;
+  return response?.ok
+    ? registeredCampaignSummary(await json(response), applicationId, stateSpaceId)
+    : null;
 }
 
 /** Reads one registered GM faction page without loading the entity directory, party inventories, or knowledge. */
@@ -2710,6 +2734,10 @@ export async function readRegisteredFactionDirectoryPage({
   });
   if (!response?.ok) return null;
   const payload = await json(response);
+  const projection = registeredReadEvidence(
+    payload, applicationId, stateSpaceId, "dnd2024.query.faction-directory-page",
+  );
+  if (!projection) return null;
   const data = payload?.data;
   if (!hasExactKeys(data, ["worldSummary", "items", "totalCount", "complete", "nextCursor"]) ||
       !text(data.worldSummary, 1_000) ||
@@ -2754,7 +2782,8 @@ export async function readRegisteredFactionDirectoryPage({
     totalCount: data.totalCount,
     complete: data.complete,
     nextCursor: data.nextCursor,
-    sourceRevisionFingerprint: token(payload?.sourceRevisionFingerprint),
+    sourceRevisionFingerprint: projection.sourceRevisionFingerprint,
+    projection,
   };
 }
 

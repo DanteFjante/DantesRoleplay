@@ -867,6 +867,12 @@ test("mounted hub loads and pages the DM faction directory only when Factions is
               complete: false,
               nextCursor: "page-two",
               sourceRevisionFingerprint: "fixture-revision",
+              projection: {
+                qualifiedQueryId: "dnd2024.query.faction-directory-page",
+                stateSpaceFingerprint: "A".repeat(64), resolutionFingerprint: "B".repeat(64),
+                outputSchemaHash: "C".repeat(64), resultFingerprint: "D".repeat(64),
+                sourceRevisionFingerprint: "fixture-revision",
+              },
             }
           : {
               factions: [secondFaction],
@@ -874,6 +880,12 @@ test("mounted hub loads and pages the DM faction directory only when Factions is
               complete: true,
               nextCursor: null,
               sourceRevisionFingerprint: "fixture-revision",
+              projection: {
+                qualifiedQueryId: "dnd2024.query.faction-directory-page",
+                stateSpaceFingerprint: "A".repeat(64), resolutionFingerprint: "B".repeat(64),
+                outputSchemaHash: "C".repeat(64), resultFingerprint: "D".repeat(64),
+                sourceRevisionFingerprint: "fixture-revision",
+              },
             };
       }}
     />,
@@ -903,6 +915,60 @@ test("mounted hub loads and pages the DM faction directory only when Factions is
   } finally {
     await mounted.cleanup();
   }
+});
+
+test("a targeted Faction notice refreshes only the Faction query", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  initial.world.factionDirectory = {
+    totalCount: initial.world.factions.length,
+    complete: true,
+    nextCursor: null,
+    sourceRevisionFingerprint: "A".repeat(64),
+  };
+  const refreshedFaction = {
+    ...initial.world.factions[0],
+    id: "faction.refreshed",
+    name: "Refreshed Compact",
+  };
+  let factionReads = 0;
+  let campaignReads = 0;
+  const mounted = await mount(
+    <DndInformationHub
+      initialEnvelope={initial}
+      loadContent={async () => { throw new Error("not used"); }}
+      loadEnvelope={async () => {
+        campaignReads += 1;
+        return initial;
+      }}
+      loadFactionPage={async () => {
+        factionReads += 1;
+        return {
+          factions: [refreshedFaction], totalCount: 1, complete: true, nextCursor: null,
+          sourceRevisionFingerprint: "B".repeat(64),
+          projection: {
+            qualifiedQueryId: "dnd2024.query.faction-directory-page",
+            stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+            outputSchemaHash: "3".repeat(64), resultFingerprint: "4".repeat(64),
+            sourceRevisionFingerprint: "B".repeat(64),
+          },
+        };
+      }}
+    />,
+  );
+  try {
+    await act(async () => mounted.dom.window.dispatchEvent(new mounted.dom.window.CustomEvent(
+      "dnd2024-object-changed",
+      { detail: { object: { qualifiedId: "dnd2024.object.faction-directory-page" } } },
+    )));
+    assert.ok(button(mounted.container, "Refresh view"));
+    await click(button(mounted.container, "Refresh view"));
+    assert.equal(factionReads, 1);
+    assert.equal(campaignReads, 0);
+    await click(button(mounted.container, "Factions"));
+    assert.match(mounted.container.textContent ?? "", /Refreshed Compact/u);
+    assert.equal(mounted.container.querySelector(".perspective-notice"), null);
+  } finally { await mounted.cleanup(); }
 });
 
 test("mounted hub first-read failures remain explicit until a successful retry", async (t) => {
@@ -980,6 +1046,30 @@ test("mounted hub switches Player to DM to Player without retaining DM-only data
   } finally {
     await mounted.cleanup();
   }
+});
+
+test("a denied perspective response leaves the current authorized view intact", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("player");
+  const mounted = await mount(
+    <DndInformationHub
+      initialEnvelope={initial}
+      loadContent={async () => { throw new Error("not used"); }}
+      loadEnvelope={async () => ({
+        version: 1,
+        status: "denied",
+        message: "That perspective is not authorized.",
+      } as unknown as ReadyHubEnvelope)}
+    />,
+  );
+  try {
+    await click(button(mounted.container, "DM"));
+    assert.equal(mounted.container.querySelector(".information-hub")?.getAttribute("data-perspective"), "player");
+    assert.match(mounted.container.querySelector('[role="alert"]')?.textContent ?? "", /current information is still available/iu);
+    for (const canary of [...SECRET_CANARIES, ...DM_ONLY_BASE_CANARIES, ...DM_ONLY_LAYER_CANARIES]) {
+      assert.equal(mounted.container.innerHTML.includes(canary), false, `Denied response leaked ${canary}`);
+    }
+  } finally { await mounted.cleanup(); }
 });
 
 test("a mounted view error boundary keeps a rendering failure local", async () => {

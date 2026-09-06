@@ -1280,6 +1280,9 @@ export function connectedCampaignToHubEnvelope(
       perspective,
       allowedPerspectives: connection.audience.allowedPerspectives,
     },
+    ...(connection.campaign.projection ? {
+      objectQueries: { campaignSummary: connection.campaign.projection },
+    } : {}),
     currentSituation,
     contextSelection,
     world: {

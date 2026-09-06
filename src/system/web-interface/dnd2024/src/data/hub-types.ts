@@ -857,6 +857,18 @@ export type ReadyHubEnvelope = {
   party: PartyMemberReadModel[];
   rules: RuleReadModel[];
   currentSituation?: CurrentSituationReadModel;
+  objectQueries?: {
+    campaignSummary?: ObjectReadEvidence;
+  };
+};
+
+export type ObjectReadEvidence = {
+  qualifiedQueryId: string;
+  stateSpaceFingerprint: string;
+  resolutionFingerprint: string;
+  outputSchemaHash: string;
+  resultFingerprint: string;
+  sourceRevisionFingerprint: string;
 };
 
 export type DeniedHubEnvelope = {
@@ -886,6 +898,7 @@ export type ConnectedCampaignEnvelope = {
     premise: string | null;
     partyGoals: string[];
     toneAndBoundaries: string[];
+    projection?: ObjectReadEvidence;
     chapters: Array<{
       id: string;
       status: "active" | "closed";

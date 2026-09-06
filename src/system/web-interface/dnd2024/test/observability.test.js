@@ -4,6 +4,7 @@ import test from "node:test";
 
 import {
   PERFORMANCE_MARKS,
+  PERFORMANCE_MEASURES,
   markActiveViewReady,
   markBootstrapResponse,
   markCharacterReady,
@@ -33,6 +34,23 @@ test("readiness marks are stable and recorded only once", () => {
   markCombatBoardReady("encounter.1", target);
 
   assert.deepEqual(entries.map((entry) => entry.name), Object.values(PERFORMANCE_MARKS));
+});
+
+test("the first ready view records a navigation-to-view latency measure", () => {
+  resetPerformanceMarksForTests();
+  const measures = [];
+  const target = { performance: {
+    mark: () => {},
+    measure: (name, options) => measures.push({ name, options }),
+  } };
+
+  markActiveViewReady("world", target);
+  markActiveViewReady("campaign", target);
+
+  assert.equal(measures.length, 1);
+  assert.equal(measures[0].name, PERFORMANCE_MEASURES.firstReadyView);
+  assert.deepEqual(measures[0].options,
+    { start: 0, end: PERFORMANCE_MARKS.activeViewReady, detail: { view: "world" } });
 });
 
 test("development request ledger records metadata without URLs, query values, or bodies", async () => {

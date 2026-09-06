@@ -7,6 +7,10 @@ export const PERFORMANCE_MARKS = Object.freeze({
   combatBoardReady: "dnd2024.combat-board.ready",
 });
 
+export const PERFORMANCE_MEASURES = Object.freeze({
+  firstReadyView: "dnd2024.first-ready-view",
+});
+
 const recordedMarks = new Set();
 
 function markOnce(name, detail, target = globalThis) {
@@ -29,7 +33,19 @@ export function markBootstrapResponse(status, target) {
 }
 
 export function markActiveViewReady(view, target) {
-  return markOnce(PERFORMANCE_MARKS.activeViewReady, { view }, target);
+  const marked = markOnce(PERFORMANCE_MARKS.activeViewReady, { view }, target);
+  if (marked && typeof target?.performance?.measure === "function") {
+    try {
+      target.performance.measure(PERFORMANCE_MEASURES.firstReadyView, {
+        start: 0,
+        end: PERFORMANCE_MARKS.activeViewReady,
+        detail: { view },
+      });
+    } catch {
+      // A browser without mark-name measure options still keeps the readiness mark.
+    }
+  }
+  return marked;
 }
 
 export function markCharacterReady(characterId, target) {

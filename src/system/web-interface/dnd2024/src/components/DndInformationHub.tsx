@@ -1,7 +1,14 @@
 "use client";
 
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useReducer, useRef, useState } from "react";
 
+import {
+  CAMPAIGN_SUMMARY_OBJECT_ID,
+  FACTION_DIRECTORY_OBJECT_ID,
+  browserObjectUiReducer,
+  createBrowserObjectUiState,
+  type FactionDirectoryPage,
+} from "../data/browser-object-state";
 import { resolveCampaignWorldTarget } from "../data/campaign-navigation";
 import { ITEM_ROUTE_EVENT, navigateItemRoute, parseItemRoute } from "../data/item-view-route";
 import { preserveLastGoodPartyData } from "../data/section-state";
@@ -17,7 +24,6 @@ import type {
   RuleReadModel,
   WorldLocation,
   WorldSectionId,
-  WorldFaction,
 } from "../data/hub-types";
 import {
   filterLocations,
@@ -109,13 +115,11 @@ type HubEnvelopeLoader = (
 
 type RulesLoader = () => Promise<RuleReadModel[]>;
 type ContentLoader = () => Promise<InstalledContentModel>;
-type FactionPageLoader = (envelope: ReadyHubEnvelope, cursor: string | null, signal: AbortSignal) => Promise<{
-  factions: WorldFaction[];
-  totalCount: number;
-  complete: boolean;
-  nextCursor: string | null;
-  sourceRevisionFingerprint: string | null;
-}>;
+type FactionPageLoader = (
+  envelope: ReadyHubEnvelope,
+  cursor: string | null,
+  signal: AbortSignal,
+) => Promise<FactionDirectoryPage>;
 type CampaignDetailsLoader = (envelope: ReadyHubEnvelope, signal: AbortSignal) => Promise<CampaignReadModel>;
 
 export function DndInformationHub({
@@ -156,7 +160,12 @@ export function DndInformationHub({
   const [worldSection, setWorldSection] = useState<WorldSectionId>("overview");
   const [locationSection, setLocationSection] = useState<LocationSectionId>("details");
   const [selectedLocationId, setSelectedLocationId] = useState(initialEnvelope.world.currentLocationId);
-  const [selectedFactionId, setSelectedFactionId] = useState(initialEnvelope.world.factions[0]?.id ?? "");
+  const [objectUi, dispatchObjectUi] = useReducer(
+    browserObjectUiReducer,
+    initialEnvelope.world.factions[0]?.id ?? "",
+    createBrowserObjectUiState,
+  );
+  const { selectedFactionId, campaignDetailsLoaded } = objectUi;
   const [selectedPersonId, setSelectedPersonId] = useState(initialEnvelope.world.people[0]?.id ?? "");
   const [activeMapId, setActiveMapId] = useState(
     normalizeMapId(initialEnvelope.world.maps, initialEnvelope.world.rootMapId, initialEnvelope.world.rootMapId) as string,
@@ -167,12 +176,25 @@ export function DndInformationHub({
   const [hubBusy, setHubBusy] = useState(false);
   const [hubError, setHubError] = useState("");
   const [serverChanged, setServerChanged] = useState(false);
-  const [campaignDetailsLoaded, setCampaignDetailsLoaded] = useState(false);
+  const [changedObjectId, setChangedObjectId] = useState<string | null>(null);
   const sectionAbort = useRef<AbortController | null>(null);
   useEffect(() => {
-    const invalidate = () => setServerChanged(true);
+    const invalidate = () => {
+      setChangedObjectId(null);
+      setServerChanged(true);
+    };
+    const objectChanged = (event: Event) => {
+      const qualifiedId = (event as CustomEvent).detail?.object?.qualifiedId;
+      if (qualifiedId !== CAMPAIGN_SUMMARY_OBJECT_ID && qualifiedId !== FACTION_DIRECTORY_OBJECT_ID) return;
+      setChangedObjectId(qualifiedId);
+      setServerChanged(true);
+    };
     window.addEventListener("dnd2024-view-invalidated", invalidate);
-    return () => window.removeEventListener("dnd2024-view-invalidated", invalidate);
+    window.addEventListener("dnd2024-object-changed", objectChanged);
+    return () => {
+      window.removeEventListener("dnd2024-view-invalidated", invalidate);
+      window.removeEventListener("dnd2024-object-changed", objectChanged);
+    };
   }, []);
   const hubRequestSequence = useRef(0);
 
@@ -258,10 +280,14 @@ export function DndInformationHub({
         : preserveLastGoodPartyData(envelope, loadedEnvelope);
       setEnvelope(readyEnvelope);
       if (campaignChanged || perspectiveChanged) {
-        setCampaignDetailsLoaded(false);
+        dispatchObjectUi({
+          type: "scope-replaced",
+          factionId: readyEnvelope.world.factions[0]?.id ?? "",
+        });
         sectionAbort.current?.abort();
       }
       setServerChanged(false);
+      setChangedObjectId(null);
       setLocationSection(
         normalizeLocationSection(
           locationSection,
@@ -271,8 +297,9 @@ export function DndInformationHub({
       if (campaignChanged || !readyEnvelope.world.locations.some((location) => location.id === selectedLocationId)) {
         setSelectedLocationId(readyEnvelope.world.currentLocationId);
       }
-      if (campaignChanged || !readyEnvelope.world.factions.some((faction) => faction.id === selectedFactionId)) {
-        setSelectedFactionId(readyEnvelope.world.factions[0]?.id ?? "");
+      if (!campaignChanged && !perspectiveChanged &&
+          !readyEnvelope.world.factions.some((faction) => faction.id === selectedFactionId)) {
+        dispatchObjectUi({ type: "faction-selected", factionId: readyEnvelope.world.factions[0]?.id ?? "" });
       }
       if (campaignChanged || !readyEnvelope.world.people.some((person) => person.id === selectedPersonId)) {
         setSelectedPersonId(readyEnvelope.world.people[0]?.id ?? "");
@@ -392,7 +419,11 @@ export function DndInformationHub({
           sourceRevisionFingerprint: page.sourceRevisionFingerprint,
         } } };
       });
-      setSelectedFactionId((selected) => selected || page.factions[0]?.id || "");
+      if (!selectedFactionId) {
+        dispatchObjectUi({ type: "faction-selected", factionId: page.factions[0]?.id ?? "" });
+      }
+      setServerChanged(false);
+      setChangedObjectId(null);
     } catch (error) {
       if (!controller.signal.aborted) setHubError(error instanceof Error ? error.message : "The faction directory is unavailable.");
     } finally {
@@ -411,7 +442,7 @@ export function DndInformationHub({
       const campaign = await loadCampaignDetails(envelope, controller.signal);
       if (controller.signal.aborted) return;
       setEnvelope((current) => ({ ...current, campaign }));
-      setCampaignDetailsLoaded(true);
+      dispatchObjectUi({ type: "campaign-details-loaded" });
     } catch (error) {
       if (!controller.signal.aborted) setHubError(error instanceof Error ? error.message : "The campaign details are unavailable.");
     } finally {
@@ -458,6 +489,14 @@ export function DndInformationHub({
     focusViewHeading();
   }
 
+  function refreshChangedView() {
+    if (changedObjectId === FACTION_DIRECTORY_OBJECT_ID) {
+      void requestFactionPage(null);
+      return;
+    }
+    void requestHub(perspective, contextSelection.selectedCampaignId, false, true);
+  }
+
   function focusWorldEntityCard(kind: "person" | "faction", entityId: string) {
     window.requestAnimationFrame(() => document.getElementById(`world-${kind}-${entityId}`)?.focus());
   }
@@ -475,7 +514,7 @@ export function DndInformationHub({
   function openCampaignFaction(factionId: string) {
     const faction = resolveCampaignWorldTarget(envelope.world.factions, factionId);
     if (!faction) return;
-    setSelectedFactionId(factionId);
+    dispatchObjectUi({ type: "faction-selected", factionId });
     setWorldSection("factions");
     setActiveTab("world");
     setAnnouncement(`${faction.name} opened from Campaign`);
@@ -559,7 +598,7 @@ export function DndInformationHub({
               setAnnouncement(`${selectedLocation.name} ${nextSection} opened`);
             }}
             onFactionSelect={(factionId) => {
-              setSelectedFactionId(factionId);
+              dispatchObjectUi({ type: "faction-selected", factionId });
               setAnnouncement(
                 `${envelope.world.factions.find((faction) => faction.id === factionId)?.name ?? "Faction"} selected`,
               );
@@ -625,7 +664,7 @@ export function DndInformationHub({
       {hubError ? <p className="perspective-notice" role="alert">{hubError}</p> : null}
       {serverChanged ? <div className="perspective-notice" role="status">
         The server changed or the live connection was interrupted. Showing the last loaded view.
-        <button type="button" disabled={hubBusy} onClick={() => void requestHub(perspective, contextSelection.selectedCampaignId, false, true)}>Refresh view</button>
+        <button type="button" disabled={hubBusy} onClick={refreshChangedView}>Refresh view</button>
       </div> : null}
       <div className="information-hub__body">
         <MainNavigation

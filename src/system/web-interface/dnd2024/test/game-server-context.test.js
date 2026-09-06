@@ -26,7 +26,12 @@ test("registered Campaign summary stays bounded and preserves read-only party re
     campaignId: "campaign.caldris.measure-of-mercy", perspective: "player",
     fetchImpl: async (input) => {
       calls.push(new URL(input));
-      return response(200, { data: {
+      return response(200, {
+        applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+        qualifiedQueryId: "dnd2024.query.campaign-summary",
+        stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+        outputSchemaHash: "3".repeat(64), resultFingerprint: "4".repeat(64),
+        sourceRevisionFingerprint: "5".repeat(64), data: {
         status: "active", title: "The Measure of Mercy", premise: "Choose what mercy costs.",
         partyGoals: ["Protect Ganji."], toneAndBoundaries: ["No sexual violence."],
         party: [{ id: "participation.ganji", name: "Ganji participation", status: "active" }],
@@ -35,6 +40,8 @@ test("registered Campaign summary stays bounded and preserves read-only party re
     },
   });
   assert.equal(summary.title, "The Measure of Mercy");
+  assert.equal(summary.projection.sourceRevisionFingerprint, "5".repeat(64));
+  assert.equal(summary.projection.resolutionFingerprint, "2".repeat(64));
   assert.deepEqual(summary.party.map((entry) => entry.id), ["participation.ganji"]);
   assert.equal(calls.length, 1);
   assert.equal(calls[0].searchParams.get("perspective"), "player");
@@ -52,7 +59,13 @@ test("registered faction pages stay bounded and do not fan out into knowledge or
       const request = new URL(input);
       calls.push(request.pathname + request.search);
       return response(200, {
+        applicationId: "dnd2024",
+        stateSpaceId: "dnd2024-main",
         qualifiedQueryId: "dnd2024.query.faction-directory-page",
+        stateSpaceFingerprint: "1".repeat(64),
+        resolutionFingerprint: "2".repeat(64),
+        outputSchemaHash: "3".repeat(64),
+        resultFingerprint: "4".repeat(64),
         sourceRevisionFingerprint: "A".repeat(64),
         data: {
           worldSummary: "A low-magic world shaped by roads, rivers, and rival powers.",
@@ -72,6 +85,7 @@ test("registered faction pages stay bounded and do not fan out into knowledge or
   });
 
   assert.equal(page.factions.length, 1);
+  assert.equal(page.projection.resolutionFingerprint, "2".repeat(64));
   assert.equal(page.totalCount, 35);
   assert.equal(page.factions[0].agenda.summary, "Retrieve Ganji.");
   assert.deepEqual(page.factions[0].memberIds, ["actor.caldris.ganji"]);
@@ -108,7 +122,12 @@ test("the selected Campaign bootstrap uses only its three registered reads", asy
       if (request.pathname.endsWith("/campaign.caldris.measure-of-mercy")) return response(200, {
         entityId: "campaign.caldris.measure-of-mercy", name: "The Measure of Mercy",
       });
-      if (request.pathname.includes("dnd2024.query.campaign-summary")) return response(200, { data: {
+      if (request.pathname.includes("dnd2024.query.campaign-summary")) return response(200, {
+        applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+        qualifiedQueryId: "dnd2024.query.campaign-summary",
+        stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+        outputSchemaHash: "3".repeat(64), resultFingerprint: "4".repeat(64),
+        sourceRevisionFingerprint: "5".repeat(64), data: {
         status: "active", title: "The Measure of Mercy", premise: "Choose what mercy costs.",
         partyGoals: ["Protect Ganji."], toneAndBoundaries: ["No sexual violence."],
         party: [{ id: "participation.ganji", name: "Ganji participation", status: "active" }],
@@ -120,6 +139,7 @@ test("the selected Campaign bootstrap uses only its three registered reads", asy
 
   assert.equal(value.status, "connected", JSON.stringify({ value, calls }));
   assert.equal(value.campaign.title, "The Measure of Mercy");
+  assert.equal(value.campaign.projection.sourceRevisionFingerprint, "5".repeat(64));
   assert.deepEqual(value.party.map((entry) => entry.id), ["participation.ganji"]);
   assert.equal(calls.length, 3);
   assert.ok(calls.every((call) => !call.includes("knowledge") && !call.includes("chronology") &&
