@@ -64,6 +64,7 @@ public static class WebInterfaceServiceCollectionExtensions
                 : UnavailableWebPagePublicationDirectory.Instance);
         services.AddScoped<DynamicDataReader>();
         services.AddScoped<SqliteWebChangeFeed>();
+        services.TryAddScoped<IWebChangeScopeAuthorizer, UnavailableWebChangeScopeAuthorizer>();
         services.AddScoped<CommittedEffectHistory>();
         services.AddScoped<ControlStructureExplorer>();
         services.TryAddSingleton<IWebReadableRulesAudienceProvider,

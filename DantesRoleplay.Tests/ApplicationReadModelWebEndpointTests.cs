@@ -6,6 +6,7 @@ using DantesRoleplay.Interactions;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.MCPServer;
+using DantesRoleplay.Web.Live;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +15,32 @@ namespace DantesRoleplay.Tests;
 
 public sealed class ApplicationReadModelWebEndpointTests
 {
+    [Fact]
+    public async Task Change_stream_scope_cannot_elevate_or_cross_the_ambient_audience_binding()
+    {
+        var actorSeat = new LocalKnowledgeSeatSnapshot(
+            true, "player", "dnd2024", "campaign.1", "actor.aric");
+        var actor = new WebChangeScopeAuthorizer(new Seats(actorSeat), new Audience(actorSeat),
+            new Bindings(), new Participation(true));
+
+        Assert.True(await actor.AuthorizeAsync(new(
+            "dnd2024", "dnd2024-main", "player")));
+        Assert.False(await actor.AuthorizeAsync(new(
+            "dnd2024", "dnd2024-main", "dm")));
+        Assert.False(await actor.AuthorizeAsync(new(
+            "other", "dnd2024-main", "player")));
+        Assert.False(await actor.AuthorizeAsync(new(
+            "dnd2024", "other-space", "player")));
+
+        var gmSeat = actorSeat with { Role = KnowledgeAudienceRole.GameMaster, ActorId = null };
+        var gameMaster = new WebChangeScopeAuthorizer(new Seats(gmSeat), new Audience(gmSeat),
+            new Bindings(), new Participation(true));
+        Assert.True(await gameMaster.AuthorizeAsync(new(
+            "dnd2024", "dnd2024-main", "dm")));
+        Assert.True(await gameMaster.AuthorizeAsync(new(
+            "dnd2024", "dnd2024-main", "player")));
+    }
+
     [Fact]
     public async Task Actor_may_read_only_their_own_registered_read_model()
     {

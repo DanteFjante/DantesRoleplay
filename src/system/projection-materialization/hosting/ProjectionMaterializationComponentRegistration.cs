@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using DantesRoleplay.EcsEffects;
 
 namespace DantesRoleplay.Projections;
 
@@ -21,6 +22,8 @@ internal static class ProjectionMaterializationComponentRegistration
         services.AddScoped<IApplicationObjectWriteService, ApplicationObjectWriteService>();
         services.AddScoped<IProjectionImpactSnapshotReader, SqliteProjectionImpactSnapshotReader>();
         services.AddScoped<IProjectionImpactService, ProjectionImpactService>();
+        services.AddScoped<IApplicationEcsTransactionParticipant,
+            ApplicationObjectChangeTransactionParticipant>();
         return services;
     }
 }

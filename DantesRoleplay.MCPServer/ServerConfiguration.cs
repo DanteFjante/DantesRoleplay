@@ -16,6 +16,7 @@ using DantesRoleplay.Blobs;
 using DantesRoleplay.Media;
 using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.Web.Hosting;
+using DantesRoleplay.Web.Live;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using ModelContextProtocol;
@@ -95,6 +96,7 @@ public static class ServerConfiguration
         services.AddScoped<IInformationActionCoordinator, InformationActionCoordinator>();
         var localKnowledgeSeat = new ConfigurationLocalKnowledgeSeatProvider(hostConfiguration);
         services.AddSingleton<ILocalKnowledgeSeatProvider>(localKnowledgeSeat);
+        services.AddScoped<IWebChangeScopeAuthorizer, WebChangeScopeAuthorizer>();
         services.AddSingleton<IWebReadableRulesAudienceProvider,
             LocalReadableRulesAudienceProvider>();
         services.AddSingleton<IEntityMediaAudienceResolver, LocalEntityMediaAudienceResolver>();

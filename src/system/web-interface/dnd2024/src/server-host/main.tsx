@@ -6,6 +6,7 @@ import { resolveHubSurface } from "../data/hub-availability.js";
 import type { CampaignReadModel, CanonicalCharacterResult, ConnectedCampaignEnvelope, HubEnvelope, PartyMemberReadModel, Perspective, ReadyHubEnvelope, RuleReadModel, WorldFaction } from "../data/hub-types";
 import { ViewReadClient, ViewReadError } from "../data/view-read-client";
 import { loadInitialHub } from "../data/hub-preferences";
+import { parseCursorCheckpoint, parseObjectChange } from "../data/object-change.js";
 import { isReadyHubEnvelope } from "../state.js";
 import { markBootstrapResponse } from "../observability/performance.js";
 import {
@@ -272,8 +273,19 @@ try {
     getItem: (key) => window.localStorage.getItem(key),
   });
   if (typeof EventSource !== "undefined") {
-    const changes = new EventSource("/api/changes?page=dnd2024-play");
+    const changeParameters = new URLSearchParams({ page: "dnd2024-play" });
+    if (initialEnvelope.status === "ready") {
+      changeParameters.set("application", initialEnvelope.applicationId);
+      changeParameters.set("stateSpace", initialEnvelope.stateSpaceId);
+      changeParameters.set("perspective", initialEnvelope.audience.perspective);
+      // A fresh snapshot starts at zero so a commit racing bootstrap is replayed or produces
+      // the server's bounded continuity-gap invalidation. EventSource supplies Last-Event-ID
+      // automatically on later reconnects.
+      changeParameters.set("cursor", "0");
+    }
+    const changes = new EventSource(`/api/changes?${changeParameters.toString()}`);
     let connected = false;
+    let lastCursor = 0;
     const invalidate = () => {
       hubClient.invalidate();
       characterClient.invalidate();
@@ -287,7 +299,31 @@ try {
       } catch { /* An unreadable event invalidates rather than reusing private data. */ }
       invalidate();
     });
-    changes.addEventListener("error", invalidate);
+    changes.addEventListener("object-change", (event) => {
+      try {
+        if (initialEnvelope.status !== "ready") return;
+        const notice = parseObjectChange(event.data, {
+          applicationId: initialEnvelope.applicationId,
+          stateSpaceId: initialEnvelope.stateSpaceId,
+        }, lastCursor);
+        if (!notice) return;
+        lastCursor = notice.cursor;
+        // These are application-client dependencies, never kernel rule branches. Other object
+        // notices only wake their own consumers through the targeted event.
+        if (notice.object.qualifiedId === "dnd2024.object.campaign-summary") {
+          hubClient.invalidate();
+          characterClient.invalidate();
+        }
+        window.dispatchEvent(new CustomEvent("dnd2024-object-changed", { detail: notice }));
+        window.dispatchEvent(new Event("dnd2024-view-invalidated"));
+      } catch { invalidate(); }
+    });
+    changes.addEventListener("cursor", (event) => {
+      lastCursor = parseCursorCheckpoint(event.data, lastCursor);
+    });
+    changes.addEventListener("error", () => {
+      window.dispatchEvent(new Event("dnd2024-change-stream-disconnected"));
+    });
     window.addEventListener("pagehide", () => { changes.close(); invalidate(); }, { once: true });
   }
   markBootstrapResponse(initialEnvelope.status);

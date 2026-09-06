@@ -1708,7 +1708,8 @@ public static class WebInterfaceEndpoints
 
     private static async Task StreamChangesAsync(
         HttpContext context,
-        SqliteWebChangeFeed changes)
+        SqliteWebChangeFeed changes,
+        IWebChangeScopeAuthorizer changeScopes)
     {
         var pageId = context.Request.Query["page"].FirstOrDefault();
         if (pageId is not null && !WebPageId.IsValid(pageId))
@@ -1724,6 +1725,59 @@ public static class WebInterfaceEndpoints
             return;
         }
 
+        var applicationId = context.Request.Query["application"].FirstOrDefault();
+        var stateSpaceId = context.Request.Query["stateSpace"].FirstOrDefault();
+        var perspective = context.Request.Query["perspective"].FirstOrDefault();
+        WebChangeSubscription? subscription = null;
+        if (applicationId is not null || stateSpaceId is not null || perspective is not null)
+        {
+            var cursorText = context.Request.Headers["Last-Event-ID"].FirstOrDefault()
+                ?? context.Request.Query["cursor"].FirstOrDefault();
+            if (applicationId is null || stateSpaceId is null || perspective is null
+                || (cursorText is not null && (!long.TryParse(cursorText,
+                    System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out var parsedCursor)
+                    || parsedCursor < 0)))
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    error = "INVALID_CHANGE_SCOPE",
+                    message = "Application change streams require bounded application, state-space, perspective, and cursor values."
+                }, context.RequestAborted);
+                return;
+            }
+
+            try
+            {
+                subscription = new WebChangeSubscription(applicationId, stateSpaceId, perspective,
+                    cursorText is null ? null : long.Parse(cursorText,
+                        System.Globalization.CultureInfo.InvariantCulture));
+                subscription.Validate();
+            }
+            catch (ArgumentException)
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    error = "INVALID_CHANGE_SCOPE",
+                    message = "Application change streams require bounded application, state-space, perspective, and cursor values."
+                }, context.RequestAborted);
+                return;
+            }
+
+            if (!await changeScopes.AuthorizeAsync(subscription, context.RequestAborted))
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    error = "CHANGE_SCOPE_FORBIDDEN",
+                    message = "The current audience cannot subscribe to this application change scope."
+                }, context.RequestAborted);
+                return;
+            }
+        }
+
         context.Features.Get<IHttpResponseBodyFeature>()?.DisableBuffering();
         context.Response.StatusCode = StatusCodes.Status200OK;
         context.Response.ContentType = "text/event-stream; charset=utf-8";
@@ -1735,9 +1789,10 @@ public static class WebInterfaceEndpoints
             await context.Response.WriteAsync("retry: 2000\n\n", context.RequestAborted);
             await context.Response.Body.FlushAsync(context.RequestAborted);
 
-            await foreach (var change in changes.WatchAsync(
-                pageId,
-                cancellationToken: context.RequestAborted))
+            var stream = subscription is null
+                ? changes.WatchAsync(pageId, cancellationToken: context.RequestAborted)
+                : changes.WatchAsync(subscription, pageId, cancellationToken: context.RequestAborted);
+            await foreach (var change in stream)
             {
                 await context.Response.WriteAsync(
                     WebChangeSseFormatter.Format(change),

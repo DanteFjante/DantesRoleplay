@@ -197,6 +197,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         ConfigureComponentTypes(modelBuilder);
         ConfigureApplicationScopedEcs(modelBuilder);
         ConfigureProjectionMaterialization(modelBuilder);
+        ConfigureApplicationObjectChanges(modelBuilder);
         ConfigureApplicationActivation(modelBuilder);
         ConfigureLegacyStateAdoption(modelBuilder);
     }
@@ -1104,6 +1105,35 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         modelBuilder.Entity<ProjectionMappingRecord>(entity =>
         {
             entity.ToTable("system_projection_mapping"); entity.HasKey(x => new { x.QualifiedId, x.Version, x.TargetPointer }); entity.Property(x => x.QualifiedId).HasMaxLength(200); entity.Property(x => x.TargetPointer).HasMaxLength(1000); entity.Property(x => x.InputId).HasMaxLength(200).IsRequired(); entity.Property(x => x.SourcePointer).HasMaxLength(1000).IsRequired(); entity.HasIndex(x => new { x.QualifiedId, x.Version, x.Ordinal }).IsUnique(); entity.HasOne<ProjectionDefinitionVersionRecord>().WithMany().HasForeignKey(x => new { x.QualifiedId, x.Version }).OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureApplicationObjectChanges(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ApplicationObjectChangeRecord>(entity =>
+        {
+            entity.ToTable("system_application_object_change", table =>
+            {
+                table.HasCheckConstraint("CK_system_application_object_change_contract", "\"ContractVersion\" = 1");
+                table.HasCheckConstraint("CK_system_application_object_change_scope", "\"Scope\" IN ('object', 'application', 'none')");
+                table.HasCheckConstraint("CK_system_application_object_change_target", "(\"Scope\" = 'object' AND \"ObjectQualifiedId\" IS NOT NULL AND \"ObjectVersion\" > 0) OR (\"Scope\" IN ('application', 'none') AND \"ObjectQualifiedId\" IS NULL AND \"ObjectVersion\" IS NULL)");
+                table.HasCheckConstraint("CK_system_application_object_change_perspectives", "json_valid(\"ReadPerspectivesJson\") AND json_type(\"ReadPerspectivesJson\") = 'array'");
+            });
+            entity.HasKey(value => value.Cursor);
+            entity.Property(value => value.Cursor).ValueGeneratedOnAdd();
+            entity.Property(value => value.OperationId).HasMaxLength(32).IsRequired();
+            entity.Property(value => value.ApplicationId).HasMaxLength(63).IsRequired();
+            entity.Property(value => value.StateSpaceId).HasMaxLength(200).IsRequired();
+            entity.Property(value => value.Scope).HasMaxLength(16).IsRequired();
+            entity.Property(value => value.ObjectQualifiedId).HasMaxLength(200);
+            entity.Property(value => value.ReadPerspectivesJson).HasMaxLength(64).IsRequired();
+            entity.Property(value => value.Reason).HasMaxLength(64).IsRequired();
+            entity.HasIndex(value => new { value.OperationId, value.Scope, value.ObjectQualifiedId, value.ObjectVersion }).IsUnique();
+            entity.HasIndex(value => new { value.ApplicationId, value.StateSpaceId, value.Cursor });
+            entity.HasOne<ApplicationRegistryRecord>().WithMany()
+                .HasForeignKey(value => value.ApplicationId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationStateSpaceRecord>().WithMany()
+                .HasForeignKey(value => value.StateSpaceId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 

@@ -18,6 +18,7 @@ using DantesRoleplay.Events;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.Operations;
+using DantesRoleplay.Projections;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.SystemConversations;
@@ -1380,6 +1381,182 @@ public sealed class WebInterfaceTests
             ": keep-alive\n\n",
             WebChangeSseFormatter.Format(
                 new WebChange(WebChangeKind.KeepAlive, "keep-alive", 8)));
+    }
+
+    [Fact]
+    public async Task Scoped_change_feed_replays_committed_rows_in_cursor_order_without_private_object_ids()
+    {
+        var connectionString = SharedMemoryConnectionString();
+        await using var keeper = new SqliteConnection(connectionString);
+        await keeper.OpenAsync();
+        await using (var setup = CreateWebContext(connectionString))
+        {
+            await setup.Database.EnsureCreatedAsync();
+            await CreateChangeDeliveryTableAsync(setup);
+            await InsertChangeAsync(setup, "fixture", "fixture-space", "private.object", "[\"dm\"]", "op-private");
+            await InsertChangeAsync(setup, "other", "other-space", "other.object", "[\"player\"]", "op-other");
+            await InsertChangeAsync(setup, "fixture", "fixture-space", "public.object", "[\"dm\",\"player\"]", "op-public");
+        }
+
+        await using var observer = CreateWebContext(connectionString);
+        var feed = new SqliteWebChangeFeed(observer);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await using var changes = feed.WatchAsync(
+                new WebChangeSubscription("fixture", "fixture-space", "player", 0),
+                pollInterval: TimeSpan.FromMilliseconds(10),
+                keepAliveInterval: TimeSpan.FromSeconds(10),
+                cancellationToken: timeout.Token)
+            .GetAsyncEnumerator(timeout.Token);
+
+        Assert.True(await changes.MoveNextAsync());
+        Assert.Equal("connected", changes.Current.Reason);
+        Assert.True(await changes.MoveNextAsync());
+        Assert.Equal(WebChangeKind.ObjectChange, changes.Current.Kind);
+        Assert.Equal(3, changes.Current.Cursor);
+        Assert.Equal("public.object", changes.Current.ObjectQualifiedId);
+        var frame = WebChangeSseFormatter.Format(changes.Current);
+        Assert.Contains("id: 3\nevent: object-change", frame, StringComparison.Ordinal);
+        Assert.Contains("\"contractVersion\":1", frame, StringComparison.Ordinal);
+        Assert.DoesNotContain("private.object", frame, StringComparison.Ordinal);
+        Assert.DoesNotContain("other.object", frame, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Scoped_change_feed_recovers_a_commit_missed_before_dispatch_and_skips_duplicates()
+    {
+        var connectionString = SharedMemoryConnectionString();
+        await using var keeper = new SqliteConnection(connectionString);
+        await keeper.OpenAsync();
+        await using (var setup = CreateWebContext(connectionString))
+        {
+            await setup.Database.EnsureCreatedAsync();
+            await CreateChangeDeliveryTableAsync(setup);
+            await InsertChangeAsync(setup, "fixture", "fixture-space", "first.object", "[\"player\"]", "op-first");
+            await InsertChangeAsync(setup, "fixture", "fixture-space", "second.object", "[\"player\"]", "op-second");
+        }
+
+        await using var observer = CreateWebContext(connectionString);
+        var feed = new SqliteWebChangeFeed(observer);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await using var changes = feed.WatchAsync(
+                new WebChangeSubscription("fixture", "fixture-space", "player", 1),
+                pollInterval: TimeSpan.FromMilliseconds(10),
+                keepAliveInterval: TimeSpan.FromSeconds(10),
+                cancellationToken: timeout.Token)
+            .GetAsyncEnumerator(timeout.Token);
+
+        Assert.True(await changes.MoveNextAsync());
+        Assert.True(await changes.MoveNextAsync());
+        Assert.Equal(2, changes.Current.Cursor);
+        Assert.Equal("second.object", changes.Current.ObjectQualifiedId);
+    }
+
+    [Fact]
+    public async Task Scoped_change_feed_falls_back_for_continuity_gaps_and_untracked_commits()
+    {
+        var connectionString = SharedMemoryConnectionString();
+        await using var keeper = new SqliteConnection(connectionString);
+        await keeper.OpenAsync();
+        await using (var setup = CreateWebContext(connectionString))
+        {
+            await setup.Database.EnsureCreatedAsync();
+            await CreateChangeDeliveryTableAsync(setup);
+            for (var index = 0; index <= ApplicationObjectChangeContract.MaximumReplayRows; index++)
+                await InsertChangeAsync(setup, "fixture", "fixture-space", $"object.{index}",
+                    "[\"player\"]", $"op-{index}");
+        }
+
+        await using var observer = CreateWebContext(connectionString);
+        var feed = new SqliteWebChangeFeed(observer);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await using var changes = feed.WatchAsync(
+                new WebChangeSubscription("fixture", "fixture-space", "player", 0),
+                "home", TimeSpan.FromMilliseconds(10), TimeSpan.FromSeconds(10), timeout.Token)
+            .GetAsyncEnumerator(timeout.Token);
+        Assert.True(await changes.MoveNextAsync());
+        Assert.True(await changes.MoveNextAsync());
+        Assert.Equal(WebChangeKind.Invalidate, changes.Current.Kind);
+        Assert.Equal("continuity-gap", changes.Current.Reason);
+        Assert.Equal(ApplicationObjectChangeContract.MaximumReplayRows + 1, changes.Current.Cursor);
+
+        await using (var writer = CreateWebContext(connectionString))
+            await new WebPageStore(writer).SaveAndActivateAsync("home", "<h1>Outside typed effects</h1>");
+        Assert.True(await changes.MoveNextAsync());
+        Assert.Equal(WebChangeKind.Invalidate, changes.Current.Kind);
+        Assert.Equal("untracked-commit", changes.Current.Reason);
+        Assert.Equal("fixture", changes.Current.ApplicationId);
+        Assert.Equal("fixture-space", changes.Current.StateSpaceId);
+        Assert.True(await changes.MoveNextAsync());
+        Assert.Equal(WebChangeKind.PageRevision, changes.Current.Kind);
+    }
+
+    [Fact]
+    public async Task Scoped_change_feed_does_not_dispatch_a_rolled_back_delivery_row()
+    {
+        var connectionString = SharedMemoryConnectionString();
+        await using var keeper = new SqliteConnection(connectionString);
+        await keeper.OpenAsync();
+        await using (var setup = CreateWebContext(connectionString))
+        {
+            await setup.Database.EnsureCreatedAsync();
+            await CreateChangeDeliveryTableAsync(setup);
+        }
+        await using var observer = CreateWebContext(connectionString);
+        var feed = new SqliteWebChangeFeed(observer);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
+        await using var changes = feed.WatchAsync(
+                new WebChangeSubscription("fixture", "fixture-space", "player", 0),
+                pollInterval: TimeSpan.FromMilliseconds(10),
+                keepAliveInterval: TimeSpan.FromSeconds(10),
+                cancellationToken: timeout.Token)
+            .GetAsyncEnumerator(timeout.Token);
+        Assert.True(await changes.MoveNextAsync());
+
+        await using (var writer = CreateWebContext(connectionString))
+        {
+            await using var transaction = await writer.Database.BeginTransactionAsync();
+            await InsertChangeAsync(writer, "fixture", "fixture-space", "rolled-back.object",
+                "[\"player\"]", "op-rollback");
+            await transaction.RollbackAsync();
+        }
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            await changes.MoveNextAsync().AsTask());
+    }
+
+    [Fact]
+    public async Task Scoped_change_feed_advances_past_a_tracked_unrelated_commit_without_invalidating()
+    {
+        var connectionString = SharedMemoryConnectionString();
+        await using var keeper = new SqliteConnection(connectionString);
+        await keeper.OpenAsync();
+        await using (var setup = CreateWebContext(connectionString))
+        {
+            await setup.Database.EnsureCreatedAsync();
+            await CreateChangeDeliveryTableAsync(setup);
+        }
+        await using var observer = CreateWebContext(connectionString);
+        var feed = new SqliteWebChangeFeed(observer);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await using var changes = feed.WatchAsync(
+                new WebChangeSubscription("fixture", "fixture-space", "player", 0),
+                pollInterval: TimeSpan.FromMilliseconds(10),
+                keepAliveInterval: TimeSpan.FromSeconds(10), cancellationToken: timeout.Token)
+            .GetAsyncEnumerator(timeout.Token);
+        Assert.True(await changes.MoveNextAsync());
+
+        await using (var writer = CreateWebContext(connectionString))
+            await writer.Database.ExecuteSqlRawAsync("""
+                INSERT INTO system_application_object_change
+                    ("ContractVersion", "OperationId", "ApplicationId", "StateSpaceId", "Scope",
+                     "ObjectQualifiedId", "ObjectVersion", "ReadPerspectivesJson", "Reason", "CreatedAtUtc")
+                VALUES (1, 'op-unrelated', 'fixture', 'fixture-space', 'none', NULL, NULL, '[]',
+                    'tracked-no-dependency', {0});
+                """, DateTime.UtcNow);
+
+        Assert.True(await changes.MoveNextAsync());
+        Assert.Equal(WebChangeKind.Cursor, changes.Current.Kind);
+        Assert.Equal("cursor-advanced", changes.Current.Reason);
+        Assert.Equal(1, changes.Current.Cursor);
     }
 
     [Fact]
@@ -3238,6 +3415,37 @@ public sealed class WebInterfaceTests
             .Options;
         return new WebContentDbContext(options);
     }
+
+    private static Task CreateChangeDeliveryTableAsync(WebContentDbContext db) =>
+        db.Database.ExecuteSqlRawAsync("""
+            CREATE TABLE system_application_object_change (
+                "Cursor" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                "ContractVersion" INTEGER NOT NULL,
+                "OperationId" TEXT NOT NULL,
+                "ApplicationId" TEXT NOT NULL,
+                "StateSpaceId" TEXT NOT NULL,
+                "Scope" TEXT NOT NULL,
+                "ObjectQualifiedId" TEXT NULL,
+                "ObjectVersion" INTEGER NULL,
+                "ReadPerspectivesJson" TEXT NOT NULL,
+                "Reason" TEXT NOT NULL,
+                "CreatedAtUtc" TEXT NOT NULL
+            );
+            """);
+
+    private static Task InsertChangeAsync(
+        WebContentDbContext db,
+        string applicationId,
+        string stateSpaceId,
+        string objectId,
+        string perspectivesJson,
+        string operationId) =>
+        db.Database.ExecuteSqlRawAsync("""
+            INSERT INTO system_application_object_change
+                ("ContractVersion", "OperationId", "ApplicationId", "StateSpaceId", "Scope",
+                 "ObjectQualifiedId", "ObjectVersion", "ReadPerspectivesJson", "Reason", "CreatedAtUtc")
+            VALUES (1, {0}, {1}, {2}, 'object', {3}, 1, {4}, 'registered-dependency', {5});
+            """, operationId, applicationId, stateSpaceId, objectId, perspectivesJson, DateTime.UtcNow);
 
     private static async Task<long> SqliteTotalChangesAsync(DantesRoleplayDbContext db)
     {
