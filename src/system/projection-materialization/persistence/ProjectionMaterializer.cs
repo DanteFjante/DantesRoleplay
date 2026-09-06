@@ -6,96 +6,236 @@ using DantesRoleplay.SchemaValidation;
 
 namespace DantesRoleplay.Projections;
 
-/// <summary>Read-only structural projection engine. It deliberately has no write, cache, or rule execution dependency.</summary>
+/// <summary>Prepared read-only structural projection engine. Result data is never cached.</summary>
 public sealed class ProjectionMaterializer(
     IProjectionDefinitionRegistry definitions,
     IEntityComponentStore components,
     IStateSpaceRegistry stateSpaces,
-    IBoundedJsonSchemaValidator validator) : IProjectionMaterializer
+    IBoundedJsonSchemaValidator validator,
+    ProjectionPlanCache? planCache = null,
+    IProjectionSourceSnapshotReader? snapshots = null) : IProjectionMaterializer
 {
-    public async Task<ProjectionMaterializationResult> MaterializeAsync(ProjectionMaterializationRequest request, CancellationToken cancellationToken = default)
+    private readonly ProjectionPlanCache plans = planCache ?? new ProjectionPlanCache();
+
+    public async Task<ProjectionMaterializationResult> MaterializeAsync(
+        ProjectionMaterializationRequest request,
+        CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(request); request.Projection.Validate();
-        if (string.IsNullOrWhiteSpace(request.StateSpaceId) || request.RoleEntityIds is null || request.RoleEntityIds.Count > 64) throw new ArgumentException("A bounded state-space and role binding are required.");
-        var root = Require(request.Projection);
-        var stateSpace = stateSpaces.Get(request.StateSpaceId) ?? throw new InvalidOperationException("Unknown projection state space.");
-        if (stateSpace.ApplicationRevision.ApplicationId != root.Owner) throw new InvalidOperationException("A projection cannot cross an application state-space boundary.");
-        var plan = new List<Node>(); var locators = new Dictionary<(string Entity, string Type), EcsComponentLocator>();
-        Plan(root, request.RoleEntityIds, 0, plan, locators);
-        if (locators.Count > 256) throw new InvalidOperationException("Projection component read bound exceeded.");
-        var read = await components.GetComponentsAsync(request.StateSpaceId, locators.Values.ToArray(), cancellationToken);
-        var values = read.ToDictionary(x => (x.EntityId, x.Type.QualifiedTypeId));
-        var evaluated = new Dictionary<Node, string>();
-        foreach (var node in plan)
-            evaluated[node] = Evaluate(node, values, evaluated);
-        var output = evaluated[plan[^1]];
-        return new ProjectionMaterializationResult(root.Reference, output, Array.AsReadOnly(read.OrderBy(x => x.EntityId, StringComparer.Ordinal).ThenBy(x => x.Type.QualifiedTypeId, StringComparer.Ordinal).Select(x => new ProjectionSourceRevision(x.EntityId, x.Type, x.Revision)).ToArray()));
+        ArgumentNullException.ThrowIfNull(request);
+        request.Projection.Validate();
+        if (string.IsNullOrWhiteSpace(request.StateSpaceId) || request.RoleEntityIds is null
+            || request.RoleEntityIds.Count > 64 || request.RoleEntityIds.Values.Any(string.IsNullOrWhiteSpace))
+            throw new ArgumentException("A bounded state-space and role binding are required.");
+
+        var plan = plans.GetOrPrepare(request.Projection, () =>
+        {
+            var root = Require(request.Projection);
+            return ProjectionPlanCompiler.Compile(root, Require);
+        });
+        ValidateRootRoles(plan.Root, request.RoleEntityIds);
+        var active = ActiveNodes(plan, request.RoleEntityIds);
+        var locators = Locators(plan, active, request.RoleEntityIds);
+        if (locators.Count > 256)
+            throw new InvalidOperationException("Projection component read bound exceeded.");
+
+        ProjectionSourceSnapshot snapshot;
+        if (snapshots is not null)
+            snapshot = await snapshots.ReadAsync(request.StateSpaceId, plan.Root.Owner,
+                locators.Values.ToArray(), cancellationToken);
+        else
+        {
+            var stateSpace = stateSpaces.Get(request.StateSpaceId)
+                ?? throw new InvalidOperationException("Unknown projection state space.");
+            if (stateSpace.ApplicationRevision.ApplicationId != plan.Root.Owner)
+                throw new InvalidOperationException("A projection cannot cross an application state-space boundary.");
+            snapshot = new(stateSpace, await components.GetComponentsAsync(request.StateSpaceId,
+                locators.Values.ToArray(), cancellationToken));
+        }
+
+        var values = snapshot.Components.ToDictionary(value =>
+            (value.EntityId, value.Type.QualifiedTypeId));
+        var evaluated = new Dictionary<int, string>();
+        for (var index = 0; index < plan.Nodes.Count; index++)
+        {
+            if (!active.Contains(index)) continue;
+            evaluated[index] = Evaluate(plan.Nodes[index], request.RoleEntityIds, values, evaluated, active);
+        }
+        var rootIndex = plan.Nodes.Count - 1;
+        if (!evaluated.TryGetValue(rootIndex, out var output))
+            throw new InvalidOperationException("The prepared projection root did not produce a result.");
+        return new(plan.Root.Reference, output,
+            Array.AsReadOnly(snapshot.Components.OrderBy(value => value.EntityId, StringComparer.Ordinal)
+                .ThenBy(value => value.Type.QualifiedTypeId, StringComparer.Ordinal)
+                .Select(value => new ProjectionSourceRevision(value.EntityId, value.Type, value.Revision)).ToArray()));
     }
 
-    private void Plan(RegisteredProjectionDefinition definition, IReadOnlyDictionary<string, string> roles, int depth, List<Node> nodes, Dictionary<(string, string), EcsComponentLocator> locators)
+    private static void ValidateRootRoles(
+        RegisteredProjectionDefinition root,
+        IReadOnlyDictionary<string, string> roles)
     {
-        if (depth > 16 || !definition.EntityRoles.Order().SequenceEqual(roles.Keys.Order(), StringComparer.Ordinal) || roles.Values.Any(string.IsNullOrWhiteSpace)) throw new InvalidOperationException("Projection role bindings do not exactly match its declaration.");
-        var children = new Dictionary<string, Node>(StringComparer.Ordinal);
-        foreach (var input in definition.DependencyInputs)
-        {
-            var childRoles = input.RoleBindings.ToDictionary(x => x.Key, x => roles[x.Value], StringComparer.Ordinal);
-            var child = Require(input.Projection); Plan(child, childRoles, depth + 1, nodes, locators); children.Add(input.InputId, nodes[^1]);
-        }
-        foreach (var input in definition.ComponentInputs)
-        {
-            var entity = roles[input.EntityRole]; var key = (entity, input.Type.QualifiedTypeId);
-            locators.TryAdd(key, new EcsComponentLocator(entity, input.Type.QualifiedTypeId));
-        }
-        nodes.Add(new Node(definition, new Dictionary<string, string>(roles, StringComparer.Ordinal), children));
+        var declared = root.EntityRoles.ToHashSet(StringComparer.Ordinal);
+        if (roles.Keys.Any(role => !declared.Contains(role)))
+            throw new InvalidOperationException("Projection role bindings contain an undeclared role.");
+        var required = root.ObjectContract?.Roles.Where(value => value.Required).Select(value => value.RoleId)
+            .ToHashSet(StringComparer.Ordinal) ?? declared;
+        if (required.Any(role => !roles.ContainsKey(role))
+            || root.ObjectContract is null && roles.Count != declared.Count)
+            throw new InvalidOperationException("Projection role bindings do not satisfy its exact declaration.");
     }
 
-    private string Evaluate(Node node, IReadOnlyDictionary<(string, string), EcsComponentView> values, IReadOnlyDictionary<Node, string> evaluated)
+    private static HashSet<int> ActiveNodes(
+        PreparedProjectionPlan plan,
+        IReadOnlyDictionary<string, string> roles)
+    {
+        var active = new HashSet<int>();
+        Activate(plan.Nodes.Count - 1);
+        return active;
+
+        void Activate(int index)
+        {
+            if (!active.Add(index)) return;
+            var node = plan.Nodes[index];
+            foreach (var input in node.Definition.DependencyInputs)
+            {
+                var childIndex = node.Children[input.InputId];
+                var child = plan.Nodes[childIndex];
+                var childRequired = child.Definition.ObjectContract?.Roles.Where(value => value.Required)
+                    .Select(value => value.RoleId).ToArray() ?? child.Definition.EntityRoles.ToArray();
+                var bindable = childRequired.All(role => roles.ContainsKey(child.RootRoles[role]));
+                if (!bindable && node.OptionalDependencyInputs.Contains(input.InputId)) continue;
+                if (!bindable)
+                    throw new InvalidOperationException("A required projection dependency role is unbound.");
+                Activate(childIndex);
+            }
+        }
+    }
+
+    private static Dictionary<(string Entity, string Type), EcsComponentLocator> Locators(
+        PreparedProjectionPlan plan,
+        IReadOnlySet<int> active,
+        IReadOnlyDictionary<string, string> roles)
+    {
+        var result = new Dictionary<(string Entity, string Type), EcsComponentLocator>();
+        for (var index = 0; index < plan.Nodes.Count; index++)
+        {
+            if (!active.Contains(index)) continue;
+            var node = plan.Nodes[index];
+            foreach (var input in node.Definition.ComponentInputs)
+            {
+                var rootRole = node.RootRoles[input.EntityRole];
+                if (!roles.TryGetValue(rootRole, out var entity))
+                {
+                    if (node.OptionalComponentInputs.Contains(input.InputId)) continue;
+                    throw new InvalidOperationException("A required projection component role is unbound.");
+                }
+                result.TryAdd((entity, input.Type.QualifiedTypeId),
+                    new(entity, input.Type.QualifiedTypeId));
+            }
+        }
+        return result;
+    }
+
+    private string Evaluate(
+        PreparedProjectionNode node,
+        IReadOnlyDictionary<string, string> roles,
+        IReadOnlyDictionary<(string, string), EcsComponentView> values,
+        IReadOnlyDictionary<int, string> evaluated,
+        IReadOnlySet<int> active)
     {
         var sources = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var input in node.Definition.ComponentInputs)
         {
-            var entity = node.Roles[input.EntityRole];
-            if (!values.TryGetValue((entity, input.Type.QualifiedTypeId), out var value) || value.Type != input.Type) throw new InvalidOperationException("A declared projection component is missing or stale.");
+            var rootRole = node.RootRoles[input.EntityRole];
+            if (!roles.TryGetValue(rootRole, out var entity))
+            {
+                if (node.OptionalComponentInputs.Contains(input.InputId)) continue;
+                throw new InvalidOperationException("A required projection component role is unbound.");
+            }
+            if (!values.TryGetValue((entity, input.Type.QualifiedTypeId), out var value)
+                || value.Type != input.Type)
+            {
+                if (node.OptionalComponentInputs.Contains(input.InputId)) continue;
+                throw new InvalidOperationException("A declared projection component is missing or stale.");
+            }
             sources.Add(input.InputId, value.ValueJson);
         }
-        foreach (var input in node.Definition.DependencyInputs) sources.Add(input.InputId, evaluated[node.Children[input.InputId]]);
+        foreach (var input in node.Definition.DependencyInputs)
+        {
+            var child = node.Children[input.InputId];
+            if (!active.Contains(child))
+            {
+                if (node.OptionalDependencyInputs.Contains(input.InputId)) continue;
+                throw new InvalidOperationException("A required projection dependency is unavailable.");
+            }
+            sources.Add(input.InputId, evaluated[child]);
+        }
+
         string result;
-        if (node.Definition.Mappings[0].TargetPointer == "") result = Select(sources[node.Definition.Mappings[0].InputId], node.Definition.Mappings[0].SourcePointer).GetRawText();
+        if (node.Definition.Mappings[0].TargetPointer == "")
+        {
+            if (!sources.TryGetValue(node.Definition.Mappings[0].InputId, out var source))
+                throw new InvalidOperationException("A root projection mapping source is unavailable.");
+            result = Select(source, node.Definition.Mappings[0].SourcePointer).GetRawText();
+        }
         else
         {
             var output = new JsonObject();
-            foreach (var mapping in node.Definition.Mappings) Set(output, mapping.TargetPointer, JsonNode.Parse(Select(sources[mapping.InputId], mapping.SourcePointer).GetRawText()));
+            foreach (var mapping in node.Definition.Mappings)
+            {
+                if (!sources.TryGetValue(mapping.InputId, out var source)) continue;
+                Set(output, mapping.TargetPointer,
+                    JsonNode.Parse(Select(source, mapping.SourcePointer).GetRawText()));
+            }
             result = output.ToJsonString();
         }
-        if (Encoding.UTF8.GetByteCount(result) > SystemJsonSchemaProfile.MaximumValueBytes || validator.Validate(node.Definition.ProfileId, node.Definition.OutputSchemaJson, result).Status != SchemaValueStatus.Valid) throw new InvalidOperationException("Structural projection output fails its exact schema.");
+        if (Encoding.UTF8.GetByteCount(result) > SystemJsonSchemaProfile.MaximumValueBytes
+            || validator.Validate(node.Definition.ProfileId, node.Definition.OutputSchemaJson, result).Status
+                != SchemaValueStatus.Valid)
+            throw new InvalidOperationException("Structural projection output fails its exact schema.");
         return result;
     }
 
     private RegisteredProjectionDefinition Require(ProjectionReference reference)
     {
         var result = definitions.Get(reference.QualifiedId, reference.Version);
-        return result is null || result.ContentHash != reference.ContentHash ? throw new InvalidOperationException("Projection reference is unknown or stale.") : result;
+        return result is null || result.ContentHash != reference.ContentHash
+            ? throw new InvalidOperationException("Projection reference is unknown or stale.")
+            : result;
     }
+
     private static JsonElement Select(string json, string pointer)
     {
-        using var document = JsonDocument.Parse(json); var current = document.RootElement;
+        using var document = JsonDocument.Parse(json);
+        var current = document.RootElement;
         foreach (var token in Tokens(pointer))
         {
-            if (current.ValueKind == JsonValueKind.Object && current.TryGetProperty(token, out var property)) current = property;
-            else if (current.ValueKind == JsonValueKind.Array && int.TryParse(token, out var index) && index >= 0 && index < current.GetArrayLength()) current = current[index];
+            if (current.ValueKind == JsonValueKind.Object && current.TryGetProperty(token, out var property))
+                current = property;
+            else if (current.ValueKind == JsonValueKind.Array && int.TryParse(token, out var index)
+                     && index >= 0 && index < current.GetArrayLength())
+                current = current[index];
             else throw new InvalidOperationException("A declared source path is absent from its value.");
         }
-        using var stable = JsonDocument.Parse(current.GetRawText()); return stable.RootElement.Clone();
+        using var stable = JsonDocument.Parse(current.GetRawText());
+        return stable.RootElement.Clone();
     }
+
     private static void Set(JsonObject root, string pointer, JsonNode? value)
     {
-        var tokens = Tokens(pointer).ToArray(); JsonObject current = root;
-        for (var i = 0; i < tokens.Length - 1; i++)
+        var tokens = Tokens(pointer).ToArray();
+        var current = root;
+        for (var index = 0; index < tokens.Length - 1; index++)
         {
-            if (current[tokens[i]] is not JsonObject next) { next = new JsonObject(); current[tokens[i]] = next; } current = next;
+            if (current[tokens[index]] is not JsonObject next)
+            {
+                next = new JsonObject();
+                current[tokens[index]] = next;
+            }
+            current = next;
         }
         current[tokens[^1]] = value?.DeepClone();
     }
-    private static IEnumerable<string> Tokens(string pointer) => pointer == "" ? [] : pointer.Split('/').Skip(1).Select(x => x.Replace("~1", "/").Replace("~0", "~"));
-    private sealed record Node(RegisteredProjectionDefinition Definition, IReadOnlyDictionary<string, string> Roles, IReadOnlyDictionary<string, Node> Children);
+
+    private static IEnumerable<string> Tokens(string pointer) => pointer == "" ? []
+        : pointer.Split('/').Skip(1).Select(value => value.Replace("~1", "/").Replace("~0", "~"));
 }

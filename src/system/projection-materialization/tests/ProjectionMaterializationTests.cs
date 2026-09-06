@@ -215,6 +215,151 @@ public sealed class ProjectionMaterializationTests : IDisposable
             new Dictionary<string, string> { ["subject"] = "complete" })));
     }
 
+    [Fact]
+    public async Task Prepared_plans_are_shared_by_exact_version_without_caching_results_and_failed_replacement_is_isolated()
+    {
+        var setup = Setup("prepared-projection", "prepared-space");
+        await setup.Store.CreateEntityAsync("prepared-space", "subject", "Subject");
+        var type = setup.Types.Define(new(setup.Application, "prepared-projection.value",
+            "{\"type\":\"object\",\"properties\":{\"score\":{\"type\":\"integer\"}}}"));
+        await setup.Store.AddComponentAsync(new("prepared-space", "subject", Ref(type), "{\"score\":7}", 0));
+        var first = setup.Registry.Define(new(setup.Application, "prepared-projection.view",
+            "{\"type\":\"object\",\"properties\":{\"score\":{\"type\":\"integer\"}}}",
+            [new("value", "subject", Ref(type))], [], [new("value", "/score", "/score")]));
+        var second = setup.Registry.Define(new(setup.Application, "prepared-projection.view",
+            "{\"type\":\"object\",\"properties\":{\"renamed\":{\"type\":\"integer\"}}}",
+            [new("value", "subject", Ref(type))], [], [new("value", "/score", "/renamed")]));
+        var definitions = new CountingRegistry(setup.Registry);
+        var reads = new CountingStore(setup.Store);
+        var cache = new ProjectionPlanCache();
+        var firstMaterializer = new ProjectionMaterializer(definitions, reads, setup.StateSpaces,
+            setup.Schemas, cache);
+        var secondMaterializer = new ProjectionMaterializer(definitions, reads, setup.StateSpaces,
+            setup.Schemas, cache);
+        var roles = new Dictionary<string, string> { ["subject"] = "subject" };
+
+        Assert.Equal("{\"score\":7}", (await firstMaterializer.MaterializeAsync(
+            new("prepared-space", first.Reference, roles))).OutputJson);
+        Assert.Equal("{\"score\":7}", (await secondMaterializer.MaterializeAsync(
+            new("prepared-space", first.Reference, roles))).OutputJson);
+        Assert.Equal("{\"renamed\":7}", (await firstMaterializer.MaterializeAsync(
+            new("prepared-space", second.Reference, roles))).OutputJson);
+        Assert.Equal(2, definitions.Reads);
+        Assert.Equal(3, reads.BatchReads);
+        Assert.Equal(2, cache.Snapshot.Preparations);
+        Assert.Equal(1, cache.Snapshot.Hits);
+        Assert.Equal(2, cache.Snapshot.RetainedPlans);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => firstMaterializer.MaterializeAsync(
+            new("prepared-space", first.Reference with { ContentHash = new string('F', 64) }, roles)));
+        Assert.Equal(2, cache.Snapshot.RetainedPlans);
+        Assert.Equal("{\"score\":7}", (await firstMaterializer.MaterializeAsync(
+            new("prepared-space", first.Reference, roles))).OutputJson);
+        Assert.Equal(2, cache.Snapshot.Preparations);
+        Assert.Equal(2, cache.Snapshot.Hits);
+    }
+
+    [Fact]
+    public async Task Prepared_source_selection_is_constant_when_unrelated_entities_double()
+    {
+        var setup = Setup("scaling-projection", "scaling-space");
+        await setup.Store.CreateEntityAsync("scaling-space", "selected", "Selected");
+        var type = setup.Types.Define(new(setup.Application, "scaling-projection.value",
+            "{\"type\":\"integer\"}"));
+        await setup.Store.AddComponentAsync(new("scaling-space", "selected", Ref(type), "9", 0));
+        var definition = setup.Registry.Define(new(setup.Application, "scaling-projection.view",
+            "{\"type\":\"integer\"}", [new("value", "subject", Ref(type))], [],
+            [new("value", "", "")]));
+        for (var index = 0; index < 32; index++)
+            await setup.Store.CreateEntityAsync("scaling-space", "unrelated-a-" + index, "Unrelated");
+        var reads = new CountingStore(setup.Store);
+        var materializer = new ProjectionMaterializer(setup.Registry, reads, setup.StateSpaces,
+            setup.Schemas, new ProjectionPlanCache());
+        var request = new ProjectionMaterializationRequest("scaling-space", definition.Reference,
+            new Dictionary<string, string> { ["subject"] = "selected" });
+
+        Assert.Equal("9", (await materializer.MaterializeAsync(request)).OutputJson);
+        Assert.Equal(1, reads.LastLocatorCount);
+        for (var index = 32; index < 64; index++)
+            await setup.Store.CreateEntityAsync("scaling-space", "unrelated-b-" + index, "Unrelated");
+        Assert.Equal("9", (await materializer.MaterializeAsync(request)).OutputJson);
+        Assert.Equal(1, reads.LastLocatorCount);
+        Assert.Equal(2, reads.BatchReads);
+    }
+
+    [Fact]
+    public async Task Sqlite_source_reader_keeps_authority_and_component_reads_in_one_snapshot()
+    {
+        var setup = Setup("snapshot-projection", "snapshot-space");
+        await setup.Store.CreateEntityAsync("snapshot-space", "selected", "Selected");
+        var type = setup.Types.Define(new(setup.Application, "snapshot-projection.value",
+            "{\"type\":\"integer\"}"));
+        await setup.Store.AddComponentAsync(new("snapshot-space", "selected", Ref(type), "4", 0));
+        var observing = new CountingStore(setup.Store, setup.Db);
+        var reader = new SqliteProjectionSourceSnapshotReader(setup.Db, setup.StateSpaces, observing);
+
+        var snapshot = await reader.ReadAsync("snapshot-space", setup.Application,
+            [new("selected", type.QualifiedId)]);
+
+        Assert.True(observing.ReadInsideTransaction);
+        Assert.Equal(setup.Application, snapshot.StateSpace.ApplicationRevision.ApplicationId);
+        Assert.Equal("4", Assert.Single(snapshot.Components).ValueJson);
+        Assert.Null(setup.Db.Database.CurrentTransaction);
+    }
+
+    [Fact]
+    public async Task Prepared_plan_cache_has_bounded_atomic_publication_and_eviction()
+    {
+        var owner = ApplicationIdentifier.Parse("cache-projection");
+        var root = new RegisteredProjectionDefinition(owner, "cache-projection.view", 1,
+            SystemJsonSchemaProfile.Version1Id, "{\"type\":\"integer\"}", new string('A', 64),
+            new string('B', 64), [], [], [], DateTime.UnixEpoch);
+        var plan = new PreparedProjectionPlan(root, [], 1, 1);
+        var cache = new ProjectionPlanCache();
+        for (var index = 0; index <= ProjectionPlanCache.MaximumPlans; index++)
+        {
+            var reference = new ProjectionReference("cache-projection.view-" + index, 1,
+                index.ToString("X64"));
+            Assert.Same(plan, cache.GetOrPrepare(reference, () => plan));
+        }
+        Assert.Equal(ProjectionPlanCache.MaximumPlans, cache.Snapshot.RetainedPlans);
+        Assert.Equal(ProjectionPlanCache.MaximumPlans, cache.Snapshot.DeclarationBytes);
+        Assert.Equal(ProjectionPlanCache.MaximumPlans, cache.Snapshot.MappingNodes);
+        Assert.Equal(1, cache.Snapshot.Evictions);
+
+        var rejected = new ProjectionPlanCache();
+        var rejectedReference = new ProjectionReference("cache-projection.oversized", 1,
+            new string('C', 64));
+        Assert.Throws<InvalidOperationException>(() => rejected.GetOrPrepare(rejectedReference,
+            () => plan with { DeclarationBytes = ProjectionPlanCache.MaximumDeclarationBytes + 1 }));
+        Assert.Equal(0, rejected.Snapshot.RetainedPlans);
+
+        var concurrent = new ProjectionPlanCache();
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var preparations = 0;
+        var exact = new ProjectionReference("cache-projection.concurrent", 1, new string('D', 64));
+        var first = Task.Run(() => concurrent.GetOrPrepare(exact, () =>
+        {
+            Interlocked.Increment(ref preparations);
+            entered.Set();
+            release.Wait();
+            return plan;
+        }));
+        Assert.True(entered.Wait(TimeSpan.FromSeconds(5)));
+        var second = Task.Run(() => concurrent.GetOrPrepare(exact, () =>
+        {
+            Interlocked.Increment(ref preparations);
+            return plan;
+        }));
+        release.Set();
+
+        Assert.Same(await first, await second);
+        Assert.Equal(1, preparations);
+        Assert.Equal(1, concurrent.Snapshot.Preparations);
+        Assert.Equal(1, concurrent.Snapshot.Hits);
+    }
+
     private ProjectionSetup Setup(string applicationId, string stateSpaceId)
     {
         var db = _fixture.CreateContext(); var application = ApplicationIdentifier.Parse(applicationId);
@@ -230,15 +375,29 @@ public sealed class ProjectionMaterializationTests : IDisposable
     private sealed record ProjectionSetup(DantesRoleplayDbContext Db, ApplicationIdentifier Application, SqliteStateSpaceRegistry StateSpaces,
         BoundedJsonSchemaValidator Schemas, SqliteComponentTypeRegistry Types, SqliteEntityComponentStore Store, SqliteProjectionDefinitionRegistry Registry);
 
-    private sealed class CountingStore(IEntityComponentStore inner) : IEntityComponentStore
+    private sealed class CountingRegistry(IProjectionDefinitionRegistry inner) : IProjectionDefinitionRegistry
+    {
+        public int Reads { get; private set; }
+        public RegisteredProjectionDefinition Define(ProjectionDefinitionRequest definition) => inner.Define(definition);
+        public RegisteredProjectionDefinition? Get(string qualifiedId, int version)
+        {
+            Reads++;
+            return inner.Get(qualifiedId, version);
+        }
+        public ProjectionImpactGraph GetImpactGraph(ApplicationIdentifier owner) => inner.GetImpactGraph(owner);
+    }
+
+    private sealed class CountingStore(IEntityComponentStore inner, DantesRoleplayDbContext? db = null) : IEntityComponentStore
     {
         public int BatchReads { get; private set; }
+        public int LastLocatorCount { get; private set; }
+        public bool ReadInsideTransaction { get; private set; }
         public Task<EcsEntityView> CreateEntityAsync(string stateSpaceId, string entityId, string name, CancellationToken cancellationToken = default) => inner.CreateEntityAsync(stateSpaceId, entityId, name, cancellationToken);
         public Task<EcsEntityView?> GetEntityAsync(string stateSpaceId, string entityId, CancellationToken cancellationToken = default) => inner.GetEntityAsync(stateSpaceId, entityId, cancellationToken);
         public Task<EcsEntityDiscoveryPage> ListEntitiesAsync(string stateSpaceId, string? afterEntityId, int limit, CancellationToken cancellationToken = default) => inner.ListEntitiesAsync(stateSpaceId, afterEntityId, limit, cancellationToken);
         public Task<bool> DeleteEntityAsync(string stateSpaceId, string entityId, int expectedRevision, CancellationToken cancellationToken = default) => inner.DeleteEntityAsync(stateSpaceId, entityId, expectedRevision, cancellationToken);
         public Task<EcsComponentView?> GetComponentAsync(string stateSpaceId, string entityId, string qualifiedTypeId, CancellationToken cancellationToken = default) => inner.GetComponentAsync(stateSpaceId, entityId, qualifiedTypeId, cancellationToken);
-        public async Task<IReadOnlyList<EcsComponentView>> GetComponentsAsync(string stateSpaceId, IReadOnlyList<EcsComponentLocator> locators, CancellationToken cancellationToken = default) { BatchReads++; return await inner.GetComponentsAsync(stateSpaceId, locators, cancellationToken); }
+        public async Task<IReadOnlyList<EcsComponentView>> GetComponentsAsync(string stateSpaceId, IReadOnlyList<EcsComponentLocator> locators, CancellationToken cancellationToken = default) { BatchReads++; LastLocatorCount = locators.Count; ReadInsideTransaction = db?.Database.CurrentTransaction is not null; return await inner.GetComponentsAsync(stateSpaceId, locators, cancellationToken); }
         public Task<EcsComponentDiscoveryPage> ListComponentsAsync(string stateSpaceId, string entityId, string? afterQualifiedTypeId, int limit, CancellationToken cancellationToken = default) => inner.ListComponentsAsync(stateSpaceId, entityId, afterQualifiedTypeId, limit, cancellationToken);
         public Task<EcsComponentView> AddComponentAsync(EcsComponentWrite write, CancellationToken cancellationToken = default) => inner.AddComponentAsync(write, cancellationToken);
         public Task<EcsComponentView> SetComponentAsync(EcsComponentWrite write, CancellationToken cancellationToken = default) => inner.SetComponentAsync(write, cancellationToken);

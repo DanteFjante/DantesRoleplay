@@ -285,6 +285,39 @@ public sealed class InteractionQueryTests
     }
 
     [Fact]
+    public async Task Object_projection_executor_uses_the_exact_collection_scoped_prepared_object()
+    {
+        var projection = Projection();
+        var source = new ProjectionSourceRevision("orban",
+            new("sample-app.stats", 1, Hash("component-schema")), 3);
+        var materializer = new Materializer(
+            new(projection.Reference, "{\"entityId\":\"driver\",\"score\":16}", [source]));
+        var executor = new ObjectProjectionInteractionQueryExecutor(materializer);
+        var contract = new InteractionQueryContractReference(ApplicationQueryContract.ObjectProjectionExecutor,
+            projection.QualifiedId, projection.Version, projection.ContentHash, projection.OutputSchemaHash,
+            projection.OutputSchemaJson, ApplicationQueryExposure.BindingOnly, ["subject"], "drivers");
+        var request = new InteractionQueryExecutionRequest("space.1", App,
+            "sample-app.query.find-driver", contract,
+            new Dictionary<string, string> { ["subject"] = "orban" });
+
+        var first = await executor.ExecuteAsync(request);
+        var second = await executor.ExecuteAsync(request);
+
+        Assert.Equal(first, second);
+        Assert.Equal(ApplicationQueryContract.ObjectProjectionExecutor, executor.Kind);
+        Assert.Equal(projection.Reference, materializer.LastRequest!.Projection);
+        Assert.Equal("orban", materializer.LastRequest.RoleEntityIds["subject"]);
+        Assert.Equal("{\"entityId\":\"driver\",\"score\":16}", first.OutputJson);
+        await Assert.ThrowsAsync<InteractionContractException>(() => executor.ExecuteAsync(
+            request with { RoleBindings = new Dictionary<string, string> { ["other"] = "orban" } }));
+        Assert.Equal("INVALID_QUERY_COLLECTION", Assert.Throws<InteractionContractException>(() =>
+            new InteractionQueryContractReference(ApplicationQueryContract.ObjectProjectionExecutor,
+                projection.QualifiedId, projection.Version, projection.ContentHash,
+                projection.OutputSchemaHash, projection.OutputSchemaJson,
+                ApplicationQueryExposure.BindingOnly, ["subject"])).Code);
+    }
+
+    [Fact]
     public async Task Coordinator_binds_query_into_action_and_equal_replay_does_no_second_read_or_action()
     {
         var applications = new InMemoryApplicationRegistry();
@@ -438,8 +471,13 @@ public sealed class InteractionQueryTests
 
     private sealed class Materializer(ProjectionMaterializationResult value) : IProjectionMaterializer
     {
+        public ProjectionMaterializationRequest? LastRequest { get; private set; }
         public Task<ProjectionMaterializationResult> MaterializeAsync(ProjectionMaterializationRequest request,
-            CancellationToken cancellationToken = default) => Task.FromResult(value);
+            CancellationToken cancellationToken = default)
+        {
+            LastRequest = request;
+            return Task.FromResult(value);
+        }
     }
 
     private sealed class MappingResolver : IApplicationMechanicProjectionMappingResolver

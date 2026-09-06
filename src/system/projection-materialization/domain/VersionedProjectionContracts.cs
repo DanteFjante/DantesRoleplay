@@ -54,6 +54,16 @@ public sealed record ProjectionMaterializationRequest(string StateSpaceId, Proje
 public sealed record ProjectionSourceRevision(string EntityId, EcsComponentReference Type, int Revision);
 public sealed record ProjectionMaterializationResult(ProjectionReference Projection, string OutputJson, IReadOnlyList<ProjectionSourceRevision> SourceRevisions);
 public sealed record ProjectionImpactGraph(IReadOnlyDictionary<string, IReadOnlyList<string>> Forward, IReadOnlyDictionary<string, IReadOnlyList<string>> Reverse);
+public sealed record ProjectionSourceSnapshot(
+    StateSpaceView StateSpace,
+    IReadOnlyList<EcsComponentView> Components);
+public sealed record ProjectionPlanCacheSnapshot(
+    int RetainedPlans,
+    int DeclarationBytes,
+    int MappingNodes,
+    long Preparations,
+    long Hits,
+    long Evictions);
 
 public interface IProjectionDefinitionRegistry
 {
@@ -65,4 +75,19 @@ public interface IProjectionDefinitionRegistry
 public interface IProjectionMaterializer
 {
     Task<ProjectionMaterializationResult> MaterializeAsync(ProjectionMaterializationRequest request, CancellationToken cancellationToken = default);
+}
+
+/// <summary>One provider-owned read snapshot for a prepared projection's exact component set.</summary>
+public interface IProjectionSourceSnapshotReader
+{
+    Task<ProjectionSourceSnapshot> ReadAsync(
+        string stateSpaceId,
+        ApplicationIdentifier expectedOwner,
+        IReadOnlyList<EcsComponentLocator> locators,
+        CancellationToken cancellationToken = default);
+}
+
+public interface IProjectionPlanCacheDiagnostics
+{
+    ProjectionPlanCacheSnapshot Snapshot { get; }
 }

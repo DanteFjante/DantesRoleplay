@@ -159,7 +159,7 @@ internal sealed class InteractionProposalVerifier(
                 {
                     queryContract = new(query.Executor, query.ProjectionQualifiedId, query.ProjectionVersion,
                         query.ProjectionContentHash, effectiveOutputSchemaHash, query.OutputSchemaJson,
-                        query.Exposure, query.Roles.Keys);
+                        query.Exposure, query.Roles.Keys, query.ObjectCollectionId);
                 }
                 catch (InteractionContractException)
                 {

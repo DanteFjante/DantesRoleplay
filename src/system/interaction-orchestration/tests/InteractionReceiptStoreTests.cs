@@ -266,7 +266,12 @@ public sealed class InteractionReceiptStoreTests : IDisposable
         using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();
         var executors = scope.ServiceProvider.GetServices<IInteractionQueryExecutor>().ToArray();
-        Assert.Equal(new[] { ApplicationQueryContract.MechanicProjectionExecutor, ApplicationQueryContract.ProjectionExecutor },
+        Assert.Equal(new[]
+            {
+                ApplicationQueryContract.MechanicProjectionExecutor,
+                ApplicationQueryContract.ObjectProjectionExecutor,
+                ApplicationQueryContract.ProjectionExecutor
+            },
             executors.Select(value => value.Kind).Order(StringComparer.Ordinal));
         var registry = scope.ServiceProvider.GetRequiredService<IInteractionQueryExecutorRegistry>();
         foreach (var executor in executors)

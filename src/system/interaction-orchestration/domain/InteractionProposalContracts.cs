@@ -71,7 +71,8 @@ public sealed record InteractionQueryContractReference
         string outputSchemaHash,
         string outputSchemaJson,
         ApplicationQueryExposure exposure,
-        IEnumerable<string> roles)
+        IEnumerable<string> roles,
+        string? collectionId = null)
     {
         Executor = InteractionGuard.Identifier(executor, nameof(executor));
         ProjectionQualifiedId = InteractionGuard.Identifier(projectionQualifiedId, nameof(projectionQualifiedId));
@@ -86,6 +87,16 @@ public sealed record InteractionQueryContractReference
         Exposure = exposure;
         Roles = InteractionGuard.CopyDistinctList(roles, InteractionContractLimits.RoleHints,
             "INVALID_QUERY_ROLES", sort: true);
+        if (executor == ApplicationQueryContract.ObjectProjectionExecutor)
+        {
+            if (string.IsNullOrWhiteSpace(collectionId))
+                throw new InteractionContractException("INVALID_QUERY_COLLECTION",
+                    "An object-projection query requires a collection identity.");
+            CollectionId = InteractionGuard.Identifier(collectionId, nameof(collectionId));
+        }
+        else if (collectionId is not null)
+            throw new InteractionContractException("INVALID_QUERY_COLLECTION",
+                "Only an object-projection query can carry a collection identity.");
     }
 
     public string Executor { get; }
@@ -96,6 +107,7 @@ public sealed record InteractionQueryContractReference
     public string OutputSchemaJson { get; }
     public ApplicationQueryExposure Exposure { get; }
     public IReadOnlyList<string> Roles { get; }
+    public string? CollectionId { get; }
 }
 
 public sealed record InteractionContractReference

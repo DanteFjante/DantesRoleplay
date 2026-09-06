@@ -80,6 +80,7 @@ internal static class InteractionOrchestrationComponentRegistration
             provider.GetService<IInteractionDerivedVectorIndex>()));
         services.TryAddScoped<IInteractionProposalVerifier, InteractionProposalVerifier>();
         services.TryAddEnumerable(ServiceDescriptor.Scoped<IInteractionQueryExecutor, ProjectionInteractionQueryExecutor>());
+        services.TryAddEnumerable(ServiceDescriptor.Scoped<IInteractionQueryExecutor, ObjectProjectionInteractionQueryExecutor>());
         services.TryAddEnumerable(ServiceDescriptor.Scoped<IInteractionQueryExecutor, MechanicProjectionInteractionQueryExecutor>());
         services.TryAddScoped<IInteractionQueryExecutorRegistry, InteractionQueryExecutorRegistry>();
         services.TryAddScoped<IApplicationReadModelService, ApplicationReadModelService>();
