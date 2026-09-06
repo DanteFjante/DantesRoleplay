@@ -32,6 +32,8 @@ Keep temporary plans in the task or issue. Do not create permanent implementatio
 
 Confirmation is required for new permanent IDs, schema-meaning changes, migrations, public-surface changes, destructive operations, cross-owner semantic changes, and completed feature acceptance. Routine edits inside an approved boundary do not need repeated pauses.
 
+**Authorized unattended cleanup exception (user instruction, 2026-09-06):** when asked to implement a numbered slice from [docs/current/SYSTEM-AUDIT.md](docs/current/SYSTEM-AUDIT.md), follow that document's unattended execution contract. The user has authorized the scoped implementation decisions, tested migrations/cutovers, evidenced cleanup, local publication and acceptance described there without another confirmation. This exception applies only to that plan; it does not authorize unrelated destructive work or bypass its preservation, verification and recovery requirements. If a required invariant or external execution permission cannot be satisfied, record the blocker without asking questions or claiming completion.
+
 Tests may replace manual confirmation only when they assert the same invariant. Report the delivered boundary, commands/results, and deliberate exclusions in the task response rather than creating a receipt by default.
 
 ## Documentation

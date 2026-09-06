@@ -2,9 +2,31 @@
 
 **Audit date:** 6 September 2026. **Source baseline:** `017ed8fec13a54b22b50ef6fa14f04b1cf414c09`.
 
-**Plan updated:** 6 September 2026, following the user's request to integrate registered application objects, efficient C# mappings, JavaScript reducers, and change broadcasting into the cleanup work.
+**Plan updated:** 6 September 2026, following the user's requests to integrate registered application objects, efficient C# mappings, JavaScript reducers and change broadcasting, then make the cleanup one ordered queue executable without further confirmation.
 
-**Purpose:** preserve the audit evidence and provide one coordinated implementation plan. The requested architecture is the planned direction; the slices below have not been implemented. Exact new runtime identities, public contracts, schema changes and migrations must be made concrete and reviewed at their owning slice under the repository agreement. Routine work inside an approved slice does not require repeated confirmation. No implementation, catalog, configuration, or live game-state changes were made during the audit or this planning update.
+**Purpose:** preserve the audit evidence and provide one coordinated implementation plan. The user has authorized unattended implementation under the contract below, including the scoped decisions needed to finish each slice. This planning edit does not itself start implementation or change live game state. Current execution status belongs to each slice in the single ordered list.
+
+## Queue and unattended execution contract
+
+The user requested on 6 September 2026: "one slice list in the correct order" so they can queue "Implement slice x from /C:/Users/dante/source/repos/DantesRoleplay/docs/current/SYSTEM-AUDIT.md" and have it done "without me having to confirm anything" while away. This is explicit authorization for the scoped work below. The matching exception in [AGENTS.md](../../AGENTS.md) makes this instruction available to future runs.
+
+Queue slices **0 through 17**, in numerical order, in the same task and checkout. There is one authoritative [ordered slice list](#ordered-slice-list); its existing SC00–SC17 identifiers are aliases, not a second sequence. For example:
+
+```text
+Implement slice 0 from /C:/Users/dante/source/repos/DantesRoleplay/docs/current/SYSTEM-AUDIT.md
+```
+
+Replace `0` with the next number. `slice 0`, `slice 00` and `SC00` identify the same slice. The optional leading slash in `/C:/...` is queue notation; the Windows file is `C:/Users/dante/source/repos/DantesRoleplay/docs/current/SYSTEM-AUDIT.md`. Preparing this document does not create scheduled jobs or start the implementation queue.
+
+**Execution:** implement the requested slice through its exit checks and receipt commit; do not stop after proposing a design or asking for approval. Read AGENTS.md, the current entry guide and this document, then only the exact owners/contracts/tests needed. Reuse completed work. If earlier slices are unfinished, resume the earliest unfinished predecessor and proceed through the requested number, with a separate commit per completed slice. Do not start a later slice merely because it was queued while an earlier one was running or blocked. A repeated request for a completed slice verifies its recorded result against current source and resumes only missing or regressed work. This sequence is serial; do not run these migrations concurrently in separate tasks or checkouts.
+
+**Delegated decisions and confirmation:** choose and document the exact names/IDs, compatible schema and public-contract versions, mapping declarations, library integration, implementation details and cross-owner changes required by this plan. The user also authorizes the plan's evidence-backed source removals, data-preserving migrations, local catalog activation, local website publication, necessary local service restarts and completed-feature acceptance once the stated checks pass. Do not seek another confirmation for these scoped actions. In this document, "reviewed", "agreed", "approved" and "acceptance" mean agent review plus the specified evidence under this authorization; they do not create a new human checkpoint. Record important decisions and their reasons in the owning slice and commit, without creating another implementation plan.
+
+**Preservation and cutover:** the authorization does not relax C#/JavaScript ownership, audience permissions, compatibility, transaction or recovery invariants. Before a live change, identify the actual listener/content root/database and binding, preserve a consistent database/blob backup and affected live-authored exports, and rehearse the exact change on an isolated copy. Review the exact diff and dry-run output, then use the established migration/activation/publication path at a recorded synchronization boundary. Coordinate writers during a data-changing cutover; never restore a backup over newer legitimate commits. Perform readiness and exact readback checks; recover the last verified compatible runtime if they fail, preserving committed data. Source cleanup requires consumer/history checks and a precise removal list. Never drop campaign/history data, overwrite unrelated work, rewrite Git history, change access grants, or bulk-delete retained identities to finish a slice. No remote push or unrelated external publication is included. Exercise gameplay writes against disposable data; live verification must preserve actual campaign content.
+
+**Blockers while away:** make reasonable decisions and fix ordinary failures autonomously. Do not ask questions or wait for a reply. If required evidence, a dependency, access, a recovery guarantee or an external execution permission cannot be obtained, finish the independent safe work within the slice, preserve the working system and mark that slice **Blocked** with the exact cause and remaining work. A later queued request may retry the blocked predecessor when conditions change; it must not skip it or repeat an unchanged failed operation indefinitely. Do not bypass tool approval controls. Required architecture or failing correctness/performance checks cannot be relabeled as optional. A candidate optimization or retirement may be deliberately retained when measurements or compatibility evidence justify it, with the reason recorded; that does not excuse an unfinished required feature.
+
+**Completion and receipts:** each slice below owns its status. Use **Not started**, **In progress**, **Complete**, or **Blocked**, followed by a compact outcome with verification results, evidence locations, retained candidates and limitations. Update that entry in the slice commit; detailed history stays in Git and ignored evidence. Run focused tests while iterating, catalog validation after catalog changes, the full suite for feature acceptance, and the protocol walk when MCP contracts or dependency registration change. Verify the actual served browser path for delivered UI behavior. Commit only reviewed slice changes with a receipt stating what changed, what ran/passed/failed and what remains. Do not mark a slice complete on focused tests when its required full or served-runtime checks have not passed. If committing is unavailable, preserve verified work and report that limitation. Final closeout requires every slice's mandatory exit conditions; an unresolved blocker keeps the document open.
 
 ## What deserves attention first
 
@@ -14,9 +36,9 @@ The clearest repository cleanup is **678 tracked build-output files occupying 26
 
 There are also real sources of future regressions: unconsumed pagination cursors, three copies of the item response-envelope checks, excluded former-host sources and tests, and large mixed-purpose files. Some apparent duplication is deliberate: 86 compatibility catalog records have explicit retention requirements, and several large frontend modules are still used by tests.
 
-The implementation approach is to replace repeated application-side ECS assembly with **registered application object contracts**, executed by a generic C# mapping engine. Catalog JavaScript will retain game behavior through pure reducer-style mechanics. Validated changes will use the existing transaction/effect path, followed by authorized object/view notifications. Each replacement will retire its superseded loading or mapping code as part of the same cleanup program. The original 23 findings and measured baseline below remain unchanged; the integrated SC00–SC17 slices supersede the earlier suggested A–K sequence.
+The implementation approach is to replace repeated application-side ECS assembly with **registered application object contracts**, executed by a generic C# mapping engine. Catalog JavaScript will retain game behavior through pure reducer-style mechanics. Validated changes will use the existing transaction/effect path, followed by authorized object/view notifications. Each replacement will retire its superseded loading or mapping code as part of the same cleanup program. The original 23 findings and measured baseline below remain unchanged; the ordered slices 0–17 (SC00–SC17) supersede the earlier suggested A–K sequence.
 
-For implementation, start with [the target design](#target-design-registered-objects-and-controlled-state-changes), then [the slice register](#integrated-implementation-slices). Consult the finding details for evidence and retirement constraints.
+For implementation, follow [the unattended execution contract](#queue-and-unattended-execution-contract), [the target design](#target-design-registered-objects-and-controlled-state-changes) and the requested entry in [the ordered slice list](#ordered-slice-list). Consult the finding details for evidence and retirement constraints.
 
 ## Scope and evidence standard
 
@@ -449,142 +471,157 @@ Committed writes record enough durable change evidence to dispatch after commit 
 
 Begin with targeted invalidation and refetch. Coalesce related notices; duplicate or out-of-order delivery is harmless. Reconnect uses a bounded replay cursor or invalidates the authorized scope if continuity cannot be established. Permission/observer changes clear the relevant cache immediately. Field-level pushed patches and optimistic gameplay updates are later optimizations, not requirements for the first release. Preserve page-version notifications separately from game-object changes.
 
-## Integrated implementation slices
+## Ordered slice list
 
-**Status:** all SC00–SC17 slices are **Not started**. This update plans the work; it does not start SC00. Slice references replace the earlier A–K sequence. Dependencies identify prerequisites, not a requirement to block independent source hygiene behind the whole architecture.
+Execute exactly in the order below. Slice 0 has no predecessor; each later slice starts after all lower-numbered slices are complete. This linear order satisfies the former dependency graph and keeps the existing SC identifiers stable. There are no separately queued branches, lettered sub-slices or second status table. Each entry contains its scope, finding coverage and completion conditions; all entries initially remain **Not started**.
 
-| Slice | Depends on | Finding coverage | Deliverable |
-| --- | --- | --- | --- |
-| SC00 — Baseline and contract decisions | None | P01, P02, P03, P11, all dispositions | Reproducible performance/correctness harness, agreed budgets and existing-owner map |
-| SC01 — Complete pagination | SC00 | C01 | Advancing bounded cursors and explicit incomplete results |
-| SC02 — Registered object contracts | SC00 | P04, R03, R04 | Versioned application schemas, read/write declarations and one registration owner |
-| SC03 — Prepared C# batch-read engine | SC02 | P01, P04, P12, R04 | Bounded reusable plans, snapshot reads and runtime version replacement |
-| SC04 — Campaign/Factions vertical slice | SC01, SC03 | P01, P11, P12, O03, R04 | Minimal hub bootstrap and mapped Campaign/Faction reads used by the live website |
-| SC05 — Knowledge and chronology migration | SC01, SC03, SC04 | P02, P03, P11 | Authorized batched projections replacing full-entity discovery and repeated hydration |
-| SC06 — Explicit reverse mappings | SC02, SC03, SC04 | R03, R04 | Atomic, revision-checked mapped edits through existing effects |
-| SC07 — Object-based JavaScript reducers | SC06 | R01, R04 | One existing mechanic migrated to declared objects with equivalent effects |
-| SC08 — Targeted committed-change delivery | SC06 | P01, P12 | Durable post-commit invalidation, dependency tracking and reconnect recovery |
-| SC09 — Browser object/query state | SC04, SC08 | P11, P12, O03, R03 | One cache owner per migrated view, reducer-driven UI state and selective refresh |
-| SC10 — Character and Item migration | SC05, SC07, SC09 | P01, R02, R03, R04 | Existing dossiers/tabs use shared object contracts; superseded assembly/validation code retired |
-| SC11 — Source and documentation hygiene | SC00; consumer removals follow their migration | O01, O02, O03, O06, R02, R04 | Reviewed output removal, fixture relocation, exclusions/test ownership and updated guidance |
-| SC12 — Profile remaining host costs | SC03, SC05, SC06 | P04, P05, P06, P07 | Evidence-based catalog/schema/constraint/transaction optimizations |
-| SC13 — Media and database ownership | SC00 | O04, O05 | File-by-file disposition and verified seed/live/history owners |
-| SC14 — Durable storage deduplication | SC13; migration design reviewed | P09, P10 | Shared immutable storage or archival design preserving complete revision/history contracts |
-| SC15 — Scheduled work throughput | SC00 | P08 | Queue-age visibility, recoverable claims and bounded provider execution |
-| SC16 — Retained compatibility retirement | Relevant SC07/SC10/SC11 replacements; SC13 | R01, remaining O02 | Exact selected retirement packet and conformance updates |
-| SC17 — Acceptance and closeout | SC01–SC16 dispositions complete | All findings | Published verification, rollback proof and honest remaining-work disposition |
+### Slice 0 (SC00) — Baseline and contract decisions
 
-### SC00 — Baseline and contract decisions
+**Status:** Not started. **Finding coverage:** P01, P02, P03, P11; establish dispositions for all findings.
 
 Identify the current checkout, listener, database, audience binding and active revisions. Build disposable fixtures representing the observed main state space and larger unrelated catalog populations. Measure HTTP requests, SQL commands, source-file reads, body bytes, allocations and separate cold/warm durations. Include actual actor, GM and GM-as-player-preview workflows. Do not infer actor results from preview.
 
-Prepare the exact registration/query/write vocabulary and owner changes for review. Settle whether existing projection records can be extended compatibly, how write commands are declared, and which existing event evidence supports reliable dispatch. Establish benchmark ceilings from the budget proposal below. No runtime identity is registered in this slice. Map each intended removal to its replacement or retention reason.
+Choose, review and record the exact registration/query/write vocabulary and owner changes under the unattended authorization. Settle whether existing projection records can be extended compatibly, how write commands are declared, and which existing event evidence supports reliable dispatch. Establish benchmark ceilings from the budget proposal below and select the existing mechanic to migrate in slice 7. No runtime identity is registered in this slice. Map each intended removal to its replacement or retention reason. Carry these concrete decisions into later slices without asking the user to reconfirm them.
 
 **Exit:** reproducible baseline, executable correctness/performance measurements, concrete contract decisions and frozen acceptance budgets. Preserve the original two DM samples as historical observations, not a new p95 baseline.
 
-### SC01 — Complete pagination
+### Slice 1 (SC01) — Complete pagination
+
+**Status:** Not started. **Finding coverage:** C01.
 
 Repair the adjacent containment, relationship and campaign loops identified by C01 before using them as comparison truth. Cover 99/100/101 entries, repeated cursors, failures after a successful first page and oversized/malformed pages. Keep traversal bounded and make incomplete reads visible. Do not raise shared rate limits to pass this slice.
 
 **Cleanup and exit:** converge duplicate cursor handling where semantics match; demonstrate full expected records or explicit incompleteness in both current loaders and future fixtures. No public response change is hidden inside a helper refactor.
 
-### SC02 — Registered object contracts
+### Slice 2 (SC02) — Registered object contracts
+
+**Status:** Not started. **Finding coverage:** P04, R03, R04.
 
 Extend the established projection/catalog owner with object identity, independent output schema, exact source dependencies, relationship/collection declarations, explicit edit schema and read/write capabilities. Validate cycles, ambiguous mappings, computed writes, ownership and resource limits. Define generated simple reverse mappings as validated registration output, not runtime guesses. Expose discovery through existing capability/query mechanisms; enumerate any new IDs and schema meanings in this slice's review.
 
 **Cleanup and exit:** one registration authority; existing projections still resolve unchanged. Registration/readback/version tests, unsupported-mapping errors, cross-owner tests and an exact compatibility strategy pass. Record which current mapping types are adapters and when they retire.
 
-### SC03 — Prepared C# batch-read engine
+### Slice 3 (SC03) — Prepared C# batch-read engine
+
+**Status:** Not started. **Finding coverage:** P01, P04, P12, R04.
 
 Implement plan preparation/cache and bounded direct-store execution over one consistent read snapshot where required. Support declared source selection and bounded graph expansion, deduplicate shared components, validate results and retain source dependency evidence. Prepare plans once per exact version; enable replacement after startup with bounded retention and atomic publication. Test file/registration/schema drift and activation changes, not only cache hits.
 
 **Cleanup and exit:** current structural projections run through the shared engine where equivalent. Compare result parity, SQL counts, allocations and plan reuse. Prove that doubling unrelated ECS entities does not double source lookups for a fixed selected object. Invalid replacement leaves the current valid plan usable, while stale writes cannot commit under an obsolete definition.
 
-### SC04 — Campaign/Factions vertical slice
+### Slice 4 (SC04) — Campaign/Factions vertical slice
+
+**Status:** Not started. **Finding coverage:** P01, P11, P12, O03, R04.
 
 Author a minimal Campaign summary and paginated Faction directory through the new registration. Use existing query transport where possible. The website loads only its initial selected view, with deeper sections requested explicitly. Preserve faction search, selection, count/completeness, media and GM/private field handling. Initially, party references and faction membership are read-only.
 
 **Cleanup and exit:** remove the replaced campaign/faction assembly branches from the active loader after side-by-side read parity. Retain only explicitly required compatibility adapters. Verify all 35 baseline Caldris factions in a pinned fixture/live comparison, actor/DM separation, mobile/keyboard behavior and the view request budget. Reading one Factions page must not load every character inventory or the entire knowledge notebook.
 
-### SC05 — Knowledge and chronology migration
+### Slice 5 (SC05) — Knowledge and chronology migration
+
+**Status:** Not started. **Finding coverage:** P02, P03, P11.
 
 Use declared component selection, shared graph indexes and bounded batched hydration. Preserve existing notebook and chronology authorization owners, familiar/unknown behavior, calendar rules, exact revisions and revalidation under a consistent snapshot. Keep the visible API shape unless an explicitly reviewed version replaces it. Loading Campaign/Factions must not eagerly fetch the full notebook/history.
 
 **Cleanup and exit:** retire the replaced full-entity scan and repeated graph/hydration loops once equivalence is proved. Benchmark actual actor and GM reads, larger unrelated catalogs, stale knowledge and source changes. Meet the agreed SQL/latency ceilings without removing the second-check invariant that protected disclosure.
 
-### SC06 — Explicit reverse mappings
+### Slice 6 (SC06) — Explicit reverse mappings
+
+**Status:** Not started. **Finding coverage:** R03, R04.
 
 Start with a permitted Campaign premise edit; extend to one explicit relationship operation only after field-save behavior is proven. Translate changed fields/operations to the current typed effects and commit path. Preserve component/graph validation, authorization, expected revisions, idempotency and transaction scope. Map fields owned by different components atomically.
 
 **Cleanup and exit:** no parallel direct-database save path. Tests prove unchanged save is a no-op; partial/hidden fields survive; calculated/unauthorized edits fail; explicit deletion differs from omission; stale and duplicate requests behave correctly; failure on one mapped effect rolls back every effect. Re-read the resulting object with fresh source evidence.
 
-### SC07 — Object-based JavaScript reducers
+### Slice 7 (SC07) — Object-based JavaScript reducers
 
-Select one currently supported mechanic with meaningful rules and existing tests in SC00; migrate its input declarations to object contracts while preserving its public action semantics, supplied seed/context, effects and audit. A pure reducer returns a bounded proposed change set. It does not load data, save, broadcast or call CLR services. Structural changes with gameplay meaning remain reachable only through their authorized mechanic.
+**Status:** Not started. **Finding coverage:** R01, R04.
+
+Use the currently supported mechanic with meaningful rules and existing tests selected in slice 0; migrate its input declarations to object contracts while preserving its public action semantics, supplied seed/context, effects and audit. A pure reducer returns a bounded proposed change set. It does not load data, save, broadcast or call CLR services. Structural changes with gameplay meaning remain reachable only through their authorized mechanic.
 
 **Cleanup and exit:** remove the selected mechanic's duplicate ECS-to-object and object-to-effect translation after differential tests demonstrate equivalent outcomes. Preserve supported legacy action callers through one adapter where required. Do not clone the entire mechanic catalog or silently move D&D formulas into C# to pass performance checks.
 
-### SC08 — Targeted committed-change delivery
+### Slice 8 (SC08) — Targeted committed-change delivery
+
+**Status:** Not started. **Finding coverage:** P01, P12.
 
 Track object and list dependencies, including membership changes and authorization dependencies. Stage durable change evidence in the same transaction as state writes and dispatch only after commit. Integrate every supported mutation path or deliberately fall back to scoped invalidation for paths whose exact dependencies cannot yet be identified. Reuse SSE transport and preserve page-activation events.
 
 **Cleanup and exit:** replace broad invalidation for migrated scopes; retain an explicit recovery path for continuity gaps. Tests cover rollback, crash between commit and dispatch, duplicate/out-of-order notices, reconnect, deletion/list membership, visibility revocation and a source changed outside the object-save API. One unrelated edit must not refetch the entire world, and private object identities must not appear in another audience's events.
 
-### SC09 — Browser object/query state
+### Slice 9 (SC09) — Browser object/query state
+
+**Status:** Not started. **Finding coverage:** P11, P12, O03, R03.
 
 Pilot Redux Toolkit/RTK Query for Campaign/Factions object reads and local reducers for selections/edit state. Compare with the current `ViewReadClient` before choosing the single retained owner. Whichever implementation is selected must preserve strict response validation, cancellation, bounded retention, mapping/source revisions, audience isolation and targeted notifications. Game writes remain pending until the server confirms their result.
 
 **Cleanup and exit:** no duplicate cache for the same migrated feature; remove its old hand-managed fetching/invalidation code. Test in-flight perspective changes, denied/stale responses, reconnect, rapid navigation, failed writes and cache expiry. Keep the initial bundle gate and measure mandatory feature chunks and first-ready-view latency. Record the library decision without making the backend dependent on it.
 
-### SC10 — Character and Item migration
+### Slice 10 (SC10) — Character and Item migration
+
+**Status:** Not started. **Finding coverage:** P01, R02, R03, R04.
 
 Extend registered objects to the existing character dossier and item Details/Recipes/Uses boundaries, with explicit references and paged recipe/use collections. Preserve both recipe groups, observer knowledge, media validation, source-revision-pinned pagination, character abilities/layout and inventory navigation. Migrate read assembly incrementally; gameplay writes require SC06/SC07 ownership.
 
 **Cleanup and exit:** replace the repeated item-envelope logic with one contract-bound adapter; consolidate compatible mapping paths; relocate fixture-only sources and retire active loader branches only after parity. Keep existing published contracts and generated validators available until their consumers migrate. Mounted/browser, authorization, forged-response, pagination, item and mechanic tests pass with improved request/SQL counts.
 
-### SC11 — Source and documentation hygiene
+### Slice 11 (SC11) — Source and documentation hygiene
 
-Begin safe tracked-output review after SC00, independently of the object implementation. Inventory all O02 excluded tests against current coverage; preserve the opt-in protocol walk. Remove reviewed build outputs from tracking with precise ignore rules; verify a clean checkout builds. Relocate test-only projections/assets to their proper owners. Remove O03 components/selectors after confirming consumer absence and update dated contributor guidance from actual results.
+**Status:** Not started. **Finding coverage:** O01, O02, O03, O06, R02, R04.
 
-**Cleanup and exit:** file-by-file disposition and replacement test ownership, no unrelated file removal, no dependency on stale binaries. Feature-specific deletion waits for its migration even when general hygiene proceeds early. `_to_delete/` remains excluded. No Git-history rewrite is part of this slice.
+Now that the feature migrations are complete, finish tracked-output and remaining source cleanup using the slice 0 inventory. Inventory all O02 excluded tests against current coverage; preserve the opt-in protocol walk. Remove reviewed build outputs from tracking with precise ignore rules; verify a clean checkout builds. Finish relocating remaining test-only projections/assets to their proper owners. Remove remaining O03 components/selectors after confirming consumer absence and update dated contributor guidance from actual results.
 
-### SC12 — Profile remaining host costs
+**Cleanup and exit:** file-by-file disposition and replacement test ownership, no unrelated file removal, no dependency on stale binaries. Check the completed migrations' consumer and parity evidence before feature-specific deletion. `_to_delete/` remains excluded. No Git-history rewrite is part of this slice.
+
+### Slice 12 (SC12) — Profile remaining host costs
+
+**Status:** Not started. **Finding coverage:** P04, P05, P06, P07.
 
 Re-profile catalog materialization, role constraints, schema locks and play-write coordination after the batching work. Reuse prepared metadata where immutable; keep actor-specific results scoped. Optimize only measured remaining costs, preserving source drift, cross-entity constraints, schema safety, SQLite transactions and concurrent conversation correctness.
 
 **Cleanup and exit:** remove superseded cache/mapping owners instead of stacking caches. Record before/after allocation, I/O, SQL and lock-wait evidence; existing invariant and concurrency tests pass. Do not lift bounds or remove serialization solely to make a benchmark faster.
 
-### SC13 — Media and database ownership
+### Slice 13 (SC13) — Media and database ownership
+
+**Status:** Not started. **Finding coverage:** O04, O05.
 
 Resolve each fixture/source image, historical page asset and candidate root database to an owner and retention purpose. Distinguish live SQLite/blob data from authored catalog/source files. Confirm supported launch/setup behavior with explicit database paths; establish a maintained seed contract if a seed is retained.
 
 **Cleanup and exit:** reviewed disposition with live/historical references and backup/readback needs. No merge, overwrite or deletion based on matching filenames or missing text-search references. This slice supplies the prerequisites for storage work and selected retirement.
 
-### SC14 — Durable storage deduplication
+### Slice 14 (SC14) — Durable storage deduplication
 
-Prepare and review web-asset and activation-evidence storage proposals separately, then implement each as a contained migration if justified. Prefer sharing identical immutable bytes/evidence while retaining revision identity, exact hashes, old page resolution and activation history. Blob storage reuse must respect its different media/security contract.
+**Status:** Not started. **Finding coverage:** P09, P10.
+
+Prepare and review web-asset and activation-evidence storage changes separately inside this slice, then implement and verify each justified migration under the unattended authorization. These are internal work steps, not extra queued slices or human approval gates. Prefer sharing identical immutable bytes/evidence while retaining revision identity, exact hashes, old page resolution and activation history. Blob storage reuse must respect its different media/security contract.
 
 **Cleanup and exit:** rehearsal on a copy, pre-migration database/blob backup, exact old/new revision readback, restore and application-readiness proof. Report actual reclaimed/storage-growth measurements separately from theoretical duplicate bytes. Do not discard historical events or migration records to hit a storage target.
 
-### SC15 — Scheduled work throughput
+### Slice 15 (SC15) — Scheduled work throughput
+
+**Status:** Not started. **Finding coverage:** P08.
 
 Measure queue age, provider duration, claiming/recovery and failure visibility. Add bounded concurrency or provider isolation only where it improves observed delays. Coordinate event/change delivery through established transaction owners; scheduled models do not approve their own writes.
 
 **Cleanup and exit:** deterministic disposable-runtime tests for slow providers, cancellation, duplicate delivery and interruption. Replace the selected serial/hidden-failure path with one maintained worker implementation; preserve audit and recovery semantics.
 
-### SC16 — Retained compatibility retirement
+### Slice 16 (SC16) — Retained compatibility retirement
+
+**Status:** Not started. **Finding coverage:** R01, remaining O02.
 
 Select exact old mechanic/source/test identities whose replacements are accepted. Follow `catalog/compatibility-retention.json`, reviewed live export, historical-operation/source references and backup/readback requirements. Update conformance inventory only for the reviewed retirement; retain any identities still needed to interpret history.
 
 **Cleanup and exit:** selected duplicate owners removed or explicitly retained with reason, current contracts still pass and live state is unchanged except for the approved synchronization. An unresolved historical dependency is a retained disposition, not permission to invent a replacement or bulk-delete the 86 records.
 
-### SC17 — Acceptance and closeout
+### Slice 17 (SC17) — Acceptance and closeout
+
+**Status:** Not started. **Finding coverage:** All 23 original findings and all preceding slices.
 
 Verify the final source and served application, not just fixtures. Run the full relevant solution/web suites, catalog validation after catalog changes, and the protocol walk when MCP contracts or dependency registration changed. Compare actor/GM workflows, startup/reload, object edits, reducer execution, subscriptions/reconnect, pagination, character/item regressions and responsive accessibility. Verify current database/binding, signed served assets where applicable, and rollback to retained compatible versions.
 
-**Exit:** each SC slice has an accepted implementation or an explicit, agreed retained/deferred disposition; every original finding maps to evidence. Report HTTP/SQL/latency/allocation/storage outcomes against SC00 and preserve the original audit measurements. Update the current architecture guide only for behavior actually delivered. Do not close the document while required work is silently unfinished or a performance/correctness gate still fails.
+**Exit:** every preceding slice is complete with its mandatory implementation and checks delivered; every original finding maps to evidence. Candidate optimizations/retirements may have an evidence-backed retained disposition under the execution contract, but required architecture cannot be deferred to manufacture completion. Report HTTP/SQL/latency/allocation/storage outcomes against SC00 and preserve the original audit measurements. Update the current architecture guide only for behavior actually delivered. Close the document and commit the final receipt without another user confirmation only when these conditions pass. A missing required implementation, blocked slice or failed performance/correctness gate keeps it open.
 
-### Performance gates to freeze in SC00
+## Performance gates to freeze in slice 0
 
 These are proposed engineering targets for the pinned local fixture, not measured improvements or a public SLA. Confirm fixture sizes and accounting in SC00; any necessary adjustment must retain a quantitative target and a recorded reason.
 
@@ -600,11 +637,11 @@ These are proposed engineering targets for the pinned local fixture, not measure
 
 Track script/style/image transfer separately from data requests; report all exclusions. Do not compare an empty shell with a fully loaded old hub. In-process component/SQL/file reads remain visible in the measurement even when HTTP request count falls. Performance acceptance cannot be obtained by raising rate limits or disabling validation.
 
-### Cutover and removal rule for every slice
+## Cutover and removal rule for every slice
 
 For each migrated view or mechanic, record the existing owner, replacement, parity evidence, remaining callers and exact removal list. Introduce the replacement behind a versioned boundary, compare on a disposable/pinned dataset, switch one consumer, then retire superseded active code when all intended consumers are covered. A retained adapter has one stated compatibility purpose and an exit condition. Source differences must not be silently hidden by falling back to old data when the new contract rejects a request.
 
-Preserve the previous mapping/action/page version until recovery is proven. Read-version rollback does not guarantee write/schema rollback; verify compatibility with writes committed since cutover. Backups, migrations and live catalog synchronization keep their existing explicit boundaries. Stage only the slice's reviewed changes and include what changed, verification and remaining limitations in its commit message, following the user's receipt preference.
+Preserve the previous mapping/action/page version until recovery is proven. Read-version rollback does not guarantee write/schema rollback; verify compatibility with writes committed since cutover. Backups, migrations and live catalog synchronization follow the preauthorized, evidenced cutover boundary in the execution contract, with no further human confirmation. Stage only the slice's reviewed changes and include what changed, verification and remaining limitations in its commit message, following the user's receipt preference.
 
 ## Measurement record
 
@@ -657,4 +694,4 @@ SELECT name, SUM(pgsize) AS bytes
 FROM dbstat GROUP BY name ORDER BY bytes DESC LIMIT 12;
 ```
 
-For each later slice, append a short disposition to the relevant finding: **confirmed scope, implementation commit, validation result, remaining limitation, and retirement status**. Keep original measurements dated so later improvements can be compared without rewriting the baseline. A zero-reference text search alone is not final removal approval.
+For each executed slice, update its single status entry with a short outcome: **implemented scope, validation result/evidence, remaining limitation, and retirement status**. Keep detailed receipts in its commit message and preserve the original dated findings/measurements. Do not maintain a duplicate progress list in the findings register. A zero-reference text search alone is not sufficient evidence for removal.
