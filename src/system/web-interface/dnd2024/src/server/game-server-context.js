@@ -1,4 +1,5 @@
 import { createHubReadScope } from "./hub-read-scope.js";
+import { readCompletePages } from "./complete-pagination.js";
 
 const TOKEN_MAXIMUM = 200;
 const LOCATION_COMPONENT_TYPE_ID = "game.core.world.location";
@@ -85,6 +86,36 @@ function url(origin, path) {
 async function json(response) {
   if (!response) return null;
   try { return await response.json(); } catch { return null; }
+}
+
+async function readJsonPages({
+  fetchImpl,
+  origin,
+  path,
+  pageSize = 100,
+  maximumPages = 100,
+  maximumItems = 10_000,
+}) {
+  return readCompletePages({
+    pageSize,
+    maximumPages,
+    maximumItems,
+    fetchPage: async (cursor) => {
+      const pageUrl = new URL(path, `${origin}/`);
+      pageUrl.searchParams.set("limit", String(pageSize));
+      if (cursor !== null) pageUrl.searchParams.set("cursor", cursor);
+      const response = await fetchImpl(pageUrl.toString(), {
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      });
+      if (!response?.ok) throw new Error("Collection page unavailable.");
+      return json(response);
+    },
+  });
+}
+
+function unavailableOnFirstPage(result) {
+  return result?.status === "incomplete" && result.reason === "page-unavailable" && result.pagesRead === 0;
 }
 
 function denied(message) {
@@ -1036,42 +1067,25 @@ async function readContextSelection({
   const headers = { Accept: "application/json" };
   const campaignCandidates = new Map();
   const worldNames = new Map();
-  const seenCursors = new Set();
-  let nextCursor = null;
+  const directory = await readJsonPages({
+    fetchImpl, origin, path: listRoot, maximumPages: 1_000, maximumItems: 100_000,
+  });
+  if (directory.status !== "complete") {
+    return unavailableOnFirstPage(directory) ? fallback : { ...fallback, incomplete: true };
+  }
 
-  do {
-    const pageUrl = listRoot + (
-      nextCursor === null ? "?limit=100" : `?cursor=${encodeURIComponent(nextCursor)}&limit=100`
-    );
-    let response;
-    try {
-      response = await fetchImpl(url(origin, pageUrl), { headers, cache: "no-store" });
-    } catch {
-      return fallback;
-    }
-    if (!response?.ok) return fallback;
-    const payload = await json(response);
-    if (!payload || !Array.isArray(payload.items)) return fallback;
-
-    for (const item of payload.items) {
-      const id = token(typeof item?.entityId === "string" ? item.entityId : item?.id);
-      const name = text(item?.name, 200);
-      if (!id || !name) continue;
-      if (id.startsWith("world.")) worldNames.set(id, name);
-      if (id.startsWith("campaign.") && campaignCandidates.size < 50) {
-        campaignCandidates.set(id, { id, name });
+  for (const item of directory.items) {
+    const id = token(typeof item?.entityId === "string" ? item.entityId : item?.id);
+    const name = text(item?.name, 200);
+    if (!id || !name) continue;
+    if (id.startsWith("world.")) worldNames.set(id, name);
+    if (id.startsWith("campaign.")) {
+      if (!campaignCandidates.has(id) && campaignCandidates.size >= 1_000) {
+        return { ...fallback, incomplete: true };
       }
+      campaignCandidates.set(id, { id, name });
     }
-
-    nextCursor = typeof payload.nextCursor === "string" && payload.nextCursor.length > 0
-      ? payload.nextCursor
-      : null;
-    if (nextCursor && seenCursors.has(nextCursor)) {
-      nextCursor = null;
-    } else if (nextCursor) {
-      seenCursors.add(nextCursor);
-    }
-  } while (nextCursor);
+  }
 
   const verified = await Promise.all(Array.from(campaignCandidates.values()).map(async (candidate) => {
     const componentPath = `${listRoot}/${encodeURIComponent(candidate.id)}` +
@@ -1137,52 +1151,26 @@ async function readRawLocationDirectory({
   stateSpaceId,
   worldId,
 }) {
-  if (!applicationId || !stateSpaceId || !worldId) return [];
+  if (!applicationId || !stateSpaceId || !worldId) return { status: "complete", items: [] };
   const listRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
     `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
   const headers = { Accept: "application/json" };
   const entries = new Map();
-  const seenCursors = new Set();
-  let nextCursor = null;
+  const directory = await readJsonPages({
+    fetchImpl, origin, path: listRoot, maximumPages: 1_000, maximumItems: 100_000,
+  });
+  if (directory.status !== "complete") {
+    return unavailableOnFirstPage(directory) ? { status: "complete", items: [] } : directory;
+  }
 
-  do {
-    const pageUrl = listRoot + (
-      nextCursor === null ? "?limit=100" : `?cursor=${encodeURIComponent(nextCursor)}&limit=100`
-    );
-    let response;
-    try {
-      response = await fetchImpl(url(origin, pageUrl), { headers, cache: "no-store" });
-    } catch {
-      break;
-    }
-    if (!response?.ok) {
-      break;
-    }
-    const payload = await json(response);
-    if (!payload || !Array.isArray(payload.items)) {
-      break;
-    }
+  for (const item of directory.items) {
+    if (!isLocationEntity(item, worldId)) continue;
+    const locationId = typeof item.entityId === "string" ? item.entityId : item.id;
+    const name = text(item.name, 200);
+    if (name && locationId && !entries.has(locationId)) entries.set(locationId, name);
+  }
 
-    for (const item of payload.items) {
-      if (!isLocationEntity(item, worldId)) continue;
-      const locationId = typeof item.entityId === "string" ? item.entityId : item.id;
-      const name = text(item.name, 200);
-      if (name && locationId && !entries.has(locationId)) {
-        entries.set(locationId, name);
-      }
-    }
-
-    nextCursor = typeof payload.nextCursor === "string" && payload.nextCursor.length > 0
-      ? payload.nextCursor
-      : null;
-    if (nextCursor && seenCursors.has(nextCursor)) {
-      nextCursor = null;
-    } else if (nextCursor) {
-      seenCursors.add(nextCursor);
-    }
-  } while (nextCursor);
-
-  if (entries.size === 0) return [];
+  if (entries.size === 0) return { status: "complete", items: [] };
 
   const locationDirectory = await Promise.all(Array.from(entries.entries()).map(async ([id, name]) => {
     const containmentPath = `/api/applications/${encodeURIComponent(applicationId)}` +
@@ -1250,9 +1238,12 @@ async function readRawLocationDirectory({
       return { id, name, visibility: null, mediaPayload: null };
     }
   }));
-  return locationDirectory
-    .filter((entry) => entry && typeof entry.id === "string" && typeof entry.name === "string")
-    .sort((left, right) => left.name.localeCompare(right.name));
+  return {
+    status: "complete",
+    items: locationDirectory
+      .filter((entry) => entry && typeof entry.id === "string" && typeof entry.name === "string")
+      .sort((left, right) => left.name.localeCompare(right.name)),
+  };
 }
 
 const LOCATION_DIRECTORY_CACHE_MS = 10_000;
@@ -1270,23 +1261,29 @@ async function readLocationDirectory(options) {
   if (!cached || now - cached.createdAt >= LOCATION_DIRECTORY_CACHE_MS) {
     cached = {
       createdAt: now,
-      value: readRawLocationDirectory(options).catch(() => []),
+      value: readRawLocationDirectory(options).catch(() => ({
+        status: "incomplete", reason: "page-unavailable", items: [],
+      })),
     };
     locationDirectoryCache.set(key, cached);
   }
   const rawDirectory = await cached.value;
-  return rawDirectory.flatMap((entry) => {
-    if (options.perspective === "player" && entry.visibility !== "public") return [];
-    const selectedMedia = entry.mediaPayload ? mediaVisual(entry.mediaPayload) : null;
-    const selectedVisual = selectedMedia?.map ?? null;
-    const { visibility: _, mediaPayload: __, ...safeEntry } = entry;
-    const { map: ___, ...entityMedia } = selectedMedia ?? {};
-    return [{
-      ...safeEntry,
-      ...(selectedVisual ? { mapVisual: { imageUrl: selectedVisual.imageUrl, alt: selectedVisual.alt } } : {}),
-      ...(Object.keys(entityMedia).length > 0 ? { media: entityMedia } : {}),
-    }];
-  });
+  if (rawDirectory.status !== "complete") return rawDirectory;
+  return {
+    status: "complete",
+    items: rawDirectory.items.flatMap((entry) => {
+      if (options.perspective === "player" && entry.visibility !== "public") return [];
+      const selectedMedia = entry.mediaPayload ? mediaVisual(entry.mediaPayload) : null;
+      const selectedVisual = selectedMedia?.map ?? null;
+      const { visibility: _, mediaPayload: __, ...safeEntry } = entry;
+      const { map: ___, ...entityMedia } = selectedMedia ?? {};
+      return [{
+        ...safeEntry,
+        ...(selectedVisual ? { mapVisual: { imageUrl: selectedVisual.imageUrl, alt: selectedVisual.alt } } : {}),
+        ...(Object.keys(entityMedia).length > 0 ? { media: entityMedia } : {}),
+      }];
+    }),
+  };
 }
 
 function isHoldingEntityId(entityId) {
@@ -1295,7 +1292,7 @@ function isHoldingEntityId(entityId) {
 }
 
 function relationshipTargetIds(value, expectedFromId, expectedKind) {
-  if (!value || !Array.isArray(value.items) || value.items.length > 100) return [];
+  if (!value || !Array.isArray(value.items)) return [];
   return value.items.flatMap((item) => {
     const fromEntityId = token(item?.fromEntityId);
     const toEntityId = token(item?.toEntityId);
@@ -1343,21 +1340,40 @@ async function readEntityMedia(fetchImpl, origin, entityRoot, entityId, perspect
   }
 }
 
-async function readExactRelationshipTargets(fetchImpl, origin, entityRoot, fromEntityId, qualifiedKind) {
-  try {
-    const relationshipRoot = entityRoot.replace(/\/entities$/u, "/relationships");
-    const response = await fetchImpl(url(origin, `${relationshipRoot}` +
-      `?fromEntityId=${encodeURIComponent(fromEntityId)}` +
-      `&qualifiedKind=${encodeURIComponent(qualifiedKind)}&limit=100`), {
-      headers: { Accept: "application/json" }, cache: "no-store",
-    });
-    if (!response?.ok) return null;
-    const payload = await json(response);
-    const targets = relationshipTargetIds(payload, fromEntityId, qualifiedKind);
-    return payload?.items?.length === targets.length ? [...new Set(targets)] : null;
-  } catch {
-    return null;
+async function readCompleteRelationshipTargetIds(
+  fetchImpl,
+  origin,
+  entityRoot,
+  fromEntityId,
+  qualifiedKind,
+  { unavailableFirstPageIsEmpty = false } = {},
+) {
+  const relationshipRoot = entityRoot.replace(/\/entities$/u, "/relationships");
+  const path = `${relationshipRoot}?fromEntityId=${encodeURIComponent(fromEntityId)}` +
+    `&qualifiedKind=${encodeURIComponent(qualifiedKind)}`;
+  const pages = await readJsonPages({
+    fetchImpl, origin, path, maximumPages: 10, maximumItems: 1_000,
+  });
+  if (pages.status !== "complete") {
+    return unavailableFirstPageIsEmpty && unavailableOnFirstPage(pages) ? [] : null;
   }
+  const payload = { items: pages.items };
+  const targets = relationshipTargetIds(payload, fromEntityId, qualifiedKind);
+  return pages.items.length === targets.length ? targets : null;
+}
+
+async function readExactRelationshipTargets(
+  fetchImpl,
+  origin,
+  entityRoot,
+  fromEntityId,
+  qualifiedKind,
+  options,
+) {
+  const targets = await readCompleteRelationshipTargetIds(
+    fetchImpl, origin, entityRoot, fromEntityId, qualifiedKind, options,
+  );
+  return targets === null ? null : [...new Set(targets)];
 }
 
 async function readSingleExactRelationshipTarget(
@@ -1367,23 +1383,17 @@ async function readSingleExactRelationshipTarget(
   fromEntityId,
   qualifiedKind,
 ) {
-  try {
-    const relationshipRoot = entityRoot.replace(/\/entities$/u, "/relationships");
-    const response = await fetchImpl(url(origin, `${relationshipRoot}` +
-      `?fromEntityId=${encodeURIComponent(fromEntityId)}` +
-      `&qualifiedKind=${encodeURIComponent(qualifiedKind)}&limit=100`), {
-      headers: { Accept: "application/json" }, cache: "no-store",
-    });
-    if (!response?.ok) return null;
-    const payload = await json(response);
-    if (!payload || !Array.isArray(payload.items) || payload.items.length !== 1) return null;
-    const item = payload.items[0];
-    return token(item?.fromEntityId) === fromEntityId && token(item?.qualifiedKind) === qualifiedKind
-      ? token(item?.toEntityId)
-      : null;
-  } catch {
-    return null;
-  }
+  const relationshipRoot = entityRoot.replace(/\/entities$/u, "/relationships");
+  const path = `${relationshipRoot}?fromEntityId=${encodeURIComponent(fromEntityId)}` +
+    `&qualifiedKind=${encodeURIComponent(qualifiedKind)}`;
+  const pages = await readJsonPages({
+    fetchImpl, origin, path, pageSize: 2, maximumPages: 1, maximumItems: 2,
+  });
+  if (pages.status !== "complete" || pages.items.length !== 1) return null;
+  const item = pages.items[0];
+  return token(item?.fromEntityId) === fromEntityId && token(item?.qualifiedKind) === qualifiedKind
+    ? token(item?.toEntityId)
+    : null;
 }
 
 function validActiveRoute(value) {
@@ -1682,82 +1692,76 @@ export async function readCombatCurrentScene({
 }
 
 async function campaignRecordWorldEntityIds({ fetchImpl, origin, relationshipRoot, recordId }) {
-  try {
-    const path = `${relationshipRoot}?fromEntityId=${encodeURIComponent(recordId)}` +
-      `&qualifiedKind=${encodeURIComponent(CAMPAIGN_RECORD_WORLD_REFERENCE_RELATIONSHIP_KIND)}&limit=100`;
-    const response = await fetchImpl(url(origin, path), {
-      headers: { Accept: "application/json" },
-      cache: "no-store",
-    });
-    const payload = response?.ok ? await json(response) : null;
-    return [...new Set(relationshipTargetIds(
-      payload,
-      recordId,
-      CAMPAIGN_RECORD_WORLD_REFERENCE_RELATIONSHIP_KIND,
-    ))];
-  } catch {
-    return [];
-  }
+  const path = `${relationshipRoot}?fromEntityId=${encodeURIComponent(recordId)}` +
+    `&qualifiedKind=${encodeURIComponent(CAMPAIGN_RECORD_WORLD_REFERENCE_RELATIONSHIP_KIND)}`;
+  const pages = await readJsonPages({
+    fetchImpl, origin, path, maximumPages: 10, maximumItems: 1_000,
+  });
+  if (pages.status !== "complete") return unavailableOnFirstPage(pages) ? [] : null;
+  const targets = relationshipTargetIds(
+    { items: pages.items },
+    recordId,
+    CAMPAIGN_RECORD_WORLD_REFERENCE_RELATIONSHIP_KIND,
+  );
+  return targets.length === pages.items.length ? [...new Set(targets)] : null;
 }
 
 async function readCampaignLocationVisits({
   fetchImpl,
   origin,
   listRoot,
-  relationshipRoot,
   campaignId,
   includeGmContext,
 }) {
   if (!includeGmContext) return [];
   try {
-    const ownershipPath = `${relationshipRoot}?fromEntityId=${encodeURIComponent(campaignId)}` +
-      `&qualifiedKind=${encodeURIComponent(CAMPAIGN_HAS_LOCATION_VISIT_RELATIONSHIP_KIND)}&limit=100`;
-    const ownershipResponse = await fetchImpl(url(origin, ownershipPath), {
-      headers: { Accept: "application/json" }, cache: "no-store",
-    });
-    const ownershipPayload = ownershipResponse?.ok ? await json(ownershipResponse) : null;
-    const visitIds = [...new Set(relationshipTargetIds(
-      ownershipPayload,
+    const visitIds = await readExactRelationshipTargets(
+      fetchImpl,
+      origin,
+      listRoot,
       campaignId,
       CAMPAIGN_HAS_LOCATION_VISIT_RELATIONSHIP_KIND,
-    ))];
+      { unavailableFirstPageIsEmpty: true },
+    );
+    if (visitIds === null) return null;
     const visits = (await Promise.all(visitIds.map(async (visitId) => {
       const componentPath = `${listRoot}/${encodeURIComponent(visitId)}` +
         `/components/${CAMPAIGN_LOCATION_VISIT_COMPONENT_TYPE_ID}`;
-      const targetPath = `${relationshipRoot}?fromEntityId=${encodeURIComponent(visitId)}` +
-        `&qualifiedKind=${encodeURIComponent(CAMPAIGN_LOCATION_VISIT_AT_LOCATION_RELATIONSHIP_KIND)}&limit=2`;
       try {
-        const [componentResponse, targetResponse] = await Promise.all([
+        const [componentResponse, locationIds] = await Promise.all([
           fetchImpl(url(origin, componentPath), { headers: { Accept: "application/json" }, cache: "no-store" }),
-          fetchImpl(url(origin, targetPath), { headers: { Accept: "application/json" }, cache: "no-store" }),
+          readExactRelationshipTargets(
+            fetchImpl,
+            origin,
+            listRoot,
+            visitId,
+            CAMPAIGN_LOCATION_VISIT_AT_LOCATION_RELATIONSHIP_KIND,
+            { unavailableFirstPageIsEmpty: true },
+          ),
         ]);
-        if (!componentResponse?.ok || !targetResponse?.ok) return null;
-        const [componentPayload, targetPayload] = await Promise.all([
-          json(componentResponse), json(targetResponse),
-        ]);
+        if (!componentResponse?.ok) return null;
+        if (locationIds === null) return { incomplete: true };
+        const componentPayload = await json(componentResponse);
         const value = campaignLocationVisit(componentValue(
           componentPayload,
           visitId,
           CAMPAIGN_LOCATION_VISIT_COMPONENT_TYPE_ID,
         ), includeGmContext);
-        const locationIds = [...new Set(relationshipTargetIds(
-          targetPayload,
-          visitId,
-          CAMPAIGN_LOCATION_VISIT_AT_LOCATION_RELATIONSHIP_KIND,
-        ))];
         return value && locationIds.length === 1
           ? { id: visitId, locationId: locationIds[0], ...value }
           : null;
       } catch {
         return null;
       }
-    }))).filter(Boolean);
+    })));
+    if (visits.some((visit) => visit?.incomplete)) return null;
+    const completeVisits = visits.filter(Boolean);
     const counts = new Map();
-    for (const visit of visits) counts.set(visit.locationId, (counts.get(visit.locationId) ?? 0) + 1);
-    return visits.filter((visit) => counts.get(visit.locationId) === 1)
+    for (const visit of completeVisits) counts.set(visit.locationId, (counts.get(visit.locationId) ?? 0) + 1);
+    return completeVisits.filter((visit) => counts.get(visit.locationId) === 1)
       .sort((left, right) => right.lastVisitedMinute - left.lastVisitedMinute || left.id.localeCompare(right.id));
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -1794,25 +1798,16 @@ async function readPartyRoster({
   const applicationRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
     `/state-spaces/${encodeURIComponent(stateSpaceId)}`;
   const entityRoot = `${applicationRoot}/entities`;
-  const relationshipRoot = `${applicationRoot}/relationships`;
   const headers = { Accept: "application/json" };
-  let campaignRelationships;
-  try {
-    const response = await fetchImpl(url(origin, `${relationshipRoot}` +
-      `?fromEntityId=${encodeURIComponent(campaignId)}` +
-      `&qualifiedKind=${encodeURIComponent(CAMPAIGN_HAS_PARTICIPATION_RELATIONSHIP_KIND)}` +
-      "&limit=100"), { headers, cache: "no-store" });
-    if (!response?.ok) return [];
-    campaignRelationships = await json(response);
-  } catch {
-    return [];
-  }
-
-  const rawParticipationIds = relationshipTargetIds(
-    campaignRelationships,
+  const rawParticipationIds = await readCompleteRelationshipTargetIds(
+    fetchImpl,
+    origin,
+    entityRoot,
     campaignId,
     CAMPAIGN_HAS_PARTICIPATION_RELATIONSHIP_KIND,
+    { unavailableFirstPageIsEmpty: true },
   );
+  if (rawParticipationIds === null) return null;
   const occurrenceCount = new Map();
   for (const id of rawParticipationIds) {
     occurrenceCount.set(id, (occurrenceCount.get(id) ?? 0) + 1);
@@ -1821,28 +1816,25 @@ async function readPartyRoster({
 
   const members = await Promise.all(participationIds.map(async (participationId) => {
     try {
-      const [componentResponse, actorRelationshipResponse] = await Promise.all([
+      const [componentResponse, actorIds] = await Promise.all([
         fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(participationId)}` +
           `/components/${CAMPAIGN_PARTICIPATION_COMPONENT_TYPE_ID}`), {
           headers,
           cache: "no-store",
         }),
-        fetchImpl(url(origin, `${relationshipRoot}` +
-          `?fromEntityId=${encodeURIComponent(participationId)}` +
-          `&qualifiedKind=${encodeURIComponent(CAMPAIGN_PARTICIPATION_ACTOR_RELATIONSHIP_KIND)}` +
-          "&limit=100"), { headers, cache: "no-store" }),
+        readExactRelationshipTargets(
+          fetchImpl,
+          origin,
+          entityRoot,
+          participationId,
+          CAMPAIGN_PARTICIPATION_ACTOR_RELATIONSHIP_KIND,
+          { unavailableFirstPageIsEmpty: true },
+        ),
       ]);
-      if (!componentResponse?.ok || !actorRelationshipResponse?.ok) return null;
-      const [componentPayload, relationshipPayload] = await Promise.all([
-        json(componentResponse),
-        json(actorRelationshipResponse),
-      ]);
+      if (actorIds === null) return { incomplete: true };
+      if (!componentResponse?.ok) return null;
+      const componentPayload = await json(componentResponse);
       if (!activeCharacterParticipation(componentPayload, participationId)) return null;
-      const actorIds = relationshipTargetIds(
-        relationshipPayload,
-        participationId,
-        CAMPAIGN_PARTICIPATION_ACTOR_RELATIONSHIP_KIND,
-      );
       if (actorIds.length !== 1) return null;
       const actorId = actorIds[0];
       const [actorResponse, recordResponse] = await Promise.all([
@@ -1900,6 +1892,7 @@ async function readPartyRoster({
     }
   }));
 
+  if (members.some((member) => member?.incomplete)) return null;
   const validMembers = members.filter(Boolean);
   const actorOccurrenceCount = new Map();
   for (const member of validMembers) {
@@ -1928,62 +1921,41 @@ async function readWorldDirectory({
   const relationshipRoot = listRoot.replace(/\/entities$/u, "/relationships");
   const headers = { Accept: "application/json" };
   const entities = new Map();
-  const seenCursors = new Set();
-  let nextCursor = null;
-  let pagesRead = 0;
-
-  do {
-    const pageUrl = listRoot + (
-      nextCursor === null ? "?limit=100" : `?cursor=${encodeURIComponent(nextCursor)}&limit=100`
-    );
-    let response;
-    try {
-      response = await fetchImpl(url(origin, pageUrl), { headers, cache: "no-store" });
-    } catch {
-      return empty;
+  const directory = await readJsonPages({ fetchImpl, origin, path: listRoot });
+  if (directory.status !== "complete") return incomplete;
+  for (const item of directory.items) {
+    const id = token(typeof item?.entityId === "string" ? item.entityId : item?.id);
+    const name = text(item?.name, 200);
+    // Catalog definitions must not exhaust the directory's retained-record budget
+    // before later pages containing actual world factions, people and holdings.
+    const relevant = id && (id === `faction.${worldId}` || id.startsWith(`faction.${worldId}.`) ||
+      id.startsWith("actor.") || id.startsWith("creature.") || isHoldingEntityId(id));
+    if (relevant && name) {
+      if (!entities.has(id) && entities.size >= 1_000) return incomplete;
+      entities.set(id, { id, name });
     }
-    if (!response?.ok) return empty;
-    const payload = await json(response);
-    if (!payload || !Array.isArray(payload.items) || payload.items.length > 100) return incomplete;
-    pagesRead += 1;
-    for (const item of payload.items) {
-      const id = token(typeof item?.entityId === "string" ? item.entityId : item?.id);
-      const name = text(item?.name, 200);
-      // Catalog definitions must not exhaust the directory's retained-record budget
-      // before later pages containing actual world factions, people and holdings.
-      const relevant = id && (id === `faction.${worldId}` || id.startsWith(`faction.${worldId}.`) ||
-        id.startsWith("actor.") || id.startsWith("creature.") || isHoldingEntityId(id));
-      if (relevant && name) {
-        if (!entities.has(id) && entities.size >= 1_000) return incomplete;
-        entities.set(id, { id, name });
-      }
-    }
-    nextCursor = typeof payload.nextCursor === "string" && payload.nextCursor.length > 0
-      ? payload.nextCursor
-      : null;
-    if (nextCursor && (seenCursors.has(nextCursor) || pagesRead >= 100)) return incomplete;
-    else if (nextCursor) seenCursors.add(nextCursor);
-  } while (nextCursor);
+  }
 
   const locationIds = new Set(locationDirectory.map((location) => location.id));
   const containedResults = await Promise.all(locationDirectory.map(async (location) => {
     const path = `${listRoot.replace(/\/entities$/u, "/containments")}` +
-      `?containerEntityId=${encodeURIComponent(location.id)}&limit=100`;
-    try {
-      const response = await fetchImpl(url(origin, path), { headers, cache: "no-store" });
-      const payload = response?.ok ? await json(response) : null;
-      if (!payload || !Array.isArray(payload.items) || payload.items.length > 100) return [];
-      return payload.items.flatMap((item) => {
-        const containedEntityId = token(item?.containedEntityId);
-        const containerEntityId = token(item?.containerEntityId);
-        return containedEntityId && containerEntityId === location.id && entities.has(containedEntityId)
-          ? [{ entityId: containedEntityId, locationId: location.id }]
-          : [];
-      });
-    } catch {
-      return [];
+      `?containerEntityId=${encodeURIComponent(location.id)}`;
+    const pages = await readJsonPages({
+      fetchImpl, origin, path, maximumPages: 10, maximumItems: 1_000,
+    });
+    if (pages.status !== "complete") return unavailableOnFirstPage(pages) ? [] : null;
+    const values = [];
+    for (const item of pages.items) {
+      const containedEntityId = token(item?.containedEntityId);
+      const containerEntityId = token(item?.containerEntityId);
+      if (!containedEntityId || containerEntityId !== location.id) return null;
+      if (entities.has(containedEntityId)) {
+        values.push({ entityId: containedEntityId, locationId: location.id });
+      }
     }
+    return values;
   }));
+  if (containedResults.some((result) => result === null)) return incomplete;
   const contained = containedResults.flat();
 
   const people = await Promise.all(contained.flatMap((entry) => {
@@ -2032,25 +2004,22 @@ async function readWorldDirectory({
 
   const factionCandidates = Array.from(entities.values()).filter((entry) =>
     entry.id === `faction.${worldId}` || entry.id.startsWith(`faction.${worldId}.`));
-  const factions = (await Promise.all(factionCandidates.map(async (entry) => {
+  const factionResults = await Promise.all(factionCandidates.map(async (entry) => {
     const componentPath = `${listRoot}/${encodeURIComponent(entry.id)}/components/${WORLD_FACTION_COMPONENT_TYPE_ID}`;
-    const relationshipRoot = `${listRoot.replace(/\/entities$/u, "/relationships")}`;
     try {
-      const [componentResponse, ...relationshipResponses] = await Promise.all([
+      const [componentResponse, ...relationshipTargets] = await Promise.all([
         fetchImpl(url(origin, componentPath), { headers, cache: "no-store" }),
         ...Object.values(WORLD_FACTION_RELATIONSHIP_KINDS).map((kind) =>
-          fetchImpl(url(origin, `${relationshipRoot}?fromEntityId=${encodeURIComponent(entry.id)}` +
-            `&qualifiedKind=${encodeURIComponent(kind)}&limit=100`), { headers, cache: "no-store" })
-            .catch(() => null)),
+          readExactRelationshipTargets(fetchImpl, origin, listRoot, entry.id, kind,
+            { unavailableFirstPageIsEmpty: true })),
       ]);
       if (!componentResponse?.ok) return null;
       const componentPayload = await json(componentResponse);
       const record = worldFaction(componentValue(componentPayload, entry.id, WORLD_FACTION_COMPONENT_TYPE_ID));
       if (!record || record.status !== "active") return null;
-      const relationshipPayloads = await Promise.all(relationshipResponses.map((response) =>
-        response?.ok ? json(response) : Promise.resolve(null)));
+      if (relationshipTargets.some((targets) => targets === null)) return { incomplete: true };
       const byKind = Object.fromEntries(Object.entries(WORLD_FACTION_RELATIONSHIP_KINDS).map(
-        ([key, kind], index) => [key, relationshipTargetIds(relationshipPayloads[index], entry.id, kind)],
+        ([key], index) => [key, relationshipTargets[index]],
       ));
       return {
         ...entry,
@@ -2063,7 +2032,9 @@ async function readWorldDirectory({
     } catch {
       return null;
     }
-  }))).filter(Boolean);
+  }));
+  if (factionResults.some((result) => result?.incomplete)) return incomplete;
+  const factions = factionResults.filter(Boolean);
 
   return {
     people: people.sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id)),
@@ -2087,49 +2058,28 @@ async function readCampaignStructure({
   includeGmContext,
 }) {
   const empty = { chapters: [], arcs: [], sessions: [], visits: [] };
+  const incomplete = { ...empty, incomplete: true };
   if (!applicationId || !stateSpaceId || !campaignId) return empty;
   const listRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
     `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
   const relationshipRoot = listRoot.replace(/\/entities$/u, "/relationships");
   const headers = { Accept: "application/json" };
   const candidates = new Map();
-  const seenCursors = new Set();
-  let nextCursor = null;
-
-  do {
-    const pageUrl = listRoot + (
-      nextCursor === null ? "?limit=100" : `?cursor=${encodeURIComponent(nextCursor)}&limit=100`
-    );
-    let response;
-    try {
-      response = await fetchImpl(url(origin, pageUrl), { headers, cache: "no-store" });
-    } catch {
-      return empty;
-    }
-    if (!response?.ok) return empty;
-    const payload = await json(response);
-    if (!payload || !Array.isArray(payload.items)) return empty;
-
-    for (const item of payload.items) {
-      const id = token(typeof item?.entityId === "string" ? item.entityId : item?.id);
-      const kind = id ? campaignChildType(id, campaignId) : null;
-      if (!id || !kind || candidates.size >= 100) continue;
-      candidates.set(id, {
-        id,
-        kind,
-        createdAtUtc: text(item?.createdAtUtc, 64),
-      });
-    }
-
-    nextCursor = typeof payload.nextCursor === "string" && payload.nextCursor.length > 0
-      ? payload.nextCursor
-      : null;
-    if (nextCursor && seenCursors.has(nextCursor)) {
-      nextCursor = null;
-    } else if (nextCursor) {
-      seenCursors.add(nextCursor);
-    }
-  } while (nextCursor && candidates.size < 100);
+  const directory = await readJsonPages({
+    fetchImpl, origin, path: listRoot, maximumPages: 1_000, maximumItems: 100_000,
+  });
+  if (directory.status !== "complete") return unavailableOnFirstPage(directory) ? empty : incomplete;
+  for (const item of directory.items) {
+    const id = token(typeof item?.entityId === "string" ? item.entityId : item?.id);
+    const kind = id ? campaignChildType(id, campaignId) : null;
+    if (!id || !kind) continue;
+    if (!candidates.has(id) && candidates.size >= 1_000) return incomplete;
+    candidates.set(id, {
+      id,
+      kind,
+      createdAtUtc: text(item?.createdAtUtc, 64),
+    });
+  }
 
   const records = await Promise.all(Array.from(candidates.values()).map(async (candidate) => {
     const typeId = candidate.kind === "chapter"
@@ -2154,6 +2104,7 @@ async function readCampaignStructure({
             fetchImpl, origin, relationshipRoot, recordId: candidate.id,
           })
         : [];
+      if (worldEntityIds === null) return { incomplete: true };
       return {
         kind: candidate.kind,
         record: {
@@ -2168,6 +2119,7 @@ async function readCampaignStructure({
       return null;
     }
   }));
+  if (records.some((record) => record?.incomplete)) return incomplete;
 
   const compare = (left, right) =>
     (left.createdAtUtc ?? "").localeCompare(right.createdAtUtc ?? "") || left.id.localeCompare(right.id);
@@ -2175,14 +2127,19 @@ async function readCampaignStructure({
   if (includeGmContext) try {
     const relationshipPath = `${relationshipRoot}` +
       `?fromEntityId=${encodeURIComponent(campaignId)}` +
-      `&qualifiedKind=${encodeURIComponent(CAMPAIGN_HAS_SESSION_RELATIONSHIP_KIND)}&limit=100`;
-    const relationshipResponse = await fetchImpl(url(origin, relationshipPath), { headers, cache: "no-store" });
-    const relationshipPayload = relationshipResponse?.ok ? await json(relationshipResponse) : null;
+      `&qualifiedKind=${encodeURIComponent(CAMPAIGN_HAS_SESSION_RELATIONSHIP_KIND)}`;
+    const relationshipPages = await readJsonPages({
+      fetchImpl, origin, path: relationshipPath, maximumPages: 10, maximumItems: 1_000,
+    });
+    if (relationshipPages.status !== "complete") {
+      if (!unavailableOnFirstPage(relationshipPages)) return incomplete;
+    }
     const sessionIds = relationshipTargetIds(
-      relationshipPayload,
+      { items: relationshipPages.items },
       campaignId,
       CAMPAIGN_HAS_SESSION_RELATIONSHIP_KIND,
     );
+    if (sessionIds.length !== relationshipPages.items.length) return incomplete;
     sessions = (await Promise.all(sessionIds.map(async (sessionId) => {
       const componentRoot = `${listRoot}/${encodeURIComponent(sessionId)}/components`;
       try {
@@ -2214,6 +2171,7 @@ async function readCampaignStructure({
         const worldEntityIds = session.status === "ended"
           ? await campaignRecordWorldEntityIds({ fetchImpl, origin, relationshipRoot, recordId: sessionId })
           : [];
+        if (worldEntityIds === null) return { incomplete: true };
         return {
           id: sessionId,
           ...session,
@@ -2224,18 +2182,21 @@ async function readCampaignStructure({
       } catch {
         return null;
       }
-    }))).filter(Boolean).sort((left, right) => left.ordinal - right.ordinal || left.id.localeCompare(right.id));
+    })));
+    if (sessions.some((session) => session?.incomplete)) return incomplete;
+    sessions = sessions.filter(Boolean)
+      .sort((left, right) => left.ordinal - right.ordinal || left.id.localeCompare(right.id));
   } catch {
-    sessions = [];
+    return incomplete;
   }
   const visits = await readCampaignLocationVisits({
     fetchImpl,
     origin,
     listRoot,
-    relationshipRoot,
     campaignId,
     includeGmContext,
   });
+  if (visits === null) return incomplete;
   return {
     chapters: records.filter((value) => value?.kind === "chapter").map((value) => value.record).sort(compare),
     arcs: records.filter((value) => value?.kind === "arc").map((value) => value.record).sort(compare),
@@ -2332,6 +2293,9 @@ async function readGameServerContextCore({
     boundCampaignId: binding.campaignId,
     isGameMaster: serverRole.role === "game-master",
   });
+  if (contextSelection?.incomplete) {
+    return unavailable("The campaign directory could not be loaded completely. Please try again.");
+  }
   const selectedContext = selectContext(contextSelection, requestedCampaign ?? binding.campaignId);
   if (!selectedContext) {
     return denied("That campaign is not available to this local table.");
@@ -2444,6 +2408,9 @@ async function readGameServerContextCore({
     boundCanonicalResult,
     deferCharacterDetails,
   });
+  if (party === null) {
+    return unavailable("The campaign party could not be loaded completely. Please try again.");
+  }
   let projectedKnowledge = knowledgeResponse?.ok
     ? knowledge(knowledgeEnvelope)
     : { status: "unavailable", entries: [], locations: [] };
@@ -2458,7 +2425,7 @@ async function readGameServerContextCore({
   const projectedChronology = chronologyResponse?.ok
     ? chronology(chronologyEnvelope, contextAudience.perspective ?? "player")
     : { status: "unavailable", perspective: contextAudience.perspective ?? "player", entries: [] };
-  const [locationDirectory, campaignStructure] = await Promise.all([
+  const [locationDirectoryResult, campaignStructure] = await Promise.all([
     readLocationDirectory({
       fetchImpl,
       origin,
@@ -2477,6 +2444,13 @@ async function readGameServerContextCore({
       includeGmContext: contextAudience.perspective === "dm",
     }),
   ]);
+  if (locationDirectoryResult.status !== "complete") {
+    return unavailable("The location directory could not be loaded completely. Please try again.");
+  }
+  if (campaignStructure.incomplete) {
+    return unavailable("The campaign history could not be loaded completely. Please try again.");
+  }
+  const locationDirectory = locationDirectoryResult.items;
   let currentLocationId = null;
   if (shouldReadBoundActor && locationDirectory.length > 0) {
     try {

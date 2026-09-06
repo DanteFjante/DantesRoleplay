@@ -548,11 +548,13 @@ Application query contracts retain their existing response envelope and discover
 
 ### Slice 1 (SC01) — Complete pagination
 
-**Status:** Not started. **Finding coverage:** C01.
+**Status:** Complete. **Finding coverage:** C01. **Outcome:** the D&D web context adapter now uses one bounded opaque-cursor reader for entity discovery, location and world containment, faction links, campaign records, sessions, visits and party relationships. Every consumer either receives the complete validated collection or discards it and exposes its existing scoped unavailable response; malformed successful pages, oversized pages, repeated cursors and failures after a valid page can no longer become credible empty or partial data. Optional resources that are unavailable on their first transport request retain the previous empty/fallback behavior, while the shared result records that zero pages were read so later-page failure remains distinguishable. Broad entity discovery is bounded at 1,000 pages/100,000 records, world discovery at 100 pages/10,000 records, and containment/relationship traversal at 10 pages/1,000 records; exact single-link reads retain a two-record, one-page bound. Relevant campaign records are retained up to an explicit 1,000-record ceiling. No shared server rate limit, public ready-response shape, catalog record, runtime identity or database was changed.
 
 Repair the adjacent containment, relationship and campaign loops identified by C01 before using them as comparison truth. Cover 99/100/101 entries, repeated cursors, failures after a successful first page and oversized/malformed pages. Keep traversal bounded and make incomplete reads visible. Do not raise shared rate limits to pass this slice.
 
 **Cleanup and exit:** converge duplicate cursor handling where semantics match; demonstrate full expected records or explicit incompleteness in both current loaders and future fixtures. No public response change is hidden inside a helper refactor.
+
+SC01 verification covers the shared future-fixture contract at 99, 100 and 101 entries plus repeated cursors, bounded traversal, malformed/oversized pages and a failed second page. Loader-level fixtures retain all 101 containment records, 101 faction-member links and 101 campaign chapters, and prove that second-page containment or relationship failures return an explicit World-directory unavailable result. The existing location-directory second-page failure test remains green. The full web verification passes 257 Node tests, 70 mounted tests, TypeScript checking and the production Vite build. The Release solution build succeeds with zero warnings and errors, and the full .NET suite passes 1,922/1,922. Catalog validation and the MCP protocol walk were deliberately not run because this slice changes neither catalog content nor the MCP surface/dependency registration.
 
 ### Slice 2 (SC02) — Registered object contracts
 
