@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Net;
 using System.Text.Json;
 using DantesRoleplay.ApplicationActivation;
@@ -5,8 +6,10 @@ using DantesRoleplay.Applications;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.MCPServer;
+using DantesRoleplay.Projections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Json;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DantesRoleplay.Tests;
@@ -157,6 +160,50 @@ public sealed class WorldChronologyWebEndpointTests
         else Assert.False(response.Body.TryGetProperty("entries", out _));
     }
 
+    [Fact]
+    public async Task Chronology_projection_stays_within_twelve_sql_commands_including_subject_hydration()
+    {
+        var commands = new CommandCounter();
+        using var fixture = new DantesRoleplay.Knowledge.Tests.KnowledgeCoreTests.KnowledgeFixture(
+            interceptor: commands);
+        await fixture.AddCoreAsync();
+        await fixture.SetComponentAsync(fixture.World, fixture.Binding.WorldClockComponentTypeId,
+            "{\"minute\":\"fixture-calendar\"}");
+        var chronology = FixtureChronologyBinding(fixture.ApplicationId);
+        fixture.DefineComponent(chronology.ComponentTypeId);
+        await fixture.AddActiveLocationAsync("location-fixture", "Fixture Gate");
+        _ = await fixture.Edges.MoveContainmentAsync(
+            fixture.Campaign, "location-fixture", fixture.World, "location", 0);
+        await fixture.AddEntityAsync("chronology-fixture", "Public dedication");
+        await fixture.ComponentAsync("chronology-fixture", chronology.ComponentTypeId,
+            JsonSerializer.Serialize(Chronology("active", "Public dedication", 10, "public")));
+        await fixture.RelateAsync("chronology-fixture", fixture.World,
+            chronology.InWorldRelationshipKind, "{}");
+        await fixture.RelateAsync("chronology-fixture", "location-fixture",
+            chronology.AboutRelationshipKind, "{}");
+        var seat = new LocalKnowledgeSeatSnapshot(
+            true, "principal.fixture", fixture.ApplicationId, fixture.Campaign, null,
+            KnowledgeAudienceRole.GameMaster, ["fixture-source"]);
+        var context = new DefaultHttpContext
+        {
+            Response = { Body = new MemoryStream() },
+            RequestServices = JsonResultServices()
+        };
+        context.Connection.RemoteIpAddress = IPAddress.Loopback;
+
+        commands.Reset();
+        var result = await WorldChronologyWebEndpoint.ReadAsync(
+            fixture.ApplicationId, fixture.Campaign, "dm", context,
+            new Seats(seat), new Audience(seat.Role), new Bindings(fixture.Binding),
+            new ChronologyBindings(chronology), new Participation(), fixture.Entities,
+            fixture.Edges, fixture.Transactions, CancellationToken.None);
+        await result.ExecuteAsync(context);
+
+        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+        Assert.True(commands.Count <= 12,
+            $"Chronology used {commands.Count} SQL commands:{Environment.NewLine}{string.Join(Environment.NewLine, commands.Commands)}");
+    }
+
     private static async Task<(int StatusCode, JsonElement Body)> ReadAsync(
         ChronologyFixture fixture,
         LocalKnowledgeSeatSnapshot seat,
@@ -170,7 +217,7 @@ public sealed class WorldChronologyWebEndpointTests
             "dnd2024", "campaign.fixture", perspective, context,
             new Seats(seat), new Audience(seat.Role), new Bindings(fixture.Binding),
             new ChronologyBindings(fixture.Chronology), new Participation(), fixture.Entities,
-            fixture.Edges, CancellationToken.None);
+            fixture.Edges, new ReadTransaction(), CancellationToken.None);
         await result.ExecuteAsync(context);
         context.Response.Body.Position = 0;
         using var document = await JsonDocument.ParseAsync(context.Response.Body);
@@ -261,6 +308,29 @@ public sealed class WorldChronologyWebEndpointTests
         return binding;
     }
 
+    private static WorldChronologyBinding FixtureChronologyBinding(string applicationId) => new()
+    {
+        ComponentTypeId = $"{applicationId}.chronology",
+        StatusProperty = "status",
+        ActiveStatus = "active",
+        ArchivedStatus = "archived",
+        TitleProperty = "title",
+        SummaryProperty = "summary",
+        CalendarIdProperty = "calendarId",
+        OccurredAtMinuteProperty = "occurredAtMinute",
+        PrecisionProperty = "precision",
+        Precisions = ["exact"],
+        DateLabelProperty = "dateLabel",
+        VisibilityProperty = "visibility",
+        PublicVisibility = "public",
+        PartyVisibility = "party",
+        GameMasterVisibility = "gm",
+        InWorldRelationshipKind = $"{applicationId}.chronology-world",
+        AboutRelationshipKind = $"{applicationId}.chronology-about",
+        WorldClockCalendarIdProperty = "minute",
+        SubjectWorldRelationshipKinds = []
+    };
+
     private static LocalKnowledgeSeatSnapshot ActorSeat(string campaignId = "campaign.fixture") => new(
         true, "principal.fixture", "dnd2024", campaignId, "actor.fixture",
         SourceIds: ["dnd2024-core"]);
@@ -335,7 +405,37 @@ public sealed class WorldChronologyWebEndpointTests
                 new KnowledgeParticipationResolution(true, "participation.fixture"));
     }
 
-    private sealed class Entities : IEntityComponentStore
+    private sealed class CommandCounter : DbCommandInterceptor
+    {
+        public int Count { get; private set; }
+        public List<string> Commands { get; } = [];
+        public void Reset() { Count = 0; Commands.Clear(); }
+
+        public override InterceptionResult<DbDataReader> ReaderExecuting(
+            DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result)
+        {
+            Count++;
+            Commands.Add(command.CommandText.Split('\n', StringSplitOptions.RemoveEmptyEntries)[0]);
+            return result;
+        }
+
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
+            DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result,
+            CancellationToken cancellationToken = default)
+        {
+            Count++;
+            Commands.Add(command.CommandText.Split('\n', StringSplitOptions.RemoveEmptyEntries)[0]);
+            return ValueTask.FromResult(result);
+        }
+    }
+
+    private sealed class ReadTransaction : IProjectionReadTransaction
+    {
+        public Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> read,
+            CancellationToken cancellationToken = default) => read(cancellationToken);
+    }
+
+    private sealed class Entities : IEntityComponentStore, IEntityComponentProjectionStore
     {
         private static readonly EcsComponentReference Reference = new("fixture", 1, new string('0', 64));
         private readonly Dictionary<string, EcsEntityView> _entities = new(StringComparer.Ordinal);
@@ -369,6 +469,34 @@ public sealed class WorldChronologyWebEndpointTests
         public Task<EcsComponentView?> GetComponentAsync(string stateSpaceId, string entityId,
             string qualifiedTypeId, CancellationToken cancellationToken = default) =>
             Task.FromResult(_components.GetValueOrDefault((entityId, qualifiedTypeId)));
+
+        public Task<EcsEntityComponentProjectionPage> SelectAsync(string stateSpaceId,
+            EcsComponentProjectionSelection selection, CancellationToken cancellationToken = default)
+        {
+            selection.Validate();
+            ListCalls++;
+            var candidates = _entities.Values.OrderBy(value => value.EntityId, StringComparer.Ordinal)
+                .Where(value => selection.AfterEntityId is null ||
+                    StringComparer.Ordinal.Compare(value.EntityId, selection.AfterEntityId) > 0)
+                .Where(value => selection.RequiredAnyQualifiedTypeIds.Any(typeId =>
+                    _components.ContainsKey((value.EntityId, typeId))))
+                .Take(selection.Limit + 1).ToArray();
+            var hasMore = candidates.Length > selection.Limit;
+            var page = hasMore ? candidates[..selection.Limit] : candidates;
+            return Task.FromResult(new EcsEntityComponentProjectionPage(page.Select(value => new
+                EcsEntityComponentProjection(value, selection.IncludedQualifiedTypeIds
+                    .Select(typeId => _components.GetValueOrDefault((value.EntityId, typeId)))
+                    .Where(component => component is not null).Cast<EcsComponentView>().ToArray()))
+                .ToArray(), hasMore ? page[^1].EntityId : null));
+        }
+
+        public Task<IReadOnlyList<EcsEntityComponentProjection>> GetAsync(string stateSpaceId,
+            IReadOnlyList<string> entityIds, IReadOnlyList<string> includedQualifiedTypeIds,
+            CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<EcsEntityComponentProjection>>(
+                entityIds.Distinct(StringComparer.Ordinal).Where(_entities.ContainsKey).Select(entityId =>
+                    new EcsEntityComponentProjection(_entities[entityId], includedQualifiedTypeIds
+                        .Select(typeId => _components.GetValueOrDefault((entityId, typeId)))
+                        .Where(component => component is not null).Cast<EcsComponentView>().ToArray())).ToArray());
 
         public Task<EcsEntityView> CreateEntityAsync(string stateSpaceId, string entityId, string name,
             CancellationToken cancellationToken = default) => throw new NotSupportedException();

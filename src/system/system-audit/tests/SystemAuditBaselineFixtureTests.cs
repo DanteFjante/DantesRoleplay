@@ -12,6 +12,7 @@ using Xunit.Abstractions;
 
 namespace DantesRoleplay.SystemAudit.Tests;
 
+[Collection("System audit performance")]
 public sealed class SystemAuditBaselineFixtureTests(ITestOutputHelper output)
 {
     [Theory]
@@ -64,6 +65,51 @@ public sealed class SystemAuditBaselineFixtureTests(ITestOutputHelper output)
         }));
     }
 
+    [Fact]
+    public async Task Component_selected_pages_are_constant_sql_and_unrelated_catalog_growth_stays_bounded()
+    {
+        using var observed = await SystemAuditBaselineFixture.CreateAsync(includeUnrelatedPopulation: false);
+        using var expanded = await SystemAuditBaselineFixture.CreateAsync(includeUnrelatedPopulation: true);
+        var observedProfile = CreateSelectionProfile(observed);
+        var expandedProfile = CreateSelectionProfile(expanded);
+        await using var observedDb = observedProfile.Db;
+        await using var expandedDb = expandedProfile.Db;
+
+        var observedSamples = new List<Measurement>();
+        var expandedSamples = new List<Measurement>();
+        for (var sample = 0; sample < 25; sample++)
+        {
+            observedSamples.Add(await MeasureSelectionAsync(observedProfile));
+            expandedSamples.Add(await MeasureSelectionAsync(expandedProfile));
+        }
+        var observedMedian = Median(observedSamples.Skip(5).ToArray());
+        var expandedMedian = Median(expandedSamples.Skip(5).ToArray());
+        var legacySamples = new List<Measurement>();
+        for (var sample = 0; sample < 20; sample++)
+            legacySamples.Add(await MeasureLegacyEntityScanAsync(observedProfile));
+        var legacyMedian = Median(legacySamples);
+
+        Assert.All(observedSamples, value => Assert.InRange(value.SqlCommands, 1, 2));
+        Assert.All(expandedSamples, value => Assert.InRange(value.SqlCommands, 1, 2));
+        Assert.All(observedSamples, value => Assert.Equal(419, value.Rows));
+        Assert.All(expandedSamples, value => Assert.Equal(419, value.Rows));
+        Assert.True(expandedMedian.DurationMs <= observedMedian.DurationMs * 1.10,
+            $"Expanded median {expandedMedian.DurationMs:F3} ms exceeded observed median {observedMedian.DurationMs:F3} ms by more than 10%.");
+        Assert.True(expandedMedian.AllocatedBytes <= observedMedian.AllocatedBytes * 1.10,
+            $"Expanded median allocation {expandedMedian.AllocatedBytes} exceeded observed {observedMedian.AllocatedBytes} by more than 10%.");
+        Assert.True(observedMedian.DurationMs <= legacyMedian.DurationMs * 0.50,
+            $"Selected median {observedMedian.DurationMs:F3} ms did not improve the legacy scan median {legacyMedian.DurationMs:F3} ms by at least 50%.");
+        output.WriteLine(JsonSerializer.Serialize(new
+        {
+            schema = "dantesroleplay.system-audit-component-selection.v1",
+            samplesPerProfile = 20,
+            sourceFileReads = 0,
+            legacyEntityScan = legacyMedian,
+            observed = observedMedian,
+            expanded = expandedMedian
+        }));
+    }
+
     private static Task<int> CountKindAsync(DantesRoleplayDbContext db, string kind) =>
         db.Set<ApplicationEcsComponentRecord>().CountAsync(value =>
             value.QualifiedTypeId == SystemAuditBaselineFixture.KindTypeId &&
@@ -85,7 +131,65 @@ public sealed class SystemAuditBaselineFixtureTests(ITestOutputHelper output)
             GC.GetTotalAllocatedBytes(precise: true) - allocatedBefore);
     }
 
+    private static SelectionProfile CreateSelectionProfile(SqliteFixture fixture)
+    {
+        var counter = new CommandCounter();
+        var options = new DbContextOptionsBuilder<DantesRoleplayDbContext>()
+            .UseSqlite(fixture.Connection).AddInterceptors(counter).Options;
+        var db = new DantesRoleplayDbContext(options);
+        var schemas = new BoundedJsonSchemaValidator();
+        var types = new SqliteComponentTypeRegistry(db, schemas);
+        return new(db, counter, new SqliteEntityComponentStore(db, types, schemas));
+    }
+
+    private static async Task<Measurement> MeasureSelectionAsync(SelectionProfile profile)
+    {
+        profile.Db.ChangeTracker.Clear();
+        profile.Counter.Reset();
+        var allocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
+        var timer = Stopwatch.StartNew();
+        var page = await profile.Store.SelectAsync(SystemAuditBaselineFixture.StateSpaceId,
+            new([SystemAuditBaselineFixture.KindTypeId], [SystemAuditBaselineFixture.KindTypeId], null, 1_000));
+        timer.Stop();
+        return new(page.Entities.Count, profile.Counter.Count, timer.Elapsed.TotalMilliseconds,
+            GC.GetTotalAllocatedBytes(precise: true) - allocatedBefore);
+    }
+
+    private static async Task<Measurement> MeasureLegacyEntityScanAsync(SelectionProfile profile)
+    {
+        profile.Db.ChangeTracker.Clear();
+        profile.Counter.Reset();
+        var allocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
+        var timer = Stopwatch.StartNew();
+        var rows = 0;
+        string? cursor = null;
+        do
+        {
+            var page = await profile.Store.ListEntitiesAsync(
+                SystemAuditBaselineFixture.StateSpaceId, cursor, 100);
+            foreach (var entity in page.Entities)
+                if (await profile.Store.GetComponentAsync(SystemAuditBaselineFixture.StateSpaceId,
+                        entity.EntityId, SystemAuditBaselineFixture.KindTypeId) is not null) rows++;
+            cursor = page.NextEntityId;
+        } while (cursor is not null);
+        timer.Stop();
+        return new(rows, profile.Counter.Count, timer.Elapsed.TotalMilliseconds,
+            GC.GetTotalAllocatedBytes(precise: true) - allocatedBefore);
+    }
+
+    private static Measurement Median(IReadOnlyList<Measurement> values)
+    {
+        var duration = values.Select(value => value.DurationMs).Order().ToArray();
+        var allocation = values.Select(value => value.AllocatedBytes).Order().ToArray();
+        return new(values[0].Rows, values.Max(value => value.SqlCommands),
+            duration[duration.Length / 2], allocation[allocation.Length / 2]);
+    }
+
     private sealed record Measurement(int Rows, int SqlCommands, double DurationMs, long AllocatedBytes);
+    private sealed record SelectionProfile(
+        DantesRoleplayDbContext Db,
+        CommandCounter Counter,
+        SqliteEntityComponentStore Store);
 
     private sealed class CommandCounter : DbCommandInterceptor
     {
@@ -113,10 +217,13 @@ public sealed class SystemAuditBaselineFixtureTests(ITestOutputHelper output)
     }
 }
 
+[CollectionDefinition("System audit performance", DisableParallelization = true)]
+public sealed class SystemAuditPerformanceCollection;
+
 internal static class SystemAuditBaselineFixture
 {
     public const string KindTypeId = "system-audit-fixture.kind";
-    private const string StateSpaceId = "system-audit-fixture-main";
+    public const string StateSpaceId = "system-audit-fixture-main";
 
     public static async Task<SqliteFixture> CreateAsync(bool includeUnrelatedPopulation)
     {

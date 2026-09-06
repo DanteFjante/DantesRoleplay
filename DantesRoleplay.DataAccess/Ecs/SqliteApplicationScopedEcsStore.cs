@@ -2,6 +2,7 @@
 using System.Text.Json.Nodes;
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
+using DantesRoleplay.Projections;
 using DantesRoleplay.SchemaValidation;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,8 +10,12 @@ namespace DantesRoleplay.Ecs;
 
 public sealed class SqliteStateSpaceRegistry(
     DantesRoleplayDbContext db,
-    IApplicationRegistry applications) : IStateSpaceRegistry
+    IApplicationRegistry applications,
+    IProjectionReadSnapshotStatus? snapshotStatus = null) : IStateSpaceRegistry
 {
+    private readonly Dictionary<string, StateSpaceView?> snapshotReads = new(StringComparer.Ordinal);
+    private long snapshotRevision = -1;
+
     public StateSpaceView Create(StateSpaceBinding binding)
     {
         ArgumentNullException.ThrowIfNull(binding);
@@ -62,12 +67,29 @@ public sealed class SqliteStateSpaceRegistry(
     public StateSpaceView? Get(string stateSpaceId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(stateSpaceId);
+        RefreshSnapshotReads();
+        if (snapshotStatus?.IsActive == true && snapshotReads.TryGetValue(stateSpaceId, out var cached))
+            return cached;
         var row = db.Set<ApplicationStateSpaceRecord>().AsNoTracking().SingleOrDefault(x => x.Id == stateSpaceId);
-        if (row is null) return null;
+        if (row is null)
+        {
+            if (snapshotStatus?.IsActive == true) snapshotReads[stateSpaceId] = null;
+            return null;
+        }
         var application = applications.Get(ApplicationIdentifier.Parse(row.ApplicationId), row.ApplicationRevision);
         if (application is null || application.Revision != row.ApplicationRevision)
             throw new InvalidOperationException("The stored state space has no matching application revision.");
-        return ToView(row, application);
+        var result = ToView(row, application);
+        if (snapshotStatus?.IsActive == true) snapshotReads[stateSpaceId] = result;
+        return result;
+    }
+
+    private void RefreshSnapshotReads()
+    {
+        var revision = snapshotStatus?.IsActive == true ? snapshotStatus.Revision : -1;
+        if (revision == snapshotRevision) return;
+        snapshotRevision = revision;
+        snapshotReads.Clear();
     }
 
     public StateSpaceDiscoveryPage ListPage(
@@ -136,7 +158,8 @@ public sealed class SqliteEntityComponentStore(
     DantesRoleplayDbContext db,
     IApplicationComponentTypeRegistry types,
     IBoundedJsonSchemaValidator validator,
-    IEcsRoleConstraintValidator? constraints = null) : IEntityComponentStore, IEntityComponentSearchStore, IEntityBatchReadStore
+    IEcsRoleConstraintValidator? constraints = null) : IEntityComponentStore, IEntityComponentSearchStore,
+    IEntityBatchReadStore, IEntityComponentProjectionStore
 {
     private readonly Dictionary<string, ApplicationStateSpaceRecord> readableStateSpaces = new(StringComparer.Ordinal);
 
@@ -190,6 +213,91 @@ public sealed class SqliteEntityComponentStore(
             .ToArrayAsync(cancellationToken);
         return Array.AsReadOnly(rows.Select(ToView).ToArray());
     }
+
+    public async Task<EcsEntityComponentProjectionPage> SelectAsync(
+        string stateSpaceId,
+        EcsComponentProjectionSelection selection,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(stateSpaceId);
+        ArgumentNullException.ThrowIfNull(selection);
+        ValidateBoundedId(stateSpaceId, nameof(stateSpaceId));
+        selection.Validate();
+        await RequireStateSpaceAsync(stateSpaceId, cancellationToken);
+        var after = await ValidateEntityCursorAsync(stateSpaceId, selection.AfterEntityId, cancellationToken);
+        var required = selection.RequiredAnyQualifiedTypeIds.ToArray();
+        var included = selection.IncludedQualifiedTypeIds.ToArray();
+        var maximumRows = checked((selection.Limit + 1) * included.Length);
+        var query = db.Set<ApplicationEcsComponentRecord>().AsNoTracking()
+            .Join(db.Set<ApplicationEcsEntityRecord>().AsNoTracking(),
+                component => new { component.StateSpaceId, component.EntityId },
+                entity => new { entity.StateSpaceId, EntityId = entity.Id },
+                (component, entity) => new { Component = component, Entity = entity })
+            .Where(value => value.Component.StateSpaceId == stateSpaceId &&
+                value.Entity.DeletedAtUtc == null && included.Contains(value.Component.QualifiedTypeId) &&
+                (after == null || string.Compare(value.Entity.Id, after) > 0));
+        if (required.Length != included.Length || required.Except(included, StringComparer.Ordinal).Any())
+            query = query.Where(value => db.Set<ApplicationEcsComponentRecord>().Any(candidate =>
+                    candidate.StateSpaceId == value.Entity.StateSpaceId &&
+                    candidate.EntityId == value.Entity.Id && required.Contains(candidate.QualifiedTypeId)));
+        var rows = await query
+            .OrderBy(value => value.Component.EntityId).ThenBy(value => value.Component.QualifiedTypeId)
+            .Take(maximumRows)
+            .Select(value => new ComponentProjectionRow(value.Component, value.Entity))
+            .ToArrayAsync(cancellationToken);
+        var projected = Project(rows);
+        var hasMore = projected.Count > selection.Limit;
+        var page = hasMore ? projected.Take(selection.Limit).ToArray() : projected.ToArray();
+        return new(Array.AsReadOnly(page), hasMore ? page[^1].Entity.EntityId : null);
+    }
+
+    public async Task<IReadOnlyList<EcsEntityComponentProjection>> GetAsync(
+        string stateSpaceId,
+        IReadOnlyList<string> entityIds,
+        IReadOnlyList<string> includedQualifiedTypeIds,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(stateSpaceId);
+        ArgumentNullException.ThrowIfNull(entityIds);
+        ArgumentNullException.ThrowIfNull(includedQualifiedTypeIds);
+        ValidateBoundedId(stateSpaceId, nameof(stateSpaceId));
+        if (entityIds.Count is < 1 or > 1_000 || includedQualifiedTypeIds.Count is < 1 or > 32 ||
+            entityIds.Any(value => string.IsNullOrWhiteSpace(value) || value.Length > 200) ||
+            includedQualifiedTypeIds.Any(value => string.IsNullOrWhiteSpace(value) || value.Length > 200))
+            throw new ArgumentException("A component projection batch requires 1 to 1,000 entities and 1 to 32 bounded type IDs.");
+        await RequireStateSpaceAsync(stateSpaceId, cancellationToken);
+        var ids = entityIds.Distinct(StringComparer.Ordinal).ToArray();
+        var types = includedQualifiedTypeIds.Distinct(StringComparer.Ordinal).ToArray();
+        var rows = await (
+            from entity in db.Set<ApplicationEcsEntityRecord>().AsNoTracking()
+            where entity.StateSpaceId == stateSpaceId && entity.DeletedAtUtc == null && ids.Contains(entity.Id)
+            join component in db.Set<ApplicationEcsComponentRecord>().AsNoTracking()
+                    .Where(value => value.StateSpaceId == stateSpaceId && types.Contains(value.QualifiedTypeId))
+                on new { entity.StateSpaceId, EntityId = entity.Id }
+                equals new { component.StateSpaceId, component.EntityId } into components
+            from component in components.DefaultIfEmpty()
+            orderby entity.Id, component == null ? string.Empty : component.QualifiedTypeId
+            select new ComponentProjectionRow(component, entity))
+            .ToArrayAsync(cancellationToken);
+        return Project(rows);
+    }
+
+    private static IReadOnlyList<EcsEntityComponentProjection> Project(
+        IEnumerable<ComponentProjectionRow> rows)
+    {
+        var result = new List<EcsEntityComponentProjection>();
+        foreach (var group in rows.GroupBy(value => value.Entity.Id, StringComparer.Ordinal))
+        {
+            var first = group.First();
+            result.Add(new(ToView(first.Entity), Array.AsReadOnly(group.Where(value => value.Component is not null)
+                .Select(value => ToView(value.Component!)).ToArray())));
+        }
+        return result.AsReadOnly();
+    }
+
+    private sealed record ComponentProjectionRow(
+        ApplicationEcsComponentRecord? Component,
+        ApplicationEcsEntityRecord Entity);
 
     public async Task<EcsEntityDiscoveryPage> ListEntitiesAsync(
         string stateSpaceId,

@@ -2,6 +2,7 @@ using System.Text.Json;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.MCPServer.Mcp;
+using DantesRoleplay.Projections;
 using Microsoft.AspNetCore.Http;
 
 namespace DantesRoleplay.MCPServer;
@@ -30,6 +31,7 @@ internal static class WorldChronologyWebEndpoint
         IKnowledgeActorParticipationVerifier participation,
         IEntityComponentStore entities,
         IStateSpaceEdgeStore edges,
+        IProjectionReadTransaction transactions,
         CancellationToken cancellationToken)
     {
         context.Response.Headers.CacheControl = "private, no-store";
@@ -58,8 +60,8 @@ internal static class WorldChronologyWebEndpoint
             var chronology = await chronologyBindings.ResolveAsync(binding, cancellationToken);
             if (chronology is null)
                 return Error("CHRONOLOGY_UNAVAILABLE", StatusCodes.Status503ServiceUnavailable);
-            var projection = await ProjectAsync(
-                binding, chronology, perspective, entities, edges, cancellationToken);
+            var projection = await transactions.ExecuteAsync(token => ProjectAsync(
+                binding, chronology, perspective, entities, edges, token), cancellationToken);
             if (projection is null)
                 return Error("CHRONOLOGY_UNAVAILABLE", StatusCodes.Status503ServiceUnavailable);
 
@@ -138,6 +140,10 @@ internal static class WorldChronologyWebEndpoint
             if (!parentByEntity.TryAdd(containment.ContainedEntityId, containment.ContainerEntityId))
                 return null;
 
+        if (entities is IEntityComponentProjectionStore selections)
+            return await ProjectSelectedAsync(binding, chronologyBinding, perspective, worldId,
+                calendarId, relationships, parentByEntity, selections, cancellationToken);
+
         var result = new List<ProjectedEntry>();
         string? cursor = null;
         var seen = 0;
@@ -203,6 +209,105 @@ internal static class WorldChronologyWebEndpoint
             return minute != 0 ? minute : StringComparer.Ordinal.Compare(left.CanonicalId, right.CanonicalId);
         });
         return result;
+    }
+
+    private static async Task<IReadOnlyList<ProjectedEntry>?> ProjectSelectedAsync(
+        KnowledgeApplicationBinding binding,
+        WorldChronologyBinding chronologyBinding,
+        string perspective,
+        string worldId,
+        string calendarId,
+        IReadOnlyList<EcsRelationshipView> relationships,
+        IReadOnlyDictionary<string, string> parentByEntity,
+        IEntityComponentProjectionStore selections,
+        CancellationToken cancellationToken)
+    {
+        var result = new List<ProjectedEntry>();
+        string? cursor = null;
+        var seen = 0;
+        do
+        {
+            var page = await selections.SelectAsync(binding.StateSpaceId,
+                new([chronologyBinding.ComponentTypeId], [chronologyBinding.ComponentTypeId], cursor, 1_000),
+                cancellationToken);
+            seen += page.Entities.Count;
+            if (seen > MaximumEntities) return null;
+            var pageIds = page.Entities.Select(value => value.Entity.EntityId).ToHashSet(StringComparer.Ordinal);
+            var subjectIds = relationships.Where(value => pageIds.Contains(value.FromEntityId) &&
+                    value.QualifiedKind == chronologyBinding.AboutRelationshipKind)
+                .Select(value => value.ToEntityId).Distinct(StringComparer.Ordinal).ToArray();
+            var subjects = new Dictionary<string, EcsEntityView>(StringComparer.Ordinal);
+            foreach (var chunk in subjectIds.Chunk(1_000))
+            {
+                var rows = await selections.GetAsync(binding.StateSpaceId, chunk,
+                    [chronologyBinding.ComponentTypeId], cancellationToken);
+                foreach (var row in rows) subjects[row.Entity.EntityId] = row.Entity;
+            }
+
+            foreach (var candidate in page.Entities)
+            {
+                var component = candidate.Components.SingleOrDefault(value =>
+                    value.Type.QualifiedTypeId == chronologyBinding.ComponentTypeId);
+                if (component is null) return null;
+                var projected = ProjectCandidate(candidate.Entity, component, chronologyBinding,
+                    perspective, worldId, calendarId, relationships, parentByEntity, subjects);
+                if (!projected.Valid) return null;
+                if (projected.Entry is not null)
+                {
+                    result.Add(projected.Entry);
+                    if (result.Count > MaximumEntries) return null;
+                }
+            }
+            cursor = page.NextEntityId;
+        } while (cursor is not null);
+
+        result.Sort((left, right) =>
+        {
+            var minute = left.OccurredAtMinute.CompareTo(right.OccurredAtMinute);
+            return minute != 0 ? minute : StringComparer.Ordinal.Compare(left.CanonicalId, right.CanonicalId);
+        });
+        return result;
+    }
+
+    private static (bool Valid, ProjectedEntry? Entry) ProjectCandidate(
+        EcsEntityView entity,
+        EcsComponentView component,
+        WorldChronologyBinding chronologyBinding,
+        string perspective,
+        string worldId,
+        string calendarId,
+        IReadOnlyList<EcsRelationshipView> relationships,
+        IReadOnlyDictionary<string, string> parentByEntity,
+        IReadOnlyDictionary<string, EcsEntityView> subjectsById)
+    {
+        var scopes = relationships.Where(value => value.FromEntityId == entity.EntityId &&
+            value.QualifiedKind == chronologyBinding.InWorldRelationshipKind).ToArray();
+        if (!scopes.Any(value => value.ToEntityId == worldId)) return (true, null);
+        if (scopes.Length != 1 || !Empty(scopes[0].DataJson)) return (false, null);
+        if (!TryRead(component.ValueJson, chronologyBinding, out var chronology)) return (false, null);
+        if (chronology.Status == chronologyBinding.ArchivedStatus) return (true, null);
+        if (chronology.Status != chronologyBinding.ActiveStatus) return (false, null);
+        var allowed = chronology.Visibility == chronologyBinding.PublicVisibility ||
+            chronology.Visibility == chronologyBinding.PartyVisibility ||
+            (perspective == "dm" && chronology.Visibility == chronologyBinding.GameMasterVisibility);
+        if (!allowed) return (true, null);
+        if (chronology.CalendarId != calendarId) return (false, null);
+        var about = relationships.Where(value => value.FromEntityId == entity.EntityId &&
+            value.QualifiedKind == chronologyBinding.AboutRelationshipKind).ToArray();
+        if (about.Length > MaximumSubjects || about.Any(value => !Empty(value.DataJson)) ||
+            about.Select(value => value.ToEntityId).Distinct(StringComparer.Ordinal).Count() != about.Length)
+            return (false, null);
+        var subjects = new List<ProjectedSubject>();
+        foreach (var subjectEdge in about.OrderBy(value => value.ToEntityId, StringComparer.Ordinal))
+        {
+            if (!InWorld(subjectEdge.ToEntityId, worldId, parentByEntity,
+                    relationships, chronologyBinding.SubjectWorldRelationshipKinds) ||
+                !subjectsById.TryGetValue(subjectEdge.ToEntityId, out var subject) ||
+                !DisplayText(subject.Name, 200, out var subjectName)) return (false, null);
+            subjects.Add(new(subject.EntityId, subjectName));
+        }
+        return (true, new(entity.EntityId, chronology.OccurredAtMinute, chronology.DateLabel,
+            chronology.Precision, chronology.Title, chronology.Summary, subjects));
     }
 
     private static bool TryRead(

@@ -6,8 +6,16 @@ namespace DantesRoleplay.Knowledge;
 /// <summary>Resolves current actor epistemic state from exact application graph vocabulary.</summary>
 public sealed class ApplicationKnowledgeEffectiveStateResolver(
     IEntityComponentStore entities,
-    IStateSpaceEdgeStore edges) : IKnowledgeEffectiveStateResolver
+    IStateSpaceEdgeStore edges) : IKnowledgeEffectiveStateResolver, IKnowledgeEffectiveStateSnapshotResolver
 {
+    public async Task<IKnowledgeEffectiveStateSnapshot> CaptureAsync(
+        KnowledgeApplicationBinding binding,
+        string actorId,
+        string worldId,
+        IReadOnlyList<string> knowledgeIds,
+        CancellationToken cancellationToken = default) => new EffectiveStateSnapshot(
+            await ResolveAllAsync(binding, actorId, worldId, knowledgeIds, cancellationToken));
+
     public async Task<IReadOnlyDictionary<string, EffectiveKnowledgeState>> ResolveAllAsync(
         KnowledgeApplicationBinding binding,
         string actorId,
@@ -20,12 +28,26 @@ public sealed class ApplicationKnowledgeEffectiveStateResolver(
         binding.Validate();
         if (!Bounded(actorId) || !Bounded(worldId) || knowledgeIds.Count > 10_000 ||
             knowledgeIds.Any(value => !Bounded(value)) ||
-            knowledgeIds.Distinct(StringComparer.Ordinal).Count() != knowledgeIds.Count ||
-            await entities.GetEntityAsync(binding.StateSpaceId, actorId, cancellationToken) is null)
+            knowledgeIds.Distinct(StringComparer.Ordinal).Count() != knowledgeIds.Count)
             return new Dictionary<string, EffectiveKnowledgeState>(StringComparer.Ordinal);
 
         var relationships = await edges.ListRelationshipsAsync(binding.StateSpaceId, cancellationToken);
         var containments = await edges.ListContainmentsAsync(binding.StateSpaceId, cancellationToken);
+        IReadOnlyDictionary<string, EcsEntityComponentProjection>? scopeProjections = null;
+        if (entities is IEntityComponentProjectionStore projections)
+        {
+            var scopeIds = relationships.Where(value => value.QualifiedKind == binding.BaselineRelationshipKind &&
+                    value.FromEntityId != worldId)
+                .Select(value => value.FromEntityId).Append(actorId)
+                .Distinct(StringComparer.Ordinal).ToArray();
+            var rows = await projections.GetAsync(binding.StateSpaceId, scopeIds,
+                [binding.FactionComponentTypeId, binding.LocationComponentTypeId], cancellationToken);
+            scopeProjections = rows.ToDictionary(value => value.Entity.EntityId, StringComparer.Ordinal);
+            if (!scopeProjections.ContainsKey(actorId))
+                return new Dictionary<string, EffectiveKnowledgeState>(StringComparer.Ordinal);
+        }
+        else if (await entities.GetEntityAsync(binding.StateSpaceId, actorId, cancellationToken) is null)
+            return new Dictionary<string, EffectiveKnowledgeState>(StringComparer.Ordinal);
         var containers = containments.ToDictionary(
             value => value.ContainedEntityId, value => value, StringComparer.Ordinal);
         var graphRevision = ApplicationKnowledgeCanonicalSource.Hash(new
@@ -66,8 +88,11 @@ public sealed class ApplicationKnowledgeEffectiveStateResolver(
             var invalidScope = false;
             foreach (var baseline in baselines.Where(value => value.FromEntityId != worldId))
             {
-                var scope = await ResolveScopeAsync(binding, baseline.FromEntityId, actorId, worldId,
-                    relationships, containers, componentCache, cancellationToken);
+                var scope = scopeProjections is null
+                    ? await ResolveScopeAsync(binding, baseline.FromEntityId, actorId, worldId,
+                        relationships, containers, componentCache, cancellationToken)
+                    : ResolveScope(binding, baseline.FromEntityId, actorId, worldId,
+                        relationships, containers, scopeProjections);
                 if (!scope.Valid)
                 {
                     invalidScope = true;
@@ -127,6 +152,44 @@ public sealed class ApplicationKnowledgeEffectiveStateResolver(
 
         var location = await ComponentAsync(binding.StateSpaceId, scopeId,
             binding.LocationComponentTypeId, cache, cancellationToken);
+        if (location is null || !ApplicationKnowledgeCanonicalSource.Text(
+                location.ValueJson, binding.LocationStatusProperty, out var locationStatus) ||
+            locationStatus != binding.ActiveLocationStatus || !ApplicationKnowledgeCanonicalSource.Text(
+                location.ValueJson, binding.LocationKindProperty, out var kind) ||
+            kind != binding.RegionLocationKind || !ContainedBy(scopeId, worldId, containers))
+            return new(false, false);
+        return new(true, ContainedBy(actorId, scopeId, containers));
+    }
+
+    private static ScopeResolution ResolveScope(
+        KnowledgeApplicationBinding binding,
+        string scopeId,
+        string actorId,
+        string worldId,
+        IReadOnlyList<EcsRelationshipView> relationships,
+        IReadOnlyDictionary<string, EcsContainmentView> containers,
+        IReadOnlyDictionary<string, EcsEntityComponentProjection> scopes)
+    {
+        if (!scopes.TryGetValue(scopeId, out var scope)) return new(false, false);
+        var faction = scope.Components.SingleOrDefault(value =>
+            value.Type.QualifiedTypeId == binding.FactionComponentTypeId);
+        if (faction is not null)
+        {
+            if (!ApplicationKnowledgeCanonicalSource.Text(faction.ValueJson,
+                    binding.FactionStatusProperty, out var status) || status != binding.ActiveFactionStatus)
+                return new(false, false);
+            var inWorld = relationships.Any(value => value.FromEntityId == scopeId &&
+                value.ToEntityId == worldId && value.QualifiedKind == binding.FactionWorldRelationshipKind &&
+                ApplicationKnowledgeCanonicalSource.Empty(value.DataJson));
+            if (!inWorld) return new(false, false);
+            var member = relationships.Any(value => value.FromEntityId == scopeId &&
+                value.ToEntityId == actorId && value.QualifiedKind == binding.FactionMemberRelationshipKind &&
+                ApplicationKnowledgeCanonicalSource.Empty(value.DataJson));
+            return new(true, member);
+        }
+
+        var location = scope.Components.SingleOrDefault(value =>
+            value.Type.QualifiedTypeId == binding.LocationComponentTypeId);
         if (location is null || !ApplicationKnowledgeCanonicalSource.Text(
                 location.ValueJson, binding.LocationStatusProperty, out var locationStatus) ||
             locationStatus != binding.ActiveLocationStatus || !ApplicationKnowledgeCanonicalSource.Text(
@@ -216,4 +279,16 @@ public sealed class ApplicationKnowledgeEffectiveStateResolver(
         !string.IsNullOrWhiteSpace(value) && value == value.Trim() && value.Length <= 200;
 
     private readonly record struct ScopeResolution(bool Valid, bool Applies);
+
+    private sealed class EffectiveStateSnapshot(
+        IReadOnlyDictionary<string, EffectiveKnowledgeState> states) : IKnowledgeEffectiveStateSnapshot
+    {
+        public IReadOnlyDictionary<string, EffectiveKnowledgeState> Resolve(IReadOnlyList<string> knowledgeIds)
+        {
+            var result = new Dictionary<string, EffectiveKnowledgeState>(StringComparer.Ordinal);
+            foreach (var knowledgeId in knowledgeIds)
+                if (states.TryGetValue(knowledgeId, out var state)) result[knowledgeId] = state;
+            return result;
+        }
+    }
 }

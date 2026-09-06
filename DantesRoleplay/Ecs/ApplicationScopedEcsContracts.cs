@@ -136,6 +136,59 @@ public interface IEntityBatchReadStore
         CancellationToken cancellationToken = default);
 }
 
+/// <summary>
+/// A bounded component-driven projection request. Candidate entities must own at least one required
+/// type; the returned rows include every requested type on those entities so callers can hydrate a
+/// structural page without an entity scan or an N+1 component loop.
+/// </summary>
+public sealed record EcsComponentProjectionSelection(
+    IReadOnlyList<string> RequiredAnyQualifiedTypeIds,
+    IReadOnlyList<string> IncludedQualifiedTypeIds,
+    string? AfterEntityId,
+    int Limit)
+{
+    public void Validate()
+    {
+        ArgumentNullException.ThrowIfNull(RequiredAnyQualifiedTypeIds);
+        ArgumentNullException.ThrowIfNull(IncludedQualifiedTypeIds);
+        if (RequiredAnyQualifiedTypeIds.Count is < 1 or > 32 ||
+            IncludedQualifiedTypeIds.Count is < 1 or > 32 || Limit is < 1 or > 1_000 ||
+            RequiredAnyQualifiedTypeIds.Any(value => !Bounded(value)) ||
+            IncludedQualifiedTypeIds.Any(value => !Bounded(value)) ||
+            RequiredAnyQualifiedTypeIds.Distinct(StringComparer.Ordinal).Count() != RequiredAnyQualifiedTypeIds.Count ||
+            IncludedQualifiedTypeIds.Distinct(StringComparer.Ordinal).Count() != IncludedQualifiedTypeIds.Count ||
+            RequiredAnyQualifiedTypeIds.Any(value => !IncludedQualifiedTypeIds.Contains(value, StringComparer.Ordinal)) ||
+            (AfterEntityId is not null && !Bounded(AfterEntityId)))
+            throw new ArgumentException("A component projection requires bounded, distinct type IDs, a valid cursor, and a limit from 1 to 1,000.");
+    }
+
+    private static bool Bounded(string? value) =>
+        !string.IsNullOrWhiteSpace(value) && value == value.Trim() && value.Length <= 200;
+}
+
+public sealed record EcsEntityComponentProjection(
+    EcsEntityView Entity,
+    IReadOnlyList<EcsComponentView> Components);
+
+public sealed record EcsEntityComponentProjectionPage(
+    IReadOnlyList<EcsEntityComponentProjection> Entities,
+    string? NextEntityId);
+
+/// <summary>Optional bounded, batched structural reads for projection consumers.</summary>
+public interface IEntityComponentProjectionStore
+{
+    Task<EcsEntityComponentProjectionPage> SelectAsync(
+        string stateSpaceId,
+        EcsComponentProjectionSelection selection,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<EcsEntityComponentProjection>> GetAsync(
+        string stateSpaceId,
+        IReadOnlyList<string> entityIds,
+        IReadOnlyList<string> includedQualifiedTypeIds,
+        CancellationToken cancellationToken = default);
+}
+
 public interface IEntityComponentStore
 {
     Task<EcsEntityView> CreateEntityAsync(string stateSpaceId, string entityId, string name, CancellationToken cancellationToken = default);

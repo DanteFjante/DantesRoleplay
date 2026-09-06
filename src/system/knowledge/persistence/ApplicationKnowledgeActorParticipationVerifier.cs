@@ -24,12 +24,23 @@ public sealed class ApplicationKnowledgeActorParticipationVerifier(
                 value.FromEntityId == binding.CampaignEntityId &&
                 value.QualifiedKind == binding.CampaignParticipationRelationshipKind &&
                 Empty(value.DataJson)).ToArray();
+            IReadOnlyDictionary<string, EcsEntityComponentProjection>? participationProjections = null;
+            if (entities is IEntityComponentProjectionStore projections && campaignLinks.Length > 0)
+            {
+                var rows = await projections.GetAsync(binding.StateSpaceId,
+                    campaignLinks.Select(value => value.ToEntityId).Distinct(StringComparer.Ordinal).ToArray(),
+                    [binding.ParticipationComponentTypeId], cancellationToken);
+                participationProjections = rows.ToDictionary(
+                    value => value.Entity.EntityId, StringComparer.Ordinal);
+            }
             var matches = new List<(EcsEntityView Participation, EcsComponentView Status,
                 EcsRelationshipView CampaignLink, EcsRelationshipView ActorLink)>();
             foreach (var campaignLink in campaignLinks)
             {
-                var participation = await entities.GetEntityAsync(
-                    binding.StateSpaceId, campaignLink.ToEntityId, cancellationToken);
+                var participation = participationProjections is null
+                    ? await entities.GetEntityAsync(
+                        binding.StateSpaceId, campaignLink.ToEntityId, cancellationToken)
+                    : participationProjections.GetValueOrDefault(campaignLink.ToEntityId)?.Entity;
                 if (participation is null) continue;
                 var owners = relationships.Where(value =>
                     value.ToEntityId == participation.EntityId &&
@@ -37,8 +48,11 @@ public sealed class ApplicationKnowledgeActorParticipationVerifier(
                     Empty(value.DataJson)).ToArray();
                 if (owners.Length != 1 || owners[0].FromEntityId != binding.CampaignEntityId)
                     continue;
-                var status = await entities.GetComponentAsync(binding.StateSpaceId,
-                    participation.EntityId, binding.ParticipationComponentTypeId, cancellationToken);
+                var status = participationProjections is null
+                    ? await entities.GetComponentAsync(binding.StateSpaceId,
+                        participation.EntityId, binding.ParticipationComponentTypeId, cancellationToken)
+                    : participationProjections[participation.EntityId].Components.SingleOrDefault(value =>
+                        value.Type.QualifiedTypeId == binding.ParticipationComponentTypeId);
                 if (status is null || !ExactText(status.ValueJson, binding.ParticipationStatusProperty,
                         binding.ActiveParticipationStatus)) continue;
                 var actorLinks = relationships.Where(value =>

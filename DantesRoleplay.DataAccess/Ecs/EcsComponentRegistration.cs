@@ -12,6 +12,7 @@ internal static class EcsComponentRegistration
         services.AddScoped<IEntityComponentStore>(provider => provider.GetRequiredService<SqliteEntityComponentStore>());
         services.AddScoped<IEntityComponentSearchStore>(provider => provider.GetRequiredService<SqliteEntityComponentStore>());
         services.AddScoped<IEntityBatchReadStore>(provider => provider.GetRequiredService<SqliteEntityComponentStore>());
+        services.AddScoped<IEntityComponentProjectionStore>(provider => provider.GetRequiredService<SqliteEntityComponentStore>());
         services.AddScoped<IEcsLifecycleStore, SqliteEcsLifecycleStore>();
         services.AddScoped<IEcsWriteTransactionFactory, SqliteEcsWriteTransactionFactory>();
         services.AddScoped<IEcsRoleConstraintValidator, SqliteEcsRoleConstraintValidator>();

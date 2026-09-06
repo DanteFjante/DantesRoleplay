@@ -1,3 +1,5 @@
+using DantesRoleplay.Projections;
+
 namespace DantesRoleplay.Knowledge;
 
 /// <summary>
@@ -12,11 +14,19 @@ public sealed class AuthorizedKnowledgeNotebookReader(
     IKnowledgeActorParticipationVerifier participation,
     IKnowledgeCanonicalSource source,
     IKnowledgeEffectiveStateResolver states,
-    IKnowledgeLexicalRetriever lexical) : IAuthorizedKnowledgeNotebookReader
+    IKnowledgeLexicalRetriever lexical,
+    IProjectionReadTransaction? transactions = null) : IAuthorizedKnowledgeNotebookReader
 {
-    public async Task<AuthorizedKnowledgeNotebookResult> ReadAsync(
+    public Task<AuthorizedKnowledgeNotebookResult> ReadAsync(
         AuthorizedKnowledgeNotebookRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) => transactions is null
+            ? ReadCoreAsync(request, cancellationToken)
+            : transactions.ExecuteAsync(
+                token => ReadCoreAsync(request, token), cancellationToken);
+
+    private async Task<AuthorizedKnowledgeNotebookResult> ReadCoreAsync(
+        AuthorizedKnowledgeNotebookRequest request,
+        CancellationToken cancellationToken)
     {
         if (!Valid(request)) return new("invalid", [], [], "INVALID_KNOWLEDGE_REQUEST");
 
@@ -56,11 +66,20 @@ public sealed class AuthorizedKnowledgeNotebookReader(
 
             IReadOnlyDictionary<string, EffectiveKnowledgeState> effective =
                 new Dictionary<string, EffectiveKnowledgeState>(StringComparer.Ordinal);
+            IKnowledgeEffectiveStateSnapshot? stateSnapshot = null;
             IReadOnlySet<string>? allowed = null;
             if (actor)
             {
-                effective = await states.ResolveAllAsync(binding, grant.ActorId!, scope.WorldId,
-                    projection.Documents.Select(value => value.KnowledgeId).ToArray(), cancellationToken);
+                var knowledgeIds = projection.Documents.Select(value => value.KnowledgeId).ToArray();
+                if (states is IKnowledgeEffectiveStateSnapshotResolver snapshots)
+                {
+                    stateSnapshot = await snapshots.CaptureAsync(
+                        binding, grant.ActorId!, scope.WorldId, knowledgeIds, cancellationToken);
+                    effective = stateSnapshot.Resolve(knowledgeIds);
+                }
+                else
+                    effective = await states.ResolveAllAsync(
+                        binding, grant.ActorId!, scope.WorldId, knowledgeIds, cancellationToken);
                 allowed = projection.Documents.Where(document => effective.TryGetValue(
                         document.KnowledgeId, out var state) && state.WorldId == scope.WorldId &&
                         (binding.ContentStates.Contains(state.State, StringComparer.Ordinal) ||
@@ -92,17 +111,26 @@ public sealed class AuthorizedKnowledgeNotebookReader(
             var entries = new List<AuthorizedKnowledgeNotebookEntry>(selected.Count);
             var locationIndexes = new Dictionary<string, int>(StringComparer.Ordinal);
             var locations = new List<(string Name, List<AuthorizedKnowledgeNotebookEntry> Entries)>();
+            var hydratedDocuments = await source.ReadDocumentsAsync(binding, scope.WorldId,
+                selected.Select(value => value.KnowledgeId).ToArray(), cancellationToken);
+            IReadOnlyDictionary<string, EffectiveKnowledgeState> rechecked =
+                new Dictionary<string, EffectiveKnowledgeState>(StringComparer.Ordinal);
+            if (actor)
+            {
+                var selectedIds = selected.Select(value => value.KnowledgeId).ToArray();
+                rechecked = stateSnapshot is null
+                    ? await states.ResolveAllAsync(
+                        binding, grant.ActorId!, scope.WorldId, selectedIds, cancellationToken)
+                    : stateSnapshot.Resolve(selectedIds);
+            }
             foreach (var document in selected)
             {
-                var hydrated = await source.ReadDocumentAsync(
-                    binding, scope.WorldId, document.KnowledgeId, cancellationToken);
-                if (hydrated is null || hydrated.Revision != document.Revision) continue;
+                if (!hydratedDocuments.TryGetValue(document.KnowledgeId, out var hydrated) ||
+                    hydrated.Revision != document.Revision) continue;
 
                 var stance = binding.BaselineState;
                 if (actor)
                 {
-                    var rechecked = await states.ResolveAllAsync(binding, grant.ActorId!, scope.WorldId,
-                        [hydrated.KnowledgeId], cancellationToken);
                     if (!rechecked.TryGetValue(hydrated.KnowledgeId, out var current) ||
                         !effective.TryGetValue(hydrated.KnowledgeId, out var before) ||
                         current.Revision != before.Revision) continue;

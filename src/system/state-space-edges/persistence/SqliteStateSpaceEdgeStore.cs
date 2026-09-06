@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
+using DantesRoleplay.Projections;
 using DantesRoleplay.SchemaValidation;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,9 +10,13 @@ namespace DantesRoleplay.Ecs;
 
 public sealed class SqliteStateSpaceEdgeStore(
     DantesRoleplayDbContext db,
-    IStateSpaceRegistry stateSpaces) : IStateSpaceEdgeStore, IRelationshipCollectionReader
+    IStateSpaceRegistry stateSpaces,
+    IProjectionReadSnapshotStatus? snapshotStatus = null) : IStateSpaceEdgeStore, IRelationshipCollectionReader
 {
     private readonly Dictionary<string, StateSpaceView> transactionStateSpaces = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, IReadOnlyList<EcsContainmentView>> transactionContainments = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, IReadOnlyList<EcsRelationshipView>> transactionRelationships = new(StringComparer.Ordinal);
+    private object? transactionIdentity;
 
     public async Task<EcsContainmentView?> GetContainmentAsync(
         string stateSpaceId,
@@ -35,7 +40,10 @@ public sealed class SqliteStateSpaceEdgeStore(
         CancellationToken cancellationToken = default)
     {
         ValidateId(stateSpaceId, nameof(stateSpaceId));
+        RefreshTransactionCache();
         RequireStateSpace(stateSpaceId);
+        if (snapshotStatus?.IsActive == true &&
+            transactionContainments.TryGetValue(stateSpaceId, out var cached)) return cached;
         var rows = await db.Set<ApplicationEcsContainmentRecord>().AsNoTracking()
             .Where(value => value.StateSpaceId == stateSpaceId)
             .Where(value => db.Set<ApplicationEcsEntityRecord>().Any(entity =>
@@ -44,7 +52,9 @@ public sealed class SqliteStateSpaceEdgeStore(
                     entity.StateSpaceId == stateSpaceId && entity.Id == value.ContainerEntityId && entity.DeletedAtUtc == null))
             .OrderBy(value => value.ContainedEntityId)
             .ToArrayAsync(cancellationToken);
-        return Array.AsReadOnly(rows.Select(View).ToArray());
+        var result = Array.AsReadOnly(rows.Select(View).ToArray());
+        if (snapshotStatus?.IsActive == true) transactionContainments[stateSpaceId] = result;
+        return result;
     }
 
     public async Task<EcsContainmentDiscoveryPage> ListContainmentsAsync(
@@ -140,6 +150,7 @@ public sealed class SqliteStateSpaceEdgeStore(
             row.UpdatedAtUtc = now;
         }
         await db.SaveChangesAsync(cancellationToken);
+        transactionContainments.Remove(stateSpaceId);
         return View(row);
     }
 
@@ -159,6 +170,7 @@ public sealed class SqliteStateSpaceEdgeStore(
             throw new InvalidOperationException("The containment revision is stale.");
         db.Remove(row);
         await db.SaveChangesAsync(cancellationToken);
+        transactionContainments.Remove(stateSpaceId);
         return true;
     }
 
@@ -189,7 +201,10 @@ public sealed class SqliteStateSpaceEdgeStore(
         CancellationToken cancellationToken = default)
     {
         ValidateId(stateSpaceId, nameof(stateSpaceId));
+        RefreshTransactionCache();
         RequireStateSpace(stateSpaceId);
+        if (snapshotStatus?.IsActive == true &&
+            transactionRelationships.TryGetValue(stateSpaceId, out var cached)) return cached;
         var rows = await db.Set<ApplicationEcsRelationshipRecord>().AsNoTracking()
             .Where(value => value.StateSpaceId == stateSpaceId)
             .Where(value => db.Set<ApplicationEcsEntityRecord>().Any(entity =>
@@ -199,7 +214,9 @@ public sealed class SqliteStateSpaceEdgeStore(
             .OrderBy(value => value.FromEntityId).ThenBy(value => value.ToEntityId)
             .ThenBy(value => value.QualifiedKind)
             .ToArrayAsync(cancellationToken);
-        return Array.AsReadOnly(rows.Select(View).ToArray());
+        var result = Array.AsReadOnly(rows.Select(View).ToArray());
+        if (snapshotStatus?.IsActive == true) transactionRelationships[stateSpaceId] = result;
+        return result;
     }
 
     public async Task<IReadOnlyList<EcsRelationshipView>> ReadCollectionAsync(
@@ -317,6 +334,7 @@ public sealed class SqliteStateSpaceEdgeStore(
             row.UpdatedAtUtc = now;
         }
         await db.SaveChangesAsync(cancellationToken);
+        transactionRelationships.Remove(stateSpaceId);
         return View(row);
     }
 
@@ -341,6 +359,7 @@ public sealed class SqliteStateSpaceEdgeStore(
             throw new InvalidOperationException("The relationship revision is stale.");
         db.Remove(row);
         await db.SaveChangesAsync(cancellationToken);
+        transactionRelationships.Remove(stateSpaceId);
         return true;
     }
 
@@ -364,13 +383,24 @@ public sealed class SqliteStateSpaceEdgeStore(
 
     private StateSpaceView RequireStateSpace(string stateSpaceId)
     {
-        if (db.Database.CurrentTransaction is not null
+        RefreshTransactionCache();
+        if (snapshotStatus?.IsActive == true
             && transactionStateSpaces.TryGetValue(stateSpaceId, out var cached)) return cached;
         var stateSpace = stateSpaces.Get(stateSpaceId)
             ?? throw new InvalidOperationException("The state space is unknown.");
-        if (db.Database.CurrentTransaction is not null) transactionStateSpaces[stateSpaceId] = stateSpace;
+        if (snapshotStatus?.IsActive == true) transactionStateSpaces[stateSpaceId] = stateSpace;
         else transactionStateSpaces.Clear();
         return stateSpace;
+    }
+
+    private void RefreshTransactionCache()
+    {
+        var current = snapshotStatus?.IsActive == true ? db.Database.CurrentTransaction : null;
+        if (ReferenceEquals(current, transactionIdentity)) return;
+        transactionIdentity = current;
+        transactionStateSpaces.Clear();
+        transactionContainments.Clear();
+        transactionRelationships.Clear();
     }
 
     private static void ValidateRegisteredKind(string qualifiedKind)

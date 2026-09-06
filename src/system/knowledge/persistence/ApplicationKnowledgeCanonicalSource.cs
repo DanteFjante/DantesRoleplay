@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using DantesRoleplay.Ecs;
+using DantesRoleplay.Projections;
 
 namespace DantesRoleplay.Knowledge;
 
@@ -9,11 +10,16 @@ namespace DantesRoleplay.Knowledge;
 public sealed class ApplicationKnowledgeCanonicalSource(
     IStateSpaceRegistry stateSpaces,
     IEntityComponentStore entities,
-    IStateSpaceEdgeStore edges) : IKnowledgeCanonicalSource
+    IStateSpaceEdgeStore edges,
+    IProjectionReadSnapshotStatus? snapshotStatus = null) : IKnowledgeCanonicalSource
 {
     private const int PageSize = 100;
     private const int MaximumEntities = 10_000;
     private const int MaximumComponentsPerEntity = 2_000;
+    private string? cachedWorldId;
+    private string? cachedStateSpaceId;
+    private long cachedSnapshotRevision;
+    private IReadOnlyDictionary<string, CanonicalKnowledgeDocument>? cachedDocuments;
 
     public async Task<KnowledgeCampaignScope?> ReadCampaignScopeAsync(
         KnowledgeApplicationBinding binding,
@@ -79,6 +85,13 @@ public sealed class ApplicationKnowledgeCanonicalSource(
         if (stateSpace is null || stateSpace.ApplicationRevision.ApplicationId.Value != binding.ApplicationId)
             return null;
         var relationships = await edges.ListRelationshipsAsync(binding.StateSpaceId, cancellationToken);
+        if (entities is IEntityComponentProjectionStore selections)
+        {
+            var selected = await ReadSelectedWorldAsync(
+                binding, scope, relationships, selections, cancellationToken);
+            Cache(binding, scope.WorldId, selected);
+            return selected;
+        }
         var projected = new List<CanonicalKnowledgeDocument>();
         string? cursor = null;
         var seen = 0;
@@ -105,7 +118,9 @@ public sealed class ApplicationKnowledgeCanonicalSource(
                 .Select(value => new { value.FromEntityId, value.ToEntityId, value.QualifiedKind, value.Revision }),
             documents = projected.Select(value => new { value.KnowledgeId, value.Revision })
         });
-        return new(scope, revision, projected);
+        var projection = new KnowledgeCampaignProjection(scope, revision, projected);
+        Cache(binding, scope.WorldId, projection);
+        return projection;
     }
 
     public async Task<CanonicalKnowledgeDocument?> ReadDocumentAsync(
@@ -120,10 +135,139 @@ public sealed class ApplicationKnowledgeCanonicalSource(
         var stateSpace = stateSpaces.Get(binding.StateSpaceId);
         if (stateSpace is null || stateSpace.ApplicationRevision.ApplicationId.Value != binding.ApplicationId)
             return null;
-        var entity = await entities.GetEntityAsync(binding.StateSpaceId, knowledgeId, cancellationToken);
-        if (entity is null) return null;
+        var documents = await ReadDocumentsAsync(binding, worldId, [knowledgeId], cancellationToken);
+        return documents.GetValueOrDefault(knowledgeId);
+    }
+
+    public async Task<IReadOnlyDictionary<string, CanonicalKnowledgeDocument>> ReadDocumentsAsync(
+        KnowledgeApplicationBinding binding,
+        string worldId,
+        IReadOnlyList<string> knowledgeIds,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(binding);
+        ArgumentNullException.ThrowIfNull(knowledgeIds);
+        binding.Validate();
+        if (!Bounded(worldId) || knowledgeIds.Count > 1_000 ||
+            knowledgeIds.Any(value => !Bounded(value)) ||
+            knowledgeIds.Distinct(StringComparer.Ordinal).Count() != knowledgeIds.Count)
+            return new Dictionary<string, CanonicalKnowledgeDocument>(StringComparer.Ordinal);
+        var stateSpace = stateSpaces.Get(binding.StateSpaceId);
+        if (stateSpace is null || stateSpace.ApplicationRevision.ApplicationId.Value != binding.ApplicationId)
+            return new Dictionary<string, CanonicalKnowledgeDocument>(StringComparer.Ordinal);
+        if (snapshotStatus?.IsActive == true && cachedStateSpaceId == binding.StateSpaceId &&
+            cachedSnapshotRevision == snapshotStatus.Revision && cachedWorldId == worldId && cachedDocuments is not null &&
+            knowledgeIds.All(cachedDocuments.ContainsKey))
+            return knowledgeIds.ToDictionary(
+                value => value, value => cachedDocuments[value], StringComparer.Ordinal);
         var relationships = await edges.ListRelationshipsAsync(binding.StateSpaceId, cancellationToken);
-        return await ProjectAsync(binding, worldId, entity, relationships, cancellationToken);
+        var result = new Dictionary<string, CanonicalKnowledgeDocument>(StringComparer.Ordinal);
+        if (knowledgeIds.Count == 0) return result;
+        if (entities is IEntityComponentProjectionStore selections)
+        {
+            var rows = await selections.GetAsync(binding.StateSpaceId, knowledgeIds,
+                DocumentComponentTypes(binding), cancellationToken);
+            var subjects = await ReadSubjectsAsync(binding, rows, relationships, selections, cancellationToken);
+            foreach (var row in rows)
+            {
+                var document = Project(binding, worldId, row.Entity, row.Components, relationships, subjects);
+                if (document is not null) result[document.KnowledgeId] = document;
+            }
+            return result;
+        }
+
+        foreach (var knowledgeId in knowledgeIds)
+        {
+            var entity = await entities.GetEntityAsync(binding.StateSpaceId, knowledgeId, cancellationToken);
+            if (entity is null) continue;
+            var document = await ProjectAsync(binding, worldId, entity, relationships, cancellationToken);
+            if (document is not null) result[document.KnowledgeId] = document;
+        }
+        return result;
+    }
+
+    private async Task<KnowledgeCampaignProjection?> ReadSelectedWorldAsync(
+        KnowledgeApplicationBinding binding,
+        KnowledgeCampaignScope scope,
+        IReadOnlyList<EcsRelationshipView> relationships,
+        IEntityComponentProjectionStore selections,
+        CancellationToken cancellationToken)
+    {
+        var projected = new List<CanonicalKnowledgeDocument>();
+        var required = binding.KnowledgeKinds.Select(value => value.ComponentTypeId).ToArray();
+        var included = DocumentComponentTypes(binding);
+        string? cursor = null;
+        var seen = 0;
+        do
+        {
+            var page = await selections.SelectAsync(binding.StateSpaceId,
+                new(required, included, cursor, 1_000), cancellationToken);
+            seen += page.Entities.Count;
+            if (seen > MaximumEntities) return null;
+            var subjects = await ReadSubjectsAsync(
+                binding, page.Entities, relationships, selections, cancellationToken);
+            foreach (var row in page.Entities)
+            {
+                var document = Project(
+                    binding, scope.WorldId, row.Entity, row.Components, relationships, subjects);
+                if (document is not null) projected.Add(document);
+            }
+            cursor = page.NextEntityId;
+        } while (cursor is not null);
+        return Projection(scope, relationships, projected);
+    }
+
+    private async Task<IReadOnlyDictionary<string, EcsEntityComponentProjection>> ReadSubjectsAsync(
+        KnowledgeApplicationBinding binding,
+        IReadOnlyList<EcsEntityComponentProjection> candidates,
+        IReadOnlyList<EcsRelationshipView> relationships,
+        IEntityComponentProjectionStore selections,
+        CancellationToken cancellationToken)
+    {
+        var candidateIds = candidates.Select(value => value.Entity.EntityId).ToHashSet(StringComparer.Ordinal);
+        var subjectIds = relationships.Where(value => candidateIds.Contains(value.FromEntityId) &&
+                value.QualifiedKind == binding.KnowledgeAboutRelationshipKind && Empty(value.DataJson))
+            .Select(value => value.ToEntityId).Distinct(StringComparer.Ordinal).ToArray();
+        if (subjectIds.Length == 0)
+            return new Dictionary<string, EcsEntityComponentProjection>(StringComparer.Ordinal);
+        var rows = await selections.GetAsync(binding.StateSpaceId, subjectIds,
+            [binding.LocationComponentTypeId], cancellationToken);
+        return rows.ToDictionary(value => value.Entity.EntityId, StringComparer.Ordinal);
+    }
+
+    private static IReadOnlyList<string> DocumentComponentTypes(KnowledgeApplicationBinding binding) =>
+        binding.KnowledgeKinds.Select(value => value.ComponentTypeId)
+            .Append(binding.ClassificationComponentTypeId)
+            .Append(binding.ValidityComponentTypeId)
+            .Distinct(StringComparer.Ordinal).ToArray();
+
+    private void Cache(
+        KnowledgeApplicationBinding binding,
+        string worldId,
+        KnowledgeCampaignProjection? projection)
+    {
+        if (snapshotStatus?.IsActive != true || projection is null) return;
+        cachedStateSpaceId = binding.StateSpaceId;
+        cachedWorldId = worldId;
+        cachedSnapshotRevision = snapshotStatus.Revision;
+        cachedDocuments = projection.Documents.ToDictionary(
+            value => value.KnowledgeId, StringComparer.Ordinal);
+    }
+
+    private static KnowledgeCampaignProjection Projection(
+        KnowledgeCampaignScope scope,
+        IReadOnlyList<EcsRelationshipView> relationships,
+        List<CanonicalKnowledgeDocument> projected)
+    {
+        projected.Sort((left, right) => StringComparer.Ordinal.Compare(left.KnowledgeId, right.KnowledgeId));
+        var revision = Hash(new
+        {
+            scope.Revision,
+            worldEdges = relationships.Where(value => value.ToEntityId == scope.WorldId)
+                .Select(value => new { value.FromEntityId, value.ToEntityId, value.QualifiedKind, value.Revision }),
+            documents = projected.Select(value => new { value.KnowledgeId, value.Revision })
+        });
+        return new(scope, revision, projected);
     }
 
     private async Task<CanonicalKnowledgeDocument?> ProjectAsync(
@@ -135,12 +279,36 @@ public sealed class ApplicationKnowledgeCanonicalSource(
     {
         var components = await ReadComponentsAsync(binding.StateSpaceId, entity.EntityId, cancellationToken);
         if (components is null) return null;
+        var subjects = relationships.Where(value =>
+                value.FromEntityId == entity.EntityId &&
+                value.QualifiedKind == binding.KnowledgeAboutRelationshipKind && Empty(value.DataJson))
+            .Select(value => value.ToEntityId).ToArray();
+        if (subjects.Length != 1) return null;
+        var subject = await entities.GetEntityAsync(
+            binding.StateSpaceId, subjects[0], cancellationToken);
+        if (subject is null) return null;
+        var subjectLocation = await entities.GetComponentAsync(
+            binding.StateSpaceId, subject.EntityId, binding.LocationComponentTypeId, cancellationToken);
+        return Project(binding, worldId, entity, components, relationships,
+            new Dictionary<string, EcsEntityComponentProjection>(StringComparer.Ordinal)
+            {
+                [subject.EntityId] = new(subject, subjectLocation is null ? [] : [subjectLocation])
+            });
+    }
+
+    private static CanonicalKnowledgeDocument? Project(
+        KnowledgeApplicationBinding binding,
+        string worldId,
+        EcsEntityView entity,
+        IReadOnlyList<EcsComponentView> components,
+        IReadOnlyList<EcsRelationshipView> relationships,
+        IReadOnlyDictionary<string, EcsEntityComponentProjection> subjectsById)
+    {
         var primary = components.Where(component => binding.KnowledgeKinds.Any(kind =>
             kind.ComponentTypeId == component.Type.QualifiedTypeId)).ToArray();
         if (primary.Length != 1) return null;
         var kind = binding.KnowledgeKinds.Single(value =>
             value.ComponentTypeId == primary[0].Type.QualifiedTypeId);
-
         var classification = components.Where(value =>
             value.Type.QualifiedTypeId == binding.ClassificationComponentTypeId).ToArray();
         if (classification.Length != 1 ||
@@ -149,22 +317,17 @@ public sealed class ApplicationKnowledgeCanonicalSource(
         if (!Text(primary[0].ValueJson, binding.PrimaryStatusProperty, out var status) ||
             !Text(primary[0].ValueJson, binding.PrimarySummaryProperty, out var summary))
             return null;
-
-        var scopedWorlds = relationships.Where(value =>
-                value.FromEntityId == entity.EntityId &&
+        var scopedWorlds = relationships.Where(value => value.FromEntityId == entity.EntityId &&
                 value.QualifiedKind == binding.KnowledgeWorldRelationshipKind && Empty(value.DataJson))
             .Select(value => value.ToEntityId).ToArray();
-        var subjects = relationships.Where(value =>
-                value.FromEntityId == entity.EntityId &&
+        var subjects = relationships.Where(value => value.FromEntityId == entity.EntityId &&
                 value.QualifiedKind == binding.KnowledgeAboutRelationshipKind && Empty(value.DataJson))
             .Select(value => value.ToEntityId).ToArray();
-        if (scopedWorlds.Length != 1 || scopedWorlds[0] != worldId || subjects.Length != 1)
-            return null;
-        var subject = await entities.GetEntityAsync(
-            binding.StateSpaceId, subjects[0], cancellationToken);
-        if (subject is null) return null;
-        var subjectLocation = await entities.GetComponentAsync(
-            binding.StateSpaceId, subject.EntityId, binding.LocationComponentTypeId, cancellationToken);
+        if (scopedWorlds.Length != 1 || scopedWorlds[0] != worldId || subjects.Length != 1 ||
+            !subjectsById.TryGetValue(subjects[0], out var subjectProjection)) return null;
+        var subject = subjectProjection.Entity;
+        var subjectLocation = subjectProjection.Components.SingleOrDefault(value =>
+            value.Type.QualifiedTypeId == binding.LocationComponentTypeId);
         var subjectIsActiveLocation = subjectLocation is not null &&
             Text(subjectLocation.ValueJson, binding.LocationStatusProperty, out var locationStatus) &&
             locationStatus == binding.ActiveLocationStatus;

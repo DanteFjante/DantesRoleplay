@@ -5,8 +5,13 @@ using Microsoft.EntityFrameworkCore;
 namespace DantesRoleplay.Projections;
 
 /// <summary>Runs a compound projection read against one consistent SQLite snapshot.</summary>
-public sealed class SqliteProjectionReadTransaction(DantesRoleplayDbContext db) : IProjectionReadTransaction
+public sealed class SqliteProjectionReadTransaction(DantesRoleplayDbContext db) :
+    IProjectionReadTransaction, IProjectionReadSnapshotStatus
 {
+    private long revision;
+    public bool IsActive => db.Database.CurrentTransaction is not null;
+    public long Revision => revision;
+
     public async Task<T> ExecuteAsync<T>(
         Func<CancellationToken, Task<T>> read,
         CancellationToken cancellationToken = default)
@@ -15,6 +20,7 @@ public sealed class SqliteProjectionReadTransaction(DantesRoleplayDbContext db) 
         if (db.Database.CurrentTransaction is not null)
             return await read(cancellationToken);
 
+        Interlocked.Increment(ref revision);
         await using var transaction = await db.Database.BeginTransactionAsync(
             IsolationLevel.Serializable, cancellationToken);
         var result = await read(cancellationToken);

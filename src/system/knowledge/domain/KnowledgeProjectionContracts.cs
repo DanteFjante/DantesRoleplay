@@ -49,6 +49,21 @@ public interface IKnowledgeCanonicalSource
         string worldId,
         string knowledgeId,
         CancellationToken cancellationToken = default);
+
+    async Task<IReadOnlyDictionary<string, CanonicalKnowledgeDocument>> ReadDocumentsAsync(
+        KnowledgeApplicationBinding binding,
+        string worldId,
+        IReadOnlyList<string> knowledgeIds,
+        CancellationToken cancellationToken = default)
+    {
+        var result = new Dictionary<string, CanonicalKnowledgeDocument>(StringComparer.Ordinal);
+        foreach (var knowledgeId in knowledgeIds)
+        {
+            var document = await ReadDocumentAsync(binding, worldId, knowledgeId, cancellationToken);
+            if (document is not null) result[knowledgeId] = document;
+        }
+        return result;
+    }
 }
 
 public sealed record EffectiveKnowledgeState(
@@ -62,6 +77,25 @@ public sealed record EffectiveKnowledgeState(
 public interface IKnowledgeEffectiveStateResolver
 {
     Task<IReadOnlyDictionary<string, EffectiveKnowledgeState>> ResolveAllAsync(
+        KnowledgeApplicationBinding binding,
+        string actorId,
+        string worldId,
+        IReadOnlyList<string> knowledgeIds,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// One immutable effective-state view used for initial filtering and the mandatory disclosure
+/// recheck while the owning notebook read remains on a consistent provider snapshot.
+/// </summary>
+public interface IKnowledgeEffectiveStateSnapshot
+{
+    IReadOnlyDictionary<string, EffectiveKnowledgeState> Resolve(IReadOnlyList<string> knowledgeIds);
+}
+
+public interface IKnowledgeEffectiveStateSnapshotResolver
+{
+    Task<IKnowledgeEffectiveStateSnapshot> CaptureAsync(
         KnowledgeApplicationBinding binding,
         string actorId,
         string worldId,

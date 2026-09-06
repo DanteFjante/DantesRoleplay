@@ -1,12 +1,16 @@
+using System.Data.Common;
 using DantesRoleplay.Applications;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.EcsEffects;
 using DantesRoleplay.Operations;
+using DantesRoleplay.Projections;
 using DantesRoleplay.Retrieval;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.Tests;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DantesRoleplay.Knowledge.Tests;
@@ -368,6 +372,35 @@ public sealed class KnowledgeCoreTests
     }
 
     [Fact]
+    public async Task Actor_notebook_page_including_disclosure_recheck_stays_within_sixteen_sql_commands()
+    {
+        var commands = new CommandCounter();
+        using var fixture = new KnowledgeFixture(interceptor: commands);
+        await fixture.AddCoreAsync();
+        await fixture.AddParticipationAsync();
+        await fixture.AddKnowledgeAsync("known", "The archive ledger records old tolls.");
+        await fixture.AddKnowledgeAsync("familiar", "The brass seal marks the royal archive.");
+        await fixture.RelateAsync(fixture.Actor, "known", fixture.Binding.ExplicitStateRelationshipKind,
+            "{\"stance\":\"known\"}");
+        await fixture.RelateAsync(fixture.Actor, "familiar", fixture.Binding.ExplicitStateRelationshipKind,
+            "{\"stance\":\"familiar\"}");
+        var reader = new AuthorizedKnowledgeNotebookReader(
+            new Policy(new(new("principal", fixture.Campaign, KnowledgeAudienceRole.Actor,
+                fixture.Actor, "policy.1"))), new Binding(fixture.Binding),
+            new ApplicationKnowledgeActorParticipationVerifier(fixture.Entities, fixture.Edges),
+            fixture.Source, fixture.States, new DeterministicKnowledgeLexicalRetriever(),
+            fixture.Transactions);
+
+        commands.Reset();
+        var result = await reader.ReadAsync(new(fixture.Campaign, Limit: 25));
+
+        Assert.Equal("ready", result.Status);
+        Assert.Equal(2, result.Entries.Count);
+        Assert.True(commands.Count <= 16,
+            $"Notebook used {commands.Count} SQL commands:{Environment.NewLine}{string.Join(Environment.NewLine, commands.Commands)}");
+    }
+
+    [Fact]
     public async Task Notebook_accepts_complete_world_sized_pages_and_rejects_oversized_requests()
     {
         using var fixture = new KnowledgeFixture();
@@ -487,6 +520,30 @@ public sealed class KnowledgeCoreTests
             Task.FromResult(new KnowledgeParticipationResolution(true, "participation.1"));
     }
 
+    private sealed class CommandCounter : DbCommandInterceptor
+    {
+        public int Count { get; private set; }
+        public List<string> Commands { get; } = [];
+        public void Reset() { Count = 0; Commands.Clear(); }
+
+        public override InterceptionResult<DbDataReader> ReaderExecuting(
+            DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result)
+        {
+            Count++;
+            Commands.Add(command.CommandText.Split('\n', StringSplitOptions.RemoveEmptyEntries)[0]);
+            return result;
+        }
+
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
+            DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result,
+            CancellationToken cancellationToken = default)
+        {
+            Count++;
+            Commands.Add(command.CommandText.Split('\n', StringSplitOptions.RemoveEmptyEntries)[0]);
+            return ValueTask.FromResult(result);
+        }
+    }
+
     private sealed class RecordingEffects : IApplicationEcsEffectApplier
     {
         public Task<ApplicationEcsEffectResult> ApplyAsync(ApplicationEcsEffectBatch batch,
@@ -574,21 +631,28 @@ public sealed class KnowledgeCoreTests
         public KnowledgeApplicationBinding Binding { get; }
         public IKnowledgeCanonicalSource Source { get; }
         public IKnowledgeEffectiveStateResolver States { get; }
+        public SqliteProjectionReadTransaction Transactions { get; }
         public DantesRoleplayDbContext Db => _db;
 
-        public KnowledgeFixture(bool retainApplicationPrefixedIdentities = false)
+        public KnowledgeFixture(
+            bool retainApplicationPrefixedIdentities = false,
+            DbCommandInterceptor? interceptor = null)
         {
             _retainApplicationPrefixedIdentities = retainApplicationPrefixedIdentities;
-            _db = _database.CreateContext();
+            _db = interceptor is null
+                ? _database.CreateContext()
+                : new DantesRoleplayDbContext(new DbContextOptionsBuilder<DantesRoleplayDbContext>()
+                    .UseSqlite(_database.Connection).AddInterceptors(interceptor).Options);
+            Transactions = new SqliteProjectionReadTransaction(_db);
             var applications = new SqliteApplicationRegistry(_db);
             var application = ApplicationIdentifier.Parse(Application);
             var revision = applications.Register(new(application, Application, "", []));
-            StateSpaces = new SqliteStateSpaceRegistry(_db, applications);
+            StateSpaces = new SqliteStateSpaceRegistry(_db, applications, Transactions);
             StateSpaces.Create(new(Campaign, revision, Manifest));
             var schemas = new BoundedJsonSchemaValidator();
             var registry = new SqliteComponentTypeRegistry(_db, schemas);
             Entities = new SqliteEntityComponentStore(_db, registry, schemas);
-            Edges = new SqliteStateSpaceEdgeStore(_db, StateSpaces);
+            Edges = new SqliteStateSpaceEdgeStore(_db, StateSpaces, Transactions);
             Binding = CreateBinding();
             foreach (var typeId in ComponentTypeIds(Binding))
             {
@@ -598,7 +662,7 @@ public sealed class KnowledgeCoreTests
                 var type = registry.Define(new(application, storedTypeId, "true"));
                 _types.Add(typeId, new(type.QualifiedId, type.Version, type.SchemaHash));
             }
-            Source = new ApplicationKnowledgeCanonicalSource(StateSpaces, Entities, Edges);
+            Source = new ApplicationKnowledgeCanonicalSource(StateSpaces, Entities, Edges, Transactions);
             States = new ApplicationKnowledgeEffectiveStateResolver(Entities, Edges);
         }
 
@@ -746,6 +810,10 @@ public sealed class KnowledgeCoreTests
 
         public async Task ComponentAsync(string entityId, string typeId, string json) =>
             _ = await Entities.AddComponentAsync(new(Campaign, entityId, _types[typeId], json, 0));
+
+        public async Task SetComponentAsync(string entityId, string typeId, string json, int expectedRevision = 1) =>
+            _ = await Entities.SetComponentAsync(new(
+                Campaign, entityId, _types[typeId], json, expectedRevision));
 
         public EcsComponentReference DefineComponent(string id)
         {

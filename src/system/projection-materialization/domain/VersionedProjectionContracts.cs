@@ -102,6 +102,13 @@ public interface IProjectionReadTransaction
     Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> read, CancellationToken cancellationToken = default);
 }
 
+/// <summary>Reports whether the scoped provider is currently serving one consistent read snapshot.</summary>
+public interface IProjectionReadSnapshotStatus
+{
+    bool IsActive { get; }
+    long Revision { get; }
+}
+
 /// <summary>One provider-owned read snapshot for a prepared projection's exact component set.</summary>
 public interface IProjectionSourceSnapshotReader
 {
