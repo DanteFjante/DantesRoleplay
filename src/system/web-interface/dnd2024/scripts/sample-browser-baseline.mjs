@@ -12,6 +12,16 @@ export function requestMetadata(request, parentInteraction, started) {
 
 export const reportedPayloadBytes = value => Number.isSafeInteger(value) && value >= 0 ? value : null;
 
+export const isPersistentReadPath = path => path === '/api/changes';
+
+export const browserStorageState = (listener, perspective) => ({
+  cookies: [],
+  origins: [{ origin: listener, localStorage: [{ name: 'dnd2024-table-mode', value: perspective }] }],
+});
+
+export const remainingPairDelay = (previousStart, now, spacingMs) => previousStart === null
+  ? 0 : Math.max(0, previousStart + spacingMs - now);
+
 export function initializeBrowserProbe({ perspective }) {
   localStorage.setItem('dnd2024-table-mode', perspective);
   window.__DND_BASELINE_BLOCKED_WRITES__ = 0;
@@ -109,17 +119,25 @@ async function sample(page, client, cacheState, index) {
   const time = () => page.evaluate(() => performance.now());
   const paint = () => page.evaluate(() => new Promise(resolve =>
     requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const waitForFiniteRequests = async () => {
+    const deadline = Date.now() + 60_000;
+    while ([...byRequest].some(([request, entry]) => entry.outcome === 'pending'
+      && !isPersistentReadPath(new URL(request.url()).pathname))) {
+      if (Date.now() >= deadline) throw new Error('Finite browser requests did not settle within 60 seconds');
+      await page.waitForTimeout(25);
+    }
+  };
   try {
-    await page.goto(page.baselineUrl, { waitUntil: 'domcontentloaded', timeout: 15_000 });
+    await page.goto(page.baselineUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
     await page.waitForFunction(() => window.__DND_BASELINE_SCRIPT_ERRORS__ > 0 ||
       window.__DND_BASELINE_DOM_MARKS__?.activeView &&
-      performance.getEntriesByName('dnd2024.bootstrap.response').length, null, { timeout: 15_000 });
+      performance.getEntriesByName('dnd2024.bootstrap.response').length, null, { timeout: 60_000 });
     const observed = await page.evaluate(() => ({
       ...window.__DND_BASELINE_DOM_MARKS__,
       bootstrap: performance.getEntriesByName('dnd2024.bootstrap.response')[0]?.startTime,
     }));
     Object.assign(run.marks, observed);
-    await page.waitForLoadState('networkidle', { timeout: 15_000 });
+    await waitForFiniteRequests();
     if (!await page.locator('.information-hub:not(.bootstrap-shell):not(.rules-only-hub) #main-view-heading').count()) {
       for (const name of ['shell', 'bootstrap', 'activeView', 'character', 'map']) {
         if (run.marks[name] === undefined) run.outcomes[name] = {
@@ -153,13 +171,13 @@ async function sample(page, client, cacheState, index) {
     run.outcomes.character = { status: characterStatus, reason: characterStatus === 'ready'
       ? null : 'The unchanged live view did not render a ready canonical character sheet.' };
     if (characterStatus === 'ready') run.marks.character = await time() - characterStart;
-    await page.waitForLoadState('networkidle', { timeout: 30_000 });
+    await waitForFiniteRequests();
     phase = 'map';
     const mapStart = await time();
     await navigation.getByRole('button', { name: 'World', exact: true }).click();
     await page.getByRole('navigation', { name: 'World sections', exact: true })
       .getByRole('button', { name: 'Map', exact: true }).click();
-    await page.waitForLoadState('networkidle', { timeout: 30_000 });
+    await waitForFiniteRequests();
     if (await page.locator('.world-map-canvas').count()) {
       await page.locator('.world-map-canvas').waitFor({ state: 'visible' });
       await page.waitForFunction(() => [...document.querySelectorAll('.world-map-canvas img')]
@@ -169,7 +187,7 @@ async function sample(page, client, cacheState, index) {
     } else {
       run.outcomes.map = { status: 'unavailable', reason: 'No authorized map canvas rendered.' };
     }
-    await page.waitForLoadState('networkidle', { timeout: 30_000 });
+    await waitForFiniteRequests();
     phase = 'current';
     const currentStart = await time();
     await navigation.getByRole('button', { name: 'Current View', exact: true }).click();
@@ -183,7 +201,7 @@ async function sample(page, client, cacheState, index) {
     } else {
       run.combatBoard = { status: 'not-applicable', reason: 'No authorized tactical board in the current live situation.' };
     }
-    await page.waitForLoadState('networkidle', { timeout: 30_000 });
+    await waitForFiniteRequests();
     run.blockedWrites = await page.evaluate(() => window.__DND_BASELINE_BLOCKED_WRITES__);
     run.blockedOperations = await page.evaluate(() => window.__DND_BASELINE_BLOCKED_OPERATIONS__);
     assert.ok(requests.every(request => ['GET', 'HEAD'].includes(request.method)));
@@ -242,7 +260,7 @@ async function sample(page, client, cacheState, index) {
 
 async function main() {
   const options = { listener: 'http://localhost:6217', output: resolve(webRoot, '.tmp/website-slice-0/browser.json'), pairs: 20,
-    perspective: 'player' };
+    perspective: 'player', pairSpacingMs: 61_000 };
   for (let i = 2; i < process.argv.length; i++) {
     const name = process.argv[i]; const value = process.argv[++i];
     assert.ok(value);
@@ -252,9 +270,11 @@ async function main() {
     else if (name === '--browser-executable') options.executable = resolve(value);
     else if (name === '--pairs') options.pairs = Number(value);
     else if (name === '--perspective') options.perspective = value;
+    else if (name === '--pair-spacing-ms') options.pairSpacingMs = Number(value);
     else throw new Error('Unknown option ' + name);
   }
   assert.ok(Number.isInteger(options.pairs) && options.pairs >= 1 && options.pairs <= 100);
+  assert.ok(Number.isInteger(options.pairSpacingMs) && options.pairSpacingMs >= 0 && options.pairSpacingMs <= 300_000);
   assert.ok(['player', 'dm'].includes(options.perspective), 'Perspective must be player or dm');
   const { chromium } = await import(options.module ?? 'playwright');
   const browser = await chromium.launch({ headless: true, ...(options.executable ? { executablePath: options.executable } : {}) });
@@ -265,9 +285,10 @@ async function main() {
     machine: machineProfile(), generatedAtUtc: new Date().toISOString(), readOnly: true,
     protocol: {
       viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1, throttling: 'none',
-      navigationTimeoutMs: 15000, readinessTimeoutMs: 15000, viewTimeoutMs: 15000, idleTimeoutMs: 30000,
+      navigationTimeoutMs: 60000, readinessTimeoutMs: 60000, viewTimeoutMs: 60000, idleTimeoutMs: 60000,
       cold: 'Fresh isolated browser context with HTTP cache explicitly cleared; server remains warm.',
       warm: 'Second full navigation in the same context after World, Character sheet, Map and Current view.',
+      pairSpacingMs: options.pairSpacingMs,
       timingOrigins: { shell: 'navigation', bootstrap: 'navigation', activeView: 'navigation',
         character: 'Party navigation start through canonical sheet paint', map: 'World navigation start through map image load and paint',
         combatBoard: 'Current view navigation start through board paint, only when present' },
@@ -290,13 +311,18 @@ async function main() {
     report.liveBefore = await livePageEvidence(options.listener);
     report.perspective = options.perspective;
     report.audienceView = audienceViewFor(report.liveBefore.audience, report.perspective);
+    let previousPairStarted = null;
     for (let index = 1; index <= options.pairs; index++) {
-      const context = await browser.newContext({ viewport: report.protocol.viewport, deviceScaleFactor: 1, serviceWorkers: 'block' });
+      const delay = remainingPairDelay(previousPairStarted, Date.now(), options.pairSpacingMs);
+      if (delay) await new Promise(resolve => setTimeout(resolve, delay));
+      previousPairStarted = Date.now();
+      const context = await browser.newContext({ viewport: report.protocol.viewport, deviceScaleFactor: 1,
+        serviceWorkers: 'block', storageState: browserStorageState(options.listener, report.perspective) });
       try {
         await context.addInitScript(initializeBrowserProbe, { perspective: report.perspective });
         const page = await context.newPage();
         page.baselineUrl = options.listener + '/ui/dnd2024-play';
-        page.setDefaultTimeout(15_000);
+        page.setDefaultTimeout(60_000);
         const client = await context.newCDPSession(page);
         await client.send('Network.enable');
         await client.send('Network.clearBrowserCache');

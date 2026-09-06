@@ -56,7 +56,10 @@ Omit --playwright-module if Playwright is already resolvable in the local Node e
 The sampler uses a separate headless browser and disposable contexts, never the user's profile or
 open tab. Its default is 20 pairs: a fresh context with cleared HTTP cache, then a second navigation
 through World, Character sheet, Map and Current View in that same context. The server stays warm;
-private API reads still obey no-store. The target records browser version, viewport, CPU, OS, memory,
+private API reads still obey no-store. Pair starts are paced 61 seconds apart by default so the
+measurement does not defeat or raise the production fixed-window read limit; `--pair-spacing-ms`
+may be lowered only when the measured workflow remains within that unchanged limit. The target
+records browser version, viewport, CPU, OS, memory,
 perspective and listener. Run the GM listener once with `--perspective dm` and once with
 `--perspective player`; the latter is labelled GM-as-Player preview. Run a separately bound Actor
 listener with `--perspective player` for the actual Actor profile. The evidence validator rejects a
@@ -73,7 +76,9 @@ Browser evidence must match the exact listener, machine, browser, audience/runti
 active page before and after sampling. Missing metrics, duplicate IDs, short runs and drift cannot
 pass. Readiness timing summaries retain sample count, p50 and p95. Request summaries retain path,
 parent interaction, response status, transferred payload size and browser/server cache evidence;
-unknown lengths or cache results remain unknown. An unavailable character/map is recorded as a
+unknown lengths or cache results remain unknown. When any request length is unknown, the exact total
+remains unavailable and a separately labelled known-byte lower bound plus unknown-request count is
+retained. An unavailable character/map is recorded as a
 known baseline failure with no invented ready latency. An absent combat board is not applicable,
 not zero milliseconds. This can complete baseline collection without claiming that the website
 itself is healthy.

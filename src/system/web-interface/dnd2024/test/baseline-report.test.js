@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 
 import { audienceViewFor, browserEvidence, gateEvidence, machineProfile, normalizeListener, requiredMarks,
   sameLivePage, sha256, summarizeRequests, summarizeSamples } from "../scripts/collect-baseline.mjs";
-import { initializeBrowserProbe, reportedPayloadBytes, requestMetadata } from "../scripts/sample-browser-baseline.mjs";
+import { browserStorageState, initializeBrowserProbe, isPersistentReadPath, remainingPairDelay,
+  reportedPayloadBytes, requestMetadata } from "../scripts/sample-browser-baseline.mjs";
 import { JSDOM } from 'jsdom';
 
 test("baseline percentiles always retain sample count, p50, and p95", () => {
@@ -74,6 +75,8 @@ test('request summaries keep the interaction, sample denominator, statuses, cach
     { requests: [{ ...request, durationMs: 20 }], requestCount: 1, payloadBytes: 12, browserCacheHits: 0 },
   ], live.listener, { name: 'Chrome', version: '152' });
   assert.deepEqual(result.counts, { sampleCount: 2, p50: 1, p95: 1, unit: 'requests' });
+  assert.deepEqual(result.knownTransferredPayload, { sampleCount: 2, p50: 12, p95: 12, unit: 'bytes' });
+  assert.deepEqual(result.unknownPayloads, { sampleCount: 2, p50: 0, p95: 0, unit: 'requests' });
   assert.deepEqual(result.paths[0].duration, { sampleCount: 2, p50Ms: 10, p95Ms: 20 });
   assert.equal(result.paths[0].statuses[404], 2);
   assert.equal(result.paths[0].parentInteraction, 'character');
@@ -146,6 +149,25 @@ test('browser ledger records transport metadata, not query values or private bod
   const report = browserEvidence(source, live);
   assert.equal(report.status, 'invalid');
   assert.doesNotMatch(JSON.stringify(report), /private-payload/);
+});
+
+test('browser settling excludes only the intentional change-feed long poll', () => {
+  assert.equal(isPersistentReadPath('/api/changes'), true);
+  assert.equal(isPersistentReadPath('/api/audience-context'), false);
+  assert.equal(isPersistentReadPath('/api/changes/other'), false);
+});
+
+test('browser contexts begin with the requested perspective before application scripts run', () => {
+  assert.deepEqual(browserStorageState(live.listener, 'dm'), {
+    cookies: [],
+    origins: [{ origin: live.listener, localStorage: [{ name: 'dnd2024-table-mode', value: 'dm' }] }],
+  });
+});
+
+test('browser pairs respect the production fixed-window read allowance', () => {
+  assert.equal(remainingPairDelay(null, 50_000, 61_000), 0);
+  assert.equal(remainingPairDelay(1_000, 50_000, 61_000), 12_000);
+  assert.equal(remainingPairDelay(1_000, 70_000, 61_000), 0);
 });
 
 test('browser guard rejects mutating URL and Request fetches without recording their bodies', async () => {

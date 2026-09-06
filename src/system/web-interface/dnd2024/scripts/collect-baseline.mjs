@@ -169,6 +169,10 @@ export function summarizeRequests(runs, listener, browser) {
     listener, browser,
     counts: summarizeCounts(runs.map(run => run.requestCount), 'requests'),
     transferredPayload: summarizeCounts(runs.map(run => run.payloadBytes), 'bytes'),
+    knownTransferredPayload: summarizeCounts(runs.map(run => (run.requests ?? [])
+      .reduce((sum, request) => sum + (request.payloadBytes ?? 0), 0)), 'bytes'),
+    unknownPayloads: summarizeCounts(runs.map(run => (run.requests ?? [])
+      .filter(request => request.payloadBytes === null).length), 'requests'),
     browserCacheHits: summarizeCounts(runs.map(run => run.browserCacheHits), 'requests'),
     paths: [...byPath].sort(([a], [b]) => a.localeCompare(b)).map(([key, entries]) => {
       const [parentInteraction, method, path] = JSON.parse(key);
