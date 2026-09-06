@@ -86,11 +86,7 @@ public sealed class ApplicationMechanicProjectionMappingResolver(
                 localIds.Add(localId);
             if (declared.AuthorizedContext is { SourceSets: var sources })
             {
-                localIds.Add(sources.Selection.DefinitionLinkComponentId);
-                foreach (var id in sources.OptionalSelectedItemComponents) localIds.Add(id);
-                if (sources.Discovery is { } discovery) localIds.Add(discovery.ComponentId);
-                if (sources.Associations is { } associations) localIds.Add(associations.CandidateComponentId);
-                if (sources.Activities is { } activities) localIds.Add(activities.ComponentId);
+                foreach (var id in sources.ComponentIds()) localIds.Add(id);
             }
             foreach (var localId in declared.Roles.Values.SelectMany(value =>
                          value.Components.Concat(value.OptionalComponents ?? [])

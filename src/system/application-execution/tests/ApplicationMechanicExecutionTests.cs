@@ -596,6 +596,60 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
         Assert.Null(await entities.GetEntityAsync("action-space", "rolled-back"));
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("membership")]
+    [InlineData("payload")]
+    public async Task Authorized_linked_sources_require_exact_membership_and_target_mappings(string? missing)
+    {
+        await using var db = _fixture.CreateContext();
+        var app = ApplicationIdentifier.Parse("fixture-linked");
+        var applications = new SqliteApplicationRegistry(db);
+        var revision = applications.Register(new(app, "Linked fixture", "", []));
+        var spaces = new SqliteStateSpaceRegistry(db, applications);
+        spaces.Create(new("linked-space", revision, Hash("linked-activation")));
+        var types = new SqliteComponentTypeRegistry(db, new BoundedJsonSchemaValidator());
+        foreach (var id in new[] { "link", "inline", "membership", "payload" }.Where(id => id != missing))
+            types.Define(new(app, app.Value + "." + id, "{}"));
+        var manifest = CatalogNavigationManifest.Create(app, Hash("linked-catalog"), "catalog-lexical-v1",
+            [new(app.Value, "Fixture", "Linked fixture.")],
+            [new(app.Value, "", "Fixture", "Linked fixture.", CatalogDescriptionStatus.Authored)], []);
+        var catalogs = new InMemoryPublicApplicationCatalogProvider(new Dictionary<ApplicationIdentifier, ICatalogNavigator>
+        {
+            [app] = new InMemoryCatalogNavigator(manifest,
+                new CatalogCursorCodec(Encoding.UTF8.GetBytes("linked-source-test-cursor-key-32-bytes")))
+        });
+        var requirements = new MechanicRequirements
+        {
+            AuthorizedContext = new()
+            {
+                SourceSets = new()
+                {
+                    Selection = new() { DefinitionLinkComponentId = "link" },
+                    Activities = new("inline", "activities", ["selected-item", "selected-definition"])
+                    {
+                        Linked = new() { ComponentId = "membership", Field = "records", TargetComponentIds = ["payload"] }
+                    }
+                }
+            }
+        };
+        var resolver = new ApplicationMechanicProjectionMappingResolver(catalogs, spaces, types,
+            new SqliteStateSpaceEdgeStore(db, spaces));
+        var result = await resolver.ResolveAsync("linked-space", app, "fixture-linked.read", requirements);
+        if (missing is not null)
+        {
+            Assert.False(result.Resolved);
+            Assert.Equal("COMPONENT_MAPPING_MISSING", Assert.Single(result.Problems).Code);
+        }
+        else
+        {
+            Assert.True(result.Resolved);
+            Assert.Equal(new[] { "inline", "link", "membership", "payload" }, result.Mapping!.Components.Keys.Order());
+            foreach (var (id, reference) in result.Mapping.Components)
+                Assert.Equal(types.GetLatest(app.Value + "." + id)!.SchemaHash, reference.SchemaHash);
+        }
+    }
+
     public void Dispose() => _fixture.Dispose();
 
     private static MechanicFile[] RatifiedMechanics()

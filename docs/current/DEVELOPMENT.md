@@ -306,6 +306,15 @@ tampered manifests, runtime or asset drift, cache-policy failures, missing live 
 and changes during verification. Browser evidence is bound to the signed manifest, exact listener,
 and seat; source tests alone cannot satisfy the wheel behavior and player/DM dossier checks.
 
+Parameterized release probes include their reviewed `input`, `perspective`, and `campaignId`;
+the verifier rejects campaign drift and compares result/source fingerprints for that exact query.
+Item releases also declare `expectedRuntime.itemView` with the observer, item IDs, perspectives,
+and viewport widths. Browser evidence must cover all three tabs for every declared selection,
+match corresponding signed server probes, record return/request-budget/knowledge checks, and
+include non-overflowing layout measurements at every declared width. Unavailable tabs cannot
+satisfy item release acceptance. Actual Actor verification uses an isolated authorized host with
+the reviewed artifacts, preserving the shared live seat.
+
 ## Changes needing confirmation
 
 Pause for confirmation before introducing permanent IDs, changing schema meaning, adding a migration, changing a public surface, crossing an ownership boundary semantically, or performing a destructive operation that the user has not already authorized.

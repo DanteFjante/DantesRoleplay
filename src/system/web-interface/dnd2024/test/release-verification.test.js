@@ -73,3 +73,39 @@ test('browser proof must bind the exact signed release, role, listener and compl
   assert.throws(() => verifyBrowserEvidence(manifest, baseUrl, { ...evidence, role: 'game-master' }));
   assert.throws(() => verifyBrowserEvidence(manifest, baseUrl, { ...evidence, manifestFingerprint: 'B'.repeat(64) }));
 });
+
+test('signed parameterized probes retain item, perspective and campaign without accepting scope drift', async () => {
+  const { expected, readiness, audience } = fixture();
+  Object.assign(expected.readModels[0], { input: { itemId: 'item.fixture', offset: 0 }, perspective: 'player', campaignId: expected.campaignId });
+  let query;
+  const response = async path => {
+    if (path.includes('/readiness/')) return readiness;
+    if (path === '/api/audience-context') return audience;
+    if (path.includes('/read-models/')) { query = new URL(path, 'http://localhost'); return { data: {}, resultFingerprint: hash, sourceRevisionFingerprint: hash }; }
+    return { version: 1, contentFingerprint: hash };
+  };
+  await probeRuntime(expected, response);
+  assert.deepEqual(JSON.parse(query.searchParams.get('input')), expected.readModels[0].input);
+  assert.equal(query.searchParams.get('perspective'), 'player');
+  assert.equal(query.searchParams.get('campaignId'), audience.campaignId);
+  expected.readModels[0].campaignId = 'other';
+  await assert.rejects(probeRuntime(expected, response));
+});
+
+test('item release evidence rejects missing tabs, observer drift, unprobed selections and overflow', () => {
+  const expected = fixture().expected;
+  expected.itemView = { observerId: 'actor.fixture', itemIds: ['item.fixture'], perspectives: ['player'], widths: [320] };
+  expected.readModels = ['details', 'recipes', 'uses'].map(tab => ({ entityId: 'actor.fixture', queryId: `dnd2024.query.inventory-item-${tab}`, input: { itemId: 'item.fixture' }, perspective: 'player', campaignId: expected.campaignId }));
+  const manifest = { pageId: 'dnd2024-play', expectedRuntime: expected }, baseUrl = 'http://localhost:6217';
+  const evidence = { manifestFingerprint: sha256(Buffer.from(canonicalJson(manifest))), url: baseUrl + '/ui/dnd2024-play', role: 'actor',
+    checks: Object.fromEntries(['no-wheel-zoom', 'ganji-dossier', 'player-dm-boundary', 'item-return', 'item-request-budget', 'item-knowledge-boundary'].map(name => [name, 'passed'])), observations: ['Browser observation'],
+    itemViews: [{ itemId: 'item.fixture', observerId: 'actor.fixture', perspective: 'player', tabs: { details: 'ready', recipes: 'empty', uses: 'partial' } }],
+    itemLayouts: [{ width: 320, clientWidth: 305, scrollWidth: 305 }] };
+  verifyBrowserEvidence(manifest, baseUrl, evidence);
+  for (const mutate of [e => { delete e.itemViews[0].tabs.uses; }, e => { e.itemViews[0].observerId = 'other'; },
+    e => { e.itemLayouts[0].scrollWidth = 321; }, e => { e.itemViews = []; }, e => { e.itemLayouts = []; }]) {
+    const changed = structuredClone(evidence); mutate(changed); assert.throws(() => verifyBrowserEvidence(manifest, baseUrl, changed));
+  }
+  expected.readModels.pop(); evidence.manifestFingerprint = sha256(Buffer.from(canonicalJson(manifest)));
+  assert.throws(() => verifyBrowserEvidence(manifest, baseUrl, evidence));
+});

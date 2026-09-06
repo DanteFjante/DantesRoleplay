@@ -43,6 +43,30 @@ export function verifyBrowserEvidence(manifest, baseUrl, evidence) {
   for (const name of ['no-wheel-zoom', 'ganji-dossier', 'player-dm-boundary'])
     assert.equal(evidence.checks?.[name], 'passed', `Missing live browser check: ${name}`);
   assert.ok(Array.isArray(evidence.observations) && evidence.observations.length > 0, 'Browser observations must be retained');
+  const itemView = manifest.expectedRuntime.itemView;
+  if (itemView) {
+    assert.ok(itemView.observerId && itemView.itemIds?.length && itemView.perspectives?.length);
+    for (const itemId of itemView.itemIds) for (const perspective of itemView.perspectives) {
+      assert.ok(['player', 'dm'].includes(perspective));
+      const matches = evidence.itemViews?.filter(row => row.itemId === itemId && row.perspective === perspective && row.observerId === itemView.observerId) ?? [];
+      assert.equal(matches.length, 1, 'Each signed item selection needs one browser observation');
+      for (const tab of ['details', 'recipes', 'uses']) {
+        assert.ok(['ready', 'partial', 'empty'].includes(matches[0].tabs?.[tab]), `Item ${tab} did not render successfully`);
+        assert.equal(manifest.expectedRuntime.readModels.filter(probe => probe.entityId === itemView.observerId &&
+          probe.input?.itemId === itemId && probe.perspective === perspective && probe.campaignId === manifest.expectedRuntime.campaignId &&
+          probe.queryId === `dnd2024.query.inventory-item-${tab}`).length, 1, 'Item browser proof requires a matching signed server probe');
+      }
+    }
+    for (const name of ['item-return', 'item-request-budget', 'item-knowledge-boundary'])
+      assert.equal(evidence.checks?.[name], 'passed', `Missing item browser check: ${name}`);
+    assert.ok(itemView.widths?.length);
+    for (const width of itemView.widths) {
+      const layouts = evidence.itemLayouts?.filter(row => row.width === width) ?? [];
+      assert.equal(layouts.length, 1, 'Each signed width needs a browser measurement');
+      assert.ok(layouts[0].clientWidth > 0 && layouts[0].clientWidth <= width);
+      assert.ok(layouts[0].scrollWidth <= layouts[0].clientWidth, 'Item page overflows');
+    }
+  }
 }
 
 export async function probeRuntime(expected, json) {
@@ -52,7 +76,21 @@ export async function probeRuntime(expected, json) {
   assert.ok(expected.readModels?.length && expected.actions?.length, 'Signed query and action probes are required');
   const prefix = `/api/applications/${app}/state-spaces/${encodeURIComponent(expected.stateSpaceId)}`;
   for (const probe of expected.readModels) {
-    const data = await json(`${prefix}/entities/${encodeURIComponent(probe.entityId)}/read-models/${encodeURIComponent(probe.queryId)}`);
+    const parameters = new URLSearchParams();
+    if (probe.input !== undefined) {
+      assert.ok(probe.input && typeof probe.input === 'object' && !Array.isArray(probe.input));
+      parameters.set('input', JSON.stringify(probe.input));
+    }
+    if (probe.perspective !== undefined) {
+      assert.ok(['player', 'dm'].includes(probe.perspective));
+      parameters.set('perspective', probe.perspective);
+    }
+    if (probe.campaignId !== undefined) {
+      assert.equal(probe.campaignId, expected.campaignId);
+      parameters.set('campaignId', probe.campaignId);
+    }
+    const suffix = parameters.size ? '?' + parameters : '';
+    const data = await json(`${prefix}/entities/${encodeURIComponent(probe.entityId)}/read-models/${encodeURIComponent(probe.queryId)}${suffix}`);
     for (const field of ['resultFingerprint', 'sourceRevisionFingerprint']) {
       assert.match(probe[field], /^[0-9A-F]{64}$/);
       assert.equal(data[field], probe[field], `Live query ${field} drift`);
