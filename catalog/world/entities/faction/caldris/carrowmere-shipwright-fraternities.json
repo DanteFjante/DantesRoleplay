@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.carrowmere-shipwright-fraternities",
+  "name": "Carrowmere Shipwright Fraternities",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Carrowmere Shipwright Fraternities operates across Carrowmere. Safe work, injury support, and high-quality ships.",
+      "visibility": "public",
+      "goals": [
+        "Safe work, injury support, and high-quality ships."
+      ],
+      "methods": [
+        "Rival yards compete for contracts and disagree over strike tactics."
+      ],
+      "assets": [
+        "Reach: Carrowmere"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "The grain fleet deadline approaches."
+      }
+    }
+  }
+}

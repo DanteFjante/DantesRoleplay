@@ -845,6 +845,66 @@ test("mounted hub retry replaces a stale character warning with Ready canonical 
   }
 });
 
+test("mounted hub loads and pages the DM faction directory only when Factions is opened", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const fixture = envelope("dm");
+  const firstFaction = { ...fixture.world.factions[0], id: "faction.caldris.first", monogram: "F", name: "First Compact" };
+  const secondFaction = { ...fixture.world.factions[1], id: "faction.caldris.second", monogram: "S", name: "Second Compact" };
+  const initial = structuredClone(fixture);
+  initial.world.factions = [];
+  delete initial.world.factionDirectory;
+  const calls: Array<string | null> = [];
+  const mounted = await mount(
+    <DndInformationHub
+      initialEnvelope={initial}
+      loadContent={async () => { throw new Error("not used"); }}
+      loadFactionPage={async (_envelope, cursor) => {
+        calls.push(cursor);
+        return cursor === null
+          ? {
+              factions: [firstFaction],
+              totalCount: 2,
+              complete: false,
+              nextCursor: "page-two",
+              sourceRevisionFingerprint: "fixture-revision",
+            }
+          : {
+              factions: [secondFaction],
+              totalCount: 2,
+              complete: true,
+              nextCursor: null,
+              sourceRevisionFingerprint: "fixture-revision",
+            };
+      }}
+    />,
+  );
+  try {
+    assert.deepEqual(calls, [], "the initial World overview must not read the faction directory");
+    Object.defineProperty(mounted.dom.window, "innerWidth", { configurable: true, value: 390 });
+    await act(async () => mounted.dom.window.dispatchEvent(new mounted.dom.window.Event("resize")));
+
+    await click(button(mounted.container, "Factions"));
+    assert.deepEqual(calls, [null]);
+    assert.match(mounted.container.textContent ?? "", /1 visible · 1 of 2 loaded/);
+    assert.match(mounted.container.textContent ?? "", /First Compact/);
+
+    const selectFirst = button(mounted.container, "F");
+    await act(async () => selectFirst.focus());
+    assert.equal(mounted.dom.window.document.activeElement, selectFirst);
+    await click(selectFirst);
+    assert.equal(mounted.container.querySelector('[id="world-faction-faction.caldris.first"]')?.getAttribute("data-selected"), "true");
+
+    await click(button(mounted.container, "Load more factions"));
+    assert.deepEqual(calls, [null, "page-two"]);
+    assert.match(mounted.container.textContent ?? "", /2 visible · 2 of 2 loaded/);
+    assert.match(mounted.container.textContent ?? "", /Second Compact/);
+    assert.equal([...mounted.container.querySelectorAll("button")]
+      .some((candidate) => candidate.textContent?.trim() === "Load more factions"), false);
+  } finally {
+    await mounted.cleanup();
+  }
+});
+
 test("mounted hub first-read failures remain explicit until a successful retry", async (t) => {
   const { DndInformationHub } = await import("../../src/components/DndInformationHub");
   const failures: Array<SectionState<PartyMemberReadModel["sheet"]>> = [

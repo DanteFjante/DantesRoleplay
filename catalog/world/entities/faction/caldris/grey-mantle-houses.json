@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.grey-mantle-houses",
+  "name": "Grey Mantle Houses",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Grey Mantle Houses operates across Dunmarrow. Maintain northern defence and veteran support.",
+      "visibility": "public",
+      "goals": [
+        "Maintain northern defence and veteran support."
+      ],
+      "methods": [
+        "Conflate family prestige with public safety and lobby for a standing army."
+      ],
+      "assets": [
+        "Reach: Dunmarrow"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Mine revenue no longer supports fortress budgets."
+      }
+    }
+  }
+}

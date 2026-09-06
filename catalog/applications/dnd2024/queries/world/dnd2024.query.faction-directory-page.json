@@ -1,0 +1,30 @@
+{
+  "id": "dnd2024.query.faction-directory-page",
+  "category": "world.factions",
+  "name": "Faction directory page",
+  "description": "Reads one source-revision-bound page of the selected world's GM faction directory.",
+  "matches": ["list factions", "faction directory"],
+  "roles": { "world": "The selected authorized world." },
+  "executor": "object-projection",
+  "object": {
+    "qualifiedId": "dnd2024.object.faction-directory-page",
+    "version": 1,
+    "contentFingerprint": "867C1B1567F1801F34528A3AC7DD8DA2DB72BF69F24A086A3F5FC7F99AD31B3C"
+  },
+  "collection": "factions",
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["worldSummary", "items", "totalCount", "complete", "nextCursor"],
+    "properties": {
+      "worldSummary": { "type": "string", "minLength": 1, "maxLength": 1000 },
+      "items": { "type": "array", "maxItems": 25, "items": { "type": "object", "additionalProperties": false, "required": ["id", "name", "status", "summary", "visibility", "goals", "methods", "assets", "agenda", "members", "controlledSites", "territories", "allies", "opponents"], "properties": { "id": { "type": "string", "minLength": 1, "maxLength": 200 }, "name": { "type": "string", "minLength": 1, "maxLength": 400 }, "status": { "enum": ["draft", "active", "archived"] }, "summary": { "type": "string", "minLength": 1, "maxLength": 1000 }, "visibility": { "enum": ["public", "party", "gm"] }, "goals": { "type": "array", "minItems": 1, "maxItems": 5, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 500 } }, "methods": { "type": "array", "minItems": 1, "maxItems": 5, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 500 } }, "assets": { "type": "array", "maxItems": 10, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 500 } }, "agenda": { "type": "object", "additionalProperties": false, "required": ["state", "summary"], "properties": { "state": { "enum": ["ready", "advanced"] }, "summary": { "type": "string", "minLength": 1, "maxLength": 1000 } } }, "members": { "type": "array", "maxItems": 10, "uniqueItems": true, "items": { "$ref": "#/$defs/entityReference" } }, "controlledSites": { "type": "array", "maxItems": 10, "uniqueItems": true, "items": { "$ref": "#/$defs/entityReference" } }, "territories": { "type": "array", "maxItems": 10, "uniqueItems": true, "items": { "$ref": "#/$defs/entityReference" } }, "allies": { "type": "array", "maxItems": 10, "uniqueItems": true, "items": { "$ref": "#/$defs/entityReference" } }, "opponents": { "type": "array", "maxItems": 10, "uniqueItems": true, "items": { "$ref": "#/$defs/entityReference" } } } } },
+      "totalCount": { "type": "integer", "minimum": 0, "maximum": 100 },
+      "complete": { "type": "boolean" },
+      "nextCursor": { "type": ["string", "null"], "maxLength": 2048 }
+    },
+    "$defs": { "entityReference": { "type": "object", "additionalProperties": false, "required": ["id", "name"], "properties": { "id": { "type": "string", "minLength": 1, "maxLength": 200 }, "name": { "type": "string", "minLength": 1, "maxLength": 400 } } } }
+  },
+  "exposure": "model-visible",
+  "status": "active"
+}

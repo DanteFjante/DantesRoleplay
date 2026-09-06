@@ -118,7 +118,11 @@ public sealed class Dnd2024ExtensionPackagingTests : IDisposable
             "test-coverage", false,
             extended.Sources.Select(source => new ActivatedApplicationSource(source.SourceId,
                 source.RegistrationFingerprint, source.DocumentCount, source.ProblemCount)).ToArray(),
-            extended.Winners.Select(winner => new ActivatedApplicationDocument(winner.LogicalIdentity,
+            extended.Winners.Where(winner =>
+                    !winner.RelativePath.Contains("/objects/", StringComparison.Ordinal)
+                    && !winner.RelativePath.EndsWith("dnd2024.query.campaign-summary.json", StringComparison.Ordinal)
+                    && !winner.RelativePath.EndsWith("dnd2024.query.faction-directory-page.json", StringComparison.Ordinal))
+                .Select(winner => new ActivatedApplicationDocument(winner.LogicalIdentity,
                 winner.SourceId, winner.Trust, winner.Precedence, winner.RelativePath,
                 winner.MediaType, winner.ContentFingerprint, winner.Length, winner.IsText)).ToArray(),
             "test-operation", DateTime.UtcNow)

@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.company-of-weirs",
+  "name": "Company of Weirs",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Company of Weirs operates across Alderwick rivers. Maintain bridges, mills, floodworks, and navigation.",
+      "visibility": "public",
+      "goals": [
+        "Maintain bridges, mills, floodworks, and navigation."
+      ],
+      "methods": [
+        "Uses inherited monopolies and sometimes invents urgent repairs to retain tolls."
+      ],
+      "assets": [
+        "Reach: Alderwick rivers"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Flood-control funding is diverted to court roads."
+      }
+    }
+  }
+}

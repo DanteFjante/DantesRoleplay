@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.oath-rope-lodges",
+  "name": "Oath Rope Lodges",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Oath Rope Lodges operates across Lornspine. Organize rescue and reciprocal mountain aid.",
+      "visibility": "public",
+      "goals": [
+        "Organize rescue and reciprocal mountain aid."
+      ],
+      "methods": [
+        "Some lodges refuse aid to unregistered commercial expeditions."
+      ],
+      "assets": [
+        "Reach: Lornspine"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Counterfeit rescue knots appear in Kethria."
+      }
+    }
+  }
+}

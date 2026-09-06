@@ -290,8 +290,8 @@ public sealed class InteractionQueryTests
         var projection = Projection();
         var source = new ProjectionSourceRevision("orban",
             new("sample-app.stats", 1, Hash("component-schema")), 3);
-        var materializer = new Materializer(
-            new(projection.Reference, "{\"entityId\":\"driver\",\"score\":16}", [source]));
+        var materializer = new CollectionMaterializer(
+            new(projection.Reference, "{\"entityId\":\"driver\",\"score\":16}", [source], Hash("collection-source")));
         var executor = new ObjectProjectionInteractionQueryExecutor(materializer);
         var contract = new InteractionQueryContractReference(ApplicationQueryContract.ObjectProjectionExecutor,
             projection.QualifiedId, projection.Version, projection.ContentHash, projection.OutputSchemaHash,
@@ -473,6 +473,17 @@ public sealed class InteractionQueryTests
     {
         public ProjectionMaterializationRequest? LastRequest { get; private set; }
         public Task<ProjectionMaterializationResult> MaterializeAsync(ProjectionMaterializationRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            LastRequest = request;
+            return Task.FromResult(value);
+        }
+    }
+
+    private sealed class CollectionMaterializer(ProjectionCollectionMaterializationResult value) : IProjectionCollectionMaterializer
+    {
+        public ProjectionCollectionMaterializationRequest? LastRequest { get; private set; }
+        public Task<ProjectionCollectionMaterializationResult> MaterializeAsync(ProjectionCollectionMaterializationRequest request,
             CancellationToken cancellationToken = default)
         {
             LastRequest = request;

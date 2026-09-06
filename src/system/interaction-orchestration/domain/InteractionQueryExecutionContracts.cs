@@ -15,7 +15,9 @@ public sealed record InteractionQueryExecutionRequest(
     string QualifiedQueryId,
     InteractionQueryContractReference Contract,
     IReadOnlyDictionary<string, string> RoleBindings,
-    MechanicAudienceContext? Audience = null);
+    MechanicAudienceContext? Audience = null,
+    string? Cursor = null,
+    int? PageSize = null);
 
 public sealed record InteractionQueryExecutionResult(
     string OutputJson,

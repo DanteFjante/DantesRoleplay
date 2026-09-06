@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.low-lantern-dry-sock-fund",
+  "name": "Low Lantern Dry Sock Fund",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Low Lantern Dry Sock Fund operates across Seven Lamps. Mutual aid for dock and ferry workers.",
+      "visibility": "public",
+      "goals": [
+        "Mutual aid for dock and ferry workers."
+      ],
+      "methods": [
+        "Its impeccable records accidentally expose smuggling and espionage."
+      ],
+      "assets": [
+        "Reach: Seven Lamps"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Three states demand access to its books."
+      }
+    }
+  }
+}

@@ -25,7 +25,8 @@ public static class ApplicationReadModelWebEndpoint
         IKnowledgeActorParticipationVerifier? participation = null)
     {
         context.Response.Headers.CacheControl = "private, no-store";
-        var inputAware = context.Request.Query.ContainsKey("input") || context.Request.Query.ContainsKey("campaignId");
+        var inputAware = context.Request.Query.ContainsKey("input") || context.Request.Query.ContainsKey("campaignId")
+            || context.Request.Query.ContainsKey("cursor") || context.Request.Query.ContainsKey("limit");
         var seat = seats.Current();
         if (!Authorized(seat, applicationId, entityId, out var application) ||
             catalogs is null && seat.Role == KnowledgeAudienceRole.Actor && seat.ActorId != entityId)
@@ -67,7 +68,13 @@ public static class ApplicationReadModelWebEndpoint
             inputAware |= queryContract?.CampaignSelection is not null;
             var suppliedInput = context.Request.Query["input"];
             var suppliedCampaign = context.Request.Query["campaignId"];
-            if (suppliedInput.Count > 1 || suppliedCampaign.Count > 1)
+            var suppliedCursor = context.Request.Query["cursor"];
+            var suppliedLimit = context.Request.Query["limit"];
+            var parsedLimit = 0;
+            if (suppliedInput.Count > 1 || suppliedCampaign.Count > 1 || suppliedCursor.Count > 1
+                || suppliedLimit.Count > 1 || suppliedCursor.Count == 1 && suppliedCursor[0]!.Length > 2_048
+                || suppliedLimit.Count == 1 && (!int.TryParse(suppliedLimit[0], out parsedLimit)
+                    || parsedLimit is < 1 or > 500))
                 return SafeError("READ_MODEL_INPUT_INVALID");
             var input = ApplicationReadModelInput.Normalize(suppliedInput.Count == 0 ? "{}" : suppliedInput[0]!);
             if (suppliedCampaign.Count == 1 || queryContract?.CampaignSelection is not null)
@@ -106,7 +113,9 @@ public static class ApplicationReadModelWebEndpoint
                 application!,
                 qualifiedQueryId,
                 roleBindings,
-                audience, input), cancellationToken);
+                audience, input,
+                suppliedCursor.Count == 1 ? suppliedCursor[0] : null,
+                suppliedLimit.Count == 1 ? parsedLimit : null), cancellationToken);
             if (selectionResult is not null && queryContract?.CampaignSelection is { } recheck)
             {
                 var current = await ReadSelectionAsync(recheck, catalogs!, readModels, application!,

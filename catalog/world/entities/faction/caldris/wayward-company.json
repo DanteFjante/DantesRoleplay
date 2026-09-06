@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.wayward-company",
+  "name": "Wayward Company",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Wayward Company operates across cross-border adventurers. Solve problems, protect travellers, and become respectably famous.",
+      "visibility": "public",
+      "goals": [
+        "Solve problems, protect travellers, and become respectably famous."
+      ],
+      "methods": [
+        "Takes jobs too quickly, advertises victories too loudly, and occasionally solves the wrong problem well."
+      ],
+      "assets": [
+        "Reach: cross-border adventurers"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "It receives a contract intended for the player party."
+      }
+    }
+  }
+}

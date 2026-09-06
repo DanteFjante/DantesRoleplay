@@ -10,12 +10,121 @@ import {
   readCanonicalCharacter,
   readConversationCurrentScene,
   readGameServerContext,
+  readRegisteredCampaignSummary,
+  readRegisteredFactionDirectoryPage,
   readKnownOpenRoutes,
   resolveCurrentSceneRecord,
   resolveRecordedPlaySituation,
   resolveSceneAffordancesRecord,
   resolvePresenceLocation,
 } from "../src/server/game-server-context.js";
+
+test("registered Campaign summary stays bounded and preserves read-only party references", async () => {
+  const calls = [];
+  const summary = await readRegisteredCampaignSummary({
+    origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    campaignId: "campaign.caldris.measure-of-mercy", perspective: "player",
+    fetchImpl: async (input) => {
+      calls.push(new URL(input));
+      return response(200, { data: {
+        status: "active", title: "The Measure of Mercy", premise: "Choose what mercy costs.",
+        partyGoals: ["Protect Ganji."], toneAndBoundaries: ["No sexual violence."],
+        party: [{ id: "participation.ganji", name: "Ganji participation", status: "active" }],
+        totalCount: 1, complete: true, nextCursor: null,
+      } });
+    },
+  });
+  assert.equal(summary.title, "The Measure of Mercy");
+  assert.deepEqual(summary.party.map((entry) => entry.id), ["participation.ganji"]);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].searchParams.get("perspective"), "player");
+  assert.ok(calls.every((call) => !call.pathname.includes("knowledge") && !call.pathname.includes("inventory")));
+});
+
+test("registered faction pages stay bounded and do not fan out into knowledge or inventory reads", async () => {
+  const calls = [];
+  const page = await readRegisteredFactionDirectoryPage({
+    origin: "http://localhost:6217",
+    applicationId: "dnd2024",
+    stateSpaceId: "dnd2024-main",
+    worldId: "world.caldris",
+    fetchImpl: async (input) => {
+      const request = new URL(input);
+      calls.push(request.pathname + request.search);
+      return response(200, {
+        qualifiedQueryId: "dnd2024.query.faction-directory-page",
+        sourceRevisionFingerprint: "A".repeat(64),
+        data: {
+          worldSummary: "A low-magic world shaped by roads, rivers, and rival powers.",
+          items: [{
+            id: "faction.caldris.tensor-sect", name: "Tensor Sect", status: "active",
+            visibility: "public", summary: "A disciplined order.", goals: ["Perfect perception."],
+            methods: ["Study."], assets: [], agenda: { state: "ready", summary: "Retrieve Ganji." },
+            members: [{ id: "actor.caldris.ganji", name: "Ganji" }],
+            controlledSites: [{ id: "location.caldris.ninth-angle", name: "House of the Ninth Angle" }],
+            territories: [{ id: "location.caldris.highmead", name: "Highmead" }],
+            allies: [], opponents: [],
+          }],
+          totalCount: 35, complete: false, nextCursor: "next-page",
+        },
+      });
+    },
+  });
+
+  assert.equal(page.factions.length, 1);
+  assert.equal(page.totalCount, 35);
+  assert.equal(page.factions[0].agenda.summary, "Retrieve Ganji.");
+  assert.deepEqual(page.factions[0].memberIds, ["actor.caldris.ganji"]);
+  assert.deepEqual(page.factions[0].territoryIds,
+    ["location.caldris.ninth-angle", "location.caldris.highmead"]);
+  assert.equal(calls.length, 1);
+  assert.match(calls[0], /dnd2024\.query\.faction-directory-page/u);
+  assert.match(calls[0], /world\.caldris/u);
+  assert.ok(calls.every((call) => !call.includes("knowledge") && !call.includes("inventory")));
+
+  const denied = await readRegisteredFactionDirectoryPage({
+    origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    worldId: "world.caldris", fetchImpl: async () => response(403, {}),
+  });
+  assert.equal(denied, null);
+});
+
+test("the selected Campaign bootstrap uses only its three registered reads", async () => {
+  const calls = [];
+  const value = await readGameServerContext({
+    serverOrigin: "http://localhost:6217",
+    requestedPerspective: "dm",
+    deferCharacterDetails: true,
+    deferCampaignDetails: true,
+    deferWorldDirectory: true,
+    useRegisteredCampaignSummary: true,
+    fetchImpl: async (input) => {
+      const request = new URL(input);
+      calls.push(request.pathname);
+      if (request.pathname === "/api/audience-context") return response(200, {
+        status: "bound", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+        campaignId: "campaign.caldris.measure-of-mercy", role: "game-master",
+      });
+      if (request.pathname.endsWith("/campaign.caldris.measure-of-mercy")) return response(200, {
+        entityId: "campaign.caldris.measure-of-mercy", name: "The Measure of Mercy",
+      });
+      if (request.pathname.includes("dnd2024.query.campaign-summary")) return response(200, { data: {
+        status: "active", title: "The Measure of Mercy", premise: "Choose what mercy costs.",
+        partyGoals: ["Protect Ganji."], toneAndBoundaries: ["No sexual violence."],
+        party: [{ id: "participation.ganji", name: "Ganji participation", status: "active" }],
+        totalCount: 1, complete: true, nextCursor: null,
+      } });
+      return response(500, {});
+    },
+  });
+
+  assert.equal(value.status, "connected", JSON.stringify({ value, calls }));
+  assert.equal(value.campaign.title, "The Measure of Mercy");
+  assert.deepEqual(value.party.map((entry) => entry.id), ["participation.ganji"]);
+  assert.equal(calls.length, 3);
+  assert.ok(calls.every((call) => !call.includes("knowledge") && !call.includes("chronology") &&
+    !call.includes("inventory") && !call.endsWith("/entities")));
+});
 
 const MEDIA_HASH = "3ae0336e89155a4a00fb0d982ae903bf9ed1137cd292b097b252fd38c1501fa3";
 

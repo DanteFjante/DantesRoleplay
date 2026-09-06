@@ -2217,6 +2217,9 @@ async function readCampaignStructure({
  *   localSeat?: string, // Legacy option accepted but never used to override the server seat.
  *   mediaAssetBaseUrl?: string,
  *   deferCharacterDetails?: boolean,
+ *   deferCampaignDetails?: boolean,
+ *   deferWorldDirectory?: boolean,
+ *   useRegisteredCampaignSummary?: boolean,
  * }} options
  */
 export async function readGameServerContext(options) {
@@ -2232,6 +2235,9 @@ async function readGameServerContextCore({
   requestedCampaignId = null,
   mediaAssetBaseUrl = "/ui/dnd2024-play/assets/",
   deferCharacterDetails = false,
+  deferCampaignDetails = false,
+  deferWorldDirectory = false,
+  useRegisteredCampaignSummary = false,
 }) {
   const normalizedRequestedPerspective = requestedPerspective === null ? "dm" : requestedPerspective;
   const origin = normalizeGameServerOrigin(serverOrigin);
@@ -2285,14 +2291,18 @@ async function readGameServerContextCore({
   if (requestedCampaignId !== null && !requestedCampaign) {
     return denied("That campaign is not available to this local table.");
   }
-  const contextSelection = await readContextSelection({
-    fetchImpl,
-    origin,
-    applicationId: binding.applicationId,
-    stateSpaceId: binding.stateSpaceId,
-    boundCampaignId: binding.campaignId,
-    isGameMaster: serverRole.role === "game-master",
-  });
+  const minimalCampaignBootstrap = deferCharacterDetails && deferCampaignDetails && deferWorldDirectory &&
+    useRegisteredCampaignSummary && (!requestedCampaign || requestedCampaign === binding.campaignId);
+  const contextSelection = minimalCampaignBootstrap
+    ? fallbackContextSelection(binding.campaignId)
+    : await readContextSelection({
+      fetchImpl,
+      origin,
+      applicationId: binding.applicationId,
+      stateSpaceId: binding.stateSpaceId,
+      boundCampaignId: binding.campaignId,
+      isGameMaster: serverRole.role === "game-master",
+    });
   if (contextSelection?.incomplete) {
     return unavailable("The campaign directory could not be loaded completely. Please try again.");
   }
@@ -2323,11 +2333,15 @@ async function readGameServerContextCore({
           headers: { Accept: "application/json" }, cache: "no-store",
         })
         : Promise.resolve(null),
-      fetchImpl(url(origin, `${root}/${encodeURIComponent(selectedCampaignId)}` +
-        `/components/${CAMPAIGN_ROOT_COMPONENT_TYPE_ID}`), {
+      fetchImpl(url(origin, useRegisteredCampaignSummary
+        ? `${root}/${encodeURIComponent(selectedCampaignId)}/read-models/` +
+          `${encodeURIComponent("dnd2024.query.campaign-summary")}?` + new URLSearchParams({
+            perspective: contextAudience.perspective ?? "player", campaignId: selectedCampaignId, limit: "20",
+          })
+        : `${root}/${encodeURIComponent(selectedCampaignId)}/components/${CAMPAIGN_ROOT_COMPONENT_TYPE_ID}`), {
         headers: { Accept: "application/json" }, cache: "no-store",
       }),
-      fetchImpl(url(origin, `${root}/${encodeURIComponent(selectedCampaignId)}` +
+      minimalCampaignBootstrap ? Promise.resolve(null) : fetchImpl(url(origin, `${root}/${encodeURIComponent(selectedCampaignId)}` +
         `/components/${CAMPAIGN_CURRENT_SCENE_COMPONENT_TYPE_ID}`), {
         headers: { Accept: "application/json" }, cache: "no-store",
       }).catch(() => null),
@@ -2337,18 +2351,18 @@ async function readGameServerContextCore({
           headers: { Accept: "application/json" }, cache: "no-store",
         })
         : Promise.resolve(null),
-      canReadBoundKnowledge
+      canReadBoundKnowledge && !minimalCampaignBootstrap
         ? fetchImpl(url(origin, `/api/applications/${encodeURIComponent(binding.applicationId)}` +
           `/campaigns/${encodeURIComponent(selectedCampaignId)}/knowledge`), {
           headers: { Accept: "application/json" }, cache: "no-store",
         }).catch(() => null)
         : Promise.resolve(null),
-      fetchImpl(url(origin, `/api/applications/${encodeURIComponent(binding.applicationId)}` +
+      minimalCampaignBootstrap ? Promise.resolve(null) : fetchImpl(url(origin, `/api/applications/${encodeURIComponent(binding.applicationId)}` +
         `/campaigns/${encodeURIComponent(selectedCampaignId)}/chronology` +
         `?perspective=${encodeURIComponent(contextAudience.perspective ?? "player")}`), {
         headers: { Accept: "application/json" }, cache: "no-store",
       }).catch(() => null),
-      fetchImpl(url(origin, `/api/applications/${encodeURIComponent(binding.applicationId)}` +
+      minimalCampaignBootstrap ? Promise.resolve(null) : fetchImpl(url(origin, `/api/applications/${encodeURIComponent(binding.applicationId)}` +
         `/state-spaces/${encodeURIComponent(binding.stateSpaceId)}/play/sessions/` +
         encodeURIComponent(selectedCampaignId)), {
         headers: { Accept: "application/json" }, cache: "no-store",
@@ -2370,14 +2384,43 @@ async function readGameServerContextCore({
     json(playSessionResponse),
   ]);
   const campaignEntity = campaignResponse?.ok ? entity(campaign, selectedCampaignId) : null;
+  const registeredCampaign = useRegisteredCampaignSummary && campaignComponentResponse?.ok
+    ? registeredCampaignSummary(campaignComponent) : null;
   const boundActorEntity = shouldReadBoundActor && actorResponse?.ok
     ? entity(actor, binding.actorId)
     : null;
   const actorEntity = isGameMaster
     ? { id: "local-game-master", name: "Dungeon Master" }
     : boundActorEntity;
-  if (!campaignEntity || !actorEntity) {
+  if (!campaignEntity || !actorEntity || (useRegisteredCampaignSummary && !registeredCampaign)) {
     return unavailable("The campaign binding no longer matches readable game state.");
+  }
+  if (minimalCampaignBootstrap) {
+    return {
+      version: 1,
+      status: "connected",
+      applicationId: binding.applicationId,
+      stateSpaceId: binding.stateSpaceId,
+      audience: contextAudience,
+      contextSelection: updateSelectedCampaignName(selectedContext, campaignEntity),
+      campaign: {
+        ...campaignEntity,
+        name: registeredCampaign.title,
+        ...registeredCampaign,
+        chapters: [],
+        arcs: [],
+        sessions: [],
+        visits: [],
+      },
+      actor: actorEntity,
+      currentSituation: {
+        status: "unavailable",
+        message: "Open a play view to load the current scene.",
+      },
+      party: registeredCampaign.party,
+      knowledge: { status: "unavailable", entries: [], locations: [] },
+      chronology: { status: "unavailable", perspective: effectivePerspective, entries: [] },
+    };
   }
   // Resolve the small, authoritative party graph before the optional World and knowledge
   // directories fan out into many reads. Otherwise a large DM projection can consume the shared
@@ -2435,7 +2478,7 @@ async function readGameServerContextCore({
       perspective: contextAudience.perspective,
       mediaAssetBaseUrl,
     }),
-    readCampaignStructure({
+    deferCampaignDetails ? Promise.resolve({ chapters: [], arcs: [], sessions: [], visits: [] }) : readCampaignStructure({
       fetchImpl,
       origin,
       applicationId: binding.applicationId,
@@ -2468,7 +2511,7 @@ async function readGameServerContextCore({
       currentLocationId = null;
     }
   }
-  const worldDirectory = contextAudience.seat === "dm" && contextAudience.perspective === "dm"
+  const worldDirectory = !deferWorldDirectory && contextAudience.seat === "dm" && contextAudience.perspective === "dm"
     ? await readWorldDirectory({
       fetchImpl,
       origin,
@@ -2587,9 +2630,10 @@ async function readGameServerContextCore({
     contextSelection: updateSelectedCampaignName(selectedContext, campaignEntity),
     campaign: {
       ...campaignEntity,
-      ...campaignDetails(campaignComponentResponse.ok
+      ...(registeredCampaign ? { name: registeredCampaign.title, ...registeredCampaign } :
+        campaignDetails(campaignComponentResponse.ok
         ? componentValue(campaignComponent, selectedCampaignId, CAMPAIGN_ROOT_COMPONENT_TYPE_ID)
-        : null),
+        : null)),
       ...campaignStructure,
     },
     actor: {
@@ -2608,4 +2652,122 @@ async function readGameServerContextCore({
       worldDirectory.people.length > 0 || worldDirectory.factions.length > 0 || worldDirectory.holdings.length > 0
     ) ? { worldDirectory } : {}),
   };
+}
+
+function registeredCampaignSummary(payload) {
+  const data = payload?.data;
+  if (!hasExactKeys(data, ["status", "title", "premise", "partyGoals", "toneAndBoundaries", "party",
+    "totalCount", "complete", "nextCursor"]) || data.status !== "active") return null;
+  const title = text(data.title, 160);
+  const premise = text(data.premise, 1_000);
+  const partyGoals = textList(data.partyGoals, 3, 500);
+  const toneAndBoundaries = textList(data.toneAndBoundaries, 8, 300);
+  if (!title || !premise || partyGoals.length === 0 || toneAndBoundaries.length === 0 ||
+      !Array.isArray(data.party) || data.party.length > 20 || !Number.isInteger(data.totalCount) ||
+      data.totalCount < data.party.length || data.totalCount > 20 || typeof data.complete !== "boolean" ||
+      !(data.nextCursor === null || token(data.nextCursor)) || data.complete !== (data.nextCursor === null)) return null;
+  const party = data.party.map((entry) => hasExactKeys(entry, ["id", "name", "status"])
+    && token(entry.id) && text(entry.name, 400) && new Set(["active", "withdrawn"]).has(entry.status)
+    ? { id: entry.id, name: entry.name, status: entry.status } : null);
+  if (party.some((entry) => entry === null) || new Set(party.map((entry) => entry.id)).size !== party.length)
+    return null;
+  return { status: data.status, title, premise, partyGoals, toneAndBoundaries, party,
+    totalCount: data.totalCount, complete: data.complete, nextCursor: data.nextCursor };
+}
+
+/** Reads the registered Campaign summary without loading its deeper narrative records. */
+/** @param {{fetchImpl?: typeof fetch, origin: string, applicationId: string, stateSpaceId: string, campaignId: string, perspective: string}} options */
+export async function readRegisteredCampaignSummary({
+  fetchImpl = fetch, origin, applicationId, stateSpaceId, campaignId, perspective,
+}) {
+  const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
+  const parameters = new URLSearchParams({ perspective, campaignId, limit: "20" });
+  const response = await fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(campaignId)}` +
+    `/read-models/${encodeURIComponent("dnd2024.query.campaign-summary")}?${parameters}`), {
+    headers: { Accept: "application/json" }, cache: "no-store",
+  });
+  return response?.ok ? registeredCampaignSummary(await json(response)) : null;
+}
+
+/** Reads one registered GM faction page without loading the entity directory, party inventories, or knowledge. */
+/** @param {{fetchImpl?: typeof fetch, origin: string, applicationId: string, stateSpaceId: string, worldId: string, cursor?: string | null}} options */
+export async function readRegisteredFactionDirectoryPage({
+  fetchImpl = fetch,
+  origin,
+  applicationId,
+  stateSpaceId,
+  worldId,
+  cursor = null,
+}) {
+  const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
+  const parameters = new URLSearchParams({ perspective: "dm", limit: "25" });
+  if (cursor) parameters.set("cursor", cursor);
+  const response = await fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(worldId)}` +
+    `/read-models/${encodeURIComponent("dnd2024.query.faction-directory-page")}?${parameters}`), {
+    headers: { Accept: "application/json" }, cache: "no-store",
+  });
+  if (!response?.ok) return null;
+  const payload = await json(response);
+  const data = payload?.data;
+  if (!hasExactKeys(data, ["worldSummary", "items", "totalCount", "complete", "nextCursor"]) ||
+      !text(data.worldSummary, 1_000) ||
+      !Array.isArray(data.items) || data.items.length > 25 || !Number.isInteger(data.totalCount) ||
+      data.totalCount < data.items.length || data.totalCount > 100 || typeof data.complete !== "boolean" ||
+      !(data.nextCursor === null || token(data.nextCursor)) || data.complete !== (data.nextCursor === null)) return null;
+  const factions = data.items.map((item) => {
+    const id = token(item?.id);
+    const name = text(item?.name, 400);
+    const record = worldFaction(item);
+    const references = (value) => {
+      if (!Array.isArray(value) || value.length > 10) return null;
+      const result = value.map((entry) => hasExactKeys(entry, ["id", "name"])
+        ? { id: token(entry.id), name: text(entry.name, 400) } : null);
+      return result.some((entry) => !entry?.id || !entry?.name) ||
+        new Set(result.map((entry) => entry.id)).size !== result.length ? null : result;
+    };
+    const members = references(item?.members);
+    const controlledSites = references(item?.controlledSites);
+    const territories = references(item?.territories);
+    const allies = references(item?.allies);
+    const opponents = references(item?.opponents);
+    if (!members || !controlledSites || !territories || !allies || !opponents) return null;
+    const territoryReferences = [...controlledSites, ...territories].filter((entry, index, values) =>
+      values.findIndex((candidate) => candidate.id === entry.id) === index);
+    return id && name && record ? {
+      id, name, ...record,
+      memberIds: members.map((entry) => entry.id),
+      territoryIds: territoryReferences.map((entry) => entry.id),
+      alliedIds: allies.map((entry) => entry.id),
+      opposedIds: opponents.map((entry) => entry.id),
+      memberReferences: members,
+      territoryReferences,
+      alliedReferences: allies,
+      opposedReferences: opponents,
+    } : null;
+  });
+  if (factions.some((item) => item === null) || new Set(factions.map((item) => item.id)).size !== factions.length)
+    return null;
+  return {
+    factions,
+    totalCount: data.totalCount,
+    complete: data.complete,
+    nextCursor: data.nextCursor,
+    sourceRevisionFingerprint: token(payload?.sourceRevisionFingerprint),
+  };
+}
+
+/** Lazily retains the legacy campaign-record adapter until its records receive registered objects. */
+/** @param {{fetchImpl?: typeof fetch, origin: string, source: any}} options */
+/** @returns {Promise<any>} */
+export async function readDeferredCampaignDetails({ fetchImpl = fetch, origin, source }) {
+  return readCampaignStructure({
+    fetchImpl,
+    origin,
+    applicationId: source.applicationId,
+    stateSpaceId: source.stateSpaceId,
+    campaignId: source.campaign.id,
+    includeGmContext: source.audience.perspective === "dm",
+  });
 }

@@ -41,6 +41,8 @@ export function WorldView({
   onLocationSelect,
   onLocationSectionChange,
   onFactionSelect,
+  factionDirectoryBusy,
+  onLoadMoreFactions,
   onQueryChange,
 }: {
   section: WorldSectionId;
@@ -63,6 +65,8 @@ export function WorldView({
   onLocationSelect: (locationId: string) => void;
   onLocationSectionChange: (section: LocationSectionId) => void;
   onFactionSelect: (factionId: string) => void;
+  factionDirectoryBusy?: boolean;
+  onLoadMoreFactions?: () => void;
   onQueryChange: (query: string) => void;
 }) {
   return (
@@ -114,6 +118,8 @@ export function WorldView({
       ) : section === "factions" ? (
         <WorldFactions
           onFactionSelect={onFactionSelect}
+          busy={factionDirectoryBusy}
+          onLoadMore={onLoadMoreFactions}
           onOpenLocation={(locationId) => {
             onLocationSelect(locationId);
             onSectionChange("locations");

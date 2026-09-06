@@ -136,8 +136,10 @@ public sealed class SqliteEntityComponentStore(
     DantesRoleplayDbContext db,
     IApplicationComponentTypeRegistry types,
     IBoundedJsonSchemaValidator validator,
-    IEcsRoleConstraintValidator? constraints = null) : IEntityComponentStore, IEntityComponentSearchStore
+    IEcsRoleConstraintValidator? constraints = null) : IEntityComponentStore, IEntityComponentSearchStore, IEntityBatchReadStore
 {
+    private readonly Dictionary<string, ApplicationStateSpaceRecord> readableStateSpaces = new(StringComparer.Ordinal);
+
     public async Task<EcsEntityView> CreateEntityAsync(string stateSpaceId, string entityId, string name, CancellationToken cancellationToken = default)
     {
         ValidateEntity(stateSpaceId, entityId, name);
@@ -167,6 +169,26 @@ public sealed class SqliteEntityComponentStore(
         var row = await db.Set<ApplicationEcsEntityRecord>().AsNoTracking()
             .SingleOrDefaultAsync(x => x.StateSpaceId == stateSpaceId && x.Id == entityId && x.DeletedAtUtc == null, cancellationToken);
         return row is null ? null : ToView(row);
+    }
+
+    public async Task<IReadOnlyList<EcsEntityView>> GetEntitiesAsync(
+        string stateSpaceId,
+        IReadOnlyList<string> entityIds,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(stateSpaceId);
+        ArgumentNullException.ThrowIfNull(entityIds);
+        if (entityIds.Count > 10_000 || entityIds.Any(value => string.IsNullOrWhiteSpace(value) || value.Length > 200))
+            throw new ArgumentOutOfRangeException(nameof(entityIds), "An entity batch read requires at most 10,000 bounded IDs.");
+        await RequireStateSpaceAsync(stateSpaceId, cancellationToken);
+        if (entityIds.Count == 0) return Array.Empty<EcsEntityView>();
+        var requested = entityIds.Distinct(StringComparer.Ordinal).ToArray();
+        var rows = await db.Set<ApplicationEcsEntityRecord>().AsNoTracking()
+            .Where(value => value.StateSpaceId == stateSpaceId && requested.Contains(value.Id)
+                && value.DeletedAtUtc == null)
+            .OrderBy(value => value.Id)
+            .ToArrayAsync(cancellationToken);
+        return Array.AsReadOnly(rows.Select(ToView).ToArray());
     }
 
     public async Task<EcsEntityDiscoveryPage> ListEntitiesAsync(
@@ -442,9 +464,17 @@ public sealed class SqliteEntityComponentStore(
         }
     }
 
-    private async Task<ApplicationStateSpaceRecord> RequireStateSpaceAsync(string stateSpaceId, CancellationToken cancellationToken) =>
-        await db.Set<ApplicationStateSpaceRecord>().AsNoTracking().SingleOrDefaultAsync(x => x.Id == stateSpaceId, cancellationToken)
-        ?? throw new InvalidOperationException("Unknown state space.");
+    private async Task<ApplicationStateSpaceRecord> RequireStateSpaceAsync(
+        string stateSpaceId,
+        CancellationToken cancellationToken)
+    {
+        if (readableStateSpaces.TryGetValue(stateSpaceId, out var cached)) return cached;
+        var stateSpace = await db.Set<ApplicationStateSpaceRecord>().AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == stateSpaceId, cancellationToken)
+            ?? throw new InvalidOperationException("Unknown state space.");
+        readableStateSpaces[stateSpaceId] = stateSpace;
+        return stateSpace;
+    }
 
     private async Task RequireLiveEntityAsync(string stateSpaceId, string entityId, CancellationToken cancellationToken)
     {

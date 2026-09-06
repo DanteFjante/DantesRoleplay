@@ -246,6 +246,12 @@ export type WorldReadModel = {
   locations: WorldLocation[];
   people: WorldPersonDirectoryEntry[];
   factions: WorldFaction[];
+  factionDirectory?: {
+    totalCount: number;
+    complete: boolean;
+    nextCursor: string | null;
+    sourceRevisionFingerprint: string | null;
+  };
   lore: WorldLoreEntry[];
 };
 
@@ -1016,6 +1022,10 @@ export type ConnectedCampaignEnvelope = {
       territoryIds: string[];
       alliedIds: string[];
       opposedIds: string[];
+      memberReferences?: Array<{ id: string; name: string }>;
+      territoryReferences?: Array<{ id: string; name: string }>;
+      alliedReferences?: Array<{ id: string; name: string }>;
+      opposedReferences?: Array<{ id: string; name: string }>;
     }>;
     holdings: Array<{
       id: string;

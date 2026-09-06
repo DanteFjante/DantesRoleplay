@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.brotherhood-of-saint-orro",
+  "name": "Brotherhood of Saint Orro",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Brotherhood of Saint Orro operates across Selucia. Rescue anyone in danger at sea.",
+      "visibility": "public",
+      "goals": [
+        "Rescue anyone in danger at sea."
+      ],
+      "methods": [
+        "The order treats proper knots as a moral issue and hoards navigation logs."
+      ],
+      "assets": [
+        "Reach: Selucia"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "A relic dispute could close the repair dock."
+      }
+    }
+  }
+}

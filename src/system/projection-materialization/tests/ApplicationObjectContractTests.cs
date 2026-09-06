@@ -4,6 +4,7 @@ using DantesRoleplay.Ecs;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.Tests;
 using DantesRoleplay.CatalogNavigation;
+using System.Text.Json;
 
 namespace DantesRoleplay.Projections.Tests;
 
@@ -87,6 +88,76 @@ public sealed class ApplicationObjectContractTests : IDisposable
         Assert.NotNull(registered.ObjectContract);
         Assert.Throws<ArgumentException>(() => ApplicationObjectDocument.Parse(
             json.Replace("\"access\":", "\"unknown\":true,\"access\":"), setup.Application));
+    }
+
+    [Fact]
+    public void Slice_four_catalog_objects_keep_their_reviewed_exact_fingerprints()
+    {
+        var db = _fixture.CreateContext();
+        var applications = new SqliteApplicationRegistry(db);
+        var game = ApplicationIdentifier.Parse("game");
+        applications.Register(new(game, "Game", "", []));
+        var application = ApplicationIdentifier.Parse("dnd2024");
+        applications.Register(new(application, "D&D", "", [game]));
+        var schemas = new BoundedJsonSchemaValidator();
+        var types = new SqliteComponentTypeRegistry(db, schemas);
+        types.Define(new(game, "game.core.campaign.root",
+            File.ReadAllText(Path.Combine(Catalog(), "components", "game", "core", "campaign", "root.schema.json"))));
+        types.Define(new(game, "game.core.campaign.character-participation",
+            File.ReadAllText(Path.Combine(Catalog(), "components", "game", "core", "campaign", "character-participation.schema.json"))));
+        types.Define(new(game, "game.core.world.faction",
+            File.ReadAllText(Path.Combine(Catalog(), "components", "game", "core", "world", "faction.schema.json"))));
+        types.Define(new(game, "game.core.world.root",
+            File.ReadAllText(Path.Combine(Catalog(), "components", "game", "core", "world", "root.schema.json"))));
+        var registry = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications);
+        var objects = Path.Combine(Catalog(), "applications", "dnd2024", "objects");
+        var campaign = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+            objects, "campaign", "dnd2024.object.campaign-summary.json")), application));
+        var factions = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+            objects, "world", "dnd2024.object.faction-directory-page.json")), application));
+
+        Assert.Equal("3AE6FD831B4319BA96E15A1501896549030C80FDBFA49D5503D0568DB9B61DEB", campaign.ContentHash);
+        Assert.Equal("867C1B1567F1801F34528A3AC7DD8DA2DB72BF69F24A086A3F5FC7F99AD31B3C", factions.ContentHash);
+    }
+
+    [Fact]
+    public void Slice_four_pins_the_complete_exported_caldris_faction_directory()
+    {
+        string[] expected =
+        [
+            "faction.caldris.alderwick-crown-council", "faction.caldris.aur-river-judges",
+            "faction.caldris.bellafont-water-courts", "faction.caldris.bramblebridge-watch",
+            "faction.caldris.brotherhood-of-saint-orro", "faction.caldris.carrowmere-shipwright-fraternities",
+            "faction.caldris.company-of-weirs", "faction.caldris.free-axle-companies",
+            "faction.caldris.glassharbor-furnace-guilds", "faction.caldris.grey-mantle-houses",
+            "faction.caldris.honest-weights-guild", "faction.caldris.houses-of-rescue",
+            "faction.caldris.keepers-of-the-mountain-tithe", "faction.caldris.kethrian-canal-councils",
+            "faction.caldris.lantern-sea-couriers", "faction.caldris.league-chairs-secretariat",
+            "faction.caldris.long-bench-union", "faction.caldris.lorn-bell-houses",
+            "faction.caldris.low-lantern-dry-sock-fund", "faction.caldris.namar-water-captains",
+            "faction.caldris.nine-lamps-hospitallers", "faction.caldris.nine-march-moot",
+            "faction.caldris.oath-rope-lodges", "faction.caldris.open-roof-society",
+            "faction.caldris.quiet-bell-chapter", "faction.caldris.roadmenders-brotherhood",
+            "faction.caldris.seed-mothers-compact", "faction.caldris.selucian-dock-assemblies",
+            "faction.caldris.society-of-the-silver-pear", "faction.caldris.swallow-almanac-society",
+            "faction.caldris.tensor-sect", "faction.caldris.tessa-sky-college",
+            "faction.caldris.the-seventh-ledger", "faction.caldris.vessa-open-archive-league",
+            "faction.caldris.wayward-company"
+        ];
+        var directory = Path.Combine(Catalog(), "world", "entities", "faction", "caldris");
+        var actual = Directory.GetFiles(directory, "*.json").Select(path =>
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(path));
+            Assert.True(document.RootElement.GetProperty("components").TryGetProperty("game.core.world.faction", out _));
+            return document.RootElement.GetProperty("id").GetString()!;
+        }).Order(StringComparer.Ordinal).ToArray();
+        Assert.Equal(expected.Order(StringComparer.Ordinal), actual);
+
+        using var objectDocument = JsonDocument.Parse(File.ReadAllText(Path.Combine(Catalog(), "applications", "dnd2024",
+            "objects", "world", "dnd2024.object.faction-directory-page.json")));
+        var relationship = objectDocument.RootElement.GetProperty("relationships")[0];
+        Assert.Equal("game.core.world.faction.in-world", relationship.GetProperty("qualifiedKind").GetString());
+        Assert.Equal("incoming", relationship.GetProperty("direction").GetString());
     }
 
     [Fact]
@@ -211,6 +282,14 @@ public sealed class ApplicationObjectContractTests : IDisposable
 
     private static EcsComponentReference Ref(RegisteredComponentTypeVersion type) =>
         new(type.QualifiedId, type.Version, type.SchemaHash);
+
+    private static string Catalog()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+            if (File.Exists(Path.Combine(directory.FullName, "DantesRoleplay.slnx")))
+                return Path.Combine(directory.FullName, "catalog");
+        throw new DirectoryNotFoundException();
+    }
 
     private sealed record SetupContext(DantesRoleplayDbContext Db, ApplicationIdentifier Application,
         SqliteComponentTypeRegistry Types, SqliteProjectionDefinitionRegistry Registry);

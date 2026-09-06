@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.glassharbor-furnace-guilds",
+  "name": "Glassharbor Furnace Guilds",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Glassharbor Furnace Guilds operates across Seven Lamps. Safe fuel, fair apprenticeships, and high craft standards.",
+      "visibility": "public",
+      "goals": [
+        "Safe fuel, fair apprenticeships, and high craft standards."
+      ],
+      "methods": [
+        "Old masters suppress efficient methods that weaken their control."
+      ],
+      "assets": [
+        "Reach: Seven Lamps"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Cheap fuel violates forest agreements."
+      }
+    }
+  }
+}

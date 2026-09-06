@@ -8,6 +8,7 @@ import { preserveLastGoodPartyData } from "../data/section-state";
 import { ViewReadError } from "../data/view-read-client";
 import type {
   CampaignSectionId,
+  CampaignReadModel,
   HubContextSelection,
   LocationSectionId,
   MainTabId,
@@ -16,6 +17,7 @@ import type {
   RuleReadModel,
   WorldLocation,
   WorldSectionId,
+  WorldFaction,
 } from "../data/hub-types";
 import {
   filterLocations,
@@ -107,6 +109,14 @@ type HubEnvelopeLoader = (
 
 type RulesLoader = () => Promise<RuleReadModel[]>;
 type ContentLoader = () => Promise<InstalledContentModel>;
+type FactionPageLoader = (envelope: ReadyHubEnvelope, cursor: string | null, signal: AbortSignal) => Promise<{
+  factions: WorldFaction[];
+  totalCount: number;
+  complete: boolean;
+  nextCursor: string | null;
+  sourceRevisionFingerprint: string | null;
+}>;
+type CampaignDetailsLoader = (envelope: ReadyHubEnvelope, signal: AbortSignal) => Promise<CampaignReadModel>;
 
 export function DndInformationHub({
   initialEnvelope,
@@ -114,12 +124,16 @@ export function DndInformationHub({
   loadRules,
   loadContent,
   loadCharacter,
+  loadFactionPage,
+  loadCampaignDetails,
 }: {
   initialEnvelope: ReadyHubEnvelope;
   loadEnvelope?: HubEnvelopeLoader;
   loadRules?: RulesLoader;
   loadContent: ContentLoader;
   loadCharacter?: (envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) => Promise<import("../data/hub-types").PartyMemberReadModel>;
+  loadFactionPage?: FactionPageLoader;
+  loadCampaignDetails?: CampaignDetailsLoader;
 }) {
   const [envelope, setEnvelope] = useState(initialEnvelope);
   const readCharacter = useCallback((id: string, signal: AbortSignal) => {
@@ -153,6 +167,8 @@ export function DndInformationHub({
   const [hubBusy, setHubBusy] = useState(false);
   const [hubError, setHubError] = useState("");
   const [serverChanged, setServerChanged] = useState(false);
+  const [campaignDetailsLoaded, setCampaignDetailsLoaded] = useState(false);
+  const sectionAbort = useRef<AbortController | null>(null);
   useEffect(() => {
     const invalidate = () => setServerChanged(true);
     window.addEventListener("dnd2024-view-invalidated", invalidate);
@@ -241,6 +257,10 @@ export function DndInformationHub({
         ? loadedEnvelope
         : preserveLastGoodPartyData(envelope, loadedEnvelope);
       setEnvelope(readyEnvelope);
+      if (campaignChanged || perspectiveChanged) {
+        setCampaignDetailsLoaded(false);
+        sectionAbort.current?.abort();
+      }
       setServerChanged(false);
       setLocationSection(
         normalizeLocationSection(
@@ -350,11 +370,63 @@ export function DndInformationHub({
     window.requestAnimationFrame(() => document.querySelector<HTMLElement>("#main-view-heading")?.focus());
   }
 
+  async function requestFactionPage(cursor: string | null) {
+    if (!loadFactionPage || perspective !== "dm" || hubBusy) return;
+    sectionAbort.current?.abort();
+    const controller = new AbortController();
+    sectionAbort.current = controller;
+    setHubBusy(true);
+    setHubError("");
+    try {
+      const page = await loadFactionPage(envelope, cursor, controller.signal);
+      if (controller.signal.aborted) return;
+      setEnvelope((current) => {
+        const merged = cursor === null ? page.factions : [
+          ...current.world.factions,
+          ...page.factions.filter((item) => !current.world.factions.some((value) => value.id === item.id)),
+        ];
+        return { ...current, world: { ...current.world, factions: merged, factionDirectory: {
+          totalCount: page.totalCount,
+          complete: page.complete,
+          nextCursor: page.nextCursor,
+          sourceRevisionFingerprint: page.sourceRevisionFingerprint,
+        } } };
+      });
+      setSelectedFactionId((selected) => selected || page.factions[0]?.id || "");
+    } catch (error) {
+      if (!controller.signal.aborted) setHubError(error instanceof Error ? error.message : "The faction directory is unavailable.");
+    } finally {
+      if (!controller.signal.aborted) setHubBusy(false);
+    }
+  }
+
+  async function requestCampaignDetails() {
+    if (!loadCampaignDetails || campaignDetailsLoaded || hubBusy) return;
+    sectionAbort.current?.abort();
+    const controller = new AbortController();
+    sectionAbort.current = controller;
+    setHubBusy(true);
+    setHubError("");
+    try {
+      const campaign = await loadCampaignDetails(envelope, controller.signal);
+      if (controller.signal.aborted) return;
+      setEnvelope((current) => ({ ...current, campaign }));
+      setCampaignDetailsLoaded(true);
+    } catch (error) {
+      if (!controller.signal.aborted) setHubError(error instanceof Error ? error.message : "The campaign details are unavailable.");
+    } finally {
+      if (!controller.signal.aborted) setHubBusy(false);
+    }
+  }
+
   function selectTab(tab: MainTabId) {
     const nextTab = normalizeMainTab(tab) as MainTabId;
     if (nextTab === activeTab) return;
     if (itemRoute.kind !== "none") navigateItemRoute(null, false, null, nextTab);
     setActiveTab(nextTab);
+    if (nextTab === "campaign" && campaignSection !== "overview") void requestCampaignDetails();
+    if (nextTab === "world" && worldSection === "factions" && !envelope.world.factionDirectory)
+      void requestFactionPage(null);
     setAnnouncement(`${nextTab === "current" ? "Current view" : nextTab} opened`);
     focusViewHeading();
   }
@@ -362,6 +434,7 @@ export function DndInformationHub({
   function selectWorldSection(section: WorldSectionId) {
     const nextSection = normalizeWorldSection(section) as WorldSectionId;
     setWorldSection(nextSection);
+    if (nextSection === "factions" && !envelope.world.factionDirectory) void requestFactionPage(null);
     setAnnouncement(`World ${nextSection} opened`);
     focusViewHeading();
   }
@@ -369,6 +442,7 @@ export function DndInformationHub({
   function selectCampaignSection(section: CampaignSectionId) {
     const nextSection = normalizeCampaignSection(section) as CampaignSectionId;
     setCampaignSection(nextSection);
+    if (nextSection !== "overview") void requestCampaignDetails();
     setAnnouncement(`Campaign ${nextSection === "log" ? "adventure log" : nextSection} opened`);
     focusViewHeading();
   }
@@ -490,6 +564,8 @@ export function DndInformationHub({
                 `${envelope.world.factions.find((faction) => faction.id === factionId)?.name ?? "Faction"} selected`,
               );
             }}
+            factionDirectoryBusy={hubBusy && worldSection === "factions"}
+            onLoadMoreFactions={() => void requestFactionPage(envelope.world.factionDirectory?.nextCursor ?? null)}
             activeMapId={activeMapId}
             onMapChange={(mapId) => {
               const nextMapId = normalizeMapId(

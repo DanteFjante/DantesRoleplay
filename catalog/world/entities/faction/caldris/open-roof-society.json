@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.open-roof-society",
+  "name": "Open Roof Society",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Open Roof Society operates across Tessarane. Teach public observation and challenge fraudulent prophecy.",
+      "visibility": "public",
+      "goals": [
+        "Teach public observation and challenge fraudulent prophecy."
+      ],
+      "methods": [
+        "Performative skeptics sometimes mock sincere faith or local knowledge."
+      ],
+      "assets": [
+        "Reach: Tessarane"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Members receive threats from three factions."
+      }
+    }
+  }
+}

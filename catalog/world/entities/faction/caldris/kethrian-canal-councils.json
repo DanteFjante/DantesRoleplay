@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.kethrian-canal-councils",
+  "name": "Kethrian Canal Councils",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Kethrian Canal Councils operates across Kethria. Maintain snowmelt water through shared labour.",
+      "visibility": "public",
+      "goals": [
+        "Maintain snowmelt water through shared labour."
+      ],
+      "methods": [
+        "Upland and lowland councils hide measurements from one another."
+      ],
+      "assets": [
+        "Reach: Kethria"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Warm night water suggests diverted underground flow."
+      }
+    }
+  }
+}

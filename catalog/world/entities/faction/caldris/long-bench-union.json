@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.long-bench-union",
+  "name": "Long Bench Union",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Long Bench Union operates across Dunmarrow. Feed and protect mining households during closures.",
+      "visibility": "public",
+      "goals": [
+        "Feed and protect mining households during closures."
+      ],
+      "methods": [
+        "Some organizers sabotage reopening plans they consider unsafe."
+      ],
+      "assets": [
+        "Reach: Dunmarrow"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Sealed shafts promise work and unknown risk."
+      }
+    }
+  }
+}

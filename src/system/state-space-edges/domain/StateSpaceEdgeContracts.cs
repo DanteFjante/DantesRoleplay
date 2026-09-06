@@ -23,6 +23,26 @@ public sealed record EcsRelationshipView(
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc);
 
+/// <summary>Targeted relationship discovery for one declared collection source.</summary>
+public interface IRelationshipCollectionReader
+{
+    Task<IReadOnlyList<EcsRelationshipView>> ReadCollectionAsync(
+        string stateSpaceId,
+        string fromEntityId,
+        string qualifiedKind,
+        int maximumItems,
+        bool incoming = false,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<EcsRelationshipView>> ReadCollectionsAsync(
+        string stateSpaceId,
+        IReadOnlyCollection<string> fromEntityIds,
+        IReadOnlyCollection<string> qualifiedKinds,
+        int maximumItems,
+        bool incoming = false,
+        CancellationToken cancellationToken = default);
+}
+
 public interface IStateSpaceEdgeStore
 {
     Task<EcsContainmentView?> GetContainmentAsync(

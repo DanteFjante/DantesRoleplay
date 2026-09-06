@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.lorn-bell-houses",
+  "name": "Lorn Bell Houses",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Lorn Bell Houses operates across Lornesse. Coordinate warning, rescue, worship, and civic time.",
+      "visibility": "public",
+      "goals": [
+        "Coordinate warning, rescue, worship, and civic time."
+      ],
+      "methods": [
+        "Bell families guard patterns as hereditary property."
+      ],
+      "assets": [
+        "Reach: Lornesse"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "False alarms mask activity below Copperdeep."
+      }
+    }
+  }
+}

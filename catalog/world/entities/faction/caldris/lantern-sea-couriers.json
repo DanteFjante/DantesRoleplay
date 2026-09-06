@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.lantern-sea-couriers",
+  "name": "Lantern Sea Couriers",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Lantern Sea Couriers operates across cross-border. Carry authenticated messages across political boundaries.",
+      "visibility": "public",
+      "goals": [
+        "Carry authenticated messages across political boundaries."
+      ],
+      "methods": [
+        "Couriers protect client confidentiality even when information could prevent harm."
+      ],
+      "assets": [
+        "Reach: cross-border"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Seven-sided seals appear on unauthorized packets."
+      }
+    }
+  }
+}

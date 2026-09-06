@@ -12,8 +12,11 @@ namespace DantesRoleplay.Projections;
 public sealed class SqliteProjectionDefinitionRegistry(
     DantesRoleplayDbContext db,
     IApplicationComponentTypeRegistry componentTypes,
-    IBoundedJsonSchemaValidator validator) : IProjectionDefinitionRegistry
+    IBoundedJsonSchemaValidator validator,
+    IApplicationRegistry? applications = null) : IProjectionDefinitionRegistry
 {
+    private readonly Dictionary<(string QualifiedId, int Version), RegisteredProjectionDefinition> cache = [];
+
     public RegisteredProjectionDefinition Define(ProjectionDefinitionRequest definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -37,7 +40,7 @@ public sealed class SqliteProjectionDefinitionRegistry(
             if (definition.DeclaredVersion is int replayVersion && replay.Version != replayVersion)
                 throw new ArgumentException("The declared object version does not match its immutable registered version.");
             transaction.Commit();
-            return Read(replay, definition.Owner);
+            return Remember(Read(replay, definition.Owner));
         }
         var version = db.Set<ProjectionDefinitionVersionRecord>().Where(x => x.QualifiedId == definition.QualifiedId).Max(x => (int?)x.Version).GetValueOrDefault() + 1;
         if (definition.DeclaredVersion is int declaredVersion && version != declaredVersion)
@@ -52,16 +55,23 @@ public sealed class SqliteProjectionDefinitionRegistry(
             db.Add(new ProjectionDependencyInputRecord { QualifiedId = definition.QualifiedId, Version = version, InputId = input.InputId, DependencyQualifiedId = input.Projection.QualifiedId, DependencyVersion = input.Projection.Version, DependencyContentHash = input.Projection.ContentHash, RoleBindingsJson = JsonSerializer.Serialize(input.RoleBindings.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value)), Ordinal = ordinal });
         foreach (var (mapping, ordinal) in definition.Mappings.Select((x, i) => (x, i)))
             db.Add(new ProjectionMappingRecord { QualifiedId = definition.QualifiedId, Version = version, TargetPointer = mapping.TargetPointer, InputId = mapping.InputId, SourcePointer = mapping.SourcePointer, Ordinal = ordinal });
-        db.SaveChanges(); transaction.Commit(); return Read(row, definition.Owner);
+        db.SaveChanges(); transaction.Commit(); return Remember(Read(row, definition.Owner));
     }
 
     public RegisteredProjectionDefinition? Get(string qualifiedId, int version)
     {
         if (string.IsNullOrWhiteSpace(qualifiedId) || version < 1) throw new ArgumentException("An exact projection ID and version are required.");
+        if (cache.TryGetValue((qualifiedId, version), out var cached)) return cached;
         var row = db.Set<ProjectionDefinitionVersionRecord>().AsNoTracking().SingleOrDefault(x => x.QualifiedId == qualifiedId && x.Version == version);
         if (row is null) return null;
         var owner = db.Set<ProjectionDefinitionRecord>().AsNoTracking().Where(x => x.QualifiedId == qualifiedId).Select(x => x.ApplicationId).Single();
-        return Read(row, ApplicationIdentifier.Parse(owner));
+        return Remember(Read(row, ApplicationIdentifier.Parse(owner)));
+    }
+
+    private RegisteredProjectionDefinition Remember(RegisteredProjectionDefinition definition)
+    {
+        cache[(definition.QualifiedId, definition.Version)] = definition;
+        return definition;
     }
 
     public ProjectionImpactGraph GetImpactGraph(ApplicationIdentifier owner)
@@ -105,7 +115,7 @@ public sealed class SqliteProjectionDefinitionRegistry(
         foreach (var input in definition.ComponentInputs)
         {
             input.Type.Validate(); var type = componentTypes.Get(input.Type.QualifiedTypeId, input.Type.TypeVersion);
-            if (type is null || type.Owner != definition.Owner || type.SchemaHash != input.Type.SchemaHash) throw new ArgumentException("Projection component inputs require exact owner-local registered types.");
+            if (type is null || !OwnsOrComposes(definition.Owner, type.Owner) || type.SchemaHash != input.Type.SchemaHash) throw new ArgumentException("Projection component inputs require exact owner-composed registered types.");
         }
         var sourceSchemas = definition.ComponentInputs.ToDictionary(x => x.InputId, x => componentTypes.Get(x.Type.QualifiedTypeId, x.Type.TypeVersion)!.SchemaJson, StringComparer.Ordinal);
         foreach (var input in definition.DependencyInputs)
@@ -181,6 +191,7 @@ public sealed class SqliteProjectionDefinitionRegistry(
             if (!Identifier(relationship.RelationshipId, 200) || !Identifier(relationship.QualifiedKind, 200)
                 || !roleIds.Contains(relationship.FromRole, StringComparer.Ordinal)
                 || !roleIds.Contains(relationship.ToRole, StringComparer.Ordinal)
+                || relationship.Direction is not (null or "outgoing" or "incoming")
                 || relationship.Cardinality is not ("one" or "zero-or-one" or "many")
                 || !Pointer(relationship.TargetPointer)
                 || !ProjectionSchemaPath.Exists(normalizedOutputSchema, relationship.TargetPointer))
@@ -267,8 +278,8 @@ public sealed class SqliteProjectionDefinitionRegistry(
                 throw new ArgumentException("Relationship endpoint components require an exact endpoint.");
             component.Type.Validate();
             var registered = componentTypes.Get(component.Type.QualifiedTypeId, component.Type.TypeVersion);
-            if (registered is null || registered.Owner != owner || registered.SchemaHash != component.Type.SchemaHash)
-                throw new ArgumentException("Relationship endpoint components require exact owner-local registered types.");
+            if (registered is null || !OwnsOrComposes(owner, registered.Owner) || registered.SchemaHash != component.Type.SchemaHash)
+                throw new ArgumentException("Relationship endpoint components require exact owner-composed registered types.");
         }
         var keys = all.Select(x => (x.Endpoint, x.Type.QualifiedTypeId, x.Type.TypeVersion)).ToArray();
         if (keys.Distinct().Count() != keys.Length)
@@ -341,6 +352,13 @@ public sealed class SqliteProjectionDefinitionRegistry(
             && type.GetString() == "object"
             && root.TryGetProperty("additionalProperties", out var additional)
             && additional.ValueKind == JsonValueKind.False;
+    }
+
+    private bool OwnsOrComposes(ApplicationIdentifier owner, ApplicationIdentifier componentOwner)
+    {
+        if (owner == componentOwner) return true;
+        var revision = applications?.Get(owner);
+        return revision is not null && revision.BaseApplications.Contains(componentOwner);
     }
 
     private static bool IsArrayIndex(string value) => int.TryParse(value, out _);

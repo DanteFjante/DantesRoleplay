@@ -15,7 +15,8 @@ internal sealed class ApplicationReadModelService(
     IStateSpaceRegistry stateSpaces,
     IApplicationMechanicProjectionMappingResolver mappings,
     IApplicationMechanicEvaluator evaluator,
-    IBoundedJsonSchemaValidator schemas) : IApplicationReadModelService
+    IBoundedJsonSchemaValidator schemas,
+    ObjectProjectionInteractionQueryExecutor? objectQueries = null) : IApplicationReadModelService
 {
     public async Task<ApplicationReadModelResult> ReadAsync(
         ApplicationReadModelRequest request,
@@ -67,9 +68,6 @@ internal sealed class ApplicationReadModelService(
             throw Failure("READ_MODEL_CONTRACT_INVALID",
                 "The requested read-model contract is invalid.", exception);
         }
-        if (contract.Executor != ApplicationQueryContract.MechanicProjectionExecutor)
-            throw Failure("READ_MODEL_EXECUTOR_UNSUPPORTED",
-                "The requested read model is not backed by catalog JavaScript.");
         if (!contract.Roles.Keys.Order(StringComparer.Ordinal)
             .SequenceEqual(request.RoleBindings.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal))
             throw Failure("READ_MODEL_ROLES_INVALID",
@@ -88,6 +86,54 @@ internal sealed class ApplicationReadModelService(
                     inputSchema.NormalizedSchema, input).Status != SchemaValueStatus.Valid)
                 throw Failure("READ_MODEL_INPUT_INVALID", "The request is invalid.");
         }
+
+        if (contract.Executor == ApplicationQueryContract.ObjectProjectionExecutor)
+        {
+            if (objectQueries is null)
+                throw Failure("READ_MODEL_UNAVAILABLE", "The registered object reader is unavailable.");
+            var outputSchema = schemas.Compile(contract.OutputSchemaJson);
+            if (!outputSchema.IsAccepted)
+                throw Failure("READ_MODEL_SCHEMA_STALE", "The read-model output schema is invalid.");
+            InteractionQueryExecutionResult projection;
+            try
+            {
+                projection = await objectQueries.ExecuteAsync(new(
+                    request.StateSpaceId,
+                    request.ApplicationId,
+                    request.QualifiedQueryId,
+                    new InteractionQueryContractReference(
+                        contract.Executor,
+                        contract.ProjectionQualifiedId,
+                        contract.ProjectionVersion,
+                        contract.ProjectionContentHash,
+                        outputSchema.SchemaHash,
+                        outputSchema.NormalizedSchema,
+                        contract.Exposure,
+                        contract.Roles.Keys,
+                        contract.ObjectCollectionId),
+                    request.RoleBindings,
+                    request.Audience,
+                    request.Cursor,
+                    request.PageSize), cancellationToken);
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                throw Failure("READ_MODEL_FORBIDDEN", "The requested view is unavailable.", exception);
+            }
+            catch (InvalidOperationException exception) when (exception.Message.Contains("CURSOR", StringComparison.Ordinal))
+            {
+                throw Failure("READ_MODEL_SOURCE_STALE", "The view changed. Refresh to continue.", exception);
+            }
+            if (schemas.Validate(outputSchema.ProfileId, outputSchema.NormalizedSchema,
+                    projection.OutputJson).Status != SchemaValueStatus.Valid)
+                throw Failure("READ_MODEL_OUTPUT_INVALID", "The registered object returned data outside its query schema.");
+            return new(request.ApplicationId.Value, request.StateSpaceId, request.QualifiedQueryId,
+                stateSpace.ManifestFingerprint, stateSpace.ResolutionFingerprint, outputSchema.SchemaHash,
+                projection.ResultFingerprint, projection.SourceRevisionFingerprint, projection.OutputJson);
+        }
+        if (contract.Executor != ApplicationQueryContract.MechanicProjectionExecutor)
+            throw Failure("READ_MODEL_EXECUTOR_UNSUPPORTED",
+                "The requested read model is not backed by a supported projection.");
 
         CatalogRecordView mechanicRecord;
         try

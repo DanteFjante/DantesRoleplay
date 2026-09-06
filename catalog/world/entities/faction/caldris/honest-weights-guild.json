@@ -1,0 +1,28 @@
+{
+  "id": "faction.caldris.honest-weights-guild",
+  "name": "Honest Weights Guild",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Market assessors and craftspeople who defend common measures and small traders while guarding their own authority to certify what counts as honest.",
+      "visibility": "public",
+      "goals": [
+        "Protect reliable public measures.",
+        "Give small traders a fair appeal."
+      ],
+      "methods": [
+        "Public tests and witnessed scales.",
+        "Formal arbitration and apprentice training."
+      ],
+      "assets": [
+        "Honest Weights Hall",
+        "Certified standards",
+        "Regional assessors"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Discover how a hollow standard and counterfeit exemptions entered Bramblebridge without making an unverified public accusation."
+      }
+    }
+  }
+}

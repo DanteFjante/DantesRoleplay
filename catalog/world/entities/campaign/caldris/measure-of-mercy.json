@@ -1,0 +1,29 @@
+{
+  "id": "campaign.caldris.measure-of-mercy",
+  "name": "The Measure of Mercy",
+  "components": {
+    "game.core.campaign.root": {
+      "status": "active",
+      "title": "The Measure of Mercy",
+      "premise": "A bridge toll and a bell that rings thirteen times lead from local corruption to royal succession, transcontinental archives, and the old responsibility of a dragon—without losing sight of supper, friendship, weather, work, and ordinary lives worth protecting.",
+      "partyGoals": [
+        "Become part of Bramblebridge without taking over its life.",
+        "Learn who profits from the new toll orders and why an empty tax wagon reached the market.",
+        "Choose how powerful systems can be made humane without making every victory belong to one conspiracy."
+      ],
+      "toneAndBoundaries": [
+        "Cozy, lightly humorous, storybook medieval adventure grounded in believable work, law, travel, weather, and consequence.",
+        "Magic is rare and remarkable rather than ordinary infrastructure; grief and danger appear beside warmth, eccentricity, and recovery.",
+        "Mysteries reward secrets, riddles, conversation, and creative solutions; apparent bosses may reveal higher layers while completed adventures still matter."
+      ],
+      "rulesetScope": "dnd2024",
+      "creationMethod": "manual",
+      "reviewFingerprint": "5118269bd27dfc3805ef7af962221c5100bfa7c57dabd4528d554d0e7335670c"
+    },
+    "game.core.campaign.current-scene": {
+      "location": {
+        "entityId": "location.caldris.bramblebridge"
+      }
+    }
+  }
+}

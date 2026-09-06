@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.nine-march-moot",
+  "name": "Nine March Moot",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Nine March Moot operates across Veyr. Preserve cooperation without erasing local law.",
+      "visibility": "public",
+      "goals": [
+        "Preserve cooperation without erasing local law."
+      ],
+      "methods": [
+        "Procedure allows wealthy marches to delay urgent decisions."
+      ],
+      "assets": [
+        "Reach: Veyr"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "The High Warden is dying."
+      }
+    }
+  }
+}

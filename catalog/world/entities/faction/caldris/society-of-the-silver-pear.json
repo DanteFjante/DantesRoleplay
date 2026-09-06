@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.society-of-the-silver-pear",
+  "name": "Society of the Silver Pear",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Society of the Silver Pear operates across Bellafont court. Fund art, gardens, and public feasts.",
+      "visibility": "public",
+      "goals": [
+        "Fund art, gardens, and public feasts."
+      ],
+      "methods": [
+        "Courtly patrons use taste as political exclusion and intelligence gathering."
+      ],
+      "assets": [
+        "Reach: Bellafont court"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "A satire names a private royal fear."
+      }
+    }
+  }
+}

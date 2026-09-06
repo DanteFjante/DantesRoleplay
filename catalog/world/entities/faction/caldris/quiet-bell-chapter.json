@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.quiet-bell-chapter",
+  "name": "Quiet Bell Chapter",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Quiet Bell Chapter operates across Alderwick. Keep bridge shrines, hospice beds, and memorial bells.",
+      "visibility": "public",
+      "goals": [
+        "Keep bridge shrines, hospice beds, and memorial bells."
+      ],
+      "methods": [
+        "Strict traditionalists oppose practical reform; local chapters disagree about magic."
+      ],
+      "assets": [
+        "Reach: Alderwick"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Bells ring with unexplained patterns."
+      }
+    }
+  }
+}

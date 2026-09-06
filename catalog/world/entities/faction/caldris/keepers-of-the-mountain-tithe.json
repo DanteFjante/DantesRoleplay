@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.keepers-of-the-mountain-tithe",
+  "name": "Keepers of the Mountain Tithe",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Keepers of the Mountain Tithe operates across Kethria. Preserve an ancient peace and prevent dragon conflict.",
+      "visibility": "public",
+      "goals": [
+        "Preserve an ancient peace and prevent dragon conflict."
+      ],
+      "methods": [
+        "A secretive office allowed one official to double the tithe."
+      ],
+      "assets": [
+        "Reach: Kethria"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Copper disappears before storage."
+      }
+    }
+  }
+}

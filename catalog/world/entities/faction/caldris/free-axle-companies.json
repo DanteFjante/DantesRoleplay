@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.free-axle-companies",
+  "name": "Free Axle Companies",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Free Axle Companies operates across Veyr roads. Repair vehicles and aid stranded travellers.",
+      "visibility": "public",
+      "goals": [
+        "Repair vehicles and aid stranded travellers."
+      ],
+      "methods": [
+        "Some companies trade route information to escort firms."
+      ],
+      "assets": [
+        "Reach: Veyr roads"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "False raids raise travel costs."
+      }
+    }
+  }
+}

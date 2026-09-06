@@ -34,6 +34,10 @@ public static class ProjectionSchemaPath
             && Supports(root, property, tokens, tokenIndex + 1, depth + 1, references))
             return true;
 
+        if (tokens[tokenIndex] == "*" && current["items"] is JsonNode wildcardItems
+            && Supports(root, wildcardItems, tokens, tokenIndex + 1, depth + 1, references))
+            return true;
+
         if (int.TryParse(tokens[tokenIndex], out var arrayIndex) && arrayIndex >= 0)
         {
             if (current["prefixItems"] is JsonArray prefix && arrayIndex < prefix.Count)

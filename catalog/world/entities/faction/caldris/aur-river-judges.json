@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.aur-river-judges",
+  "name": "Aur River Judges",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Aur River Judges operates across Ordelain. Keep navigation and water rights predictable.",
+      "visibility": "public",
+      "goals": [
+        "Keep navigation and water rights predictable."
+      ],
+      "methods": [
+        "Elite training isolates judges from villages; rival schools weaponize precedent."
+      ],
+      "assets": [
+        "Reach: Ordelain"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "The river changes course around a ducal estate."
+      }
+    }
+  }
+}

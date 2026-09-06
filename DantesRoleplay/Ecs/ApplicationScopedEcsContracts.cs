@@ -127,6 +127,15 @@ public interface IEntityComponentSearchStore
         CancellationToken cancellationToken = default);
 }
 
+/// <summary>Bounded exact entity hydration for structural collection reads.</summary>
+public interface IEntityBatchReadStore
+{
+    Task<IReadOnlyList<EcsEntityView>> GetEntitiesAsync(
+        string stateSpaceId,
+        IReadOnlyList<string> entityIds,
+        CancellationToken cancellationToken = default);
+}
+
 public interface IEntityComponentStore
 {
     Task<EcsEntityView> CreateEntityAsync(string stateSpaceId, string entityId, string name, CancellationToken cancellationToken = default);

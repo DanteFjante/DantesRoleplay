@@ -1,0 +1,89 @@
+{
+  "id": "dnd2024.object.campaign-summary",
+  "version": 1,
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "status": { "const": "active" },
+      "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+      "premise": { "type": "string", "minLength": 1, "maxLength": 1000 },
+      "partyGoals": { "type": "array", "minItems": 1, "maxItems": 3, "items": { "type": "string", "minLength": 1, "maxLength": 500 } },
+      "toneAndBoundaries": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "type": "string", "minLength": 1, "maxLength": 300 } },
+      "party": {
+        "type": "array",
+        "maxItems": 20,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "name", "status"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+            "name": { "type": "string", "minLength": 1, "maxLength": 400 },
+            "status": { "enum": ["active", "withdrawn"] }
+          }
+        }
+      },
+      "totalCount": { "type": "integer", "minimum": 0, "maximum": 20 },
+      "complete": { "type": "boolean" },
+      "nextCursor": { "type": ["string", "null"], "maxLength": 2048 }
+    }
+  },
+  "roles": {
+    "campaign": { "required": true },
+    "participation": { "required": false }
+  },
+  "sources": [
+    {
+      "id": "campaign",
+      "role": "campaign",
+      "component": {
+        "qualifiedId": "game.core.campaign.root",
+        "version": 1,
+        "schemaHash": "FF68DCFF34FA11442CFAF9E75C8F1E73C64FBD6CE525C34EA06A197614D68BD9"
+      },
+      "required": true
+    }
+  ],
+  "relationships": [
+    {
+      "id": "party",
+      "qualifiedKind": "game.core.campaign.has-character-participation",
+      "fromRole": "campaign",
+      "toRole": "participation",
+      "cardinality": "many",
+      "targetPointer": "/party",
+      "requiredEndpointComponents": [
+        {
+          "endpoint": "to",
+          "component": {
+            "qualifiedId": "game.core.campaign.character-participation",
+            "version": 1,
+            "schemaHash": "21E65F869F95A6280A6C1C7A145F8149B1BB4FB6674DD8FA4FC9C31DF96A92C7"
+          }
+        }
+      ],
+      "optionalEndpointComponents": []
+    }
+  ],
+  "references": [],
+  "mappings": [
+    { "inputId": "campaign", "sourcePointer": "/status", "targetPointer": "/status" },
+    { "inputId": "campaign", "sourcePointer": "/title", "targetPointer": "/title" },
+    { "inputId": "campaign", "sourcePointer": "/premise", "targetPointer": "/premise" },
+    { "inputId": "campaign", "sourcePointer": "/partyGoals", "targetPointer": "/partyGoals" },
+    { "inputId": "campaign", "sourcePointer": "/toneAndBoundaries", "targetPointer": "/toneAndBoundaries" }
+  ],
+  "collections": [
+    {
+      "id": "party",
+      "sourceId": "party",
+      "pageSize": 20,
+      "maximumPageSize": 20,
+      "order": [{ "path": "/name", "direction": "asc" }],
+      "cursor": "source-revision-bound"
+    }
+  ],
+  "limits": { "traversalDepth": 2, "itemCount": 20, "outputBytes": 65536, "sqlQueries": 12 },
+  "access": { "read": ["player", "dm"], "write": [] }
+}

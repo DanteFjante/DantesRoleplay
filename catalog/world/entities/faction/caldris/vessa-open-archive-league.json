@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.vessa-open-archive-league",
+  "name": "Vessa Open Archive League",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Vessa Open Archive League operates across Ordelain. Return copies of important records to communities.",
+      "visibility": "public",
+      "goals": [
+        "Return copies of important records to communities."
+      ],
+      "methods": [
+        "Radical members steal documents rather than litigate."
+      ],
+      "assets": [
+        "Reach: Ordelain"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "A private archive buys flood-era charters."
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.bellafont-water-courts",
+  "name": "Bellafont Water Courts",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Bellafont Water Courts operates across Bellafont. Allocate scarce water by charter and need.",
+      "visibility": "public",
+      "goals": [
+        "Allocate scarce water by charter and need."
+      ],
+      "methods": [
+        "Ancient documents privilege abbeys and estates; reformers forge consensus statistics."
+      ],
+      "assets": [
+        "Reach: Bellafont"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Orchard blight and drought coincide."
+      }
+    }
+  }
+}

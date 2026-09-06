@@ -110,11 +110,15 @@ export function WorldFactions({
   selectedFactionId,
   onFactionSelect,
   onOpenLocation,
+  busy,
+  onLoadMore,
 }: {
   world: WorldReadModel;
   selectedFactionId: string;
   onFactionSelect: (factionId: string) => void;
   onOpenLocation: (locationId: string) => void;
+  busy?: boolean;
+  onLoadMore?: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [influence, setInfluence] = useState("all");
@@ -134,7 +138,7 @@ export function WorldFactions({
           <span className="eyebrow">Powers in motion</span>
           <h1 id="main-view-heading" tabIndex={-1}>Factions</h1>
         </div>
-        <p>{factions.length} of {world.factions.length} visible</p>
+        <p aria-live="polite">{factions.length} visible · {world.factions.length} of {world.factionDirectory?.totalCount ?? world.factions.length} loaded</p>
       </header>
       <p className="world-directory-introduction">
         Sovereign powers and organizations whose rule, goals, alliances, and rivalries continue to shape {world.name}.
@@ -175,6 +179,14 @@ export function WorldFactions({
           <p>Try another name or influence level.</p>
         </div>
       )}
+      {world.factionDirectory && !world.factionDirectory.complete ? (
+        <div className="directory-pagination">
+          <button aria-busy={busy ? "true" : undefined} disabled={busy} onClick={onLoadMore} type="button">
+            {busy ? "Loading factions…" : "Load more factions"}
+          </button>
+          <p>{world.factionDirectory.totalCount - world.factions.length} factions remain.</p>
+        </div>
+      ) : null}
     </div>
   );
 }

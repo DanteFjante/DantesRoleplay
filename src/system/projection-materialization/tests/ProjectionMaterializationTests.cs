@@ -1,8 +1,11 @@
+using System.Data.Common;
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.Tests;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace DantesRoleplay.Projections.Tests;
 
@@ -16,6 +19,7 @@ public sealed class ProjectionMaterializationTests : IDisposable
     [InlineData("{\"anyOf\":[{\"properties\":{\"score\":{\"type\":\"integer\"}}},{\"properties\":{\"score\":{\"type\":\"string\"}}}]}", "/score", true)]
     [InlineData("{\"anyOf\":[{\"properties\":{\"score\":{\"type\":\"integer\"}}},{\"properties\":{\"other\":{\"type\":\"string\"}}}]}", "/score", false)]
     [InlineData("{\"type\":\"array\",\"prefixItems\":[{\"properties\":{\"score\":{\"type\":\"integer\"}}}]}", "/0/score", true)]
+    [InlineData("{\"type\":\"array\",\"items\":{\"properties\":{\"score\":{\"type\":\"integer\"}}}}", "/*/score", true)]
     public void Schema_path_discovery_follows_the_bounded_profile(string schema, string pointer, bool expected) =>
         Assert.Equal(expected, ProjectionSchemaPath.Exists(schema, pointer));
 
@@ -79,6 +83,80 @@ public sealed class ProjectionMaterializationTests : IDisposable
         Assert.Empty(report.Edges);
         Assert.Empty(report.Dependents);
         Assert.Equal(64, report.GraphFingerprint.Length);
+    }
+
+    [Fact]
+    public async Task Registered_collection_pages_only_declared_edges_with_batched_hydration_and_revision_bound_cursor()
+    {
+        var setup = Setup("collection-projection", "collection-space");
+        var rootType = setup.Types.Define(new(setup.Application, "collection-projection.root",
+            "{\"type\":\"object\",\"required\":[\"title\"],\"properties\":{\"title\":{\"type\":\"string\"}}}"));
+        var itemType = setup.Types.Define(new(setup.Application, "collection-projection.item",
+            "{\"type\":\"object\",\"required\":[\"summary\"],\"properties\":{\"summary\":{\"type\":\"string\"}}}"));
+        await setup.Store.CreateEntityAsync("collection-space", "root", "Root");
+        await setup.Store.CreateEntityAsync("collection-space", "item.b", "Bravo");
+        await setup.Store.CreateEntityAsync("collection-space", "item.a", "Alpha");
+        await setup.Store.CreateEntityAsync("collection-space", "member.z", "Zed");
+        await setup.Store.CreateEntityAsync("collection-space", "unrelated", "Unrelated");
+        await setup.Store.AddComponentAsync(new("collection-space", "root", Ref(rootType), "{\"title\":\"Directory\"}", 0));
+        await setup.Store.AddComponentAsync(new("collection-space", "item.a", Ref(itemType), "{\"summary\":\"A\"}", 0));
+        await setup.Store.AddComponentAsync(new("collection-space", "item.b", Ref(itemType), "{\"summary\":\"B\"}", 0));
+        var edges = new SqliteStateSpaceEdgeStore(setup.Db, setup.StateSpaces);
+        await edges.SetRelationshipAsync("collection-space", "item.a", "root", "collection-projection.includes", "{}", 0);
+        await edges.SetRelationshipAsync("collection-space", "item.b", "root", "collection-projection.includes", "{}", 0);
+        await edges.SetRelationshipAsync("collection-space", "item.a", "member.z", "collection-projection.members", "{}", 0);
+
+        const string schema = """
+        {"type":"object","additionalProperties":false,"properties":{"title":{"type":"string"},"items":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","name","summary","members"],"properties":{"id":{"type":"string"},"name":{"type":"string"},"summary":{"type":"string"},"members":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","name"],"properties":{"id":{"type":"string"},"name":{"type":"string"}}}}}}},"totalCount":{"type":"integer"},"complete":{"type":"boolean"},"nextCursor":{"type":["string","null"]}}}
+        """;
+        var definition = setup.Registry.Define(new(setup.Application, "collection-projection.directory", schema,
+            [new("root", "owner", Ref(rootType))], [], [new("root", "/title", "/title")],
+            new([new("owner", true), new("item", false), new("member", false)], [new("root", true)],
+                [new("items", "collection-projection.includes", "item", "owner", "many", "/items",
+                    [new("from", Ref(itemType))], [], "incoming"),
+                 new("members", "collection-projection.members", "item", "member", "many", "/items/*/members", [], [])], [],
+                [new("items", "items", 1, 2, [new("/name", "asc")], "source-revision-bound")],
+                new(2, 10, 32_768, 12), new(["dm"], []), null), 1));
+        var counter = new CommandCounter();
+        var options = new DbContextOptionsBuilder<DantesRoleplayDbContext>()
+            .UseSqlite(_fixture.Connection).AddInterceptors(counter).Options;
+        await using var countedDb = new DantesRoleplayDbContext(options);
+        var applications = new SqliteApplicationRegistry(countedDb);
+        var countedSpaces = new SqliteStateSpaceRegistry(countedDb, applications);
+        var countedTypes = new SqliteComponentTypeRegistry(countedDb, setup.Schemas);
+        var countedStore = new SqliteEntityComponentStore(countedDb, countedTypes, setup.Schemas);
+        var countedRegistry = new SqliteProjectionDefinitionRegistry(countedDb, countedTypes, setup.Schemas);
+        var countedEdges = new SqliteStateSpaceEdgeStore(countedDb, countedSpaces);
+        var rootMaterializer = new ProjectionMaterializer(countedRegistry, countedStore, countedSpaces, setup.Schemas,
+            snapshots: new SqliteProjectionSourceSnapshotReader(countedDb, countedSpaces, countedStore));
+        var materializer = new ProjectionCollectionMaterializer(countedRegistry, rootMaterializer, countedEdges,
+            countedStore, countedStore, setup.Schemas, new SqliteProjectionReadTransaction(countedDb));
+        var request = new ProjectionCollectionMaterializationRequest("collection-space", definition.Reference,
+            new Dictionary<string, string> { ["owner"] = "root" }, "items", "dm");
+
+        Assert.NotNull(countedRegistry.Get(definition.QualifiedId, definition.Version));
+        counter.Reset();
+        var first = await materializer.MaterializeAsync(request);
+        Assert.True(counter.Count is >= 1 && counter.Count <= definition.ObjectContract!.Limits.SqlQueries,
+            $"Collection read used {counter.Count} SQL commands:{Environment.NewLine}{string.Join(Environment.NewLine, counter.Commands)}");
+        using var firstJson = System.Text.Json.JsonDocument.Parse(first.OutputJson);
+        Assert.Equal("Alpha", firstJson.RootElement.GetProperty("items")[0].GetProperty("name").GetString());
+        Assert.Equal("Zed", firstJson.RootElement.GetProperty("items")[0].GetProperty("members")[0]
+            .GetProperty("name").GetString());
+        Assert.Equal(2, firstJson.RootElement.GetProperty("totalCount").GetInt32());
+        Assert.False(firstJson.RootElement.GetProperty("complete").GetBoolean());
+        var cursor = firstJson.RootElement.GetProperty("nextCursor").GetString();
+        var second = await materializer.MaterializeAsync(request with { Cursor = cursor });
+        using var secondJson = System.Text.Json.JsonDocument.Parse(second.OutputJson);
+        Assert.Equal("Bravo", secondJson.RootElement.GetProperty("items")[0].GetProperty("name").GetString());
+        Assert.Empty(secondJson.RootElement.GetProperty("items")[0].GetProperty("members").EnumerateArray());
+        Assert.True(secondJson.RootElement.GetProperty("complete").GetBoolean());
+        await setup.Store.CreateEntityAsync("collection-space", "member.y", "Yara");
+        await edges.SetRelationshipAsync("collection-space", "item.b", "member.y", "collection-projection.members", "{}", 0);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            materializer.MaterializeAsync(request with { Cursor = cursor }));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            materializer.MaterializeAsync(request with { Perspective = "player" }));
     }
 
     [Fact]
@@ -385,6 +463,34 @@ public sealed class ProjectionMaterializationTests : IDisposable
             return inner.Get(qualifiedId, version);
         }
         public ProjectionImpactGraph GetImpactGraph(ApplicationIdentifier owner) => inner.GetImpactGraph(owner);
+    }
+
+    private sealed class CommandCounter : DbCommandInterceptor
+    {
+        public int Count { get; private set; }
+        public List<string> Commands { get; } = [];
+        public void Reset()
+        {
+            Count = 0;
+            Commands.Clear();
+        }
+
+        public override InterceptionResult<DbDataReader> ReaderExecuting(
+            DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result)
+        {
+            Count++;
+            Commands.Add(command.CommandText);
+            return result;
+        }
+
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
+            DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result,
+            CancellationToken cancellationToken = default)
+        {
+            Count++;
+            Commands.Add(command.CommandText);
+            return ValueTask.FromResult(result);
+        }
     }
 
     private sealed class CountingStore(IEntityComponentStore inner, DantesRoleplayDbContext? db = null) : IEntityComponentStore

@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.namar-water-captains",
+  "name": "Namar Water Captains",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Namar Water Captains operates across Namarra. Maintain canals, evacuation, and fair local allocation.",
+      "visibility": "public",
+      "goals": [
+        "Maintain canals, evacuation, and fair local allocation."
+      ],
+      "methods": [
+        "Local loyalties sometimes conceal trade from royal tax offices."
+      ],
+      "assets": [
+        "Reach: Namarra"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Villages disappear from state rolls."
+      }
+    }
+  }
+}

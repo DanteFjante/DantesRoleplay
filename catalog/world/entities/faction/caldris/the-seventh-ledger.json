@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.the-seventh-ledger",
+  "name": "The Seventh Ledger",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "The Seventh Ledger operates across hidden transcontinental. Restore predictable peace through records, standards, and enforceable obligation.",
+      "visibility": "public",
+      "goals": [
+        "Restore predictable peace through records, standards, and enforceable obligation."
+      ],
+      "methods": [
+        "Believes consent is a luxury and erases people who cannot be made legible. Cells disagree between reform, capture, and restoration."
+      ],
+      "assets": [
+        "Reach: hidden transcontinental"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Counterfeit seals test which institutions still obey Concord forms."
+      }
+    }
+  }
+}

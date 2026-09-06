@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 
 import { BootstrapShell } from "../components/BootstrapShell";
 import { resolveHubSurface } from "../data/hub-availability.js";
-import type { CanonicalCharacterResult, ConnectedCampaignEnvelope, HubEnvelope, PartyMemberReadModel, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
+import type { CampaignReadModel, CanonicalCharacterResult, ConnectedCampaignEnvelope, HubEnvelope, PartyMemberReadModel, Perspective, ReadyHubEnvelope, RuleReadModel, WorldFaction } from "../data/hub-types";
 import { ViewReadClient, ViewReadError } from "../data/view-read-client";
 import { loadInitialHub } from "../data/hub-preferences";
 import { isReadyHubEnvelope } from "../state.js";
@@ -65,6 +65,9 @@ async function readEnvelope(
     requestedCampaignId: campaignId ?? null,
     mediaAssetBaseUrl: PAGE_ASSET_BASE,
     deferCharacterDetails: true,
+    deferCampaignDetails: true,
+    deferWorldDirectory: true,
+    useRegisteredCampaignSummary: true,
   })) as HubEnvelope;
 
   if (sourceEnvelope.status !== "connected") return sourceEnvelope;
@@ -159,6 +162,60 @@ async function loadCharacter(envelope: ReadyHubEnvelope, actorId: string, signal
   finally { signal.removeEventListener("abort", cancel); }
 }
 
+async function loadFactionPage(
+  envelope: ReadyHubEnvelope,
+  cursor: string | null,
+  signal: AbortSignal,
+): Promise<{ factions: WorldFaction[]; totalCount: number; complete: boolean; nextCursor: string | null; sourceRevisionFingerprint: string | null }> {
+  const source = characterSources.get(characterScope(envelope.stateSpaceId,
+    envelope.contextSelection?.selectedCampaignId ?? "", envelope.audience.perspective));
+  if (!source || source.audience.seat !== "dm" || source.audience.perspective !== "dm" || signal.aborted)
+    throw new Error("The faction directory is unavailable to this audience.");
+  const [{ readRegisteredFactionDirectoryPage }, { connectedCampaignToHubEnvelope }] = await Promise.all([
+    import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
+  ]);
+  const page = await readRegisteredFactionDirectoryPage({
+    fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
+    origin: window.location.origin,
+    applicationId: source.applicationId,
+    stateSpaceId: source.stateSpaceId,
+    worldId: envelope.contextSelection?.selectedWorldId ?? "",
+    cursor,
+  });
+  if (!page) throw new Error("The faction directory could not be read.");
+  const projected = connectedCampaignToHubEnvelope({ ...source,
+    worldDirectory: { people: [], factions: page.factions, holdings: [] }, rules: [],
+  }, { assetBaseUrl: PAGE_ASSET_BASE });
+  const ids = new Set(page.factions.map((faction: { id: string }) => faction.id));
+  return {
+    factions: projected.world.factions.filter((faction) => ids.has(faction.id)),
+    totalCount: page.totalCount,
+    complete: page.complete,
+    nextCursor: page.nextCursor,
+    sourceRevisionFingerprint: page.sourceRevisionFingerprint ?? null,
+  };
+}
+
+async function loadCampaignDetails(
+  envelope: ReadyHubEnvelope,
+  signal: AbortSignal,
+): Promise<CampaignReadModel> {
+  const source = characterSources.get(characterScope(envelope.stateSpaceId,
+    envelope.contextSelection?.selectedCampaignId ?? "", envelope.audience.perspective));
+  if (!source || signal.aborted) throw new Error("The campaign details are unavailable.");
+  const [{ readDeferredCampaignDetails }, { connectedCampaignToHubEnvelope }] = await Promise.all([
+    import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
+  ]);
+  const details = await readDeferredCampaignDetails({
+    fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
+    origin: window.location.origin,
+    source,
+  });
+  if (details?.incomplete) throw new Error("The campaign details could not be read completely.");
+  return connectedCampaignToHubEnvelope({ ...source, campaign: { ...source.campaign, ...details }, rules: [] },
+    { assetBaseUrl: PAGE_ASSET_BASE }).campaign;
+}
+
 async function loadEnvelope(
   perspective: Perspective,
   campaignId?: string,
@@ -243,6 +300,8 @@ try {
             initialEnvelope={initialEnvelope}
             loadEnvelope={loadReadyEnvelope}
             loadCharacter={loadCharacter}
+            loadFactionPage={loadFactionPage}
+            loadCampaignDetails={loadCampaignDetails}
             loadRules={loadRulesReference}
             loadContent={loadInstalledContent}
           />

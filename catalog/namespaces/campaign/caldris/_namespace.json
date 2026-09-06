@@ -1,0 +1,10 @@
+{
+  "id": "campaign.caldris",
+  "owner": "campaign",
+  "description": "Namespace for Caldris campaign entities.",
+  "allowedKinds": ["entity"],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for the Measure of Mercy campaign summary registration."
+}

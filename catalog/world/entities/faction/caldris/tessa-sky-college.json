@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.tessa-sky-college",
+  "name": "Tessa Sky College",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Tessa Sky College operates across Tessarane. Observe stars and weather carefully.",
+      "visibility": "public",
+      "goals": [
+        "Observe stars and weather carefully."
+      ],
+      "methods": [
+        "Senior scholars enjoy court patronage and overstate certainty."
+      ],
+      "assets": [
+        "Reach: Tessarane"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "A comet becomes political evidence."
+      }
+    }
+  }
+}

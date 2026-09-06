@@ -1,0 +1,28 @@
+{
+  "id": "faction.caldris.bramblebridge-watch",
+  "name": "Bramblebridge Watch",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "A tiny civic watch trying to keep a busy market town safe with too little money, uneven social skills, borrowed equipment, and considerable local loyalty.",
+      "visibility": "public",
+      "goals": [
+        "Keep Bramblebridge safe.",
+        "Prevent toll anger from becoming violence."
+      ],
+      "methods": [
+        "Foot patrols, witness interviews, and local favors.",
+        "Maps, labeled string, and reluctant cooperation with guilds."
+      ],
+      "assets": [
+        "Tibb's Watch Post",
+        "Town maps",
+        "A whistle everyone recognizes"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Find the missing tax-wagon driver and learn why the noon bell rang thirteen times before someone is arrested for convenience."
+      }
+    }
+  }
+}

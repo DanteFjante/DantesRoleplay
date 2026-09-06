@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.nine-lamps-hospitallers",
+  "name": "Nine Lamps Hospitallers",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Nine Lamps Hospitallers operates across cross-border. Provide hospice beds, burial, relief, and mediation.",
+      "visibility": "public",
+      "goals": [
+        "Provide hospice beds, burial, relief, and mediation."
+      ],
+      "methods": [
+        "Central officers standardize traditions that local houses consider essential."
+      ],
+      "assets": [
+        "Reach: cross-border"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Relief grain is redirected through political contracts."
+      }
+    }
+  }
+}

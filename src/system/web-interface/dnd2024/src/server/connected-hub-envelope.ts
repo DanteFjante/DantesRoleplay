@@ -1021,18 +1021,25 @@ export function connectedCampaignToHubEnvelope(
     assets: faction.assets,
     members: faction.memberIds.flatMap((id) => {
       const person = worldPersonById.get(id);
-      return person ? [{ id: person.id, name: person.name, kind: person.kind }] : [];
+      const reference = faction.memberReferences?.find((value) => value.id === id);
+      return person ? [{ id: person.id, name: person.name, kind: person.kind }]
+        : reference ? [{ ...reference, kind: "NPC" as const }] : [];
     }),
     territories: faction.territoryIds.flatMap((id) => {
       const location = baseLocationById.get(id);
-      return location ? [{ id: location.id, name: location.name, region: location.region }] : [];
+      const reference = faction.territoryReferences?.find((value) => value.id === id);
+      return location ? [{ id: location.id, name: location.name, region: location.region }]
+        : reference ? [{ ...reference, region: "Recorded location" }] : [];
     }),
     relationships: [
       ...faction.alliedIds.map((id) => ({ id, stance: "Allied" })),
       ...faction.opposedIds.map((id) => ({ id, stance: "Opposed" })),
     ].flatMap((relationship) => {
       const target = factionById.get(relationship.id);
-      return target ? [{ id: target.id, name: target.name, stance: relationship.stance }] : [];
+      const references = relationship.stance === "Allied" ? faction.alliedReferences : faction.opposedReferences;
+      const reference = references?.find((value) => value.id === relationship.id);
+      return target ? [{ id: target.id, name: target.name, stance: relationship.stance }]
+        : reference ? [{ ...reference, stance: relationship.stance }] : [];
     }),
     dmAgenda: faction.agenda.summary,
   }));

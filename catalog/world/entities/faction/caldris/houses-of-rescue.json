@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.houses-of-rescue",
+  "name": "Houses of Rescue",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Houses of Rescue operates across Carrowmere coast. Maintain lighthouses, boats, shelters, and survivor care.",
+      "visibility": "public",
+      "goals": [
+        "Maintain lighthouses, boats, shelters, and survivor care."
+      ],
+      "methods": [
+        "Protect embarrassing wreck records to preserve public trust."
+      ],
+      "assets": [
+        "Reach: Carrowmere coast"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Several warning signals appear without storms."
+      }
+    }
+  }
+}

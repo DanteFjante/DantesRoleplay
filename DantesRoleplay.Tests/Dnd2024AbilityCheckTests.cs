@@ -8967,7 +8967,8 @@ public sealed class Dnd2024AbilityCheckTests
             var schemas = new BoundedJsonSchemaValidator();
             var types = new SqliteComponentTypeRegistry(db, schemas);
             var entities = new SqliteEntityComponentStore(db, types, schemas);
-            var materializer = new ActivatedApplicationCatalogMaterializer(applications, activations, sources, roots);
+            var materializer = new ActivatedApplicationCatalogMaterializer(applications, activations, sources, roots,
+                projections: new SqliteProjectionDefinitionRegistry(db, types, schemas, applications));
             _ = materializer.BuildFeatureSnapshot(Application);
             var catalogs = new ActivatedApplicationCatalogProvider(
                 new ConfiguredPublicApplicationCatalogPolicy([Application.Value]),
@@ -9075,7 +9076,7 @@ public sealed class Dnd2024AbilityCheckTests
                          "game.core.world.root", "game.core.world.clock",
                          "game.core.world.fact", "game.core.campaign.root",
                          "game.core.campaign.character-participation",
-                         "game.core.world.location", "game.core.world.route",
+                         "game.core.world.location", "game.core.world.faction", "game.core.world.route",
                          "game.core.world.route.availability", "game.core.world.traveller",
                          "game.core.media.visual", "game.core.world.media.visual"
                      })

@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.seed-mothers-compact",
+  "name": "Seed Mothers' Compact",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Seed Mothers' Compact operates across Namarra. Preserve resilient seed and emergency grain.",
+      "visibility": "public",
+      "goals": [
+        "Preserve resilient seed and emergency grain."
+      ],
+      "methods": [
+        "Elders restrict access to protect stock, frustrating younger farmers."
+      ],
+      "assets": [
+        "Reach: Namarra"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Durable seed is being exported secretly."
+      }
+    }
+  }
+}

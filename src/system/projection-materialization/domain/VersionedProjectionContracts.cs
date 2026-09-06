@@ -53,6 +53,19 @@ public sealed record RegisteredProjectionDefinition(
 public sealed record ProjectionMaterializationRequest(string StateSpaceId, ProjectionReference Projection, IReadOnlyDictionary<string, string> RoleEntityIds);
 public sealed record ProjectionSourceRevision(string EntityId, EcsComponentReference Type, int Revision);
 public sealed record ProjectionMaterializationResult(ProjectionReference Projection, string OutputJson, IReadOnlyList<ProjectionSourceRevision> SourceRevisions);
+public sealed record ProjectionCollectionMaterializationRequest(
+    string StateSpaceId,
+    ProjectionReference Projection,
+    IReadOnlyDictionary<string, string> RoleEntityIds,
+    string CollectionId,
+    string Perspective,
+    string? Cursor = null,
+    int? PageSize = null);
+public sealed record ProjectionCollectionMaterializationResult(
+    ProjectionReference Projection,
+    string OutputJson,
+    IReadOnlyList<ProjectionSourceRevision> SourceRevisions,
+    string SourceRevisionFingerprint);
 public sealed record ProjectionImpactGraph(IReadOnlyDictionary<string, IReadOnlyList<string>> Forward, IReadOnlyDictionary<string, IReadOnlyList<string>> Reverse);
 public sealed record ProjectionSourceSnapshot(
     StateSpaceView StateSpace,
@@ -75,6 +88,18 @@ public interface IProjectionDefinitionRegistry
 public interface IProjectionMaterializer
 {
     Task<ProjectionMaterializationResult> MaterializeAsync(ProjectionMaterializationRequest request, CancellationToken cancellationToken = default);
+}
+
+public interface IProjectionCollectionMaterializer
+{
+    Task<ProjectionCollectionMaterializationResult> MaterializeAsync(
+        ProjectionCollectionMaterializationRequest request,
+        CancellationToken cancellationToken = default);
+}
+
+public interface IProjectionReadTransaction
+{
+    Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> read, CancellationToken cancellationToken = default);
 }
 
 /// <summary>One provider-owned read snapshot for a prepared projection's exact component set.</summary>

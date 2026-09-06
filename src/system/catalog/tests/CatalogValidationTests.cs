@@ -36,7 +36,7 @@ public sealed class CatalogValidationTests
             .Order(StringComparer.Ordinal).ToArray();
 
         Assert.Equal(153, mechanicPaths.Length);
-        Assert.Equal(19, queryPaths.Length);
+        Assert.Equal(21, queryPaths.Length);
         foreach (var path in mechanicPaths)
         {
             var file = MechanicFile.Parse(File.ReadAllText(path), path,

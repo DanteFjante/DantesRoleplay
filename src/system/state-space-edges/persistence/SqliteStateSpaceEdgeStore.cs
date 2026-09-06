@@ -9,8 +9,10 @@ namespace DantesRoleplay.Ecs;
 
 public sealed class SqliteStateSpaceEdgeStore(
     DantesRoleplayDbContext db,
-    IStateSpaceRegistry stateSpaces) : IStateSpaceEdgeStore
+    IStateSpaceRegistry stateSpaces) : IStateSpaceEdgeStore, IRelationshipCollectionReader
 {
+    private readonly Dictionary<string, StateSpaceView> transactionStateSpaces = new(StringComparer.Ordinal);
+
     public async Task<EcsContainmentView?> GetContainmentAsync(
         string stateSpaceId,
         string containedEntityId,
@@ -200,6 +202,74 @@ public sealed class SqliteStateSpaceEdgeStore(
         return Array.AsReadOnly(rows.Select(View).ToArray());
     }
 
+    public async Task<IReadOnlyList<EcsRelationshipView>> ReadCollectionAsync(
+        string stateSpaceId,
+        string fromEntityId,
+        string qualifiedKind,
+        int maximumItems,
+        bool incoming = false,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateId(stateSpaceId, nameof(stateSpaceId));
+        ValidateId(fromEntityId, nameof(fromEntityId));
+        ValidateRegisteredKind(qualifiedKind);
+        if (maximumItems is < 1 or > 10_000) throw new ArgumentOutOfRangeException(nameof(maximumItems));
+        await RequireEntityAsync(stateSpaceId, fromEntityId, cancellationToken);
+        var rows = await db.Set<ApplicationEcsRelationshipRecord>().AsNoTracking()
+            .Where(value => value.StateSpaceId == stateSpaceId && value.QualifiedKind == qualifiedKind
+                && (incoming ? value.ToEntityId == fromEntityId : value.FromEntityId == fromEntityId))
+            .Where(value => db.Set<ApplicationEcsEntityRecord>().Any(entity =>
+                entity.StateSpaceId == stateSpaceId
+                && entity.Id == (incoming ? value.FromEntityId : value.ToEntityId)
+                && entity.DeletedAtUtc == null))
+            .OrderBy(value => incoming ? value.FromEntityId : value.ToEntityId)
+            .Take(maximumItems + 1)
+            .ToArrayAsync(cancellationToken);
+        if (rows.Length > maximumItems)
+            throw new InvalidOperationException("Relationship collection item bound exceeded.");
+        return Array.AsReadOnly(rows.Select(View).ToArray());
+    }
+
+    public async Task<IReadOnlyList<EcsRelationshipView>> ReadCollectionsAsync(
+        string stateSpaceId,
+        IReadOnlyCollection<string> fromEntityIds,
+        IReadOnlyCollection<string> qualifiedKinds,
+        int maximumItems,
+        bool incoming = false,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateId(stateSpaceId, nameof(stateSpaceId));
+        ArgumentNullException.ThrowIfNull(fromEntityIds);
+        ArgumentNullException.ThrowIfNull(qualifiedKinds);
+        var sources = fromEntityIds.Distinct(StringComparer.Ordinal).ToArray();
+        var kinds = qualifiedKinds.Distinct(StringComparer.Ordinal).ToArray();
+        if (sources.Length is < 1 or > 256 || kinds.Length is < 1 or > 32)
+            throw new ArgumentOutOfRangeException(nameof(fromEntityIds), "Relationship collection selectors exceed their fixed bounds.");
+        if (maximumItems is < 1 or > 10_000) throw new ArgumentOutOfRangeException(nameof(maximumItems));
+        foreach (var source in sources) ValidateId(source, nameof(fromEntityIds));
+        foreach (var kind in kinds) ValidateRegisteredKind(kind);
+        var sourceCount = await db.Set<ApplicationEcsEntityRecord>().AsNoTracking().CountAsync(value =>
+            value.StateSpaceId == stateSpaceId && sources.Contains(value.Id) && value.DeletedAtUtc == null,
+            cancellationToken);
+        if (sourceCount != sources.Length)
+            throw new InvalidOperationException("A relationship collection source is unknown or deleted.");
+        var rows = await db.Set<ApplicationEcsRelationshipRecord>().AsNoTracking()
+            .Where(value => value.StateSpaceId == stateSpaceId && kinds.Contains(value.QualifiedKind)
+                && (incoming ? sources.Contains(value.ToEntityId) : sources.Contains(value.FromEntityId)))
+            .Where(value => db.Set<ApplicationEcsEntityRecord>().Any(entity =>
+                entity.StateSpaceId == stateSpaceId
+                && entity.Id == (incoming ? value.FromEntityId : value.ToEntityId)
+                && entity.DeletedAtUtc == null))
+            .OrderBy(value => incoming ? value.ToEntityId : value.FromEntityId)
+            .ThenBy(value => value.QualifiedKind)
+            .ThenBy(value => incoming ? value.FromEntityId : value.ToEntityId)
+            .Take(maximumItems + 1)
+            .ToArrayAsync(cancellationToken);
+        if (rows.Length > maximumItems)
+            throw new InvalidOperationException("Relationship collection item bound exceeded.");
+        return Array.AsReadOnly(rows.Select(View).ToArray());
+    }
+
     public async Task<EcsRelationshipView> SetRelationshipAsync(
         string stateSpaceId,
         string fromEntityId,
@@ -292,12 +362,31 @@ public sealed class SqliteStateSpaceEdgeStore(
                 nameof(qualifiedKind));
     }
 
-    private StateSpaceView RequireStateSpace(string stateSpaceId) =>
-        stateSpaces.Get(stateSpaceId) ?? throw new InvalidOperationException("The state space is unknown.");
+    private StateSpaceView RequireStateSpace(string stateSpaceId)
+    {
+        if (db.Database.CurrentTransaction is not null
+            && transactionStateSpaces.TryGetValue(stateSpaceId, out var cached)) return cached;
+        var stateSpace = stateSpaces.Get(stateSpaceId)
+            ?? throw new InvalidOperationException("The state space is unknown.");
+        if (db.Database.CurrentTransaction is not null) transactionStateSpaces[stateSpaceId] = stateSpace;
+        else transactionStateSpaces.Clear();
+        return stateSpace;
+    }
+
+    private static void ValidateRegisteredKind(string qualifiedKind)
+    {
+        var separator = qualifiedKind.IndexOf('.');
+        if (separator <= 0)
+            throw new ArgumentException("A relationship kind must be a qualified ID.", nameof(qualifiedKind));
+        var ownerText = qualifiedKind[..separator];
+        var owner = ownerText == ApplicationIdentifier.System.Value
+            ? ApplicationIdentifier.System
+            : ApplicationIdentifier.Parse(ownerText);
+        ComponentTypeIdentifier.Validate(owner, qualifiedKind);
+    }
 
     private async Task RequireEntityAsync(string stateSpaceId, string entityId, CancellationToken cancellationToken)
     {
-        RequireStateSpace(stateSpaceId);
         if (!await db.Set<ApplicationEcsEntityRecord>().AsNoTracking().AnyAsync(value =>
                 value.StateSpaceId == stateSpaceId && value.Id == entityId && value.DeletedAtUtc == null,
                 cancellationToken))

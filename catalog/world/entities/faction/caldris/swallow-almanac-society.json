@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.swallow-almanac-society",
+  "name": "Swallow Almanac Society",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Swallow Almanac Society operates across cross-border. Observe migration, weather, insects, and crop patterns.",
+      "visibility": "public",
+      "goals": [
+        "Observe migration, weather, insects, and crop patterns."
+      ],
+      "methods": [
+        "Competing theories become personal feuds; collectors sometimes trespass."
+      ],
+      "assets": [
+        "Reach: cross-border"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "The Summer Without Swallows remains unexplained."
+      }
+    }
+  }
+}

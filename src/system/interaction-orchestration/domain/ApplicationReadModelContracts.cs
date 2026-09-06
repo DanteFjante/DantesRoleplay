@@ -9,7 +9,9 @@ public sealed record ApplicationReadModelRequest(
     string QualifiedQueryId,
     IReadOnlyDictionary<string, string> RoleBindings,
     MechanicAudienceContext? Audience = null,
-    string InputJson = "{}");
+    string InputJson = "{}",
+    string? Cursor = null,
+    int? PageSize = null);
 
 public sealed record ApplicationReadModelResult(
     string ApplicationId,

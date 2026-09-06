@@ -1,0 +1,24 @@
+{
+  "id": "faction.caldris.roadmenders-brotherhood",
+  "name": "Roadmenders' Brotherhood",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "Roadmenders' Brotherhood operates across cross-border. Keep roads, bridges, waymarks, and travellers safe.",
+      "visibility": "public",
+      "goals": [
+        "Keep roads, bridges, waymarks, and travellers safe."
+      ],
+      "methods": [
+        "Accepts quiet payments to prioritize some routes; local chapters vary wildly."
+      ],
+      "assets": [
+        "Reach: cross-border"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Waymarks rotate or vanish along three old Lantern Roads."
+      }
+    }
+  }
+}

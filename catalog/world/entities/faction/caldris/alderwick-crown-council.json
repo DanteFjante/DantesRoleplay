@@ -1,0 +1,28 @@
+{
+  "id": "faction.caldris.alderwick-crown-council",
+  "name": "Alderwick Crown Council",
+  "components": {
+    "game.core.world.faction": {
+      "status": "active",
+      "summary": "The council charged with preserving lawful succession and the kingdom's fragile peace while Queen Adela refuses to name an heir.",
+      "visibility": "public",
+      "goals": [
+        "Preserve lawful succession.",
+        "Prevent uncertainty from becoming war."
+      ],
+      "methods": [
+        "Committee review and sealed advice.",
+        "Selective disclosure intended to project confidence."
+      ],
+      "assets": [
+        "Royal clerks",
+        "Provincial correspondence",
+        "Emergency legal powers"
+      ],
+      "agenda": {
+        "state": "ready",
+        "summary": "Contain the toll scandal before it becomes evidence that the Crown has lost control of its own orders."
+      }
+    }
+  }
+}
