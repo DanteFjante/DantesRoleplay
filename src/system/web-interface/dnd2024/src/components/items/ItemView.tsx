@@ -5,6 +5,10 @@ const tabs: { id: ItemTab; label: string }[] = [
   { id: "details", label: "Details" }, { id: "recipes", label: "Known recipes" }, { id: "uses", label: "Known uses" },
 ];
 
+// Explicit reads replace their trigger buttons. Keep keyboard users at the
+// stable panel instead of letting focus fall back to the document body.
+export function focusItemPanel() { document.getElementById("item-panel")?.focus(); }
+
 // Only ConnectedItemView supplies identity from a validated, current response.
 export function ItemView({ tab, onTab, onBack, name, details, recipes, uses }: { tab: ItemTab; onTab: (tab: ItemTab) => void; onBack: () => void; name?: string; details?: ReactNode; recipes?: ReactNode; uses?: ReactNode }) {
   const heading = useRef<HTMLHeadingElement>(null);

@@ -3,7 +3,7 @@ import { useEffect, useState, useSyncExternalStore, type ComponentProps } from "
 import { ViewReadError } from "../../data/view-read-client";
 import type { ItemDetailsRequest, ItemDetailsResult, ItemViewClient } from "../../server/item-view-client";
 import { ItemDetails } from "./ItemDetails";
-import { ItemView } from "./ItemView";
+import { ItemView, focusItemPanel } from "./ItemView";
 import { ItemRecipes } from "./ItemRecipes";
 
 export function ConnectedItemView({ client, request, ...navigation }: ComponentProps<typeof ItemView> & {
@@ -39,7 +39,7 @@ export function ConnectedItemView({ client, request, ...navigation }: ComponentP
   const result = loaded?.key === key ? loaded.result : null;
   const data = result?.status === "ready" && result.expiresAt > Date.now() ? result.data : null;
   const state = result?.status ?? "loading";
-  const refresh = () => { client.reads.invalidate(request); setLoaded(null); setRetry((value) => value + 1); };
+  const refresh = () => { focusItemPanel(); client.reads.invalidate(request); setLoaded(null); setRetry((value) => value + 1); };
   return <ItemView {...navigation} name={data?.name} uses={<ItemUses key={key} client={client} request={request} active={navigation.tab === "uses"} />} recipes={<ItemRecipes key={key} client={client} request={request} active={navigation.tab === "recipes"} />} details={data ? <ItemDetails data={data} scopeKey={key} /> :
     <div role="status" aria-busy={state === "loading"}>
       <h2>{state === "loading" ? "Loading item details" : state === "stale" ? "Item details need a refresh" : state === "forbidden" ? "Item details unavailable in this perspective" : "Item details unavailable"}</h2>

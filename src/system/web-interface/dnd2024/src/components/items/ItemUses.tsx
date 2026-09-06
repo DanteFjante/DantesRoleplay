@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { focusItemPanel } from "./ItemView";
 import type { ItemDetailsRequest, ItemViewClient } from "../../server/item-view-client";
 import { usesKey, type ItemUsesRequest, type ItemUsesResult, type UseEntry, type UseGroup } from "../../server/item-uses-client";
 const availability: Record<UseEntry["availability"], string> = { "not-evaluated": "Availability not evaluated", available: "Requirements met", "requirements-not-met": "Requirements not met", "definition-incomplete": "Activity definition incomplete" };
@@ -45,8 +46,9 @@ export function ItemUses({ client, request, active }: { client: ItemViewClient; 
     return () => { live = false; clearTimeout(timer); client.uses.cancel(); };
   }, [client, key, active, retry]);
   const data = current?.status === "ready" && current.expiresAt > Date.now() ? current.data : null;
-  const refresh = () => { client.uses.invalidate(); setLoaded(null); setPage({ offset: 0, expectedSourceRevision: null }); setRetry(v => v + 1); };
+  const refresh = () => { focusItemPanel(); client.uses.invalidate(); setLoaded(null); setPage({ offset: 0, expectedSourceRevision: null }); setRetry(v => v + 1); };
   const next = () => { if (!data || current?.status !== "ready" || data.uses.nextOffset === null) return;
+    focusItemPanel();
     setPage({ offset: data.uses.nextOffset, expectedSourceRevision: current.sourceRevision }); };
   if (!data) return <div role="status" aria-busy={!current}><h2>{!current ? "Loading known uses" : current.status === "stale" || current.status === "ready" ? "Uses need a refresh" : "Uses unavailable"}</h2>
     <p>{!current ? "Reading uses known to the selected character…" : "Refresh to read the current uses. Previous use details are no longer shown."}</p>

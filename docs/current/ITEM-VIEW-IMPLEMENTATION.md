@@ -1,12 +1,12 @@
 # Item view implementation plan
 
-Version 1.9 · 5 September 2026
+Version 1.10 · 6 September 2026
 
 ## Purpose and delivery boundary
 
 Build a full item dossier that opens from a character's inventory. It has three tabs: **Details**, **Known recipes**, and **Known uses**. Recipes are split into **Makes this item** and **Uses this item**, as requested. The dossier describes the actual item instance and the knowledge of the selected character, while preserving the current character sheet, nested inventory, and DM and Player switch.
 
-This document specifies implementation work; it is not evidence that the published feature exists. IV00 contracts were approved by the user on 5 September 2026. IV01–IV08 are implemented within their documented supported boundaries, including IV06 association review and disposable fixtures; IV09–IV10 remain pending. Validation results and exclusions are recorded in the implementation commits. The concrete review packet is [item-view-contracts/README.md](item-view-contracts/README.md). The requested document does not itself authorize new runtime identities, catalog synchronization, or activation. Apply the repository working agreement at each concrete boundary, using authorization already present in the implementation task rather than repeatedly requesting it.
+This document specifies implementation work; it is not evidence that the published feature exists. IV00 contracts were approved by the user on 5 September 2026. IV01–IV09 are implemented within their documented supported boundaries, including IV06 association review and disposable fixtures; IV10 publication and live acceptance remain pending. Validation results and exclusions are recorded in the implementation commits. The concrete review packet is [item-view-contracts/README.md](item-view-contracts/README.md). The requested document does not itself authorize new runtime identities, catalog synchronization, or activation. Apply the repository working agreement at each concrete boundary, using authorization already present in the implementation task rather than repeatedly requesting it.
 
 The first release is read-only. Opening a tab must not equip, consume, identify, reveal, craft, advance time, or record a discovery. Use and Start crafting are explicitly deferred to follow-up slices after this release. Do not infer missing recipes, properties, or uses from prose or item names.
 
@@ -225,6 +225,10 @@ The tab loads on first visit, preserves its page across tab changes, clears reti
 **Rollback and stop:** Return Uses to an explicit unavailable state while retaining Details and Recipes. Stop if prose is being treated as executable mechanics or unknown properties become visible through costs, targets, or effect descriptions.
 
 ## IV09 Integrated correctness and accessibility
+
+**Status:** Implemented for prepublication integration. Mounted tests exercise the complete information hub with the actual item client: lazy tab reads, fresh cache reuse through Back/Forward, nested inventory disclosure/focus/scroll restoration, keyboard tabs, independent continuation, observer changes, unknown identity, invalidation, and late DM responses after returning to Player. Cross-tab .NET tests run all three authored projections through the authorized resolver and JavaScript engine against disposable SQLite data, checking Actor/GM Player-preview parity, independent observer knowledge, hidden identity and associations, rejected scope/possession, closed outputs, and effect-free reads. Existing focused media, availability, stale-response and projection suites retain their respective matrix coverage.
+
+Browser checks use the complete hub in `WEB/test/visual/item-integration-fixture.html` and measure Inventory plus each populated tab at 1600, 1100, 820, 390 and 320 CSS pixels. They cover bounded first visits, cached return, perspective switching, paging focus, and real-browser accessibility including contrast. Integration exposed and corrected focus loss when paging/refresh buttons disappear, an invalid label on a decorative navigation graphic, narrow recipe/use fact indentation, 320-pixel inventory overflow, and phone header crowding around the perspective controls. Ganji's real inventory, Actor-seat verification against reviewed published artifacts, and the published character-layout regression remain IV10 live acceptance gates; disposable evidence does not claim those gates are complete. No live catalog synchronization, page activation or gameplay write occurs in IV09.
 
 **Owner and files:** Integration owner; affected item and character tests, `WEB/test/mounted/`, focused .NET tests, release verification scripts only where item evidence must be added.
 

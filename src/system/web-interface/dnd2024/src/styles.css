@@ -6119,3 +6119,32 @@ button.campaign-link:hover {
 .view-loading p {
   margin-block: 0.5rem;
 }
+
+/* Keep the campaign selector and both perspective controls distinct on phones. */
+@media (max-width: 480px) {
+  .top-bar:has(.world-context) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding-block: 10px;
+  }
+
+  .top-bar:has(.world-context) .brand-lockup {
+    display: none;
+  }
+
+  .world-context__trigger {
+    min-height: 44px;
+  }
+
+  .perspective-switch button {
+    min-height: 44px;
+  }
+
+  .world-context__trigger > span:not(.world-context__chevron) {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .world-context__trigger strong {
+    max-width: 100%;
+  }
+}

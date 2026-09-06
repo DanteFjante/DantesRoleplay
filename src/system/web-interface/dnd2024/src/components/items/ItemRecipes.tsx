@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { focusItemPanel } from "./ItemView";
 import type { ItemDetailsRequest, ItemViewClient } from "../../server/item-view-client";
 import { recipesKey, type ItemRecipesRequest, type ItemRecipesResult, type RecipeEntry, type RecipeGroup } from "../../server/item-recipes-client";
 const availability: Record<RecipeEntry["availability"], string> = { "not-evaluated": "Availability not evaluated", available: "Requirements met", "requirements-not-met": "Requirements not met", "definition-incomplete": "Recipe definition incomplete" };
@@ -48,8 +49,9 @@ export function ItemRecipes({ client, request, active }: { client: ItemViewClien
     return () => { live = false; clearTimeout(timer); client.recipes.cancel(); };
   }, [client, key, active, retry]);
   const data = current?.status === "ready" && current.expiresAt > Date.now() ? current.data : null;
-  const refresh = () => { client.recipes.invalidate(); setLoaded(null); setPage({ makesOffset: 0, usesOffset: 0, expectedSourceRevision: null }); setRetry(v => v + 1); };
+  const refresh = () => { focusItemPanel(); client.recipes.invalidate(); setLoaded(null); setPage({ makesOffset: 0, usesOffset: 0, expectedSourceRevision: null }); setRetry(v => v + 1); };
   const next = (group: "makes" | "uses") => { if (!data || current?.status !== "ready" || data[group].nextOffset === null) return;
+    focusItemPanel();
     setPage({ ...page, [group === "makes" ? "makesOffset" : "usesOffset"]: data[group].nextOffset, expectedSourceRevision: current.sourceRevision }); };
   if (!data) return <div role="status" aria-busy={!current}><h2>{!current ? "Loading known recipes" : current.status === "stale" || current.status === "ready" ? "Recipes need a refresh" : "Recipes unavailable"}</h2>
     <p>{!current ? "Reading the selected character’s recipe knowledge…" : "Refresh to read the current recipes. Previous recipe details are no longer shown."}</p>

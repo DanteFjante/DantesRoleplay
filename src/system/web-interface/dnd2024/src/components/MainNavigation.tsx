@@ -41,7 +41,7 @@ export function MainNavigation({
         <span className="eyebrow">Current chapter</span>
         <strong>{chapter}</strong>
         <small>{progress}</small>
-        <div className="chapter-progress" aria-label={progress}>
+        <div className="chapter-progress" aria-hidden="true">
           <span style={{ width: "100%" }} />
         </div>
       </div>
