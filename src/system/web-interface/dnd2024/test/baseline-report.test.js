@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from 'node:fs';
 
-import { browserEvidence, gateEvidence, machineProfile, normalizeListener, requiredMarks,
+import { audienceViewFor, browserEvidence, gateEvidence, machineProfile, normalizeListener, requiredMarks,
   sameLivePage, sha256, summarizeRequests, summarizeSamples } from "../scripts/collect-baseline.mjs";
 import { initializeBrowserProbe, reportedPayloadBytes, requestMetadata } from "../scripts/sample-browser-baseline.mjs";
 import { JSDOM } from 'jsdom';
@@ -19,17 +19,27 @@ test("baseline percentiles always retain sample count, p50, and p95", () => {
 });
 
 const live = { status: 'available', listener: 'http://localhost:6217', activeRevision: 45,
-  activeEntityId: 'web-page:dnd2024', pageContentHash: 'page', bundleSha256: 'bundle', runtimeFingerprint: 'runtime' };
+  activeEntityId: 'web-page:dnd2024', pageContentHash: 'page', bundleSha256: 'bundle', runtimeFingerprint: 'runtime',
+  audience: { role: 'game-master', actorId: null } };
 function samples() {
   return { listener: live.listener, browser: { name: 'Chrome', version: '152' }, machine: machineProfile(),
     samplerSha256: sha256(readFileSync(new URL('../scripts/sample-browser-baseline.mjs', import.meta.url))),
-    readOnly: true, liveBefore: { ...live }, liveAfter: { ...live },
+    readOnly: true, perspective: 'player', audienceView: 'gm-player-preview',
+    liveBefore: { ...live }, liveAfter: { ...live },
     runs: ['cold', 'warm'].flatMap(cacheState => Array.from({ length: 20 }, (_, index) => ({
       id: cacheState + index, cacheState, status: 'passed',
       requests: [], requestCount: 0, payloadBytes: 0, browserCacheHits: 0,
       marks: Object.fromEntries(requiredMarks.map(name => [name, index + 1])),
     }))) };
 }
+
+test('baseline distinguishes an actor, a GM Player preview, and a GM view', () => {
+  assert.equal(audienceViewFor({ role: 'game-master', actorId: null }, 'player'), 'gm-player-preview');
+  assert.equal(audienceViewFor({ role: 'game-master', actorId: null }, 'dm'), 'game-master');
+  assert.equal(audienceViewFor({ role: 'actor', actorId: 'actor.fixture' }, 'player'), 'actor');
+  assert.throws(() => audienceViewFor({ role: 'actor', actorId: 'actor.fixture' }, 'dm'));
+  assert.throws(() => audienceViewFor({ role: 'actor', actorId: null }, 'player'));
+});
 
 test('baseline requires 20 complete samples per metric, not merely 20 rows', () => {
   const source = samples();
@@ -80,6 +90,7 @@ test('baseline rejects another listener, page, runtime, audience, browser or mac
     value => { value.machine.cpu = 'another-machine'; },
     value => { value.readOnly = false; },
     value => { value.samplerSha256 = 'changed'; },
+    value => { value.audienceView = 'actor'; },
   ]) {
     const source = samples(); mutate(source);
     assert.equal(browserEvidence(source, live).status, 'invalid');
