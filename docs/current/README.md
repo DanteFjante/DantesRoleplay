@@ -10,7 +10,7 @@ This directory is the maintained entry point for humans and LLMs working on Dant
 | Change code, tests, schemas, or catalog content | [DEVELOPMENT.md](DEVELOPMENT.md) |
 | Compare, validate, export, or import catalog/database records | [CATALOG.md](CATALOG.md) |
 | Run the server, connect a client, or verify the protocol | [OPERATIONS.md](OPERATIONS.md) |
-| Implement the planned item dossier and its three tabs | [ITEM-VIEW-IMPLEMENTATION.md](ITEM-VIEW-IMPLEMENTATION.md) |
+| Inspect the delivered item dossier, supported boundaries and closed IV00–IV10 release | [ITEM-VIEW-IMPLEMENTATION.md](ITEM-VIEW-IMPLEMENTATION.md) |
 
 Do not preload every guide. `docs/world/` contains world-specific working material and media, including the unfinished Thalorien workspace; `docs/pdfs/` contains source references. Neither is general implementation context. Implementation history is available in version control and should not be recreated as permanent plans or receipts by default.
 

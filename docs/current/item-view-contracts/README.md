@@ -1,6 +1,6 @@
 # IV00 item-view contract review
 
-Status: **approved on 5 September 2026; IV01–IV08 implemented within the supported boundaries below**. These draft wrappers remain review artifacts; the actual Details, Recipes and Uses queries/mechanics live under `catalog/applications/dnd2024`. This packet establishes neither catalog activation nor published-feature acceptance. These documentation files must not be imported.
+Status: **approved on 5 September 2026; IV00–IV10 delivered and the read-only release closed on 6 September 2026**. These draft wrappers remain review artifacts; the actual Details, Recipes and Uses queries/mechanics live under `catalog/applications/dnd2024`. Publication and acceptance are recorded in [the closed implementation document](../ITEM-VIEW-IMPLEMENTATION.md) and commit `0f20cafe`; this packet alone is not release evidence. The supported boundaries below remain applicable. These documentation files must not be imported.
 
 ## IV08 supported boundary
 

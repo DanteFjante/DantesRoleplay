@@ -1,16 +1,33 @@
 # Item view implementation plan
 
-Version 1.10 · 6 September 2026
+Version 1.11 · 6 September 2026
+
+**Status: Closed — IV00–IV10 delivered and accepted on 6 September 2026.** No implementation or publication slice remains open in this read-only release. F01/F02 below are unimplemented follow-up proposals outside this closure.
 
 ## Purpose and delivery boundary
 
 Build a full item dossier that opens from a character's inventory. It has three tabs: **Details**, **Known recipes**, and **Known uses**. Recipes are split into **Makes this item** and **Uses this item**, as requested. The dossier describes the actual item instance and the knowledge of the selected character, while preserving the current character sheet, nested inventory, and DM and Player switch.
 
-This document specifies implementation work; it is not evidence that the published feature exists. IV00 contracts were approved by the user on 5 September 2026. IV01–IV09 are implemented within their documented supported boundaries, including IV06 association review and disposable fixtures; IV10 publication and live acceptance remain pending. Validation results and exclusions are recorded in the implementation commits. The concrete review packet is [item-view-contracts/README.md](item-view-contracts/README.md). The requested document does not itself authorize new runtime identities, catalog synchronization, or activation. Apply the repository working agreement at each concrete boundary, using authorization already present in the implementation task rather than repeatedly requesting it.
+IV00–IV10 are complete within the supported boundaries recorded below. IV00 contracts were approved on 5 September 2026; IV10 published and verified the read-only item view on 6 September 2026. Commit `0f20cafe` records the release receipt, including signed live and isolated Actor verification, page revision 49, catalog activation 51 and compatible state-space binding revision 27. The live listener, shared GM seat and all eight readiness checks were rechecked during document closeout. Validation results and exclusions are recorded in the implementation commits. The concrete review packet is [item-view-contracts/README.md](item-view-contracts/README.md). This document records the delivered boundary; it is not authorization for unrelated runtime changes.
 
 The first release is read-only. Opening a tab must not equip, consume, identify, reveal, craft, advance time, or record a discovery. Use and Start crafting are explicitly deferred to follow-up slices after this release. Do not infer missing recipes, properties, or uses from prose or item names.
 
-The Markdown document is the execution source. Read `AGENTS.md`, `docs/current/README.md`, and the relevant current topic guide before executing a slice. Paths below are relative to the repository root; aliases are defined in the owner map.
+This Markdown document is the closed release record. The original work, completion criteria and per-slice notes below are retained for traceability; references to later slices or publication being pending describe the boundary at that slice's delivery and are superseded by IV10. New work should use the maintained owners and current guides rather than rerunning this plan. Paths below are relative to the repository root; aliases are defined in the owner map.
+
+## Closeout
+
+| Slices | Final disposition |
+| --- | --- |
+| IV00 | Contracts and ownership approved. |
+| IV01–IV03 | Authorized observer, Details projection and safe media implemented and included in the published release. |
+| IV04–IV05 | Inventory navigation and connected Details implemented and included in the published release. |
+| IV06–IV08 | Reviewed recipe associations, Known recipes and Known uses implemented within the documented supported boundaries. |
+| IV09 | Integrated correctness, disclosure boundaries, navigation and accessibility verified. |
+| IV10 | Runtime publication and live acceptance complete; receipt in commit `0f20cafe`. |
+
+Acceptance evidence from IV10 comprises 1,919 passing .NET tests, 309 passing web tests, a zero-warning solution build, signed verification of all 32 served files for the live GM and isolated Actor hosts, and the recorded browser matrix. Closeout rechecked live page 49, catalog activation 51, the shared GM seat and all eight readiness checks. The tests and browser matrix were not rerun for this documentation-only closeout.
+
+Supported content limitations remain explicit: unknown identity stays undisclosed, unsupported activity/recipe details remain partial or unavailable, and absent descriptions or images are not invented. These accepted limits do not represent unfinished IV slices. Item execution and crafting are not part of the accepted read-only release.
 
 ## Product decisions
 
@@ -30,7 +47,7 @@ The item instance is primary. Ganji's quarterstaff may differ from another quart
 
 ## Verified starting points
 
-The following observations came from source inspection on 5 September 2026. Recheck the specific owners before implementation because this checkout contains concurrent work.
+The following historical baseline came from source inspection on 5 September 2026, before IV00–IV10. Statements about missing item UI or proposed contracts describe that starting point, not the completed release. The slice records and IV10 acceptance below describe delivery.
 
 - `InventoryTree.tsx` renders nested inventory with native disclosures and item identity content. It does not currently provide an item dossier action.
 - `CharacterInventoryItemV2` contains instance and definition identities, quantity, containment position, depth, child count, equipment slots, and optional media. The character dossier includes definition summaries and source references, not a complete item view.
@@ -302,7 +319,9 @@ Catalog validation uses a disposable database. Full feature acceptance additiona
 
 Use `npm run release:manifest` and `npm run release:verify-live` with the actual arguments and signing/evidence requirements in `docs/current/DEVELOPMENT.md` and the maintained scripts. Do not invent a successful release signature or use an old browser observation as evidence for a new asset hash.
 
-## Deferred follow up slices
+## Follow-up proposals outside this closed release
+
+**Disposition: Deferred and not implemented.** F01/F02 are separate action-feature proposals, not remaining acceptance gates for IV00–IV10. Closing this document does not mark them complete or authorize live gameplay actions. Their executable bindings, supported records and acceptance boundaries must be established in the follow-up work.
 
 **F01 Use an item:** After IV10, design an explicit action preview and confirmation flow through the existing item-activity owner. Revalidate actor, item possession, knowledge, targets, costs and source revisions at commit time. Test idempotency, stale state, cancellation and rollback. No new rule execution in the UI.
 
@@ -310,6 +329,6 @@ Use `npm run release:manifest` and `npm run release:verify-live` with the actual
 
 **Excluded from the first release:** Shops, loot transfers, trade, item editing, recipe authoring UI, automatic identification, new crafting rules, autogenerated discoveries, and wholesale rewriting of historical content. These need separate scope and acceptance boundaries.
 
-## Slice completion checklist
+## Original slice completion checklist
 
 For each slice, report in the implementation task: the delivered behavior, exact files/owners changed, checks with exit results, deliberate exclusions, live synchronization performed or not performed, and the next dependency now unblocked. Use a coherent commit when appropriate. Do not mark a slice complete because its UI looks plausible, a fixture is populated, or source builds. IV10 is complete only when the actual published item view passes the live matrix.
