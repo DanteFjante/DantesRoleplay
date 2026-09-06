@@ -5,11 +5,24 @@ using DantesRoleplay.Interactions;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.MCPServer.Mcp;
+using DantesRoleplay.Projections;
 
 namespace DantesRoleplay.MCPServer;
 
 public static class ApplicationReadModelWebEndpoint
 {
+    public sealed record RelationshipEditBody(
+        string Path,
+        string Operation,
+        string TargetEntityId,
+        int ExpectedRevision);
+
+    public sealed record WriteBody(
+        string IdempotencyKey,
+        string ExpectedSourceRevisionFingerprint,
+        JsonElement Changes,
+        IReadOnlyList<RelationshipEditBody>? RelationshipEdits);
+
     public static async Task<IResult> ReadAsync(
         string applicationId,
         string stateSpaceId,
@@ -164,6 +177,108 @@ public static class ApplicationReadModelWebEndpoint
         catch (Exception exception) when (exception is ArgumentException or KeyNotFoundException or JsonException)
         { return SafeError("READ_MODEL_UNAVAILABLE"); }
         catch (Exception) when (inputAware) { return SafeError("READ_MODEL_UNAVAILABLE"); }
+    }
+
+    public static async Task<IResult> WriteAsync(
+        string applicationId,
+        string stateSpaceId,
+        string entityId,
+        string qualifiedQueryId,
+        WriteBody body,
+        HttpContext context,
+        ILocalKnowledgeSeatProvider seats,
+        IApplicationObjectWriteService writes,
+        IPublicApplicationCatalogProvider catalogs,
+        IAuthorizedKnowledgeAudiencePolicy audiences,
+        IKnowledgeApplicationBindingResolver bindings,
+        IKnowledgeActorParticipationVerifier participation,
+        CancellationToken cancellationToken)
+    {
+        context.Response.Headers.CacheControl = "private, no-store";
+        var seat = seats.Current();
+        if (!Authorized(seat, applicationId, entityId, out var application) ||
+            seat.Role != KnowledgeAudienceRole.GameMaster)
+            return SafeWriteError("OBJECT_WRITE_FORBIDDEN");
+
+        try
+        {
+            var authorization = await SystemAudienceContextHandler.ResolveAsync(
+                seats, audiences, bindings, participation, seat.CampaignId, cancellationToken);
+            if (authorization.Error is not null)
+                return SafeWriteError("OBJECT_WRITE_FORBIDDEN");
+            var binding = await bindings.ResolveAsync(seat.CampaignId, cancellationToken);
+            if (binding is null || binding.ApplicationId != applicationId ||
+                binding.StateSpaceId != stateSpaceId || binding.CampaignEntityId != seat.CampaignId)
+                return SafeWriteError("OBJECT_WRITE_FORBIDDEN");
+            if (!catalogs.TryGet(application!, out var catalog))
+                return SafeWriteError("OBJECT_WRITE_UNAVAILABLE");
+            var query = ApplicationQueryContract.Parse(catalog.Inspect(new(
+                application!, application!.Value, qualifiedQueryId)).ContentJson, application!);
+            if (query.Id != qualifiedQueryId || query.Status != "active" || !query.IsObjectProjection ||
+                query.ObjectCollectionId is null)
+                return SafeWriteError("OBJECT_WRITE_UNKNOWN");
+            var roleBindings = ResolveRoleBindings(catalogs, application!, qualifiedQueryId, entityId, seat);
+            if (roleBindings is null || !roleBindings.Values.Contains(entityId, StringComparer.Ordinal))
+                return SafeWriteError("OBJECT_WRITE_FORBIDDEN");
+            if (body is null || body.Changes.ValueKind != JsonValueKind.Object ||
+                body.RelationshipEdits?.Any(value => value is null) == true)
+                return SafeWriteError("OBJECT_WRITE_REQUEST_INVALID");
+
+            var result = await writes.WriteAsync(new(
+                stateSpaceId,
+                application!,
+                new(query.ProjectionQualifiedId, query.ProjectionVersion, query.ProjectionContentHash),
+                roleBindings,
+                query.ObjectCollectionId,
+                "dm",
+                body.IdempotencyKey,
+                body.ExpectedSourceRevisionFingerprint,
+                body.Changes.GetRawText(),
+                body.RelationshipEdits?.Select(value => new ApplicationObjectRelationshipEdit(
+                    value.Path, value.Operation, value.TargetEntityId, value.ExpectedRevision)).ToArray() ?? []),
+                cancellationToken);
+            using var data = JsonDocument.Parse(result.OutputJson);
+            return Results.Json(new
+            {
+                applicationId = application.Value,
+                stateSpaceId,
+                qualifiedQueryId,
+                result.Applied,
+                result.Replayed,
+                result.NoOp,
+                result.OperationId,
+                result.SourceRevisionFingerprint,
+                data = data.RootElement.Clone()
+            });
+        }
+        catch (ApplicationObjectWriteException exception)
+        {
+            return SafeWriteError(exception.Code);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch (KeyNotFoundException)
+        {
+            return SafeWriteError("OBJECT_WRITE_UNKNOWN");
+        }
+        catch (Exception exception) when (exception is ArgumentException or JsonException)
+        {
+            return SafeWriteError("OBJECT_WRITE_UNAVAILABLE");
+        }
+    }
+
+    private static IResult SafeWriteError(string code)
+    {
+        var (status, message) = code switch
+        {
+            "OBJECT_WRITE_REQUEST_INVALID" => (400, "The edit request is invalid."),
+            "OBJECT_WRITE_FORBIDDEN" => (403, "This object is not writable by the current audience."),
+            "OBJECT_WRITE_UNKNOWN" => (404, "The writable object is unavailable."),
+            "OBJECT_WRITE_SOURCE_STALE" => (409, "The object changed. Refresh before saving."),
+            "OBJECT_WRITE_IDEMPOTENCY_CONFLICT" => (409, "The edit key is already bound to another request."),
+            "OBJECT_WRITE_REJECTED" => (422, "The declared object edit was rejected."),
+            _ => (503, "The writable object is temporarily unavailable.")
+        };
+        return Results.Json(new { code, message }, statusCode: status);
     }
 
     private static IResult SafeError(string code)

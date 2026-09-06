@@ -1,6 +1,6 @@
 {
   "id": "dnd2024.object.campaign-summary",
-  "version": 2,
+  "version": 1,
   "schema": {
     "type": "object",
     "additionalProperties": false,
@@ -85,19 +85,5 @@
     }
   ],
   "limits": { "traversalDepth": 2, "itemCount": 20, "outputBytes": 65536, "sqlQueries": 12 },
-  "access": { "read": ["player", "dm"], "write": ["dm"] },
-  "writes": {
-    "schema": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "premise": { "type": "string", "minLength": 1, "maxLength": 1000 }
-      }
-    },
-    "capabilities": ["set", "relationship.add", "relationship.remove"],
-    "paths": [
-      { "path": "/premise", "operations": ["set"] },
-      { "path": "/party", "operations": ["relationship.add", "relationship.remove"] }
-    ]
-  }
+  "access": { "read": ["player", "dm"], "write": [] }
 }

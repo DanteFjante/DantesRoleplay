@@ -206,6 +206,11 @@ app.MapGet(
         ApplicationReadModelWebEndpoint.ReadAsync)
     .AddEndpointFilter<WebInterfaceSecurityFilter>()
     .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
+app.MapPatch(
+        "/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/read-models/{qualifiedQueryId}",
+        ApplicationReadModelWebEndpoint.WriteAsync)
+    .AddEndpointFilter<WebInterfaceSecurityFilter>()
+    .RequireRateLimiting(WebInterfaceSecurity.UploadRateLimitPolicy);
 app.MapGet(
         "/api/applications/{applicationId}/campaigns/{campaignId}/chronology",
         WorldChronologyWebEndpoint.ReadAsync)

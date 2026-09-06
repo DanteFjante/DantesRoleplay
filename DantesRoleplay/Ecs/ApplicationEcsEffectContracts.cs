@@ -54,6 +54,7 @@ public sealed record ApplicationEcsEffectBatch
     public string Intent { get; init; } = string.Empty;
     public IReadOnlyList<string> ProceduresUsed { get; init; } = [];
     public ApplicationEcsExecutionIdentity? ExecutionIdentity { get; init; }
+    public IReadOnlyList<ApplicationEcsComponentExpectation> ComponentExpectations { get; init; } = [];
     public IReadOnlyList<ApplicationEcsContainmentExpectation> ContainmentExpectations { get; init; } = [];
     public IReadOnlyList<ApplicationEcsContainmentEdgeExpectation> ContainmentEdgeExpectations { get; init; } = [];
     public IReadOnlyList<DeclaredEvent> DeclaredEvents { get; init; } = [];
@@ -67,6 +68,12 @@ public sealed record ApplicationEcsEffectBatch
     public long? Seed { get; init; }
     public string ProjectionJson { get; init; } = string.Empty;
 }
+
+/// <summary>Host-only exact component evidence that must still match inside the effect transaction.</summary>
+public sealed record ApplicationEcsComponentExpectation(
+    string EntityId,
+    EcsComponentReference ComponentType,
+    int Revision);
 
 /// <summary>Host-only direct-roster snapshot that must still match inside the effect transaction.</summary>
 public sealed record ApplicationEcsContainmentExpectation(
@@ -151,6 +158,7 @@ public static class ApplicationEcsEffectValidation
     // descendants and its root. Keep transaction checks closed without rejecting a valid maximal
     // nested projection solely because structural concurrency evidence was attached.
     public const int MaximumContainmentExpectations = 32 * 101;
+    public const int MaximumComponentExpectations = 256;
     public const int MaximumContentsPerExpectation = 100;
     public const int MaximumContainmentEdgeExpectations = 32 * 101;
     public const int MaximumDeclaredEvents = 64;
@@ -226,6 +234,29 @@ public static class ApplicationEcsEffectValidation
                         problems.Add(new(-1, "CONTAINMENT_EXPECTATION_INVALID",
                             $"Containment snapshot {expectationIndex} entry {contentIndex} is invalid or duplicated."));
                 }
+            }
+        }
+        if (batch.ComponentExpectations is null)
+            problems.Add(new(-1, "COMPONENT_EXPECTATIONS_REQUIRED",
+                "The component-expectation list is required."));
+        else if (batch.ComponentExpectations.Count > MaximumComponentExpectations)
+            problems.Add(new(-1, "COMPONENT_EXPECTATION_LIMIT",
+                $"At most {MaximumComponentExpectations} exact components may be checked."));
+        else
+        {
+            var components = new HashSet<(string EntityId, string TypeId)>(EqualityComparer<(string, string)>.Default);
+            for (var expectationIndex = 0; expectationIndex < batch.ComponentExpectations.Count; expectationIndex++)
+            {
+                var expectation = batch.ComponentExpectations[expectationIndex];
+                var validType = expectation?.ComponentType is not null;
+                try { expectation?.ComponentType?.Validate(); }
+                catch (ArgumentException) { validType = false; }
+                if (expectation is null || string.IsNullOrWhiteSpace(expectation.EntityId)
+                    || expectation.EntityId.Length > 200 || !validType || expectation.Revision < 1
+                    || !components.Add((expectation.EntityId,
+                        expectation.ComponentType?.QualifiedTypeId ?? string.Empty)))
+                    problems.Add(new(-1, "COMPONENT_EXPECTATION_INVALID",
+                        $"Exact component {expectationIndex} is invalid or duplicated."));
             }
         }
         if (batch.ContainmentEdgeExpectations is null)

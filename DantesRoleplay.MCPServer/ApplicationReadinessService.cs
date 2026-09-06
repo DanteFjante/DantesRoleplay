@@ -7,6 +7,7 @@ using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.MCPServer.Mcp;
+using DantesRoleplay.Projections;
 using DantesRoleplay.Web.Pages;
 using DantesRoleplay.Web.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -54,7 +55,8 @@ public sealed class ApplicationReadinessService(
     ILocalKnowledgeSeatProvider seats,
     IAuthorizedKnowledgeAudiencePolicy audiences,
     IKnowledgeApplicationBindingResolver bindings,
-    IKnowledgeActorParticipationVerifier participation)
+    IKnowledgeActorParticipationVerifier participation,
+    IProjectionDefinitionRegistry? projections = null)
 {
     public async Task<ApplicationReadinessReport> ReadAsync(
         string applicationId,
@@ -149,7 +151,7 @@ public sealed class ApplicationReadinessService(
                     ? "No extensions are active."
                     : $"{activation.Extensions.Count} extension winner set(s) are active."));
 
-        checks.Add(CheckQueries(application, catalog));
+        checks.Add(CheckQueries(application, catalog, projections));
         await CheckPageAsync(checks, application, cancellationToken);
         await CheckAudienceAsync(checks, application, cancellationToken);
 
@@ -185,7 +187,8 @@ public sealed class ApplicationReadinessService(
 
     private static ApplicationReadinessCheck CheckQueries(
         ApplicationIdentifier application,
-        ICatalogNavigator? catalog)
+        ICatalogNavigator? catalog,
+        IProjectionDefinitionRegistry? projections)
     {
         if (catalog is null)
             return Failed("query-callability", "APPLICATION_QUERY_CATALOG_UNAVAILABLE",
@@ -214,6 +217,16 @@ public sealed class ApplicationReadinessService(
                 var queryRecord = catalog.Inspect(new(
                     application, hit.Record.Collection, hit.Record.QualifiedId));
                 var query = ApplicationQueryContract.Parse(queryRecord.ContentJson, application);
+                if (query.IsObjectProjection)
+                {
+                    var objectDefinition = projections?.Get(query.ProjectionQualifiedId, query.ProjectionVersion);
+                    if (query.Status != "active" || objectDefinition is null || objectDefinition.Owner != application ||
+                        objectDefinition.ContentHash != query.ProjectionContentHash || objectDefinition.ObjectContract is null)
+                        return Failed("query-callability", "APPLICATION_QUERY_PROJECTION_STALE",
+                            $"Query '{query.Id}' does not match its exact registered object projection.",
+                            "repair-query", "Restore the declared object projection version and fingerprint, then reactivate the catalog.");
+                    continue;
+                }
                 var projection = catalog.Inspect(new(
                     application, queryRecord.Summary.Collection, query.ProjectionQualifiedId));
                 if (query.Status != "active" || projection.Summary.Kind != "mechanic" ||

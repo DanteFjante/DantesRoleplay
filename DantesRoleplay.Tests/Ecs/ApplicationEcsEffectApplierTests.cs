@@ -485,6 +485,54 @@ public sealed class ApplicationEcsEffectApplierTests : IDisposable
         Assert.Null(await setup.Store.GetEntityAsync("effect-space", "must-not-exist-exact"));
     }
 
+    [Fact]
+    public async Task Stale_exact_component_rejects_the_whole_effect_transaction()
+    {
+        var setup = Setup();
+        await SeedAsync(setup);
+        _ = await setup.Store.SetComponentAsync(new(
+            "effect-space", "fixture", setup.Type, "{\"value\":2}", 1));
+
+        var result = await setup.Applier.ApplyAsync(new()
+        {
+            StateSpaceId = "effect-space",
+            Effects = [new() { Type = ApplicationEcsEffectType.EntityCreate, EntityId = "must-not-exist-component", Name = "Rejected" }],
+            ComponentExpectations = [new("fixture", setup.Type, 1)]
+        });
+
+        Assert.False(result.Applied);
+        Assert.Equal("REVISION_STALE", Assert.Single(result.Problems).Code);
+        Assert.Null(await setup.Store.GetEntityAsync("effect-space", "must-not-exist-component"));
+    }
+
+    [Fact]
+    public void Exact_component_expectation_shape_is_bounded_and_closed()
+    {
+        var setup = Setup();
+        var tooMany = Enumerable.Range(0, ApplicationEcsEffectValidation.MaximumComponentExpectations + 1)
+            .Select(index => new ApplicationEcsComponentExpectation("entity-" + index, setup.Type, 1))
+            .ToArray();
+        var excessive = ApplicationEcsEffectValidation.Validate(new()
+        {
+            StateSpaceId = "effect-space",
+            Effects = [],
+            ComponentExpectations = tooMany
+        });
+        Assert.Contains(excessive, problem => problem.Code == "COMPONENT_EXPECTATION_LIMIT");
+
+        var malformed = ApplicationEcsEffectValidation.Validate(new()
+        {
+            StateSpaceId = "effect-space",
+            Effects = [],
+            ComponentExpectations =
+            [
+                new("fixture", setup.Type, 0),
+                new("fixture", setup.Type, 1)
+            ]
+        });
+        Assert.Contains(malformed, problem => problem.Code == "COMPONENT_EXPECTATION_INVALID");
+    }
+
     private SetupResult Setup()
     {
         var db = _fixture.CreateContext(); var app = ApplicationIdentifier.Parse("fixture-effects");

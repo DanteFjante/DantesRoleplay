@@ -8,8 +8,8 @@
   "executor": "object-projection",
   "object": {
     "qualifiedId": "dnd2024.object.campaign-summary",
-    "version": 1,
-    "contentFingerprint": "3AE6FD831B4319BA96E15A1501896549030C80FDBFA49D5503D0568DB9B61DEB"
+    "version": 2,
+    "contentFingerprint": "2C0836E9FF114C4F672D793012F2D0CD258D0A99B9DCFB5A892D63F5146011BF"
   },
   "collection": "party",
   "outputSchema": {

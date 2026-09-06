@@ -18,6 +18,7 @@ internal static class ProjectionMaterializationComponentRegistration
         services.AddScoped<IProjectionSourceSnapshotReader, SqliteProjectionSourceSnapshotReader>();
         services.AddScoped<IProjectionMaterializer, ProjectionMaterializer>();
         services.AddScoped<IProjectionCollectionMaterializer, ProjectionCollectionMaterializer>();
+        services.AddScoped<IApplicationObjectWriteService, ApplicationObjectWriteService>();
         services.AddScoped<IProjectionImpactSnapshotReader, SqliteProjectionImpactSnapshotReader>();
         services.AddScoped<IProjectionImpactService, ProjectionImpactService>();
         return services;

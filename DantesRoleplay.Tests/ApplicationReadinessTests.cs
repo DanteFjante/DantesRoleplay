@@ -5,6 +5,7 @@ using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.MCPServer.Mcp;
+using DantesRoleplay.Projections;
 using DantesRoleplay.Web.Pages;
 using DantesRoleplay.Web.Persistence;
 
@@ -97,6 +98,34 @@ public sealed class ApplicationReadinessTests : IDisposable
     }
 
     [Fact]
+    public async Task Object_projection_query_resolves_its_exact_registered_definition()
+    {
+        await using var db = fixture.CreateContext();
+        var application = ApplicationIdentifier.Parse("fixture-app");
+        var registry = new InMemoryApplicationRegistry();
+        registry.Register(new(application, "Fixture", "Fixture application.", []));
+        var projections = new ObjectProjectionRegistry(application);
+        var service = new ApplicationReadinessService(
+            db,
+            registry,
+            new Activation(Manifest(application)),
+            new Catalogs(available: true, new ObjectQueryNavigator()),
+            new Publications(),
+            new Pages(activeRevision: 2, latestRevision: 2),
+            new Seats(),
+            new Audience(allowed: true),
+            new Bindings(Binding()),
+            new Participation(),
+            projections);
+
+        var report = await service.ReadAsync(application.Value);
+
+        Assert.Equal("APPLICATION_QUERIES_CALLABLE",
+            report.Checks.Single(value => value.Name == "query-callability").Code);
+        Assert.Equal(1, projections.GetCalls);
+    }
+
+    [Fact]
     public void Mcp_and_direct_ai_catalogs_publish_the_readiness_contract()
     {
         var descriptor = Assert.Single(McpVerbCatalog.QueryKinds,
@@ -168,9 +197,9 @@ public sealed class ApplicationReadinessTests : IDisposable
         public ActiveApplicationManifest? Current(ApplicationIdentifier applicationId) => manifest;
     }
 
-    private sealed class Catalogs(bool available) : IPublicApplicationCatalogProvider, IPublicApplicationCatalogDiagnostics
+    private sealed class Catalogs(bool available, ICatalogNavigator? supplied = null) : IPublicApplicationCatalogProvider, IPublicApplicationCatalogDiagnostics
     {
-        private readonly ICatalogNavigator navigator = new QueryNavigator();
+        private readonly ICatalogNavigator navigator = supplied ?? new QueryNavigator();
 
         public bool TryGet(ApplicationIdentifier applicationId, out ICatalogNavigator value)
         {
@@ -180,6 +209,69 @@ public sealed class ApplicationReadinessTests : IDisposable
 
         public PublicApplicationCatalogFailure? LastFailure(ApplicationIdentifier applicationId) =>
             available ? null : new("CATALOG_FINGERPRINT_MISMATCH", "A retained catalog file changed after activation.");
+    }
+
+    private sealed class ObjectQueryNavigator : ICatalogNavigator
+    {
+        private static readonly CatalogRecordSummary Query = new(
+            "fixture-app", "query", "fixture-app.query.fixture", "Fixture query", "Fixture query.", "fixture-app",
+            "active", 1, Hash('1'), "fixture", "queries/fixture.json");
+
+        public CatalogSearchResult Search(CatalogSearchRequest request) => new([new(Query, 1)], null);
+
+        public CatalogRecordView Inspect(CatalogRecordRequest request) => request.QualifiedId == Query.QualifiedId
+            ? new(Query, JsonSerializer.Serialize(new
+            {
+                id = Query.QualifiedId,
+                category = "fixture.summary",
+                name = Query.Name,
+                description = Query.Description,
+                matches = new[] { "show fixture" },
+                roles = new { subject = "The authorized subject." },
+                executor = "object-projection",
+                @object = new
+                {
+                    qualifiedId = "fixture-app.object.fixture",
+                    version = 1,
+                    contentFingerprint = Hash('2')
+                },
+                collection = "items",
+                outputSchema = new { type = "object", additionalProperties = false },
+                exposure = "model-visible",
+                status = "active"
+            }))
+            : throw new KeyNotFoundException();
+
+        public IReadOnlyList<CatalogCollectionSummary> ListCollections(ApplicationIdentifier applicationId) => [];
+        public CatalogBrowseResult Browse(CatalogBrowseRequest request) => throw new NotSupportedException();
+        public EffectiveApplicationContentResult EffectiveContent(EffectiveApplicationContentRequest request) =>
+            throw new NotSupportedException();
+        public ReadableRulesResult ReadableRules(ReadableRulesRequest request) => throw new NotSupportedException();
+    }
+
+    private sealed class ObjectProjectionRegistry(ApplicationIdentifier owner) : IProjectionDefinitionRegistry
+    {
+        public int GetCalls { get; private set; }
+
+        public RegisteredProjectionDefinition Define(ProjectionDefinitionRequest definition) =>
+            throw new NotSupportedException();
+
+        public RegisteredProjectionDefinition? Get(string qualifiedId, int version)
+        {
+            GetCalls++;
+            if (qualifiedId != "fixture-app.object.fixture" || version != 1) return null;
+            return new(owner, qualifiedId, version, "projection/v1", "{}", Hash('3'), Hash('2'), [], [], [],
+                DateTime.UtcNow, new(
+                    RegisteredApplicationObjectContract.ContractProfileId,
+                    [], [], [], [], [],
+                    new(1, 1, 1, 1),
+                    new([], []),
+                    null,
+                    []));
+        }
+
+        public ProjectionImpactGraph GetImpactGraph(ApplicationIdentifier application) =>
+            throw new NotSupportedException();
     }
 
     private sealed class QueryNavigator : ICatalogNavigator

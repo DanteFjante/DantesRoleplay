@@ -86,7 +86,7 @@ public static class ApplicationCapabilityCatalogValidator
         foreach (var (qualifiedId, mechanic) in mechanics.OrderBy(value => value.Key, StringComparer.Ordinal))
             ValidateMechanic(applicationId, qualifiedId, mechanic, mechanics, schemas, issues, authoredBoundary);
 
-        var objects = new Dictionary<string, ProjectionDefinitionRequest>(StringComparer.Ordinal);
+        var objects = new Dictionary<(string QualifiedId, int Version), ProjectionDefinitionRequest>();
         var objectsRoot = Path.Combine(applicationDirectory, "objects");
         if (Directory.Exists(objectsRoot))
         {
@@ -96,9 +96,10 @@ public static class ApplicationCapabilityCatalogValidator
                 try
                 {
                     var definition = ApplicationObjectDocument.Parse(File.ReadAllText(path), applicationId);
-                    if (!objects.TryAdd(definition.QualifiedId, definition))
+                    var version = definition.DeclaredVersion ?? 1;
+                    if (!objects.TryAdd((definition.QualifiedId, version), definition))
                         issues.Add(Issue("object", definition.QualifiedId, "capability-duplicate",
-                            "The application contains more than one object with this identity."));
+                            "The application contains more than one object with this identity and version."));
                 }
                 catch (Exception exception) when (exception is ArgumentException or JsonException
                     or IOException or UnauthorizedAccessException)
@@ -107,6 +108,14 @@ public static class ApplicationCapabilityCatalogValidator
                         "capability-contract", exception.Message));
                 }
             }
+        }
+
+        foreach (var history in objects.GroupBy(value => value.Key.QualifiedId, StringComparer.Ordinal))
+        {
+            var versions = history.Select(value => value.Key.Version).Order().ToArray();
+            if (!versions.SequenceEqual(Enumerable.Range(1, versions.Length)))
+                issues.Add(Issue("object", history.Key, "capability-version-history",
+                    "Application object versions must form one contiguous history beginning at version one."));
         }
 
         var queriesRoot = Path.Combine(applicationDirectory, "queries");
@@ -122,12 +131,9 @@ public static class ApplicationCapabilityCatalogValidator
                 var projectionId = Qualify(applicationId, query.ProjectionQualifiedId);
                 if (query.Executor == ApplicationQueryContract.ObjectProjectionExecutor)
                 {
-                    if (!objects.TryGetValue(projectionId, out var definition))
+                    if (!objects.TryGetValue((projectionId, query.ProjectionVersion), out var definition))
                         issues.Add(Issue("query", qualifiedId, "capability-object-missing",
-                            $"The query references unavailable object '{projectionId}'."));
-                    else if (definition.DeclaredVersion != query.ProjectionVersion)
-                        issues.Add(Issue("query", qualifiedId, "capability-object-version",
-                            $"The query must pin authored object version {definition.DeclaredVersion}."));
+                            $"The query references unavailable object '{projectionId}' version {query.ProjectionVersion}."));
                     else if (definition.ObjectContract?.Collections.All(value =>
                                  value.CollectionId != query.ObjectCollectionId) != false)
                         issues.Add(Issue("query", qualifiedId, "capability-object-collection",

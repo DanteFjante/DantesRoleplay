@@ -305,7 +305,8 @@ public sealed class SqliteProjectionDefinitionRegistry(
         var generated = new List<GeneratedApplicationObjectWriteMapping>();
         foreach (var path in writes.Paths)
         {
-            if (!Pointer(path.Pointer) || !ProjectionSchemaPath.Exists(editSchema, path.Pointer)
+            var fieldWrite = path.Operations?.Any(operation => operation is "set" or "clear") == true;
+            if (!Pointer(path.Pointer) || fieldWrite && !ProjectionSchemaPath.Exists(editSchema, path.Pointer)
                 || !ProjectionSchemaPath.Exists(outputSchema, path.Pointer) || path.Operations is null
                 || path.Operations.Count is < 1 or > 4 || path.Operations.Distinct(StringComparer.Ordinal).Count() != path.Operations.Count
                 || path.Operations.Any(x => !writes.Capabilities.Contains(x, StringComparer.Ordinal)))

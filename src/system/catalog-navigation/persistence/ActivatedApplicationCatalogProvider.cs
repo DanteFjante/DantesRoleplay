@@ -140,22 +140,27 @@ public sealed class ActivatedApplicationCatalogMaterializer(
         if (objectWinners.Length == 0) return;
         if (projections is null)
             throw Failure("OBJECT_REGISTRY_UNAVAILABLE", "The active catalog contains objects but the object registry is unavailable.");
-        var pending = new Dictionary<string, ProjectionDefinitionRequest>(StringComparer.Ordinal);
+        var pending = new Dictionary<(string QualifiedId, int Version), ProjectionDefinitionRequest>();
         foreach (var value in objectWinners)
         {
             ProjectionDefinitionRequest request;
             try { request = ApplicationObjectDocument.Parse(ReadText(value, registrations), applicationId); }
             catch (Exception exception) when (exception is ArgumentException or JsonException)
             { throw Failure("CATALOG_OBJECT_INVALID", "An active application object could not be parsed.", exception); }
-            if (!pending.TryAdd(request.QualifiedId, request))
-                throw Failure("CATALOG_OBJECT_DUPLICATE", "Active application objects must have unique qualified identities.");
+            var version = request.DeclaredVersion ?? 1;
+            if (!pending.TryAdd((request.QualifiedId, version), request))
+                throw Failure("CATALOG_OBJECT_DUPLICATE", "Active application objects must have unique qualified identities and versions.");
         }
         while (pending.Count != 0)
         {
-            var ready = pending.Values.Where(value => value.DependencyInputs.All(dependency =>
-                !pending.ContainsKey(dependency.Projection.QualifiedId)
-                || projections.Get(dependency.Projection.QualifiedId, dependency.Projection.Version) is not null))
-                .OrderBy(value => value.QualifiedId, StringComparer.Ordinal).ToArray();
+            var ready = pending.Values.Where(value =>
+                    (value.DeclaredVersion is null or 1 ||
+                     projections.Get(value.QualifiedId, value.DeclaredVersion.Value - 1) is not null) &&
+                    value.DependencyInputs.All(dependency =>
+                        !pending.ContainsKey((dependency.Projection.QualifiedId, dependency.Projection.Version)) ||
+                        projections.Get(dependency.Projection.QualifiedId, dependency.Projection.Version) is not null))
+                .OrderBy(value => value.QualifiedId, StringComparer.Ordinal)
+                .ThenBy(value => value.DeclaredVersion ?? 1).ToArray();
             if (ready.Length == 0)
                 throw Failure("CATALOG_OBJECT_CYCLE", "Active application objects contain a dependency cycle.");
             foreach (var request in ready)
@@ -163,7 +168,7 @@ public sealed class ActivatedApplicationCatalogMaterializer(
                 try { projections.Define(request); }
                 catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
                 { throw Failure("CATALOG_OBJECT_INVALID", "An active application object could not be registered.", exception); }
-                pending.Remove(request.QualifiedId);
+                pending.Remove((request.QualifiedId, request.DeclaredVersion ?? 1));
             }
         }
     }

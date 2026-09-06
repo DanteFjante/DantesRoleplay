@@ -604,11 +604,13 @@ Verification: real SQLite actor-notebook coverage, including participation and t
 
 ### Slice 6 (SC06) — Explicit reverse mappings
 
-**Status:** Not started. **Finding coverage:** R03, R04.
+**Status:** Complete. **Finding coverage:** R03, R04. **Outcome:** exact registered object write declarations now execute through one ruleset-neutral reverse mapper and the existing typed ECS effect transaction; there is no direct database save path. The mapper validates the edit schema and write perspective, preserves unmapped component fields, distinguishes omission from declared clear, checks the read fingerprint plus exact component and relationship revisions, derives deterministic idempotency identity, groups fields by source component, commits every mapped effect atomically and returns a freshly materialized object. Catalog activation now accepts contiguous immutable object histories, retaining the read-only Campaign summary v1 while v2 declares only premise set and party participation add/remove. A GameMaster-only PATCH adapter resolves its exact active object query and catalog-declared roles without embedding application IDs or gameplay rules in the C# kernel.
 
 Start with a permitted Campaign premise edit; extend to one explicit relationship operation only after field-save behavior is proven. Translate changed fields/operations to the current typed effects and commit path. Preserve component/graph validation, authorization, expected revisions, idempotency and transaction scope. Map fields owned by different components atomically.
 
 **Cleanup and exit:** no parallel direct-database save path. Tests prove unchanged save is a no-op; partial/hidden fields survive; calculated/unauthorized edits fail; explicit deletion differs from omission; stale and duplicate requests behave correctly; failure on one mapped effect rolls back every effect. Re-read the resulting object with fresh source evidence.
+
+Verification: 41 focused object-write, object-contract, typed-effect and readiness tests pass; the Release build succeeds with zero warnings/errors; the complete .NET suite passes 1,951/1,951; catalog validation accepts 600 records with only seven unchanged legacy warnings; the web suite passes 260 Node and 71 mounted tests plus TypeScript checking and the production Vite build; and the opt-in MCP protocol walk passes 8/8 with its two unchanged environment-dependent cases skipped. A fresh ignored copy of the exported development runtime passed its 143-table/91-blob restore verification, migrated through normal host startup, imported 68 new and one changed authored catalog record while preserving five newer or database-only records, and activated revision 52 with 3,576 winners and zero preview problems. Final readiness is `ready`: all 21 active queries resolve their exact mechanic or registered-object projections.
 
 ### Slice 7 (SC07) — Object-based JavaScript reducers
 

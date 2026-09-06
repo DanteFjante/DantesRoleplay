@@ -50,6 +50,7 @@ public sealed class ApplicationEcsEffectApplier(
         {
             transaction = await SqliteEcsConstraintTransaction.BeginIfNeededAsync(db, cancellationToken)
                 ?? throw new InvalidOperationException("Application ECS effects require their own write transaction.");
+            await VerifyComponentsAsync(batch, cancellationToken);
             await VerifyContainmentsAsync(batch, cancellationToken);
             for (var index = 0; index < batch.Effects.Count; index++)
             {
@@ -168,6 +169,21 @@ public sealed class ApplicationEcsEffectApplier(
             default:
                 throw new InvalidOperationException("The effect type was not validated.");
         }
+    }
+
+    private async Task VerifyComponentsAsync(
+        ApplicationEcsEffectBatch batch,
+        CancellationToken cancellationToken)
+    {
+        if (batch.ComponentExpectations.Count == 0) return;
+        var rows = await store.GetComponentsAsync(batch.StateSpaceId,
+            batch.ComponentExpectations.Select(value => new EcsComponentLocator(
+                value.EntityId, value.ComponentType.QualifiedTypeId)).ToArray(), cancellationToken);
+        var current = rows.ToDictionary(value => (value.EntityId, value.Type.QualifiedTypeId));
+        foreach (var expected in batch.ComponentExpectations)
+            if (!current.TryGetValue((expected.EntityId, expected.ComponentType.QualifiedTypeId), out var actual)
+                || actual.Type != expected.ComponentType || actual.Revision != expected.Revision)
+                throw new InvalidOperationException("Component source is stale.");
     }
 
     private async Task VerifyContainmentsAsync(ApplicationEcsEffectBatch batch, CancellationToken cancellationToken)

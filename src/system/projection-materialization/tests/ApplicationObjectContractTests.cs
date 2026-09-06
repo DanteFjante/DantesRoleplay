@@ -91,7 +91,7 @@ public sealed class ApplicationObjectContractTests : IDisposable
     }
 
     [Fact]
-    public void Slice_four_catalog_objects_keep_their_reviewed_exact_fingerprints()
+    public void Catalog_objects_keep_their_reviewed_exact_version_fingerprints()
     {
         var db = _fixture.CreateContext();
         var applications = new SqliteApplicationRegistry(db);
@@ -111,12 +111,27 @@ public sealed class ApplicationObjectContractTests : IDisposable
             File.ReadAllText(Path.Combine(Catalog(), "components", "game", "core", "world", "root.schema.json"))));
         var registry = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications);
         var objects = Path.Combine(Catalog(), "applications", "dnd2024", "objects");
+        var campaignV1 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+            objects, "campaign", "dnd2024.object.campaign-summary.v1.json")), application));
         var campaign = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
             objects, "campaign", "dnd2024.object.campaign-summary.json")), application));
         var factions = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
             objects, "world", "dnd2024.object.faction-directory-page.json")), application));
 
-        Assert.Equal("3AE6FD831B4319BA96E15A1501896549030C80FDBFA49D5503D0568DB9B61DEB", campaign.ContentHash);
+        Assert.Equal("3AE6FD831B4319BA96E15A1501896549030C80FDBFA49D5503D0568DB9B61DEB", campaignV1.ContentHash);
+        Assert.Equal(2, campaign.Version);
+        Assert.Equal("2C0836E9FF114C4F672D793012F2D0CD258D0A99B9DCFB5A892D63F5146011BF", campaign.ContentHash);
+        Assert.Equal(["relationship.add", "relationship.remove", "set"],
+            campaign.ObjectContract!.Writes!.Capabilities);
+        Assert.Contains(campaign.ObjectContract.GeneratedWriteMappings, value =>
+            value.ObjectPointer == "/premise" && value.Operation == "set" &&
+            value.InputId == "campaign" && value.SourcePointer == "/premise");
+        Assert.Contains(campaign.ObjectContract.GeneratedWriteMappings, value =>
+            value.ObjectPointer == "/party" && value.Operation == "relationship.add" &&
+            value.RelationshipId == "party");
+        Assert.Contains(campaign.ObjectContract.GeneratedWriteMappings, value =>
+            value.ObjectPointer == "/party" && value.Operation == "relationship.remove" &&
+            value.RelationshipId == "party");
         Assert.Equal("867C1B1567F1801F34528A3AC7DD8DA2DB72BF69F24A086A3F5FC7F99AD31B3C", factions.ContentHash);
     }
 
