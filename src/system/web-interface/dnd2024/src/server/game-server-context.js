@@ -1921,6 +1921,7 @@ async function readWorldDirectory({
   mediaAssetBaseUrl,
 }) {
   const empty = { people: [], factions: [], holdings: [] };
+  const incomplete = { ...empty, incomplete: true };
   if (!applicationId || !stateSpaceId || !worldId || locationDirectory.length === 0) return empty;
   const listRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
     `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
@@ -1929,6 +1930,7 @@ async function readWorldDirectory({
   const entities = new Map();
   const seenCursors = new Set();
   let nextCursor = null;
+  let pagesRead = 0;
 
   do {
     const pageUrl = listRoot + (
@@ -1942,18 +1944,26 @@ async function readWorldDirectory({
     }
     if (!response?.ok) return empty;
     const payload = await json(response);
-    if (!payload || !Array.isArray(payload.items)) return empty;
+    if (!payload || !Array.isArray(payload.items) || payload.items.length > 100) return incomplete;
+    pagesRead += 1;
     for (const item of payload.items) {
       const id = token(typeof item?.entityId === "string" ? item.entityId : item?.id);
       const name = text(item?.name, 200);
-      if (id && name && entities.size < 1_000) entities.set(id, { id, name });
+      // Catalog definitions must not exhaust the directory's retained-record budget
+      // before later pages containing actual world factions, people and holdings.
+      const relevant = id && (id === `faction.${worldId}` || id.startsWith(`faction.${worldId}.`) ||
+        id.startsWith("actor.") || id.startsWith("creature.") || isHoldingEntityId(id));
+      if (relevant && name) {
+        if (!entities.has(id) && entities.size >= 1_000) return incomplete;
+        entities.set(id, { id, name });
+      }
     }
     nextCursor = typeof payload.nextCursor === "string" && payload.nextCursor.length > 0
       ? payload.nextCursor
       : null;
-    if (nextCursor && seenCursors.has(nextCursor)) nextCursor = null;
+    if (nextCursor && (seenCursors.has(nextCursor) || pagesRead >= 100)) return incomplete;
     else if (nextCursor) seenCursors.add(nextCursor);
-  } while (nextCursor && entities.size < 1_000);
+  } while (nextCursor);
 
   const locationIds = new Set(locationDirectory.map((location) => location.id));
   const containedResults = await Promise.all(locationDirectory.map(async (location) => {
@@ -2496,6 +2506,9 @@ async function readGameServerContextCore({
       mediaAssetBaseUrl,
     })
     : null;
+  if (worldDirectory?.incomplete) {
+    return unavailable("The world directory could not be loaded completely. Please try again.");
+  }
   const authorizedLocationIds = locationDirectory.map((location) => location.id);
   const sceneComponentWasReturned = currentSceneComponentResponse?.ok === true;
   const sceneRecord = sceneComponentWasReturned

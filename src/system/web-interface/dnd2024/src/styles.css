@@ -47,6 +47,10 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+@media (max-width: 340px) {
+  body:has(.faction-grid) { min-width: 0; }
+}
+
 button,
 input,
 select {

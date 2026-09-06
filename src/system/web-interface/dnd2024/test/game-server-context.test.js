@@ -1063,7 +1063,12 @@ test("reads only the server-selected campaign, actor, and authorized knowledge",
   ]);
 });
 
-test("maps a server-authorized game master context to the local DM seat without bound character-state reads", async () => {
+for (const { count, prefix, incomplete } of [
+  { count: 0, prefix: "catalog", incomplete: false },
+  { count: 1_000, prefix: "catalog", incomplete: false },
+  { count: 10_000, prefix: "catalog", incomplete: true },
+  { count: 1_000, prefix: "actor", incomplete: true },
+]) test(`DM world directory after ${count} ${prefix} records preserves complete faction discovery`, async () => {
   const calls = [];
   const value = await readGameServerContext({
     serverOrigin: "http://localhost:6217",
@@ -1093,14 +1098,18 @@ test("maps a server-authorized game master context to the local DM seat without 
         return response(200, { status: "empty", entries: [], locations: [] });
       }
       if (path === "/api/applications/dnd2024/state-spaces/dnd2024-main/entities") {
-        return response(200, {
-          items: [
+        const offset = Number(new URL(input).searchParams.get("cursor") ?? 0);
+        const items = [
+            ...Array.from({ length: count }, (_, index) => ({ entityId: `${prefix}.fixture.${index}`, name: `Record ${index}` })),
             { entityId: "location.thalorien.brackenford", name: "Brackenford" },
             { entityId: "actor.thalorien.brackenford.orban", name: "Orban" },
             { entityId: "location.thalorien.crownmere", name: "Crownmere" },
             { entityId: "faction.thalorien.gilded-concord", name: "The Gilded Concord" },
             { entityId: "faction.thalorien.archived", name: "Archived faction" },
-          ],
+        ];
+        return response(200, {
+          items: items.slice(offset, offset + 100),
+          nextCursor: offset + 100 < items.length ? String(offset + 100) : null,
         });
       }
       if (path.endsWith("/entities/faction.thalorien.gilded-concord/components/game.core.world.faction")) {
@@ -1141,6 +1150,12 @@ test("maps a server-authorized game master context to the local DM seat without 
     },
   });
 
+  if (incomplete) {
+    assert.equal(value.status, "unavailable");
+    assert.match(value.message, /world directory/i);
+    assert.equal(value.worldDirectory, undefined);
+    return;
+  }
   assert.deepEqual(value.audience, {
     seat: "dm",
     perspective: "dm",
