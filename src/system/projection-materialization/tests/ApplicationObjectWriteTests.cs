@@ -375,7 +375,7 @@ public sealed class ApplicationObjectWriteTests : IDisposable
         {"type":"object","additionalProperties":false,"required":["status"],"properties":{"status":{"type":"string"}}}
         """;
         private const string OutputSchema = """
-        {"type":"object","additionalProperties":false,"properties":{"title":{"type":"string"},"premise":{"type":"string"},"note":{"type":["string","null"]},"secondary":{"type":"string"},"members":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","name","status"],"properties":{"id":{"type":"string"},"name":{"type":"string"},"status":{"type":"string"}}}},"totalCount":{"type":"integer"},"complete":{"type":"boolean"},"nextCursor":{"type":["string","null"]}}}
+        {"type":"object","required":["title","premise","note","members","totalCount","complete","nextCursor"],"additionalProperties":false,"properties":{"title":{"type":"string"},"premise":{"type":"string"},"note":{"type":["string","null"]},"secondary":{"type":"string"},"members":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","name","status"],"properties":{"id":{"type":"string"},"name":{"type":"string"},"status":{"type":"string"}}}},"totalCount":{"type":"integer"},"complete":{"type":"boolean"},"nextCursor":{"type":["string","null"]}}}
         """;
         private const string EditSchema = """
         {"type":"object","additionalProperties":false,"properties":{"premise":{"type":"string","minLength":1},"note":{"type":["string","null"]},"secondary":{"type":"string"}}}

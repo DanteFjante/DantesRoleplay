@@ -104,7 +104,7 @@ public sealed class ApplicationObjectReducerSnapshotTests
             SetAsync("one", 0).GetAwaiter().GetResult();
             var definitions = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications);
             var definition = definitions.Define(new(app, "snapshot.object", """
-                {"type":"object","additionalProperties":false,"properties":{"value":{"type":"integer"},"members":{"type":"array","items":{"type":"object","properties":{"related":{"type":"array","items":{"type":"object"}}}}}}}
+                {"type":"object","required":["value","members"],"additionalProperties":false,"properties":{"value":{"type":"integer"},"members":{"type":"array","items":{"type":"object","required":["related"],"properties":{"related":{"type":"array","items":{"type":"object"}}}}}}}
                 """, [new("state", "subject", Type)], [], [new("state", "/value", "/value")], new(
                     [new("subject", true), new("member", false), new("related", false)], [new("state", true)],
                     [new("members", "snapshot.member", incoming ? "member" : "subject", incoming ? "subject" : "member",

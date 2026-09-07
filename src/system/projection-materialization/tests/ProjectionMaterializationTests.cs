@@ -1,4 +1,5 @@
 using System.Data.Common;
+using System.Text.Json.Nodes;
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
@@ -107,7 +108,7 @@ public sealed class ProjectionMaterializationTests : IDisposable
         await edges.SetRelationshipAsync("collection-space", "item.a", "member.z", "collection-projection.members", "{}", 0);
 
         const string schema = """
-        {"type":"object","additionalProperties":false,"properties":{"title":{"type":"string"},"items":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","name","summary","members"],"properties":{"id":{"type":"string"},"name":{"type":"string"},"summary":{"type":"string"},"members":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","name"],"properties":{"id":{"type":"string"},"name":{"type":"string"}}}}}}},"totalCount":{"type":"integer"},"complete":{"type":"boolean"},"nextCursor":{"type":["string","null"]}}}
+        {"type":"object","required":["title","items","totalCount","complete","nextCursor"],"additionalProperties":false,"properties":{"title":{"type":"string"},"items":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","name","summary","members"],"properties":{"id":{"type":"string"},"name":{"type":"string"},"summary":{"type":"string"},"members":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","name"],"properties":{"id":{"type":"string"},"name":{"type":"string"}}}}}}},"totalCount":{"type":"integer"},"complete":{"type":"boolean"},"nextCursor":{"type":["string","null"]}}}
         """;
         var definition = setup.Registry.Define(new(setup.Application, "collection-projection.directory", schema,
             [new("root", "owner", Ref(rootType))], [], [new("root", "/title", "/title")],
@@ -452,6 +453,171 @@ public sealed class ProjectionMaterializationTests : IDisposable
         var schemas = new BoundedJsonSchemaValidator(); var types = new SqliteComponentTypeRegistry(db, schemas);
         var store = new SqliteEntityComponentStore(db, types, schemas);
         return new(db, application, spaces, schemas, types, store, new SqliteProjectionDefinitionRegistry(db, types, schemas));
+    }
+
+    [Theory]
+    [InlineData("flat", 0)]
+    [InlineData("flat", 1)]
+    [InlineData("flat", 3)]
+    [InlineData("nested", 0)]
+    [InlineData("nested", 3)]
+    [InlineData("composed", 0)]
+    [InlineData("composed", 3)]
+    public async Task Required_collections_validate_after_empty_nonempty_and_paged_expansion(string shape, int count)
+    {
+        var schema = JsonNode.Parse(RequiredCollectionSchema)!.AsObject();
+        var pointer = "/items";
+        if (shape == "nested")
+        {
+            var properties = schema["properties"]!.AsObject();
+            var items = properties["items"]!.DeepClone();
+            properties.Remove("items");
+            properties["body"] = new JsonObject
+            {
+                ["type"] = "object", ["additionalProperties"] = false, ["required"] = new JsonArray("items"),
+                ["properties"] = new JsonObject { ["items"] = items }
+            };
+            schema["required"] = new JsonArray("title", "body", "totalCount", "complete", "nextCursor");
+            pointer = "/body/items";
+        }
+        if (shape == "composed")
+        {
+            schema["allOf"] = new JsonArray(new JsonObject { ["required"] = schema["required"]!.DeepClone() });
+            schema.Remove("required");
+            schema["$defs"] = new JsonObject { ["items"] = schema["properties"]!["items"]!.DeepClone() };
+            schema["properties"]!["items"] = new JsonObject { ["$ref"] = "#/$defs/items" };
+        }
+        var fixture = await CollectionFixtureAsync(schema.ToJsonString(), pointer, count);
+        string? cursor = null;
+        var seen = new List<string>();
+        do
+        {
+            var result = await fixture.Collections.MaterializeAsync(fixture.Request with { Cursor = cursor });
+            Assert.Equal(SchemaValueStatus.Valid, fixture.Setup.Schemas.Validate(
+                fixture.Definition.ProfileId, fixture.Definition.OutputSchemaJson, result.OutputJson).Status);
+            var output = JsonNode.Parse(result.OutputJson)!;
+            var items = (shape == "nested" ? output["body"]!["items"] : output["items"])!.AsArray();
+            seen.AddRange(items.Select(item => item!["id"]!.GetValue<string>()));
+            Assert.Equal(count, output["totalCount"]!.GetValue<int>());
+            cursor = output["nextCursor"]?.GetValue<string>();
+            Assert.Equal(cursor is null, result.Complete);
+            Assert.Equal(result.Complete, output["complete"]!.GetValue<bool>());
+            Assert.NotEmpty(result.SourceRevisions);
+        } while (cursor is not null);
+        Assert.Equal(Enumerable.Range(0, count).Select(index => "item-" + index), seen);
+        // The same cached plan must not relax ordinary structural reads.
+        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.Root.MaterializeAsync(new(
+            "required-space", fixture.Definition.Reference, fixture.Request.RoleEntityIds)));
+    }
+
+    [Theory]
+    [InlineData("missing-field", 0)]
+    [InlineData("wrong-title-type", 0)]
+    [InlineData("wrong-item-type", 1)]
+    [InlineData("minimum-items", 0)]
+    [InlineData("maximum-items", 2)]
+    [InlineData("metadata", 0)]
+    [InlineData("bytes", 1)]
+    public async Task Expanded_collections_still_reject_invalid_exact_outputs(string failure, int count)
+    {
+        var schema = JsonNode.Parse(RequiredCollectionSchema)!;
+        switch (failure)
+        {
+            case "missing-field": schema["required"]!.AsArray().Add("missing"); break;
+            case "wrong-title-type": schema["properties"]!["title"]!["type"] = "integer"; break;
+            case "wrong-item-type": schema["properties"]!["items"]!["items"]!["properties"]!["id"]!["type"] = "integer"; break;
+            case "minimum-items": schema["properties"]!["items"]!["minItems"] = 1; break;
+            case "maximum-items": schema["properties"]!["items"]!["maxItems"] = 1; break;
+            case "metadata": schema["properties"]!["totalCount"]!["minimum"] = 1; break;
+        }
+        var fixture = await CollectionFixtureAsync(schema.ToJsonString(), "/items", count, failure == "bytes" ? 40 : 32768);
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.Collections.MaterializeAsync(fixture.Request));
+        Assert.Contains("expanded object collection", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Root_expansion_never_bypasses_dependency_schema_validation()
+    {
+        var setup = Setup("expanded-dependency", "dependency-space");
+        var type = setup.Types.Define(new(setup.Application, "expanded-dependency.value", "{\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\"}}}"));
+        await setup.Store.CreateEntityAsync("dependency-space", "root", "Root");
+        await setup.Store.AddComponentAsync(new("dependency-space", "root", Ref(type), "{\"title\":\"Title\"}", 0));
+        var child = setup.Registry.Define(new(setup.Application, "expanded-dependency.child", "{\"type\":\"integer\"}",
+            [new("value", "subject", Ref(type))], [], [new("value", "/title", "")]));
+        var parent = setup.Registry.Define(new(setup.Application, "expanded-dependency.parent", "{\"type\":\"string\"}", [],
+            [new("child", child.Reference, new Dictionary<string, string> { ["subject"] = "subject" })], [new("child", "", "")]));
+        var materializer = new ProjectionMaterializer(setup.Registry, setup.Store, setup.StateSpaces, setup.Schemas);
+        var expanded = false;
+        await Assert.ThrowsAsync<InvalidOperationException>(() => materializer.MaterializeExpandedAsync(new(
+            "dependency-space", parent.Reference, new Dictionary<string, string> { ["subject"] = "root" }), (_, _) =>
+        {
+            expanded = true;
+            return Task.FromResult("\"Valid parent\"");
+        }));
+        Assert.False(expanded);
+    }
+
+    [Theory]
+    [InlineData("schema")]
+    [InlineData("json")]
+    [InlineData("bytes")]
+    [InlineData("source")]
+    public async Task Root_completion_cannot_return_invalid_output_or_bypass_missing_sources(string failure)
+    {
+        var fixture = await CollectionFixtureAsync(RequiredCollectionSchema, "/items", 0);
+        if (failure == "source")
+        {
+            var source = Assert.Single(fixture.Definition.ComponentInputs);
+            await fixture.Setup.Store.RemoveComponentAsync("required-space", "root", source.Type, 1);
+        }
+        var expanded = false;
+        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.Root.MaterializeExpandedAsync(new(
+            "required-space", fixture.Definition.Reference, fixture.Request.RoleEntityIds), (_, _) =>
+        {
+            expanded = true;
+            return Task.FromResult(failure switch
+            {
+                "json" => "{invalid",
+                "bytes" => new string(' ', SystemJsonSchemaProfile.MaximumValueBytes + 1),
+                _ => "{}"
+            });
+        }));
+        Assert.Equal(failure != "source", expanded);
+    }
+
+    private const string RequiredCollectionSchema = """
+        {"type":"object","additionalProperties":false,"required":["title","items","totalCount","complete","nextCursor"],"properties":{
+        "title":{"type":"string"},"items":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","name"],"properties":{"id":{"type":"string"},"name":{"type":"string"}}}},
+        "totalCount":{"type":"integer"},"complete":{"type":"boolean"},"nextCursor":{"type":["string","null"]}}}
+        """;
+
+    private async Task<(ProjectionSetup Setup, RegisteredProjectionDefinition Definition, ProjectionMaterializer Root,
+        ProjectionCollectionMaterializer Collections, ProjectionCollectionMaterializationRequest Request)> CollectionFixtureAsync(
+        string schema, string pointer, int count, int outputBytes = 32768)
+    {
+        var setup = Setup("required-collection", "required-space");
+        var type = setup.Types.Define(new(setup.Application, "required-collection.root",
+            "{\"type\":\"object\",\"required\":[\"title\"],\"properties\":{\"title\":{\"type\":\"string\"}}}"));
+        await setup.Store.CreateEntityAsync("required-space", "root", "Root");
+        await setup.Store.AddComponentAsync(new("required-space", "root", Ref(type), "{\"title\":\"Directory\"}", 0));
+        var edges = new SqliteStateSpaceEdgeStore(setup.Db, setup.StateSpaces);
+        for (var index = 0; index < count; index++)
+        {
+            var id = "item-" + index;
+            await setup.Store.CreateEntityAsync("required-space", id, id);
+            await edges.SetRelationshipAsync("required-space", "root", id, "required-collection.includes", "{}", 0);
+        }
+        var definition = setup.Registry.Define(new(setup.Application, "required-collection.directory", schema,
+            [new("root", "owner", Ref(type))], [], [new("root", "/title", "/title")],
+            new([new("owner", true), new("item", false)], [new("root", true)],
+                [new("items", "required-collection.includes", "owner", "item", "many", pointer, [], [])], [],
+                [new("items", "items", 2, 2, [new("/name", "asc")], "source-revision-bound")],
+                new(1, 10, outputBytes, 12), new(["dm"], []), null), 1));
+        var root = new ProjectionMaterializer(setup.Registry, setup.Store, setup.StateSpaces, setup.Schemas);
+        var collections = new ProjectionCollectionMaterializer(setup.Registry, root, edges, setup.Store, setup.Store,
+            setup.Schemas, new SqliteProjectionReadTransaction(setup.Db));
+        return (setup, definition, root, collections, new("required-space", definition.Reference,
+            new Dictionary<string, string> { ["owner"] = "root" }, "items", "dm"));
     }
 
     private static EcsComponentReference Ref(RegisteredComponentTypeVersion type) => new(type.QualifiedId, type.Version, type.SchemaHash);

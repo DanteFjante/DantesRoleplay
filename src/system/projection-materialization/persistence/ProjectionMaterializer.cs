@@ -17,9 +17,24 @@ public sealed class ProjectionMaterializer(
 {
     private readonly ProjectionPlanCache plans = planCache ?? new ProjectionPlanCache();
 
-    public async Task<ProjectionMaterializationResult> MaterializeAsync(
+    public Task<ProjectionMaterializationResult> MaterializeAsync(
         ProjectionMaterializationRequest request,
+        CancellationToken cancellationToken = default) =>
+        MaterializeCoreAsync(request, null, cancellationToken);
+
+    public Task<ProjectionMaterializationResult> MaterializeExpandedAsync(
+        ProjectionMaterializationRequest request,
+        Func<ProjectionMaterializationResult, CancellationToken, Task<string>> completeRoot,
         CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(completeRoot);
+        return MaterializeCoreAsync(request, completeRoot, cancellationToken);
+    }
+
+    private async Task<ProjectionMaterializationResult> MaterializeCoreAsync(
+        ProjectionMaterializationRequest request,
+        Func<ProjectionMaterializationResult, CancellationToken, Task<string>>? completeRoot,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         request.Projection.Validate();
@@ -58,7 +73,8 @@ public sealed class ProjectionMaterializer(
         for (var index = 0; index < plan.Nodes.Count; index++)
         {
             if (!active.Contains(index)) continue;
-            evaluated[index] = Evaluate(plan.Nodes[index], request.RoleEntityIds, values, evaluated, active);
+            evaluated[index] = Evaluate(plan.Nodes[index], request.RoleEntityIds, values, evaluated, active,
+                validateOutput: completeRoot is null || index != plan.Nodes.Count - 1);
         }
         var rootIndex = plan.Nodes.Count - 1;
         if (!evaluated.TryGetValue(rootIndex, out var output))
@@ -75,9 +91,16 @@ public sealed class ProjectionMaterializer(
                     source?.Type ?? input.Type, source?.Revision ?? 0);
             }
         }
-        return new(plan.Root.Reference, output, Array.AsReadOnly(observed.Values
+        var result = new ProjectionMaterializationResult(plan.Root.Reference, output, Array.AsReadOnly(observed.Values
             .OrderBy(value => value.EntityId, StringComparer.Ordinal)
             .ThenBy(value => value.Type.QualifiedTypeId, StringComparer.Ordinal).ToArray()));
+        if (completeRoot is not null)
+        {
+            var expanded = await completeRoot(result, cancellationToken);
+            ValidateOutput(plan.Root, expanded);
+            result = result with { OutputJson = expanded };
+        }
+        return result;
     }
 
     private static void ValidateRootRoles(
@@ -151,7 +174,8 @@ public sealed class ProjectionMaterializer(
         IReadOnlyDictionary<string, string> roles,
         IReadOnlyDictionary<(string, string), EcsComponentView> values,
         IReadOnlyDictionary<int, string> evaluated,
-        IReadOnlySet<int> active)
+        IReadOnlySet<int> active,
+        bool validateOutput)
     {
         var sources = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var input in node.Definition.ComponentInputs)
@@ -199,11 +223,17 @@ public sealed class ProjectionMaterializer(
             }
             result = output.ToJsonString();
         }
-        if (Encoding.UTF8.GetByteCount(result) > SystemJsonSchemaProfile.MaximumValueBytes
-            || validator.Validate(node.Definition.ProfileId, node.Definition.OutputSchemaJson, result).Status
-                != SchemaValueStatus.Valid)
-            throw new InvalidOperationException("Structural projection output fails its exact schema.");
+        if (Encoding.UTF8.GetByteCount(result) > SystemJsonSchemaProfile.MaximumValueBytes)
+            throw new InvalidOperationException("Structural projection output exceeds its byte bound.");
+        if (validateOutput) ValidateOutput(node.Definition, result);
         return result;
+    }
+
+    private void ValidateOutput(RegisteredProjectionDefinition definition, string output)
+    {
+        if (Encoding.UTF8.GetByteCount(output) > SystemJsonSchemaProfile.MaximumValueBytes
+            || validator.Validate(definition.ProfileId, definition.OutputSchemaJson, output).Status != SchemaValueStatus.Valid)
+            throw new InvalidOperationException("Structural projection output fails its exact schema.");
     }
 
     private RegisteredProjectionDefinition Require(ProjectionReference reference)

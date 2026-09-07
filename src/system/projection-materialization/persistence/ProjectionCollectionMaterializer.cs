@@ -57,8 +57,29 @@ public sealed class ProjectionCollectionMaterializer(
         if (contract.Limits.ItemCount > 256)
             throw new InvalidOperationException("The collection hydration bound exceeds the prepared component batch limit.");
 
-        var root = await materializer.MaterializeAsync(new(request.StateSpaceId, request.Projection,
-            request.RoleEntityIds), cancellationToken);
+        ProjectionCollectionMaterializationResult? expanded = null;
+        await materializer.MaterializeExpandedAsync(new(request.StateSpaceId, request.Projection,
+            request.RoleEntityIds), async (root, token) =>
+        {
+            expanded = await ExpandAsync(request, definition, collection, relationship, root, pageSize, token);
+            return expanded.OutputJson;
+        }, cancellationToken);
+        return expanded ?? throw new InvalidOperationException("The object collection was not expanded.");
+    }
+
+    private async Task<ProjectionCollectionMaterializationResult> ExpandAsync(
+        ProjectionCollectionMaterializationRequest request,
+        RegisteredProjectionDefinition definition,
+        ApplicationObjectCollection collection,
+        ApplicationObjectRelationship relationship,
+        ProjectionMaterializationResult root,
+        int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var contract = definition.ObjectContract!;
+        var incoming = relationship.Direction == "incoming";
+        var fromEntityId = request.RoleEntityIds[incoming ? relationship.ToRole : relationship.FromRole];
+        var itemRole = incoming ? relationship.FromRole : relationship.ToRole;
         var firstEdges = await relationships.ReadCollectionAsync(request.StateSpaceId, fromEntityId,
             relationship.QualifiedKind, contract.Limits.ItemCount, incoming, cancellationToken);
         var allCandidateIds = firstEdges.Select(value => ItemEntityId(value, incoming))

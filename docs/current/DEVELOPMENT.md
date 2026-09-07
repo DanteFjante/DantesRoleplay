@@ -99,6 +99,11 @@ reservation and before applying any effect. Empty and nested collections are evi
 only the edges or components being written does not protect the snapshot used to compute a result.
 Successful idempotent replay returns the existing receipt without revalidating later world state.
 
+Collection materialization completes the root (items, nested references, and paging metadata) before
+validating its exact registered output schema. Required collections must remain required in authored
+schemas. Structural dependencies still validate before their results are consumed; ordinary structural
+reads never receive an incomplete root. Expansion stays inside the same bounded read transaction.
+
 Time-coupled application mechanics use one `clock.advance` effect in the same effect batch as all
 sibling state changes. Their requirements declare `elapsedTime.mode` as `zero`, `fixed`, `derived`,
 or `supplied`; supplied durations name the closed input property and derived durations describe

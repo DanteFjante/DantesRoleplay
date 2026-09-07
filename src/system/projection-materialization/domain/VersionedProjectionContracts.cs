@@ -106,6 +106,16 @@ public interface IProjectionDefinitionRegistry
 public interface IProjectionMaterializer
 {
     Task<ProjectionMaterializationResult> MaterializeAsync(ProjectionMaterializationRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Completes a bounded structural root before validating its exact output schema.
+    /// Dependency outputs remain fully validated; incomplete roots never leave this operation.
+    /// </summary>
+    Task<ProjectionMaterializationResult> MaterializeExpandedAsync(
+        ProjectionMaterializationRequest request,
+        Func<ProjectionMaterializationResult, CancellationToken, Task<string>> completeRoot,
+        CancellationToken cancellationToken = default) =>
+        throw new NotSupportedException("This materializer does not support root expansion.");
 }
 
 public interface IProjectionCollectionMaterializer
