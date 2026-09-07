@@ -1,0 +1,9 @@
+<Project>
+  <!-- Baseline compiler conventions shared by every project in the solution. Packaging,
+       runtime, publishing, and test-host settings remain explicit in their owning projects. -->
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+</Project>

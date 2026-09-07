@@ -5,5 +5,72 @@
     <Compile Remove="obj\**\*.cs;.codex-build\**\*.cs;.codex-obj\**\*.cs" />
     <EmbeddedResource Remove=".codex-build\**\*;.codex-obj\**\*" />
     <None Remove=".codex-build\**\*;.codex-obj\**\*" />
+
+    <!-- Mark every linked capability source after project evaluation. This prevents a project
+         from escaping the ownership audit by adding a new source link without metadata. -->
+    <Compile Update="..\src\system\**\*.cs">
+      <CapabilitySource>true</CapabilitySource>
+    </Compile>
   </ItemGroup>
+
+  <!-- Capability sources are linked into their existing assemblies while the repository adopts
+       capability-first physical ownership. This check makes the convention mechanical: every
+       source under src/system has one recognized role and is compiled by its declared owner.
+       SqliteChangeRecovery is the sole explicit two-assembly exception. -->
+  <Target Name="ValidateCapabilitySourceLayout" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <_AllCapabilitySource Include="$(MSBuildThisFileDirectory)src\system\**\*.cs" />
+      <_KnownCapabilitySource Include="$(MSBuildThisFileDirectory)src\system\**\domain\**\*.cs;
+                                      $(MSBuildThisFileDirectory)src\system\**\hosting\**\*.cs;
+                                      $(MSBuildThisFileDirectory)src\system\**\persistence\**\*.cs;
+                                      $(MSBuildThisFileDirectory)src\system\**\tests\**\*.cs;
+                                      $(MSBuildThisFileDirectory)src\system\**\tooling\**\*.cs;
+                                      $(MSBuildThisFileDirectory)src\system\projection-materialization\sqlite\SqliteChangeRecovery.cs" />
+
+      <_OrphanedCapabilitySource Include="@(_AllCapabilitySource)" />
+      <_OrphanedCapabilitySource Remove="@(_KnownCapabilitySource)"
+                                 MatchOnMetadata="FullPath"
+                                 MatchOnMetadataOptions="PathLike" />
+
+      <_ExpectedCapabilitySource Include="$(MSBuildThisFileDirectory)src\system\**\domain\**\*.cs"
+                                 Condition="'$(MSBuildProjectName)' == 'DantesRoleplay'" />
+      <_ExpectedCapabilitySource Include="$(MSBuildThisFileDirectory)src\system\**\hosting\**\*.cs;
+                                          $(MSBuildThisFileDirectory)src\system\**\persistence\**\*.cs;
+                                          $(MSBuildThisFileDirectory)src\system\projection-materialization\sqlite\SqliteChangeRecovery.cs"
+                                 Condition="'$(MSBuildProjectName)' == 'DantesRoleplay.DataAccess'" />
+      <_ExpectedCapabilitySource Include="$(MSBuildThisFileDirectory)src\system\projection-materialization\sqlite\SqliteChangeRecovery.cs"
+                                 Condition="'$(MSBuildProjectName)' == 'DantesRoleplay.Web'" />
+      <_ExpectedCapabilitySource Include="$(MSBuildThisFileDirectory)src\system\catalog-tools\tooling\**\*.cs"
+                                 Condition="'$(MSBuildProjectName)' == 'DantesRoleplay.Tools'" />
+      <_ExpectedCapabilitySource Include="$(MSBuildThisFileDirectory)src\system\**\tests\**\*.cs"
+                                 Condition="'$(MSBuildProjectName)' == 'DantesRoleplay.Tests'" />
+
+      <_ActualCapabilitySource Include="@(Compile->WithMetadataValue('CapabilitySource', 'true'))" />
+      <_DistinctActualCapabilitySource Include="@(_ActualCapabilitySource->Distinct())" />
+
+      <_MissingCapabilitySource Include="@(_ExpectedCapabilitySource)" />
+      <_MissingCapabilitySource Remove="@(_ActualCapabilitySource)"
+                                MatchOnMetadata="FullPath"
+                                MatchOnMetadataOptions="PathLike" />
+
+      <_UnexpectedCapabilitySource Include="@(_ActualCapabilitySource)" />
+      <_UnexpectedCapabilitySource Remove="@(_ExpectedCapabilitySource)"
+                                   MatchOnMetadata="FullPath"
+                                   MatchOnMetadataOptions="PathLike" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_ActualCapabilitySourceCount>@(_ActualCapabilitySource->Count())</_ActualCapabilitySourceCount>
+      <_DistinctActualCapabilitySourceCount>@(_DistinctActualCapabilitySource->Count())</_DistinctActualCapabilitySourceCount>
+    </PropertyGroup>
+
+    <Error Condition="'@(_OrphanedCapabilitySource)' != ''"
+           Text="Capability source files must live below a domain, hosting, persistence, tests, or tooling role directory (except the explicit shared SQLite source): @(_OrphanedCapabilitySource, ', ')" />
+    <Error Condition="'@(_MissingCapabilitySource)' != ''"
+           Text="$(MSBuildProjectName) is missing capability-owned source files: @(_MissingCapabilitySource, ', ')" />
+    <Error Condition="'@(_UnexpectedCapabilitySource)' != ''"
+           Text="$(MSBuildProjectName) compiles capability source files owned by another assembly: @(_UnexpectedCapabilitySource, ', ')" />
+    <Error Condition="'$(_ActualCapabilitySourceCount)' != '$(_DistinctActualCapabilitySourceCount)'"
+           Text="$(MSBuildProjectName) includes one or more capability source files multiple times." />
+  </Target>
 </Project>

@@ -1,11 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Jint" Version="4.15.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.11" />
@@ -33,15 +27,17 @@
   <ItemGroup>
     <!-- Transitional compile links: capability-owned hosting code now lives with its component.
          Implementations move in later slices; the assembly/public surface remains unchanged. -->
-    <Compile Include="..\src\system\**\hosting\*.cs">
+    <Compile Include="..\src\system\**\hosting\**\*.cs">
       <Link>Components\System\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\system\**\persistence\*.cs">
+    <Compile Include="..\src\system\**\persistence\**\*.cs">
       <Link>Components\System\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </Compile>
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Shared infrastructure for the two SQLite-owning assemblies. The source-layout audit
+         treats this as the sole intentional cross-assembly source inclusion. -->
     <Compile Include="..\src\system\projection-materialization\sqlite\SqliteChangeRecovery.cs" />
   </ItemGroup>
 </Project>

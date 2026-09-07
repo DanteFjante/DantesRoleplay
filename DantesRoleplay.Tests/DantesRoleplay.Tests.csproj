@@ -1,10 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
     <PlatformTarget>x64</PlatformTarget>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
@@ -52,7 +49,7 @@
 
   <ItemGroup>
     <!-- Focused tests move beside each capability while retaining the shared test assembly. -->
-    <Compile Include="..\src\system\**\tests\*.cs">
+    <Compile Include="..\src\system\**\tests\**\*.cs">
       <Link>Components\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </Compile>
   </ItemGroup>

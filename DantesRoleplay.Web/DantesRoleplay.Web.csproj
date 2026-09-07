@@ -1,9 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
     <RootNamespace>DantesRoleplay.Web</RootNamespace>
   </PropertyGroup>
 
@@ -33,6 +30,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Shared infrastructure for the two SQLite-owning assemblies. The source-layout audit
+         treats this as the sole intentional cross-assembly source inclusion. -->
     <Compile Include="..\src\system\projection-materialization\sqlite\SqliteChangeRecovery.cs" />
   </ItemGroup>
 </Project>

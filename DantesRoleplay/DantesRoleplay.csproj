@@ -1,9 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
     <RootNamespace>DantesRoleplay</RootNamespace>
   </PropertyGroup>
 
@@ -53,7 +50,7 @@
 
   <ItemGroup>
     <!-- Capability-owned domain source moves here incrementally while retaining this assembly. -->
-    <Compile Include="..\src\system\**\domain\*.cs">
+    <Compile Include="..\src\system\**\domain\**\*.cs">
       <Link>Components\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </Compile>
   </ItemGroup>
