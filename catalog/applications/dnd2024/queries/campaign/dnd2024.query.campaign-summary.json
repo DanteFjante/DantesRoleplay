@@ -6,6 +6,10 @@
   "matches": ["campaign summary", "show campaign"],
   "roles": { "campaign": "The selected authorized campaign." },
   "executor": "object-projection",
+  "campaignSelection": {
+    "queryId": "dnd2024.query.recent-consequences",
+    "entityIdField": "campaignId"
+  },
   "object": {
     "qualifiedId": "dnd2024.object.campaign-summary",
     "version": 2,

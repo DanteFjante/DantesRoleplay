@@ -157,7 +157,13 @@ async function sample(page, client, cacheState, index) {
     run.step = 'open-character-sheet';
     if (await page.getByRole('button', { name: 'Character sheet', exact: true }).count()) {
       await page.getByRole('button', { name: 'Character sheet', exact: true }).click();
-      await page.locator('.character-section-heading').waitFor({ state: 'visible' });
+      await page.locator([
+        '.character-sheet-v2',
+        '.character-state--stale',
+        '.character-state--error',
+        '.character-state--forbidden',
+        '.character-state--empty',
+      ].join(', ')).first().waitFor({ state: 'visible' });
     }
     run.step = 'wait-canonical-sheet';
     await paint();

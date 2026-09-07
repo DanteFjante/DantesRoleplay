@@ -1376,6 +1376,39 @@ async function readExactRelationshipTargets(
   return targets === null ? null : [...new Set(targets)];
 }
 
+async function hydrateRegisteredPartyReferences({
+  fetchImpl,
+  origin,
+  applicationId,
+  stateSpaceId,
+  party,
+}) {
+  const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
+  const actorTargets = await Promise.all(party
+    .filter((entry) => entry.status === "active")
+    .map(async (entry) => {
+      const targets = await readExactRelationshipTargets(
+        fetchImpl,
+        origin,
+        entityRoot,
+        entry.id,
+        CAMPAIGN_PARTICIPATION_ACTOR_RELATIONSHIP_KIND,
+      );
+      return targets?.length === 1 ? targets[0] : null;
+    }));
+  const actorIds = [...new Set(actorTargets.filter(Boolean))];
+  const actors = await Promise.all(actorIds.map((actorId) =>
+    readNamedEntity(fetchImpl, origin, entityRoot, actorId)));
+  return actors.filter(Boolean).map((actor) => ({
+    ...actor,
+    state: "active",
+    current: false,
+    entries: [],
+    detailsDeferred: true,
+  }));
+}
+
 async function readSingleExactRelationshipTarget(
   fetchImpl,
   origin,
@@ -2396,6 +2429,28 @@ async function readGameServerContextCore({
     return unavailable("The campaign binding no longer matches readable game state.");
   }
   if (minimalCampaignBootstrap) {
+    const deferredParty = isGameMaster && effectivePerspective === "dm"
+      ? await hydrateRegisteredPartyReferences({
+        fetchImpl,
+        origin,
+        applicationId: binding.applicationId,
+        stateSpaceId: binding.stateSpaceId,
+        party: registeredCampaign.party,
+      })
+      : isGameMaster ? registeredCampaign.party.map((entry) => ({
+        id: entry.id,
+        name: entry.name,
+        state: entry.status,
+        current: false,
+        entries: [],
+        detailsDeferred: true,
+      })) : [{
+        ...actorEntity,
+        state: null,
+        current: true,
+        entries: [],
+        detailsDeferred: true,
+      }];
     return {
       version: 1,
       status: "connected",
@@ -2417,7 +2472,7 @@ async function readGameServerContextCore({
         status: "unavailable",
         message: "Open a play view to load the current scene.",
       },
-      party: registeredCampaign.party,
+      party: deferredParty,
       knowledge: { status: "unavailable", entries: [], locations: [] },
       chronology: { status: "unavailable", perspective: effectivePerspective, entries: [] },
     };

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { boardEnvelope } from "./fixtures/encounter-board.js";
+import { connectedCampaignToHubEnvelope } from "../src/server/connected-hub-envelope.ts";
 
 import {
   inheritMediaVisual,
@@ -103,7 +104,7 @@ test("registered faction pages stay bounded and do not fan out into knowledge or
   assert.equal(denied, null);
 });
 
-test("the selected Campaign bootstrap uses only its three registered reads", async () => {
+test("the selected Campaign bootstrap stays within eight reads and hydrates deferred DM actor identities", async () => {
   const calls = [];
   const value = await readGameServerContext({
     serverOrigin: "http://localhost:6217",
@@ -133,6 +134,17 @@ test("the selected Campaign bootstrap uses only its three registered reads", asy
         party: [{ id: "participation.ganji", name: "Ganji participation", status: "active" }],
         totalCount: 1, complete: true, nextCursor: null,
       } });
+      if (request.pathname.endsWith("/relationships") &&
+          request.searchParams.get("fromEntityId") === "participation.ganji") return response(200, {
+        items: [{
+          fromEntityId: "participation.ganji",
+          toEntityId: "actor.caldris.ganji",
+          qualifiedKind: "game.core.campaign.character-participation.for-actor",
+        }],
+      });
+      if (request.pathname.endsWith("/actor.caldris.ganji")) return response(200, {
+        entityId: "actor.caldris.ganji", name: "Ganji",
+      });
       return response(500, {});
     },
   });
@@ -140,8 +152,20 @@ test("the selected Campaign bootstrap uses only its three registered reads", asy
   assert.equal(value.status, "connected", JSON.stringify({ value, calls }));
   assert.equal(value.campaign.title, "The Measure of Mercy");
   assert.equal(value.campaign.projection.sourceRevisionFingerprint, "5".repeat(64));
-  assert.deepEqual(value.party.map((entry) => entry.id), ["participation.ganji"]);
-  assert.equal(calls.length, 3);
+  assert.deepEqual(value.party.map((entry) => entry.id), ["actor.caldris.ganji"]);
+  assert.deepEqual(value.party[0], {
+    id: "actor.caldris.ganji",
+    name: "Ganji",
+    state: "active",
+    current: false,
+    entries: [],
+    detailsDeferred: true,
+  });
+  const projected = connectedCampaignToHubEnvelope(value);
+  assert.equal(projected.status, "ready");
+  assert.equal(projected.party[0].sheetState.status, "idle");
+  assert.equal(projected.party[0].recordStatus, "Identity only");
+  assert.equal(calls.length, 5);
   assert.ok(calls.every((call) => !call.includes("knowledge") && !call.includes("chronology") &&
     !call.includes("inventory") && !call.endsWith("/entities")));
 });

@@ -37,7 +37,9 @@ public sealed class MigrateEcsIdentitiesTool : ITool
 
         The plan contains componentTypes and relationshipKinds. Component entries identify an
         existing source type, an existing canonical target type, and optional exact revision-bound
-        rewrittenValues. Relationship entries rename one qualified kind everywhere it is used.
+        rewrittenValues. Give a component the same source and target ID to upgrade older live values
+        to that type's latest immutable schema version. Relationship entries rename one qualified
+        kind everywhere it is used.
 
         Without --apply, reports source references and target availability without changing the
         database. With --apply, creates a consistent sibling backups/ database copy, then delegates
@@ -133,9 +135,8 @@ public sealed class MigrateEcsIdentitiesTool : ITool
     {
         if (plan.ComponentTypes.Count + plan.RelationshipKinds.Count is < 1 or > 512)
             throw new InvalidOperationException("An ECS identity migration needs 1 through 512 entries.");
-        if (plan.ComponentTypes.Any(value => value.SourceQualifiedTypeId == value.TargetQualifiedTypeId)
-            || plan.RelationshipKinds.Any(value => value.SourceQualifiedKind == value.TargetQualifiedKind))
-            throw new InvalidOperationException("Every ECS identity migration must change the qualified ID.");
+        if (plan.RelationshipKinds.Any(value => value.SourceQualifiedKind == value.TargetQualifiedKind))
+            throw new InvalidOperationException("Every ECS relationship migration must change the qualified kind.");
         if (plan.ComponentTypes.GroupBy(value => value.SourceQualifiedTypeId, StringComparer.Ordinal).Any(group => group.Count() > 1)
             || plan.RelationshipKinds.GroupBy(value => value.SourceQualifiedKind, StringComparer.Ordinal).Any(group => group.Count() > 1))
             throw new InvalidOperationException("Each source ECS identity may appear only once.");

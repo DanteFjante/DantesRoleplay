@@ -1,6 +1,7 @@
-import { createPublicKey, sign, verify } from 'node:crypto';
+import { createHash, createPublicKey, sign, verify } from 'node:crypto';
 import assert from 'node:assert/strict';
-import { sha256 } from './create-release-manifest.mjs';
+
+const sha256 = bytes => createHash('sha256').update(bytes).digest('hex').toUpperCase();
 
 export function canonicalJson(value) {
   if (Array.isArray(value)) return '[' + value.map(canonicalJson).join(',') + ']';

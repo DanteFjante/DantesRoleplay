@@ -92,10 +92,11 @@ Write-Host "Starting as seat Role=$Role ..." -ForegroundColor Cyan
 Write-Host "    Database: $databasePath" -ForegroundColor DarkGray
 Write-Host "    Blobs:    $blobStorageRoot" -ForegroundColor DarkGray
 
-# Keep this loop well under a remote shell's ~60s call budget: if the caller times out, the
-# teardown can take the freshly started server with it.
+# A recovered production database can need roughly 90 seconds for its cold catalog/page
+# verification pass. The server is already detached, so callers may safely yield while this
+# bounded readiness wait continues.
 $lastReadinessFailure = $null
-for ($i = 0; $i -lt 12; $i++) {
+for ($i = 0; $i -lt 60; $i++) {
     Start-Sleep -Seconds 2
     if (Get-NetTCPConnection -LocalPort 6217 -State Listen -ErrorAction SilentlyContinue) {
         try {

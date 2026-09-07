@@ -114,6 +114,36 @@ public sealed class EcsLifecycleTests : IDisposable
     }
 
     [Fact]
+    public async Task Component_type_migration_upgrades_only_older_versions_when_identity_is_unchanged()
+    {
+        var setup = Setup();
+        var first = setup.Types.Define(new(setup.Application, "fixture-app.quantity",
+            "{\"type\":\"object\",\"required\":[\"current\"],\"properties\":{\"current\":{\"type\":\"integer\"}},\"additionalProperties\":false}"));
+        await setup.Entities.CreateEntityAsync("space", "legacy-item", "Legacy item");
+        await setup.Entities.AddComponentAsync(new("space", "legacy-item",
+            new(first.QualifiedId, first.Version, first.SchemaHash), "{\"current\":1}", 0));
+        var latest = setup.Types.Define(new(setup.Application, "fixture-app.quantity",
+            "{\"type\":\"object\",\"required\":[\"current\"],\"properties\":{\"current\":{\"type\":\"integer\",\"minimum\":1}},\"additionalProperties\":false}"));
+        await setup.Entities.CreateEntityAsync("space", "current-item", "Current item");
+        await setup.Entities.AddComponentAsync(new("space", "current-item",
+            new(latest.QualifiedId, latest.Version, latest.SchemaHash), "{\"current\":2}", 0));
+
+        var migrated = await setup.Lifecycle.MigrateComponentTypeAsync(
+            first.QualifiedId, first.QualifiedId);
+
+        Assert.Equal(1, migrated.MigratedComponents);
+        Assert.Equal(["space"], migrated.StateSpaceIds);
+        Assert.True((await setup.Lifecycle.GetComponentTypeAsync(first.QualifiedId))!.IsEnabled);
+        var upgraded = await setup.Entities.GetComponentAsync("space", "legacy-item", first.QualifiedId);
+        Assert.Equal(latest.Version, upgraded!.Type.TypeVersion);
+        Assert.Equal(latest.SchemaHash, upgraded.Type.SchemaHash);
+        Assert.Equal(2, upgraded.Revision);
+        var unchanged = await setup.Entities.GetComponentAsync("space", "current-item", first.QualifiedId);
+        Assert.Equal(latest.Version, unchanged!.Type.TypeVersion);
+        Assert.Equal(1, unchanged.Revision);
+    }
+
+    [Fact]
     public async Task Relationship_kind_migration_targets_a_base_owned_kind_transactionally()
     {
         var setup = SetupWithBase();

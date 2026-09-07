@@ -322,7 +322,7 @@ public sealed class ApplicationObjectContractTests : IDisposable
     {
         var app = ApplicationIdentifier.Parse("query-object");
         var json = """
-        {"id":"query-object.query.members","category":"world.members","name":"Members","description":"Lists members.","matches":["list members"],"roles":{"subject":"The owning entity.","member":"A listed entity."},"executor":"object-projection","object":{"qualifiedId":"query-object.summary","version":1,"contentFingerprint":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"},"collection":"members","outputSchema":{"type":"object","additionalProperties":false,"properties":{"members":{"type":"array","items":{"type":"string"}}}},"exposure":"model-visible","status":"active"}
+        {"id":"query-object.query.members","category":"world.members","name":"Members","description":"Lists members.","matches":["list members"],"roles":{"campaign":"The owning campaign.","member":"A listed entity."},"executor":"object-projection","campaignSelection":{"queryId":"query-object.query.selection","entityIdField":"campaignId"},"object":{"qualifiedId":"query-object.summary","version":1,"contentFingerprint":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"},"collection":"members","outputSchema":{"type":"object","additionalProperties":false,"properties":{"members":{"type":"array","items":{"type":"string"}}}},"exposure":"model-visible","status":"active"}
         """;
 
         var parsed = ApplicationQueryContract.Parse(json, app);
@@ -333,6 +333,8 @@ public sealed class ApplicationObjectContractTests : IDisposable
         Assert.Equal("query-object.summary", read.ProjectionQualifiedId);
         Assert.Equal("members", read.ObjectCollectionId);
         Assert.Equal(new string('A', 64), read.ProjectionContentHash);
+        Assert.Equal("query-object.query.selection", read.CampaignSelection!.QueryId);
+        Assert.Equal("campaignId", read.CampaignSelection.EntityIdField);
         Assert.DoesNotContain("outputSchemaHash", canonical, StringComparison.Ordinal);
         Assert.Contains("contentFingerprint", canonical, StringComparison.Ordinal);
     }

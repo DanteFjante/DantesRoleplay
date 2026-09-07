@@ -169,19 +169,21 @@ public sealed class SqliteEcsLifecycleStore(
     {
         ValidateId(sourceQualifiedTypeId, nameof(sourceQualifiedTypeId));
         ValidateId(targetQualifiedTypeId, nameof(targetQualifiedTypeId));
-        if (sourceQualifiedTypeId == targetQualifiedTypeId)
-            throw Error("COMPONENT_TYPE_MIGRATION_SAME_ID", "Source and target component types must differ.");
+        var upgradesVersionInPlace = sourceQualifiedTypeId == targetQualifiedTypeId;
 
         var source = await RequireComponentTypeAsync(sourceQualifiedTypeId, cancellationToken);
         var target = await RequireComponentTypeAsync(targetQualifiedTypeId, cancellationToken);
         if (target.DisabledAtUtc is not null)
             throw Error("COMPONENT_TYPE_TARGET_DISABLED", "The target component type is disabled.");
 
-        var immutableReferences = (await ComponentTypeReferencesAsync(sourceQualifiedTypeId, cancellationToken))
-            .Where(value => value.Kind != "components").ToArray();
-        RequireUnused("COMPONENT_TYPE_IN_USE",
-            "The component type is used by immutable definitions that cannot be silently rewritten.",
-            immutableReferences);
+        if (!upgradesVersionInPlace)
+        {
+            var immutableReferences = (await ComponentTypeReferencesAsync(sourceQualifiedTypeId, cancellationToken))
+                .Where(value => value.Kind != "components").ToArray();
+            RequireUnused("COMPONENT_TYPE_IN_USE",
+                "The component type is used by immutable definitions that cannot be silently rewritten.",
+                immutableReferences);
+        }
 
         var targetVersion = await db.Set<ComponentTypeVersionRecord>().AsNoTracking()
             .Where(value => value.QualifiedId == targetQualifiedTypeId)
@@ -199,23 +201,30 @@ public sealed class SqliteEcsLifecycleStore(
                 "Each rewritten component value must identify a unique state-space entity.");
         }
 
-        var components = await db.Set<ApplicationEcsComponentRecord>().AsNoTracking()
-            .Where(value => value.QualifiedTypeId == sourceQualifiedTypeId)
+        var componentQuery = db.Set<ApplicationEcsComponentRecord>().AsNoTracking()
+            .Where(value => value.QualifiedTypeId == sourceQualifiedTypeId);
+        if (upgradesVersionInPlace)
+            componentQuery = componentQuery.Where(value => value.TypeVersion != targetVersion.Version
+                || value.SchemaHash != targetVersion.SchemaHash);
+        var components = await componentQuery
             .OrderBy(value => value.StateSpaceId).ThenBy(value => value.EntityId)
             .ToArrayAsync(cancellationToken);
         var componentKeys = components.Select(value => (value.StateSpaceId, value.EntityId)).ToHashSet();
         if (replacements.Keys.Any(value => !componentKeys.Contains(value)))
             throw Error("COMPONENT_TYPE_MIGRATION_VALUE_UNKNOWN",
                 "A rewritten component value does not identify a source component.");
-        var collisions = await db.Set<ApplicationEcsComponentRecord>().AsNoTracking()
-            .Where(value => value.QualifiedTypeId == targetQualifiedTypeId
-                && components.Select(component => component.StateSpaceId).Contains(value.StateSpaceId)
-                && components.Select(component => component.EntityId).Contains(value.EntityId))
-            .Select(value => new { value.StateSpaceId, value.EntityId })
-            .ToArrayAsync(cancellationToken);
-        if (collisions.Any(value => componentKeys.Contains((value.StateSpaceId, value.EntityId))))
-            throw Error("COMPONENT_TYPE_TARGET_EXISTS",
-                "An entity already contains the target component type.");
+        if (!upgradesVersionInPlace)
+        {
+            var collisions = await db.Set<ApplicationEcsComponentRecord>().AsNoTracking()
+                .Where(value => value.QualifiedTypeId == targetQualifiedTypeId
+                    && components.Select(component => component.StateSpaceId).Contains(value.StateSpaceId)
+                    && components.Select(component => component.EntityId).Contains(value.EntityId))
+                .Select(value => new { value.StateSpaceId, value.EntityId })
+                .ToArrayAsync(cancellationToken);
+            if (collisions.Any(value => componentKeys.Contains((value.StateSpaceId, value.EntityId))))
+                throw Error("COMPONENT_TYPE_TARGET_EXISTS",
+                    "An entity already contains the target component type.");
+        }
 
         foreach (var component in components)
         {
@@ -261,7 +270,8 @@ public sealed class SqliteEcsLifecycleStore(
                     throw Error("COMPONENT_TYPE_MIGRATION_VALUE_STALE",
                         "A source component changed after migration validation.");
             }
-            source.DisabledAtUtc ??= now;
+            if (!upgradesVersionInPlace)
+                source.DisabledAtUtc ??= now;
             await db.SaveChangesAsync(cancellationToken);
             if (constraints is not null)
                 foreach (var stateSpaceId in affectedStateSpaces)

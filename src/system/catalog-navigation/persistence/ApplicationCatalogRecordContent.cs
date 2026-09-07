@@ -34,7 +34,7 @@ public static class ApplicationCatalogRecordContent
         using var schema = JsonDocument.Parse(query.OutputSchemaJson);
         if (query.IsObjectProjection)
         {
-            return JsonSerializer.Serialize(new
+            var objectContent = JsonSerializer.Serialize(new
             {
                 id = query.Id,
                 category = query.Category,
@@ -55,6 +55,7 @@ public static class ApplicationCatalogRecordContent
                     ? "model-visible" : "binding-only",
                 status = query.Status
             });
+            return WithOptionalQueryMetadata(objectContent, query);
         }
         var content = JsonSerializer.Serialize(new
         {
@@ -77,11 +78,23 @@ public static class ApplicationCatalogRecordContent
                 ? "model-visible" : "binding-only",
             status = query.Status
         });
-        // Preserve legacy fingerprints byte-for-byte while retaining the opt-in input
-        // contract when importing a parameterized query into the canonical catalog.
-        if (query.InputSchemaJson is null) return content;
+        return WithOptionalQueryMetadata(content, query);
+    }
+
+    private static string WithOptionalQueryMetadata(string content, ApplicationQueryContract query)
+    {
+        // Preserve legacy fingerprints byte-for-byte while retaining opt-in query metadata in
+        // the canonical catalog used by discovery and the web authorization boundary.
+        if (query.InputSchemaJson is null && query.CampaignSelection is null) return content;
         var document = JsonNode.Parse(content)!.AsObject();
-        document["inputSchema"] = JsonNode.Parse(query.InputSchemaJson);
+        if (query.InputSchemaJson is not null)
+            document["inputSchema"] = JsonNode.Parse(query.InputSchemaJson);
+        if (query.CampaignSelection is not null)
+            document["campaignSelection"] = JsonSerializer.SerializeToNode(new
+            {
+                queryId = query.CampaignSelection.QueryId,
+                entityIdField = query.CampaignSelection.EntityIdField
+            });
         return document.ToJsonString();
     }
 

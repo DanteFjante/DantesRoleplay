@@ -53,7 +53,9 @@ then repeat the identical command with `--apply`. The apply path creates a consi
 and delegates every rename, value rewrite, collision check, revision change, and source retirement
 to the transactional ECS lifecycle store. Do not rename ECS rows with direct SQL. Schema-changing
 component migrations must provide exact state-space, entity, and expected-revision-bound rewritten
-values for every incompatible live component.
+values for every incompatible live component. A component plan whose source and target qualified IDs
+match upgrades only rows on older immutable schema versions to the latest registered version; rows
+already current remain unchanged, and the component identity remains enabled.
 
 Applications can declare reviewed base applications. A state space remains bound to the exact
 application revision and activation fingerprint recorded when it was created or last upgraded;
