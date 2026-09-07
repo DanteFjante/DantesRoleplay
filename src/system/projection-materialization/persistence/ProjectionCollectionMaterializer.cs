@@ -18,7 +18,8 @@ public sealed class ProjectionCollectionMaterializer(
     IEntityBatchReadStore entities,
     IEntityComponentStore components,
     IBoundedJsonSchemaValidator schemas,
-    IProjectionReadTransaction transactions) : IProjectionCollectionMaterializer
+    IProjectionReadTransaction transactions,
+    IProjectionCollectionEndpointSelector? endpointSelector = null) : IProjectionCollectionMaterializer
 {
     public Task<ProjectionCollectionMaterializationResult> MaterializeAsync(
         ProjectionCollectionMaterializationRequest request,
@@ -118,61 +119,129 @@ public sealed class ProjectionCollectionMaterializer(
             .Distinct(StringComparer.Ordinal).ToArray();
         if (allEntityIds.Length > 256)
             throw new InvalidOperationException("The collection entity read bound exceeded.");
-        var firstEntities = await entities.GetEntitiesAsync(request.StateSpaceId, allEntityIds, cancellationToken);
-        var entityById = firstEntities.ToDictionary(value => value.EntityId, StringComparer.Ordinal);
-
         var endpointTypes = relationship.RequiredEndpointComponents
             .Concat(relationship.OptionalEndpointComponents).ToArray();
         var sourceEndpoint = incoming ? "to" : "from";
         var itemEndpoint = incoming ? "from" : "to";
-        var locators = endpointTypes.Where(value => value.Endpoint == sourceEndpoint)
-            .Select(value => new EcsComponentLocator(fromEntityId, value.Type.QualifiedTypeId))
-            .Concat(candidateIds.SelectMany(entityId => endpointTypes.Where(value => value.Endpoint == itemEndpoint)
-                .Select(value => new EcsComponentLocator(entityId, value.Type.QualifiedTypeId))))
-            .Distinct().ToArray();
-        if (locators.Length > 256)
-            throw new InvalidOperationException("The collection component read bound exceeded.");
-        var firstComponents = await components.GetComponentsAsync(request.StateSpaceId, locators, cancellationToken);
-        var componentByKey = firstComponents.ToDictionary(value => (value.EntityId, value.Type.QualifiedTypeId));
+        var itemTypes = endpointTypes.Where(value => value.Endpoint == itemEndpoint).ToArray();
+        var requiredItemTypes = relationship.RequiredEndpointComponents
+            .Where(value => value.Endpoint == itemEndpoint).ToArray();
+        var selected = endpointSelector is null ? null : await endpointSelector.SelectAsync(
+            request.StateSpaceId, allCandidateIds, allEntityIds, requiredItemTypes, itemTypes,
+            collection.Order, cancellationToken);
 
-        foreach (var required in relationship.RequiredEndpointComponents)
+        IReadOnlyList<EcsEntityView> firstEntities;
+        IReadOnlyList<ProjectionSourceRevision> endpointRevisions;
+        IReadOnlyList<JsonObject> page;
+        string sourceFingerprint;
+        int totalCount;
+        string? nextCursor;
+        if (selected is null)
         {
-            var ids = required.Endpoint == sourceEndpoint ? new[] { fromEntityId } : candidateIds;
-            if (ids.Any(id => !componentByKey.TryGetValue((id, required.Type.QualifiedTypeId), out var value)
-                || value.Type != required.Type))
-                candidateIds = required.Endpoint == itemEndpoint
-                    ? candidateIds.Where(id => componentByKey.TryGetValue((id, required.Type.QualifiedTypeId), out var value)
-                        && value.Type == required.Type).ToArray()
-                    : throw new InvalidOperationException("A required collection source component is missing or stale.");
-        }
+            firstEntities = await entities.GetEntitiesAsync(request.StateSpaceId, allEntityIds, cancellationToken);
+            var entityById = firstEntities.ToDictionary(value => value.EntityId, StringComparer.Ordinal);
+            var locators = endpointTypes.Where(value => value.Endpoint == sourceEndpoint)
+                .Select(value => new EcsComponentLocator(fromEntityId, value.Type.QualifiedTypeId))
+                .Concat(candidateIds.SelectMany(entityId => itemTypes
+                    .Select(value => new EcsComponentLocator(entityId, value.Type.QualifiedTypeId))))
+                .Distinct().ToArray();
+            if (locators.Length > 256)
+                throw new InvalidOperationException("The collection component read bound exceeded.");
+            var firstComponents = await components.GetComponentsAsync(request.StateSpaceId, locators, cancellationToken);
+            var componentByKey = firstComponents.ToDictionary(value => (value.EntityId, value.Type.QualifiedTypeId));
 
-        var items = candidateIds.Where(entityById.ContainsKey).Select(entityId =>
-            Item(entityById[entityId], endpointTypes.Where(value => value.Endpoint == itemEndpoint), componentByKey)).ToList();
-        // Undisclosed arrays stay empty; their edges, names and revisions are never read.
-        ApplyNestedReferences(items, firstNestedEdges, declaredNestedRelationships, entityById);
-        items.Sort((left, right) => Compare(left, right, collection.Order));
-        var sourceFingerprint = Fingerprint(firstEdges.Concat(firstNestedEdges), firstEntities, firstComponents,
-            root.SourceRevisions, request, collection.CollectionId);
-        var offset = DecodeCursor(request.Cursor, sourceFingerprint, items.Count);
-        var page = items.Skip(offset).Take(pageSize).ToArray();
-        var nextOffset = offset + page.Length;
-        var nextCursor = nextOffset < items.Count ? EncodeCursor(sourceFingerprint, nextOffset) : null;
+            foreach (var required in relationship.RequiredEndpointComponents)
+            {
+                var ids = required.Endpoint == sourceEndpoint ? new[] { fromEntityId } : candidateIds;
+                if (ids.Any(id => !componentByKey.TryGetValue((id, required.Type.QualifiedTypeId), out var value)
+                    || value.Type != required.Type))
+                    candidateIds = required.Endpoint == itemEndpoint
+                        ? candidateIds.Where(id => componentByKey.TryGetValue((id, required.Type.QualifiedTypeId), out var value)
+                            && value.Type == required.Type).ToArray()
+                        : throw new InvalidOperationException("A required collection source component is missing or stale.");
+            }
+
+            var items = candidateIds.Where(entityById.ContainsKey).Select(entityId =>
+                Item(entityById[entityId], itemTypes, componentByKey)).ToList();
+            // Undisclosed arrays stay empty; their edges, names and revisions are never read.
+            ApplyNestedReferences(items, firstNestedEdges, declaredNestedRelationships, entityById);
+            items.Sort((left, right) => Compare(left, right, collection.Order));
+            sourceFingerprint = Fingerprint(firstEdges.Concat(firstNestedEdges), firstEntities,
+                firstComponents.Select(ComponentRevision), root.SourceRevisions, request, collection.CollectionId);
+            var offset = DecodeCursor(request.Cursor, sourceFingerprint, items.Count);
+            page = items.Skip(offset).Take(pageSize).ToArray();
+            var nextOffset = offset + page.Count;
+            nextCursor = nextOffset < items.Count ? EncodeCursor(sourceFingerprint, nextOffset) : null;
+            totalCount = items.Count;
+            endpointRevisions = locators.Select(locator =>
+            {
+                componentByKey.TryGetValue((locator.EntityId, locator.QualifiedTypeId), out var component);
+                return new ProjectionSourceRevision(locator.EntityId, component?.Type ?? endpointTypes
+                    .First(value => value.Type.QualifiedTypeId == locator.QualifiedTypeId).Type,
+                    component?.Revision ?? 0);
+            }).ToArray();
+        }
+        else
+        {
+            firstEntities = selected.Entities;
+            var entityById = firstEntities.ToDictionary(value => value.EntityId, StringComparer.Ordinal);
+            var sourceLocators = endpointTypes.Where(value => value.Endpoint == sourceEndpoint)
+                .Select(value => new EcsComponentLocator(fromEntityId, value.Type.QualifiedTypeId))
+                .Distinct().ToArray();
+            var sourceComponents = sourceLocators.Length == 0
+                ? []
+                : await components.GetComponentsAsync(request.StateSpaceId, sourceLocators, cancellationToken);
+            var sourceByKey = sourceComponents.ToDictionary(value => (value.EntityId, value.Type.QualifiedTypeId));
+            foreach (var required in relationship.RequiredEndpointComponents
+                         .Where(value => value.Endpoint == sourceEndpoint))
+                if (!sourceByKey.TryGetValue((fromEntityId, required.Type.QualifiedTypeId), out var value)
+                    || value.Type != required.Type)
+                    throw new InvalidOperationException("A required collection source component is missing or stale.");
+
+            var existingRevisions = selected.ExistingComponentRevisions
+                .Concat(sourceComponents.Select(ComponentRevision)).ToArray();
+            sourceFingerprint = Fingerprint(firstEdges.Concat(firstNestedEdges), firstEntities,
+                existingRevisions, root.SourceRevisions, request, collection.CollectionId);
+            totalCount = selected.OrderedCandidateEntityIds.Count;
+            var offset = DecodeCursor(request.Cursor, sourceFingerprint, totalCount);
+            var pageIds = selected.OrderedCandidateEntityIds.Skip(offset).Take(pageSize).ToArray();
+            var nextOffset = offset + pageIds.Length;
+            nextCursor = nextOffset < totalCount ? EncodeCursor(sourceFingerprint, nextOffset) : null;
+
+            var pageLocators = pageIds.SelectMany(entityId => itemTypes.Select(value =>
+                    new EcsComponentLocator(entityId, value.Type.QualifiedTypeId)))
+                .Distinct().ToArray();
+            var pageComponents = pageLocators.Length == 0
+                ? []
+                : await components.GetComponentsAsync(request.StateSpaceId, pageLocators, cancellationToken);
+            var componentByKey = sourceComponents.Concat(pageComponents)
+                .ToDictionary(value => (value.EntityId, value.Type.QualifiedTypeId));
+            var pageItems = pageIds.Select(entityId => Item(entityById[entityId], itemTypes, componentByKey)).ToArray();
+            ApplyNestedReferences(pageItems, firstNestedEdges, declaredNestedRelationships, entityById);
+            page = pageItems;
+
+            var allLocators = sourceLocators.Concat(allCandidateIds.SelectMany(entityId => itemTypes.Select(value =>
+                    new EcsComponentLocator(entityId, value.Type.QualifiedTypeId))))
+                .Distinct().ToArray();
+            var revisionByKey = existingRevisions.ToDictionary(
+                value => (value.EntityId, value.Type.QualifiedTypeId));
+            endpointRevisions = allLocators.Select(locator =>
+            {
+                revisionByKey.TryGetValue((locator.EntityId, locator.QualifiedTypeId), out var component);
+                return component ?? new ProjectionSourceRevision(locator.EntityId, endpointTypes
+                    .First(value => value.Type.QualifiedTypeId == locator.QualifiedTypeId).Type, 0);
+            }).ToArray();
+        }
 
         var output = JsonNode.Parse(root.OutputJson)?.AsObject()
             ?? throw new InvalidOperationException("The object collection root is invalid.");
         Set(output, relationship.TargetPointer, new JsonArray(page.Select(value => value.DeepClone()).ToArray()));
-        SetDeclaredMetadata(output, definition.OutputSchemaJson, items.Count, nextCursor);
+        SetDeclaredMetadata(output, definition.OutputSchemaJson, totalCount, nextCursor);
         var outputJson = output.ToJsonString();
         if (Encoding.UTF8.GetByteCount(outputJson) > contract.Limits.OutputBytes
             || schemas.Validate(definition.ProfileId, definition.OutputSchemaJson, outputJson).Status != SchemaValueStatus.Valid)
             throw new InvalidOperationException("The expanded object collection fails its exact schema or output bound.");
 
-        var endpointRevisions = locators.Select(locator =>
-        {
-            componentByKey.TryGetValue((locator.EntityId, locator.QualifiedTypeId), out var component);
-            return new ProjectionSourceRevision(locator.EntityId, component?.Type ?? endpointTypes
-                .First(value => value.Type.QualifiedTypeId == locator.QualifiedTypeId).Type, component?.Revision ?? 0);
-        });
         var revisions = root.SourceRevisions.Concat(endpointRevisions)
             .Distinct().OrderBy(value => value.EntityId, StringComparer.Ordinal)
             .ThenBy(value => value.Type.QualifiedTypeId, StringComparer.Ordinal).ToArray();
@@ -201,6 +270,9 @@ public sealed class ProjectionCollectionMaterializer(
             .ThenBy(value => value.QualifiedKind, StringComparer.Ordinal)
             .Select(value => new ProjectionRelationshipRevision(value.FromEntityId, value.ToEntityId, value.QualifiedKind, value.Revision))
             .ToArray();
+
+    private static ProjectionSourceRevision ComponentRevision(EcsComponentView component) =>
+        new(component.EntityId, component.Type, component.Revision);
 
     private static JsonObject Item(EcsEntityView entity,
         IEnumerable<ApplicationObjectEndpointComponent> declarations,
@@ -280,7 +352,7 @@ public sealed class ProjectionCollectionMaterializer(
     private static string Fingerprint(
         IEnumerable<EcsRelationshipView> edges,
         IEnumerable<EcsEntityView> entities,
-        IEnumerable<EcsComponentView> components,
+        IEnumerable<ProjectionSourceRevision> components,
         IEnumerable<ProjectionSourceRevision> rootRevisions,
         ProjectionCollectionMaterializationRequest request,
         string collectionId)

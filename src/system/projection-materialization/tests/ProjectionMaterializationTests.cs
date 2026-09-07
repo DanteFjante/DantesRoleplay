@@ -130,8 +130,10 @@ public sealed class ProjectionMaterializationTests : IDisposable
         var countedEdges = new SqliteStateSpaceEdgeStore(countedDb, countedSpaces);
         var rootMaterializer = new ProjectionMaterializer(countedRegistry, countedStore, countedSpaces, setup.Schemas,
             snapshots: new SqliteProjectionSourceSnapshotReader(countedDb, countedSpaces, countedStore));
+        var collectionReads = new CountingStore(countedStore);
         var materializer = new ProjectionCollectionMaterializer(countedRegistry, rootMaterializer, countedEdges,
-            countedStore, countedStore, setup.Schemas, new SqliteProjectionReadTransaction(countedDb));
+            collectionReads, collectionReads, setup.Schemas, new SqliteProjectionReadTransaction(countedDb),
+            new SqliteProjectionCollectionEndpointSelector(countedDb));
         var request = new ProjectionCollectionMaterializationRequest("collection-space", definition.Reference,
             new Dictionary<string, string> { ["owner"] = "root" }, "items", "dm");
 
@@ -145,6 +147,7 @@ public sealed class ProjectionMaterializationTests : IDisposable
             value.Revision == 1);
         Assert.True(counter.Count is >= 1 && counter.Count <= definition.ObjectContract!.Limits.SqlQueries,
             $"Collection read used {counter.Count} SQL commands:{Environment.NewLine}{string.Join(Environment.NewLine, counter.Commands)}");
+        Assert.Equal(1, collectionReads.LastLocatorCount);
         using var firstJson = System.Text.Json.JsonDocument.Parse(first.OutputJson);
         Assert.Equal("Alpha", firstJson.RootElement.GetProperty("items")[0].GetProperty("name").GetString());
         Assert.Equal("Zed", firstJson.RootElement.GetProperty("items")[0].GetProperty("members")[0]
@@ -154,6 +157,7 @@ public sealed class ProjectionMaterializationTests : IDisposable
         var cursor = firstJson.RootElement.GetProperty("nextCursor").GetString();
         var second = await materializer.MaterializeAsync(request with { Cursor = cursor });
         Assert.True(second.Complete);
+        Assert.Equal(1, collectionReads.LastLocatorCount);
         using var secondJson = System.Text.Json.JsonDocument.Parse(second.OutputJson);
         Assert.Equal("Bravo", secondJson.RootElement.GetProperty("items")[0].GetProperty("name").GetString());
         Assert.Empty(secondJson.RootElement.GetProperty("items")[0].GetProperty("members").EnumerateArray());
@@ -164,6 +168,120 @@ public sealed class ProjectionMaterializationTests : IDisposable
             materializer.MaterializeAsync(request with { Cursor = cursor }));
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             materializer.MaterializeAsync(request with { Perspective = "player" }));
+    }
+
+    [Fact]
+    public async Task Maximum_collection_pages_hydrate_only_selected_endpoints_and_bind_cursors_to_the_full_source()
+    {
+        const int itemCount = 100;
+        const int pageSize = 10;
+        const string stateSpaceId = "maximum-collection-space";
+        var setup = Setup("maximum-collection", stateSpaceId);
+        var rootType = setup.Types.Define(new(setup.Application, "maximum-collection.root",
+            "{\"type\":\"object\",\"required\":[\"title\"],\"properties\":{\"title\":{\"type\":\"string\"}}}"));
+        var itemType = setup.Types.Define(new(setup.Application, "maximum-collection.item",
+            "{\"type\":\"object\",\"required\":[\"summary\"],\"properties\":{\"summary\":{\"type\":\"string\"}}}"));
+        await setup.Store.CreateEntityAsync(stateSpaceId, "root", "Root");
+        await setup.Store.AddComponentAsync(new(stateSpaceId, "root", Ref(rootType),
+            "{\"title\":\"Maximum directory\"}", 0));
+        var edges = new SqliteStateSpaceEdgeStore(setup.Db, setup.StateSpaces);
+        var summary = new string('x', 512);
+        var expected = new List<(string Id, string Name)>();
+        for (var index = 0; index < itemCount; index++)
+        {
+            var id = $"item.{index:D3}";
+            var name = $"Group {index % 10:D2}";
+            expected.Add((id, name));
+            await setup.Store.CreateEntityAsync(stateSpaceId, id, name);
+            await setup.Store.AddComponentAsync(new(stateSpaceId, id, Ref(itemType),
+                $$"""{"summary":"{{summary}}"}""", 0));
+            await edges.SetRelationshipAsync(stateSpaceId, "root", id,
+                "maximum-collection.includes", "{}", 0);
+        }
+        expected = expected.OrderBy(value => value.Name, StringComparer.Ordinal)
+            .ThenBy(value => value.Id, StringComparer.Ordinal).ToList();
+
+        const string schema = """
+        {"type":"object","required":["title","items","totalCount","complete","nextCursor"],"additionalProperties":false,"properties":{"title":{"type":"string"},"items":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","name","summary"],"properties":{"id":{"type":"string"},"name":{"type":"string"},"summary":{"type":"string"}}}},"totalCount":{"type":"integer"},"complete":{"type":"boolean"},"nextCursor":{"type":["string","null"]}}}
+        """;
+        var definition = setup.Registry.Define(new(setup.Application, "maximum-collection.directory", schema,
+            [new("root", "owner", Ref(rootType))], [], [new("root", "/title", "/title")],
+            new([new("owner", true), new("item", false)], [new("root", true)],
+                [new("items", "maximum-collection.includes", "owner", "item", "many", "/items",
+                    [new("to", Ref(itemType))], [])], [],
+                [new("items", "items", pageSize, pageSize, [new("/name", "asc")],
+                    "source-revision-bound")],
+                new(1, itemCount, 32_768, 12), new(["dm"], []), null), 1));
+
+        var counter = new CommandCounter();
+        var options = new DbContextOptionsBuilder<DantesRoleplayDbContext>()
+            .UseSqlite(_fixture.Connection).AddInterceptors(counter).Options;
+        await using var countedDb = new DantesRoleplayDbContext(options);
+        var applications = new SqliteApplicationRegistry(countedDb);
+        var spaces = new SqliteStateSpaceRegistry(countedDb, applications);
+        var types = new SqliteComponentTypeRegistry(countedDb, setup.Schemas);
+        var store = new SqliteEntityComponentStore(countedDb, types, setup.Schemas);
+        var registry = new SqliteProjectionDefinitionRegistry(countedDb, types, setup.Schemas);
+        var countedEdges = new SqliteStateSpaceEdgeStore(countedDb, spaces);
+        var root = new ProjectionMaterializer(registry, store, spaces, setup.Schemas,
+            snapshots: new SqliteProjectionSourceSnapshotReader(countedDb, spaces, store));
+        var componentReads = new CountingStore(store);
+        var materializer = new ProjectionCollectionMaterializer(registry, root, countedEdges,
+            componentReads, componentReads, setup.Schemas, new SqliteProjectionReadTransaction(countedDb),
+            new SqliteProjectionCollectionEndpointSelector(countedDb));
+        var request = new ProjectionCollectionMaterializationRequest(stateSpaceId, definition.Reference,
+            new Dictionary<string, string> { ["owner"] = "root" }, "items", "dm", PageSize: pageSize);
+
+        Assert.NotNull(registry.Get(definition.QualifiedId, definition.Version));
+        var actual = new List<string>();
+        var allocations = new List<long>();
+        var elapsed = new List<long>();
+        string? cursor = null;
+        string? firstCursor = null;
+        for (var pageIndex = 0; pageIndex < itemCount / pageSize; pageIndex++)
+        {
+            counter.Reset();
+            var before = GC.GetTotalAllocatedBytes(false);
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+            var result = await materializer.MaterializeAsync(request with { Cursor = cursor });
+            timer.Stop();
+            allocations.Add(GC.GetTotalAllocatedBytes(false) - before);
+            elapsed.Add(timer.ElapsedMilliseconds);
+            Assert.True(counter.Count is >= 1 && counter.Count <= definition.ObjectContract!.Limits.SqlQueries,
+                $"Collection page {pageIndex} used {counter.Count} SQL commands:{Environment.NewLine}" +
+                string.Join(Environment.NewLine, counter.Commands));
+            Assert.Equal(pageSize, componentReads.LastLocatorCount);
+            Assert.InRange(componentReads.LastPayloadCharacterCount, pageSize * 512, pageSize * 540);
+            using var json = System.Text.Json.JsonDocument.Parse(result.OutputJson);
+            Assert.Equal(itemCount, json.RootElement.GetProperty("totalCount").GetInt32());
+            actual.AddRange(json.RootElement.GetProperty("items").EnumerateArray()
+                .Select(value => value.GetProperty("id").GetString()!));
+            cursor = json.RootElement.GetProperty("nextCursor").GetString();
+            firstCursor ??= cursor;
+            Assert.Equal(pageIndex == itemCount / pageSize - 1, result.Complete);
+        }
+        Assert.Equal(expected.Select(value => value.Id), actual);
+        Assert.Null(cursor);
+        Assert.All(allocations, value => Assert.True(value > 0));
+        Console.WriteLine($"Maximum collection page profile: allocations={string.Join(',', allocations)}; " +
+            $"elapsedMs={string.Join(',', elapsed)}");
+
+        await setup.Store.SetComponentAsync(new(stateSpaceId, "item.099", Ref(itemType),
+            "{\"summary\":\"changed outside the first page\"}", 1));
+        var stale = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            materializer.MaterializeAsync(request with { Cursor = firstCursor }));
+        Assert.Contains("CURSOR_STALE", stale.Message, StringComparison.Ordinal);
+
+        Assert.True(await setup.Store.RemoveComponentAsync(stateSpaceId, "item.098", Ref(itemType), 1));
+        var missingEndpoint = await materializer.MaterializeAsync(request);
+        using var missingJson = System.Text.Json.JsonDocument.Parse(missingEndpoint.OutputJson);
+        Assert.Equal(itemCount - 1, missingJson.RootElement.GetProperty("totalCount").GetInt32());
+        Assert.DoesNotContain("item.098", missingEndpoint.OutputJson, StringComparison.Ordinal);
+
+        var unsupportedOrder = await new SqliteProjectionCollectionEndpointSelector(countedDb).SelectAsync(
+            stateSpaceId, expected.Select(value => value.Id).ToArray(), expected.Select(value => value.Id).ToArray(),
+            [new("to", Ref(itemType))], [new("to", Ref(itemType))], [new("/summary", "asc")]);
+        Assert.Null(unsupportedOrder);
     }
 
     [Theory]
@@ -776,17 +894,20 @@ public sealed class ProjectionMaterializationTests : IDisposable
         }
     }
 
-    private sealed class CountingStore(IEntityComponentStore inner, DantesRoleplayDbContext? db = null) : IEntityComponentStore
+    private sealed class CountingStore(IEntityComponentStore inner, DantesRoleplayDbContext? db = null) :
+        IEntityComponentStore, IEntityBatchReadStore
     {
         public int BatchReads { get; private set; }
         public int LastLocatorCount { get; private set; }
+        public int LastPayloadCharacterCount { get; private set; }
         public bool ReadInsideTransaction { get; private set; }
         public Task<EcsEntityView> CreateEntityAsync(string stateSpaceId, string entityId, string name, CancellationToken cancellationToken = default) => inner.CreateEntityAsync(stateSpaceId, entityId, name, cancellationToken);
         public Task<EcsEntityView?> GetEntityAsync(string stateSpaceId, string entityId, CancellationToken cancellationToken = default) => inner.GetEntityAsync(stateSpaceId, entityId, cancellationToken);
+        public Task<IReadOnlyList<EcsEntityView>> GetEntitiesAsync(string stateSpaceId, IReadOnlyList<string> entityIds, CancellationToken cancellationToken = default) => ((IEntityBatchReadStore)inner).GetEntitiesAsync(stateSpaceId, entityIds, cancellationToken);
         public Task<EcsEntityDiscoveryPage> ListEntitiesAsync(string stateSpaceId, string? afterEntityId, int limit, CancellationToken cancellationToken = default) => inner.ListEntitiesAsync(stateSpaceId, afterEntityId, limit, cancellationToken);
         public Task<bool> DeleteEntityAsync(string stateSpaceId, string entityId, int expectedRevision, CancellationToken cancellationToken = default) => inner.DeleteEntityAsync(stateSpaceId, entityId, expectedRevision, cancellationToken);
         public Task<EcsComponentView?> GetComponentAsync(string stateSpaceId, string entityId, string qualifiedTypeId, CancellationToken cancellationToken = default) => inner.GetComponentAsync(stateSpaceId, entityId, qualifiedTypeId, cancellationToken);
-        public async Task<IReadOnlyList<EcsComponentView>> GetComponentsAsync(string stateSpaceId, IReadOnlyList<EcsComponentLocator> locators, CancellationToken cancellationToken = default) { BatchReads++; LastLocatorCount = locators.Count; ReadInsideTransaction = db?.Database.CurrentTransaction is not null; return await inner.GetComponentsAsync(stateSpaceId, locators, cancellationToken); }
+        public async Task<IReadOnlyList<EcsComponentView>> GetComponentsAsync(string stateSpaceId, IReadOnlyList<EcsComponentLocator> locators, CancellationToken cancellationToken = default) { BatchReads++; LastLocatorCount = locators.Count; ReadInsideTransaction = db?.Database.CurrentTransaction is not null; var values = await inner.GetComponentsAsync(stateSpaceId, locators, cancellationToken); LastPayloadCharacterCount = values.Sum(value => value.ValueJson.Length); return values; }
         public Task<EcsComponentDiscoveryPage> ListComponentsAsync(string stateSpaceId, string entityId, string? afterQualifiedTypeId, int limit, CancellationToken cancellationToken = default) => inner.ListComponentsAsync(stateSpaceId, entityId, afterQualifiedTypeId, limit, cancellationToken);
         public Task<EcsComponentView> AddComponentAsync(EcsComponentWrite write, CancellationToken cancellationToken = default) => inner.AddComponentAsync(write, cancellationToken);
         public Task<EcsComponentView> SetComponentAsync(EcsComponentWrite write, CancellationToken cancellationToken = default) => inner.SetComponentAsync(write, cancellationToken);

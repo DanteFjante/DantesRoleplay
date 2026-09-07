@@ -30,6 +30,25 @@ public sealed record ApplicationObjectCollection(
     int MaximumPageSize,
     IReadOnlyList<ApplicationObjectOrder> Order,
     string Cursor);
+public sealed record ProjectionCollectionEndpointSelection(
+    IReadOnlyList<string> OrderedCandidateEntityIds,
+    IReadOnlyList<EcsEntityView> Entities,
+    IReadOnlyList<ProjectionSourceRevision> ExistingComponentRevisions);
+public interface IProjectionCollectionEndpointSelector
+{
+    /// <summary>
+    /// Selects ordered identities and lightweight revision metadata when the declared ordering can
+    /// be represented exactly by the provider. Returns null to retain bounded in-memory hydration.
+    /// </summary>
+    Task<ProjectionCollectionEndpointSelection?> SelectAsync(
+        string stateSpaceId,
+        IReadOnlyList<string> candidateEntityIds,
+        IReadOnlyList<string> allEntityIds,
+        IReadOnlyList<ApplicationObjectEndpointComponent> requiredItemComponents,
+        IReadOnlyList<ApplicationObjectEndpointComponent> includedItemComponents,
+        IReadOnlyList<ApplicationObjectOrder> order,
+        CancellationToken cancellationToken = default);
+}
 public sealed record ApplicationObjectLimits(
     int TraversalDepth,
     int ItemCount,
