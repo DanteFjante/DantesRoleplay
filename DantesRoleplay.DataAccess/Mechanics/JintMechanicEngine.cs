@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using Acornima.Ast;
 using DantesRoleplay.Effects;
 using DantesRoleplay.Events;
 using DantesRoleplay.Notifications;
@@ -25,7 +26,10 @@ namespace DantesRoleplay.Mechanics;
 /// 3. <b>Every limit is set on the first run, not after something hangs.</b> Statements, wall clock,
 ///    memory, recursion — see <see cref="ExecutionLimits"/>.
 ///
-/// A fresh engine per run, so nothing a mechanic leaves behind can be seen by the next one.
+/// A fresh engine per run, so nothing a mechanic leaves behind can be seen by the next one. The
+/// fixed, trusted harness is parsed once into Jint's immutable prepared form, which is explicitly
+/// safe to share across engines and threads. Untrusted mechanic source is still parsed inside each
+/// fresh realm; no live engine, context, JavaScript value or mechanic source is cached.
 /// </summary>
 public sealed class JintMechanicEngine : IMechanicEngine
 {
@@ -44,6 +48,9 @@ public sealed class JintMechanicEngine : IMechanicEngine
         // Coming OUT: accept whatever case the mechanic used.
         PropertyNameCaseInsensitive = true
     };
+
+    private static readonly Prepared<Script> PreparedHarness =
+        Engine.PrepareScript(Harness, strict: true);
 
     public Task<MechanicRunResult> RunAsync(
         string source,
@@ -102,7 +109,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
             engine.SetValue("__source", source);
             engine.SetValue("__maxLog", limits.MaxLogLines);
 
-            var completion = engine.Evaluate(Harness).AsString();
+            var completion = engine.Evaluate(PreparedHarness).AsString();
 
             stopwatch.Stop();
 

@@ -303,6 +303,76 @@ public sealed class SandboxTests
         Assert.False(result.Ok);
     }
 
+    [Fact]
+    public async Task Every_run_has_fresh_globals_and_intrinsic_prototypes()
+    {
+        var mutation = await RunAsync("""
+            globalThis.leftBehind = 'global';
+            Object.prototype.leftBehind = 'prototype';
+            return { narration: globalThis.leftBehind + '|' + ({}).leftBehind };
+            """);
+        var probe = await RunAsync("""
+            return { narration: typeof globalThis.leftBehind + '|' + typeof ({}).leftBehind };
+            """);
+
+        Assert.True(mutation.Ok, mutation.Error);
+        Assert.Equal("global|prototype", mutation.Output.Narration);
+        Assert.True(probe.Ok, probe.Error);
+        Assert.Equal("undefined|undefined", probe.Output.Narration);
+    }
+
+    [Fact]
+    public async Task Repeated_hostile_source_is_isolated_across_concurrent_fresh_engines()
+    {
+        const string hostile = """
+            Object.prototype.hostileMark = 'set';
+            globalThis.hostileMark = 'set';
+            var escaped = System.IO.File;
+            return { narration: String(escaped) };
+            """;
+
+        var attempts = await Task.WhenAll(Enumerable.Range(0, 32).Select(_ =>
+            Task.Run(() => RunAsync(hostile))));
+        var probe = await RunAsync("""
+            return { narration: typeof globalThis.hostileMark + '|' + typeof ({}).hostileMark };
+            """);
+
+        Assert.All(attempts, result => Assert.False(result.Ok));
+        Assert.True(probe.Ok, probe.Error);
+        Assert.Equal("undefined|undefined", probe.Output.Narration);
+    }
+
+    [Fact]
+    public async Task An_already_cancelled_run_never_executes_the_mechanic()
+    {
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        var result = await Engine.RunAsync(
+            "while (true) {}",
+            new MechanicProjection { Seed = 12345 },
+            ExecutionLimits.Default,
+            cancellation.Token);
+
+        Assert.False(result.Ok);
+        Assert.Equal("cancelled", result.LimitHit);
+    }
+
+    [Fact]
+    public async Task A_pathological_run_is_stopped_by_the_wall_clock_limit()
+    {
+        var result = await RunAsync(
+            "while (true) {}",
+            new ExecutionLimits
+            {
+                MaxStatements = int.MaxValue - 1,
+                Timeout = TimeSpan.FromMilliseconds(10)
+            });
+
+        Assert.False(result.Ok);
+        Assert.Equal("timeout", result.LimitHit);
+    }
+
     // ---- reproducibility: what makes a chance-based rule reviewable ----------------------
 
     [Fact]
