@@ -14,14 +14,18 @@ function child(branch,id,label){var values=ctx.children&&ctx.children[branch];if
 function uniqueDefinitions(values){var byId={};for(var i=0;i<values.length;i++)byId[values[i].id]=values[i];return Object.keys(byId).sort().map(function(id){return byId[id];});}
 if(!subject||!closed(input,[]))throw new Error('Character dossier projection requires one subject and empty input.');
 var sheet=child('sheet','dnd2024.mechanic.character-sheet-v2.project','character-sheet v2 projection');if(sheet.version!==2||!sheet.subject||sheet.subject.id!==subject.id||!sheet.inventory||!Array.isArray(sheet.inventory.items)||sheet.inventory.contentsDepth!==4)throw new Error('The character-sheet v2 projection is invalid.');var levelOneRules=child('levelOneRules','dnd2024.mechanic.character.level-one-rules.project','level-1 rules projection');if(levelOneRules.test!=='character-level-one-rules-project'||levelOneRules.subjectId!==subject.id||!Array.isArray(levelOneRules.entitlements))throw new Error('The level-1 rules projection is invalid.');
-var record=parse(subject.components&&subject.components[RECORD],'Character creation record'),originState=parse(subject.components&&subject.components[ORIGIN],'Origin selections');
+var records=ctx.objects&&ctx.objects.records;
+if(!records||!records.roles.subject||records.roles.subject.id!==subject.id)throw new Error('Registered character records are unavailable.');
+var record=records.value.creation,originState=records.value.origin;
+if(!object(record)||!object(originState))throw new Error('Registered character records are malformed.');
 if(record.status!=='basic-playable'||!object(record.selections)||!Array.isArray(record.unresolvedEntitlements))throw new Error('The immutable creation record is invalid.');
 var speciesId=ref(originState.speciesRef),backgroundId=ref(originState.backgroundRef),recordSpecies=record.selections.speciesDefinitionId,recordBackground=record.selections.backgroundDefinitionId,classId=record.selections.classDefinitionId;
 if(!speciesId||!backgroundId||speciesId!==recordSpecies||backgroundId!==recordBackground||typeof classId!=='string'||!classId.trim())throw new Error('Origin selections conflict with immutable creation evidence.');
 var species=metadata(speciesId,'species',true),background=metadata(backgroundId,'background',true),classDefinition=metadata(classId,'class',true),definitions=[species,background,classDefinition];
 var pending=record.unresolvedEntitlements.map(function(value){if(!object(value)||typeof value.ownerDefinitionId!=='string'||typeof value.entitlementKey!=='string'||typeof value.reason!=='string')throw new Error('The pending entitlement ledger is invalid.');return value;});
 function pendingFor(owner,prefix){return pending.filter(function(value){return value.ownerDefinitionId===owner&&value.entitlementKey.indexOf(prefix)===0;});}
-var entitlementState=subject.components&&subject.components[FEATURES]?parse(subject.components[FEATURES],'Feature entitlements'):{entitlements:[]};
+var entitlementState=records.value.features;
+if(!object(entitlementState))throw new Error('Registered feature entitlements are malformed.');
 if(!Array.isArray(entitlementState.entitlements))throw new Error('Feature entitlements are invalid.');
 var entitlementByFeature={};for(var entitlementIndex=0;entitlementIndex<entitlementState.entitlements.length;entitlementIndex++){var entitlement=entitlementState.entitlements[entitlementIndex],featureId=ref(entitlement.featureRef),ownerId=ref(entitlement.grantedByRef);if(!featureId||!ownerId||typeof entitlement.grantKind!=='string')throw new Error('A feature entitlement is invalid.');var key=featureId+'\n'+ownerId;if(entitlementByFeature[key])throw new Error('Feature entitlements contain a duplicate.');entitlementByFeature[key]=entitlement;}
 var classes=(sheet.classes||[]).map(function(value){var definition=metadata(value.class.id,'class',true);definitions.push(definition);return {id:value.id,name:value.name,definition:definition,level:value.level,subclass:value.subclass};});

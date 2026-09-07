@@ -142,7 +142,7 @@ public sealed class ItemUsesProjectionTests
         public async Task<(string,JsonElement)> Run(int offset=0,string? expected=null,bool expectFailure=false,string perspective="player"){var projection=await Resolve(offset,expected,perspective);
             if(expectFailure){Assert.Null(projection.Projection);Assert.Equal(["READ_MODEL_SOURCE_STALE"],projection.Problems);return ("",default);}
             Assert.True(projection.Ok,string.Join(';',projection.Problems));
-            var run=await new JintMechanicEngine().RunAsync(Mechanic.Source,projection.Projection!,ExecutionLimits.Default);
+            var run=await new JintMechanicEngine().RunAsync(Mechanic.Source,await SnapshotObjectTestHarness.AssembleAsync(Mechanic,projection.Projection!),ExecutionLimits.Default);
             Assert.True(run.Ok,run.Error);Assert.Empty(run.Output.Effects);Assert.Empty(run.Output.Events);Assert.Empty(run.Output.Notifications);
             var valid=Schemas.Validate(Schemas.Compile(Query.OutputSchemaJson).NormalizedSchema,run.Output.Data);Assert.True(valid.Status==SchemaValueStatus.Valid,Json(valid));
             return (projection.Projection!.AuthorizedSourceRevision!,JsonDocument.Parse(run.Output.Data).RootElement.Clone());}

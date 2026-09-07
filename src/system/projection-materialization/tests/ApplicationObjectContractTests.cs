@@ -180,15 +180,21 @@ public sealed class ApplicationObjectContractTests : IDisposable
         Assert.Equal(3, definition.ComponentInputs.Single(value => value.InputId == "creation").Type.TypeVersion);
         Assert.Equal(2, definition.ComponentInputs.Single(value => value.InputId == "features").Type.TypeVersion);
         Assert.Empty(definition.ObjectContract!.Writes?.Capabilities ?? []);
+        var retainedDefinition = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
+            "applications", "dnd2024", "objects", "item", "dnd2024.object.inventory-item-definition-records.v1.json")), application));
+        var retainedInstance = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
+            "applications", "dnd2024", "objects", "item", "dnd2024.object.inventory-item-instance-records.v1.json")), application));
+        Assert.Equal("5974D9AC98344F28D58F05E2065EA1DB5274893AA1D69D492F24DA0453E64A11", retainedDefinition.ContentHash);
+        Assert.Equal("8005B25A8AEA43C76C10186369302CAED2B787AF1C38160C94186180253BB442", retainedInstance.ContentHash);
         var itemDefinition = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
             "applications", "dnd2024", "objects", "item", "dnd2024.object.inventory-item-definition-records.json")), application));
-        Assert.Equal("5974D9AC98344F28D58F05E2065EA1DB5274893AA1D69D492F24DA0453E64A11", itemDefinition.ContentHash);
+        Assert.Equal("4A8578B1A7010EB60AC64ABA7D64DD016106F19FF30A4D023A00CA35BF412476", itemDefinition.ContentHash);
         var itemRequest = ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
             "applications", "dnd2024", "objects", "item", "dnd2024.object.inventory-item-instance-records.json")), application);
         foreach (var input in itemRequest.ComponentInputs)
             Assert.Equal(itemTypes[input.Type.QualifiedTypeId].SchemaHash, input.Type.SchemaHash);
         var itemInstance = registry.Define(itemRequest);
-        Assert.Equal("8005B25A8AEA43C76C10186369302CAED2B787AF1C38160C94186180253BB442", itemInstance.ContentHash);
+        Assert.Equal("8F52017FA6BA33FB9699FB6755A1577B422B414AC55BF19401C27A803F4F15CC", itemInstance.ContentHash);
         Assert.Equal("definition", Assert.Single(itemInstance.ObjectContract!.References).InputId);
     }
 

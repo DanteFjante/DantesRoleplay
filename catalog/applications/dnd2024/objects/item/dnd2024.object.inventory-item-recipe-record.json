@@ -1,0 +1,56 @@
+{
+  "id": "dnd2024.object.inventory-item-recipe-record",
+  "version": 1,
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "dnd2024.crafting.recipe": {
+        "type": "object"
+      }
+    },
+    "required": [
+      "dnd2024.crafting.recipe"
+    ]
+  },
+  "roles": {
+    "record": {
+      "required": true
+    }
+  },
+  "sources": [
+    {
+      "id": "source0",
+      "role": "record",
+      "component": {
+        "qualifiedId": "dnd2024.crafting.recipe",
+        "version": 2,
+        "schemaHash": "6C016CBDF55D50C58C6D7B18A498F67201AD6BE9EDC72EBBF761951F5C434EAD"
+      },
+      "required": true
+    }
+  ],
+  "relationships": [],
+  "references": [],
+  "mappings": [
+    {
+      "inputId": "source0",
+      "sourcePointer": "",
+      "targetPointer": "/dnd2024.crafting.recipe"
+    }
+  ],
+  "collections": [],
+  "limits": {
+    "traversalDepth": 1,
+    "itemCount": 1,
+    "outputBytes": 65536,
+    "sqlQueries": 3
+  },
+  "access": {
+    "read": [
+      "player",
+      "dm"
+    ],
+    "write": []
+  }
+}

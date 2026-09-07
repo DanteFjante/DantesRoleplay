@@ -105,6 +105,12 @@ public interface IProjectionDefinitionRegistry
 
 public interface IProjectionMaterializer
 {
+    /// <summary>Assembles an exact object exclusively from a host-authorized component snapshot.</summary>
+    Task<ProjectionMaterializationResult> MaterializeSnapshotAsync(
+        ProjectionMaterializationRequest request, ApplicationIdentifier owner,
+        IReadOnlyList<EcsComponentView> authorizedComponents, CancellationToken cancellationToken = default) =>
+        throw new NotSupportedException("This materializer does not support supplied snapshots.");
+
     Task<ProjectionMaterializationResult> MaterializeAsync(ProjectionMaterializationRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>

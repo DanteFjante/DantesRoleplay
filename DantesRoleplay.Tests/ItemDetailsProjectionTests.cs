@@ -330,13 +330,14 @@ public sealed class ItemDetailsProjectionTests
         Assert.True(Encoding.UTF8.GetByteCount(result.RootElement.GetRawText()) <= 65536);
         projection.Projection!.References["fact.00"] = new("fact.00", new Dictionary<string, string> { ["authorized-knowledge"] = Json(new
             { subjectId = fixture.ItemId, displayText = new string('x', 2049), presentationKind = "statement", state = "known" }) });
-        var invalid = await new JintMechanicEngine().RunAsync(Mechanic.Source, projection.Projection, ExecutionLimits.Default);
+        var invalid = await new JintMechanicEngine().RunAsync(Mechanic.Source,
+            await SnapshotObjectTestHarness.AssembleAsync(Mechanic, projection.Projection), ExecutionLimits.Default);
         Assert.False(invalid.Ok);
     }
 
     private static async Task<JsonDocument> Run(MechanicProjection projection)
     {
-        var run = await new JintMechanicEngine().RunAsync(Mechanic.Source, projection, ExecutionLimits.Default);
+        var run = await new JintMechanicEngine().RunAsync(Mechanic.Source, await SnapshotObjectTestHarness.AssembleAsync(Mechanic, projection), ExecutionLimits.Default);
         Assert.True(run.Ok, run.Error);
         Assert.Empty(run.Output.Effects);
         Assert.Empty(run.Output.Events);

@@ -75,6 +75,10 @@ public interface IApplicationMechanicProjectionResolver
 /// <summary>Materializes exact registered application objects for an object-based reducer.</summary>
 public interface IApplicationMechanicObjectProjectionResolver
 {
+    Task<ProjectionResult> ResolveSnapshotAsync(ApplicationMechanicEvaluationRequest request,
+        MechanicRequirements requirements, MechanicProjection snapshot, CancellationToken cancellationToken = default) =>
+        Task.FromResult(ProjectionResult.Failed("OBJECT_SNAPSHOT_UNAVAILABLE"));
+
     Task<ProjectionResult> ResolveAsync(
         string stateSpaceId,
         ApplicationIdentifier applicationId,

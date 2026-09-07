@@ -92,6 +92,18 @@ confirmation gate; it must not add a second consent system or reintroduce unscop
 selection. The former `action` commit kind is physically retired and must not be advertised,
 dispatched, or generated as a direct AI tool.
 
+Read-only mechanics may declare `snapshotObjects`:
+exact structural objects assembled solely from their already-authorized projection, with no new
+storage read grant. Bindings may select existing roles, input-selected authorized entities,
+authorized component references, or a bounded collection of authorized reference records.
+The host validates exact object provenance, perspective, output schemas and item/byte limits;
+catalog JavaScript still owns formatting, disclosure rules and source-revision-bound paging.
+These snapshot collections are not relationship-backed storage collections. Their read revision
+remains the authorizing projection's revision, and neither they nor their child mechanics may
+propose effects, events or notifications. Item contract v1 remains immutable; partial read views
+use v2. Authored recipe/activity source pins require the matching catalog component versions at
+the next explicit activation/import boundary; editing catalog files does not migrate live state.
+
 Registered-object writes and object-backed reducers carry their complete observed source evidence
 into the generic effect transaction. Check component revisions (including absence), entity revisions,
 and exact relationship collections by kind, anchor, and direction after acquiring SQLite's write

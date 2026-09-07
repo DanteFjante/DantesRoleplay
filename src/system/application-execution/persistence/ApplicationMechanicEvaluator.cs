@@ -75,6 +75,13 @@ public sealed class ApplicationMechanicEvaluator(
                     : await authorizedProjections.ResolveAsync(request, requirements, cancellationToken);
         if (!projection.Ok)
             return new(request.QualifiedMechanicId, request.ContentFingerprint, null, null, projection.Problems);
+        if (requirements.SnapshotObjects.Count > 0)
+        {
+            projection = objectProjections is null ? ProjectionResult.Failed("OBJECT_SNAPSHOT_UNAVAILABLE")
+                : await objectProjections.ResolveSnapshotAsync(request, requirements, projection.Projection!, cancellationToken);
+            if (!projection.Ok)
+                return new(request.QualifiedMechanicId, request.ContentFingerprint, null, null, projection.Problems);
+        }
         var exactProjection = projection.Projection! with
         {
             Execution = request.Execution,
@@ -83,8 +90,9 @@ public sealed class ApplicationMechanicEvaluator(
         var composed = await ComposeAsync(request, requirements, exactProjection, depth, ancestors, budget, cancellationToken);
         if (composed.Projection is null) return Failed(request, composed.Error);
         var run = await engine.RunAsync(document.Source ?? "", composed.Projection, ExecutionLimits.Default, cancellationToken);
-        if (requirements.AuthorizedContext is not null && (run.Output.Effects.Count != 0 ||
-            run.Output.Events.Count != 0 || run.Output.Notifications.Count != 0))
+        if ((requirements.AuthorizedContext is not null || requirements.SnapshotObjects.Count > 0) &&
+            (run.Output.Effects.Count != 0 || run.Output.Events.Count != 0 || run.Output.Notifications.Count != 0 ||
+             composed.Proposal.Effects.Count != 0 || composed.Proposal.Events.Count != 0 || composed.Proposal.Notifications.Count != 0))
             return Failed(request, "READ_MODEL_OUTPUT_UNSAFE");
         return new(request.QualifiedMechanicId, request.ContentFingerprint, composed.Projection, run, [])
         {

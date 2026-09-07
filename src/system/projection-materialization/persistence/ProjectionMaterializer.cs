@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using DantesRoleplay.Ecs;
+using DantesRoleplay.Applications;
 using DantesRoleplay.SchemaValidation;
 
 namespace DantesRoleplay.Projections;
@@ -16,6 +17,14 @@ public sealed class ProjectionMaterializer(
     IProjectionSourceSnapshotReader? snapshots = null) : IProjectionMaterializer
 {
     private readonly ProjectionPlanCache plans = planCache ?? new ProjectionPlanCache();
+
+    public Task<ProjectionMaterializationResult> MaterializeSnapshotAsync(
+        ProjectionMaterializationRequest request, ApplicationIdentifier owner,
+        IReadOnlyList<EcsComponentView> authorizedComponents, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(authorizedComponents);
+        return MaterializeCoreAsync(request, null, cancellationToken, owner, authorizedComponents);
+    }
 
     public Task<ProjectionMaterializationResult> MaterializeAsync(
         ProjectionMaterializationRequest request,
@@ -34,7 +43,9 @@ public sealed class ProjectionMaterializer(
     private async Task<ProjectionMaterializationResult> MaterializeCoreAsync(
         ProjectionMaterializationRequest request,
         Func<ProjectionMaterializationResult, CancellationToken, Task<string>>? completeRoot,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        ApplicationIdentifier? snapshotOwner = null,
+        IReadOnlyList<EcsComponentView>? authorizedComponents = null)
     {
         ArgumentNullException.ThrowIfNull(request);
         request.Projection.Validate();
@@ -53,28 +64,44 @@ public sealed class ProjectionMaterializer(
         if (locators.Count > 256)
             throw new InvalidOperationException("Projection component read bound exceeded.");
 
-        ProjectionSourceSnapshot snapshot;
-        if (snapshots is not null)
-            snapshot = await snapshots.ReadAsync(request.StateSpaceId, plan.Root.Owner,
-                locators.Values.ToArray(), cancellationToken);
+        IReadOnlyList<EcsComponentView> sourceComponents;
+        if (authorizedComponents is not null)
+        {
+            if (snapshotOwner != plan.Root.Owner || authorizedComponents.Count > 256
+                || authorizedComponents.Any(value => value.StateSpaceId != request.StateSpaceId))
+                throw new InvalidOperationException("The supplied projection snapshot crosses its authorized boundary.");
+            sourceComponents = authorizedComponents;
+        }
+        else if (snapshots is not null)
+            sourceComponents = (await snapshots.ReadAsync(request.StateSpaceId, plan.Root.Owner,
+                locators.Values.ToArray(), cancellationToken)).Components;
         else
         {
             var stateSpace = stateSpaces.Get(request.StateSpaceId)
                 ?? throw new InvalidOperationException("Unknown projection state space.");
             if (stateSpace.ApplicationRevision.ApplicationId != plan.Root.Owner)
                 throw new InvalidOperationException("A projection cannot cross an application state-space boundary.");
-            snapshot = new(stateSpace, await components.GetComponentsAsync(request.StateSpaceId,
-                locators.Values.ToArray(), cancellationToken));
+            sourceComponents = await components.GetComponentsAsync(request.StateSpaceId,
+                locators.Values.ToArray(), cancellationToken);
         }
 
-        var values = snapshot.Components.ToDictionary(value =>
+        var values = sourceComponents.ToDictionary(value =>
             (value.EntityId, value.Type.QualifiedTypeId));
+        if (authorizedComponents is not null)
+            foreach (var index in active)
+                foreach (var input in plan.Nodes[index].Definition.ComponentInputs)
+                    if (request.RoleEntityIds.TryGetValue(plan.Nodes[index].RootRoles[input.EntityRole], out var entity) &&
+                        values.TryGetValue((entity, input.Type.QualifiedTypeId), out var value) && value.Type != input.Type)
+                        throw new InvalidOperationException("A supplied projection component has a stale exact type.");
         var evaluated = new Dictionary<int, string>();
         for (var index = 0; index < plan.Nodes.Count; index++)
         {
             if (!active.Contains(index)) continue;
             evaluated[index] = Evaluate(plan.Nodes[index], request.RoleEntityIds, values, evaluated, active,
                 validateOutput: completeRoot is null || index != plan.Nodes.Count - 1);
+            if (authorizedComponents is not null && plan.Nodes[index].Definition.ObjectContract is { } contract &&
+                Encoding.UTF8.GetByteCount(evaluated[index]) > contract.Limits.OutputBytes)
+                throw new InvalidOperationException("A supplied snapshot object exceeds its declared byte bound.");
         }
         var rootIndex = plan.Nodes.Count - 1;
         if (!evaluated.TryGetValue(rootIndex, out var output))

@@ -902,7 +902,7 @@ public sealed class Dnd2024ApplicationReadViewTests
 
     private static async Task<JsonDocument> Run(string mechanicPath, MechanicProjection projection)
     {
-        var result = await Engine.RunAsync(ReadMechanic(mechanicPath).Source, projection, ExecutionLimits.Default);
+        var result = await Engine.RunAsync(ReadMechanic(mechanicPath).Source, await SnapshotObjectTestHarness.AssembleAsync(ReadMechanic(mechanicPath), projection), ExecutionLimits.Default);
         Assert.True(result.Ok, result.Error);
         Assert.Empty(result.Output.Effects);
         Assert.Empty(result.Output.Events);

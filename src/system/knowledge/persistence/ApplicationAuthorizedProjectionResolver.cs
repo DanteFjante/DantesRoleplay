@@ -110,17 +110,28 @@ public sealed class ApplicationAuthorizedProjectionResolver(
             var snapshot = new MechanicProjection { StateSpaceId = request.StateSpaceId, Input = request.InputJson,
                 Seed = request.Seed, Audience = request.Audience };
             var role = requirements.Roles[declared.ObserverRole];
+            var componentCache = new Dictionary<(string EntityId, string TypeId), ApplicationEcsComponentRecord?>();
 
             async Task<Dictionary<string, string>> Components(string id, IEnumerable<string> localIds)
             {
                 var result = new Dictionary<string, string>(StringComparer.Ordinal);
-                foreach (var local in localIds.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal))
+                var locals = localIds.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
+                var requested = locals.Select(local => request.Mapping.Components.TryGetValue(local, out var exact)
+                    ? exact.QualifiedTypeId : throw new InvalidOperationException()).Distinct(StringComparer.Ordinal).ToArray();
+                var missing = requested.Where(type => !componentCache.ContainsKey((id, type))).ToArray();
+                if (missing.Length > 0)
+                {
+                    // Batch only this already-authorized entity and its declared component set.
+                    // Cache absence too; never broaden a batch to unauthorized candidate records.
+                    var rows = await componentQuery.Where(row => row.EntityId == id && missing.Contains(row.QualifiedTypeId))
+                        .Take(missing.Length + 1).ToArrayAsync(cancellationToken);
+                    var byType = rows.ToDictionary(row => row.QualifiedTypeId, StringComparer.Ordinal);
+                    foreach (var type in missing) componentCache[(id, type)] = byType.GetValueOrDefault(type);
+                }
+                foreach (var local in locals)
                 {
                     if (!request.Mapping.Components.TryGetValue(local, out var mapping)) throw new InvalidOperationException();
-                    var rows = await componentQuery.Where(row => row.EntityId == id &&
-                        row.QualifiedTypeId == mapping.QualifiedTypeId).Take(2).ToArrayAsync(cancellationToken);
-                    if (rows.Length > 1) throw new InvalidOperationException();
-                    var row = rows.SingleOrDefault();
+                    var row = componentCache[(id, mapping.QualifiedTypeId)];
                     if (row is not null && (row.TypeVersion != mapping.TypeVersion || row.SchemaHash != mapping.SchemaHash))
                         throw new InvalidOperationException();
                     observed.Add(new { id, local, revision = row?.Revision, mapping.SchemaHash });

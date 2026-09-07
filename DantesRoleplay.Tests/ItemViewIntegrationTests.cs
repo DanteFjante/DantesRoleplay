@@ -1,4 +1,7 @@
 using System.Text.Json;
+using System.Data.Common;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Xunit.Abstractions;
 using DantesRoleplay.ApplicationExecution;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
@@ -11,7 +14,7 @@ using DantesRoleplay.SchemaValidation;
 
 namespace DantesRoleplay.Tests;
 
-public sealed class ItemViewIntegrationTests
+public sealed class ItemViewIntegrationTests(ITestOutputHelper output)
 {
     private static readonly string[] Tabs=["details","recipes","uses"];
     private static string Root {get{for(var d=new DirectoryInfo(AppContext.BaseDirectory);d is not null;d=d.Parent)if(File.Exists(Path.Combine(d.FullName,"DantesRoleplay.slnx")))return d.FullName;throw new DirectoryNotFoundException();}}
@@ -21,6 +24,42 @@ public sealed class ItemViewIntegrationTests
     private static readonly BoundedJsonSchemaValidator Schemas=new();
     private static string Json(object v)=>JsonSerializer.Serialize(v);
     private static object Ref(string id)=>new{entityId=id};
+    [Theory]
+    [InlineData("details", 26, 40)]
+    [InlineData("recipes", 34, 36)]
+    [InlineData("uses", 32, 46)]
+    public async Task Registered_item_views_batch_authorized_components_without_extra_source_reads(string tab, int ceiling, int priorReads)
+    {
+        var commands = new ReadCounter();
+        using var f = await Fixture.Create(interceptor: commands);
+        await f.KnownRecords();
+        f.Policy.IsDm = true;
+        commands.Count = 0;
+        var projection = await f.Resolve(tab, "dm");
+        Assert.True(projection.Ok);
+        var reads = commands.Count;
+        var assembled = await SnapshotObjectTestHarness.AssembleAsync(Mechanic(tab), projection.Projection!);
+        Assert.Equal(reads, commands.Count);
+        Assert.Contains("item", assembled.Objects.Keys);
+        if (tab == "recipes") Assert.NotEmpty(assembled.Objects["recipes"].Value.EnumerateArray());
+        if (tab == "uses") Assert.NotEmpty(assembled.Objects["activities"].Value.EnumerateArray());
+        Assert.Equal(projection.Projection!.AuthorizedSourceRevision, assembled.AuthorizedSourceRevision);
+        // Identical fixture executed against the pre-batching resolver to establish priorReads.
+        // Catalog metadata is preloaded separately; this is not a cold-start/full-site budget.
+        output.WriteLine($"{tab}: {reads} SQL reads (prior {priorReads}); 0 additional source reads for assembly.");
+        Assert.InRange(reads, 1, ceiling);
+        Assert.True(reads < priorReads);
+    }
+
+    private sealed class ReadCounter : DbCommandInterceptor
+    {
+        public int Count { get; set; }
+        public override InterceptionResult<DbDataReader> ReaderExecuting(DbCommand command,
+            CommandEventData eventData, InterceptionResult<DbDataReader> result) { Count++; return result; }
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(DbCommand command,
+            CommandEventData eventData, InterceptionResult<DbDataReader> result, CancellationToken cancellationToken = default)
+        { Count++; return ValueTask.FromResult(result); }
+    }
     [Fact]
     public async Task All_three_authored_queries_preserve_Actor_and_GM_preview_parity_and_never_write()
     {
@@ -57,14 +96,14 @@ public sealed class ItemViewIntegrationTests
     { public Task<KnowledgeApplicationBinding?> ResolveAsync(string campaignId,CancellationToken cancellationToken=default)=>Task.FromResult<KnowledgeApplicationBinding?>(binding); }
     private sealed class Fixture:IDisposable
     {
-        public KnowledgeCoreTests.KnowledgeFixture Game {get;}=new();
+        public KnowledgeCoreTests.KnowledgeFixture Game {get;}
         public Policy Policy {get;}
         private readonly Dictionary<string,string> types=[];
         private readonly ApplicationMechanicProjectionMapping mapping;
         private readonly ApplicationAuthorizedProjectionResolver resolver;
-        private Fixture(){Policy=new(Game);var components=new Dictionary<string,EcsComponentReference>();foreach(var id in Tabs.SelectMany(t=>MechanicRequirements.Parse(Mechanic(t).Requirements).AllComponentIds()).Distinct()){var type="fixture-knowledge.use-"+types.Count;types[id]=type;components[id]=Game.DefineComponent(type);} mapping=new(components,new Dictionary<string,string>());
+        private Fixture(DbCommandInterceptor? interceptor = null){Game=new(interceptor:interceptor);Policy=new(Game);var components=new Dictionary<string,EcsComponentReference>();foreach(var id in Tabs.SelectMany(t=>MechanicRequirements.Parse(Mechanic(t).Requirements).AllComponentIds()).Distinct()){var type="fixture-knowledge.use-"+types.Count;types[id]=type;components[id]=Game.DefineComponent(type);} mapping=new(components,new Dictionary<string,string>());
             resolver=new(Game.Db,Policy,new Binding(Game.Binding),new ApplicationKnowledgeActorParticipationVerifier(Game.Entities,Game.Edges),Game.Source,Game.States);}
-        public static async Task<Fixture> Create(bool identify=true){var f=new Fixture();await f.Game.AddCoreAsync();await f.Game.AddParticipationAsync();
+        public static async Task<Fixture> Create(bool identify=true,DbCommandInterceptor? interceptor=null){var f=new Fixture(interceptor);await f.Game.AddCoreAsync();await f.Game.AddParticipationAsync();
             foreach(var (id,name) in new[]{("item.first","PRIVATE ITEM"),("definition.shared","PRIVATE DEFINITION"),("fixture.tool","Fixture tool"),("fixture.crafter","Fixture training"),("fixture.day","Day")}) {await f.Game.AddEntityAsync(id,name);if(identify||id.StartsWith("fixture.")) await f.Know(id);}
             await f.Component("definition.shared","dnd2024.core.version",new{revision=1,status="active"});
             await f.Component("item.first","dnd2024.core.definition-link",new{definition=Ref("definition.shared")});await f.Component("item.first","dnd2024.item.quantity",new{current=2});
@@ -106,7 +145,7 @@ public sealed class ItemViewIntegrationTests
         }
         public async Task<JsonElement> Run(string tab,string perspective="player",string? observer=null,string? item=null) {
             var before=Game.Db.ChangeTracker.Entries().Count();var projection=await Resolve(tab,perspective,observer,item);Assert.True(projection.Ok,string.Join(';',projection.Problems));
-            var run=await new JintMechanicEngine().RunAsync(Mechanic(tab).Source,projection.Projection!,ExecutionLimits.Default);Assert.True(run.Ok,run.Error);
+            var run=await new JintMechanicEngine().RunAsync(Mechanic(tab).Source,await SnapshotObjectTestHarness.AssembleAsync(Mechanic(tab),projection.Projection!),ExecutionLimits.Default);Assert.True(run.Ok,run.Error);
             Assert.Empty(run.Output.Effects);Assert.Empty(run.Output.Events);Assert.Empty(run.Output.Notifications);
             var schema=Schemas.Compile(Query(tab).OutputSchemaJson);var valid=Schemas.Validate(schema.NormalizedSchema,run.Output.Data);Assert.True(valid.Status==SchemaValueStatus.Valid,Json(valid));
             Assert.Equal(before,Game.Db.ChangeTracker.Entries().Count());Assert.DoesNotContain(Game.Db.ChangeTracker.Entries(),e=>e.State is Microsoft.EntityFrameworkCore.EntityState.Added or Microsoft.EntityFrameworkCore.EntityState.Modified or Microsoft.EntityFrameworkCore.EntityState.Deleted);

@@ -5536,6 +5536,22 @@ public sealed class Dnd2024AbilityCheckTests
             ApplicationIdentifier.Parse("dnd2024"),
             "dnd2024.query.character-sheet-v2",
             new Dictionary<string, string> { ["subject"] = actorId }));
+        // Dossier reads require canonical metadata; legacy feat fixtures do not provide it.
+        var incompleteDossier = await harness.EvaluateRolesAsync("dnd2024.mechanic.character-dossier-v1.project",
+            new Dictionary<string, string> { ["subject"] = actorId }, "{}", 0, MechanicAudienceContext.Player);
+        Assert.False(incompleteDossier.Ok);
+        Assert.Contains(incompleteDossier.Problems, value => value.StartsWith("COMPONENT_REFERENCE_TARGET_MISSING:"));
+        await harness.AddApplicationComponentAsync("dnd2024.feat.savage-attacker", "dnd2024.character.content-definition",
+            """{"kind":"feature","contentKey":"savage-attacker","contentVersion":1,"status":"active","sourceRef":{"sourceId":"fixture","locator":"Dossier metadata fixture"}}""");
+        var dossierProjection = await harness.EvaluateRolesAsync("dnd2024.mechanic.character-dossier-v1.project",
+            new Dictionary<string, string> { ["subject"] = actorId }, "{}", 0, MechanicAudienceContext.Player);
+        Assert.True(dossierProjection.Ok, string.Join("; ", dossierProjection.Problems) + dossierProjection.Run?.Error);
+        var registeredDossier = await harness.ReadModels.ReadAsync(new(
+            DndHarness.StateSpaceId, ApplicationIdentifier.Parse("dnd2024"),
+            "dnd2024.query.character-dossier-v1",
+            new Dictionary<string, string> { ["subject"] = actorId }, MechanicAudienceContext.Player));
+        using (var dossier = JsonDocument.Parse(registeredDossier.DataJson))
+            Assert.Equal(actorId, dossier.RootElement.GetProperty("sheet").GetProperty("subject").GetProperty("id").GetString());
         var initiative = await harness.EvaluateRolesAsync("dnd2024.mechanic.initiative.roll",
             new Dictionary<string, string> { ["subject"] = actorId }, "{}", 17);
         Assert.True(sheet.Ok, sheet.Run?.Error);
@@ -9091,6 +9107,11 @@ public sealed class Dnd2024AbilityCheckTests
                 StringComparer.Ordinal);
             var applicationComponentDirectory = Path.Combine(
                 RepositoryRoot(), "catalog", "applications", "dnd2024", "components");
+            var retainedObjectVersions = Directory.EnumerateFiles(Path.Combine(
+                    RepositoryRoot(), "catalog", "applications", "dnd2024", "objects"), "*.json", SearchOption.AllDirectories)
+                .Select(path => ApplicationObjectDocument.Parse(File.ReadAllText(path), Application))
+                .SelectMany(value => value.ComponentInputs).GroupBy(value => value.Type.QualifiedTypeId)
+                .ToDictionary(group => group.Key, group => group.Max(value => value.Type.TypeVersion) - 1);
             foreach (var path in Directory.EnumerateFiles(
                          applicationComponentDirectory, "*.json", SearchOption.TopDirectoryOnly)
                      .Where(path => !path.EndsWith(".schema.json", StringComparison.OrdinalIgnoreCase))
@@ -9100,13 +9121,7 @@ public sealed class Dnd2024AbilityCheckTests
                 if (primaryTypeIds.Contains(componentId)) continue;
 
                 var definition = await DefinitionAsync(componentId);
-                var retainedVersions = componentId switch
-                {
-                    "dnd2024.character-creation-record" => 2,
-                    "dnd2024.character.feature-entitlements" => 1,
-                    "dnd2024.item.quantity" => 1,
-                    _ => 0
-                };
+                var retainedVersions = retainedObjectVersions.GetValueOrDefault(componentId);
                 RegisterPriorComponentVersions(types, definition.Id, retainedVersions);
                 additionalTypes[definition.Id] = types.Define(new(Application, definition.Id, definition.Schema));
             }
@@ -9117,7 +9132,7 @@ public sealed class Dnd2024AbilityCheckTests
                          "game.core.campaign.character-participation",
                          "game.core.world.location", "game.core.world.faction", "game.core.world.route",
                          "game.core.world.route.availability", "game.core.world.traveller",
-                         "game.core.media.visual", "game.core.world.media.visual"
+                         "game.core.media.visual", "game.core.world.media.visual", "game.core.rules.readable"
                      })
             {
                 var definition = await GameDefinitionAsync(componentId);
@@ -9257,9 +9272,10 @@ public sealed class Dnd2024AbilityCheckTests
             => await EvaluateRolesAsync(localMechanicId, new Dictionary<string, string> { ["subject"] = subjectId }, input, seed);
 
         public async Task<ApplicationMechanicEvaluationResult> EvaluateRolesAsync(
-            string localMechanicId, IReadOnlyDictionary<string, string> roles, string input, long seed)
+            string localMechanicId, IReadOnlyDictionary<string, string> roles, string input, long seed,
+            MechanicAudienceContext? audience = null)
             => await EvaluateRolesWithMappingAsync(localMechanicId, roles, input, seed,
-                includeGameBaseMapping: true);
+                includeGameBaseMapping: true, audience);
 
         public async Task<ApplicationMechanicEvaluationResult> EvaluateRolesWithoutGameBaseMappingAsync(
             string localMechanicId, IReadOnlyDictionary<string, string> roles, string input, long seed)
@@ -9268,7 +9284,7 @@ public sealed class Dnd2024AbilityCheckTests
 
         private async Task<ApplicationMechanicEvaluationResult> EvaluateRolesWithMappingAsync(
             string localMechanicId, IReadOnlyDictionary<string, string> roles, string input, long seed,
-            bool includeGameBaseMapping)
+            bool includeGameBaseMapping, MechanicAudienceContext? audience = null)
         {
             var record = Record(localMechanicId);
             var componentMapping = new Dictionary<string, EcsComponentReference>
@@ -9320,7 +9336,7 @@ public sealed class Dnd2024AbilityCheckTests
                 _catalogs, new ApplicationMechanicProjectionResolver(_db, stateSpaces),
                 new JintMechanicEngine(), objectProjections: objectResolver).EvaluateAsync(new(
                     StateSpaceId, Application, record.Summary.QualifiedId, record.Summary.ContentFingerprint,
-                mapping, roles, input, seed));
+                mapping, roles, input, seed, Audience: audience));
         }
 
         public ApplicationActionExecutionRequest Action(

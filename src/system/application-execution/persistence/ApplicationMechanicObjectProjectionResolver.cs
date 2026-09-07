@@ -10,7 +10,7 @@ namespace DantesRoleplay.ApplicationExecution;
 /// Supplies pure reducers with exact registered application objects. It interprets only generic
 /// object declarations and opaque role bindings; application vocabulary remains in the catalog.
 /// </summary>
-public sealed class ApplicationMechanicObjectProjectionResolver(
+public sealed partial class ApplicationMechanicObjectProjectionResolver(
     IProjectionDefinitionRegistry definitions,
     IProjectionMaterializer materializer,
     IProjectionCollectionMaterializer collections,

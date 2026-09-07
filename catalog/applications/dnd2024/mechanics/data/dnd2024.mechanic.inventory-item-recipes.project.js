@@ -17,7 +17,38 @@ if (ctx.input.expectedSourceRevision !== null && ctx.input.expectedSourceRevisio
 var item = null, count = 0;
 function find(nodes, depth) { nodes.forEach(function(n) { if (++count > 512 || depth > 4) fail(); if (n.id === itemId) { if(item) fail(); item=n; } find(n.contains || [],depth+1); }); }
 find(subject.contains || [],1); if (!item) fail();
-var states=Object.create(null), facts=Object.create(null), references=ctx.references || {};
+// Registered records are the source of shared item fields; the remaining snapshot
+// carries only separately authorized facets, labels, and knowledge statements.
+var itemObject = ctx.objects && ctx.objects.item;
+if (!itemObject || !itemObject.roles.item || itemObject.roles.item.id !== itemId) fail();
+function registeredComponents(previous, value, fields) {
+    var result = Object.assign({}, previous || {});
+    Object.keys(fields).forEach(function(field) {
+        delete result[fields[field]];
+        if (value && Object.prototype.hasOwnProperty.call(value, field)) result[fields[field]] = JSON.stringify(value[field]);
+    });
+    return result;
+}
+item = Object.assign({}, item, {components: registeredComponents(item.components, itemObject.value,
+    {definitionLink:'dnd2024.core.definition-link',quantity:'dnd2024.item.quantity',equipment:'dnd2024.item.equipment'})});
+var registeredReferences = Object.assign({}, ctx.references || {});
+if (itemObject.roles.definition) {
+    var definitionKey = itemObject.roles.definition.id, originalDefinition = registeredReferences[definitionKey];
+    if (!originalDefinition) fail();
+    registeredReferences[definitionKey] = Object.assign({}, originalDefinition, {components:
+        registeredComponents(originalDefinition.components, itemObject.value.definition,
+            {definition:'dnd2024.item-definition',activityMembership:'dnd2024.activity.membership',inlineActivities:'dnd2024.item-activity'})});
+}
+var registeredRecords = ctx.objects.recipes;
+if (!registeredRecords || !Array.isArray(registeredRecords.value)) fail();
+registeredRecords.value.forEach(function(record) {
+    var previous = registeredReferences[record.id];
+    if (!previous) fail();
+    var components = Object.assign({}, previous.components);
+    Object.keys(record.value).forEach(function(id) { components[id] = JSON.stringify(record.value[id]); });
+    registeredReferences[record.id] = Object.assign({}, previous, {name:record.name, components:components});
+});
+var states=Object.create(null), facts=Object.create(null), references=registeredReferences || {};
 observer.knowledge.forEach(function(k) { if (Object.prototype.hasOwnProperty.call(states,k.knowledgeId)) fail(); states[k.knowledgeId]=k.state; });
 function state(id) { return states[id] || 'unknown'; }
 function visible(s) { return ['known','suspected','believed','doubted','disbelieved'].indexOf(s)>=0; }

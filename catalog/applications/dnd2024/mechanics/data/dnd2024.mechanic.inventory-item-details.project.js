@@ -26,6 +26,28 @@ function find(nodes, owner, depth) {
 }
 find(subject.contains || [], subject, 1);
 if (!item) fail();
+// Registered records are the source of shared item fields; the remaining snapshot
+// carries only separately authorized facets, labels, and knowledge statements.
+var itemObject = ctx.objects && ctx.objects.item;
+if (!itemObject || !itemObject.roles.item || itemObject.roles.item.id !== itemId) fail();
+function registeredComponents(previous, value, fields) {
+    var result = Object.assign({}, previous || {});
+    Object.keys(fields).forEach(function(field) {
+        delete result[fields[field]];
+        if (value && Object.prototype.hasOwnProperty.call(value, field)) result[fields[field]] = JSON.stringify(value[field]);
+    });
+    return result;
+}
+item = Object.assign({}, item, {components: registeredComponents(item.components, itemObject.value,
+    {definitionLink:'dnd2024.core.definition-link',quantity:'dnd2024.item.quantity',equipment:'dnd2024.item.equipment'})});
+var registeredReferences = Object.assign({}, ctx.references || {});
+if (itemObject.roles.definition) {
+    var definitionKey = itemObject.roles.definition.id, originalDefinition = registeredReferences[definitionKey];
+    if (!originalDefinition) fail();
+    registeredReferences[definitionKey] = Object.assign({}, originalDefinition, {components:
+        registeredComponents(originalDefinition.components, itemObject.value.definition,
+            {definition:'dnd2024.item-definition',activityMembership:'dnd2024.activity.membership',inlineActivities:'dnd2024.item-activity'})});
+}
 var states = Object.create(null);
 if (!Array.isArray(observer.knowledge) || !observer.knowledgeComplete) fail();
 observer.knowledge.forEach(function (entry) {
@@ -37,7 +59,7 @@ var link = read(item.components, 'dnd2024.core.definition-link'), definition = n
 if (link) {
     if (!ref(link.definition)) fail();
     definitionId = link.definition.entityId;
-    definition = ctx.references && ctx.references[definitionId];
+    definition = registeredReferences && registeredReferences[definitionId];
     if (!definition || definition.id !== definitionId) fail();
 }
 var discovery = read(item.components, 'dnd2024.magic-item.knowledge');
@@ -260,8 +282,8 @@ function addMedia(components, inherited) {
 if (identity) addMedia(item.components, false);
 if (definition && definitionVisible) addMedia(definition.components, true);
 
-Object.keys(ctx.references || {}).sort().forEach(function (id) {
-    var statement = read(ctx.references[id].components, 'authorized-knowledge');
+Object.keys(registeredReferences || {}).sort().forEach(function (id) {
+    var statement = read(registeredReferences[id].components, 'authorized-knowledge');
     if (!statement) return;
     if (statement.subjectId !== itemId && statement.subjectId !== definitionId) fail();
     if (!dm && ['known', 'suspected', 'believed', 'doubted', 'disbelieved'].indexOf(state(id)) < 0) return;

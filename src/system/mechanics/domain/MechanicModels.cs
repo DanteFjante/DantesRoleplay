@@ -27,6 +27,9 @@ public sealed record MechanicRequirements
     /// </summary>
     public Dictionary<string, MechanicObjectRoleRequirement> ObjectRoles { get; init; } = [];
 
+    /// <summary>Read-only exact objects assembled only from the already-authorized mechanic snapshot.</summary>
+    public Dictionary<string, MechanicSnapshotObjectRequirement> SnapshotObjects { get; init; } = [];
+
     /// <summary>
     /// Optional authored JSON Schema for the mechanic's input object. Discovery surfaces expose
     /// this contract before execution; JavaScript still performs semantic checks that depend on
@@ -96,6 +99,16 @@ public sealed record MechanicRequirements
     {
         if (string.IsNullOrWhiteSpace(json)) return new();
         var parsed = JsonSerializer.Deserialize<MechanicRequirements>(json, JsonOptions) ?? new();
+        if (parsed.SnapshotObjects is null) throw new JsonException("Invalid snapshot object declaration.");
+        if (parsed.SnapshotObjects.Count > 0)
+        {
+            using var document = JsonDocument.Parse(json);
+            RejectDuplicates(document.RootElement);
+            if (parsed.SnapshotObjects.Count > ProjectionLimits.MaxObjectRoles ||
+                parsed.SnapshotObjects.Any(pair => !MechanicObjectRoleRequirement.Token(pair.Key, 100) ||
+                    pair.Value is null || !pair.Value.Valid(parsed.Roles)))
+                throw new JsonException("Invalid snapshot object declaration.");
+        }
         if (parsed.AuthorizedContext is not null)
         {
             using var document = JsonDocument.Parse(json);
@@ -334,6 +347,12 @@ public sealed record MechanicRequirements
             EffectComponentIds.Any(string.IsNullOrWhiteSpace) ||
             EffectComponentIds.Distinct(StringComparer.Ordinal).Count() != EffectComponentIds.Count)
             problems.Add("effectComponentIds must be a bounded distinct list of component identities.");
+        if (SnapshotObjects.Count > ProjectionLimits.MaxObjectRoles ||
+            SnapshotObjects.Count > 0 && ObjectRoles.Count > 0)
+            problems.Add("Snapshot objects require a bounded, separate read-only projection declaration.");
+        foreach (var (key, value) in SnapshotObjects)
+            if (!MechanicObjectRoleRequirement.Token(key, 100) || value is null || !value.Valid(Roles))
+                problems.Add($"Snapshot object '{key}' requires an exact reference and bounded snapshot bindings.");
         if (ObjectRoles.Count > ProjectionLimits.MaxObjectRoles)
             problems.Add($"A mechanic may declare at most {ProjectionLimits.MaxObjectRoles} object roles.");
         if (ObjectRoles.Count > 0 && Children.Count > 0)

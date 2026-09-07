@@ -226,6 +226,28 @@ public static class ApplicationCapabilityCatalogValidator
                     $"Object role '{name}' references unavailable collection '{objectRole.CollectionId}'."));
         }
 
+        foreach (var (name, snapshot) in requirements.SnapshotObjects)
+        {
+            if (!objects.TryGetValue((snapshot.QualifiedId, snapshot.Version), out var definition)
+                || definition.ObjectContract is not { } contract)
+            {
+                issues.Add(Issue("mechanic", qualifiedId, "capability-object-missing",
+                    $"Snapshot '{name}' references an unavailable registered object."));
+                continue;
+            }
+            var bound = snapshot.RoleBindings.Keys.ToHashSet(StringComparer.Ordinal);
+            if (!bound.IsSubsetOf(contract.Roles.Select(value => value.RoleId)) ||
+                !contract.Roles.Where(value => value.Required).All(value => bound.Contains(value.RoleId)))
+                issues.Add(Issue("mechanic", qualifiedId, "capability-object-roles",
+                    $"Snapshot '{name}' must bind declared object roles and all required roles."));
+            if (contract.Relationships.Count > 0 || contract.Collections.Count > 0)
+                issues.Add(Issue("mechanic", qualifiedId, "capability-object-snapshot",
+                    $"Snapshot '{name}' must use a structural object without storage traversal."));
+            if (snapshot.ReferenceComponentIds.Except(requirements.AllComponentIds(), StringComparer.Ordinal).Any())
+                issues.Add(Issue("mechanic", qualifiedId, "capability-object-snapshot",
+                    $"Snapshot '{name}' selects undeclared reference components."));
+        }
+
         try
         {
             var record = Record(applicationId, "mechanic", qualifiedId, mechanic.File.Name,
