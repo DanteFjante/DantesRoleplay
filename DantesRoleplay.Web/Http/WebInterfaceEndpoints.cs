@@ -52,8 +52,6 @@ public static class WebInterfaceEndpoints
         Secure(endpoints.MapGet("/api/web/applications", GetPublishedApplicationsAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/api/web/applications/{applicationId}", GetPublishedApplicationAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/api/web/applications/{applicationId}/pages/{slug}", GetPublishedPageAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
-        Secure(endpoints.MapGet("/components/application-conversation.js", GetApplicationConversationElement), WebInterfaceSecurity.ReadRateLimitPolicy);
-        Secure(endpoints.MapGet("/components/system-workspace.js", GetSystemWorkspaceElement), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/components/{name}.js", GetBrowserComponentAssetAsync), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/api/applications/{applicationId}/catalog/browse", BrowseCatalog), WebInterfaceSecurity.ReadRateLimitPolicy);
         Secure(endpoints.MapGet("/api/applications/{applicationId}/catalog/records/{qualifiedId}", InspectCatalog), WebInterfaceSecurity.ReadRateLimitPolicy);
@@ -301,19 +299,67 @@ public static class WebInterfaceEndpoints
         }
     }
 
-    private static IResult GetApplicationConversationElement() => Results.Text(
-        ApplicationConversationElement.Script, "text/javascript; charset=utf-8", Encoding.UTF8);
-
-    private static IResult GetSystemWorkspaceElement() => Results.Text(
-        SystemWorkspaceElement.Script, "text/javascript; charset=utf-8", Encoding.UTF8);
-
     private static async Task<IResult> GetBrowserComponentAssetAsync(
-        string name, CancellationToken cancellationToken)
+        HttpContext context,
+        string name,
+        CancellationToken cancellationToken)
     {
-        var script = await BrowserComponentAssets.ReadAsync(name, cancellationToken);
-        return script is null
-            ? Results.NotFound()
-            : Results.Text(script, "text/javascript; charset=utf-8", Encoding.UTF8);
+        var asset = await BrowserComponentAssets.GetAsync(name, cancellationToken);
+        if (asset is null) return Results.NotFound();
+        context.Response.Headers.CacheControl = "public, max-age=0, must-revalidate";
+        context.Response.Headers.ETag = asset.EntityTag;
+        context.Response.Headers.LastModified = asset.LastModified.ToString("R");
+        context.Response.Headers.Vary = "Accept-Encoding";
+        if (IsNotModified(context.Request, asset)) return Results.StatusCode(StatusCodes.Status304NotModified);
+        var encoding = PreferredEncoding(context.Request.Headers.AcceptEncoding);
+        var content = encoding switch
+        {
+            "br" when asset.BrotliContent is not null => asset.BrotliContent,
+            "gzip" when asset.GzipContent is not null => asset.GzipContent,
+            _ => asset.Content
+        };
+        if (!ReferenceEquals(content, asset.Content)) context.Response.Headers.ContentEncoding = encoding;
+        return Results.Bytes(content, "text/javascript; charset=utf-8");
+    }
+
+    private static bool IsNotModified(HttpRequest request, BrowserComponentAsset asset)
+    {
+        if (request.Headers.IfNoneMatch.Count > 0)
+        {
+            var expected = asset.EntityTag.StartsWith("W/", StringComparison.Ordinal)
+                ? asset.EntityTag[2..] : asset.EntityTag;
+            return request.Headers.IfNoneMatch.ToString().Split(',').Select(value => value.Trim())
+                .Any(value => value == "*" || value == asset.EntityTag || value == expected
+                    || value == "W/" + expected);
+        }
+        return DateTimeOffset.TryParse(request.Headers.IfModifiedSince,
+                   System.Globalization.CultureInfo.InvariantCulture,
+                   System.Globalization.DateTimeStyles.AssumeUniversal, out var modifiedSince)
+               && asset.LastModified <= modifiedSince.ToUniversalTime();
+    }
+
+    private static string? PreferredEncoding(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var qualities = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in value.Split(','))
+        {
+            var parts = item.Split(';', StringSplitOptions.TrimEntries);
+            var quality = 1d;
+            foreach (var parameter in parts.Skip(1))
+                if (parameter.StartsWith("q=", StringComparison.OrdinalIgnoreCase)
+                    && (!double.TryParse(parameter[2..],
+                        System.Globalization.NumberStyles.AllowDecimalPoint,
+                        System.Globalization.CultureInfo.InvariantCulture, out quality)
+                        || quality is < 0 or > 1))
+                    quality = 0;
+            qualities[parts[0]] = quality;
+        }
+        var wildcard = qualities.GetValueOrDefault("*");
+        var brotli = qualities.TryGetValue("br", out var br) ? br : wildcard;
+        var gzip = qualities.TryGetValue("gzip", out var gz) ? gz : wildcard;
+        if (brotli <= 0 && gzip <= 0) return null;
+        return brotli >= gzip ? "br" : "gzip";
     }
 
     private static async Task<IResult> SubmitObservationAsync(

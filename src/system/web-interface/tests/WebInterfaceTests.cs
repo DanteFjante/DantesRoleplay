@@ -98,35 +98,37 @@ public sealed class WebInterfaceTests
         var route = Assert.Single(((IEndpointRouteBuilder)application).DataSources
             .SelectMany(source => source.Endpoints)
             .OfType<RouteEndpoint>(),
-            endpoint => endpoint.RoutePattern.RawText == "/components/system-workspace.js");
+            endpoint => endpoint.RoutePattern.RawText == "/components/{name}.js");
 
         Assert.Equal([HttpMethods.Get], route.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods);
-        Assert.Contains("customElements.define('system-navigation'", SystemWorkspaceElement.Script,
+        var systemWorkspace = await BrowserComponentAssets.ReadAsync("system-workspace");
+        Assert.NotNull(systemWorkspace);
+        Assert.Contains("customElements.define('system-navigation'", systemWorkspace,
             StringComparison.Ordinal);
-        Assert.Contains("/components/system-client.js", SystemWorkspaceElement.Script,
+        Assert.Contains("/components/system-client.js", systemWorkspace,
             StringComparison.Ordinal);
-        Assert.Contains("/components/system-publication.js", SystemWorkspaceElement.Script,
+        Assert.Contains("/components/system-publication.js", systemWorkspace,
             StringComparison.Ordinal);
-        Assert.DoesNotContain("/api/control/structure/applications", SystemWorkspaceElement.Script,
+        Assert.DoesNotContain("/api/control/structure/applications", systemWorkspace,
             StringComparison.Ordinal);
-        Assert.Contains("this._client.discoverAllApplications", SystemWorkspaceElement.Script,
+        Assert.Contains("this._client.discoverAllApplications", systemWorkspace,
             StringComparison.Ordinal);
-        Assert.Contains("document.createElement('application-navigation')", SystemWorkspaceElement.Script,
+        Assert.Contains("document.createElement('application-navigation')", systemWorkspace,
             StringComparison.Ordinal);
-        Assert.Contains("set client(value)", SystemWorkspaceElement.Script, StringComparison.Ordinal);
-        Assert.DoesNotContain("-play", SystemWorkspaceElement.Script, StringComparison.Ordinal);
-        Assert.DoesNotContain("#/applications/${encodeURIComponent(application.id)}", SystemWorkspaceElement.Script,
+        Assert.Contains("set client(value)", systemWorkspace, StringComparison.Ordinal);
+        Assert.DoesNotContain("-play", systemWorkspace, StringComparison.Ordinal);
+        Assert.DoesNotContain("#/applications/${encodeURIComponent(application.id)}", systemWorkspace,
             StringComparison.Ordinal);
-        Assert.Contains("No applications registered.", SystemWorkspaceElement.Script, StringComparison.Ordinal);
-        Assert.Contains("Applications are unavailable.", SystemWorkspaceElement.Script, StringComparison.Ordinal);
-        Assert.Contains("APPLICATION_DISCOVERY_UNAVAILABLE", SystemWorkspaceElement.Script,
+        Assert.Contains("No applications registered.", systemWorkspace, StringComparison.Ordinal);
+        Assert.Contains("Applications are unavailable.", systemWorkspace, StringComparison.Ordinal);
+        Assert.Contains("APPLICATION_DISCOVERY_UNAVAILABLE", systemWorkspace,
             StringComparison.Ordinal);
-        Assert.Contains("system-progress", SystemWorkspaceElement.Script, StringComparison.Ordinal);
-        Assert.Contains("system-error", SystemWorkspaceElement.Script, StringComparison.Ordinal);
-        Assert.Contains("bubbles: true, composed: true", SystemWorkspaceElement.Script, StringComparison.Ordinal);
-        Assert.Contains("window.addEventListener('hashchange'", SystemWorkspaceElement.Script,
+        Assert.Contains("system-progress", systemWorkspace, StringComparison.Ordinal);
+        Assert.Contains("system-error", systemWorkspace, StringComparison.Ordinal);
+        Assert.Contains("bubbles: true, composed: true", systemWorkspace, StringComparison.Ordinal);
+        Assert.Contains("window.addEventListener('hashchange'", systemWorkspace,
             StringComparison.Ordinal);
-        Assert.Contains("window.removeEventListener('hashchange'", SystemWorkspaceElement.Script,
+        Assert.Contains("window.removeEventListener('hashchange'", systemWorkspace,
             StringComparison.Ordinal);
         var client = await BrowserComponentAssets.ReadAsync("system-client");
         var publication = await BrowserComponentAssets.ReadAsync("system-publication");
@@ -152,16 +154,116 @@ public sealed class WebInterfaceTests
         Assert.DoesNotContain("state-space", publication, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("overlay", client, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("overlay", publication, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("/mcp", SystemWorkspaceElement.Script, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("sql", SystemWorkspaceElement.Script, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("dnd", SystemWorkspaceElement.Script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("/mcp", systemWorkspace, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("sql", systemWorkspace, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("dnd", systemWorkspace, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("dnd", client, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("dnd", publication, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
+    public async Task Browser_component_assets_revalidate_cache_and_compress_only_static_modules()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddDantesRoleplayWeb("Data Source=:memory:", new ConfigurationBuilder().Build());
+        var application = builder.Build();
+        application.MapDantesRoleplayWeb();
+        var route = Assert.Single(((IEndpointRouteBuilder)application).DataSources
+            .SelectMany(source => source.Endpoints).OfType<RouteEndpoint>(), endpoint =>
+                endpoint.RoutePattern.RawText == "/components/{name}.js");
+        var name = "asset-change-" + Guid.NewGuid().ToString("N");
+        var path = Path.Combine(AppContext.BaseDirectory, "BrowserComponents", name + ".js");
+        var firstText = string.Concat(Enumerable.Repeat(
+            "export const browserComponentValue = 'repeated static module';\n", 200));
+
+        async Task<HttpContext> RequestAsync(
+            string? ifNoneMatch = null,
+            string? ifModifiedSince = null,
+            string? acceptEncoding = null)
+        {
+            var context = RequestContext("localhost:6217", IPAddress.Loopback);
+            context.RequestServices = application.Services;
+            context.Request.Method = HttpMethods.Get;
+            context.Request.RouteValues["name"] = name;
+            if (ifNoneMatch is not null) context.Request.Headers.IfNoneMatch = ifNoneMatch;
+            if (ifModifiedSince is not null) context.Request.Headers.IfModifiedSince = ifModifiedSince;
+            if (acceptEncoding is not null) context.Request.Headers.AcceptEncoding = acceptEncoding;
+            context.Response.Body = new MemoryStream();
+            await route.RequestDelegate!(context);
+            return context;
+        }
+
+        try
+        {
+            await File.WriteAllTextAsync(path, firstText, new UTF8Encoding(false));
+            var first = await RequestAsync();
+            var firstBytes = ((MemoryStream)first.Response.Body).ToArray();
+            var entityTag = first.Response.Headers.ETag.ToString();
+            var lastModified = first.Response.Headers.LastModified.ToString();
+            Assert.Equal(StatusCodes.Status200OK, first.Response.StatusCode);
+            Assert.Equal("text/javascript; charset=utf-8", first.Response.ContentType);
+            Assert.Equal(firstText, Encoding.UTF8.GetString(firstBytes));
+            Assert.StartsWith("W/\"", entityTag, StringComparison.Ordinal);
+            Assert.Equal("public, max-age=0, must-revalidate", first.Response.Headers.CacheControl);
+            Assert.Equal("Accept-Encoding", first.Response.Headers.Vary);
+            Assert.Equal(WebInterfaceSecurity.ContentSecurityPolicy,
+                first.Response.Headers.ContentSecurityPolicy);
+            Assert.Equal("nosniff", first.Response.Headers.XContentTypeOptions);
+
+            var entityTagHit = await RequestAsync(ifNoneMatch: entityTag);
+            Assert.Equal(StatusCodes.Status304NotModified, entityTagHit.Response.StatusCode);
+            Assert.Empty(((MemoryStream)entityTagHit.Response.Body).ToArray());
+            Assert.Equal(entityTag, entityTagHit.Response.Headers.ETag);
+
+            var modifiedHit = await RequestAsync(ifModifiedSince: lastModified);
+            Assert.Equal(StatusCodes.Status304NotModified, modifiedHit.Response.StatusCode);
+            Assert.Empty(((MemoryStream)modifiedHit.Response.Body).ToArray());
+
+            var brotli = await RequestAsync(acceptEncoding: "gzip;q=0.5, br");
+            var brotliBytes = ((MemoryStream)brotli.Response.Body).ToArray();
+            Assert.Equal("br", brotli.Response.Headers.ContentEncoding);
+            Assert.True(brotliBytes.Length < firstBytes.Length);
+            using (var input = new MemoryStream(brotliBytes))
+            using (var decompressor = new BrotliStream(input, CompressionMode.Decompress))
+            using (var output = new MemoryStream())
+            {
+                await decompressor.CopyToAsync(output);
+                Assert.Equal(firstBytes, output.ToArray());
+            }
+
+            var gzip = await RequestAsync(acceptEncoding: "gzip");
+            var gzipBytes = ((MemoryStream)gzip.Response.Body).ToArray();
+            Assert.Equal("gzip", gzip.Response.Headers.ContentEncoding);
+            Assert.True(gzipBytes.Length < firstBytes.Length);
+            using (var input = new MemoryStream(gzipBytes))
+            using (var decompressor = new GZipStream(input, CompressionMode.Decompress))
+            using (var output = new MemoryStream())
+            {
+                await decompressor.CopyToAsync(output);
+                Assert.Equal(firstBytes, output.ToArray());
+            }
+
+            var changedText = firstText + "export const changedReleaseAsset = true;\n";
+            await File.WriteAllTextAsync(path, changedText, new UTF8Encoding(false));
+            File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddSeconds(2));
+            var changed = await RequestAsync(ifNoneMatch: entityTag);
+            Assert.Equal(StatusCodes.Status200OK, changed.Response.StatusCode);
+            Assert.NotEqual(entityTag, changed.Response.Headers.ETag.ToString());
+            Assert.Equal(changedText,
+                Encoding.UTF8.GetString(((MemoryStream)changed.Response.Body).ToArray()));
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+            Assert.Null(await BrowserComponentAssets.ReadAsync(name));
+        }
+    }
+
+    [Fact]
     public async Task Application_pages_are_not_generated_or_served_without_ecs_publication_identity()
     {
+        var systemWorkspace = await BrowserComponentAssets.ReadAsync("system-workspace");
+        Assert.NotNull(systemWorkspace);
         var connectionString = SharedMemoryConnectionString();
         await using var keeper = new SqliteConnection(connectionString);
         await keeper.OpenAsync();
@@ -211,7 +313,7 @@ public sealed class WebInterfaceTests
         Assert.Contains("Application unavailable", authored.Html, StringComparison.Ordinal);
         Assert.Equal(StatusCodes.Status404NotFound, unknown.Status);
         Assert.Contains("Application unavailable", unknown.Html, StringComparison.Ordinal);
-        Assert.DoesNotContain("-play", SystemWorkspaceElement.Script, StringComparison.Ordinal);
+        Assert.DoesNotContain("-play", systemWorkspace, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -586,7 +688,8 @@ public sealed class WebInterfaceTests
             ("/api/control/system/conversations/{conversationId}/tasks", HttpMethods.Post)
         ], routes);
 
-        var script = SystemWorkspaceElement.Script;
+        var script = await BrowserComponentAssets.ReadAsync("system-workspace");
+        Assert.NotNull(script);
         var chatStart = script.IndexOf("class SystemChat", StringComparison.Ordinal);
         var chat = script[chatStart..];
         Assert.Contains("customElements.define('system-chat'", chat, StringComparison.Ordinal);
@@ -678,9 +781,10 @@ public sealed class WebInterfaceTests
     }
 
     [Fact]
-    public void System_action_and_form_components_use_schema_and_separate_confirmation()
+    public async Task System_action_and_form_components_use_schema_and_separate_confirmation()
     {
-        var script = SystemWorkspaceElement.Script;
+        var script = await BrowserComponentAssets.ReadAsync("system-workspace");
+        Assert.NotNull(script);
         var start = script.IndexOf("const SYSTEM_CAPABILITY_ENDPOINT", StringComparison.Ordinal);
         var controls = script[start..];
 
@@ -716,7 +820,9 @@ public sealed class WebInterfaceTests
     public async Task Governance_control_center_discovers_contracts_and_reuses_the_generic_system_form()
     {
         var script = await BrowserComponentAssets.ReadAsync("governance-control-center");
+        var systemWorkspace = await BrowserComponentAssets.ReadAsync("system-workspace");
         Assert.NotNull(script);
+        Assert.NotNull(systemWorkspace);
         Assert.Contains("/api/control/system/capabilities", script, StringComparison.Ordinal);
         Assert.Contains("document.createElement('system-form')", script, StringComparison.Ordinal);
         Assert.Contains("item.inputSchema", script, StringComparison.Ordinal);
@@ -726,9 +832,9 @@ public sealed class WebInterfaceTests
         Assert.DoesNotContain("system.mechanic-sandbox", script, StringComparison.Ordinal);
         Assert.DoesNotContain("system.interaction-recipes", script, StringComparison.Ordinal);
         Assert.DoesNotContain("innerHTML", script, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("/components/governance-control-center.js", SystemWorkspaceElement.Script,
+        Assert.Contains("/components/governance-control-center.js", systemWorkspace,
             StringComparison.Ordinal);
-        Assert.Contains("Download result JSON", SystemWorkspaceElement.Script, StringComparison.Ordinal);
+        Assert.Contains("Download result JSON", systemWorkspace, StringComparison.Ordinal);
 
         var page = File.ReadAllText(Path.Combine(RepositoryRoot(), "src", "system", "web-interface",
             "examples", "control-center", "index.html"));
@@ -747,12 +853,10 @@ public sealed class WebInterfaceTests
         var routes = ((IEndpointRouteBuilder)application).DataSources.SelectMany(source => source.Endpoints)
             .OfType<RouteEndpoint>()
             .Where(endpoint => endpoint.RoutePattern.RawText!.StartsWith("/api/applications/", StringComparison.Ordinal)
-                || endpoint.RoutePattern.RawText == "/components/application-conversation.js"
                 || endpoint.RoutePattern.RawText == "/components/{name}.js")
             .Select(endpoint => (endpoint.RoutePattern.RawText,
                 Method: endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods.Single())).ToArray();
         Assert.Equal([
-            ("/components/application-conversation.js", HttpMethods.Get),
             ("/components/{name}.js", HttpMethods.Get),
             ("/api/applications/{applicationId}/catalog/browse", HttpMethods.Get),
             ("/api/applications/{applicationId}/catalog/records/{qualifiedId}", HttpMethods.Get),
@@ -798,21 +902,23 @@ public sealed class WebInterfaceTests
         Assert.All(applicationActionWrites, endpoint => Assert.Equal(
             WebInterfaceSecurity.UploadRateLimitPolicy,
             endpoint.Metadata.GetMetadata<EnableRateLimitingAttribute>()!.PolicyName));
-        Assert.Contains("customElements.define('application-conversation'", ApplicationConversationElement.Script, StringComparison.Ordinal);
-        Assert.Contains("session-context-id", ApplicationConversationElement.Script, StringComparison.Ordinal);
-        Assert.Contains("new CustomEvent", ApplicationConversationElement.Script, StringComparison.Ordinal);
-        Assert.Contains("conversation-change", ApplicationConversationElement.Script, StringComparison.Ordinal);
-        Assert.Contains("location-media", ApplicationConversationElement.Script, StringComparison.Ordinal);
-        Assert.Contains("/entities/${encodedLocation}/media", ApplicationConversationElement.Script, StringComparison.Ordinal);
-        Assert.Contains("application-conversation__location-media", ApplicationConversationElement.Script, StringComparison.Ordinal);
+        var conversation = await BrowserComponentAssets.ReadAsync("application-conversation");
+        Assert.NotNull(conversation);
+        Assert.Contains("customElements.define('application-conversation'", conversation, StringComparison.Ordinal);
+        Assert.Contains("session-context-id", conversation, StringComparison.Ordinal);
+        Assert.Contains("new CustomEvent", conversation, StringComparison.Ordinal);
+        Assert.Contains("conversation-change", conversation, StringComparison.Ordinal);
+        Assert.Contains("location-media", conversation, StringComparison.Ordinal);
+        Assert.Contains("/entities/${encodedLocation}/media", conversation, StringComparison.Ordinal);
+        Assert.Contains("application-conversation__location-media", conversation, StringComparison.Ordinal);
         Assert.Contains("allowedRoles = ['setting', 'scene', 'illustration', 'portrait', 'map', 'icon']",
-            ApplicationConversationElement.Script, StringComparison.Ordinal);
-        Assert.DoesNotContain("sha256", ApplicationConversationElement.Script, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("base64", ApplicationConversationElement.Script, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Remember this route", ApplicationConversationElement.Script, StringComparison.Ordinal);
-        Assert.Contains("remember.checked = false", ApplicationConversationElement.Script, StringComparison.Ordinal);
-        Assert.DoesNotContain("/api/control", ApplicationConversationElement.Script, StringComparison.Ordinal);
-        Assert.DoesNotContain("/mcp", ApplicationConversationElement.Script, StringComparison.Ordinal);
+            conversation, StringComparison.Ordinal);
+        Assert.DoesNotContain("sha256", conversation, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("base64", conversation, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Remember this route", conversation, StringComparison.Ordinal);
+        Assert.Contains("remember.checked = false", conversation, StringComparison.Ordinal);
+        Assert.DoesNotContain("/api/control", conversation, StringComparison.Ordinal);
+        Assert.DoesNotContain("/mcp", conversation, StringComparison.Ordinal);
         var applicationScript = await BrowserComponentAssets.ReadAsync("application-workspace");
         Assert.NotNull(applicationScript);
         Assert.Contains("customElements.define('application-entity-picker'", applicationScript,
