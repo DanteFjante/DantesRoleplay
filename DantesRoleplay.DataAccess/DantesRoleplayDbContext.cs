@@ -173,10 +173,10 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         ConfigureOperations(modelBuilder);
         ConfigureInteractionReceipts(modelBuilder);
         ConfigureInteractionRecipes(modelBuilder);
-        ConfigureTriggerScheduling(modelBuilder);
+        TriggerSchedulingModelConfiguration.Configure(modelBuilder);
         ConfigureHostSettings(modelBuilder);
         ConfigureAssistantConversations(modelBuilder);
-        ConfigurePlayRecording(modelBuilder);
+        PlayRecordingModelConfiguration.Configure(modelBuilder);
         ConfigureSystemTasks(modelBuilder);
         ConfigureBlobStorage(modelBuilder);
         ConfigureWorld(modelBuilder);
@@ -196,7 +196,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         ConfigureApplicationScopedEcs(modelBuilder);
         ConfigureProjectionMaterialization(modelBuilder);
         ConfigureApplicationObjectChanges(modelBuilder);
-        ConfigureApplicationActivation(modelBuilder);
+        ApplicationActivationModelConfiguration.Configure(modelBuilder);
         ConfigureLegacyStateAdoption(modelBuilder);
     }
 
