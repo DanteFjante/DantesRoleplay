@@ -190,14 +190,17 @@ async function readFactionObjectPage(
   });
   if (!page) throw new Error("The faction directory could not be read.");
   if (signal.aborted) throw new DOMException("View replaced", "AbortError");
+  const key = characterScope(source.stateSpaceId, source.campaign.id, source.audience.perspective);
+  const latest = characterSources.get(key);
+  if (!latest) throw new DOMException("View replaced", "AbortError");
   const factions = cursor === null ? page.factions : [
-    ...(source.worldDirectory?.factions ?? []),
+    ...(latest.worldDirectory?.factions ?? []),
     ...page.factions.filter((item: { id: string }) =>
-      !source.worldDirectory?.factions.some((previous) => previous.id === item.id)),
+      !latest.worldDirectory?.factions.some((previous) => previous.id === item.id)),
   ];
-  characterSources.set(characterScope(source.stateSpaceId, source.campaign.id, source.audience.perspective), {
-    ...source, worldDirectory: { people: source.worldDirectory?.people ?? [], factions,
-      holdings: source.worldDirectory?.holdings ?? [] },
+  characterSources.set(key, {
+    ...latest, worldDirectory: { people: latest.worldDirectory?.people ?? [], factions,
+      holdings: latest.worldDirectory?.holdings ?? [] },
   });
   const projected = connectedCampaignToHubEnvelope({ ...source,
     worldDirectory: { people: [], factions: page.factions, holdings: [] }, rules: [],
@@ -234,11 +237,13 @@ async function loadCampaignDetails(
   });
   if (details?.incomplete) throw new Error("The campaign details could not be read completely.");
   if (signal.aborted) throw new DOMException("View replaced", "AbortError");
-  characterSources.set(characterScope(source.stateSpaceId, source.campaign.id, source.audience.perspective),
-    { ...source, campaign: { ...source.campaign, ...details } });
+  const key = characterScope(source.stateSpaceId, source.campaign.id, source.audience.perspective);
+  const latest = characterSources.get(key);
+  if (!latest) throw new DOMException("View replaced", "AbortError");
+  characterSources.set(key, { ...latest, campaign: { ...latest.campaign, ...details } });
   return connectedCampaignToHubEnvelope({
-    ...source,
-    campaign: { ...source.campaign, ...details },
+    ...latest,
+    campaign: { ...latest.campaign, ...details },
     rules: [],
   }).campaign;
 }

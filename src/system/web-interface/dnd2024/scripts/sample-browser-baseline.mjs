@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { audienceViewFor, livePageEvidence, machineProfile, normalizeListener, sameLivePage, sha256, webRoot } from './collect-baseline.mjs';
-import { completeWorkloadEvidence, recordSetEvidence } from './complete-workload.mjs';
+import { completeWorkloadEvidence, recordSetEvidence, workloadHarnessFingerprint } from './complete-workload.mjs';
 import { readGameServerContext } from '../src/server/game-server-context.js';
 
 // Private bodies, query values, cookies, console messages and DOM text never enter the report.
@@ -155,7 +155,7 @@ async function sample(page, client, cacheState, index) {
     const characterStart = await time();
     const navigation = page.getByRole('navigation', { name: 'Main table views', exact: true });
     await navigation.getByRole('button', { name: 'Party', exact: true }).click();
-    await page.locator('.character-page, .view-render-error').waitFor({ state: 'visible' });
+    await page.locator('.character-page, .view-render-error, #information-content [data-reason-code="audience-restricted"]').waitFor({ state: 'visible' });
     run.step = 'open-character-sheet';
     const characterButton = page.getByRole('button', { name: /^Character( sheet)?$/ });
     if (await characterButton.count()) {
@@ -171,6 +171,7 @@ async function sample(page, client, cacheState, index) {
     run.step = 'wait-canonical-sheet';
     await paint();
     const characterStatus = await page.evaluate(() => {
+      if (document.querySelector('#information-content [data-reason-code="audience-restricted"]')) return 'unavailable';
       if (document.querySelector('.view-render-error')) return 'error';
       for (const state of ['stale', 'error', 'forbidden', 'empty']) {
         if (document.querySelector('.character-state--' + state)) return state;
@@ -180,7 +181,9 @@ async function sample(page, client, cacheState, index) {
     run.outcomes.character = { status: characterStatus, reason: characterStatus === 'ready'
       ? null : 'The unchanged live view did not render a ready canonical character sheet.' };
     if (characterStatus === 'ready') run.marks.character = await time() - characterStart;
-    run.traversal.character = { status: characterStatus, complete: true, ...recordSetEvidence(
+    run.traversal.character = { status: characterStatus, complete: true,
+      ...(await page.locator('#information-content [data-reason-code="audience-restricted"]').count()
+        ? { reasonCode: 'audience-restricted' } : {}), ...recordSetEvidence(
       characterStatus === 'ready' ? await page.locator('.character-page[data-record-id]').evaluateAll(
         elements => elements.map(element => element.dataset.recordId)) : []) };
     await waitForFiniteRequests();
@@ -203,7 +206,8 @@ async function sample(page, client, cacheState, index) {
       const notReady = await page.locator('#information-content .view-loading, #information-content [role="alert"], #information-content .view-render-error').count();
       const status = notReady ? 'unloaded' : 'unavailable';
       run.outcomes.map = { status, reason: 'No authorized map canvas rendered.' };
-      run.traversal.map = { status, complete: !notReady, ...recordSetEvidence([]) };
+      run.traversal.map = { status, complete: !notReady,
+        ...(!notReady ? { reasonCode: 'no-authorized-content' } : {}), ...recordSetEvidence([]) };
     }
     await waitForFiniteRequests();
     for (const view of ['history', 'lore', 'locations', 'people', 'factions']) {
@@ -227,6 +231,8 @@ async function sample(page, client, cacheState, index) {
         if (!root?.querySelector('#main-view-heading')) return { status: 'unloaded', ids: [] };
         if (document.querySelector('.information-hub > [role="alert"]') ||
             root?.querySelector('[role="alert"], .view-render-error')) return { status: 'error', ids: [] };
+        if (root.querySelector('[data-view-status="unavailable"][data-reason-code="audience-restricted"]'))
+          return { status: 'unavailable', reasonCode: 'audience-restricted', ids: [] };
         if (root?.querySelector('.view-loading, [aria-busy="true"]')) return { status: 'unloaded', ids: [] };
         const selectors = { history: '.history-event', lore: '.lore-card',
           locations: '.location-row', people: '.world-person-card', factions: '.faction-card' };
@@ -238,7 +244,8 @@ async function sample(page, client, cacheState, index) {
         return { status: ids.length ? 'ready' : 'empty', ids };
       }, view);
       run.traversal[view] = { status: snapshot.status,
-        complete: ['ready', 'empty'].includes(snapshot.status), ...recordSetEvidence(snapshot.ids) };
+        complete: ['ready', 'empty'].includes(snapshot.status) || snapshot.reasonCode === 'audience-restricted',
+        ...(snapshot.reasonCode ? { reasonCode: snapshot.reasonCode } : {}), ...recordSetEvidence(snapshot.ids) };
     }
     phase = 'context';
     await page.locator('.world-context__trigger').click();
@@ -274,6 +281,7 @@ async function sample(page, client, cacheState, index) {
       ids: elements[0]?.dataset.recordId ? [elements[0].dataset.recordId] : [],
     }));
     run.traversal.current = { status: current.status, complete: ['ready', 'unavailable'].includes(current.status),
+      ...(current.status === 'unavailable' ? { reasonCode: 'no-authorized-content' } : {}),
       ...recordSetEvidence(current.ids) };
     run.marks.completeWorkload = await time();
     run.blockedWrites = await page.evaluate(() => window.__DND_BASELINE_BLOCKED_WRITES__);
@@ -356,6 +364,7 @@ async function main() {
   const report = {
     schema: 'dnd2024.browser-baseline.v3', listener: options.listener,
     samplerSha256: sha256(await readFile(fileURLToPath(import.meta.url))),
+    workloadHarnessSha256: workloadHarnessFingerprint(),
     browser: null,
     machine: machineProfile(), generatedAtUtc: new Date().toISOString(), readOnly: true,
     protocol: {

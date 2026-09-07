@@ -73,6 +73,14 @@ function ViewLoading({ label }: { label: string }) {
   );
 }
 
+function ActorBindingRequired() {
+  return <section className="view-unavailable" role="status"
+    data-view-status="unavailable" data-reason-code="audience-restricted">
+    <h1 id="main-view-heading" tabIndex={-1}>Actor binding required</h1>
+    <p>This view is unavailable in Player preview. Open it from an authorized Actor seat.</p>
+  </section>;
+}
+
 function loadRequestedPerspective(): Perspective | null {
   try {
     const stored = window.localStorage.getItem(PERSPECTIVE_KEY);
@@ -181,8 +189,11 @@ export function DndInformationHub({
   const [announcement, setAnnouncement] = useState("World view ready");
   const [hubBusy, setHubBusy] = useState(false);
   const [hubError, setHubError] = useState("");
-  const [serverChanged, setServerChanged] = useState(false);
-  const [changedObjectId, setChangedObjectId] = useState<string | null>(null);
+  // A narrow notice must never erase an outstanding scope-wide refresh. Sequence fences
+  // also keep notices received during a read from being acknowledged by that older read.
+  const [pendingChange, setPendingChange] = useState<string | null>(null);
+  const changeSequence = useRef(0);
+  const [bootstrapGeneration, setBootstrapGeneration] = useState(0);
   const sectionAbort = useRef<AbortController | null>(null);
   const deferredAbort = useRef<AbortController | null>(null);
   const contextAbort = useRef<AbortController | null>(null);
@@ -190,14 +201,14 @@ export function DndInformationHub({
   const [deferredErrors, setDeferredErrors] = useState<Partial<Record<DeferredHubSection, string>>>({});
   useEffect(() => {
     const invalidate = () => {
-      setChangedObjectId(null);
-      setServerChanged(true);
+      ++changeSequence.current;
+      setPendingChange("scope");
     };
     const objectChanged = (event: Event) => {
       const qualifiedId = (event as CustomEvent).detail?.object?.qualifiedId;
       if (qualifiedId !== CAMPAIGN_SUMMARY_OBJECT_ID && qualifiedId !== FACTION_DIRECTORY_OBJECT_ID) return;
-      setChangedObjectId(qualifiedId);
-      setServerChanged(true);
+      ++changeSequence.current;
+      setPendingChange((current) => current === null || current === qualifiedId ? qualifiedId : "scope");
     };
     window.addEventListener("dnd2024-view-invalidated", invalidate);
     window.addEventListener("dnd2024-object-changed", objectChanged);
@@ -209,6 +220,7 @@ export function DndInformationHub({
   const hubRequestSequence = useRef(0);
 
   const perspective = envelope.audience.perspective;
+  const playerPreview = envelope.audience.seat === "dm" && perspective === "player";
   useEffect(() => subscribeChanges?.(envelope), [
     subscribeChanges, envelope.applicationId, envelope.stateSpaceId, perspective,
     envelope.contextSelection?.selectedCampaignId,
@@ -260,6 +272,7 @@ export function DndInformationHub({
     ) return;
 
     const requestId = ++hubRequestSequence.current;
+    const observedChange = changeSequence.current;
     sectionAbort.current?.abort();
     deferredAbort.current?.abort();
     contextAbort.current?.abort();
@@ -298,6 +311,8 @@ export function DndInformationHub({
       setEnvelope(readyEnvelope);
       setDeferredStates({});
       setDeferredErrors({});
+      dispatchObjectUi({ type: "campaign-details-invalidated" });
+      setBootstrapGeneration((generation) => generation + 1);
       if (campaignChanged || perspectiveChanged) {
         dispatchObjectUi({
           type: "scope-replaced",
@@ -305,8 +320,7 @@ export function DndInformationHub({
         });
         sectionAbort.current?.abort();
       }
-      setServerChanged(false);
-      setChangedObjectId(null);
+      if (changeSequence.current === observedChange) setPendingChange(null);
       setLocationSection(
         normalizeLocationSection(
           locationSection,
@@ -427,7 +441,6 @@ export function DndInformationHub({
         ...current, contextSelection: loaded.contextSelection,
       } : ({
         ...current,
-        contextSelection: loaded.contextSelection,
         currentSituation: loaded.currentSituation,
         world: { ...loaded.world,
           ...(current.world.factionDirectory ? {
@@ -449,23 +462,25 @@ export function DndInformationHub({
     : activeTab === "world" && worldSection === "factions" && perspective !== "dm" ? "lore"
     : activeTab === "world" && ["map", "locations", "history", "lore", "people"].includes(worldSection)
       ? worldSection === "map" ? "locations" : worldSection as DeferredHubSection : null;
+  const deferredRestricted = Boolean(loadDeferredSection && playerPreview &&
+    (deferredSection === "lore" || deferredSection === "people"));
   const deferredState = deferredSection && loadDeferredSection
     ? deferredStates[deferredSection] ?? "unloaded" : "ready";
   useEffect(() => {
     if (deferredState === "ready" && !hubBusy) markActiveViewReady(activeTab);
   }, [activeTab, deferredState, hubBusy]);
   useEffect(() => {
-    if (deferredSection && !hubBusy) void requestDeferred(deferredSection);
+    if (deferredSection && !hubBusy && !deferredRestricted) void requestDeferred(deferredSection);
     return () => { deferredAbort.current?.abort(); };
     // Loads belong to the selected view and the newly authorized bootstrap, not to every
     // incremental envelope merge. Errors retry only through the explicit retry button.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deferredSection, perspective, contextSelection.selectedCampaignId, hubBusy, loadDeferredSection]);
+  }, [deferredSection, perspective, contextSelection.selectedCampaignId, hubBusy, loadDeferredSection, deferredRestricted]);
   useEffect(() => () => {
     sectionAbort.current?.abort(); deferredAbort.current?.abort(); contextAbort.current?.abort();
   }, []);
 
-  const deferredNotice = deferredState !== "ready" ? (
+  const deferredNotice = deferredRestricted ? <ActorBindingRequired /> : deferredState !== "ready" ? (
     <section aria-busy={deferredState === "loading" || deferredState === "unloaded"}
       className="view-loading" role={deferredState === "error" ? "alert" : "status"}>
       <h1 id="main-view-heading" tabIndex={-1}>
@@ -482,6 +497,7 @@ export function DndInformationHub({
     if (!loadFactionPage || perspective !== "dm" || hubBusy) return;
     sectionAbort.current?.abort();
     const controller = new AbortController();
+    const observedChange = changeSequence.current;
     sectionAbort.current = controller;
     setHubBusy(true);
     setHubError("");
@@ -503,8 +519,8 @@ export function DndInformationHub({
       if (!selectedFactionId) {
         dispatchObjectUi({ type: "faction-selected", factionId: page.factions[0]?.id ?? "" });
       }
-      setServerChanged(false);
-      setChangedObjectId(null);
+      if (cursor === null && changeSequence.current === observedChange)
+        setPendingChange((current) => current === FACTION_DIRECTORY_OBJECT_ID ? null : current);
     } catch (error) {
       if (!controller.signal.aborted) setHubError(error instanceof Error ? error.message : "The faction directory is unavailable.");
     } finally {
@@ -530,6 +546,16 @@ export function DndInformationHub({
       if (!controller.signal.aborted) setHubBusy(false);
     }
   }
+
+  useEffect(() => {
+    if (bootstrapGeneration === 0) return;
+    // A refresh returns a minimal bootstrap even when the selected view is unchanged.
+    // Rehydrate that view once; failed reads remain explicit and do not start a retry loop.
+    if (activeTab === "campaign" && campaignSection !== "overview") void requestCampaignDetails();
+    if (activeTab === "world" && worldSection === "factions" && !envelope.world.factionDirectory)
+      void requestFactionPage(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bootstrapGeneration]);
 
   function selectTab(tab: MainTabId) {
     const nextTab = normalizeMainTab(tab) as MainTabId;
@@ -571,7 +597,7 @@ export function DndInformationHub({
   }
 
   function refreshChangedView() {
-    if (changedObjectId === FACTION_DIRECTORY_OBJECT_ID) {
+    if (pendingChange === FACTION_DIRECTORY_OBJECT_ID) {
       void requestFactionPage(null);
       return;
     }
@@ -617,6 +643,7 @@ export function DndInformationHub({
           />
         );
       case "party":
+        if (loadDeferredSection && playerPreview) return <ActorBindingRequired />;
         return <ItemWorkspace
           key={`${envelope.applicationId}:${envelope.stateSpaceId}:${contextSelection.selectedCampaignId}:${envelope.audience.seat}:${perspective}`}
           route={itemRoute}
@@ -751,7 +778,7 @@ export function DndInformationHub({
         contextError={deferredErrors.context}
       />
       {hubError ? <p className="perspective-notice" role="alert">{hubError}</p> : null}
-      {serverChanged ? <div className="perspective-notice" role="status">
+      {pendingChange !== null ? <div className="perspective-notice" role="status">
         The server changed or the live connection was interrupted. Showing the last loaded view.
         <button type="button" disabled={hubBusy} onClick={refreshChangedView}>Refresh view</button>
       </div> : null}

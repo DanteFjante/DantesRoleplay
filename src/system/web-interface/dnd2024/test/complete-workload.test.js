@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { completeReleaseEvidence, completeWorkloadEvidence, isWorkloadDataRead, recordSetEvidence, workloadViews } from "../scripts/complete-workload.mjs";
+import { completeReleaseEvidence, completeWorkloadEvidence, isWorkloadDataRead, recordSetEvidence, workloadHarnessFingerprint, workloadViews } from "../scripts/complete-workload.mjs";
 
 function evidence(audienceView = "game-master") {
   const runtimeFingerprint = "a".repeat(64), fixtureFingerprint = "b".repeat(64);
@@ -10,11 +10,18 @@ function evidence(audienceView = "game-master") {
   const scaling = { owner: "production-read-path", unrelatedPopulationMultiplier: 2, sampleCount: 20,
     baseSql: 8, doubledSql: 9, baseAllocatedBytes: 1000, doubledAllocatedBytes: 1050, baseMedianMs: 10, doubledMedianMs: 10.5 };
   const live = { status: "available", listener: "http://localhost:6217", activeRevision: 1,
-    activeEntityId: "page", pageContentHash: "c".repeat(64), bundleSha256: "d".repeat(64), runtimeFingerprint };
+    activeEntityId: "page", pageContentHash: "c".repeat(64), bundleSha256: "d".repeat(64), runtimeFingerprint,
+    audience: { role: audienceView === "actor" ? "actor" : "game-master", actorId: audienceView === "actor" ? "actor.fixture" : null,
+      applicationId: "fixture", stateSpaceId: "state.fixture", campaignId: "campaign.fixture" } };
+  const browser = { name: "test-browser", version: "test-version" };
+  const machine = { platform: "test", release: "test", cpu: "test", logicalProcessors: 4, memoryGiB: 16 };
   // Synthetic unit-test measurements exercise the validator, never stand in for a live run.
-  return { audienceView, readOnly: true, liveBefore: live, liveAfter: { ...live },
+  return { audienceView, perspective: audienceView === "game-master" ? "dm" : "player", readOnly: true,
+    listener: live.listener, browser, machine, workloadHarnessSha256: workloadHarnessFingerprint(),
+    liveBefore: live, liveAfter: structuredClone(live),
     workloadReference: { kind: "independent-api", runtimeFingerprint, fixtureFingerprint, audienceView, views,
-      baseline: { cold: { sampleCount: 20, loaderP50Ms: 1000 }, warm: { sampleCount: 20, loaderP50Ms: 900 } } },
+      browser: { ...browser }, machine: { ...machine },
+      baseline: { cold: { sampleCount: 20, completeWorkloadP50Ms: 1000 }, warm: { sampleCount: 20, completeWorkloadP50Ms: 900 } } },
     runs: Array.from({ length: 20 }, (_, index) => ["cold", "warm"].map(cacheState => ({
       id: `${cacheState}-${index + 1}`, cacheState, status: "collected", scriptErrorCount: 0,
       requestCount: 1, requests: [{ path: "/api/audience-context", parentInteraction: "navigation", method: "GET", status: 200, outcome: "response" }],
@@ -46,6 +53,15 @@ test("collected shell-only observations, missing SQL and undersampling remain bl
     value => { value.liveAfter.activeRevision++; },
     value => { delete value.runs[0].scriptErrorCount; },
     value => { delete value.runs[0].serverMeasurements.firstRequestCosts; },
+    value => { value.audienceView = "not-an-authorized-profile"; },
+    value => { value.liveAfter.audience.actorId = "another-actor"; },
+    value => { value.perspective = "player"; },
+    value => { delete value.browser; },
+    value => { delete value.machine; },
+    value => { value.workloadHarnessSha256 = "0".repeat(64); },
+    value => { value.workloadReference.browser.version = "different"; },
+    value => { value.workloadReference.machine.cpu = "different"; },
+    value => { value.workloadReference.baseline.cold = { sampleCount: 20, loaderP50Ms: 1000 }; },
   ]) {
     const value = evidence(); mutate(value);
     assert.equal(completeWorkloadEvidence(value).status, "blocked");
@@ -63,6 +79,10 @@ test("unloaded, failed, partial, wrong-record and empty-substitute views cannot 
     value => { value.runs[0].scriptErrorCount = 1; },
     value => { value.runs.reverse(); },
     value => { value.runs[0].cacheState = "warm"; },
+    value => { value.runs[0].requests[0].path = undefined; },
+    value => { value.runs[0].requests[0].parentInteraction = undefined; },
+    value => { value.runs[0].requests[0] = null; },
+    value => { value.runs[0] = null; },
   ]) {
     const value = evidence(); mutate(value);
     assert.equal(completeWorkloadEvidence(value).status, "failed");
@@ -72,11 +92,28 @@ test("unloaded, failed, partial, wrong-record and empty-substitute views cannot 
 test("an independently confirmed absence differs from an unloaded or failed feature", () => {
   const value = evidence();
   const absent = { status: "unavailable", complete: true, reasonCode: "no-authorized-content", ...recordSetEvidence([]) };
-  value.workloadReference.views.map = absent;
-  for (const run of value.runs) run.traversal.map = absent;
+  value.workloadReference.views.map = structuredClone(absent);
+  for (const run of value.runs) run.traversal.map = structuredClone(absent);
   assert.equal(completeWorkloadEvidence(value).status, "passed");
+  delete value.runs[0].traversal.map.reasonCode;
+  assert.equal(completeWorkloadEvidence(value).status, "failed", "an unavailable view needs its own explicit reason");
   value.runs[0].traversal.map = { ...absent, status: "unloaded" };
   assert.equal(completeWorkloadEvidence(value).status, "failed");
+});
+
+test("the release aggregator cannot bypass audience, browser, machine or harness checks", () => {
+  for (const mutate of [
+    profiles => { profiles[1].liveBefore.audience.role = "actor"; },
+    profiles => { delete profiles[1].browser; },
+    profiles => { delete profiles[1].workloadHarnessSha256; },
+    profiles => { profiles[1].machine.cpu = profiles[1].workloadReference.machine.cpu = "other target"; },
+  ]) {
+    const profiles = ["game-master", "gm-player-preview", "actor"].map(evidence);
+    mutate(profiles);
+    assert.equal(completeReleaseEvidence(profiles).status, "blocked");
+  }
+  assert.equal(completeReleaseEvidence(null).status, "blocked");
+  assert.equal(completeWorkloadEvidence(null).status, "blocked");
 });
 
 test("the initial, complete-workload, SQL, source, scaling and latency gates are independent", () => {

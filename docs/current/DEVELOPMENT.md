@@ -333,6 +333,7 @@ ready/empty and failed states; changing campaign or perspective aborts their pen
 legacy World adapters follow all continuations inside a 2,000-request per-view safety ceiling. This
 ceiling prevents runaway reads; it is not the complete-workload performance acceptance budget.
 GM Player preview never substitutes ambient DM knowledge or media for an Actor-authorized view.
+Actor-only deferred views are explicitly unavailable in preview, not loading or failed reads.
 Read-only source probes, a served browser traversal and a matched complete-workload benchmark are
 different evidence and must not be reported interchangeably.
 
@@ -340,12 +341,15 @@ The read-only `scripts/sample-browser-baseline.mjs` sampler traverses the canoni
 sheet, Map, History, Lore, Locations, People, every Factions continuation, the context directory
 and Current. `collected` records an observation, not acceptance. `--workload-reference` supplies
 an independently API-checked, fixture/runtime/audience-bound record-count/digest reference and
-matched baseline timings; `--server-measurements` supplies production-path measurements keyed by
+matched full-traversal baseline timings (`baseline.cold/warm.completeWorkloadP50Ms`) with the
+same `browser` and `machine` identities; `--server-measurements` supplies production-path measurements keyed by
 sample ID. Their shapes are checked in `scripts/complete-workload.mjs`. The sampler does not
 generate those independent inputs or derive SQL/allocation counts from HTTP traffic. Missing
 inputs, fewer than 20 cold/warm pairs, incomplete records or runtime drift block acceptance;
 measured gate violations fail it. All three authorized audience profiles are required for
-performance closeout. First-ready latency is separate from complete traversal latency. Raw
+performance closeout. The aggregate gate checks the bound audience, browser/machine and current
+three-script harness fingerprint too; it cannot bypass the per-profile identity checks.
+First-ready latency is separate from complete traversal latency. Raw
 historical reports are retained; new output defaults to `.tmp/complete-workload/browser.json`.
 Browser identity digests do not replace authorization/output parity tests or actual production
 SQL, source-read, first-request-after-change and doubled-population instrumentation.

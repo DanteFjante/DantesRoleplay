@@ -167,6 +167,7 @@ export type BrowserObjectUiAction =
   | { type: "faction-selected"; factionId: string }
   | { type: "scope-replaced"; factionId: string }
   | { type: "campaign-details-loaded" }
+  | { type: "campaign-details-invalidated" }
   | { type: "edit-staged"; objectId: string; draft: unknown }
   | { type: "write-submitted"; objectId: string }
   | { type: "write-failed"; objectId: string; error: string }
@@ -189,6 +190,8 @@ export function browserObjectUiReducer(
       return createBrowserObjectUiState(action.factionId);
     case "campaign-details-loaded":
       return state.campaignDetailsLoaded ? state : { ...state, campaignDetailsLoaded: true };
+    case "campaign-details-invalidated":
+      return state.campaignDetailsLoaded ? { ...state, campaignDetailsLoaded: false } : state;
     case "edit-staged":
       return { ...state, edits: { ...state.edits, [action.objectId]: { draft: action.draft, status: "editing" } } };
     case "write-submitted": {

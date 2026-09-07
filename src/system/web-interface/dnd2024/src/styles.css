@@ -6007,12 +6007,14 @@ button.campaign-link:hover {
 
 .bootstrap-shell__topbar span,
 .bootstrap-shell__view p,
-.view-loading p {
+.view-loading p,
+.view-unavailable p {
   color: var(--text-muted, #b9ad9f);
 }
 
 .bootstrap-shell__view,
-.view-loading {
+.view-loading,
+.view-unavailable {
   margin: clamp(1rem, 4vw, 3rem);
   max-width: 48rem;
 }
@@ -6020,7 +6022,9 @@ button.campaign-link:hover {
 .bootstrap-shell__view h1,
 .bootstrap-shell__view p,
 .view-loading h1,
-.view-loading p {
+.view-loading p,
+.view-unavailable h1,
+.view-unavailable p {
   margin-block: 0.5rem;
 }
 

@@ -971,6 +971,72 @@ test("a targeted Faction notice refreshes only the Faction query", async () => {
   } finally { await mounted.cleanup(); }
 });
 
+test("same-scope bootstrap refresh rehydrates the selected Campaign details and Factions", async (t) => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  for (const view of ["campaign", "factions"]) await t.test(view, async () => {
+    const initial = envelope("dm");
+    const faction = initial.world.factions[0];
+    initial.world.factions = [];
+    delete initial.world.factionDirectory;
+    let reads = 0;
+    const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+      loadContent={async () => { throw new Error("not used"); }}
+      loadEnvelope={async () => structuredClone(initial)}
+      loadCampaignDetails={async () => { ++reads; return initial.campaign; }}
+      loadFactionPage={async () => ({
+        factions: [{ ...faction, name: `Refreshed faction ${++reads}` }],
+        totalCount: 1, complete: true, nextCursor: null, sourceRevisionFingerprint: "A".repeat(64),
+        projection: { qualifiedQueryId: "dnd2024.query.faction-directory-page",
+          stateSpaceFingerprint: "A".repeat(64), resolutionFingerprint: "B".repeat(64),
+          outputSchemaHash: "C".repeat(64), resultFingerprint: "D".repeat(64),
+          sourceRevisionFingerprint: "A".repeat(64) },
+      })} />);
+    try {
+      if (view === "campaign") {
+        await click(button(mounted.container, "Campaign"));
+        await click(button(mounted.container, "Adventure Log"));
+      } else await click(button(mounted.container, "Factions"));
+      assert.equal(reads, 1);
+      await act(async () => window.dispatchEvent(new window.Event("dnd2024-view-invalidated")));
+      await click(button(mounted.container, "Refresh view"));
+      assert.equal(reads, 2, "the selected view must not retain a loaded flag after minimal replacement");
+      if (view === "factions") assert.match(mounted.container.textContent ?? "", /Refreshed faction 2/);
+    } finally { await mounted.cleanup(); }
+  });
+});
+
+test("a narrow notice cannot hide broader changes or acknowledge a notice received during refresh", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  let campaignReads = 0, factionReads = 0;
+  let finish: (value: ReadyHubEnvelope) => void = () => {};
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadEnvelope={() => { ++campaignReads; return new Promise(resolve => { finish = resolve; }); }}
+    loadFactionPage={async () => { ++factionReads; throw new Error("must not use a narrow refresh"); }} />);
+  const notice = (id: string) => window.dispatchEvent(new window.CustomEvent("dnd2024-object-changed", {
+    detail: { object: { qualifiedId: id } },
+  }));
+  try {
+    await act(async () => {
+      window.dispatchEvent(new window.Event("dnd2024-view-invalidated"));
+      notice("dnd2024.object.faction-directory-page");
+    });
+    await click(button(mounted.container, "Refresh view"));
+    assert.equal(campaignReads, 1);
+    assert.equal(factionReads, 0);
+    await act(async () => notice("dnd2024.object.campaign-summary"));
+    await act(async () => finish(structuredClone(initial)));
+    assert.ok(button(mounted.container, "Refresh view"), "newer changes still need a refresh");
+    await act(async () => notice("dnd2024.object.faction-directory-page"));
+    await click(button(mounted.container, "Refresh view"));
+    assert.equal(campaignReads, 2);
+    assert.equal(factionReads, 0);
+    await act(async () => finish(structuredClone(initial)));
+    assert.equal(mounted.container.querySelector(".perspective-notice"), null);
+  } finally { await mounted.cleanup(); }
+});
+
 test("mounted hub first-read failures remain explicit until a successful retry", async (t) => {
   const { DndInformationHub } = await import("../../src/components/DndInformationHub");
   const failures: Array<SectionState<PartyMemberReadModel["sheet"]>> = [
@@ -1097,6 +1163,42 @@ test("mounted deferred navigation wires Locations, People, Lore, Current and con
     assert.ok(mounted.container.querySelector('[role="dialog"]'));
     await click(button(mounted.container, "Current View"));
     assert.deepEqual(calls, ["locations", "people", "lore", "context", "current"]);
+  } finally { await mounted.cleanup(); }
+});
+
+test("a deferred view cannot replace newer independently loaded context discovery", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  const discovered = structuredClone(initial);
+  discovered.contextSelection!.worlds.push({ id: "world.concurrent", name: "Concurrent World", campaigns: [] });
+  let finishHistory: (value: ReadyHubEnvelope) => void = () => {};
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadDeferredSection={async (_scope, section) => section === "context" ? discovered
+      : new Promise<ReadyHubEnvelope>(resolve => { finishHistory = resolve; })} />);
+  try {
+    await click(button(mounted.container, "History"));
+    await click(mounted.container.querySelector<HTMLButtonElement>(".world-context__trigger")!);
+    assert.match(mounted.container.textContent ?? "", /Concurrent World/);
+    await act(async () => finishHistory(initial));
+    assert.match(mounted.container.textContent ?? "", /Concurrent World/);
+  } finally { await mounted.cleanup(); }
+});
+
+test("Player preview exposes Actor-only views as unavailable without making private or futile reads", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  let reads = 0;
+  const mounted = await mount(<DndInformationHub initialEnvelope={envelope("player")}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadCharacter={async () => { ++reads; throw new Error("private character"); }}
+    loadDeferredSection={async () => { ++reads; throw new Error("private directory"); }} />);
+  try {
+    for (const label of ["Lore", "People", "Factions", "Party"]) {
+      await click(button(mounted.container, label));
+      assert.ok(mounted.container.querySelector('#information-content [data-view-status="unavailable"][data-reason-code="audience-restricted"]'));
+      assert.equal(mounted.container.querySelector('#information-content [role="alert"], #information-content [aria-busy="true"]'), null);
+    }
+    assert.equal(reads, 0);
   } finally { await mounted.cleanup(); }
 });
 
