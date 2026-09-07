@@ -1397,10 +1397,14 @@ async function hydrateRegisteredPartyReferences({
       );
       return targets?.length === 1 ? targets[0] : null;
     }));
-  const actorIds = [...new Set(actorTargets.filter(Boolean))];
+  // Every active participation is a required join. Missing or ambiguous evidence
+  // must not be filtered into a credible empty/partial roster.
+  if (actorTargets.some((actorId) => actorId === null)) return null;
+  const actorIds = [...new Set(actorTargets)];
   const actors = await Promise.all(actorIds.map((actorId) =>
     readNamedEntity(fetchImpl, origin, entityRoot, actorId)));
-  return actors.filter(Boolean).map((actor) => ({
+  if (actors.some((actor) => actor === null)) return null;
+  return actors.map((actor) => ({
     ...actor,
     state: "active",
     current: false,
@@ -2429,6 +2433,9 @@ async function readGameServerContextCore({
     return unavailable("The campaign binding no longer matches readable game state.");
   }
   if (minimalCampaignBootstrap) {
+    if (!registeredCampaign.complete || registeredCampaign.totalCount !== registeredCampaign.party.length) {
+      return unavailable("The party roster could not be loaded completely. Please try again.");
+    }
     const deferredParty = isGameMaster && effectivePerspective === "dm"
       ? await hydrateRegisteredPartyReferences({
         fetchImpl,
@@ -2451,6 +2458,9 @@ async function readGameServerContextCore({
         entries: [],
         detailsDeferred: true,
       }];
+    if (deferredParty === null) {
+      return unavailable("The party roster could not be loaded completely. Please try again.");
+    }
     return {
       version: 1,
       status: "connected",

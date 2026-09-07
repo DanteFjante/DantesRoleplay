@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { boardEnvelope } from "./fixtures/encounter-board.js";
 import { connectedCampaignToHubEnvelope } from "../src/server/connected-hub-envelope.ts";
+import { resolveHubSurface } from "../src/data/hub-availability.js";
 
 import {
   inheritMediaVisual,
@@ -104,7 +105,12 @@ test("registered faction pages stay bounded and do not fan out into knowledge or
   assert.equal(denied, null);
 });
 
-test("the selected Campaign bootstrap stays within eight reads and hydrates deferred DM actor identities", async () => {
+async function readRegisteredPartyBootstrap({
+  party = [{ id: "participation.ganji", name: "Ganji participation", status: "active" }],
+  summary = {},
+  readRelationships,
+  readActor,
+} = {}) {
   const calls = [];
   const value = await readGameServerContext({
     serverOrigin: "http://localhost:6217",
@@ -131,24 +137,30 @@ test("the selected Campaign bootstrap stays within eight reads and hydrates defe
         sourceRevisionFingerprint: "5".repeat(64), data: {
         status: "active", title: "The Measure of Mercy", premise: "Choose what mercy costs.",
         partyGoals: ["Protect Ganji."], toneAndBoundaries: ["No sexual violence."],
-        party: [{ id: "participation.ganji", name: "Ganji participation", status: "active" }],
-        totalCount: 1, complete: true, nextCursor: null,
+        party,
+        totalCount: party.length, complete: true, nextCursor: null,
+        ...summary,
       } });
-      if (request.pathname.endsWith("/relationships") &&
-          request.searchParams.get("fromEntityId") === "participation.ganji") return response(200, {
-        items: [{
-          fromEntityId: "participation.ganji",
-          toEntityId: "actor.caldris.ganji",
-          qualifiedKind: "game.core.campaign.character-participation.for-actor",
-        }],
-      });
+      if (request.pathname.endsWith("/relationships")) {
+        const participationId = request.searchParams.get("fromEntityId");
+        if (readRelationships) return readRelationships(participationId, request);
+        return response(200, {
+          items: [actorRelationship(participationId)],
+        });
+      }
+      if (readActor && request.pathname.includes("/entities/actor."))
+        return readActor(request.pathname.split("/").at(-1));
       if (request.pathname.endsWith("/actor.caldris.ganji")) return response(200, {
         entityId: "actor.caldris.ganji", name: "Ganji",
       });
       return response(500, {});
     },
   });
+  return { value, calls };
+}
 
+test("the selected Campaign bootstrap stays within eight reads and hydrates deferred DM actor identities", async () => {
+  const { value, calls } = await readRegisteredPartyBootstrap();
   assert.equal(value.status, "connected", JSON.stringify({ value, calls }));
   assert.equal(value.campaign.title, "The Measure of Mercy");
   assert.equal(value.campaign.projection.sourceRevisionFingerprint, "5".repeat(64));
@@ -168,6 +180,133 @@ test("the selected Campaign bootstrap stays within eight reads and hydrates defe
   assert.equal(calls.length, 5);
   assert.ok(calls.every((call) => !call.includes("knowledge") && !call.includes("chronology") &&
     !call.includes("inventory") && !call.endsWith("/entities")));
+});
+
+const REGISTERED_TEST_PARTY = ["ganji", "second", "third"].map((name) => ({
+  id: `participation.${name}`, name: `${name} participation`, status: "active",
+}));
+
+function actorRelationship(participationId, actorId = participationId.replace("participation.", "actor.caldris.")) {
+  return { fromEntityId: participationId, toEntityId: actorId,
+    qualifiedKind: "game.core.campaign.character-participation.for-actor" };
+}
+
+const FAILED_RELATIONSHIP_READS = {
+  "HTTP failure": () => response(500, {}),
+  "transport failure": () => { throw new Error("Fixture transport failed"); },
+  "malformed JSON": () => ({ ok: true, status: 200, json: async () => { throw new SyntaxError("Fixture JSON"); } }),
+  "malformed page": () => response(200, { items: null }),
+  "missing actor link": () => response(200, { items: [] }),
+  "ambiguous actor links": (id) => response(200, { items: [actorRelationship(id), actorRelationship(id, "actor.other")] }),
+  "wrong relationship source": (id) => response(200, { items: [actorRelationship(`${id}.wrong`)] }),
+  "wrong relationship kind": (id) => response(200, { items: [{ ...actorRelationship(id), qualifiedKind: "fixture.wrong" }] }),
+  "malformed target": (id) => response(200, { items: [{ ...actorRelationship(id), toEntityId: null }] }),
+};
+
+function assertUnavailableRoster(value) {
+  assert.equal(value.status, "unavailable");
+  assert.match(value.message, /party roster.*completely/iu);
+  assert.equal("party" in value, false, "A failed join must not expose a partial roster");
+  assert.equal(resolveHubSurface(value), "rules", "Bootstrap must not mount a complete table for this failure");
+}
+
+for (const failedIndex of [0, 2]) {
+  for (const [reason, fail] of Object.entries(FAILED_RELATIONSHIP_READS)) {
+    test(`registered party rejects ${reason} at participation ${failedIndex + 1}`, async () => {
+      const { value, calls } = await readRegisteredPartyBootstrap({
+        party: REGISTERED_TEST_PARTY,
+        readRelationships: (id) => id === REGISTERED_TEST_PARTY[failedIndex].id
+          ? fail(id) : response(200, { items: [actorRelationship(id)] }),
+        readActor: (id) => response(200, { entityId: id, name: id }),
+      });
+      assertUnavailableRoster(value);
+      assert.ok(calls.every((path) => !path.includes("/entities/actor.")),
+        "Do not hydrate actors from an incomplete relationship snapshot");
+    });
+  }
+  for (const [reason, fail] of Object.entries({
+    "HTTP failure": () => response(500, {}),
+    "transport failure": () => { throw new Error("Fixture transport failed"); },
+    "malformed JSON": FAILED_RELATIONSHIP_READS["malformed JSON"],
+    "wrong identity": (id) => response(200, { entityId: `${id}.wrong`, name: "Wrong actor" }),
+    "missing name": (id) => response(200, { entityId: id }),
+  })) {
+    test(`registered party rejects actor ${reason} at participation ${failedIndex + 1}`, async () => {
+      const failedActorId = REGISTERED_TEST_PARTY[failedIndex].id.replace("participation.", "actor.caldris.");
+      const { value } = await readRegisteredPartyBootstrap({
+        party: REGISTERED_TEST_PARTY,
+        readActor: (id) => id === failedActorId ? fail(id) : response(200, { entityId: id, name: id }),
+      });
+      assertUnavailableRoster(value);
+    });
+  }
+}
+
+test("registered party rejects failed relationship continuations", async () => {
+  const { value } = await readRegisteredPartyBootstrap({
+    readRelationships: (id, request) => request.searchParams.has("cursor")
+      ? response(500, {})
+      : response(200, { items: [actorRelationship(id)], nextCursor: "second-page" }),
+  });
+  assertUnavailableRoster(value);
+});
+
+test("registered party cannot turn a failed single-member lookup into an empty roster", async () => {
+  for (const overrides of [
+    { readRelationships: () => response(500, {}) },
+    { readActor: () => response(500, {}) },
+  ]) {
+    const { value } = await readRegisteredPartyBootstrap(overrides);
+    assertUnavailableRoster(value);
+  }
+});
+
+test("registered party preserves every active actor and does not hydrate withdrawn participants", async () => {
+  const { value, calls } = await readRegisteredPartyBootstrap({
+    party: [...REGISTERED_TEST_PARTY, { id: "participation.withdrawn", name: "Withdrawn", status: "withdrawn" }],
+    readRelationships: (id) => {
+      assert.notEqual(id, "participation.withdrawn");
+      return response(200, { items: [actorRelationship(id)] });
+    },
+    readActor: (id) => response(200, { entityId: id, name: id }),
+  });
+  assert.equal(value.status, "connected");
+  assert.deepEqual(value.party.map(({ id }) => id),
+    REGISTERED_TEST_PARTY.map(({ id }) => id.replace("participation.", "actor.caldris.")));
+  assert.equal(calls.filter((path) => path.endsWith("/relationships")).length, 3);
+});
+
+for (const summary of [
+  { totalCount: 2, complete: false, nextCursor: "more-members" },
+  { totalCount: 2, complete: true, nextCursor: null },
+]) {
+  test(`registered party rejects incomplete summary ${JSON.stringify(summary)}`, async () => {
+    const { value, calls } = await readRegisteredPartyBootstrap({ summary });
+    assertUnavailableRoster(value);
+    assert.equal(calls.length, 3, "Reject incomplete membership before resolving actor links");
+  });
+}
+
+test("registered party preserves genuinely empty and withdrawn-only rosters", async () => {
+  for (const party of [[], REGISTERED_TEST_PARTY.map((entry) => ({ ...entry, status: "withdrawn" }))]) {
+    const { value, calls } = await readRegisteredPartyBootstrap({ party });
+    assert.equal(value.status, "connected");
+    assert.deepEqual(value.party, []);
+    assert.equal(calls.length, 3);
+  }
+});
+
+test("registered party deduplicates shared actors and duplicate links across complete pages", async () => {
+  const { value, calls } = await readRegisteredPartyBootstrap({
+    party: REGISTERED_TEST_PARTY,
+    readRelationships: (id, request) => response(200, {
+      items: [actorRelationship(id, "actor.caldris.ganji")],
+      nextCursor: request.searchParams.has("cursor") ? null : "second-page",
+    }),
+  });
+  assert.equal(value.status, "connected");
+  assert.deepEqual(value.party.map(({ id }) => id), ["actor.caldris.ganji"]);
+  assert.equal(calls.filter((path) => path.endsWith("/actor.caldris.ganji")).length, 1);
 });
 
 const MEDIA_HASH = "3ae0336e89155a4a00fb0d982ae903bf9ed1137cd292b097b252fd38c1501fa3";
