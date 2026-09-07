@@ -740,11 +740,13 @@ The recovered schema history also exposed three Slice 10 object inputs whose cur
 
 ### Slice 14 (SC14) — Durable storage deduplication
 
-**Status:** Not started. **Finding coverage:** P09, P10.
+**Status:** Complete (2026-09-07). **Finding coverage:** P09, P10.
 
-Prepare and review web-asset and activation-evidence storage changes separately inside this slice, then implement and verify each justified migration under the unattended authorization. These are internal work steps, not extra queued slices or human approval gates. Prefer sharing identical immutable bytes/evidence while retaining revision identity, exact hashes, old page resolution and activation history. Blob storage reuse must respect its different media/security contract.
+Web assets now keep revision/path/media identity in compact link rows and share immutable bytes through an exact SHA-256-keyed payload table. New writes verify stored bytes before reusing a hash, and active and historical page reads still reconstruct the same asset contracts. Activation history now separates application-scoped logical identities, versioned immutable evidence and ordered revision links; unchanged evidence is shared while changed evidence receives another retained version. Both designs remain internal persistence changes: page assets were not moved into the differently authorized blob subsystem, and no application-aware rule or identifier was added to the generic host.
 
-**Cleanup and exit:** rehearsal on a copy, pre-migration database/blob backup, exact old/new revision readback, restore and application-readiness proof. Report actual reclaimed/storage-growth measurements separately from theoretical duplicate bytes. Do not discard historical events or migration records to hit a storage target.
+**Cleanup and exit:** a retained pre-migration SQLite backup plus all 91 blobs restored into a disposable directory with matching row manifests and byte hashes. Forward/down/forward migration tests preserved exact old and new readback. The live cutover retained 591 page-asset links as 179 shared payloads (27,800,180 payload bytes) and retained all 170,166 activation-document links as 4,180 identities and 10,608 immutable evidence versions. Canonical pre/post row manifests match, foreign-key checks are clean, an active signed asset serves with its expected SHA-256, and post-compaction application readiness is `ready` on all eight checks at activation revision 54 and page revision 51.
+
+The audit's theoretical repeated web payload was 165,272,903 bytes. Actual whole-database size, which also includes the activation redesign, indexes and all unrelated tables, changed from 298,262,528 bytes before migration to 312,385,536 bytes immediately after migration with 58,427 free pages, then to 71,950,336 bytes after the reviewed `VACUUM`: 226,312,192 bytes smaller than the pre-migration file. No history, event or migration record was deleted. Seven focused storage/model/migration tests and the complete Release suite (1,981 tests) pass. D&D web verification passes typecheck, 264 Node tests, 78 mounted tests and the production build within its initial-JavaScript budget. The temporary rehearsal and accidentally initialized build-output store were removed, while the ignored pre-cutover database/blob backup remains available for recovery.
 
 ### Slice 15 (SC15) — Scheduled work throughput
 

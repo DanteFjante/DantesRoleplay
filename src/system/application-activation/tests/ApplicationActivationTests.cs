@@ -179,6 +179,40 @@ public sealed class ApplicationActivationTests : IDisposable
     }
 
     [Fact]
+    public async Task Activation_revisions_share_identity_and_unchanged_document_evidence()
+    {
+        await using var db = _fixture.CreateContext();
+        var app = Register(db, "deduplicated-activation");
+        var preview = new MutablePreview(Result(app, 'A'));
+        var service = Service(db, preview);
+        var firstRequest = new ApplicationActivationRequest(app, preview.Result.PreviewFingerprint, null);
+        var firstContext = Context("d123456789abcdef0123456789abcdef");
+        await service.PreviewAsync(firstRequest, firstContext);
+        var first = await service.ActivateAsync(firstRequest, firstContext);
+
+        preview.Result = Result(app, 'B');
+        var secondRequest = new ApplicationActivationRequest(
+            app, preview.Result.PreviewFingerprint, first.Activation.ActivationFingerprint);
+        var secondContext = Context("e123456789abcdef0123456789abcdef");
+        await service.PreviewAsync(secondRequest, secondContext);
+        var second = await service.ActivateAsync(secondRequest, secondContext);
+
+        preview.Result = Result(app, 'C', 'D');
+        var thirdRequest = new ApplicationActivationRequest(
+            app, preview.Result.PreviewFingerprint, second.Activation.ActivationFingerprint);
+        var thirdContext = Context("f123456789abcdef0123456789abcdef");
+        await service.PreviewAsync(thirdRequest, thirdContext);
+        await service.ActivateAsync(thirdRequest, thirdContext);
+
+        Assert.Equal(3, await db.Set<ApplicationActivationDocumentRecord>().CountAsync());
+        Assert.Single(await db.Set<ApplicationActivationDocumentIdentityRecord>().ToArrayAsync());
+        Assert.Equal(2, await db.Set<ApplicationActivationDocumentEvidenceRecord>().CountAsync());
+        var replay = await service.ActivateAsync(firstRequest, firstContext);
+        Assert.Equal(new string('E', 64), Assert.Single(replay.Activation.Winners).ContentFingerprint);
+        Assert.Equal(new string('D', 64), Assert.Single(service.Current(app)!.Winners).ContentFingerprint);
+    }
+
+    [Fact]
     public async Task Dependency_graph_drift_after_dry_run_requires_a_new_exact_dry_run()
     {
         await using var db = _fixture.CreateContext();
@@ -243,12 +277,15 @@ public sealed class ApplicationActivationTests : IDisposable
         new("principal." + new string('a', 64), "test", "modify", "system.private-host",
             "activation-test", true, "PRIVATE_OPERATOR_ALLOWED"));
 
-    private static ApplicationPreviewResult Result(ApplicationIdentifier app, char previewHash) => new(
+    private static ApplicationPreviewResult Result(
+        ApplicationIdentifier app,
+        char previewHash,
+        char documentHash = 'E') => new(
         app, 1, new string('A', 64), new string('B', 64), new string('C', 64),
         new string(previewHash, 64), true,
         [new("catalog", new string('D', 64), 1, 0)],
         [new("file:catalog/entry.json", "catalog", SourceTrust.Trusted, 10,
-            "catalog/entry.json", "application/json", new string('E', 64), 12, true)],
+            "catalog/entry.json", "application/json", new string(documentHash, 64), 12, true)],
         [], []);
 
     private sealed class MutablePreview(ApplicationPreviewResult result) : IApplicationPreviewService

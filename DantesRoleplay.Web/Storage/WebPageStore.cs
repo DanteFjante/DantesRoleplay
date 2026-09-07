@@ -84,7 +84,7 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
                 revision.Html,
                 revision.CreatedAt,
                 AssetCount = revision.Assets.Count,
-                AssetBytes = revision.Assets.Select(asset => (long?)asset.Content.Length).Sum() ?? 0
+                AssetBytes = revision.Assets.Select(asset => (long?)asset.Payload!.Content.Length).Sum() ?? 0
             })
             .ToArrayAsync(cancellationToken);
         var hasMore = rows.Length > limit;
@@ -115,6 +115,7 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
         var row = await db.PageRevisions
             .AsNoTracking()
             .Include(value => value.Assets)
+            .ThenInclude(value => value.Payload)
             .SingleOrDefaultAsync(
                 value => value.PageId == id && value.Revision == revision,
                 cancellationToken);
@@ -142,37 +143,23 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
         var baseRow = await db.PageRevisions
             .AsNoTracking()
             .Include(value => value.Assets)
+            .ThenInclude(value => value.Payload)
             .SingleOrDefaultAsync(
                 value => value.PageId == id && value.Revision == baseRevision,
                 cancellationToken)
             ?? throw new WebPageStoreException("REVISION_UNKNOWN", "The base revision is unknown.");
         var assets = baseRow.Assets
             .OrderBy(asset => asset.Path, StringComparer.Ordinal)
-            .Select(asset => new WebPageAssetUpload(asset.Path, asset.Content))
+            .Select(asset => new WebPageAssetUpload(asset.Path, asset.Payload!.Content))
             .ToArray();
-        _ = ValidateContent(html, assets);
+        var validatedAssets = ValidateContent(html, assets);
         var now = DateTime.UtcNow;
-        var row = new WebPageRevision
-        {
-            PageId = id,
-            Revision = latestRevision + 1,
-            Html = html,
-            CreatedAt = now,
-            Assets = baseRow.Assets
-                .OrderBy(asset => asset.Path, StringComparer.Ordinal)
-                .Select(asset => new WebPageAsset
-                {
-                    Path = asset.Path,
-                    ContentType = asset.ContentType,
-                    ContentHash = asset.ContentHash,
-                    Content = asset.Content.ToArray()
-                })
-                .ToList()
-        };
+        var row = await CreateRevisionAsync(
+            id, latestRevision + 1, html, validatedAssets, now, cancellationToken);
         db.PageRevisions.Add(row);
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        return Document(row, page.ActiveRevision);
+        return (await GetRevisionAsync(id, row.Revision, cancellationToken))!;
     }
 
     public async Task<WebPageRevisionDocument> AppendBundleDraftAsync(
@@ -197,11 +184,12 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
             throw new WebPageStoreException("PAGE_LATEST_STALE", "The page has a newer revision. Reload before saving another draft.");
 
         var now = DateTime.UtcNow;
-        var row = CreateRevision(id, latestRevision + 1, bundle.Html, validatedAssets, now);
+        var row = await CreateRevisionAsync(
+            id, latestRevision + 1, bundle.Html, validatedAssets, now, cancellationToken);
         db.PageRevisions.Add(row);
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        return Document(row, page.ActiveRevision);
+        return (await GetRevisionAsync(id, row.Revision, cancellationToken))!;
     }
 
     public async Task<WebPageActivationResult> ActivateRevisionAsync(
@@ -292,7 +280,8 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
             page.UpdatedAt = now;
         }
 
-        var revision = CreateRevision(id, nextRevision, html, validatedAssets, now);
+        var revision = await CreateRevisionAsync(
+            id, nextRevision, html, validatedAssets, now, cancellationToken);
         db.PageRevisions.Add(revision);
 
         await db.SaveChangesAsync(cancellationToken);
@@ -350,13 +339,18 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
                 db.PageAssets.AsNoTracking().Where(asset => asset.Path == validatedPath),
                 revision => revision.Id,
                 asset => asset.PageRevisionId,
-                (revision, asset) => new WebPageAssetDocument(
-                    revision.PageId,
-                    revision.Revision,
-                    asset.Path,
-                    asset.ContentType,
-                    asset.ContentHash,
-                    asset.Content))
+                (revision, asset) => new { revision, asset })
+            .Join(
+                db.PageAssetContents.AsNoTracking(),
+                value => value.asset.ContentHash,
+                payload => payload.ContentHash,
+                (value, payload) => new WebPageAssetDocument(
+                    value.revision.PageId,
+                    value.revision.Revision,
+                    value.asset.Path,
+                    value.asset.ContentType,
+                    value.asset.ContentHash,
+                    payload.Content))
             .SingleOrDefaultAsync(cancellationToken);
     }
 
@@ -410,13 +404,42 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
         return validated;
     }
 
-    private static WebPageRevision CreateRevision(
+    private async Task<WebPageRevision> CreateRevisionAsync(
         string pageId,
         int revision,
         string html,
         IReadOnlyList<(string Path, byte[] Content)> assets,
-        DateTime createdAt)
+        DateTime createdAt,
+        CancellationToken cancellationToken)
     {
+        var values = assets.Select(asset => new
+        {
+            asset.Path,
+            asset.Content,
+            ContentHash = Convert.ToHexString(SHA256.HashData(asset.Content))
+        }).ToArray();
+        var hashes = values.Select(value => value.ContentHash).Distinct(StringComparer.Ordinal).ToArray();
+        var existing = hashes.Length == 0
+            ? new Dictionary<string, WebPageAssetContent>(StringComparer.Ordinal)
+            : await db.PageAssetContents.Where(value => hashes.Contains(value.ContentHash))
+                .ToDictionaryAsync(value => value.ContentHash, StringComparer.Ordinal, cancellationToken);
+        foreach (var group in values.GroupBy(value => value.ContentHash, StringComparer.Ordinal))
+        {
+            var content = group.First().Content;
+            if (group.Any(value => !CryptographicOperations.FixedTimeEquals(content, value.Content)))
+                throw new WebPageStoreException("ASSET_HASH_COLLISION", "Different asset bytes produced one content hash.");
+            if (existing.TryGetValue(group.Key, out var payload))
+            {
+                if (!CryptographicOperations.FixedTimeEquals(payload.Content, content))
+                    throw new WebPageStoreException("ASSET_HASH_COLLISION", "Stored asset bytes do not match their content hash.");
+                continue;
+            }
+            db.PageAssetContents.Add(new WebPageAssetContent
+            {
+                ContentHash = group.Key,
+                Content = content.ToArray()
+            });
+        }
         var row = new WebPageRevision
         {
             PageId = pageId,
@@ -424,14 +447,13 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
             Html = html,
             CreatedAt = createdAt
         };
-        foreach (var asset in assets)
+        foreach (var asset in values)
         {
             row.Assets.Add(new WebPageAsset
             {
                 Path = asset.Path,
                 ContentType = ResolveContentType(asset.Path),
-                ContentHash = Convert.ToHexString(SHA256.HashData(asset.Content)),
-                Content = asset.Content
+                ContentHash = asset.ContentHash
             });
         }
         return row;
@@ -447,7 +469,7 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
                 asset.Path,
                 asset.ContentType,
                 asset.ContentHash,
-                asset.Content.ToArray()))
+                asset.Payload!.Content.ToArray()))
             .ToArray();
         return new(
             new(

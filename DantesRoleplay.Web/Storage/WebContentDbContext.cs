@@ -12,6 +12,8 @@ public sealed class WebContentDbContext(DbContextOptions<WebContentDbContext> op
 
     public DbSet<WebPageAsset> PageAssets => Set<WebPageAsset>();
 
+    public DbSet<WebPageAssetContent> PageAssetContents => Set<WebPageAssetContent>();
+
     public DbSet<WebPageMigrationReportRecord> PageMigrationReports => Set<WebPageMigrationReportRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -62,12 +64,26 @@ public sealed class WebContentDbContext(DbContextOptions<WebContentDbContext> op
                 .IsRequired();
             entity.Property(asset => asset.ContentType).HasMaxLength(127).IsRequired();
             entity.Property(asset => asset.ContentHash).HasMaxLength(64).IsRequired();
-            entity.Property(asset => asset.Content).IsRequired();
             entity.HasOne(asset => asset.PageRevision)
                 .WithMany(revision => revision.Assets)
                 .HasForeignKey(asset => asset.PageRevisionId)
                 .OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(asset => new { asset.PageRevisionId, asset.Path }).IsUnique();
+            entity.HasOne(asset => asset.Payload)
+                .WithMany(payload => payload.Assets)
+                .HasForeignKey(asset => asset.ContentHash)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<WebPageAssetContent>(entity =>
+        {
+            entity.ToTable("web_page_asset_content", table =>
+                table.HasCheckConstraint(
+                    "CK_web_page_asset_content_hash",
+                    "length(\"ContentHash\") = 64 AND \"ContentHash\" NOT GLOB '*[^0-9A-F]*'"));
+            entity.HasKey(payload => payload.ContentHash);
+            entity.Property(payload => payload.ContentHash).HasMaxLength(64);
+            entity.Property(payload => payload.Content).IsRequired();
         });
 
         modelBuilder.Entity<WebPageMigrationReportRecord>(entity =>

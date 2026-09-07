@@ -3,16 +3,19 @@ using System;
 using DantesRoleplay.Web.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace DantesRoleplay.Web.Persistence.Migrations
+namespace DantesRoleplay.Web.Storage.Migrations
 {
     [DbContext(typeof(WebContentDbContext))]
-    partial class WebContentDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260907023758_DurableWebAssetContent")]
+    partial class DurableWebAssetContent
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");

@@ -738,25 +738,70 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<ApplicationActivationDocumentRecord>(entity =>
+        modelBuilder.Entity<ApplicationActivationDocumentIdentityRecord>(entity =>
         {
-            entity.ToTable("system_application_activation_document", table =>
-            {
-                table.HasCheckConstraint("CK_system_application_activation_document_values", "\"Ordinal\" >= 0 AND \"Trust\" IN (0, 1) AND \"Length\" >= 0");
-                table.HasCheckConstraint("CK_system_application_activation_document_hash", "length(\"ContentFingerprint\") = 64 AND \"ContentFingerprint\" NOT GLOB '*[^0-9A-F]*'");
-            });
-            entity.HasKey(x => new { x.ApplicationId, x.ActivationRevision, x.Ordinal });
-            entity.Property(x => x.ApplicationId).HasMaxLength(63);
+            entity.ToTable("system_application_activation_document_identity");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+            entity.Property(x => x.ApplicationId).HasMaxLength(63).IsRequired();
             entity.Property(x => x.LogicalIdentity).HasMaxLength(1200).IsRequired();
+            entity.HasIndex(x => new { x.ApplicationId, x.LogicalIdentity }).IsUnique();
+            entity.HasOne<ApplicationRegistryRecord>()
+                .WithMany()
+                .HasForeignKey(x => x.ApplicationId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ApplicationActivationDocumentEvidenceRecord>(entity =>
+        {
+            entity.ToTable("system_application_activation_document_evidence", table =>
+            {
+                table.HasCheckConstraint("CK_system_application_activation_document_evidence_values", "\"EvidenceVersion\" > 0 AND \"Trust\" IN (0, 1) AND \"Length\" >= 0");
+                table.HasCheckConstraint("CK_system_application_activation_document_evidence_hash", "length(\"ContentFingerprint\") = 64 AND \"ContentFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+            });
+            entity.HasKey(x => new { x.IdentityId, x.EvidenceVersion });
             entity.Property(x => x.SourceId).HasMaxLength(200).IsRequired();
             entity.Property(x => x.RelativePath).HasMaxLength(1000).IsRequired();
             entity.Property(x => x.MediaType).HasMaxLength(200).IsRequired();
             entity.Property(x => x.ContentFingerprint).HasMaxLength(64).IsRequired();
-            entity.HasIndex(x => new { x.ApplicationId, x.ActivationRevision, x.LogicalIdentity }).IsUnique();
+            entity.HasIndex(x => new
+            {
+                x.IdentityId,
+                x.SourceId,
+                x.Trust,
+                x.Precedence,
+                x.RelativePath,
+                x.MediaType,
+                x.ContentFingerprint,
+                x.Length,
+                x.IsText
+            }).IsUnique();
+            entity.HasOne<ApplicationActivationDocumentIdentityRecord>()
+                .WithMany()
+                .HasForeignKey(x => x.IdentityId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ApplicationActivationDocumentRecord>(entity =>
+        {
+            entity.ToTable("system_application_activation_document", table =>
+                table.HasCheckConstraint("CK_system_application_activation_document_values", "\"Ordinal\" >= 0 AND \"EvidenceVersion\" > 0"));
+            entity.HasKey(x => new { x.ApplicationId, x.ActivationRevision, x.Ordinal });
+            entity.Property(x => x.ApplicationId).HasMaxLength(63);
+            entity.HasIndex(x => new { x.ApplicationId, x.ActivationRevision, x.IdentityId }).IsUnique();
             entity.HasOne<ApplicationActivationRevisionRecord>()
                 .WithMany()
                 .HasForeignKey(x => new { x.ApplicationId, x.ActivationRevision })
                 .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<ApplicationActivationDocumentIdentityRecord>()
+                .WithMany()
+                .HasForeignKey(x => new { x.ApplicationId, x.IdentityId })
+                .HasPrincipalKey(x => new { x.ApplicationId, x.Id })
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationActivationDocumentEvidenceRecord>()
+                .WithMany()
+                .HasForeignKey(x => new { x.IdentityId, x.EvidenceVersion })
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<ApplicationActivationReceiptRecord>(entity =>

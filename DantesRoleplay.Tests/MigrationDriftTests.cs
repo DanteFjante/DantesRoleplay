@@ -1,4 +1,6 @@
 using DantesRoleplay.DataAccess;
+using System.Data.Common;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -216,6 +218,137 @@ public sealed class MigrationDriftTests
             Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
             if (File.Exists(file)) File.Delete(file);
         }
+    }
+
+    [Fact]
+    public async Task Activation_evidence_migration_preserves_exact_history_and_round_trips()
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"activation-dedup-{Guid.NewGuid():n}.db");
+        var options = new DbContextOptionsBuilder<DantesRoleplayDbContext>()
+            .UseSqlite($"Data Source={file}")
+            .Options;
+
+        try
+        {
+            string previous;
+            IReadOnlyList<string> before;
+            await using (var db = new DantesRoleplayDbContext(options))
+            {
+                var migrations = db.Database.GetMigrations().ToArray();
+                previous = migrations[^2];
+                await db.GetService<IMigrator>().MigrateAsync(previous);
+                await db.Database.ExecuteSqlRawAsync(
+                    """
+                    INSERT INTO system_application (Id, DisplayName, Description, CreatedAtUtc)
+                    VALUES ('storage-test', 'Storage', 'Migration fixture.', '2026-09-07T00:00:00Z');
+                    INSERT INTO system_application_revision (ApplicationId, Revision, Fingerprint, CreatedAtUtc)
+                    VALUES ('storage-test', 1, 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', '2026-09-07T00:00:00Z');
+                    INSERT INTO operation
+                        (Id, Error, Intent, ProceduresCited, ProceduresRead, Subject, Success, Summary, Timestamp, Tool)
+                    VALUES
+                        ('activation-storage-op-1', '', '', '', '', '', 1, '', '2026-09-07T00:00:00Z', 'commit'),
+                        ('activation-storage-op-2', '', '', '', '', '', 1, '', '2026-09-07T00:00:01Z', 'commit');
+                    INSERT INTO system_application_activation_revision
+                        (ApplicationId, ActivationRevision, ApplicationRevision, ApplicationFingerprint,
+                         PreviewFingerprint, ScannedDocumentsFingerprint, CandidateManifestFingerprint,
+                         DependencyGraphFingerprint, ActivationFingerprint, DependencyCoverageVersion,
+                         DependencyCoverageComplete, ActivatedByOperationId, ActivatedAtUtc)
+                    VALUES
+                        ('storage-test', 1, 1,
+                         'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+                         'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+                         'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+                         'DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD',
+                         'EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE',
+                         'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
+                         'fixture-v1', 0, 'activation-storage-op-1', '2026-09-07T00:00:00Z'),
+                        ('storage-test', 2, 1,
+                         'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+                         '1111111111111111111111111111111111111111111111111111111111111111',
+                         'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+                         '2222222222222222222222222222222222222222222222222222222222222222',
+                         'EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE',
+                         '3333333333333333333333333333333333333333333333333333333333333333',
+                         'fixture-v1', 0, 'activation-storage-op-2', '2026-09-07T00:00:01Z');
+                    INSERT INTO system_application_activation_document
+                        (ApplicationId, ActivationRevision, Ordinal, LogicalIdentity, SourceId, Trust,
+                         Precedence, RelativePath, MediaType, ContentFingerprint, Length, IsText)
+                    VALUES
+                        ('storage-test', 1, 0, 'file:catalog/entry.json', 'catalog', 1, 10,
+                         'catalog/entry.json', 'application/json',
+                         '4444444444444444444444444444444444444444444444444444444444444444', 12, 1),
+                        ('storage-test', 2, 0, 'file:catalog/entry.json', 'catalog', 1, 10,
+                         'catalog/entry.json', 'application/json',
+                         '4444444444444444444444444444444444444444444444444444444444444444', 12, 1),
+                        ('storage-test', 2, 1, 'file:catalog/other.json', 'catalog', 1, 10,
+                         'catalog/other.json', 'application/json',
+                         '5555555555555555555555555555555555555555555555555555555555555555', 13, 1);
+                    """);
+                await db.Database.OpenConnectionAsync();
+                before = await ReadActivationDocumentsAsync(db.Database.GetDbConnection(), compact: false);
+                await db.Database.CloseConnectionAsync();
+
+                await db.Database.MigrateAsync();
+                Assert.Equal(3, await ScalarAsync(db.Database.GetDbConnection(),
+                    "SELECT count(*) FROM system_application_activation_document"));
+                Assert.Equal(2, await ScalarAsync(db.Database.GetDbConnection(),
+                    "SELECT count(*) FROM system_application_activation_document_identity"));
+                Assert.Equal(2, await ScalarAsync(db.Database.GetDbConnection(),
+                    "SELECT count(*) FROM system_application_activation_document_evidence"));
+                var after = await ReadActivationDocumentsAsync(db.Database.GetDbConnection(), compact: true);
+                Assert.Equal(before, after);
+
+                await db.GetService<IMigrator>().MigrateAsync(previous);
+                Assert.Equal(before,
+                    await ReadActivationDocumentsAsync(db.Database.GetDbConnection(), compact: false));
+                await db.Database.MigrateAsync();
+            }
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (File.Exists(file)) File.Delete(file);
+        }
+    }
+
+    private static async Task<IReadOnlyList<string>> ReadActivationDocumentsAsync(
+        DbConnection connection,
+        bool compact)
+    {
+        if (connection.State != System.Data.ConnectionState.Open) await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = compact
+            ? """
+              SELECT link.ApplicationId, link.ActivationRevision, link.Ordinal, identity.LogicalIdentity,
+                     evidence.SourceId, evidence.Trust, evidence.Precedence, evidence.RelativePath,
+                     evidence.MediaType, evidence.ContentFingerprint, evidence.Length, evidence.IsText
+              FROM system_application_activation_document AS link
+              JOIN system_application_activation_document_identity AS identity
+                ON identity.ApplicationId = link.ApplicationId AND identity.Id = link.IdentityId
+              JOIN system_application_activation_document_evidence AS evidence
+                ON evidence.IdentityId = link.IdentityId AND evidence.EvidenceVersion = link.EvidenceVersion
+              ORDER BY link.ApplicationId, link.ActivationRevision, link.Ordinal
+              """
+            : """
+              SELECT ApplicationId, ActivationRevision, Ordinal, LogicalIdentity, SourceId, Trust,
+                     Precedence, RelativePath, MediaType, ContentFingerprint, Length, IsText
+              FROM system_application_activation_document
+              ORDER BY ApplicationId, ActivationRevision, Ordinal
+              """;
+        var values = new List<string>();
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+            values.Add(string.Join('\u001f', Enumerable.Range(0, reader.FieldCount)
+                .Select(index => Convert.ToString(reader.GetValue(index), System.Globalization.CultureInfo.InvariantCulture))));
+        return values;
+    }
+
+    private static async Task<int> ScalarAsync(DbConnection connection, string sql)
+    {
+        if (connection.State != System.Data.ConnectionState.Open) await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        return Convert.ToInt32(await command.ExecuteScalarAsync(), System.Globalization.CultureInfo.InvariantCulture);
     }
 }
 

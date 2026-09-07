@@ -38,6 +38,8 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -1032,6 +1034,39 @@ public sealed class WebInterfaceTests
     }
 
     [Fact]
+    public async Task Revision_assets_share_immutable_payloads_without_sharing_paths_or_media_types()
+    {
+        await using var connection = new SqliteConnection("Filename=:memory:");
+        await connection.OpenAsync();
+        await using var db = CreateWebContext(connection);
+        await db.Database.EnsureCreatedAsync();
+        var store = new WebPageStore(db);
+        var bytes = Encoding.UTF8.GetBytes("same immutable bytes");
+
+        await store.SaveBundleAndActivateAsync(
+            "home",
+            new WebPageBundle(
+                "<script src=\"assets/app.js\"></script>",
+                [new WebPageAssetUpload("assets/app.js", bytes)]));
+        await store.AppendBundleDraftAsync(
+            "home",
+            1,
+            new WebPageBundle(
+                "<link rel=\"stylesheet\" href=\"assets/app.css\">",
+                [new WebPageAssetUpload("assets/app.css", bytes)]));
+
+        Assert.Equal(2, await db.PageAssets.CountAsync());
+        Assert.Single(await db.PageAssetContents.ToArrayAsync());
+        var first = await store.GetRevisionAsync("home", 1);
+        var second = await store.GetRevisionAsync("home", 2);
+        Assert.Equal("text/javascript", Assert.Single(first!.Assets).ContentType);
+        Assert.Equal("text/css", Assert.Single(second!.Assets).ContentType);
+        Assert.Equal(bytes, first.Assets[0].Content);
+        Assert.Equal(bytes, second.Assets[0].Content);
+        Assert.Equal(first.Assets[0].ContentHash, second.Assets[0].ContentHash);
+    }
+
+    [Fact]
     public async Task Zip_boundary_rejects_missing_index_unsafe_duplicates_bad_utf8_and_oversize_html()
     {
         var reader = new WebPageBundleReader();
@@ -1270,11 +1305,13 @@ public sealed class WebInterfaceTests
 
         await db.Database.MigrateAsync();
 
-        Assert.Equal(3, (await db.Database.GetAppliedMigrationsAsync()).Count());
+        Assert.Equal(4, (await db.Database.GetAppliedMigrationsAsync()).Count());
         var schemaRows = await db.Database.SqlQueryRaw<string>(
                 "SELECT name AS Value FROM sqlite_schema WHERE type IN ('table', 'index')")
             .ToListAsync();
         Assert.Contains("web_page_asset", schemaRows);
+        Assert.Contains("web_page_asset_content", schemaRows);
+        Assert.Contains("IX_web_page_asset_ContentHash", schemaRows);
         Assert.Contains("IX_web_page_asset_PageRevisionId_Path", schemaRows);
 
         var store = new WebPageStore(db);
@@ -1284,6 +1321,55 @@ public sealed class WebInterfaceTests
                 "<h1>Migrated</h1>",
                 [new WebPageAssetUpload("assets/site.css", Encoding.UTF8.GetBytes("body{}"))]));
         Assert.NotNull(await store.GetActiveAssetAsync("home", "assets/site.css"));
+    }
+
+    [Fact]
+    public async Task Web_asset_migration_preserves_duplicate_revision_bytes_and_round_trips()
+    {
+        await using var connection = new SqliteConnection("Filename=:memory:");
+        await connection.OpenAsync();
+        await using var db = CreateWebContext(connection);
+        var migrations = db.Database.GetMigrations().ToArray();
+        var previous = migrations[^2];
+        await db.GetService<IMigrator>().MigrateAsync(previous);
+        var content = Encoding.UTF8.GetBytes("shared migration payload");
+        var hash = Convert.ToHexString(SHA256.HashData(content));
+        var now = DateTime.UtcNow;
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO web_page (Id, ActiveRevision, UpdatedAt)
+            VALUES ({"home"}, {2}, {now});
+            """);
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO web_page_revision (Id, PageId, Revision, Html, CreatedAt)
+            VALUES (1, {"home"}, 1, {"<script src=\"assets/one.js\"></script>"}, {now}),
+                   (2, {"home"}, 2, {"<link rel=\"stylesheet\" href=\"assets/two.css\">"}, {now});
+            """);
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO web_page_asset (Id, PageRevisionId, Path, ContentType, ContentHash, Content)
+            VALUES (1, 1, {"assets/one.js"}, {"text/javascript"}, {hash}, {content}),
+                   (2, 2, {"assets/two.css"}, {"text/css"}, {hash}, {content});
+            """);
+
+        await db.Database.MigrateAsync();
+
+        Assert.Equal(2, await db.PageAssets.CountAsync());
+        Assert.Single(await db.PageAssetContents.ToArrayAsync());
+        var store = new WebPageStore(db);
+        Assert.Equal(content, Assert.Single((await store.GetRevisionAsync("home", 1))!.Assets).Content);
+        Assert.Equal(content, Assert.Single((await store.GetRevisionAsync("home", 2))!.Assets).Content);
+
+        db.ChangeTracker.Clear();
+        await db.GetService<IMigrator>().MigrateAsync(previous);
+        await using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "SELECT count(*), count(DISTINCT hex(Content)) FROM web_page_asset";
+            await using var reader = await command.ExecuteReaderAsync();
+            Assert.True(await reader.ReadAsync());
+            Assert.Equal(2, reader.GetInt32(0));
+            Assert.Equal(1, reader.GetInt32(1));
+        }
+        await db.Database.MigrateAsync();
+        Assert.Single(await db.PageAssetContents.ToArrayAsync());
     }
 
     [Fact]

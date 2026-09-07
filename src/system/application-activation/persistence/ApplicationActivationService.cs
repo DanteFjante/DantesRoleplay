@@ -106,7 +106,7 @@ public sealed class ApplicationActivationService(
                 guardEvidenceJson: JsonSerializer.Serialize(context.AuthorizationEvidence),
                 id: context.RequestToken);
 
-            if (!unchanged) Persist(activation);
+            if (!unchanged) await PersistAsync(activation, cancellationToken);
             db.Add(new ApplicationActivationReceiptRecord
             {
                 OperationId = context.RequestToken,
@@ -185,7 +185,9 @@ public sealed class ApplicationActivationService(
         };
     }
 
-    private void Persist(ActiveApplicationManifest activation)
+    private async Task PersistAsync(
+        ActiveApplicationManifest activation,
+        CancellationToken cancellationToken)
     {
         db.Add(new ApplicationActivationRevisionRecord
         {
@@ -228,22 +230,65 @@ public sealed class ApplicationActivationService(
                 HigherPriorityThanJson = JsonSerializer.Serialize(extension.HigherPriorityThan),
                 OverridesBase = extension.OverridesBase
             });
+        var identities = await db.Set<ApplicationActivationDocumentIdentityRecord>()
+            .Where(value => value.ApplicationId == activation.ApplicationId.Value)
+            .ToDictionaryAsync(value => value.LogicalIdentity, StringComparer.Ordinal, cancellationToken);
+        foreach (var logicalIdentity in activation.Winners.Select(value => value.LogicalIdentity)
+                     .Distinct(StringComparer.Ordinal))
+        {
+            if (identities.ContainsKey(logicalIdentity)) continue;
+            var identity = new ApplicationActivationDocumentIdentityRecord
+            {
+                ApplicationId = activation.ApplicationId.Value,
+                LogicalIdentity = logicalIdentity
+            };
+            identities.Add(logicalIdentity, identity);
+            db.Add(identity);
+        }
+        await db.SaveChangesAsync(cancellationToken);
+
+        var identityIds = identities.Values.Select(value => value.Id).ToArray();
+        var evidence = await db.Set<ApplicationActivationDocumentEvidenceRecord>()
+            .Where(value => identityIds.Contains(value.IdentityId))
+            .ToArrayAsync(cancellationToken);
+        var evidenceByIdentity = evidence.GroupBy(value => value.IdentityId)
+            .ToDictionary(value => value.Key, value => value.ToList());
         foreach (var (document, ordinal) in activation.Winners.Select((value, index) => (value, index)))
+        {
+            var identity = identities[document.LogicalIdentity];
+            if (!evidenceByIdentity.TryGetValue(identity.Id, out var candidates))
+            {
+                candidates = [];
+                evidenceByIdentity.Add(identity.Id, candidates);
+            }
+            var retained = candidates.SingleOrDefault(value => SameEvidence(value, document));
+            if (retained is null)
+            {
+                retained = new ApplicationActivationDocumentEvidenceRecord
+                {
+                    IdentityId = identity.Id,
+                    EvidenceVersion = candidates.Select(value => value.EvidenceVersion).DefaultIfEmpty().Max() + 1,
+                    SourceId = document.SourceId,
+                    Trust = (int)document.Trust,
+                    Precedence = document.Precedence,
+                    RelativePath = document.RelativePath,
+                    MediaType = document.MediaType,
+                    ContentFingerprint = document.ContentFingerprint,
+                    Length = document.Length,
+                    IsText = document.IsText
+                };
+                candidates.Add(retained);
+                db.Add(retained);
+            }
             db.Add(new ApplicationActivationDocumentRecord
             {
                 ApplicationId = activation.ApplicationId.Value,
                 ActivationRevision = activation.ActivationRevision,
                 Ordinal = ordinal,
-                LogicalIdentity = document.LogicalIdentity,
-                SourceId = document.SourceId,
-                Trust = (int)document.Trust,
-                Precedence = document.Precedence,
-                RelativePath = document.RelativePath,
-                MediaType = document.MediaType,
-                ContentFingerprint = document.ContentFingerprint,
-                Length = document.Length,
-                IsText = document.IsText
+                IdentityId = identity.Id,
+                EvidenceVersion = retained.EvidenceVersion
             });
+        }
         var current = db.Set<ApplicationActivationCurrentRecord>()
             .SingleOrDefault(row => row.ApplicationId == activation.ApplicationId.Value);
         if (current is null)
@@ -281,12 +326,21 @@ public sealed class ApplicationActivationService(
             .OrderBy(value => value.Ordinal)
             .Select(value => new ActivatedApplicationSource(value.SourceId, value.RegistrationFingerprint,
                 value.DocumentCount, value.ProblemCount)).ToArray();
-        var winners = db.Set<ApplicationActivationDocumentRecord>().AsNoTracking()
-            .Where(value => value.ApplicationId == applicationId && value.ActivationRevision == activationRevision)
-            .OrderBy(value => value.Ordinal).AsEnumerable()
-            .Select(value => new ActivatedApplicationDocument(value.LogicalIdentity, value.SourceId,
-                (SourceTrust)value.Trust, value.Precedence, value.RelativePath, value.MediaType,
-                value.ContentFingerprint, value.Length, value.IsText)).ToArray();
+        var winners = (from link in db.Set<ApplicationActivationDocumentRecord>().AsNoTracking()
+                join identity in db.Set<ApplicationActivationDocumentIdentityRecord>().AsNoTracking()
+                    on new { link.ApplicationId, link.IdentityId }
+                    equals new { identity.ApplicationId, IdentityId = identity.Id }
+                join evidence in db.Set<ApplicationActivationDocumentEvidenceRecord>().AsNoTracking()
+                    on new { link.IdentityId, link.EvidenceVersion }
+                    equals new { evidence.IdentityId, evidence.EvidenceVersion }
+                where link.ApplicationId == applicationId && link.ActivationRevision == activationRevision
+                orderby link.Ordinal
+                select new { identity.LogicalIdentity, Evidence = evidence })
+            .AsEnumerable()
+            .Select(value => new ActivatedApplicationDocument(value.LogicalIdentity, value.Evidence.SourceId,
+                (SourceTrust)value.Evidence.Trust, value.Evidence.Precedence, value.Evidence.RelativePath,
+                value.Evidence.MediaType, value.Evidence.ContentFingerprint, value.Evidence.Length,
+                value.Evidence.IsText)).ToArray();
         var activatedExtensions = db.Set<ApplicationActivationExtensionRecord>().AsNoTracking()
             .Where(value => value.ApplicationId == applicationId && value.ActivationRevision == activationRevision)
             .OrderBy(value => value.Ordinal).AsEnumerable()
@@ -309,6 +363,18 @@ public sealed class ApplicationActivationService(
         db.Set<ApplicationActivationRevisionRecord>().AsNoTracking()
             .Where(row => row.ApplicationId == applicationId.Value)
             .Max(row => (int?)row.ActivationRevision).GetValueOrDefault() + 1;
+
+    private static bool SameEvidence(
+        ApplicationActivationDocumentEvidenceRecord retained,
+        ActivatedApplicationDocument candidate) =>
+        retained.SourceId == candidate.SourceId
+        && retained.Trust == (int)candidate.Trust
+        && retained.Precedence == candidate.Precedence
+        && retained.RelativePath == candidate.RelativePath
+        && retained.MediaType == candidate.MediaType
+        && retained.ContentFingerprint == candidate.ContentFingerprint
+        && retained.Length == candidate.Length
+        && retained.IsText == candidate.IsText;
 
     private async Task<Operation> RecordPreviewAsync(
         ApplicationActivationContext context,
@@ -473,7 +539,21 @@ internal sealed class ApplicationActivationDocumentRecord
     public required string ApplicationId { get; set; }
     public int ActivationRevision { get; set; }
     public int Ordinal { get; set; }
+    public long IdentityId { get; set; }
+    public int EvidenceVersion { get; set; }
+}
+
+internal sealed class ApplicationActivationDocumentIdentityRecord
+{
+    public long Id { get; set; }
+    public required string ApplicationId { get; set; }
     public required string LogicalIdentity { get; set; }
+}
+
+internal sealed class ApplicationActivationDocumentEvidenceRecord
+{
+    public long IdentityId { get; set; }
+    public int EvidenceVersion { get; set; }
     public required string SourceId { get; set; }
     public int Trust { get; set; }
     public int Precedence { get; set; }

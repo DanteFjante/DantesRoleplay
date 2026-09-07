@@ -42,7 +42,16 @@ public sealed class WebPageAsset
 
     public required string ContentHash { get; set; }
 
+    public WebPageAssetContent? Payload { get; set; }
+}
+
+public sealed class WebPageAssetContent
+{
+    public required string ContentHash { get; set; }
+
     public required byte[] Content { get; set; }
+
+    public List<WebPageAsset> Assets { get; set; } = [];
 }
 
 public sealed class WebPageMigrationReportRecord
