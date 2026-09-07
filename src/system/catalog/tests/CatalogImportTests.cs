@@ -143,12 +143,17 @@ public sealed class CatalogImportTests : IDisposable
             EventTypeId = "test.catalog.changed",
             EventMechanicId = "mechanic.catalog.provenance",
             Mode = SubscriptionMode.Guard,
+            PayloadEqualsJson = "{ \"z\" : true, \"a\" : 1 }",
             Status = SubscriptionStatus.Active,
             CreatedBy = "subscription author",
             ChangeNote = "Subscription note."
         });
 
         await new CatalogExporter(source).ExportAsync(_root);
+        var subscriptionPath = CatalogLayout.ToFileSystemPath(
+            _root,
+            CatalogLayout.Subscription("subscription.catalog.provenance"));
+        var exportedSubscription = await File.ReadAllBytesAsync(subscriptionPath);
 
         await using var destination = _destination.CreateContext();
         var imported = await new CatalogImporter(
@@ -173,6 +178,29 @@ public sealed class CatalogImportTests : IDisposable
         Assert.Equal("Event note.", importedEvent.ChangeNote);
         Assert.Equal("subscription author", importedSubscription!.CreatedBy);
         Assert.Equal("Subscription note.", importedSubscription.ChangeNote);
+        Assert.Equal("{\"a\":1,\"z\":true}", importedSubscription.PayloadEqualsJson);
+
+        var importedFile = SubscriptionFile.Parse(
+            await File.ReadAllTextAsync(subscriptionPath),
+            CatalogLayout.Subscription("subscription.catalog.provenance"));
+        Assert.Equal(importedFile.ContentHash, importedSubscription.SourceHash);
+
+        var reexported = Path.Combine(Path.GetTempPath(), $"catalog-subscription-{Guid.NewGuid():n}");
+        try
+        {
+            await new CatalogExporter(destination).ExportAsync(reexported);
+            var reexportedPath = CatalogLayout.ToFileSystemPath(
+                reexported,
+                CatalogLayout.Subscription("subscription.catalog.provenance"));
+            Assert.Equal(exportedSubscription, await File.ReadAllBytesAsync(reexportedPath));
+        }
+        finally
+        {
+            if (Directory.Exists(reexported))
+            {
+                Directory.Delete(reexported, recursive: true);
+            }
+        }
     }
 
     [Fact]
@@ -198,6 +226,37 @@ public sealed class CatalogImportTests : IDisposable
 
         Assert.Equal("{\"subject\":\"subjectId\"}", parsed.RoleFromEventPayloadJson);
         Assert.NotEqual(subscription.ContentHash, (subscription with { RoleFromEventPayloadJson = "{}" }).ContentHash);
+    }
+
+    [Fact]
+    public void Subscription_canonicalization_keeps_its_existing_golden_identity()
+    {
+        var subscription = SubscriptionFile.Parse(
+            """
+            {
+              "id": "subscription.hash.golden",
+              "category": "test.category",
+              "eventTypeId": "test.changed",
+              "eventMechanicId": "mechanic.test.event",
+              "mode": "reaction",
+              "order": -7,
+              "fixedRoleEntityIds": { "z": {"b":2, "a":1}, "a": "first" },
+              "roleFromEventPayload": { "subject": "subjectId" },
+              "fanoutSelector": { "role": "receiver", "nested": {"z":1, "a":2} },
+              "trackedEntityIds": [ " beta ", "alpha", "beta", "alpha" ],
+              "payloadEquals": { "z": [2, 1], "a": true },
+              "maxExecutionsPerChain": 3,
+              "scope": "scope.test",
+              "status": "active"
+            }
+            """,
+            "subscription.json");
+
+        Assert.Equal("{\"a\":\"first\",\"z\":{\"b\":2, \"a\":1}}", subscription.FixedRoleEntityIdsJson);
+        Assert.Equal("{\"nested\":{\"z\":1, \"a\":2},\"role\":\"receiver\"}", subscription.FanoutSelectorJson);
+        Assert.Equal("[\"alpha\",\"beta\"]", subscription.TrackedEntityIdsJson);
+        Assert.Equal("{\"a\":true,\"z\":[2, 1]}", subscription.PayloadEqualsJson);
+        Assert.Equal("D0F81AD596BC84695F763EEEDD0CD5EA008CD3E90C305EC0B8A09C5216800C0B", subscription.ContentHash);
     }
 
     // ---- the drift table, one row at a time -----------------------------------------------
