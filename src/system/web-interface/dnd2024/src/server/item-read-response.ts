@@ -1,5 +1,6 @@
 import { ViewReadError } from "../data/view-read-client";
 import type { Perspective } from "../data/hub-types";
+import { readModelResponse } from "./read-model-response.js";
 
 export type ItemReadContract = { id: string; outputSchemaHash: string };
 export type ItemReadBinding = {
@@ -13,8 +14,6 @@ export type ItemReadBinding = {
 export type ItemReadFailure = { status: "forbidden" | "unavailable" | "stale"; data: null };
 export type ItemReadSuccess<T> = { status: "ready"; data: T; sourceRevision: string; expiresAt: number };
 
-const envelopeKeys = ["applicationId", "stateSpaceId", "qualifiedQueryId", "stateSpaceFingerprint", "resolutionFingerprint", "outputSchemaHash", "resultFingerprint", "sourceRevisionFingerprint", "data"];
-const fingerprint = (value: unknown): value is string => typeof value === "string" && /^[A-F0-9]{64}$/i.test(value);
 export const itemReadId = (value: string) => /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,199}$/.test(value);
 
 export async function readItemResponse<T>({
@@ -34,36 +33,28 @@ export async function readItemResponse<T>({
     input: JSON.stringify(input),
   });
   const url = `/api/applications/${encodeURIComponent(request.applicationId)}/state-spaces/${encodeURIComponent(request.stateSpaceId)}/entities/${encodeURIComponent(request.observerId)}/read-models/${contract.id}?${parameters}`;
-  const response = await fetchImpl(url, { signal, credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } });
-  if (!response.ok) return { status: response.status === 403 ? "forbidden" : response.status === 409 ? "stale" : "unavailable", data: null };
-  const envelope = await boundedJson(response) as Record<string, unknown> | null;
-  const data = envelope?.data as T | undefined;
-  if (!envelope || Object.keys(envelope).length !== envelopeKeys.length || !envelopeKeys.every((key) => Object.hasOwn(envelope, key)) ||
-      envelope.applicationId !== request.applicationId || envelope.stateSpaceId !== request.stateSpaceId || envelope.qualifiedQueryId !== contract.id ||
-      envelope.outputSchemaHash !== contract.outputSchemaHash ||
-      ![envelope.stateSpaceFingerprint, envelope.resolutionFingerprint, envelope.resultFingerprint, envelope.sourceRevisionFingerprint].every(fingerprint) ||
-      !validate(data) || !data || new TextEncoder().encode(JSON.stringify(data)).length > 65_536 || verify && !verify(data)) {
+  const result = await readModelResponse({
+    fetchImpl,
+    resource: url,
+    init: { signal, credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } },
+    applicationId: request.applicationId,
+    stateSpaceId: request.stateSpaceId,
+    query: { id: contract.id, outputSchemaHash: contract.outputSchemaHash },
+    maximumBodyBytes: 70_000,
+    maximumDataBytes: 65_536,
+    statusPolicy: { ready: [200], forbidden: [403], stale: [409], unavailable: "remaining" },
+    validate: (value: unknown): value is T => validate(value),
+    verify,
+    expectedSourceRevision,
+  });
+  if (result.status === "incompatible") {
     throw new ViewReadError("incompatible-data", errorMessage);
   }
-  if (expectedSourceRevision && envelope.sourceRevisionFingerprint !== expectedSourceRevision)
-    return { status: "stale", data: null };
-  return { status: "ready", data, sourceRevision: envelope.sourceRevisionFingerprint as string, expiresAt: Date.now() + 30_000 };
-}
-
-export async function boundedJson(response: Response): Promise<unknown> {
-  if (!response.body) throw new ViewReadError("incompatible-data", "Missing item response.");
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = []; let size = 0;
-  try {
-    while (true) {
-      const next = await reader.read(); if (next.done) break;
-      size += next.value.byteLength;
-      if (size > 70_000) { await reader.cancel(); throw new ViewReadError("incompatible-data", "Item response exceeds its limit."); }
-      chunks.push(next.value);
-    }
-  } finally { reader.releaseLock(); }
-  const bytes = new Uint8Array(size); let offset = 0;
-  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
-  try { return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); }
-  catch { throw new ViewReadError("incompatible-data", "Invalid item response."); }
+  if (result.status !== "ready") return { status: result.status, data: null };
+  return {
+    status: "ready",
+    data: result.data,
+    sourceRevision: result.evidence.sourceRevisionFingerprint,
+    expiresAt: Date.now() + 30_000,
+  };
 }

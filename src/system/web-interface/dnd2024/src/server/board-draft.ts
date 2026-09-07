@@ -1,5 +1,6 @@
 import query from "../../../../../../catalog/applications/dnd2024/queries/combat/dnd2024.query.encounter-board-draft.json" with { type: "json" };
 import validate from "./encounter-board-draft-validator.js";
+import { readModelResponse, validateReadModelEnvelope } from "./read-model-response.js";
 import type { TacticalEncounterBoard } from "../data/hub-types";
 
 export type BoardDraftScope = { applicationId: string; stateSpaceId: string; campaignId: string; encounterId: string };
@@ -33,13 +34,17 @@ async function json(response: Response) {
 }
 
 export function validateDraftProjection(value: unknown, scope: BoardDraftScope): value is DraftProjection {
-  if (!value || typeof value !== "object") return false;
-  const envelope = value as Record<string, unknown>;
-  if (envelope.applicationId !== scope.applicationId || envelope.stateSpaceId !== scope.stateSpaceId ||
-      envelope.qualifiedQueryId !== query.id || envelope.outputSchemaHash !== query.projection.outputSchemaHash ||
-      ![envelope.stateSpaceFingerprint, envelope.resolutionFingerprint, envelope.resultFingerprint, envelope.sourceRevisionFingerprint].every(hash) ||
-      !validate(envelope.data)) return false;
-  const data = envelope.data as BoardDraft;
+  return validateReadModelEnvelope(value, {
+    applicationId: scope.applicationId,
+    stateSpaceId: scope.stateSpaceId,
+    query: { id: query.id, outputSchemaHash: query.projection.outputSchemaHash },
+    maximumDataBytes: 65_536,
+    validate: (data: unknown): data is BoardDraft => validate(data),
+    verify: (data) => validDraftData(data, scope),
+  }) !== null;
+}
+
+function validDraftData(data: BoardDraft, scope: BoardDraftScope): boolean {
   return data.campaignId === scope.campaignId && data.encounterId === scope.encounterId &&
     data.backgroundRequest.width === data.board.columns * 64 && data.backgroundRequest.height === data.board.rows * 64 &&
     data.board.obstacles.every((item) => item.area.x + item.area.width <= data.board.columns && item.area.y + item.area.height <= data.board.rows);
@@ -47,11 +52,25 @@ export function validateDraftProjection(value: unknown, scope: BoardDraftScope):
 
 export async function generateBoardDraft(scope: BoardDraftScope, input: BoardDraftInput, signal: AbortSignal): Promise<DraftProjection> {
   const parameters = new URLSearchParams({ perspective: "dm", campaignId: scope.campaignId, input: JSON.stringify(input) });
-  const result = await json(await fetch(`${base(scope)}/entities/${encodeURIComponent(scope.encounterId)}/read-models/${query.id}?${parameters}`, {
-    cache: "no-store", signal: AbortSignal.any([signal, AbortSignal.timeout(30_000)]), headers: { Accept: "application/json" },
-  }));
-  if (!validateDraftProjection(result, scope)) throw new Error("The draft response did not match its authorized contract.");
-  return result;
+  const result = await readModelResponse({
+    resource: `${base(scope)}/entities/${encodeURIComponent(scope.encounterId)}/read-models/${query.id}?${parameters}`,
+    init: { cache: "no-store", signal: AbortSignal.any([signal, AbortSignal.timeout(30_000)]), headers: { Accept: "application/json" } },
+    applicationId: scope.applicationId,
+    stateSpaceId: scope.stateSpaceId,
+    query: { id: query.id, outputSchemaHash: query.projection.outputSchemaHash },
+    maximumBodyBytes: 70_000,
+    maximumDataBytes: 65_536,
+    statusPolicy: { ready: [200], forbidden: [403], stale: [409], unavailable: "remaining" },
+    validate: (data: unknown): data is BoardDraft => validate(data),
+    verify: (data) => validDraftData(data, scope),
+  });
+  if (result.status !== "ready") {
+    if (result.status === "forbidden") throw new Error("This draft is available only to the authorized GM.");
+    if (result.status === "stale") throw new Error("The scene or board changed. Generate a fresh draft.");
+    if (result.status === "unavailable") throw new Error(`Draft request failed (${result.httpStatus}). Your combat state is unchanged unless an acceptance was already submitted.`);
+    throw new Error("The draft response did not match its authorized contract.");
+  }
+  return { data: result.data, sourceRevisionFingerprint: result.evidence.sourceRevisionFingerprint };
 }
 
 export async function uploadDraftImage(scope: BoardDraftScope, file: File, draft: BoardDraft, signal: AbortSignal): Promise<DraftImage> {

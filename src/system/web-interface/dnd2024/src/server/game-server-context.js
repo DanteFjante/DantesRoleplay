@@ -1,5 +1,9 @@
 import { createHubReadScope } from "./hub-read-scope.js";
 import { readCompletePages } from "./complete-pagination.js";
+import { readBoundedJson, readModelResponse } from "./read-model-response.js";
+import { contract as campaignSummaryContract } from "./campaign-summary-contract.js";
+import { contract as characterDossierContract } from "./character-dossier-contract.js";
+import { contract as factionDirectoryContract } from "./faction-directory-contract.js";
 
 const TOKEN_MAXIMUM = 200;
 const LOCATION_COMPONENT_TYPE_ID = "game.core.world.location";
@@ -746,14 +750,31 @@ export async function readCanonicalCharacter({ fetchImpl, origin, applicationId,
   const entityRoot = `${applicationRoot}/entities`;
   const headers = { Accept: "application/json" };
   try {
-    const response = await fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(actorId)}` +
-      `/read-models/${encodeURIComponent("dnd2024.query.character-dossier-v1")}` +
-      (perspective ? `?perspective=${encodeURIComponent(perspective)}` : "")), {
-      headers,
-      cache: "no-store",
+    const result = await readModelResponse({
+      fetchImpl,
+      resource: url(origin, `${entityRoot}/${encodeURIComponent(actorId)}` +
+      `/read-models/${encodeURIComponent(characterDossierContract.id)}` +
+      (perspective ? `?perspective=${encodeURIComponent(perspective)}` : "")),
+      init: { headers, cache: "no-store" },
+      applicationId,
+      stateSpaceId,
+      query: characterDossierContract,
+      maximumBodyBytes: 1_060_000,
+      maximumDataBytes: 1_048_576,
+      statusPolicy: { ready: [200], forbidden: [403], stale: [409], unavailable: "remaining" },
+      validate: (value) => validCharacterDossier(value, actorId) &&
+        Array.isArray(value.sheet?.inventory?.items),
     });
-    if (!response?.ok) {
-      const failure = await json(response);
+    if (result.status !== "ready") {
+      if (result.status === "incompatible") return {
+        status: "error",
+        data: null,
+        failureCategory: "incompatible-data",
+        diagnosticId: canonicalCharacterDiagnosticId(result.response, actorId, "incompatible-data"),
+      };
+      const response = result.response;
+      const failureBody = await readBoundedJson(response, 8_192);
+      const failure = failureBody.status === "ready" ? failureBody.value : null;
       const errorCode = token(failure?.code);
       const category = canonicalCharacterFailureCategory(response, errorCode);
       const forbidden = category === "authorization";
@@ -766,18 +787,7 @@ export async function readCanonicalCharacter({ fetchImpl, origin, applicationId,
         ...(Number.isInteger(response?.status) ? { httpStatus: response.status } : {}),
       };
     }
-    const payload = await json(response);
-    const projected = payload?.data;
-    if (!validCharacterDossier(projected, actorId) ||
-        token(payload?.qualifiedQueryId) !== "dnd2024.query.character-dossier-v1" ||
-        !token(payload?.stateSpaceFingerprint) || !token(payload?.resolutionFingerprint) ||
-        !token(payload?.resultFingerprint) || !token(payload?.sourceRevisionFingerprint) ||
-        !Array.isArray(projected.sheet?.inventory?.items)) return {
-      status: "error",
-      data: null,
-      failureCategory: "incompatible-data",
-      diagnosticId: canonicalCharacterDiagnosticId(response, actorId, "incompatible-data"),
-    };
+    const projected = result.data;
     const mediaOwners = [...new Set(projected.sheet.inventory.items.flatMap(item => [item.id, item.definition.id]))];
     const inventoryMedia = new Map();
     if (perspective !== "player" && mediaOwners.length > 0 && mediaOwners.length <= 256) {
@@ -808,7 +818,7 @@ export async function readCanonicalCharacter({ fetchImpl, origin, applicationId,
     }).filter(Boolean);
     return {
       status: "ready",
-      diagnosticId: canonicalCharacterDiagnosticId(response, actorId, "ready"),
+      diagnosticId: canonicalCharacterDiagnosticId(result.response, actorId, "ready"),
       failureCategory: null,
       data: {
       ...projected.sheet,
@@ -823,14 +833,15 @@ export async function readCanonicalCharacter({ fetchImpl, origin, applicationId,
         provenance: projected.provenance,
       },
       projection: {
-        stateSpaceFingerprint: payload.stateSpaceFingerprint,
-        resolutionFingerprint: payload.resolutionFingerprint,
-        resultFingerprint: payload.resultFingerprint,
-        sourceRevisionFingerprint: payload.sourceRevisionFingerprint,
+        stateSpaceFingerprint: result.evidence.stateSpaceFingerprint,
+        resolutionFingerprint: result.evidence.resolutionFingerprint,
+        resultFingerprint: result.evidence.resultFingerprint,
+        sourceRevisionFingerprint: result.evidence.sourceRevisionFingerprint,
       },
       },
     };
-  } catch {
+  } catch (error) {
+    if (error?.name === "AbortError") throw error;
     return {
       status: "error",
       data: null,
@@ -2158,9 +2169,9 @@ async function readGameServerContextCore({
     `/state-spaces/${encodeURIComponent(binding.stateSpaceId)}/entities`;
   let campaignResponse;
   let actorResponse;
-  let campaignSummaryResponse;
+  let campaignSummaryRead;
   try {
-    [campaignResponse, actorResponse, campaignSummaryResponse] = await Promise.all([
+    [campaignResponse, actorResponse, campaignSummaryRead] = await Promise.all([
       fetchImpl(url(origin, `${root}/${encodeURIComponent(selectedCampaignId)}`), {
         headers: { Accept: "application/json" }, cache: "no-store",
       }),
@@ -2169,25 +2180,34 @@ async function readGameServerContextCore({
           headers: { Accept: "application/json" }, cache: "no-store",
         })
         : Promise.resolve(null),
-      fetchImpl(url(origin, `${root}/${encodeURIComponent(selectedCampaignId)}/read-models/` +
-        `${encodeURIComponent("dnd2024.query.campaign-summary")}?` + new URLSearchParams({
-          perspective: contextAudience.perspective ?? "player", campaignId: selectedCampaignId, limit: "20",
-        })), {
-        headers: { Accept: "application/json" }, cache: "no-store",
+      readModelResponse({
+        fetchImpl,
+        resource: url(origin, `${root}/${encodeURIComponent(selectedCampaignId)}/read-models/` +
+          `${encodeURIComponent(campaignSummaryContract.id)}?` + new URLSearchParams({
+            perspective: contextAudience.perspective ?? "player", campaignId: selectedCampaignId, limit: "20",
+          })),
+        init: { headers: { Accept: "application/json" }, cache: "no-store" },
+        applicationId: binding.applicationId,
+        stateSpaceId: binding.stateSpaceId,
+        query: campaignSummaryContract,
+        maximumBodyBytes: 70_000,
+        maximumDataBytes: 65_536,
+        statusPolicy: { ready: [200], unavailable: "remaining" },
+        validate: (value) => registeredCampaignSummary(value, null, effectivePerspective) !== null,
       }),
     ]);
   } catch {
     return unavailable("The campaign binding was found, but the game state could not be read.");
   }
 
-  const [campaign, actor, campaignSummary] = await Promise.all([
+  const [campaign, actor] = await Promise.all([
     json(campaignResponse),
     json(actorResponse),
-    json(campaignSummaryResponse),
   ]);
   const campaignEntity = campaignResponse?.ok ? entity(campaign, selectedCampaignId) : null;
-  const registeredCampaign = campaignSummaryResponse?.ok
-    ? registeredCampaignSummary(campaignSummary, binding.applicationId, binding.stateSpaceId, effectivePerspective) : null;
+  const registeredCampaign = campaignSummaryRead.status === "ready"
+    ? registeredCampaignSummary(campaignSummaryRead.data, campaignSummaryRead.evidence, effectivePerspective)
+    : null;
   const boundActorEntity = shouldReadBoundActor && actorResponse?.ok
     ? entity(actor, binding.actorId)
     : null;
@@ -2349,30 +2369,7 @@ async function resolveCurrentSituation({
   return { currentSituation, currentLocationId, knownRoutes };
 }
 
-function registeredReadEvidence(payload, applicationId, stateSpaceId, qualifiedQueryId) {
-  const keys = ["applicationId", "stateSpaceId", "qualifiedQueryId", "stateSpaceFingerprint",
-    "resolutionFingerprint", "outputSchemaHash", "resultFingerprint", "sourceRevisionFingerprint", "data"];
-  const hash = (value) => typeof value === "string" && /^[0-9A-F]{64}$/iu.test(value);
-  if (!hasExactKeys(payload, keys) || payload.applicationId !== applicationId ||
-      payload.stateSpaceId !== stateSpaceId || payload.qualifiedQueryId !== qualifiedQueryId ||
-      ![payload.stateSpaceFingerprint, payload.resolutionFingerprint, payload.outputSchemaHash,
-        payload.resultFingerprint, payload.sourceRevisionFingerprint].every(hash)) return null;
-  return {
-    qualifiedQueryId,
-    stateSpaceFingerprint: payload.stateSpaceFingerprint,
-    resolutionFingerprint: payload.resolutionFingerprint,
-    outputSchemaHash: payload.outputSchemaHash,
-    resultFingerprint: payload.resultFingerprint,
-    sourceRevisionFingerprint: payload.sourceRevisionFingerprint,
-  };
-}
-
-function registeredCampaignSummary(payload, applicationId, stateSpaceId, perspective) {
-  const projection = registeredReadEvidence(
-    payload, applicationId, stateSpaceId, "dnd2024.query.campaign-summary",
-  );
-  if (!projection) return null;
-  const data = payload?.data;
+function registeredCampaignSummary(data, projection, perspective) {
   if (!hasExactKeys(data, ["status", "title", "premise", "partyGoals", "toneAndBoundaries", "party",
     "totalCount", "complete", "nextCursor"]) || data.status !== "active") return null;
   const title = text(data.title, 160);
@@ -2408,40 +2405,25 @@ export async function readRegisteredCampaignSummary({
   const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
     `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
   const parameters = new URLSearchParams({ perspective, campaignId, limit: "20" });
-  const response = await fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(campaignId)}` +
-    `/read-models/${encodeURIComponent("dnd2024.query.campaign-summary")}?${parameters}`), {
-    headers: { Accept: "application/json" }, cache: "no-store",
+  const result = await readModelResponse({
+    fetchImpl,
+    resource: url(origin, `${entityRoot}/${encodeURIComponent(campaignId)}` +
+      `/read-models/${encodeURIComponent(campaignSummaryContract.id)}?${parameters}`),
+    init: { headers: { Accept: "application/json" }, cache: "no-store" },
+    applicationId,
+    stateSpaceId,
+    query: campaignSummaryContract,
+    maximumBodyBytes: 70_000,
+    maximumDataBytes: 65_536,
+    statusPolicy: { ready: [200], unavailable: "remaining" },
+    validate: (value) => registeredCampaignSummary(value, null, perspective) !== null,
   });
-  return response?.ok
-    ? registeredCampaignSummary(await json(response), applicationId, stateSpaceId, perspective)
+  return result.status === "ready"
+    ? registeredCampaignSummary(result.data, result.evidence, perspective)
     : null;
 }
 
-/** Reads one registered GM faction page without loading the entity directory, party inventories, or knowledge. */
-/** @param {{fetchImpl?: typeof fetch, origin: string, applicationId: string, stateSpaceId: string, worldId: string, cursor?: string | null}} options */
-export async function readRegisteredFactionDirectoryPage({
-  fetchImpl = fetch,
-  origin,
-  applicationId,
-  stateSpaceId,
-  worldId,
-  cursor = null,
-}) {
-  const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
-    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
-  const parameters = new URLSearchParams({ perspective: "dm", limit: "25" });
-  if (cursor) parameters.set("cursor", cursor);
-  const response = await fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(worldId)}` +
-    `/read-models/${encodeURIComponent("dnd2024.query.faction-directory-page")}?${parameters}`), {
-    headers: { Accept: "application/json" }, cache: "no-store",
-  });
-  if (!response?.ok) return null;
-  const payload = await json(response);
-  const projection = registeredReadEvidence(
-    payload, applicationId, stateSpaceId, "dnd2024.query.faction-directory-page",
-  );
-  if (!projection) return null;
-  const data = payload?.data;
+function registeredFactionDirectoryPage(data, projection) {
   if (!hasExactKeys(data, ["worldSummary", "items", "totalCount", "complete", "nextCursor"]) ||
       !text(data.worldSummary, 1_000) ||
       !Array.isArray(data.items) || data.items.length > 25 || !Number.isInteger(data.totalCount) ||
@@ -2485,9 +2467,41 @@ export async function readRegisteredFactionDirectoryPage({
     totalCount: data.totalCount,
     complete: data.complete,
     nextCursor: data.nextCursor,
-    sourceRevisionFingerprint: projection.sourceRevisionFingerprint,
+    sourceRevisionFingerprint: projection?.sourceRevisionFingerprint ?? null,
     projection,
   };
+}
+
+/** Reads one registered GM faction page without loading the entity directory, party inventories, or knowledge. */
+/** @param {{fetchImpl?: typeof fetch, origin: string, applicationId: string, stateSpaceId: string, worldId: string, cursor?: string | null}} options */
+export async function readRegisteredFactionDirectoryPage({
+  fetchImpl = fetch,
+  origin,
+  applicationId,
+  stateSpaceId,
+  worldId,
+  cursor = null,
+}) {
+  const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
+  const parameters = new URLSearchParams({ perspective: "dm", limit: "25" });
+  if (cursor) parameters.set("cursor", cursor);
+  const result = await readModelResponse({
+    fetchImpl,
+    resource: url(origin, `${entityRoot}/${encodeURIComponent(worldId)}` +
+      `/read-models/${encodeURIComponent(factionDirectoryContract.id)}?${parameters}`),
+    init: { headers: { Accept: "application/json" }, cache: "no-store" },
+    applicationId,
+    stateSpaceId,
+    query: factionDirectoryContract,
+    maximumBodyBytes: 524_288,
+    maximumDataBytes: 500_000,
+    statusPolicy: { ready: [200], forbidden: [403], unavailable: "remaining" },
+    validate: (value) => registeredFactionDirectoryPage(value, null) !== null,
+  });
+  return result.status === "ready"
+    ? registeredFactionDirectoryPage(result.data, result.evidence)
+    : null;
 }
 
 /** Lazily retains the legacy campaign-record adapter until its records receive registered objects. */

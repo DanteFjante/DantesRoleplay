@@ -1,7 +1,6 @@
 import validate from "./encounter-board-validator.js";
+import { readModelResponse } from "./read-model-response.js";
 import query from "../../../../../../catalog/applications/dnd2024/queries/combat/dnd2024.query.encounter-board.json" with { type: "json" };
-
-const fingerprint = (value) => typeof value === "string" && /^[a-f0-9]{64}$/iu.test(value);
 
 // The catalog owns tactical rules and audience filtering. This adapter only validates the
 // closed response, binds it to the requested encounter/perspective, and formats its view.
@@ -9,18 +8,22 @@ export async function readEncounterBoard({ fetchImpl, origin, entityRoot, encoun
   try {
     const parameters = new URLSearchParams({ perspective });
     if (campaignId) parameters.set("campaignId", campaignId);
-    const response = await fetchImpl(new URL(`${entityRoot}/${encodeURIComponent(encounterId)}/read-models/${query.id}?${parameters}`, origin), {
-      headers: { Accept: "application/json" }, cache: "no-store",
-    });
-    if (!response.ok) return null;
-    const envelope = await response.json();
-    const data = envelope.data;
     const scope = new URL(entityRoot, origin).pathname.match(/^\/api\/applications\/([^/]+)\/state-spaces\/([^/]+)\/entities$/u);
-    if (!scope || envelope.applicationId !== decodeURIComponent(scope[1]) || envelope.stateSpaceId !== decodeURIComponent(scope[2]) ||
-        envelope.qualifiedQueryId !== query.id ||
-        envelope.outputSchemaHash !== query.projection.outputSchemaHash ||
-        ![envelope.stateSpaceFingerprint, envelope.resolutionFingerprint, envelope.resultFingerprint, envelope.sourceRevisionFingerprint].every(fingerprint) ||
-        !validate(data) || data.encounter.id !== encounterId || data.perspective !== perspective) return null;
+    if (!scope) return null;
+    const result = await readModelResponse({
+      fetchImpl,
+      resource: new URL(`${entityRoot}/${encodeURIComponent(encounterId)}/read-models/${query.id}?${parameters}`, origin),
+      init: { headers: { Accept: "application/json" }, cache: "no-store" },
+      applicationId: decodeURIComponent(scope[1]),
+      stateSpaceId: decodeURIComponent(scope[2]),
+      query: { id: query.id, outputSchemaHash: query.projection.outputSchemaHash },
+      maximumBodyBytes: 262_144,
+      statusPolicy: { ready: [200], unavailable: "remaining" },
+      validate,
+    });
+    if (result.status !== "ready") return null;
+    const data = result.data;
+    if (data.encounter.id !== encounterId || data.perspective !== perspective) return null;
     const contained = (area) => area.x + area.width <= data.board.columns && area.y + area.height <= data.board.rows;
     const areas = [...data.terrain, ...data.obstacles];
     if (areas.some((entry) => !contained(entry.area) || (perspective === "player" && entry.visibility !== "public")) ||

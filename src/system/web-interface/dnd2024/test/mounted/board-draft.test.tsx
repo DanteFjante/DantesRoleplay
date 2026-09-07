@@ -3,11 +3,12 @@ import test from "node:test";
 import React, { act } from "react";
 import { JSDOM } from "jsdom";
 import { BoardDraftWorkshop } from "../../src/components/BoardDraftWorkshop";
-import { prepareBoard, validateDraftProjection, type DraftProjection } from "../../src/server/board-draft";
+import { generateBoardDraft, prepareBoard, validateDraftProjection, type DraftProjection } from "../../src/server/board-draft";
 import query from "../../../../../../catalog/applications/dnd2024/queries/combat/dnd2024.query.encounter-board-draft.json" with { type: "json" };
 
 const scope = { applicationId: "dnd2024", stateSpaceId: "dnd2024-main", campaignId: "campaign.1", encounterId: "encounter.1" };
-const projection = () => ({ ...scope, qualifiedQueryId: query.id, outputSchemaHash: query.projection.outputSchemaHash,
+const projection = () => ({ applicationId: scope.applicationId, stateSpaceId: scope.stateSpaceId,
+  qualifiedQueryId: query.id, outputSchemaHash: query.projection.outputSchemaHash,
   stateSpaceFingerprint: "A".repeat(64), resolutionFingerprint: "B".repeat(64), resultFingerprint: "C".repeat(64), sourceRevisionFingerprint: "D".repeat(64),
   data: { version: 1, campaignId: scope.campaignId, encounterId: scope.encounterId, locationId: "location.1", expectedBoardRevision: null,
     board: { revision: 1, status: "active", visibility: "public", columns: 12, rows: 12, feetPerSquare: 5, terrain: [], obstacles: [] },
@@ -24,7 +25,25 @@ test("draft responses bind exact query, campaign, fingerprints and image alignme
     (value: ReturnType<typeof projection>) => { value.data.campaignId = "campaign.foreign"; },
     (value: ReturnType<typeof projection>) => { value.sourceRevisionFingerprint = "invalid"; },
     (value: ReturnType<typeof projection>) => { value.data.backgroundRequest.width = 500; },
+    (value: ReturnType<typeof projection>) => { Object.assign(value, { private: true }); },
   ]) { const value = projection(); change(value); assert.equal(validateDraftProjection(value, scope), false); }
+});
+
+test("draft generation shares bounded status, envelope and cancellation handling", async () => {
+  const previous = globalThis.fetch;
+  const input = { columns: 12, rows: 12, obstacleCount: 1, seed: 1, setting: "ruin" as const, prompt: "Collapsed hall" };
+  try {
+    for (const [status, message] of [[403, /authorized GM/u], [409, /changed/u], [503, /503/u]] as const) {
+      globalThis.fetch = async () => new Response("PRIVATE", { status });
+      await assert.rejects(generateBoardDraft(scope, input, new AbortController().signal), message);
+    }
+    globalThis.fetch = async () => new Response("x".repeat(70_001));
+    await assert.rejects(generateBoardDraft(scope, input, new AbortController().signal), /authorized contract/u);
+    globalThis.fetch = async () => { throw new DOMException("Replaced", "AbortError"); };
+    await assert.rejects(generateBoardDraft(scope, input, new AbortController().signal), { name: "AbortError" });
+  } finally {
+    globalThis.fetch = previous;
+  }
 });
 
 test("preparation refuses a substituted board or role and never executes", async () => {

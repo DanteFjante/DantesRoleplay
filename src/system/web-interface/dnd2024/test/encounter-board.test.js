@@ -43,6 +43,7 @@ for (const [name, mutate] of [
   ["private prompt", value => { value.data.prompt = "SECRET_CANARY"; }],
   ["private media", value => { value.data.participants[0].media = "SECRET_CANARY"; }],
   ["schema mismatch", value => { value.outputSchemaHash = "e".repeat(64); }],
+  ["extra envelope field", value => { value.private = "SECRET_CANARY"; }],
   ["missing provenance", value => { delete value.sourceRevisionFingerprint; }],
   ["out of bounds footprint", value => { value.data.participants[0].position.x = 11; }],
   ["out of bounds obstacle", value => { value.data.obstacles[0].area.height = 64; }],
@@ -63,4 +64,10 @@ for (const status of [403, 404, 409, 422, 500]) test(`board HTTP ${status} stays
 
 test("board propagates cancellation", async () => {
   await assert.rejects(read(null, { fetchImpl: async () => { throw new DOMException("Replaced", "AbortError"); } }), { name: "AbortError" });
+});
+
+test("board rejects a response above its explicit transport limit", async () => {
+  assert.equal(await read(null, {
+    fetchImpl: async () => new Response("x".repeat(262_145)),
+  }), null);
 });

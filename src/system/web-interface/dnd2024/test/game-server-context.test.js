@@ -3,6 +3,9 @@ import test from "node:test";
 import { boardEnvelope } from "./fixtures/encounter-board.js";
 import { connectedCampaignToHubEnvelope } from "../src/server/connected-hub-envelope.ts";
 import { resolveHubSurface } from "../src/data/hub-availability.js";
+import { contract as campaignSummaryContract } from "../src/server/campaign-summary-contract.js";
+import { contract as characterDossierContract } from "../src/server/character-dossier-contract.js";
+import { contract as factionDirectoryContract } from "../src/server/faction-directory-contract.js";
 
 import {
   inheritMediaVisual,
@@ -30,9 +33,9 @@ test("registered Campaign summary stays bounded and preserves read-only party re
       calls.push(new URL(input));
       return response(200, {
         applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
-        qualifiedQueryId: "dnd2024.query.campaign-summary",
+        qualifiedQueryId: campaignSummaryContract.id,
         stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
-        outputSchemaHash: "3".repeat(64), resultFingerprint: "4".repeat(64),
+        outputSchemaHash: campaignSummaryContract.outputSchemaHash, resultFingerprint: "4".repeat(64),
         sourceRevisionFingerprint: "5".repeat(64), data: {
         status: "active", title: "The Measure of Mercy", premise: "Choose what mercy costs.",
         partyGoals: ["Protect Ganji."], toneAndBoundaries: ["No sexual violence."],
@@ -63,10 +66,10 @@ test("registered faction pages stay bounded and do not fan out into knowledge or
       return response(200, {
         applicationId: "dnd2024",
         stateSpaceId: "dnd2024-main",
-        qualifiedQueryId: "dnd2024.query.faction-directory-page",
+        qualifiedQueryId: factionDirectoryContract.id,
         stateSpaceFingerprint: "1".repeat(64),
         resolutionFingerprint: "2".repeat(64),
-        outputSchemaHash: "3".repeat(64),
+        outputSchemaHash: factionDirectoryContract.outputSchemaHash,
         resultFingerprint: "4".repeat(64),
         sourceRevisionFingerprint: "A".repeat(64),
         data: {
@@ -133,9 +136,9 @@ async function readRegisteredPartyBootstrap({
         if (queryResponse) return queryResponse();
         return response(200, {
           applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
-          qualifiedQueryId: "dnd2024.query.campaign-summary",
+          qualifiedQueryId: campaignSummaryContract.id,
           stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
-          outputSchemaHash: "3".repeat(64), resultFingerprint: "4".repeat(64),
+          outputSchemaHash: campaignSummaryContract.outputSchemaHash, resultFingerprint: "4".repeat(64),
           sourceRevisionFingerprint: "5".repeat(64), data: {
             status: "active", title: "The Measure of Mercy", premise: "Choose what mercy costs.",
             partyGoals: ["Protect the party."], toneAndBoundaries: ["No sexual violence."],
@@ -355,7 +358,8 @@ test("canonical senses use named references and reject legacy or partial measure
     });
     const result = await readCanonicalCharacter({
       origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "fixture", actorId: "actor.fixture",
-      fetchImpl: async () => response(200, { qualifiedQueryId: "dnd2024.query.character-dossier-v1",
+      fetchImpl: async () => response(200, { applicationId: "dnd2024", stateSpaceId: "fixture",
+        qualifiedQueryId: characterDossierContract.id, outputSchemaHash: characterDossierContract.outputSchemaHash,
         stateSpaceFingerprint: "A".repeat(64), resolutionFingerprint: "B".repeat(64),
         resultFingerprint: "C".repeat(64), sourceRevisionFingerprint: "D".repeat(64), data }),
     });
