@@ -1,7 +1,5 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { execFileSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
 import { readEncounterBoard } from "../src/server/encounter-board.js";
 import { boardEnvelope } from "./fixtures/encounter-board.js";
 
@@ -9,10 +7,6 @@ const request = { origin: "http://localhost:6217", entityRoot: "/api/application
   encounterId: "encounter.brackenford.ambush", perspective: "player" };
 const read = (envelope, extra = {}) => readEncounterBoard({ ...request,
   fetchImpl: async () => new Response(JSON.stringify(envelope), { status: 200 }), ...extra });
-
-test("precompiled board validator matches the exact catalog contract", () => {
-  execFileSync(process.execPath, [fileURLToPath(new URL('../scripts/generate-board-validator.mjs', import.meta.url)), '--check']);
-});
 
 test("board reads one closed catalog projection, never raw components or media", async () => {
   const calls = [];

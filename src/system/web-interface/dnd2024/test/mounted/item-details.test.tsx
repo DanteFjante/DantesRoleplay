@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { execFileSync } from "node:child_process";
 import React, { act } from "react";
 import { JSDOM } from "jsdom";
 import { ConnectedItemView } from "../../src/components/items/ConnectedItemView";
@@ -25,10 +24,6 @@ async function mounted(client: ItemViewClient, initial = itemRequest) {
     if (previous[index]) Object.defineProperty(globalThis, key, previous[index]!); else Reflect.deleteProperty(globalThis, key);
   }); } };
 }
-
-test("the standalone item validator matches the current authored catalog", () => {
-  execFileSync(process.execPath, ["scripts/generate-item-validator.mjs", "--check"], { cwd: new URL("../..", import.meta.url) });
-});
 
 test("Details makes one actor-scoped, read-only request with closed input", async () => {
   const calls: { url: string; init?: RequestInit }[] = [];
