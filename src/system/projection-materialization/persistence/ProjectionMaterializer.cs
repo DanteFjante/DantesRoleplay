@@ -63,10 +63,21 @@ public sealed class ProjectionMaterializer(
         var rootIndex = plan.Nodes.Count - 1;
         if (!evaluated.TryGetValue(rootIndex, out var output))
             throw new InvalidOperationException("The prepared projection root did not produce a result.");
-        return new(plan.Root.Reference, output,
-            Array.AsReadOnly(snapshot.Components.OrderBy(value => value.EntityId, StringComparer.Ordinal)
-                .ThenBy(value => value.Type.QualifiedTypeId, StringComparer.Ordinal)
-                .Select(value => new ProjectionSourceRevision(value.EntityId, value.Type, value.Revision)).ToArray()));
+        var observed = new Dictionary<(string, string), ProjectionSourceRevision>();
+        foreach (var index in active)
+        {
+            var node = plan.Nodes[index];
+            foreach (var input in node.Definition.ComponentInputs)
+            {
+                if (!request.RoleEntityIds.TryGetValue(node.RootRoles[input.EntityRole], out var entityId)) continue;
+                values.TryGetValue((entityId, input.Type.QualifiedTypeId), out var source);
+                observed[(entityId, input.Type.QualifiedTypeId)] = new(entityId,
+                    source?.Type ?? input.Type, source?.Revision ?? 0);
+            }
+        }
+        return new(plan.Root.Reference, output, Array.AsReadOnly(observed.Values
+            .OrderBy(value => value.EntityId, StringComparer.Ordinal)
+            .ThenBy(value => value.Type.QualifiedTypeId, StringComparer.Ordinal).ToArray()));
     }
 
     private static void ValidateRootRoles(

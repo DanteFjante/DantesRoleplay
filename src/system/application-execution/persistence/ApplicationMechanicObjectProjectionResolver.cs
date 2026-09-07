@@ -53,6 +53,7 @@ public sealed class ApplicationMechanicObjectProjectionResolver(
         var projected = new Dictionary<string, MechanicObjectProjection>(StringComparer.Ordinal);
         var roleEntities = new Dictionary<string, EntityProjection>(StringComparer.Ordinal);
         var observed = new Dictionary<(string EntityId, string TypeId), MechanicComponentRevision>();
+        var observedEntities = new Dictionary<string, MechanicEntityRevision>(StringComparer.Ordinal);
         var componentRevisions = new Dictionary<string, Dictionary<string, int?>>(StringComparer.Ordinal);
         var relationshipCollections = new List<MechanicRelationshipCollectionSnapshot>();
         try
@@ -93,6 +94,7 @@ public sealed class ApplicationMechanicObjectProjectionResolver(
                     if (entity is null)
                         return ProjectionResult.Failed("OBJECT_ROLE_ENTITY_STALE: A reducer object role is unavailable.");
                     identities[objectRole] = new(entity.EntityId, entity.Name);
+                    ObserveEntity(entity.EntityId, entity.Revision);
                     if (declaration.RoleBindings.TryGetValue(objectRole, out var mechanicRole))
                     {
                         if (roleEntities.TryGetValue(mechanicRole, out var prior) && prior.Id != entity.EntityId)
@@ -126,7 +128,7 @@ public sealed class ApplicationMechanicObjectProjectionResolver(
                     var local = mapping.Components.FirstOrDefault(value => value.Value == input.Type).Key;
                     if (string.IsNullOrWhiteSpace(local)) continue;
                     var source = root.SourceRevisions.SingleOrDefault(value =>
-                        value.EntityId == entityId && value.Type == input.Type);
+                        value.EntityId == entityId && value.Type == input.Type && value.Revision > 0);
                     if (source is null && sourceRequired[input.InputId])
                         return ProjectionResult.Failed(
                             "OBJECT_ROLE_COMPONENT_STALE: A required reducer object source is unavailable.");
@@ -137,16 +139,20 @@ public sealed class ApplicationMechanicObjectProjectionResolver(
 
                 if (collection is not null)
                 {
-                    var declaredCollection = definition.ObjectContract.Collections.Single(value =>
-                        value.CollectionId == declaration.CollectionId);
-                    var relationship = definition.ObjectContract.Relationships.Single(value =>
-                        value.RelationshipId == declaredCollection.SourceId);
-                    var incoming = relationship.Direction == "incoming";
-                    var sourceRole = incoming ? relationship.ToRole : relationship.FromRole;
-                    relationshipCollections.Add(new(relationship.QualifiedKind,
-                        objectBindings[sourceRole], incoming, collection.RelationshipRevisions.Select(value =>
-                            new MechanicRelationshipRevision(value.FromEntityId, value.ToEntityId,
-                                value.QualifiedKind, value.Revision)).ToArray()));
+                    foreach (var entity in collection.EntityRevisions) ObserveEntity(entity.EntityId, entity.Revision);
+                    foreach (var snapshot in collection.RelationshipCollections)
+                    {
+                        var converted = new MechanicRelationshipCollectionSnapshot(snapshot.QualifiedKind,
+                            snapshot.AnchorEntityId, snapshot.Incoming, snapshot.Relationships.Select(value =>
+                                new MechanicRelationshipRevision(value.FromEntityId, value.ToEntityId,
+                                    value.QualifiedKind, value.Revision)).ToArray());
+                        var prior = relationshipCollections.SingleOrDefault(value =>
+                            value.QualifiedKind == converted.QualifiedKind && value.AnchorEntityId == converted.AnchorEntityId
+                            && value.Incoming == converted.Incoming);
+                        if (prior is null) relationshipCollections.Add(converted);
+                        else if (!prior.Relationships.SequenceEqual(converted.Relationships))
+                            throw new InvalidOperationException("Reducer objects observed conflicting relationship snapshots.");
+                    }
                 }
             }
         }
@@ -166,8 +172,17 @@ public sealed class ApplicationMechanicObjectProjectionResolver(
             Objects = projected,
             ObservedComponents = observed.Values.OrderBy(value => value.EntityId, StringComparer.Ordinal)
                 .ThenBy(value => value.QualifiedTypeId, StringComparer.Ordinal).ToArray(),
+            ObservedEntities = observedEntities.Values.OrderBy(value => value.EntityId, StringComparer.Ordinal).ToArray(),
             ComponentRevisions = componentRevisions,
             RelationshipCollections = relationshipCollections
         }, []);
+
+        void ObserveEntity(string entityId, int revision)
+        {
+            var current = new MechanicEntityRevision(entityId, revision);
+            if (observedEntities.TryGetValue(entityId, out var prior) && prior != current)
+                throw new InvalidOperationException("Reducer objects observed conflicting entity revisions.");
+            observedEntities[entityId] = current;
+        }
     }
 }

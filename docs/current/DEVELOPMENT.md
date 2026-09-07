@@ -92,6 +92,13 @@ confirmation gate; it must not add a second consent system or reintroduce unscop
 selection. The former `action` commit kind is physically retired and must not be advertised,
 dispatched, or generated as a direct AI tool.
 
+Registered-object writes and object-backed reducers carry their complete observed source evidence
+into the generic effect transaction. Check component revisions (including absence), entity revisions,
+and exact relationship collections by kind, anchor, and direction after acquiring SQLite's write
+reservation and before applying any effect. Empty and nested collections are evidence too; checking
+only the edges or components being written does not protect the snapshot used to compute a result.
+Successful idempotent replay returns the existing receipt without revalidating later world state.
+
 Time-coupled application mechanics use one `clock.advance` effect in the same effect batch as all
 sibling state changes. Their requirements declare `elapsedTime.mode` as `zero`, `fixed`, `derived`,
 or `supplied`; supplied durations name the closed input property and derived durations describe

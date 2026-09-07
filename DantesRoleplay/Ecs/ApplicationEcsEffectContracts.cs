@@ -55,6 +55,8 @@ public sealed record ApplicationEcsEffectBatch
     public IReadOnlyList<string> ProceduresUsed { get; init; } = [];
     public ApplicationEcsExecutionIdentity? ExecutionIdentity { get; init; }
     public IReadOnlyList<ApplicationEcsComponentExpectation> ComponentExpectations { get; init; } = [];
+    public IReadOnlyList<ApplicationEcsEntityExpectation> EntityExpectations { get; init; } = [];
+    public IReadOnlyList<ApplicationEcsRelationshipExpectation> RelationshipExpectations { get; init; } = [];
     public IReadOnlyList<ApplicationEcsContainmentExpectation> ContainmentExpectations { get; init; } = [];
     public IReadOnlyList<ApplicationEcsContainmentEdgeExpectation> ContainmentEdgeExpectations { get; init; } = [];
     public IReadOnlyList<DeclaredEvent> DeclaredEvents { get; init; } = [];
@@ -69,11 +71,22 @@ public sealed record ApplicationEcsEffectBatch
     public string ProjectionJson { get; init; } = string.Empty;
 }
 
-/// <summary>Host-only exact component evidence that must still match inside the effect transaction.</summary>
+/// <summary>Host-only exact component evidence; revision zero requires absence of the qualified type.</summary>
 public sealed record ApplicationEcsComponentExpectation(
     string EntityId,
     EcsComponentReference ComponentType,
     int Revision);
+
+public sealed record ApplicationEcsEntityExpectation(string EntityId, int Revision);
+
+/// <summary>Host-only complete directed collection, including an observed empty collection.</summary>
+public sealed record ApplicationEcsRelationshipExpectation(
+    string QualifiedKind,
+    string AnchorEntityId,
+    bool Incoming,
+    IReadOnlyList<ApplicationEcsRelationshipExpectationItem> Relationships);
+
+public sealed record ApplicationEcsRelationshipExpectationItem(string FromEntityId, string ToEntityId, int Revision);
 
 /// <summary>Host-only direct-roster snapshot that must still match inside the effect transaction.</summary>
 public sealed record ApplicationEcsContainmentExpectation(
@@ -148,6 +161,7 @@ public sealed class ApplicationEcsTransactionParticipantException(string message
 
 public static class ApplicationEcsEffectValidation
 {
+    private static bool BoundedIdentity(string? value) => !string.IsNullOrWhiteSpace(value) && value.Length <= 200;
     public const long MaximumClockValue = 9_007_199_254_740_991;
     public const int MaximumEffects = 128;
     public const int MaximumIntentLength = 2_000;
@@ -159,6 +173,9 @@ public static class ApplicationEcsEffectValidation
     // nested projection solely because structural concurrency evidence was attached.
     public const int MaximumContainmentExpectations = 32 * 101;
     public const int MaximumComponentExpectations = 256;
+    public const int MaximumEntityExpectations = 256;
+    public const int MaximumRelationshipExpectations = 256;
+    public const int MaximumRelationshipExpectationItems = 256;
     public const int MaximumContentsPerExpectation = 100;
     public const int MaximumContainmentEdgeExpectations = 32 * 101;
     public const int MaximumDeclaredEvents = 64;
@@ -252,11 +269,43 @@ public static class ApplicationEcsEffectValidation
                 try { expectation?.ComponentType?.Validate(); }
                 catch (ArgumentException) { validType = false; }
                 if (expectation is null || string.IsNullOrWhiteSpace(expectation.EntityId)
-                    || expectation.EntityId.Length > 200 || !validType || expectation.Revision < 1
+                    || expectation.EntityId.Length > 200 || !validType || expectation.Revision < 0
                     || !components.Add((expectation.EntityId,
                         expectation.ComponentType?.QualifiedTypeId ?? string.Empty)))
                     problems.Add(new(-1, "COMPONENT_EXPECTATION_INVALID",
                         $"Exact component {expectationIndex} is invalid or duplicated."));
+            }
+        }
+        if (batch.EntityExpectations is null || batch.EntityExpectations.Count > MaximumEntityExpectations)
+            problems.Add(new(-1, "ENTITY_EXPECTATION_LIMIT", "Entity expectations are missing or exceed their bound."));
+        else
+        {
+            var identities = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var expected in batch.EntityExpectations)
+                if (expected is null || !BoundedIdentity(expected.EntityId)
+                    || expected.Revision < 1 || !identities.Add(expected.EntityId))
+                    problems.Add(new(-1, "ENTITY_EXPECTATION_INVALID", "Entity evidence is invalid or duplicated."));
+        }
+        if (batch.RelationshipExpectations is null || batch.RelationshipExpectations.Count > MaximumRelationshipExpectations)
+            problems.Add(new(-1, "RELATIONSHIP_EXPECTATION_LIMIT", "Relationship expectations are missing or exceed their bound."));
+        else
+        {
+            var selectors = new HashSet<(string, string, bool)>();
+            foreach (var expected in batch.RelationshipExpectations)
+            {
+                if (expected is null || !BoundedIdentity(expected.AnchorEntityId) || !BoundedIdentity(expected.QualifiedKind)
+                    || !selectors.Add((expected.QualifiedKind, expected.AnchorEntityId, expected.Incoming))
+                    || expected.Relationships is null || expected.Relationships.Count > MaximumRelationshipExpectationItems)
+                {
+                    problems.Add(new(-1, "RELATIONSHIP_EXPECTATION_INVALID", "A relationship snapshot is invalid or duplicated."));
+                    continue;
+                }
+                var identities = new HashSet<(string, string)>();
+                foreach (var edge in expected.Relationships)
+                    if (edge is null || !BoundedIdentity(edge.FromEntityId) || !BoundedIdentity(edge.ToEntityId)
+                        || edge.Revision < 1 || (expected.Incoming ? edge.ToEntityId : edge.FromEntityId) != expected.AnchorEntityId
+                        || !identities.Add((edge.FromEntityId, edge.ToEntityId)))
+                        problems.Add(new(-1, "RELATIONSHIP_EXPECTATION_INVALID", "Relationship evidence is invalid or duplicated."));
             }
         }
         if (batch.ContainmentEdgeExpectations is null)

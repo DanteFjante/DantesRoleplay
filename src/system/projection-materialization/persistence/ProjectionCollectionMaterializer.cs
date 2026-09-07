@@ -142,23 +142,40 @@ public sealed class ProjectionCollectionMaterializer(
             || schemas.Validate(definition.ProfileId, definition.OutputSchemaJson, outputJson).Status != SchemaValueStatus.Valid)
             throw new InvalidOperationException("The expanded object collection fails its exact schema or output bound.");
 
-        var revisions = root.SourceRevisions.Concat(firstComponents.Select(value =>
-                new ProjectionSourceRevision(value.EntityId, value.Type, value.Revision)))
+        var endpointRevisions = locators.Select(locator =>
+        {
+            componentByKey.TryGetValue((locator.EntityId, locator.QualifiedTypeId), out var component);
+            return new ProjectionSourceRevision(locator.EntityId, component?.Type ?? endpointTypes
+                .First(value => value.Type.QualifiedTypeId == locator.QualifiedTypeId).Type, component?.Revision ?? 0);
+        });
+        var revisions = root.SourceRevisions.Concat(endpointRevisions)
             .Distinct().OrderBy(value => value.EntityId, StringComparer.Ordinal)
             .ThenBy(value => value.Type.QualifiedTypeId, StringComparer.Ordinal).ToArray();
+        var snapshots = new List<ProjectionRelationshipCollectionSnapshot>
+        {
+            new(relationship.QualifiedKind, fromEntityId, incoming, RelationshipRevisions(firstEdges))
+        };
+        foreach (var nested in nestedRelationships)
+            foreach (var anchor in allCandidateIds)
+                snapshots.Add(new(nested.Declaration.QualifiedKind, anchor, nestedIncoming,
+                    RelationshipRevisions(firstNestedEdges.Where(value =>
+                        value.QualifiedKind == nested.Declaration.QualifiedKind && AnchorEntityId(value, nestedIncoming) == anchor))));
         return new(definition.Reference, outputJson, Array.AsReadOnly(revisions), sourceFingerprint)
         {
             Complete = nextCursor is null,
-            RelationshipRevisions = firstEdges.Concat(firstNestedEdges)
-                .DistinctBy(value => (value.FromEntityId, value.ToEntityId, value.QualifiedKind))
-                .OrderBy(value => value.FromEntityId, StringComparer.Ordinal)
-                .ThenBy(value => value.ToEntityId, StringComparer.Ordinal)
-                .ThenBy(value => value.QualifiedKind, StringComparer.Ordinal)
-                .Select(value => new ProjectionRelationshipRevision(
-                    value.FromEntityId, value.ToEntityId, value.QualifiedKind, value.Revision))
-                .ToArray()
+            RelationshipRevisions = RelationshipRevisions(firstEdges.Concat(firstNestedEdges)),
+            RelationshipCollections = snapshots,
+            EntityRevisions = firstEntities.Select(value => new ProjectionEntityRevision(value.EntityId, value.Revision)).ToArray()
         };
     }
+
+    private static ProjectionRelationshipRevision[] RelationshipRevisions(IEnumerable<EcsRelationshipView> edges) =>
+        edges.DistinctBy(value => (value.FromEntityId, value.ToEntityId, value.QualifiedKind))
+            .OrderBy(value => value.FromEntityId, StringComparer.Ordinal)
+            .ThenBy(value => value.ToEntityId, StringComparer.Ordinal)
+            .ThenBy(value => value.QualifiedKind, StringComparer.Ordinal)
+            .Select(value => new ProjectionRelationshipRevision(value.FromEntityId, value.ToEntityId, value.QualifiedKind, value.Revision))
+            .ToArray();
 
     private static JsonObject Item(EcsEntityView entity,
         IEnumerable<ApplicationObjectEndpointComponent> declarations,

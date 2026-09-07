@@ -6,6 +6,7 @@ using DantesRoleplay.EcsEffects;
 using DantesRoleplay.Operations;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.Tests;
+using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.Projections.Tests;
 
@@ -138,6 +139,50 @@ public sealed class ApplicationObjectWriteTests : IDisposable
             Fixture.StateSpace, Fixture.Subject, Fixture.MemberOne, Fixture.MemberKind));
     }
 
+    [Theory]
+    [InlineData("written-component")]
+    [InlineData("read-only-component")]
+    [InlineData("removed-component")]
+    [InlineData("absent-root-component")]
+    [InlineData("absent-endpoint-component")]
+    [InlineData("added-edge")]
+    [InlineData("removed-edge")]
+    [InlineData("revised-edge")]
+    [InlineData("empty-collection")]
+    [InlineData("renamed-entity")]
+    public async Task Concurrent_snapshot_changes_reject_the_entire_object_write(string change)
+    {
+        using var scoped = new Fixture(optionalSecondary: true);
+        if (change == "absent-root-component")
+            await scoped.Entities.RemoveComponentAsync(Fixture.StateSpace, Fixture.Subject, scoped.Secondary, 1);
+        if (change == "empty-collection")
+            await scoped.Edges.RemoveRelationshipAsync(Fixture.StateSpace, Fixture.Subject, Fixture.MemberOne, Fixture.MemberKind, 1);
+        var before = await scoped.ReadAsync();
+        scoped.BeforeApply = () => scoped.ChangeSnapshotAsync(change);
+
+        var failure = await Assert.ThrowsAsync<ApplicationObjectWriteException>(() => scoped.Writer.WriteAsync(
+            scoped.Request(before.SourceRevisionFingerprint, "race", "{\"premise\":\"Must not commit\"}")));
+
+        Assert.Equal("OBJECT_WRITE_SOURCE_STALE", failure.Code);
+        Assert.Equal(change == "written-component" ? "Concurrent edit" : "Original premise",
+            Json((await scoped.ComponentAsync(scoped.Primary)).ValueJson).GetProperty("premise").GetString());
+        Assert.False((await scoped.AuditAsync()).Success);
+    }
+
+    [Fact]
+    public async Task Successful_replay_does_not_revalidate_an_obsolete_snapshot_or_execute_again()
+    {
+        var before = await fixture.ReadAsync();
+        var request = fixture.Request(before.SourceRevisionFingerprint, "replay-after-change", "{\"premise\":\"Saved\"}");
+        var first = await fixture.Writer.WriteAsync(request);
+        await fixture.ChangeSnapshotAsync("read-only-component");
+        fixture.BeforeApply = () => throw new InvalidOperationException("Replay must not apply again.");
+        var replay = await fixture.Writer.WriteAsync(request);
+        Assert.True(replay.Replayed);
+        Assert.Equal(first.OperationId, replay.OperationId);
+        Assert.Equal(2, (await fixture.ComponentAsync(fixture.Primary)).Revision);
+    }
+
     private static JsonElement Json(string value)
     {
         using var document = JsonDocument.Parse(value);
@@ -145,6 +190,16 @@ public sealed class ApplicationObjectWriteTests : IDisposable
     }
 
     public void Dispose() => fixture.Dispose();
+
+    private sealed class BeforeApplyApplier(IApplicationEcsEffectApplier inner, Func<Task> beforeApply) : IApplicationEcsEffectApplier
+    {
+        public async Task<ApplicationEcsEffectResult> ApplyAsync(ApplicationEcsEffectBatch batch, bool dryRun = false,
+            CancellationToken cancellationToken = default)
+        {
+            await beforeApply();
+            return await inner.ApplyAsync(batch, dryRun, cancellationToken);
+        }
+    }
 
     private sealed class Fixture : IDisposable
     {
@@ -160,11 +215,13 @@ public sealed class ApplicationObjectWriteTests : IDisposable
         private readonly IProjectionCollectionMaterializer materializer;
         public readonly EcsComponentReference Primary;
         public readonly EcsComponentReference Secondary;
+        public readonly EcsComponentReference Member;
         public readonly IEntityComponentStore Entities;
         public readonly IStateSpaceEdgeStore Edges;
         public readonly IApplicationObjectWriteService Writer;
+        public Func<Task>? BeforeApply { get; set; }
 
-        public Fixture()
+        public Fixture(bool optionalSecondary = false)
         {
             db = database.CreateContext();
             var owner = ApplicationIdentifier.Parse(Application);
@@ -177,13 +234,13 @@ public sealed class ApplicationObjectWriteTests : IDisposable
             var types = new SqliteComponentTypeRegistry(db, schemas);
             Primary = Ref(types.Define(new(owner, "write-object.primary", PrimarySchema)));
             Secondary = Ref(types.Define(new(owner, "write-object.secondary", SecondarySchema)));
-            var member = Ref(types.Define(new(owner, "write-object.member-state", MemberSchema)));
+            var member = Member = Ref(types.Define(new(owner, "write-object.member-state", MemberSchema)));
             Entities = new SqliteEntityComponentStore(db, types, schemas);
             Edges = new SqliteStateSpaceEdgeStore(db, stateSpaces, transactions);
             SeedAsync(member).GetAwaiter().GetResult();
 
             var registry = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications);
-            projection = registry.Define(Definition(owner, Primary, Secondary, member)).Reference;
+            projection = registry.Define(Definition(owner, Primary, Secondary, member, optionalSecondary)).Reference;
             var source = new SqliteProjectionSourceSnapshotReader(db, stateSpaces, Entities);
             var root = new ProjectionMaterializer(registry, Entities, stateSpaces, schemas,
                 new ProjectionPlanCache(), source);
@@ -193,7 +250,8 @@ public sealed class ApplicationObjectWriteTests : IDisposable
             var applier = new ApplicationEcsEffectApplier(
                 db, Entities, stateSpaces, new OperationLog(db), Edges);
             Writer = new ApplicationObjectWriteService(
-                registry, materializer, Entities, applier, new OperationLog(db), schemas);
+                registry, materializer, Entities, new BeforeApplyApplier(applier, () => BeforeApply?.Invoke() ?? Task.CompletedTask),
+                new OperationLog(db), schemas);
         }
 
         public Task<ProjectionCollectionMaterializationResult> ReadAsync() => materializer.MaterializeAsync(new(
@@ -211,6 +269,47 @@ public sealed class ApplicationObjectWriteTests : IDisposable
 
         public async Task<EcsComponentView> ComponentAsync(EcsComponentReference type) =>
             (await Entities.GetComponentAsync(StateSpace, Subject, type.QualifiedTypeId))!;
+
+        public async Task<Operation> AuditAsync() => await db.Operations.AsNoTracking().SingleAsync();
+
+        public async Task ChangeSnapshotAsync(string change)
+        {
+            Assert.Null(db.Database.CurrentTransaction);
+            switch (change)
+            {
+                case "written-component":
+                    await Entities.MergeComponentAsync(new(StateSpace, Subject, Primary, "{\"premise\":\"Concurrent edit\"}", 1));
+                    break;
+                case "read-only-component":
+                    await Entities.SetComponentAsync(new(StateSpace, MemberOne, Member, "{\"status\":\"changed\"}", 1));
+                    break;
+                case "removed-component":
+                    await Entities.RemoveComponentAsync(StateSpace, MemberOne, Member, 1);
+                    break;
+                case "absent-root-component":
+                    await Entities.AddComponentAsync(new(StateSpace, Subject, Secondary, "{\"detail\":\"accepted\"}", 0));
+                    break;
+                case "absent-endpoint-component":
+                    await Entities.AddComponentAsync(new(StateSpace, MemberOne, Secondary, "{\"detail\":\"accepted\"}", 0));
+                    break;
+                case "added-edge":
+                case "empty-collection":
+                    await Edges.SetRelationshipAsync(StateSpace, Subject, MemberTwo, MemberKind, "{}", 0);
+                    break;
+                case "removed-edge":
+                    await Edges.RemoveRelationshipAsync(StateSpace, Subject, MemberOne, MemberKind, 1);
+                    break;
+                case "revised-edge":
+                    await Edges.SetRelationshipAsync(StateSpace, Subject, MemberOne, MemberKind, "{\"changed\":true}", 1);
+                    break;
+                case "renamed-entity":
+                    await db.Set<ApplicationEcsEntityRecord>().Where(value => value.StateSpaceId == StateSpace && value.Id == MemberOne)
+                        .ExecuteUpdateAsync(update => update.SetProperty(value => value.Name, "Renamed")
+                            .SetProperty(value => value.Revision, value => value.Revision + 1));
+                    break;
+                default: throw new ArgumentOutOfRangeException(nameof(change));
+            }
+        }
 
         private async Task SeedAsync(EcsComponentReference member)
         {
@@ -233,7 +332,8 @@ public sealed class ApplicationObjectWriteTests : IDisposable
             ApplicationIdentifier owner,
             EcsComponentReference primary,
             EcsComponentReference secondary,
-            EcsComponentReference member) => new(
+            EcsComponentReference member,
+            bool optionalSecondary) => new(
                 owner, "write-object.summary", OutputSchema,
                 [new("primary", "subject", primary), new("secondary", "subject", secondary)], [],
                 [
@@ -244,9 +344,9 @@ public sealed class ApplicationObjectWriteTests : IDisposable
                 ],
                 new(
                     [new("subject", true), new("member", false)],
-                    [new("primary", true), new("secondary", true)],
+                    [new("primary", true), new("secondary", !optionalSecondary)],
                     [new("members", MemberKind, "subject", "member", "many", "/members",
-                        [new("to", member)], [])],
+                        [new("to", member)], [new("to", secondary)])],
                     [],
                     [new("members", "members", 20, 20, [new("/name", "asc")],
                         "source-revision-bound")],

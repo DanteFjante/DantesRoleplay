@@ -161,6 +161,12 @@ public sealed class ApplicationActionRunner(
                     new EcsComponentReference(value.QualifiedTypeId, value.TypeVersion, value.SchemaHash),
                     value.Revision))
                 .ToArray(),
+            EntityExpectations = evaluation.Projection.ObservedEntities.Select(value =>
+                new ApplicationEcsEntityExpectation(value.EntityId, value.Revision)).ToArray(),
+            RelationshipExpectations = evaluation.Projection.RelationshipCollections.Select(value =>
+                new ApplicationEcsRelationshipExpectation(value.QualifiedKind, value.AnchorEntityId, value.Incoming,
+                    value.Relationships.Select(edge => new ApplicationEcsRelationshipExpectationItem(
+                        edge.FromEntityId, edge.ToEntityId, edge.Revision)).ToArray())).ToArray(),
             ContainmentExpectations = evaluation.Projection!.ContainmentRevisions
                 .OrderBy(pair => pair.Key, StringComparer.Ordinal)
                 .Select(pair => new ApplicationEcsContainmentExpectation(pair.Key,

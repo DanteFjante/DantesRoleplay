@@ -175,8 +175,12 @@ public sealed class ApplicationObjectWriteService(
                 throw Failure("OBJECT_WRITE_REJECTED",
                     "A declared relationship endpoint component is missing or stale.");
 
-        var expectations = sourceComponents.Select(value => new ApplicationEcsComponentExpectation(
+        // Preserve the materialized snapshot, including read-only/absent sources. Fresh
+        // endpoint reads may add evidence, but must never replace evidence already observed.
+        var expectations = current.SourceRevisions.Select(value => new ApplicationEcsComponentExpectation(
                 value.EntityId, value.Type, value.Revision))
+            .Concat(sourceComponents.Select(value => new ApplicationEcsComponentExpectation(
+                value.EntityId, value.Type, value.Revision)))
             .DistinctBy(value => (value.EntityId, value.ComponentType.QualifiedTypeId))
             .OrderBy(value => value.EntityId, StringComparer.Ordinal)
             .ThenBy(value => value.ComponentType.QualifiedTypeId, StringComparer.Ordinal).ToArray();
@@ -186,6 +190,12 @@ public sealed class ApplicationObjectWriteService(
             Intent = "Apply one explicit registered application object edit.",
             ExecutionIdentity = identity,
             ComponentExpectations = expectations,
+            EntityExpectations = current.EntityRevisions.Select(value =>
+                new ApplicationEcsEntityExpectation(value.EntityId, value.Revision)).ToArray(),
+            RelationshipExpectations = current.RelationshipCollections.Select(value =>
+                new ApplicationEcsRelationshipExpectation(value.QualifiedKind, value.AnchorEntityId, value.Incoming,
+                    value.Relationships.Select(edge => new ApplicationEcsRelationshipExpectationItem(
+                        edge.FromEntityId, edge.ToEntityId, edge.Revision)).ToArray())).ToArray(),
             Effects = [.. componentEffects, .. relationshipEffects]
         };
         var applied = await effects.ApplyAsync(batch, cancellationToken: cancellationToken);

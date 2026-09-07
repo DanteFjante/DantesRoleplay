@@ -51,6 +51,7 @@ public sealed record RegisteredProjectionDefinition(
 }
 
 public sealed record ProjectionMaterializationRequest(string StateSpaceId, ProjectionReference Projection, IReadOnlyDictionary<string, string> RoleEntityIds);
+/// <summary>Observed component evidence; revision zero records absence of the qualified type.</summary>
 public sealed record ProjectionSourceRevision(string EntityId, EcsComponentReference Type, int Revision);
 public sealed record ProjectionMaterializationResult(ProjectionReference Projection, string OutputJson, IReadOnlyList<ProjectionSourceRevision> SourceRevisions);
 public sealed record ProjectionCollectionMaterializationRequest(
@@ -68,6 +69,8 @@ public sealed record ProjectionCollectionMaterializationResult(
     string SourceRevisionFingerprint)
 {
     public IReadOnlyList<ProjectionRelationshipRevision> RelationshipRevisions { get; init; } = [];
+    public IReadOnlyList<ProjectionRelationshipCollectionSnapshot> RelationshipCollections { get; init; } = [];
+    public IReadOnlyList<ProjectionEntityRevision> EntityRevisions { get; init; } = [];
     public bool Complete { get; init; } = true;
 }
 public sealed record ProjectionRelationshipRevision(
@@ -75,6 +78,12 @@ public sealed record ProjectionRelationshipRevision(
     string ToEntityId,
     string QualifiedKind,
     int Revision);
+public sealed record ProjectionEntityRevision(string EntityId, int Revision);
+public sealed record ProjectionRelationshipCollectionSnapshot(
+    string QualifiedKind,
+    string AnchorEntityId,
+    bool Incoming,
+    IReadOnlyList<ProjectionRelationshipRevision> Relationships);
 public sealed record ProjectionImpactGraph(IReadOnlyDictionary<string, IReadOnlyList<string>> Forward, IReadOnlyDictionary<string, IReadOnlyList<string>> Reverse);
 public sealed record ProjectionSourceSnapshot(
     StateSpaceView StateSpace,

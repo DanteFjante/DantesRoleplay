@@ -526,11 +526,98 @@ public sealed class ApplicationEcsEffectApplierTests : IDisposable
             Effects = [],
             ComponentExpectations =
             [
-                new("fixture", setup.Type, 0),
+                new("fixture", setup.Type, -1),
                 new("fixture", setup.Type, 1)
             ]
         });
         Assert.Contains(malformed, problem => problem.Code == "COMPONENT_EXPECTATION_INVALID");
+    }
+
+    [Fact]
+    public async Task Absent_component_evidence_is_checked_for_dry_runs_and_commits()
+    {
+        var setup = Setup();
+        await setup.Store.CreateEntityAsync("effect-space", "fixture", "Fixture");
+        var batch = new ApplicationEcsEffectBatch
+        {
+            StateSpaceId = "effect-space",
+            Effects = [new() { Type = ApplicationEcsEffectType.EntityCreate, EntityId = "result", Name = "Result" }],
+            ComponentExpectations = [new("fixture", setup.Type, 0)]
+        };
+        Assert.True((await setup.Applier.ApplyAsync(batch, dryRun: true)).Valid);
+        Assert.Null(await setup.Store.GetEntityAsync("effect-space", "result"));
+        await setup.Store.AddComponentAsync(new("effect-space", "fixture", setup.Type, "{\"value\":1}", 0));
+        foreach (var dryRun in new[] { true, false })
+        {
+            var result = await setup.Applier.ApplyAsync(batch, dryRun);
+            Assert.False(result.Applied);
+            Assert.Equal("REVISION_STALE", Assert.Single(result.Problems).Code);
+            Assert.Null(await setup.Store.GetEntityAsync("effect-space", "result"));
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Collection_evidence_is_scoped_to_exact_kind_anchor_and_direction(bool incoming)
+    {
+        var setup = Setup();
+        foreach (var id in new[] { "root", "one", "other" })
+            await setup.Store.CreateEntityAsync("effect-space", id, id);
+        var from = incoming ? "one" : "root";
+        var to = incoming ? "root" : "one";
+        await setup.Edges.SetRelationshipAsync("effect-space", from, to, "fixture-effects.link", "{}", 0);
+        await setup.Edges.SetRelationshipAsync("effect-space", to, from, "fixture-effects.link", "{}", 0);
+        await setup.Edges.SetRelationshipAsync("effect-space", from, to, "fixture-effects.other", "{}", 0);
+        await setup.Edges.SetRelationshipAsync("effect-space", "other", "other", "fixture-effects.link", "{}", 0);
+        var batch = new ApplicationEcsEffectBatch
+        {
+            StateSpaceId = "effect-space",
+            Effects = [new() { Type = ApplicationEcsEffectType.EntityCreate, EntityId = "result", Name = "Result" }],
+            EntityExpectations = [new("root", 1)],
+            RelationshipExpectations = [new("fixture-effects.link", "root", incoming, [new(from, to, 1)])]
+        };
+        Assert.True((await setup.Applier.ApplyAsync(batch, dryRun: true)).Valid);
+        Assert.Null(await setup.Store.GetEntityAsync("effect-space", "result"));
+        Assert.True((await setup.Applier.ApplyAsync(batch)).Applied);
+        Assert.NotNull(await setup.Store.GetEntityAsync("effect-space", "result"));
+    }
+
+    [Fact]
+    public void Entity_and_collection_expectations_are_bounded_and_closed()
+    {
+        var batch = new ApplicationEcsEffectBatch { StateSpaceId = "effect-space", Effects = [] };
+        var valid = new ApplicationEcsRelationshipExpectation("fixture.link", "root", false, [new("root", "one", 1)]);
+        var invalid = new ApplicationEcsRelationshipExpectation[]
+        {
+            null!, valid with { AnchorEntityId = "" }, valid with { QualifiedKind = "" },
+            valid with { Relationships = null! }, valid with { Incoming = true },
+            valid with { Relationships = [new("root", "one", 0)] },
+            valid with { Relationships = [new("root", "one", 1), new("root", "one", 1)] },
+            valid with { Relationships = Enumerable.Range(0, ApplicationEcsEffectValidation.MaximumRelationshipExpectationItems + 1)
+                .Select(index => new ApplicationEcsRelationshipExpectationItem("root", "item-" + index, 1)).ToArray() }
+        };
+        foreach (var value in invalid)
+            Assert.Contains(ApplicationEcsEffectValidation.Validate(batch with { RelationshipExpectations = [value] }),
+                problem => problem.Code == "RELATIONSHIP_EXPECTATION_INVALID");
+        Assert.Contains(ApplicationEcsEffectValidation.Validate(batch with { RelationshipExpectations = [valid, valid] }),
+            problem => problem.Code == "RELATIONSHIP_EXPECTATION_INVALID");
+        Assert.Contains(ApplicationEcsEffectValidation.Validate(batch with { RelationshipExpectations = null! }),
+            problem => problem.Code == "RELATIONSHIP_EXPECTATION_LIMIT");
+        Assert.Contains(ApplicationEcsEffectValidation.Validate(batch with { RelationshipExpectations =
+            Enumerable.Range(0, ApplicationEcsEffectValidation.MaximumRelationshipExpectations + 1).Select(_ => valid).ToArray() }),
+            problem => problem.Code == "RELATIONSHIP_EXPECTATION_LIMIT");
+        Assert.Contains(ApplicationEcsEffectValidation.Validate(batch with { EntityExpectations = [new("root", 0)] }),
+            problem => problem.Code == "ENTITY_EXPECTATION_INVALID");
+        Assert.Contains(ApplicationEcsEffectValidation.Validate(batch with { EntityExpectations = [new("root", 1), new("root", 1)] }),
+            problem => problem.Code == "ENTITY_EXPECTATION_INVALID");
+        Assert.Contains(ApplicationEcsEffectValidation.Validate(batch with { EntityExpectations = null! }),
+            problem => problem.Code == "ENTITY_EXPECTATION_LIMIT");
+        Assert.Contains(ApplicationEcsEffectValidation.Validate(batch with { EntityExpectations =
+            Enumerable.Range(0, ApplicationEcsEffectValidation.MaximumEntityExpectations + 1).Select(index => new ApplicationEcsEntityExpectation("e-" + index, 1)).ToArray() }),
+            problem => problem.Code == "ENTITY_EXPECTATION_LIMIT");
+        Assert.DoesNotContain(ApplicationEcsEffectValidation.Validate(batch with { RelationshipExpectations = [valid with { Relationships = [] }] }),
+            problem => problem.Code.StartsWith("RELATIONSHIP_EXPECTATION", StringComparison.Ordinal));
     }
 
     private SetupResult Setup()

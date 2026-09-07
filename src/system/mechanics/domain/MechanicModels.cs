@@ -709,6 +709,9 @@ public sealed record MechanicProjection
     [JsonIgnore]
     public IReadOnlyList<MechanicComponentRevision> ObservedComponents { get; init; } = [];
 
+    [JsonIgnore]
+    public IReadOnlyList<MechanicEntityRevision> ObservedEntities { get; init; } = [];
+
     /// <summary>Host-only complete relationship collections used for stale effect translation.</summary>
     [JsonIgnore]
     public IReadOnlyList<MechanicRelationshipCollectionSnapshot> RelationshipCollections { get; init; } = [];
@@ -787,6 +790,8 @@ public sealed record MechanicComponentRevision(
     int TypeVersion,
     string SchemaHash,
     int Revision);
+
+public sealed record MechanicEntityRevision(string EntityId, int Revision);
 
 public sealed record MechanicRelationshipRevision(
     string FromEntityId,

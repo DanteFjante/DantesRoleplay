@@ -51,6 +51,8 @@ public sealed class ApplicationEcsEffectApplier(
             transaction = await SqliteEcsConstraintTransaction.BeginIfNeededAsync(db, cancellationToken)
                 ?? throw new InvalidOperationException("Application ECS effects require their own write transaction.");
             await VerifyComponentsAsync(batch, cancellationToken);
+            await VerifyEntitiesAsync(batch, cancellationToken);
+            await VerifyRelationshipsAsync(batch, cancellationToken);
             await VerifyContainmentsAsync(batch, cancellationToken);
             for (var index = 0; index < batch.Effects.Count; index++)
             {
@@ -181,9 +183,55 @@ public sealed class ApplicationEcsEffectApplier(
                 value.EntityId, value.ComponentType.QualifiedTypeId)).ToArray(), cancellationToken);
         var current = rows.ToDictionary(value => (value.EntityId, value.Type.QualifiedTypeId));
         foreach (var expected in batch.ComponentExpectations)
-            if (!current.TryGetValue((expected.EntityId, expected.ComponentType.QualifiedTypeId), out var actual)
-                || actual.Type != expected.ComponentType || actual.Revision != expected.Revision)
+        {
+            current.TryGetValue((expected.EntityId, expected.ComponentType.QualifiedTypeId), out var actual);
+            if (expected.Revision == 0 ? actual is not null
+                : actual is null || actual.Type != expected.ComponentType || actual.Revision != expected.Revision)
                 throw new InvalidOperationException("Component source is stale.");
+        }
+    }
+
+    private async Task VerifyEntitiesAsync(ApplicationEcsEffectBatch batch, CancellationToken cancellationToken)
+    {
+        if (batch.EntityExpectations.Count == 0) return;
+        var ids = batch.EntityExpectations.Select(value => value.EntityId).ToArray();
+        var current = await db.Set<ApplicationEcsEntityRecord>().AsNoTracking()
+            .Where(value => value.StateSpaceId == batch.StateSpaceId && ids.Contains(value.Id) && value.DeletedAtUtc == null)
+            .ToDictionaryAsync(value => value.Id, cancellationToken);
+        foreach (var expected in batch.EntityExpectations)
+            if (!current.TryGetValue(expected.EntityId, out var actual) || actual.Revision != expected.Revision)
+                throw new InvalidOperationException("Entity source is stale.");
+    }
+
+    private async Task VerifyRelationshipsAsync(ApplicationEcsEffectBatch batch, CancellationToken cancellationToken)
+    {
+        if (batch.RelationshipExpectations.Count == 0) return;
+        var reader = RequireEdges() as IRelationshipCollectionReader
+            ?? throw new InvalidOperationException("The relationship snapshot reader is unavailable.");
+        foreach (var group in batch.RelationshipExpectations.GroupBy(value => (value.QualifiedKind, value.Incoming)))
+        {
+            // Bound each read to exactly the observed size (+ the reader's overflow sentinel).
+            // Grouping by kind and direction avoids per-edge reads and unrelated graph scans.
+            var expectedCount = group.Sum(value => value.Relationships.Count);
+            if (expectedCount > 10_000)
+                throw new InvalidOperationException("Relationship snapshot read bound exceeded.");
+            IReadOnlyList<EcsRelationshipView> rows;
+            try
+            {
+                rows = await reader.ReadCollectionsAsync(batch.StateSpaceId,
+                    group.Select(value => value.AnchorEntityId).ToArray(), [group.Key.QualifiedKind],
+                    Math.Max(1, expectedCount), group.Key.Incoming, cancellationToken);
+            }
+            catch (InvalidOperationException)
+            {
+                throw new InvalidOperationException("Relationship collection source is stale.");
+            }
+            var current = rows.ToDictionary(value => (value.FromEntityId, value.ToEntityId));
+            if (rows.Count != expectedCount || group.SelectMany(value => value.Relationships).Any(expected =>
+                    !current.TryGetValue((expected.FromEntityId, expected.ToEntityId), out var actual)
+                    || actual.Revision != expected.Revision))
+                throw new InvalidOperationException("Relationship collection source is stale.");
+        }
     }
 
     private async Task VerifyContainmentsAsync(ApplicationEcsEffectBatch batch, CancellationToken cancellationToken)
