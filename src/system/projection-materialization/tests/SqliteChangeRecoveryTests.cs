@@ -10,6 +10,33 @@ namespace DantesRoleplay.Projections.Tests;
 public sealed class SqliteChangeRecoveryTests
 {
     [Fact]
+    public async Task Derived_fts5_index_is_not_instrumented_as_canonical_object_state()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = SqliteChangeRecovery.CreateSql + "CREATE VIRTUAL TABLE fixture USING fts5(value);";
+        await command.ExecuteNonQueryAsync();
+        await SqliteChangeRecovery.InstallAsync(connection);
+        foreach (var sql in new[] { "INSERT INTO fixture VALUES ('first')", "UPDATE fixture SET value='second'", "DELETE FROM fixture" })
+        {
+            var before = (await SqliteChangeRecovery.ReadAsync(connection, null))!.Value;
+            command.CommandText = sql;
+            await command.ExecuteNonQueryAsync();
+            Assert.Equal(before, (await SqliteChangeRecovery.ReadAsync(connection, null))!.Value);
+        }
+        var committed = await SqliteChangeRecovery.ReadAsync(connection, null);
+        await using (var transaction = await connection.BeginTransactionAsync())
+        {
+            command.Transaction = (SqliteTransaction)transaction;
+            command.CommandText = "INSERT INTO fixture VALUES ('rollback')";
+            await command.ExecuteNonQueryAsync();
+            await transaction.RollbackAsync();
+        }
+        Assert.Equal(committed, await SqliteChangeRecovery.ReadAsync(connection, null));
+    }
+
+    [Fact]
     public async Task Migration_preserves_existing_data_and_installs_transactional_coverage_on_actual_schema()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

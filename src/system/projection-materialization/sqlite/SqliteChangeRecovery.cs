@@ -34,7 +34,9 @@ internal static class SqliteChangeRecovery
             await using (var command = connection.CreateCommand())
             {
                 command.Transaction = transaction;
-                command.CommandText = "SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name";
+                // FTS5 is a derived search index, not object-state authority. Its virtual table
+                // rejects triggers, and triggers on its internal shadow tables are unsafe.
+                command.CommandText = "SELECT name FROM pragma_table_list WHERE schema='main' AND type='table' ORDER BY name";
                 await using var reader = await command.ExecuteReaderAsync(ct);
                 while (await reader.ReadAsync(ct)) tables.Add(reader.GetString(0));
             }
@@ -53,6 +55,11 @@ internal static class SqliteChangeRecovery
                 }
             }
             var schema = await ScalarAsync(connection, transaction, "PRAGMA schema_version", ct);
+            var unsupportedVirtualTables = await ScalarAsync(connection, transaction, """
+                SELECT count(*) FROM sqlite_schema s JOIN pragma_table_list p ON p.name=s.name AND p.schema='main'
+                WHERE p.type='virtual' AND lower(s.sql) NOT LIKE '%using fts5(%'
+                """, ct);
+            if (unsupportedVirtualTables > 0) schema = -1; // Unknown storage modules fail closed.
             await ExecuteAsync(connection, transaction,
                 $"UPDATE system_change_recovery SET SchemaVersion={schema}, OtherVersion=OtherVersion+1 WHERE Id=1", ct);
             await transaction.CommitAsync(ct);

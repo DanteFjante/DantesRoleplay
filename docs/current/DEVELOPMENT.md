@@ -333,7 +333,8 @@ the reviewed artifacts, preserving the shared live seat.
 
 Scoped live-change recovery uses a durable `system_change_recovery` marker. At normal application
 and web schema initialization, SQLite triggers cover all application tables except delivery rows,
-operation audit, and SQLite/EF infrastructure. Typed ECS transactions acknowledge only their own
+operation audit, derived FTS5 indexes (including their internal shadow tables), and SQLite/EF
+infrastructure. Unknown virtual-table storage modules leave coverage conservative. Typed ECS transactions acknowledge only their own
 ECS mutation delta when durable delivery evidence exists; other writes remain conservative scope
 invalidations. Missing marker coverage or schema drift also falls back to scope invalidation.
 An older database is not migrated by opening a change feed. Apply migrations through the normal
