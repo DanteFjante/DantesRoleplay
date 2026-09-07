@@ -16,6 +16,8 @@ import { ViewReadError } from "../data/view-read-client";
 import type {
   CampaignSectionId,
   CampaignReadModel,
+  DeferredHubSection,
+  DeferredViewState,
   HubContextSelection,
   LocationSectionId,
   MainTabId,
@@ -130,6 +132,7 @@ export function DndInformationHub({
   loadCharacter,
   loadFactionPage,
   loadCampaignDetails,
+  loadDeferredSection,
 }: {
   initialEnvelope: ReadyHubEnvelope;
   loadEnvelope?: HubEnvelopeLoader;
@@ -138,6 +141,7 @@ export function DndInformationHub({
   loadCharacter?: (envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) => Promise<import("../data/hub-types").PartyMemberReadModel>;
   loadFactionPage?: FactionPageLoader;
   loadCampaignDetails?: CampaignDetailsLoader;
+  loadDeferredSection?: (envelope: ReadyHubEnvelope, section: DeferredHubSection, signal: AbortSignal) => Promise<ReadyHubEnvelope>;
 }) {
   const [envelope, setEnvelope] = useState(initialEnvelope);
   const readCharacter = useCallback((id: string, signal: AbortSignal) => {
@@ -178,6 +182,10 @@ export function DndInformationHub({
   const [serverChanged, setServerChanged] = useState(false);
   const [changedObjectId, setChangedObjectId] = useState<string | null>(null);
   const sectionAbort = useRef<AbortController | null>(null);
+  const deferredAbort = useRef<AbortController | null>(null);
+  const contextAbort = useRef<AbortController | null>(null);
+  const [deferredStates, setDeferredStates] = useState<Partial<Record<DeferredHubSection, DeferredViewState>>>({});
+  const [deferredErrors, setDeferredErrors] = useState<Partial<Record<DeferredHubSection, string>>>({});
   useEffect(() => {
     const invalidate = () => {
       setChangedObjectId(null);
@@ -246,6 +254,9 @@ export function DndInformationHub({
     ) return;
 
     const requestId = ++hubRequestSequence.current;
+    sectionAbort.current?.abort();
+    deferredAbort.current?.abort();
+    contextAbort.current?.abort();
     setHubBusy(true);
     setHubError("");
     try {
@@ -279,6 +290,8 @@ export function DndInformationHub({
         ? loadedEnvelope
         : preserveLastGoodPartyData(envelope, loadedEnvelope);
       setEnvelope(readyEnvelope);
+      setDeferredStates({});
+      setDeferredErrors({});
       if (campaignChanged || perspectiveChanged) {
         dispatchObjectUi({
           type: "scope-replaced",
@@ -389,13 +402,75 @@ export function DndInformationHub({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestedItemScope]);
 
-  useEffect(() => {
-    markActiveViewReady(activeTab);
-  }, [activeTab]);
-
   function focusViewHeading() {
     window.requestAnimationFrame(() => document.querySelector<HTMLElement>("#main-view-heading")?.focus());
   }
+
+  async function requestDeferred(section: DeferredHubSection, force = false) {
+    if (!loadDeferredSection || (!force && deferredStates[section] === "ready")) return;
+    const owner = section === "context" ? contextAbort : deferredAbort;
+    owner.current?.abort();
+    const controller = new AbortController();
+    owner.current = controller;
+    setDeferredStates((states) => ({ ...states, [section]: "loading" }));
+    setDeferredErrors((errors) => ({ ...errors, [section]: "" }));
+    try {
+      const loaded = await loadDeferredSection(envelope, section, controller.signal);
+      if (controller.signal.aborted) return;
+      setEnvelope((current) => section === "context" ? {
+        ...current, contextSelection: loaded.contextSelection,
+      } : ({
+        ...current,
+        contextSelection: loaded.contextSelection,
+        currentSituation: loaded.currentSituation,
+        world: { ...loaded.world,
+          ...(current.world.factionDirectory ? {
+            factions: current.world.factions, factionDirectory: current.world.factionDirectory,
+          } : {}),
+        },
+        campaign: { ...current.campaign, mapOverlays: loaded.campaign.mapOverlays },
+      }));
+      setDeferredStates((states) => ({ ...states, [section]: "ready" }));
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      setDeferredStates((states) => ({ ...states, [section]: "error" }));
+      setDeferredErrors((errors) => ({ ...errors,
+        [section]: error instanceof Error ? error.message : "The view is unavailable." }));
+    }
+  }
+
+  const deferredSection: DeferredHubSection | null = activeTab === "current" ? "current"
+    : activeTab === "world" && worldSection === "factions" && perspective !== "dm" ? "lore"
+    : activeTab === "world" && ["map", "locations", "history", "lore", "people"].includes(worldSection)
+      ? worldSection === "map" ? "locations" : worldSection as DeferredHubSection : null;
+  const deferredState = deferredSection && loadDeferredSection
+    ? deferredStates[deferredSection] ?? "unloaded" : "ready";
+  useEffect(() => {
+    if (deferredState === "ready" && !hubBusy) markActiveViewReady(activeTab);
+  }, [activeTab, deferredState, hubBusy]);
+  useEffect(() => {
+    if (deferredSection && !hubBusy) void requestDeferred(deferredSection);
+    return () => { deferredAbort.current?.abort(); };
+    // Loads belong to the selected view and the newly authorized bootstrap, not to every
+    // incremental envelope merge. Errors retry only through the explicit retry button.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deferredSection, perspective, contextSelection.selectedCampaignId, hubBusy, loadDeferredSection]);
+  useEffect(() => () => {
+    sectionAbort.current?.abort(); deferredAbort.current?.abort(); contextAbort.current?.abort();
+  }, []);
+
+  const deferredNotice = deferredState !== "ready" ? (
+    <section aria-busy={deferredState === "loading" || deferredState === "unloaded"}
+      className="view-loading" role={deferredState === "error" ? "alert" : "status"}>
+      <h1 id="main-view-heading" tabIndex={-1}>
+        {deferredState === "error" ? "View unavailable" : `Opening ${deferredSection}`}
+      </h1>
+      <p>{deferredState === "error" && deferredSection
+        ? deferredErrors[deferredSection] : "Loading the complete authorized view."}</p>
+      {deferredState === "error" && deferredSection
+        ? <button type="button" onClick={() => void requestDeferred(deferredSection, true)}>Retry view</button> : null}
+    </section>
+  ) : null;
 
   async function requestFactionPage(cursor: string | null) {
     if (!loadFactionPage || perspective !== "dm" || hubBusy) return;
@@ -548,6 +623,7 @@ export function DndInformationHub({
           party={envelope.party}
         />;
       case "current":
+        if (deferredNotice) return deferredNotice;
         return (
           <div className="current-play-workspace">
             <CurrentViewPreview
@@ -578,6 +654,8 @@ export function DndInformationHub({
       default:
         return (
           <WorldView
+            directoriesDeferred={Boolean(loadDeferredSection)}
+            deferredNotice={deferredNotice}
             campaign={envelope.campaign}
             currentLocation={currentLocation}
             filteredLocations={visibleLocations}
@@ -660,6 +738,9 @@ export function DndInformationHub({
         onCampaignChange={(campaignId) => void requestCampaign(campaignId)}
         perspective={perspective}
         onPerspectiveChange={(nextPerspective) => void requestPerspective(nextPerspective)}
+        onOpenContext={loadDeferredSection ? () => void requestDeferred("context") : undefined}
+        contextState={deferredStates.context}
+        contextError={deferredErrors.context}
       />
       {hubError ? <p className="perspective-notice" role="alert">{hubError}</p> : null}
       {serverChanged ? <div className="perspective-notice" role="status">

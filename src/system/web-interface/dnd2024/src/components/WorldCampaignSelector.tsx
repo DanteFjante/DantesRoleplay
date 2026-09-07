@@ -2,16 +2,22 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import type { HubContextSelection } from "../data/hub-types";
+import type { DeferredViewState, HubContextSelection } from "../data/hub-types";
 
 export function WorldCampaignSelector({
   busy,
   selection,
   onCampaignChange,
+  onOpen,
+  loadState,
+  error,
 }: {
   busy: boolean;
   selection: HubContextSelection;
   onCampaignChange: (campaignId: string) => void;
+  onOpen?: () => void;
+  loadState?: DeferredViewState;
+  error?: string;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -53,7 +59,7 @@ export function WorldCampaignSelector({
         aria-haspopup="dialog"
         className="world-context__trigger"
         disabled={busy}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => { if (!open) onOpen?.(); setOpen((value) => !value); }}
         type="button"
       >
         <span>
@@ -78,6 +84,10 @@ export function WorldCampaignSelector({
             <button aria-label="Close world and campaign selection" onClick={() => setOpen(false)} type="button">×</button>
           </div>
 
+          {onOpen && loadState !== "ready" ? <p role={loadState === "error" ? "alert" : "status"}>
+            {loadState === "error" ? error : "Loading authorized worlds and campaigns…"}
+            {loadState === "error" ? <button type="button" onClick={onOpen}>Retry directory</button> : null}
+          </p> : null}
           <div aria-label="Available worlds" className="context-picker__worlds">
             {selection.worlds.map((world) => (
               <button

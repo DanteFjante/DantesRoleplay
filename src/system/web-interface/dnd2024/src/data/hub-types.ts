@@ -844,6 +844,9 @@ export type KnownRouteReadModel = {
   durationMinutes: number;
 };
 
+export type DeferredHubSection = "context" | "history" | "lore" | "locations" | "people" | "current";
+export type DeferredViewState = "unloaded" | "loading" | "ready" | "error";
+
 export type ReadyHubEnvelope = {
   version: 1;
   status: "ready";

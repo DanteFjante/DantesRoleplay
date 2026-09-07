@@ -1048,6 +1048,82 @@ test("mounted hub switches Player to DM to Player without retaining DM-only data
   }
 });
 
+test("deferred hub sections stay unloaded until navigation and never display failed history as empty", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  initial.world.history = [];
+  const calls: string[] = [];
+  let finish: (value: ReadyHubEnvelope) => void = () => {};
+  let fail = true;
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadDeferredSection={async (_scope, section) => {
+      calls.push(section);
+      if (fail) throw new Error("History transport failed.");
+      return new Promise<ReadyHubEnvelope>((resolve) => { finish = resolve; });
+    }} />);
+  try {
+    assert.deepEqual(calls, []);
+    await click(button(mounted.container, "History"));
+    assert.deepEqual(calls, ["history"]);
+    assert.match(mounted.container.textContent ?? "", /History transport failed/);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /No dated world history/);
+    fail = false;
+    await click(button(mounted.container, "Retry view"));
+    assert.match(mounted.container.textContent ?? "", /Opening history/);
+    await act(async () => finish(envelope("dm")));
+    assert.doesNotMatch(mounted.container.textContent ?? "", /Opening history|History transport failed/);
+    await click(button(mounted.container, "Overview"));
+    await click(button(mounted.container, "History"));
+    assert.deepEqual(calls, ["history", "history"]);
+  } finally { await mounted.cleanup(); }
+});
+
+test("mounted deferred navigation wires Locations, People, Lore, Current and context discovery", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const calls: string[] = [];
+  const mounted = await mount(<DndInformationHub initialEnvelope={envelope("dm")}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadDeferredSection={async (_scope, section) => {
+      calls.push(section);
+      if (section === "current") return new Promise<ReadyHubEnvelope>(() => {});
+      return envelope("dm");
+    }} />);
+  try {
+    for (const label of ["Locations", "People", "Lore"]) await click(button(mounted.container, label));
+    const selector = mounted.container.querySelector<HTMLButtonElement>(".world-context__trigger");
+    assert.ok(selector);
+    await click(selector);
+    assert.ok(mounted.container.querySelector('[role="dialog"]'));
+    await click(button(mounted.container, "Current View"));
+    assert.deepEqual(calls, ["locations", "people", "lore", "context", "current"]);
+  } finally { await mounted.cleanup(); }
+});
+
+test("deferred responses from an abandoned perspective cannot reenter the active view", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  let finishDm: (value: ReadyHubEnvelope) => void = () => {};
+  let dmSignal: AbortSignal | undefined;
+  const mounted = await mount(<DndInformationHub initialEnvelope={envelope("dm")}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadEnvelope={async (perspective) => envelope(perspective)}
+    loadDeferredSection={async (scope, _section, signal) => {
+      if (scope.audience.perspective === "player") return envelope("player");
+      dmSignal = signal;
+      return new Promise<ReadyHubEnvelope>((resolve) => { finishDm = resolve; });
+    }} />);
+  try {
+    await click(button(mounted.container, "History"));
+    await click(button(mounted.container, "Player"));
+    assert.equal(dmSignal?.aborted, true);
+    const stale = envelope("dm");
+    stale.world.name = "PRIVATE STALE WORLD";
+    await act(async () => finishDm(stale));
+    assert.equal(mounted.container.querySelector(".information-hub")?.getAttribute("data-perspective"), "player");
+    assert.doesNotMatch(mounted.container.textContent ?? "", /PRIVATE STALE WORLD/);
+  } finally { await mounted.cleanup(); }
+});
+
 test("a denied perspective response leaves the current authorized view intact", async () => {
   const { DndInformationHub } = await import("../../src/components/DndInformationHub");
   const initial = envelope("player");

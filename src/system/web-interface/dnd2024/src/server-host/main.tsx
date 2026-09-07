@@ -8,7 +8,7 @@ import {
   type FactionObjectRequest,
 } from "../data/browser-object-state";
 import { resolveHubSurface } from "../data/hub-availability.js";
-import type { CampaignReadModel, CanonicalCharacterResult, ConnectedCampaignEnvelope, HubEnvelope, PartyMemberReadModel, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
+import type { CampaignReadModel, CanonicalCharacterResult, ConnectedCampaignEnvelope, DeferredHubSection, HubEnvelope, PartyMemberReadModel, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
 import { ViewReadClient, ViewReadError } from "../data/view-read-client";
 import { loadInitialHub } from "../data/hub-preferences";
 import { parseCursorCheckpoint, parseObjectChange } from "../data/object-change.js";
@@ -191,6 +191,16 @@ async function readFactionObjectPage(
     cursor,
   });
   if (!page) throw new Error("The faction directory could not be read.");
+  if (signal.aborted) throw new DOMException("View replaced", "AbortError");
+  const factions = cursor === null ? page.factions : [
+    ...(source.worldDirectory?.factions ?? []),
+    ...page.factions.filter((item: { id: string }) =>
+      !source.worldDirectory?.factions.some((previous) => previous.id === item.id)),
+  ];
+  characterSources.set(characterScope(source.stateSpaceId, source.campaign.id, source.audience.perspective), {
+    ...source, worldDirectory: { people: source.worldDirectory?.people ?? [], factions,
+      holdings: source.worldDirectory?.holdings ?? [] },
+  });
   const projected = connectedCampaignToHubEnvelope({ ...source,
     worldDirectory: { people: [], factions: page.factions, holdings: [] }, rules: [],
   }, { assetBaseUrl: PAGE_ASSET_BASE });
@@ -225,6 +235,9 @@ async function loadCampaignDetails(
     source,
   });
   if (details?.incomplete) throw new Error("The campaign details could not be read completely.");
+  if (signal.aborted) throw new DOMException("View replaced", "AbortError");
+  characterSources.set(characterScope(source.stateSpaceId, source.campaign.id, source.audience.perspective),
+    { ...source, campaign: { ...source.campaign, ...details } });
   return connectedCampaignToHubEnvelope({ ...source, campaign: { ...source.campaign, ...details }, rules: [] },
     { assetBaseUrl: PAGE_ASSET_BASE }).campaign;
 }
@@ -234,6 +247,28 @@ async function loadEnvelope(
   campaignId?: string,
 ): Promise<HubEnvelope> {
   return browserObjectState.loadCampaign({ perspective, campaignId });
+}
+
+async function loadDeferredSection(envelope: ReadyHubEnvelope, section: DeferredHubSection, signal: AbortSignal) {
+  const key = characterScope(envelope.stateSpaceId,
+    envelope.contextSelection?.selectedCampaignId ?? "", envelope.audience.perspective);
+  const source = characterSources.get(key);
+  if (!source || signal.aborted) throw new Error("Refresh the authorized view before continuing.");
+  const [{ readDeferredHubSection }, { connectedCampaignToHubEnvelope }] = await Promise.all([
+    import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
+  ]);
+  const patch = await readDeferredHubSection({
+    fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
+    origin: window.location.origin, source, section,
+  });
+  const latest = characterSources.get(key);
+  if (signal.aborted || !latest)
+    throw new DOMException("View replaced", "AbortError");
+  // Independent context discovery may finish beside a section read. Merge their disjoint
+  // patches; the hub aborts both owners before replacing the authorized bootstrap.
+  const updated = { ...latest, ...patch };
+  characterSources.set(key, updated);
+  return connectedCampaignToHubEnvelope({ ...updated, rules: [] }, { assetBaseUrl: PAGE_ASSET_BASE });
 }
 
 async function loadRulesReference(): Promise<RuleReadModel[]> {
@@ -349,6 +384,7 @@ try {
             loadCharacter={loadCharacter}
             loadFactionPage={loadFactionPage}
             loadCampaignDetails={loadCampaignDetails}
+            loadDeferredSection={loadDeferredSection}
             loadRules={loadRulesReference}
             loadContent={loadInstalledContent}
           />

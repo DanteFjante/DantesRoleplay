@@ -1,4 +1,4 @@
-import type { HubContextSelection, Perspective } from "../data/hub-types";
+import type { DeferredViewState, HubContextSelection, Perspective } from "../data/hub-types";
 import { PerspectiveSwitch } from "./PerspectiveSwitch";
 import { WorldCampaignSelector } from "./WorldCampaignSelector";
 
@@ -9,6 +9,9 @@ export function TopBar({
   contextSelection,
   onCampaignChange,
   onPerspectiveChange,
+  onOpenContext,
+  contextState,
+  contextError,
 }: {
   perspective: Perspective;
   allowedPerspectives: Perspective[];
@@ -16,6 +19,9 @@ export function TopBar({
   contextSelection: HubContextSelection;
   onCampaignChange: (campaignId: string) => void;
   onPerspectiveChange: (perspective: Perspective) => void;
+  onOpenContext?: () => void;
+  contextState?: DeferredViewState;
+  contextError?: string;
 }) {
   return (
     <header className="top-bar">
@@ -30,6 +36,9 @@ export function TopBar({
         busy={busy}
         onCampaignChange={onCampaignChange}
         selection={contextSelection}
+        onOpen={onOpenContext}
+        loadState={contextState}
+        error={contextError}
       />
       <PerspectiveSwitch
         allowedPerspectives={allowedPerspectives}

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 
 import type {
   CampaignReadModel,
@@ -21,6 +21,8 @@ const ScopedMapWorkspace = lazy(() => import("./ScopedMapWorkspace")
   .then((module) => ({ default: module.ScopedMapWorkspace })));
 
 export function WorldView({
+  deferredNotice,
+  directoriesDeferred,
   section,
   activeMapId,
   selectedMapFeatureId,
@@ -45,6 +47,8 @@ export function WorldView({
   onLoadMoreFactions,
   onQueryChange,
 }: {
+  deferredNotice?: ReactNode;
+  directoriesDeferred?: boolean;
   section: WorldSectionId;
   activeMapId: string;
   selectedMapFeatureId: string;
@@ -72,7 +76,10 @@ export function WorldView({
   return (
     <div className="world-view">
       <WorldSectionNavigation activeSection={section} onSelect={onSectionChange} />
-      {section === "overview" ? (
+      {section === "overview" && directoriesDeferred ? <p role="status">
+        World directories load when opened. Overview counts reflect only information loaded so far.
+      </p> : null}
+      {deferredNotice ?? (section === "overview" ? (
         <WorldOverview
           campaign={campaign}
           currentLocation={currentLocation}
@@ -166,7 +173,7 @@ export function WorldView({
             />
           </div>
         </div>
-      )}
+      ))}
     </div>
   );
 }

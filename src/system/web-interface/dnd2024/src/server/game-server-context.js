@@ -1949,6 +1949,7 @@ async function readWorldDirectory({
   locationDirectory,
   perspective,
   mediaAssetBaseUrl,
+  includeFactions = true,
 }) {
   const empty = { people: [], factions: [], holdings: [] };
   const incomplete = { ...empty, incomplete: true };
@@ -2039,8 +2040,8 @@ async function readWorldDirectory({
     return record ? [{ ...record, locationId: entry.locationId, kind: entry.entityId.split(".")[0] }] : [];
   });
 
-  const factionCandidates = Array.from(entities.values()).filter((entry) =>
-    entry.id === `faction.${worldId}` || entry.id.startsWith(`faction.${worldId}.`));
+  const factionCandidates = includeFactions ? Array.from(entities.values()).filter((entry) =>
+    entry.id === `faction.${worldId}` || entry.id.startsWith(`faction.${worldId}.`)) : [];
   const factionResults = await Promise.all(factionCandidates.map(async (entry) => {
     const componentPath = `${listRoot}/${encodeURIComponent(entry.id)}/components/${WORLD_FACTION_COMPONENT_TYPE_ID}`;
     try {
@@ -2329,8 +2330,8 @@ async function readGameServerContextCore({
     return denied("That campaign is not available to this local table.");
   }
   const minimalCampaignBootstrap = deferCharacterDetails && deferCampaignDetails && deferWorldDirectory &&
-    useRegisteredCampaignSummary && (!requestedCampaign || requestedCampaign === binding.campaignId);
-  const contextSelection = minimalCampaignBootstrap
+    useRegisteredCampaignSummary;
+  const contextSelection = minimalCampaignBootstrap && (!requestedCampaign || requestedCampaign === binding.campaignId)
     ? fallbackContextSelection(binding.campaignId)
     : await readContextSelection({
       fetchImpl,
@@ -2591,6 +2592,53 @@ async function readGameServerContextCore({
   if (worldDirectory?.incomplete) {
     return unavailable("The world directory could not be loaded completely. Please try again.");
   }
+  const resolvedCurrent = await resolveCurrentSituation({
+    fetchImpl, origin, root, selectedCampaignId, binding, serverRole, contextAudience,
+    currentSceneComponentResponse, currentSceneComponent, playSessionResponse, playSessionEnvelope,
+    locationDirectory, currentLocationId, party, selectedContext, projectedKnowledge, mediaAssetBaseUrl,
+  });
+  const { currentSituation, knownRoutes } = resolvedCurrent;
+  currentLocationId = resolvedCurrent.currentLocationId;
+
+  return {
+    version: 1,
+    status: "connected",
+    applicationId: binding.applicationId,
+    stateSpaceId: binding.stateSpaceId,
+    audience: contextAudience,
+    contextSelection: updateSelectedCampaignName(selectedContext, campaignEntity),
+    campaign: {
+      ...campaignEntity,
+      ...(registeredCampaign ? { name: registeredCampaign.title, ...registeredCampaign } :
+        campaignDetails(campaignComponentResponse.ok
+        ? componentValue(campaignComponent, selectedCampaignId, CAMPAIGN_ROOT_COMPONENT_TYPE_ID)
+        : null)),
+      ...campaignStructure,
+    },
+    actor: {
+      ...actorEntity,
+      ...boundActorDetails,
+    },
+    ...(currentLocationId ? { currentLocationId } : {}),
+    currentSituation,
+    ...(knownRoutes.length > 0 ? { knownRoutes } : {}),
+    party,
+    knowledge: projectedKnowledge,
+    chronology: projectedChronology,
+    ...(locationDirectory.length > 0 ? { locationDirectoryAudience: contextAudience.perspective } : {}),
+    ...(locationDirectory.length > 0 ? { locationDirectory } : {}),
+    ...(worldDirectory && (
+      worldDirectory.people.length > 0 || worldDirectory.factions.length > 0 || worldDirectory.holdings.length > 0
+    ) ? { worldDirectory } : {}),
+  };
+}
+
+
+async function resolveCurrentSituation({
+  fetchImpl, origin, root, selectedCampaignId, binding, serverRole, contextAudience,
+  currentSceneComponentResponse, currentSceneComponent, playSessionResponse, playSessionEnvelope,
+  locationDirectory, currentLocationId, party, selectedContext, projectedKnowledge, mediaAssetBaseUrl,
+}) {
   const authorizedLocationIds = locationDirectory.map((location) => location.id);
   const sceneComponentWasReturned = currentSceneComponentResponse?.ok === true;
   const sceneRecord = sceneComponentWasReturned
@@ -2685,38 +2733,7 @@ async function readGameServerContextCore({
       locationDirectory,
     })
     : [];
-
-  return {
-    version: 1,
-    status: "connected",
-    applicationId: binding.applicationId,
-    stateSpaceId: binding.stateSpaceId,
-    audience: contextAudience,
-    contextSelection: updateSelectedCampaignName(selectedContext, campaignEntity),
-    campaign: {
-      ...campaignEntity,
-      ...(registeredCampaign ? { name: registeredCampaign.title, ...registeredCampaign } :
-        campaignDetails(campaignComponentResponse.ok
-        ? componentValue(campaignComponent, selectedCampaignId, CAMPAIGN_ROOT_COMPONENT_TYPE_ID)
-        : null)),
-      ...campaignStructure,
-    },
-    actor: {
-      ...actorEntity,
-      ...boundActorDetails,
-    },
-    ...(currentLocationId ? { currentLocationId } : {}),
-    currentSituation,
-    ...(knownRoutes.length > 0 ? { knownRoutes } : {}),
-    party,
-    knowledge: projectedKnowledge,
-    chronology: projectedChronology,
-    ...(locationDirectory.length > 0 ? { locationDirectoryAudience: contextAudience.perspective } : {}),
-    ...(locationDirectory.length > 0 ? { locationDirectory } : {}),
-    ...(worldDirectory && (
-      worldDirectory.people.length > 0 || worldDirectory.factions.length > 0 || worldDirectory.holdings.length > 0
-    ) ? { worldDirectory } : {}),
-  };
+  return { currentSituation, currentLocationId, knownRoutes };
 }
 
 function registeredReadEvidence(payload, applicationId, stateSpaceId, qualifiedQueryId) {
@@ -2864,4 +2881,126 @@ export async function readDeferredCampaignDetails({ fetchImpl = fetch, origin, s
     campaignId: source.campaign.id,
     includeGmContext: source.audience.perspective === "dm",
   });
+}
+
+/**
+ * Completes only the requested deferred view. The existing private endpoints remain the
+ * authorization boundary; no ambient DM knowledge or media is requested for Player preview.
+ * Legacy directory adapters remain bounded and follow every continuation. They are not a
+ * claim that the complete-workload request budget has been met.
+ * @param {{fetchImpl?: typeof fetch, origin: string, source: any, section: string}} options
+ * @returns {Promise<any>}
+ */
+export async function readDeferredHubSection({ fetchImpl = fetch, origin, source, section }) {
+  if (!["context", "history", "lore", "locations", "people", "current"].includes(section))
+    throw new Error("Unknown deferred view.");
+  let failure = null;
+  let requests = 0;
+  const preview = source.audience.seat === "dm" && source.audience.perspective === "player";
+  const scope = createHubReadScope(async (input, init) => {
+    const target = new URL(String(input));
+    if (preview && target.pathname.endsWith("/media")) return new Response(null, { status: 404 });
+    if (++requests > 2_000) {
+      failure = "This view exceeds its bounded read budget.";
+      throw new Error(failure);
+    }
+    try {
+      const response = await fetchImpl(input, init);
+      // A missing optional component is legitimate; transport failures and denied directories
+      // must never be converted by a legacy adapter into a credible empty collection.
+      if (response.status >= 500 || response.status === 429 ||
+          (!response.ok && /\/(entities|containments)$/.test(target.pathname)))
+        failure = "The view could not be read completely.";
+      return response;
+    } catch (error) {
+      failure = "The view could not be read completely.";
+      throw error;
+    }
+  });
+  const read = scope.fetch;
+  const { applicationId, stateSpaceId } = source;
+  const campaignId = source.campaign.id;
+  const perspective = source.audience.perspective ?? "player";
+  const root = `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
+  const options = {
+    fetchImpl: read, origin, applicationId, stateSpaceId, perspective,
+    worldId: campaignWorldId(campaignId), mediaAssetBaseUrl: "/ui/dnd2024-play/assets/",
+  };
+  const patch = {};
+  if (section === "context") {
+    const selection = await readContextSelection({ ...options, boundCampaignId: campaignId,
+      isGameMaster: source.audience.seat === "dm" });
+    if (!selection || selection.incomplete) throw new Error("The campaign directory is incomplete.");
+    patch.contextSelection = updateSelectedCampaignName(selection, source.campaign);
+  } else if (section === "history" || section === "lore") {
+    if (section === "lore" && preview)
+      throw new Error("Campaign knowledge is unavailable in Player preview; an Actor binding is required.");
+    const endpoint = section === "history" ? "chronology" : "knowledge";
+    const response = await read(url(origin, `/api/applications/${encodeURIComponent(applicationId)}` +
+      `/campaigns/${encodeURIComponent(campaignId)}/${endpoint}?perspective=${perspective}`),
+      { headers: { Accept: "application/json" }, cache: "no-store" });
+    const result = response.ok ? (section === "history"
+      ? chronology(await json(response), perspective) : knowledge(await json(response))) : null;
+    if (!result || result.status === "unavailable") throw new Error(`The ${section} view is unavailable.`);
+    if (section === "history") patch.chronology = result;
+    else patch.knowledge = await attachAuthorizedKnowledgeMedia({ ...options, entityRoot: root,
+      projectedKnowledge: result });
+  } else {
+    let locations = source.locationDirectory;
+    if (!Array.isArray(locations)) {
+      const result = await readLocationDirectory(options);
+      if (result.status !== "complete") throw new Error("The location directory is incomplete.");
+      locations = result.items;
+      patch.locationDirectory = locations;
+      patch.locationDirectoryAudience = perspective;
+    }
+    if (section === "people") {
+      if (source.audience.seat === "dm" && perspective === "dm") {
+        const directory = await readWorldDirectory({ ...options, locationDirectory: locations, includeFactions: false });
+        if (directory.incomplete) throw new Error("The people directory is incomplete.");
+        patch.worldDirectory = { ...directory, factions: source.worldDirectory?.factions ?? [] };
+      } else {
+        // Public people are derived only from this seat's knowledge, never from the DM directory.
+        if (preview) throw new Error("The people directory is unavailable in Player preview; an Actor binding is required.");
+        Object.assign(patch, await readDeferredHubSection({ fetchImpl: read, origin, source, section: "lore" }));
+      }
+    }
+    if (section === "current") {
+      if (!preview && source.knowledge.status === "unavailable") {
+        const notebook = await read(url(origin, `/api/applications/${encodeURIComponent(applicationId)}` +
+          `/campaigns/${encodeURIComponent(campaignId)}/knowledge`),
+          { headers: { Accept: "application/json" }, cache: "no-store" });
+        if (notebook.ok) {
+          const projected = knowledge(await json(notebook));
+          if (projected.status === "unavailable") throw new Error("Current scene knowledge is malformed.");
+          patch.knowledge = await attachAuthorizedKnowledgeMedia({ ...options, entityRoot: root,
+            projectedKnowledge: projected });
+        }
+      }
+      const readOptional = (path) => read(url(origin, path), {
+        headers: { Accept: "application/json" }, cache: "no-store",
+      });
+      const [sceneResponse, sessionResponse, presenceResponse] = await Promise.all([
+        readOptional(`${root}/${encodeURIComponent(campaignId)}/components/${CAMPAIGN_CURRENT_SCENE_COMPONENT_TYPE_ID}`),
+        readOptional(`/api/applications/${encodeURIComponent(applicationId)}/state-spaces/${encodeURIComponent(stateSpaceId)}` +
+          `/play/sessions/${encodeURIComponent(campaignId)}`),
+        source.audience.seat === "player"
+          ? readOptional(`${root}/${encodeURIComponent(source.actor.id)}/containment`) : null,
+      ]);
+      const present = presenceResponse?.ok ? resolvePresenceLocation(await json(presenceResponse),
+        source.actor.id, locations.map((location) => location.id)) : null;
+      Object.assign(patch, await resolveCurrentSituation({
+        ...options, root, selectedCampaignId: campaignId, binding: { actorId: source.actor.id },
+        serverRole: { role: source.audience.seat === "dm" ? "game-master" : "actor" },
+        contextAudience: source.audience, currentSceneComponentResponse: sceneResponse,
+        currentSceneComponent: await json(sceneResponse), playSessionResponse: sessionResponse,
+        playSessionEnvelope: await json(sessionResponse), locationDirectory: locations,
+        currentLocationId: present, party: source.party, selectedContext: source.contextSelection,
+        projectedKnowledge: patch.knowledge ?? source.knowledge,
+      }));
+    }
+  }
+  if (failure || scope.failure) throw new Error(failure ?? scope.failure);
+  return patch;
 }

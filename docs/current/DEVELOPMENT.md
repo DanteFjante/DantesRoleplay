@@ -311,6 +311,15 @@ Player and then repeating the world load for DM. Each view load limits reads to 
 requests and reuses bounded entity listings only within that load. A rate-limited load never becomes
 a successful partial world/map; the current view remains available.
 
+World History, Lore, Locations/Map, People, Current and context-directory discovery load on demand,
+separately from the registered Campaign bootstrap. Deferred views distinguish unloaded, loading,
+ready/empty and failed states; changing campaign or perspective aborts their pending reads. The
+legacy World adapters follow all continuations inside a 2,000-request per-view safety ceiling. This
+ceiling prevents runaway reads; it is not the complete-workload performance acceptance budget.
+GM Player preview never substitutes ambient DM knowledge or media for an Actor-authorized view.
+Read-only source probes, a served browser traversal and a matched complete-workload benchmark are
+different evidence and must not be reported interchangeably.
+
 Build an application page bundle from its maintained browser source, then stage it through the
 registered ECS page identity. Post an `application/zip` body containing root `index.html` and
 assets below `assets/` to
