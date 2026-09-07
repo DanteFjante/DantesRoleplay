@@ -177,54 +177,7 @@ await using (var assistantScope = app.Services.CreateAsyncScope())
 app.UseDantesRoleplayRemoteWebBoundary();
 app.UseRateLimiter();
 app.MapMcp(ServerConfiguration.McpEndpoint);
-app.MapPut("/api/blob-uploads/{uploadId}", BlobTransferWebEndpoints.UploadAsync)
-    .AddEndpointFilter<WebInterfaceSecurityFilter>()
-    .RequireRateLimiting(WebInterfaceSecurity.UploadRateLimitPolicy);
-app.MapPost("/api/applications/{applicationId}/visual-drafts", VisualDraftUploadWebEndpoint.UploadAsync)
-    .AddEndpointFilter<WebInterfaceSecurityFilter>()
-    .RequireRateLimiting(WebInterfaceSecurity.UploadRateLimitPolicy);
-app.MapGet("/api/blobs/sha256/{sha256}", BlobTransferWebEndpoints.DownloadAsync)
-    .AddEndpointFilter<WebInterfaceSecurityFilter>()
-    .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
-app.MapGet("/api/audience-context", AudienceContextWebEndpoint.CurrentAsync)
-    .AddEndpointFilter<WebInterfaceSecurityFilter>()
-    .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
-app.MapGet("/api/readiness/applications/{applicationId}", ApplicationReadinessWebEndpoint.ReadAsync)
-    .AddEndpointFilter<WebInterfaceSecurityFilter>()
-    .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
-app.MapGet(
-        "/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/media",
-        EntityMediaWebEndpoints.DiscoverAsync)
-    .AddEndpointFilter<WebInterfaceSecurityFilter>()
-    .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
-app.MapPost("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/media-batch", EntityMediaWebEndpoints.DiscoverBatchAsync)
-    .AddEndpointFilter<WebInterfaceSecurityFilter>()
-    .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
-app.MapGet(
-        "/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/media/{mediaId}/content",
-        EntityMediaWebEndpoints.ReadAsync)
-    .AddEndpointFilter<WebInterfaceSecurityFilter>()
-    .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
-app.MapGet(
-        "/api/read-model-media/{token}/content",
-        ReadModelMediaWebEndpoint.ReadAsync)
-    .AddEndpointFilter<WebInterfaceSecurityFilter>()
-    .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
-app.MapGet(
-        "/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/read-models/{qualifiedQueryId}",
-        ApplicationReadModelWebEndpoint.ReadAsync)
-    .AddEndpointFilter<WebInterfaceSecurityFilter>()
-    .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
-app.MapPatch(
-        "/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/read-models/{qualifiedQueryId}",
-        ApplicationReadModelWebEndpoint.WriteAsync)
-    .AddEndpointFilter<WebInterfaceSecurityFilter>()
-    .RequireRateLimiting(WebInterfaceSecurity.UploadRateLimitPolicy);
-app.MapGet(
-        "/api/applications/{applicationId}/campaigns/{campaignId}/chronology",
-        WorldChronologyWebEndpoint.ReadAsync)
-    .AddEndpointFilter<WebInterfaceSecurityFilter>()
-    .RequireRateLimiting(WebInterfaceSecurity.ReadRateLimitPolicy);
+app.MapDantesRoleplayHostWebAdapters();
 app.MapDantesRoleplayWeb();
 
 // Deliberately no HTTPS redirection. The MCP endpoint is reached over loopback by a local
