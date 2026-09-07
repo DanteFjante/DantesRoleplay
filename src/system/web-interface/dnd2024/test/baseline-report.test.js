@@ -45,6 +45,8 @@ test('baseline distinguishes an actor, a GM Player preview, and a GM view', () =
 test('baseline requires 20 complete samples per metric, not merely 20 rows', () => {
   const source = samples();
   assert.equal(browserEvidence(source, live).status, 'complete');
+  assert.notEqual(browserEvidence(source, live).acceptance.status, 'passed',
+    'Complete observations are not equivalent-workload acceptance evidence.');
   assert.deepEqual(browserEvidence(source, live).metrics.cold.character, {
     sampleCount: 20, p50Ms: 10, p95Ms: 19, listener: live.listener, browser: source.browser,
     unavailableCount: 0, status: 'measured',

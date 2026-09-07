@@ -6,6 +6,7 @@ import { cpus, platform, release, totalmem } from 'node:os';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
+import { completeWorkloadEvidence } from './complete-workload.mjs';
 
 const scriptPath = fileURLToPath(import.meta.url);
 export const webRoot = resolve(dirname(scriptPath), '..');
@@ -255,6 +256,7 @@ export function browserEvidence(source, live) {
   }
   // Invalid evidence never gets plausible-looking percentile tables.
   return { status: problems.length ? 'invalid' : viewFailures.length ? 'complete-with-view-failures' : 'complete',
+    acceptance: problems.length ? { status: 'blocked', reason: 'Invalid observation evidence.' } : completeWorkloadEvidence(source),
     requiredSamples, observedSamples, problems, viewFailures, perspective: source.perspective, audienceView: source.audienceView,
     listener: source.listener, browser: source.browser, protocol: source.protocol,
     samplerSha256: source.samplerSha256,

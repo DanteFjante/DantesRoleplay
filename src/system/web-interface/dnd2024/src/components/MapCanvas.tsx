@@ -207,6 +207,7 @@ export function MapCanvas({
         aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown"
         aria-label={`${map.subject.name} interactive map`}
         className="world-map-canvas"
+        data-record-id={map.id}
         data-base={map.base && !imageFailed ? "present" : "absent"}
         onClick={() => {
           if (movedRef.current) { movedRef.current = false; return; }

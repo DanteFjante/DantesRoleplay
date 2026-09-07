@@ -30,7 +30,7 @@ export function CharacterShell({
   selectedMember: PartyMemberReadModel;
 }) {
   return (
-    <div className="character-page">
+    <div className="character-page" data-record-id={selectedMember.id}>
       <header className="character-page__heading">
         <div>
           <span className="eyebrow">Campaign companions</span>

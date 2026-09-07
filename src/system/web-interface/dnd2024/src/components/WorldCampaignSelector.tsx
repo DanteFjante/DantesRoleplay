@@ -93,6 +93,7 @@ export function WorldCampaignSelector({
               <button
                 aria-pressed={world.id === viewedWorld?.id}
                 className="context-picker__world"
+                data-record-id={world.id}
                 key={world.id}
                 onClick={() => setViewedWorldId(world.id)}
                 type="button"
@@ -111,6 +112,7 @@ export function WorldCampaignSelector({
                 <button
                   aria-current={current ? "true" : undefined}
                   className="context-picker__campaign"
+                  data-record-id={campaign.id}
                   disabled={busy}
                   key={campaign.id}
                   onClick={() => {

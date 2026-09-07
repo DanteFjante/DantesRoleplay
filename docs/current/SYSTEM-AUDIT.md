@@ -772,7 +772,11 @@ Verification: the focused compatibility/catalog set passes 12/12. Catalog valida
 
 ### Slice 17 (SC17) — Acceptance and closeout
 
-**Status:** Complete (2026-09-07). **Finding coverage:** P01–P12, C01, O01–O06 and R01–R04; all 23 original findings and SC00–SC16 retain an implemented or evidence-backed retained disposition.
+**Status:** Reopened (2026-09-07, review finding R12). The prior closeout overstated equivalent-workload and production-path performance acceptance. Required gates remain open.
+
+**Correction superseding the historical closeout below:** the 33-request samples did not traverse History, Lore, Locations, People and context discovery, and cannot establish parity with the original 2,096-request workload. Five initial reads for a one-actor campaign do not prove the large-party budget (repair slice 6 / R11 remains outstanding). The 419-marker fixture does not establish actual Campaign/Factions SQL, allocation or source-read costs. An unavailable view is not proof that its authorized records do not exist. Preserve the original dated observations, but do not use these comparisons or the former completion claim as acceptance evidence.
+
+Closeout requires independently checked authorized record parity, at least 20 sequential cold/warm pairs for each of DM, GM Player preview and Actor, and correlated production-path HTTP/SQL/source/allocation/scaling measurements against the unchanged gates below. The corrected sampler separates collected observations from acceptance and blocks missing evidence. Its record-identity digests are a completeness check, not a substitute for output, authorization or edit correctness tests. The live Campaign bootstrap currently returns `READ_MODEL_UNAVAILABLE` (HTTP 503); runtime cutover and genuine served-path measurements remain outstanding. No acceptance measurement is inferred from source tests.
 
 Verify the final source and served application, not just fixtures. Run the full relevant solution/web suites, catalog validation after catalog changes, and the protocol walk when MCP contracts or dependency registration changed. Compare actor/GM workflows, startup/reload, object edits, reducer execution, subscriptions/reconnect, pagination, character/item regressions and responsive accessibility. Verify current database/binding, signed served assets where applicable, and rollback to retained compatible versions.
 

@@ -631,7 +631,9 @@ export function DndInformationHub({
       case "current":
         if (deferredNotice) return deferredNotice;
         return (
-          <div className="current-play-workspace">
+          <div className="current-play-workspace" data-view-status={currentSituation.status}
+            data-record-id={currentSituation.status === "ready"
+              ? `${currentSituation.kind}:${currentSituation.locationId ?? "unplaced"}` : undefined}>
             <CurrentViewPreview
               image={currentSceneImage}
               location={currentSceneLocation}

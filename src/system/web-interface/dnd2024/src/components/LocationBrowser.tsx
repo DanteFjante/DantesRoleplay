@@ -45,6 +45,7 @@ export function LocationBrowser({
               <button
                 aria-pressed={selected}
                 className="location-row"
+                data-record-id={location.id}
                 key={location.id}
                 onClick={() => onSelect(location.id)}
                 type="button"

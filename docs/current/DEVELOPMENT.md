@@ -320,6 +320,20 @@ GM Player preview never substitutes ambient DM knowledge or media for an Actor-a
 Read-only source probes, a served browser traversal and a matched complete-workload benchmark are
 different evidence and must not be reported interchangeably.
 
+The read-only `scripts/sample-browser-baseline.mjs` sampler traverses the canonical Character
+sheet, Map, History, Lore, Locations, People, every Factions continuation, the context directory
+and Current. `collected` records an observation, not acceptance. `--workload-reference` supplies
+an independently API-checked, fixture/runtime/audience-bound record-count/digest reference and
+matched baseline timings; `--server-measurements` supplies production-path measurements keyed by
+sample ID. Their shapes are checked in `scripts/complete-workload.mjs`. The sampler does not
+generate those independent inputs or derive SQL/allocation counts from HTTP traffic. Missing
+inputs, fewer than 20 cold/warm pairs, incomplete records or runtime drift block acceptance;
+measured gate violations fail it. All three authorized audience profiles are required for
+performance closeout. First-ready latency is separate from complete traversal latency. Raw
+historical reports are retained; new output defaults to `.tmp/complete-workload/browser.json`.
+Browser identity digests do not replace authorization/output parity tests or actual production
+SQL, source-read, first-request-after-change and doubled-population instrumentation.
+
 Build an application page bundle from its maintained browser source, then stage it through the
 registered ECS page identity. Post an `application/zip` body containing root `index.html` and
 assets below `assets/` to
