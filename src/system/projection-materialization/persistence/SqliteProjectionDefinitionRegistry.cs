@@ -13,7 +13,8 @@ public sealed class SqliteProjectionDefinitionRegistry(
     DantesRoleplayDbContext db,
     IApplicationComponentTypeRegistry componentTypes,
     IBoundedJsonSchemaValidator validator,
-    IApplicationRegistry? applications = null) : IProjectionDefinitionRegistry
+    IApplicationRegistry? applications = null,
+    ApplicationObjectDependencyIndexCache? objectDependencyIndices = null) : IProjectionDefinitionRegistry
 {
     private readonly Dictionary<(string QualifiedId, int Version), RegisteredProjectionDefinition> cache = [];
 
@@ -55,7 +56,18 @@ public sealed class SqliteProjectionDefinitionRegistry(
             db.Add(new ProjectionDependencyInputRecord { QualifiedId = definition.QualifiedId, Version = version, InputId = input.InputId, DependencyQualifiedId = input.Projection.QualifiedId, DependencyVersion = input.Projection.Version, DependencyContentHash = input.Projection.ContentHash, RoleBindingsJson = JsonSerializer.Serialize(input.RoleBindings.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value)), Ordinal = ordinal });
         foreach (var (mapping, ordinal) in definition.Mappings.Select((x, i) => (x, i)))
             db.Add(new ProjectionMappingRecord { QualifiedId = definition.QualifiedId, Version = version, TargetPointer = mapping.TargetPointer, InputId = mapping.InputId, SourcePointer = mapping.SourcePointer, Ordinal = ordinal });
-        db.SaveChanges(); transaction.Commit(); return Remember(Read(row, definition.Owner));
+        db.SaveChanges();
+        db.Database.ExecuteSqlInterpolated($"""
+            INSERT INTO system_projection_registry_generation (ApplicationId, Generation)
+            VALUES ({definition.Owner.Value}, 1)
+            ON CONFLICT(ApplicationId) DO UPDATE SET Generation = Generation + 1;
+            """);
+        var generation = db.Set<ProjectionRegistryGenerationRecord>().AsNoTracking()
+            .Where(x => x.ApplicationId == definition.Owner.Value).Select(x => x.Generation).Single();
+        transaction.Commit();
+        objectDependencyIndices?.ObserveGeneration(db.Database.GetDbConnection(), definition.Owner.Value,
+            generation);
+        return Remember(Read(row, definition.Owner));
     }
 
     public RegisteredProjectionDefinition? Get(string qualifiedId, int version)
@@ -414,6 +426,7 @@ public sealed class SqliteProjectionDefinitionRegistry(
 }
 
 internal sealed class ProjectionDefinitionRecord { public required string QualifiedId { get; set; } public required string ApplicationId { get; set; } public DateTime CreatedAtUtc { get; set; } }
+internal sealed class ProjectionRegistryGenerationRecord { public required string ApplicationId { get; set; } public long Generation { get; set; } }
 internal sealed class ProjectionDefinitionVersionRecord { public required string QualifiedId { get; set; } public int Version { get; set; } public required string ProfileId { get; set; } public required string OutputSchemaJson { get; set; } public required string OutputSchemaHash { get; set; } public required string ContentHash { get; set; } public string? ObjectContractJson { get; set; } public DateTime CreatedAtUtc { get; set; } }
 internal sealed class ProjectionComponentInputRecord { public required string QualifiedId { get; set; } public int Version { get; set; } public required string InputId { get; set; } public required string EntityRole { get; set; } public required string QualifiedTypeId { get; set; } public int TypeVersion { get; set; } public required string SchemaHash { get; set; } public int Ordinal { get; set; } }
 internal sealed class ProjectionDependencyInputRecord { public required string QualifiedId { get; set; } public int Version { get; set; } public required string InputId { get; set; } public required string DependencyQualifiedId { get; set; } public int DependencyVersion { get; set; } public required string DependencyContentHash { get; set; } public required string RoleBindingsJson { get; set; } public int Ordinal { get; set; } }

@@ -1117,6 +1117,15 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
 
     private static void ConfigureProjectionMaterialization(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<ProjectionRegistryGenerationRecord>(entity =>
+        {
+            entity.ToTable("system_projection_registry_generation", table =>
+                table.HasCheckConstraint("CK_system_projection_registry_generation_value", "\"Generation\" >= 0"));
+            entity.HasKey(x => x.ApplicationId);
+            entity.Property(x => x.ApplicationId).HasMaxLength(63);
+            entity.HasOne<ApplicationRegistryRecord>().WithMany().HasForeignKey(x => x.ApplicationId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
         modelBuilder.Entity<ProjectionDefinitionRecord>(entity =>
         {
             entity.ToTable("system_projection_definition"); entity.HasKey(x => x.QualifiedId);

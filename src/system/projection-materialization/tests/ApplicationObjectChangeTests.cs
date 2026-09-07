@@ -1,3 +1,4 @@
+using System.Data.Common;
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
@@ -6,6 +7,7 @@ using DantesRoleplay.Operations;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.Tests;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using DantesRoleplay.SqliteInfrastructure;
 
 namespace DantesRoleplay.Projections.Tests;
@@ -148,7 +150,7 @@ public sealed class ApplicationObjectChangeTests : IDisposable
             new RejectingParticipant()
         ]);
 
-        var result = await applier.ApplyAsync(new ApplicationEcsEffectBatch
+        var batch = new ApplicationEcsEffectBatch
         {
             StateSpaceId = Fixture.Space,
             Effects = [new()
@@ -159,13 +161,113 @@ public sealed class ApplicationObjectChangeTests : IDisposable
                 DataJson = "{\"name\":\"rolled back\"}",
                 ExpectedRevision = component!.Revision
             }]
-        });
+        };
+        var before = fixture.DependencyIndices.Snapshot;
+        var result = await applier.ApplyAsync(batch);
 
         Assert.False(result.Applied);
         Assert.Empty(await fixture.ReadRowsAsync());
         var current = await fixture.Store.GetComponentAsync(Fixture.Space, Fixture.Subject,
             fixture.Source.QualifiedTypeId);
         Assert.Equal("{\"name\":\"original\"}", current!.ValueJson);
+        var failed = fixture.DependencyIndices.Snapshot;
+        Assert.Equal(before.Preparations + 1, failed.Preparations);
+
+        var retry = await fixture.Applier.ApplyAsync(batch);
+        Assert.True(retry.Applied);
+        Assert.Equal(failed.Preparations, fixture.DependencyIndices.Snapshot.Preparations);
+        Assert.Equal(failed.Hits + 1, fixture.DependencyIndices.Snapshot.Hits);
+    }
+
+    [Fact]
+    public async Task Definition_generation_refreshes_all_retained_versions_and_their_audiences()
+    {
+        await fixture.ChangeSourceAsync("warm");
+        var warm = fixture.DependencyIndices.Snapshot;
+        fixture.RegisterObjectVersionFromAnotherContext(2, ["player"]);
+        await fixture.ClearRowsAsync();
+
+        await fixture.ChangeSourceAsync("after definition change");
+
+        var rows = await fixture.ReadRowsAsync();
+        Assert.Collection(rows.OrderBy(value => value.ObjectVersion),
+            value =>
+            {
+                Assert.Equal(1, value.ObjectVersion);
+                Assert.Equal("[\"dm\"]", value.Perspectives);
+            },
+            value =>
+            {
+                Assert.Equal(2, value.ObjectVersion);
+                Assert.Equal("[\"player\"]", value.Perspectives);
+            });
+        var refreshed = fixture.DependencyIndices.Snapshot;
+        Assert.Equal(warm.Preparations + 1, refreshed.Preparations);
+    }
+
+    [Fact]
+    public async Task Replay_does_not_stage_duplicate_notices_or_touch_the_dependency_index()
+    {
+        var component = await fixture.Store.GetComponentAsync(Fixture.Space, Fixture.Subject,
+            fixture.Source.QualifiedTypeId);
+        var batch = new ApplicationEcsEffectBatch
+        {
+            StateSpaceId = Fixture.Space,
+            ExecutionIdentity = new("8123456789abcdef0123456789abcdef", new string('A', 64)),
+            Effects = [new()
+            {
+                Type = ApplicationEcsEffectType.ComponentSet,
+                EntityId = Fixture.Subject,
+                ComponentType = fixture.Source,
+                DataJson = "{\"name\":\"replay\"}",
+                ExpectedRevision = component!.Revision
+            }]
+        };
+        var first = await fixture.Applier.ApplyAsync(batch);
+        var afterFirst = fixture.DependencyIndices.Snapshot;
+        var replay = await fixture.Applier.ApplyAsync(batch);
+
+        Assert.True(first.Applied);
+        Assert.False(replay.Applied);
+        Assert.True(replay.Replayed);
+        Assert.Single(await fixture.ReadRowsAsync());
+        Assert.Equal(afterFirst, fixture.DependencyIndices.Snapshot);
+    }
+
+    [Fact]
+    public async Task Warm_dependency_lookup_avoids_history_scans_and_records_writer_cost()
+    {
+        using var measured = new Fixture(measureCommands: true);
+        for (var version = 2; version <= 24; version++)
+            measured.RegisterObjectVersion(version, version % 2 == 0 ? ["player"] : ["dm"]);
+
+        measured.Commands!.Reset();
+        var before = measured.DependencyIndices.Snapshot;
+        await measured.ChangeSourceAsync("cold history");
+        var coldReads = measured.Commands.DependencyRegistryReads;
+        var cold = measured.DependencyIndices.Snapshot;
+
+        measured.Commands.Reset();
+        await measured.ChangeSourceAsync("warm history");
+        var warmReads = measured.Commands.DependencyRegistryReads;
+        var warm = measured.DependencyIndices.Snapshot;
+
+        Assert.Equal(5, coldReads);
+        Assert.Equal(1, warmReads);
+        Assert.Equal(before.Preparations + 1, cold.Preparations);
+        Assert.Equal(cold.Preparations, warm.Preparations);
+        Assert.Equal(cold.Hits + 1, warm.Hits);
+        Assert.Equal(cold.PreparationAllocatedBytes, warm.PreparationAllocatedBytes);
+        Assert.Equal(cold.PreparationElapsedTicks, warm.PreparationElapsedTicks);
+        Assert.True(cold.WriterHeldStageElapsedTicks > before.WriterHeldStageElapsedTicks);
+        Assert.True(warm.WriterHeldStageElapsedTicks > cold.WriterHeldStageElapsedTicks);
+        Assert.Equal(cold.StageCalls + 1, warm.StageCalls);
+        Assert.InRange(warm.RetainedIndices, 1, ApplicationObjectDependencyIndexCache.MaximumIndices);
+        Assert.InRange(warm.DeclarationBytes, 1,
+            ApplicationObjectDependencyIndexCache.MaximumDeclarationBytes);
+        Assert.InRange(warm.Nodes, 1, ApplicationObjectDependencyIndexCache.MaximumNodes);
+        Assert.Contains(await measured.ReadRowsAsync(), value => value.ObjectVersion == 1);
+        Assert.Contains(await measured.ReadRowsAsync(), value => value.ObjectVersion == 24);
     }
 
     [Fact]
@@ -234,11 +336,20 @@ public sealed class ApplicationObjectChangeTests : IDisposable
         public readonly SqliteEntityComponentStore Store;
         public readonly ApplicationObjectChangeTransactionParticipant Participant;
         public readonly IApplicationEcsEffectApplier Applier;
+        public readonly ApplicationObjectDependencyIndexCache DependencyIndices = new();
+        public readonly CommandCounter? Commands;
+        private readonly SqliteProjectionDefinitionRegistry registry;
+        private readonly ApplicationIdentifier owner;
+        private readonly ProjectionReference baseProjection;
+        private readonly EcsComponentReference member;
 
-        public Fixture()
+        public Fixture(bool measureCommands = false)
         {
-            db = database.CreateContext();
-            var owner = ApplicationIdentifier.Parse("change-test");
+            Commands = measureCommands ? new() : null;
+            db = Commands is null ? database.CreateContext() : new DantesRoleplayDbContext(
+                new DbContextOptionsBuilder<DantesRoleplayDbContext>()
+                    .UseSqlite(database.Connection).AddInterceptors(Commands).Options);
+            owner = ApplicationIdentifier.Parse("change-test");
             var applications = new SqliteApplicationRegistry(db);
             var revision = applications.Register(new(owner, "Change test", "", []));
             stateSpaces = new SqliteStateSpaceRegistry(db, applications);
@@ -247,12 +358,13 @@ public sealed class ApplicationObjectChangeTests : IDisposable
             var types = new SqliteComponentTypeRegistry(db, schemas);
             Source = Ref(types.Define(new(owner, "change-test.source", Schema("name", "string"))));
             Unrelated = Ref(types.Define(new(owner, "change-test.unrelated", Schema("value", "integer"))));
-            var member = Ref(types.Define(new(owner, "change-test.member-state", Schema("name", "string"))));
-            var registry = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications);
-            var baseProjection = registry.Define(new(owner, "change-test.base",
+            member = Ref(types.Define(new(owner, "change-test.member-state", Schema("name", "string"))));
+            registry = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications,
+                DependencyIndices);
+            baseProjection = registry.Define(new(owner, "change-test.base",
                 "{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"name\":{\"type\":\"string\"}}}",
-                [new("source", "subject", Source)], [], [new("source", "/name", "/name")]));
-            registry.Define(Definition(owner, baseProjection.Reference, member));
+                [new("source", "subject", Source)], [], [new("source", "/name", "/name")])).Reference;
+            registry.Define(Definition(owner, baseProjection, member, 1, ["dm"]));
 
             Store = new SqliteEntityComponentStore(db, types, schemas);
             edges = new SqliteStateSpaceEdgeStore(db, stateSpaces);
@@ -264,7 +376,7 @@ public sealed class ApplicationObjectChangeTests : IDisposable
                 .GetAwaiter().GetResult();
             Store.AddComponentAsync(new(Space, Member, member, "{\"name\":\"member\"}", 0))
                 .GetAwaiter().GetResult();
-            Participant = new(db, stateSpaces);
+            Participant = new(db, stateSpaces, DependencyIndices);
             Applier = CreateApplier([Participant]);
             db.Database.ExecuteSqlRaw(SqliteChangeRecovery.CreateSql);
             SqliteChangeRecovery.InstallAsync(db.Database.GetDbConnection()).GetAwaiter().GetResult();
@@ -277,6 +389,41 @@ public sealed class ApplicationObjectChangeTests : IDisposable
             IReadOnlyList<IApplicationEcsTransactionParticipant> participants) =>
             new ApplicationEcsEffectApplier(db, Store, stateSpaces, new OperationLog(db), edges,
                 participants);
+
+        public void RegisterObjectVersion(int version, IReadOnlyList<string> perspectives) =>
+            registry.Define(Definition(owner, baseProjection, member, version, perspectives));
+
+        public void RegisterObjectVersionFromAnotherContext(int version,
+            IReadOnlyList<string> perspectives)
+        {
+            using var externalDb = database.CreateContext();
+            var externalSchemas = new BoundedJsonSchemaValidator();
+            var externalRegistry = new SqliteProjectionDefinitionRegistry(externalDb,
+                new SqliteComponentTypeRegistry(externalDb, externalSchemas), externalSchemas,
+                new SqliteApplicationRegistry(externalDb));
+            externalRegistry.Define(Definition(owner, baseProjection, member, version, perspectives));
+        }
+
+        public async Task ChangeSourceAsync(string name)
+        {
+            var component = await Store.GetComponentAsync(Space, Subject, Source.QualifiedTypeId);
+            var result = await Applier.ApplyAsync(new ApplicationEcsEffectBatch
+            {
+                StateSpaceId = Space,
+                Effects = [new()
+                {
+                    Type = ApplicationEcsEffectType.ComponentSet,
+                    EntityId = Subject,
+                    ComponentType = Source,
+                    DataJson = $"{{\"name\":\"{name}\"}}",
+                    ExpectedRevision = component!.Revision
+                }]
+            });
+            Assert.True(result.Applied);
+        }
+
+        public async Task ClearRowsAsync() =>
+            await db.Set<ApplicationObjectChangeRecord>().ExecuteDeleteAsync();
 
         public async Task<IReadOnlyList<ChangeRow>> ReadRowsAsync()
         {
@@ -296,7 +443,8 @@ public sealed class ApplicationObjectChangeTests : IDisposable
         }
 
         private static ProjectionDefinitionRequest Definition(
-            ApplicationIdentifier owner, ProjectionReference baseProjection, EcsComponentReference member) =>
+            ApplicationIdentifier owner, ProjectionReference baseProjection, EcsComponentReference member,
+            int version, IReadOnlyList<string> perspectives) =>
             new(owner, "change-test.summary",
                 "{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"name\":{\"type\":\"string\"},\"members\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}}",
                 [], [new("base", baseProjection, new Dictionary<string, string> { ["subject"] = "subject" })],
@@ -305,13 +453,32 @@ public sealed class ApplicationObjectChangeTests : IDisposable
                     [new("members", Relationship, "subject", "member", "many", "/members",
                         [new("to", member)], [])], [new("base", true)],
                     [new("members", "members", 25, 100, [new("", "asc")], "source-revision-bound")],
-                    new(2, 100, 16_384, 8), new(["dm"], []), null), 1);
+                    new(2, 100, 16_384, 8), new(perspectives, []), null), version);
 
         private static string Schema(string property, string type) =>
             $"{{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"{property}\"],\"properties\":{{\"{property}\":{{\"type\":\"{type}\"}}}}}}";
         private static EcsComponentReference Ref(RegisteredComponentTypeVersion type) =>
             new(type.QualifiedId, type.Version, type.SchemaHash);
         public void Dispose() => database.Dispose();
+    }
+
+    private sealed class CommandCounter : DbCommandInterceptor
+    {
+        public int DependencyRegistryReads { get; private set; }
+
+        public void Reset() => DependencyRegistryReads = 0;
+
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
+            DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result,
+            CancellationToken cancellationToken = default)
+        {
+            if (command.CommandText.Contains("system_projection_definition", StringComparison.Ordinal)
+                || command.CommandText.Contains("system_projection_registry_generation", StringComparison.Ordinal)
+                || command.CommandText.Contains("system_projection_component_input", StringComparison.Ordinal)
+                || command.CommandText.Contains("system_projection_dependency_input", StringComparison.Ordinal))
+                DependencyRegistryReads++;
+            return ValueTask.FromResult(result);
+        }
     }
 
     private sealed record ChangeRow(

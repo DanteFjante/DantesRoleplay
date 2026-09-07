@@ -1,4 +1,4 @@
-using System.Text.Json;
+using System.Diagnostics;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.EcsEffects;
@@ -13,9 +13,10 @@ namespace DantesRoleplay.Projections;
 /// </summary>
 public sealed class ApplicationObjectChangeTransactionParticipant(
     DantesRoleplayDbContext db,
-    IStateSpaceRegistry stateSpaces) : IApplicationEcsTransactionParticipant
+    IStateSpaceRegistry stateSpaces,
+    ApplicationObjectDependencyIndexCache dependencyIndices) : IApplicationEcsTransactionParticipant
 {
-    private static readonly string[] AllPerspectives = ["dm", "player"];
+    private const string AllPerspectivesJson = "[\"dm\",\"player\"]";
 
     public async Task StageAsync(
         ApplicationEcsEffectBatch batch,
@@ -23,172 +24,163 @@ public sealed class ApplicationObjectChangeTransactionParticipant(
         string operationId,
         CancellationToken cancellationToken = default)
     {
-        var stateSpace = stateSpaces.Get(batch.StateSpaceId)
-            ?? throw new ApplicationEcsTransactionParticipantException("The change delivery state space is unknown.");
-        var applicationId = stateSpace.ApplicationRevision.ApplicationId.Value;
-
-        var definitionIds = await db.Set<ProjectionDefinitionRecord>().AsNoTracking()
-            .Where(value => value.ApplicationId == applicationId)
-            .Select(value => value.QualifiedId)
-            .ToArrayAsync(cancellationToken);
-        var versions = await db.Set<ProjectionDefinitionVersionRecord>().AsNoTracking()
-            .Where(value => definitionIds.Contains(value.QualifiedId) && value.ObjectContractJson != null)
-            .ToArrayAsync(cancellationToken);
-        var components = await db.Set<ProjectionComponentInputRecord>().AsNoTracking()
-            .Where(value => definitionIds.Contains(value.QualifiedId))
-            .ToArrayAsync(cancellationToken);
-        var dependencies = await db.Set<ProjectionDependencyInputRecord>().AsNoTracking()
-            .Where(value => definitionIds.Contains(value.QualifiedId))
-            .ToArrayAsync(cancellationToken);
-
-        var declarations = versions.Select(value => new ObjectDeclaration(
-            value.QualifiedId,
-            value.Version,
-            JsonSerializer.Deserialize<RegisteredApplicationObjectContract>(value.ObjectContractJson!)
-                ?? throw new ApplicationEcsTransactionParticipantException("A registered object contract is unreadable.")))
-            .ToDictionary(value => value.Key, StringComparer.Ordinal);
-        var changed = new HashSet<string>(StringComparer.Ordinal);
-        var applicationFallback = versions.Length == 0 && batch.Effects.Count > 0;
-
-        foreach (var effect in batch.Effects)
+        var stageStarted = Stopwatch.GetTimestamp();
+        try
         {
-            var consumers = new HashSet<string>(StringComparer.Ordinal);
-            switch (effect.Type)
+            var stateSpace = stateSpaces.Get(batch.StateSpaceId)
+                ?? throw new ApplicationEcsTransactionParticipantException("The change delivery state space is unknown.");
+            var applicationId = stateSpace.ApplicationRevision.ApplicationId.Value;
+            var registryGeneration = await db.Set<ProjectionRegistryGenerationRecord>().AsNoTracking()
+                .Where(value => value.ApplicationId == applicationId)
+                .Select(value => (long?)value.Generation)
+                .SingleOrDefaultAsync(cancellationToken) ?? 0;
+
+            var index = await dependencyIndices.GetOrPrepareAsync(db.Database.GetDbConnection(), applicationId,
+                registryGeneration,
+                async token =>
+                {
+                    var definitionIds = await db.Set<ProjectionDefinitionRecord>().AsNoTracking()
+                        .Where(value => value.ApplicationId == applicationId)
+                        .Select(value => value.QualifiedId)
+                        .ToArrayAsync(token);
+                    var versions = await db.Set<ProjectionDefinitionVersionRecord>().AsNoTracking()
+                        .Where(value => definitionIds.Contains(value.QualifiedId) && value.ObjectContractJson != null)
+                        .ToArrayAsync(token);
+                    var components = await db.Set<ProjectionComponentInputRecord>().AsNoTracking()
+                        .Where(value => definitionIds.Contains(value.QualifiedId))
+                        .ToArrayAsync(token);
+                    var dependencies = await db.Set<ProjectionDependencyInputRecord>().AsNoTracking()
+                        .Where(value => definitionIds.Contains(value.QualifiedId))
+                        .ToArrayAsync(token);
+                    return PreparedApplicationObjectDependencyIndex.Create(versions, components, dependencies);
+                }, cancellationToken);
+            var declarations = index.Declarations;
+            var changed = new HashSet<string>(StringComparer.Ordinal);
+            var applicationFallback = declarations.Count == 0 && batch.Effects.Count > 0;
+
+            foreach (var effect in batch.Effects)
             {
-                case ApplicationEcsEffectType.ComponentAdd:
-                case ApplicationEcsEffectType.ComponentSet:
-                case ApplicationEcsEffectType.ComponentMerge:
-                case ApplicationEcsEffectType.ComponentRemove:
-                case ApplicationEcsEffectType.ClockAdvance:
-                    if (effect.ComponentType is not null)
-                        AddComponentConsumers(effect.ComponentType, components, declarations, consumers);
-                    break;
-                case ApplicationEcsEffectType.RelationshipSet:
-                case ApplicationEcsEffectType.RelationshipRemove:
-                    foreach (var declaration in declarations.Values.Where(value => value.Contract.Relationships.Any(
-                                 relationship => relationship.QualifiedKind == effect.QualifiedRelationshipKind)))
-                        consumers.Add(declaration.Key);
-                    break;
-                case ApplicationEcsEffectType.EntityCreate:
-                case ApplicationEcsEffectType.EntityDelete:
-                case ApplicationEcsEffectType.ContainmentMove:
-                case ApplicationEcsEffectType.ContainmentRemove:
-                    // Registered objects do not yet declare entity-existence or containment dependencies.
-                    // Keep this recovery scoped to the owning application and audience.
-                    applicationFallback = true;
-                    break;
+                var consumers = new HashSet<string>(StringComparer.Ordinal);
+                switch (effect.Type)
+                {
+                    case ApplicationEcsEffectType.ComponentAdd:
+                    case ApplicationEcsEffectType.ComponentSet:
+                    case ApplicationEcsEffectType.ComponentMerge:
+                    case ApplicationEcsEffectType.ComponentRemove:
+                    case ApplicationEcsEffectType.ClockAdvance:
+                        if (effect.ComponentType is not null)
+                            AddConsumers(index.ComponentConsumers,
+                                new(effect.ComponentType.QualifiedTypeId, effect.ComponentType.TypeVersion), consumers);
+                        break;
+                    case ApplicationEcsEffectType.RelationshipSet:
+                    case ApplicationEcsEffectType.RelationshipRemove:
+                        AddConsumers(index.RelationshipConsumers, effect.QualifiedRelationshipKind, consumers);
+                        break;
+                    case ApplicationEcsEffectType.EntityCreate:
+                    case ApplicationEcsEffectType.EntityDelete:
+                    case ApplicationEcsEffectType.ContainmentMove:
+                    case ApplicationEcsEffectType.ContainmentRemove:
+                        // Registered objects do not yet declare entity-existence or containment dependencies.
+                        // Keep this recovery scoped to the owning application and audience.
+                        applicationFallback = true;
+                        break;
+                }
+                CloseOverDependencies(consumers, index.DependencyConsumers);
+                // Registered objects do not prove coverage of all still-active legacy queries.
+                // An unmatched effect therefore needs scoped compatibility recovery, even beside
+                // another effect which has a precise registered consumer in this same transaction.
+                if (!consumers.Any(declarations.ContainsKey)) applicationFallback = true;
+                changed.UnionWith(consumers);
             }
-            CloseOverDependencies(consumers, dependencies);
-            // Registered objects do not prove coverage of all still-active legacy queries.
-            // An unmatched effect therefore needs scoped compatibility recovery, even beside
-            // another effect which has a precise registered consumer in this same transaction.
-            if (!consumers.Any(declarations.ContainsKey)) applicationFallback = true;
-            changed.UnionWith(consumers);
+
+            CloseOverDependencies(changed, index.DependencyConsumers);
+            var now = DateTime.UtcNow;
+            var rows = changed.Where(declarations.ContainsKey).Order(StringComparer.Ordinal).Select(key =>
+            {
+                var declaration = declarations[key];
+                return new ApplicationObjectChangeRecord
+                {
+                    ContractVersion = ApplicationObjectChangeContract.Version,
+                    OperationId = operationId,
+                    ApplicationId = applicationId,
+                    StateSpaceId = batch.StateSpaceId,
+                    Scope = ApplicationObjectChangeContract.ObjectScope,
+                    ObjectQualifiedId = declaration.QualifiedId,
+                    ObjectVersion = declaration.Version,
+                    ReadPerspectivesJson = declaration.ReadPerspectivesJson,
+                    Reason = "registered-dependency",
+                    CreatedAtUtc = now
+                };
+            }).ToList();
+
+            if (applicationFallback)
+                rows.Add(new ApplicationObjectChangeRecord
+                {
+                    ContractVersion = ApplicationObjectChangeContract.Version,
+                    OperationId = operationId,
+                    ApplicationId = applicationId,
+                    StateSpaceId = batch.StateSpaceId,
+                    Scope = ApplicationObjectChangeContract.ApplicationScope,
+                    ReadPerspectivesJson = AllPerspectivesJson,
+                    Reason = "dependency-fallback",
+                    CreatedAtUtc = now
+                });
+
+            if (rows.Count == 0)
+                rows.Add(new ApplicationObjectChangeRecord
+                {
+                    ContractVersion = ApplicationObjectChangeContract.Version,
+                    OperationId = operationId,
+                    ApplicationId = applicationId,
+                    StateSpaceId = batch.StateSpaceId,
+                    Scope = ApplicationObjectChangeContract.NoChangeScope,
+                    ReadPerspectivesJson = "[]",
+                    Reason = "tracked-no-dependency",
+                    CreatedAtUtc = now
+                });
+            db.AddRange(rows);
+            await db.SaveChangesAsync(cancellationToken);
+
+            var cutoff = await db.Set<ApplicationObjectChangeRecord>().AsNoTracking()
+                .OrderByDescending(value => value.Cursor)
+                .Skip(ApplicationObjectChangeContract.RetainedRows - 1)
+                .Select(value => (long?)value.Cursor)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (cutoff is not null)
+            {
+                await db.Set<ApplicationObjectChangeRecord>()
+                    .Where(value => value.Cursor < cutoff.Value)
+                    .ExecuteDeleteAsync(cancellationToken);
+            }
         }
-
-        CloseOverDependencies(changed, dependencies);
-        var now = DateTime.UtcNow;
-        var rows = changed.Where(declarations.ContainsKey).Order(StringComparer.Ordinal).Select(key =>
+        finally
         {
-            var declaration = declarations[key];
-            return new ApplicationObjectChangeRecord
-            {
-                ContractVersion = ApplicationObjectChangeContract.Version,
-                OperationId = operationId,
-                ApplicationId = applicationId,
-                StateSpaceId = batch.StateSpaceId,
-                Scope = ApplicationObjectChangeContract.ObjectScope,
-                ObjectQualifiedId = declaration.QualifiedId,
-                ObjectVersion = declaration.Version,
-                ReadPerspectivesJson = JsonSerializer.Serialize(declaration.Contract.Access.ReadPerspectives
-                    .Order(StringComparer.Ordinal).ToArray()),
-                Reason = "registered-dependency",
-                CreatedAtUtc = now
-            };
-        }).ToList();
-
-        if (applicationFallback)
-            rows.Add(new ApplicationObjectChangeRecord
-            {
-                ContractVersion = ApplicationObjectChangeContract.Version,
-                OperationId = operationId,
-                ApplicationId = applicationId,
-                StateSpaceId = batch.StateSpaceId,
-                Scope = ApplicationObjectChangeContract.ApplicationScope,
-                ReadPerspectivesJson = JsonSerializer.Serialize(AllPerspectives),
-                Reason = "dependency-fallback",
-                CreatedAtUtc = now
-            });
-
-        if (rows.Count == 0)
-            rows.Add(new ApplicationObjectChangeRecord
-            {
-                ContractVersion = ApplicationObjectChangeContract.Version,
-                OperationId = operationId,
-                ApplicationId = applicationId,
-                StateSpaceId = batch.StateSpaceId,
-                Scope = ApplicationObjectChangeContract.NoChangeScope,
-                ReadPerspectivesJson = "[]",
-                Reason = "tracked-no-dependency",
-                CreatedAtUtc = now
-            });
-        db.AddRange(rows);
-        await db.SaveChangesAsync(cancellationToken);
-
-        var cutoff = await db.Set<ApplicationObjectChangeRecord>().AsNoTracking()
-            .OrderByDescending(value => value.Cursor)
-            .Skip(ApplicationObjectChangeContract.RetainedRows - 1)
-            .Select(value => (long?)value.Cursor)
-            .FirstOrDefaultAsync(cancellationToken);
-        if (cutoff is not null)
-        {
-            await db.Set<ApplicationObjectChangeRecord>()
-                .Where(value => value.Cursor < cutoff.Value)
-                .ExecuteDeleteAsync(cancellationToken);
+            dependencyIndices.RecordWriterHeldStage(Stopwatch.GetTimestamp() - stageStarted);
         }
     }
 
-    private static void AddComponentConsumers(
-        EcsComponentReference componentType,
-        IReadOnlyList<ProjectionComponentInputRecord> components,
-        IReadOnlyDictionary<string, ObjectDeclaration> declarations,
-        ISet<string> changed)
+    private static void AddConsumers<TKey>(
+        IReadOnlyDictionary<TKey, IReadOnlyList<string>> indexed,
+        TKey key,
+        ISet<string> changed) where TKey : notnull
     {
-        foreach (var input in components.Where(value => value.QualifiedTypeId == componentType.QualifiedTypeId
-                     && value.TypeVersion == componentType.TypeVersion))
-            changed.Add(Key(input.QualifiedId, input.Version));
-
-        foreach (var declaration in declarations.Values.Where(value => value.Contract.Relationships.Any(relationship =>
-                     relationship.RequiredEndpointComponents.Concat(relationship.OptionalEndpointComponents)
-                         .Any(component => component.Type.QualifiedTypeId == componentType.QualifiedTypeId
-                             && component.Type.TypeVersion == componentType.TypeVersion))))
-            changed.Add(declaration.Key);
+        if (!indexed.TryGetValue(key, out var consumers)) return;
+        foreach (var consumer in consumers) changed.Add(consumer);
     }
 
     private static void CloseOverDependencies(
         ISet<string> changed,
-        IReadOnlyList<ProjectionDependencyInputRecord> dependencies)
+        IReadOnlyDictionary<string, IReadOnlyList<string>> dependencyConsumers)
     {
         var pending = new Queue<string>(changed);
         while (pending.TryDequeue(out var dependencyKey))
         {
-            foreach (var edge in dependencies.Where(value =>
-                         Key(value.DependencyQualifiedId, value.DependencyVersion) == dependencyKey))
+            if (!dependencyConsumers.TryGetValue(dependencyKey, out var consumers)) continue;
+            foreach (var consumerKey in consumers)
             {
-                var consumerKey = Key(edge.QualifiedId, edge.Version);
                 if (changed.Add(consumerKey)) pending.Enqueue(consumerKey);
             }
         }
-    }
-
-    private static string Key(string qualifiedId, int version) => qualifiedId + "@" + version;
-
-    private sealed record ObjectDeclaration(
-        string QualifiedId,
-        int Version,
-        RegisteredApplicationObjectContract Contract)
-    {
-        public string Key => ApplicationObjectChangeTransactionParticipant.Key(QualifiedId, Version);
     }
 }
 

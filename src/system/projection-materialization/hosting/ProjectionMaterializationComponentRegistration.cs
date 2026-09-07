@@ -10,6 +10,9 @@ internal static class ProjectionMaterializationComponentRegistration
         services.AddSingleton<ProjectionPlanCache>();
         services.AddSingleton<IProjectionPlanCacheDiagnostics>(provider =>
             provider.GetRequiredService<ProjectionPlanCache>());
+        services.AddSingleton<ApplicationObjectDependencyIndexCache>();
+        services.AddSingleton<IApplicationObjectDependencyIndexCacheDiagnostics>(provider =>
+            provider.GetRequiredService<ApplicationObjectDependencyIndexCache>());
         services.AddScoped<IProjectionDefinitionRegistry, SqliteProjectionDefinitionRegistry>();
         services.AddScoped<SqliteProjectionReadTransaction>();
         services.AddScoped<IProjectionReadTransaction>(provider =>

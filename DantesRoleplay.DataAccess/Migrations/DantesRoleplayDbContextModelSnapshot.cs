@@ -3585,6 +3585,23 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.ToTable("system_projection_component_input", (string)null);
                 });
 
+            modelBuilder.Entity("DantesRoleplay.Projections.ProjectionRegistryGenerationRecord", b =>
+                {
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Generation")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ApplicationId");
+
+                    b.ToTable("system_projection_registry_generation", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_system_projection_registry_generation_value", "\"Generation\" >= 0");
+                        });
+                });
+
             modelBuilder.Entity("DantesRoleplay.Projections.ProjectionDefinitionRecord", b =>
                 {
                     b.Property<string>("QualifiedId")
@@ -7875,6 +7892,15 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.HasOne("DantesRoleplay.Ecs.ComponentTypeVersionRecord", null)
                         .WithMany()
                         .HasForeignKey("QualifiedTypeId", "TypeVersion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Projections.ProjectionRegistryGenerationRecord", b =>
+                {
+                    b.HasOne("DantesRoleplay.Applications.ApplicationRegistryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
