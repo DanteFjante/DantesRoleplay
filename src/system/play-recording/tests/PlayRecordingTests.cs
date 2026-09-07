@@ -2,6 +2,7 @@ using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Tests;
+using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.Play.Tests;
 
@@ -98,6 +99,54 @@ public sealed class PlayRecordingTests : IDisposable
 
         Assert.Single(conversation.KnownTruths);
         Assert.Equal(statement, conversation.KnownTruths[0].Statement);
+    }
+
+    [Fact]
+    public async Task Concurrent_contexts_share_one_database_gate_and_preserve_message_order()
+    {
+        string conversationId;
+        using (var setup = fixture.CreateContext())
+        {
+            RegisterStateSpace(setup);
+            conversationId = new ApplicationPlayRecordStore(setup).ResumeOrCreate(Identity()).Id;
+        }
+        using var firstDb = fixture.CreateContext();
+        using var secondDb = fixture.CreateContext();
+        var first = new ApplicationPlayRecordStore(firstDb);
+        var second = new ApplicationPlayRecordStore(secondDb);
+        Assert.Same(ApplicationPlayWriteCoordinator.For(firstDb), ApplicationPlayWriteCoordinator.For(secondDb));
+        using var start = new ManualResetEventSlim();
+
+        await Task.WhenAll(
+            Task.Run(() => { start.Wait(); first.AppendMessage(conversationId,
+                new("player", "First concurrent message.", null, DateTime.UtcNow), "ready"); }),
+            Task.Run(() => { start.Wait(); second.AppendMessage(conversationId,
+                new("assistant", "Second concurrent message.", null, DateTime.UtcNow), "ready"); }),
+            Task.Run(() => start.Set()));
+
+        using var verify = fixture.CreateContext();
+        var result = new ApplicationPlayRecordStore(verify).GetMessages(
+            Identity().PrincipalId, Identity().ApplicationId, conversationId, null, 10);
+        Assert.Equal([1, 2], result.Messages.Select(value => value.Ordinal).ToArray());
+        Assert.Equal(2, result.Messages.Select(value => value.Text).Distinct(StringComparer.Ordinal).Count());
+        Assert.Equal(3, new ApplicationPlayRecordStore(verify).Get(
+            Identity().PrincipalId, Identity().ApplicationId, conversationId)!.Revision);
+    }
+
+    [Fact]
+    public void Play_write_coordination_is_bounded_and_not_one_global_database_gate()
+    {
+        var stripes = new HashSet<int>();
+        for (var index = 0; index < 128; index++)
+        {
+            var options = new DbContextOptionsBuilder<DantesRoleplayDbContext>()
+                .UseSqlite($"Data Source={Path.Combine(Path.GetTempPath(), $"play-stripe-{index}.db")}")
+                .Options;
+            using var db = new DantesRoleplayDbContext(options);
+            stripes.Add(ApplicationPlayWriteCoordinator.StripeFor(db));
+        }
+
+        Assert.InRange(stripes.Count, 2, ApplicationPlayWriteCoordinator.StripeCount);
     }
 
     private static PlayConversationIdentity Identity() => new(

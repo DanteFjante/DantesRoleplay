@@ -154,6 +154,47 @@ public sealed class EcsRoleConstraintTests : IDisposable
         _ = second;
     }
 
+    [Fact]
+    public async Task Constraint_validation_loads_only_component_types_observable_by_the_effective_policy()
+    {
+        await using var setup = await OpenAsync();
+        await setup.Entities.CreateEntityAsync("publication", "home", "Home");
+        await setup.Entities.AddComponentAsync(Write("home", setup.Page, "home", 0));
+        await setup.Entities.AddComponentAsync(Write("home", setup.Index, "{}", 0, raw: true));
+
+        var now = DateTime.UtcNow;
+        var entities = Enumerable.Range(0, 200).Select(index => new ApplicationEcsEntityRecord
+        {
+            StateSpaceId = "publication",
+            Id = $"noise-{index:D3}",
+            Name = $"Noise {index}",
+            Revision = 1,
+            CreatedAtUtc = now
+        }).ToArray();
+        setup.Db.Set<ApplicationEcsEntityRecord>().AddRange(entities);
+        setup.Db.Set<ApplicationEcsComponentRecord>().AddRange(entities.Select(entity =>
+            new ApplicationEcsComponentRecord
+            {
+                StateSpaceId = "publication",
+                EntityId = entity.Id,
+                QualifiedTypeId = setup.Noise.QualifiedId,
+                TypeVersion = setup.Noise.Version,
+                SchemaHash = setup.Noise.SchemaHash,
+                Data = "{}",
+                Revision = 1,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            }));
+        await setup.Db.SaveChangesAsync();
+
+        await setup.Constraints.ValidateStateSpaceAsync("publication");
+
+        Assert.Equal(3, setup.Constraints.LastProfile.EligibleTypeVersions);
+        Assert.Equal(2, setup.Constraints.LastProfile.RelevantComponentTypes);
+        Assert.Equal(201, setup.Constraints.LastProfile.EnabledEntities);
+        Assert.Equal(2, setup.Constraints.LastProfile.LoadedComponents);
+    }
+
     private async Task<Fixture> OpenAsync()
     {
         var fixture = await Fixture.OpenAsync(_database, migrate: true);
@@ -223,6 +264,7 @@ public sealed class EcsRoleConstraintTests : IDisposable
         public ApplicationRevision Revision { get; private set; } = null!;
         public RegisteredComponentTypeVersion Page { get; private set; } = null!;
         public RegisteredComponentTypeVersion Index { get; private set; } = null!;
+        public RegisteredComponentTypeVersion Noise { get; private set; } = null!;
 
         public static async Task<Fixture> OpenAsync(string path, bool migrate)
         {
@@ -241,6 +283,7 @@ public sealed class EcsRoleConstraintTests : IDisposable
             Revision = Applications.Register(new(app, "Fixture", "ECS constraint fixture.", []));
             Page = Types.Define(new(app, "fixture.page", PageSchema));
             Index = Types.Define(new(app, "fixture.index-page", IndexSchema));
+            Noise = Types.Define(new(app, "fixture.noise", "{\"type\":\"object\",\"additionalProperties\":false}"));
             Spaces.Create(new("publication", Revision, Hash, Hash, EcsStateSpaceScope.ApplicationPublication));
         }
 
@@ -250,6 +293,7 @@ public sealed class EcsRoleConstraintTests : IDisposable
             Revision = Applications.Get(app)!;
             Page = Types.GetLatest("fixture.page")!;
             Index = Types.GetLatest("fixture.index-page")!;
+            Noise = Types.GetLatest("fixture.noise")!;
         }
 
         public ValueTask DisposeAsync() => Db.DisposeAsync();

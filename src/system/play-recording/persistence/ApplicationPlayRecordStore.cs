@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -10,13 +11,13 @@ public sealed class ApplicationPlayRecordStore(DantesRoleplayDbContext db) : IAp
 {
     private const int RecentMessageLimit = 64;
     private const int KnownTruthLimit = 64;
-    private static readonly SemaphoreSlim WriteGate = new(1, 1);
+    private readonly SemaphoreSlim writeGate = ApplicationPlayWriteCoordinator.For(db);
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     public PlayConversationDocument ResumeOrCreate(PlayConversationIdentity identity)
     {
         ValidateIdentity(identity);
-        WriteGate.Wait();
+        writeGate.Wait();
         try
         {
             var existing = db.Set<ApplicationPlayConversationRecord>().SingleOrDefault(value =>
@@ -43,7 +44,7 @@ public sealed class ApplicationPlayRecordStore(DantesRoleplayDbContext db) : IAp
             db.SaveChanges();
             return Document(record);
         }
-        finally { WriteGate.Release(); }
+        finally { writeGate.Release(); }
     }
 
     public PlayConversationDocument? Get(
@@ -79,7 +80,7 @@ public sealed class ApplicationPlayRecordStore(DantesRoleplayDbContext db) : IAp
     {
         ValidateMessage(message);
         ValidateStatus(status);
-        WriteGate.Wait();
+        writeGate.Wait();
         try
         {
             using var transaction = db.Database.BeginTransaction();
@@ -89,7 +90,7 @@ public sealed class ApplicationPlayRecordStore(DantesRoleplayDbContext db) : IAp
             transaction.Commit();
             return Document(conversation);
         }
-        finally { WriteGate.Release(); }
+        finally { writeGate.Release(); }
     }
 
     public PlayConversationDocument AppendNarrative(
@@ -102,7 +103,7 @@ public sealed class ApplicationPlayRecordStore(DantesRoleplayDbContext db) : IAp
         ValidateStatus(status);
         ValidateSituation(narrative.Situation);
         ValidateTruths(narrative.Truths);
-        WriteGate.Wait();
+        writeGate.Wait();
         try
         {
             using var transaction = db.Database.BeginTransaction();
@@ -114,7 +115,7 @@ public sealed class ApplicationPlayRecordStore(DantesRoleplayDbContext db) : IAp
             transaction.Commit();
             return Document(conversation);
         }
-        finally { WriteGate.Release(); }
+        finally { writeGate.Release(); }
     }
 
     public PlayMessagePage GetMessages(
@@ -144,7 +145,7 @@ public sealed class ApplicationPlayRecordStore(DantesRoleplayDbContext db) : IAp
     public PlayConversationDocument SetStatus(string conversationId, string status)
     {
         ValidateStatus(status);
-        WriteGate.Wait();
+        writeGate.Wait();
         try
         {
             var conversation = RequiredConversation(conversationId);
@@ -157,7 +158,7 @@ public sealed class ApplicationPlayRecordStore(DantesRoleplayDbContext db) : IAp
             }
             return Document(conversation);
         }
-        finally { WriteGate.Release(); }
+        finally { writeGate.Release(); }
     }
 
     private ApplicationPlayConversationRecord RequiredConversation(string conversationId) =>
@@ -418,4 +419,41 @@ public sealed class ApplicationPlayRecordStore(DantesRoleplayDbContext db) : IAp
     private static bool BoundedText(string value, int maximum) =>
         !string.IsNullOrWhiteSpace(value) && value.Length <= maximum
         && !value.Any(character => char.IsControl(character) && character is not '\r' and not '\n' and not '\t');
+}
+
+/// <summary>
+/// Bounded process-local coordination for SQLite writers. All contexts targeting one database
+/// resolve to the same stripe; unrelated database files can progress independently without an
+/// unbounded per-path lock dictionary. SQLite transaction ownership remains inside the store.
+/// </summary>
+internal static class ApplicationPlayWriteCoordinator
+{
+    internal const int StripeCount = 64;
+    private static readonly SemaphoreSlim[] Gates = Enumerable.Range(0, StripeCount)
+        .Select(_ => new SemaphoreSlim(1, 1)).ToArray();
+
+    internal static SemaphoreSlim For(DantesRoleplayDbContext db) => Gates[StripeFor(db)];
+
+    internal static int StripeFor(DantesRoleplayDbContext db)
+    {
+        ArgumentNullException.ThrowIfNull(db);
+        var connection = db.Database.GetDbConnection();
+        var dataSource = connection.DataSource;
+        string identity;
+        if (string.IsNullOrWhiteSpace(dataSource) || dataSource is ":memory:")
+        {
+            // A SQLite in-memory database is owned by its open connection. Contexts sharing that
+            // connection must share the write gate; separate test/runtime databases need not.
+            identity = $"memory:{RuntimeHelpers.GetHashCode(connection)}";
+        }
+        else
+        {
+            try { dataSource = Path.GetFullPath(dataSource); }
+            catch (Exception exception) when (exception is ArgumentException or NotSupportedException)
+            { /* Hash the provider's stable data-source identity as supplied. */ }
+            identity = OperatingSystem.IsWindows() ? dataSource.ToUpperInvariant() : dataSource;
+        }
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(connection.GetType().FullName + "|" + identity));
+        return (int)(BitConverter.ToUInt32(hash, 0) % StripeCount);
+    }
 }

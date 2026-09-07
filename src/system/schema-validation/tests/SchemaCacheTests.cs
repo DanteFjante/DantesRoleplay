@@ -61,6 +61,33 @@ public sealed class SchemaCacheTests
     }
 
     [Fact]
+    public async Task Concurrent_distinct_misses_compile_safely_and_remain_within_the_shared_bounds()
+    {
+        var validator = new BoundedJsonSchemaValidator();
+        using var start = new ManualResetEventSlim();
+        var tasks = Enumerable.Range(0, 64).Select(index => Task.Run(() =>
+        {
+            start.Wait();
+            var schema = JsonSerializer.Serialize(new
+            {
+                type = "object",
+                properties = Enumerable.Range(0, 32).ToDictionary(
+                    property => $"p{property}", _ => new { type = "integer", minimum = index })
+            });
+            return validator.Compile(schema);
+        })).ToArray();
+
+        start.Set();
+        var results = await Task.WhenAll(tasks);
+
+        Assert.All(results, result => Assert.True(result.IsAccepted));
+        Assert.Equal(64, results.Select(value => value.SchemaHash).Distinct(StringComparer.Ordinal).Count());
+        Assert.InRange(validator.CacheUsage.Count, 1, BoundedJsonSchemaValidator.MaximumCachedSchemas);
+        Assert.InRange(validator.CacheUsage.TextBytes, 1, BoundedJsonSchemaValidator.MaximumCachedTextBytes);
+        Assert.InRange(validator.CacheUsage.Nodes, 1, BoundedJsonSchemaValidator.MaximumCachedSchemaNodes);
+    }
+
+    [Fact]
     public void Cache_evicts_least_recently_used_entries_and_releases_them()
     {
         var validator = new BoundedJsonSchemaValidator();

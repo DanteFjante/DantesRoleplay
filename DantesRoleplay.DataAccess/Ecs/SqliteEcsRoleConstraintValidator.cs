@@ -12,6 +12,8 @@ namespace DantesRoleplay.Ecs;
 public sealed class SqliteEcsRoleConstraintValidator(DantesRoleplayDbContext db)
     : IEcsRoleConstraintValidator
 {
+    internal EcsRoleConstraintValidationProfile LastProfile { get; private set; } = new(0, 0, 0, 0);
+
     public async Task ValidateStateSpaceAsync(
         string stateSpaceId,
         CancellationToken cancellationToken = default)
@@ -26,7 +28,11 @@ public sealed class SqliteEcsRoleConstraintValidator(DantesRoleplayDbContext db)
             .Where(value => owners.Contains(value.ApplicationId))
             .Select(value => value.QualifiedId)
             .ToArrayAsync(cancellationToken);
-        if (typeRows.Length == 0) return;
+        if (typeRows.Length == 0)
+        {
+            LastProfile = new(0, 0, 0, 0);
+            return;
+        }
 
         var versions = await db.Set<ComponentTypeVersionRecord>().AsNoTracking()
             .Where(value => typeRows.Contains(value.QualifiedId))
@@ -37,19 +43,33 @@ public sealed class SqliteEcsRoleConstraintValidator(DantesRoleplayDbContext db)
             value => EcsComponentRolePolicyParser.Parse(value.SchemaJson));
         var constraints = EffectiveConstraints(versions, policies)
             .Where(value => value.Scope == scope).ToArray();
-        if (constraints.Length == 0) return;
+        if (constraints.Length == 0)
+        {
+            LastProfile = new(versions.Length, 0, 0, 0);
+            return;
+        }
+
+        // Cardinality still needs the complete enabled-entity set, but selectors can only observe
+        // component types named directly by a constraint or carrying one of its semantic roles.
+        // Keep every version's policy in the lookup so historical component versions retain their
+        // exact role meaning while unrelated component payloads stay in SQLite.
+        var relevantTypeIds = RelevantComponentTypeIds(constraints, policies);
 
         var entities = await db.Set<ApplicationEcsEntityRecord>().AsNoTracking()
             .Where(value => value.StateSpaceId == stateSpaceId && value.DeletedAtUtc == null)
             .OrderBy(value => value.Id)
             .ToArrayAsync(cancellationToken);
-        var components = await db.Set<ApplicationEcsComponentRecord>().AsNoTracking()
-            .Where(value => value.StateSpaceId == stateSpaceId)
-            .OrderBy(value => value.EntityId).ThenBy(value => value.QualifiedTypeId)
-            .ToArrayAsync(cancellationToken);
+        var components = relevantTypeIds.Length == 0
+            ? []
+            : await db.Set<ApplicationEcsComponentRecord>().AsNoTracking()
+                .Where(value => value.StateSpaceId == stateSpaceId
+                    && relevantTypeIds.Contains(value.QualifiedTypeId))
+                .OrderBy(value => value.EntityId).ThenBy(value => value.QualifiedTypeId)
+                .ToArrayAsync(cancellationToken);
         var componentsByEntity = components.GroupBy(value => value.EntityId, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => (IReadOnlyList<ApplicationEcsComponentRecord>)group.ToArray(),
                 StringComparer.Ordinal);
+        LastProfile = new(versions.Length, relevantTypeIds.Length, entities.Length, components.Length);
 
         foreach (var constraint in constraints.OrderBy(value => value.Id, StringComparer.Ordinal))
             Validate(constraint, entities, componentsByEntity, policies);
@@ -93,6 +113,31 @@ public sealed class SqliteEcsRoleConstraintValidator(DantesRoleplayDbContext db)
             }
         }
         return result.Values.Select(value => value.Value).ToArray();
+    }
+
+    private static string[] RelevantComponentTypeIds(
+        IReadOnlyList<EcsEntityRoleConstraint> constraints,
+        IReadOnlyDictionary<(string Id, int Version), EcsComponentRolePolicy> policies)
+    {
+        var selectors = constraints.Select(value => value.Selector)
+            .Concat(constraints.SelectMany(value => value.Requires))
+            .Concat(constraints.SelectMany(value => value.UniqueKeys).Select(value => value.Source))
+            .ToArray();
+        var result = selectors
+            .Where(value => value.Kind == EcsEntitySelectorKind.Component)
+            .Select(value => value.Value)
+            .ToHashSet(StringComparer.Ordinal);
+        var roles = selectors.Where(value => value.Kind == EcsEntitySelectorKind.SemanticRole)
+            .Select(value => value.Value).ToHashSet(StringComparer.Ordinal);
+        if (roles.Count != 0)
+        {
+            foreach (var policy in policies)
+            {
+                if (policy.Value.SemanticRoles.Any(roles.Contains))
+                    result.Add(policy.Key.Id);
+            }
+        }
+        return result.Order(StringComparer.Ordinal).ToArray();
     }
 
     private static void Validate(
@@ -211,3 +256,9 @@ public sealed class SqliteEcsRoleConstraintValidator(DantesRoleplayDbContext db)
 
     private static EcsRoleConstraintException Failure(string code, string message) => new(code, message);
 }
+
+internal sealed record EcsRoleConstraintValidationProfile(
+    int EligibleTypeVersions,
+    int RelevantComponentTypes,
+    int EnabledEntities,
+    int LoadedComponents);

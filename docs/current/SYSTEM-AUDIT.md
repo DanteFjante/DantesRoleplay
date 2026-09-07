@@ -680,11 +680,51 @@ Verification: `SubscriptionStoreTests` pass 7/7. The web gate passes TypeScript,
 
 ### Slice 12 (SC12) — Profile remaining host costs
 
-**Status:** Not started. **Finding coverage:** P04, P05, P06, P07.
+**Status:** Complete. **Finding coverage:** P04, P05, P06, P07. **Outcome:** the remaining generic
+host costs were re-profiled after the object and browser batching work. Role validation still reads
+the complete enabled-entity index required for cross-entity cardinality, but its component query now
+uses the existing state-space/type index to materialize only component types named by an effective
+selector or carrying one of its semantic roles. Policies for every eligible historical type version
+remain in the lookup, so semantic-role, requirement and unique-key meaning is unchanged. The bounded
+schema validator now coordinates only equal in-flight schema/profile compilations; distinct misses
+parse and build their private registries outside the LRU lock, while successful retention bounds and
+per-schema evaluation serialization remain unchanged. Play writes use 64 stable bounded stripes by
+SQLite database identity instead of one process-wide semaphore. Contexts for the same file, or the
+same open in-memory connection, still serialize their transactions; unrelated database files can
+make progress independently. No application ID, rule vocabulary or gameplay branch entered C#.
 
 Re-profile catalog materialization, role constraints, schema locks and play-write coordination after the batching work. Reuse prepared metadata where immutable; keep actor-specific results scoped. Optimize only measured remaining costs, preserving source drift, cross-entity constraints, schema safety, SQLite transactions and concurrent conversation correctness.
 
 **Cleanup and exit:** remove superseded cache/mapping owners instead of stacking caches. Record before/after allocation, I/O, SQL and lock-wait evidence; existing invariant and concurrency tests pass. Do not lift bounds or remove serialization solely to make a benchmark faster.
+
+The disposable before/after profile used the same Debug build and harness on revision `7fdb2d32` and
+this slice. Eight warm validations over 2,001 enabled entities with 2,001 components, of which one
+component type was role-observable, kept six SQL statements and the complete 2,001-row entity index
+but reduced component rows returned from 2,001 to 1, elapsed time from 128.2 ms to 53.8 ms and managed
+allocation from 32,352,240 to 12,674,112 bytes. Ninety-six distinct 64-property schema misses at
+parallelism eight fell from 141.5 ms to 56.7 ms; allocation stayed effectively flat at 24,811,560
+versus 24,955,232 bytes. The same-schema concurrency, invalid-schema non-retention, 256-entry/2-MiB/
+32,000-node eviction and serialized evaluation checks remain in the ordinary suite. For play-write
+lock wait, 128 writes spread across eight independent in-memory databases fell from 223.1 ms behind
+the single gate to 97.3 ms through database stripes. The companion invariant test proves two contexts
+over one SQLite connection share a gate and preserve unique ordinals and monotonic conversation
+revision; a topology test proves coordination is bounded and no longer one global gate.
+
+Catalog materialization deliberately retains one complete file read, length check and SHA-256 check
+for every relevant active winner on each cold scoped build. The one-document drift fixture therefore
+remains one file read per build before and after, and still rejects an edit on the next build. A
+process-wide parsed snapshot cache was not added: metadata-only reuse would weaken exact file-drift,
+source-registration or extension-resolution detection, while a second cache after re-reading the
+same bytes would duplicate the scoped provider's owner without removing I/O. Actor-specific
+navigation and validation results remain scoped; only immutable schema compilations have bounded
+cross-request retention.
+
+Verification: 18 directly focused role-constraint, schema-cache and play-recording tests pass,
+including the new unrelated-component, mixed-schema and concurrent-conversation cases; the broader
+affected persistence, catalog-drift and schema set passes 69/69. The Release solution build succeeds
+with zero warnings/errors, and the complete .NET suite passes 1,974/1,974. No catalog record,
+migration, dependency registration, public protocol surface or live database changed, so catalog
+validation, the web suite and the protocol walk are not required for this slice.
 
 ### Slice 13 (SC13) — Media and database ownership
 

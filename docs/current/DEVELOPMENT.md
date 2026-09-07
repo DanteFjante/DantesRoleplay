@@ -28,8 +28,10 @@ The singleton bounded validator may reuse successful schema compilations by exac
 requested profile. Its least-recently-used cache is capped at 256 entries, 2 MiB of retained schema
 text, and 32,000 schema nodes. Each cache miss still builds with its own registry, and each value is
 parsed and validated afresh under the existing limits. Invalid compilations, input values, validation
-results, authorization decisions, and game-state projections are not cached. Edited schemas use new
-keys immediately; no time-based expiry can serve an older contract for changed contents.
+results, authorization decisions, and game-state projections are not cached. Concurrent misses for
+one exact schema/profile key share only their in-flight build; distinct keys compile outside the
+short LRU lock, and evaluation of one retained schema graph remains serialized. Edited schemas use
+new keys immediately; no time-based expiry can serve an older contract for changed contents.
 
 Every repository-authored application mechanic declares a closed `inputSchema` in its requirements.
 Capability discovery exposes that schema plus generated valid and invalid examples; the common

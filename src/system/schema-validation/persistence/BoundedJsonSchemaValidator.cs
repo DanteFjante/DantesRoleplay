@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Security.Cryptography;
 using System.Text;
@@ -17,6 +18,7 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
     private readonly object cacheLock = new();
     private readonly Dictionary<(string Schema, string? Profile), LinkedListNode<CacheEntry>> cache = [];
     private readonly LinkedList<CacheEntry> recency = [];
+    private readonly ConcurrentDictionary<(string Schema, string? Profile), Lazy<CompiledSchema>> preparing = [];
     private int cachedTextBytes;
     private int cachedSchemaNodes;
 
@@ -50,16 +52,42 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
                 recency.AddFirst(existing);
                 return existing.Value.Value;
             }
+        }
 
-            // Build once per concurrent miss. Invalid schemas never occupy the cache.
-            var compilation = CompileUncached(schemaJson, requiredProfileId, out var schema, out var nodes);
-            var value = new CompiledSchema(compilation, schema);
-            if (!compilation.IsAccepted) return value;
-            var textBytes = checked(2 * (schemaJson.Length + compilation.NormalizedSchema.Length +
-                (requiredProfileId?.Length ?? 0)));
-            if (textBytes > MaximumCachedTextBytes || nodes > MaximumCachedSchemaNodes) return value;
-            while (cache.Count >= MaximumCachedSchemas || cachedTextBytes + textBytes > MaximumCachedTextBytes ||
-                   cachedSchemaNodes + nodes > MaximumCachedSchemaNodes)
+        // Coordinate only callers compiling the same exact key. Distinct misses no longer hold the
+        // global LRU lock while parsing and building their private schema registries.
+        var pending = preparing.GetOrAdd(key, cacheKey => new Lazy<CompiledSchema>(
+            () => CompileAndCache(cacheKey), LazyThreadSafetyMode.ExecutionAndPublication));
+        try
+        {
+            return pending.Value;
+        }
+        finally
+        {
+            preparing.TryRemove(new KeyValuePair<(string Schema, string? Profile), Lazy<CompiledSchema>>(key, pending));
+        }
+    }
+
+    private CompiledSchema CompileAndCache((string Schema, string? Profile) key)
+    {
+        var compilation = CompileUncached(key.Schema, key.Profile, out var schema, out var nodes);
+        var compiled = new CompiledSchema(compilation, schema);
+        if (!compilation.IsAccepted) return compiled;
+        var textBytes = checked(2 * (key.Schema.Length + compilation.NormalizedSchema.Length
+            + (key.Profile?.Length ?? 0)));
+        if (textBytes > MaximumCachedTextBytes || nodes > MaximumCachedSchemaNodes) return compiled;
+
+        lock (cacheLock)
+        {
+            if (cache.TryGetValue(key, out var existing))
+            {
+                recency.Remove(existing);
+                recency.AddFirst(existing);
+                return existing.Value.Value;
+            }
+            while (cache.Count >= MaximumCachedSchemas
+                   || cachedTextBytes + textBytes > MaximumCachedTextBytes
+                   || cachedSchemaNodes + nodes > MaximumCachedSchemaNodes)
             {
                 var oldest = recency.Last!;
                 recency.RemoveLast();
@@ -67,11 +95,11 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
                 cachedTextBytes -= oldest.Value.TextBytes;
                 cachedSchemaNodes -= oldest.Value.Nodes;
             }
-            var entry = new CacheEntry(key, value, textBytes, nodes);
+            var entry = new CacheEntry(key, compiled, textBytes, nodes);
             cache.Add(key, recency.AddFirst(entry));
             cachedTextBytes += textBytes;
             cachedSchemaNodes += nodes;
-            return value;
+            return compiled;
         }
     }
 
