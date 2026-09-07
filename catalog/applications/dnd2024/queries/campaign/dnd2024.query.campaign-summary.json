@@ -2,7 +2,7 @@
   "id": "dnd2024.query.campaign-summary",
   "category": "campaign.summary",
   "name": "Campaign summary",
-  "description": "Reads the selected campaign summary and its bounded read-only party participation references.",
+  "description": "Reads the selected campaign and bounded participation identities, with batched actor references restricted to DM.",
   "matches": ["campaign summary", "show campaign"],
   "roles": { "campaign": "The selected authorized campaign." },
   "executor": "object-projection",
@@ -12,8 +12,8 @@
   },
   "object": {
     "qualifiedId": "dnd2024.object.campaign-summary",
-    "version": 2,
-    "contentFingerprint": "2C0836E9FF114C4F672D793012F2D0CD258D0A99B9DCFB5A892D63F5146011BF"
+    "version": 3,
+    "contentFingerprint": "E3979EB454E4A0D1AEC65446D6E2849D8E2ED29D0C8C43E7B8E5CF3E0783EB42"
   },
   "collection": "party",
   "outputSchema": {
@@ -26,7 +26,7 @@
       "premise": { "type": "string", "minLength": 1, "maxLength": 1000 },
       "partyGoals": { "type": "array", "minItems": 1, "maxItems": 3, "items": { "type": "string", "minLength": 1, "maxLength": 500 } },
       "toneAndBoundaries": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "type": "string", "minLength": 1, "maxLength": 300 } },
-      "party": { "type": "array", "maxItems": 20, "items": { "type": "object", "additionalProperties": false, "required": ["id", "name", "status"], "properties": { "id": { "type": "string", "minLength": 1, "maxLength": 200 }, "name": { "type": "string", "minLength": 1, "maxLength": 400 }, "status": { "enum": ["active", "withdrawn"] } } } },
+      "party": { "type": "array", "maxItems": 20, "items": { "type": "object", "additionalProperties": false, "required": ["id", "name", "status", "actors"], "properties": { "id": { "type": "string", "minLength": 1, "maxLength": 200 }, "name": { "type": "string", "minLength": 1, "maxLength": 400 }, "status": { "enum": ["active", "withdrawn"] }, "actors": {"type":"array","maxItems":1,"items":{"type":"object","additionalProperties":false,"required":["id","name"],"properties":{"id":{"type":"string","minLength":1,"maxLength":200},"name":{"type":"string","minLength":1,"maxLength":400}}}} } } },
       "totalCount": { "type": "integer", "minimum": 0, "maximum": 20 },
       "complete": { "type": "boolean" },
       "nextCursor": { "type": ["string", "null"], "maxLength": 2048 }

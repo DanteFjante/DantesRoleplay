@@ -1376,35 +1376,17 @@ async function readExactRelationshipTargets(
   return targets === null ? null : [...new Set(targets)];
 }
 
-async function hydrateRegisteredPartyReferences({
-  fetchImpl,
-  origin,
-  applicationId,
-  stateSpaceId,
-  party,
-}) {
-  const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
-    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
-  const actorTargets = await Promise.all(party
-    .filter((entry) => entry.status === "active")
-    .map(async (entry) => {
-      const targets = await readExactRelationshipTargets(
-        fetchImpl,
-        origin,
-        entityRoot,
-        entry.id,
-        CAMPAIGN_PARTICIPATION_ACTOR_RELATIONSHIP_KIND,
-      );
-      return targets?.length === 1 ? targets[0] : null;
-    }));
-  // Every active participation is a required join. Missing or ambiguous evidence
-  // must not be filtered into a credible empty/partial roster.
-  if (actorTargets.some((actorId) => actorId === null)) return null;
-  const actorIds = [...new Set(actorTargets)];
-  const actors = await Promise.all(actorIds.map((actorId) =>
-    readNamedEntity(fetchImpl, origin, entityRoot, actorId)));
-  if (actors.some((actor) => actor === null)) return null;
-  return actors.map((actor) => ({
+function projectRegisteredPartyReferences(party) {
+  const actors = new Map();
+  for (const entry of party.filter((value) => value.status === "active")) {
+    // All identities come from one source-revision-bound object response. Never
+    // fall back to per-member requests or filter a failed join into a partial roster.
+    if (!Array.isArray(entry.actors) || entry.actors.length !== 1) return null;
+    const actor = entry.actors[0];
+    if (actors.has(actor.id) && actors.get(actor.id).name !== actor.name) return null;
+    actors.set(actor.id, actor);
+  }
+  return [...actors.values()].map((actor) => ({
     ...actor,
     state: "active",
     current: false,
@@ -2423,7 +2405,7 @@ async function readGameServerContextCore({
   ]);
   const campaignEntity = campaignResponse?.ok ? entity(campaign, selectedCampaignId) : null;
   const registeredCampaign = useRegisteredCampaignSummary && campaignComponentResponse?.ok
-    ? registeredCampaignSummary(campaignComponent, binding.applicationId, binding.stateSpaceId) : null;
+    ? registeredCampaignSummary(campaignComponent, binding.applicationId, binding.stateSpaceId, effectivePerspective) : null;
   const boundActorEntity = shouldReadBoundActor && actorResponse?.ok
     ? entity(actor, binding.actorId)
     : null;
@@ -2438,13 +2420,7 @@ async function readGameServerContextCore({
       return unavailable("The party roster could not be loaded completely. Please try again.");
     }
     const deferredParty = isGameMaster && effectivePerspective === "dm"
-      ? await hydrateRegisteredPartyReferences({
-        fetchImpl,
-        origin,
-        applicationId: binding.applicationId,
-        stateSpaceId: binding.stateSpaceId,
-        party: registeredCampaign.party,
-      })
+      ? projectRegisteredPartyReferences(registeredCampaign.party)
       : isGameMaster ? registeredCampaign.party.map((entry) => ({
         id: entry.id,
         name: entry.name,
@@ -2754,7 +2730,7 @@ function registeredReadEvidence(payload, applicationId, stateSpaceId, qualifiedQ
   };
 }
 
-function registeredCampaignSummary(payload, applicationId, stateSpaceId) {
+function registeredCampaignSummary(payload, applicationId, stateSpaceId, perspective) {
   const projection = registeredReadEvidence(
     payload, applicationId, stateSpaceId, "dnd2024.query.campaign-summary",
   );
@@ -2770,9 +2746,17 @@ function registeredCampaignSummary(payload, applicationId, stateSpaceId) {
       !Array.isArray(data.party) || data.party.length > 20 || !Number.isInteger(data.totalCount) ||
       data.totalCount < data.party.length || data.totalCount > 20 || typeof data.complete !== "boolean" ||
       !(data.nextCursor === null || token(data.nextCursor)) || data.complete !== (data.nextCursor === null)) return null;
-  const party = data.party.map((entry) => hasExactKeys(entry, ["id", "name", "status"])
-    && token(entry.id) && text(entry.name, 400) && new Set(["active", "withdrawn"]).has(entry.status)
-    ? { id: entry.id, name: entry.name, status: entry.status } : null);
+  const party = data.party.map((entry) => {
+    // v2 participation-only records remain readable, but cannot satisfy a DM actor roster.
+    const fields = ["id", "name", "status", ...(Object.hasOwn(entry ?? {}, "actors") ? ["actors"] : [])];
+    if (!hasExactKeys(entry, fields) || !token(entry.id) || !text(entry.name, 400) ||
+        !["active", "withdrawn"].includes(entry.status)) return null;
+    if (Object.hasOwn(entry, "actors") && (!Array.isArray(entry.actors) || entry.actors.length > 1 ||
+        perspective !== "dm" && entry.actors.length !== 0 || entry.actors.some(actor =>
+          !hasExactKeys(actor, ["id", "name"]) || !token(actor.id) || !text(actor.name, 400)))) return null;
+    return { id: entry.id, name: entry.name, status: entry.status,
+      ...(Object.hasOwn(entry, "actors") ? { actors: entry.actors.map(actor => ({ id: actor.id, name: actor.name })) } : {}) };
+  });
   if (party.some((entry) => entry === null) || new Set(party.map((entry) => entry.id)).size !== party.length)
     return null;
   return { status: data.status, title, premise, partyGoals, toneAndBoundaries, party,
@@ -2792,7 +2776,7 @@ export async function readRegisteredCampaignSummary({
     headers: { Accept: "application/json" }, cache: "no-store",
   });
   return response?.ok
-    ? registeredCampaignSummary(await json(response), applicationId, stateSpaceId)
+    ? registeredCampaignSummary(await json(response), applicationId, stateSpaceId, perspective)
     : null;
 }
 

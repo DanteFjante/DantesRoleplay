@@ -85,13 +85,16 @@ public sealed class ProjectionCollectionMaterializer(
         var allCandidateIds = firstEdges.Select(value => ItemEntityId(value, incoming))
             .Distinct(StringComparer.Ordinal).ToArray();
         var candidateIds = allCandidateIds;
-        var nestedRelationships = contract.Relationships
+        var declaredNestedRelationships = contract.Relationships
             .Where(value => value.RelationshipId != relationship.RelationshipId
                 && (value.Direction == "incoming" ? value.ToRole : value.FromRole) == itemRole
                 && value.Cardinality == "many")
             .Select(value => (Declaration: value,
                 Property: NestedProperty(relationship.TargetPointer, value.TargetPointer)))
             .Where(value => value.Property is not null).ToArray();
+        var nestedRelationships = declaredNestedRelationships.Where(value =>
+            value.Declaration.ReadPerspectives is null ||
+            value.Declaration.ReadPerspectives.Contains(request.Perspective, StringComparer.Ordinal)).ToArray();
         if (nestedRelationships.Select(value => value.Declaration.Direction ?? "outgoing")
                 .Distinct(StringComparer.Ordinal).Count() > 1)
             throw new InvalidOperationException("Nested collection relationships must use one traversal direction.");
@@ -145,7 +148,8 @@ public sealed class ProjectionCollectionMaterializer(
 
         var items = candidateIds.Where(entityById.ContainsKey).Select(entityId =>
             Item(entityById[entityId], endpointTypes.Where(value => value.Endpoint == itemEndpoint), componentByKey)).ToList();
-        ApplyNestedReferences(items, firstNestedEdges, nestedRelationships, entityById);
+        // Undisclosed arrays stay empty; their edges, names and revisions are never read.
+        ApplyNestedReferences(items, firstNestedEdges, declaredNestedRelationships, entityById);
         items.Sort((left, right) => Compare(left, right, collection.Order));
         var sourceFingerprint = Fingerprint(firstEdges.Concat(firstNestedEdges), firstEntities, firstComponents,
             root.SourceRevisions, request, collection.CollectionId);

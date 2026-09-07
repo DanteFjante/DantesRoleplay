@@ -122,6 +122,8 @@ public sealed class ApplicationObjectContractTests : IDisposable
         var campaignV1 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
             objects, "campaign", "dnd2024.object.campaign-summary.v1.json")), application));
         var campaign = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+            objects, "campaign", "dnd2024.object.campaign-summary.v2.json")), application));
+        var campaignV3 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
             objects, "campaign", "dnd2024.object.campaign-summary.json")), application));
         var factions = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
             objects, "world", "dnd2024.object.faction-directory-page.json")), application));
@@ -135,6 +137,11 @@ public sealed class ApplicationObjectContractTests : IDisposable
         Assert.Equal("3AE6FD831B4319BA96E15A1501896549030C80FDBFA49D5503D0568DB9B61DEB", campaignV1.ContentHash);
         Assert.Equal(2, campaign.Version);
         Assert.Equal("2C0836E9FF114C4F672D793012F2D0CD258D0A99B9DCFB5A892D63F5146011BF", campaign.ContentHash);
+        Assert.Equal(3, campaignV3.Version);
+        using var queryDocument = JsonDocument.Parse(File.ReadAllText(Path.Combine(Catalog(), "applications", "dnd2024",
+            "queries", "campaign", "dnd2024.query.campaign-summary.json")));
+        Assert.True(queryDocument.RootElement.GetProperty("object").GetProperty("contentFingerprint").GetString() == campaignV3.ContentHash,
+            $"Campaign query must pin v3 fingerprint {campaignV3.ContentHash}");
         Assert.Equal(["relationship.add", "relationship.remove", "set"],
             campaign.ObjectContract!.Writes!.Capabilities);
         Assert.Contains(campaign.ObjectContract.GeneratedWriteMappings, value =>

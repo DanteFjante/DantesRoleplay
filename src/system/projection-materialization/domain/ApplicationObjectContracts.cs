@@ -20,7 +20,8 @@ public sealed record ApplicationObjectRelationship(
     string TargetPointer,
     IReadOnlyList<ApplicationObjectEndpointComponent> RequiredEndpointComponents,
     IReadOnlyList<ApplicationObjectEndpointComponent> OptionalEndpointComponents,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Direction = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Direction = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<string>? ReadPerspectives = null);
 public sealed record ApplicationObjectOrder(string Pointer, string Direction);
 public sealed record ApplicationObjectCollection(
     string CollectionId,
@@ -137,14 +138,16 @@ public static class ApplicationObjectDocument
         {
             Exact(value, "id", "qualifiedKind", "fromRole", "toRole", "cardinality", "targetPointer",
                 "requiredEndpointComponents", "optionalEndpointComponents",
-                value.TryGetProperty("direction", out _) ? "direction" : null);
+                value.TryGetProperty("direction", out _) ? "direction" : null,
+                value.TryGetProperty("read", out _) ? "read" : null);
             return new ApplicationObjectRelationship(
                 Identifier(value, "id", 200), Identifier(value, "qualifiedKind", 200),
                 Identifier(value, "fromRole", 200), Identifier(value, "toRole", 200),
                 Identifier(value, "cardinality", 32), Pointer(value, "targetPointer"),
                 EndpointComponents(Array(value, "requiredEndpointComponents", 32)),
                 EndpointComponents(Array(value, "optionalEndpointComponents", 32)),
-                value.TryGetProperty("direction", out _) ? Identifier(value, "direction", 16) : null);
+                value.TryGetProperty("direction", out _) ? Identifier(value, "direction", 16) : null,
+                value.TryGetProperty("read", out _) ? StringArray(value, "read", 2, 16) : null);
         }).ToArray();
 
         var mappings = Array(root, "mappings", 128).Select(value =>

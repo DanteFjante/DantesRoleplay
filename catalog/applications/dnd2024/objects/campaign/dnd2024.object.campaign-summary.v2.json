@@ -1,6 +1,6 @@
 {
   "id": "dnd2024.object.campaign-summary",
-  "version": 3,
+  "version": 2,
   "schema": {
     "type": "object",
     "additionalProperties": false,
@@ -16,31 +16,22 @@
         "items": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["id", "name", "status", "actors"],
+          "required": ["id", "name", "status"],
           "properties": {
             "id": { "type": "string", "minLength": 1, "maxLength": 200 },
             "name": { "type": "string", "minLength": 1, "maxLength": 400 },
-            "status": { "enum": ["active", "withdrawn"] },
-            "actors": { "type": "array", "maxItems": 1, "items": {
-              "type": "object", "additionalProperties": false, "required": ["id", "name"],
-              "properties": {
-                "id": { "type": "string", "minLength": 1, "maxLength": 200 },
-                "name": { "type": "string", "minLength": 1, "maxLength": 400 }
-              }
-            } }
+            "status": { "enum": ["active", "withdrawn"] }
           }
         }
       },
       "totalCount": { "type": "integer", "minimum": 0, "maximum": 20 },
       "complete": { "type": "boolean" },
       "nextCursor": { "type": ["string", "null"], "maxLength": 2048 }
-    },
-    "required": ["status", "title", "premise", "partyGoals", "toneAndBoundaries", "party", "totalCount", "complete", "nextCursor"]
+    }
   },
   "roles": {
     "campaign": { "required": true },
-    "participation": { "required": false },
-    "actor": { "required": false }
+    "participation": { "required": false }
   },
   "sources": [
     {
@@ -62,7 +53,7 @@
       "toRole": "participation",
       "cardinality": "many",
       "targetPointer": "/party",
-      "optionalEndpointComponents": [
+      "requiredEndpointComponents": [
         {
           "endpoint": "to",
           "component": {
@@ -72,15 +63,7 @@
           }
         }
       ],
-      "requiredEndpointComponents": []
-    },
-    {
-      "id": "actors",
-      "qualifiedKind": "game.core.campaign.character-participation.for-actor",
-      "fromRole": "participation", "toRole": "actor",
-      "cardinality": "many", "targetPointer": "/party/*/actors",
-      "requiredEndpointComponents": [], "optionalEndpointComponents": [],
-      "read": ["dm"]
+      "optionalEndpointComponents": []
     }
   ],
   "references": [],
@@ -101,7 +84,7 @@
       "cursor": "source-revision-bound"
     }
   ],
-  "limits": { "traversalDepth": 2, "itemCount": 40, "outputBytes": 65536, "sqlQueries": 12 },
+  "limits": { "traversalDepth": 2, "itemCount": 20, "outputBytes": 65536, "sqlQueries": 12 },
   "access": { "read": ["player", "dm"], "write": ["dm"] },
   "writes": {
     "schema": {

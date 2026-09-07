@@ -105,209 +105,146 @@ test("registered faction pages stay bounded and do not fan out into knowledge or
   assert.equal(denied, null);
 });
 
+const partyReference = (index) => ({
+  id: `participation.${index}`, name: `Participation ${index}`, status: "active",
+  actors: [{ id: `actor.${index}`, name: `Actor ${index}` }],
+});
+
 async function readRegisteredPartyBootstrap({
-  party = [{ id: "participation.ganji", name: "Ganji participation", status: "active" }],
-  summary = {},
-  readRelationships,
-  readActor,
+  party = [partyReference(0)], summary = {}, perspective = "dm", role = "game-master",
+  queryResponse,
 } = {}) {
   const calls = [];
   const value = await readGameServerContext({
-    serverOrigin: "http://localhost:6217",
-    requestedPerspective: "dm",
-    deferCharacterDetails: true,
-    deferCampaignDetails: true,
-    deferWorldDirectory: true,
+    serverOrigin: "http://localhost:6217", requestedPerspective: perspective,
+    deferCharacterDetails: true, deferCampaignDetails: true, deferWorldDirectory: true,
     useRegisteredCampaignSummary: true,
     fetchImpl: async (input) => {
-      const request = new URL(input);
-      calls.push(request.pathname);
+      const request = new URL(input); calls.push(request.pathname);
       if (request.pathname === "/api/audience-context") return response(200, {
         status: "bound", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
-        campaignId: "campaign.caldris.measure-of-mercy", role: "game-master",
+        campaignId: "campaign.caldris.measure-of-mercy", role,
+        ...(role === "actor" ? { actorId: "actor.0" } : {}),
       });
       if (request.pathname.endsWith("/campaign.caldris.measure-of-mercy")) return response(200, {
         entityId: "campaign.caldris.measure-of-mercy", name: "The Measure of Mercy",
       });
-      if (request.pathname.includes("dnd2024.query.campaign-summary")) return response(200, {
-        applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
-        qualifiedQueryId: "dnd2024.query.campaign-summary",
-        stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
-        outputSchemaHash: "3".repeat(64), resultFingerprint: "4".repeat(64),
-        sourceRevisionFingerprint: "5".repeat(64), data: {
-        status: "active", title: "The Measure of Mercy", premise: "Choose what mercy costs.",
-        partyGoals: ["Protect Ganji."], toneAndBoundaries: ["No sexual violence."],
-        party,
-        totalCount: party.length, complete: true, nextCursor: null,
-        ...summary,
-      } });
-      if (request.pathname.endsWith("/relationships")) {
-        const participationId = request.searchParams.get("fromEntityId");
-        if (readRelationships) return readRelationships(participationId, request);
+      if (role === "actor" && request.pathname.endsWith("/entities/actor.0"))
+        return response(200, { entityId: "actor.0", name: "Actor 0" });
+      if (request.pathname.includes("dnd2024.query.campaign-summary")) {
+        if (queryResponse) return queryResponse();
         return response(200, {
-          items: [actorRelationship(participationId)],
+          applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+          qualifiedQueryId: "dnd2024.query.campaign-summary",
+          stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+          outputSchemaHash: "3".repeat(64), resultFingerprint: "4".repeat(64),
+          sourceRevisionFingerprint: "5".repeat(64), data: {
+            status: "active", title: "The Measure of Mercy", premise: "Choose what mercy costs.",
+            partyGoals: ["Protect the party."], toneAndBoundaries: ["No sexual violence."],
+            party, totalCount: party.length, complete: true, nextCursor: null, ...summary,
+          },
         });
       }
-      if (readActor && request.pathname.includes("/entities/actor."))
-        return readActor(request.pathname.split("/").at(-1));
-      if (request.pathname.endsWith("/actor.caldris.ganji")) return response(200, {
-        entityId: "actor.caldris.ganji", name: "Ganji",
-      });
-      return response(500, {});
+      assert.fail("Unexpected per-member or directory read: " + request.pathname);
     },
   });
   return { value, calls };
 }
 
-test("the selected Campaign bootstrap stays within eight reads and hydrates deferred DM actor identities", async () => {
-  const { value, calls } = await readRegisteredPartyBootstrap();
-  assert.equal(value.status, "connected", JSON.stringify({ value, calls }));
-  assert.equal(value.campaign.title, "The Measure of Mercy");
-  assert.equal(value.campaign.projection.sourceRevisionFingerprint, "5".repeat(64));
-  assert.deepEqual(value.party.map((entry) => entry.id), ["actor.caldris.ganji"]);
-  assert.deepEqual(value.party[0], {
-    id: "actor.caldris.ganji",
-    name: "Ganji",
-    state: "active",
-    current: false,
-    entries: [],
-    detailsDeferred: true,
+for (const count of [0, 1, 3, 20]) {
+  test(`registered Campaign bootstrap batches all ${count} members in three HTTP reads`, async () => {
+    const party = Array.from({ length: count }, (_, index) => partyReference(index));
+    const { value, calls } = await readRegisteredPartyBootstrap({ party });
+    assert.equal(value.status, "connected");
+    assert.deepEqual(value.party.map(entry => ({ id: entry.id, name: entry.name })), party.flatMap(entry => entry.actors));
+    assert.equal(value.campaign.projection.sourceRevisionFingerprint, "5".repeat(64));
+    assert.equal(calls.length, 3);
+    assert.ok(calls.every(path => !path.endsWith("/relationships") && !path.includes("/entities/actor.")));
+    if (count) {
+      const projected = connectedCampaignToHubEnvelope(value);
+      assert.equal(projected.party[0].sheetState.status, "idle");
+      assert.equal(projected.party[0].recordStatus, "Identity only");
+    }
   });
-  const projected = connectedCampaignToHubEnvelope(value);
-  assert.equal(projected.status, "ready");
-  assert.equal(projected.party[0].sheetState.status, "idle");
-  assert.equal(projected.party[0].recordStatus, "Identity only");
-  assert.equal(calls.length, 5);
-  assert.ok(calls.every((call) => !call.includes("knowledge") && !call.includes("chronology") &&
-    !call.includes("inventory") && !call.endsWith("/entities")));
-});
-
-const REGISTERED_TEST_PARTY = ["ganji", "second", "third"].map((name) => ({
-  id: `participation.${name}`, name: `${name} participation`, status: "active",
-}));
-
-function actorRelationship(participationId, actorId = participationId.replace("participation.", "actor.caldris.")) {
-  return { fromEntityId: participationId, toEntityId: actorId,
-    qualifiedKind: "game.core.campaign.character-participation.for-actor" };
 }
-
-const FAILED_RELATIONSHIP_READS = {
-  "HTTP failure": () => response(500, {}),
-  "transport failure": () => { throw new Error("Fixture transport failed"); },
-  "malformed JSON": () => ({ ok: true, status: 200, json: async () => { throw new SyntaxError("Fixture JSON"); } }),
-  "malformed page": () => response(200, { items: null }),
-  "missing actor link": () => response(200, { items: [] }),
-  "ambiguous actor links": (id) => response(200, { items: [actorRelationship(id), actorRelationship(id, "actor.other")] }),
-  "wrong relationship source": (id) => response(200, { items: [actorRelationship(`${id}.wrong`)] }),
-  "wrong relationship kind": (id) => response(200, { items: [{ ...actorRelationship(id), qualifiedKind: "fixture.wrong" }] }),
-  "malformed target": (id) => response(200, { items: [{ ...actorRelationship(id), toEntityId: null }] }),
-};
 
 function assertUnavailableRoster(value) {
   assert.equal(value.status, "unavailable");
-  assert.match(value.message, /party roster.*completely/iu);
   assert.equal("party" in value, false, "A failed join must not expose a partial roster");
-  assert.equal(resolveHubSurface(value), "rules", "Bootstrap must not mount a complete table for this failure");
+  assert.equal(resolveHubSurface(value), "rules");
 }
 
-for (const failedIndex of [0, 2]) {
-  for (const [reason, fail] of Object.entries(FAILED_RELATIONSHIP_READS)) {
-    test(`registered party rejects ${reason} at participation ${failedIndex + 1}`, async () => {
-      const { value, calls } = await readRegisteredPartyBootstrap({
-        party: REGISTERED_TEST_PARTY,
-        readRelationships: (id) => id === REGISTERED_TEST_PARTY[failedIndex].id
-          ? fail(id) : response(200, { items: [actorRelationship(id)] }),
-        readActor: (id) => response(200, { entityId: id, name: id }),
-      });
-      assertUnavailableRoster(value);
-      assert.ok(calls.every((path) => !path.includes("/entities/actor.")),
-        "Do not hydrate actors from an incomplete relationship snapshot");
-    });
-  }
-  for (const [reason, fail] of Object.entries({
-    "HTTP failure": () => response(500, {}),
-    "transport failure": () => { throw new Error("Fixture transport failed"); },
-    "malformed JSON": FAILED_RELATIONSHIP_READS["malformed JSON"],
-    "wrong identity": (id) => response(200, { entityId: `${id}.wrong`, name: "Wrong actor" }),
-    "missing name": (id) => response(200, { entityId: id }),
+for (const failedIndex of [0, 19]) {
+  for (const [reason, mutate] of Object.entries({
+    "missing actor reference": entry => { entry.actors = []; },
+    "missing actor field (old contract)": entry => { delete entry.actors; },
+    "ambiguous actor references": entry => { entry.actors.push({ id: "actor.other", name: "Other" }); },
+    "missing actor identity": entry => { delete entry.actors[0].id; },
+    "missing actor name": entry => { delete entry.actors[0].name; },
+    "extra private fields": entry => { entry.actors[0].secret = "Hidden"; },
+    "invalid status": entry => { entry.status = "unknown"; },
   })) {
-    test(`registered party rejects actor ${reason} at participation ${failedIndex + 1}`, async () => {
-      const failedActorId = REGISTERED_TEST_PARTY[failedIndex].id.replace("participation.", "actor.caldris.");
-      const { value } = await readRegisteredPartyBootstrap({
-        party: REGISTERED_TEST_PARTY,
-        readActor: (id) => id === failedActorId ? fail(id) : response(200, { entityId: id, name: id }),
-      });
+    test(`batched roster rejects ${reason} at participation ${failedIndex + 1}`, async () => {
+      const party = Array.from({ length: 20 }, (_, index) => partyReference(index));
+      mutate(party[failedIndex]);
+      const { value, calls } = await readRegisteredPartyBootstrap({ party });
       assertUnavailableRoster(value);
+      assert.equal(calls.length, 3);
     });
   }
 }
 
-test("registered party rejects failed relationship continuations", async () => {
-  const { value } = await readRegisteredPartyBootstrap({
-    readRelationships: (id, request) => request.searchParams.has("cursor")
-      ? response(500, {})
-      : response(200, { items: [actorRelationship(id)], nextCursor: "second-page" }),
-  });
-  assertUnavailableRoster(value);
-});
-
-test("registered party cannot turn a failed single-member lookup into an empty roster", async () => {
-  for (const overrides of [
-    { readRelationships: () => response(500, {}) },
-    { readActor: () => response(500, {}) },
+test("batched roster fails closed on failed, denied and malformed object responses", async () => {
+  for (const queryResponse of [
+    () => response(500, {}), () => response(403, {}),
+    () => { throw new Error("Transport failure"); },
+    () => ({ ok: true, status: 200, json: async () => { throw new SyntaxError("Invalid JSON"); } }),
   ]) {
-    const { value } = await readRegisteredPartyBootstrap(overrides);
+    const { value, calls } = await readRegisteredPartyBootstrap({ queryResponse });
     assertUnavailableRoster(value);
-  }
-});
-
-test("registered party preserves every active actor and does not hydrate withdrawn participants", async () => {
-  const { value, calls } = await readRegisteredPartyBootstrap({
-    party: [...REGISTERED_TEST_PARTY, { id: "participation.withdrawn", name: "Withdrawn", status: "withdrawn" }],
-    readRelationships: (id) => {
-      assert.notEqual(id, "participation.withdrawn");
-      return response(200, { items: [actorRelationship(id)] });
-    },
-    readActor: (id) => response(200, { entityId: id, name: id }),
-  });
-  assert.equal(value.status, "connected");
-  assert.deepEqual(value.party.map(({ id }) => id),
-    REGISTERED_TEST_PARTY.map(({ id }) => id.replace("participation.", "actor.caldris.")));
-  assert.equal(calls.filter((path) => path.endsWith("/relationships")).length, 3);
-});
-
-for (const summary of [
-  { totalCount: 2, complete: false, nextCursor: "more-members" },
-  { totalCount: 2, complete: true, nextCursor: null },
-]) {
-  test(`registered party rejects incomplete summary ${JSON.stringify(summary)}`, async () => {
-    const { value, calls } = await readRegisteredPartyBootstrap({ summary });
-    assertUnavailableRoster(value);
-    assert.equal(calls.length, 3, "Reject incomplete membership before resolving actor links");
-  });
-}
-
-test("registered party preserves genuinely empty and withdrawn-only rosters", async () => {
-  for (const party of [[], REGISTERED_TEST_PARTY.map((entry) => ({ ...entry, status: "withdrawn" }))]) {
-    const { value, calls } = await readRegisteredPartyBootstrap({ party });
-    assert.equal(value.status, "connected");
-    assert.deepEqual(value.party, []);
     assert.equal(calls.length, 3);
   }
 });
 
-test("registered party deduplicates shared actors and duplicate links across complete pages", async () => {
-  const { value, calls } = await readRegisteredPartyBootstrap({
-    party: REGISTERED_TEST_PARTY,
-    readRelationships: (id, request) => response(200, {
-      items: [actorRelationship(id, "actor.caldris.ganji")],
-      nextCursor: request.searchParams.has("cursor") ? null : "second-page",
-    }),
-  });
-  assert.equal(value.status, "connected");
-  assert.deepEqual(value.party.map(({ id }) => id), ["actor.caldris.ganji"]);
-  assert.equal(calls.filter((path) => path.endsWith("/actor.caldris.ganji")).length, 1);
+test("batched roster rejects partial, over-limit and duplicated participation records", async () => {
+  for (const options of [
+    { summary: { totalCount: 2, complete: false, nextCursor: "more-members" } },
+    { summary: { totalCount: 2, complete: true, nextCursor: null } },
+    { party: Array.from({ length: 21 }, (_, index) => partyReference(index)) },
+    { party: [partyReference(0), partyReference(0)] },
+  ]) {
+    const { value, calls } = await readRegisteredPartyBootstrap(options);
+    assertUnavailableRoster(value);
+    assert.equal(calls.length, 3);
+  }
 });
+
+test("batched roster deduplicates shared actors, excludes withdrawn participants and rejects conflicting names", async () => {
+  const duplicate = { ...partyReference(1), actors: partyReference(0).actors };
+  const withdrawn = { ...partyReference(2), status: "withdrawn", actors: [] };
+  const { value, calls } = await readRegisteredPartyBootstrap({ party: [partyReference(0), duplicate, withdrawn] });
+  assert.equal(value.status, "connected");
+  assert.deepEqual(value.party.map(entry => entry.id), ["actor.0"]);
+  assert.equal(calls.length, 3);
+  const empty = await readRegisteredPartyBootstrap({ party: [withdrawn] });
+  assert.deepEqual(empty.value.party, []);
+  duplicate.actors = [{ id: "actor.0", name: "Conflicting name" }];
+  assertUnavailableRoster((await readRegisteredPartyBootstrap({ party: [partyReference(0), duplicate] })).value);
+});
+
+for (const role of ["game-master", "actor"]) {
+  test(`batched ${role} Player projection never accepts DM actor references`, async () => {
+    const party = Array.from({ length: 20 }, (_, index) => ({ ...partyReference(index), actors: [] }));
+    const { value, calls } = await readRegisteredPartyBootstrap({ party, role, perspective: "player" });
+    assert.equal(value.status, "connected");
+    assert.equal(calls.length, role === "actor" ? 4 : 3);
+    assert.ok(value.campaign.party.every(entry => entry.actors.length === 0));
+    if (role === "actor") assert.deepEqual(value.party.map(entry => entry.id), ["actor.0"]);
+    else assert.ok(value.party.every(entry => entry.id.startsWith("participation.")));
+    party[19].actors = [{ id: "actor.secret", name: "Secret" }];
+    assertUnavailableRoster((await readRegisteredPartyBootstrap({ party, role, perspective: "player" })).value);
+  });
+}
 
 const MEDIA_HASH = "3ae0336e89155a4a00fb0d982ae903bf9ed1137cd292b097b252fd38c1501fa3";
 

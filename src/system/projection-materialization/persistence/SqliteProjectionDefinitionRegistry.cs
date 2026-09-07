@@ -225,6 +225,21 @@ public sealed class SqliteProjectionDefinitionRegistry(
             || value.Limits.SqlQueries is < 1 or > 64)
             throw new ArgumentException("Application object resource limits exceed the supported profile.");
         var perspectives = new[] { "player", "dm" };
+        foreach (var relationship in relationships.Where(x => x.ReadPerspectives is not null))
+        {
+            // Narrowing is supported only for nested reference arrays. It cannot silently
+            // change a root collection, structural mapping, or its write semantics.
+            if (relationship.ReadPerspectives!.Count is < 1 or > 2 ||
+                relationship.ReadPerspectives.Distinct(StringComparer.Ordinal).Count() != relationship.ReadPerspectives.Count ||
+                relationship.ReadPerspectives.Any(x => !perspectives.Contains(x, StringComparer.Ordinal)) ||
+                relationship.Cardinality != "many" ||
+                !collections.Any(collection => relationships.Any(parent => parent.RelationshipId == collection.SourceId &&
+                    relationship.TargetPointer.StartsWith(parent.TargetPointer + "/*/", StringComparison.Ordinal) &&
+                    relationship.TargetPointer[(parent.TargetPointer.Length + 3)..].IndexOf('/') < 0 &&
+                    (relationship.Direction == "incoming" ? relationship.ToRole : relationship.FromRole) ==
+                    (parent.Direction == "incoming" ? parent.FromRole : parent.ToRole))))
+                throw new ArgumentException("Relationship read access must narrow a declared nested reference array.");
+        }
         if (value.Access.ReadPerspectives is null || value.Access.WritePerspectives is null
             || value.Access.ReadPerspectives.Count is < 1 or > 2 || value.Access.WritePerspectives.Count > 2
             || value.Access.ReadPerspectives.Any(x => !perspectives.Contains(x, StringComparer.Ordinal))
@@ -256,7 +271,9 @@ public sealed class SqliteProjectionDefinitionRegistry(
         return new(RegisteredApplicationObjectContract.ContractProfileId,
             Array.AsReadOnly(roles.OrderBy(x => x.RoleId, StringComparer.Ordinal).ToArray()),
             Array.AsReadOnly(value.Sources.OrderBy(x => x.InputId, StringComparer.Ordinal).ToArray()),
-            Array.AsReadOnly(relationships.OrderBy(x => x.RelationshipId, StringComparer.Ordinal).ToArray()),
+            Array.AsReadOnly(relationships.OrderBy(x => x.RelationshipId, StringComparer.Ordinal)
+                .Select(x => x.ReadPerspectives is null ? x : x with
+                { ReadPerspectives = Array.AsReadOnly(x.ReadPerspectives.Order(StringComparer.Ordinal).ToArray()) }).ToArray()),
             Array.AsReadOnly(value.References.OrderBy(x => x.InputId, StringComparer.Ordinal).ToArray()),
             Array.AsReadOnly(collections.OrderBy(x => x.CollectionId, StringComparer.Ordinal).ToArray()),
             value.Limits,

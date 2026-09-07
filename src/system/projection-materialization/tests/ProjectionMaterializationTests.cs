@@ -166,6 +166,117 @@ public sealed class ProjectionMaterializationTests : IDisposable
             materializer.MaterializeAsync(request with { Perspective = "player" }));
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(20)]
+    public async Task Catalog_campaign_batches_complete_rosters_and_never_reads_hidden_references(int count)
+    {
+        var counter = new CommandCounter();
+        var options = new DbContextOptionsBuilder<DantesRoleplayDbContext>()
+            .UseSqlite(_fixture.Connection).AddInterceptors(counter).Options;
+        await using var db = new DantesRoleplayDbContext(options);
+        var applications = new SqliteApplicationRegistry(db);
+        var game = ApplicationIdentifier.Parse("game");
+        var app = ApplicationIdentifier.Parse("dnd2024");
+        applications.Register(new(game, "Game", "", []));
+        var revision = applications.Register(new(app, "D&D", "", [game]));
+        var spaces = new SqliteStateSpaceRegistry(db, applications);
+        spaces.Create(new("batch-space", revision, new string('A', 64)));
+        var schemas = new BoundedJsonSchemaValidator();
+        var types = new SqliteComponentTypeRegistry(db, schemas);
+        var catalog = FindCatalog();
+        var rootType = types.Define(new(game, "game.core.campaign.root", File.ReadAllText(
+            Path.Combine(catalog, "components", "game", "core", "campaign", "root.schema.json"))));
+        var participationType = types.Define(new(game, "game.core.campaign.character-participation", File.ReadAllText(
+            Path.Combine(catalog, "components", "game", "core", "campaign", "character-participation.schema.json"))));
+        var store = new SqliteEntityComponentStore(db, types, schemas);
+        var edges = new SqliteStateSpaceEdgeStore(db, spaces);
+        await store.CreateEntityAsync("batch-space", "campaign", "Campaign");
+        await store.AddComponentAsync(new("batch-space", "campaign", Ref(rootType),
+            """{"status":"active","title":"Campaign","premise":"Premise","partyGoals":["Goal"],"toneAndBoundaries":["Boundary"],"rulesetScope":"dnd2024","creationMethod":"manual","reviewFingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}""", 0));
+        for (var i = 0; i < count; i++)
+        {
+            await store.CreateEntityAsync("batch-space", $"participation.{i:D2}", $"Participation {i:D2}");
+            await store.CreateEntityAsync("batch-space", $"actor.{i:D2}", $"Private actor {i:D2}");
+            await store.AddComponentAsync(new("batch-space", $"participation.{i:D2}", Ref(participationType), """{"status":"active"}""", 0));
+            await edges.SetRelationshipAsync("batch-space", "campaign", $"participation.{i:D2}", "game.core.campaign.has-character-participation", "{}", 0);
+            await edges.SetRelationshipAsync("batch-space", $"participation.{i:D2}", $"actor.{i:D2}", "game.core.campaign.character-participation.for-actor", "{}", 0);
+        }
+        // Unrelated entities are not candidates for either batch.
+        await store.CreateEntityAsync("batch-space", "unrelated", "Unrelated");
+        var registry = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications);
+        RegisteredProjectionDefinition definition = null!;
+        foreach (var suffix in new[] { ".v1", ".v2", "" })
+            definition = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(catalog,
+                "applications", "dnd2024", "objects", "campaign", $"dnd2024.object.campaign-summary{suffix}.json")), app));
+        var root = new ProjectionMaterializer(registry, store, spaces, schemas,
+            snapshots: new SqliteProjectionSourceSnapshotReader(db, spaces, store));
+        var materializer = new ProjectionCollectionMaterializer(registry, root, edges, store, store, schemas,
+            new SqliteProjectionReadTransaction(db));
+        var request = new ProjectionCollectionMaterializationRequest("batch-space", definition.Reference,
+            new Dictionary<string, string> { ["campaign"] = "campaign" }, "party", "dm", PageSize: 20);
+        counter.Reset();
+        var dm = await materializer.MaterializeAsync(request);
+        Assert.InRange(counter.Count, 1, 12);
+        var party = JsonNode.Parse(dm.OutputJson)!["party"]!.AsArray();
+        Assert.True(dm.Complete);
+        Assert.Equal(count, party.Count);
+        Assert.Equal(count, JsonNode.Parse(dm.OutputJson)!["totalCount"]!.GetValue<int>());
+        for (var i = 0; i < count; i++)
+        {
+            var actor = Assert.Single(party[i]!["actors"]!.AsArray());
+            Assert.Equal($"actor.{i:D2}", actor!["id"]!.GetValue<string>());
+            Assert.Equal($"Private actor {i:D2}", actor["name"]!.GetValue<string>());
+        }
+        counter.Reset();
+        var player = await materializer.MaterializeAsync(request with { Perspective = "player" });
+        Assert.InRange(counter.Count, 1, 12);
+        Assert.All(JsonNode.Parse(player.OutputJson)!["party"]!.AsArray(), item => Assert.Empty(item!["actors"]!.AsArray()));
+        Assert.DoesNotContain("Private actor", player.OutputJson);
+        Assert.DoesNotContain(player.EntityRevisions, entity => entity.EntityId.StartsWith("actor.", StringComparison.Ordinal));
+        Assert.DoesNotContain(player.RelationshipCollections, edge => edge.QualifiedKind.EndsWith("for-actor", StringComparison.Ordinal));
+        if (count > 0)
+        {
+            await edges.SetRelationshipAsync("batch-space", "participation.00", "unrelated",
+                "game.core.campaign.character-participation.for-actor", "{}", 0);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => materializer.MaterializeAsync(request));
+            await edges.RemoveRelationshipAsync("batch-space", "participation.00", "unrelated",
+                "game.core.campaign.character-participation.for-actor", 1);
+            // Hidden link changes do not become a Player cursor/fingerprint side channel.
+            await edges.RemoveRelationshipAsync("batch-space", "participation.00", "actor.00",
+                "game.core.campaign.character-participation.for-actor", 1);
+            var changed = await materializer.MaterializeAsync(request);
+            Assert.NotEqual(dm.SourceRevisionFingerprint, changed.SourceRevisionFingerprint);
+            var playerAgain = await materializer.MaterializeAsync(request with { Perspective = "player" });
+            Assert.Equal(player.SourceRevisionFingerprint, playerAgain.SourceRevisionFingerprint);
+            // Missing participation state cannot be filtered into a supposedly complete roster.
+            await store.RemoveComponentAsync("batch-space", "participation.00", Ref(participationType), 1);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => materializer.MaterializeAsync(request));
+        }
+    }
+
+    private static string FindCatalog()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+            if (Directory.Exists(Path.Combine(directory.FullName, "catalog"))) return Path.Combine(directory.FullName, "catalog");
+        throw new DirectoryNotFoundException("Repository catalog not found.");
+    }
+
+    [Fact]
+    public async Task Relationship_read_restrictions_cannot_change_root_collection_semantics()
+    {
+        var fixture = await CollectionFixtureAsync(RequiredCollectionSchema, "/items", 0);
+        var contract = fixture.Definition.ObjectContract!;
+        foreach (var read in new IReadOnlyList<string>[] { ["dm"], ["unknown"], [], ["dm", "dm"] })
+            Assert.Throws<ArgumentException>(() => fixture.Setup.Registry.Define(new(fixture.Setup.Application,
+                "required-collection.restricted", RequiredCollectionSchema, fixture.Definition.ComponentInputs,
+                fixture.Definition.DependencyInputs, fixture.Definition.Mappings,
+                new(contract.Roles, contract.Sources, [contract.Relationships[0] with { ReadPerspectives = read }],
+                    contract.References, contract.Collections, contract.Limits, contract.Access, null), 1)));
+    }
+
     [Fact]
     public async Task Versioned_structural_projection_materializes_dependencies_and_returns_source_evidence()
     {

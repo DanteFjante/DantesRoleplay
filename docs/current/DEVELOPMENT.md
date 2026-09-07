@@ -116,6 +116,22 @@ validating its exact registered output schema. Required collections must remain 
 schemas. Structural dependencies still validate before their results are consumed; ordinary structural
 reads never receive an incomplete root. Expansion stays inside the same bounded read transaction.
 
+Nested object reference arrays may declare `read: ["dm"]` (or another subset of the supported
+perspectives). The generic collection reader applies that restriction before retrieving edges or
+entity names; excluded arrays remain empty and contribute no hidden entity/relationship revisions.
+Omitting `read` preserves the prior contract and fingerprint. Restrictions cannot redefine root
+collections or grant access beyond the object's existing audience policy.
+
+Campaign summary v3 uses this batched nested-reference owner for up to 20 participations and
+20 actor links. DM bootstrap consumes their exact actor identities/names without per-member HTTP
+reads; Player projections retain participation identities only, with an Actor's own identity loaded
+through the existing authorized binding. Missing/ambiguous active actor references fail the DM
+bootstrap, shared actor identities are deduplicated, and withdrawn participations are excluded.
+Participation state is merged as an optional endpoint source but required by the final item schema,
+so absent/stale state fails validation instead of filtering a member out. The immutable v1/v2
+objects remain available. Activating v3 and publishing its matching browser require the normal
+explicit catalog/runtime synchronization boundary; source edits do not upgrade a running game.
+
 Time-coupled application mechanics use one `clock.advance` effect in the same effect batch as all
 sibling state changes. Their requirements declare `elapsedTime.mode` as `zero`, `fixed`, `derived`,
 or `supplied`; supplied durations name the closed input property and derived durations describe
