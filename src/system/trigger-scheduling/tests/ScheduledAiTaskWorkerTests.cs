@@ -36,8 +36,11 @@ public sealed class ScheduledAiTaskWorkerTests
         agent.Release.TrySetResult();
         var result = await running;
 
-        Assert.Equal(6, result.Claimed);
-        Assert.Equal(6, result.Completed);
+        Assert.Equal(4, result.Claimed);
+        Assert.Equal(4, result.Completed);
+        var remaining = await harness.Worker.RunBatchAsync("scheduled.parallel");
+        Assert.Equal(2, remaining.Claimed);
+        Assert.Equal(2, remaining.Completed);
         Assert.Equal(ScheduledAiTaskWorker.MaximumConcurrency, agent.PeakConcurrency);
         Assert.All(agent.Requests, request => Assert.Equal(AiRequestKind.ScheduledTask, request));
         Assert.False(agent.ReceivedApprovalGate);
@@ -238,6 +241,7 @@ public sealed class ScheduledAiTaskWorkerTests
         var time = new ManualTimeProvider(Now);
         var store = new SqliteScheduledAiTaskWorkStore(db, time);
         var lease = Assert.Single((await store.ClaimBatchAsync("scheduled.owner")).Leases);
+        Assert.True(await store.OwnsAsync(lease));
         time.Advance(SqliteScheduledAiTaskWorkStore.LeaseRenewalInterval);
         Assert.True(await store.RenewAsync(lease));
 
@@ -260,6 +264,94 @@ public sealed class ScheduledAiTaskWorkerTests
 
     private static AiResponse Success(string text) =>
         new(true, null, text, null, [], 0, 0);
+
+    [Fact]
+    public async Task Waiting_work_stays_unclaimed_beyond_a_lease_while_two_workers_deliver_once()
+    {
+        var time = new ManualTimeProvider(Now);
+        var agent = new BlockingAgent(4);
+        await using var harness = await Harness.CreateAsync(time, agent);
+        for (var index = 0; index < 8; index++) await harness.AddAsync($"lease-window-{index}", Now.AddMinutes(-1));
+        var first = harness.Worker.RunBatchAsync("scheduled.first");
+        Task<ScheduledAiTaskBatchResult>? second = null;
+        try
+        {
+            await agent.TargetEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            // Let the production heartbeat renew each active lease through fake timers.
+            for (var index = 0; index < 4; index++)
+            {
+                time.Advance(SqliteScheduledAiTaskWorkStore.LeaseRenewalInterval);
+                var expected = time.GetUtcNow().Add(SqliteScheduledAiTaskWorkStore.LeaseDuration).UtcDateTime;
+                await EventuallyAsync(async () =>
+                {
+                    await using var db = harness.CreateContext();
+                    return await db.ScheduledAiTaskWork.CountAsync(value =>
+                        value.LeaseOwner == "scheduled.first" && value.LeaseExpiresAtUtc >= expected) == 4;
+                });
+            }
+            Assert.True(time.GetUtcNow() > Now.Add(SqliteScheduledAiTaskWorkStore.LeaseDuration));
+            await using (var waiting = harness.CreateContext())
+            {
+                Assert.Equal(4, await waiting.ScheduledAiTaskWork.CountAsync(value =>
+                    value.State == "ready" && value.AttemptCount == 0 && value.LeaseOwner == null));
+            }
+            var other = new ScheduledAiTaskWorker(harness.Scopes, NullLogger<ScheduledAiTaskWorker>.Instance, time);
+            second = other.RunBatchAsync("scheduled.second");
+            await EventuallyAsync(() => Task.FromResult(agent.Calls == 8));
+            agent.Release.TrySetResult();
+            Assert.Equal(4, (await first).Completed);
+            var secondResult = await second;
+            Assert.Equal(4, secondResult.Completed);
+            Assert.Equal(0, secondResult.Recovered);
+            Assert.Equal(8, agent.Correlations.Distinct().Count());
+            Assert.Equal(8, agent.Calls);
+            await using var verify = harness.CreateContext();
+            Assert.Equal(8, await verify.ScheduledAiTaskWork.CountAsync(value =>
+                value.State == "completed" && value.AttemptCount == 1));
+        }
+        finally
+        {
+            agent.Release.TrySetResult();
+            await first.WaitAsync(TimeSpan.FromSeconds(5));
+            if (second is not null) await second.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+    }
+
+    [Fact]
+    public async Task Expired_or_superseded_lease_never_invokes_the_provider()
+    {
+        var time = new ManualTimeProvider(Now);
+        var agent = new TimedSequenceAgent(time);
+        await using var harness = await Harness.CreateAsync(time, agent);
+        await harness.AddAsync("stale-before-invocation", Now);
+        await using var db = harness.CreateContext();
+        var store = new SqliteScheduledAiTaskWorkStore(db, time);
+        var stale = Assert.Single((await store.ClaimBatchAsync("scheduled.old")).Leases);
+        time.Advance(SqliteScheduledAiTaskWorkStore.LeaseDuration.Add(TimeSpan.FromSeconds(1)));
+        await using (var scope = harness.Scopes.CreateAsyncScope())
+            Assert.Equal(ScheduledAiTaskExecutionOutcome.None,
+                await scope.ServiceProvider.GetRequiredService<ScheduledAiTaskExecutor>().ExecuteAsync(stale, default));
+        Assert.Equal(0, agent.Calls);
+        var recovered = Assert.Single((await store.ClaimBatchAsync("scheduled.new")).Leases);
+        await using (var scope = harness.Scopes.CreateAsyncScope())
+        {
+            var executor = scope.ServiceProvider.GetRequiredService<ScheduledAiTaskExecutor>();
+            Assert.Equal(ScheduledAiTaskExecutionOutcome.None, await executor.ExecuteAsync(stale, default));
+            Assert.Equal(0, agent.Calls);
+            Assert.Equal(ScheduledAiTaskExecutionOutcome.Completed, await executor.ExecuteAsync(recovered, default));
+        }
+        Assert.Equal(1, agent.Calls);
+    }
+
+    private static async Task EventuallyAsync(Func<Task<bool>> predicate)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (!await predicate())
+        {
+            Assert.True(DateTime.UtcNow < deadline, "The asynchronous fake-time work did not settle.");
+            await Task.Delay(10);
+        }
+    }
 
     private sealed class Harness : IAsyncDisposable
     {
@@ -360,6 +452,7 @@ public sealed class ScheduledAiTaskWorkerTests
         private readonly object gate = new();
         private DateTimeOffset now = now;
         private long timestamp;
+        private readonly List<ManualTimer> timers = [];
 
         public override DateTimeOffset GetUtcNow()
         {
@@ -375,11 +468,44 @@ public sealed class ScheduledAiTaskWorkerTests
 
         internal void Advance(TimeSpan duration)
         {
+            ManualTimer[] due;
             lock (gate)
             {
                 now = now.Add(duration);
                 timestamp += duration.Ticks;
+                due = timers.Where(timer => !timer.Disposed && timer.DueAt <= now).ToArray();
+                foreach (var timer in due) timer.DueAt = timer.Period == Timeout.InfiniteTimeSpan
+                    ? DateTimeOffset.MaxValue : now.Add(timer.Period);
             }
+            foreach (var timer in due) timer.Fire();
+        }
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            var timer = new ManualTimer(this, callback, state);
+            timer.Change(dueTime, period);
+            lock (gate) timers.Add(timer);
+            return timer;
+        }
+
+        private sealed class ManualTimer(ManualTimeProvider owner, TimerCallback callback, object? state) : ITimer
+        {
+            internal bool Disposed { get; private set; }
+            internal DateTimeOffset DueAt { get; set; }
+            internal TimeSpan Period { get; private set; }
+            public bool Change(TimeSpan dueTime, TimeSpan period)
+            {
+                lock (owner.gate)
+                {
+                    if (Disposed) return false;
+                    DueAt = dueTime == Timeout.InfiniteTimeSpan ? DateTimeOffset.MaxValue : owner.now.Add(dueTime);
+                    Period = period;
+                    return true;
+                }
+            }
+            internal void Fire() { if (!Disposed) callback(state); }
+            public void Dispose() { lock (owner.gate) { Disposed = true; owner.timers.Remove(this); } }
+            public ValueTask DisposeAsync() { Dispose(); return ValueTask.CompletedTask; }
         }
     }
 
@@ -395,6 +521,7 @@ public sealed class ScheduledAiTaskWorkerTests
         internal int Calls => Volatile.Read(ref calls);
         internal int PeakConcurrency => Volatile.Read(ref peak);
         internal ConcurrentBag<AiRequestKind> Requests { get; } = [];
+        internal ConcurrentBag<string> Correlations { get; } = [];
         internal bool ReceivedApprovalGate { get; private set; }
 
         public async Task<AiResponse> SendAsync(
@@ -408,6 +535,7 @@ public sealed class ScheduledAiTaskWorkerTests
             if (writeApprovalGate is not null || toolApprovalGate is not null)
                 ReceivedApprovalGate = true;
             Requests.Add(request.Kind);
+            Correlations.Add(context.CorrelationId);
             var count = Interlocked.Increment(ref calls);
             var current = Interlocked.Increment(ref running);
             UpdatePeak(current);

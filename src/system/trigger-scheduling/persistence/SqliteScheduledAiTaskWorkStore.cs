@@ -18,12 +18,15 @@ internal sealed class SqliteScheduledAiTaskWorkStore(
 
     internal async Task<ScheduledAiTaskClaimBatch> ClaimBatchAsync(
         string workerId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int maximumCount = MaximumBatchSize)
     {
         ValidateWorkerId(workerId);
+        if (maximumCount is < 1 or > MaximumBatchSize)
+            throw new ArgumentOutOfRangeException(nameof(maximumCount));
         var now = timeProvider.GetUtcNow();
         await DiscoverAsync(now, cancellationToken);
-        var exhausted = await FindExhaustedAsync(now, cancellationToken);
+        var exhausted = await FindExhaustedAsync(now, maximumCount, cancellationToken);
         db.ChangeTracker.Clear();
         var utc = now.UtcDateTime;
         var candidates = await db.ScheduledAiTaskWork.AsNoTracking()
@@ -34,7 +37,7 @@ internal sealed class SqliteScheduledAiTaskWorkStore(
                 value.State == "leased" && value.LeaseExpiresAtUtc <= utc))
             .OrderBy(value => value.EnqueuedAtUtc)
             .ThenBy(value => value.NotificationId)
-            .Take(MaximumBatchSize - exhausted.Count)
+            .Take(maximumCount - exhausted.Count)
             .Select(value => new Candidate(
                 value.NotificationId, value.State, value.EnqueuedAtUtc))
             .ToArrayAsync(cancellationToken);
@@ -102,6 +105,15 @@ internal sealed class SqliteScheduledAiTaskWorkStore(
         return changed == 1;
     }
 
+    internal Task<bool> OwnsAsync(ScheduledAiTaskLease lease, CancellationToken cancellationToken = default)
+    {
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        return db.ScheduledAiTaskWork.AsNoTracking().AnyAsync(value =>
+            value.NotificationId == lease.NotificationId && value.State == "leased" &&
+            value.AttemptCount == lease.Attempt && value.LeaseOwner == lease.WorkerId &&
+            value.LeaseToken == lease.LeaseToken && value.LeaseExpiresAtUtc > now, cancellationToken);
+    }
+
     internal async Task<bool> FinishExhaustedAsync(
         string notificationId,
         CancellationToken cancellationToken = default)
@@ -137,6 +149,7 @@ internal sealed class SqliteScheduledAiTaskWorkStore(
 
     private async Task<IReadOnlyList<string>> FindExhaustedAsync(
         DateTimeOffset now,
+        int maximumCount,
         CancellationToken cancellationToken)
     {
         var utc = now.UtcDateTime;
@@ -145,7 +158,7 @@ internal sealed class SqliteScheduledAiTaskWorkStore(
                 value.LeaseExpiresAtUtc <= utc)
             .OrderBy(value => value.LeaseExpiresAtUtc)
             .ThenBy(value => value.NotificationId)
-            .Take(MaximumBatchSize)
+            .Take(maximumCount)
             .Select(value => value.NotificationId)
             .ToArrayAsync(cancellationToken);
     }

@@ -199,7 +199,9 @@ internal sealed class ScheduledAiTaskWorker(
         await using (var claimScope = scopes.CreateAsyncScope())
         {
             var store = claimScope.ServiceProvider.GetRequiredService<SqliteScheduledAiTaskWorkStore>();
-            batch = await store.ClaimBatchAsync(workerId, cancellationToken);
+            // Every claimed lease must enter execution immediately, including when exhausted
+            // work shares this batch. Durable ready rows do not need local queue heartbeats.
+            batch = await store.ClaimBatchAsync(workerId, cancellationToken, MaximumConcurrency);
         }
 
         using var concurrency = new SemaphoreSlim(MaximumConcurrency, MaximumConcurrency);
@@ -361,6 +363,10 @@ internal sealed class ScheduledAiTaskExecutor(
                 "SCHEDULED_AI_TASK_RESOLUTION_STALE",
                 "The scheduled task was not run because its application extensions changed.");
 
+        // Recovery may have replaced this owner during activation or notification reads.
+        // Do not spend provider work under an expired or superseded lease.
+        if (!await work.OwnsAsync(lease, cancellationToken))
+            return ScheduledAiTaskExecutionOutcome.None;
         var started = timeProvider.GetTimestamp();
         AiResponse response;
         try

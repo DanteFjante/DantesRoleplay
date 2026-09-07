@@ -369,6 +369,15 @@ An older database is not migrated by opening a change feed. Apply migrations thr
 initialization boundary and retain a pre-migration database backup: downgrading this marker requires
 restoring that backup, because removing its table alone would leave triggers referencing it.
 
+## Scheduled provider work
+
+Scheduled AI workers claim at most their available execution capacity, counting exhausted-work
+finalization in the same bound. Waiting work remains durable and unclaimed instead of consuming
+an unrenewed lease in a local semaphore queue. Immediately before invoking a provider, the executor
+rechecks the lease owner, token, attempt and expiry. Running calls retain their existing heartbeat
+and transactional result fence; this does not promise exactly-once external provider execution
+after process loss or a provider/network failure.
+
 ## Changes needing confirmation
 
 Pause for confirmation before introducing permanent IDs, changing schema meaning, adding a migration, changing a public surface, crossing an ownership boundary semantically, or performing a destructive operation that the user has not already authorized.
