@@ -386,6 +386,7 @@ _to_delete/
 out-*.txt
 verify.txt
 DantesRoleplay.MCPServer/data/dantesroleplay.db
+/data/dantesroleplay.db
 *.db.backup-*
 
 # Named local verification outputs. These are alternate build directories, not source.

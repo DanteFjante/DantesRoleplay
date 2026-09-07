@@ -24,14 +24,32 @@ param(
     [ValidateSet('Actor', 'GameMaster')]
     [string] $Role     = 'GameMaster',
     [string] $ActorId  = 'actor.caldris.ganji',
-    [string] $Campaign = 'campaign.caldris.measure-of-mercy'
+    [string] $Campaign = 'campaign.caldris.measure-of-mercy',
+    [string] $Database,
+    [string] $BlobRoot
 )
 
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $exe  = Join-Path $root 'DantesRoleplay.MCPServer\bin\Debug\net10.0\win-x64\DantesRoleplay.MCPServer.exe'
+$databasePath = if ($Database) {
+    [IO.Path]::GetFullPath($Database)
+} else {
+    Join-Path $root 'DantesRoleplay.MCPServer\data\dantesroleplay.db'
+}
+$blobStorageRoot = if ($BlobRoot) {
+    [IO.Path]::GetFullPath($BlobRoot)
+} else {
+    Join-Path (Split-Path -Parent $databasePath) 'blobs'
+}
 
 if (-not (Test-Path $exe)) { throw "Not built yet: $exe. Run: dotnet build DantesRoleplay.slnx" }
+if (-not (Test-Path -LiteralPath $databasePath -PathType Leaf)) {
+    throw "Runtime database not found: $databasePath. Restore a reviewed snapshot or pass -Database explicitly."
+}
+if (-not (Test-Path -LiteralPath $blobStorageRoot -PathType Container)) {
+    throw "Blob storage not found: $blobStorageRoot. Restore the matching blob set or pass -BlobRoot explicitly."
+}
 
 if ($Restart) {
     Get-Process DantesRoleplay.MCPServer -ErrorAction SilentlyContinue | Stop-Process -Force
@@ -45,6 +63,9 @@ if (Get-Process DantesRoleplay.MCPServer -ErrorAction SilentlyContinue) {
 
 $env:ASPNETCORE_ENVIRONMENT              = 'Development'
 $env:ASPNETCORE_URLS                     = 'http://localhost:6217'
+$env:ConnectionStrings__Kernel           = $databasePath
+$env:BlobStorage__Root                   = $blobStorageRoot
+$env:Sources__AllowedRoots__repository   = $root
 $env:DANTESROLEPLAY_OLLAMA_COMPLETION    = 'true'
 $env:Knowledge__Completion__Enabled      = 'true'
 $env:Knowledge__LocalPlayer__Enabled     = 'true'
@@ -68,6 +89,8 @@ Start-Process -FilePath 'cmd.exe' `
     -ArgumentList $cmdArguments `
     -WindowStyle Hidden
 Write-Host "Starting as seat Role=$Role ..." -ForegroundColor Cyan
+Write-Host "    Database: $databasePath" -ForegroundColor DarkGray
+Write-Host "    Blobs:    $blobStorageRoot" -ForegroundColor DarkGray
 
 # Keep this loop well under a remote shell's ~60s call budget: if the caller times out, the
 # teardown can take the freshly started server with it.

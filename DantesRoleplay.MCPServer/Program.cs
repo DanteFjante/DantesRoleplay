@@ -19,13 +19,18 @@ var builder = WebApplication.CreateBuilder(args);
 var developmentInformationScope = builder.Configuration["Information:DevelopmentScope"]
     ?? Environment.GetEnvironmentVariable("DANTESROLEPLAY_DEVELOPMENT_INFORMATION_SCOPE")
     ?? "local.*";
-var databasePath = builder.Configuration.GetConnectionString("Kernel")
-    ?? Path.Combine(builder.Environment.ContentRootPath, "data", "dantesroleplay.db");
-var blobStorageRoot = builder.Configuration["BlobStorage:Root"]
-    ?? Path.Combine(Path.GetDirectoryName(Path.GetFullPath(databasePath))!, "blobs");
-var allowedSourceRoots = builder.Configuration.GetSection("Sources:AllowedRoots")
-    .GetChildren()
-    .ToDictionary(child => child.Key, child => child.Value ?? string.Empty, StringComparer.Ordinal);
+var runtimeStorage = RuntimeStoragePaths.Resolve(
+    builder.Environment.ContentRootPath,
+    builder.Configuration.GetConnectionString("Kernel"),
+    builder.Configuration["BlobStorage:Root"],
+    builder.Configuration["Retrieval:DerivedDataDirectory"]);
+var databasePath = runtimeStorage.DatabasePath;
+var blobStorageRoot = runtimeStorage.BlobStorageRoot;
+var allowedSourceRoots = RuntimeStoragePaths.ResolveSourceRoots(
+    builder.Environment.ContentRootPath,
+    builder.Configuration.GetSection("Sources:AllowedRoots")
+        .GetChildren()
+        .Select(child => new KeyValuePair<string, string?>(child.Key, child.Value)));
 var publishedApplicationCatalogs = builder.Configuration.GetSection("Catalogs:PublishedApplications")
     .GetChildren().Select(child => child.Value ?? string.Empty).ToArray();
 
@@ -70,9 +75,7 @@ if (embeddingOptions.Enabled)
         new OllamaEmbeddingProvider(
             services.GetRequiredService<IHttpClientFactory>().CreateClient("local-assistant"),
             embeddingOptions));
-    builder.Services.AddInteractionRetrievalDerivedIndex(
-        builder.Configuration["Retrieval:DerivedDataDirectory"]
-            ?? Path.Combine(Path.GetDirectoryName(Path.GetFullPath(databasePath))!, "derived"));
+    builder.Services.AddInteractionRetrievalDerivedIndex(runtimeStorage.DerivedDataRoot);
     builder.Services.AddHostedService(services => new InteractionRetrievalWarmup(
         services.GetRequiredService<IServiceScopeFactory>(),
         publishedApplicationCatalogs,
@@ -135,6 +138,12 @@ builder.Services.AddDantesRoleplayWeb(databasePath, builder.Configuration);
 builder.Services.AddScoped<ApplicationReadinessService>();
 
 var app = builder.Build();
+
+app.Logger.LogInformation(
+    "Runtime storage resolved to database {DatabasePath}, blobs {BlobStorageRoot}, and derived data {DerivedDataRoot}.",
+    runtimeStorage.DatabasePath,
+    runtimeStorage.BlobStorageRoot,
+    runtimeStorage.DerivedDataRoot);
 
 // Migrate, then seed the bootstrap contracts from the embedded markdown files. Seeding is
 // idempotent by content hash, so a restart with no edits writes nothing.

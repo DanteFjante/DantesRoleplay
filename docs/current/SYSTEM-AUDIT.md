@@ -294,25 +294,25 @@ Candidates: `src/system/web-interface/dnd2024/src/components/HubUnavailable.tsx`
 
 **Owner:** web fixtures, authored media, publication tooling.
 
-The D&D web `public/` directory has **38 tracked files totaling 14,635,427 bytes (13.96 MiB)**. `vite.server.config.ts:12` sets `publicDir: false`, so they are not copied wholesale into the server build. Several filenames are still referenced by the fixture world (`src/server/hub-source.js`) and fixture tests. Treat the group as fixture/source assets, not automatically dead runtime assets.
+SC13 resolved the inventory. `docs/world/` owns authored world-building inputs. The 13 files and 3,220,812 bytes under `src/system/web-interface/dnd2024/test/support/assets/` are reproducible fixture inputs and remain referenced by the fixture source/tests. The 25 files and 11,416,821 bytes under the D&D web `public/` directory are retained historical publication inputs: `publicDir: false` excludes them from the current build, while the live database retains page-revision-owned copies of older published variants. The source and historical hashes are intentionally not treated as interchangeable.
 
-Additional tracked source media exists under `DantesRoleplay.Web/BrowserComponents/MapImages/` and `BrowserComponents/Media/`, including both `caldris-eredane.png` and `caldris-eredane-v2.png`. No reference to the searched path names was found in the inspected code/catalog text. This does **not** exclude database-held, historical-page, external tooling, or excluded world-workspace references. Content similarity and live blob provenance were not compared.
+The 17 files and 59,024,253 bytes below `DantesRoleplay.Web/BrowserComponents/MapImages/` and `BrowserComponents/Media/` had no build owner. Every file had an exact authored counterpart in `docs/world/` and an exact SHA-256-addressed live blob; all 91 live blob filenames were independently checked against their content. SC13 therefore removed only those duplicate BrowserComponents copies. Git history, the authored inputs, the live blob set and the versioned recovery export provide independent readback paths.
 
-**Later pass:** create a source-asset inventory with fixture, live publication, immutable blob, and historical reference owners. Relocate fixture-only assets if helpful; retire versions only after that inventory proves they are unused. Do not delete an image because its name has a version suffix.
-
-**Acceptance:** reproducible fixture/browser tests, asset-hash and page readback, and no broken live or historical image URL.
+**Disposition:** resolved in SC13. Fixture, authored, historical-page and live-blob roles remain separate; no historical page asset or live blob was deleted.
 
 ### O05 — A second tracked database has an unclear purpose
 
 **Owner:** runtime startup, development setup and catalog tooling.
 
-`data/dantesroleplay.db` is tracked and **2,150,400 bytes**. Read-only inspection found 134 tables, zero operations and zero web pages. The current server uses the separate `DantesRoleplay.MCPServer/data/dantesroleplay.db`, which had 143 tables, 5,772 operations and three web pages at inspection. The stores are not interchangeable copies.
+The former tracked `data/dantesroleplay.db` was 2,150,400 bytes, behind the current migration set, and contained zero operations, web pages, blob records or activation revisions. Its history established no supported consumer or refresh process. It was not a seed and was never merged into another database; SC13 removed it and added an explicit root-path ignore rule so it cannot silently reacquire that role.
 
-`DantesRoleplay.MCPServer/Program.cs:22` defaults the database below the content root. `run-mcp-server.ps1` supplies the MCPServer working directory; tooling help also points to the MCP server database. The root database has not been proved to be an intentionally maintained seed, and no supported consumer was established during this pass.
+The ignored `DantesRoleplay.MCPServer/data/dantesroleplay.db` is the canonical live store. SC13 promoted the reviewed Slice 6 recovery copy into that path without overwriting an existing target, then let the normal host apply its pending migration and reviewed catalog activation. Final read-only verification found an intact 298,262,528-byte database with 70 migrations, 5,786 operations, three pages, 69 page revisions, 591 page assets, 91 blob records and 55 activation-revision records. D&D is active at revision 54. Its adjacent 91-file blob store totals 116,294,935 bytes, and each filename matches the content SHA-256.
 
-**Later pass:** identify its creation/consumer history and either document an explicit seed contract or retire it. Make database selection visible in startup diagnostics and verify launch behavior from different working directories. Do not import, overwrite, or merge these databases based on filename similarity.
+`data/exports/2026-09-06/` is the maintained, immutable recovery capture, not a catalog seed or live store. Its 1,711 tracked files total 212,234,833 bytes; its restore program verifies the manifest and rows, refuses an existing destination and restores database plus blobs only to a new directory. A fresh development store remains reproducible through migrations, kernel bootstrap and explicit catalog import rather than a committed SQLite seed.
 
-**Acceptance:** fresh setup remains reproducible, the intended runtime binding is unchanged, and any retained seed has an owner and refresh policy.
+Runtime settings now use host-content-root-relative database/source paths, normalize database, blob, derived-data and source roots before registration, and log the resolved storage paths. `run-mcp-server.ps1` binds and reports explicit absolute database/blob paths and refuses missing pairs. This makes startup independent of the caller's working directory while keeping the host generic.
+
+**Disposition:** resolved in SC13. The live store, recovery capture and authored catalog each have one distinct owner; the stale former-checkout absolute bindings and ambiguous tracked database are gone.
 
 ### O06 — Dated entry status can mislead future work
 
@@ -538,8 +538,8 @@ Application query contracts retain their existing response envelope and discover
 | O01 | Exact five tracked output directories are removed after clean-checkout proof; precise ignores replace accidental tracking | 11 |
 | O02 | Each of 14 excluded files gets a replacement-test or retained-history disposition; protocol walk remains | 11, 16 |
 | O03 | Two unreferenced components and only proven unused selectors are removed after mounted/build proof | 11 |
-| O04 | Retained until fixture/live/page/blob ownership and hash readback are established | 13 |
-| O05 | Retained until the root database is proved seed or obsolete; never merged by filename | 13 |
+| O04 | Resolved: fixture, authored, historical-page and blob owners inventoried; only hash-proved duplicate source copies retired | 13 |
+| O05 | Resolved: obsolete root database retired without merge; canonical live and versioned recovery roles made explicit | 13 |
 | O06 | Volatile dated status is refreshed or removed from the entry guide using actual acceptance evidence | 11 |
 | R01 | All 86 manifest records and 15 mechanic pairs remain until identity/history checks permit selected retirement | 16 |
 | R02 | Fixture-only projection sources move to test support after connected-path parity; fixtures themselves remain | 10, 11 |
@@ -728,11 +728,15 @@ validation, the web suite and the protocol walk are not required for this slice.
 
 ### Slice 13 (SC13) — Media and database ownership
 
-**Status:** Not started. **Finding coverage:** O04, O05.
+**Status:** Complete (2026-09-07). **Finding coverage:** O04, O05.
 
-Resolve each fixture/source image, historical page asset and candidate root database to an owner and retention purpose. Distinguish live SQLite/blob data from authored catalog/source files. Confirm supported launch/setup behavior with explicit database paths; establish a maintained seed contract if a seed is retained.
+The ownership review assigns authored media to `docs/world/`, fixture media to `test/support/assets/`, retained historical publication inputs to web `public/`, immutable historical page bytes to SQLite page revisions, and live content-addressed media to the adjacent blob store. The 17 BrowserComponents image copies were removed only after exact content hashes established both authored and blob readback. No page-revision asset or live blob changed.
 
-**Cleanup and exit:** reviewed disposition with live/historical references and backup/readback needs. No merge, overwrite or deletion based on matching filenames or missing text-search references. This slice supplies the prerequisites for storage work and selected retirement.
+The full recovered database/blob pair now occupies the canonical ignored MCP data paths. The unrelated small tracked root database was proved obsolete and removed without merge or overwrite. The dated tracked export is the maintained point-in-time recovery boundary; there is deliberately no committed SQLite seed. Startup resolves configured relative storage/source paths from the host content root, reports its exact binding, and the convenience launcher accepts and validates explicit database/blob paths.
+
+The recovered schema history also exposed three Slice 10 object inputs whose current hashes had been paired with stale version numbers. The source records now pin the retained live versions (character creation v3, feature entitlements v2 and item quantity v2); the generic component registry recorded quantity v2, and D&D activation revision 54 materializes 3,582 winners with no problems. Runtime readiness then passed all eight checks. No application-specific behavior was added to the C# host.
+
+**Cleanup and exit:** database integrity is `ok`; all 91 blob hashes pass; focused path/version-history/materialization tests pass 21/21; and the full Release solution passes 1,977/1,977 tests. Catalog validation passes all 600 records with the same seven unchanged legacy warnings. The D&D web verification passes 264 Node tests, 78 mounted tests, typecheck and the production build. A recovery rehearsal restored the tracked export to a new temporary directory, matched all 143 tables and 91 blobs, and left the live target untouched; its disposable copy was then removed. The versioned export and Git history cover recovery for every retired tracked item. The retained web `public/` assets are historical inputs rather than live URL authority, and selected storage deduplication remains SC14 work.
 
 ### Slice 14 (SC14) — Durable storage deduplication
 

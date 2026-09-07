@@ -13,9 +13,9 @@
   },
   "roles": { "subject": { "required": true } },
   "sources": [
-    { "id": "creation", "role": "subject", "component": { "qualifiedId": "dnd2024.character-creation-record", "version": 1, "schemaHash": "9986B4B84B79DAA9C298A04D2432329253ADA175FE25209A4D81259A40D44D22" }, "required": true },
+    { "id": "creation", "role": "subject", "component": { "qualifiedId": "dnd2024.character-creation-record", "version": 3, "schemaHash": "9986B4B84B79DAA9C298A04D2432329253ADA175FE25209A4D81259A40D44D22" }, "required": true },
     { "id": "origin", "role": "subject", "component": { "qualifiedId": "dnd2024.character.origin-selections", "version": 1, "schemaHash": "D53B87E1DF01647EAB7C87645A6B98B9FC83CE4E16C1B2B14837983251D3FEF0" }, "required": true },
-    { "id": "features", "role": "subject", "component": { "qualifiedId": "dnd2024.character.feature-entitlements", "version": 1, "schemaHash": "8D820FF249FC486C99ECD62323FB7E797D0381B9018DC3A9BEE7DD844C9EE3D7" }, "required": true }
+    { "id": "features", "role": "subject", "component": { "qualifiedId": "dnd2024.character.feature-entitlements", "version": 2, "schemaHash": "8D820FF249FC486C99ECD62323FB7E797D0381B9018DC3A9BEE7DD844C9EE3D7" }, "required": true }
   ],
   "relationships": [],
   "references": [],

@@ -9100,6 +9100,14 @@ public sealed class Dnd2024AbilityCheckTests
                 if (primaryTypeIds.Contains(componentId)) continue;
 
                 var definition = await DefinitionAsync(componentId);
+                var retainedVersions = componentId switch
+                {
+                    "dnd2024.character-creation-record" => 2,
+                    "dnd2024.character.feature-entitlements" => 1,
+                    "dnd2024.item.quantity" => 1,
+                    _ => 0
+                };
+                RegisterPriorComponentVersions(types, definition.Id, retainedVersions);
                 additionalTypes[definition.Id] = types.Define(new(Application, definition.Id, definition.Schema));
             }
             foreach (var componentId in new[]
@@ -9232,6 +9240,16 @@ public sealed class Dnd2024AbilityCheckTests
 
             return new(fixture, abilities, proficiencies, hitPoints, speed, additionalTypes,
                 activation.Activation.Winners.Select(value => value.RelativePath).ToHashSet(StringComparer.Ordinal));
+        }
+
+        private static void RegisterPriorComponentVersions(
+            SqliteComponentTypeRegistry types,
+            string componentId,
+            int count)
+        {
+            for (var version = 1; version <= count; version++)
+                types.Define(new(Application, componentId,
+                    $$"""{"type":"object","title":"retained-prior-v{{version}}"}"""));
         }
 
         public async Task<ApplicationMechanicEvaluationResult> EvaluateAsync(

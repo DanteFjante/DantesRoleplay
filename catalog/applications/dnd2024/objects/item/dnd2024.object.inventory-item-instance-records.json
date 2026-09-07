@@ -18,7 +18,7 @@
   },
   "sources": [
     { "id": "definitionLink", "role": "item", "component": { "qualifiedId": "dnd2024.core.definition-link", "version": 1, "schemaHash": "4EEB5C2EDCAFFA1B9DEF830FD4650B574AACE8D41BFAB6EB2978114B0C591890" }, "required": true },
-    { "id": "quantity", "role": "item", "component": { "qualifiedId": "dnd2024.item.quantity", "version": 1, "schemaHash": "EE3183B792C710122B0ABA4B4B230EB732136EB4519C0C6A4F5E2E3E6F1D695C" }, "required": false },
+    { "id": "quantity", "role": "item", "component": { "qualifiedId": "dnd2024.item.quantity", "version": 2, "schemaHash": "EE3183B792C710122B0ABA4B4B230EB732136EB4519C0C6A4F5E2E3E6F1D695C" }, "required": false },
     { "id": "equipment", "role": "item", "component": { "qualifiedId": "dnd2024.item.equipment", "version": 1, "schemaHash": "49B3805C1BE10A5FB12E7C739D535CF878F54090D104F3078C04E51595A1CE58" }, "required": false }
   ],
   "relationships": [],
