@@ -1645,6 +1645,85 @@ public sealed class WebInterfaceTests
         Assert.Equal(1, changes.Current.Cursor);
     }
 
+    [Theory]
+    [InlineData("visible", true, "player")]
+    [InlineData("visible", false, "dm")]
+    [InlineData("private", true, "player")]
+    [InlineData("private", false, "player")]
+    [InlineData("other-app", true, "player")]
+    [InlineData("other-app", false, "dm")]
+    [InlineData("other-space", true, "dm")]
+    [InlineData("other-space", false, "player")]
+    [InlineData("none", true, "player")]
+    [InlineData("none", false, "dm")]
+    public async Task Mixed_commits_invalidate_even_when_delivery_rows_are_filtered(
+        string delivery, bool untrackedFirst, string perspective)
+    {
+        var connectionString = SharedMemoryConnectionString();
+        await using var keeper = new SqliteConnection(connectionString);
+        await keeper.OpenAsync();
+        await using var writer = CreateWebContext(connectionString);
+        await writer.Database.EnsureCreatedAsync();
+        await writer.Database.ExecuteSqlRawAsync("CREATE TABLE recovery_test_state (value INTEGER); INSERT INTO recovery_test_state VALUES (0)");
+        await CreateChangeDeliveryTableAsync(writer);
+        await using var observer = CreateWebContext(connectionString);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await using var changes = new SqliteWebChangeFeed(observer).WatchAsync(
+            new WebChangeSubscription("fixture", "fixture-space", perspective),
+            pollInterval: TimeSpan.FromMilliseconds(10), keepAliveInterval: TimeSpan.FromMilliseconds(50),
+            cancellationToken: timeout.Token).GetAsyncEnumerator(timeout.Token);
+        Assert.True(await changes.MoveNextAsync());
+        async Task Untracked() => await writer.Database.ExecuteSqlRawAsync("UPDATE recovery_test_state SET value=value+1");
+        if (untrackedFirst) await Untracked();
+        await InsertChangeAsync(writer, delivery == "other-app" ? "other" : "fixture",
+            delivery == "other-space" ? "other-space" : "fixture-space", "private.identity",
+            delivery == "none" ? "[]" : delivery == "private" ? "[\"dm\"]" : "[\"player\",\"dm\"]", "tracked");
+        if (delivery == "none")
+            await writer.Database.ExecuteSqlRawAsync("UPDATE system_application_object_change SET Scope='none', ObjectQualifiedId=NULL, ObjectVersion=NULL");
+        if (!untrackedFirst) await Untracked();
+        Assert.True(await changes.MoveNextAsync());
+        Assert.Equal("untracked-commit", changes.Current.Reason);
+        Assert.Equal(WebChangeKind.Invalidate, changes.Current.Kind);
+        Assert.Equal(1, changes.Current.Cursor);
+        Assert.Equal("fixture-space", changes.Current.StateSpaceId);
+        Assert.DoesNotContain("private.identity", WebChangeSseFormatter.Format(changes.Current), StringComparison.Ordinal);
+        Assert.True(await changes.MoveNextAsync());
+        Assert.Equal(WebChangeKind.KeepAlive, changes.Current.Kind);
+    }
+
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("schema-drift")]
+    [InlineData("missing-trigger")]
+    public async Task Incomplete_recovery_coverage_fails_closed_despite_tracked_delivery(string damage)
+    {
+        var connectionString = SharedMemoryConnectionString();
+        await using var keeper = new SqliteConnection(connectionString);
+        await keeper.OpenAsync();
+        await using var writer = CreateWebContext(connectionString);
+        await writer.Database.EnsureCreatedAsync();
+        await CreateChangeDeliveryTableAsync(writer);
+        if (damage == "missing") await writer.Database.ExecuteSqlRawAsync("DELETE FROM system_change_recovery");
+        await using var observer = CreateWebContext(connectionString);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await using var changes = new SqliteWebChangeFeed(observer).WatchAsync(
+            new WebChangeSubscription("fixture", "fixture-space", "player"),
+            pollInterval: TimeSpan.FromMilliseconds(10), cancellationToken: timeout.Token).GetAsyncEnumerator(timeout.Token);
+        Assert.True(await changes.MoveNextAsync());
+        if (damage == "schema-drift") await writer.Database.ExecuteSqlRawAsync("CREATE TABLE new_uncovered_table (value INTEGER)");
+        if (damage == "missing-trigger")
+        {
+            await using var command = keeper.CreateCommand();
+            command.CommandText = "SELECT name FROM sqlite_schema WHERE type='trigger' AND name LIKE 'system_change_recovery_%' LIMIT 1";
+            var name = (string)(await command.ExecuteScalarAsync())!;
+            command.CommandText = "DROP TRIGGER \"" + name.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+            await command.ExecuteNonQueryAsync();
+        }
+        await InsertChangeAsync(writer, "fixture", "fixture-space", "some.object", "[\"player\"]", "tracked");
+        Assert.True(await changes.MoveNextAsync());
+        Assert.Equal("untracked-commit", changes.Current.Reason);
+    }
+
     [Fact]
     public void Local_web_access_fails_closed_except_for_ipv4_and_ipv6_loopback()
     {
@@ -3502,8 +3581,9 @@ public sealed class WebInterfaceTests
         return new WebContentDbContext(options);
     }
 
-    private static Task CreateChangeDeliveryTableAsync(WebContentDbContext db) =>
-        db.Database.ExecuteSqlRawAsync("""
+    private static async Task CreateChangeDeliveryTableAsync(WebContentDbContext db)
+    {
+        await db.Database.ExecuteSqlRawAsync("""
             CREATE TABLE system_application_object_change (
                 "Cursor" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                 "ContractVersion" INTEGER NOT NULL,
@@ -3518,6 +3598,9 @@ public sealed class WebInterfaceTests
                 "CreatedAtUtc" TEXT NOT NULL
             );
             """);
+        await db.Database.ExecuteSqlRawAsync(DantesRoleplay.SqliteInfrastructure.SqliteChangeRecovery.CreateSql);
+        await DantesRoleplay.SqliteInfrastructure.SqliteChangeRecovery.InstallAsync(db.Database.GetDbConnection());
+    }
 
     private static Task InsertChangeAsync(
         WebContentDbContext db,

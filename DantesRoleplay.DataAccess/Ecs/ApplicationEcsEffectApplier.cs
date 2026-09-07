@@ -1,6 +1,7 @@
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Operations;
+using DantesRoleplay.SqliteInfrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -54,12 +55,16 @@ public sealed class ApplicationEcsEffectApplier(
             await VerifyEntitiesAsync(batch, cancellationToken);
             await VerifyRelationshipsAsync(batch, cancellationToken);
             await VerifyContainmentsAsync(batch, cancellationToken);
+            var recoveryBefore = await SqliteChangeRecovery.ReadAsync(db.Database.GetDbConnection(),
+                transaction.GetDbTransaction(), cancellationToken);
             for (var index = 0; index < batch.Effects.Count; index++)
             {
                 currentIndex = index;
                 receipts.Add(await ApplyOneAsync(batch.StateSpaceId, batch.Effects[index], index, cancellationToken));
             }
 
+            var recoveryAfter = await SqliteChangeRecovery.ReadAsync(db.Database.GetDbConnection(),
+                transaction.GetDbTransaction(), cancellationToken);
             if (roleConstraints is not null)
                 await roleConstraints.ValidateStateSpaceAsync(batch.StateSpaceId, cancellationToken);
 
@@ -77,6 +82,8 @@ public sealed class ApplicationEcsEffectApplier(
                 await participant.StageAsync(batch, receipts.AsReadOnly(), operationId, cancellationToken);
 
             await RecordAsync(batch, operationId, success: true, dryRun: false, receipts.Count, "", cancellationToken);
+            await SqliteChangeRecovery.AcknowledgeAsync(db.Database.GetDbConnection(),
+                transaction.GetDbTransaction(), recoveryBefore, recoveryAfter, operationId, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return new(true, false, operationId, receipts.AsReadOnly(), []);
         }

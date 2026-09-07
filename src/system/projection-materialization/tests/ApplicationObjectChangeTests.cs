@@ -6,12 +6,71 @@ using DantesRoleplay.Operations;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.Tests;
 using Microsoft.EntityFrameworkCore;
+using DantesRoleplay.SqliteInfrastructure;
 
 namespace DantesRoleplay.Projections.Tests;
 
 public sealed class ApplicationObjectChangeTests : IDisposable
 {
     private readonly Fixture fixture = new();
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Covered_effects_preserve_untracked_commits_in_either_order(bool untrackedFirst)
+    {
+        var baseline = await fixture.StampAsync();
+        async Task Untracked() => await fixture.Store.CreateEntityAsync(Fixture.Space, "untracked.fixture", "Outside effects");
+        if (untrackedFirst) await Untracked();
+        var beforeTracked = await fixture.StampAsync();
+        var result = await fixture.Applier.ApplyAsync(new ApplicationEcsEffectBatch
+        {
+            StateSpaceId = Fixture.Space,
+            Effects = [new() { Type = ApplicationEcsEffectType.EntityCreate, EntityId = "tracked.fixture", Name = "Tracked" }]
+        });
+        Assert.True(result.Applied);
+        Assert.Equal(beforeTracked, await fixture.StampAsync());
+        if (!untrackedFirst) await Untracked();
+        Assert.True((await fixture.StampAsync())!.Value.StateVersion > baseline!.Value.StateVersion);
+    }
+
+    [Fact]
+    public async Task Participant_mutations_outside_the_effect_batch_are_not_acknowledged()
+    {
+        var before = await fixture.StampAsync();
+        var applier = fixture.CreateApplier([fixture.Participant, new ExtraWriteParticipant(fixture.Store)]);
+        var result = await applier.ApplyAsync(new ApplicationEcsEffectBatch
+        {
+            StateSpaceId = Fixture.Space,
+            Effects = [new() { Type = ApplicationEcsEffectType.EntityCreate, EntityId = "tracked.fixture", Name = "Tracked" }]
+        });
+        Assert.True(result.Applied);
+        Assert.Equal(before!.Value.StateVersion + 1, (await fixture.StampAsync())!.Value.StateVersion);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Dry_run_and_late_failure_roll_back_recovery_counters(bool dryRun)
+    {
+        var before = await fixture.StampAsync();
+        var applier = dryRun ? fixture.Applier : fixture.CreateApplier([fixture.Participant, new RejectingParticipant()]);
+        var result = await applier.ApplyAsync(new ApplicationEcsEffectBatch
+        {
+            StateSpaceId = Fixture.Space,
+            Effects = [new() { Type = ApplicationEcsEffectType.EntityCreate, EntityId = "rollback.fixture", Name = "Rollback" }]
+        }, dryRun);
+        Assert.False(result.Applied);
+        Assert.Equal(before, await fixture.StampAsync());
+        Assert.Empty(await fixture.ReadRowsAsync());
+    }
+
+    private sealed class ExtraWriteParticipant(IEntityComponentStore store) : IApplicationEcsTransactionParticipant
+    {
+        public async Task StageAsync(ApplicationEcsEffectBatch batch, IReadOnlyList<ApplicationEcsEffectReceipt> receipts,
+            string operationId, CancellationToken cancellationToken = default) =>
+            await store.CreateEntityAsync(batch.StateSpaceId, "outside.fixture", "Outside effects", cancellationToken);
+    }
 
     [Fact]
     public async Task Component_and_membership_changes_stage_exact_durable_objects_without_source_ids()
@@ -185,7 +244,12 @@ public sealed class ApplicationObjectChangeTests : IDisposable
                 .GetAwaiter().GetResult();
             Participant = new(db, stateSpaces);
             Applier = CreateApplier([Participant]);
+            db.Database.ExecuteSqlRaw(SqliteChangeRecovery.CreateSql);
+            SqliteChangeRecovery.InstallAsync(db.Database.GetDbConnection()).GetAwaiter().GetResult();
         }
+
+        public Task<SqliteChangeRecovery.Stamp?> StampAsync() =>
+            SqliteChangeRecovery.ReadAsync(db.Database.GetDbConnection(), null);
 
         public IApplicationEcsEffectApplier CreateApplier(
             IReadOnlyList<IApplicationEcsTransactionParticipant> participants) =>

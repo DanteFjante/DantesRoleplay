@@ -329,6 +329,17 @@ include non-overflowing layout measurements at every declared width. Unavailable
 satisfy item release acceptance. Actual Actor verification uses an isolated authorized host with
 the reviewed artifacts, preserving the shared live seat.
 
+## Scoped live-change recovery
+
+Scoped live-change recovery uses a durable `system_change_recovery` marker. At normal application
+and web schema initialization, SQLite triggers cover all application tables except delivery rows,
+operation audit, and SQLite/EF infrastructure. Typed ECS transactions acknowledge only their own
+ECS mutation delta when durable delivery evidence exists; other writes remain conservative scope
+invalidations. Missing marker coverage or schema drift also falls back to scope invalidation.
+An older database is not migrated by opening a change feed. Apply migrations through the normal
+initialization boundary and retain a pre-migration database backup: downgrading this marker requires
+restoring that backup, because removing its table alone would leave triggers referencing it.
+
 ## Changes needing confirmation
 
 Pause for confirmation before introducing permanent IDs, changing schema meaning, adding a migration, changing a public surface, crossing an ownership boundary semantically, or performing a destructive operation that the user has not already authorized.

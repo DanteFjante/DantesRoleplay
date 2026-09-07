@@ -41,4 +41,7 @@
     </Compile>
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\src\system\projection-materialization\sqlite\SqliteChangeRecovery.cs" />
+  </ItemGroup>
 </Project>

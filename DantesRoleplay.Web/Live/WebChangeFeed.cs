@@ -4,9 +4,12 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DantesRoleplay.Projections;
+using DantesRoleplay.SqliteInfrastructure;
+using Microsoft.Data.Sqlite;
 using DantesRoleplay.Web.Pages;
 using DantesRoleplay.Web.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DantesRoleplay.Web.Live;
 
@@ -85,21 +88,24 @@ public sealed class SqliteWebChangeFeed(WebContentDbContext db)
         try
         {
             var version = await ReadDataVersionAsync(cancellationToken);
+            using var initialSnapshot = ((SqliteConnection)db.Database.GetDbConnection()).BeginTransaction(deferred: true);
+            await using var initialScope = await db.Database.UseTransactionAsync(initialSnapshot, cancellationToken);
             var pageRevision = await ReadPageRevisionAsync(pageId, cancellationToken);
             var durableDelivery = subscription is not null && await ChangeTableExistsAsync(cancellationToken);
             var bounds = durableDelivery ? await ReadCursorBoundsAsync(cancellationToken) : default;
             var cursor = subscription?.AfterCursor ?? bounds.Maximum;
+            var recovery = await SqliteChangeRecovery.ReadAsync(db.Database.GetDbConnection(), initialSnapshot, cancellationToken);
+            var initialReplay = durableDelivery && subscription!.AfterCursor is not null
+                ? await ReplayAsync(subscription, bounds, cursor, version, pageId, pageRevision, cancellationToken)
+                : new ReplayResult(cursor, []);
+            await initialSnapshot.CommitAsync(cancellationToken);
+            await initialScope!.DisposeAsync();
             var lastWrite = Stopwatch.GetTimestamp();
 
             yield return Scoped(WebChangeKind.Invalidate, "connected", version, pageId, pageRevision,
                 subscription, cursor);
-            if (durableDelivery && subscription!.AfterCursor is not null)
-            {
-                var replay = await ReplayAsync(subscription, bounds, cursor, version, pageId, pageRevision,
-                    cancellationToken);
-                cursor = replay.Cursor;
-                foreach (var change in replay.Changes) yield return change;
-            }
+            cursor = initialReplay.Cursor;
+            foreach (var change in initialReplay.Changes) yield return change;
 
             using var timer = new PeriodicTimer(poll);
             while (await timer.WaitForNextTickAsync(cancellationToken))
@@ -108,11 +114,15 @@ public sealed class SqliteWebChangeFeed(WebContentDbContext db)
                 if (currentVersion != version)
                 {
                     version = currentVersion;
+                    var pending = new List<WebChange>();
+                    using var snapshot = ((SqliteConnection)db.Database.GetDbConnection()).BeginTransaction(deferred: true);
+                    await using var snapshotScope = await db.Database.UseTransactionAsync(snapshot, cancellationToken);
                     var currentPageRevision = await ReadPageRevisionAsync(pageId, cancellationToken);
+                    var currentRecovery = await SqliteChangeRecovery.ReadAsync(db.Database.GetDbConnection(), snapshot, cancellationToken);
                     if (!durableDelivery)
                     {
-                        yield return new WebChange(WebChangeKind.Invalidate, "database-commit", version,
-                            pageId, currentPageRevision);
+                        pending.Add(new WebChange(WebChangeKind.Invalidate, "database-commit", version,
+                            pageId, currentPageRevision));
                     }
                     else
                     {
@@ -120,12 +130,17 @@ public sealed class SqliteWebChangeFeed(WebContentDbContext db)
                         var replay = await ReplayAsync(subscription!, currentBounds, cursor, version, pageId,
                             currentPageRevision, cancellationToken);
                         cursor = replay.Cursor;
-                        if (replay.Changes.Count == 0)
-                            yield return Scoped(WebChangeKind.Invalidate, "untracked-commit", version, pageId,
-                                currentPageRevision, subscription, cursor);
+                        if (recovery is null || currentRecovery is null || recovery != currentRecovery)
+                            pending.Add(Scoped(WebChangeKind.Invalidate, "untracked-commit", version, pageId,
+                                currentPageRevision, subscription, cursor));
                         else
-                            foreach (var change in replay.Changes) yield return change;
+                            pending.AddRange(replay.Changes);
                     }
+
+                    recovery = currentRecovery;
+                    await snapshot.CommitAsync(cancellationToken);
+                    await snapshotScope!.DisposeAsync();
+                    foreach (var change in pending) yield return change;
 
                     if (pageId is not null && currentPageRevision != pageRevision)
                     {
@@ -195,6 +210,7 @@ public sealed class SqliteWebChangeFeed(WebContentDbContext db)
     private async Task<bool> ChangeTableExistsAsync(CancellationToken cancellationToken)
     {
         await using var command = db.Database.GetDbConnection().CreateCommand();
+        command.Transaction = db.Database.CurrentTransaction?.GetDbTransaction();
         command.CommandText = "SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'system_application_object_change');";
         return Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken),
             System.Globalization.CultureInfo.InvariantCulture) == 1;
@@ -203,6 +219,7 @@ public sealed class SqliteWebChangeFeed(WebContentDbContext db)
     private async Task<CursorBounds> ReadCursorBoundsAsync(CancellationToken cancellationToken)
     {
         await using var command = db.Database.GetDbConnection().CreateCommand();
+        command.Transaction = db.Database.CurrentTransaction?.GetDbTransaction();
         command.CommandText = "SELECT COALESCE(MIN(\"Cursor\"), 0), COALESCE(MAX(\"Cursor\"), 0) FROM system_application_object_change;";
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         await reader.ReadAsync(cancellationToken);
@@ -213,6 +230,7 @@ public sealed class SqliteWebChangeFeed(WebContentDbContext db)
         long cursor, int limit, CancellationToken cancellationToken)
     {
         await using var command = db.Database.GetDbConnection().CreateCommand();
+        command.Transaction = db.Database.CurrentTransaction?.GetDbTransaction();
         command.CommandText = """
             SELECT "Cursor", "ApplicationId", "StateSpaceId", "Scope", "ObjectQualifiedId",
                    "ObjectVersion", "ReadPerspectivesJson", "Reason"

@@ -160,6 +160,8 @@ public static class DataAccessServiceCollectionExtensions
         // and two worked examples of what the manual is describing.
         var rules = scope.ServiceProvider.GetRequiredService<MechanicSeeder>();
         await rules.SeedAsync(cancellationToken);
+        await DantesRoleplay.SqliteInfrastructure.SqliteChangeRecovery.InstallAsync(
+            db.Database.GetDbConnection(), cancellationToken);
     }
 
     private static string NormaliseSqlite(string connectionStringOrPath)

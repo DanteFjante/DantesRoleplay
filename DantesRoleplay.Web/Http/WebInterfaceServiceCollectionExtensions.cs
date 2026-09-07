@@ -180,6 +180,8 @@ public static class WebInterfaceServiceCollectionExtensions
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<WebContentDbContext>();
         await db.Database.MigrateAsync(cancellationToken);
+        await DantesRoleplay.SqliteInfrastructure.SqliteChangeRecovery.InstallAsync(
+            db.Database.GetDbConnection(), cancellationToken);
         await scope.ServiceProvider.GetRequiredService<IWebPageIdentityMigration>()
             .InspectAsync(cancellationToken);
     }
