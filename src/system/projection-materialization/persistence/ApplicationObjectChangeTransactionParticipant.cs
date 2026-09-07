@@ -52,6 +52,7 @@ public sealed class ApplicationObjectChangeTransactionParticipant(
 
         foreach (var effect in batch.Effects)
         {
+            var consumers = new HashSet<string>(StringComparer.Ordinal);
             switch (effect.Type)
             {
                 case ApplicationEcsEffectType.ComponentAdd:
@@ -60,13 +61,13 @@ public sealed class ApplicationObjectChangeTransactionParticipant(
                 case ApplicationEcsEffectType.ComponentRemove:
                 case ApplicationEcsEffectType.ClockAdvance:
                     if (effect.ComponentType is not null)
-                        AddComponentConsumers(effect.ComponentType, components, declarations, changed);
+                        AddComponentConsumers(effect.ComponentType, components, declarations, consumers);
                     break;
                 case ApplicationEcsEffectType.RelationshipSet:
                 case ApplicationEcsEffectType.RelationshipRemove:
                     foreach (var declaration in declarations.Values.Where(value => value.Contract.Relationships.Any(
                                  relationship => relationship.QualifiedKind == effect.QualifiedRelationshipKind)))
-                        changed.Add(declaration.Key);
+                        consumers.Add(declaration.Key);
                     break;
                 case ApplicationEcsEffectType.EntityCreate:
                 case ApplicationEcsEffectType.EntityDelete:
@@ -77,6 +78,12 @@ public sealed class ApplicationObjectChangeTransactionParticipant(
                     applicationFallback = true;
                     break;
             }
+            CloseOverDependencies(consumers, dependencies);
+            // Registered objects do not prove coverage of all still-active legacy queries.
+            // An unmatched effect therefore needs scoped compatibility recovery, even beside
+            // another effect which has a precise registered consumer in this same transaction.
+            if (!consumers.Any(declarations.ContainsKey)) applicationFallback = true;
+            changed.UnionWith(consumers);
         }
 
         CloseOverDependencies(changed, dependencies);

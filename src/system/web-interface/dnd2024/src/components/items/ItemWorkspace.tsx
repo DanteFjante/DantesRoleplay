@@ -5,6 +5,7 @@ import { itemRouteHash, navigateItemRoute, readInventoryReturn, type ItemNavigat
 import type { Perspective, ReadyHubEnvelope } from "../../data/hub-types";
 import { ItemViewClient } from "../../server/item-view-client";
 import { ConnectedItemView } from "./ConnectedItemView";
+import { objectConsumers } from "../../data/scoped-change-stream";
 
 export function ItemWorkspace({ route, campaignId, perspective, context, itemClient, ...partyProps }: ComponentProps<typeof PartyView> & {
   route: ItemNavigationRoute; campaignId: string; perspective: Perspective;
@@ -13,9 +14,14 @@ export function ItemWorkspace({ route, campaignId, perspective, context, itemCli
 }) {
   const client = useMemo(() => itemClient ?? new ItemViewClient(), [context, itemClient]);
   useEffect(() => {
+    const changed = (event: Event) => {
+      if (objectConsumers((event as CustomEvent).detail?.object?.qualifiedId).item) client.invalidate();
+    };
+    window.addEventListener("dnd2024-object-changed", changed);
     for (const event of ["dnd2024-view-invalidated", "focus", "pagehide"]) window.addEventListener(event, client.invalidate);
     document.addEventListener("visibilitychange", client.invalidate);
     return () => {
+      window.removeEventListener("dnd2024-object-changed", changed);
       for (const event of ["dnd2024-view-invalidated", "focus", "pagehide"]) window.removeEventListener(event, client.invalidate);
       document.removeEventListener("visibilitychange", client.invalidate);
       client.invalidate();

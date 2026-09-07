@@ -133,6 +133,7 @@ export function DndInformationHub({
   loadFactionPage,
   loadCampaignDetails,
   loadDeferredSection,
+  subscribeChanges,
 }: {
   initialEnvelope: ReadyHubEnvelope;
   loadEnvelope?: HubEnvelopeLoader;
@@ -142,6 +143,7 @@ export function DndInformationHub({
   loadFactionPage?: FactionPageLoader;
   loadCampaignDetails?: CampaignDetailsLoader;
   loadDeferredSection?: (envelope: ReadyHubEnvelope, section: DeferredHubSection, signal: AbortSignal) => Promise<ReadyHubEnvelope>;
+  subscribeChanges?: (envelope: ReadyHubEnvelope) => () => void;
 }) {
   const [envelope, setEnvelope] = useState(initialEnvelope);
   const readCharacter = useCallback((id: string, signal: AbortSignal) => {
@@ -207,6 +209,10 @@ export function DndInformationHub({
   const hubRequestSequence = useRef(0);
 
   const perspective = envelope.audience.perspective;
+  useEffect(() => subscribeChanges?.(envelope), [
+    subscribeChanges, envelope.applicationId, envelope.stateSpaceId, perspective,
+    envelope.contextSelection?.selectedCampaignId,
+  ]);
   const contextSelection: HubContextSelection = envelope.contextSelection ?? {
     selectedWorldId: envelope.world.id,
     selectedCampaignId: envelope.revision,

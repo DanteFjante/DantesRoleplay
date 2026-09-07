@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { objectConsumers } from "../data/scoped-change-stream";
 import type { InventoryReturnContext } from "../data/item-view-route";
 
 import type {
@@ -121,6 +122,18 @@ export function PartyView({
   const [detailBusy, setDetailBusy] = useState(false);
   const [detailError, setDetailError] = useState(false);
   const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    const invalidate = () => { setDetail(null); setRetry((value) => value + 1); };
+    const changed = (event: Event) => {
+      if (objectConsumers((event as CustomEvent).detail?.object?.qualifiedId).character) invalidate();
+    };
+    window.addEventListener("dnd2024-view-invalidated", invalidate);
+    window.addEventListener("dnd2024-object-changed", changed);
+    return () => {
+      window.removeEventListener("dnd2024-view-invalidated", invalidate);
+      window.removeEventListener("dnd2024-object-changed", changed);
+    };
+  }, []);
   useEffect(() => {
     if (!loadCharacter || !selectedMemberId || !party.some((member) => member.id === selectedMemberId)) return;
     const controller = new AbortController();

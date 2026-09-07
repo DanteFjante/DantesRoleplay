@@ -12,10 +12,16 @@ async function mount(hash = itemRouteHash(integrationInventory)) {
   const keys = ["window", "document", "HTMLElement", "Element", "Node", "Event", "MouseEvent", "fetch", "IS_REACT_ACT_ENVIRONMENT"] as const;
   const prior = keys.map(k => Object.getOwnPropertyDescriptor(globalThis,k));
   const calls: ItemRead[] = [], hubCalls: string[] = [], pending: { read: ItemRead; resolve: (r: Response) => void }[] = [];
-  const control = { delayDm: false, mode: "ready" };
+  const control = { delayDm: false, mode: "ready", quantity: 1 };
   const fetchImpl = (async (url, init) => { assert.ok(!init?.method || init.method === "GET");const read = integrationRead(String(url)); calls.push(read);
     if(control.delayDm && read.request.perspective === "dm") return new Promise<Response>(resolve => pending.push({ read, resolve }));
-    return integrationResponse(read, control.mode);
+    const response = integrationResponse(read, control.mode);
+    if (read.tab === "details" && control.mode === "ready") {
+      const payload = await response.json();
+      payload.data.quantity = control.quantity;
+      return new Response(JSON.stringify(payload), { status: response.status, headers: response.headers });
+    }
+    return response;
   }) as typeof fetch;
   for(const k of keys) Object.defineProperty(globalThis,k,{ configurable:true,writable:true,value:k === "IS_REACT_ACT_ENVIRONMENT" ? true : k === "fetch" ? fetchImpl : dom.window[k as keyof Window] });
   dom.window.requestAnimationFrame = cb => dom.window.setTimeout(() => cb(0),0);
@@ -89,4 +95,25 @@ test("transport failures remain distinct from empty knowledge and explicit retri
     v.control.mode="ready";await v.click("Refresh uses");assert.equal(document.activeElement?.id,"item-panel");assert.match(v.container.textContent!,/Staff attack/);
     assert.deepEqual(v.hubCalls,[]);
   }finally{await v.cleanup();}
+});
+
+test("a committed Item notice refetches the visible item without focus or hub rediscovery", async () => {
+  const view = await mount();
+  try {
+    await openStaff(view);
+    const before = view.calls.length;
+    view.control.quantity = 7;
+    await perform(() => window.dispatchEvent(new window.CustomEvent("dnd2024-object-changed", { detail: {
+      contractVersion: 1, cursor: 1, applicationId: "dnd2024", stateSpaceId: "fixture",
+      object: { qualifiedId: "dnd2024.object.inventory-item-instance-records", version: 2 },
+    } })));
+    assert.equal(view.calls.length, before + 1);
+    assert.equal(view.calls.at(-1)?.tab, "details");
+    assert.match(view.container.querySelector('[role="tabpanel"]')?.textContent ?? "", /7/);
+    assert.deepEqual(view.hubCalls, []);
+    await perform(() => window.dispatchEvent(new window.CustomEvent("dnd2024-object-changed", { detail: {
+      object: { qualifiedId: "dnd2024.object.faction-directory-page", version: 2 },
+    } })));
+    assert.equal(view.calls.length, before + 1);
+  } finally { await view.cleanup(); }
 });

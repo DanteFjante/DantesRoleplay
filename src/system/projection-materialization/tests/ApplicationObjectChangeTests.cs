@@ -113,7 +113,7 @@ public sealed class ApplicationObjectChangeTests : IDisposable
     }
 
     [Fact]
-    public async Task Unrelated_component_change_does_not_stage_world_invalidation()
+    public async Task Unmatched_component_change_retains_scoped_legacy_query_recovery()
     {
         var component = await fixture.Store.GetComponentAsync(Fixture.Space, Fixture.Subject,
             fixture.Unrelated.QualifiedTypeId);
@@ -133,9 +133,9 @@ public sealed class ApplicationObjectChangeTests : IDisposable
 
         Assert.True(result.Applied);
         var marker = Assert.Single(await fixture.ReadRowsAsync());
-        Assert.Equal(ApplicationObjectChangeContract.NoChangeScope, marker.Scope);
+        Assert.Equal(ApplicationObjectChangeContract.ApplicationScope, marker.Scope);
         Assert.Null(marker.ObjectId);
-        Assert.Equal("[]", marker.Perspectives);
+        Assert.Equal("[\"dm\",\"player\"]", marker.Perspectives);
     }
 
     [Fact]
@@ -166,6 +166,28 @@ public sealed class ApplicationObjectChangeTests : IDisposable
         var current = await fixture.Store.GetComponentAsync(Fixture.Space, Fixture.Subject,
             fixture.Source.QualifiedTypeId);
         Assert.Equal("{\"name\":\"original\"}", current!.ValueJson);
+    }
+
+    [Fact]
+    public async Task A_matched_effect_does_not_mask_unmatched_effects_in_the_same_transaction()
+    {
+        var source = await fixture.Store.GetComponentAsync(Fixture.Space, Fixture.Subject, fixture.Source.QualifiedTypeId);
+        var unrelated = await fixture.Store.GetComponentAsync(Fixture.Space, Fixture.Subject, fixture.Unrelated.QualifiedTypeId);
+        var result = await fixture.Applier.ApplyAsync(new ApplicationEcsEffectBatch
+        {
+            StateSpaceId = Fixture.Space,
+            Effects = [
+                new() { Type = ApplicationEcsEffectType.ComponentSet, EntityId = Fixture.Subject,
+                    ComponentType = fixture.Source, DataJson = "{\"name\":\"changed\"}", ExpectedRevision = source!.Revision },
+                new() { Type = ApplicationEcsEffectType.ComponentSet, EntityId = Fixture.Subject,
+                    ComponentType = fixture.Unrelated, DataJson = "{\"value\":3}", ExpectedRevision = unrelated!.Revision }
+            ]
+        });
+        Assert.True(result.Applied);
+        var rows = await fixture.ReadRowsAsync();
+        Assert.Contains(rows, row => row.ObjectId == "change-test.summary");
+        Assert.Contains(rows, row => row.Scope == ApplicationObjectChangeContract.ApplicationScope);
+        Assert.DoesNotContain(rows, row => row.Scope == ApplicationObjectChangeContract.NoChangeScope);
     }
 
     [Fact]

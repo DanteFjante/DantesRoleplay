@@ -352,6 +352,13 @@ the reviewed artifacts, preserving the shared live seat.
 
 ## Scoped live-change recovery
 
+The browser's change stream belongs to the currently authorized application, state space, campaign
+and perspective. Scope replacement closes the old stream and starts fresh cursor reconciliation;
+queued frames from retired streams cannot invalidate or populate the new scope. Character and Item
+consumers retire their caches on their registered-object notices. Unmatched typed effects still emit
+application-scoped compatibility invalidation while legacy query dependencies remain in use; one
+matched effect in a transaction never proves coverage of its unmatched siblings.
+
 Scoped live-change recovery uses a durable `system_change_recovery` marker. At normal application
 and web schema initialization, SQLite triggers cover all application tables except delivery rows,
 operation audit, derived FTS5 indexes (including their internal shadow tables), and SQLite/EF

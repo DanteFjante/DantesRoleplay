@@ -1124,6 +1124,47 @@ test("deferred responses from an abandoned perspective cannot reenter the active
   } finally { await mounted.cleanup(); }
 });
 
+test("mounted hub replaces the change subscription on both authorized perspective transitions", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const opened: string[] = [], closed: string[] = [];
+  const mounted = await mount(<DndInformationHub initialEnvelope={envelope("player")}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadEnvelope={async (perspective) => envelope(perspective)}
+    subscribeChanges={(scope) => {
+      const perspective = scope.audience.perspective;
+      opened.push(perspective);
+      return () => { closed.push(perspective); };
+    }} />);
+  try {
+    await click(button(mounted.container, "DM"));
+    await click(button(mounted.container, "Player"));
+    assert.deepEqual(opened, ["player", "dm", "player"]);
+    assert.deepEqual(closed, ["player", "dm"]);
+  } finally { await mounted.cleanup(); }
+  assert.deepEqual(closed, ["player", "dm", "player"]);
+});
+
+test("mounted Character reloads for its object and legacy notices without a focus change", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const fixture = envelope("dm");
+  let calls = 0;
+  const mounted = await mount(<DndInformationHub initialEnvelope={fixture}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadCharacter={async () => ({ ...fixture.party[0], name: `Revision ${++calls}` })} />);
+  try {
+    await click(button(mounted.container, "Party"));
+    assert.equal(calls, 1);
+    await act(async () => window.dispatchEvent(new window.CustomEvent("dnd2024-object-changed", { detail: {
+      object: { qualifiedId: "dnd2024.object.character-dossier-records", version: 1 },
+    } })));
+    assert.equal(calls, 2);
+    assert.match(mounted.container.textContent ?? "", /Revision 2/);
+    await act(async () => window.dispatchEvent(new window.Event("dnd2024-view-invalidated")));
+    assert.equal(calls, 3);
+    assert.match(mounted.container.textContent ?? "", /Revision 3/);
+  } finally { await mounted.cleanup(); }
+});
+
 test("a denied perspective response leaves the current authorized view intact", async () => {
   const { DndInformationHub } = await import("../../src/components/DndInformationHub");
   const initial = envelope("player");

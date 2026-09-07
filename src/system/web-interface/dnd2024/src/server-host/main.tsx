@@ -4,14 +4,13 @@ import { createRoot } from "react-dom/client";
 import { BootstrapShell } from "../components/BootstrapShell";
 import {
   BrowserObjectQueryState,
-  CAMPAIGN_SUMMARY_OBJECT_ID,
   type FactionObjectRequest,
 } from "../data/browser-object-state";
 import { resolveHubSurface } from "../data/hub-availability.js";
 import type { CampaignReadModel, CanonicalCharacterResult, ConnectedCampaignEnvelope, DeferredHubSection, HubEnvelope, PartyMemberReadModel, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
 import { ViewReadClient, ViewReadError } from "../data/view-read-client";
 import { loadInitialHub } from "../data/hub-preferences";
-import { parseCursorCheckpoint, parseObjectChange } from "../data/object-change.js";
+import { objectConsumers, subscribeScopedChanges } from "../data/scoped-change-stream";
 import { isReadyHubEnvelope } from "../state.js";
 import { markBootstrapResponse } from "../observability/performance.js";
 import {
@@ -307,6 +306,24 @@ async function loadReadyEnvelope(
 }
 
 const rootElement = document.querySelector<HTMLElement>("#root");
+function subscribeChanges(envelope: ReadyHubEnvelope) {
+  if (typeof EventSource === "undefined") return () => {};
+  const invalidate = () => {
+    browserObjectState.invalidateAll();
+    characterClient.invalidate();
+    window.dispatchEvent(new Event("dnd2024-view-invalidated"));
+  };
+  return subscribeScopedChanges(envelope, {
+    invalidate,
+    changed: (notice) => {
+      const consumers = objectConsumers(notice.object.qualifiedId);
+      if (!consumers.known) { invalidate(); return; }
+      browserObjectState.invalidateObject(notice.object.qualifiedId);
+      if (consumers.character) characterClient.invalidate();
+      window.dispatchEvent(new CustomEvent("dnd2024-object-changed", { detail: notice }));
+    },
+  });
+}
 if (!rootElement) throw new Error("The React mount is unavailable.");
 const root = createRoot(rootElement);
 root.render(
@@ -319,59 +336,6 @@ try {
   const initialEnvelope = await loadInitialHub(loadEnvelope, {
     getItem: (key) => window.localStorage.getItem(key),
   });
-  if (typeof EventSource !== "undefined") {
-    const changeParameters = new URLSearchParams({ page: "dnd2024-play" });
-    if (initialEnvelope.status === "ready") {
-      changeParameters.set("application", initialEnvelope.applicationId);
-      changeParameters.set("stateSpace", initialEnvelope.stateSpaceId);
-      changeParameters.set("perspective", initialEnvelope.audience.perspective);
-      // A fresh snapshot starts at zero so a commit racing bootstrap is replayed or produces
-      // the server's bounded continuity-gap invalidation. EventSource supplies Last-Event-ID
-      // automatically on later reconnects.
-      changeParameters.set("cursor", "0");
-    }
-    const changes = new EventSource(`/api/changes?${changeParameters.toString()}`);
-    let connected = false;
-    let lastCursor = 0;
-    const invalidate = () => {
-      browserObjectState.invalidateAll();
-      characterClient.invalidate();
-      window.dispatchEvent(new Event("dnd2024-view-invalidated"));
-    };
-    changes.addEventListener("invalidate", (event) => {
-      try {
-        const firstConnection = !connected && JSON.parse(event.data).reason === "connected";
-        connected = true;
-        if (firstConnection) return;
-      } catch { /* An unreadable event invalidates rather than reusing private data. */ }
-      invalidate();
-    });
-    changes.addEventListener("object-change", (event) => {
-      try {
-        if (initialEnvelope.status !== "ready") return;
-        const notice = parseObjectChange(event.data, {
-          applicationId: initialEnvelope.applicationId,
-          stateSpaceId: initialEnvelope.stateSpaceId,
-        }, lastCursor);
-        if (!notice) return;
-        lastCursor = notice.cursor;
-        // These are application-client dependencies, never kernel rule branches. Other object
-        // notices only wake their own consumers through the targeted event.
-        const migrated = browserObjectState.invalidateObject(notice.object.qualifiedId);
-        if (migrated && notice.object.qualifiedId === CAMPAIGN_SUMMARY_OBJECT_ID) {
-          characterClient.invalidate();
-        }
-        window.dispatchEvent(new CustomEvent("dnd2024-object-changed", { detail: notice }));
-      } catch { invalidate(); }
-    });
-    changes.addEventListener("cursor", (event) => {
-      lastCursor = parseCursorCheckpoint(event.data, lastCursor);
-    });
-    changes.addEventListener("error", () => {
-      window.dispatchEvent(new Event("dnd2024-change-stream-disconnected"));
-    });
-    window.addEventListener("pagehide", () => { changes.close(); invalidate(); }, { once: true });
-  }
   markBootstrapResponse(initialEnvelope.status);
   const surface = resolveHubSurface(initialEnvelope);
   root.render(
@@ -380,6 +344,7 @@ try {
         {surface === "table" && initialEnvelope.status === "ready" ? (
           <DndInformationHub
             initialEnvelope={initialEnvelope}
+            subscribeChanges={subscribeChanges}
             loadEnvelope={loadReadyEnvelope}
             loadCharacter={loadCharacter}
             loadFactionPage={loadFactionPage}
