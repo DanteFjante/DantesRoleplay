@@ -11,19 +11,18 @@ using DantesRoleplay.World;
 
 namespace DantesRoleplay.Tests;
 
-public sealed class CatalogWorldFeature13Tests : IDisposable
+public sealed class CatalogWorldFeature13Tests
 {
     private const string Dragon = "mount.feature-13.dragon", Route = "aerial-route.feature-13.gate-to-observatory", Root = "world.feature-01.fixture", Gate = "location.feature-01.gate", Observatory = "location.feature-01.observatory";
     private const string ConveyanceComponent = "game.core.world.aerial-conveyance", RouteComponent = "game.core.world.aerial-route";
-    private readonly SqliteFixture _fixture = new(); private readonly string _copy = Path.Combine(Path.GetTempPath(), $"world-feature-13-{Guid.NewGuid():n}");
-    public void Dispose() { _fixture.Dispose(); if (Directory.Exists(_copy)) Directory.Delete(_copy, true); }
 
     [Fact]
     public async Task Fresh_import_has_generic_aerial_state_and_a_non_adjacent_gate_to_observatory_route()
     {
-        Copy(Catalog(), _copy); var contents = await CatalogReader.ReadAsync(_copy); AssertFixture(contents);
-        await using var db = _fixture.CreateContext(); var world = new WorldStore(db);
-        Assert.False((await new CatalogImporter(db, new MechanicStore(db), new ProcedureStore(db), world).ApplyAsync(_copy, new CatalogImportOptions())).Aborted);
+        using var copy = CatalogTestTemplate.CopyRepositoryCatalog("world-feature-13");
+        var contents = await CatalogReader.ReadAsync(copy.Root); AssertFixture(contents);
+        using var fixture = new SqliteFixture(); await using var db = fixture.CreateContext(); var world = new WorldStore(db);
+        Assert.False((await new CatalogImporter(db, new MechanicStore(db), new ProcedureStore(db), world).ApplyAsync(copy.Root, new CatalogImportOptions())).Aborted);
         Assert.NotNull(await new ProcedureStore(db).GetAsync("procedure.game.core.world.travel"));
         var dragon = (await world.GetEntityAsync(Dragon))!; Assert.Equal(Gate, dragon.ContainerId); Assert.Equal("presence", dragon.ContainerSlot); AssertConveyance(Component(dragon, ConveyanceComponent));
         var route = (await world.GetEntityAsync(Route))!; AssertRoute(Component(route, RouteComponent)); AssertLinks((await world.GetRelationshipsAsync(Route, includeIncoming: false)).Select(ToLink));
@@ -45,8 +44,7 @@ public sealed class CatalogWorldFeature13Tests : IDisposable
     [Fact]
     public async Task Replacing_dragon_speed_does_not_change_ground_routes_clock_or_topology()
     {
-        Copy(Catalog(), _copy); await using var db = _fixture.CreateContext(); var world = new WorldStore(db);
-        Assert.False((await new CatalogImporter(db, new MechanicStore(db), new ProcedureStore(db), world).ApplyAsync(_copy, new CatalogImportOptions())).Aborted);
+        using var fixture = await CatalogTestTemplate.CloneImportedAsync(); await using var db = fixture.CreateContext(); var world = new WorldStore(db);
         var cart = (await world.GetEntityAsync("conveyance.feature-12.horse-cart"))!; var root = (await world.GetEntityAsync(Root))!; var groundRoute = (await world.GetEntityAsync("conveyance-route.feature-12.gate-to-market-ground"))!; var gateLinks = await world.GetRelationshipsAsync(Gate);
         await world.SetComponentAsync(Dragon, ConveyanceComponent, """{"status":"active","summary":"A calm fixture dragon prepared for the reviewed aerial route.","visibility":"party","travelMode":"air","speedUnitsPerMinute":40}""");
         Assert.Equal(Gate, cart.ContainerId); Assert.Equal("{\"calendarId\":\"lantern-compact-epoch\",\"currentMinute\":0,\"revision\":0}", Component(root, "game.core.world.clock")); Assert.Equal("ground", JsonDocument.Parse(Component(groundRoute, "game.core.world.conveyance-route")).RootElement.GetProperty("travelMode").GetString()); Assert.Equal(gateLinks.Select(Key), (await world.GetRelationshipsAsync(Gate)).Select(Key));
@@ -55,8 +53,7 @@ public sealed class CatalogWorldFeature13Tests : IDisposable
     [Fact]
     public async Task Aerial_conveyance_journey_moves_dragon_and_rider_over_non_adjacent_endpoints()
     {
-        Copy(Catalog(), _copy); await using var db = _fixture.CreateContext(); var world = new WorldStore(db); var mechanics = new MechanicStore(db);
-        Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db)).ApplyAsync(_copy, new CatalogImportOptions())).Aborted);
+        using var fixture = await CatalogTestTemplate.CloneImportedAsync(); await using var db = fixture.CreateContext(); var world = new WorldStore(db); var mechanics = new MechanicStore(db);
         const string travel = "mechanic.game.core.world.aerial-conveyance.travel"; Assert.NotNull(await mechanics.GetAsync(travel));
 
         var result = await JourneyAsync(Runner(db, world, mechanics));
@@ -70,8 +67,7 @@ public sealed class CatalogWorldFeature13Tests : IDisposable
     [Fact]
     public async Task Ceiling_division_and_invalid_or_replayed_aerial_journeys_leave_no_partial_state()
     {
-        Copy(Catalog(), _copy); await using var db = _fixture.CreateContext(); var world = new WorldStore(db); var mechanics = new MechanicStore(db);
-        Assert.False((await new CatalogImporter(db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db)).ApplyAsync(_copy, new CatalogImportOptions())).Aborted);
+        using var fixture = await CatalogTestTemplate.CloneImportedAsync(); await using var db = fixture.CreateContext(); var world = new WorldStore(db); var mechanics = new MechanicStore(db);
         var runner = Runner(db, world, mechanics); var baseline = await JourneyStateAsync(world);
 
         await world.MoveAsync(Dragon, Observatory, "presence"); var splitBefore = await JourneyStateAsync(world);
@@ -101,10 +97,6 @@ public sealed class CatalogWorldFeature13Tests : IDisposable
     private static async Task<JourneyState> JourneyStateAsync(WorldStore world) { var dragon = (await world.GetEntityAsync(Dragon))!; var rider = (await world.GetEntityAsync("traveller.feature-02.fixture"))!; var root = (await world.GetEntityAsync(Root))!; return new(dragon.ContainerId, dragon.ContainerSlot, rider.ContainerId, rider.ContainerSlot, Component(dragon, ConveyanceComponent), Component(root, "game.core.world.clock")); }
     private static void AssertClock(EntitySnapshot root, long minute, long revision) { using var document = JsonDocument.Parse(Component(root, "game.core.world.clock")); Assert.Equal(minute, document.RootElement.GetProperty("currentMinute").GetInt64()); Assert.Equal(revision, document.RootElement.GetProperty("revision").GetInt64()); }
     private static string Component(EntitySnapshot entity, string id) => entity.Components.Single(component => component.DefinitionId == id).Data; private static string Key(RelationshipView link) => $"{link.FromEntityId}|{link.ToEntityId}|{link.Kind}|{link.Data}"; private static Link ToLink(RelationshipEntry link) => new(link.From, link.To, link.Kind, link.Data); private static Link ToLink(RelationshipView link) => new(link.FromEntityId, link.ToEntityId, link.Kind, link.Data);
-    private static string Catalog() { for (var d = new DirectoryInfo(AppContext.BaseDirectory); d is not null; d = d.Parent) if (File.Exists(Path.Combine(d.FullName, "DantesRoleplay.slnx"))) return Path.Combine(d.FullName, "catalog"); throw new DirectoryNotFoundException(); }
-    private static void Copy(string source, string target) { Directory.CreateDirectory(target); foreach (var d in Directory.EnumerateDirectories(source, "*", SearchOption.AllDirectories)) Directory.CreateDirectory(Path.Combine(target, Path.GetRelativePath(source, d))); foreach (var f in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories)) File.Copy(f, Path.Combine(target, Path.GetRelativePath(source, f)));
-        WorldFeatureFixture.RestoreRelationships(source, target);
-    }
     private sealed record Link(string From, string To, string Kind, string Data);
     private sealed record JourneyState(string? ConveyanceContainer, string ConveyanceSlot, string? RiderContainer, string RiderSlot, string ConveyanceData, string ClockData);
 }

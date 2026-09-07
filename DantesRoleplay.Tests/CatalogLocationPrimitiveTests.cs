@@ -9,7 +9,7 @@ using DantesRoleplay.World;
 
 namespace DantesRoleplay.Tests;
 
-public sealed class CatalogLocationPrimitiveTests : IDisposable
+public sealed class CatalogLocationPrimitiveTests
 {
     private const string World = "world.feature-01.fixture";
     private const string Parent = "region.feature-01.fixture";
@@ -17,21 +17,13 @@ public sealed class CatalogLocationPrimitiveTests : IDisposable
     private const string Location = "location.feature-01.primitive-workshop";
     private const string Furnishing = "furnishing.primitive-workshop-table";
     private const string Knowledge = "fact.feature-04.primitive-workshop-charter";
-    private readonly SqliteFixture _fixture = new();
-    private readonly string _catalogCopy = Path.Combine(
-        Path.GetTempPath(), $"location-primitives-{Guid.NewGuid():n}");
-
     [Fact]
     public async Task Focused_primitives_commit_authored_state_without_inventing_world_details()
     {
-        CopyDirectory(RepositoryCatalog(), _catalogCopy);
-        await using var db = _fixture.CreateContext();
+        using var fixture = await CatalogTestTemplate.CloneImportedAsync();
+        await using var db = fixture.CreateContext();
         var world = new WorldStore(db);
         var mechanics = new MechanicStore(db);
-        var imported = await new CatalogImporter(
-                db, mechanics, new ProcedureStore(db), world, new EventTypeStore(db))
-            .ApplyAsync(_catalogCopy, new CatalogImportOptions());
-        Assert.False(imported.Aborted);
         var runner = Runner(db, world, mechanics);
         var primitiveIds = new[]
         {
@@ -178,12 +170,6 @@ public sealed class CatalogLocationPrimitiveTests : IDisposable
         Assert.Null(await world.GetEntityAsync("location.feature-01.invalid-primitive"));
     }
 
-    public void Dispose()
-    {
-        _fixture.Dispose();
-        if (Directory.Exists(_catalogCopy)) Directory.Delete(_catalogCopy, recursive: true);
-    }
-
     private static async Task<ActionRunResult> RunAsync(
         CatalogMechanicTestHarness runner,
         string intent,
@@ -212,24 +198,4 @@ public sealed class CatalogLocationPrimitiveTests : IDisposable
         new OperationLog(db),
         new MechanicComposer(mechanics, new ProjectionResolver(db), new JintMechanicEngine()));
 
-    private static string RepositoryCatalog()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory);
-             directory is not null;
-             directory = directory.Parent)
-        {
-            var manifest = Path.Combine(directory.FullName, "catalog", "manifest.json");
-            if (File.Exists(manifest)) return Path.GetDirectoryName(manifest)!;
-        }
-        throw new DirectoryNotFoundException("Could not locate the repository catalog.");
-    }
-
-    private static void CopyDirectory(string source, string destination)
-    {
-        foreach (var directory in Directory.EnumerateDirectories(source, "*", SearchOption.AllDirectories))
-            Directory.CreateDirectory(Path.Combine(destination, Path.GetRelativePath(source, directory)));
-        Directory.CreateDirectory(destination);
-        foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
-            File.Copy(file, Path.Combine(destination, Path.GetRelativePath(source, file)));
-    }
 }
