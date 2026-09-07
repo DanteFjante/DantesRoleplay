@@ -8,7 +8,9 @@ namespace DantesRoleplay.AI;
 public sealed partial class AiService : IAiService
 {
     private readonly IReadOnlyDictionary<string, IAiProvider> _providers;
-    private readonly IReadOnlyDictionary<string, IAiTool> _tools;
+    private readonly IReadOnlyDictionary<string, PreparedAiTool> _tools;
+    private long _toolSchemaCompilations;
+    private long _toolSchemaCompilationAllocatedBytes;
 
     public AiService(IEnumerable<IAiProvider> providers, IEnumerable<IAiTool>? tools = null)
     {
@@ -68,20 +70,25 @@ public sealed partial class AiService : IAiService
         if (!ValidProfile(profile, out var invalid))
             return AiResponse.Failure("AI_AGENT_PROFILE_INVALID", invalid);
 
-        IReadOnlyDictionary<string, IAiTool> available;
-        try { available = MergeTools(_tools, UniqueTools(authorizedTools)); }
+        IReadOnlyDictionary<string, PreparedAiTool> available;
+        IReadOnlyDictionary<string, PreparedAiTool> authorized;
+        try
+        {
+            authorized = UniqueTools(authorizedTools);
+            available = MergeTools(_tools, authorized);
+        }
         catch (ArgumentException exception)
         {
             return AiResponse.Failure("AI_TOOL_INVALID", Bound(exception.Message));
         }
 
-        var allowed = request.AllowedTools ?? authorizedTools.Select(value => value.Definition.Name).ToArray();
+        var allowed = request.AllowedTools ?? authorized.Keys.ToArray();
         return await SendRequestCoreAsync(request with { AllowedTools = allowed }, available, profile, cancellationToken);
     }
 
     private async Task<AiResponse> SendRequestCoreAsync(
         AiRequest request,
-        IReadOnlyDictionary<string, IAiTool> availableTools,
+        IReadOnlyDictionary<string, PreparedAiTool> availableTools,
         AiAgentProfile? profile,
         CancellationToken cancellationToken)
     {
@@ -228,7 +235,7 @@ public sealed partial class AiService : IAiService
     private async Task<AiToolResult> InvokeToolAsync(
         AiToolCall call,
         AiRequestKind requestKind,
-        IReadOnlyDictionary<string, IAiTool> tools,
+        IReadOnlyDictionary<string, PreparedAiTool> tools,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(call.Id) || !ToolName().IsMatch(call.Name) ||
@@ -239,11 +246,9 @@ public sealed partial class AiService : IAiService
             using var arguments = JsonDocument.Parse(call.ArgumentsJson);
             if (arguments.RootElement.ValueKind != JsonValueKind.Object)
                 return AiToolResult.Failure("AI_TOOL_ARGUMENTS_INVALID", "Tool arguments must be a JSON object.");
-            var schema = JsonSchema.FromText(tool.Definition.InputSchemaJson,
-                new BuildOptions { SchemaRegistry = new SchemaRegistry() });
-            if (!schema.Evaluate(arguments.RootElement).IsValid)
+            if (!tool.InputSchema.Evaluate(arguments.RootElement).IsValid)
                 return AiToolResult.Failure("AI_TOOL_ARGUMENTS_INVALID", "Tool arguments do not match the declared schema.");
-            return await tool.InvokeAsync(
+            return await tool.Tool.InvokeAsync(
                 new(call.Id, call.Name, arguments.RootElement.Clone(), requestKind), cancellationToken);
         }
         catch (JsonException)
@@ -256,20 +261,20 @@ public sealed partial class AiService : IAiService
         }
     }
 
-    private IReadOnlyDictionary<string, IAiTool> SelectTools(
+    private IReadOnlyDictionary<string, PreparedAiTool> SelectTools(
         IReadOnlyList<string>? allowed,
-        IReadOnlyDictionary<string, IAiTool> available,
+        IReadOnlyDictionary<string, PreparedAiTool> available,
         out AiResponse? failure)
     {
         failure = null;
-        if (allowed is null or { Count: 0 }) return new Dictionary<string, IAiTool>(StringComparer.Ordinal);
-        var selected = new Dictionary<string, IAiTool>(StringComparer.Ordinal);
+        if (allowed is null or { Count: 0 }) return new Dictionary<string, PreparedAiTool>(StringComparer.Ordinal);
+        var selected = new Dictionary<string, PreparedAiTool>(StringComparer.Ordinal);
         foreach (var name in allowed.Distinct(StringComparer.Ordinal))
         {
             if (!available.TryGetValue(name, out var tool))
             {
                 failure = AiResponse.Failure("AI_TOOL_UNKNOWN", $"AI tool '{name}' is not registered.");
-                return new Dictionary<string, IAiTool>(StringComparer.Ordinal);
+                return new Dictionary<string, PreparedAiTool>(StringComparer.Ordinal);
             }
             selected.Add(name, tool);
         }
@@ -312,29 +317,49 @@ public sealed partial class AiService : IAiService
         return result;
     }
 
-    private static IReadOnlyDictionary<string, IAiTool> UniqueTools(IEnumerable<IAiTool> values)
+    private IReadOnlyDictionary<string, PreparedAiTool> UniqueTools(IEnumerable<IAiTool> values)
     {
-        var result = new Dictionary<string, IAiTool>(StringComparer.Ordinal);
+        var result = new Dictionary<string, PreparedAiTool>(StringComparer.Ordinal);
         foreach (var value in values)
         {
-            if (value is null || !ToolName().IsMatch(value.Definition.Name) ||
-                string.IsNullOrWhiteSpace(value.Definition.Description) ||
-                string.IsNullOrWhiteSpace(value.Definition.InputSchemaJson) ||
-                !result.TryAdd(value.Definition.Name, value))
+            if (value is null)
                 throw new ArgumentException("AI tools must have unique valid names, descriptions, and schemas.", nameof(values));
-            _ = JsonSchema.FromText(value.Definition.InputSchemaJson,
-                new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+            var definition = value.Definition;
+            if (!ToolName().IsMatch(definition.Name) ||
+                string.IsNullOrWhiteSpace(definition.Description) ||
+                string.IsNullOrWhiteSpace(definition.InputSchemaJson) ||
+                result.ContainsKey(definition.Name))
+                throw new ArgumentException("AI tools must have unique valid names, descriptions, and schemas.", nameof(values));
+            JsonSchema schema;
+            var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+            try
+            {
+                schema = JsonSchema.FromText(definition.InputSchemaJson,
+                    new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+            }
+            catch (Exception exception) when (exception is JsonException or JsonSchemaException)
+            {
+                throw new ArgumentException("AI tools must have unique valid names, descriptions, and schemas.",
+                    nameof(values), exception);
+            }
+            finally
+            {
+                Interlocked.Increment(ref _toolSchemaCompilations);
+                Interlocked.Add(ref _toolSchemaCompilationAllocatedBytes,
+                    Math.Max(0, GC.GetAllocatedBytesForCurrentThread() - allocatedBefore));
+            }
+            result.Add(definition.Name, new(value, definition, schema));
         }
         return result;
     }
 
-    private static IReadOnlyDictionary<string, IAiTool> MergeTools(
-        IReadOnlyDictionary<string, IAiTool> registered,
-        IReadOnlyDictionary<string, IAiTool> authorized)
+    private static IReadOnlyDictionary<string, PreparedAiTool> MergeTools(
+        IReadOnlyDictionary<string, PreparedAiTool> registered,
+        IReadOnlyDictionary<string, PreparedAiTool> authorized)
     {
-        var result = new Dictionary<string, IAiTool>(registered, StringComparer.Ordinal);
+        var result = new Dictionary<string, PreparedAiTool>(registered, StringComparer.Ordinal);
         foreach (var (name, tool) in authorized)
-            if (!result.TryAdd(name, tool) && !ReferenceEquals(result[name], tool))
+            if (!result.TryAdd(name, tool) && !ReferenceEquals(result[name].Tool, tool.Tool))
                 throw new ArgumentException($"AI tool '{name}' has conflicting registrations.", nameof(authorized));
         return result;
     }
@@ -355,7 +380,7 @@ public sealed partial class AiService : IAiService
     private static string AgentSystemPrompt(
         AiAgentProfile profile,
         AiRequest request,
-        IEnumerable<IAiTool> tools)
+        IEnumerable<PreparedAiTool> tools)
     {
         var selected = tools.OrderBy(value => value.Definition.Name, StringComparer.Ordinal).ToArray();
         var prompt = new StringBuilder()
@@ -384,9 +409,20 @@ public sealed partial class AiService : IAiService
 
     private static string Bound(string value) => value.Length <= 500 ? value : value[..500];
 
+    internal AiToolSchemaPreparationSnapshot ToolSchemaPreparation => new(
+        Interlocked.Read(ref _toolSchemaCompilations),
+        Interlocked.Read(ref _toolSchemaCompilationAllocatedBytes));
+
+    private sealed record PreparedAiTool(
+        IAiTool Tool,
+        AiToolDefinition Definition,
+        JsonSchema InputSchema);
+
     [GeneratedRegex("^[A-Za-z0-9_-]{1,64}$", RegexOptions.CultureInvariant)]
     private static partial Regex ToolName();
 
     [GeneratedRegex("^[a-z0-9][a-z0-9._-]{0,79}$", RegexOptions.CultureInvariant)]
     private static partial Regex AgentId();
 }
+
+internal sealed record AiToolSchemaPreparationSnapshot(long Compilations, long AllocatedBytes);
