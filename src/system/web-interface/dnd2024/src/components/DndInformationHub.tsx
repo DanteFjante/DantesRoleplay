@@ -55,11 +55,11 @@ const CampaignView = lazy(() => import("./CampaignView")
   .then((module) => ({ default: module.CampaignView })));
 const InstalledContentView = lazy(() => import("./InstalledContentView")
   .then((module) => ({ default: module.InstalledContentView })));
-const ItemWorkspace = lazy(() => import("./items/ItemWorkspace")
+const ItemWorkspace = lazy(() => import("./items/ItemWorkspaceFeature")
   .then((module) => ({ default: module.ItemWorkspace })));
 const PlayConversationPanel = lazy(() => import("./PlayConversationPanel")
   .then((module) => ({ default: module.PlayConversationPanel })));
-const CurrentViewPreview = lazy(() => import("./PreviewViews")
+const CurrentViewPreview = lazy(() => import("./PreviewViewsFeature")
   .then((module) => ({ default: module.CurrentViewPreview })));
 const RulesView = lazy(() => import("./RulesView")
   .then((module) => ({ default: module.RulesView })));

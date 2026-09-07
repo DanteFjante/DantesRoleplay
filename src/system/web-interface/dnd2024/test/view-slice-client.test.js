@@ -27,9 +27,9 @@ test("inactive high-cost views are lazy module boundaries", () => {
   for (const component of [
     "CampaignView",
     "InstalledContentView",
-    "items/ItemWorkspace",
+    "items/ItemWorkspaceFeature",
     "PlayConversationPanel",
-    "PreviewViews",
+    "PreviewViewsFeature",
     "RulesView",
   ]) assert.match(hub, new RegExp(`lazy\\(\\(\\) => import\\(\"\\./${component}\"\\)`, "u"));
   assert.match(world, /lazy\(\(\) => import\("\.\/ScopedMapWorkspace"\)/u);

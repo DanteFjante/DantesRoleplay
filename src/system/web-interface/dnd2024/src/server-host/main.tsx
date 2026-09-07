@@ -19,8 +19,6 @@ import {
   withinDevelopmentInteraction,
 } from "../observability/request-ledger.js";
 import "../styles.css";
-import "../character-page.css";
-import "../board-draft.css";
 
 const characterSources = new Map<string, ConnectedCampaignEnvelope>();
 const characterScope = (state: string, campaign: string, perspective?: Perspective) => `${state}:${campaign}:${perspective ?? "player"}`;

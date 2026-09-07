@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { gzipSync } from 'node:zlib';
 import { measureJavaScriptBundle } from '../scripts/bundle-budget.mjs';
+
+const entrySource = readFileSync(new URL('../src/server-host/main.tsx', import.meta.url), 'utf8');
+const hubSource = readFileSync(new URL('../src/components/DndInformationHub.tsx', import.meta.url), 'utf8');
+const itemFeatureSource = readFileSync(new URL('../src/components/items/ItemWorkspaceFeature.tsx', import.meta.url), 'utf8');
+const previewFeatureSource = readFileSync(new URL('../src/components/PreviewViewsFeature.tsx', import.meta.url), 'utf8');
+const sharedStyles = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
 
 test('initial bundle budget includes shared static imports once but tracks lazy chunks separately', () => {
   const report = measureJavaScriptBundle({
@@ -35,4 +42,27 @@ test('first-ready-view accounting includes mandatory lazy modules and their shar
   assert.throws(() => measureJavaScriptBundle({
     'entry.js': { type: 'chunk', isEntry: true, code: 'entry', imports: [], modules: {} },
   }, { mandatoryModuleSuffixes: ['/missing.ts'] }), /Mandatory first-ready-view module is unavailable/);
+});
+
+test('feature styles are awaited inside their existing lazy view boundaries', () => {
+  assert.match(entrySource, /import "\.\.\/styles\.css";/u);
+  assert.doesNotMatch(entrySource, /character-page\.css|item-page\.css|board-draft\.css/u);
+  assert.doesNotMatch(sharedStyles, /@import\s+["']\.\/item-page\.css/u);
+
+  const itemBoundary = hubSource.slice(
+    hubSource.indexOf('const ItemWorkspace'),
+    hubSource.indexOf('const PlayConversationPanel'),
+  );
+  assert.match(itemBoundary, /import\("\.\/items\/ItemWorkspaceFeature"\)/u);
+  assert.match(itemFeatureSource, /import "\.\.\/\.\.\/character-page\.css";/u);
+  assert.match(itemFeatureSource, /import "\.\.\/\.\.\/item-page\.css";/u);
+  assert.match(itemFeatureSource, /export \{ ItemWorkspace \} from "\.\/ItemWorkspace";/u);
+
+  const previewBoundary = hubSource.slice(
+    hubSource.indexOf('const CurrentViewPreview'),
+    hubSource.indexOf('const RulesView'),
+  );
+  assert.match(previewBoundary, /import\("\.\/PreviewViewsFeature"\)/u);
+  assert.match(previewFeatureSource, /import "\.\.\/board-draft\.css";/u);
+  assert.match(previewFeatureSource, /export \{ CurrentViewPreview \} from "\.\/PreviewViews";/u);
 });
