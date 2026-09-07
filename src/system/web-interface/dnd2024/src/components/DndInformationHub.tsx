@@ -11,12 +11,13 @@ import {
 } from "../data/browser-object-state";
 import { resolveCampaignWorldTarget } from "../data/campaign-navigation";
 import { ITEM_ROUTE_EVENT, navigateItemRoute, parseItemRoute } from "../data/item-view-route";
-import { preserveLastGoodPartyData } from "../data/section-state";
+import { applyDeferredHubUpdate, preserveLastGoodPartyData } from "../data/section-state";
 import { ViewReadError } from "../data/view-read-client";
 import type {
   CampaignSectionId,
   CampaignReadModel,
   DeferredHubSection,
+  DeferredHubUpdate,
   DeferredViewState,
   HubContextSelection,
   LocationSectionId,
@@ -150,7 +151,7 @@ export function DndInformationHub({
   loadCharacter?: (envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) => Promise<import("../data/hub-types").PartyMemberReadModel>;
   loadFactionPage?: FactionPageLoader;
   loadCampaignDetails?: CampaignDetailsLoader;
-  loadDeferredSection?: (envelope: ReadyHubEnvelope, section: DeferredHubSection, signal: AbortSignal) => Promise<ReadyHubEnvelope>;
+  loadDeferredSection?: (envelope: ReadyHubEnvelope, section: DeferredHubSection, signal: AbortSignal) => Promise<DeferredHubUpdate>;
   subscribeChanges?: (envelope: ReadyHubEnvelope) => () => void;
 }) {
   const [envelope, setEnvelope] = useState(initialEnvelope);
@@ -437,18 +438,7 @@ export function DndInformationHub({
     try {
       const loaded = await loadDeferredSection(envelope, section, controller.signal);
       if (controller.signal.aborted) return;
-      setEnvelope((current) => section === "context" ? {
-        ...current, contextSelection: loaded.contextSelection,
-      } : ({
-        ...current,
-        currentSituation: loaded.currentSituation,
-        world: { ...loaded.world,
-          ...(current.world.factionDirectory ? {
-            factions: current.world.factions, factionDirectory: current.world.factionDirectory,
-          } : {}),
-        },
-        campaign: { ...current.campaign, mapOverlays: loaded.campaign.mapOverlays },
-      }));
+      setEnvelope((current) => applyDeferredHubUpdate(current, loaded));
       setDeferredStates((states) => ({ ...states, [section]: "ready" }));
     } catch (error) {
       if (controller.signal.aborted) return;

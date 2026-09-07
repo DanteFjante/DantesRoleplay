@@ -1,6 +1,8 @@
 import type {
   CampaignMapOverlay,
   ConnectedCampaignEnvelope,
+  DeferredHubSection,
+  DeferredHubUpdate,
   MapDocument,
   MapFeature,
   MapLayer,
@@ -1372,4 +1374,56 @@ export function connectedCampaignToHubEnvelope(
     party: projectParty(connection),
     rules: connection.rules ?? [],
   };
+}
+
+export function connectedCampaignToDeferredHubUpdate(
+  connection: ConnectedCampaignEnvelope,
+  section: DeferredHubSection,
+): DeferredHubUpdate {
+  const projected = connectedCampaignToHubEnvelope(connection);
+  switch (section) {
+    case "context":
+      return { section, contextSelection: projected.contextSelection! };
+    case "history":
+      return { section, world: { history: projected.world.history } };
+    case "lore":
+      return {
+        section,
+        world: { lore: projected.world.lore },
+        campaign: {
+          quests: projected.campaign.quests,
+          clues: projected.campaign.clues,
+          mapOverlays: projected.campaign.mapOverlays,
+        },
+      };
+    case "locations":
+      return {
+        section,
+        world: {
+          currentLocationId: projected.world.currentLocationId,
+          map: projected.world.map,
+          rootMapId: projected.world.rootMapId,
+          maps: projected.world.maps,
+          regions: projected.world.regions,
+          facts: projected.world.facts,
+          locations: projected.world.locations,
+        },
+        campaign: { mapOverlays: projected.campaign.mapOverlays },
+      };
+    case "people":
+      return {
+        section,
+        world: { locations: projected.world.locations, people: projected.world.people },
+      };
+    case "current":
+      return {
+        section,
+        currentSituation: projected.currentSituation!,
+        world: {
+          currentLocationId: projected.world.currentLocationId,
+          locations: projected.world.locations,
+        },
+        campaign: { mapOverlays: projected.campaign.mapOverlays },
+      };
+  }
 }

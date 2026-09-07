@@ -27,12 +27,6 @@ const CAMPAIGN_LOCATION_VISIT_AT_LOCATION_RELATIONSHIP_KIND =
   "game.core.campaign.location-visit.at-location";
 const CAMPAIGN_RECORD_WORLD_REFERENCE_RELATIONSHIP_KIND =
   "game.core.campaign.record.references-world-entity";
-const CAMPAIGN_PARTICIPATION_COMPONENT_TYPE_ID = "game.core.campaign.character-participation";
-const CAMPAIGN_HAS_PARTICIPATION_RELATIONSHIP_KIND =
-  "game.core.campaign.has-character-participation";
-const CAMPAIGN_PARTICIPATION_ACTOR_RELATIONSHIP_KIND =
-  "game.core.campaign.character-participation.for-actor";
-const PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID = "dnd2024.playtest-character-record";
 const WORLD_INTERACTION_COMPONENT_TYPE_ID = "game.core.world.interaction";
 const WORLD_INTERACTION_PARTICIPANT_RELATIONSHIP_KIND =
   "game.core.world.interaction.participant";
@@ -536,21 +530,6 @@ function worldFaction(value) {
   return { status, visibility, summary, goals, methods, assets, agenda: { state: agendaState, summary: agendaSummary } };
 }
 
-function characterDetails(value) {
-  const entries = Array.isArray(value?.entries) && value.entries.length <= 200
-    ? value.entries.map((entry) => {
-      const kind = token(entry?.kind);
-      const key = token(entry?.key);
-      const label = text(entry?.label, 160);
-      const details = entry?.details === undefined ? null : text(entry.details, 2_000);
-      return kind && key && label && (entry?.details === undefined || details)
-        ? { kind, key, label, ...(details ? { details } : {}) }
-        : null;
-    }).filter(Boolean)
-    : [];
-  return { state: text(value?.state, 32), entries };
-}
-
 function referenceId(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const keys = Object.keys(value).sort().join(",");
@@ -859,11 +838,6 @@ export async function readCanonicalCharacter({ fetchImpl, origin, applicationId,
       diagnosticId: canonicalCharacterDiagnosticId(null, actorId, "transport"),
     };
   }
-}
-
-function activeCharacterParticipation(value, expectedEntityId) {
-  const parsed = componentValue(value, expectedEntityId, CAMPAIGN_PARTICIPATION_COMPONENT_TYPE_ID);
-  return hasExactKeys(parsed, ["status"]) && parsed.status === "active";
 }
 
 function knowledgeEntries(value) {
@@ -1784,144 +1758,6 @@ async function readCampaignLocationVisits({
   }
 }
 
-async function readPartyRoster({
-  fetchImpl,
-  origin,
-  applicationId,
-  stateSpaceId,
-  campaignId,
-  serverRole,
-  perspective,
-  boundActor,
-  boundActorDetails,
-  boundCanonicalResult,
-  deferCharacterDetails = false,
-}) {
-  if (perspective === "player" && boundActor) {
-    const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
-      `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
-    const mediaValue = await readEntityMedia(fetchImpl, origin, entityRoot, boundActor.id);
-    const media = mediaValue ? projectMediaVisual(mediaValue) : null;
-    return [{
-      ...boundActor,
-      ...boundActorDetails,
-      canonicalResult: boundCanonicalResult,
-      ...(deferCharacterDetails ? { detailsDeferred: true } : {}),
-      ...(boundCanonicalResult?.status === "ready" ? { canonical: boundCanonicalResult.data } : {}),
-      ...(media ? { media } : {}),
-      current: true,
-    }];
-  }
-  if (serverRole.role === "actor") return [];
-
-  const applicationRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
-    `/state-spaces/${encodeURIComponent(stateSpaceId)}`;
-  const entityRoot = `${applicationRoot}/entities`;
-  const headers = { Accept: "application/json" };
-  const rawParticipationIds = await readCompleteRelationshipTargetIds(
-    fetchImpl,
-    origin,
-    entityRoot,
-    campaignId,
-    CAMPAIGN_HAS_PARTICIPATION_RELATIONSHIP_KIND,
-    { unavailableFirstPageIsEmpty: true },
-  );
-  if (rawParticipationIds === null) return null;
-  const occurrenceCount = new Map();
-  for (const id of rawParticipationIds) {
-    occurrenceCount.set(id, (occurrenceCount.get(id) ?? 0) + 1);
-  }
-  const participationIds = rawParticipationIds.filter((id) => occurrenceCount.get(id) === 1);
-
-  const members = await Promise.all(participationIds.map(async (participationId) => {
-    try {
-      const [componentResponse, actorIds] = await Promise.all([
-        fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(participationId)}` +
-          `/components/${CAMPAIGN_PARTICIPATION_COMPONENT_TYPE_ID}`), {
-          headers,
-          cache: "no-store",
-        }),
-        readExactRelationshipTargets(
-          fetchImpl,
-          origin,
-          entityRoot,
-          participationId,
-          CAMPAIGN_PARTICIPATION_ACTOR_RELATIONSHIP_KIND,
-          { unavailableFirstPageIsEmpty: true },
-        ),
-      ]);
-      if (actorIds === null) return { incomplete: true };
-      if (!componentResponse?.ok) return null;
-      const componentPayload = await json(componentResponse);
-      if (!activeCharacterParticipation(componentPayload, participationId)) return null;
-      if (actorIds.length !== 1) return null;
-      const actorId = actorIds[0];
-      const [actorResponse, recordResponse] = await Promise.all([
-        fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(actorId)}`), {
-          headers,
-          cache: "no-store",
-        }),
-        perspective === "dm" && !deferCharacterDetails
-          ? fetchImpl(url(origin, `${entityRoot}/${encodeURIComponent(actorId)}` +
-            `/components/${PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID}`), {
-            headers,
-            cache: "no-store",
-          }).catch(() => null)
-          : Promise.resolve(null),
-      ]);
-      if (!actorResponse?.ok) return null;
-      const [actorPayload, recordPayload] = await Promise.all([
-        json(actorResponse),
-        recordResponse?.ok ? json(recordResponse) : Promise.resolve(null),
-      ]);
-      const actor = entity(actorPayload, actorId);
-      if (!actor) return null;
-      if (deferCharacterDetails) return { ...actor, state: null, entries: [], detailsDeferred: true, current: false };
-      // Request a fresh player-filtered projection rather than reusing a GM dossier.
-      if (perspective === "player") {
-        const canonicalResult = await readCanonicalCharacter({
-          fetchImpl, origin, applicationId, stateSpaceId, actorId, perspective: "player",
-        });
-        return {
-          ...actor,
-          state: null,
-          entries: [],
-          canonicalResult,
-          ...(canonicalResult.status === "ready" ? { canonical: canonicalResult.data } : {}),
-          current: false,
-        };
-      }
-      const [canonicalResult, mediaValue] = await Promise.all([
-        readCanonicalCharacter({ fetchImpl, origin, applicationId, stateSpaceId, actorId }),
-        readEntityMedia(fetchImpl, origin, entityRoot, actorId),
-      ]);
-      const media = mediaValue ? projectMediaVisual(mediaValue) : null;
-      return {
-        ...actor,
-        ...characterDetails(recordPayload
-          ? componentValue(recordPayload, actorId, PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID)
-          : null),
-        canonicalResult,
-        ...(canonicalResult.status === "ready" ? { canonical: canonicalResult.data } : {}),
-        ...(media ? { media } : {}),
-        current: false,
-      };
-    } catch {
-      return null;
-    }
-  }));
-
-  if (members.some((member) => member?.incomplete)) return null;
-  const validMembers = members.filter(Boolean);
-  const actorOccurrenceCount = new Map();
-  for (const member of validMembers) {
-    actorOccurrenceCount.set(member.id, (actorOccurrenceCount.get(member.id) ?? 0) + 1);
-  }
-  return validMembers
-    .filter((member) => actorOccurrenceCount.get(member.id) === 1)
-    .sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id));
-}
-
 async function readWorldDirectory({
   fetchImpl,
   origin,
@@ -2234,12 +2070,6 @@ async function readCampaignStructure({
  *   fetchImpl?: typeof fetch,
  *   requestedPerspective?: string | null,
  *   requestedCampaignId?: string | null,
- *   localSeat?: string, // Legacy option accepted but never used to override the server seat.
- *   mediaAssetBaseUrl?: string,
- *   deferCharacterDetails?: boolean,
- *   deferCampaignDetails?: boolean,
- *   deferWorldDirectory?: boolean,
- *   useRegisteredCampaignSummary?: boolean,
  * }} options
  */
 export async function readGameServerContext(options) {
@@ -2253,11 +2083,6 @@ async function readGameServerContextCore({
   fetchImpl = fetch,
   requestedPerspective = "dm",
   requestedCampaignId = null,
-  mediaAssetBaseUrl = "/ui/dnd2024-play/assets/",
-  deferCharacterDetails = false,
-  deferCampaignDetails = false,
-  deferWorldDirectory = false,
-  useRegisteredCampaignSummary = false,
 }) {
   const normalizedRequestedPerspective = requestedPerspective === null ? "dm" : requestedPerspective;
   const origin = normalizeGameServerOrigin(serverOrigin);
@@ -2294,7 +2119,6 @@ async function readGameServerContextCore({
     : { seat: "player", perspective: "player", allowedPerspectives: ["player"] };
   const effectivePerspective = contextAudience.perspective ?? "player";
   const shouldReadBoundActor = hasBoundActor && effectivePerspective === "player";
-  const canReadBoundKnowledge = !isGameMaster || contextAudience.perspective === "dm";
   if (binding.status === "character-creation-required") {
     return {
       version: 1,
@@ -2311,9 +2135,7 @@ async function readGameServerContextCore({
   if (requestedCampaignId !== null && !requestedCampaign) {
     return denied("That campaign is not available to this local table.");
   }
-  const minimalCampaignBootstrap = deferCharacterDetails && deferCampaignDetails && deferWorldDirectory &&
-    useRegisteredCampaignSummary;
-  const contextSelection = minimalCampaignBootstrap && (!requestedCampaign || requestedCampaign === binding.campaignId)
+  const contextSelection = (!requestedCampaign || requestedCampaign === binding.campaignId)
     ? fallbackContextSelection(binding.campaignId)
     : await readContextSelection({
       fetchImpl,
@@ -2336,15 +2158,9 @@ async function readGameServerContextCore({
     `/state-spaces/${encodeURIComponent(binding.stateSpaceId)}/entities`;
   let campaignResponse;
   let actorResponse;
-  let campaignComponentResponse;
-  let currentSceneComponentResponse;
-  let actorComponentResponse;
-  let knowledgeResponse;
-  let chronologyResponse;
-  let playSessionResponse;
+  let campaignSummaryResponse;
   try {
-    [campaignResponse, actorResponse, campaignComponentResponse, currentSceneComponentResponse,
-      actorComponentResponse, knowledgeResponse, chronologyResponse, playSessionResponse] = await Promise.all([
+    [campaignResponse, actorResponse, campaignSummaryResponse] = await Promise.all([
       fetchImpl(url(origin, `${root}/${encodeURIComponent(selectedCampaignId)}`), {
         headers: { Accept: "application/json" }, cache: "no-store",
       }),
@@ -2353,229 +2169,56 @@ async function readGameServerContextCore({
           headers: { Accept: "application/json" }, cache: "no-store",
         })
         : Promise.resolve(null),
-      fetchImpl(url(origin, useRegisteredCampaignSummary
-        ? `${root}/${encodeURIComponent(selectedCampaignId)}/read-models/` +
-          `${encodeURIComponent("dnd2024.query.campaign-summary")}?` + new URLSearchParams({
-            perspective: contextAudience.perspective ?? "player", campaignId: selectedCampaignId, limit: "20",
-          })
-        : `${root}/${encodeURIComponent(selectedCampaignId)}/components/${CAMPAIGN_ROOT_COMPONENT_TYPE_ID}`), {
+      fetchImpl(url(origin, `${root}/${encodeURIComponent(selectedCampaignId)}/read-models/` +
+        `${encodeURIComponent("dnd2024.query.campaign-summary")}?` + new URLSearchParams({
+          perspective: contextAudience.perspective ?? "player", campaignId: selectedCampaignId, limit: "20",
+        })), {
         headers: { Accept: "application/json" }, cache: "no-store",
       }),
-      minimalCampaignBootstrap ? Promise.resolve(null) : fetchImpl(url(origin, `${root}/${encodeURIComponent(selectedCampaignId)}` +
-        `/components/${CAMPAIGN_CURRENT_SCENE_COMPONENT_TYPE_ID}`), {
-        headers: { Accept: "application/json" }, cache: "no-store",
-      }).catch(() => null),
-      shouldReadBoundActor && !deferCharacterDetails
-        ? fetchImpl(url(origin, `${root}/${encodeURIComponent(binding.actorId)}` +
-          `/components/${PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID}`), {
-          headers: { Accept: "application/json" }, cache: "no-store",
-        })
-        : Promise.resolve(null),
-      canReadBoundKnowledge && !minimalCampaignBootstrap
-        ? fetchImpl(url(origin, `/api/applications/${encodeURIComponent(binding.applicationId)}` +
-          `/campaigns/${encodeURIComponent(selectedCampaignId)}/knowledge`), {
-          headers: { Accept: "application/json" }, cache: "no-store",
-        }).catch(() => null)
-        : Promise.resolve(null),
-      minimalCampaignBootstrap ? Promise.resolve(null) : fetchImpl(url(origin, `/api/applications/${encodeURIComponent(binding.applicationId)}` +
-        `/campaigns/${encodeURIComponent(selectedCampaignId)}/chronology` +
-        `?perspective=${encodeURIComponent(contextAudience.perspective ?? "player")}`), {
-        headers: { Accept: "application/json" }, cache: "no-store",
-      }).catch(() => null),
-      minimalCampaignBootstrap ? Promise.resolve(null) : fetchImpl(url(origin, `/api/applications/${encodeURIComponent(binding.applicationId)}` +
-        `/state-spaces/${encodeURIComponent(binding.stateSpaceId)}/play/sessions/` +
-        encodeURIComponent(selectedCampaignId)), {
-        headers: { Accept: "application/json" }, cache: "no-store",
-      }).catch(() => null),
     ]);
   } catch {
     return unavailable("The campaign binding was found, but the game state could not be read.");
   }
 
-  const [campaign, actor, campaignComponent, currentSceneComponent, actorComponent, knowledgeEnvelope,
-    chronologyEnvelope, playSessionEnvelope] = await Promise.all([
+  const [campaign, actor, campaignSummary] = await Promise.all([
     json(campaignResponse),
     json(actorResponse),
-    json(campaignComponentResponse),
-    json(currentSceneComponentResponse),
-    json(actorComponentResponse),
-    json(knowledgeResponse),
-    json(chronologyResponse),
-    json(playSessionResponse),
+    json(campaignSummaryResponse),
   ]);
   const campaignEntity = campaignResponse?.ok ? entity(campaign, selectedCampaignId) : null;
-  const registeredCampaign = useRegisteredCampaignSummary && campaignComponentResponse?.ok
-    ? registeredCampaignSummary(campaignComponent, binding.applicationId, binding.stateSpaceId, effectivePerspective) : null;
+  const registeredCampaign = campaignSummaryResponse?.ok
+    ? registeredCampaignSummary(campaignSummary, binding.applicationId, binding.stateSpaceId, effectivePerspective) : null;
   const boundActorEntity = shouldReadBoundActor && actorResponse?.ok
     ? entity(actor, binding.actorId)
     : null;
   const actorEntity = isGameMaster
     ? { id: "local-game-master", name: "Dungeon Master" }
     : boundActorEntity;
-  if (!campaignEntity || !actorEntity || (useRegisteredCampaignSummary && !registeredCampaign)) {
+  if (!campaignEntity || !actorEntity || !registeredCampaign) {
     return unavailable("The campaign binding no longer matches readable game state.");
   }
-  if (minimalCampaignBootstrap) {
-    if (!registeredCampaign.complete || registeredCampaign.totalCount !== registeredCampaign.party.length) {
-      return unavailable("The party roster could not be loaded completely. Please try again.");
-    }
-    const deferredParty = isGameMaster && effectivePerspective === "dm"
-      ? projectRegisteredPartyReferences(registeredCampaign.party)
-      : isGameMaster ? registeredCampaign.party.map((entry) => ({
-        id: entry.id,
-        name: entry.name,
-        state: entry.status,
-        current: false,
-        entries: [],
-        detailsDeferred: true,
-      })) : [{
-        ...actorEntity,
-        state: null,
-        current: true,
-        entries: [],
-        detailsDeferred: true,
-      }];
-    if (deferredParty === null) {
-      return unavailable("The party roster could not be loaded completely. Please try again.");
-    }
-    return {
-      version: 1,
-      status: "connected",
-      applicationId: binding.applicationId,
-      stateSpaceId: binding.stateSpaceId,
-      audience: contextAudience,
-      contextSelection: updateSelectedCampaignName(selectedContext, campaignEntity),
-      campaign: {
-        ...campaignEntity,
-        name: registeredCampaign.title,
-        ...registeredCampaign,
-        chapters: [],
-        arcs: [],
-        sessions: [],
-        visits: [],
-      },
-      actor: actorEntity,
-      currentSituation: {
-        status: "unavailable",
-        message: "Open a play view to load the current scene.",
-      },
-      party: deferredParty,
-      knowledge: { status: "unavailable", entries: [], locations: [] },
-      chronology: { status: "unavailable", perspective: effectivePerspective, entries: [] },
-    };
+  if (!registeredCampaign.complete || registeredCampaign.totalCount !== registeredCampaign.party.length) {
+    return unavailable("The party roster could not be loaded completely. Please try again.");
   }
-  // Resolve the small, authoritative party graph before the optional World and knowledge
-  // directories fan out into many reads. Otherwise a large DM projection can consume the shared
-  // read budget first and make a valid active participant look like an empty roster.
-  const boundActorDetails = characterDetails(actorComponentResponse?.ok
-    && shouldReadBoundActor
-    ? componentValue(actorComponent, binding.actorId, PLAYTEST_CHARACTER_RECORD_COMPONENT_TYPE_ID)
-    : null);
-  const boundCanonicalResult = shouldReadBoundActor && !deferCharacterDetails
-    ? await readCanonicalCharacter({
-      fetchImpl,
-      origin,
-      applicationId: binding.applicationId,
-      stateSpaceId: binding.stateSpaceId,
-      actorId: binding.actorId,
-    })
-    : null;
-  const party = await readPartyRoster({
-    fetchImpl,
-    origin,
-    applicationId: binding.applicationId,
-    stateSpaceId: binding.stateSpaceId,
-    campaignId: selectedCampaignId,
-    serverRole,
-    perspective: effectivePerspective,
-    boundActor: boundActorEntity,
-    boundActorDetails,
-    boundCanonicalResult,
-    deferCharacterDetails,
-  });
-  if (party === null) {
-    return unavailable("The campaign party could not be loaded completely. Please try again.");
+  const deferredParty = isGameMaster && effectivePerspective === "dm"
+    ? projectRegisteredPartyReferences(registeredCampaign.party)
+    : isGameMaster ? registeredCampaign.party.map((entry) => ({
+      id: entry.id,
+      name: entry.name,
+      state: entry.status,
+      current: false,
+      entries: [],
+      detailsDeferred: true,
+    })) : [{
+      ...actorEntity,
+      state: null,
+      current: true,
+      entries: [],
+      detailsDeferred: true,
+    }];
+  if (deferredParty === null) {
+    return unavailable("The party roster could not be loaded completely. Please try again.");
   }
-  let projectedKnowledge = knowledgeResponse?.ok
-    ? knowledge(knowledgeEnvelope)
-    : { status: "unavailable", entries: [], locations: [] };
-  projectedKnowledge = await attachAuthorizedKnowledgeMedia({
-    fetchImpl,
-    origin,
-    entityRoot: root,
-    projectedKnowledge,
-    perspective: contextAudience.perspective ?? "player",
-    mediaAssetBaseUrl,
-  });
-  const projectedChronology = chronologyResponse?.ok
-    ? chronology(chronologyEnvelope, contextAudience.perspective ?? "player")
-    : { status: "unavailable", perspective: contextAudience.perspective ?? "player", entries: [] };
-  const [locationDirectoryResult, campaignStructure] = await Promise.all([
-    readLocationDirectory({
-      fetchImpl,
-      origin,
-      applicationId: binding.applicationId,
-      stateSpaceId: binding.stateSpaceId,
-      worldId: campaignWorldId(selectedCampaignId),
-      perspective: contextAudience.perspective,
-      mediaAssetBaseUrl,
-    }),
-    deferCampaignDetails ? Promise.resolve({ chapters: [], arcs: [], sessions: [], visits: [] }) : readCampaignStructure({
-      fetchImpl,
-      origin,
-      applicationId: binding.applicationId,
-      stateSpaceId: binding.stateSpaceId,
-      campaignId: selectedCampaignId,
-      includeGmContext: contextAudience.perspective === "dm",
-    }),
-  ]);
-  if (locationDirectoryResult.status !== "complete") {
-    return unavailable("The location directory could not be loaded completely. Please try again.");
-  }
-  if (campaignStructure.incomplete) {
-    return unavailable("The campaign history could not be loaded completely. Please try again.");
-  }
-  const locationDirectory = locationDirectoryResult.items;
-  let currentLocationId = null;
-  if (shouldReadBoundActor && locationDirectory.length > 0) {
-    try {
-      const containmentResponse = await fetchImpl(url(origin,
-        `${root}/${encodeURIComponent(binding.actorId)}/containment`), {
-        headers: { Accept: "application/json" }, cache: "no-store",
-      });
-      const containmentPayload = containmentResponse?.ok ? await json(containmentResponse) : null;
-      currentLocationId = resolvePresenceLocation(
-        containmentPayload,
-        binding.actorId,
-        locationDirectory.map((location) => location.id),
-      );
-    } catch {
-      currentLocationId = null;
-    }
-  }
-  const worldDirectory = !deferWorldDirectory && contextAudience.seat === "dm" && contextAudience.perspective === "dm"
-    ? await readWorldDirectory({
-      fetchImpl,
-      origin,
-      applicationId: binding.applicationId,
-      stateSpaceId: binding.stateSpaceId,
-      worldId: campaignWorldId(selectedCampaignId),
-      locationDirectory,
-      perspective: contextAudience.perspective,
-      mediaAssetBaseUrl,
-    })
-    : null;
-  if (worldDirectory?.incomplete) {
-    return unavailable("The world directory could not be loaded completely. Please try again.");
-  }
-  const resolvedCurrent = await resolveCurrentSituation({
-    fetchImpl, origin, root, selectedCampaignId, binding, serverRole, contextAudience,
-    currentSceneComponentResponse, currentSceneComponent, playSessionResponse, playSessionEnvelope,
-    locationDirectory, currentLocationId, party, selectedContext, projectedKnowledge, mediaAssetBaseUrl,
-  });
-  const { currentSituation, knownRoutes } = resolvedCurrent;
-  currentLocationId = resolvedCurrent.currentLocationId;
-
   return {
     version: 1,
     status: "connected",
@@ -2585,27 +2228,21 @@ async function readGameServerContextCore({
     contextSelection: updateSelectedCampaignName(selectedContext, campaignEntity),
     campaign: {
       ...campaignEntity,
-      ...(registeredCampaign ? { name: registeredCampaign.title, ...registeredCampaign } :
-        campaignDetails(campaignComponentResponse.ok
-        ? componentValue(campaignComponent, selectedCampaignId, CAMPAIGN_ROOT_COMPONENT_TYPE_ID)
-        : null)),
-      ...campaignStructure,
+      name: registeredCampaign.title,
+      ...registeredCampaign,
+      chapters: [],
+      arcs: [],
+      sessions: [],
+      visits: [],
     },
-    actor: {
-      ...actorEntity,
-      ...boundActorDetails,
+    actor: actorEntity,
+    currentSituation: {
+      status: "unavailable",
+      message: "Open a play view to load the current scene.",
     },
-    ...(currentLocationId ? { currentLocationId } : {}),
-    currentSituation,
-    ...(knownRoutes.length > 0 ? { knownRoutes } : {}),
-    party,
-    knowledge: projectedKnowledge,
-    chronology: projectedChronology,
-    ...(locationDirectory.length > 0 ? { locationDirectoryAudience: contextAudience.perspective } : {}),
-    ...(locationDirectory.length > 0 ? { locationDirectory } : {}),
-    ...(worldDirectory && (
-      worldDirectory.people.length > 0 || worldDirectory.factions.length > 0 || worldDirectory.holdings.length > 0
-    ) ? { worldDirectory } : {}),
+    party: deferredParty,
+    knowledge: { status: "unavailable", entries: [], locations: [] },
+    chronology: { status: "unavailable", perspective: effectivePerspective, entries: [] },
   };
 }
 

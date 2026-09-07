@@ -1,4 +1,21 @@
-import type { PartyMemberReadModel, ReadyHubEnvelope, SectionState } from "./hub-types";
+import type { DeferredHubUpdate, PartyMemberReadModel, ReadyHubEnvelope, SectionState } from "./hub-types";
+
+export function applyDeferredHubUpdate(
+  current: ReadyHubEnvelope,
+  update: DeferredHubUpdate,
+): ReadyHubEnvelope {
+  if (update.section === "context") {
+    return { ...current, contextSelection: update.contextSelection };
+  }
+  return {
+    ...current,
+    ...(update.section === "current" ? { currentSituation: update.currentSituation } : {}),
+    world: { ...current.world, ...update.world },
+    ...(update.section === "lore" || update.section === "locations" || update.section === "current"
+      ? { campaign: { ...current.campaign, ...update.campaign } }
+      : {}),
+  };
+}
 
 function sameAudienceBoundary(previous: ReadyHubEnvelope, next: ReadyHubEnvelope): boolean {
   const previousCampaignId = previous.contextSelection?.selectedCampaignId ?? previous.revision;

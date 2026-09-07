@@ -5,6 +5,8 @@ import { JSDOM } from "jsdom";
 import React, { act, type ReactNode, useState } from "react";
 
 import type {
+  DeferredHubSection,
+  DeferredHubUpdate,
   PartyMemberReadModel,
   MapDocument,
   Perspective,
@@ -516,6 +518,31 @@ function envelope(perspective: Perspective): ReadyHubEnvelope {
   };
 }
 
+function deferredUpdate(section: DeferredHubSection, ready = envelope("dm")): DeferredHubUpdate {
+  switch (section) {
+    case "context":
+      return { section, contextSelection: ready.contextSelection! };
+    case "history":
+      return { section, world: { history: ready.world.history } };
+    case "lore":
+      return { section, world: { lore: ready.world.lore }, campaign: {
+        quests: ready.campaign.quests, clues: ready.campaign.clues, mapOverlays: ready.campaign.mapOverlays,
+      } };
+    case "locations":
+      return { section, world: {
+        currentLocationId: ready.world.currentLocationId, map: ready.world.map,
+        rootMapId: ready.world.rootMapId, maps: ready.world.maps, regions: ready.world.regions,
+        facts: ready.world.facts, locations: ready.world.locations,
+      }, campaign: { mapOverlays: ready.campaign.mapOverlays } };
+    case "people":
+      return { section, world: { locations: ready.world.locations, people: ready.world.people } };
+    case "current":
+      return { section, currentSituation: ready.currentSituation!, world: {
+        currentLocationId: ready.world.currentLocationId, locations: ready.world.locations,
+      }, campaign: { mapOverlays: ready.campaign.mapOverlays } };
+  }
+}
+
 test("mounted Party view distinguishes loading, ready, empty, stale, forbidden, and malformed data", async (t) => {
   const { PartyView } = await import("../../src/components/PartyView");
   const confirmedEntry = [{
@@ -1009,7 +1036,7 @@ test("a narrow notice cannot hide broader changes or acknowledge a notice receiv
   const { DndInformationHub } = await import("../../src/components/DndInformationHub");
   const initial = envelope("dm");
   let campaignReads = 0, factionReads = 0;
-  let finish: (value: ReadyHubEnvelope) => void = () => {};
+  let finish: (value: DeferredHubUpdate) => void = () => {};
   const mounted = await mount(<DndInformationHub initialEnvelope={initial}
     loadContent={async () => { throw new Error("not used"); }}
     loadEnvelope={() => { ++campaignReads; return new Promise(resolve => { finish = resolve; }); }}
@@ -1126,7 +1153,7 @@ test("deferred hub sections stay unloaded until navigation and never display fai
     loadDeferredSection={async (_scope, section) => {
       calls.push(section);
       if (fail) throw new Error("History transport failed.");
-      return new Promise<ReadyHubEnvelope>((resolve) => { finish = resolve; });
+      return new Promise<DeferredHubUpdate>((resolve) => { finish = resolve; });
     }} />);
   try {
     assert.deepEqual(calls, []);
@@ -1137,7 +1164,7 @@ test("deferred hub sections stay unloaded until navigation and never display fai
     fail = false;
     await click(button(mounted.container, "Retry view"));
     assert.match(mounted.container.textContent ?? "", /Opening history/);
-    await act(async () => finish(envelope("dm")));
+    await act(async () => finish(deferredUpdate("history")));
     assert.doesNotMatch(mounted.container.textContent ?? "", /Opening history|History transport failed/);
     await click(button(mounted.container, "Overview"));
     await click(button(mounted.container, "History"));
@@ -1152,8 +1179,8 @@ test("mounted deferred navigation wires Locations, People, Lore, Current and con
     loadContent={async () => { throw new Error("not used"); }}
     loadDeferredSection={async (_scope, section) => {
       calls.push(section);
-      if (section === "current") return new Promise<ReadyHubEnvelope>(() => {});
-      return envelope("dm");
+      if (section === "current") return new Promise<DeferredHubUpdate>(() => {});
+      return deferredUpdate(section);
     }} />);
   try {
     for (const label of ["Locations", "People", "Lore"]) await click(button(mounted.container, label));
@@ -1171,16 +1198,17 @@ test("a deferred view cannot replace newer independently loaded context discover
   const initial = envelope("dm");
   const discovered = structuredClone(initial);
   discovered.contextSelection!.worlds.push({ id: "world.concurrent", name: "Concurrent World", campaigns: [] });
-  let finishHistory: (value: ReadyHubEnvelope) => void = () => {};
+  let finishHistory: (value: DeferredHubUpdate) => void = () => {};
   const mounted = await mount(<DndInformationHub initialEnvelope={initial}
     loadContent={async () => { throw new Error("not used"); }}
-    loadDeferredSection={async (_scope, section) => section === "context" ? discovered
-      : new Promise<ReadyHubEnvelope>(resolve => { finishHistory = resolve; })} />);
+    loadDeferredSection={async (_scope, section) => section === "context"
+      ? deferredUpdate("context", discovered)
+      : new Promise<DeferredHubUpdate>(resolve => { finishHistory = resolve; })} />);
   try {
     await click(button(mounted.container, "History"));
     await click(mounted.container.querySelector<HTMLButtonElement>(".world-context__trigger")!);
     assert.match(mounted.container.textContent ?? "", /Concurrent World/);
-    await act(async () => finishHistory(initial));
+    await act(async () => finishHistory(deferredUpdate("history", initial)));
     assert.match(mounted.container.textContent ?? "", /Concurrent World/);
   } finally { await mounted.cleanup(); }
 });
@@ -1204,22 +1232,22 @@ test("Player preview exposes Actor-only views as unavailable without making priv
 
 test("deferred responses from an abandoned perspective cannot reenter the active view", async () => {
   const { DndInformationHub } = await import("../../src/components/DndInformationHub");
-  let finishDm: (value: ReadyHubEnvelope) => void = () => {};
+  let finishDm: (value: DeferredHubUpdate) => void = () => {};
   let dmSignal: AbortSignal | undefined;
   const mounted = await mount(<DndInformationHub initialEnvelope={envelope("dm")}
     loadContent={async () => { throw new Error("not used"); }}
     loadEnvelope={async (perspective) => envelope(perspective)}
-    loadDeferredSection={async (scope, _section, signal) => {
-      if (scope.audience.perspective === "player") return envelope("player");
+    loadDeferredSection={async (scope, section, signal) => {
+      if (scope.audience.perspective === "player") return deferredUpdate(section, envelope("player"));
       dmSignal = signal;
-      return new Promise<ReadyHubEnvelope>((resolve) => { finishDm = resolve; });
+      return new Promise<DeferredHubUpdate>((resolve) => { finishDm = resolve; });
     }} />);
   try {
     await click(button(mounted.container, "History"));
     await click(button(mounted.container, "Player"));
     assert.equal(dmSignal?.aborted, true);
-    const stale = envelope("dm");
-    stale.world.name = "PRIVATE STALE WORLD";
+    const stale = deferredUpdate("history", envelope("dm"));
+    stale.world.history = [{ ...stale.world.history[0]!, title: "PRIVATE STALE WORLD" }];
     await act(async () => finishDm(stale));
     assert.equal(mounted.container.querySelector(".information-hub")?.getAttribute("data-perspective"), "player");
     assert.doesNotMatch(mounted.container.textContent ?? "", /PRIVATE STALE WORLD/);

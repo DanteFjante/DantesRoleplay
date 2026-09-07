@@ -47,6 +47,19 @@ test("deferred empty, unavailable and malformed history cannot be confused", asy
   await assert.rejects(load({ status: "ready", perspective: "player", entries: [] }), /unavailable/);
 });
 
+test("deferred history preserves the 500-entry boundary and rejects overflow", async () => {
+  const entries = Array.from({ length: 500 }, (_, i) => ({
+    id: `history.${i}`, occurredAtMinute: i, dateLabel: `Day ${i}`,
+    precision: "exact", title: `Event ${i}`, summary: "An event.", subjects: [],
+  }));
+  const load = (items) => readDeferredHubSection({
+    origin, source, section: "history",
+    fetchImpl: async () => response({ status: "ready", perspective: "dm", entries: items }),
+  });
+  assert.equal((await load(entries)).chronology.entries.length, 500);
+  await assert.rejects(load([...entries, { ...entries[0], id: "history.overflow" }]), /unavailable/u);
+});
+
 test("preview lore and people never request ambient DM knowledge or media", async () => {
   for (const section of ["lore", "people"]) {
     const calls = [];
@@ -77,7 +90,8 @@ test("deferred locations traverse every page and suppress ambient media in previ
     fetchImpl: async (input) => {
       const target = new URL(input); calls.push(target);
       if (target.pathname.endsWith("/entities")) return response({
-        items: [{ entityId: target.searchParams.has("cursor") ? "location.caldris.two" : "location.caldris.one",
+        items: [{ [target.searchParams.has("cursor") ? "id" : "entityId"]:
+          target.searchParams.has("cursor") ? "location.caldris.two" : "location.caldris.one",
           name: "Place" }], nextCursor: target.searchParams.has("cursor") ? null : "page.two",
       });
       if (target.pathname.endsWith("/components/game.core.world.location")) {

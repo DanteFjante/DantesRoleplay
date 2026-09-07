@@ -847,6 +847,28 @@ export type KnownRouteReadModel = {
 export type DeferredHubSection = "context" | "history" | "lore" | "locations" | "people" | "current";
 export type DeferredViewState = "unloaded" | "loading" | "ready" | "error";
 
+export type DeferredHubUpdate =
+  | { section: "context"; contextSelection: HubContextSelection }
+  | { section: "history"; world: Pick<WorldReadModel, "history"> }
+  | {
+      section: "lore";
+      world: Pick<WorldReadModel, "lore">;
+      campaign: Pick<CampaignReadModel, "quests" | "clues" | "mapOverlays">;
+    }
+  | {
+      section: "locations";
+      world: Pick<WorldReadModel,
+        "currentLocationId" | "map" | "rootMapId" | "maps" | "regions" | "facts" | "locations">;
+      campaign: Pick<CampaignReadModel, "mapOverlays">;
+    }
+  | { section: "people"; world: Pick<WorldReadModel, "locations" | "people"> }
+  | {
+      section: "current";
+      currentSituation: CurrentSituationReadModel;
+      world: Pick<WorldReadModel, "currentLocationId" | "locations">;
+      campaign: Pick<CampaignReadModel, "mapOverlays">;
+    };
+
 export type ReadyHubEnvelope = {
   version: 1;
   status: "ready";
@@ -1069,5 +1091,5 @@ export type UnavailableHubEnvelope = {
   message: string;
 };
 
-export type HubEnvelope = ReadyHubEnvelope | DeniedHubEnvelope | ConnectedCampaignEnvelope |
+export type HubEnvelope = ReadyHubEnvelope | DeniedHubEnvelope |
   CharacterCreationRequiredEnvelope | UnavailableHubEnvelope;

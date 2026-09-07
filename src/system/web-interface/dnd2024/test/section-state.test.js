@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { preserveLastGoodPartyData } from "../src/data/section-state.ts";
+import { applyDeferredHubUpdate, preserveLastGoodPartyData } from "../src/data/section-state.ts";
 
 function member(state) {
   const data = [{ id: "sheet-1", kind: "class", title: "Bard", detail: "Canonical bard." }];
@@ -46,6 +46,33 @@ function envelope(party, perspective = "player", campaignId = "campaign.one", op
     party,
   };
 }
+
+test("deferred feature updates preserve independently loaded hub data", () => {
+  const current = {
+    ...envelope([]),
+    contextSelection: { selectedCampaignId: "campaign.one", selectedWorldId: "world.one", worlds: [] },
+    currentSituation: { status: "unavailable", message: "Not loaded" },
+    world: {
+      history: [{ id: "history.old" }],
+      lore: [{ id: "lore.keep" }],
+      locations: [{ id: "location.keep" }],
+      people: [{ id: "person.keep" }],
+      factions: [{ id: "faction.keep" }],
+      factionDirectory: { totalCount: 1, complete: true, nextCursor: null },
+    },
+    campaign: { quests: [{ id: "quest.keep" }], clues: [], mapOverlays: [] },
+  };
+  const updated = applyDeferredHubUpdate(current, {
+    section: "history",
+    world: { history: [{ id: "history.new" }] },
+  });
+  assert.deepEqual(updated.world.history, [{ id: "history.new" }]);
+  assert.equal(updated.world.lore, current.world.lore);
+  assert.equal(updated.world.factions, current.world.factions);
+  assert.equal(updated.world.factionDirectory, current.world.factionDirectory);
+  assert.equal(updated.campaign, current.campaign);
+  assert.equal(updated.currentSituation, current.currentSituation);
+});
 
 test("refresh failure preserves canonical data as stale and a later success restores ready", () => {
   const ready = envelope([member({ status: "ready" })]);

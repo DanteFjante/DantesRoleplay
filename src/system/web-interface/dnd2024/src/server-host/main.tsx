@@ -7,7 +7,7 @@ import {
   type FactionObjectRequest,
 } from "../data/browser-object-state";
 import { resolveHubSurface } from "../data/hub-availability.js";
-import type { CampaignReadModel, CanonicalCharacterResult, ConnectedCampaignEnvelope, DeferredHubSection, HubEnvelope, PartyMemberReadModel, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
+import type { CampaignReadModel, CanonicalCharacterResult, ConnectedCampaignEnvelope, DeferredHubSection, DeferredHubUpdate, HubEnvelope, PartyMemberReadModel, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
 import { ViewReadClient, ViewReadError } from "../data/view-read-client";
 import { loadInitialHub } from "../data/hub-preferences";
 import { objectConsumers, subscribeScopedChanges } from "../data/scoped-change-stream";
@@ -22,7 +22,6 @@ import "../styles.css";
 import "../character-page.css";
 import "../board-draft.css";
 
-const PAGE_ASSET_BASE = "/ui/dnd2024-play/assets/";
 const characterSources = new Map<string, ConnectedCampaignEnvelope>();
 const characterScope = (state: string, campaign: string, perspective?: Perspective) => `${state}:${campaign}:${perspective ?? "player"}`;
 const DndInformationHub = lazy(() => import("../components/DndInformationHub")
@@ -74,12 +73,7 @@ async function readEnvelope(
     fetchImpl: fetchWithSignal,
     requestedPerspective: perspective,
     requestedCampaignId: campaignId ?? null,
-    mediaAssetBaseUrl: PAGE_ASSET_BASE,
-    deferCharacterDetails: true,
-    deferCampaignDetails: true,
-    deferWorldDirectory: true,
-    useRegisteredCampaignSummary: true,
-  })) as HubEnvelope;
+  })) as HubEnvelope | ConnectedCampaignEnvelope;
 
   if (sourceEnvelope.status !== "connected") return sourceEnvelope;
   if (signal.aborted) throw new DOMException("View replaced", "AbortError");
@@ -255,12 +249,16 @@ async function loadEnvelope(
   return browserObjectState.loadCampaign({ perspective, campaignId });
 }
 
-async function loadDeferredSection(envelope: ReadyHubEnvelope, section: DeferredHubSection, signal: AbortSignal) {
+async function loadDeferredSection(
+  envelope: ReadyHubEnvelope,
+  section: DeferredHubSection,
+  signal: AbortSignal,
+): Promise<DeferredHubUpdate> {
   const key = characterScope(envelope.stateSpaceId,
     envelope.contextSelection?.selectedCampaignId ?? "", envelope.audience.perspective);
   const source = characterSources.get(key);
   if (!source || signal.aborted) throw new Error("Refresh the authorized view before continuing.");
-  const [{ readDeferredHubSection }, { connectedCampaignToHubEnvelope }] = await Promise.all([
+  const [{ readDeferredHubSection }, { connectedCampaignToDeferredHubUpdate }] = await Promise.all([
     import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
   ]);
   const patch = await readDeferredHubSection({
@@ -274,7 +272,7 @@ async function loadDeferredSection(envelope: ReadyHubEnvelope, section: Deferred
   // patches; the hub aborts both owners before replacing the authorized bootstrap.
   const updated = { ...latest, ...patch };
   characterSources.set(key, updated);
-  return connectedCampaignToHubEnvelope({ ...updated, rules: [] });
+  return connectedCampaignToDeferredHubUpdate({ ...updated, rules: [] }, section);
 }
 
 async function loadRulesReference(): Promise<RuleReadModel[]> {

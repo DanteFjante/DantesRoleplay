@@ -396,9 +396,10 @@ async function main() {
     report.liveBefore = await livePageEvidence(options.listener);
     report.perspective = options.perspective;
     report.audienceView = audienceViewFor(report.liveBefore.audience, report.perspective);
-    const bootstrap = await readGameServerContext({ serverOrigin: options.listener,
-      requestedPerspective: options.perspective, deferCharacterDetails: true,
-      deferCampaignDetails: true, deferWorldDirectory: true, useRegisteredCampaignSummary: true });
+    const bootstrap = await readGameServerContext({
+      serverOrigin: options.listener,
+      requestedPerspective: options.perspective,
+    });
     if (bootstrap.status !== 'connected') {
       report.blocker = { phase: 'preflight', code: 'LIVE_BOOTSTRAP_UNAVAILABLE' };
       throw new Error('The live Campaign bootstrap is unavailable; no acceptance samples were manufactured.');
