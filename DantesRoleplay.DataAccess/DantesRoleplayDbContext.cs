@@ -30,11 +30,8 @@ using Microsoft.EntityFrameworkCore;
 namespace DantesRoleplay.DataAccess;
 
 /// <summary>
-/// The only type in the solution that knows a database exists.
-///
-/// Per ARCHITECTURE.md §3.4 nothing outside this project writes SQL, and per §3.11 nothing in
-/// here knows anything about a game: the world tables are Entity, ComponentDefinition,
-/// Component, Containment and Relationship, and every game concept is a row in them.
+/// Maps the generic kernel's persisted records and keeps its save-boundary invariants together.
+/// Game-specific state and rules remain catalog-owned records and JavaScript mechanics.
 /// </summary>
 public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbContext> options)
     : DbContext(options)

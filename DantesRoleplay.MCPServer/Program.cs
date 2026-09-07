@@ -116,8 +116,8 @@ builder.Services.AddSingleton<IInteractionNarrationProvider>(services =>
 builder.Services.AddSingleton<IInteractionTaskAgendaProvider>(services =>
     services.GetRequiredService<SelectedInteractionOuterProvider>());
 
-// Everything this application registers lives in one method, which the end-to-end test also
-// calls — so the surface the test walks is the surface this host serves, by construction.
+// Register the shared kernel and MCP surface exercised by the end-to-end protocol tests. Host-only
+// model providers, the Codex bridge, and web adapters are composed separately around this boundary.
 builder.Services.AddDantesRoleplayMcpServer(
     databasePath,
     DatabaseProvider.Sqlite,

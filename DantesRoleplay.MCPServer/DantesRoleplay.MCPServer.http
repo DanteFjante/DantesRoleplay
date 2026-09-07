@@ -1,8 +1,6 @@
 # A scratch client for this server's three verbs. Send a request from the gutter in Visual Studio.
-#
-# This file shipped as the Web SDK template's example and called `get_random_number` on port 5144
-# — a tool that never existed on a port this project never used. It is now the shortest way to
-# check the surface by hand: the same walk the protocol tests automate.
+# Discover the current descriptor immediately before adapting any write example. Values named
+# `example` below are placeholders and must not be sent to a live database.
 
 @HostAddress = http://localhost:6217
 
@@ -55,30 +53,24 @@ Content-Type: application/json
 
 {"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"query","arguments":{"kind":"mechanics","query":"can they manage it"}}}
 
-### Declare a component definition. Note payload is a JSON object encoded as a STRING.
+### Read the exact active application mechanic before direct execution.
 POST {{HostAddress}}/mcp
 Accept: application/json, text/event-stream
 Content-Type: application/json
 
-{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"commit","arguments":{"kind":"component","payload":"{\"id\":\"stats\",\"name\":\"Stats\",\"description\":\"Numbers about an entity.\"}","intent":"set up a scratch world"}}}
+{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"query","arguments":{"kind":"system.catalog.record","applicationId":"example","collection":"actions","id":"example.mechanic.fixture"}}}
 
-### Change the world. dryRun first, always — then send the identical payload without it.
+### Execute one already selected exact mechanic. Replace every placeholder from current reads.
+# This direct action has no dry run; obtain confirmation before sending it.
 POST {{HostAddress}}/mcp
 Accept: application/json, text/event-stream
 Content-Type: application/json
 
-{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"commit","arguments":{"kind":"effects","payload":"{\"effects\":[{\"type\":\"entity.create\",\"entityId\":\"orban\",\"name\":\"Orban\"},{\"type\":\"component.set\",\"entityId\":\"orban\",\"definitionId\":\"stats\",\"data\":\"{\\\"vigour\\\":6}\"}]}","dryRun":true,"intent":"create a character","proceduresUsed":["procedure.world.change"]}}}
-
-### Resolve an action. This RUNS a rule — selection is by intent, and there is no dry run.
-POST {{HostAddress}}/mcp
-Accept: application/json, text/event-stream
-Content-Type: application/json
-
-{"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"commit","arguments":{"kind":"action","payload":"{\"intent\":\"can they manage it\",\"roleEntityIds\":{\"subject\":\"orban\"},\"input\":\"{\\\"field\\\":\\\"vigour\\\",\\\"threshold\\\":5}\"}","proceduresUsed":["procedure.action.run"]}}}
+{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"commit","arguments":{"kind":"application.action.execute","payload":"{\"idempotencyKey\":\"application-action.example.1\",\"applicationId\":\"example\",\"stateSpaceId\":\"example-space\",\"qualifiedMechanicId\":\"example.mechanic.fixture\",\"mechanicVersion\":1,\"contentFingerprint\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"roleEntityIds\":{},\"input\":{}}","intent":"execute the reviewed exact mechanic","proceduresUsed":["procedure.system.use","procedure.action.run"]}}}
 
 ### What has been done, newest first. Add failuresOnly or subject to narrow it.
 POST {{HostAddress}}/mcp
 Accept: application/json, text/event-stream
 Content-Type: application/json
 
-{"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"query","arguments":{"kind":"history","limit":20}}}
+{"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"query","arguments":{"kind":"history","limit":20}}}

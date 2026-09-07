@@ -174,6 +174,44 @@ public sealed class GuardTests
     }
 
     [Fact]
+    public void Scratch_client_examples_name_only_current_descriptors()
+    {
+        var path = Path.Combine(
+            RepositoryRoot(), "DantesRoleplay.MCPServer", "DantesRoleplay.MCPServer.http");
+        var examples = File.ReadLines(path)
+            .Where(line => line.StartsWith('{'))
+            .Select(line => JsonDocument.Parse(line))
+            .ToArray();
+
+        Assert.NotEmpty(examples);
+        foreach (var example in examples)
+        {
+            using (example)
+            {
+                var root = example.RootElement;
+                if (root.GetProperty("method").GetString() == "tools/list") continue;
+
+                var parameters = root.GetProperty("params");
+                var tool = parameters.GetProperty("name").GetString();
+                var arguments = parameters.GetProperty("arguments");
+                if (tool == "orient") continue;
+
+                var kind = arguments.GetProperty("kind").GetString();
+                if (tool == "query")
+                {
+                    Assert.Contains(kind, McpVerbCatalog.QueryKindNames);
+                    continue;
+                }
+
+                Assert.Equal("commit", tool);
+                Assert.Contains(kind, McpVerbCatalog.CommitKindNames);
+                using var payload = JsonDocument.Parse(arguments.GetProperty("payload").GetString()!);
+                Assert.Equal(JsonValueKind.Object, payload.RootElement.ValueKind);
+            }
+        }
+    }
+
+    [Fact]
     public void Superseded_generic_write_routes_and_runner_sources_are_physically_absent()
     {
         foreach (var kind in new[] { "component", "effects", "mechanic", "action" })

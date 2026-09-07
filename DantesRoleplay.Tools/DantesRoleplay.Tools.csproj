@@ -12,13 +12,10 @@
 
   <ItemGroup>
     <!--
-      DataAccess only, and deliberately NOT RuleAccess. Nothing in here executes a mechanic, so the
-      Jint sandbox has no business being in a developer tool's dependency graph — the one component
-      in this solution that runs code it did not write should be reachable from exactly the places
-      that need it.
-
-      No PackageReference of its own either. Everything these tools need arrives transitively with
-      DataAccess, which is the check that a tool has not quietly grown into a second application.
+      Reference DataAccess, but deliberately not RuleAccess. These catalog tools do not expose a
+      mechanic-execution command; DataAccess supplies their persistence services and its own
+      dependencies transitively. Keeping direct package references out of this project prevents the
+      CLI from quietly growing a second application composition root.
     -->
     <ProjectReference Include="..\DantesRoleplay.DataAccess\DantesRoleplay.DataAccess.csproj" />
   </ItemGroup>

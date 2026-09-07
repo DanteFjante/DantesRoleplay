@@ -16,6 +16,55 @@ http://127.0.0.1:6217/mcp
 
 The default development database is `DantesRoleplay.MCPServer/data/dantesroleplay.db`. It is runtime state and is not the authored catalog.
 
+## Host-owned configuration
+
+ASP.NET Core maps nested environment configuration with double underscores. Keep canonical paths,
+credentials, provider choices and other host policy out of MCP payloads and checked-in settings.
+
+Source registrations use an opaque allowed-root ID plus a relative path or glob. Configure the
+canonical host path separately, for example:
+
+```powershell
+$env:Sources__AllowedRoots__workspace = 'C:\source\my-application'
+```
+
+An authenticated local client may then use `allowedRootId: "workspace"`; preview results expose
+only relative logical paths and content evidence, never the canonical host path.
+
+The private operator interface can run the pinned Codex CLI through `codex app-server --stdio`.
+Override host-owned bridge settings only when needed:
+
+```powershell
+$env:Codex__ExecutablePath = 'C:\Tools\codex.exe'
+$env:Codex__RepositoryRoot = 'C:\source\DantesRoleplay'
+$env:Codex__PinnedVersion = '<required version>'
+$env:Codex__Model = '<supported model>'
+```
+
+The bridge fixes turns to the configured repository and does not store Codex credentials. Each turn
+uses request-scoped approval with a read-only, no-network baseline; the browser cannot grant a
+session-wide approval or choose its sandbox. If the configured executable is inaccessible
+(including some packaged desktop-app binaries), install an independently accessible CLI or point
+`Codex__ExecutablePath` to one.
+
+The separate no-tools remote interaction-planning adapter is disabled by default and never reuses
+the repository-capable Codex bridge. Development verification must enable it explicitly and supply
+its credential through host configuration:
+
+```powershell
+$env:InteractionPlanning__Remote__Enabled = 'true'
+$env:OPENAI_API_KEY = '<credential>'
+```
+
+Use `query(kind: "capabilities")` and the catalog procedures for current preview, activation,
+state-space and interaction payloads rather than copying protocol shapes into operational docs.
+
+## Publish the server
+
+The server project publishes as a self-contained single-file application. Its current
+`RuntimeIdentifiers` list is the authority for supported publish targets; pass one of those runtime
+identifiers to `dotnet publish`. Adding a target is a project-file change, not a runtime setting.
+
 ## Page identity upgrade
 
 Application navigation is registered ECS publication state. Versioned HTML and assets remain in
