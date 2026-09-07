@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ItemWorkspace } from "../../src/components/items/ItemWorkspace";
 import { ItemViewClient } from "../../src/server/item-view-client";

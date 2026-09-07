@@ -168,10 +168,8 @@ test("Caldris map keys resolve only to the reviewed world and Eredane atlas byte
     visual("caldris.town.bramblebridge.player", "").imageUrl);
 });
 
-test("server page bundles keep owner-bound media routes independent of page asset roots", () => {
-  const envelope = connectedCampaignToHubEnvelope(connected("player"), {
-    assetBaseUrl: "/ui/dnd2024-play/assets/",
-  });
+test("server page bundles preserve owner-bound media routes", () => {
+  const envelope = connectedCampaignToHubEnvelope(connected("player"));
   assert.equal(
     mapFor(envelope, "location.thalorien.thalos")?.base?.imageUrl,
     visual("thalos.player", "").imageUrl,

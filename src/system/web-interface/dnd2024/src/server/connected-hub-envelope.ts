@@ -746,7 +746,6 @@ function preparedQuestCards(
 
 export function connectedCampaignToHubEnvelope(
   connection: ConnectedCampaignEnvelope,
-  options: { assetBaseUrl?: string } = {},
 ): ReadyHubEnvelope {
   const perspective = connection.audience.perspective ?? connection.audience.seat;
   const hasLocationDirectory = Array.isArray(connection.locationDirectory)
@@ -801,7 +800,6 @@ export function connectedCampaignToHubEnvelope(
     : null;
   const liveMapTree = buildLiveMapTree(sourceLocations);
   const rootMapId = liveMapTree.rootMapId;
-  const liveMapFeatures = liveMapTree.maps.find((map) => map.id === rootMapId)?.features ?? [];
   const liveKnowledgeOverlays: CampaignMapOverlay[] = (() => {
     // A DM's Player toggle is a local rehearsal over a GM-authorized server request. Until the
     // server can issue a perspective-bound knowledge read, emitting that knowledge in preview

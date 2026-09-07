@@ -91,7 +91,6 @@ async function readEnvelope(
 
   const projected = connectedCampaignToHubEnvelope(
     { ...sourceEnvelope, rules: [] },
-    { assetBaseUrl: PAGE_ASSET_BASE },
   );
   recordDevelopmentDiagnostic("party-read", {
     applicationId: projected.applicationId,
@@ -202,7 +201,7 @@ async function readFactionObjectPage(
   });
   const projected = connectedCampaignToHubEnvelope({ ...source,
     worldDirectory: { people: [], factions: page.factions, holdings: [] }, rules: [],
-  }, { assetBaseUrl: PAGE_ASSET_BASE });
+  });
   const ids = new Set(page.factions.map((faction: { id: string }) => faction.id));
   return {
     factions: projected.world.factions.filter((faction) => ids.has(faction.id)),
@@ -237,8 +236,11 @@ async function loadCampaignDetails(
   if (signal.aborted) throw new DOMException("View replaced", "AbortError");
   characterSources.set(characterScope(source.stateSpaceId, source.campaign.id, source.audience.perspective),
     { ...source, campaign: { ...source.campaign, ...details } });
-  return connectedCampaignToHubEnvelope({ ...source, campaign: { ...source.campaign, ...details }, rules: [] },
-    { assetBaseUrl: PAGE_ASSET_BASE }).campaign;
+  return connectedCampaignToHubEnvelope({
+    ...source,
+    campaign: { ...source.campaign, ...details },
+    rules: [],
+  }).campaign;
 }
 
 async function loadEnvelope(
@@ -267,7 +269,7 @@ async function loadDeferredSection(envelope: ReadyHubEnvelope, section: Deferred
   // patches; the hub aborts both owners before replacing the authorized bootstrap.
   const updated = { ...latest, ...patch };
   characterSources.set(key, updated);
-  return connectedCampaignToHubEnvelope({ ...updated, rules: [] }, { assetBaseUrl: PAGE_ASSET_BASE });
+  return connectedCampaignToHubEnvelope({ ...updated, rules: [] });
 }
 
 async function loadRulesReference(): Promise<RuleReadModel[]> {

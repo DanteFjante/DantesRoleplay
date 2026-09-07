@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ConnectedItemView } from "../../src/components/items/ConnectedItemView";
 import { ItemViewClient } from "../../src/server/item-view-client";
