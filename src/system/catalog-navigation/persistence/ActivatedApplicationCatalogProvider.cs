@@ -34,6 +34,17 @@ public sealed class ActivatedApplicationCatalogMaterializer(
     private const string MaterializerVersion = "activated-application-catalog-v3";
     private const string SearchSortVersion = "catalog-lexical-v1";
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
+    private ActivatedApplicationCatalogSnapshotCache? _preparations;
+    private ActivatedApplicationCatalogCacheAuthority? _preparationAuthority;
+
+    internal ActivatedApplicationCatalogMaterializer UsePreparationCache(
+        ActivatedApplicationCatalogSnapshotCache cache,
+        ActivatedApplicationCatalogCacheAuthority authority)
+    {
+        _preparations = cache ?? throw new ArgumentNullException(nameof(cache));
+        _preparationAuthority = authority ?? throw new ArgumentNullException(nameof(authority));
+        return this;
+    }
 
     public CatalogNavigationManifest Build(ApplicationIdentifier applicationId) =>
         BuildFeatureSnapshot(applicationId).Manifest;
@@ -60,13 +71,39 @@ public sealed class ActivatedApplicationCatalogMaterializer(
                 throw Failure("SOURCE_REGISTRATION_DRIFT", "An active source registration no longer matches its retained evidence.");
         }
 
+        foreach (var retained in activation.Extensions)
+        {
+            if (!extensionRegistrations.TryGetValue(retained.ExtensionId, out var current)
+                || ApplicationExtensionRegistrationFingerprint.Compute(current) != retained.RegistrationFingerprint)
+                throw Failure("EXTENSION_REGISTRATION_DRIFT",
+                    "An active extension registration no longer matches its retained evidence.");
+        }
+
         var winners = activation.Winners.ToDictionary(value => value.RelativePath, StringComparer.Ordinal);
-        RegisterObjects(applicationId, activation.Winners, registrations);
+        var documents = ReadCatalogBytes(activation.Winners, winners, registrations);
+        RegisterObjects(applicationId, activation.Winners, documents);
+        var preparationFingerprint = PreparationFingerprint(application, activation, registrations,
+            extensionRegistrations, documents.Keys);
+        ActiveCatalogFeatureSnapshot Factory() => BuildPreparedSnapshot(applicationId, application,
+            activation, winners, extensionRegistrations, documents);
+        return _preparations is null || _preparationAuthority is null
+            ? Factory()
+            : _preparations.GetOrCreate(_preparationAuthority, applicationId, preparationFingerprint, Factory);
+    }
+
+    private ActiveCatalogFeatureSnapshot BuildPreparedSnapshot(
+        ApplicationIdentifier applicationId,
+        ApplicationRegistration application,
+        ActiveApplicationManifest activation,
+        IReadOnlyDictionary<string, ActivatedApplicationDocument> winners,
+        IReadOnlyDictionary<string, ApplicationExtensionRegistration> extensionRegistrations,
+        IReadOnlyDictionary<string, byte[]> documents)
+    {
         var records = new List<CatalogRecordDefinition>();
         foreach (var winner in activation.Winners.OrderBy(value => value.RelativePath, StringComparer.Ordinal))
         {
             if (!TryRecordKind(winner.RelativePath, out var kind)) continue;
-            var sourceText = ReadText(winner, registrations);
+            var sourceText = DecodeText(winner, documents[winner.RelativePath]);
             try
             {
                 records.Add(kind switch
@@ -76,7 +113,7 @@ public sealed class ActivatedApplicationCatalogMaterializer(
                     "query" => QueryRecord(applicationId, applicationId.Value, winner,
                         ApplicationQueryContract.Parse(sourceText, applicationId)),
                     "entity" => EntityRecord(applicationId, applicationId.Value, winner, sourceText),
-                    _ => MechanicRecord(applicationId, applicationId.Value, winner, sourceText, winners, registrations)
+                    _ => MechanicRecord(applicationId, applicationId.Value, winner, sourceText, winners, documents)
                 });
             }
             catch (ApplicationCatalogMaterializationException) { throw; }
@@ -102,22 +139,20 @@ public sealed class ActivatedApplicationCatalogMaterializer(
             var trust = activation.Winners.ToDictionary(
                 value => (value.SourceId, value.RelativePath),
                 value => value.Trust);
-            var documents = manifest.Records.Select(record =>
+            var featureDocuments = manifest.Records.Select(record =>
             {
                 if (!trust.TryGetValue((record.SourceId, record.SourceLogicalPath), out var winnerTrust))
                     throw Failure("CATALOG_PROVENANCE_MISSING", "An active catalog record has no exact source-winner provenance.");
                 return new ActiveCatalogFeatureDocument(record, winnerTrust);
             }).ToArray();
-            return new ActiveCatalogFeatureSnapshot(manifest, documents)
+            return new ActiveCatalogFeatureSnapshot(manifest, featureDocuments)
             {
                 EffectiveSetFingerprint = activation.ActivationFingerprint,
                 Resolution = CatalogExtensionResolutionContext.Create(applicationId,
                     activation.ResolutionFingerprint,
                     activation.Extensions.Select(value =>
                     {
-                        if (!extensionRegistrations.TryGetValue(value.ExtensionId, out var registration))
-                            throw Failure("EXTENSION_REGISTRATION_DRIFT",
-                                "An active extension registration is no longer available.");
+                        var registration = extensionRegistrations[value.ExtensionId];
                         return new CatalogExtensionContribution(value.ExtensionId,
                             registration.DisplayName, registration.Description, registration.Classification,
                             registration.SourceIds, value.NamespaceIds, value.HigherPriorityThan,
@@ -133,7 +168,7 @@ public sealed class ActivatedApplicationCatalogMaterializer(
 
     private void RegisterObjects(ApplicationIdentifier applicationId,
         IReadOnlyList<ActivatedApplicationDocument> winners,
-        IReadOnlyDictionary<string, SourceRegistration> registrations)
+        IReadOnlyDictionary<string, byte[]> documents)
     {
         var objectWinners = winners.Where(value => IsObjectDocument(value.RelativePath))
             .OrderBy(value => value.RelativePath, StringComparer.Ordinal).ToArray();
@@ -144,7 +179,8 @@ public sealed class ActivatedApplicationCatalogMaterializer(
         foreach (var value in objectWinners)
         {
             ProjectionDefinitionRequest request;
-            try { request = ApplicationObjectDocument.Parse(ReadText(value, registrations), applicationId); }
+            try { request = ApplicationObjectDocument.Parse(
+                DecodeText(value, documents[value.RelativePath]), applicationId); }
             catch (Exception exception) when (exception is ArgumentException or JsonException)
             { throw Failure("CATALOG_OBJECT_INVALID", "An active application object could not be parsed.", exception); }
             var version = request.DeclaredVersion ?? 1;
@@ -179,14 +215,14 @@ public sealed class ActivatedApplicationCatalogMaterializer(
         ActivatedApplicationDocument markdownWinner,
         string markdown,
         IReadOnlyDictionary<string, ActivatedApplicationDocument> winners,
-        IReadOnlyDictionary<string, SourceRegistration> registrations)
+        IReadOnlyDictionary<string, byte[]> documents)
     {
         var sourcePath = Path.ChangeExtension(markdownWinner.RelativePath, ".js").Replace('\\', '/');
         if (!winners.TryGetValue(sourcePath, out var sourceWinner))
             throw Failure("MECHANIC_SOURCE_MISSING", "An active mechanic Markdown record has no active JavaScript sidecar.");
         if (sourceWinner.SourceId != markdownWinner.SourceId)
             throw Failure("MECHANIC_SOURCE_SPLIT", "A mechanic contract and JavaScript sidecar must come from one effective source.");
-        var source = ReadText(sourceWinner, registrations);
+        var source = DecodeText(sourceWinner, documents[sourceWinner.RelativePath]);
         var file = MechanicFile.Parse(markdown, markdownWinner.RelativePath, source);
         var content = ApplicationCatalogRecordContent.MechanicJson(file);
         return Record(applicationId, collection, "mechanic", file.Id, file.Category, file.Name,
@@ -272,7 +308,69 @@ public sealed class ActivatedApplicationCatalogMaterializer(
             Hash(Encoding.UTF8.GetBytes(content)), winner.SourceId, winner.RelativePath);
     }
 
-    private string ReadText(
+    private IReadOnlyDictionary<string, byte[]> ReadCatalogBytes(
+        IReadOnlyList<ActivatedApplicationDocument> activationWinners,
+        IReadOnlyDictionary<string, ActivatedApplicationDocument> winners,
+        IReadOnlyDictionary<string, SourceRegistration> registrations)
+    {
+        var used = activationWinners.Where(value => IsObjectDocument(value.RelativePath)
+                || TryRecordKind(value.RelativePath, out _))
+            .ToDictionary(value => value.RelativePath, StringComparer.Ordinal);
+        foreach (var mechanic in activationWinners.Where(value =>
+                     TryRecordKind(value.RelativePath, out var kind) && kind == "mechanic"))
+        {
+            var sourcePath = Path.ChangeExtension(mechanic.RelativePath, ".js").Replace('\\', '/');
+            if (winners.TryGetValue(sourcePath, out var source)) used.TryAdd(sourcePath, source);
+        }
+        return used.OrderBy(value => value.Key, StringComparer.Ordinal)
+            .ToDictionary(value => value.Key, value => ReadBytes(value.Value, registrations),
+                StringComparer.Ordinal);
+    }
+
+    private static string PreparationFingerprint(
+        ApplicationRegistration application,
+        ActiveApplicationManifest activation,
+        IReadOnlyDictionary<string, SourceRegistration> registrations,
+        IReadOnlyDictionary<string, ApplicationExtensionRegistration> extensionRegistrations,
+        IEnumerable<string> usedPaths)
+    {
+        var used = usedPaths.ToHashSet(StringComparer.Ordinal);
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            materializer = MaterializerVersion,
+            application = new
+            {
+                id = application.Id.Value,
+                application.DisplayName,
+                application.Description,
+                bases = application.BaseApplications.Select(value => value.Value).Order(StringComparer.Ordinal)
+            },
+            activation = new
+            {
+                activation.ActivationRevision,
+                activation.ApplicationRevision,
+                activation.ApplicationFingerprint,
+                activation.ActivationFingerprint,
+                activation.ResolutionFingerprint,
+                sources = activation.Sources.OrderBy(value => value.SourceId, StringComparer.Ordinal),
+                winners = activation.Winners.Where(value => used.Contains(value.RelativePath))
+                    .OrderBy(value => value.RelativePath, StringComparer.Ordinal),
+                extensions = activation.Extensions.OrderBy(value => value.ExtensionId, StringComparer.Ordinal)
+            },
+            registrations = registrations.Values.OrderBy(value => value.SourceId, StringComparer.Ordinal)
+                .Select(value => new { value.SourceId, Fingerprint = SourceRegistrationFingerprint.Compute(value) }),
+            extensionRegistrations = activation.Extensions.OrderBy(value => value.ExtensionId, StringComparer.Ordinal)
+                .Select(value => new
+                {
+                    value.ExtensionId,
+                    Fingerprint = ApplicationExtensionRegistrationFingerprint.Compute(
+                        extensionRegistrations[value.ExtensionId])
+                })
+        });
+        return Hash(bytes);
+    }
+
+    private byte[] ReadBytes(
         ActivatedApplicationDocument winner,
         IReadOnlyDictionary<string, SourceRegistration> registrations)
     {
@@ -295,14 +393,27 @@ public sealed class ActivatedApplicationCatalogMaterializer(
                 throw Failure("SOURCE_FILE_DRIFT",
                     $"'{winner.RelativePath}' no longer matches the length and hash retained at "
                     + "activation. Re-activate the application, or restore the file.");
-            var text = StrictUtf8.GetString(bytes);
-            return text.Length > 0 && text[0] == '\uFEFF' ? text[1..] : text;
+            return bytes;
         }
         catch (ApplicationCatalogMaterializationException) { throw; }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException
-            or ArgumentException or NotSupportedException or DecoderFallbackException)
+            or ArgumentException or NotSupportedException)
         {
             throw Failure("SOURCE_FILE_UNAVAILABLE", "An active document could not be read safely.", exception);
+        }
+    }
+
+    private static string DecodeText(ActivatedApplicationDocument winner, byte[] bytes)
+    {
+        try
+        {
+            var text = StrictUtf8.GetString(bytes);
+            return text.Length > 0 && text[0] == '\uFEFF' ? text[1..] : text;
+        }
+        catch (DecoderFallbackException exception)
+        {
+            throw Failure("SOURCE_FILE_UNAVAILABLE",
+                $"'{winner.RelativePath}' is not valid UTF-8 text.", exception);
         }
     }
 

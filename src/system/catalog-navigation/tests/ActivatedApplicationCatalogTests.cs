@@ -3,7 +3,9 @@ using System.Text;
 using System.Text.Json;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Applications;
+using DantesRoleplay.DataAccess.Composition;
 using DantesRoleplay.Sources;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DantesRoleplay.CatalogNavigation.Tests;
 
@@ -44,16 +46,25 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
         var sources = new InMemorySourceRegistry();
         var source = sources.Register(new(app, "catalog", "fixture-root", "content/**/*",
             SourceTrust.Trusted, 0, "fixture-catalog"));
+        var extensions = new InMemoryApplicationExtensionRegistry(sources);
+        var extension = extensions.Register(new(app, "fixture-extension", "Fixture extension",
+            "Adds fixture catalog records.", ApplicationExtensionClassifications.Homebrew,
+            [source.SourceId], ["fixture.extension"], [], [], [], false));
         var activation = new ActiveApplicationManifest(
             app, 1, revision.Revision, revision.Fingerprint, Sha('B'), Sha('C'), Sha('D'), Sha('E'),
             Sha('A'), "fixture-coverage-v1", false,
             [new("catalog", SourceRegistrationFingerprint.Compute(source), 1, 0)],
             [new("file:" + relativePath, "catalog", SourceTrust.Trusted, 0, relativePath,
                 "text/markdown", Hash(bytes), bytes.LongLength, true)],
-            "fixture-operation", DateTime.UtcNow);
+            "fixture-operation", DateTime.UtcNow)
+        {
+            Extensions = [new(extension.ExtensionId,
+                ApplicationExtensionRegistrationFingerprint.Compute(extension), extension.SourceIds,
+                extension.NamespaceIds, extension.HigherPriorityThan, extension.OverridesBase)]
+        };
         var materializer = new ActivatedApplicationCatalogMaterializer(
             applications, new StaticActivation(activation), sources,
-            new StaticRoot("fixture-root", _root));
+            new StaticRoot("fixture-root", _root), extensions);
 
         var manifest = materializer.Build(app);
         var snapshot = materializer.BuildFeatureSnapshot(app);
@@ -77,6 +88,13 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
             new ConfiguredPublicApplicationCatalogPolicy(["fixture"]), materializer, cursor).TryGet(app, out var navigator));
         Assert.Equal(1, Assert.Single(navigator.ListCollections(app)).RecordCount);
 
+        var driftedExtensions = new InMemoryApplicationExtensionRegistry(sources);
+        driftedExtensions.Register(extension with { Description = "Changed extension registration." });
+        var extensionDrift = Assert.Throws<ApplicationCatalogMaterializationException>(() =>
+            new ActivatedApplicationCatalogMaterializer(applications, new StaticActivation(activation), sources,
+                new StaticRoot("fixture-root", _root), driftedExtensions).Build(app));
+        Assert.Equal("EXTENSION_REGISTRATION_DRIFT", extensionDrift.Code);
+
         File.AppendAllText(fullPath, "\nchanged");
         var drift = Assert.Throws<ApplicationCatalogMaterializationException>(() => materializer.Build(app));
         Assert.Equal("SOURCE_FILE_DRIFT", drift.Code);
@@ -89,6 +107,22 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
         Assert.Throws<ArgumentException>(() => new ConfiguredPublicApplicationCatalogPolicy(["fixture", "fixture"]));
         Assert.Throws<ArgumentException>(() => new ConfiguredPublicApplicationCatalogPolicy(
             Enumerable.Range(0, 101).Select(index => $"app{index}")));
+    }
+
+    [Fact]
+    public void Prepared_snapshot_cache_is_host_owned_while_catalog_services_remain_scoped()
+    {
+        var services = new ServiceCollection();
+        services.AddCatalogNavigationComponent();
+
+        Assert.Equal(ServiceLifetime.Singleton, Assert.Single(services, value =>
+            value.ServiceType == typeof(ActivatedApplicationCatalogSnapshotCache)).Lifetime);
+        Assert.Equal(ServiceLifetime.Singleton, Assert.Single(services, value =>
+            value.ServiceType == typeof(ActivatedApplicationCatalogCacheAuthority)).Lifetime);
+        Assert.Equal(ServiceLifetime.Scoped, Assert.Single(services, value =>
+            value.ServiceType == typeof(ActivatedApplicationCatalogMaterializer)).Lifetime);
+        Assert.Equal(ServiceLifetime.Scoped, Assert.Single(services, value =>
+            value.ServiceType == typeof(ActivatedApplicationCatalogProvider)).Lifetime);
     }
 
     [Fact]
@@ -241,6 +275,124 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
             alpha, "alpha", alphaPage.Records[0].Record.QualifiedId));
         Assert.Contains("alpha", alphaRecord.ContentJson, StringComparison.Ordinal);
         Assert.DoesNotContain("beta", alphaRecord.ContentJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Repeated_equivalent_maximum_catalog_preparation_profile()
+    {
+        const int recordCount = CatalogNavigationLimits.MaximumRecords;
+        var app = ApplicationIdentifier.Parse("profile");
+        var applications = new InMemoryApplicationRegistry();
+        var revision = applications.Register(new(app, "Profile application",
+            "Maximum-size activated catalog preparation profile.", []));
+        var sources = new InMemorySourceRegistry();
+        var source = sources.Register(new(app, "catalog", "fixture-root", "profile/**/*",
+            SourceTrust.Trusted, 0, "profile-catalog"));
+        var winners = new List<ActivatedApplicationDocument>();
+        for (var index = 0; index < recordCount; index++)
+        {
+            var relativePath = $"profile/procedures/group-{index % 10:D2}/procedure.profile-{index:D3}.md";
+            var fullPath = Path.Combine(_root, relativePath.Replace('/', Path.DirectorySeparatorChar));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+            var markdown = $$"""
+                ---
+                id: procedure.profile-{{index:D3}}
+                category: group-{{index % 10:D2}}
+                name: Profile procedure {{index:D3}}
+                governs: query(kind: "profile-{{index:D3}}")
+                status: active
+                ---
+
+                ## Description
+                Profile activated catalog preparation for record {{index:D3}}.
+
+                ## Instructions
+                1. Inspect the requested profile record.
+
+                ## Constraints
+                - Never mutate profile state.
+                """;
+            File.WriteAllText(fullPath, markdown, new UTF8Encoding(false));
+            var bytes = File.ReadAllBytes(fullPath);
+            winners.Add(new("file:" + relativePath, "catalog", SourceTrust.Trusted, 0, relativePath,
+                "text/markdown", Hash(bytes), bytes.LongLength, true));
+        }
+        var activation = new ActiveApplicationManifest(app, 1, revision.Revision, revision.Fingerprint,
+            Sha('B'), Sha('C'), Sha('D'), Sha('E'), Sha('A'), "profile-coverage-v1", false,
+            [new("catalog", SourceRegistrationFingerprint.Compute(source), recordCount, 0)], winners,
+            "profile-operation", DateTime.UtcNow);
+        var cache = new ActivatedApplicationCatalogSnapshotCache();
+        var authority = new ActivatedApplicationCatalogCacheAuthority();
+        var allocations = new List<long>();
+        var elapsed = new List<long>();
+        var snapshots = new List<ActiveCatalogFeatureSnapshot>();
+
+        for (var iteration = 0; iteration < 3; iteration++)
+        {
+            var before = GC.GetTotalAllocatedBytes(false);
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+            snapshots.Add(new ActivatedApplicationCatalogMaterializer(applications,
+                    new StaticActivation(activation), sources, new StaticRoot("fixture-root", _root))
+                .UsePreparationCache(cache, authority).BuildFeatureSnapshot(app));
+            timer.Stop();
+            allocations.Add(GC.GetTotalAllocatedBytes(false) - before);
+            elapsed.Add(timer.ElapsedMilliseconds);
+        }
+
+        Assert.All(snapshots, snapshot => Assert.Equal(recordCount, snapshot.Manifest.Records.Count));
+        Assert.Same(snapshots[0], snapshots[1]);
+        Assert.Same(snapshots[0], snapshots[2]);
+        Assert.Equal(2, cache.Hits);
+        Assert.Equal(1, cache.Misses);
+        Assert.Equal(1, cache.Count);
+        Console.WriteLine($"Activated catalog preparation with verified reuse: allocations={string.Join(',', allocations)}; " +
+            $"elapsedMs={string.Join(',', elapsed)}");
+
+        var changedActivation = activation with
+        {
+            ActivationRevision = 2,
+            ActivationFingerprint = Sha('9'),
+            ResolutionFingerprint = Sha('9')
+        };
+        var changed = new ActivatedApplicationCatalogMaterializer(applications,
+                new StaticActivation(changedActivation), sources, new StaticRoot("fixture-root", _root))
+            .UsePreparationCache(cache, authority).BuildFeatureSnapshot(app);
+        Assert.NotSame(snapshots[0], changed);
+        Assert.NotEqual(snapshots[0].Manifest.Fingerprint, changed.Manifest.Fingerprint);
+        Assert.Equal(2, cache.Misses);
+        Assert.Equal(1, cache.Count);
+
+        var beforeUnpublished = (cache.Hits, cache.Misses);
+        var unpublished = new ActivatedApplicationCatalogProvider(new EmptyPublicApplicationCatalogPolicy(),
+            new ActivatedApplicationCatalogMaterializer(applications, new StaticActivation(activation), sources,
+                    new StaticRoot("fixture-root", _root)).UsePreparationCache(cache, authority),
+            new CatalogCursorCodec(Encoding.UTF8.GetBytes("profile-catalog-cursor-signing-key")));
+        Assert.False(unpublished.TryGet(app, out _));
+        Assert.Equal(beforeUnpublished, (cache.Hits, cache.Misses));
+
+        var otherAuthority = new ActivatedApplicationCatalogCacheAuthority();
+        var otherContext = new ActivatedApplicationCatalogMaterializer(applications,
+                new StaticActivation(activation), sources, new StaticRoot("fixture-root", _root))
+            .UsePreparationCache(cache, otherAuthority).BuildFeatureSnapshot(app);
+        Assert.NotSame(snapshots[0], otherContext);
+        Assert.Equal(3, cache.Misses);
+        Assert.Equal(2, cache.Count);
+
+        var driftedSources = new InMemorySourceRegistry();
+        driftedSources.Register(source with { LogicalIdentity = "changed-registration" });
+        var registrationDrift = Assert.Throws<ApplicationCatalogMaterializationException>(() =>
+            new ActivatedApplicationCatalogMaterializer(applications, new StaticActivation(activation),
+                    driftedSources, new StaticRoot("fixture-root", _root))
+                .UsePreparationCache(cache, authority).BuildFeatureSnapshot(app));
+        Assert.Equal("SOURCE_REGISTRATION_DRIFT", registrationDrift.Code);
+
+        File.AppendAllText(Path.Combine(_root,
+            winners[0].RelativePath.Replace('/', Path.DirectorySeparatorChar)), "\nchanged");
+        var fileDrift = Assert.Throws<ApplicationCatalogMaterializationException>(() =>
+            new ActivatedApplicationCatalogMaterializer(applications, new StaticActivation(activation), sources,
+                    new StaticRoot("fixture-root", _root))
+                .UsePreparationCache(cache, authority).BuildFeatureSnapshot(app));
+        Assert.Equal("SOURCE_FILE_DRIFT", fileDrift.Code);
     }
 
     public void Dispose()

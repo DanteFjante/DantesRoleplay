@@ -11,7 +11,13 @@ internal static class CatalogNavigationComponentRegistration
     {
         services.TryAddSingleton<IPublicApplicationCatalogPolicy, EmptyPublicApplicationCatalogPolicy>();
         services.TryAddSingleton(new CatalogCursorCodec(RandomNumberGenerator.GetBytes(32)));
-        services.AddScoped<ActivatedApplicationCatalogMaterializer>();
+        services.TryAddSingleton<ActivatedApplicationCatalogSnapshotCache>();
+        services.TryAddSingleton<ActivatedApplicationCatalogCacheAuthority>();
+        services.AddScoped(provider => ActivatorUtilities
+            .CreateInstance<ActivatedApplicationCatalogMaterializer>(provider)
+            .UsePreparationCache(
+                provider.GetRequiredService<ActivatedApplicationCatalogSnapshotCache>(),
+                provider.GetRequiredService<ActivatedApplicationCatalogCacheAuthority>()));
         services.AddScoped<ActivatedApplicationCatalogProvider>();
         services.AddScoped<IPublicApplicationCatalogProvider>(provider =>
             provider.GetRequiredService<ActivatedApplicationCatalogProvider>());
