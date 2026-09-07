@@ -20,14 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Retained compatibility sources for the former game host. They are deliberately not
-         compiled by the generic server until an application adapter owns their dependencies. -->
-    <Compile Remove="DevelopmentKnowledgeAudience.cs" />
-    <Compile Remove="KnowledgeBackgroundWorker.cs" />
-    <Compile Remove="StoryPlanWorker.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\DantesRoleplay.DataAccess\DantesRoleplay.DataAccess.csproj" />
     <ProjectReference Include="..\DantesRoleplay.LocalAI\DantesRoleplay.LocalAI.csproj" />
     <ProjectReference Include="..\DantesRoleplay.Web\DantesRoleplay.Web.csproj" />

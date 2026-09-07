@@ -1,17 +1,13 @@
-using System.Text.Json;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
-using DantesRoleplay.MCPServer.Mcp;
-using DantesRoleplay.Operations;
-using DantesRoleplay.Procedures;
 using DantesRoleplay.World;
 
 namespace DantesRoleplay.Tests;
 
 /// <summary>
-/// Slice 2 proves registration and validation only. These tests intentionally do not try to
-/// execute middleware: no dispatch or event ledger exists in this slice.
+/// Covers subscription registration and validation independently from EventRouterTests, which
+/// own dispatch and event-ledger behavior.
 /// </summary>
 public sealed class SubscriptionStoreTests : IDisposable
 {
@@ -162,50 +158,6 @@ public sealed class SubscriptionStoreTests : IDisposable
 
         Assert.False(Assert.Single(mixed, check => check.Name == "fanout-selector").Passed);
         Assert.False(Assert.Single(malformed, check => check.Name == "fanoutSelector").Passed);
-    }
-
-    [Fact]
-    public async Task The_public_commit_verb_dry_runs_a_subscription_without_registering_it()
-    {
-        await using var db = _fixture.CreateContext();
-        await SeedEventMechanicAsync(db, EventMechanicMode.Guard);
-        var payload = JsonSerializer.Serialize(new
-        {
-            id = "subscription.guard.test",
-            category = "test",
-            eventTypeId = "test.changed",
-            eventMechanicId = "mechanic.test.event",
-            mode = "guard",
-            fixedRoleEntityIdsJson = "{}",
-            trackedEntityIdsJson = "[]",
-            payloadEqualsJson = "{}",
-            status = "draft"
-        });
-
-        var result = await new CommitMcpTool().CommitAsync(
-            procedures: new ProcedureStore(db),
-            world: new WorldStore(db),
-            effects: null!,
-            mechanics: new MechanicStore(db),
-            eventTypes: new EventTypeStore(db),
-            subscriptions: new SubscriptionStore(db),
-            actions: null!,
-            itineraries: null!,
-            campaigns: null!,
-            campaignBootstrapper: null!,
-            campaignContinuity: null!,
-            campaignSessions: null!,
-            campaignSessionStarter: null!,
-            quests: null!,
-            questLifecycle: null!,
-            log: new OperationLog(db),
-            notifications: new NotificationStore(db),
-            kind: "subscription",
-            payload: payload,
-            dryRun: true);
-
-        Assert.True(result.Ok, JsonSerializer.Serialize(result));
-        Assert.False(await new SubscriptionStore(db).ExistsAsync("subscription.guard.test"));
     }
 
     private static WriteSubscriptionRequest Request() => new()

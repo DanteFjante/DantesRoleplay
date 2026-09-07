@@ -387,3 +387,10 @@ out-*.txt
 verify.txt
 DantesRoleplay.MCPServer/data/dantesroleplay.db
 *.db.backup-*
+
+# Named local verification outputs. These are alternate build directories, not source.
+/DantesRoleplay.Tests/.codex-build/
+/DantesRoleplay.Tests/.codex-obj/
+/DantesRoleplay.Tests/bin-slice2/
+/DantesRoleplay.Tools/.codex-build/
+/DantesRoleplay.Tools/.codex-obj/

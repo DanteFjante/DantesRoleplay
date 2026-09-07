@@ -8,13 +8,19 @@
   </head>
   <body>
     <div id="root">
-      <main class="hub-unavailable">
-        <section aria-live="polite">
-          <span class="eyebrow">Private table</span>
-          <h1>Opening the game table</h1>
-          <p>Gathering the latest World and campaign state…</p>
-        </section>
-      </main>
+      <div aria-busy="true" class="information-hub bootstrap-shell">
+        <header class="bootstrap-shell__topbar">
+          <strong>D&amp;D 2024</strong>
+          <span>Preparing your authorized world view…</span>
+        </header>
+        <main class="information-content">
+          <section class="bootstrap-shell__view" aria-live="polite">
+            <span class="eyebrow">World</span>
+            <h1>Opening the world overview</h1>
+            <p>Private campaign information will appear after its contract is validated.</p>
+          </section>
+        </main>
+      </div>
     </div>
     <script type="module" src="../src/server-host/main.tsx"></script>
   </body>

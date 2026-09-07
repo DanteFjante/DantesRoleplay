@@ -58,19 +58,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Retained tests for former game adapters are not part of the generic host test assembly. -->
-    <Compile Remove="DevelopmentKnowledgeAudienceTests.cs" />
-    <Compile Remove="CatalogWorldFeature7Tests.cs" />
-    <Compile Remove="CatalogWorldFeature9Tests.cs" />
-    <Compile Remove="CategoryToolTests.cs" />
-    <Compile Remove="InformationTests.cs" />
-    <Compile Remove="ProcedureBoundActionVerifierTests.cs" />
+    <!-- The end-to-end protocol walk stays opt-in because it starts the complete host. -->
     <Compile Remove="ProtocolWalkTests.cs" Condition="'$(IncludeProtocolWalkTests)' != 'true'" />
-    <Compile Remove="SessionFeature4Tests.cs" />
-    <Compile Remove="SqliteVecExtensionProbeTests.cs" />
-    <Compile Remove="VerbToolTests.cs" />
-    <Compile Remove="..\src\system\events-and-notifications\tests\SubscriptionStoreTests.cs" />
-    <Compile Remove="..\src\system\snapshots\tests\SnapshotFeature1Tests.cs" />
   </ItemGroup>
 
 </Project>
