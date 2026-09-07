@@ -5,9 +5,9 @@ import { JSDOM } from "jsdom";
 import { ItemWorkspace } from "../../src/components/items/ItemWorkspace";
 import { DndInformationHub } from "../../src/components/DndInformationHub";
 import { ITEM_ROUTE_EVENT, itemRouteHash, navigateItemRoute, parseItemRoute, readInventoryReturn, type InventoryRoute } from "../../src/data/item-view-route";
-import { hubSource } from "../../src/server/hub-source.js";
-import { projectHubEnvelope } from "../../src/server/hub-envelope.js";
-import { resolveAudience } from "../../src/server/audience-policy.js";
+import { hubSource } from "../support/hub-source.js";
+import { projectHubEnvelope } from "../support/hub-envelope.js";
+import { resolveAudience } from "../support/audience-policy.js";
 import type { PartyMemberReadModel, ReadyHubEnvelope } from "../../src/data/hub-types";
 
 const inventory: InventoryRoute = { kind: "inventory", characterId: "actor.second", campaignId: "campaign.test", perspective: "player" };

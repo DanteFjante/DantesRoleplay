@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { isReadyHubEnvelope } from "../src/state.js";
-import { projectHubEnvelope } from "../src/server/hub-envelope.js";
-import { resolveAudience } from "../src/server/audience-policy.js";
-import { hubSource, HUB_SOURCE_REVISION } from "../src/server/hub-source.js";
+import { projectHubEnvelope } from "./support/hub-envelope.js";
+import { resolveAudience } from "./support/audience-policy.js";
+import { hubSource, HUB_SOURCE_REVISION } from "./support/hub-source.js";
 
 test("hub validation accepts declared revision failures without rejecting the whole view", () => {
   const envelope = projectHubEnvelope(hubSource, HUB_SOURCE_REVISION, resolveAudience({

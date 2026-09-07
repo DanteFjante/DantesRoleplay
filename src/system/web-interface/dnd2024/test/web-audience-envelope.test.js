@@ -5,8 +5,8 @@ import {
   parseDmEmails,
   parseDmPrincipalIds,
   resolveAudience,
-} from "../src/server/audience-policy.js";
-import { projectHubEnvelope, readHubEnvelope } from "../src/server/hub-envelope.js";
+} from "./support/audience-policy.js";
+import { projectHubEnvelope, readHubEnvelope } from "./support/hub-envelope.js";
 import {
   CAMPAIGN_SECRET_CANARIES,
   FACTION_SECRET_CANARIES,
@@ -29,7 +29,7 @@ import {
   PERSON_SECRET_CANARIES,
   SECRET_CANARIES,
   hubSource,
-} from "../src/server/hub-source.js";
+} from "./support/hub-source.js";
 
 const dmPrincipal = "principal.dm.fixture";
 

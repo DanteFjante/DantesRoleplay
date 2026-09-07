@@ -1,8 +1,8 @@
 import { readItemUses, usesKey, type ItemUsesRequest, type ItemUsesResult } from "./item-uses-client";
-import { boundedJson } from "./item-read-response";
+import { itemReadId, readItemResponse } from "./item-read-response";
 import { readItemRecipes, recipesKey, type ItemRecipesRequest, type ItemRecipesResult } from "./item-recipes-client";
 import validate, { contract } from "./item-details-validator.js";
-import { ViewReadClient, ViewReadError } from "../data/view-read-client";
+import { ViewReadClient } from "../data/view-read-client";
 import type { Perspective } from "../data/hub-types";
 import type { ItemMediaEntry } from "../components/EntityMediaGallery";
 
@@ -24,30 +24,14 @@ export type ItemDetailsRequest = {
 };
 export type ItemDetailsResult = { status: "ready"; data: ItemDetailsData; sourceRevision: string; expiresAt: number }
   | { status: "forbidden" | "unavailable" | "stale"; data: null };
-const fingerprint = (value: unknown) => typeof value === "string" && /^[a-f0-9]{64}$/i.test(value);
-const id = (value: string) => /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,199}$/.test(value);
-const envelopeKeys = ["applicationId", "stateSpaceId", "qualifiedQueryId", "stateSpaceFingerprint", "resolutionFingerprint", "outputSchemaHash", "resultFingerprint", "sourceRevisionFingerprint", "data"];
-
-
 export async function readItemDetails(request: ItemDetailsRequest, signal: AbortSignal, fetchImpl: typeof fetch = fetch): Promise<ItemDetailsResult> {
-  if (![request.applicationId, request.stateSpaceId, request.campaignId, request.observerId, request.itemId].every(id) ||
+  if (![request.applicationId, request.stateSpaceId, request.campaignId, request.observerId, request.itemId].every(itemReadId) ||
       !["player", "dm"].includes(request.perspective)) return { status: "unavailable", data: null };
-  const parameters = new URLSearchParams({ perspective: request.perspective, campaignId: request.campaignId, input: JSON.stringify({ itemId: request.itemId }) });
-  const url = `/api/applications/${encodeURIComponent(request.applicationId)}/state-spaces/${encodeURIComponent(request.stateSpaceId)}/entities/${encodeURIComponent(request.observerId)}/read-models/${contract.id}?${parameters}`;
-  const response = await fetchImpl(url, { signal, credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } });
-  if (!response.ok) return { status: response.status === 403 ? "forbidden" : response.status === 409 ? "stale" : "unavailable", data: null };
-  const envelope = await boundedJson(response) as Record<string, unknown> | null;
-  const data = envelope?.data as ItemDetailsData | undefined;
-  if (!envelope || Object.keys(envelope).length !== envelopeKeys.length || !envelopeKeys.every((key) => Object.hasOwn(envelope, key)) ||
-      envelope.applicationId !== request.applicationId || envelope.stateSpaceId !== request.stateSpaceId || envelope.qualifiedQueryId !== contract.id ||
-      envelope.outputSchemaHash !== contract.outputSchemaHash ||
-      ![envelope.stateSpaceFingerprint, envelope.resolutionFingerprint, envelope.resultFingerprint, envelope.sourceRevisionFingerprint].every(fingerprint) ||
-      !validate(data) || !data || data.observerId !== request.observerId || data.itemId !== request.itemId || data.perspective !== request.perspective ||
-      new TextEncoder().encode(JSON.stringify(data)).length > 65_536 ||
-      data.media.some((image) => !/^\/api\/read-model-media\/[a-f0-9]{64}\/content$/.test(image.contentUrl))) {
-    throw new ViewReadError("incompatible-data", "The item response did not match its authorized selection.");
-  }
-  return { status: "ready", data, sourceRevision: envelope.sourceRevisionFingerprint as string, expiresAt: Date.now() + 30_000 };
+  return readItemResponse<ItemDetailsData>({ request, input: { itemId: request.itemId }, contract, validate,
+    errorMessage: "The item response did not match its authorized selection.",
+    verify: (data) => data.observerId === request.observerId && data.itemId === request.itemId && data.perspective === request.perspective &&
+      data.media.every((image) => /^\/api\/read-model-media\/[a-f0-9]{64}\/content$/.test(image.contentUrl)),
+  }, signal, fetchImpl);
 }
 
 let nextClient = 0;

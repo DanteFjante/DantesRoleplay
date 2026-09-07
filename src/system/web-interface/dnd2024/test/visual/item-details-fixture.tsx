@@ -4,7 +4,7 @@ import { ItemWorkspace } from "../../src/components/items/ItemWorkspace";
 import { ItemViewClient } from "../../src/server/item-view-client";
 import { ITEM_ROUTE_EVENT, navigateItemRoute, parseItemRoute } from "../../src/data/item-view-route";
 import { itemRequest, itemEnvelope } from "../fixtures/item-details";
-import { hubSource } from "../../src/server/hub-source.js";
+import { hubSource } from "../support/hub-source.js";
 import type { PartyMemberReadModel } from "../../src/data/hub-types";
 import "../../src/styles.css";
 import "../../src/character-page.css";

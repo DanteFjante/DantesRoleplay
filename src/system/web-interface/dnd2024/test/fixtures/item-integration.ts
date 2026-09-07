@@ -1,6 +1,6 @@
-import { hubSource } from "../../src/server/hub-source.js";
-import { projectHubEnvelope } from "../../src/server/hub-envelope.js";
-import { resolveAudience } from "../../src/server/audience-policy.js";
+import { hubSource } from "../support/hub-source.js";
+import { projectHubEnvelope } from "../support/hub-envelope.js";
+import { resolveAudience } from "../support/audience-policy.js";
 import type { PartyMemberReadModel, Perspective, ReadyHubEnvelope } from "../../src/data/hub-types";
 import { itemData, itemEnvelope, itemRequest } from "./item-details";
 import { recipeData, recipeEnvelope } from "./item-recipes";

@@ -153,6 +153,44 @@ public sealed class ApplicationObjectContractTests : IDisposable
     }
 
     [Fact]
+    public void Slice_ten_character_dossier_records_pin_the_imported_component_versions()
+    {
+        var db = _fixture.CreateContext();
+        var applications = new SqliteApplicationRegistry(db);
+        var application = ApplicationIdentifier.Parse("dnd2024");
+        applications.Register(new(application, "D&D", "", []));
+        var schemas = new BoundedJsonSchemaValidator();
+        var types = new SqliteComponentTypeRegistry(db, schemas);
+        types.Define(new(application, "dnd2024.character-creation-record", ComponentSchema("dnd2024.character-creation-record")));
+        types.Define(new(application, "dnd2024.character.origin-selections", ComponentSchema("dnd2024.character.origin-selections")));
+        types.Define(new(application, "dnd2024.character.feature-entitlements", ComponentSchema("dnd2024.character.feature-entitlements")));
+        var itemTypes = new[] { "dnd2024.item-definition", "dnd2024.activity.membership", "dnd2024.item-activity",
+                     "dnd2024.core.definition-link", "dnd2024.item.quantity", "dnd2024.item.equipment" }
+            .ToDictionary(componentId => componentId, componentId => types.Define(new(application, componentId,
+                ComponentSchema(componentId))));
+        var registry = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications);
+        var definition = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
+            "applications", "dnd2024", "objects", "character", "dnd2024.object.character-dossier-records.json")), application));
+
+        Assert.Equal("5A88ECE5C45330AC1CAB2F364ED8363581EDA369B115F921CCBB6126B59C6680", definition.ContentHash);
+        Assert.All(definition.ComponentInputs, value => Assert.Equal(1, value.Type.TypeVersion));
+        Assert.Empty(definition.ObjectContract!.Writes?.Capabilities ?? []);
+        var itemDefinition = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
+            "applications", "dnd2024", "objects", "item", "dnd2024.object.inventory-item-definition-records.json")), application));
+        Assert.Equal("5974D9AC98344F28D58F05E2065EA1DB5274893AA1D69D492F24DA0453E64A11", itemDefinition.ContentHash);
+        var itemRequest = ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
+            "applications", "dnd2024", "objects", "item", "dnd2024.object.inventory-item-instance-records.json")), application);
+        foreach (var input in itemRequest.ComponentInputs)
+            Assert.Equal(itemTypes[input.Type.QualifiedTypeId].SchemaHash, input.Type.SchemaHash);
+        var itemInstance = registry.Define(itemRequest);
+        Assert.Equal("28BC953BB78EC5ACB8A651B7EBB0AFF56A8B48350C39AAEAC2381D0BF6071244", itemInstance.ContentHash);
+        Assert.Equal("definition", Assert.Single(itemInstance.ObjectContract!.References).InputId);
+    }
+
+    private static string ComponentSchema(string id) => File.ReadAllText(Path.Combine(
+        Catalog(), "applications", "dnd2024", "components", id + ".schema.json"));
+
+    [Fact]
     public void Slice_four_pins_the_complete_exported_caldris_faction_directory()
     {
         string[] expected =

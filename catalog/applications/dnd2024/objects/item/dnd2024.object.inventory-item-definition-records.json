@@ -1,0 +1,30 @@
+{
+  "id": "dnd2024.object.inventory-item-definition-records",
+  "version": 1,
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["definition"],
+    "properties": {
+      "definition": { "type": "object" },
+      "activityMembership": { "type": "object" },
+      "inlineActivities": { "type": "object" }
+    }
+  },
+  "roles": { "definition": { "required": true } },
+  "sources": [
+    { "id": "definition", "role": "definition", "component": { "qualifiedId": "dnd2024.item-definition", "version": 1, "schemaHash": "5C81C315D523883D88F7BC0C17E98A5CA88E6EF2B910A75DD2E6FEC7E1F842A1" }, "required": true },
+    { "id": "activityMembership", "role": "definition", "component": { "qualifiedId": "dnd2024.activity.membership", "version": 1, "schemaHash": "92A7441EFE68D0F68DBDF044008FA0891B054AAF76B414F04061A4FB117D6047" }, "required": false },
+    { "id": "inlineActivities", "role": "definition", "component": { "qualifiedId": "dnd2024.item-activity", "version": 1, "schemaHash": "5BA4800CB163BA310A21985848343297FF5BFF0B196C235569228BFBCB7FF3D3" }, "required": false }
+  ],
+  "relationships": [],
+  "references": [],
+  "mappings": [
+    { "inputId": "definition", "sourcePointer": "", "targetPointer": "/definition" },
+    { "inputId": "activityMembership", "sourcePointer": "", "targetPointer": "/activityMembership" },
+    { "inputId": "inlineActivities", "sourcePointer": "", "targetPointer": "/inlineActivities" }
+  ],
+  "collections": [],
+  "limits": { "traversalDepth": 1, "itemCount": 1, "outputBytes": 65536, "sqlQueries": 3 },
+  "access": { "read": ["player", "dm"], "write": [] }
+}

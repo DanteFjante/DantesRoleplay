@@ -12,8 +12,8 @@ import type {
   SectionState,
   TacticalEncounterBoard,
 } from "../../src/data/hub-types";
-import { resolveAudience } from "../../src/server/audience-policy.js";
-import { projectHubEnvelope } from "../../src/server/hub-envelope.js";
+import { resolveAudience } from "../support/audience-policy.js";
+import { projectHubEnvelope } from "../support/hub-envelope.js";
 import {
   DM_ONLY_BASE_CANARIES,
   DM_ONLY_LAYER_CANARIES,
@@ -21,7 +21,7 @@ import {
   HUB_SOURCE_REVISION,
   SECRET_CANARIES,
   hubSource,
-} from "../../src/server/hub-source.js";
+} from "../support/hub-source.js";
 import {
   DEFAULT_MAP_VIEWPORT,
   MapCanvas,
