@@ -10,6 +10,7 @@ internal static class TriggerSchedulingComponentRegistration
     internal static IServiceCollection AddTriggerSchedulingComponent(this IServiceCollection services)
     {
         services.TryAddSingleton<ITriggerClock, SystemTriggerClock>();
+        services.TryAddSingleton<TimeProvider>(TimeProvider.System);
         services.TryAddSingleton<ITriggerObservationRateLimiter, InMemoryTriggerObservationRateLimiter>();
         services.TryAddSingleton<IConditionalTriggerAdapter, ClosedScalarConditionalTriggerAdapter>();
         services.TryAddSingleton<IObservationMatchAdapter, ClosedScalarsObservationMatchAdapter>();
@@ -42,6 +43,8 @@ internal static class TriggerSchedulingComponentRegistration
         services.AddScoped<IObservationTriggerWorker, SqliteObservationTriggerWorker>();
         services.AddHostedService<TriggerSchedulingBackgroundWorker>();
         services.AddScoped<ISystemAiToolSource, ScheduledAiTaskToolSource>();
+        services.AddScoped<SqliteScheduledAiTaskWorkStore>();
+        services.AddScoped<ScheduledAiTaskExecutor>();
         services.AddHostedService<ScheduledAiTaskWorker>();
         return services;
     }

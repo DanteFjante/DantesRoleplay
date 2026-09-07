@@ -150,6 +150,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
     public DbSet<PhoneCompanionDeviceStructureRecord> PhoneCompanionDeviceStructures => Set<PhoneCompanionDeviceStructureRecord>();
     public DbSet<PhoneCompanionDeviceStatusRecord> PhoneCompanionDeviceStatuses => Set<PhoneCompanionDeviceStatusRecord>();
     public DbSet<PhoneCompanionDeviceCurrentRecord> PhoneCompanionDeviceCurrent => Set<PhoneCompanionDeviceCurrentRecord>();
+    internal DbSet<ScheduledAiTaskWorkRecord> ScheduledAiTaskWork => Set<ScheduledAiTaskWorkRecord>();
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
@@ -2706,6 +2707,39 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.HasOne<Notification>().WithOne()
                 .HasForeignKey<ObservationTriggerNotificationLinkRecord>(row => row.NotificationId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<TriggerObservationRecord>().WithMany().HasForeignKey(row => row.ObservationId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ScheduledAiTaskWorkRecord>(entity =>
+        {
+            entity.ToTable("scheduled_ai_task_work", table =>
+            {
+                table.HasCheckConstraint("CK_scheduled_ai_task_work_values",
+                    "\"AttemptCount\" BETWEEN 0 AND 3 AND \"Revision\" >= 0 " +
+                    "AND (\"QueueAgeMilliseconds\" IS NULL OR \"QueueAgeMilliseconds\" >= 0) " +
+                    "AND (\"ProviderDurationMilliseconds\" IS NULL OR \"ProviderDurationMilliseconds\" >= 0)");
+                table.HasCheckConstraint("CK_scheduled_ai_task_work_state",
+                    "\"State\" IN ('ready', 'leased', 'retry', 'completed', 'failed') AND (" +
+                    "(\"State\" = 'ready' AND \"AttemptCount\" = 0 AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IS NULL AND \"FailureMessage\" IS NULL AND \"QueueAgeMilliseconds\" IS NULL AND \"ProviderDurationMilliseconds\" IS NULL AND \"CompletedAtUtc\" IS NULL) OR " +
+                    "(\"State\" = 'leased' AND \"AttemptCount\" BETWEEN 1 AND 3 AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NOT NULL AND \"LeaseToken\" IS NOT NULL AND \"LeaseExpiresAtUtc\" IS NOT NULL AND \"FailureKind\" IS NULL AND \"FailureMessage\" IS NULL AND \"QueueAgeMilliseconds\" IS NOT NULL AND \"ProviderDurationMilliseconds\" IS NULL AND \"CompletedAtUtc\" IS NULL) OR " +
+                    "(\"State\" = 'retry' AND \"AttemptCount\" BETWEEN 1 AND 2 AND \"NextAttemptAtUtc\" IS NOT NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IS NOT NULL AND \"FailureMessage\" IS NOT NULL AND \"QueueAgeMilliseconds\" IS NOT NULL AND \"ProviderDurationMilliseconds\" IS NOT NULL AND \"CompletedAtUtc\" IS NULL) OR " +
+                    "(\"State\" = 'completed' AND \"AttemptCount\" BETWEEN 1 AND 3 AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IS NULL AND \"FailureMessage\" IS NULL AND \"QueueAgeMilliseconds\" IS NOT NULL AND \"ProviderDurationMilliseconds\" IS NOT NULL AND \"CompletedAtUtc\" IS NOT NULL) OR " +
+                    "(\"State\" = 'failed' AND \"AttemptCount\" BETWEEN 1 AND 3 AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IS NOT NULL AND \"FailureMessage\" IS NOT NULL AND \"QueueAgeMilliseconds\" IS NOT NULL AND \"ProviderDurationMilliseconds\" IS NOT NULL AND \"CompletedAtUtc\" IS NOT NULL))");
+                table.HasCheckConstraint("CK_scheduled_ai_task_work_lease",
+                    "\"LeaseOwner\" IS NULL OR (length(\"LeaseOwner\") BETWEEN 1 AND 128 AND \"LeaseOwner\" NOT GLOB '*[^A-Za-z0-9._:-]*')");
+                table.HasCheckConstraint("CK_scheduled_ai_task_work_token",
+                    "\"LeaseToken\" IS NULL OR (length(\"LeaseToken\") = 32 AND \"LeaseToken\" NOT GLOB '*[^0-9a-f]*')");
+            });
+            entity.HasKey(row => row.NotificationId);
+            entity.Property(row => row.NotificationId).HasMaxLength(40);
+            entity.Property(row => row.State).HasMaxLength(20).IsRequired();
+            entity.Property(row => row.LeaseOwner).HasMaxLength(128);
+            entity.Property(row => row.LeaseToken).HasMaxLength(32);
+            entity.Property(row => row.FailureKind).HasMaxLength(100);
+            entity.Property(row => row.FailureMessage).HasMaxLength(500);
+            entity.Property(row => row.Revision).IsConcurrencyToken();
+            entity.HasIndex(row => new { row.State, row.NextAttemptAtUtc, row.LeaseExpiresAtUtc, row.EnqueuedAtUtc });
+            entity.HasOne<Notification>().WithOne().HasForeignKey<ScheduledAiTaskWorkRecord>(row => row.NotificationId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }

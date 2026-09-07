@@ -235,7 +235,10 @@ public sealed class MigrationDriftTests
             await using (var db = new DantesRoleplayDbContext(options))
             {
                 var migrations = db.Database.GetMigrations().ToArray();
-                previous = migrations[^2];
+                const string target = "20260907023854_DurableActivationEvidence";
+                var targetIndex = Array.IndexOf(migrations, target);
+                Assert.True(targetIndex > 0, "The durable activation evidence migration is missing its predecessor.");
+                previous = migrations[targetIndex - 1];
                 await db.GetService<IMigrator>().MigrateAsync(previous);
                 await db.Database.ExecuteSqlRawAsync(
                     """
@@ -288,7 +291,7 @@ public sealed class MigrationDriftTests
                 before = await ReadActivationDocumentsAsync(db.Database.GetDbConnection(), compact: false);
                 await db.Database.CloseConnectionAsync();
 
-                await db.Database.MigrateAsync();
+                await db.GetService<IMigrator>().MigrateAsync(target);
                 Assert.Equal(3, await ScalarAsync(db.Database.GetDbConnection(),
                     "SELECT count(*) FROM system_application_activation_document"));
                 Assert.Equal(2, await ScalarAsync(db.Database.GetDbConnection(),

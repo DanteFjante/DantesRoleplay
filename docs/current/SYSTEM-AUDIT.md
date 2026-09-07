@@ -750,11 +750,13 @@ The audit's theoretical repeated web payload was 165,272,903 bytes. Actual whole
 
 ### Slice 15 (SC15) — Scheduled work throughput
 
-**Status:** Not started. **Finding coverage:** P08.
+**Status:** Complete. **Finding coverage:** P08. **Outcome:** the serial notification consumer is replaced by one durable scheduled-work owner with atomic SQLite claims, bounded four-way execution, expiring leases with active renewal, deterministic retry and interruption recovery, and terminal exhaustion handling. Queue age, provider duration, attempts, recovery, failure kind and failure detail remain queryable on each work item; every provider result and exhausted lease is recorded through the existing operation and notification owners in the same transaction. Polling, renewal and out-of-transaction execution failures are logged instead of swallowed. Scheduled requests use their existing application-resolution binding but receive neither write-approval nor tool-approval gates, so the model still cannot approve its own writes. The queue and worker contain no application-specific ID, rule vocabulary or branch.
 
 Measure queue age, provider duration, claiming/recovery and failure visibility. Add bounded concurrency or provider isolation only where it improves observed delays. Coordinate event/change delivery through established transaction owners; scheduled models do not approve their own writes.
 
 **Cleanup and exit:** deterministic disposable-runtime tests for slow providers, cancellation, duplicate delivery and interruption. Replace the selected serial/hidden-failure path with one maintained worker implementation; preserve audit and recovery semantics.
+
+The slow-provider fixture proves a peak of four concurrent calls while a six-item batch is blocked, rather than the former peak of one, and asserts the hard bound. Disposable file-backed SQLite tests cover competing workers, cancellation with unread notification preservation, expired-lease restart, retry timing, durable queue/provider measurements, provider failure audit, final-lease exhaustion and absence of model approval gates. The migrated-schema test accepts an owned renewal while rejecting forged transitions, lease takeover and deletion. The focused scheduling, migration-drift and model-coverage set passes 10/10; the Release solution builds with zero warnings/errors and the complete .NET suite passes 1,987/1,987. The opt-in MCP protocol walk passes 8/8 with its two unchanged environment-dependent cases skipped. No catalog, web asset or live database changed, so catalog validation and the web suite were not required; the migration was exercised only on disposable databases.
 
 ### Slice 16 (SC16) — Retained compatibility retirement
 

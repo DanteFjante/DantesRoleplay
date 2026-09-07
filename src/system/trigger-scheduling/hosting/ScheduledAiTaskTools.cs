@@ -7,8 +7,11 @@ using DantesRoleplay.Authorization;
 using DantesRoleplay.Notifications;
 using DantesRoleplay.Operations;
 using DantesRoleplay.SystemCapabilities;
+using DantesRoleplay.DataAccess;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.TriggerScheduling;
 
@@ -156,9 +159,14 @@ public sealed class ScheduledAiTaskToolSource(
 /// Consumes durable trigger notifications. Scheduled runs receive no approval gates, so they may
 /// read and prepare reviewable plans but cannot autonomously confirm writes.
 /// </summary>
-internal sealed class ScheduledAiTaskWorker(IServiceScopeFactory scopes) : BackgroundService
+internal sealed class ScheduledAiTaskWorker(
+    IServiceScopeFactory scopes,
+    ILogger<ScheduledAiTaskWorker> logger,
+    TimeProvider timeProvider) : BackgroundService
 {
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(2);
+    internal const int MaximumConcurrency = 4;
+    private readonly string workerId = "scheduled-ai:" + Guid.NewGuid().ToString("N");
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -166,69 +174,317 @@ internal sealed class ScheduledAiTaskWorker(IServiceScopeFactory scopes) : Backg
         {
             try
             {
-                using var scope = scopes.CreateScope();
-                if (scope.ServiceProvider.GetService<IAiService>() is not null)
-                    await RunBatchAsync(scope.ServiceProvider, stoppingToken);
+                var result = await RunBatchAsync(workerId, stoppingToken);
+                if (result.Discovered > 0)
+                    logger.LogInformation(
+                        "Scheduled AI batch discovered {Discovered}, claimed {Claimed}, recovered {Recovered}, completed {Completed}, retried {Retried}, and failed {Failed} task(s).",
+                        result.Discovered, result.Claimed, result.Recovered, result.Completed,
+                        result.Retried, result.Failed);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { return; }
-            catch { }
+            catch (Exception exception)
+            {
+                logger.LogError(exception, "Scheduled AI task polling failed; durable leases remain recoverable.");
+            }
             try { await Task.Delay(PollInterval, stoppingToken); }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { return; }
         }
     }
 
-    private static async Task RunBatchAsync(IServiceProvider services, CancellationToken cancellationToken)
+    internal async Task<ScheduledAiTaskBatchResult> RunBatchAsync(
+        string workerId,
+        CancellationToken cancellationToken = default)
     {
-        var notifications = services.GetRequiredService<INotificationStore>();
-        var pending = await notifications.FindAsync(state: NotificationState.Unread,
-            topic: ScheduledAiTaskProtocol.Topic, limit: 8, cancellationToken: cancellationToken);
-        foreach (var notification in pending.OrderBy(value => value.CreatedAt).ThenBy(value => value.Id, StringComparer.Ordinal))
+        ScheduledAiTaskClaimBatch batch;
+        await using (var claimScope = scopes.CreateAsyncScope())
         {
-            var claimed = await notifications.SetStateAsync(notification.Id, NotificationState.Read, cancellationToken);
-            if (!claimed.Ok) continue;
-            try
+            var store = claimScope.ServiceProvider.GetRequiredService<SqliteScheduledAiTaskWorkStore>();
+            batch = await store.ClaimBatchAsync(workerId, cancellationToken);
+        }
+
+        using var concurrency = new SemaphoreSlim(MaximumConcurrency, MaximumConcurrency);
+        var pending = new List<Task<ScheduledAiTaskExecutionOutcome>>(
+            batch.Leases.Count + batch.ExhaustedNotificationIds.Count);
+        foreach (var notificationId in batch.ExhaustedNotificationIds)
+            pending.Add(RunBoundedAsync(
+                () => FinalizeExhaustedAsync(notificationId), concurrency, cancellationToken));
+        foreach (var lease in batch.Leases)
+            pending.Add(RunBoundedAsync(
+                () => ExecuteAsync(lease, cancellationToken), concurrency, cancellationToken));
+        var outcomes = await Task.WhenAll(pending);
+        return new(batch.Discovered, batch.Leases.Count,
+            outcomes.Count(value => value == ScheduledAiTaskExecutionOutcome.Completed),
+            outcomes.Count(value => value == ScheduledAiTaskExecutionOutcome.Retried),
+            outcomes.Count(value => value == ScheduledAiTaskExecutionOutcome.Failed),
+            batch.Leases.Count(value => value.Recovered));
+    }
+
+    private async Task<ScheduledAiTaskExecutionOutcome> ExecuteAsync(
+        ScheduledAiTaskLease lease,
+        CancellationToken cancellationToken)
+    {
+        using var heartbeatCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken);
+        var heartbeat = RenewLeaseAsync(lease, heartbeatCancellation.Token);
+        try
+        {
+            await using var scope = scopes.CreateAsyncScope();
+            return await scope.ServiceProvider.GetRequiredService<ScheduledAiTaskExecutor>()
+                .ExecuteAsync(lease, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception,
+                "Scheduled AI task {NotificationId} failed outside its durable outcome transaction; its lease remains recoverable.",
+                lease.NotificationId);
+            return ScheduledAiTaskExecutionOutcome.None;
+        }
+        finally
+        {
+            await heartbeatCancellation.CancelAsync();
+            try { await heartbeat; }
+            catch (OperationCanceledException) when (heartbeatCancellation.IsCancellationRequested) { }
+        }
+    }
+
+    private async Task RenewLeaseAsync(
+        ScheduledAiTaskLease lease,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (true)
             {
-                var scheduled = JsonSerializer.Deserialize<ScheduledAiTaskEnvelope>(notification.Body)
-                    ?? throw new JsonException("The scheduled AI task body is empty.");
-                var applicationId = ApplicationIdentifier.Parse(scheduled.ApplicationId);
-                var active = services.GetRequiredService<IApplicationActivationReader>()
-                    .Current(applicationId);
-                if (active is null
-                    || !string.Equals(active.ResolutionFingerprint, scheduled.ResolutionFingerprint,
-                        StringComparison.Ordinal))
+                await Task.Delay(SqliteScheduledAiTaskWorkStore.LeaseRenewalInterval,
+                    timeProvider, cancellationToken);
+                await using var scope = scopes.CreateAsyncScope();
+                var renewed = await scope.ServiceProvider
+                    .GetRequiredService<SqliteScheduledAiTaskWorkStore>()
+                    .RenewAsync(lease, cancellationToken);
+                if (!renewed)
                 {
-                    await services.GetRequiredService<IOperationLog>().RecordAsync(
-                        "local-ai.scheduled-task",
-                        "The scheduled task was not run because its application extensions changed.",
-                        false, scheduled.Task, notification.Id,
-                        error: "SCHEDULED_AI_TASK_RESOLUTION_STALE",
-                        cancellationToken: cancellationToken);
-                    continue;
+                    logger.LogWarning(
+                        "Scheduled AI task {NotificationId} lost its lease while the provider was running; a stale result will not commit.",
+                        lease.NotificationId);
+                    return;
                 }
-                var principal = TrustedPrincipalContext.VerifiedPrincipal(
-                    scheduled.PrincipalId, scheduled.AuthenticationMethod);
-                var response = await services.GetRequiredService<ISystemAiAgentService>().SendAsync(
-                    scheduled.Profile,
-                    new(scheduled.Provider, scheduled.Model, [new(AiMessageRole.User, scheduled.Task)],
-                        AiRequestKind.Task, scheduled.Reasoning),
-                    new(principal, scheduled.Scope, BoundCorrelation(notification.Id)),
-                    cancellationToken: cancellationToken);
-                await services.GetRequiredService<IOperationLog>().RecordAsync(
-                    "local-ai.scheduled-task",
-                    response.Ok ? Bound(response.Text, 500) : Bound(response.ErrorMessage, 500),
-                    response.Ok,
-                    scheduled.Task,
-                    notification.Id,
-                    error: response.ErrorCode,
-                    cancellationToken: cancellationToken);
             }
-            catch (Exception exception) when (exception is not OperationCanceledException)
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        catch (Exception exception)
+        {
+            logger.LogError(exception,
+                "Scheduled AI task {NotificationId} could not renew its lease; a stale result will not commit after expiry.",
+                lease.NotificationId);
+        }
+    }
+
+    private async Task<ScheduledAiTaskExecutionOutcome> FinalizeExhaustedAsync(string notificationId)
+    {
+        try
+        {
+            await using var scope = scopes.CreateAsyncScope();
+            return await scope.ServiceProvider.GetRequiredService<ScheduledAiTaskExecutor>()
+                .FinalizeExhaustedAsync(notificationId);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception,
+                "Scheduled AI task {NotificationId} could not record its exhausted lease; it remains recoverable.",
+                notificationId);
+            return ScheduledAiTaskExecutionOutcome.None;
+        }
+    }
+
+    private static async Task<ScheduledAiTaskExecutionOutcome> RunBoundedAsync(
+        Func<Task<ScheduledAiTaskExecutionOutcome>> action,
+        SemaphoreSlim concurrency,
+        CancellationToken cancellationToken)
+    {
+        await concurrency.WaitAsync(cancellationToken);
+        try { return await action(); }
+        finally { concurrency.Release(); }
+    }
+}
+
+internal sealed class ScheduledAiTaskExecutor(
+    DantesRoleplayDbContext db,
+    SqliteScheduledAiTaskWorkStore work,
+    INotificationStore notifications,
+    IApplicationActivationReader activations,
+    ISystemAiAgentService agents,
+    IOperationLog operations,
+    TimeProvider timeProvider)
+{
+    internal async Task<ScheduledAiTaskExecutionOutcome> ExecuteAsync(
+        ScheduledAiTaskLease lease,
+        CancellationToken cancellationToken)
+    {
+        var notification = AssertNotification(await notifications.FindAsync(
+            id: lease.NotificationId, limit: 1, cancellationToken: cancellationToken), lease.NotificationId);
+        ScheduledAiTaskEnvelope scheduled;
+        try
+        {
+            scheduled = JsonSerializer.Deserialize<ScheduledAiTaskEnvelope>(notification.Body)
+                ?? throw new JsonException("The scheduled AI task body is empty.");
+        }
+        catch (Exception exception) when (exception is JsonException or NotSupportedException)
+        {
+            return await PersistAsync(lease, notification, null,
+                ScheduledAiTaskExecutionOutcome.Failed, 0, "SCHEDULED_AI_TASK_INVALID",
+                exception.Message);
+        }
+
+        ApplicationIdentifier applicationId;
+        TrustedPrincipalContext principal;
+        try
+        {
+            applicationId = ApplicationIdentifier.Parse(scheduled.ApplicationId);
+            principal = TrustedPrincipalContext.VerifiedPrincipal(
+                scheduled.PrincipalId, scheduled.AuthenticationMethod);
+        }
+        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
+        {
+            return await PersistAsync(lease, notification, scheduled,
+                ScheduledAiTaskExecutionOutcome.Failed, 0, "SCHEDULED_AI_TASK_INVALID",
+                exception.Message);
+        }
+        var active = activations.Current(applicationId);
+        if (active is null || !string.Equals(active.ResolutionFingerprint,
+                scheduled.ResolutionFingerprint, StringComparison.Ordinal))
+            return await PersistAsync(lease, notification, scheduled,
+                ScheduledAiTaskExecutionOutcome.Failed, 0,
+                "SCHEDULED_AI_TASK_RESOLUTION_STALE",
+                "The scheduled task was not run because its application extensions changed.");
+
+        var started = timeProvider.GetTimestamp();
+        AiResponse response;
+        try
+        {
+            response = await agents.SendAsync(
+                scheduled.Profile,
+                new(scheduled.Provider, scheduled.Model, [new(AiMessageRole.User, scheduled.Task)],
+                    AiRequestKind.ScheduledTask, scheduled.Reasoning),
+                new(principal, scheduled.Scope, BoundCorrelation(notification.Id)),
+                cancellationToken: cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            var elapsed = Milliseconds(timeProvider.GetElapsedTime(started));
+            return await PersistAsync(lease, notification, scheduled,
+                lease.Attempt < SqliteScheduledAiTaskWorkStore.MaximumAttempts
+                    ? ScheduledAiTaskExecutionOutcome.Retried
+                    : ScheduledAiTaskExecutionOutcome.Failed,
+                elapsed, "SCHEDULED_AI_TASK_PROVIDER_EXCEPTION", exception.Message);
+        }
+
+        var duration = Milliseconds(timeProvider.GetElapsedTime(started));
+        return await PersistAsync(lease, notification, scheduled,
+            response.Ok
+                ? ScheduledAiTaskExecutionOutcome.Completed
+                : lease.Attempt < SqliteScheduledAiTaskWorkStore.MaximumAttempts
+                    ? ScheduledAiTaskExecutionOutcome.Retried
+                    : ScheduledAiTaskExecutionOutcome.Failed,
+            duration,
+            response.Ok ? string.Empty : NonEmpty(response.ErrorCode, "SCHEDULED_AI_TASK_PROVIDER_FAILED"),
+            response.Ok ? response.Text : NonEmpty(response.ErrorMessage,
+                "The scheduled AI provider returned a failure."));
+    }
+
+    internal async Task<ScheduledAiTaskExecutionOutcome> FinalizeExhaustedAsync(string notificationId)
+    {
+        var notification = AssertNotification(await notifications.FindAsync(
+            id: notificationId, limit: 1), notificationId);
+        var task = TryReadTask(notification.Body);
+        await using var transaction = await db.Database.BeginTransactionAsync();
+        try
+        {
+            if (!await work.FinishExhaustedAsync(notificationId))
             {
-                await services.GetRequiredService<IOperationLog>().RecordAsync(
-                    "local-ai.scheduled-task", Bound(exception.Message, 500), false,
-                    subject: notification.Id, error: "SCHEDULED_AI_TASK_FAILED",
-                    cancellationToken: cancellationToken);
+                await transaction.RollbackAsync();
+                return ScheduledAiTaskExecutionOutcome.None;
             }
+            await operations.RecordAsync(
+                "local-ai.scheduled-task",
+                "Scheduled AI task failed after its final lease expired; provider duration 0 ms.",
+                false, task, notificationId, error: "SCHEDULED_AI_TASK_ATTEMPTS_EXHAUSTED");
+            await MarkReadAsync(notification);
+            await transaction.CommitAsync();
+            return ScheduledAiTaskExecutionOutcome.Failed;
+        }
+        catch
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            throw;
+        }
+    }
+
+    private async Task<ScheduledAiTaskExecutionOutcome> PersistAsync(
+        ScheduledAiTaskLease lease,
+        NotificationView notification,
+        ScheduledAiTaskEnvelope? scheduled,
+        ScheduledAiTaskExecutionOutcome outcome,
+        long providerDurationMilliseconds,
+        string failureKind,
+        string detail)
+    {
+        var success = outcome == ScheduledAiTaskExecutionOutcome.Completed;
+        var summary = $"Scheduled AI task {(success ? "completed" : outcome == ScheduledAiTaskExecutionOutcome.Retried ? "will retry" : "failed")}; " +
+            $"attempt {lease.Attempt}; queue age {lease.QueueAgeMilliseconds} ms; " +
+            $"provider duration {providerDurationMilliseconds} ms. {Bound(detail, 500)}";
+        await using var transaction = await db.Database.BeginTransactionAsync();
+        try
+        {
+            await operations.RecordAsync(
+                "local-ai.scheduled-task", summary, success,
+                scheduled?.Task ?? string.Empty, notification.Id,
+                error: success ? string.Empty : failureKind);
+            if (!await work.FinishAsync(lease, outcome, providerDurationMilliseconds,
+                    failureKind, detail))
+            {
+                await transaction.RollbackAsync();
+                return ScheduledAiTaskExecutionOutcome.None;
+            }
+            if (outcome is ScheduledAiTaskExecutionOutcome.Completed or ScheduledAiTaskExecutionOutcome.Failed)
+                await MarkReadAsync(notification);
+            await transaction.CommitAsync();
+            return outcome;
+        }
+        catch
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            throw;
+        }
+    }
+
+    private async Task MarkReadAsync(NotificationView notification)
+    {
+        if (notification.State == NotificationState.Archived) return;
+        var result = await notifications.SetStateAsync(notification.Id, NotificationState.Read);
+        if (!result.Ok)
+            throw new InvalidOperationException(result.Problem);
+    }
+
+    private static NotificationView AssertNotification(
+        IReadOnlyList<NotificationView> values,
+        string notificationId) => values.SingleOrDefault()
+        ?? throw new InvalidOperationException(
+            $"The scheduled AI work item refers to missing notification '{notificationId}'.");
+
+    private static string TryReadTask(string body)
+    {
+        try { return JsonSerializer.Deserialize<ScheduledAiTaskEnvelope>(body)?.Task ?? string.Empty; }
+        catch (Exception exception) when (exception is JsonException or NotSupportedException)
+        {
+            return string.Empty;
         }
     }
 
@@ -240,4 +496,10 @@ internal sealed class ScheduledAiTaskWorker(IServiceScopeFactory scopes) : Backg
 
     private static string Bound(string value, int maximum) =>
         value.Length <= maximum ? value : value[..maximum];
+
+    private static string NonEmpty(string value, string fallback) =>
+        string.IsNullOrWhiteSpace(value) ? fallback : value;
+
+    private static long Milliseconds(TimeSpan value) =>
+        SqliteScheduledAiTaskWorkStore.Milliseconds(value);
 }
