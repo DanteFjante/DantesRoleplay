@@ -34,6 +34,9 @@ export type CampaignContextUpdate = Extract<DeferredHubUpdate, { section: "conte
 export type CharacterResourceRequest = { envelope: ReadyHubEnvelope; actorId: string };
 export type WorldScopeRequest = { envelope: ReadyHubEnvelope; scopeId: string };
 export type WorldScopeUpdate = Extract<DeferredHubUpdate, { section: "locations" }>;
+export type WorldInformationSection = "people" | "lore" | "history";
+export type WorldInformationRequest = { envelope: ReadyHubEnvelope; section: WorldInformationSection };
+export type WorldInformationUpdate = Extract<DeferredHubUpdate, { section: WorldInformationSection }>;
 
 type TableResourceOwnerOptions = {
   readCampaign: (request: CampaignObjectRequest, signal: AbortSignal) => Promise<HubEnvelope>;
@@ -98,6 +101,10 @@ function worldTableScope(envelope: ReadyHubEnvelope) {
   return worldScopeResource({ envelope, scopeId: "all-world-scopes" });
 }
 
+function worldInformationResource({ envelope, section }: WorldInformationRequest) {
+  return `${worldTableScope(envelope)}:${section}`;
+}
+
 function isCharacterResource(value: unknown): value is PartyMemberReadModel {
   if (!value || typeof value !== "object") return false;
   const member = value as Partial<PartyMemberReadModel>;
@@ -134,6 +141,25 @@ function isWorldScopeUpdate(value: unknown): value is WorldScopeUpdate {
   return Array.isArray(world.maps) && world.maps.length > 0 && world.maps.length <= 1_001 &&
     Array.isArray(world.locations) && world.locations.length <= 1_000 &&
     validText(world.rootMapId, 400);
+}
+
+function isWorldInformationUpdate(value: unknown): value is WorldInformationUpdate {
+  if (!value || typeof value !== "object") return false;
+  const update = value as Record<string, unknown>;
+  if (!["people", "lore", "history"].includes(String(update.section)) ||
+      !update.world || typeof update.world !== "object") return false;
+  const world = update.world as Record<string, unknown>;
+  if (update.section === "people") {
+    return Array.isArray(world.locations) && world.locations.length <= 100 &&
+      Array.isArray(world.people) && world.people.length <= 100;
+  }
+  if (update.section === "history")
+    return Array.isArray(world.history) && world.history.length <= 500;
+  if (!Array.isArray(world.lore) || world.lore.length > 500 ||
+      !update.campaign || typeof update.campaign !== "object") return false;
+  const campaign = update.campaign as Record<string, unknown>;
+  return Array.isArray(campaign.quests) && Array.isArray(campaign.clues) &&
+    Array.isArray(campaign.mapOverlays);
 }
 
 function validText(value: unknown, maximumLength: number) {
@@ -304,6 +330,7 @@ export class TableResourceOwner {
 
 type WorldResourceOwnerOptions = {
   readScope: (request: WorldScopeRequest, signal: AbortSignal) => Promise<WorldScopeUpdate>;
+  readInformation: (request: WorldInformationRequest, signal: AbortSignal) => Promise<WorldInformationUpdate>;
   maximumEntries?: number;
   maximumRetainedBytes?: number;
   maximumAgeMs?: number;
@@ -313,6 +340,7 @@ type WorldResourceOwnerOptions = {
 export class WorldResourceOwner {
   readonly #store: ResourceStore;
   readonly #scopes: KeyedResource<WorldScopeRequest, WorldScopeUpdate>;
+  readonly #information: KeyedResource<WorldInformationRequest, WorldInformationUpdate>;
   #activeScope: string | null = null;
 
   constructor(options: WorldResourceOwnerOptions) {
@@ -328,6 +356,14 @@ export class WorldResourceOwner {
       maximumAgeMs: options.maximumAgeMs ?? 30_000,
       maximumEntryBytes: 524_288,
     });
+    this.#information = this.#store.define({
+      name: "world-information",
+      cacheKey: worldInformationResource,
+      read: options.readInformation,
+      validate: isWorldInformationUpdate,
+      maximumAgeMs: options.maximumAgeMs ?? 30_000,
+      maximumEntryBytes: 1_100_000,
+    });
   }
 
   replaceScope(envelope: ReadyHubEnvelope) {
@@ -339,6 +375,11 @@ export class WorldResourceOwner {
   async loadScope(request: WorldScopeRequest, signal?: AbortSignal, preferCached = true) {
     this.replaceScope(request.envelope);
     return (await this.#scopes.load(request, { signal, preferCached })).value;
+  }
+
+  async loadInformation(request: WorldInformationRequest, signal?: AbortSignal, preferCached = true) {
+    this.replaceScope(request.envelope);
+    return (await this.#information.load(request, { signal, preferCached })).value;
   }
 
   invalidateAll() {

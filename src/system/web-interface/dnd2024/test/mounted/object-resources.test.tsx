@@ -310,6 +310,14 @@ test("World scope resources deduplicate exact locations and fence audience chang
         campaign: { mapOverlays: [] },
       } as unknown as import("../../src/data/object-resources").WorldScopeUpdate;
     },
+    readInformation: async ({ section }) => ({
+      section,
+      ...(section === "people" ? { world: { locations: [], people: [] } } : {}),
+      ...(section === "history" ? { world: { history: [] } } : {}),
+      ...(section === "lore" ? {
+        world: { lore: [] }, campaign: { quests: [], clues: [], mapOverlays: [] },
+      } : {}),
+    } as import("../../src/data/object-resources").WorldInformationUpdate),
   });
   const dm = scope("dm");
   await Promise.all([
@@ -323,6 +331,39 @@ test("World scope resources deduplicate exact locations and fence audience chang
   await owner.loadScope({ envelope: scope("player"), scopeId: "world.fixture" });
   await owner.loadScope({ envelope: dm, scopeId: "world.fixture" });
   assert.equal(reads, 4, "audience replacement retires every prior-scope map resource");
+});
+
+test("World information resources cache People, Lore, and History independently and fence observers", async () => {
+  const reads = { people: 0, lore: 0, history: 0 };
+  const owner = new WorldResourceOwner({
+    readScope: async () => ({}) as import("../../src/data/object-resources").WorldScopeUpdate,
+    readInformation: async ({ section }) => {
+      reads[section] += 1;
+      if (section === "people") return {
+        section, world: { locations: [], people: [] },
+      } as import("../../src/data/object-resources").WorldInformationUpdate;
+      if (section === "history") return {
+        section, world: { history: [] },
+      } as import("../../src/data/object-resources").WorldInformationUpdate;
+      return {
+        section, world: { lore: [] }, campaign: { quests: [], clues: [], mapOverlays: [] },
+      } as import("../../src/data/object-resources").WorldInformationUpdate;
+    },
+  });
+  const dm = scope("dm");
+  await Promise.all([
+    owner.loadInformation({ envelope: dm, section: "people" }),
+    owner.loadInformation({ envelope: dm, section: "people" }),
+  ]);
+  await owner.loadInformation({ envelope: dm, section: "lore" });
+  await owner.loadInformation({ envelope: dm, section: "history" });
+  await owner.loadInformation({ envelope: dm, section: "lore" });
+  assert.deepEqual(reads, { people: 1, lore: 1, history: 1 });
+
+  const actor = scope("player");
+  await owner.loadInformation({ envelope: actor, section: "people" });
+  await owner.loadInformation({ envelope: dm, section: "people" });
+  assert.equal(reads.people, 3, "observer replacement retires cached private information");
 });
 
 test("local edit state remains pending through submit and retains failed drafts until server confirmation", () => {

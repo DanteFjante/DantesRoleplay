@@ -4,11 +4,10 @@ import test from "node:test";
 import { readDeferredCampaignDetails, readDeferredHubSection } from "../src/server/game-server-context.js";
 import { contract as campaignDetailsContract } from "../src/server/campaign-details-contract.js";
 import { contract as campaignLocationVisitsContract } from "../src/server/campaign-location-visits-contract.js";
+import { contract as worldPeopleHoldingsContract } from "../src/server/world-people-holdings-contract.js";
 
 const ORIGIN = "http://localhost:6217";
 const CAMPAIGN_ID = "campaign.thalorien.brackenford";
-const ENTITY_ROOT = "/api/applications/dnd2024/state-spaces/dnd2024-main/entities";
-const CONTAINMENT_ROOT = "/api/applications/dnd2024/state-spaces/dnd2024-main/containments";
 const SOURCE = {
   applicationId: "dnd2024",
   stateSpaceId: "dnd2024-main",
@@ -27,72 +26,50 @@ function response(status, body) {
   });
 }
 
-function page(items, requested) {
-  const offset = Number(requested.searchParams.get("cursor") ?? 0);
-  const limit = Number(requested.searchParams.get("limit") ?? 100);
-  return response(200, {
-    items: items.slice(offset, offset + limit),
-    nextCursor: offset + limit < items.length ? String(offset + limit) : null,
-  });
-}
-
-function dmFixture({ entities, containments = () => [], failPage = null }) {
-  return async (input) => {
-    const requested = new URL(input);
-    const { pathname } = requested;
-    if (pathname === ENTITY_ROOT) return page(entities, requested);
-    if (pathname === CONTAINMENT_ROOT) {
-      if (failPage?.owner === "containment" && requested.searchParams.has("cursor")) return response(500, {});
-      return page(containments(requested), requested);
-    }
-    const chapterMatch = pathname.match(/\/entities\/(.+)\/components\/game\.core\.campaign\.chapter$/u);
-    if (chapterMatch) {
-      const entityId = decodeURIComponent(chapterMatch[1]);
-      return response(200, {
-        entityId,
-        qualifiedTypeId: "game.core.campaign.chapter",
-        valueJson: JSON.stringify({
-          status: "active",
-          title: entityId.split(".").at(-1),
-          partyQuestion: "Does the next page remain visible?",
-        }),
-      });
-    }
-    return response(404, {});
+function worldProjection(count) {
+  const people = Array.from({ length: count }, (_, index) => ({
+    id: `subject-${index + 1}`, name: `Person ${index + 1}`, locationId: "pagination-hall",
+    kind: "NPC", motive: null,
+  }));
+  return {
+    applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    qualifiedQueryId: worldPeopleHoldingsContract.id,
+    stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+    outputSchemaHash: worldPeopleHoldingsContract.outputSchemaHash, resultFingerprint: "3".repeat(64),
+    sourceRevisionFingerprint: "4".repeat(64),
+    data: {
+      version: 1, state: "ready", world: { id: "world.thalorien", name: "Thalorien" },
+      locations: count < 100 ? [{ id: "pagination-hall", name: "Pagination Hall",
+        parentId: "world.thalorien", kind: "region", status: "active", summary: "A hall." }] : [],
+      people, holdings: [], limits: { contentsDepth: 4, recordCount: 100, complete: true },
+    },
   };
 }
 
-function worldFixture({ failPage = null } = {}) {
-  const locationId = "location.thalorien.pagination";
-  const actorIds = Array.from({ length: 101 }, (_, index) => `actor.pagination.${index + 1}`);
-  const entities = [
-    { entityId: locationId, name: "Pagination Hall" },
-    ...actorIds.map((entityId, index) => ({ entityId, name: `Actor ${index + 1}` })),
-  ];
-  const fetchImpl = dmFixture({
-    entities,
-    failPage,
-    containments: (requested) => requested.searchParams.get("containerEntityId") === locationId
-      ? actorIds.map((containedEntityId) => ({ containedEntityId, containerEntityId: locationId }))
-      : [],
-  });
-  return { fetchImpl, actorIds };
-}
-
-test("deferred people loader retains all 101 containment records", async () => {
-  const fixture = worldFixture();
+test("deferred people loader retains the complete 100-record projection bound", async () => {
+  const calls = [];
   const value = await readDeferredHubSection({
-    origin: ORIGIN, source: SOURCE, section: "people", fetchImpl: fixture.fetchImpl,
+    origin: ORIGIN, source: SOURCE, section: "people",
+    fetchImpl: async (input) => {
+      const target = new URL(input); calls.push(target);
+      if (target.pathname.endsWith("/media-batch")) return response(200, {
+        applicationId: "dnd2024", stateSpaceId: "dnd2024-main", items: [],
+      });
+      const projected = worldProjection(99);
+      return response(200, projected);
+    },
   });
 
-  assert.equal(value.worldDirectory.people.length, 101);
-  assert.deepEqual(new Set(value.worldDirectory.people.map((entry) => entry.id)), new Set(fixture.actorIds));
+  assert.equal(value.worldDirectory.people.length, 99);
+  assert.equal(value.locationDirectory.length, 1);
+  assert.equal(calls.length, 2);
+  assert.ok(calls.every((target) => !/\/(entities|containments)$/u.test(target.pathname)));
 });
 
-test("deferred people rejects containment failure after a valid first page", async () => {
-  const fixture = worldFixture({ failPage: { owner: "containment" } });
+test("deferred people rejects a projection beyond its complete record bound", async () => {
   await assert.rejects(readDeferredHubSection({
-    origin: ORIGIN, source: SOURCE, section: "people", fetchImpl: fixture.fetchImpl,
+    origin: ORIGIN, source: SOURCE, section: "people",
+    fetchImpl: async () => response(200, worldProjection(101)),
   }), /incomplete/u);
 });
 

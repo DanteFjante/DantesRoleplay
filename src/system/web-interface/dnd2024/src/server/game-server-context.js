@@ -11,6 +11,7 @@ import { contract as characterDossierContract } from "./character-dossier-contra
 import { contract as inventoryContainerContract } from "./inventory-container-contract.js";
 import { contract as factionDirectoryContract } from "./faction-directory-contract.js";
 import { contract as worldLocationScopeContract } from "./world-location-scope-contract.js";
+import { contract as worldPeopleHoldingsContract } from "./world-people-holdings-contract.js";
 
 export { readRegisteredCampaignSummary } from "./campaign-summary.js";
 
@@ -41,15 +42,6 @@ const ENCOUNTER_RELATIONSHIP_KINDS = {
   actor: "dnd2024.encounter.participation.for-actor",
   activeRound: "dnd2024.encounter.active-round",
   activeTurn: "dnd2024.encounter.active-turn",
-};
-const WORLD_MOTIVE_COMPONENT_TYPE_ID = "game.core.world.motive";
-const WORLD_FACTION_COMPONENT_TYPE_ID = "game.core.world.faction";
-const WORLD_FACTION_RELATIONSHIP_KINDS = {
-  members: "game.core.world.faction.member",
-  controls: "game.core.world.faction.controls",
-  territories: "game.core.world.faction.territory-controls",
-  allies: "game.core.world.faction.allied-with",
-  opponents: "game.core.world.faction.opposed-to",
 };
 const RECORDED_SITUATION_KINDS = new Set([
   "out-of-character", "conversation", "combat", "exploration", "investigation",
@@ -507,13 +499,6 @@ function campaignLocationVisit(value, includeGmContext) {
   };
 }
 
-function worldMotive(value) {
-  const status = new Set(["draft", "active", "archived"]).has(value?.status) ? value.status : null;
-  const visibility = new Set(["public", "party", "gm"]).has(value?.visibility) ? value.visibility : null;
-  const summary = text(value?.summary, 1_000);
-  return status && visibility && summary ? { status, visibility, summary } : null;
-}
-
 function worldFaction(value) {
   const status = new Set(["draft", "active", "archived"]).has(value?.status) ? value.status : null;
   const visibility = new Set(["public", "party", "gm"]).has(value?.visibility) ? value.visibility : null;
@@ -942,6 +927,106 @@ export async function readWorldLocationScopePatch({ fetchImpl = fetch, origin, s
   };
 }
 
+function validWorldPeopleHoldings(value, worldId) {
+  if (!hasExactKeys(value, ["version", "state", "world", "locations", "people", "holdings", "limits"]) ||
+      value.version !== 1 || !["ready", "forbidden"].includes(value.state) ||
+      !Array.isArray(value.locations) || !Array.isArray(value.people) || !Array.isArray(value.holdings) ||
+      value.locations.length + value.people.length + value.holdings.length > 100 ||
+      !hasExactKeys(value.limits, ["contentsDepth", "recordCount", "complete"]) ||
+      value.limits.contentsDepth !== 4 || value.limits.recordCount !== 100 ||
+      value.limits.complete !== true) return false;
+  if (value.state === "forbidden") return value.world === null && value.locations.length === 0 &&
+    value.people.length === 0 && value.holdings.length === 0;
+  if (!hasExactKeys(value.world, ["id", "name"]) || value.world.id !== worldId ||
+      !text(value.world.name, 400)) return false;
+  const locationIds = new Set();
+  for (const location of value.locations) {
+    if (!hasExactKeys(location, ["id", "name", "parentId", "kind", "status", "summary"]) ||
+        !token(location.id) || locationIds.has(location.id) || !text(location.name, 400) ||
+        !token(location.parentId) || !["region", "settlement", "site", "interior"].includes(location.kind) ||
+        !["draft", "active"].includes(location.status) || !text(location.summary, 1_000)) return false;
+    locationIds.add(location.id);
+  }
+  if (value.locations.some((location) => location.parentId !== worldId && !locationIds.has(location.parentId)))
+    return false;
+  const recordIds = new Set(locationIds);
+  const validMotive = (motive) => motive === null ||
+    hasExactKeys(motive, ["status", "summary", "visibility"]) &&
+    ["draft", "active"].includes(motive.status) && text(motive.summary, 1_000) &&
+    ["public", "party", "gm"].includes(motive.visibility);
+  for (const person of value.people) {
+    if (!hasExactKeys(person, ["id", "name", "locationId", "kind", "motive"]) ||
+        !token(person.id) || recordIds.has(person.id) || !text(person.name, 400) ||
+        !locationIds.has(person.locationId) || !["NPC", "Creature"].includes(person.kind) ||
+        !validMotive(person.motive)) return false;
+    recordIds.add(person.id);
+  }
+  for (const holding of value.holdings) {
+    if (!hasExactKeys(holding, ["id", "name", "locationId", "kind"]) ||
+        !token(holding.id) || recordIds.has(holding.id) || !text(holding.name, 400) ||
+        !locationIds.has(holding.locationId) ||
+        !["Item", "Conveyance", "Aerial conveyance", "Teleport gate"].includes(holding.kind)) return false;
+    recordIds.add(holding.id);
+  }
+  return true;
+}
+
+/** Reads the bounded DM directory without raw entity, containment, component, or per-person media reads. */
+export async function readRegisteredWorldPeopleHoldings({
+  fetchImpl = fetch, origin, applicationId, stateSpaceId, worldId,
+}) {
+  const applicationRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/state-spaces/${encodeURIComponent(stateSpaceId)}`;
+  try {
+    const result = await readModelResponse({
+      fetchImpl,
+      resource: url(origin, `${applicationRoot}/entities/${encodeURIComponent(worldId)}` +
+        `/read-models/${encodeURIComponent(worldPeopleHoldingsContract.id)}?perspective=dm`),
+      init: { headers: { Accept: "application/json" }, cache: "no-store" },
+      applicationId,
+      stateSpaceId,
+      query: worldPeopleHoldingsContract,
+      maximumBodyBytes: 270_000,
+      maximumDataBytes: 262_144,
+      statusPolicy: { ready: [200], forbidden: [403], stale: [409], unavailable: "remaining" },
+      validate: (value) => validWorldPeopleHoldings(value, worldId),
+    });
+    if (result.status !== "ready" || result.data.state !== "ready") return {
+      status: result.status === "forbidden" || result.data?.state === "forbidden" ? "forbidden" : "error",
+      locations: [], people: [], holdings: [],
+    };
+    const media = await readAuthorizedMediaBatch({
+      fetchImpl, origin, applicationId, stateSpaceId,
+      entityIds: result.data.people.map((person) => person.id), perspective: "dm",
+    });
+    return {
+      status: "ready",
+      locations: result.data.locations.map((location) => ({
+        id: location.id, name: location.name, kind: location.kind, summary: location.summary,
+        containerId: location.parentId,
+      })),
+      people: result.data.people.map((person) => {
+        const { motive, ...identity } = person;
+        return {
+          ...identity,
+          ...(motive ? { motive } : {}),
+          ...(media.has(person.id) ? { media: media.get(person.id) } : {}),
+        };
+      }),
+      holdings: result.data.holdings,
+      projection: {
+        stateSpaceFingerprint: result.evidence.stateSpaceFingerprint,
+        resolutionFingerprint: result.evidence.resolutionFingerprint,
+        resultFingerprint: result.evidence.resultFingerprint,
+        sourceRevisionFingerprint: result.evidence.sourceRevisionFingerprint,
+      },
+    };
+  } catch (error) {
+    if (error?.name === "AbortError") throw error;
+    return { status: "error", locations: [], people: [], holdings: [] };
+  }
+}
+
 /** Reads only the calculated v2 sheet. Full dossier metadata remains a separate resource. */
 export async function readCanonicalCharacterSheet({
   fetchImpl, origin, applicationId, stateSpaceId, actorId, perspective,
@@ -1226,39 +1311,72 @@ function knowledge(value) {
     : { status: "unavailable", entries: [], locations: [] };
 }
 
+async function readAuthorizedMediaBatch({
+  fetchImpl, origin, applicationId, stateSpaceId, entityIds, perspective,
+}) {
+  const ids = [...new Set(entityIds.map(token).filter(Boolean))];
+  if (ids.length === 0) return new Map();
+  if (ids.length > 256) return new Map();
+  try {
+    const applicationRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
+      `/state-spaces/${encodeURIComponent(stateSpaceId)}`;
+    const response = await fetchImpl(url(origin, `${applicationRoot}/media-batch`), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      cache: "no-store",
+      body: JSON.stringify({ entityIds: ids, perspective }),
+    });
+    const payload = response?.ok ? await json(response) : null;
+    const allowed = new Set(ids);
+    if (payload?.applicationId !== applicationId || payload.stateSpaceId !== stateSpaceId ||
+        !Array.isArray(payload.items) || payload.items.length > ids.length ||
+        new Set(payload.items.map((item) => item?.entityId)).size !== payload.items.length ||
+        !payload.items.every((item) => allowed.has(token(item?.entityId)))) return new Map();
+    const result = new Map();
+    for (const item of payload.items) {
+      const visual = projectMediaVisual(item);
+      if (visual) result.set(item.entityId, visual);
+    }
+    return result;
+  } catch (error) {
+    if (error?.name === "AbortError") throw error;
+    return new Map();
+  }
+}
+
 async function attachAuthorizedKnowledgeMedia({
   fetchImpl,
   origin,
-  entityRoot,
+  applicationId,
+  stateSpaceId,
   projectedKnowledge,
-  perspective: _,
+  perspective,
   mediaAssetBaseUrl: __,
 }) {
   if (projectedKnowledge.status !== "ready") return projectedKnowledge;
-  const cache = new Map();
-  async function mediaFor(ownerId) {
-    if (!cache.has(ownerId)) {
-      cache.set(ownerId, readEntityMedia(fetchImpl, origin, entityRoot, ownerId)
-        .then((value) => value ? projectMediaVisual(value) : null));
-    }
-    return cache.get(ownerId);
-  }
-  async function enrich(entries) {
-    return Promise.all(entries.map(async (entry) => {
+  const ownerIds = [...new Set([
+    ...projectedKnowledge.entries,
+    ...projectedKnowledge.locations.flatMap((location) => location.entries),
+  ].map((entry) => token(entry.mediaOwnerId)).filter(Boolean))];
+  const media = await readAuthorizedMediaBatch({
+    fetchImpl, origin, applicationId, stateSpaceId, entityIds: ownerIds, perspective,
+  });
+  function enrich(entries) {
+    return entries.map((entry) => {
       const { mediaOwnerId, ...projectedEntry } = entry;
       const ownerId = token(mediaOwnerId);
       if (!ownerId) return projectedEntry;
-      const media = await mediaFor(ownerId);
-      return media ? { ...projectedEntry, media } : projectedEntry;
-    }));
+      const visual = media.get(ownerId);
+      return visual ? { ...projectedEntry, media: visual } : projectedEntry;
+    });
   }
   return {
     ...projectedKnowledge,
-    entries: await enrich(projectedKnowledge.entries),
-    locations: await Promise.all(projectedKnowledge.locations.map(async (location) => ({
+    entries: enrich(projectedKnowledge.entries),
+    locations: projectedKnowledge.locations.map((location) => ({
       ...location,
-      entries: await enrich(location.entries),
-    }))),
+      entries: enrich(location.entries),
+    })),
   };
 }
 
@@ -1459,11 +1577,6 @@ async function readLocationDirectory(options) {
       }];
     }),
   };
-}
-
-function isHoldingEntityId(entityId) {
-  return ["holding.", "container.", "chest.", "item.", "equipment.", "weapon."]
-    .some((prefix) => entityId.startsWith(prefix));
 }
 
 function relationshipTargetIds(value, expectedFromId, expectedKind) {
@@ -1867,148 +1980,6 @@ export async function readCombatCurrentScene({
   };
 }
 
-async function readWorldDirectory({
-  fetchImpl,
-  origin,
-  applicationId,
-  stateSpaceId,
-  worldId,
-  locationDirectory,
-  perspective,
-  mediaAssetBaseUrl,
-  includeFactions = true,
-}) {
-  const empty = { people: [], factions: [], holdings: [] };
-  const incomplete = { ...empty, incomplete: true };
-  if (!applicationId || !stateSpaceId || !worldId || locationDirectory.length === 0) return empty;
-  const listRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
-    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
-  const relationshipRoot = listRoot.replace(/\/entities$/u, "/relationships");
-  const headers = { Accept: "application/json" };
-  const entities = new Map();
-  const directory = await readJsonPages({ fetchImpl, origin, path: listRoot });
-  if (directory.status !== "complete") return incomplete;
-  for (const item of directory.items) {
-    const id = token(typeof item?.entityId === "string" ? item.entityId : item?.id);
-    const name = text(item?.name, 200);
-    // Catalog definitions must not exhaust the directory's retained-record budget
-    // before later pages containing actual world factions, people and holdings.
-    const relevant = id && (id === `faction.${worldId}` || id.startsWith(`faction.${worldId}.`) ||
-      id.startsWith("actor.") || id.startsWith("creature.") || isHoldingEntityId(id));
-    if (relevant && name) {
-      if (!entities.has(id) && entities.size >= 1_000) return incomplete;
-      entities.set(id, { id, name });
-    }
-  }
-
-  const locationIds = new Set(locationDirectory.map((location) => location.id));
-  const containedResults = await Promise.all(locationDirectory.map(async (location) => {
-    const path = `${listRoot.replace(/\/entities$/u, "/containments")}` +
-      `?containerEntityId=${encodeURIComponent(location.id)}`;
-    const pages = await readJsonPages({
-      fetchImpl, origin, path, maximumPages: 10, maximumItems: 1_000,
-    });
-    if (pages.status !== "complete") return unavailableOnFirstPage(pages) ? [] : null;
-    const values = [];
-    for (const item of pages.items) {
-      const containedEntityId = token(item?.containedEntityId);
-      const containerEntityId = token(item?.containerEntityId);
-      if (!containedEntityId || containerEntityId !== location.id) return null;
-      if (entities.has(containedEntityId)) {
-        values.push({ entityId: containedEntityId, locationId: location.id });
-      }
-    }
-    return values;
-  }));
-  if (containedResults.some((result) => result === null)) return incomplete;
-  const contained = containedResults.flat();
-
-  const people = await Promise.all(contained.flatMap((entry) => {
-    const isActor = entry.entityId.startsWith("actor.");
-    const isCreature = entry.entityId.startsWith("creature.");
-    if (!isActor && !isCreature) return [];
-    const record = entities.get(entry.entityId);
-    return [Promise.resolve().then(async () => {
-      let motive = null;
-      let media = null;
-      try {
-        const [motiveResponse, mediaResponse] = await Promise.all([
-          fetchImpl(url(origin,
-            `${listRoot}/${encodeURIComponent(entry.entityId)}/components/${WORLD_MOTIVE_COMPONENT_TYPE_ID}`),
-          { headers, cache: "no-store" }),
-          fetchImpl(url(origin,
-            `${listRoot}/${encodeURIComponent(entry.entityId)}/media`),
-          { headers, cache: "no-store" }),
-        ]);
-        const [motivePayload, mediaPayload] = await Promise.all([
-          motiveResponse?.ok ? json(motiveResponse) : Promise.resolve(null),
-          mediaResponse?.ok ? json(mediaResponse) : Promise.resolve(null),
-        ]);
-        motive = worldMotive(componentValue(motivePayload, entry.entityId, WORLD_MOTIVE_COMPONENT_TYPE_ID));
-        media = mediaPayload ? mediaVisual(mediaPayload) : null;
-      } catch {
-        motive = null;
-        media = null;
-      }
-      return {
-        id: entry.entityId,
-        name: record.name,
-        kind: isCreature ? "Creature" : "NPC",
-        locationId: entry.locationId,
-        ...(media ? { media } : {}),
-        ...(motive ? { motive } : {}),
-      };
-    })];
-  }));
-
-  const holdings = contained.flatMap((entry) => {
-    if (locationIds.has(entry.entityId) || !isHoldingEntityId(entry.entityId)) return [];
-    const record = entities.get(entry.entityId);
-    return record ? [{ ...record, locationId: entry.locationId, kind: entry.entityId.split(".")[0] }] : [];
-  });
-
-  const factionCandidates = includeFactions ? Array.from(entities.values()).filter((entry) =>
-    entry.id === `faction.${worldId}` || entry.id.startsWith(`faction.${worldId}.`)) : [];
-  const factionResults = await Promise.all(factionCandidates.map(async (entry) => {
-    const componentPath = `${listRoot}/${encodeURIComponent(entry.id)}/components/${WORLD_FACTION_COMPONENT_TYPE_ID}`;
-    try {
-      const [componentResponse, ...relationshipTargets] = await Promise.all([
-        fetchImpl(url(origin, componentPath), { headers, cache: "no-store" }),
-        ...Object.values(WORLD_FACTION_RELATIONSHIP_KINDS).map((kind) =>
-          readExactRelationshipTargets(fetchImpl, origin, listRoot, entry.id, kind,
-            { unavailableFirstPageIsEmpty: true })),
-      ]);
-      if (!componentResponse?.ok) return null;
-      const componentPayload = await json(componentResponse);
-      const record = worldFaction(componentValue(componentPayload, entry.id, WORLD_FACTION_COMPONENT_TYPE_ID));
-      if (!record || record.status !== "active") return null;
-      if (relationshipTargets.some((targets) => targets === null)) return { incomplete: true };
-      const byKind = Object.fromEntries(Object.entries(WORLD_FACTION_RELATIONSHIP_KINDS).map(
-        ([key], index) => [key, relationshipTargets[index]],
-      ));
-      return {
-        ...entry,
-        ...record,
-        memberIds: byKind.members,
-        territoryIds: [...new Set([...byKind.controls, ...byKind.territories])],
-        alliedIds: byKind.allies,
-        opposedIds: byKind.opponents,
-      };
-    } catch {
-      return null;
-    }
-  }));
-  if (factionResults.some((result) => result?.incomplete)) return incomplete;
-  const factions = factionResults.filter(Boolean);
-
-  return {
-    people: people.sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id)),
-    factions: factions.sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id)),
-    holdings: holdings.sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id)),
-  };
-}
-
-
 /**
  * Reads the host-selected application/state-space/seat binding and a server-validated campaign
  * context. The browser may request a campaign token, but it is accepted only after this adapter
@@ -2182,7 +2153,6 @@ async function readGameServerContextCore({
     chronology: { status: "unavailable", perspective: effectivePerspective, entries: [] },
   };
 }
-
 
 async function resolveCurrentSituation({
   fetchImpl, origin, root, selectedCampaignId, binding, serverRole, contextAudience,
@@ -2652,6 +2622,66 @@ export async function readDeferredCampaignDetails({ fetchImpl = fetch, origin, s
   };
 }
 
+export async function readAuthorizedWorldHistory({ fetchImpl = fetch, origin, source }) {
+  const { applicationId } = source;
+  const campaignId = source.campaign.id;
+  const perspective = source.audience.perspective ?? "player";
+  const response = await fetchImpl(url(origin, `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/campaigns/${encodeURIComponent(campaignId)}/chronology?perspective=${encodeURIComponent(perspective)}`),
+  { headers: { Accept: "application/json" }, cache: "no-store" });
+  const result = response.ok ? chronology(await json(response), perspective) : null;
+  if (!result || result.status === "unavailable") throw new Error("The history view is unavailable.");
+  return { chronology: result };
+}
+
+export async function readAuthorizedWorldLore({ fetchImpl = fetch, origin, source }) {
+  const { applicationId, stateSpaceId } = source;
+  const campaignId = source.campaign.id;
+  const perspective = source.audience.perspective ?? "player";
+  const preview = source.audience.seat === "dm" && perspective === "player";
+  if (preview)
+    throw new Error("Campaign knowledge is unavailable in Player preview; an Actor binding is required.");
+  const response = await fetchImpl(url(origin, `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/campaigns/${encodeURIComponent(campaignId)}/knowledge?perspective=${encodeURIComponent(perspective)}`),
+  { headers: { Accept: "application/json" }, cache: "no-store" });
+  const result = response.ok ? knowledge(await json(response)) : null;
+  if (!result || result.status === "unavailable") throw new Error("The lore view is unavailable.");
+  return {
+    knowledge: await attachAuthorizedKnowledgeMedia({
+      fetchImpl, origin, applicationId, stateSpaceId, perspective,
+      mediaAssetBaseUrl: "/ui/dnd2024-play/assets/", projectedKnowledge: result,
+    }),
+  };
+}
+
+export async function readWorldPeopleHoldings({ fetchImpl = fetch, origin, source }) {
+  const perspective = source.audience.perspective ?? "player";
+  const preview = source.audience.seat === "dm" && perspective === "player";
+  if (preview)
+    throw new Error("The people directory is unavailable in Player preview; an Actor binding is required.");
+  if (source.audience.seat !== "dm" || perspective !== "dm")
+    return readAuthorizedWorldLore({ fetchImpl, origin, source });
+  const worldId = token(source.contextSelection?.selectedWorldId);
+  if (!worldId) throw new Error("The selected World identity is unavailable.");
+  const result = await readRegisteredWorldPeopleHoldings({
+    fetchImpl, origin, applicationId: source.applicationId, stateSpaceId: source.stateSpaceId, worldId,
+  });
+  if (result.status === "forbidden") throw new Error("The people directory is unavailable to this audience.");
+  if (result.status !== "ready") throw new Error("The people directory is incomplete.");
+  const locations = new Map(result.locations.map((location) => [location.id, location]));
+  for (const location of source.locationDirectory ?? []) locations.set(location.id, location);
+  return {
+    locationDirectory: [...locations.values()].sort((left, right) =>
+      left.name.localeCompare(right.name) || left.id.localeCompare(right.id)),
+    locationDirectoryAudience: perspective,
+    worldDirectory: {
+      people: result.people,
+      holdings: result.holdings,
+      factions: source.worldDirectory?.factions ?? [],
+    },
+  };
+}
+
 /**
  * Completes only the requested deferred view. The existing private endpoints remain the
  * authorization boundary; no ambient DM knowledge or media is requested for Player preview.
@@ -2722,19 +2752,10 @@ export async function readDeferredHubSection({ fetchImpl = fetch, origin, source
         worlds: [{ ...directory.identity, campaigns: directory.items }],
       };
     }
-  } else if (section === "history" || section === "lore") {
-    if (section === "lore" && preview)
-      throw new Error("Campaign knowledge is unavailable in Player preview; an Actor binding is required.");
-    const endpoint = section === "history" ? "chronology" : "knowledge";
-    const response = await read(url(origin, `/api/applications/${encodeURIComponent(applicationId)}` +
-      `/campaigns/${encodeURIComponent(campaignId)}/${endpoint}?perspective=${perspective}`),
-      { headers: { Accept: "application/json" }, cache: "no-store" });
-    const result = response.ok ? (section === "history"
-      ? chronology(await json(response), perspective) : knowledge(await json(response))) : null;
-    if (!result || result.status === "unavailable") throw new Error(`The ${section} view is unavailable.`);
-    if (section === "history") patch.chronology = result;
-    else patch.knowledge = await attachAuthorizedKnowledgeMedia({ ...options, entityRoot: root,
-      projectedKnowledge: result });
+  } else if (section === "history") {
+    Object.assign(patch, await readAuthorizedWorldHistory({ fetchImpl: read, origin, source }));
+  } else if (section === "lore") {
+    Object.assign(patch, await readAuthorizedWorldLore({ fetchImpl: read, origin, source }));
   } else if (section === "locations") {
     const worldId = token(source.contextSelection?.selectedWorldId);
     if (!worldId) throw new Error("The selected World identity is unavailable.");
@@ -2746,6 +2767,8 @@ export async function readDeferredHubSection({ fetchImpl = fetch, origin, source
     if (result.status !== "ready") throw new Error("The World map scope could not be read.");
     patch.locationDirectory = result.items;
     patch.locationDirectoryAudience = perspective;
+  } else if (section === "people") {
+    Object.assign(patch, await readWorldPeopleHoldings({ fetchImpl: read, origin, source }));
   } else {
     let locations = source.locationDirectory;
     if (!Array.isArray(locations)) {
@@ -2754,17 +2777,6 @@ export async function readDeferredHubSection({ fetchImpl = fetch, origin, source
       locations = result.items;
       patch.locationDirectory = locations;
       patch.locationDirectoryAudience = perspective;
-    }
-    if (section === "people") {
-      if (source.audience.seat === "dm" && perspective === "dm") {
-        const directory = await readWorldDirectory({ ...options, locationDirectory: locations, includeFactions: false });
-        if (directory.incomplete) throw new Error("The people directory is incomplete.");
-        patch.worldDirectory = { ...directory, factions: source.worldDirectory?.factions ?? [] };
-      } else {
-        // Public people are derived only from this seat's knowledge, never from the DM directory.
-        if (preview) throw new Error("The people directory is unavailable in Player preview; an Actor binding is required.");
-        Object.assign(patch, await readDeferredHubSection({ fetchImpl: read, origin, source, section: "lore" }));
-      }
     }
     if (section === "current") {
       if (!preview && source.knowledge.status === "unavailable") {

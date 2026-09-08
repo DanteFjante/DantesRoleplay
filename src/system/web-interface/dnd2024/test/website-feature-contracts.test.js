@@ -102,6 +102,17 @@ test("W06 registers the bounded World/location scope owner", async () => {
   assert.equal(query?.outputSchema?.properties?.locations?.maxItems, 100);
 });
 
+test("W07 registers the component-owned People and Holdings projection", async () => {
+  const query = await findCatalogRecord(catalogQueryRoot, "dnd2024.query.world-people-holdings");
+  assert.equal(query?.status, "active");
+  assert.equal(query?.executor, "mechanic-projection");
+  assert.equal(query?.exposure, "binding-only");
+  assert.deepEqual(query?.roles, { world: "The exact selected World." });
+  assert.equal(query?.outputSchema?.properties?.limits?.properties?.contentsDepth?.const, 4);
+  assert.equal(query?.outputSchema?.properties?.people?.maxItems, 100);
+  assert.equal(query?.outputSchema?.properties?.holdings?.maxItems, 100);
+});
+
 test("W01 coverage follows every current navigation section and item/board route", () => {
   const coverage = contract.navigationCoverage;
   assert.deepEqual(coverage.persistentShell, ["context-and-shell"]);

@@ -3,6 +3,7 @@ import test from "node:test";
 import { readDeferredHubSection } from "../src/server/game-server-context.js";
 import { contract as worldCampaignDirectoryContract } from "../src/server/world-campaign-directory-contract.js";
 import { contract as worldLocationScopeContract } from "../src/server/world-location-scope-contract.js";
+import { contract as worldPeopleHoldingsContract } from "../src/server/world-people-holdings-contract.js";
 
 const origin = "http://localhost:6217";
 const source = {
@@ -180,22 +181,92 @@ test("context discovery follows every registered continuation without hydrating 
     !target.pathname.includes("/components/")));
 });
 
-test("people discovery reuses locations and does not read faction graphs", async () => {
+test("DM people and holdings use one bounded projection and one authorized media batch", async () => {
   const calls = [];
   const result = await readDeferredHubSection({
     origin, section: "people", source: { ...source, locationDirectory: [{ id: "location.caldris.one", name: "Place" }] },
-    fetchImpl: async (input) => {
+    fetchImpl: async (input, init = {}) => {
       const target = new URL(input); calls.push(target);
-      if (target.pathname.endsWith("/entities")) return response({
-        items: [{ entityId: "actor.fixture", name: "Person" }], nextCursor: null,
+      if (target.pathname.endsWith("/media-batch")) {
+        assert.deepEqual(JSON.parse(init.body), { entityIds: ["subject-9"], perspective: "dm" });
+        return response({ applicationId: "dnd2024", stateSpaceId: "state.fixture", items: [] });
+      }
+      return response({
+        applicationId: "dnd2024", stateSpaceId: "state.fixture",
+        qualifiedQueryId: worldPeopleHoldingsContract.id,
+        stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+        outputSchemaHash: worldPeopleHoldingsContract.outputSchemaHash,
+        resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64),
+        data: {
+          version: 1, state: "ready", world: { id: "world.caldris", name: "Caldris" },
+          locations: [{ id: "place-azure", name: "Azure Reach", parentId: "world.caldris",
+            kind: "region", status: "active", summary: "A coast." }],
+          people: [{ id: "subject-9", name: "Person", locationId: "place-azure", kind: "NPC",
+            motive: null }],
+          holdings: [{ id: "plain-identity", name: "Rope", locationId: "place-azure", kind: "Item" }],
+          limits: { contentsDepth: 4, recordCount: 100, complete: true },
+        },
       });
-      if (target.pathname.endsWith("/containments")) return response({
-        items: [{ containedEntityId: "actor.fixture", containerEntityId: "location.caldris.one" }], nextCursor: null,
-      });
-      return response({}, 404);
     },
   });
-  assert.deepEqual(result.worldDirectory.people.map((person) => person.id), ["actor.fixture"]);
-  assert.equal(calls.length, 4);
-  assert.ok(calls.every((target) => !target.pathname.includes("relationships")));
+  assert.deepEqual(result.worldDirectory.people.map((person) => person.id), ["subject-9"]);
+  assert.deepEqual(result.worldDirectory.holdings.map((holding) => holding.id), ["plain-identity"]);
+  assert.equal(calls.length, 2);
+  assert.match(calls[0].pathname,
+    /entities\/world\.caldris\/read-models\/dnd2024\.query\.world-people-holdings$/u);
+  assert.ok(calls.every((target) => !/\/(entities|containments)$/u.test(target.pathname) &&
+    !target.pathname.includes("/components/") && !target.pathname.includes("relationships") &&
+    !target.pathname.endsWith("/media")));
+});
+
+test("Actor People reuse only known lore and attach permitted media in one batch", async () => {
+  const calls = [];
+  const actorSource = { ...source, audience: { seat: "player", perspective: "player" } };
+  const result = await readDeferredHubSection({
+    origin, section: "people", source: actorSource,
+    fetchImpl: async (input, init = {}) => {
+      const target = new URL(input); calls.push(target);
+      if (target.pathname.endsWith("/knowledge")) return response({
+        status: "ready", entries: [{ text: "Mara runs the harbour.", stance: "known",
+          presentationKind: "person", mediaOwnerId: "subject-9" }], locations: [],
+      });
+      assert.ok(target.pathname.endsWith("/media-batch"));
+      assert.deepEqual(JSON.parse(init.body), { entityIds: ["subject-9"], perspective: "player" });
+      return response({ applicationId: "dnd2024", stateSpaceId: "state.fixture", items: [] });
+    },
+  });
+  assert.deepEqual(result.knowledge.entries, [{
+    text: "Mara runs the harbour.", stance: "known", presentationKind: "person",
+  }]);
+  assert.equal(calls.length, 2);
+  assert.ok(calls.every((target) => !target.pathname.includes("world-people-holdings") &&
+    !target.pathname.endsWith("/media")));
+});
+
+test("empty DM People is distinct from a denied directory", async () => {
+  const envelope = (data) => ({
+    applicationId: "dnd2024", stateSpaceId: "state.fixture",
+    qualifiedQueryId: worldPeopleHoldingsContract.id,
+    stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+    outputSchemaHash: worldPeopleHoldingsContract.outputSchemaHash,
+    resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64), data,
+  });
+  const empty = await readDeferredHubSection({
+    origin, section: "people", source,
+    fetchImpl: async () => response(envelope({
+      version: 1, state: "ready", world: { id: "world.caldris", name: "Caldris" },
+      locations: [], people: [], holdings: [],
+      limits: { contentsDepth: 4, recordCount: 100, complete: true },
+    })),
+  });
+  assert.deepEqual(empty.worldDirectory.people, []);
+  assert.deepEqual(empty.worldDirectory.holdings, []);
+
+  await assert.rejects(readDeferredHubSection({
+    origin, section: "people", source,
+    fetchImpl: async () => response(envelope({
+      version: 1, state: "forbidden", world: null, locations: [], people: [], holdings: [],
+      limits: { contentsDepth: 4, recordCount: 100, complete: true },
+    })),
+  }), /unavailable to this audience/u);
 });

@@ -13,6 +13,8 @@ import {
   type FactionObjectRequest,
   type WorldScopeRequest,
   type WorldScopeUpdate,
+  type WorldInformationRequest,
+  type WorldInformationUpdate,
 } from "../data/object-resources";
 import { resolveHubSurface } from "../data/hub-availability.js";
 import type { CampaignReadModel, CanonicalCharacterResult, CharacterSheetResult, ConnectedCampaignEnvelope, DeferredHubSection, DeferredHubUpdate, HubEnvelope, InventoryContainerResult, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
@@ -131,7 +133,10 @@ const characterResources = new CharacterResourceOwner({
   readInventory: readCharacterInventoryResource,
 });
 
-const worldResources = new WorldResourceOwner({ readScope: readWorldScopeObject });
+const worldResources = new WorldResourceOwner({
+  readScope: readWorldScopeObject,
+  readInformation: readWorldInformationObject,
+});
 
 function authorizedCharacter({ envelope, actorId }: CharacterResourceRequest) {
   const member = envelope.party.find((candidate) => candidate.id === actorId);
@@ -333,6 +338,16 @@ async function loadWorldScope(envelope: ReadyHubEnvelope, scopeId: string, signa
   return worldResources.loadScope({ envelope, scopeId }, signal);
 }
 
+async function readWorldInformationObject(
+  request: WorldInformationRequest,
+  signal: AbortSignal,
+): Promise<WorldInformationUpdate> {
+  const update = await readDeferredSectionObject(request, request.section, signal);
+  if (update.section !== request.section)
+    throw new Error("The World information response is incompatible.");
+  return update as WorldInformationUpdate;
+}
+
 async function readCampaignContextObject(
   request: CampaignContextObjectRequest,
   signal: AbortSignal,
@@ -351,7 +366,9 @@ async function loadDeferredSection(
     ? tableResources.loadCampaignContext({ envelope }, signal)
     : section === "locations"
       ? loadWorldScope(envelope, envelope.contextSelection?.selectedWorldId ?? envelope.world.id, signal)
-    : readDeferredSectionObject({ envelope }, section, signal);
+      : ["people", "lore", "history"].includes(section)
+        ? worldResources.loadInformation({ envelope, section: section as WorldInformationRequest["section"] }, signal)
+        : readDeferredSectionObject({ envelope }, section, signal);
 }
 
 async function loadRulesReference(): Promise<RuleReadModel[]> {

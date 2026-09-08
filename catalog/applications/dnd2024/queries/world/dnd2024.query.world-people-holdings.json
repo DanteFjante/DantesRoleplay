@@ -1,0 +1,108 @@
+{
+  "id": "dnd2024.query.world-people-holdings",
+  "category": "dnd2024.presentation.world.people-holdings",
+  "name": "D&D 2024 World people and holdings",
+  "description": "Returns the bounded DM directory of locations, people, creatures, and durable holdings for one exact World without scanning the entity directory.",
+  "matches": ["list people in the selected world", "show dm holdings by location"],
+  "roles": { "world": "The exact selected World." },
+  "executor": "mechanic-projection",
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.world.people-holdings.project",
+    "version": 1,
+    "contentHash": "87E27B57865B0BA7FE9EA58CF8D070A449525068948284367F2246FA6642B7B8",
+    "outputSchemaHash": "3C9B26896E0E0C3E76B57AF2F114BE411B2646E0130C741C4D72FD23112E055A"
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["version", "state", "world", "locations", "people", "holdings", "limits"],
+    "properties": {
+      "version": { "const": 1 },
+      "state": { "enum": ["ready", "forbidden"] },
+      "world": { "anyOf": [{ "$ref": "#/$defs/named" }, { "type": "null" }] },
+      "locations": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/location" } },
+      "people": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/person" } },
+      "holdings": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/holding" } },
+      "limits": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["contentsDepth", "recordCount", "complete"],
+        "properties": {
+          "contentsDepth": { "const": 4 },
+          "recordCount": { "const": 100 },
+          "complete": { "const": true }
+        }
+      }
+    },
+    "allOf": [
+      {
+        "if": { "properties": { "state": { "const": "ready" } } },
+        "then": { "properties": { "world": { "$ref": "#/$defs/named" } } }
+      },
+      {
+        "if": { "properties": { "state": { "const": "forbidden" } } },
+        "then": {
+          "properties": {
+            "world": { "type": "null" },
+            "locations": { "maxItems": 0 },
+            "people": { "maxItems": 0 },
+            "holdings": { "maxItems": 0 }
+          }
+        }
+      }
+    ],
+    "$defs": {
+      "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "name": { "type": "string", "minLength": 1, "maxLength": 400 },
+      "summary": { "type": "string", "minLength": 1, "maxLength": 1000 },
+      "named": {
+        "type": "object", "additionalProperties": false, "required": ["id", "name"],
+        "properties": { "id": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/name" } }
+      },
+      "location": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "name", "parentId", "kind", "status", "summary"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/name" },
+          "parentId": { "anyOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+          "kind": { "enum": ["region", "settlement", "site", "interior"] },
+          "status": { "enum": ["draft", "active"] }, "summary": { "$ref": "#/$defs/summary" }
+        }
+      },
+      "motive": {
+        "anyOf": [
+          {
+            "type": "object", "additionalProperties": false,
+            "required": ["status", "summary", "visibility"],
+            "properties": {
+              "status": { "enum": ["draft", "active"] }, "summary": { "$ref": "#/$defs/summary" },
+              "visibility": { "enum": ["public", "party", "gm"] }
+            }
+          },
+          { "type": "null" }
+        ]
+      },
+      "person": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "name", "locationId", "kind", "motive"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/name" },
+          "locationId": { "$ref": "#/$defs/id" }, "kind": { "enum": ["NPC", "Creature"] },
+          "motive": { "$ref": "#/$defs/motive" }
+        }
+      },
+      "holding": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "name", "locationId", "kind"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/name" },
+          "locationId": { "$ref": "#/$defs/id" },
+          "kind": { "enum": ["Item", "Conveyance", "Aerial conveyance", "Teleport gate"] }
+        }
+      }
+    }
+  },
+  "exposure": "binding-only",
+  "status": "active"
+}

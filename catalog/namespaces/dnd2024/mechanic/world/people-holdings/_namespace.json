@@ -1,0 +1,10 @@
+{
+  "id": "dnd2024.mechanic.world.people-holdings",
+  "owner": "dnd2024",
+  "description": "Reviewed namespace for the bounded DM World people and holdings projection.",
+  "allowedKinds": ["mechanic"],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "W07 admits one exact, containment-backed World people and holdings directory. It is DM-only, identifier-agnostic, and fixed to the generic four-level, 100-node mechanic projection bound."
+}
