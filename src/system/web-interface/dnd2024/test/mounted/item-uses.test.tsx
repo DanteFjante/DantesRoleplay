@@ -74,7 +74,7 @@ test("slow DM reads, selection changes and context invalidation cannot restore r
     await act(async()=>{client.invalidate();await tick();});assert.equal(view.container.querySelectorAll("article").length,0);
   }finally{await view.cleanup();}
 });
-test("expired use data is cleared and explicit refresh starts at the first page",async()=>{
+test("expired use data revalidates without hiding the last valid page",async()=>{
   let reads=0;const client=new ItemViewClient((async(url)=>{if(String(url).includes("inventory-item-details"))return response(itemEnvelope());reads++;return response(usesEnvelope());}) as typeof fetch,40);
-  const view=await mount(client);try{await view.render();await act(async()=>{await new Promise(r=>setTimeout(r,60));});assert.equal(view.container.querySelectorAll("article").length,0);assert.match(view.container.textContent!,/Uses need a refresh/);await view.click("Refresh uses");assert.equal(reads,2);}finally{await view.cleanup();}
+  const view=await mount(client);try{await view.render();await act(async()=>{await new Promise(r=>setTimeout(r,70));});assert.equal(view.container.querySelectorAll("article").length,4);assert.equal(reads,2);}finally{await view.cleanup();}
 });

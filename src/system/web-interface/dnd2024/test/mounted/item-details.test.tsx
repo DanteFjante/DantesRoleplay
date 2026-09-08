@@ -105,7 +105,7 @@ test("slow scope switches, invalidation and transfer never resurrect previous he
   } finally { await view.cleanup(); }
 });
 
-test("fresh return uses cache; expiry clears content without a polling loop", async () => {
+test("fresh return uses cache and expiry revalidates without hiding last-good content", async () => {
   let calls = 0;
   const client = new ItemViewClient((async () => { calls++; return response(itemEnvelope()); }) as typeof fetch, 250);
   let view = await mounted(client);
@@ -113,10 +113,48 @@ test("fresh return uses cache; expiry clears content without a polling loop", as
   try {
     assert.equal(calls, 1); assert.match(view.container.textContent!, /Travel staff/);
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 270)); });
-    assert.equal(view.container.querySelector("h1")?.textContent, "Item"); assert.match(view.container.textContent!, /Item details need a refresh/);
-    assert.equal(calls, 1);
-    await act(async () => { view.container.querySelector<HTMLButtonElement>('[role="status"] button')!.click(); await tick(); });
+    assert.equal(view.container.querySelector("h1")?.textContent, "Travel staff");
     assert.equal(calls, 2); assert.match(view.container.textContent!, /Travel staff/);
+  } finally { await view.cleanup(); }
+});
+
+test("same-key Item consumers share one read and different Item keys remain concurrent", async () => {
+  const pending: { request: ItemDetailsRequest; resolve: (response: Response) => void }[] = [];
+  const client = new ItemViewClient(((url) => new Promise<Response>((resolve) => {
+    const parsed = new URL(String(url), "https://table.test");
+    pending.push({ request: { ...itemRequest,
+      perspective: parsed.searchParams.get("perspective") as "player" | "dm",
+      itemId: JSON.parse(parsed.searchParams.get("input")!).itemId }, resolve });
+  })) as typeof fetch);
+  const other = { ...itemRequest, itemId: "item.pack" };
+  const first = client.reads.load(itemRequest);
+  const shared = client.reads.load(itemRequest);
+  const separate = client.reads.load(other);
+  assert.equal(pending.length, 2);
+  for (const read of pending) read.resolve(response(itemEnvelope(read.request)));
+  await Promise.all([first, shared, separate]);
+  assert.equal(client.cacheMetrics().inFlightShares, 1);
+  assert.equal(client.cacheMetrics().activeRequests, 0);
+  assert.equal(client.cacheMetrics().retainedEntries, 2);
+  assert.ok(client.cacheMetrics().retainedBytes > 0);
+});
+
+test("failed background refresh keeps the last valid Item details visible", async () => {
+  let calls = 0;
+  let fail = false;
+  const client = new ItemViewClient((async () => {
+    calls += 1;
+    if (fail) throw new TypeError("offline");
+    return response(itemEnvelope());
+  }) as typeof fetch, 40);
+  const view = await mounted(client);
+  try {
+    fail = true;
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 90)); });
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 40)); });
+    assert.ok(calls >= 2);
+    assert.equal(view.container.querySelector("h1")?.textContent, "Travel staff");
+    assert.match(view.container.textContent!, /last available details remain visible/i);
   } finally { await view.cleanup(); }
 });
 

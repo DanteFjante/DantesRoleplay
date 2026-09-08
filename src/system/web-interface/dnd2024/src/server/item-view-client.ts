@@ -2,7 +2,8 @@ import { readItemUses, usesKey, type ItemUsesRequest, type ItemUsesResult } from
 import { itemReadId, readItemResponse } from "./item-read-response";
 import { readItemRecipes, recipesKey, type ItemRecipesRequest, type ItemRecipesResult } from "./item-recipes-client";
 import validate, { contract } from "./item-details-validator.js";
-import { ViewReadClient } from "../data/view-read-client";
+import { ResourceStore, type KeyedResource, type ResourceInvalidationReason } from "../data/resource-store";
+import { RESOURCE_FRESHNESS_MS } from "../data/resource-policy";
 import type { Perspective } from "../data/hub-types";
 import type { ItemMediaEntry } from "../components/EntityMediaGallery";
 
@@ -41,28 +42,34 @@ let nextClient = 0;
 export class ItemViewClient {
   readonly identity = ++nextClient;
   readonly maximumAgeMs: number;
-  readonly uses: ViewReadClient<ItemUsesRequest, ItemUsesResult>;
-  readonly recipes: ViewReadClient<ItemRecipesRequest, ItemRecipesResult>;
-  readonly reads: ViewReadClient<ItemDetailsRequest, ItemDetailsResult>;
+  readonly uses: KeyedResource<ItemUsesRequest, ItemUsesResult>;
+  readonly recipes: KeyedResource<ItemRecipesRequest, ItemRecipesResult>;
+  readonly reads: KeyedResource<ItemDetailsRequest, ItemDetailsResult>;
+  readonly #store: ResourceStore;
   #revision = 0;
   #listeners = new Set<() => void>();
-  constructor(fetchImpl: typeof fetch = fetch, maximumAgeMs = 30_000) {
+  constructor(fetchImpl: typeof fetch = fetch, maximumAgeMs = RESOURCE_FRESHNESS_MS.itemDetails) {
     this.maximumAgeMs = maximumAgeMs;
-    this.uses = new ViewReadClient({ read: async (request, signal) => {
+    this.#store = new ResourceStore({ maximumEntries: 24, maximumRetainedBytes: 6 * 1024 * 1024,
+      diagnosticName: "item-resources" });
+    this.uses = this.#store.define({ name: "item-uses", read: async (request, signal) => {
       const value = await readItemUses(request, signal, fetchImpl);
       return value.status === "ready" ? { ...value, expiresAt: Date.now() + maximumAgeMs } : value;
-    }, cacheKey: (request) => usesKey(this.identity, request), maximumCachedScopes: 8, maximumCacheAgeMs: maximumAgeMs,
+    }, cacheKey: (request) => usesKey(this.identity, request), maximumAgeMs,
+      maximumEntryBytes: 524_288,
       validate: (value): value is ItemUsesResult => Boolean(value && typeof value === "object" && "status" in value) });
-    this.recipes = new ViewReadClient({ read: async (request, signal) => {
+    this.recipes = this.#store.define({ name: "item-recipes", read: async (request, signal) => {
       const value = await readItemRecipes(request, signal, fetchImpl);
       return value.status === "ready" ? { ...value, expiresAt: Date.now() + maximumAgeMs } : value;
-    }, cacheKey: (request) => recipesKey(this.identity, request), maximumCachedScopes: 8, maximumCacheAgeMs: maximumAgeMs,
+    }, cacheKey: (request) => recipesKey(this.identity, request), maximumAgeMs,
+      maximumEntryBytes: 524_288,
       validate: (value): value is ItemRecipesResult => Boolean(value && typeof value === "object" && "status" in value) });
-    this.reads = new ViewReadClient({ read: async (request, signal) => {
+    this.reads = this.#store.define({ name: "item-details", read: async (request, signal) => {
       const result = await readItemDetails(request, signal, fetchImpl);
       return result.status === "ready" ? { ...result, expiresAt: Date.now() + maximumAgeMs } : result;
     },
-      cacheKey: (request) => this.key(request), maximumCachedScopes: 8, maximumCacheAgeMs: maximumAgeMs,
+      cacheKey: (request) => this.key(request), maximumAgeMs,
+      maximumEntryBytes: 524_288,
       validate: (value): value is ItemDetailsResult => Boolean(value && typeof value === "object" && "status" in value &&
         ((value as ItemDetailsResult).status === "ready" ? validate((value as ItemDetailsResult).data) :
           ["forbidden", "unavailable", "stale"].includes((value as ItemDetailsResult).status) && (value as ItemDetailsResult).data === null)) });
@@ -70,5 +77,10 @@ export class ItemViewClient {
   key(request: ItemDetailsRequest) { return JSON.stringify([this.identity, contract.contentHash, request.applicationId, request.stateSpaceId, request.campaignId, request.observerId, request.perspective, request.itemId, request.contextRevision]); }
   snapshot = () => this.#revision;
   subscribe = (listener: () => void) => { this.#listeners.add(listener); return () => { this.#listeners.delete(listener); }; };
-  invalidate = () => { this.reads.invalidate(); this.recipes.invalidate(); this.uses.invalidate(); this.#revision++; for (const listener of this.#listeners) listener(); };
+  invalidate = (reason: ResourceInvalidationReason = "manual") => {
+    this.#store.invalidateAll(reason);
+    this.#revision++;
+    for (const listener of this.#listeners) listener();
+  };
+  cacheMetrics = () => this.#store.metrics();
 }

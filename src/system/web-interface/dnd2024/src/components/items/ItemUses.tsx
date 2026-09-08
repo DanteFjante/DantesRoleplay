@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { focusItemPanel } from "./ItemView";
+import { ViewReadError } from "../../data/view-read-client";
 import type { ItemDetailsRequest, ItemViewClient } from "../../server/item-view-client";
 import { usesKey, type ItemUsesRequest, type ItemUsesResult, type UseEntry, type UseGroup } from "../../server/item-uses-client";
 const availability: Record<UseEntry["availability"], string> = { "not-evaluated": "Availability not evaluated", available: "Requirements met", "requirements-not-met": "Requirements not met", "definition-incomplete": "Activity definition incomplete" };
@@ -29,24 +30,39 @@ export function ItemUses({ client, request, active }: { client: ItemViewClient; 
   const [retry, setRetry] = useState(0);
   const full: ItemUsesRequest = { ...request, ...page }, key = usesKey(client.identity, full);
   const [loaded, setLoaded] = useState<{ key: string; result: ItemUsesResult } | null>(null);
+  const [refreshFailed, setRefreshFailed] = useState(false);
   const current = loaded?.key === key ? loaded.result : null;
   useEffect(() => {
     if (!active) return;
     let live = true; let timer: ReturnType<typeof setTimeout> | undefined;
-    const accept = (result: ItemUsesResult) => {
+    const controller = new AbortController();
+    const accept = (result: ItemUsesResult, schedule = true) => {
       if (!live) return; setLoaded({ key, result });
-      if (result.status === "ready") timer = setTimeout(() => { client.uses.invalidate(full); if(live) setLoaded({ key, result: { status: "stale", data: null } }); }, Math.max(0, result.expiresAt - Date.now()));
+      setRefreshFailed(false);
+      if (schedule && result.status === "ready") timer = setTimeout(() => {
+        if (live) setRetry((value) => value + 1);
+      }, Math.max(0, result.expiresAt - Date.now()));
     };
-    if (document.visibilityState === "hidden") accept({ status: "stale", data: null });
+    const cached = client.uses.peek(full);
+    if (cached) accept(cached.value);
     else {
-      const cached = client.uses.peek(full);
-      if (cached?.value.status === "ready" && cached.value.expiresAt > Date.now()) accept(cached.value);
-      else { setLoaded(null); void client.uses.load(full).then(value => accept(value.value)).catch(() => accept({ status: "unavailable", data: null })); }
+      const previous = client.uses.state(full);
+      if ((previous.status === "ready" || previous.status === "stale") && previous.result.value.status === "ready")
+        setLoaded({ key, result: previous.result.value });
+      else setLoaded(null);
+      void client.uses.load(full, { signal: controller.signal }).then(value => accept(value.value)).catch((error) => {
+        if (!live || error instanceof ViewReadError && error.category === "cancelled") return;
+        const retained = client.uses.state(full);
+        if (retained.status === "stale" && retained.result.value.status === "ready") {
+          setLoaded({ key, result: retained.result.value });
+          setRefreshFailed(true);
+        } else accept({ status: "unavailable", data: null }, false);
+      });
     }
-    return () => { live = false; clearTimeout(timer); client.uses.cancel(); };
+    return () => { live = false; clearTimeout(timer); controller.abort(); };
   }, [client, key, active, retry]);
-  const data = current?.status === "ready" && current.expiresAt > Date.now() ? current.data : null;
-  const refresh = () => { focusItemPanel(); client.uses.invalidate(); setLoaded(null); setPage({ offset: 0, expectedSourceRevision: null }); setRetry(v => v + 1); };
+  const data = current?.status === "ready" ? current.data : null;
+  const refresh = () => { focusItemPanel(); client.uses.invalidate(undefined, "manual"); setLoaded(null); setPage({ offset: 0, expectedSourceRevision: null }); setRetry(v => v + 1); };
   const next = () => { if (!data || current?.status !== "ready" || data.uses.nextOffset === null) return;
     focusItemPanel();
     setPage({ offset: data.uses.nextOffset, expectedSourceRevision: current.sourceRevision }); };
@@ -54,6 +70,7 @@ export function ItemUses({ client, request, active }: { client: ItemViewClient; 
     <p>{!current ? "Reading uses known to the selected character…" : "Refresh to read the current uses. Previous use details are no longer shown."}</p>
     {current ? <button type="button" onClick={refresh}>Refresh uses</button> : null}</div>;
   return <div className="item-recipes"><p>Activities and statements available to this character. Execution support does not mean current requirements are met.</p>
+    {refreshFailed ? <div className="item-details__notice" role="status"><strong>Could not refresh uses</strong><p>The last available uses remain visible.</p><button type="button" onClick={refresh}>Try again</button></div> : null}
     {page.offset > 0 ? <button type="button" onClick={refresh}>Back to first uses</button> : null}
     <UseList group={data.uses} next={next} />
   </div>;

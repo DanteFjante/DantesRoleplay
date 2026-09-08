@@ -17,16 +17,20 @@ export function ItemWorkspace({ route, campaignId, perspective, context, itemCli
   useEffect(() => retainItemClient?.(client), [client, retainItemClient]);
   useEffect(() => {
     const changed = (event: Event) => {
-      if (objectConsumers((event as CustomEvent).detail?.object?.qualifiedId).item) client.invalidate();
+      if (objectConsumers((event as CustomEvent).detail?.object?.qualifiedId).item)
+        client.invalidate("object-change");
+    };
+    const invalidated = (event: Event) => {
+      const reason = (event as CustomEvent).detail?.reason;
+      client.invalidate(["stream-recovery", "stream-error", "pagehide", "unknown-object",
+        "release-replaced", "workspace-replaced"].includes(reason) ? reason : "stream-recovery");
     };
     window.addEventListener("dnd2024-object-changed", changed);
-    for (const event of ["dnd2024-view-invalidated", "focus", "pagehide"]) window.addEventListener(event, client.invalidate);
-    document.addEventListener("visibilitychange", client.invalidate);
+    window.addEventListener("dnd2024-view-invalidated", invalidated);
     return () => {
       window.removeEventListener("dnd2024-object-changed", changed);
-      for (const event of ["dnd2024-view-invalidated", "focus", "pagehide"]) window.removeEventListener(event, client.invalidate);
-      document.removeEventListener("visibilitychange", client.invalidate);
-      if (!retainItemClient) client.invalidate();
+      window.removeEventListener("dnd2024-view-invalidated", invalidated);
+      if (!retainItemClient) client.invalidate("scope-replaced");
     };
   }, [client, retainItemClient]);
   const selected = route.kind === "item" || route.kind === "inventory" ? route : null;

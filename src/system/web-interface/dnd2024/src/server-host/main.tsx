@@ -22,6 +22,7 @@ import {
 import { resolveHubSurface } from "../data/hub-availability.js";
 import type { CampaignReadModel, CanonicalCharacterResult, CharacterSheetResult, ConnectedCampaignDetails, ConnectedCampaignEnvelope, DeferredHubSection, DeferredHubUpdate, HubEnvelope, InventoryContainerResult, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
 import { ViewReadError } from "../data/view-read-client";
+import type { ResourceInvalidationReason } from "../data/resource-store";
 import { loadInitialHub } from "../data/hub-preferences";
 import { objectConsumers, subscribeScopedChanges } from "../data/scoped-change-stream";
 import { isReadyHubEnvelope } from "../state.js";
@@ -34,8 +35,21 @@ import {
 } from "../observability/request-ledger.js";
 import "../styles.css";
 
-const characterSources = new Map<string, ConnectedCampaignEnvelope>();
-const characterScope = (state: string, campaign: string, perspective?: Perspective) => `${state}:${campaign}:${perspective ?? "player"}`;
+// Connected source workspaces are not response caches: deferred readers merge newly loaded
+// source sections here before projecting them. The exact authorized selection prevents one
+// campaign, world, seat, or perspective from borrowing another selection's mutable workspace.
+const connectedSources = new Map<string, ConnectedCampaignEnvelope>();
+const connectedSourceScope = (source: ConnectedCampaignEnvelope) => JSON.stringify([
+  source.applicationId, source.stateSpaceId, source.contextSelection.selectedWorldId, source.campaign.id,
+  source.audience.seat, source.audience.perspective ?? source.audience.seat,
+]);
+const projectedSourceScope = (envelope: ReadyHubEnvelope) => JSON.stringify([
+  envelope.applicationId, envelope.stateSpaceId,
+  envelope.contextSelection?.selectedWorldId ?? envelope.world.id,
+  envelope.contextSelection?.selectedCampaignId ?? envelope.revision,
+  envelope.audience.seat, envelope.audience.perspective,
+]);
+const connectedSourceFor = (envelope: ReadyHubEnvelope) => connectedSources.get(projectedSourceScope(envelope));
 
 function sameCampaignProjection(left: ConnectedCampaignEnvelope, right: ConnectedCampaignEnvelope) {
   const previous = left.campaign.projection;
@@ -101,16 +115,16 @@ async function readEnvelope(
 
   if (sourceEnvelope.status !== "connected") return sourceEnvelope;
   if (signal.aborted) throw new DOMException("View replaced", "AbortError");
-  const scope = characterScope(sourceEnvelope.stateSpaceId, sourceEnvelope.campaign.id, sourceEnvelope.audience.perspective);
-  characterSources.delete(scope);
-  characterSources.set(scope, sourceEnvelope);
-  if (characterSources.size > 8) characterSources.delete(characterSources.keys().next().value!);
+  const scope = connectedSourceScope(sourceEnvelope);
+  connectedSources.delete(scope);
+  connectedSources.set(scope, sourceEnvelope);
+  if (connectedSources.size > 8) connectedSources.delete(connectedSources.keys().next().value!);
   const projected = connectedCampaignToHubEnvelope(
     { ...sourceEnvelope, rules: [] },
   );
-  characterResources.replaceScope(projected);
-  worldResources.replaceScope(projected);
-  currentViewResources.replaceScope(projected);
+  characterResources.replaceScope(projected, true, "workspace-replaced");
+  worldResources.replaceScope(projected, true, "workspace-replaced");
+  currentViewResources.replaceScope(projected, true, "workspace-replaced");
   recordDevelopmentDiagnostic("party-read", {
     applicationId: projected.applicationId,
     stateSpaceId: projected.stateSpaceId,
@@ -217,8 +231,7 @@ async function readFactionObjectPage(
   { envelope, cursor }: FactionObjectRequest,
   signal: AbortSignal,
 ) {
-  const source = characterSources.get(characterScope(envelope.stateSpaceId,
-    envelope.contextSelection?.selectedCampaignId ?? "", envelope.audience.perspective));
+  const source = connectedSourceFor(envelope);
   if (!source || source.audience.seat !== "dm" || source.audience.perspective !== "dm" || signal.aborted)
     throw new Error("The faction directory is unavailable to this audience.");
   const [{ readRegisteredFactionDirectoryPage }, { connectedCampaignToHubEnvelope }] = await Promise.all([
@@ -234,15 +247,15 @@ async function readFactionObjectPage(
   });
   if (!page) throw new Error("The faction directory could not be read.");
   if (signal.aborted) throw new DOMException("View replaced", "AbortError");
-  const key = characterScope(source.stateSpaceId, source.campaign.id, source.audience.perspective);
-  const latest = characterSources.get(key);
+  const key = connectedSourceScope(source);
+  const latest = connectedSources.get(key);
   if (!latest) throw new DOMException("View replaced", "AbortError");
   const factions = cursor === null ? page.factions : [
     ...(latest.worldDirectory?.factions ?? []),
     ...page.factions.filter((item: { id: string }) =>
       !latest.worldDirectory?.factions.some((previous) => previous.id === item.id)),
   ];
-  characterSources.set(key, {
+  connectedSources.set(key, {
     ...latest, worldDirectory: { people: latest.worldDirectory?.people ?? [], factions,
       holdings: latest.worldDirectory?.holdings ?? [] },
   });
@@ -268,8 +281,7 @@ async function readCampaignDetailsObject(
   { envelope }: CampaignDetailsObjectRequest,
   signal: AbortSignal,
 ): Promise<CampaignReadModel> {
-  const source = characterSources.get(characterScope(envelope.stateSpaceId,
-    envelope.contextSelection?.selectedCampaignId ?? "", envelope.audience.perspective));
+  const source = connectedSourceFor(envelope);
   if (!source || signal.aborted) throw new Error("The campaign details are unavailable.");
   const [{ readDeferredCampaignDetails }, { connectedCampaignToHubEnvelope, mergeConnectedCampaignDetails }] = await Promise.all([
     import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
@@ -280,8 +292,8 @@ async function readCampaignDetailsObject(
     source,
   });
   if (signal.aborted) throw new DOMException("View replaced", "AbortError");
-  const key = characterScope(source.stateSpaceId, source.campaign.id, source.audience.perspective);
-  const latest = characterSources.get(key);
+  const key = connectedSourceScope(source);
+  const latest = connectedSources.get(key);
   if (!latest || !sameCampaignProjection(source, latest))
     throw new DOMException("View replaced", "AbortError");
   return connectedCampaignToHubEnvelope({
@@ -305,9 +317,8 @@ async function readDeferredSectionObject(
   section: DeferredHubSection,
   signal: AbortSignal,
 ): Promise<DeferredHubUpdate> {
-  const key = characterScope(envelope.stateSpaceId,
-    envelope.contextSelection?.selectedCampaignId ?? "", envelope.audience.perspective);
-  const source = characterSources.get(key);
+  const key = projectedSourceScope(envelope);
+  const source = connectedSources.get(key);
   if (!source || signal.aborted) throw new Error("Refresh the authorized view before continuing.");
   const [{ readDeferredHubSection }, { connectedCampaignToDeferredHubUpdate }] = await Promise.all([
     import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
@@ -316,13 +327,13 @@ async function readDeferredSectionObject(
     fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
     origin: window.location.origin, source, section,
   });
-  const latest = characterSources.get(key);
+  const latest = connectedSources.get(key);
   if (signal.aborted || !latest)
     throw new DOMException("View replaced", "AbortError");
   // Independent context discovery may finish beside a section read. Merge their disjoint
   // patches; the hub aborts both owners before replacing the authorized bootstrap.
   const updated = { ...latest, ...patch };
-  characterSources.set(key, updated);
+  connectedSources.set(key, updated);
   return connectedCampaignToDeferredHubUpdate({ ...updated, rules: [] }, section);
 }
 
@@ -330,9 +341,8 @@ async function readWorldScopeObject(
   { envelope, scopeId, cursor }: WorldScopeRequest,
   signal: AbortSignal,
 ): Promise<WorldScopeUpdate> {
-  const key = characterScope(envelope.stateSpaceId,
-    envelope.contextSelection?.selectedCampaignId ?? "", envelope.audience.perspective);
-  const source = characterSources.get(key);
+  const key = projectedSourceScope(envelope);
+  const source = connectedSources.get(key);
   if (!source || signal.aborted) throw new Error("Refresh the authorized World view before continuing.");
   const [{ readWorldLocationScopePatch }, { connectedCampaignToDeferredHubUpdate }] = await Promise.all([
     import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
@@ -341,10 +351,10 @@ async function readWorldScopeObject(
     fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
     origin: window.location.origin, source, scopeId, cursor,
   });
-  const latest = characterSources.get(key);
+  const latest = connectedSources.get(key);
   if (signal.aborted || !latest) throw new DOMException("World scope replaced", "AbortError");
   const updated = { ...latest, ...patch };
-  characterSources.set(key, updated);
+  connectedSources.set(key, updated);
   const projected = connectedCampaignToDeferredHubUpdate({ ...updated, rules: [] }, "locations");
   if (projected.section !== "locations") throw new Error("The World scope response is incompatible.");
   return projected;
@@ -441,18 +451,18 @@ async function loadReadyEnvelope(
 const rootElement = document.querySelector<HTMLElement>("#root");
 function subscribeChanges(envelope: ReadyHubEnvelope) {
   if (typeof EventSource === "undefined") return () => {};
-  const invalidate = () => {
-    tableResources.invalidateAll();
-    characterResources.invalidateAll();
-    worldResources.invalidateAll();
-    currentViewResources.invalidateAll();
-    window.dispatchEvent(new Event("dnd2024-view-invalidated"));
+  const invalidate = (reason: ResourceInvalidationReason = "stream-recovery") => {
+    tableResources.invalidateAll(reason);
+    characterResources.invalidateAll(reason);
+    worldResources.invalidateAll(reason);
+    currentViewResources.invalidateAll(reason);
+    window.dispatchEvent(new CustomEvent("dnd2024-view-invalidated", { detail: { reason } }));
   };
   return subscribeScopedChanges(envelope, {
     invalidate,
     changed: (notice) => {
       const consumers = objectConsumers(notice.object.qualifiedId);
-      if (!consumers.known) { invalidate(); return; }
+      if (!consumers.known) { invalidate("unknown-object"); return; }
       tableResources.invalidateObject(notice.object.qualifiedId);
       if (consumers.character) characterResources.invalidateObject(notice.object.qualifiedId);
       currentViewResources.invalidateObject(notice.object.qualifiedId);

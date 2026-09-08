@@ -173,16 +173,17 @@ export function DndInformationHub({
   subscribeChanges?: (envelope: ReadyHubEnvelope) => () => void;
 }) {
   const [envelope, setEnvelope] = useState(initialEnvelope);
-  const itemClientScope = `${envelope.applicationId}:${envelope.stateSpaceId}:${envelope.revision}:${envelope.audience.seat}:${envelope.audience.perspective}`;
+  const [bootstrapGeneration, setBootstrapGeneration] = useState(0);
+  const itemClientScope = `${envelope.applicationId}:${envelope.stateSpaceId}:${bootstrapGeneration}:${envelope.audience.seat}:${envelope.audience.perspective}`;
   const itemClientScopeRef = useRef(itemClientScope);
   itemClientScopeRef.current = itemClientScope;
   const itemClientCache = useRef<{ scope: string; client: ItemViewClient } | null>(null);
   const retainItemClient = useCallback((client: ItemViewClient) => {
     const previous = itemClientCache.current;
-    if (previous && previous.client !== client) previous.client.invalidate();
+    if (previous && previous.client !== client) previous.client.invalidate("workspace-replaced");
     itemClientCache.current = { scope: itemClientScopeRef.current, client };
   }, []);
-  useEffect(() => () => itemClientCache.current?.client.invalidate(), []);
+  useEffect(() => () => itemClientCache.current?.client.invalidate("scope-replaced"), []);
   const readCharacterSheet = useCallback((id: string, signal: AbortSignal) => {
     if (!loadCharacterSheet) throw new Error("Character sheet loading is unavailable.");
     return loadCharacterSheet(envelope, id, signal);
@@ -268,7 +269,6 @@ export function DndInformationHub({
   // also keep notices received during a read from being acknowledged by that older read.
   const [pendingChange, setPendingChange] = useState<string | null>(null);
   const changeSequence = useRef(0);
-  const [bootstrapGeneration, setBootstrapGeneration] = useState(0);
   const sectionAbort = useRef<AbortController | null>(null);
   const campaignDetailsAbort = useRef<AbortController | null>(null);
   const deferredAbort = useRef<AbortController | null>(null);

@@ -1,6 +1,24 @@
 import type { ResourceFailure, ResourceResult, ResourceState } from "./resource-state.ts";
 import { ViewReadError } from "./view-read-client.ts";
 import { sha256Hex } from "./browser-crypto.ts";
+import { recordDevelopmentResourceCache } from "../observability/request-ledger.js";
+
+export type ResourceInvalidationReason =
+  | "manual" | "scope-replaced" | "workspace-replaced" | "release-replaced"
+  | "object-change" | "stream-recovery" | "stream-error" | "pagehide" | "unknown-object"
+  | "capacity";
+
+export type ResourceStoreMetrics = {
+  hits: number;
+  misses: number;
+  expiries: number;
+  inFlightShares: number;
+  retainedEntries: number;
+  retainedBytes: number;
+  activeRequests: number;
+  evictions: number;
+  invalidationsByReason: Readonly<Record<string, number>>;
+};
 
 type ResourceRead<TRequest, TResponse> = (
   request: TRequest,
@@ -23,6 +41,7 @@ type StoredEntry<T> = {
   bytes: number;
   storedAt: number;
   lastAccess: number;
+  expiryReported?: boolean;
 };
 
 type InFlight<T> = {
@@ -41,6 +60,7 @@ type ResourceLoadOptions = {
 type ResourceStoreOptions = {
   maximumEntries?: number;
   maximumRetainedBytes?: number;
+  diagnosticName?: string;
 };
 
 const unloaded = <T>(): ResourceState<T> => ({ status: "unloaded", data: null });
@@ -82,19 +102,29 @@ function encodedBytes(value: unknown) {
 export class ResourceStore {
   readonly #maximumEntries: number;
   readonly #maximumRetainedBytes: number;
+  readonly #diagnosticName: string | null;
   readonly #entries = new Map<string, StoredEntry<unknown>>();
   readonly #inFlight = new Map<string, InFlight<unknown>>();
   readonly #listeners = new Map<string, Set<(state: ResourceState<unknown>) => void>>();
   readonly #resourceNames = new Set<string>();
   #requestId = 0;
+  #retainedBytes = 0;
+  #metrics = {
+    hits: 0, misses: 0, expiries: 0, inFlightShares: 0, evictions: 0,
+    invalidationsByReason: {} as Record<string, number>,
+  };
 
   constructor(options: ResourceStoreOptions = {}) {
     this.#maximumEntries = options.maximumEntries ?? 16;
     this.#maximumRetainedBytes = options.maximumRetainedBytes ?? 4 * 1024 * 1024;
+    this.#diagnosticName = options.diagnosticName ?? null;
     if (!Number.isSafeInteger(this.#maximumEntries) || this.#maximumEntries < 1 ||
         !Number.isSafeInteger(this.#maximumRetainedBytes) || this.#maximumRetainedBytes < 1) {
       throw new Error("Resource retention limits must be positive integers.");
     }
+    if (this.#diagnosticName !== null && !/^[a-z][a-z0-9-]{0,79}$/u.test(this.#diagnosticName))
+      throw new Error("Resource diagnostic names must be stable identifiers.");
+    this.publishMetrics();
   }
 
   define<TRequest, TResponse>(definition: ResourceDefinition<TRequest, TResponse>) {
@@ -104,8 +134,14 @@ export class ResourceStore {
     return new KeyedResource<TRequest, TResponse>(this, definition);
   }
 
-  invalidateAll() {
-    for (const key of new Set([...this.#entries.keys(), ...this.#inFlight.keys()])) this.invalidateKey(key);
+  invalidateAll(reason: ResourceInvalidationReason = "manual") {
+    for (const key of new Set([...this.#entries.keys(), ...this.#inFlight.keys()])) this.invalidateKey(key, reason);
+  }
+
+  metrics(): ResourceStoreMetrics {
+    return { ...this.#metrics, retainedEntries: this.#entries.size,
+      retainedBytes: this.#retainedBytes, activeRequests: this.#inFlight.size,
+      invalidationsByReason: { ...this.#metrics.invalidationsByReason } };
   }
 
   async load<TRequest, TResponse>(
@@ -118,9 +154,13 @@ export class ResourceStore {
     if (options.preferCached) {
       const cached = this.peek(definition, request);
       if (cached) return cached;
-    }
+    } else { this.#metrics.misses += 1; this.publishMetrics(); }
     const existing = this.#inFlight.get(key) as InFlight<TResponse> | undefined;
-    if (existing) return this.join(key, existing, options.signal);
+    if (existing) {
+      this.#metrics.inFlightShares += 1;
+      this.publishMetrics();
+      return this.join(key, existing, options.signal);
+    }
 
     const previous = this.#entries.get(key) as StoredEntry<TResponse> | undefined;
     const controller = new AbortController();
@@ -129,6 +169,7 @@ export class ResourceStore {
       promise: Promise.resolve(null as unknown as ResourceResult<TResponse>),
     };
     this.#inFlight.set(key, flight as InFlight<unknown>);
+    this.publishMetrics();
     this.storeState(key, {
       state: { status: "loading", data: previous?.result?.value ?? null },
       result: previous?.result,
@@ -141,6 +182,7 @@ export class ResourceStore {
       if (this.#inFlight.get(key) === flight) {
         this.#inFlight.delete(key);
         this.trim();
+        this.publishMetrics();
       }
     });
     return this.join(key, flight, options.signal);
@@ -154,11 +196,22 @@ export class ResourceStore {
     const entry = this.#entries.get(key) as StoredEntry<TResponse> | undefined;
     const maximumAgeMs = definition.maximumAgeMs ?? 30_000;
     if (entry?.result && Date.now() - entry.storedAt >= maximumAgeMs) {
-      this.invalidateKey(key);
+      this.#metrics.misses += 1;
+      if (!entry.expiryReported) {
+        entry.expiryReported = true;
+        this.#metrics.expiries += 1;
+      }
+      this.publishMetrics();
       return null;
     }
-    if (!entry?.result) return null;
+    if (!entry?.result) {
+      this.#metrics.misses += 1;
+      this.publishMetrics();
+      return null;
+    }
     entry.lastAccess = Date.now();
+    this.#metrics.hits += 1;
+    this.publishMetrics();
     return entry.result;
   }
 
@@ -167,7 +220,6 @@ export class ResourceStore {
     request: TRequest,
   ): ResourceState<TResponse> {
     const key = this.key(definition, request);
-    this.peek(definition, request);
     return (this.#entries.get(key)?.state as ResourceState<TResponse> | undefined) ?? unloaded();
   }
 
@@ -190,14 +242,15 @@ export class ResourceStore {
   invalidate<TRequest, TResponse>(
     definition: ResourceDefinition<TRequest, TResponse>,
     request?: TRequest,
+    reason: ResourceInvalidationReason = "manual",
   ) {
     if (request !== undefined) {
-      this.invalidateKey(this.key(definition, request));
+      this.invalidateKey(this.key(definition, request), reason);
       return;
     }
     const prefix = `${definition.name}\u0000`;
     for (const key of new Set([...this.#entries.keys(), ...this.#inFlight.keys()]))
-      if (key.startsWith(prefix)) this.invalidateKey(key);
+      if (key.startsWith(prefix)) this.invalidateKey(key, reason);
   }
 
   private key<TRequest, TResponse>(definition: ResourceDefinition<TRequest, TResponse>, request: TRequest) {
@@ -285,33 +338,53 @@ export class ResourceStore {
     flight.controller.abort();
     this.#inFlight.delete(key);
     if (flight.previous) this.storeState(key, flight.previous);
-    else { this.#entries.delete(key); this.notify(key, unloaded()); }
+    else { this.deleteEntry(key); this.notify(key, unloaded()); }
+    this.publishMetrics();
   }
 
-  private invalidateKey(key: string) {
+  private invalidateKey(key: string, reason: ResourceInvalidationReason) {
     const flight = this.#inFlight.get(key);
     if (flight) { flight.controller.abort(); this.#inFlight.delete(key); }
-    this.#entries.delete(key);
+    const existed = this.#entries.has(key) || Boolean(flight);
+    this.deleteEntry(key);
+    if (existed) this.#metrics.invalidationsByReason[reason] =
+      (this.#metrics.invalidationsByReason[reason] ?? 0) + 1;
     this.notify(key, unloaded());
+    this.publishMetrics();
   }
 
   private storeState<T>(key: string, entry: StoredEntry<T>) {
-    this.#entries.delete(key);
+    this.deleteEntry(key);
     this.#entries.set(key, entry as StoredEntry<unknown>);
+    this.#retainedBytes += entry.bytes;
     this.notify(key, entry.state);
     this.trim();
+    this.publishMetrics();
   }
 
   private trim() {
-    const totalBytes = () => [...this.#entries.values()].reduce((total, entry) => total + entry.bytes, 0);
-    while (this.#entries.size > this.#maximumEntries || totalBytes() > this.#maximumRetainedBytes) {
+    while (this.#entries.size > this.#maximumEntries || this.#retainedBytes > this.#maximumRetainedBytes) {
       const candidate = [...this.#entries.entries()]
         .filter(([key]) => !this.#inFlight.has(key))
         .sort(([, left], [, right]) => left.lastAccess - right.lastAccess)[0];
       if (!candidate) break;
-      this.#entries.delete(candidate[0]);
+      this.deleteEntry(candidate[0]);
+      this.#metrics.evictions += 1;
+      this.#metrics.invalidationsByReason.capacity =
+        (this.#metrics.invalidationsByReason.capacity ?? 0) + 1;
       this.notify(candidate[0], unloaded());
     }
+  }
+
+  private deleteEntry(key: string) {
+    const entry = this.#entries.get(key);
+    if (!entry) return;
+    this.#retainedBytes -= entry.bytes;
+    this.#entries.delete(key);
+  }
+
+  private publishMetrics() {
+    if (this.#diagnosticName) recordDevelopmentResourceCache(this.#diagnosticName, this.metrics());
   }
 
   private notify<T>(key: string, state: ResourceState<T>) {
@@ -359,7 +432,7 @@ export class KeyedResource<TRequest, TResponse> {
     return this.store.subscribe(this.definition, request, listener);
   }
 
-  invalidate(request?: TRequest) {
-    this.store.invalidate(this.definition, request);
+  invalidate(request?: TRequest, reason: ResourceInvalidationReason = "manual") {
+    this.store.invalidate(this.definition, request, reason);
   }
 }

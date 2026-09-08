@@ -1,5 +1,6 @@
 import type { ReadyHubEnvelope } from "./hub-types";
 import { parseCursorCheckpoint, parseObjectChange } from "./object-change.js";
+import type { ResourceInvalidationReason } from "./resource-store";
 
 /** Browser dependencies only. Unknown objects retain compatibility recovery, never silence. */
 export function objectConsumers(id: string) {
@@ -19,7 +20,7 @@ export function objectConsumers(id: string) {
 
 type Options = {
   createSource?: (url: string) => EventSource;
-  invalidate: () => void;
+  invalidate: (reason: ResourceInvalidationReason) => void;
   changed: (notice: NonNullable<ReturnType<typeof parseObjectChange>>) => void;
   lifecycle?: Window;
 };
@@ -46,7 +47,7 @@ export function subscribeScopedChanges(envelope: ReadyHubEnvelope, {
         connected = true;
         if (first) return;
       } catch { /* Unreadable recovery evidence invalidates the current scope. */ }
-      invalidate();
+      invalidate("stream-recovery");
     });
     current.addEventListener("object-change", (event) => {
       if (!active()) return;
@@ -58,9 +59,9 @@ export function subscribeScopedChanges(envelope: ReadyHubEnvelope, {
     current.addEventListener("cursor", (event) => {
       if (active()) cursor = parseCursorCheckpoint(event.data, cursor);
     });
-    current.addEventListener("error", () => { if (active()) invalidate(); });
+    current.addEventListener("error", () => { if (active()) invalidate("stream-error"); });
   }
-  const hide = () => { source?.close(); source = null; invalidate(); };
+  const hide = () => { source?.close(); source = null; invalidate("pagehide"); };
   lifecycle.addEventListener("pagehide", hide);
   lifecycle.addEventListener("pageshow", connect);
   connect();

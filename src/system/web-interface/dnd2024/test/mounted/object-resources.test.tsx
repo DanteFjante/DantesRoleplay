@@ -68,6 +68,17 @@ function scope(
   } as unknown as ReadyHubEnvelope;
 }
 
+function scopeWithCampaignEvidence(sourceRevisionFingerprint: string, resultFingerprint = "4".repeat(64),
+  resolutionFingerprint = "2".repeat(64)) {
+  const envelope = scope();
+  envelope.objectQueries = { campaignSummary: {
+    qualifiedQueryId: "dnd2024.query.campaign-summary",
+    stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint,
+    outputSchemaHash: "3".repeat(64), resultFingerprint, sourceRevisionFingerprint,
+  } };
+  return envelope;
+}
+
 function page(
   id = "faction.fixture",
   sourceRevisionFingerprint = "A".repeat(64),
@@ -459,6 +470,24 @@ test("Character scope replacement fences cached actors across perspectives", asy
   assert.equal(reads, 3);
 });
 
+test("result revisions do not fragment Character cache keys but resolution changes do", async () => {
+  let reads = 0;
+  const owner = new CharacterResourceOwner({
+    readSheet: async ({ actorId }) => { reads += 1; return character(actorId); },
+    readDetails: async ({ actorId }) => character(actorId),
+    readInventory: async ({ actorId }) => inventory(actorId),
+  });
+  const first = scopeWithCampaignEvidence("A".repeat(64), "4".repeat(64));
+  const newerResult = scopeWithCampaignEvidence("B".repeat(64), "5".repeat(64));
+  await owner.loadSheet({ envelope: first, actorId: "actor.first" });
+  await owner.loadSheet({ envelope: newerResult, actorId: "actor.first" });
+  assert.equal(reads, 1, "source/result evidence belongs with results, not resource identity");
+  await owner.loadSheet({ envelope: scopeWithCampaignEvidence("C".repeat(64), "6".repeat(64), "7".repeat(64)),
+    actorId: "actor.first" });
+  assert.equal(reads, 2, "effective query resolution fences incompatible cached results");
+  assert.ok(owner.cacheMetrics().retainedBytes > 0);
+});
+
 test("World scope resources deduplicate exact locations and fence audience changes", async () => {
   let reads = 0;
   const owner = new WorldResourceOwner({
@@ -501,6 +530,28 @@ test("World scope resources deduplicate exact locations and fence audience chang
   await owner.loadScope({ envelope: scope("player"), scopeId: "world.fixture" });
   await owner.loadScope({ envelope: dm, scopeId: "world.fixture" });
   assert.equal(reads, 4, "audience replacement retires every prior-scope map resource");
+});
+
+test("World first-page cache identity ignores a newly materialized result revision", async () => {
+  let reads = 0;
+  const owner = new WorldResourceOwner({
+    readScope: async ({ scopeId }) => {
+      reads += 1;
+      return { section: "locations", world: { currentLocationId: "", map: { imageUrl: "", alt: "Map unavailable" },
+        rootMapId: `map.live.${scopeId}`, maps: [{ id: `map.live.${scopeId}` }], regions: [], facts: [], locations: [],
+        locationScopes: [{ id: scopeId, name: scopeId, parentId: null, childIds: [], totalCount: 0,
+          complete: true, nextCursor: null, sourceRevisionFingerprint: "A".repeat(64) }] },
+        campaign: { mapOverlays: [] } } as unknown as import("../../src/data/object-resources").WorldScopeUpdate;
+    },
+    readInformation: async () => ({}) as import("../../src/data/object-resources").WorldInformationUpdate,
+  });
+  const first = scopeWithCampaignEvidence("A".repeat(64));
+  const revisited = structuredClone(first);
+  revisited.world.locationScopes = [{ id: "world.fixture", sourceRevisionFingerprint: "A".repeat(64) }] as never;
+  await owner.loadScope({ envelope: first, scopeId: "world.fixture", cursor: null });
+  await owner.loadScope({ envelope: revisited, scopeId: "world.fixture", cursor: null });
+  assert.equal(reads, 1);
+  assert.equal(owner.cacheMetrics().hits, 1);
 });
 
 test("World information resources cache People, Lore, and History independently and fence observers", async () => {

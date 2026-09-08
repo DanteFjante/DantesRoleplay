@@ -1,8 +1,21 @@
 import type { CampaignReadModel, DeferredHubUpdate, HubEnvelope, InventoryContainerResult, ObjectReadEvidence, PartyMemberReadModel, Perspective, ReadyHubEnvelope, WorldFaction } from "./hub-types";
-import { ResourceStore, type KeyedResource } from "./resource-store";
+import { ResourceStore, type KeyedResource, type ResourceInvalidationReason } from "./resource-store";
 import type { ResourceState } from "./resource-state";
+import { RESOURCE_FRESHNESS_MS, resourceCacheKey, resourceContractToken } from "./resource-policy";
 import { ViewReadError } from "./view-read-client";
 import { isCampaignReadModel } from "../state.js";
+import { contract as campaignSummaryContract } from "../server/campaign-summary-contract.js";
+import { contract as factionDirectoryContract } from "../server/faction-directory-contract.js";
+import { contract as campaignDetailsContract } from "../server/campaign-details-contract.js";
+import { contract as campaignContextContract } from "../server/campaign-context-contract.js";
+import { contract as characterSheetContract } from "../server/character-sheet-contract.js";
+import { contract as characterDossierContract } from "../server/character-dossier-contract.js";
+import { contract as inventoryContainerContract } from "../server/inventory-container-contract.js";
+import { contract as worldLocationScopeContract } from "../server/world-location-scope-contract.js";
+import { contract as worldLocationScopePageContract } from "../server/world-location-scope-page-contract.js";
+import { contract as worldPeopleHoldingsContract } from "../server/world-people-holdings-contract.js";
+import { contract as campaignResumeContract } from "../server/campaign-resume-contract.js";
+import { contract as currentSceneContract } from "../server/current-scene-contract.js";
 
 export const CAMPAIGN_SUMMARY_OBJECT_ID = "dnd2024.object.campaign-summary";
 export const FACTION_DIRECTORY_OBJECT_ID = "dnd2024.object.faction-directory-page";
@@ -53,61 +66,76 @@ type TableResourceOwnerOptions = {
 };
 
 function campaignSelection({ perspective, campaignId }: CampaignObjectRequest) {
-  return `${perspective}:${campaignId ?? "bound"}`;
+  return resourceCacheKey("dnd2024", resourceContractToken(campaignSummaryContract),
+    perspective, campaignId ?? "bound");
 }
 
-function factionScope({ envelope, cursor }: FactionObjectRequest) {
+function factionScope({ envelope, cursor }: FactionObjectRequest, generation: number) {
   const campaignId = envelope.contextSelection?.selectedCampaignId ?? envelope.revision;
   const worldId = envelope.contextSelection?.selectedWorldId ?? envelope.world.id;
   const campaignEvidence = envelope.objectQueries?.campaignSummary;
-  return [envelope.applicationId, envelope.stateSpaceId, campaignId,
+  const continuationRevision = cursor === null ? null
+    : envelope.world.factionDirectory?.sourceRevisionFingerprint ?? null;
+  return resourceCacheKey(resourceContractToken(factionDirectoryContract), generation,
+    envelope.applicationId, envelope.stateSpaceId, campaignId,
     envelope.audience.seat, envelope.audience.perspective, worldId,
     campaignEvidence?.resolutionFingerprint ?? "no-resolution",
-    campaignEvidence?.sourceRevisionFingerprint ?? "no-source-revision",
-    cursor ?? "first"].join(":");
+    cursor, continuationRevision);
 }
 
-function scopedCampaignResource({ envelope }: CampaignDetailsObjectRequest | CampaignContextObjectRequest) {
+function scopedCampaignResource({ envelope }: CampaignDetailsObjectRequest | CampaignContextObjectRequest,
+  generation: number, contractToken: string) {
   const campaignId = envelope.contextSelection?.selectedCampaignId ?? envelope.revision;
   const worldId = envelope.contextSelection?.selectedWorldId ?? envelope.world.id;
   const evidence = envelope.objectQueries?.campaignSummary;
-  return [envelope.applicationId, envelope.stateSpaceId, campaignId, worldId,
+  return resourceCacheKey(contractToken, generation,
+    envelope.applicationId, envelope.stateSpaceId, campaignId, worldId,
     envelope.audience.seat, envelope.audience.perspective,
-    evidence?.resolutionFingerprint ?? "no-resolution",
-    evidence?.sourceRevisionFingerprint ?? "no-source-revision"].join(":");
+    evidence?.resolutionFingerprint ?? "no-resolution");
 }
 
-function characterResourceScope({ envelope, actorId }: CharacterResourceRequest) {
+function characterResourceScope({ envelope, actorId }: CharacterResourceRequest,
+  generation: number, contractToken: string) {
   const campaignId = envelope.contextSelection?.selectedCampaignId ?? envelope.revision;
   const evidence = envelope.objectQueries?.campaignSummary;
-  return [envelope.applicationId, envelope.stateSpaceId, campaignId,
+  return resourceCacheKey(contractToken, generation,
+    envelope.applicationId, envelope.stateSpaceId, campaignId,
     envelope.audience.seat, envelope.audience.perspective,
-    evidence?.resolutionFingerprint ?? "no-resolution",
-    evidence?.sourceRevisionFingerprint ?? "no-source-revision", actorId].join(":");
+    evidence?.resolutionFingerprint ?? "no-resolution", actorId);
 }
 
 function characterTableScope(envelope: ReadyHubEnvelope) {
-  return characterResourceScope({ envelope, actorId: "all-characters" });
+  const campaignId = envelope.contextSelection?.selectedCampaignId ?? envelope.revision;
+  return resourceCacheKey(envelope.applicationId, envelope.stateSpaceId, campaignId,
+    envelope.audience.seat, envelope.audience.perspective,
+    envelope.objectQueries?.campaignSummary?.resolutionFingerprint ?? "no-resolution");
 }
 
-function worldScopeResource({ envelope, scopeId, cursor }: WorldScopeRequest) {
+function worldScopeResource({ envelope, scopeId, cursor }: WorldScopeRequest, generation: number) {
   const campaignId = envelope.contextSelection?.selectedCampaignId ?? envelope.revision;
   const worldId = envelope.contextSelection?.selectedWorldId ?? envelope.world.id;
   const evidence = envelope.objectQueries?.campaignSummary;
-  return [envelope.applicationId, envelope.stateSpaceId, campaignId, worldId,
+  const continuationRevision = cursor == null ? null
+    : envelope.world.locationScopes.find((scope) => scope.id === scopeId)?.sourceRevisionFingerprint ?? null;
+  return resourceCacheKey(cursor == null ? resourceContractToken(worldLocationScopeContract)
+    : resourceContractToken(worldLocationScopePageContract), generation,
+    envelope.applicationId, envelope.stateSpaceId, campaignId, worldId,
     envelope.audience.seat, envelope.audience.perspective,
-    evidence?.resolutionFingerprint ?? "no-resolution",
-    evidence?.sourceRevisionFingerprint ?? "no-source-revision", scopeId,
-    envelope.world.locationScopes.find((scope) => scope.id === scopeId)?.sourceRevisionFingerprint ?? "unloaded",
-    cursor ?? "first"].join(":");
+    evidence?.resolutionFingerprint ?? "no-resolution", scopeId, cursor ?? null, continuationRevision);
 }
 
 function worldTableScope(envelope: ReadyHubEnvelope) {
-  return worldScopeResource({ envelope, scopeId: "all-world-scopes", cursor: null });
+  const campaignId = envelope.contextSelection?.selectedCampaignId ?? envelope.revision;
+  return resourceCacheKey(envelope.applicationId, envelope.stateSpaceId, campaignId,
+    envelope.contextSelection?.selectedWorldId ?? envelope.world.id,
+    envelope.audience.seat, envelope.audience.perspective,
+    envelope.objectQueries?.campaignSummary?.resolutionFingerprint ?? "no-resolution");
 }
 
-function worldInformationResource({ envelope, section }: WorldInformationRequest) {
-  return `${worldTableScope(envelope)}:${section}`;
+function worldInformationResource({ envelope, section }: WorldInformationRequest, generation: number) {
+  const token = section === "people" ? resourceContractToken(worldPeopleHoldingsContract)
+    : `dnd2024-${section}-adapter-v1`;
+  return resourceCacheKey(token, generation, worldTableScope(envelope), section);
 }
 
 function isCharacterResource(value: unknown): value is PartyMemberReadModel {
@@ -221,52 +249,65 @@ export class TableResourceOwner {
   readonly #campaignDetails: KeyedResource<CampaignDetailsObjectRequest, CampaignReadModel>;
   readonly #campaignContext: KeyedResource<CampaignContextObjectRequest, CampaignContextUpdate>;
   #activeSelection: string | null = null;
+  #generation = 0;
 
   constructor(options: TableResourceOwnerOptions) {
     this.#store = new ResourceStore({
       maximumEntries: options.maximumEntries ?? 16,
       maximumRetainedBytes: options.maximumRetainedBytes ?? 4 * 1024 * 1024,
+      diagnosticName: "table-resources",
     });
-    const maximumAgeMs = options.maximumAgeMs ?? 30_000;
+    const maximumAgeMs = options.maximumAgeMs;
     this.#campaign = this.#store.define({
       name: "campaign-summary",
       cacheKey: campaignSelection,
       read: options.readCampaign,
       validate: options.validateCampaign,
-      maximumAgeMs,
+      maximumAgeMs: maximumAgeMs ?? RESOURCE_FRESHNESS_MS.campaignSummary,
       maximumEntryBytes: 2 * 1024 * 1024,
     });
     this.#factions = this.#store.define({
       name: "faction-directory-page",
-      cacheKey: factionScope,
+      cacheKey: (request) => factionScope(request, this.#generation),
       read: options.readFactionPage,
       validate: isFactionDirectoryPage,
-      maximumAgeMs,
+      maximumAgeMs: maximumAgeMs ?? RESOURCE_FRESHNESS_MS.factionDirectoryPage,
       maximumEntryBytes: 524_288,
     });
     this.#campaignDetails = this.#store.define({
       name: "campaign-details",
-      cacheKey: scopedCampaignResource,
+      cacheKey: (request) => scopedCampaignResource(request, this.#generation,
+        resourceContractToken(campaignDetailsContract)),
       read: options.readCampaignDetails,
       validate: isCampaignDetails,
-      maximumAgeMs,
+      maximumAgeMs: maximumAgeMs ?? RESOURCE_FRESHNESS_MS.campaignDetails,
       maximumEntryBytes: 2 * 1024 * 1024,
     });
     this.#campaignContext = this.#store.define({
       name: "campaign-context",
-      cacheKey: scopedCampaignResource,
+      cacheKey: (request) => scopedCampaignResource(request, this.#generation,
+        resourceContractToken(campaignContextContract)),
       read: options.readCampaignContext,
       validate: isCampaignContextUpdate,
-      maximumAgeMs,
+      maximumAgeMs: maximumAgeMs ?? RESOURCE_FRESHNESS_MS.campaignContext,
       maximumEntryBytes: 524_288,
     });
   }
 
   async loadCampaign(request: CampaignObjectRequest, preferCached = false, signal?: AbortSignal) {
     const selection = campaignSelection(request);
-    if (this.#activeSelection !== null && selection !== this.#activeSelection) this.#store.invalidateAll();
+    const changed = this.#activeSelection !== null && selection !== this.#activeSelection;
+    if (changed) this.#store.invalidateAll("scope-replaced");
     this.#activeSelection = selection;
-    return (await this.#campaign.load(request, { preferCached, signal })).value;
+    const cached = preferCached ? this.#campaign.peek(request) : null;
+    const value = (await this.#campaign.load(request, { preferCached, signal })).value;
+    if (!cached) {
+      this.#generation += 1;
+      this.#factions.invalidate(undefined, "workspace-replaced");
+      this.#campaignDetails.invalidate(undefined, "workspace-replaced");
+      this.#campaignContext.invalidate(undefined, "workspace-replaced");
+    }
+    return value;
   }
 
   peekCampaign(request: CampaignObjectRequest) {
@@ -288,7 +329,7 @@ export class TableResourceOwner {
         ? null
         : request.envelope.world.factionDirectory?.sourceRevisionFingerprint ?? null;
       if (expectedRevision && page.sourceRevisionFingerprint !== expectedRevision) {
-        this.#factions.invalidate();
+        this.#factions.invalidate(undefined, "workspace-replaced");
         throw new ViewReadError("stale-data", "The faction directory changed while it was being paged.");
       }
       return page;
@@ -319,29 +360,32 @@ export class TableResourceOwner {
 
   invalidateObject(qualifiedId: string) {
     if (qualifiedId === CAMPAIGN_SUMMARY_OBJECT_ID) {
-      this.#campaign.invalidate();
-      this.#campaignDetails.invalidate();
-      this.#campaignContext.invalidate();
+      this.#campaign.invalidate(undefined, "object-change");
+      this.#campaignDetails.invalidate(undefined, "object-change");
+      this.#campaignContext.invalidate(undefined, "object-change");
       return true;
     }
     if (qualifiedId === FACTION_DIRECTORY_OBJECT_ID) {
-      this.#factions.invalidate();
+      this.#factions.invalidate(undefined, "object-change");
       return true;
     }
     if (qualifiedId === CAMPAIGN_LOCATION_VISITS_OBJECT_ID) {
-      this.#campaignDetails.invalidate();
+      this.#campaignDetails.invalidate(undefined, "object-change");
       return true;
     }
     if (qualifiedId === WORLD_CAMPAIGN_DIRECTORY_OBJECT_ID) {
-      this.#campaignContext.invalidate();
+      this.#campaignContext.invalidate(undefined, "object-change");
       return true;
     }
     return false;
   }
 
-  invalidateAll() {
-    this.#store.invalidateAll();
+  invalidateAll(reason: ResourceInvalidationReason = "manual") {
+    this.#generation += 1;
+    this.#store.invalidateAll(reason);
   }
+
+  cacheMetrics() { return this.#store.metrics(); }
 }
 
 type WorldResourceOwnerOptions = {
@@ -358,33 +402,39 @@ export class WorldResourceOwner {
   readonly #scopes: KeyedResource<WorldScopeRequest, WorldScopeUpdate>;
   readonly #information: KeyedResource<WorldInformationRequest, WorldInformationUpdate>;
   #activeScope: string | null = null;
+  #generation = 0;
 
   constructor(options: WorldResourceOwnerOptions) {
     this.#store = new ResourceStore({
       maximumEntries: options.maximumEntries ?? 20,
       maximumRetainedBytes: options.maximumRetainedBytes ?? 2 * 1024 * 1024,
+      diagnosticName: "world-resources",
     });
     this.#scopes = this.#store.define({
       name: "world-location-scope",
-      cacheKey: worldScopeResource,
+      cacheKey: (request) => worldScopeResource(request, this.#generation),
       read: options.readScope,
       validate: isWorldScopeUpdate,
-      maximumAgeMs: options.maximumAgeMs ?? 30_000,
+      maximumAgeMs: options.maximumAgeMs ?? RESOURCE_FRESHNESS_MS.worldLocationScope,
       maximumEntryBytes: 524_288,
     });
     this.#information = this.#store.define({
       name: "world-information",
-      cacheKey: worldInformationResource,
+      cacheKey: (request) => worldInformationResource(request, this.#generation),
       read: options.readInformation,
       validate: isWorldInformationUpdate,
-      maximumAgeMs: options.maximumAgeMs ?? 30_000,
+      maximumAgeMs: options.maximumAgeMs ?? RESOURCE_FRESHNESS_MS.worldInformation,
       maximumEntryBytes: 1_100_000,
     });
   }
 
-  replaceScope(envelope: ReadyHubEnvelope) {
+  replaceScope(envelope: ReadyHubEnvelope, force = false,
+    reason: ResourceInvalidationReason = "scope-replaced") {
     const scope = worldTableScope(envelope);
-    if (this.#activeScope !== null && this.#activeScope !== scope) this.#store.invalidateAll();
+    if (this.#activeScope !== null && (force || this.#activeScope !== scope)) {
+      this.#generation += 1;
+      this.#store.invalidateAll(reason);
+    }
     this.#activeScope = scope;
   }
 
@@ -398,9 +448,12 @@ export class WorldResourceOwner {
     return (await this.#information.load(request, { signal, preferCached })).value;
   }
 
-  invalidateAll() {
-    this.#store.invalidateAll();
+  invalidateAll(reason: ResourceInvalidationReason = "manual") {
+    this.#generation += 1;
+    this.#store.invalidateAll(reason);
   }
+
+  cacheMetrics() { return this.#store.metrics(); }
 }
 
 type CurrentViewResourceOwnerOptions = {
@@ -415,25 +468,33 @@ export class CurrentViewResourceOwner {
   readonly #store: ResourceStore;
   readonly #current: KeyedResource<CurrentViewRequest, CurrentViewUpdate>;
   #activeScope: string | null = null;
+  #generation = 0;
 
   constructor(options: CurrentViewResourceOwnerOptions) {
     this.#store = new ResourceStore({
       maximumEntries: options.maximumEntries ?? 2,
       maximumRetainedBytes: options.maximumRetainedBytes ?? 2 * 1024 * 1024,
+      diagnosticName: "current-view-resources",
     });
     this.#current = this.#store.define({
       name: "current-view",
-      cacheKey: scopedCampaignResource,
+      cacheKey: (request) => scopedCampaignResource(request, this.#generation,
+        resourceCacheKey(resourceContractToken(campaignResumeContract), resourceContractToken(currentSceneContract),
+          "current-view-adapter-v1")),
       read: options.readCurrent,
       validate: isCurrentViewUpdate,
-      maximumAgeMs: options.maximumAgeMs ?? 15_000,
+      maximumAgeMs: options.maximumAgeMs ?? RESOURCE_FRESHNESS_MS.currentView,
       maximumEntryBytes: 1_100_000,
     });
   }
 
-  replaceScope(envelope: ReadyHubEnvelope) {
-    const scope = scopedCampaignResource({ envelope });
-    if (this.#activeScope !== null && this.#activeScope !== scope) this.#store.invalidateAll();
+  replaceScope(envelope: ReadyHubEnvelope, force = false,
+    reason: ResourceInvalidationReason = "scope-replaced") {
+    const scope = worldTableScope(envelope);
+    if (this.#activeScope !== null && (force || this.#activeScope !== scope)) {
+      this.#generation += 1;
+      this.#store.invalidateAll(reason);
+    }
     this.#activeScope = scope;
   }
 
@@ -444,13 +505,16 @@ export class CurrentViewResourceOwner {
 
   invalidateObject(qualifiedId: string) {
     if (qualifiedId !== CAMPAIGN_SUMMARY_OBJECT_ID) return false;
-    this.#current.invalidate();
+    this.#current.invalidate(undefined, "object-change");
     return true;
   }
 
-  invalidateAll() {
-    this.#store.invalidateAll();
+  invalidateAll(reason: ResourceInvalidationReason = "manual") {
+    this.#generation += 1;
+    this.#store.invalidateAll(reason);
   }
+
+  cacheMetrics() { return this.#store.metrics(); }
 }
 
 type CharacterResourceOwnerOptions = {
@@ -469,76 +533,89 @@ export class CharacterResourceOwner {
   readonly #details: KeyedResource<CharacterResourceRequest, PartyMemberReadModel>;
   readonly #inventory: KeyedResource<CharacterResourceRequest, InventoryContainerResult>;
   #activeScope: string | null = null;
+  #generation = 0;
 
   constructor(options: CharacterResourceOwnerOptions) {
     this.#store = new ResourceStore({
       maximumEntries: options.maximumEntries ?? 12,
       maximumRetainedBytes: options.maximumRetainedBytes ?? 4 * 1024 * 1024,
+      diagnosticName: "character-resources",
     });
-    const maximumAgeMs = options.maximumAgeMs ?? 30_000;
+    const maximumAgeMs = options.maximumAgeMs;
     this.#sheet = this.#store.define({
-      name: "character-sheet", cacheKey: characterResourceScope,
+      name: "character-sheet", cacheKey: (request) => characterResourceScope(request,
+        this.#generation, resourceContractToken(characterSheetContract)),
       read: options.readSheet, validate: isCharacterResource,
-      maximumAgeMs, maximumEntryBytes: 1_100_000,
+      maximumAgeMs: maximumAgeMs ?? RESOURCE_FRESHNESS_MS.characterSheet, maximumEntryBytes: 1_100_000,
     });
     this.#details = this.#store.define({
-      name: "character-details", cacheKey: characterResourceScope,
+      name: "character-details", cacheKey: (request) => characterResourceScope(request,
+        this.#generation, resourceContractToken(characterDossierContract)),
       read: options.readDetails, validate: isCharacterResource,
-      maximumAgeMs, maximumEntryBytes: 1_100_000,
+      maximumAgeMs: maximumAgeMs ?? RESOURCE_FRESHNESS_MS.characterDetails, maximumEntryBytes: 1_100_000,
     });
     this.#inventory = this.#store.define({
-      name: "character-inventory", cacheKey: characterResourceScope,
+      name: "character-inventory", cacheKey: (request) => characterResourceScope(request,
+        this.#generation, resourceContractToken(inventoryContainerContract)),
       read: options.readInventory,
       validate: (value): value is InventoryContainerResult => Boolean(value && typeof value === "object" &&
         "status" in value && typeof value.status === "string" &&
         ["ready", "error", "forbidden"].includes(value.status)),
-      maximumAgeMs, maximumEntryBytes: 280_000,
+      maximumAgeMs: maximumAgeMs ?? RESOURCE_FRESHNESS_MS.characterInventory, maximumEntryBytes: 280_000,
     });
   }
 
-  replaceScope(envelope: ReadyHubEnvelope) {
+  replaceScope(envelope: ReadyHubEnvelope, force = false,
+    reason: ResourceInvalidationReason = "scope-replaced") {
     const scope = characterTableScope(envelope);
-    if (this.#activeScope !== null && this.#activeScope !== scope) this.#store.invalidateAll();
+    if (this.#activeScope !== null && (force || this.#activeScope !== scope)) {
+      this.#generation += 1;
+      this.#store.invalidateAll(reason);
+    }
     this.#activeScope = scope;
   }
 
   async loadSheet(request: CharacterResourceRequest, signal?: AbortSignal, preferCached = true) {
     this.replaceScope(request.envelope);
     const value = (await this.#sheet.load(request, { signal, preferCached })).value;
-    if (value.sheetState.status === "error") this.#sheet.invalidate();
+    if (value.sheetState.status === "error") this.#sheet.invalidate(undefined, "manual");
     return value;
   }
 
   async loadDetails(request: CharacterResourceRequest, signal?: AbortSignal, preferCached = true) {
     this.replaceScope(request.envelope);
     const value = (await this.#details.load(request, { signal, preferCached })).value;
-    if (value.sheetState.status === "error" || value.inventoryState.status === "error") this.#details.invalidate();
+    if (value.sheetState.status === "error" || value.inventoryState.status === "error")
+      this.#details.invalidate(undefined, "manual");
     return value;
   }
 
   async loadInventory(request: CharacterResourceRequest, signal?: AbortSignal, preferCached = true) {
     this.replaceScope(request.envelope);
     const value = (await this.#inventory.load(request, { signal, preferCached })).value;
-    if (value.status === "error") this.#inventory.invalidate();
+    if (value.status === "error") this.#inventory.invalidate(undefined, "manual");
     return value;
   }
 
   invalidateObject(qualifiedId: string) {
     if (qualifiedId === CHARACTER_DOSSIER_OBJECT_ID || qualifiedId === CAMPAIGN_SUMMARY_OBJECT_ID) {
-      this.#sheet.invalidate();
-      this.#details.invalidate();
-      this.#inventory.invalidate();
+      this.#sheet.invalidate(undefined, "object-change");
+      this.#details.invalidate(undefined, "object-change");
+      this.#inventory.invalidate(undefined, "object-change");
       return true;
     }
     if (qualifiedId.startsWith("dnd2024.object.inventory-item-")) {
-      this.#details.invalidate();
-      this.#inventory.invalidate();
+      this.#details.invalidate(undefined, "object-change");
+      this.#inventory.invalidate(undefined, "object-change");
       return true;
     }
     return false;
   }
 
-  invalidateAll() {
-    this.#store.invalidateAll();
+  invalidateAll(reason: ResourceInvalidationReason = "manual") {
+    this.#generation += 1;
+    this.#store.invalidateAll(reason);
   }
+
+  cacheMetrics() { return this.#store.metrics(); }
 }

@@ -77,12 +77,14 @@ test("a failed refresh retains last-good data as stale and never caches the fail
   assert.equal(resource.peek({ id: "one" }).value.value, "last-good");
 });
 
-test("retention is bounded by entry count, bytes, age, and invalid response shape", async () => {
+test("retention is bounded by entry count, bytes, freshness, and invalid response shape", async () => {
   const store = new ResourceStore({ maximumEntries: 2, maximumRetainedBytes: 1000 });
   const resource = store.define({ name: "campaign", cacheKey: ({ id }) => id, maximumAgeMs: 0,
     maximumEntryBytes: 100, read: async ({ id }) => ({ version: 1, value: id }), validate: valid });
   await resource.load({ id: "one" });
-  assert.equal(resource.peek({ id: "one" }), null, "expired entries are removed");
+  assert.equal(resource.peek({ id: "one" }), null, "expired entries are not returned as fresh");
+  assert.equal(resource.state({ id: "one" }).data.value, "one",
+    "the last valid value remains available to an allowed refresh");
 
   const incompatible = store.define({ name: "factions", cacheKey: ({ id }) => id,
     maximumEntryBytes: 10, read: async () => ({ version: 1, value: "too-large" }), validate: valid });
@@ -105,4 +107,60 @@ test("retention is bounded by entry count, bytes, age, and invalid response shap
   await bytes.load({ id: "b" });
   assert.equal(bytes.peek({ id: "a" }), null, "least-recently-used data is evicted by total bytes");
   assert.notEqual(bytes.peek({ id: "b" }), null);
+});
+
+test("expired refreshes preserve last-good data and expose bounded cache counters", async () => {
+  const originalNow = Date.now;
+  let now = 1_000;
+  Date.now = () => now;
+  try {
+    let fail = false;
+    const store = new ResourceStore({ maximumEntries: 1, maximumRetainedBytes: 1_000 });
+    const resource = store.define({ name: "measured", cacheKey: ({ id }) => id, maximumAgeMs: 10,
+      retryDelayMs: 0, read: async ({ id }) => {
+        if (fail) throw new ViewReadError("transport", "offline");
+        return { version: 1, value: id };
+      }, validate: valid });
+
+    await resource.load({ id: "one" }, { preferCached: true });
+    assert.equal(resource.peek({ id: "one" }).value.value, "one");
+    now += 11;
+    assert.equal(resource.peek({ id: "one" }), null);
+    fail = true;
+    await assert.rejects(resource.load({ id: "one" }), /offline/u);
+    assert.equal(resource.state({ id: "one" }).status, "stale");
+    assert.equal(resource.state({ id: "one" }).data.value, "one");
+    fail = false;
+    await resource.load({ id: "two" });
+    resource.invalidate({ id: "two" }, "object-change");
+
+    const metrics = store.metrics();
+    assert.ok(metrics.hits >= 1);
+    assert.ok(metrics.misses >= 3);
+    assert.equal(metrics.expiries, 1);
+    assert.equal(metrics.invalidationsByReason["object-change"], 1);
+    assert.equal(metrics.retainedEntries, 0);
+    assert.equal(metrics.retainedBytes, 0);
+    assert.equal(metrics.activeRequests, 0);
+  } finally { Date.now = originalNow; }
+});
+
+test("cache metrics count in-flight sharing and capacity eviction without retaining request keys", async () => {
+  const store = new ResourceStore({ maximumEntries: 1, maximumRetainedBytes: 1_000 });
+  const pending = deferred();
+  const resource = store.define({ name: "measured", cacheKey: ({ id }) => id,
+    read: async ({ id }) => id === "shared" ? pending.promise : { version: 1, value: id }, validate: valid });
+  const first = resource.load({ id: "shared" });
+  const second = resource.load({ id: "shared" });
+  assert.equal(store.metrics().activeRequests, 1);
+  pending.resolve({ version: 1, value: "shared" });
+  await Promise.all([first, second]);
+  await resource.load({ id: "replacement" });
+  const metrics = store.metrics();
+  assert.equal(metrics.inFlightShares, 1);
+  assert.equal(metrics.evictions, 1);
+  assert.equal(metrics.invalidationsByReason.capacity, 1);
+  assert.equal(metrics.retainedEntries, 1);
+  assert.ok(metrics.retainedBytes > 0);
+  assert.doesNotMatch(JSON.stringify(metrics), /shared|replacement/u);
 });

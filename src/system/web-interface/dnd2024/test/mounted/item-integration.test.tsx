@@ -61,6 +61,8 @@ test("full hub inventory journey respects tab request budgets and caches fresh r
     await perform(()=>window.history.forward());await v.click("Known recipes");await v.click("Known uses");assert.equal(v.calls.length,3);assert.deepEqual(v.hubCalls,[]);
     assert.equal(window.location.pathname,"/published/revision");assert.equal(window.location.search,"?keep=yes");
     await act(async()=>{await new Promise(r=>setTimeout(r,100));});assert.equal(v.calls.length,3);
+    await perform(()=>{window.dispatchEvent(new Event("focus"));document.dispatchEvent(new Event("visibilitychange"));});
+    assert.equal(v.calls.length,3,"focus and visibility changes keep fresh item resources");
     const before=window.scrollY;await perform(()=>v.container.dispatchEvent(new window.WheelEvent("wheel",{deltaY:80,bubbles:true})));assert.equal(window.scrollY,before);assert.equal(v.calls.length,3);
   }finally{await v.cleanup();}
 });

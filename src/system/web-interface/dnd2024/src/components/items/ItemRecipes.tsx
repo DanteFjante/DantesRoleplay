@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { focusItemPanel } from "./ItemView";
+import { ViewReadError } from "../../data/view-read-client";
 import type { ItemDetailsRequest, ItemViewClient } from "../../server/item-view-client";
 import { recipesKey, type ItemRecipesRequest, type ItemRecipesResult, type RecipeEntry, type RecipeGroup } from "../../server/item-recipes-client";
 const availability: Record<RecipeEntry["availability"], string> = { "not-evaluated": "Availability not evaluated", available: "Requirements met", "requirements-not-met": "Requirements not met", "definition-incomplete": "Recipe definition incomplete" };
@@ -32,24 +33,39 @@ export function ItemRecipes({ client, request, active }: { client: ItemViewClien
   const [retry, setRetry] = useState(0);
   const full: ItemRecipesRequest = { ...request, ...page }, key = recipesKey(client.identity, full);
   const [loaded, setLoaded] = useState<{ key: string; result: ItemRecipesResult } | null>(null);
+  const [refreshFailed, setRefreshFailed] = useState(false);
   const current = loaded?.key === key ? loaded.result : null;
   useEffect(() => {
     if (!active) return;
     let live = true; let timer: ReturnType<typeof setTimeout> | undefined;
-    const accept = (result: ItemRecipesResult) => {
+    const controller = new AbortController();
+    const accept = (result: ItemRecipesResult, schedule = true) => {
       if (!live) return; setLoaded({ key, result });
-      if (result.status === "ready") timer = setTimeout(() => { client.recipes.invalidate(full); if(live) setLoaded({ key, result: { status: "stale", data: null } }); }, Math.max(0, result.expiresAt - Date.now()));
+      setRefreshFailed(false);
+      if (schedule && result.status === "ready") timer = setTimeout(() => {
+        if (live) setRetry((value) => value + 1);
+      }, Math.max(0, result.expiresAt - Date.now()));
     };
-    if (document.visibilityState === "hidden") accept({ status: "stale", data: null });
+    const cached = client.recipes.peek(full);
+    if (cached) accept(cached.value);
     else {
-      const cached = client.recipes.peek(full);
-      if (cached?.value.status === "ready" && cached.value.expiresAt > Date.now()) accept(cached.value);
-      else { setLoaded(null); void client.recipes.load(full).then(value => accept(value.value)).catch(() => accept({ status: "unavailable", data: null })); }
+      const previous = client.recipes.state(full);
+      if ((previous.status === "ready" || previous.status === "stale") && previous.result.value.status === "ready")
+        setLoaded({ key, result: previous.result.value });
+      else setLoaded(null);
+      void client.recipes.load(full, { signal: controller.signal }).then(value => accept(value.value)).catch((error) => {
+        if (!live || error instanceof ViewReadError && error.category === "cancelled") return;
+        const retained = client.recipes.state(full);
+        if (retained.status === "stale" && retained.result.value.status === "ready") {
+          setLoaded({ key, result: retained.result.value });
+          setRefreshFailed(true);
+        } else accept({ status: "unavailable", data: null }, false);
+      });
     }
-    return () => { live = false; clearTimeout(timer); client.recipes.cancel(); };
+    return () => { live = false; clearTimeout(timer); controller.abort(); };
   }, [client, key, active, retry]);
-  const data = current?.status === "ready" && current.expiresAt > Date.now() ? current.data : null;
-  const refresh = () => { focusItemPanel(); client.recipes.invalidate(); setLoaded(null); setPage({ makesOffset: 0, usesOffset: 0, expectedSourceRevision: null }); setRetry(v => v + 1); };
+  const data = current?.status === "ready" ? current.data : null;
+  const refresh = () => { focusItemPanel(); client.recipes.invalidate(undefined, "manual"); setLoaded(null); setPage({ makesOffset: 0, usesOffset: 0, expectedSourceRevision: null }); setRetry(v => v + 1); };
   const next = (group: "makes" | "uses") => { if (!data || current?.status !== "ready" || data[group].nextOffset === null) return;
     focusItemPanel();
     setPage({ ...page, [group === "makes" ? "makesOffset" : "usesOffset"]: data[group].nextOffset, expectedSourceRevision: current.sourceRevision }); };
@@ -57,6 +73,7 @@ export function ItemRecipes({ client, request, active }: { client: ItemViewClien
     <p>{!current ? "Reading the selected character’s recipe knowledge…" : "Refresh to read the current recipes. Previous recipe details are no longer shown."}</p>
     {current ? <button type="button" onClick={refresh}>Refresh recipes</button> : null}</div>;
   return <div className="item-recipes"><p>Recipes recorded in this character’s knowledge.</p>
+    {refreshFailed ? <div className="item-details__notice" role="status"><strong>Could not refresh recipes</strong><p>The last available recipes remain visible.</p><button type="button" onClick={refresh}>Try again</button></div> : null}
     {(page.makesOffset > 0 || page.usesOffset > 0) ? <button type="button" onClick={refresh}>Back to first recipes</button> : null}
     <Group group={data.makes} title="Makes this item" next={() => next("makes")} />
     <Group group={data.uses} title="Uses this item" next={() => next("uses")} />

@@ -17,6 +17,7 @@ import {
   DEVELOPMENT_OBSERVABILITY_KEY,
   installDevelopmentRequestLedger,
   recordDevelopmentDiagnostic,
+  recordDevelopmentResourceCache,
   withinDevelopmentInteraction,
 } from "../src/observability/request-ledger.js";
 
@@ -129,6 +130,26 @@ test("development ledger records bounded party-read status without component val
     },
   }]);
   assert.doesNotMatch(JSON.stringify(snapshot), /componentValue|valueJson|private biography/u);
+  observability.restore();
+});
+
+test("development ledger exposes aggregate cache reuse without keys or response bodies", () => {
+  const target = { fetch: async () => new Response(null, { status: 204 }) };
+  const observability = installDevelopmentRequestLedger({ target });
+  assert.equal(recordDevelopmentResourceCache("item-resources", {
+    hits: 4, misses: 2, expiries: 1, inFlightShares: 1, retainedEntries: 3,
+    retainedBytes: 2048, activeRequests: 1, evictions: 0,
+    invalidationsByReason: { "object-change": 2, "PRIVATE_ITEM_KEY": 99 },
+    privateBody: "PRIVATE RESPONSE",
+  }, target), true);
+  assert.deepEqual(observability.snapshot().resourceCaches, {
+    "item-resources": {
+      hits: 4, misses: 2, expiries: 1, inFlightShares: 1, retainedEntries: 3,
+      retainedBytes: 2048, activeRequests: 1, evictions: 0,
+      invalidationsByReason: { "object-change": 2 },
+    },
+  });
+  assert.doesNotMatch(JSON.stringify(observability.snapshot()), /PRIVATE/u);
   observability.restore();
 });
 

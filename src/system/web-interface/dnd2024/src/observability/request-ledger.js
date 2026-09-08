@@ -48,6 +48,7 @@ export function installDevelopmentRequestLedger({ target = globalThis, maximumEn
     diagnostics: [],
     interactions: [],
     requests: [],
+    resourceCaches: {},
   };
 
   const observability = {
@@ -76,6 +77,23 @@ export function installDevelopmentRequestLedger({ target = globalThis, maximumEn
         detail,
       }, maximumEntries);
     },
+    recordResourceCache(name, metrics) {
+      if (!/^[a-z][a-z0-9-]{0,79}$/u.test(name)) return false;
+      const invalidationsByReason = Object.fromEntries(Object.entries(metrics.invalidationsByReason ?? {})
+        .filter(([reason, count]) => /^[a-z][a-z0-9-]{0,79}$/u.test(reason) && Number.isSafeInteger(count) && count >= 0));
+      state.resourceCaches[name] = {
+        hits: Number(metrics.hits) || 0,
+        misses: Number(metrics.misses) || 0,
+        expiries: Number(metrics.expiries) || 0,
+        inFlightShares: Number(metrics.inFlightShares) || 0,
+        retainedEntries: Number(metrics.retainedEntries) || 0,
+        retainedBytes: Number(metrics.retainedBytes) || 0,
+        activeRequests: Number(metrics.activeRequests) || 0,
+        evictions: Number(metrics.evictions) || 0,
+        invalidationsByReason,
+      };
+      return true;
+    },
     restore() {
       target.fetch = originalFetch;
       delete target[DEVELOPMENT_OBSERVABILITY_KEY];
@@ -87,6 +105,7 @@ export function installDevelopmentRequestLedger({ target = globalThis, maximumEn
         diagnostics: state.diagnostics,
         interactions: state.interactions,
         requests: state.requests,
+        resourceCaches: state.resourceCaches,
       }));
     },
   };
@@ -159,4 +178,10 @@ export function recordDevelopmentDiagnostic(kind, detail, target = globalThis) {
   if (!observability || typeof observability.recordDiagnostic !== "function") return false;
   observability.recordDiagnostic(kind, detail);
   return true;
+}
+
+export function recordDevelopmentResourceCache(name, metrics, target = globalThis) {
+  const observability = target[DEVELOPMENT_OBSERVABILITY_KEY];
+  if (!observability || typeof observability.recordResourceCache !== "function") return false;
+  return observability.recordResourceCache(name, metrics);
 }

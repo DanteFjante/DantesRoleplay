@@ -27,10 +27,10 @@ test("every Character and Item registered object reaches its browser consumers",
 test("scope teardown closes the old stream, resets cursors and fences queued frames in both directions", () => {
   for (const perspectives of [["player", "dm"], ["dm", "player"]]) {
     const sources = [], urls = [], changes = [];
-    let invalidations = 0;
+    const invalidations = [];
     const options = {
       createSource: (url) => { const source = new Source(); sources.push(source); urls.push(new URL(url, "http://localhost")); return source; },
-      changed: (value) => changes.push(value.cursor), invalidate: () => invalidations++,
+      changed: (value) => changes.push(value.cursor), invalidate: (reason) => invalidations.push(reason),
       lifecycle: new EventTarget(),
     };
     const closeFirst = subscribeScopedChanges(envelope(perspectives[0]), options);
@@ -46,7 +46,7 @@ test("scope teardown closes the old stream, resets cursors and fences queued fra
     sources[1].frame("object-change", notice(1));
     sources[1].frame("object-change", notice(1));
     assert.deepEqual(changes, [100, 1]);
-    assert.equal(invalidations, 0);
+    assert.deepEqual(invalidations, []);
     closeSecond();
   }
 });
@@ -54,10 +54,10 @@ test("scope teardown closes the old stream, resets cursors and fences queued fra
 test("disconnect invalidates, and bfcache resume reconnects without reviving the hidden stream", () => {
   const lifecycle = new EventTarget();
   const sources = [];
-  let invalidations = 0;
+  const invalidations = [];
   const close = subscribeScopedChanges(envelope("dm"), {
     lifecycle, createSource: () => { const source = new Source(); sources.push(source); return source; },
-    invalidate: () => invalidations++, changed: () => {},
+    invalidate: (reason) => invalidations.push(reason), changed: () => {},
   });
   sources[0].dispatchEvent(new Event("error"));
   lifecycle.dispatchEvent(new Event("pagehide"));
@@ -65,7 +65,7 @@ test("disconnect invalidates, and bfcache resume reconnects without reviving the
   lifecycle.dispatchEvent(new Event("pageshow"));
   assert.equal(sources.length, 2);
   sources[0].dispatchEvent(new Event("error"));
-  assert.equal(invalidations, 2);
+  assert.deepEqual(invalidations, ["stream-error", "pagehide"]);
   close();
   lifecycle.dispatchEvent(new Event("pageshow"));
   assert.equal(sources.length, 2);
