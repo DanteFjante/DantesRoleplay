@@ -22,7 +22,7 @@ test("the character page is decomposed and renders every catalog-owned v2 sectio
   for (const property of ["identity", "origin", "classes", "abilities", "savingThrows", "skills", "hitPoints",
     "temporaryHitPoints", "armorClass", "initiative", "body", "movement", "senses", "conditions",
     "proficiencies", "features", "resources", "spellcasting", "actions", "inventory", "wallet"]) {
-    assert.match(source, new RegExp(`(?:sheet|characterSheet)\\??\\.${property}\\b`, "u"));
+    assert.match(source, new RegExp(`(?:sheet|characterSheet|inventoryData)\\??\\.${property}\\b`, "u"));
   }
 });
 
@@ -37,8 +37,10 @@ test("large spell and action reference sets remain bounded in the presentation",
   assert.match(source, /values\.length - visible\.length/u);
 });
 
-test("inventory renders canonical definition details and provenance from the dossier", () => {
-  assert.match(source, /dossier\?\.inventory\.definitions/u);
+test("inventory renders the independent bounded container while retaining reusable item identity", () => {
+  assert.match(source, /loadCharacterInventory/u);
+  assert.match(source, /inventoryData\?\.items/u);
+  assert.doesNotMatch(source, /dossier\?\.inventory\.definitions/u);
   assert.match(source, /definition\?\.summary/u);
   assert.match(source, /definition\?\.source/u);
   assert.doesNotMatch(source, /fixture\.legacy|legacy\.stats/u);

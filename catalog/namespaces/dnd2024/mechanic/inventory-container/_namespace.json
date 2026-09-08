@@ -1,0 +1,10 @@
+{
+  "id": "dnd2024.mechanic.inventory-container",
+  "owner": "dnd2024",
+  "description": "Namespace for the bounded character inventory and container presentation projection.",
+  "allowedKinds": ["mechanic"],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "W05 approved a read-only inventory/container projection on 8 September 2026; live synchronization and publication remain separate release work."
+}

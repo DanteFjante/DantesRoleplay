@@ -1,4 +1,4 @@
-import type { CampaignReadModel, DeferredHubUpdate, HubEnvelope, ObjectReadEvidence, PartyMemberReadModel, Perspective, ReadyHubEnvelope, WorldFaction } from "./hub-types";
+import type { CampaignReadModel, DeferredHubUpdate, HubEnvelope, InventoryContainerResult, ObjectReadEvidence, PartyMemberReadModel, Perspective, ReadyHubEnvelope, WorldFaction } from "./hub-types";
 import { ResourceStore, type KeyedResource } from "./resource-store";
 import type { ResourceState } from "./resource-state";
 import { ViewReadError } from "./view-read-client";
@@ -278,6 +278,7 @@ export class TableResourceOwner {
 type CharacterResourceOwnerOptions = {
   readSheet: (request: CharacterResourceRequest, signal: AbortSignal) => Promise<PartyMemberReadModel>;
   readDetails: (request: CharacterResourceRequest, signal: AbortSignal) => Promise<PartyMemberReadModel>;
+  readInventory: (request: CharacterResourceRequest, signal: AbortSignal) => Promise<InventoryContainerResult>;
   maximumEntries?: number;
   maximumRetainedBytes?: number;
   maximumAgeMs?: number;
@@ -288,6 +289,7 @@ export class CharacterResourceOwner {
   readonly #store: ResourceStore;
   readonly #sheet: KeyedResource<CharacterResourceRequest, PartyMemberReadModel>;
   readonly #details: KeyedResource<CharacterResourceRequest, PartyMemberReadModel>;
+  readonly #inventory: KeyedResource<CharacterResourceRequest, InventoryContainerResult>;
   #activeScope: string | null = null;
 
   constructor(options: CharacterResourceOwnerOptions) {
@@ -305,6 +307,14 @@ export class CharacterResourceOwner {
       name: "character-details", cacheKey: characterResourceScope,
       read: options.readDetails, validate: isCharacterResource,
       maximumAgeMs, maximumEntryBytes: 1_100_000,
+    });
+    this.#inventory = this.#store.define({
+      name: "character-inventory", cacheKey: characterResourceScope,
+      read: options.readInventory,
+      validate: (value): value is InventoryContainerResult => Boolean(value && typeof value === "object" &&
+        "status" in value && typeof value.status === "string" &&
+        ["ready", "error", "forbidden"].includes(value.status)),
+      maximumAgeMs, maximumEntryBytes: 280_000,
     });
   }
 
@@ -328,14 +338,23 @@ export class CharacterResourceOwner {
     return value;
   }
 
+  async loadInventory(request: CharacterResourceRequest, signal?: AbortSignal, preferCached = true) {
+    this.replaceScope(request.envelope);
+    const value = (await this.#inventory.load(request, { signal, preferCached })).value;
+    if (value.status === "error") this.#inventory.invalidate();
+    return value;
+  }
+
   invalidateObject(qualifiedId: string) {
     if (qualifiedId === CHARACTER_DOSSIER_OBJECT_ID || qualifiedId === CAMPAIGN_SUMMARY_OBJECT_ID) {
       this.#sheet.invalidate();
       this.#details.invalidate();
+      this.#inventory.invalidate();
       return true;
     }
     if (qualifiedId.startsWith("dnd2024.object.inventory-item-")) {
       this.#details.invalidate();
+      this.#inventory.invalidate();
       return true;
     }
     return false;

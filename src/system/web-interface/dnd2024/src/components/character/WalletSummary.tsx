@@ -1,7 +1,7 @@
 import type { CharacterWalletV2 } from "../../data/hub-types";
 import { Icon } from "../Icon";
 
-export function WalletSummary({ wallet }: { wallet: CharacterWalletV2 }) {
+export function WalletSummary({ complete = true, wallet }: { complete?: boolean; wallet: CharacterWalletV2 }) {
   return (
     <section aria-labelledby="character-wallet-heading" className="character-wallet">
       <header>
@@ -9,10 +9,11 @@ export function WalletSummary({ wallet }: { wallet: CharacterWalletV2 }) {
         <div><small>Carried wealth</small><h3 id="character-wallet-heading">Wallet</h3></div>
       </header>
       <dl className="character-wallet__totals">
-        <div><dt>Gold pieces</dt><dd>{wallet.gpCount.toLocaleString()}</dd></div>
-        <div><dt>All coins</dt><dd>{wallet.coinCount.toLocaleString()}</dd></div>
-        <div><dt>Copper value</dt><dd>{wallet.copperValue.toLocaleString()}</dd></div>
+        <div><dt>{complete ? "Gold pieces" : "Visible gold pieces"}</dt><dd>{wallet.gpCount.toLocaleString()}</dd></div>
+        <div><dt>{complete ? "All coins" : "Visible coins"}</dt><dd>{wallet.coinCount.toLocaleString()}</dd></div>
+        <div><dt>{complete ? "Copper value" : "Visible copper value"}</dt><dd>{wallet.copperValue.toLocaleString()}</dd></div>
       </dl>
+      {!complete ? <p role="status">These totals cover only the visible bounded inventory.</p> : null}
       {wallet.denominations.length ? (
         <ul className="character-wallet__denominations">
           {wallet.denominations.map((row) => (

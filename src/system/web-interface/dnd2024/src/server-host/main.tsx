@@ -12,7 +12,7 @@ import {
   type FactionObjectRequest,
 } from "../data/object-resources";
 import { resolveHubSurface } from "../data/hub-availability.js";
-import type { CampaignReadModel, CanonicalCharacterResult, CharacterSheetResult, ConnectedCampaignEnvelope, DeferredHubSection, DeferredHubUpdate, HubEnvelope, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
+import type { CampaignReadModel, CanonicalCharacterResult, CharacterSheetResult, ConnectedCampaignEnvelope, DeferredHubSection, DeferredHubUpdate, HubEnvelope, InventoryContainerResult, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
 import { ViewReadError } from "../data/view-read-client";
 import { loadInitialHub } from "../data/hub-preferences";
 import { objectConsumers, subscribeScopedChanges } from "../data/scoped-change-stream";
@@ -124,6 +124,7 @@ const tableResources = new TableResourceOwner({
 const characterResources = new CharacterResourceOwner({
   readSheet: readCharacterSheetResource,
   readDetails: readCharacterDetailsResource,
+  readInventory: readCharacterInventoryResource,
 });
 
 function authorizedCharacter({ envelope, actorId }: CharacterResourceRequest) {
@@ -163,12 +164,23 @@ async function readCharacterDetailsResource(request: CharacterResourceRequest, s
     await readCanonicalCharacter(characterReadRequest(request, signal)) as CanonicalCharacterResult);
 }
 
+async function readCharacterInventoryResource(request: CharacterResourceRequest, signal: AbortSignal) {
+  authorizedCharacter(request);
+  const { readCanonicalInventory } = await import("../server/game-server-context.js");
+  if (signal.aborted) throw new DOMException("Inventory replaced", "AbortError");
+  return await readCanonicalInventory(characterReadRequest(request, signal)) as InventoryContainerResult;
+}
+
 async function loadCharacterSheet(envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) {
   return characterResources.loadSheet({ envelope, actorId }, signal);
 }
 
 async function loadCharacterDetails(envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) {
   return characterResources.loadDetails({ envelope, actorId }, signal);
+}
+
+async function loadCharacterInventory(envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) {
+  return characterResources.loadInventory({ envelope, actorId }, signal);
 }
 
 async function readFactionObjectPage(
@@ -384,6 +396,7 @@ try {
             loadEnvelope={loadReadyEnvelope}
             loadCharacterSheet={loadCharacterSheet}
             loadCharacterDetails={loadCharacterDetails}
+            loadCharacterInventory={loadCharacterInventory}
             loadFactionPage={loadFactionPage}
             loadCampaignDetails={loadCampaignDetails}
             loadDeferredSection={loadDeferredSection}

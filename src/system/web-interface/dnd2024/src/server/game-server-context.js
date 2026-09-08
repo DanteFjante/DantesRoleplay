@@ -8,6 +8,7 @@ import { contract as campaignLocationVisitsContract } from "./campaign-location-
 import { contract as worldCampaignDirectoryContract } from "./world-campaign-directory-contract.js";
 import { contract as characterSheetContract } from "./character-sheet-contract.js";
 import { contract as characterDossierContract } from "./character-dossier-contract.js";
+import { contract as inventoryContainerContract } from "./inventory-container-contract.js";
 import { contract as factionDirectoryContract } from "./faction-directory-contract.js";
 
 export { readRegisteredCampaignSummary } from "./campaign-summary.js";
@@ -738,6 +739,65 @@ function validCharacterDossier(value, actorId) {
     value.sheet.origin?.background?.id === value.origin.background.id;
 }
 
+function validInventoryContainer(value, actorId) {
+  const reasons = new Set(["depth-limit", "unclassified-content"]);
+  if (!hasExactKeys(value, ["version", "owner", "state", "reasons", "items", "wallet", "limits"]) ||
+      value.version !== 1 || !namedCharacterReference(value.owner) || value.owner.id !== actorId ||
+      !["ready", "partial"].includes(value.state) || !Array.isArray(value.reasons) ||
+      value.reasons.length > 2 || new Set(value.reasons).size !== value.reasons.length ||
+      value.reasons.some((reason) => !reasons.has(reason)) || !Array.isArray(value.items) ||
+      value.items.length > 100 || !validCharacterWallet(value.wallet) ||
+      !hasExactKeys(value.limits, ["contentsDepth", "itemCount", "complete"]) ||
+      value.limits.contentsDepth !== 4 || value.limits.itemCount !== 100 ||
+      typeof value.limits.complete !== "boolean" ||
+      (value.state === "ready") !== value.limits.complete ||
+      (value.state === "ready") !== (value.reasons.length === 0)) return false;
+  const ids = new Set();
+  const positions = new Set();
+  for (const item of value.items) {
+    if (!hasExactKeys(item, ["id", "name", "definition", "quantity", "slot", "parentItemId",
+      "order", "depth", "childCount", "deeperContentsOmitted", "equipmentSlots", "classification"]) ||
+        !token(item.id) || !text(item.name, 400) ||
+        !(item.definition === null || namedCharacterReference(item.definition)) ||
+        !(item.quantity === null || boundedInteger(item.quantity, 1)) ||
+        typeof item.slot !== "string" || item.slot.length > 200 ||
+        !(item.parentItemId === null || token(item.parentItemId)) ||
+        !boundedInteger(item.order, 0, 99) || !boundedInteger(item.depth, 1, 4) ||
+        !boundedInteger(item.childCount, 0, 100) || typeof item.deeperContentsOmitted !== "boolean" ||
+        !namedCharacterReferences(item.equipmentSlots, 32) ||
+        !["item", "unclassified"].includes(item.classification) || ids.has(item.id) ||
+        (item.classification === "item") !== (item.definition !== null && item.quantity !== null) ||
+        (item.classification === "unclassified" && item.equipmentSlots.length > 0)) return false;
+    ids.add(item.id);
+    const position = `${item.parentItemId ?? "root"}:${item.order}`;
+    if (positions.has(position)) return false;
+    positions.add(position);
+  }
+  const byId = new Map(value.items.map((item) => [item.id, item]));
+  const childCounts = new Map();
+  for (const item of value.items) {
+    if (item.parentItemId === null) {
+      if (item.depth !== 1) return false;
+    } else {
+      const parent = byId.get(item.parentItemId);
+      if (!parent || item.depth !== parent.depth + 1) return false;
+      childCounts.set(parent.id, (childCounts.get(parent.id) ?? 0) + 1);
+    }
+    const visited = new Set([item.id]);
+    let parentId = item.parentItemId;
+    while (parentId !== null) {
+      if (visited.has(parentId)) return false;
+      visited.add(parentId);
+      parentId = byId.get(parentId)?.parentItemId ?? null;
+    }
+  }
+  return value.items.every((item) =>
+    item.childCount === (childCounts.get(item.id) ?? 0) &&
+    (item.depth !== 4 || item.deeperContentsOmitted)) &&
+    value.reasons.includes("depth-limit") === value.items.some((item) => item.depth === 4) &&
+    value.reasons.includes("unclassified-content") === value.items.some((item) => item.classification === "unclassified");
+}
+
 /** Reads only the calculated v2 sheet. Full dossier metadata remains a separate resource. */
 export async function readCanonicalCharacterSheet({
   fetchImpl, origin, applicationId, stateSpaceId, actorId, perspective,
@@ -796,6 +856,68 @@ export async function readCanonicalCharacterSheet({
     return {
       status: "error", data: null, failureCategory: "transport",
       diagnosticId: canonicalCharacterDiagnosticId(null, actorId, "transport"),
+    };
+  }
+}
+
+/** Reads only the bounded physical inventory and wallet for one authorized character. */
+export async function readCanonicalInventory({
+  fetchImpl, origin, applicationId, stateSpaceId, actorId, perspective,
+}) {
+  const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
+  try {
+    const result = await readModelResponse({
+      fetchImpl,
+      resource: url(origin, `${entityRoot}/${encodeURIComponent(actorId)}` +
+        `/read-models/${encodeURIComponent(inventoryContainerContract.id)}` +
+        (perspective ? `?perspective=${encodeURIComponent(perspective)}` : "")),
+      init: { headers: { Accept: "application/json" }, cache: "no-store" },
+      applicationId,
+      stateSpaceId,
+      query: inventoryContainerContract,
+      maximumBodyBytes: 270_000,
+      maximumDataBytes: 262_144,
+      statusPolicy: { ready: [200], forbidden: [403], stale: [409], unavailable: "remaining" },
+      validate: (value) => validInventoryContainer(value, actorId),
+    });
+    if (result.status !== "ready") {
+      if (result.status === "incompatible") return {
+        status: "error", data: null, failureCategory: "incompatible-data",
+        diagnosticId: canonicalCharacterDiagnosticId(result.response, actorId, "inventory-incompatible"),
+      };
+      const response = result.response;
+      const failureBody = await readBoundedJson(response, 8_192);
+      const failure = failureBody.status === "ready" ? failureBody.value : null;
+      const errorCode = token(failure?.code);
+      const category = canonicalCharacterFailureCategory(response, errorCode);
+      return {
+        status: category === "authorization" ? "forbidden" : "error",
+        data: null,
+        failureCategory: category,
+        diagnosticId: canonicalCharacterDiagnosticId(response, actorId, `inventory-${category}`),
+        ...(errorCode ? { errorCode } : {}),
+        ...(Number.isInteger(response?.status) ? { httpStatus: response.status } : {}),
+      };
+    }
+    return {
+      status: "ready", failureCategory: null,
+      diagnosticId: canonicalCharacterDiagnosticId(result.response, actorId, "inventory-ready"),
+      data: {
+        ...result.data,
+        projection: {
+          stateSpaceFingerprint: result.evidence.stateSpaceFingerprint,
+          resolutionFingerprint: result.evidence.resolutionFingerprint,
+          resultFingerprint: result.evidence.resultFingerprint,
+          sourceRevisionFingerprint: result.evidence.sourceRevisionFingerprint,
+        },
+      },
+    };
+  } catch (error) {
+    if (error?.name === "AbortError") throw error;
+    return {
+      status: "error", data: null, failureCategory: "transport",
+      diagnosticId: canonicalCharacterDiagnosticId(null, actorId, "inventory-transport"),
     };
   }
 }

@@ -720,6 +720,50 @@ public sealed class Dnd2024ApplicationReadViewTests
     }
 
     [Fact]
+    public async Task Inventory_container_preserves_nested_items_unknown_contents_and_exact_wallet()
+    {
+        var rope = new ContainedProjection("inventory.rope", "Hempen Rope", "contents", new Dictionary<string, string>
+        {
+            ["dnd2024.core.definition-link"] = Json(new { definition = Ref("item.rope") }),
+            ["dnd2024.item.quantity"] = Json(new { current = 1 })
+        }, []);
+        var unknown = new ContainedProjection("inventory.unknown", "Sealed Parcel", "contents", null, []);
+        var backpack = new ContainedProjection("inventory.backpack", "Backpack", "inventory", new Dictionary<string, string>
+        {
+            ["dnd2024.core.definition-link"] = Json(new { definition = Ref("item.backpack") }),
+            ["dnd2024.item.quantity"] = Json(new { current = 1 })
+        }, [rope, unknown]);
+        var subject = Entity("actor.aric", "Aric", new()) with { Contains = [backpack] };
+        var references = new Dictionary<string, ReferencedEntityProjection>
+        {
+            ["item.backpack"] = new ReferencedEntityProjection("item.backpack", new Dictionary<string, string>(), "Backpack"),
+            ["item.rope"] = new ReferencedEntityProjection("item.rope", new Dictionary<string, string>(), "Hempen Rope")
+        };
+        var projection = new MechanicProjection
+        {
+            Input = "{}",
+            Roles = { ["subject"] = subject },
+            References = references,
+            Children =
+            {
+                ["currency"] = [Child("dnd2024.mechanic.currency-value.read", "root", subject.Id,
+                    """{"test":"currency-value-read","rootId":"actor.aric","coinCount":3,"copperValue":300,"denominations":[{"denominationId":"dnd2024.equipment.currency.gold-piece","code":"gp","count":3,"copperValuePerCoin":100,"totalCopperValue":300}],"boundedDepth":4}""")]
+            }
+        };
+
+        using var output = await Run("data/dnd2024.mechanic.inventory-container.project", projection);
+        var data = output.RootElement;
+        var items = data.GetProperty("items").EnumerateArray().ToArray();
+        Assert.Equal("partial", data.GetProperty("state").GetString());
+        Assert.Equal("inventory.backpack", items[1].GetProperty("parentItemId").GetString());
+        Assert.Equal("unclassified", items[2].GetProperty("classification").GetString());
+        Assert.Equal(JsonValueKind.Null, items[2].GetProperty("definition").ValueKind);
+        Assert.Contains("unclassified-content", data.GetProperty("reasons").EnumerateArray().Select(value => value.GetString()));
+        Assert.Equal(300, data.GetProperty("wallet").GetProperty("copperValue").GetInt32());
+        AssertSchema("character/dnd2024.query.inventory-container.json", data.GetRawText());
+    }
+
+    [Fact]
     public async Task Character_sheet_v2_rejects_duplicate_nodes_and_depth_overflow_without_output()
     {
         var duplicate = new ContainedProjection("item.same", "Duplicate", "contents", null, []);

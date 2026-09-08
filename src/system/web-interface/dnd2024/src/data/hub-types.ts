@@ -478,6 +478,50 @@ export type CharacterWalletV2 = {
   }>;
 };
 
+export type InventoryContainerItem = Omit<CharacterInventoryItemV2, "definition" | "quantity"> & {
+  definition: NamedCharacterReference | null;
+  quantity: number | null;
+  classification: "item" | "unclassified";
+};
+
+export type InventoryContainerProjection = {
+  version: 1;
+  owner: NamedCharacterReference;
+  state: "ready" | "partial";
+  reasons: Array<"depth-limit" | "unclassified-content">;
+  items: InventoryContainerItem[];
+  wallet: CharacterWalletV2;
+  limits: { contentsDepth: 4; itemCount: 100; complete: boolean };
+};
+
+export type InventoryContainerData = InventoryContainerProjection & {
+  projection: {
+    stateSpaceFingerprint: string;
+    resolutionFingerprint: string;
+    resultFingerprint: string;
+    sourceRevisionFingerprint: string;
+  };
+};
+
+export type InventoryContainerResult =
+  | { status: "ready"; data: InventoryContainerData; failureCategory: null; diagnosticId: string }
+  | {
+      status: "error";
+      data: null;
+      failureCategory: Exclude<SectionFailureCategory, "authorization">;
+      diagnosticId: string;
+      errorCode?: string;
+      httpStatus?: number;
+    }
+  | {
+      status: "forbidden";
+      data: null;
+      failureCategory: "authorization";
+      diagnosticId: string;
+      errorCode?: string;
+      httpStatus?: number;
+    };
+
 export type CharacterSheetProjectionV2 = {
   version: 2;
   subject: NamedCharacterReference;

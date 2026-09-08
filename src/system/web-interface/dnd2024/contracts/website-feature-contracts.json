@@ -231,15 +231,15 @@
     {
       "id": "inventory-and-items",
       "screens": ["Inventory", "item details", "item uses", "item recipes"],
-      "currentOwner": ["generic containment", "dnd2024.query.inventory-item-details", "dnd2024.query.inventory-item-uses", "dnd2024.query.inventory-item-recipes"],
-      "browserAssembly": "ItemWorkspace routes by URL hash and validates independently revision-bound details, uses, and recipe responses",
+      "currentOwner": ["dnd2024.query.inventory-container", "generic containment", "dnd2024.query.inventory-item-details", "dnd2024.query.inventory-item-uses", "dnd2024.query.inventory-item-recipes"],
+      "browserAssembly": "Inventory loads one bounded owner/container projection; ItemWorkspace separately validates revision-bound details, uses, and recipe responses only after navigation",
       "authority": "SQLite containment and item components; catalog JavaScript mechanics own item behavior",
       "audience": { "game-master": "authorized-character", "gm-player-preview": "forbidden", "actor": "owned-or-authorized-item", "unbound": "forbidden" },
       "editCapability": "inventory mutations must use typed mechanics and confirmed server responses; local drafts are non-authoritative",
-      "completeness": "each response is ready or partial with explicit inventory/source/page/byte/dependency reasons; stale revision is distinct",
-      "currentCost": "Details, uses, and recipes are separate reads; each response is capped at 70000 body bytes and 65536 data bytes.",
-      "target": { "slice": "W04", "owner": "reuse the three item query v1 contracts and generic containment", "pageSize": 25, "maximumPages": 21, "maximumRecords": 512 },
-      "gates": { "requests": 3, "sqlStatements": 20, "responseBytes": 210000, "retainedResponseBytes": 2097152 },
+      "completeness": "the container projection is complete or partial with explicit depth/unclassified reasons; item responses retain their explicit source/page/byte/dependency reasons and stale revision is distinct",
+      "currentCost": "Inventory is one response capped at 270000 body bytes and 262144 data bytes; details, uses, and recipes remain separate 70000-byte reads requested only after item navigation.",
+      "target": { "slice": "W05", "owner": "bounded inventory-container query plus the three existing item query v1 contracts", "pageSize": 100, "maximumPages": 1, "maximumRecords": 100 },
+      "gates": { "requests": 4, "sqlStatements": 24, "responseBytes": 480000, "retainedResponseBytes": 2097152 },
       "fixtureCases": ["small", "large", "unauthorized"]
     },
     {

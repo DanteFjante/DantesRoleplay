@@ -145,6 +145,7 @@ export function DndInformationHub({
   loadContent,
   loadCharacterSheet,
   loadCharacterDetails,
+  loadCharacterInventory,
   loadFactionPage,
   loadCampaignDetails,
   loadDeferredSection,
@@ -156,6 +157,7 @@ export function DndInformationHub({
   loadContent: ContentLoader;
   loadCharacterSheet?: (envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) => Promise<import("../data/hub-types").PartyMemberReadModel>;
   loadCharacterDetails?: (envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) => Promise<import("../data/hub-types").PartyMemberReadModel>;
+  loadCharacterInventory?: (envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) => Promise<import("../data/hub-types").InventoryContainerResult>;
   loadFactionPage?: FactionPageLoader;
   loadCampaignDetails?: CampaignDetailsLoader;
   loadDeferredSection?: (envelope: ReadyHubEnvelope, section: DeferredHubSection, signal: AbortSignal) => Promise<DeferredHubUpdate>;
@@ -180,6 +182,10 @@ export function DndInformationHub({
     if (!loadCharacterDetails) throw new Error("Character detail loading is unavailable.");
     return loadCharacterDetails(envelope, id, signal);
   }, [envelope, loadCharacterDetails]);
+  const readCharacterInventory = useCallback((id: string, signal: AbortSignal) => {
+    if (!loadCharacterInventory) throw new Error("Character inventory loading is unavailable.");
+    return loadCharacterInventory(envelope, id, signal);
+  }, [envelope, loadCharacterInventory]);
   const [itemRoute, setItemRoute] = useState(() => parseItemRoute(window.location.hash));
   const [activeTab, setActiveTab] = useState<MainTabId>(() => {
     const item = parseItemRoute(window.location.hash);
@@ -695,6 +701,7 @@ export function DndInformationHub({
             inventoryReturn={inventoryReturn}
             loadCharacterSheet={loadCharacterSheet ? readCharacterSheet : undefined}
             loadCharacterDetails={loadCharacterDetails ? readCharacterDetails : undefined}
+            loadCharacterInventory={loadCharacterInventory ? readCharacterInventory : undefined}
             loading={hubBusy}
             onRetry={() => void requestHub(perspective, contextSelection.selectedCampaignId, false, true)}
             onOpenItem={(characterId, itemId, context) => {
@@ -716,6 +723,7 @@ export function DndInformationHub({
           retainItemClient={retainItemClient}
           loadCharacterSheet={loadCharacterSheet ? readCharacterSheet : undefined}
           loadCharacterDetails={loadCharacterDetails ? readCharacterDetails : undefined}
+          loadCharacterInventory={loadCharacterInventory ? readCharacterInventory : undefined}
           loading={hubBusy}
           onRetry={() => void requestHub(perspective, contextSelection.selectedCampaignId, false, true)}
           party={envelope.party}

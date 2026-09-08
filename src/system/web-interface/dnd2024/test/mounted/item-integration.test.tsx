@@ -5,13 +5,14 @@ import { JSDOM } from "jsdom";
 import { DndInformationHub } from "../../src/components/DndInformationHub";
 import { integrationEnvelope, integrationInventory, integrationRead, integrationResponse, type ItemRead } from "../fixtures/item-integration";
 import { itemRouteHash, navigateItemRoute, parseItemRoute } from "../../src/data/item-view-route";
+import type { InventoryContainerResult } from "../../src/data/hub-types";
 const tick = () => new Promise(resolve => setTimeout(resolve, 25));
 async function perform(action: () => void) { await act(async () => { action(); await tick(); }); await act(tick); }
 async function mount(hash = itemRouteHash(integrationInventory)) {
   const dom = new JSDOM("<!doctype html><html lang='en'><head><title>Integration</title></head><body><div id='root'></div></body></html>", { url: "https://table.test/published/revision?keep=yes" + hash, pretendToBeVisual: true });
   const keys = ["window", "document", "HTMLElement", "Element", "Node", "Event", "MouseEvent", "fetch", "IS_REACT_ACT_ENVIRONMENT"] as const;
   const prior = keys.map(k => Object.getOwnPropertyDescriptor(globalThis,k));
-  const calls: ItemRead[] = [], hubCalls: string[] = [], pending: { read: ItemRead; resolve: (r: Response) => void }[] = [];
+  const calls: ItemRead[] = [], hubCalls: string[] = [], inventoryCalls: string[] = [], pending: { read: ItemRead; resolve: (r: Response) => void }[] = [];
   const control = { delayDm: false, mode: "ready", quantity: 1 };
   const fetchImpl = (async (url, init) => { assert.ok(!init?.method || init.method === "GET");const read = integrationRead(String(url)); calls.push(read);
     if(control.delayDm && read.request.perspective === "dm") return new Promise<Response>(resolve => pending.push({ read, resolve }));
@@ -28,10 +29,23 @@ async function mount(hash = itemRouteHash(integrationInventory)) {
   dom.window.scrollTo = (_x,y) => Object.defineProperty(dom.window,"scrollY",{ configurable:true,value:y });
   const { createRoot } = await import("react-dom/client");const container = document.getElementById("root")!;const root = createRoot(container);
   const initial = integrationEnvelope();
-  await act(async()=>{root.render(<DndInformationHub initialEnvelope={initial} loadContent={async()=>({}) as never} loadEnvelope={async perspective=>{hubCalls.push(perspective);return integrationEnvelope(perspective);}}/>);await tick();});
+  const loadCharacterInventory = async (_envelope: unknown, actorId: string): Promise<InventoryContainerResult> => {
+    inventoryCalls.push(actorId);
+    const sheet = initial.party.find(member => member.id === actorId)?.characterSheet;
+    if (!sheet) throw new Error("Missing inventory fixture");
+    return { status: "ready", failureCategory: null, diagnosticId: `inventory-${actorId}`, data: {
+      version: 1, owner: sheet.subject, state: "ready", reasons: [],
+      items: sheet.inventory.items.map(item => ({ ...item, classification: "item" as const })), wallet: sheet.wallet,
+      limits: { contentsDepth: 4, itemCount: 100, complete: true }, projection: {
+        stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+        resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64),
+      },
+    } };
+  };
+  await act(async()=>{root.render(<DndInformationHub initialEnvelope={initial} loadContent={async()=>({}) as never} loadEnvelope={async perspective=>{hubCalls.push(perspective);return integrationEnvelope(perspective);}} loadCharacterInventory={loadCharacterInventory}/>);await tick();});
   await act(tick);await act(tick);
   const click = (label:string) => perform(()=>{const b=[...container.querySelectorAll<HTMLButtonElement>("button")].find(b=>b.textContent?.trim()===label);assert.ok(b,"Missing button "+label);b.focus();b.click();});
-  return { container, calls, hubCalls, pending, control, click, async cleanup(){await act(async()=>root.unmount());dom.window.close();keys.forEach((k,i)=>{if(prior[i])Object.defineProperty(globalThis,k,prior[i]!);else Reflect.deleteProperty(globalThis,k);});} };
+  return { container, calls, hubCalls, inventoryCalls, pending, control, click, async cleanup(){await act(async()=>root.unmount());dom.window.close();keys.forEach((k,i)=>{if(prior[i])Object.defineProperty(globalThis,k,prior[i]!);else Reflect.deleteProperty(globalThis,k);});} };
 }
 async function openStaff(view: Awaited<ReturnType<typeof mount>>) {
   const disclosure = view.container.querySelector<HTMLDetailsElement>(".character-inventory__branch")!;assert.ok(disclosure);
@@ -41,7 +55,7 @@ async function openStaff(view: Awaited<ReturnType<typeof mount>>) {
 }
 test("full hub inventory journey respects tab request budgets and caches fresh returns across Back/Forward",async()=>{
   const v=await mount();try{
-    assert.equal(v.calls.length,0);await openStaff(v);assert.deepEqual(v.calls.map(c=>c.tab),["details"]);assert.equal(document.activeElement?.id,"main-view-heading");
+    assert.equal(v.calls.length,0);assert.deepEqual(v.inventoryCalls,["actor.fixture"]);await openStaff(v);assert.deepEqual(v.calls.map(c=>c.tab),["details"]);assert.equal(document.activeElement?.id,"main-view-heading");
     await v.click("Known recipes");await v.click("Known uses");await v.click("Details");assert.deepEqual(v.calls.map(c=>c.tab),["details","recipes","uses"]);assert.deepEqual(v.hubCalls,[]);
     await v.click("Back to inventory");assert.equal(parseItemRoute(window.location.hash).kind,"inventory");assert.equal(v.container.querySelector<HTMLDetailsElement>(".character-inventory__branch")?.open,true);assert.equal(window.scrollY,487);assert.equal((document.activeElement as HTMLElement).dataset.itemOpen,"item.staff");
     await perform(()=>window.history.forward());await v.click("Known recipes");await v.click("Known uses");assert.equal(v.calls.length,3);assert.deepEqual(v.hubCalls,[]);

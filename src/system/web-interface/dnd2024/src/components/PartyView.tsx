@@ -5,11 +5,12 @@ import { objectConsumers } from "../data/scoped-change-stream";
 import type { InventoryReturnContext } from "../data/item-view-route";
 
 import type {
-  CanonicalCharacterData,
+  InventoryContainerResult,
   PartyDossierEntry,
   PartyKnowledgeEntry,
   PartyMemberReadModel,
   PartySectionId,
+  SectionState,
 } from "../data/hub-types";
 import { markCharacterReady } from "../observability/performance.js";
 import { CharacterOverview } from "./character/CharacterOverview";
@@ -79,13 +80,14 @@ function emptyCopy(section: PartySectionId, member: PartyMemberReadModel) {
   }
 }
 
-function SectionHeader({ count, member, section }: {
+function SectionHeader({ count, member, section, sectionState }: {
   count: number;
   member: PartyMemberReadModel;
   section: PartySectionId;
+  sectionState?: SectionState<unknown> | null;
 }) {
-  const state = section === "sheet" ? member.sheetState
-    : section === "inventory" ? member.inventoryState : null;
+  const state = sectionState ?? (section === "sheet" ? member.sheetState
+    : section === "inventory" ? member.inventoryState : null);
   const unavailable = state?.status === "error" || state?.status === "forbidden" ||
     state?.status === "idle" || state?.status === "loading" && state.data === null;
   return (
@@ -103,6 +105,7 @@ export function CharacterWorkspace({
   party,
   loadCharacterSheet,
   loadCharacterDetails,
+  loadCharacterInventory,
   navigationCharacterId,
   inventoryReturn,
   onOpenItem,
@@ -112,6 +115,7 @@ export function CharacterWorkspace({
   party: PartyMemberReadModel[];
   loadCharacterSheet?: (id: string, signal: AbortSignal) => Promise<PartyMemberReadModel>;
   loadCharacterDetails?: (id: string, signal: AbortSignal) => Promise<PartyMemberReadModel>;
+  loadCharacterInventory?: (id: string, signal: AbortSignal) => Promise<InventoryContainerResult>;
   navigationCharacterId?: string;
   inventoryReturn?: InventoryReturnContext | null;
   onOpenItem?: (characterId: string, itemId: string, context: InventoryReturnContext) => void;
@@ -125,9 +129,17 @@ export function CharacterWorkspace({
   const [detailKind, setDetailKind] = useState<"sheet" | "details" | null>(null);
   const [detailBusy, setDetailBusy] = useState(false);
   const [detailError, setDetailError] = useState(false);
+  const [inventoryResult, setInventoryResult] = useState<InventoryContainerResult | null>(null);
+  const [inventoryBusy, setInventoryBusy] = useState(false);
+  const [inventoryError, setInventoryError] = useState(false);
   const [retry, setRetry] = useState(0);
   useEffect(() => {
-    const invalidate = () => { setDetail(null); setDetailKind(null); setRetry((value) => value + 1); };
+    const invalidate = () => {
+      setDetail(null);
+      setDetailKind(null);
+      setInventoryResult(null);
+      setRetry((value) => value + 1);
+    };
     const changed = (event: Event) => {
       if (objectConsumers((event as CustomEvent).detail?.object?.qualifiedId).character) invalidate();
     };
@@ -140,7 +152,7 @@ export function CharacterWorkspace({
   }, []);
   useEffect(() => {
     const requiredKind = section === "sheet" ? "sheet"
-      : section === "overview" ? null : "details";
+      : section === "overview" || section === "inventory" ? null : "details";
     const loader = requiredKind === "sheet" ? loadCharacterSheet
       : requiredKind === "details" ? loadCharacterDetails : null;
     if (!requiredKind || !loader || !selectedMemberId ||
@@ -165,8 +177,29 @@ export function CharacterWorkspace({
   }, [loadCharacterDetails, loadCharacterSheet, selectedMemberId, section, retry, detail, detailKind, party]);
 
   useEffect(() => {
+    if (section !== "inventory" || !loadCharacterInventory || !selectedMemberId ||
+        !party.some((member) => member.id === selectedMemberId) ||
+        inventoryResult) return;
+    const controller = new AbortController();
+    setInventoryResult(null);
+    setInventoryError(false);
+    setInventoryBusy(true);
+    void loadCharacterInventory(selectedMemberId, controller.signal).then((value) => {
+      if (!controller.signal.aborted && (value.status !== "ready" || value.data.owner.id === selectedMemberId)) {
+        setInventoryResult(value);
+      }
+    }).catch(() => {
+      if (!controller.signal.aborted) setInventoryError(true);
+    }).finally(() => {
+      if (!controller.signal.aborted) setInventoryBusy(false);
+    });
+    return () => controller.abort();
+  }, [inventoryResult, loadCharacterInventory, party, retry, section, selectedMemberId]);
+
+  useEffect(() => {
     if (!navigationCharacterId && !party.some((member) => member.id === selectedMemberId)) {
       setSelectedMemberId(party[0]?.id ?? "");
+      setInventoryResult(null);
       setSection("overview");
       setQuery("");
     }
@@ -179,15 +212,22 @@ export function CharacterWorkspace({
     setDetailKind(null);
     setRetry((value) => value + 1);
   };
+  const retryInventory = () => {
+    setInventoryResult(null);
+    setInventoryError(false);
+    setRetry((value) => value + 1);
+  };
+  const inventoryData = inventoryResult?.status === "ready" ? inventoryResult.data : null;
   useLayoutEffect(() => {
-    if (restored.current || !inventoryReturn || detailBusy || section !== "inventory" || !selectedMember?.characterSheet) return;
+    if (restored.current || !inventoryReturn || inventoryBusy || section !== "inventory" ||
+        !(inventoryData || !loadCharacterInventory && selectedMember?.characterSheet)) return;
     const target = [...document.querySelectorAll<HTMLElement>("[data-item-open]")]
       .find((element) => element.dataset.itemOpen === inventoryReturn.focusItemId);
     if (!target) return;
     restored.current = true;
     target.focus({ preventScroll: true });
     window.scrollTo(0, inventoryReturn.scrollY);
-  }, [inventoryReturn, detailBusy, section, selectedMember]);
+  }, [inventoryReturn, inventoryBusy, section, selectedMember, inventoryData, loadCharacterInventory]);
   useEffect(() => {
     if (!loading && selectedMember?.sheetState.status === "ready" && selectedMember.sheetState.source === "canonical") {
       markCharacterReady(selectedMember.id);
@@ -195,8 +235,20 @@ export function CharacterWorkspace({
   }, [loading, selectedMember]);
 
   const entries = selectedMember ? sectionEntries(selectedMember, section) : [];
+  const sectionCount = section === "inventory"
+    ? inventoryData?.items.length ?? selectedMember?.characterSheet?.inventory.items.length ?? 0
+    : entries.length;
+  const inventoryState = loadCharacterInventory
+    ? inventoryBusy ? { status: "loading" as const, data: null }
+      : inventoryError ? { status: "error" as const, data: null, failureCategory: "transport" as const,
+        diagnosticId: `inventory-${selectedMemberId}-transport` }
+      : inventoryResult?.status === "ready"
+        ? { status: inventoryResult.data.items.length || inventoryResult.data.wallet.coinCount ? "ready" as const : "empty" as const,
+          data: [], source: "canonical" as const }
+        : inventoryResult ?? { status: "idle" as const, data: null }
+    : selectedMember?.inventoryState ?? null;
   const state = selectedMember && (section === "sheet" || section === "inventory")
-    ? (section === "sheet" ? selectedMember.sheetState : selectedMember.inventoryState)
+    ? (section === "sheet" ? selectedMember.sheetState : inventoryState)
     : null;
   const stateBlocksContent = state?.status === "empty" || state?.status === "error" ||
     state?.status === "forbidden" || state?.status === "idle" ||
@@ -220,7 +272,7 @@ export function CharacterWorkspace({
   const selectSection = (next: PartySectionId) => { setSection(next); setQuery(""); };
   return (
     <CharacterShell
-      onSelectMember={(id) => { setSelectedMemberId(id); setExpandedIds([]); selectSection("overview"); }}
+      onSelectMember={(id) => { setSelectedMemberId(id); setExpandedIds([]); setInventoryResult(null); selectSection("overview"); }}
       onSelectSection={selectSection}
       party={party}
       section={section}
@@ -233,11 +285,12 @@ export function CharacterWorkspace({
         <CharacterOverview member={selectedMember} onOpenSection={selectSection} />
       ) : (
         <>
-          <SectionHeader count={entries.length} member={selectedMember} section={section} />
+          <SectionHeader count={sectionCount} member={selectedMember} section={section} sectionState={state} />
           {state ? <CharacterSectionState
             label={section === "sheet" ? "character sheet" : "inventory"}
             loading={loading || detailBusy}
-            onRetry={loadCharacterSheet || loadCharacterDetails ? retryCharacter : onRetry}
+            onRetry={section === "inventory" && loadCharacterInventory ? retryInventory
+              : loadCharacterSheet || loadCharacterDetails ? retryCharacter : onRetry}
             state={state}
           /> : null}
           {entries.length > 8 && section !== "sheet" && section !== "inventory" ? (
@@ -248,7 +301,7 @@ export function CharacterWorkspace({
           ) : null}
           {stateBlocksContent ? null : section === "sheet" && selectedMember.characterSheet ? (
             <CharacterSheet sheet={selectedMember.characterSheet} />
-          ) : stateBlocksContent ? null : section === "inventory" && selectedMember.characterSheet ? (
+          ) : stateBlocksContent ? null : section === "inventory" && (inventoryData || selectedMember.characterSheet) ? (
             <div className="character-inventory-layout">
               <InventoryTree
                 key={selectedMember.id}
@@ -258,10 +311,13 @@ export function CharacterWorkspace({
                 onOpenItem={onOpenItem ? (itemId) => onOpenItem(selectedMember.id, itemId, {
                   characterId: selectedMember.id, expandedIds, focusItemId: itemId, scrollY: window.scrollY,
                 }) : undefined}
-                definitions={(selectedMember.characterSheet as CanonicalCharacterData).dossier?.inventory.definitions ?? []}
-                items={selectedMember.characterSheet.inventory.items}
+                complete={inventoryData?.limits.complete ?? true}
+                definitions={[]}
+                items={inventoryData?.items ?? selectedMember.characterSheet?.inventory.items ?? []}
+                reasons={inventoryData?.reasons ?? []}
               />
-              <WalletSummary wallet={selectedMember.characterSheet.wallet} />
+              <WalletSummary complete={inventoryData?.limits.complete ?? true}
+                wallet={inventoryData?.wallet ?? selectedMember.characterSheet!.wallet} />
             </div>
           ) : filteredEntries.length ? (
             section === "knowledge"

@@ -83,6 +83,13 @@ const targets = [
     contractOnly: true,
   },
   {
+    name: "inventory-container-contract",
+    source: "character/dnd2024.query.inventory-container.json",
+    output: "inventory-container-contract.js",
+    label: "bounded inventory container",
+    contractOnly: true,
+  },
+  {
     name: "character-dossier-contract",
     source: "character/dnd2024.query.character-dossier-v1.json",
     output: "character-dossier-contract.js",

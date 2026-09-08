@@ -67,6 +67,7 @@ test("W01 preserves all existing registered query and object owners at their cur
     "dnd2024.query.campaign-summary",
     "dnd2024.query.character-dossier-v1",
     "dnd2024.query.character-sheet-v2",
+    "dnd2024.query.inventory-container",
     "dnd2024.query.inventory-item-details",
     "dnd2024.query.inventory-item-uses",
     "dnd2024.query.inventory-item-recipes",

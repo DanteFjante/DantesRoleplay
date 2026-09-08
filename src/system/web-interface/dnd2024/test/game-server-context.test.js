@@ -9,6 +9,7 @@ import { contract as campaignDetailsContract } from "../src/server/campaign-deta
 import { contract as characterSheetContract } from "../src/server/character-sheet-contract.js";
 import { contract as characterDossierContract } from "../src/server/character-dossier-contract.js";
 import { contract as factionDirectoryContract } from "../src/server/faction-directory-contract.js";
+import { contract as inventoryContainerContract } from "../src/server/inventory-container-contract.js";
 
 import {
   inheritMediaVisual,
@@ -17,6 +18,7 @@ import {
   readCombatCurrentScene,
   readCanonicalCharacter,
   readCanonicalCharacterSheet,
+  readCanonicalInventory,
   readConversationCurrentScene,
   readGameServerContext,
   readRegisteredCampaignSummary,
@@ -28,6 +30,83 @@ import {
   resolveSceneAffordancesRecord,
   resolvePresenceLocation,
 } from "../src/server/game-server-context.js";
+
+function inventoryContainerData(actorId) {
+  return {
+    version: 1,
+    owner: { id: actorId, label: "Ganji" },
+    state: "ready",
+    reasons: [],
+    items: [
+      {
+        id: "inventory.backpack", name: "Backpack", definition: { id: "item.backpack", label: "Backpack" },
+        quantity: 1, slot: "carried", parentItemId: null, order: 0, depth: 1, childCount: 1,
+        deeperContentsOmitted: false, equipmentSlots: [], classification: "item",
+      },
+      {
+        id: "inventory.rope", name: "Hempen rope", definition: { id: "item.rope", label: "Hempen rope" },
+        quantity: 1, slot: "contained", parentItemId: "inventory.backpack", order: 0, depth: 2,
+        childCount: 0, deeperContentsOmitted: false, equipmentSlots: [], classification: "item",
+      },
+    ],
+    wallet: { coinCount: 3, copperValue: 300, gpCount: 3, denominations: [
+      { denomination: { id: "currency.gp", label: "Gold piece" }, code: "gp", count: 3,
+        copperValuePerCoin: 100, totalCopperValue: 300 },
+    ] },
+    limits: { contentsDepth: 4, itemCount: 100, complete: true },
+  };
+}
+
+test("inventory container reads one bounded nested projection without item-tab fan-out", async () => {
+  const calls = [];
+  const actorId = "actor.ganji";
+  const result = await readCanonicalInventory({
+    origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    actorId, perspective: "player",
+    fetchImpl: async (input) => {
+      calls.push(new URL(input));
+      return response(200, {
+        applicationId: "dnd2024", stateSpaceId: "dnd2024-main", qualifiedQueryId: inventoryContainerContract.id,
+        stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+        outputSchemaHash: inventoryContainerContract.outputSchemaHash, resultFingerprint: "3".repeat(64),
+        sourceRevisionFingerprint: "4".repeat(64), data: inventoryContainerData(actorId),
+      });
+    },
+  });
+  assert.equal(result.status, "ready");
+  assert.deepEqual(result.data.items.map((item) => [item.id, item.parentItemId]), [
+    ["inventory.backpack", null], ["inventory.rope", "inventory.backpack"],
+  ]);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].searchParams.get("perspective"), "player");
+  assert.match(calls[0].pathname, /dnd2024\.query\.inventory-container$/);
+  assert.ok(calls.every((call) => !/recipes|uses|character-dossier/.test(call.pathname)));
+});
+
+test("inventory container rejects cycles and preserves authorization failures", async () => {
+  const actorId = "actor.ganji";
+  const cycle = inventoryContainerData(actorId);
+  cycle.items[0].parentItemId = "inventory.rope";
+  cycle.items[0].depth = 3;
+  const incompatible = await readCanonicalInventory({
+    origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    actorId, perspective: "dm", fetchImpl: async () => response(200, {
+      applicationId: "dnd2024", stateSpaceId: "dnd2024-main", qualifiedQueryId: inventoryContainerContract.id,
+      stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+      outputSchemaHash: inventoryContainerContract.outputSchemaHash, resultFingerprint: "3".repeat(64),
+      sourceRevisionFingerprint: "4".repeat(64), data: cycle,
+    }),
+  });
+  assert.equal(incompatible.status, "error");
+  assert.equal(incompatible.failureCategory, "incompatible-data");
+
+  const forbidden = await readCanonicalInventory({
+    origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    actorId, perspective: "player", fetchImpl: async () => response(403, { code: "forbidden" }),
+  });
+  assert.equal(forbidden.status, "forbidden");
+  assert.equal(forbidden.failureCategory, "authorization");
+});
 
 test("registered Campaign summary stays bounded and preserves read-only party references", async () => {
   const calls = [];
