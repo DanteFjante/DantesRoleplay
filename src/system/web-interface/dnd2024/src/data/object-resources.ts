@@ -152,8 +152,8 @@ function isWorldInformationUpdate(value: unknown): value is WorldInformationUpda
       !update.world || typeof update.world !== "object") return false;
   const world = update.world as Record<string, unknown>;
   if (update.section === "people") {
-    return Array.isArray(world.locations) && world.locations.length <= 100 &&
-      Array.isArray(world.people) && world.people.length <= 100;
+    return Array.isArray(world.locations) && Array.isArray(world.people) &&
+      world.locations.length + world.people.length <= 200;
   }
   if (update.section === "history")
     return Array.isArray(world.history) && world.history.length <= 500;

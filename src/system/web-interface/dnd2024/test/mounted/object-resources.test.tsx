@@ -367,6 +367,32 @@ test("World information resources cache People, Lore, and History independently 
   assert.equal(reads.people, 3, "observer replacement retires cached private information");
 });
 
+test("World People resources accept the declared combined 200-record projection bound", async () => {
+  const update = (people: number) => ({
+    section: "people" as const,
+    world: {
+      locations: Array.from({ length: 15 }, (_, index) => ({ id: `location-${index}` })),
+      people: Array.from({ length: people }, (_, index) => ({ id: `person-${index}` })),
+    },
+  }) as unknown as import("../../src/data/object-resources").WorldInformationUpdate;
+  const owner = new WorldResourceOwner({
+    readScope: async () => ({}) as import("../../src/data/object-resources").WorldScopeUpdate,
+    readInformation: async () => update(185),
+  });
+
+  const result = await owner.loadInformation({ envelope: scope("dm"), section: "people" });
+  assert.equal(result.world.locations.length + result.world.people.length, 200);
+
+  const overflow = new WorldResourceOwner({
+    readScope: async () => ({}) as import("../../src/data/object-resources").WorldScopeUpdate,
+    readInformation: async () => update(186),
+  });
+  await assert.rejects(
+    overflow.loadInformation({ envelope: scope("dm"), section: "people" }),
+    (error) => error instanceof ViewReadError && error.category === "incompatible-data",
+  );
+});
+
 test("Current View deduplicates one campaign resource and fences late observer responses", async () => {
   type CurrentUpdate = import("../../src/data/object-resources").CurrentViewUpdate;
   const pending = new Map<string, (value: CurrentUpdate) => void>();
