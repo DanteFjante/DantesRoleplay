@@ -350,7 +350,11 @@ public sealed class Dnd2024InventoryAndProgressionTests : Dnd2024TestBase
         var burden = await harness.EvaluateRolesAsync("dnd2024.mechanic.item-burden.read",
             new Dictionary<string, string> { ["root"] = "subject.high" }, "{}", 0);
         var carrying = await harness.EvaluateRolesAsync("dnd2024.mechanic.carrying-capacity.read",
-            new Dictionary<string, string> { ["creature"] = "subject.high" }, "{}", 0);
+            new Dictionary<string, string> { ["creature"] = "subject.high" }, "{}", 0,
+            MechanicAudienceContext.GameMaster);
+        var playerCarrying = await harness.EvaluateRolesAsync("dnd2024.mechanic.carrying-capacity.read",
+            new Dictionary<string, string> { ["creature"] = "subject.high" }, "{}", 0,
+            MechanicAudienceContext.Player);
 
         Assert.True(inventory.Ok,
             string.Join("; ", inventory.Problems.Append(inventory.Run?.Error ?? string.Empty)));
@@ -359,10 +363,55 @@ public sealed class Dnd2024InventoryAndProgressionTests : Dnd2024TestBase
         Assert.True(burden.Ok, burden.Run?.Error);
         Assert.Contains("\"mass\":{\"dimension\":\"mass\",\"value\":{\"numerator\":45359237,\"denominator\":50000000}",
             burden.Run!.Output.Data, StringComparison.Ordinal);
-        Assert.True(carrying.Ok, carrying.Run?.Error);
+        Assert.True(carrying.Ok,
+            string.Join("; ", carrying.Problems.Append(carrying.Run?.Error ?? string.Empty)));
+        Assert.True(playerCarrying.Ok,
+            string.Join("; ", playerCarrying.Problems.Append(playerCarrying.Run?.Error ?? string.Empty)));
+        Assert.Equal(carrying.Run!.Output.Data, playerCarrying.Run!.Output.Data);
+        Assert.Equal(carrying.Run.Output.Narration, playerCarrying.Run.Output.Narration);
         Assert.Contains("\"carryingCapacity\":{\"dimension\":\"mass\",\"value\":{\"numerator\":408233133,\"denominator\":2000000}",
             carrying.Run!.Output.Data, StringComparison.Ordinal);
         Assert.Empty(carrying.Run.Output.Effects);
+        var capacityProjection = carrying.Projection!;
+        var capacityObject = Assert.Single(capacityProjection.Objects).Value;
+        Assert.Equal("dnd2024.object.carrying-capacity-creature", capacityObject.QualifiedId);
+        Assert.Equal("subject.high", capacityObject.Roles["creature"].Id);
+        Assert.Equal(30, capacityObject.Value.GetProperty("abilityScores").GetProperty("scores")
+            .GetProperty("dnd2024.vocabulary.ability.strength").GetInt32());
+        Assert.Equal("dnd2024.vocabulary.size.medium",
+            capacityObject.Value.GetProperty("sizeRef").GetProperty("entityId").GetString());
+        Assert.InRange(Encoding.UTF8.GetByteCount(capacityObject.Value.GetRawText()), 1, 4096);
+        Assert.Empty(capacityProjection.Roles["creature"].Components);
+        Assert.Null(capacityProjection.Roles["creature"].Contains);
+        Assert.Empty(capacityProjection.References);
+        var sourceRevisions = capacityProjection.ComponentRevisions["subject.high"];
+        Assert.True(sourceRevisions["dnd2024.creature.ability-scores"] > 0);
+        Assert.True(sourceRevisions["dnd2024.creature.body"] > 0);
+        Assert.Single(capacityProjection.Children["burden"]);
+    }
+
+    [Fact]
+    public async Task Carrying_capacity_object_requires_complete_strength_and_size_sources()
+    {
+        await using var harness = await DndHarness.CreateAsync();
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded,
+            (await harness.Runner.RunAsync(harness.ActionForRoles(
+                "dnd2024.mechanic.creature-size.record",
+                new Dictionary<string, string> { ["creature"] = "subject.high" },
+                "{\"size\":\"medium\"}", 0,
+                "b223456789abcdef0123456789abcdee"))).Disposition);
+        var body = (await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+            "subject.high", "dnd2024.creature.body"))!;
+        Assert.True(await harness.Entities.RemoveComponentAsync(DndHarness.StateSpaceId,
+            "subject.high", body.Type, body.Revision));
+
+        var result = await harness.EvaluateRolesAsync("dnd2024.mechanic.carrying-capacity.read",
+            new Dictionary<string, string> { ["creature"] = "subject.high" }, "{}", 0,
+            MechanicAudienceContext.GameMaster);
+
+        Assert.False(result.Ok);
+        Assert.Equal(["OBJECT_SNAPSHOT_UNAVAILABLE"], result.Problems);
+        Assert.Null(result.Run);
     }
 
     [Fact]

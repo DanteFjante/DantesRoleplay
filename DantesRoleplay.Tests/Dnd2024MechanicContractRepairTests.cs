@@ -474,7 +474,33 @@ public sealed class Dnd2024MechanicContractRepairTests
         var capacity = await RunAsync("data/dnd2024.mechanic.carrying-capacity.read", new MechanicProjection
         {
             Input = "{}",
-            Roles = new() { ["creature"] = creature },
+            Roles = new()
+            {
+                ["creature"] = new EntityProjection(creature.Id, creature.Name,
+                    new Dictionary<string, string>())
+            },
+            Objects = new()
+            {
+                ["creature"] = new MechanicObjectProjection(
+                    "dnd2024.object.carrying-capacity-creature",
+                    1,
+                    "234CF49317F99A4468828E77E06A954DCEED4640BEF4307A397CB8BFEE7529AF",
+                    new Dictionary<string, MechanicObjectEntity>
+                    {
+                        ["creature"] = new(creature.Id, creature.Name)
+                    },
+                    JsonSerializer.SerializeToElement(new
+                    {
+                        abilityScores = new
+                        {
+                            scores = new Dictionary<string, int>
+                            {
+                                ["dnd2024.vocabulary.ability.strength"] = 10
+                            }
+                        },
+                        sizeRef = new { entityId = "dnd2024.vocabulary.size.medium" }
+                    }))
+            },
             Children = new()
             {
                 ["burden"] =
@@ -497,6 +523,32 @@ public sealed class Dnd2024MechanicContractRepairTests
         Assert.Equal(136077711, carrying.GetProperty("numerator").GetInt64());
         Assert.Equal(2000000, carrying.GetProperty("denominator").GetInt64());
         Assert.True(capacityResult.RootElement.GetProperty("withinCarryingCapacity").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Carrying_capacity_rejects_legacy_raw_role_state_without_the_exact_object()
+    {
+        var result = await RunAsync("data/dnd2024.mechanic.carrying-capacity.read",
+            new MechanicProjection
+            {
+                Input = "{}",
+                Roles = new()
+                {
+                    ["creature"] = new EntityProjection("creature.hero", "Hero",
+                        new Dictionary<string, string>
+                        {
+                            ["dnd2024.creature.ability-scores"] =
+                                "{\"scores\":{\"dnd2024.vocabulary.ability.strength\":10}}",
+                            ["dnd2024.creature.body"] =
+                                "{\"sizeRef\":{\"entityId\":\"dnd2024.vocabulary.size.medium\"}}"
+                        })
+                }
+            });
+
+        Assert.False(result.Ok);
+        Assert.Contains("exact registered creature object", result.Error,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(result.Output.Effects);
     }
 
     [Theory]

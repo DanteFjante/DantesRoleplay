@@ -47,6 +47,28 @@
     ],
     "newPermanentIdsRegisteredByW01": []
   },
+  "mechanicInputPilot": {
+    "slice": "W10",
+    "mechanic": "dnd2024.mechanic.carrying-capacity.read",
+    "object": {
+      "qualifiedId": "dnd2024.object.carrying-capacity-creature",
+      "version": 1,
+      "contentFingerprint": "234CF49317F99A4468828E77E06A954DCEED4640BEF4307A397CB8BFEE7529AF",
+      "sourceComponents": ["dnd2024.creature.ability-scores", "dnd2024.creature.body"],
+      "outputBytes": 4096,
+      "sqlStatements": 3
+    },
+    "inventoryOwner": "The exact pinned dnd2024.mechanic.item-burden.read child remains the sole bounded inventory-graph projection.",
+    "maintainabilityBenefit": "Strength and Size assembly now has one registered structural contract, consumed raw components are absent from the sandbox role, and the parent no longer duplicates its child's four-level inventory and definition assembly.",
+    "behaviorBoundary": "The SRD formula, exact kilogram conversion, deterministic result shape, empty effect/event/notification sets, audience role assignment, and source-revision evidence are preserved.",
+    "furtherCandidates": [
+      "item equip/unequip after a shared exact item-and-holder action object is justified",
+      "item transfer after recursive containment object requirements are proven",
+      "travel execution after its traveller/world/route assembly is measured",
+      "campaign session actions after party/world role reuse is demonstrated"
+    ],
+    "notClaimed": "This pilot does not migrate every D&D mechanic and does not add a generic host capability."
+  },
   "versioning": {
     "rule": "Reuse an existing contract only when meaning and closed response shape are unchanged. Otherwise add a new immutable version and keep the prior version readable through the compatibility window.",
     "compatibilityOrder": [

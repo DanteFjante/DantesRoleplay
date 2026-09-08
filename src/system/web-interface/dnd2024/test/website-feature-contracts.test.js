@@ -144,6 +144,28 @@ test("W09 limits the first website write to the existing mapped DM premise field
   assert.deepEqual(object?.writes?.paths?.find(({ path }) => path === "/premise")?.operations, ["set"]);
 });
 
+test("W10 records one exact mechanic-input pilot without claiming a ruleset-wide migration", async () => {
+  const pilot = contract.mechanicInputPilot;
+  assert.equal(pilot.slice, "W10");
+  assert.equal(pilot.mechanic, "dnd2024.mechanic.carrying-capacity.read");
+  assert.deepEqual(pilot.object.sourceComponents,
+    ["dnd2024.creature.ability-scores", "dnd2024.creature.body"]);
+  assert.match(pilot.inventoryOwner, /sole bounded inventory-graph projection/u);
+  assert.match(pilot.maintainabilityBenefit, /no longer duplicates/u);
+  assert.match(pilot.behaviorBoundary, /source-revision evidence are preserved/u);
+  assert.equal(pilot.furtherCandidates.length, 4);
+  assert.match(pilot.notClaimed, /does not migrate every D&D mechanic/u);
+
+  const object = await findCatalogRecord(catalogObjectRoot,
+    "dnd2024.object.carrying-capacity-creature");
+  assert.equal(object?.version, 1);
+  assert.deepEqual(object?.access, { read: ["player", "dm"], write: [] });
+  assert.deepEqual(object?.relationships, []);
+  assert.deepEqual(object?.references, []);
+  assert.deepEqual(object?.collections, []);
+  assert.equal(object?.limits?.outputBytes, pilot.object.outputBytes);
+});
+
 test("W01 coverage follows every current navigation section and item/board route", () => {
   const coverage = contract.navigationCoverage;
   assert.deepEqual(coverage.persistentShell, ["context-and-shell"]);

@@ -178,6 +178,43 @@ public sealed class ApplicationObjectContractTests : IDisposable
     }
 
     [Fact]
+    public void Website_slice_ten_carrying_capacity_object_is_small_exact_and_read_only()
+    {
+        var db = _fixture.CreateContext();
+        var applications = new SqliteApplicationRegistry(db);
+        var application = ApplicationIdentifier.Parse("dnd2024");
+        applications.Register(new(application, "D&D", "", []));
+        var schemas = new BoundedJsonSchemaValidator();
+        var types = new SqliteComponentTypeRegistry(db, schemas);
+        var abilities = types.Define(new(application, "dnd2024.creature.ability-scores",
+            ComponentSchema("dnd2024.creature.ability-scores")));
+        var body = types.Define(new(application, "dnd2024.creature.body",
+            ComponentSchema("dnd2024.creature.body")));
+        var request = ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
+            "applications", "dnd2024", "objects", "character",
+            "dnd2024.object.carrying-capacity-creature.json")), application);
+        var definition = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications)
+            .Define(request);
+
+        Assert.Equal("234CF49317F99A4468828E77E06A954DCEED4640BEF4307A397CB8BFEE7529AF",
+            definition.ContentHash);
+        Assert.Equal("dnd2024.object.carrying-capacity-creature", definition.QualifiedId);
+        Assert.Equal(1, definition.Version);
+        Assert.Equal([abilities.SchemaHash, body.SchemaHash],
+            definition.ComponentInputs.Select(value => value.Type.SchemaHash).ToArray());
+        Assert.Equal(["abilityScores", "body"],
+            definition.ObjectContract!.Sources.Select(value => value.InputId).ToArray());
+        Assert.All(definition.ObjectContract.Sources, value => Assert.True(value.Required));
+        Assert.Empty(definition.ObjectContract.Relationships);
+        Assert.Empty(definition.ObjectContract.References);
+        Assert.Empty(definition.ObjectContract.Collections);
+        Assert.Equal(["dm", "player"], definition.ObjectContract.Access.ReadPerspectives);
+        Assert.Empty(definition.ObjectContract.Access.WritePerspectives);
+        Assert.Null(definition.ObjectContract.Writes);
+        Assert.Equal(4096, definition.ObjectContract.Limits.OutputBytes);
+    }
+
+    [Fact]
     public void Slice_ten_character_dossier_records_pin_the_imported_component_versions()
     {
         var db = _fixture.CreateContext();
