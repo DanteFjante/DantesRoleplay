@@ -526,6 +526,7 @@ export function connectedCampaignToHubEnvelope(
         summary: entry.summary ?? null,
         sourceEntries,
         kind: entry.kind,
+        isWorldRoot: entry.isWorldRoot,
         containerId: entry.containerId ?? null,
         containmentSlot: entry.containmentSlot,
         mapAnchor: entry.mapAnchor,
@@ -540,9 +541,11 @@ export function connectedCampaignToHubEnvelope(
       containerId: null,
       sourceEntries: entry.entries,
     }));
-  const hasSourceLocations = sourceLocations.length > 0;
+  const locationEntries = sourceLocations.filter((entry) => !entry.isWorldRoot);
+  const worldRootEntry = sourceLocations.find((entry) => entry.isWorldRoot) ?? null;
+  const hasSourceLocations = locationEntries.length > 0;
   const regionHints = hasLocationDirectory
-    ? sourceLocations
+    ? locationEntries
       .filter((entry) => normalizeKind(entry.kind)?.toLowerCase() === "region")
       .map((entry) => entry.name)
     : [];
@@ -606,7 +609,7 @@ export function connectedCampaignToHubEnvelope(
     });
   })();
   const baseWorldLocations = hasSourceLocations
-    ? sourceLocations.map((entry, index) => {
+    ? locationEntries.map((entry, index) => {
       const x = validAnchor(entry.mapAnchor) ? Math.round(entry.mapAnchor.x / 10) : 0;
       const y = validAnchor(entry.mapAnchor) ? Math.round(entry.mapAnchor.y / 10) : 0;
       const notes = entry.sourceEntries.map((note) => note.text.trim()).filter(Boolean);
@@ -1038,7 +1041,8 @@ export function connectedCampaignToHubEnvelope(
       id: contextSelection.selectedWorldId,
       name: worldName,
       era: "Live campaign",
-      summary: "This world view is reading the campaign context currently available from the game server.",
+      summary: worldRootEntry?.summary
+        ?? "This world view is reading the campaign context currently available from the game server.",
       premise,
       currentLocationId,
       map: { ...legacyWorldMap },

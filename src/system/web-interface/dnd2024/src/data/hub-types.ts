@@ -1093,6 +1093,7 @@ export type ConnectedCampaignEnvelope = {
   locationDirectory?: Array<{
     id: string;
     name: string;
+    isWorldRoot?: boolean;
     kind?: string;
     summary?: string;
     containerId?: string;

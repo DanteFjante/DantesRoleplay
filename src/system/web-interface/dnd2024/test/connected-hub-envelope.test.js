@@ -1279,6 +1279,36 @@ test("links illustrative Crownmere and Merrowgate city maps from their exact Reg
   assert.equal(isReadyHubEnvelope(envelope), true);
 });
 
+test("projects an explicit non-conventional World root as the map owner without listing it as a location", () => {
+  const source = connectedFixture({
+    audience: { seat: "dm", perspective: "dm", allowedPerspectives: ["dm", "player"] },
+    locationDirectoryAudience: "dm",
+    locationDirectory: [
+      {
+        id: "realm-root-7", name: "The Seventh Realm", kind: "world", isWorldRoot: true,
+        summary: "An exact World identity.", mapVisual: visual("realm-root-7", "The Seventh Realm"),
+      },
+      {
+        id: "place-azure", name: "Azure Reach", kind: "region", containerId: "realm-root-7",
+        summary: "A coastal region.", mapAnchor: { x: 125, y: 875 },
+        mapVisual: visual("place-azure", "Azure Reach"),
+      },
+    ],
+  });
+  source.contextSelection = {
+    selectedWorldId: "realm-root-7", selectedCampaignId: source.campaign.id,
+    worlds: [{ id: "realm-root-7", name: "The Seventh Realm", campaigns: [source.campaign] }],
+  };
+  const envelope = connectedCampaignToHubEnvelope(source);
+  assert.equal(envelope.world.id, "realm-root-7");
+  assert.equal(envelope.world.rootMapId, "map.live.realm-root-7");
+  assert.deepEqual(envelope.world.locations.map((location) => location.id), ["place-azure"]);
+  const rootMap = envelope.world.maps.find((map) => map.id === envelope.world.rootMapId);
+  assert.equal(rootMap?.subject.id, "realm-root-7");
+  assert.deepEqual(rootMap?.features.map((feature) => feature.locationId), ["place-azure"]);
+  assert.deepEqual(rootMap?.scopeLinks.map((link) => link.childMapId), ["map.live.place-azure"]);
+});
+
 test("omits a city scope when the settlement is unauthorized or has the wrong parent", () => {
   const actor = connectedCampaignToHubEnvelope(connectedFixture({
     audience: { seat: "player", allowedPerspectives: ["player"] },

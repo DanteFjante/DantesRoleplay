@@ -32,6 +32,8 @@ export type CampaignDetailsObjectRequest = { envelope: ReadyHubEnvelope };
 export type CampaignContextObjectRequest = { envelope: ReadyHubEnvelope };
 export type CampaignContextUpdate = Extract<DeferredHubUpdate, { section: "context" }>;
 export type CharacterResourceRequest = { envelope: ReadyHubEnvelope; actorId: string };
+export type WorldScopeRequest = { envelope: ReadyHubEnvelope; scopeId: string };
+export type WorldScopeUpdate = Extract<DeferredHubUpdate, { section: "locations" }>;
 
 type TableResourceOwnerOptions = {
   readCampaign: (request: CampaignObjectRequest, signal: AbortSignal) => Promise<HubEnvelope>;
@@ -82,6 +84,20 @@ function characterTableScope(envelope: ReadyHubEnvelope) {
   return characterResourceScope({ envelope, actorId: "all-characters" });
 }
 
+function worldScopeResource({ envelope, scopeId }: WorldScopeRequest) {
+  const campaignId = envelope.contextSelection?.selectedCampaignId ?? envelope.revision;
+  const worldId = envelope.contextSelection?.selectedWorldId ?? envelope.world.id;
+  const evidence = envelope.objectQueries?.campaignSummary;
+  return [envelope.applicationId, envelope.stateSpaceId, campaignId, worldId,
+    envelope.audience.seat, envelope.audience.perspective,
+    evidence?.resolutionFingerprint ?? "no-resolution",
+    evidence?.sourceRevisionFingerprint ?? "no-source-revision", scopeId].join(":");
+}
+
+function worldTableScope(envelope: ReadyHubEnvelope) {
+  return worldScopeResource({ envelope, scopeId: "all-world-scopes" });
+}
+
 function isCharacterResource(value: unknown): value is PartyMemberReadModel {
   if (!value || typeof value !== "object") return false;
   const member = value as Partial<PartyMemberReadModel>;
@@ -107,6 +123,17 @@ function isCampaignContextUpdate(value: unknown): value is CampaignContextUpdate
   const selection = update.contextSelection as Record<string, unknown>;
   return validText(selection.selectedCampaignId, 200) && validText(selection.selectedWorldId, 200) &&
     Array.isArray(selection.worlds) && selection.worlds.length > 0;
+}
+
+function isWorldScopeUpdate(value: unknown): value is WorldScopeUpdate {
+  if (!value || typeof value !== "object") return false;
+  const update = value as Record<string, unknown>;
+  if (update.section !== "locations" || !update.world || typeof update.world !== "object" ||
+      !update.campaign || typeof update.campaign !== "object") return false;
+  const world = update.world as Record<string, unknown>;
+  return Array.isArray(world.maps) && world.maps.length > 0 && world.maps.length <= 1_001 &&
+    Array.isArray(world.locations) && world.locations.length <= 1_000 &&
+    validText(world.rootMapId, 400);
 }
 
 function validText(value: unknown, maximumLength: number) {
@@ -268,6 +295,50 @@ export class TableResourceOwner {
       return true;
     }
     return false;
+  }
+
+  invalidateAll() {
+    this.#store.invalidateAll();
+  }
+}
+
+type WorldResourceOwnerOptions = {
+  readScope: (request: WorldScopeRequest, signal: AbortSignal) => Promise<WorldScopeUpdate>;
+  maximumEntries?: number;
+  maximumRetainedBytes?: number;
+  maximumAgeMs?: number;
+};
+
+/** Owns independently loaded map/location scopes and fences them to one authorized table view. */
+export class WorldResourceOwner {
+  readonly #store: ResourceStore;
+  readonly #scopes: KeyedResource<WorldScopeRequest, WorldScopeUpdate>;
+  #activeScope: string | null = null;
+
+  constructor(options: WorldResourceOwnerOptions) {
+    this.#store = new ResourceStore({
+      maximumEntries: options.maximumEntries ?? 20,
+      maximumRetainedBytes: options.maximumRetainedBytes ?? 2 * 1024 * 1024,
+    });
+    this.#scopes = this.#store.define({
+      name: "world-location-scope",
+      cacheKey: worldScopeResource,
+      read: options.readScope,
+      validate: isWorldScopeUpdate,
+      maximumAgeMs: options.maximumAgeMs ?? 30_000,
+      maximumEntryBytes: 524_288,
+    });
+  }
+
+  replaceScope(envelope: ReadyHubEnvelope) {
+    const scope = worldTableScope(envelope);
+    if (this.#activeScope !== null && this.#activeScope !== scope) this.#store.invalidateAll();
+    this.#activeScope = scope;
+  }
+
+  async loadScope(request: WorldScopeRequest, signal?: AbortSignal, preferCached = true) {
+    this.replaceScope(request.envelope);
+    return (await this.#scopes.load(request, { signal, preferCached })).value;
   }
 
   invalidateAll() {

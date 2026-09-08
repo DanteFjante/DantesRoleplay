@@ -5,6 +5,7 @@ import {
   CharacterResourceOwner,
   CHARACTER_DOSSIER_OBJECT_ID,
   TableResourceOwner,
+  WorldResourceOwner,
   CAMPAIGN_SUMMARY_OBJECT_ID,
   CAMPAIGN_LOCATION_VISITS_OBJECT_ID,
   FACTION_DIRECTORY_OBJECT_ID,
@@ -290,6 +291,38 @@ test("Character scope replacement fences cached actors across perspectives", asy
   await owner.loadSheet({ envelope: scope("player"), actorId: "actor.first" });
   await owner.loadSheet({ envelope: scope("dm"), actorId: "actor.first" });
   assert.equal(reads, 3);
+});
+
+test("World scope resources deduplicate exact locations and fence audience changes", async () => {
+  let reads = 0;
+  const owner = new WorldResourceOwner({
+    readScope: async ({ scopeId }) => {
+      reads += 1;
+      return {
+        section: "locations" as const,
+        world: {
+          currentLocationId: "",
+          map: { imageUrl: "", alt: "Map unavailable" },
+          rootMapId: `map.live.${scopeId}`,
+          maps: [{ id: `map.live.${scopeId}` }],
+          regions: [], facts: [], locations: [],
+        },
+        campaign: { mapOverlays: [] },
+      } as unknown as import("../../src/data/object-resources").WorldScopeUpdate;
+    },
+  });
+  const dm = scope("dm");
+  await Promise.all([
+    owner.loadScope({ envelope: dm, scopeId: "world.fixture" }),
+    owner.loadScope({ envelope: dm, scopeId: "world.fixture" }),
+  ]);
+  await owner.loadScope({ envelope: dm, scopeId: "world.fixture" });
+  assert.equal(reads, 1);
+  await owner.loadScope({ envelope: dm, scopeId: "location.region" });
+  assert.equal(reads, 2, "a nested map scope is a separate bounded resource");
+  await owner.loadScope({ envelope: scope("player"), scopeId: "world.fixture" });
+  await owner.loadScope({ envelope: dm, scopeId: "world.fixture" });
+  assert.equal(reads, 4, "audience replacement retires every prior-scope map resource");
 });
 
 test("local edit state remains pending through submit and retains failed drafts until server confirmation", () => {

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readDeferredHubSection } from "../src/server/game-server-context.js";
 import { contract as worldCampaignDirectoryContract } from "../src/server/world-campaign-directory-contract.js";
+import { contract as worldLocationScopeContract } from "../src/server/world-location-scope-contract.js";
 
 const origin = "http://localhost:6217";
 const source = {
@@ -84,36 +85,43 @@ test("Actor lore uses the authorized notebook and preserves all entries", async 
   assert.deepEqual(result.knowledge.entries, entries);
 });
 
-test("deferred locations traverse every page and suppress ambient media in preview", async () => {
+test("deferred locations read one exact root scope and suppress ambient media in preview", async () => {
   const calls = [];
+  const locations = Array.from({ length: 100 }, (_, index) => ({
+    id: `place-${index}`, name: `Place ${index}`, parentId: "world.caldris", slot: "region",
+    kind: "region", status: index % 2 ? "draft" : "active", summary: "A place.",
+    visibility: "public", mapAnchor: null,
+  }));
   const result = await readDeferredHubSection({
     origin, section: "locations", source: { ...source, audience: { seat: "dm", perspective: "player" } },
     fetchImpl: async (input) => {
       const target = new URL(input); calls.push(target);
-      if (target.pathname.endsWith("/entities")) return response({
-        items: [{ [target.searchParams.has("cursor") ? "id" : "entityId"]:
-          target.searchParams.has("cursor") ? "location.caldris.two" : "location.caldris.one",
-          name: "Place" }], nextCursor: target.searchParams.has("cursor") ? null : "page.two",
+      return response({
+        applicationId: "dnd2024", stateSpaceId: "state.fixture",
+        qualifiedQueryId: worldLocationScopeContract.id,
+        stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+        outputSchemaHash: worldLocationScopeContract.outputSchemaHash,
+        resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64),
+        data: {
+          version: 1, state: "ready",
+          scope: { id: "world.caldris", name: "Caldris", parentId: null, slot: "", kind: "world",
+            status: "active", summary: "A gentle world.", visibility: "public", mapAnchor: null },
+          locations, limits: { contentsDepth: 1, locationCount: 100, complete: true },
+        },
       });
-      if (target.pathname.endsWith("/components/game.core.world.location")) {
-        const id = target.pathname.split("/").at(-3);
-        return component(id, "game.core.world.location", { visibility: "public", kind: "village", summary: "A place." });
-      }
-      assert.ok(!target.pathname.endsWith("/media"));
-      return response({}, 404);
     },
   });
-  assert.deepEqual(result.locationDirectory.map((item) => item.id), ["location.caldris.one", "location.caldris.two"]);
-  assert.equal(calls.filter((target) => target.pathname.endsWith("/entities")).length, 2);
+  assert.equal(result.locationDirectory.length, 101);
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].pathname, /entities\/world\.caldris\/read-models\/dnd2024\.query\.world-location-scope$/u);
+  assert.ok(calls.every((target) => !target.pathname.endsWith("/entities") && !target.pathname.endsWith("/media")));
 });
 
-test("failed directory continuations and first-page failures never produce empty success", async () => {
-  for (const failFirst of [true, false]) {
+test("failed or incompatible root scopes never produce empty location success", async () => {
+  for (const value of [response({}, 500), response({ unexpected: true })]) {
     await assert.rejects(readDeferredHubSection({
-      origin, source, section: "locations",
-      fetchImpl: async (input) => response(failFirst || new URL(input).searchParams.has("cursor")
-        ? {} : { items: [], nextCursor: "later" }, failFirst || new URL(input).searchParams.has("cursor") ? 500 : 200),
-    }), /complete/);
+      origin, source, section: "locations", fetchImpl: async () => value,
+    }), /scope/);
   }
 });
 

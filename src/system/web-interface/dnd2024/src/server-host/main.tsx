@@ -5,11 +5,14 @@ import { BootstrapShell } from "../components/BootstrapShell";
 import {
   CharacterResourceOwner,
   TableResourceOwner,
+  WorldResourceOwner,
   type CampaignContextObjectRequest,
   type CampaignContextUpdate,
   type CampaignDetailsObjectRequest,
   type CharacterResourceRequest,
   type FactionObjectRequest,
+  type WorldScopeRequest,
+  type WorldScopeUpdate,
 } from "../data/object-resources";
 import { resolveHubSurface } from "../data/hub-availability.js";
 import type { CampaignReadModel, CanonicalCharacterResult, CharacterSheetResult, ConnectedCampaignEnvelope, DeferredHubSection, DeferredHubUpdate, HubEnvelope, InventoryContainerResult, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
@@ -88,6 +91,7 @@ async function readEnvelope(
     { ...sourceEnvelope, rules: [] },
   );
   characterResources.replaceScope(projected);
+  worldResources.replaceScope(projected);
   recordDevelopmentDiagnostic("party-read", {
     applicationId: projected.applicationId,
     stateSpaceId: projected.stateSpaceId,
@@ -126,6 +130,8 @@ const characterResources = new CharacterResourceOwner({
   readDetails: readCharacterDetailsResource,
   readInventory: readCharacterInventoryResource,
 });
+
+const worldResources = new WorldResourceOwner({ readScope: readWorldScopeObject });
 
 function authorizedCharacter({ envelope, actorId }: CharacterResourceRequest) {
   const member = envelope.party.find((candidate) => candidate.id === actorId);
@@ -299,6 +305,34 @@ async function readDeferredSectionObject(
   return connectedCampaignToDeferredHubUpdate({ ...updated, rules: [] }, section);
 }
 
+async function readWorldScopeObject(
+  { envelope, scopeId }: WorldScopeRequest,
+  signal: AbortSignal,
+): Promise<WorldScopeUpdate> {
+  const key = characterScope(envelope.stateSpaceId,
+    envelope.contextSelection?.selectedCampaignId ?? "", envelope.audience.perspective);
+  const source = characterSources.get(key);
+  if (!source || signal.aborted) throw new Error("Refresh the authorized World view before continuing.");
+  const [{ readWorldLocationScopePatch }, { connectedCampaignToDeferredHubUpdate }] = await Promise.all([
+    import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
+  ]);
+  const patch = await readWorldLocationScopePatch({
+    fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
+    origin: window.location.origin, source, scopeId,
+  });
+  const latest = characterSources.get(key);
+  if (signal.aborted || !latest) throw new DOMException("World scope replaced", "AbortError");
+  const updated = { ...latest, ...patch };
+  characterSources.set(key, updated);
+  const projected = connectedCampaignToDeferredHubUpdate({ ...updated, rules: [] }, "locations");
+  if (projected.section !== "locations") throw new Error("The World scope response is incompatible.");
+  return projected;
+}
+
+async function loadWorldScope(envelope: ReadyHubEnvelope, scopeId: string, signal: AbortSignal) {
+  return worldResources.loadScope({ envelope, scopeId }, signal);
+}
+
 async function readCampaignContextObject(
   request: CampaignContextObjectRequest,
   signal: AbortSignal,
@@ -315,6 +349,8 @@ async function loadDeferredSection(
 ): Promise<DeferredHubUpdate> {
   return section === "context"
     ? tableResources.loadCampaignContext({ envelope }, signal)
+    : section === "locations"
+      ? loadWorldScope(envelope, envelope.contextSelection?.selectedWorldId ?? envelope.world.id, signal)
     : readDeferredSectionObject({ envelope }, section, signal);
 }
 
@@ -359,6 +395,7 @@ function subscribeChanges(envelope: ReadyHubEnvelope) {
   const invalidate = () => {
     tableResources.invalidateAll();
     characterResources.invalidateAll();
+    worldResources.invalidateAll();
     window.dispatchEvent(new Event("dnd2024-view-invalidated"));
   };
   return subscribeScopedChanges(envelope, {
@@ -400,6 +437,7 @@ try {
             loadFactionPage={loadFactionPage}
             loadCampaignDetails={loadCampaignDetails}
             loadDeferredSection={loadDeferredSection}
+            loadWorldScope={loadWorldScope}
             loadRules={loadRulesReference}
             loadContent={loadInstalledContent}
           />

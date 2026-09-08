@@ -92,6 +92,16 @@ test("W01 preserves all existing registered query and object owners at their cur
   }
 });
 
+test("W06 registers the bounded World/location scope owner", async () => {
+  const query = await findCatalogRecord(catalogQueryRoot, "dnd2024.query.world-location-scope");
+  assert.equal(query?.status, "active");
+  assert.equal(query?.executor, "mechanic-projection");
+  assert.equal(query?.exposure, "binding-only");
+  assert.deepEqual(query?.roles, { scope: "The exact World root or previously authorized location scope." });
+  assert.equal(query?.outputSchema?.properties?.limits?.properties?.contentsDepth?.const, 1);
+  assert.equal(query?.outputSchema?.properties?.locations?.maxItems, 100);
+});
+
 test("W01 coverage follows every current navigation section and item/board route", () => {
   const coverage = contract.navigationCoverage;
   assert.deepEqual(coverage.persistentShell, ["context-and-shell"]);

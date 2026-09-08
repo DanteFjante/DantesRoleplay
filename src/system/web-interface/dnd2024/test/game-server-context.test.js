@@ -10,6 +10,7 @@ import { contract as characterSheetContract } from "../src/server/character-shee
 import { contract as characterDossierContract } from "../src/server/character-dossier-contract.js";
 import { contract as factionDirectoryContract } from "../src/server/faction-directory-contract.js";
 import { contract as inventoryContainerContract } from "../src/server/inventory-container-contract.js";
+import { contract as worldLocationScopeContract } from "../src/server/world-location-scope-contract.js";
 
 import {
   inheritMediaVisual,
@@ -24,12 +25,94 @@ import {
   readRegisteredCampaignSummary,
   readRegisteredCampaignDetails,
   readRegisteredFactionDirectoryPage,
+  readRegisteredWorldLocationScope,
+  readDeferredHubSection,
   readKnownOpenRoutes,
   resolveCurrentSceneRecord,
   resolveRecordedPlaySituation,
   resolveSceneAffordancesRecord,
   resolvePresenceLocation,
 } from "../src/server/game-server-context.js";
+
+function worldLocationScopeData(scopeId = "realm-root-7") {
+  return {
+    version: 1,
+    state: "ready",
+    scope: {
+      id: scopeId, name: "The Seventh Realm", parentId: null, slot: "", kind: "world",
+      status: "active", summary: "A renamed world with no identifier convention.", visibility: "party",
+      mapAnchor: null,
+    },
+    locations: [{
+      id: "place-azure", name: "Azure Reach", parentId: scopeId, slot: "region", kind: "region",
+      status: "active", summary: "The coast beneath blue cliffs.", visibility: "public",
+      mapAnchor: { x: 125, y: 875 },
+    }],
+    limits: { contentsDepth: 1, locationCount: 100, complete: true },
+  };
+}
+
+function worldScopeEnvelope(data) {
+  return {
+    applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    qualifiedQueryId: worldLocationScopeContract.id,
+    stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+    outputSchemaHash: worldLocationScopeContract.outputSchemaHash, resultFingerprint: "3".repeat(64),
+    sourceRevisionFingerprint: "4".repeat(64), data,
+  };
+}
+
+test("world location scope reads a non-conventional exact identity and batches only returned media owners", async () => {
+  const calls = [];
+  const result = await readRegisteredWorldLocationScope({
+    origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    scopeId: "realm-root-7", perspective: "player",
+    fetchImpl: async (input, init = {}) => {
+      calls.push({ url: new URL(input), init });
+      if (new URL(input).pathname.endsWith("/media-batch")) return response(200, {
+        applicationId: "dnd2024", stateSpaceId: "dnd2024-main", items: [{
+          entityId: "realm-root-7", attachments: [{
+            mediaId: "map.realm-7", role: "map", mediaType: "image/webp", width: 1000, height: 1000,
+            alt: "Map of the Seventh Realm", caption: "", order: 0,
+            contentUrl: "/api/applications/dnd2024/state-spaces/dnd2024-main/media/map.realm-7/content",
+          }],
+        }],
+      });
+      return response(200, worldScopeEnvelope(worldLocationScopeData()));
+    },
+  });
+  assert.equal(result.status, "ready");
+  assert.deepEqual(result.items.map((item) => [item.id, item.containerId ?? null]), [
+    ["realm-root-7", null], ["place-azure", "realm-root-7"],
+  ]);
+  assert.equal(result.items[0].isWorldRoot, true);
+  assert.match(result.items[0].mapVisual.imageUrl, /map\.realm-7\/content$/u);
+  assert.equal(calls.length, 2);
+  assert.match(calls[0].url.pathname, /entities\/realm-root-7\/read-models\/dnd2024\.query\.world-location-scope$/u);
+  assert.deepEqual(JSON.parse(calls[1].init.body).entityIds, ["realm-root-7", "place-azure"]);
+  assert.ok(calls.every(({ url }) => !/\/entities$/u.test(url.pathname)));
+});
+
+test("World and Locations deferred view uses one authorized root scope and no raw directory scan", async () => {
+  const calls = [];
+  const source = {
+    applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    audience: { seat: "dm", perspective: "player", allowedPerspectives: ["dm", "player"] },
+    contextSelection: { selectedWorldId: "realm-root-7", selectedCampaignId: "campaign-9", worlds: [] },
+    campaign: { id: "campaign-9" },
+  };
+  const patch = await readDeferredHubSection({
+    origin: "http://localhost:6217", source, section: "locations",
+    fetchImpl: async (input) => {
+      calls.push(new URL(input));
+      return response(200, worldScopeEnvelope(worldLocationScopeData()));
+    },
+  });
+  assert.deepEqual(patch.locationDirectory.map((item) => item.id), ["realm-root-7", "place-azure"]);
+  assert.equal(patch.locationDirectoryAudience, "player");
+  assert.equal(calls.length, 1);
+  assert.ok(calls.every((call) => !/\/entities$/u.test(call.pathname) && !call.pathname.endsWith("/media")));
+});
 
 function inventoryContainerData(actorId) {
   return {

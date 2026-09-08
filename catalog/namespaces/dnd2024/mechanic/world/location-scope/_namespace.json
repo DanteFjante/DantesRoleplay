@@ -1,0 +1,12 @@
+{
+  "id": "dnd2024.mechanic.world.location-scope",
+  "owner": "dnd2024",
+  "description": "Reviewed namespace for bounded, audience-authorized World and location scope projection.",
+  "allowedKinds": [
+    "mechanic"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "W06 admits the exact one-level World and location projection. Containment supplies hierarchy, audience filtering occurs before output, and nested scopes require separate bounded reads."
+}

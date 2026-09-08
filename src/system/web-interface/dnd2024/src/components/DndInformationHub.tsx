@@ -149,6 +149,7 @@ export function DndInformationHub({
   loadFactionPage,
   loadCampaignDetails,
   loadDeferredSection,
+  loadWorldScope,
   subscribeChanges,
 }: {
   initialEnvelope: ReadyHubEnvelope;
@@ -161,6 +162,7 @@ export function DndInformationHub({
   loadFactionPage?: FactionPageLoader;
   loadCampaignDetails?: CampaignDetailsLoader;
   loadDeferredSection?: (envelope: ReadyHubEnvelope, section: DeferredHubSection, signal: AbortSignal) => Promise<DeferredHubUpdate>;
+  loadWorldScope?: (envelope: ReadyHubEnvelope, scopeId: string, signal: AbortSignal) => Promise<Extract<DeferredHubUpdate, { section: "locations" }>>;
   subscribeChanges?: (envelope: ReadyHubEnvelope) => () => void;
 }) {
   const [envelope, setEnvelope] = useState(initialEnvelope);
@@ -245,6 +247,8 @@ export function DndInformationHub({
   const sectionAbort = useRef<AbortController | null>(null);
   const deferredAbort = useRef<AbortController | null>(null);
   const contextAbort = useRef<AbortController | null>(null);
+  const worldScopeAbort = useRef<AbortController | null>(null);
+  const loadedWorldScopes = useRef(new Set<string>());
   const [deferredStates, setDeferredStates] = useState<Partial<Record<DeferredHubSection, DeferredViewState>>>({});
   const [deferredErrors, setDeferredErrors] = useState<Partial<Record<DeferredHubSection, string>>>({});
   useEffect(() => {
@@ -360,6 +364,7 @@ export function DndInformationHub({
       setEnvelope(readyEnvelope);
       setDeferredStates({});
       setDeferredErrors({});
+      loadedWorldScopes.current.clear();
       dispatchObjectUi({ type: "campaign-details-invalidated" });
       setBootstrapGeneration((generation) => generation + 1);
       if (campaignChanged || perspectiveChanged) {
@@ -487,12 +492,31 @@ export function DndInformationHub({
       const loaded = await loadDeferredSection(envelope, section, controller.signal);
       if (controller.signal.aborted) return;
       setEnvelope((current) => applyDeferredHubUpdate(current, loaded));
+      if (section === "locations") loadedWorldScopes.current.add(
+        envelope.contextSelection?.selectedWorldId ?? envelope.world.id,
+      );
       setDeferredStates((states) => ({ ...states, [section]: "ready" }));
     } catch (error) {
       if (controller.signal.aborted) return;
       setDeferredStates((states) => ({ ...states, [section]: "error" }));
       setDeferredErrors((errors) => ({ ...errors,
         [section]: error instanceof Error ? error.message : "The view is unavailable." }));
+    }
+  }
+
+  async function requestWorldScope(scopeId: string) {
+    if (!loadWorldScope || loadedWorldScopes.current.has(scopeId)) return;
+    worldScopeAbort.current?.abort();
+    const controller = new AbortController();
+    worldScopeAbort.current = controller;
+    try {
+      const loaded = await loadWorldScope(envelope, scopeId, controller.signal);
+      if (controller.signal.aborted) return;
+      loadedWorldScopes.current.add(scopeId);
+      setEnvelope((current) => applyDeferredHubUpdate(current, loaded));
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      setHubError(error instanceof Error ? error.message : "The map scope is unavailable.");
     }
   }
 
@@ -516,6 +540,7 @@ export function DndInformationHub({
   }, [deferredSection, perspective, contextSelection.selectedCampaignId, hubBusy, loadDeferredSection, deferredRestricted]);
   useEffect(() => () => {
     sectionAbort.current?.abort(); deferredAbort.current?.abort(); contextAbort.current?.abort();
+    worldScopeAbort.current?.abort();
   }, []);
 
   const deferredNotice = deferredRestricted ? <ActorBindingRequired /> : deferredState !== "ready" ? (
@@ -801,6 +826,8 @@ export function DndInformationHub({
               if (nextMapId === activeMapId) return;
               setActiveMapId(nextMapId);
               setSelectedMapFeatureId("");
+              const map = resolveMapDocument(envelope.world.maps, nextMapId);
+              if (map) void requestWorldScope(map.subject.id);
               setAnnouncement(
                 `${resolveMapDocument(envelope.world.maps, nextMapId)?.subject.name ?? "Map"} map opened`,
               );
@@ -821,6 +848,7 @@ export function DndInformationHub({
               const feature = resolveSelectedMapFeature(map, featureId);
               setActiveMapId(nextMapId);
               setSelectedMapFeatureId(feature?.id ?? "");
+              if (map) void requestWorldScope(map.subject.id);
               setAnnouncement(feature
                 ? `${feature.name} opened on ${map?.subject.name ?? "the map"}`
                 : `${map?.subject.name ?? "Map"} opened`);

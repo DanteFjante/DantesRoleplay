@@ -10,6 +10,7 @@ import { contract as characterSheetContract } from "./character-sheet-contract.j
 import { contract as characterDossierContract } from "./character-dossier-contract.js";
 import { contract as inventoryContainerContract } from "./inventory-container-contract.js";
 import { contract as factionDirectoryContract } from "./faction-directory-contract.js";
+import { contract as worldLocationScopeContract } from "./world-location-scope-contract.js";
 
 export { readRegisteredCampaignSummary } from "./campaign-summary.js";
 
@@ -796,6 +797,149 @@ function validInventoryContainer(value, actorId) {
     (item.depth !== 4 || item.deeperContentsOmitted)) &&
     value.reasons.includes("depth-limit") === value.items.some((item) => item.depth === 4) &&
     value.reasons.includes("unclassified-content") === value.items.some((item) => item.classification === "unclassified");
+}
+
+function validWorldLocationScope(value, scopeId) {
+  if (!hasExactKeys(value, ["version", "state", "scope", "locations", "limits"]) ||
+      value.version !== 1 || !["ready", "forbidden"].includes(value.state) ||
+      !Array.isArray(value.locations) || value.locations.length > 100 ||
+      !hasExactKeys(value.limits, ["contentsDepth", "locationCount", "complete"]) ||
+      value.limits.contentsDepth !== 1 || value.limits.locationCount !== 100 ||
+      value.limits.complete !== true) return false;
+  if (value.state === "forbidden") return value.scope === null && value.locations.length === 0;
+  const validRecord = (record, allowWorld) => hasExactKeys(record,
+    ["id", "name", "parentId", "slot", "kind", "status", "summary", "visibility", "mapAnchor"]) &&
+    token(record.id) && text(record.name, 400) &&
+    (record.parentId === null || token(record.parentId)) &&
+    typeof record.slot === "string" && record.slot.length <= 200 &&
+    (allowWorld
+      ? ["world", "region", "settlement", "site", "interior"].includes(record.kind)
+      : ["region", "settlement", "site", "interior"].includes(record.kind)) &&
+    ["draft", "active"].includes(record.status) && ["public", "party", "gm"].includes(record.visibility) &&
+    text(record.summary, 1_000) && (record.mapAnchor === null ||
+      hasExactKeys(record.mapAnchor, ["x", "y"]) &&
+      Number.isInteger(record.mapAnchor.x) && record.mapAnchor.x >= 0 && record.mapAnchor.x <= 1_000 &&
+      Number.isInteger(record.mapAnchor.y) && record.mapAnchor.y >= 0 && record.mapAnchor.y <= 1_000);
+  if (!validRecord(value.scope, true) || value.scope.id !== scopeId) return false;
+  const ids = new Set();
+  return value.locations.every((location) => validRecord(location, false) &&
+    location.parentId === scopeId && !ids.has(location.id) && Boolean(ids.add(location.id)));
+}
+
+function worldLocationDiagnosticId(scopeId, category) {
+  const safe = String(scopeId).replace(/[^a-zA-Z0-9.-]/gu, "-").slice(0, 80) || "unknown";
+  return `world-location-scope:${safe}:${category}`;
+}
+
+/** Reads one exact authorized containment scope; it never lists the world entity directory. */
+export async function readRegisteredWorldLocationScope({
+  fetchImpl, origin, applicationId, stateSpaceId, scopeId, perspective, includeMedia = true,
+}) {
+  const applicationRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/state-spaces/${encodeURIComponent(stateSpaceId)}`;
+  const resource = `${applicationRoot}/entities/${encodeURIComponent(scopeId)}` +
+    `/read-models/${encodeURIComponent(worldLocationScopeContract.id)}` +
+    `?perspective=${encodeURIComponent(perspective)}`;
+  try {
+    const result = await readModelResponse({
+      fetchImpl,
+      resource: url(origin, resource),
+      init: { headers: { Accept: "application/json" }, cache: "no-store" },
+      applicationId,
+      stateSpaceId,
+      query: worldLocationScopeContract,
+      maximumBodyBytes: 270_000,
+      maximumDataBytes: 262_144,
+      statusPolicy: { ready: [200], forbidden: [403], stale: [409], unavailable: "remaining" },
+      validate: (value) => validWorldLocationScope(value, scopeId),
+    });
+    if (result.status !== "ready") return {
+      status: result.status === "forbidden" ? "forbidden" : "error",
+      items: [],
+      diagnosticId: worldLocationDiagnosticId(scopeId, result.status),
+    };
+    if (result.data.state === "forbidden") return {
+      status: "forbidden", items: [],
+      diagnosticId: worldLocationDiagnosticId(scopeId, "audience"),
+    };
+    const records = [result.data.scope, ...result.data.locations];
+    const mediaById = new Map();
+    if (includeMedia && records.length > 0) {
+      try {
+        const response = await fetchImpl(url(origin, `${applicationRoot}/media-batch`), {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          cache: "no-store",
+          body: JSON.stringify({ entityIds: records.map((record) => record.id), perspective }),
+        });
+        const media = response?.ok ? await json(response) : null;
+        const allowed = new Set(records.map((record) => record.id));
+        if (media?.applicationId === applicationId && media.stateSpaceId === stateSpaceId &&
+            Array.isArray(media.items) && media.items.length <= records.length &&
+            new Set(media.items.map((item) => item.entityId)).size === media.items.length &&
+            media.items.every((item) => allowed.has(item.entityId))) {
+          for (const item of media.items) {
+            const projected = projectMediaVisual(item);
+            if (projected) mediaById.set(item.entityId, projected);
+          }
+        }
+      } catch (error) { if (error?.name === "AbortError") throw error; }
+    }
+    const items = records.map((record, index) => {
+      const selectedMedia = mediaById.get(record.id) ?? null;
+      const selectedMap = selectedMedia?.map ?? null;
+      const { map: _, ...entityMedia } = selectedMedia ?? {};
+      return {
+        id: record.id,
+        name: record.name,
+        kind: record.kind,
+        summary: record.summary,
+        ...(record.parentId ? { containerId: record.parentId } : {}),
+        ...(record.slot ? { containmentSlot: record.slot } : {}),
+        ...(record.mapAnchor ? { mapAnchor: record.mapAnchor } : {}),
+        ...(index === 0 && record.kind === "world" ? { isWorldRoot: true } : {}),
+        ...(selectedMap ? { mapVisual: { imageUrl: selectedMap.imageUrl, alt: selectedMap.alt } } : {}),
+        ...(Object.keys(entityMedia).length > 0 ? { media: entityMedia } : {}),
+      };
+    });
+    return {
+      status: "ready",
+      items,
+      diagnosticId: worldLocationDiagnosticId(scopeId, "ready"),
+      projection: {
+        stateSpaceFingerprint: result.evidence.stateSpaceFingerprint,
+        resolutionFingerprint: result.evidence.resolutionFingerprint,
+        resultFingerprint: result.evidence.resultFingerprint,
+        sourceRevisionFingerprint: result.evidence.sourceRevisionFingerprint,
+      },
+    };
+  } catch (error) {
+    if (error?.name === "AbortError") throw error;
+    return { status: "error", items: [], diagnosticId: worldLocationDiagnosticId(scopeId, "transport") };
+  }
+}
+
+export async function readWorldLocationScopePatch({ fetchImpl = fetch, origin, source, scopeId }) {
+  const exactScopeId = token(scopeId);
+  const rootId = token(source?.contextSelection?.selectedWorldId);
+  const known = Array.isArray(source?.locationDirectory) &&
+    source.locationDirectory.some((entry) => entry.id === exactScopeId);
+  if (!exactScopeId || (!known && exactScopeId !== rootId))
+    throw new Error("That world location scope is not in the authorized map hierarchy.");
+  const preview = source.audience.seat === "dm" && source.audience.perspective === "player";
+  const result = await readRegisteredWorldLocationScope({
+    fetchImpl, origin, applicationId: source.applicationId, stateSpaceId: source.stateSpaceId,
+    scopeId: exactScopeId, perspective: source.audience.perspective ?? "player", includeMedia: !preview,
+  });
+  if (result.status === "forbidden") throw new Error("That world location scope is unavailable to this audience.");
+  if (result.status !== "ready") throw new Error("The world location scope could not be read.");
+  const merged = new Map((source.locationDirectory ?? []).map((entry) => [entry.id, entry]));
+  for (const entry of result.items) merged.set(entry.id, entry);
+  return {
+    locationDirectory: [...merged.values()].sort((left, right) =>
+      left.name.localeCompare(right.name) || left.id.localeCompare(right.id)),
+    locationDirectoryAudience: source.audience.perspective ?? "player",
+  };
 }
 
 /** Reads only the calculated v2 sheet. Full dossier metadata remains a separate resource. */
@@ -2591,6 +2735,17 @@ export async function readDeferredHubSection({ fetchImpl = fetch, origin, source
     if (section === "history") patch.chronology = result;
     else patch.knowledge = await attachAuthorizedKnowledgeMedia({ ...options, entityRoot: root,
       projectedKnowledge: result });
+  } else if (section === "locations") {
+    const worldId = token(source.contextSelection?.selectedWorldId);
+    if (!worldId) throw new Error("The selected World identity is unavailable.");
+    const result = await readRegisteredWorldLocationScope({
+      fetchImpl: read, origin, applicationId, stateSpaceId, scopeId: worldId, perspective,
+      includeMedia: !preview,
+    });
+    if (result.status === "forbidden") throw new Error("The World map is unavailable to this audience.");
+    if (result.status !== "ready") throw new Error("The World map scope could not be read.");
+    patch.locationDirectory = result.items;
+    patch.locationDirectoryAudience = perspective;
   } else {
     let locations = source.locationDirectory;
     if (!Array.isArray(locations)) {
