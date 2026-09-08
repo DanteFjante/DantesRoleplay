@@ -127,6 +127,12 @@ test("W08 composes Current View from the registered resume, scene, and board own
     const query = await findCatalogRecord(catalogQueryRoot, id);
     assert.equal(query?.status, "active", `${id} remains active`);
     assert.equal(query?.executor, "mechanic-projection", `${id} remains catalog-owned`);
+    if (id !== "dnd2024.query.encounter-board") {
+      assert.deepEqual(query?.campaignSelection, {
+        queryId: "dnd2024.query.recent-consequences",
+        entityIdField: "campaignId",
+      }, `${id} authorizes Actor reads through the bound campaign selection`);
+    }
   }
 });
 

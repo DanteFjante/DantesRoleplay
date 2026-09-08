@@ -5,6 +5,7 @@
   "description": "Returns bounded party-visible continuity for resuming an active campaign, including the current scene, active story structure, latest durable recap, and available party actions.",
   "matches": ["resume the campaign", "what is happening in the campaign", "continue play from authoritative state"],
   "roles": { "campaign": "The exact audience-authorized active campaign." },
+  "campaignSelection": { "queryId": "dnd2024.query.recent-consequences", "entityIdField": "campaignId" },
   "executor": "mechanic-projection",
   "projection": {
     "qualifiedId": "dnd2024.mechanic.campaign.resume.project",
