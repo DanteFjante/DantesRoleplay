@@ -769,7 +769,7 @@ export function DndInformationHub({
           />
         );
       case "party":
-        if (loadDeferredSection && playerPreview) return <ActorBindingRequired />;
+        if (loadDeferredSection && playerPreview && itemRoute.kind !== "none") return <ActorBindingRequired />;
         if (itemRoute.kind === "none" || itemRoute.kind === "inventory" &&
             itemRoute.campaignId === contextSelection.selectedCampaignId &&
             itemRoute.perspective === perspective &&
@@ -792,6 +792,7 @@ export function DndInformationHub({
               navigateItemRoute({ ...inventory, kind: "item", itemId, tab: "details" }, false, context);
             }}
             party={envelope.party}
+            summaryOnly={Boolean(loadDeferredSection && playerPreview)}
           />;
         }
         return <ItemWorkspace

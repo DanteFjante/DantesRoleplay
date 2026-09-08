@@ -19,6 +19,7 @@ export function CharacterShell({
   onSelectMember,
   onSelectSection,
   party,
+  sections = CHARACTER_SECTIONS,
   section,
   selectedMember,
 }: {
@@ -26,6 +27,7 @@ export function CharacterShell({
   onSelectMember: (id: string) => void;
   onSelectSection: (section: PartySectionId) => void;
   party: PartyMemberReadModel[];
+  sections?: ReadonlyArray<{ id: PartySectionId; label: string; icon: string }>;
   section: PartySectionId;
   selectedMember: PartyMemberReadModel;
 }) {
@@ -71,7 +73,7 @@ export function CharacterShell({
         <section aria-label={`${selectedMember.name} character dossier`} className="character-dossier">
           <CharacterHero member={selectedMember} />
           <nav aria-label="Character dossier sections" className="character-tabs">
-            {CHARACTER_SECTIONS.map((candidate) => (
+            {sections.map((candidate) => (
               <button
                 aria-current={section === candidate.id ? "page" : undefined}
                 key={candidate.id}

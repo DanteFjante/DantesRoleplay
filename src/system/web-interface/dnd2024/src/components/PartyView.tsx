@@ -109,6 +109,7 @@ export function CharacterWorkspace({
   navigationCharacterId,
   inventoryReturn,
   onOpenItem,
+  summaryOnly = false,
 }: {
   loading?: boolean;
   onRetry?: () => void;
@@ -119,9 +120,10 @@ export function CharacterWorkspace({
   navigationCharacterId?: string;
   inventoryReturn?: InventoryReturnContext | null;
   onOpenItem?: (characterId: string, itemId: string, context: InventoryReturnContext) => void;
+  summaryOnly?: boolean;
 }) {
   const [selectedMemberId, setSelectedMemberId] = useState(navigationCharacterId ?? party[0]?.id ?? "");
-  const [section, setSection] = useState<PartySectionId>(navigationCharacterId ? "inventory" : "overview");
+  const [section, setSection] = useState<PartySectionId>(navigationCharacterId && !summaryOnly ? "inventory" : "overview");
   const [expandedIds, setExpandedIds] = useState<string[]>(inventoryReturn?.expandedIds ?? []);
   const restored = useRef(false);
   const [query, setQuery] = useState("");
@@ -269,12 +271,16 @@ export function CharacterWorkspace({
     );
   }
 
-  const selectSection = (next: PartySectionId) => { setSection(next); setQuery(""); };
+  const selectSection = (next: PartySectionId) => {
+    setSection(summaryOnly ? "overview" : next);
+    setQuery("");
+  };
   return (
     <CharacterShell
       onSelectMember={(id) => { setSelectedMemberId(id); setExpandedIds([]); setInventoryResult(null); selectSection("overview"); }}
       onSelectSection={selectSection}
       party={party}
+      sections={summaryOnly ? CHARACTER_SECTIONS.filter((candidate) => candidate.id === "overview") : undefined}
       section={section}
       selectedMember={selectedMember}
     >
@@ -282,7 +288,7 @@ export function CharacterWorkspace({
       {detailError ? <div role="alert"><p>This character could not be loaded. No empty inventory or wallet is inferred.</p>
         <button type="button" onClick={retryCharacter}>Retry character</button></div> : null}
       {section === "overview" ? (
-        <CharacterOverview member={selectedMember} onOpenSection={selectSection} />
+        <CharacterOverview member={selectedMember} onOpenSection={selectSection} summaryOnly={summaryOnly} />
       ) : (
         <>
           <SectionHeader count={sectionCount} member={selectedMember} section={section} sectionState={state} />

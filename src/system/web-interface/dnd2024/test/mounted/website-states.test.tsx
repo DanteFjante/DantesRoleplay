@@ -1255,7 +1255,7 @@ test("a deferred view cannot replace newer independently loaded context discover
   } finally { await mounted.cleanup(); }
 });
 
-test("Player preview exposes Actor-only views as unavailable without making private or futile reads", async () => {
+test("Player preview shows the safe Party roster while Actor-only views make no private or futile reads", async () => {
   const { DndInformationHub } = await import("../../src/components/DndInformationHub");
   let reads = 0;
   const mounted = await mount(<DndInformationHub initialEnvelope={envelope("player")}
@@ -1264,11 +1264,15 @@ test("Player preview exposes Actor-only views as unavailable without making priv
     loadCharacterDetails={async () => { ++reads; throw new Error("private character"); }}
     loadDeferredSection={async () => { ++reads; throw new Error("private directory"); }} />);
   try {
-    for (const label of ["Lore", "People", "Factions", "Party"]) {
+    for (const label of ["Lore", "People", "Factions"]) {
       await click(button(mounted.container, label));
       assert.ok(mounted.container.querySelector('#information-content [data-view-status="unavailable"][data-reason-code="audience-restricted"]'));
       assert.equal(mounted.container.querySelector('#information-content [role="alert"], #information-content [aria-busy="true"]'), null);
     }
+    await click(button(mounted.container, "Party"));
+    assert.equal(mounted.container.querySelector('#information-content [data-view-status="unavailable"]'), null);
+    assert.match(mounted.container.textContent ?? "", /Player-visible campaign roster/);
+    assert.equal(mounted.container.querySelectorAll(".character-tabs button").length, 1);
     assert.equal(reads, 0);
   } finally { await mounted.cleanup(); }
 });
