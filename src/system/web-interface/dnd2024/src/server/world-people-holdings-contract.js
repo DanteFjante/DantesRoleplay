@@ -1,4 +1,4 @@
 export const contract = Object.freeze({
   id: "dnd2024.query.world-people-holdings",
-  outputSchemaHash: "3C9B26896E0E0C3E76B57AF2F114BE411B2646E0130C741C4D72FD23112E055A",
+  outputSchemaHash: "DD915E0731FC56C2B19655118CBBFD273AE02EA5C013CF19FC07F9F00A9200F5",
 });

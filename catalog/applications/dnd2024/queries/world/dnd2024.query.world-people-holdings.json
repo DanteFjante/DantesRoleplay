@@ -10,7 +10,7 @@
     "qualifiedId": "dnd2024.mechanic.world.people-holdings.project",
     "version": 1,
     "contentHash": "7005E7C292CD0B055A992CC44A4F865B1A567215044174272799E193FD43D31B",
-    "outputSchemaHash": "3C9B26896E0E0C3E76B57AF2F114BE411B2646E0130C741C4D72FD23112E055A"
+    "outputSchemaHash": "DD915E0731FC56C2B19655118CBBFD273AE02EA5C013CF19FC07F9F00A9200F5"
   },
   "outputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
