@@ -11,6 +11,7 @@
     "baseline:collect": "node scripts/collect-baseline.mjs",
     "release:manifest": "node scripts/create-release-manifest.mjs",
     "release:verify-live": "node scripts/verify-live-release.mjs",
+    "release:reconcile-object-types": "node scripts/reconcile-object-component-types.mjs",
     "typecheck": "tsc --noEmit",
     "slice19:preflight": "node scripts/campaign-simulation-preflight.mjs",
     "slice19:simulate": "node scripts/campaign-simulation.mjs",

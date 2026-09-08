@@ -16,6 +16,48 @@ http://127.0.0.1:6217/mcp
 
 The default development database is `DantesRoleplay.MCPServer/data/dantesroleplay.db`. It is runtime state and is not the authored catalog.
 
+Before a catalog activation, state migration, import, or page release, create a consistent database
+backup without combining preservation with a catalog import:
+
+```powershell
+.\roleplay.cmd backup
+```
+
+The command uses SQLite's online backup API, verifies the copy with `integrity_check`, and never
+migrates or writes the source database. Use `--output <path>` when a reviewed release needs a named
+recovery point; an existing file is never overwritten.
+
+Run a live release from a frozen source directory instead of the development checkout. The release
+directory must contain `catalog/` at its root:
+
+```powershell
+.\run-mcp-server.ps1 -SourceRoot D:\releases\dantes-roleplay\<release-id>
+```
+
+Keep the preceding release directory and its matching database backup until the new release passes
+readiness and browser verification. Registrations retain the stable `repository` allowed-root ID
+and relative catalog paths; only the host-owned resolved root changes between releases.
+
+After an application preview is reviewed and before its activation, check that the runtime has the
+exact component-type versions referenced by D&D application objects:
+
+```powershell
+cd src/system/web-interface/dnd2024
+npm run release:reconcile-object-types
+```
+
+The check derives requirements from the object contracts and exits non-zero when registration is
+required. Run the same command with `-- --apply` only at the reviewed synchronization boundary. It
+dry-runs every missing contiguous version through the authenticated local MCP endpoint, verifies the
+derived version and schema hash against the object contract, then commits that exact request. It
+does not import state or register unrelated component schemas.
+
+After activating a changed application resolution, readiness now fails with
+`AUDIENCE_STATE_SPACE_STALE` until the server-selected state space is current. Use the
+`system.state-space.upgrade` capability's dry-run and exact commit boundary; it validates every
+persisted component against its retained contract before rebinding populated state. Then require
+both application readiness and a real audience-bound read model to pass before publishing the page.
+
 ## Host-owned configuration
 
 ASP.NET Core maps nested environment configuration with double underscores. Keep canonical paths,

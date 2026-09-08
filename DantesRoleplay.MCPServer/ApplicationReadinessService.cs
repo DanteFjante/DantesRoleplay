@@ -5,6 +5,7 @@ using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.DataAccess;
+using DantesRoleplay.Ecs;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Projections;
@@ -56,7 +57,8 @@ public sealed class ApplicationReadinessService(
     IAuthorizedKnowledgeAudiencePolicy audiences,
     IKnowledgeApplicationBindingResolver bindings,
     IKnowledgeActorParticipationVerifier participation,
-    IProjectionDefinitionRegistry? projections = null)
+    IProjectionDefinitionRegistry? projections = null,
+    IStateSpaceRegistry? stateSpaces = null)
 {
     public async Task<ApplicationReadinessReport> ReadAsync(
         string applicationId,
@@ -153,7 +155,7 @@ public sealed class ApplicationReadinessService(
 
         checks.Add(CheckQueries(application, catalog, projections));
         await CheckPageAsync(checks, application, cancellationToken);
-        await CheckAudienceAsync(checks, application, cancellationToken);
+        await CheckAudienceAsync(checks, application, activation, cancellationToken);
 
         return new(
             checks.All(value => value.Status == "ready") ? "ready" : "failed",
@@ -315,6 +317,7 @@ public sealed class ApplicationReadinessService(
     private async Task CheckAudienceAsync(
         ICollection<ApplicationReadinessCheck> checks,
         ApplicationIdentifier application,
+        ActiveApplicationManifest? activation,
         CancellationToken cancellationToken)
     {
         var outcome = await SystemAudienceContextHandler.ResolveAsync(
@@ -356,6 +359,32 @@ public sealed class ApplicationReadinessService(
         var stateSpaceId = value.TryGetProperty("stateSpaceId", out var stateSpace)
             ? stateSpace.GetString() : null;
         var role = value.TryGetProperty("role", out var roleValue) ? roleValue.GetString() : null;
+        StateSpaceView? boundStateSpace = null;
+        try
+        {
+            if (stateSpaces is not null && !string.IsNullOrWhiteSpace(stateSpaceId))
+                boundStateSpace = stateSpaces.Get(stateSpaceId);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // Report the same recoverable boundary as a missing or stale binding without
+            // exposing persistence details through the public readiness surface.
+        }
+        if (activation is null || boundStateSpace is null
+            || boundStateSpace.ApplicationRevision.ApplicationId != application
+            || boundStateSpace.ApplicationRevision.Revision != activation.ApplicationRevision
+            || boundStateSpace.ApplicationRevision.Fingerprint != activation.ApplicationFingerprint
+            || boundStateSpace.ManifestFingerprint != activation.ActivationFingerprint
+            || boundStateSpace.ResolutionFingerprint != activation.ResolutionFingerprint)
+        {
+            checks.Add(Failed("audience-binding", "AUDIENCE_STATE_SPACE_STALE",
+                "The server-selected audience state space is not bound to the active application resolution.",
+                "upgrade-state-space",
+                "Preview and commit the exact compatible state-space upgrade, then request readiness again.",
+                boundStateSpace?.BindingRevision.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                boundStateSpace?.ManifestFingerprint));
+            return;
+        }
         checks.Add(Ready("audience-binding", "AUDIENCE_CONTEXT_BOUND",
             $"The server-selected {role ?? "audience"} context is bound to state space {stateSpaceId ?? "unknown"}.",
             detail: $"Application {application.Value}; role {role ?? "unknown"}."));

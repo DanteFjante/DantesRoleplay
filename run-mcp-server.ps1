@@ -26,7 +26,8 @@ param(
     [string] $ActorId  = 'actor.caldris.ganji',
     [string] $Campaign = 'campaign.caldris.measure-of-mercy',
     [string] $Database,
-    [string] $BlobRoot
+    [string] $BlobRoot,
+    [string] $SourceRoot
 )
 
 $ErrorActionPreference = 'Stop'
@@ -42,6 +43,11 @@ $blobStorageRoot = if ($BlobRoot) {
 } else {
     Join-Path (Split-Path -Parent $databasePath) 'blobs'
 }
+$catalogSourceRoot = if ($SourceRoot) {
+    [IO.Path]::GetFullPath($SourceRoot)
+} else {
+    $root
+}
 
 if (-not (Test-Path $exe)) { throw "Not built yet: $exe. Run: dotnet build DantesRoleplay.slnx" }
 if (-not (Test-Path -LiteralPath $databasePath -PathType Leaf)) {
@@ -49,6 +55,9 @@ if (-not (Test-Path -LiteralPath $databasePath -PathType Leaf)) {
 }
 if (-not (Test-Path -LiteralPath $blobStorageRoot -PathType Container)) {
     throw "Blob storage not found: $blobStorageRoot. Restore the matching blob set or pass -BlobRoot explicitly."
+}
+if (-not (Test-Path -LiteralPath (Join-Path $catalogSourceRoot 'catalog') -PathType Container)) {
+    throw "Catalog source root is invalid: $catalogSourceRoot. It must contain a catalog directory."
 }
 
 if ($Restart) {
@@ -65,7 +74,7 @@ $env:ASPNETCORE_ENVIRONMENT              = 'Development'
 $env:ASPNETCORE_URLS                     = 'http://localhost:6217'
 $env:ConnectionStrings__Kernel           = $databasePath
 $env:BlobStorage__Root                   = $blobStorageRoot
-$env:Sources__AllowedRoots__repository   = $root
+$env:Sources__AllowedRoots__repository   = $catalogSourceRoot
 $env:DANTESROLEPLAY_OLLAMA_COMPLETION    = 'true'
 $env:Knowledge__Completion__Enabled      = 'true'
 $env:Knowledge__LocalPlayer__Enabled     = 'true'
@@ -91,6 +100,7 @@ Start-Process -FilePath 'cmd.exe' `
 Write-Host "Starting as seat Role=$Role ..." -ForegroundColor Cyan
 Write-Host "    Database: $databasePath" -ForegroundColor DarkGray
 Write-Host "    Blobs:    $blobStorageRoot" -ForegroundColor DarkGray
+Write-Host "    Sources:  $catalogSourceRoot" -ForegroundColor DarkGray
 
 # A recovered production database can need roughly 90 seconds for its cold catalog/page
 # verification pass. The server is already detached, so callers may safely yield while this

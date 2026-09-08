@@ -2,6 +2,7 @@ using System.Text.Json;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.Ecs;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.MCPServer.Mcp;
@@ -34,7 +35,8 @@ public sealed class ApplicationReadinessTests : IDisposable
             new Seats(),
             new Audience(allowed: true),
             new Bindings(Binding()),
-            new Participation());
+            new Participation(),
+            stateSpaces: new StateSpaces(Manifest(application)));
 
         var report = await service.ReadAsync("dnd2024");
 
@@ -123,6 +125,26 @@ public sealed class ApplicationReadinessTests : IDisposable
         Assert.Equal("APPLICATION_QUERIES_CALLABLE",
             report.Checks.Single(value => value.Name == "query-callability").Code);
         Assert.Equal(1, projections.GetCalls);
+    }
+
+    [Fact]
+    public async Task Stale_audience_state_space_fails_readiness_before_the_browser_opens()
+    {
+        await using var db = fixture.CreateContext();
+        var application = ApplicationIdentifier.Parse("dnd2024");
+        var registry = new InMemoryApplicationRegistry();
+        registry.Register(new(application, "D&D 2024", "D&D 2024 application.", []));
+        var active = Manifest(application);
+        var stale = active with { ActivationFingerprint = Hash('8'), ResolutionFingerprint = Hash('7') };
+        var service = new ApplicationReadinessService(
+            db, registry, new Activation(active), new Catalogs(available: true), new Publications(),
+            new Pages(activeRevision: 2, latestRevision: 2), new Seats(), new Audience(allowed: true),
+            new Bindings(Binding()), new Participation(), stateSpaces: new StateSpaces(stale));
+
+        var report = await service.ReadAsync(application.Value);
+
+        Assert.Equal("failed", report.Status);
+        AssertFailure(report, "audience-binding", "AUDIENCE_STATE_SPACE_STALE", "upgrade-state-space");
     }
 
     [Fact]
@@ -317,6 +339,23 @@ public sealed class ApplicationReadinessTests : IDisposable
         public EffectiveApplicationContentResult EffectiveContent(EffectiveApplicationContentRequest request) =>
             throw new NotSupportedException();
         public ReadableRulesResult ReadableRules(ReadableRulesRequest request) => throw new NotSupportedException();
+    }
+
+    private sealed class StateSpaces(ActiveApplicationManifest manifest) : IStateSpaceRegistry
+    {
+        public StateSpaceView? Get(string stateSpaceId) => stateSpaceId == "dnd2024-main"
+            ? new(stateSpaceId,
+                new(manifest.ApplicationId, manifest.ApplicationRevision,
+                    manifest.ApplicationFingerprint, []),
+                manifest.ActivationFingerprint, 3, DateTime.UtcNow, DateTime.UtcNow)
+                { ResolutionFingerprint = manifest.ResolutionFingerprint }
+            : null;
+
+        public StateSpaceView Create(StateSpaceBinding binding) => throw new NotSupportedException();
+
+        public StateSpaceDiscoveryPage ListPage(
+            ApplicationIdentifier applicationId, string? afterStateSpaceId, int limit) =>
+            throw new NotSupportedException();
     }
 
     private sealed class Publications : IWebPagePublicationDirectory

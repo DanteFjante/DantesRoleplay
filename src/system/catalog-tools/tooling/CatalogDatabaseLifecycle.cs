@@ -59,8 +59,7 @@ public static class CatalogDatabaseLifecycle
         }
 
         await RequireValidCatalogAsync(root, cancellationToken);
-        var backup = BackupPath(target);
-        CreateConsistentBackup(target, backup);
+        var backup = DatabaseBackup.Create(target);
 
         try
         {
@@ -140,22 +139,6 @@ public static class CatalogDatabaseLifecycle
         return Directory.Exists(root)
             ? root
             : throw new DirectoryNotFoundException($"No catalog at '{root}'.");
-    }
-
-    private static string BackupPath(string databasePath)
-    {
-        var timestamp = DateTimeOffset.UtcNow.ToString("yyyyMMdd'T'HHmmssfff'Z'");
-        var candidate = $"{databasePath}.backup-{timestamp}";
-        return File.Exists(candidate) ? $"{candidate}-{Guid.NewGuid():n}" : candidate;
-    }
-
-    private static void CreateConsistentBackup(string sourcePath, string backupPath)
-    {
-        using var source = new SqliteConnection($"Data Source={sourcePath};Mode=ReadOnly;Pooling=False");
-        using var destination = new SqliteConnection($"Data Source={backupPath};Mode=ReadWriteCreate;Pooling=False");
-        source.Open();
-        destination.Open();
-        source.BackupDatabase(destination);
     }
 
     private static void RestoreBackup(string backupPath, string databasePath)
