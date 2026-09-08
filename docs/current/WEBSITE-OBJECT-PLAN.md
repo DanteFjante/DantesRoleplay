@@ -1,5 +1,7 @@
 # Website audit and object-backed application plan
 
+The follow-up [Website reassessment and remediation plan](WEBSITE-REMEDIATION-PLAN.md) evaluates W00–W11 against the implementation and live public website. It records reopened acceptance gaps, the user's shared-website access requirement, and repair slices R00–R14. Read it for subsequent remediation; this original document retains the initial migration design.
+
 ## Decision and scope
 
 Use registered application objects consistently across the D&D application and website. Keep the existing React UI and generic C# infrastructure; migrate one complete feature at a time. The largest opportunity is replacing browser-side record assembly with bounded, authorized queries—not replacing React or creating another database.
