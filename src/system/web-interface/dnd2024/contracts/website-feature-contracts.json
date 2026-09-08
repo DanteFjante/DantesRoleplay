@@ -1,0 +1,372 @@
+{
+  "schema": "dnd2024.website-feature-contracts.v1",
+  "slice": "W01",
+  "purpose": "Acceptance inventory for the website object migration. This file is not runtime game state and does not register catalog IDs.",
+  "authority": {
+    "liveGameState": "SQLite through audience-authorized host queries, generic relationships, containment, and mechanics",
+    "authoredRulesAndFixtures": "catalog",
+    "browser": "bounded validated response cache, selection state, and uncommitted drafts only",
+    "forbiddenShortcut": "A browser, document, or second service must not become an authoritative game-state store."
+  },
+  "decisions": {
+    "persistDistinctPartyEntity": false,
+    "partyOwner": "The selected campaign's game.core.campaign.has-character-participation relationships and their game.core.campaign.character-participation.for-actor edges.",
+    "partyReason": "Party membership has no independent lifecycle, shared ownership, or cross-campaign identity in the current product.",
+    "existingGenericCapabilities": [
+      "audience-scoped read-model execution",
+      "object projection with source-revision-bound pagination",
+      "generic relationships and containment",
+      "typed mechanic prepare/confirm/execute",
+      "scoped change notifications"
+    ],
+    "missingCapabilities": [
+      {
+        "label": "context-directory-read-model",
+        "owner": "generic object projection over authorized world and campaign membership",
+        "neededBy": ["W02", "W03"],
+        "reason": "Context discovery currently scans the entity directory and infers world identity from campaign IDs."
+      },
+      {
+        "label": "world-directory-read-models",
+        "owner": "catalog-declared world, location, people, holdings, knowledge, chronology, and route projections",
+        "neededBy": ["W05", "W06"],
+        "reason": "These views still assemble many private entity, component, relationship, containment, media, and notebook reads in the browser adapter."
+      },
+      {
+        "label": "campaign-detail-read-model",
+        "owner": "catalog-declared campaign records and existing campaign relationships",
+        "neededBy": ["W03"],
+        "reason": "Campaign detail sections still scan and assemble legacy records after the registered summary read."
+      },
+      {
+        "label": "bounded-rule-and-content-responses",
+        "owner": "existing rules and effective-content protocols",
+        "neededBy": ["W10"],
+        "reason": "The protocols exist, but their clients do not yet enforce response-byte and first-screen retention gates."
+      }
+    ],
+    "newPermanentIdsRegisteredByW01": []
+  },
+  "versioning": {
+    "rule": "Reuse an existing contract only when meaning and closed response shape are unchanged. Otherwise add a new immutable version and keep the prior version readable through the compatibility window.",
+    "compatibilityOrder": [
+      "add and validate the new catalog object/query/mechanic version",
+      "teach the server and browser adapter to read both old and new versions",
+      "migrate or backfill live records in a tested transaction when state shape changes",
+      "activate the new mapping or query version",
+      "publish the compatible website bundle",
+      "remove the old reader only after live verification and the declared compatibility window"
+    ],
+    "migrationRules": {
+      "queryOnlyProjection": "No database migration; register and validate the new projection before activating the client.",
+      "componentShapeChange": "Requires an export, tested migration/backfill, validation, activation, and recovery point.",
+      "relationshipMeaningChange": "Requires a new qualified relationship kind or versioned object contract; never reinterpret existing edges in place.",
+      "uiAssemblyOnly": "No catalog or database migration; preserve the accepted response contract."
+    },
+    "plannedChanges": [
+      { "feature": "campaign-and-party", "current": "dnd2024.object.campaign-summary v3", "target": "reuse v3 for summary and membership; add a separate first-version campaign-detail projection only if W03 cannot compose existing records without changing meaning" },
+      { "feature": "character", "current": "dnd2024.query.character-dossier-v1 / dossier version 1", "target": "reuse version 1 until a closed response-shape change is required" },
+      { "feature": "inventory-and-items", "current": "inventory item details/uses/recipes version 1", "target": "reuse version 1; containment remains generic and mutations remain mechanics" },
+      { "feature": "factions", "current": "dnd2024.object.faction-directory-page v1", "target": "reuse version 1" },
+      { "feature": "board", "current": "encounter board and draft version 1", "target": "reuse version 1; do not redesign the protocol" },
+      { "feature": "world-context-and-directories", "current": "legacy private API assembly", "target": "first registered versions after their IDs and schemas are separately confirmed in their implementation slices" }
+    ]
+  },
+  "fixtures": {
+    "small": {
+      "worlds": 1,
+      "campaigns": 1,
+      "partyMembers": 1,
+      "locations": 4,
+      "people": 3,
+      "holdings": 2,
+      "factions": 2,
+      "inventoryEntries": 8,
+      "rules": 12,
+      "installedRecords": 5,
+      "expectation": "Every authorized view is ready or explicitly empty and completes in one page."
+    },
+    "large": {
+      "worlds": 4,
+      "campaigns": 20,
+      "partyMembers": 20,
+      "locations": 1000,
+      "people": 1000,
+      "holdings": 1000,
+      "factions": 100,
+      "inventoryEntries": 512,
+      "rules": 4096,
+      "installedRecords": 20000,
+      "expectation": "Every collection follows stable continuation tokens to the declared maximum without omissions, duplicates, source-revision drift, or unrelated-population scaling."
+    },
+    "unauthorized": {
+      "profiles": ["unbound", "wrong-campaign-actor", "gm-player-preview"],
+      "canaries": ["gm-only-component", "gm-only-media", "other-campaign-record", "unowned-inventory-item"],
+      "expectation": "Forbidden or intentionally unavailable results remain distinct from empty results, and no canary identity or value reaches response data, browser cache, diagnostics, or rendered text."
+    }
+  },
+  "navigationCoverage": {
+    "persistentShell": ["context-and-shell"],
+    "mainTabs": {
+      "world": ["world-overview", "maps-locations-and-routes", "people-and-holdings", "factions", "lore-and-history"],
+      "campaign": ["campaign"],
+      "party": ["party-roster", "character", "inventory-and-items"],
+      "current": ["current-and-play", "tactical-board"],
+      "rules": ["rules"],
+      "content": ["installed-content"]
+    },
+    "campaignSections": {
+      "overview": "campaign",
+      "log": "campaign",
+      "places": "campaign",
+      "outcomes": "campaign",
+      "quests": "campaign",
+      "threads": "campaign",
+      "clues": "campaign"
+    },
+    "worldSections": {
+      "overview": "world-overview",
+      "map": "maps-locations-and-routes",
+      "history": "lore-and-history",
+      "locations": "maps-locations-and-routes",
+      "people": "people-and-holdings",
+      "factions": "factions",
+      "lore": "lore-and-history"
+    },
+    "locationSections": {
+      "details": "maps-locations-and-routes",
+      "people": "people-and-holdings",
+      "holdings": "people-and-holdings"
+    },
+    "itemRoutes": {
+      "inventory": "inventory-and-items",
+      "details": "inventory-and-items",
+      "uses": "inventory-and-items",
+      "recipes": "inventory-and-items"
+    },
+    "boardActions": {
+      "generate": "tactical-board",
+      "upload-optional-background": "tactical-board",
+      "prepare": "tactical-board",
+      "confirm": "tactical-board",
+      "execute": "tactical-board"
+    }
+  },
+  "gateSemantics": {
+    "status": "These are acceptance ceilings, not measured improvement claims. A target gate becomes mandatory when its target owner replaces the legacy path; currentCost records the existing bound until then.",
+    "featureRequests": "Maximum data requests for one user-triggered feature load. Each explicit continuation repeats the same per-page gate up to target.maximumPages.",
+    "featureSql": "Maximum production-path SQL statements for one feature load; catalog/source-only work may report zero but must still provide measured evidence.",
+    "featureBytes": "responseBytes is the aggregate transport body allowance for one feature load; retainedResponseBytes is the maximum validated response data retained for that audience scope.",
+    "completeWorkload": "The core table journey loads the first complete page of each listed feature interaction. Rules, installed content, and the optional board mutation flow retain independent route gates and fixtures."
+  },
+  "completeWorkloadGates": {
+    "authorizedProfiles": ["game-master", "gm-player-preview", "actor"],
+    "featureInteractions": ["context-and-shell", "campaign", "party-roster", "character", "inventory-and-items", "world-overview", "maps-locations-and-routes", "people-and-holdings", "factions", "lore-and-history", "current-and-play"],
+    "independentRouteInteractions": ["tactical-board", "rules", "installed-content"],
+    "maximumDataRequests": 200,
+    "maximumSqlStatements": 80,
+    "maximumResponseBytes": 12582912,
+    "maximumRetainedResponseBytes": 33554432,
+    "warmSourceReads": 0,
+    "minimumColdSamples": 20,
+    "minimumWarmSamples": 20
+  },
+  "features": [
+    {
+      "id": "context-and-shell",
+      "screens": ["bootstrap", "world/campaign selector", "DM/player perspective switch"],
+      "currentOwner": ["host audience binding", "dnd2024.query.campaign-summary", "legacy entity directory plus campaign-root component reads"],
+      "browserAssembly": "readGameServerContext then connectedCampaignToHubEnvelope; BrowserObjectQueryState caches at most eight audience scopes",
+      "authority": "host binding, SQLite campaign records, and registered campaign summary projection",
+      "audience": { "game-master": "full", "gm-player-preview": "projected", "actor": "bound-campaign-only", "unbound": "reference-shell-only" },
+      "editCapability": "selection and perspective are browser preferences only; they do not mutate game state",
+      "completeness": "ready requires an unchanged binding plus a complete authorized context directory; unavailable and denied are never treated as empty",
+      "currentCost": "Initial Campaign is frozen at at most eight data reads; legacy GM context discovery may scan up to 1000 pages and 100000 entities.",
+      "target": { "slice": "W02-W03", "owner": "existing campaign summary plus missing context-directory-read-model", "pageSize": 25, "maximumPages": 40, "maximumRecords": 1000 },
+      "gates": { "requests": 3, "sqlStatements": 12, "responseBytes": 262144, "retainedResponseBytes": 1048576 },
+      "fixtureCases": ["small", "large", "unauthorized"]
+    },
+    {
+      "id": "campaign",
+      "screens": ["Campaign overview", "Adventure Log", "Places Visited", "Outcomes", "Quests", "Open Threads", "Clues"],
+      "currentOwner": ["dnd2024.object.campaign-summary v3", "dnd2024.query.campaign-summary", "legacy campaign chapter/arc/session/visit relationships and components"],
+      "browserAssembly": "summary arrives in bootstrap; non-overview sections call readDeferredCampaignDetails and merge a validated read model",
+      "authority": "SQLite campaign components and relationships through object/query projections",
+      "audience": { "game-master": "full", "gm-player-preview": "player-projected", "actor": "player-projected", "unbound": "forbidden" },
+      "editCapability": "v3 permits DM premise and participation relationship edits; the current website is read-only",
+      "completeness": "summary is source-revision-bound and limited to 20 participation records; every detail collection must be complete or the view fails",
+      "currentCost": "Campaign SQL is frozen at 12 statements; legacy details may scan up to 1000 pages and 100000 entities before following bounded relationships.",
+      "target": { "slice": "W03", "owner": "reuse campaign summary v3; missing campaign-detail-read-model only if required", "pageSize": 25, "maximumPages": 40, "maximumRecords": 1000 },
+      "gates": { "requests": 2, "sqlStatements": 12, "responseBytes": 524288, "retainedResponseBytes": 2097152 },
+      "fixtureCases": ["small", "large", "unauthorized"]
+    },
+    {
+      "id": "party-roster",
+      "screens": ["Party roster", "character selection"],
+      "currentOwner": ["dnd2024.object.campaign-summary v3 party collection", "game.core.campaign.has-character-participation", "game.core.campaign.character-participation.for-actor"],
+      "browserAssembly": "projectRegisteredPartyReferences derives actors from one source-revision-bound campaign object response",
+      "authority": "campaign participation relationships in SQLite; no Party entity",
+      "audience": { "game-master": "full", "gm-player-preview": "forbidden", "actor": "authorized-roster", "unbound": "forbidden" },
+      "editCapability": "DM membership changes use campaign-summary relationship writes after confirmation; selection is local UI state",
+      "completeness": "at most 20 participation records; each active participation must resolve exactly one actor or the roster fails closed",
+      "currentCost": "Included in the campaign-summary request and its 12-SQL, 65536-data-byte object limits.",
+      "target": { "slice": "W03", "owner": "reuse campaign summary v3 and existing participation edges", "pageSize": 20, "maximumPages": 1, "maximumRecords": 20 },
+      "gates": { "requests": 1, "sqlStatements": 12, "responseBytes": 70000, "retainedResponseBytes": 524288 },
+      "fixtureCases": ["small", "large", "unauthorized"]
+    },
+    {
+      "id": "character",
+      "screens": ["Character summary", "Sheet", "Features", "Inventory", "Backstory", "Knowledge"],
+      "currentOwner": ["dnd2024.query.character-dossier-v1", "dnd2024.object.character-dossier-records", "dnd2024.query.character-sheet-v2"],
+      "browserAssembly": "ViewReadClient loads one selected authorized actor, validates the dossier, and caches by state-space/campaign/perspective/actor",
+      "authority": "SQLite character components and containment projected by catalog JavaScript mechanics",
+      "audience": { "game-master": "full", "gm-player-preview": "forbidden", "actor": "authorized-roster", "unbound": "forbidden" },
+      "editCapability": "future edits must invoke typed character mechanics; browser drafts never become authoritative",
+      "completeness": "closed dossier v1; inventory depth is exactly four and explicitly reports that deeper contents may be omitted",
+      "currentCost": "One selected-character read-model response is capped at 1060000 body bytes and 1048576 data bytes.",
+      "target": { "slice": "W04", "owner": "reuse character dossier v1", "pageSize": 1, "maximumPages": 1, "maximumRecords": 1 },
+      "gates": { "requests": 1, "sqlStatements": 16, "responseBytes": 1060000, "retainedResponseBytes": 4194304 },
+      "fixtureCases": ["small", "large", "unauthorized"]
+    },
+    {
+      "id": "inventory-and-items",
+      "screens": ["Inventory", "item details", "item uses", "item recipes"],
+      "currentOwner": ["generic containment", "dnd2024.query.inventory-item-details", "dnd2024.query.inventory-item-uses", "dnd2024.query.inventory-item-recipes"],
+      "browserAssembly": "ItemWorkspace routes by URL hash and validates independently revision-bound details, uses, and recipe responses",
+      "authority": "SQLite containment and item components; catalog JavaScript mechanics own item behavior",
+      "audience": { "game-master": "authorized-character", "gm-player-preview": "forbidden", "actor": "owned-or-authorized-item", "unbound": "forbidden" },
+      "editCapability": "inventory mutations must use typed mechanics and confirmed server responses; local drafts are non-authoritative",
+      "completeness": "each response is ready or partial with explicit inventory/source/page/byte/dependency reasons; stale revision is distinct",
+      "currentCost": "Details, uses, and recipes are separate reads; each response is capped at 70000 body bytes and 65536 data bytes.",
+      "target": { "slice": "W04", "owner": "reuse the three item query v1 contracts and generic containment", "pageSize": 25, "maximumPages": 21, "maximumRecords": 512 },
+      "gates": { "requests": 3, "sqlStatements": 20, "responseBytes": 210000, "retainedResponseBytes": 2097152 },
+      "fixtureCases": ["small", "large", "unauthorized"]
+    },
+    {
+      "id": "world-overview",
+      "screens": ["World overview"],
+      "currentOwner": ["legacy world identity inferred from campaign ID", "game.core.world location/component records"],
+      "browserAssembly": "readGameServerContext assembles world identity; connectedCampaignToHubEnvelope formats the overview",
+      "authority": "SQLite world and location records",
+      "audience": { "game-master": "full", "gm-player-preview": "player-projected", "actor": "player-projected", "unbound": "forbidden" },
+      "editCapability": "read-only until a typed world mechanic is explicitly exposed",
+      "completeness": "world identity, selected campaign, and root map must agree; inferred identity is a compatibility fallback, not authority",
+      "currentCost": "Shares bootstrap and context discovery costs; no independent world-summary query exists.",
+      "target": { "slice": "W05", "owner": "missing world summary/context projection", "pageSize": 1, "maximumPages": 1, "maximumRecords": 1 },
+      "gates": { "requests": 1, "sqlStatements": 8, "responseBytes": 131072, "retainedResponseBytes": 524288 },
+      "fixtureCases": ["small", "large", "unauthorized"]
+    },
+    {
+      "id": "maps-locations-and-routes",
+      "screens": ["World Map", "Locations", "location Details", "People & Creatures", "DM Holdings", "known routes"],
+      "currentOwner": ["game.core.world.location", "generic containment", "map media", "game.core.world.route and route relationships"],
+      "browserAssembly": "legacy location directory pages, per-location components/media, containment, and known-route relationship reads are joined client-side",
+      "authority": "SQLite world/location/route components, relationships, containment, and audience-filtered media",
+      "audience": { "game-master": "full", "gm-player-preview": "player-projected", "actor": "knowledge-projected", "unbound": "forbidden" },
+      "editCapability": "map selection is local; travel and map/location edits require typed mechanics",
+      "completeness": "stable pages must include every authorized location; missing continuation, containment, route endpoint, or source revision fails the view",
+      "currentCost": "A deferred section guard allows up to 2000 reads; individual generic directories default to 100-item pages and 100 pages, with narrower relationship limits.",
+      "target": { "slice": "W05-W06", "owner": "missing world/location/map/route projections over existing generic records", "pageSize": 50, "maximumPages": 20, "maximumRecords": 1000 },
+      "gates": { "requests": 2, "sqlStatements": 16, "responseBytes": 524288, "retainedResponseBytes": 2097152 },
+      "fixtureCases": ["small", "large", "unauthorized"]
+    },
+    {
+      "id": "people-and-holdings",
+      "screens": ["World People", "location People & Creatures", "location Holdings"],
+      "currentOwner": ["generic entities and containment", "game.core.world.motive", "audience-filtered entity media"],
+      "browserAssembly": "readWorldDirectory scans entities, then joins containment and per-person motive/media calls",
+      "authority": "SQLite entities, containment, motive components, and media grants",
+      "audience": { "game-master": "full", "gm-player-preview": "forbidden", "actor": "knowledge-projected", "unbound": "forbidden" },
+      "editCapability": "read-only; changes require typed world/social mechanics",
+      "completeness": "people and holdings are scoped to authorized locations; failed later pages or containment joins fail closed rather than appearing empty",
+      "currentCost": "The legacy directory can retain 1000 relevant entities and issue containment plus motive/media reads per location/person within the 2000-read section guard.",
+      "target": { "slice": "W05", "owner": "missing people/holdings directory projections", "pageSize": 50, "maximumPages": 20, "maximumRecords": 1000 },
+      "gates": { "requests": 2, "sqlStatements": 16, "responseBytes": 524288, "retainedResponseBytes": 2097152 },
+      "fixtureCases": ["small", "large", "unauthorized"]
+    },
+    {
+      "id": "factions",
+      "screens": ["World Factions", "faction details"],
+      "currentOwner": ["dnd2024.object.faction-directory-page v1", "dnd2024.query.faction-directory-page"],
+      "browserAssembly": "BrowserObjectQueryState loads and revision-checks 25-item pages, then merges unique factions",
+      "authority": "SQLite faction components and declared member/control/territory/ally/opponent relationships through object projection",
+      "audience": { "game-master": "full", "gm-player-preview": "forbidden", "actor": "knowledge-projected fallback", "unbound": "forbidden" },
+      "editCapability": "current website is read-only; future edits require object writes or typed mechanics with confirmation",
+      "completeness": "source-revision-bound pages, maximum 100 factions, explicit complete and nextCursor; stale paging is rejected",
+      "currentCost": "One Factions page is frozen at two data reads and the projection at 12 SQL statements, 25 records, and 500000 data bytes.",
+      "target": { "slice": "W05", "owner": "reuse faction directory page v1", "pageSize": 25, "maximumPages": 4, "maximumRecords": 100 },
+      "gates": { "requests": 2, "sqlStatements": 12, "responseBytes": 524288, "retainedResponseBytes": 2097152 },
+      "fixtureCases": ["small", "large", "unauthorized"]
+    },
+    {
+      "id": "lore-and-history",
+      "screens": ["World Lore", "World History", "character Knowledge"],
+      "currentOwner": ["private campaign knowledge endpoint", "private campaign chronology endpoint", "catalog world chronology metadata"],
+      "browserAssembly": "deferred knowledge/chronology responses are validated, audience-projected, and joined to authorized media",
+      "authority": "SQLite campaign knowledge and chronology with catalog-declared presentation metadata",
+      "audience": { "game-master": "full", "gm-player-preview": "forbidden-for-lore", "actor": "knowledge-projected", "unbound": "forbidden" },
+      "editCapability": "read-only; knowledge and chronology changes require existing typed game mechanisms",
+      "completeness": "ready and empty are explicit; malformed, forbidden, or unavailable sources never become credible empty history/lore",
+      "currentCost": "Knowledge SQL is frozen at 16 and chronology at 12; legacy media attachment remains within the 2000-read section guard.",
+      "target": { "slice": "W06", "owner": "missing knowledge and chronology projections", "pageSize": 50, "maximumPages": 20, "maximumRecords": 1000 },
+      "gates": { "requests": 2, "sqlStatements": 16, "responseBytes": 524288, "retainedResponseBytes": 2097152 },
+      "fixtureCases": ["small", "large", "unauthorized"]
+    },
+    {
+      "id": "current-and-play",
+      "screens": ["Current View", "exploration scene", "conversation panel", "combat scene"],
+      "currentOwner": ["dnd2024.query.current-scene", "play session endpoint", "campaign current-scene/affordance components", "conversation component"],
+      "browserAssembly": "deferred current view combines current-scene component, session, actor presence, authorized knowledge, affordances, routes, and conversation controls",
+      "authority": "SQLite campaign/play records and catalog mechanics; rendered scene state is not authoritative",
+      "audience": { "game-master": "full", "gm-player-preview": "player-projected", "actor": "player-projected", "unbound": "forbidden" },
+      "editCapability": "conversation actions and other play mutations use server protocols; view refreshes only after confirmed changes",
+      "completeness": "the selected campaign, scene, location, session, participants, and audience projection must agree; unavailable is explicit",
+      "currentCost": "The legacy current section performs several parallel component/session/presence reads plus optional knowledge, affordance, route, encounter, and media reads under the 2000-read guard.",
+      "target": { "slice": "W06", "owner": "reuse current-scene and play protocols behind one bounded current-view composition", "pageSize": 25, "maximumPages": 4, "maximumRecords": 100 },
+      "gates": { "requests": 4, "sqlStatements": 16, "responseBytes": 524288, "retainedResponseBytes": 2097152 },
+      "fixtureCases": ["small", "large", "unauthorized"]
+    },
+    {
+      "id": "tactical-board",
+      "screens": ["encounter board", "GM board draft", "optional background upload", "prepare", "confirm", "execute"],
+      "currentOwner": ["dnd2024.query.encounter-board", "dnd2024.query.encounter-board-draft", "dnd2024.mechanic.encounter.board.accept"],
+      "browserAssembly": "validated board projection plus an isolated GM draft workflow; geometry remains structured even when a background is uploaded",
+      "authority": "SQLite encounter records and catalog JavaScript board mechanics",
+      "audience": { "game-master": "read-and-confirm", "gm-player-preview": "player-projected-read", "actor": "player-projected-read", "unbound": "forbidden" },
+      "editCapability": "GM-only draft then explicit prepare/confirm/execute; upload is optional and capped at 10 MiB",
+      "completeness": "closed board v1 with at most 256 terrain, 256 obstacles, and 100 participants; hidden terrain never enters player data",
+      "currentCost": "Board read is one response capped at 262144 body bytes; a complete confirmed draft uses draft, optional upload, prepare, and execute requests.",
+      "target": { "slice": "W06", "owner": "reuse board/draft v1 and existing accept mechanic", "pageSize": 1, "maximumPages": 1, "maximumRecords": 1 },
+      "gates": { "requests": 4, "sqlStatements": 16, "responseBytes": 11010048, "retainedResponseBytes": 12582912 },
+      "fixtureCases": ["small", "large", "unauthorized"]
+    },
+    {
+      "id": "rules",
+      "screens": ["Rules", "rules-only fallback hub"],
+      "currentOwner": ["GET /api/applications/dnd2024/rules", "resolved catalog rule presentation"],
+      "browserAssembly": "lazy RulesView load; projectResolvedRules validates and sorts at most 128 sections and 4096 rules",
+      "authority": "resolved catalog content and active extension ordering, never website prose",
+      "audience": { "game-master": "full", "gm-player-preview": "public-projected", "actor": "public-projected", "unbound": "public-reference" },
+      "editCapability": "read-only; rule changes remain authored and reviewed in the catalog",
+      "completeness": "one resolved fingerprinted rules response; invalid response yields explicit no-reference state, not game state",
+      "currentCost": "One lazy HTTP read; the client caps counts but does not yet cap response bytes.",
+      "target": { "slice": "W10", "owner": "reuse existing rules protocol", "pageSize": 4096, "maximumPages": 1, "maximumRecords": 4096 },
+      "gates": { "requests": 1, "sqlStatements": 8, "responseBytes": 2097152, "retainedResponseBytes": 8388608 },
+      "fixtureCases": ["small", "large", "unauthorized"]
+    },
+    {
+      "id": "installed-content",
+      "screens": ["Installed Content", "rules-only fallback hub content view"],
+      "currentOwner": ["GET /api/applications/dnd2024/content", "effective catalog resolution"],
+      "browserAssembly": "lazy InstalledContentView load; readInstalledContent follows 100-record pages, validates one resolution fingerprint, and sorts extension winners",
+      "authority": "resolved catalog base plus active extensions",
+      "audience": { "game-master": "full", "gm-player-preview": "metadata", "actor": "metadata", "unbound": "metadata" },
+      "editCapability": "read-only; installation and extension ordering remain outside the website",
+      "completeness": "every page must share one resolution fingerprint; cursor repetition, duplicate IDs, malformed records, or more than 20000 winners fails the view",
+      "currentCost": "Eager complete load uses 100-record pages, permits up to 10000 pages, and retains at most 20000 non-base winners.",
+      "target": { "slice": "W10", "owner": "reuse existing effective-content protocol with first-screen paging", "pageSize": 100, "maximumPages": 200, "maximumRecords": 20000 },
+      "gates": { "requests": 1, "sqlStatements": 8, "responseBytes": 524288, "retainedResponseBytes": 2097152 },
+      "fixtureCases": ["small", "large", "unauthorized"]
+    }
+  ]
+}
