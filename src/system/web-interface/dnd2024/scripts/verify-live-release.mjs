@@ -15,14 +15,22 @@ async function fetchBytes(url) {
   return { bytes, cacheControl: response.headers.get("cache-control") ?? "" };
 }
 
+export function resolveReleaseOrigin(baseUrl, expectedOrigin) {
+  const origin = new URL(baseUrl);
+  assert.ok(!origin.username && !origin.password && !origin.search && !origin.hash && origin.pathname === '/',
+    'Verification requires an exact origin without credentials, path, query or fragment');
+  if (expectedOrigin !== undefined) assert.equal(origin.origin, expectedOrigin, 'Signed verification origin drift');
+  const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname);
+  assert.ok(origin.protocol === 'https:' || origin.protocol === 'http:' && (loopback || expectedOrigin === origin.origin),
+    'Public HTTP requires its exact origin in the signed runtime target');
+  return origin.origin;
+}
+
 export async function verifyLiveRelease({ manifestPath, baseUrl, output, trustedPublicKey, browserEvidence }) {
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
   verifyManifest(manifest, trustedPublicKey);
   assert.equal(manifest.schemaVersion, 2);
-  const origin = new URL(baseUrl);
-  assert.ok(!origin.username && !origin.password && !origin.search && !origin.hash && origin.pathname === '/');
-  assert.ok(origin.protocol === 'https:' || origin.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname));
-  baseUrl = origin.origin;
+  baseUrl = resolveReleaseOrigin(baseUrl, manifest.expectedRuntime.origin);
   const json = async path => JSON.parse((await fetchBytes(baseUrl + path)).bytes.toString('utf8'));
   const readiness = await probeRuntime(manifest.expectedRuntime, json);
   const results = [];

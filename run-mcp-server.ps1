@@ -1,135 +1,129 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Starts the local DantesRoleplay MCP server the way the http launch profile does.
-
+    Starts or checks the saved, byte-verified runtime release.
 .DESCRIPTION
-    Launching the built exe with a bare Start-Process does NOT work: it binds port 5000 with
-    Production configuration, and the mcp-remote bridge Claude Desktop uses never reconnects.
-    The launch profile in Properties/launchSettings.json supplies both the URL and a set of
-    Knowledge__LocalPlayer__* environment variables that OVERRIDE appsettings.json. This script
-    reproduces that environment so the server comes up on 6217 with a local GameMaster seat
-    that can use both DM and Player views. Pass -Role Actor for a player-only session.
-
+    Ordinary use needs no database, source-root, or role arguments. Local administration
+    settings select the compatible host, frozen catalog, live database/blobs, and probe origins.
+    -Restart replaces only the instance started by this launcher, never every server.
+    -Profile selects a reviewed alternative for development or recovery.
+    -Check verifies saved files without starting, stopping, or changing anything.
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File .\run-mcp-server.ps1
-
 .EXAMPLE
-    # Stop whatever is running first (required before any build -- the exe locks its own DLLs)
     powershell -ExecutionPolicy Bypass -File .\run-mcp-server.ps1 -Restart
 #>
 [CmdletBinding()]
-param(
-    [switch] $Restart,
-    [ValidateSet('Actor', 'GameMaster')]
-    [string] $Role     = 'GameMaster',
-    [string] $ActorId  = 'actor.caldris.ganji',
-    [string] $Campaign = 'campaign.caldris.measure-of-mercy',
-    [string] $Database,
-    [string] $BlobRoot,
-    [string] $SourceRoot
-)
+param([switch] $Restart, [string] $Profile, [switch] $Check)
 
 $ErrorActionPreference = 'Stop'
-$root = $PSScriptRoot
-$exe  = Join-Path $root 'DantesRoleplay.MCPServer\bin\Debug\net10.0\win-x64\DantesRoleplay.MCPServer.exe'
-$databasePath = if ($Database) {
-    [IO.Path]::GetFullPath($Database)
-} else {
-    Join-Path $root 'DantesRoleplay.MCPServer\data\dantesroleplay.db'
+. (Join-Path $PSScriptRoot 'src\system\web-interface\scripts\RuntimeLaunch.ps1')
+if (-not $Profile) { $Profile = Join-Path $PSScriptRoot 'DantesRoleplay.MCPServer\data\runtime-launch.json' }
+$Profile = [IO.Path]::GetFullPath($Profile)
+if (-not (Test-Path -LiteralPath $Profile -PathType Leaf)) {
+    throw "No saved runtime release at $Profile. Configure a reviewed release with Save-RuntimeLaunchProfile; startup will not guess from an editable checkout."
 }
-$blobStorageRoot = if ($BlobRoot) {
-    [IO.Path]::GetFullPath($BlobRoot)
-} else {
-    Join-Path (Split-Path -Parent $databasePath) 'blobs'
-}
-$catalogSourceRoot = if ($SourceRoot) {
-    [IO.Path]::GetFullPath($SourceRoot)
-} else {
-    $root
-}
+$fingerprint = (Get-FileHash -LiteralPath $Profile -Algorithm SHA256).Hash
+$selection = Get-Content -LiteralPath $Profile -Raw | ConvertFrom-Json
+Assert-RuntimeLaunchProfile $selection
+$exe = Resolve-RuntimeChildPath $selection.hostRoot $selection.executable
+if ((Get-FileHash -LiteralPath $Profile -Algorithm SHA256).Hash -cne $fingerprint) { throw 'Release selection changed during validation. Retry with the reviewed profile.' }
+Write-Host "Saved release: $fingerprint"
+Write-Host "    Host:     $exe"
+Write-Host "    Database: $($selection.database)"
+Write-Host "    Blobs:    $($selection.blobRoot)"
+Write-Host "    Sources:  $($selection.sourceRoot)"
+if ($Check) { Write-Host 'Release files verified; no runtime changes.'; return }
 
-if (-not (Test-Path $exe)) { throw "Not built yet: $exe. Run: dotnet build DantesRoleplay.slnx" }
-if (-not (Test-Path -LiteralPath $databasePath -PathType Leaf)) {
-    throw "Runtime database not found: $databasePath. Restore a reviewed snapshot or pass -Database explicitly."
-}
-if (-not (Test-Path -LiteralPath $blobStorageRoot -PathType Container)) {
-    throw "Blob storage not found: $blobStorageRoot. Restore the matching blob set or pass -BlobRoot explicitly."
-}
-if (-not (Test-Path -LiteralPath (Join-Path $catalogSourceRoot 'catalog') -PathType Container)) {
-    throw "Catalog source root is invalid: $catalogSourceRoot. It must contain a catalog directory."
-}
-
-if ($Restart) {
-    Get-Process DantesRoleplay.MCPServer -ErrorAction SilentlyContinue | Stop-Process -Force
-    Start-Sleep -Seconds 4
-}
-
-if (Get-Process DantesRoleplay.MCPServer -ErrorAction SilentlyContinue) {
-    Write-Host 'Already running. Use -Restart to replace it.' -ForegroundColor Yellow
-    return
-}
-
-$env:ASPNETCORE_ENVIRONMENT              = 'Development'
-$env:ASPNETCORE_URLS                     = 'http://localhost:6217'
-$env:ConnectionStrings__Kernel           = $databasePath
-$env:BlobStorage__Root                   = $blobStorageRoot
-$env:Sources__AllowedRoots__repository   = $catalogSourceRoot
-$env:DANTESROLEPLAY_OLLAMA_COMPLETION    = 'true'
-$env:Knowledge__Completion__Enabled      = 'true'
-$env:Knowledge__LocalPlayer__Enabled     = 'true'
-$env:Knowledge__LocalPlayer__PrincipalId = 'local.player'
-$env:Knowledge__LocalPlayer__ApplicationId = 'dnd2024'
-$env:Knowledge__LocalPlayer__CampaignId  = $Campaign
-$env:Knowledge__LocalPlayer__Role        = $Role
-# A GameMaster seat must have NO actor; an Actor seat must have one.
-if ($Role -eq 'Actor') { $env:Knowledge__LocalPlayer__ActorId = $ActorId }
-else { Remove-Item Env:\Knowledge__LocalPlayer__ActorId -ErrorAction SilentlyContinue }
-
-# Hand the launch to cmd's `start`, which orphans the child. A plain Start-Process leaves the
-# server tied to this console, so closing the window that ran this script kills the server --
-# which is exactly what happened on 2026-09-01.
-$workdir = Join-Path $root 'DantesRoleplay.MCPServer'
-# Start-Process validates every item in an argument array. Keep cmd's required empty
-# window-title token inside one command string so it is passed literally rather than
-# being bound as an empty PowerShell argument.
-$cmdArguments = '/c start "" /D "{0}" /B "{1}"' -f $workdir, $exe
-Start-Process -FilePath 'cmd.exe' `
-    -ArgumentList $cmdArguments `
-    -WindowStyle Hidden
-Write-Host "Starting as seat Role=$Role ..." -ForegroundColor Cyan
-Write-Host "    Database: $databasePath" -ForegroundColor DarkGray
-Write-Host "    Blobs:    $blobStorageRoot" -ForegroundColor DarkGray
-Write-Host "    Sources:  $catalogSourceRoot" -ForegroundColor DarkGray
-
-# A recovered production database can need roughly 90 seconds for its cold catalog/page
-# verification pass. The server is already detached, so callers may safely yield while this
-# bounded readiness wait continues.
-$lastReadinessFailure = $null
-for ($i = 0; $i -lt 60; $i++) {
-    Start-Sleep -Seconds 2
-    if (Get-NetTCPConnection -LocalPort 6217 -State Listen -ErrorAction SilentlyContinue) {
-        try {
-            $readiness = Invoke-RestMethod `
-                -Uri 'http://localhost:6217/api/readiness/applications/dnd2024' `
-                -Method Get `
-                -TimeoutSec 5
-            if ($readiness.status -eq 'ready') {
-                Write-Host '    OK   listening on http://localhost:6217 and dnd2024 is ready' -ForegroundColor Green
-                Write-Host '         Safe to close this window; the server keeps running.' -ForegroundColor DarkGray
-                return
-            }
-            $lastReadinessFailure = $readiness | ConvertTo-Json -Depth 5 -Compress
-        }
-        catch {
-            $lastReadinessFailure = if ($_.ErrorDetails.Message) { $_.ErrorDetails.Message } else { $_.Exception.Message }
-        }
+$receiptPath = $Profile + '.process.json'
+$port = ([uri]$selection.listenUrl).Port
+$mutex = New-Object Threading.Mutex($false, "Local\DantesRoleplay.Runtime.Port.$port")
+$locked = $false
+try {
+    try { $locked = $mutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $locked = $true }
+    if (-not $locked) { throw "Another launcher is already managing port $port." }
+    if ((Get-FileHash -LiteralPath $Profile -Algorithm SHA256).Hash -cne $fingerprint) { throw 'Release selection changed before launch.' }
+    $receipt = if (Test-Path -LiteralPath $receiptPath) { Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json } else { $null }
+    $processes = @(Get-CimInstance Win32_Process -Filter "Name = 'DantesRoleplay.MCPServer.exe'")
+    $owned = Get-OwnedRuntimeProcess $receipt $processes
+    $listeners = @(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)
+    Assert-RuntimeListenerOwnership $listeners $owned
+    $unowned = @($processes | Where-Object { $_.ExecutablePath -eq $exe -and $_.ProcessId -ne $owned.ProcessId })
+    if ($unowned.Count) { throw "The selected executable has an untracked instance: PID $($unowned.ProcessId -join ', '). It was left unchanged." }
+    if ($owned -and $Restart) {
+        # Re-resolve immediately before stopping: a reused PID is not ownership.
+        $current = Get-OwnedRuntimeProcess $receipt @(Get-CimInstance Win32_Process -Filter "ProcessId = $($owned.ProcessId)")
+        if (-not $current) { throw 'The recorded process changed while checking restart ownership.' }
+        Stop-Process -Id $current.ProcessId -ErrorAction Stop
+        $stopDeadline = [DateTime]::UtcNow.AddSeconds(20)
+        do {
+            $remaining = Get-OwnedRuntimeProcess $receipt @(Get-CimInstance Win32_Process -Filter "ProcessId = $($current.ProcessId)")
+            if ($remaining) { Start-Sleep -Milliseconds 250 }
+        } while ($remaining -and [DateTime]::UtcNow -lt $stopDeadline)
+        if ($remaining) { throw 'The selected process did not exit.' }
+        $owned = $null
     }
-}
-if (Get-NetTCPConnection -LocalPort 6217 -State Listen -ErrorAction SilentlyContinue) {
-    Write-Host '    FAIL listening on 6217, but dnd2024 readiness failed.' -ForegroundColor Red
-    if ($lastReadinessFailure) { Write-Host "         $lastReadinessFailure" -ForegroundColor Red }
-}
-else {
-    Write-Host '    FAIL never started listening on 6217.' -ForegroundColor Red
+    if ($owned -and $receipt.profileFingerprint -cne $fingerprint) { throw 'Saved release changed. Use -Restart to replace the recorded instance.' }
+    if (-not $owned) {
+        Assert-RuntimeListenerOwnership @(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue) $null
+        # cmd start detaches the child from the calling console. These are paths, not commands.
+        $logPath = $Profile + '.' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ') + '.startup.log'
+        if ($exe -match '["%!?^&|<>\r\n]' -or $selection.hostRoot -match '["%!?^&|<>\r\n]' -or
+            $logPath -match '["%!?^&|<>\r\n]') { throw 'Host/profile path contains unsupported shell metacharacters.' }
+        $environment = Get-RuntimeEnvironment $selection
+        $previous = @{}
+        $started = [DateTime]::UtcNow
+        try {
+            foreach ($name in $environment.Keys) {
+                $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
+                [Environment]::SetEnvironmentVariable($name, $environment[$name], 'Process')
+            }
+            $arguments = '/c start "" /D "{0}" /B "{1}" > "{2}" 2>&1' -f $selection.hostRoot, $exe, $logPath
+            Start-Process -FilePath cmd.exe -ArgumentList $arguments -WindowStyle Hidden
+        } finally {
+            foreach ($name in $previous.Keys) { [Environment]::SetEnvironmentVariable($name, $previous[$name], 'Process') }
+        }
+        for ($attempt = 0; $attempt -lt 20 -and -not $owned; $attempt++) {
+            $candidates = @(Get-CimInstance Win32_Process -Filter "Name = 'DantesRoleplay.MCPServer.exe'" | Where-Object {
+                $_.ExecutablePath -eq $exe -and $_.CreationDate.ToUniversalTime() -ge $started
+            })
+            if ($candidates.Count -gt 1) { throw 'Multiple matching new processes; none will be stopped automatically.' }
+            if ($candidates.Count -eq 1) { $owned = $candidates[0] } else { Start-Sleep -Milliseconds 250 }
+        }
+        if (-not $owned) { throw "The selected server did not start. Log: $logPath" }
+        $receipt = @{ processId = $owned.ProcessId; executable = $exe; startedAtUtc = $owned.CreationDate.ToUniversalTime().ToString('o'); profileFingerprint = $fingerprint; logPath = $logPath }
+        Write-RuntimeJson $receiptPath $receipt -Replace
+    }
+    $deadline = [DateTime]::UtcNow.AddSeconds(150)
+    $ready = $false
+    do {
+        if (-not (Get-OwnedRuntimeProcess $receipt @(Get-CimInstance Win32_Process -Filter "ProcessId = $($owned.ProcessId)"))) {
+            throw "The selected server exited before readiness; no other listener can satisfy this launch. Log: $($receipt.logPath)"
+        }
+        $listeners = @(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)
+        Assert-RuntimeListenerOwnership $listeners $owned
+        try {
+            if (-not $listeners.Count) { throw 'Waiting for the selected listener.' }
+            Test-RuntimeTarget $selection $selection.targets[0] | Out-Null
+            $ready = $true
+        } catch { $lastFailure = $_.Exception.Message }
+        if (-not $ready) { Start-Sleep -Seconds 2 }
+    } while (-not $ready -and [DateTime]::UtcNow -lt $deadline)
+    if (-not $ready) { throw "The selected server is not ready: $lastFailure" }
+    foreach ($target in $selection.targets) {
+        Test-RuntimeTarget $selection $target | Out-Null
+        Write-Host "    Verified ready: $($target.origin)" -ForegroundColor Green
+    }
+    if ((Get-FileHash -LiteralPath $Profile -Algorithm SHA256).Hash -cne $fingerprint -or
+        -not (Get-OwnedRuntimeProcess $receipt @(Get-CimInstance Win32_Process -Filter "ProcessId = $($owned.ProcessId)"))) {
+        throw 'Release selection or process changed during readiness verification.'
+    }
+    $listeners = @(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)
+    if (-not $listeners.Count) { throw 'The selected listener disappeared during readiness verification.' }
+    Assert-RuntimeListenerOwnership $listeners $owned
+    foreach ($listener in $listeners) { Write-Host "    Listening: $($listener.LocalAddress):$($listener.LocalPort), PID $($listener.OwningProcess)" }
+    Write-Host 'Safe to close this window; the server keeps running.'
+} finally {
+    if ($locked) { $mutex.ReleaseMutex() }
+    $mutex.Dispose()
 }

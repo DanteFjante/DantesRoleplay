@@ -4,9 +4,15 @@ Use this guide to run the local service, connect an MCP client, and perform a co
 
 ## Run the service
 
+For the saved live release, use the ordinary launcher. The development launch profile below
+does not select a frozen release and is not a production restart workflow.
+
 ```powershell
-dotnet run --project DantesRoleplay.MCPServer
+.\run-mcp-server.ps1
+.\run-mcp-server.ps1 -Restart
 ```
+
+For deliberate source development only: `dotnet run --project DantesRoleplay.MCPServer`.
 
 The development MCP endpoint is:
 
@@ -27,16 +33,53 @@ The command uses SQLite's online backup API, verifies the copy with `integrity_c
 migrates or writes the source database. Use `--output <path>` when a reviewed release needs a named
 recovery point; an existing file is never overwritten.
 
-Run a live release from a frozen source directory instead of the development checkout. The release
-directory must contain `catalog/` at its root:
+The ordinary launcher reads `DantesRoleplay.MCPServer/data/runtime-launch.json`. That local
+administration profile pins the host directory and every host file, the source directory and every
+source file, the live database/blob paths, one listener, and readiness/audience evidence for each
+exact probe origin. The source directory must contain `catalog/`. Normal startup never guesses a
+release from the editable checkout or the newest folder. It verifies byte lengths and SHA-256
+hashes, including line endings, before starting or replacing a process.
 
 ```powershell
-.\run-mcp-server.ps1 -SourceRoot D:\releases\dantes-roleplay\<release-id>
+.\run-mcp-server.ps1 -Check
+# Explicit development/recovery selection, not an argument required for normal use:
+.\run-mcp-server.ps1 -Profile D:\releases\dantes-roleplay\reviewed-runtime-launch.json
 ```
+
+`-Restart` stops only the process whose executable, PID and start time match this launcher's saved
+receipt. Untracked listeners, split IPv4/IPv6 listeners, and reused PIDs fail with a specific
+diagnostic instead of stopping every server or accepting another process's readiness. New starts
+retain a timestamped startup log next to the profile; the launcher reports actual bound addresses
+and checks both the direct local listener and every configured public origin without redirects.
+It pins both `URLS` and `ASPNETCORE_URLS` so application settings cannot redirect a rehearsal onto
+the live port. The caller's environment is restored after launch.
+
+At an explicit release-selection boundary, dot-source
+`src/system/web-interface/scripts/RuntimeLaunch.ps1` and call `Save-RuntimeLaunchProfile` with
+`-Path`, `-HostRoot`, `-SourceRoot`, `-Database`, `-BlobRoot`, `-ApplicationId`, `-ListenUrl`,
+`-Targets`, and `-Environment`. Each target is `{ origin, expected: { checks, audience } }`:
+`checks` pins each readiness owner's code/revision/fingerprint; `audience` pins the bound context
+returned by that exact origin. Review these against an isolated restored copy and the actual
+activation/page before selection. Do not self-certify a failed response or reuse localhost's
+policy fingerprint for a public request. Explicit `-Replace` retains the previous profile;
+ordinary startup never rewrites its selection. Copy only deployable host files (including shared
+BrowserComponents), not an output directory's incidental `data/` tree. No catalog import, state
+migration, page publication, or database restoration is performed by the launcher.
 
 Keep the preceding release directory and its matching database backup until the new release passes
 readiness and browser verification. Registrations retain the stable `repository` allowed-root ID
 and relative catalog paths; only the host-owned resolved root changes between releases.
+Backups include the matching content-addressed blobs: verify their recorded lengths and SHA-256
+values on readback. Rehearse against a separate database copy, never the retained recovery point.
+Reverting the host/source selection does not rewind gameplay. Restore a prior database only after
+reconciling later writes, and restore its matching blobs with it.
+
+Public plain-HTTP release verification is opt-in per signed target: set `expectedRuntime.origin`
+to the exact public origin in the signed version-2 release manifest. `release:verify-live` rejects
+another origin, port, redirects, wrong audience/runtime evidence, or changed assets; it never
+substitutes localhost. Public browser evidence must name that same origin. Omitting the origin
+retains the previous HTTPS/loopback-only verifier policy. Startup health and asset identity are
+not complete feature/browser acceptance; retain the separate release checks.
 
 After an application preview is reviewed and before its activation, check that the runtime has the
 exact component-type versions referenced by D&D application objects:

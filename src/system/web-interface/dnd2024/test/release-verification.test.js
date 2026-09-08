@@ -4,6 +4,72 @@ import { generateKeyPairSync } from 'node:crypto';
 import { signManifest, verifyManifest, canonicalJson } from '../scripts/release-signature.mjs';
 import { verifyRuntimeTarget, verifyBrowserEvidence, probeRuntime } from '../scripts/release-runtime-verification.mjs';
 import { sha256 } from '../scripts/create-release-manifest.mjs';
+import { resolveReleaseOrigin, verifyLiveRelease } from '../scripts/verify-live-release.mjs';
+import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+test('public HTTP verification requires the exact signed origin and never substitutes localhost', () => {
+  const publicOrigin = 'http://98.128.172.181';
+  assert.equal(resolveReleaseOrigin(publicOrigin, publicOrigin), publicOrigin);
+  assert.equal(resolveReleaseOrigin('http://localhost:6217/'), 'http://localhost:6217');
+  assert.equal(resolveReleaseOrigin('https://example.test'), 'https://example.test');
+  assert.throws(() => resolveReleaseOrigin(publicOrigin), /exact origin/);
+  for (const other of ['http://localhost:6217', 'http://98.128.172.181:6217', 'http://98.128.172.182'])
+    assert.throws(() => resolveReleaseOrigin(other, publicOrigin), /origin drift/);
+  for (const suffix of ['/ui/dnd2024-play', '/?x=1', '/#view'])
+    assert.throws(() => resolveReleaseOrigin(publicOrigin + suffix, publicOrigin));
+  assert.throws(() => resolveReleaseOrigin('http://user:password@98.128.172.181', publicOrigin));
+  assert.throws(() => resolveReleaseOrigin('file:///C:/release'));
+});
+
+test('public verification retains signed runtime, audience, exact assets and no-redirect transport checks', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'roleplay-public-release-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const { expected, readiness, audience } = fixture();
+  expected.origin = 'http://98.128.172.181';
+  const html = '<script src="/ui/dnd2024-play/assets/index-abcdefgh.js"></script>';
+  const script = 'console.log("fixture");';
+  const keys = generateKeyPairSync('ed25519');
+  const manifest = signManifest({ schemaVersion: 2, pageId: 'dnd2024-play', expectedRuntime: expected,
+    files: [{path: 'index.html', length: Buffer.byteLength(html), sha256: sha256(Buffer.from(html))},
+      {path: 'assets/index-abcdefgh.js', length: Buffer.byteLength(script), sha256: sha256(Buffer.from(script))}],
+    assetReferences: ['assets/index-abcdefgh.js'] }, keys.privateKey);
+  const manifestPath = join(directory, 'manifest.json');
+  await writeFile(manifestPath, JSON.stringify(manifest));
+  const browserEvidence = { manifestFingerprint: sha256(Buffer.from(canonicalJson(manifest))),
+    url: expected.origin + '/ui/dnd2024-play', role: expected.role,
+    checks: {'no-wheel-zoom': 'passed', 'ganji-dossier': 'passed', 'player-dm-boundary': 'passed'}, observations: ['Fixture only'] };
+  let drift = null;
+  const requests = [];
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    requests.push(url);
+    assert.equal(new URL(url).origin, expected.origin);
+    assert.equal(options.redirect, 'error');
+    assert.ok(options.signal instanceof AbortSignal);
+    const path = new URL(url).pathname;
+    let body = path.includes('/readiness/') ? readiness : path === '/api/audience-context' ? audience
+      : path.includes('/read-models/') ? {data: {}, resultFingerprint: hash, sourceRevisionFingerprint: hash}
+        : path.includes('/mechanics/') ? {version: 1, contentFingerprint: hash}
+          : path.includes('/assets/') ? script : html;
+    if (drift === 'asset' && path.includes('/assets/')) body += 'tampered';
+    if (drift === 'audience' && path === '/api/audience-context') body = {...audience, policyRevision: 'B'.repeat(64)};
+    if (drift === 'runtime' && path.includes('/readiness/')) body = {...readiness, status: 'failed'};
+    return new Response(typeof body === 'string' ? body : JSON.stringify(body), {
+      headers: {'cache-control': path.includes('/assets/') ? 'private, immutable' : 'private, no-store'} });
+  });
+  const options = {manifestPath, baseUrl: expected.origin, trustedPublicKey: keys.publicKey.export({type: 'spki', format: 'pem'}), browserEvidence};
+  const report = await verifyLiveRelease(options);
+  assert.equal(report.baseUrl, expected.origin);
+  assert.equal(report.status, 'passed');
+  assert.ok(requests.some(url => url.includes('/read-models/')));
+  for (drift of ['asset', 'audience', 'runtime']) await assert.rejects(verifyLiveRelease(options));
+  drift = null;
+  await assert.rejects(verifyLiveRelease({...options, browserEvidence: {...browserEvidence, url: 'http://localhost:6217/ui/dnd2024-play'}}));
+  const tampered = {...manifest, expectedRuntime: {...expected, origin: 'http://98.128.172.182'}};
+  await writeFile(manifestPath, JSON.stringify(tampered));
+  await assert.rejects(verifyLiveRelease(options), /signature is invalid/);
+});
 
 const hash = 'A'.repeat(64);
 function fixture() {
