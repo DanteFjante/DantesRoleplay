@@ -1837,7 +1837,7 @@ async function readGameServerContextCore({
   }
   const deferredParty = isGameMaster && effectivePerspective === "dm"
     ? projectRegisteredPartyReferences(registeredCampaign.party)
-    : isGameMaster ? registeredCampaign.party.map((entry) => ({
+    : isGameMaster ? registeredCampaign.party.filter((entry) => entry.status === "active").map((entry) => ({
       id: entry.id,
       name: entry.name,
       state: entry.status,

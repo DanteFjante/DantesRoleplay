@@ -511,6 +511,17 @@ for (const role of ["game-master", "actor"]) {
   });
 }
 
+test("Game Master Player preview excludes withdrawn participation summaries", async () => {
+  const active = { ...partyReference(0), actors: [] };
+  const withdrawn = { ...partyReference(1), status: "withdrawn", actors: [] };
+  const { value, calls } = await readRegisteredPartyBootstrap({
+    party: [active, withdrawn], role: "game-master", perspective: "player",
+  });
+  assert.equal(value.status, "connected");
+  assert.deepEqual(value.party.map(entry => entry.id), [active.id]);
+  assert.equal(calls.length, 3);
+});
+
 const MEDIA_HASH = "3ae0336e89155a4a00fb0d982ae903bf9ed1137cd292b097b252fd38c1501fa3";
 
 function dossierDefinition(reference, kind, status = "active") {
