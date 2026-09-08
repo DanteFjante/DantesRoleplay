@@ -2,6 +2,7 @@ import type { ReadyHubEnvelope } from "../data/hub-types";
 import { validateRegisteredCampaignSummary } from "./campaign-summary.js";
 import { contract as campaignSummaryContract } from "./campaign-summary-contract.js";
 import { readBoundedJson } from "./read-model-response.js";
+import { requestId } from "../data/browser-crypto.ts";
 
 export type CampaignPremiseWriteRequest = {
   envelope: ReadyHubEnvelope;
@@ -109,7 +110,7 @@ export function createCampaignPremiseWriter(
     const premise = request.premise.trim();
     const evidence = envelope.objectQueries?.campaignSummary;
     const campaignId = envelope.contextSelection?.selectedCampaignId ?? envelope.revision;
-    const idempotencyKey = request.idempotencyKey ?? globalThis.crypto.randomUUID();
+    const idempotencyKey = request.idempotencyKey ?? requestId();
     if (envelope.audience.seat !== "dm" || envelope.audience.perspective !== "dm")
       throw new CampaignPremiseWriteError("authorization", "OBJECT_WRITE_FORBIDDEN",
         "Only the authorized DM can edit the campaign premise.");
@@ -128,7 +129,7 @@ export function createCampaignPremiseWriter(
     });
     const resource = `/api/applications/${encodeURIComponent(envelope.applicationId)}` +
       `/state-spaces/${encodeURIComponent(envelope.stateSpaceId)}/entities/${encodeURIComponent(campaignId)}` +
-      `/read-models/${encodeURIComponent(campaignSummaryContract.id)}`;
+      `/read-models/${encodeURIComponent(campaignSummaryContract.id)}?campaign=${encodeURIComponent(campaignId)}`;
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {

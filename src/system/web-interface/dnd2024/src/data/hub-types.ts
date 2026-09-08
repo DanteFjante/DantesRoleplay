@@ -1154,6 +1154,7 @@ export type UnavailableHubEnvelope = {
   version: 1;
   status: "unavailable";
   message: string;
+  reason?: "connection";
 };
 
 export type HubEnvelope = ReadyHubEnvelope | DeniedHubEnvelope |

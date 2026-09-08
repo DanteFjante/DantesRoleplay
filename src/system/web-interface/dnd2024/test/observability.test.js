@@ -137,7 +137,7 @@ test("production component paths emit every readiness mark", () => {
     "../src/server-host/main.tsx",
     "../src/components/BootstrapShell.tsx",
     "../src/components/DndInformationHub.tsx",
-    "../src/components/RulesOnlyHub.tsx",
+    "../src/components/ApplicationStartupError.tsx",
     "../src/components/PartyView.tsx",
     "../src/components/MapCanvas.tsx",
     "../src/components/PreviewViews.tsx",

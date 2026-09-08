@@ -315,6 +315,22 @@ a runtime database must include both the SQLite file and its adjacent `blobs/` d
 
 ## Published web bundles
 
+Server startup applies the kernel and web schema initialization, bootstrap contracts, saved host
+settings, and interrupted-conversation recovery before opening the listener. It logs phase timings,
+then the actual listener address and openable website/MCP links once the listener is ready.
+The default console suppresses SQL command text and routine HTTP traffic while retaining application
+information and framework warnings/errors. For an explicit SQL investigation, override
+`Logging:LogLevel:Microsoft.EntityFrameworkCore.Database.Command` to `Information` in host configuration.
+
+Legacy page-identity inspection is an explicit web administration operation. Do not run it during
+normal startup: it traverses every retained page revision and asset to produce migration evidence.
+Its inspection and reviewed migration paths remain available through web page administration.
+
+The browser supports plain HTTP network origins. Use its shared browser crypto helper for SHA-256
+fingerprints and request IDs: these origins lack SubtleCrypto and randomUUID even though secure
+random bytes remain available. Preserve exact SHA-256 output with the bundled implementation when
+the native hashing API is absent, and exercise campaign loading through a non-loopback HTTP URL.
+
 Web read throttling keeps API reads and page/browser-asset loads in separate bounded allowances.
 API polling or catalog traversal must not prevent a user from reloading the UI or its entity-owned
 map images. Media content shares the page/asset allowance. Each read group permits 6,000 requests
@@ -332,8 +348,10 @@ separately from the registered Campaign bootstrap. Deferred views distinguish un
 ready/empty and failed states; changing campaign or perspective aborts their pending reads. The
 legacy World adapters follow all continuations inside a 2,000-request per-view safety ceiling. This
 ceiling prevents runaway reads; it is not the complete-workload performance acceptance budget.
-GM Player preview never substitutes ambient DM knowledge or media for an Actor-authorized view.
-Actor-only deferred views are explicitly unavailable in preview, not loading or failed reads.
+The shared website has full application authority after admission and offers no role switch.
+Obsolete Player preferences and deep links normalize to the full shared view. Optional knowledge
+preview requires an explicit observer before it can be reintroduced; non-website Actor knowledge
+and media projections retain their existing contracts. See OPERATIONS.md for the admission boundary.
 Read-only source probes, a served browser traversal and a matched complete-workload benchmark are
 different evidence and must not be reported interchangeably.
 

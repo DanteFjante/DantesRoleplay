@@ -134,7 +134,8 @@ public static partial class WebInterfaceEndpoints
     private static string SettingActor(HttpContext context) => string.Equals(
         context.User.Identity?.AuthenticationType, WebAccessPolicy.TailscaleAuthenticationType, StringComparison.Ordinal)
         ? context.User.Identity?.Name ?? "tailscale-operator"
-        : "local-operator";
+        : context.User.Identity?.AuthenticationType == WebAccessPolicy.AnonymousPublicAuthenticationType
+            ? "anonymous-public-operator" : "local-operator";
 
     private static async Task<IResult> SettingsAsync<T>(HttpContext context, Func<Task<T?>> read)
     {
@@ -457,13 +458,7 @@ public static partial class WebInterfaceEndpoints
     }
 
     private static string AssistantOperatorId(HttpContext context)
-    {
-        var tailscale = string.Equals(context.User.Identity?.AuthenticationType,
-            WebAccessPolicy.TailscaleAuthenticationType, StringComparison.Ordinal);
-        return PrivateOperatorPrincipal.Create(
-            tailscale ? "tailscale-serve" : "local-loopback",
-            tailscale ? context.User.Identity?.Name ?? "invalid" : "local-operator").PrincipalId;
-    }
+        => WebTrustedPrincipalContextFactory.FromPrincipal(context.User).PrincipalId;
 
     private static async Task<IResult> AssistantAsync(HttpContext context, Func<Task<object?>> action)
     {

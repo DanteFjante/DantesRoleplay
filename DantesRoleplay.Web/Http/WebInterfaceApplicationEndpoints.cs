@@ -297,12 +297,7 @@ public static partial class WebInterfaceEndpoints
             cancellationToken));
 
     private static DantesRoleplay.Authorization.TrustedPrincipalContext InteractionPrincipal(HttpContext context)
-    {
-        var tailscale = string.Equals(context.User.Identity?.AuthenticationType,
-            WebAccessPolicy.TailscaleAuthenticationType, StringComparison.Ordinal);
-        return PrivateOperatorPrincipal.Create(tailscale ? "tailscale-serve" : "local-loopback",
-            tailscale ? context.User.Identity?.Name ?? "tailscale-operator" : "local-operator");
-    }
+        => WebTrustedPrincipalContextFactory.FromPrincipal(context.User);
 
     private static IResult InteractionWeb<T>(Func<T?> read)
     {

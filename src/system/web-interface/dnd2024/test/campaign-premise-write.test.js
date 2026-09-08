@@ -55,7 +55,7 @@ test("premise writer sends one exact mapped PATCH and accepts committed or no-op
 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].input,
-    "/api/applications/dnd2024/state-spaces/state.fixture/entities/campaign.fixture/read-models/dnd2024.query.campaign-summary");
+    "/api/applications/dnd2024/state-spaces/state.fixture/entities/campaign.fixture/read-models/dnd2024.query.campaign-summary?campaign=campaign.fixture");
   assert.equal(calls[0].init.method, "PATCH");
   assert.equal(calls[0].init.credentials, "same-origin");
   assert.deepEqual(JSON.parse(calls[0].init.body), {

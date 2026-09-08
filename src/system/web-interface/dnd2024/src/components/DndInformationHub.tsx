@@ -473,6 +473,12 @@ export function DndInformationHub({
     if (itemRoute.kind === "none") return;
     ++hubRequestSequence.current;
     setHubBusy(false);
+    if ((itemRoute.kind === "item" || itemRoute.kind === "inventory") &&
+        envelope.audience.seat === "dm" && envelope.audience.allowedPerspectives.length === 1 &&
+        perspective === "dm" && itemRoute.perspective === "player") {
+      navigateItemRoute({ ...itemRoute, perspective: "dm" }, true);
+      return;
+    }
     if ((itemRoute.kind !== "item" && itemRoute.kind !== "inventory") ||
         !envelope.audience.allowedPerspectives.includes(itemRoute.perspective) ||
         !contextSelection.worlds.some((world) => world.campaigns.some((campaign) => campaign.id === itemRoute.campaignId))) return;

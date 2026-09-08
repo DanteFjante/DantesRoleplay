@@ -22,6 +22,33 @@ http://127.0.0.1:6217/mcp
 
 The default development database is `DantesRoleplay.MCPServer/data/dantesroleplay.db`. It is runtime state and is not the authored catalog.
 
+The HTTP launch profile, direct executable configuration, and `run-mcp-server.ps1` listen on
+all IPv4 interfaces at port 6217. Router forwarding maps external TCP 80 to this device's TCP
+6217; internet visitors then open `http://<public-ip>/` without a port suffix. Allow inbound TCP
+6217 in Windows Firewall by running `enable-public-web-firewall.ps1` from an administrator
+PowerShell window. This rule also applies when the Ethernet connection uses the Public profile.
+
+Anonymous public website access is explicitly enabled in this checkout through
+`WebInterface:RemoteAccess:AllowAnonymousPublicAccess`. Every direct network visitor receives
+website operator access, including DM views and control-center operations; there is no sign-in.
+Its audit identity is `anonymous-public-web`, distinct from the local operator. Every admitted
+website request uses the same full application context, regardless of the MCP Actor/Role/Enabled
+settings. `Knowledge:LocalPlayer:ApplicationId` and `CampaignId` seed the initial workspace;
+the UI selects world, campaign, and character. No role arguments or separate Actor server are
+needed. The website reports `X-Website-Access: shared` on bootstrap, ignores obsolete Player
+preferences, and does not offer the old role switch. Character-knowledge preview is deferred until
+it can select an explicit observer without changing application authority.
+Same-origin control and public mapped-edit/action checks use the external request host and port.
+Set the option to `false` and
+restart to reject anonymous network visitors; the option defaults to false when omitted.
+Private MCP operations retain their existing loopback-only authorization.
+
+Startup distinguishes service unavailability, connection failure, and actual admission denial.
+“Retry application” reloads bootstrap and its resource owners; a failed deployment does not claim
+that private views are locked or that a Rules load succeeded. Plain HTTP browsers use the shared
+SHA-256/request-ID helper, retaining exact fingerprints and cryptographically random IDs without
+requiring secure-context-only browser APIs.
+
 Before a catalog activation, state migration, import, or page release, create a consistent database
 backup without combining preservation with a catalog import:
 

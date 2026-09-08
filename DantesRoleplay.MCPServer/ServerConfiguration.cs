@@ -95,7 +95,9 @@ public static class ServerConfiguration
         });
         services.AddScoped<IInformationActionCoordinator, InformationActionCoordinator>();
         var localKnowledgeSeat = new ConfigurationLocalKnowledgeSeatProvider(hostConfiguration);
-        services.AddSingleton<ILocalKnowledgeSeatProvider>(localKnowledgeSeat);
+        services.AddSingleton<ILocalKnowledgeSeatProvider>(provider =>
+            new ConfigurationLocalKnowledgeSeatProvider(hostConfiguration,
+                provider.GetRequiredService<IHttpContextAccessor>()));
         services.AddScoped<IWebChangeScopeAuthorizer, WebChangeScopeAuthorizer>();
         services.AddSingleton<IWebReadableRulesAudienceProvider,
             LocalReadableRulesAudienceProvider>();

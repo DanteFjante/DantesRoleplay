@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Web.Hosting;
+using DantesRoleplay.Web.Security;
 
 namespace DantesRoleplay.MCPServer;
 
@@ -58,12 +59,28 @@ internal sealed class LocalEntityMediaAudienceResolver(
         value == value.Trim() && value.Length <= 200 && !value.Any(char.IsWhiteSpace);
 }
 
-internal sealed class ConfigurationLocalKnowledgeSeatProvider(IConfiguration? configuration)
+internal static class SharedWebsiteContext
+{
+    // Only the endpoint access filter creates these principals. Never infer website authority
+    // from a URL, forwarded identity header, browser perspective, or an MCP request.
+    public static bool IsTrusted(HttpContext? context) =>
+        context?.Connection.RemoteIpAddress is not null &&
+        !context.Request.Path.StartsWithSegments(ServerConfiguration.McpEndpoint) &&
+        context.User.Identity is { IsAuthenticated: true } identity &&
+        identity.AuthenticationType is WebAccessPolicy.LocalAuthenticationType or
+            WebAccessPolicy.TailscaleAuthenticationType or WebAccessPolicy.AnonymousPublicAuthenticationType;
+}
+
+internal sealed class ConfigurationLocalKnowledgeSeatProvider(
+    IConfiguration? configuration, IHttpContextAccessor? http = null)
     : ILocalKnowledgeSeatProvider
 {
     public LocalKnowledgeSeatSnapshot Current()
     {
         var section = configuration?.GetSection("Knowledge:LocalPlayer");
+        if (SharedWebsiteContext.IsTrusted(http?.HttpContext))
+            return new(true, "shared-website", section?["ApplicationId"] ?? "",
+                section?["CampaignId"] ?? "", null, KnowledgeAudienceRole.GameMaster);
         var role = section?["Role"] switch
         {
             null or "Actor" => KnowledgeAudienceRole.Actor,
@@ -87,9 +104,8 @@ internal sealed class ConfigurationLocalKnowledgeSeatProvider(IConfiguration? co
 }
 
 /// <summary>
-/// Temporary private-table policy. It trusts only current host configuration and the server-side
-/// loopback peer; request bodies, browser selections, forwarded headers, and remote access never
-/// select a principal, role, application, campaign, or actor.
+/// Website admission grants one shared application context. Other callers retain the configured
+/// loopback seat. Campaign selection is still resolved through the application binding.
 /// </summary>
 internal sealed class LocalKnowledgeAudiencePolicy(
     IHttpContextAccessor http,
@@ -104,7 +120,7 @@ internal sealed class LocalKnowledgeAudiencePolicy(
         var seat = seats.Current();
         if (!Valid(seat) || !Token(campaignId) || seat.ApplicationId != application.ApplicationId ||
             (seat.Role != KnowledgeAudienceRole.GameMaster && campaignId != seat.CampaignId) ||
-            !Loopback(http.HttpContext?.Connection.RemoteIpAddress))
+            !(Loopback(http.HttpContext?.Connection.RemoteIpAddress) || SharedWebsiteContext.IsTrusted(http.HttpContext)))
             return Task.FromResult(KnowledgeAudienceResolution.Denied());
 
         var effectiveCampaignId = seat.Role == KnowledgeAudienceRole.GameMaster
@@ -113,7 +129,8 @@ internal sealed class LocalKnowledgeAudiencePolicy(
 
         var revision = Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new
         {
-            policy = "local-loopback-seat-v1",
+            policy = SharedWebsiteContext.IsTrusted(http.HttpContext)
+                ? "shared-website-v1" : "local-loopback-seat-v1",
             seat.Enabled,
             seat.PrincipalId,
             seat.ApplicationId,

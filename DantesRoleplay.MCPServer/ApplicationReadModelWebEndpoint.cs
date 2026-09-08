@@ -200,6 +200,17 @@ public static class ApplicationReadModelWebEndpoint
             seat.Role != KnowledgeAudienceRole.GameMaster)
             return SafeWriteError("OBJECT_WRITE_FORBIDDEN");
 
+        // Workspace selection is not authority. Resolve it through the same binding as reads
+        // before using it to materialize roles or applying a mapped edit.
+        if (context.Request.Query.TryGetValue("campaign", out var campaigns))
+        {
+            var campaign = campaigns.ToString();
+            if (campaigns.Count != 1 || string.IsNullOrWhiteSpace(campaign) ||
+                campaign.Length > 200 || campaign.Any(char.IsWhiteSpace))
+                return SafeWriteError("OBJECT_WRITE_REQUEST_INVALID");
+            seat = seat with { CampaignId = campaign };
+        }
+
         try
         {
             var authorization = await SystemAudienceContextHandler.ResolveAsync(

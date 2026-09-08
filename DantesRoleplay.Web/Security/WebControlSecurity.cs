@@ -81,7 +81,9 @@ public sealed class WebControlRequestGuard(WebPrivateOperatorGuard operators)
             WebAccessPolicy.TailscaleAuthenticationType,
             StringComparison.Ordinal);
         var requestHost = NormalizeHost(context.Request.Host.Host);
-        if (requestHost is null || (!tailscale && !IsLoopbackHost(requestHost)))
+        var anonymousPublic = operatorDecision.Principal!.Identity?.AuthenticationType
+            == WebAccessPolicy.AnonymousPublicAuthenticationType;
+        if (requestHost is null || (!tailscale && !anonymousPublic && !IsLoopbackHost(requestHost)))
         {
             return Denied(
                 StatusCodes.Status403Forbidden,

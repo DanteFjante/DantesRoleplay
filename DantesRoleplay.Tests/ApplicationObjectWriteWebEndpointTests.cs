@@ -100,13 +100,27 @@ public sealed class ApplicationObjectWriteWebEndpointTests
         JsonSerializer.SerializeToElement(new { value = "changed" }),
         [new("/items", "relationship.add", "entity.target", 0)]);
 
+    [Theory]
+    [InlineData("?campaign=scope.other", 200)]
+    [InlineData("?campaign=bad%20scope", 400)]
+    [InlineData("?campaign=scope.one&campaign=scope.two", 400)]
+    public async Task Workspace_selection_is_validated_before_a_mapped_write(string selection, int expectedStatus)
+    {
+        var writes = new Writes();
+        var response = await WriteAsync(new(true, "gm", Application, "scope.fixture", null,
+            KnowledgeAudienceRole.GameMaster), writes, Body("selected-scope"), queryString: selection);
+        Assert.Equal(expectedStatus, response.StatusCode);
+        Assert.Equal(expectedStatus == 200 ? 1 : 0, writes.Calls);
+    }
+
     private static async Task<(int StatusCode, JsonElement Body, string? CacheControl)> WriteAsync(
         LocalKnowledgeSeatSnapshot seat,
         Writes writes,
         ApplicationReadModelWebEndpoint.WriteBody body,
-        string stateSpaceId = "space.fixture")
+        string stateSpaceId = "space.fixture", string queryString = "")
     {
         var context = new DefaultHttpContext();
+        context.Request.QueryString = new QueryString(queryString);
         context.Response.Body = new MemoryStream();
         context.RequestServices = new ServiceCollection()
             .AddOptions<JsonOptions>()

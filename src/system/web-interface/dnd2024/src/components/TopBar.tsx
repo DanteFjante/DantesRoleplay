@@ -40,12 +40,12 @@ export function TopBar({
         loadState={contextState}
         error={contextError}
       />
-      <PerspectiveSwitch
+      {allowedPerspectives.length > 1 ? <PerspectiveSwitch
         allowedPerspectives={allowedPerspectives}
         busy={busy}
         perspective={perspective}
         onChange={onPerspectiveChange}
-      />
+      /> : <span className="perspective-switch__label">Shared table</span>}
     </header>
   );
 }

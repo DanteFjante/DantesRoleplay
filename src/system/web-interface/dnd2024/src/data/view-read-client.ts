@@ -1,3 +1,5 @@
+import { sha256Hex } from "./browser-crypto.ts";
+
 export type ViewReadErrorCategory = "cancelled" | "incompatible-data" | "stale-data" | "transport";
 
 export class ViewReadError extends Error {
@@ -53,11 +55,7 @@ function isRetryable(error: unknown) {
 }
 
 async function sha256(value: unknown): Promise<string> {
-  const bytes = new TextEncoder().encode(JSON.stringify(value));
-  const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0"))
-    .join("")
-    .toUpperCase();
+  return (await sha256Hex(JSON.stringify(value))).toUpperCase();
 }
 
 /**

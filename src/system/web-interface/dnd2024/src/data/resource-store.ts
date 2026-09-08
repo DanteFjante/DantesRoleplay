@@ -1,5 +1,6 @@
 import type { ResourceFailure, ResourceResult, ResourceState } from "./resource-state.ts";
 import { ViewReadError } from "./view-read-client.ts";
+import { sha256Hex } from "./browser-crypto.ts";
 
 type ResourceRead<TRequest, TResponse> = (
   request: TRequest,
@@ -66,10 +67,7 @@ function failure(error: ViewReadError): ResourceFailure {
 }
 
 async function fingerprint(value: unknown): Promise<string> {
-  const bytes = new TextEncoder().encode(JSON.stringify(value));
-  const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0"))
-    .join("").toUpperCase();
+  return (await sha256Hex(JSON.stringify(value))).toUpperCase();
 }
 
 function encodedBytes(value: unknown) {

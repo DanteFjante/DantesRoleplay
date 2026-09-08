@@ -182,8 +182,8 @@ public static class WebInterfaceServiceCollectionExtensions
         await db.Database.MigrateAsync(cancellationToken);
         await DantesRoleplay.SqliteInfrastructure.SqliteChangeRecovery.InstallAsync(
             db.Database.GetDbConnection(), cancellationToken);
-        await scope.ServiceProvider.GetRequiredService<IWebPageIdentityMigration>()
-            .InspectAsync(cancellationToken);
+        // Legacy page-identity inspection reads every retained page revision and asset. It is an
+        // explicit administration operation, not a prerequisite for serving published pages.
     }
 
     private static bool HasPublicationDependencies(IServiceProvider provider) =>

@@ -38,8 +38,8 @@ const characterSources = new Map<string, ConnectedCampaignEnvelope>();
 const characterScope = (state: string, campaign: string, perspective?: Perspective) => `${state}:${campaign}:${perspective ?? "player"}`;
 const DndInformationHub = lazy(() => import("../components/DndInformationHub")
   .then((module) => ({ default: module.DndInformationHub })));
-const RulesOnlyHub = lazy(() => import("../components/RulesOnlyHub")
-  .then((module) => ({ default: module.RulesOnlyHub })));
+const ApplicationStartupError = lazy(() => import("../components/ApplicationStartupError")
+  .then((module) => ({ default: module.ApplicationStartupError })));
 
 if (process.env.NODE_ENV !== "production") installDevelopmentRequestLedger();
 
@@ -488,24 +488,25 @@ try {
             loadContent={loadInstalledContent}
           />
         ) : (
-          <RulesOnlyHub
-            loadRules={loadRulesReference}
-            loadContent={loadInstalledContent}
+          <ApplicationStartupError
+            kind={surface === "table" ? "unavailable" : surface}
+            onRetry={() => window.location.reload()}
             message={envelopeMessage(initialEnvelope)}
           />
         )}
       </Suspense>
     </StrictMode>,
   );
-} catch {
+} catch (error) {
+  console.error("D&D campaign view initialization failed.", error);
   markBootstrapResponse("error");
   root.render(
     <StrictMode>
       <Suspense fallback={<BootstrapShell />}>
-        <RulesOnlyHub
-          loadRules={loadRulesReference}
-          loadContent={loadInstalledContent}
-          message="The private campaign view could not be prepared."
+        <ApplicationStartupError
+          kind={error instanceof TypeError ? "connection" : "unavailable"}
+          onRetry={() => window.location.reload()}
+          message="The application could not be loaded. Retry to reconnect and load the whole table."
         />
       </Suspense>
     </StrictMode>,

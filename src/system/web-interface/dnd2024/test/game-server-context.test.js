@@ -348,18 +348,22 @@ const partyReference = (index) => ({
 
 async function readRegisteredPartyBootstrap({
   party = [partyReference(0)], summary = {}, perspective = "dm", role = "game-master",
-  queryResponse, localSeat,
+  queryResponse, localSeat, shared = false,
 } = {}) {
   const calls = [];
   const value = await readGameServerContext({
     serverOrigin: "http://localhost:6217", requestedPerspective: perspective, localSeat,
     fetchImpl: async (input) => {
       const request = new URL(input); calls.push(request.pathname);
-      if (request.pathname === "/api/audience-context") return response(200, {
+      if (request.pathname === "/api/audience-context") {
+        const result = response(200, {
         status: "bound", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
         campaignId: "campaign.caldris.measure-of-mercy", role,
         ...(role === "actor" ? { actorId: "actor.0" } : {}),
       });
+        if (shared) result.headers.set("X-Website-Access", "shared");
+        return result;
+      }
       if (role === "actor" && request.pathname.endsWith("/entities/actor.0"))
         return response(200, { entityId: "actor.0", name: "Actor 0" });
       if (request.pathname.includes("dnd2024.query.campaign-context")) {
@@ -396,6 +400,28 @@ async function readRegisteredPartyBootstrap({
   });
   return { value, calls };
 }
+
+test("shared website ignores obsolete Player preferences and exposes the complete table", async () => {
+  const { value, calls } = await readRegisteredPartyBootstrap({ shared: true, perspective: "player" });
+  assert.equal(value.status, "connected");
+  assert.deepEqual(value.audience, { seat: "dm", perspective: "dm", allowedPerspectives: ["dm"] });
+  const hub = connectedCampaignToHubEnvelope(value);
+  assert.equal(resolveHubSurface(hub), "table");
+  assert.equal(hub.party.length, 1);
+  assert.equal(calls.length, 3);
+});
+
+test("failed bootstrap and source drift are service failures, not restricted access", async () => {
+  const offline = await readGameServerContext({ serverOrigin: "http://98.128.172.181",
+    fetchImpl: async () => { throw new TypeError("Failed to fetch"); } });
+  assert.equal(resolveHubSurface(offline), "connection");
+  const { value } = await readRegisteredPartyBootstrap({ shared: true,
+    queryResponse: () => response(503, { code: "SOURCE_FILE_DRIFT" }) });
+  assert.equal(resolveHubSurface(value), "unavailable");
+  const denied = await readGameServerContext({ serverOrigin: "http://98.128.172.181",
+    fetchImpl: async () => response(403, { status: "denied" }) });
+  assert.equal(resolveHubSurface(denied), "denied");
+});
 
 test("registered bootstrap keeps the server actor seat despite obsolete local DM input", async () => {
   const { value, calls } = await readRegisteredPartyBootstrap({
@@ -436,7 +462,7 @@ for (const count of [0, 1, 3, 20]) {
 function assertUnavailableRoster(value) {
   assert.equal(value.status, "unavailable");
   assert.equal("party" in value, false, "A failed join must not expose a partial roster");
-  assert.equal(resolveHubSurface(value), "rules");
+  assert.equal(resolveHubSurface(value), "unavailable");
 }
 
 for (const failedIndex of [0, 19]) {

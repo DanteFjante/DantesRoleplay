@@ -13,7 +13,9 @@ using DantesRoleplay.DataAccess.Composition;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.AI;
 using DantesRoleplay.AI.Ollama;
+using System.Diagnostics;
 
+var startup = Stopwatch.StartNew();
 var builder = WebApplication.CreateBuilder(args);
 
 var developmentInformationScope = builder.Configuration["Information:DevelopmentScope"]
@@ -147,7 +149,9 @@ app.Logger.LogInformation(
 
 // Migrate, then seed the bootstrap contracts from the embedded markdown files. Seeding is
 // idempotent by content hash, so a restart with no edits writes nothing.
-await app.Services.InitialiseDantesRoleplayAsync();
+await InitialiseStepAsync("Kernel database and bootstrap contracts", () =>
+    app.Services.InitialiseDantesRoleplayAsync());
+var settingsStarted = Stopwatch.GetTimestamp();
 await using (var settingsScope = app.Services.CreateAsyncScope())
 {
     var overrides = settingsScope.ServiceProvider.GetRequiredService<IHostSettingOverrideStore>();
@@ -167,11 +171,14 @@ await using (var settingsScope = app.Services.CreateAsyncScope())
     await overrides.MarkPendingAppliedAsync();
 }
 hostSettings.MarkProviderRegistered();
-await app.Services.InitialiseDantesRoleplayWebAsync();
+app.Logger.LogInformation("Startup: host settings ready in {ElapsedMs:F0} ms.",
+    Stopwatch.GetElapsedTime(settingsStarted).TotalMilliseconds);
+await InitialiseStepAsync("Website database", () => app.Services.InitialiseDantesRoleplayWebAsync());
 await using (var assistantScope = app.Services.CreateAsyncScope())
 {
-    await assistantScope.ServiceProvider.GetRequiredService<IAssistantConversationService>()
-        .RecoverInterruptedAsync();
+    await InitialiseStepAsync("Interrupted conversation recovery", async () =>
+        await assistantScope.ServiceProvider.GetRequiredService<IAssistantConversationService>()
+            .RecoverInterruptedAsync());
 }
 
 app.UseDantesRoleplayRemoteWebBoundary();
@@ -182,7 +189,18 @@ app.MapDantesRoleplayWeb();
 
 // Deliberately no HTTPS redirection. The MCP endpoint is reached over loopback by a local
 // client, and a redirect there is a confusing failure rather than a security gain.
+app.Lifetime.ApplicationStarted.Register(() =>
+    ServerStartupDiagnostics.LogReady(app.Logger, app.Urls, startup.Elapsed));
 app.Run();
+
+async Task InitialiseStepAsync(string step, Func<Task> initialise)
+{
+    app.Logger.LogInformation("Startup: preparing {Step}...", step);
+    var started = Stopwatch.GetTimestamp();
+    await initialise();
+    app.Logger.LogInformation("Startup: {Step} ready in {ElapsedMs:F0} ms.",
+        step, Stopwatch.GetElapsedTime(started).TotalMilliseconds);
+}
 
 static string ResolveRepositoryRoot(string? configured, string contentRoot)
 {

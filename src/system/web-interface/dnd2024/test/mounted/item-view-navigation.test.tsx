@@ -173,6 +173,28 @@ test("hub deep links request the authorized perspective once across tabs and dis
   } finally { await mounted.cleanup(); }
 });
 
+test("shared table upgrades obsolete Player inventory links without offering a role switch", async () => {
+  const projected = projectHubEnvelope(hubSource, "fixture", resolveAudience({
+    authenticatedUserId: "dm.fixture", authenticatedUserEmail: "", requestedPerspective: "dm",
+    dmPrincipalIds: ["dm.fixture"],
+  })) as ReadyHubEnvelope;
+  const initial: ReadyHubEnvelope = { ...projected, party,
+    audience: { seat: "dm", perspective: "dm", allowedPerspectives: ["dm"] },
+    contextSelection: { selectedWorldId: projected.world.id, selectedCampaignId: "campaign.test",
+      worlds: [{ id: projected.world.id, name: projected.world.name,
+        campaigns: [{ id: "campaign.test", name: "Fixture" }] }] } };
+  const mounted = await mount(itemRouteHash(inventory), <DndInformationHub initialEnvelope={initial} />);
+  try {
+    await perform(() => {});
+    const route = parseItemRoute(window.location.hash);
+    assert.equal(route.kind, "inventory");
+    assert.equal(route.kind === "inventory" && route.perspective, "dm");
+    assert.match(mounted.container.textContent!, /Shared table/);
+    assert.doesNotMatch(mounted.container.textContent!, /Actor binding required|not available for this seat/);
+    assert.equal(mounted.container.querySelector('[aria-label="Table perspective"]'), null);
+  } finally { await mounted.cleanup(); }
+});
+
 test("Campaign section and Party navigation survive Back and Forward", async () => {
   const projected = projectHubEnvelope(hubSource, "fixture", resolveAudience({
     authenticatedUserId: "dm.fixture", authenticatedUserEmail: "", requestedPerspective: "dm",

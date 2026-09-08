@@ -1,3 +1,6 @@
 export function resolveHubSurface(envelope) {
-  return envelope?.status === "ready" ? "table" : "rules";
+  if (envelope?.status === "ready") return "table";
+  if (envelope?.status === "denied") return "denied";
+  if (envelope?.reason === "connection") return "connection";
+  return "unavailable";
 }

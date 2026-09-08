@@ -2,6 +2,7 @@ import query from "../../../../../../catalog/applications/dnd2024/queries/combat
 import validate from "./encounter-board-draft-validator.js";
 import { readModelResponse, validateReadModelEnvelope } from "./read-model-response.js";
 import type { TacticalEncounterBoard } from "../data/hub-types";
+import { requestId, sha256Hex } from "../data/browser-crypto.ts";
 
 export type BoardDraftScope = { applicationId: string; stateSpaceId: string; campaignId: string; encounterId: string };
 export type BoardDraftInput = { columns: number; rows: number; obstacleCount: number; seed: number; setting: "woodland" | "ruin" | "chamber"; prompt: string };
@@ -86,8 +87,7 @@ export async function uploadDraftImage(scope: BoardDraftScope, file: File, draft
 }
 
 async function digest(value: string) {
-  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return sha256Hex(value);
 }
 
 export async function prepareBoard(scope: BoardDraftScope, projection: DraftProjection, image: DraftImage | null, signal: AbortSignal): Promise<PreparedBoard> {
@@ -98,7 +98,7 @@ export async function prepareBoard(scope: BoardDraftScope, projection: DraftProj
       provenance: { kind: "original", credit: "GM supplied and reviewed", reviewedOn: new Date().toISOString().slice(0,10), version: 1,
         source: `${draft.provider}/${draft.model}; input:${projection.sourceRevisionFingerprint}; prompt:${await digest(backgroundPrompt(draft))}; background:gm-upload` } } : null };
   const result = await json(await fetch(`${mechanic(scope)}/prepare`, { method: "POST", cache: "no-store", signal,
-    headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idempotencyKey: crypto.randomUUID(), roleEntityIds: { campaign: scope.campaignId, encounter: scope.encounterId }, input }),
+    headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idempotencyKey: requestId(), roleEntityIds: { campaign: scope.campaignId, encounter: scope.encounterId }, input }),
   }));
   if (result.ready !== true || result.requiresConfirmation !== true || !hash(result.proposalFingerprint) ||
       typeof result.receipt?.id !== "string" || result.proposal?.command !== "propose" || result.proposal.steps?.length !== 1 ||
@@ -107,7 +107,7 @@ export async function prepareBoard(scope: BoardDraftScope, projection: DraftProj
       canonical(result.proposal.steps[0].dependsOn) !== "[]" ||
       canonical(result.proposal.steps[0].roleBindings) !== canonical({ campaign: scope.campaignId, encounter: scope.encounterId }) ||
       canonical(result.proposal.steps[0].input) !== canonical(input)) throw new Error("The host could not prepare this exact board for confirmation.");
-  return { proposal: result.proposal, proposalFingerprint: result.proposalFingerprint, receipt: result.receipt, executionKey: crypto.randomUUID() };
+  return { proposal: result.proposal, proposalFingerprint: result.proposalFingerprint, receipt: result.receipt, executionKey: requestId() };
 }
 
 // Called only by the separate, explicit GM Accept button. A timeout is not proof of rollback.

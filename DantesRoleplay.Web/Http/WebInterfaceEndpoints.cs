@@ -78,7 +78,9 @@ public static partial class WebInterfaceEndpoints
             StringComparison.Ordinal);
         return Results.Json(new
         {
-            accessMode = tailscale ? "tailscale" : "local",
+            accessMode = tailscale ? "tailscale"
+                : context.User.Identity?.AuthenticationType == WebAccessPolicy.AnonymousPublicAuthenticationType
+                    ? "anonymous-public" : "local",
             login = tailscale ? context.User.Identity?.Name : null
         });
     }

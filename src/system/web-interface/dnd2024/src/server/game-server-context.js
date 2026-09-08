@@ -94,8 +94,8 @@ function denied(message) {
   return { version: 1, status: "denied", message };
 }
 
-function unavailable(message) {
-  return { version: 1, status: "unavailable", message };
+function unavailable(message, reason) {
+  return { version: 1, status: "unavailable", message, ...(reason ? { reason } : {}) };
 }
 
 function audience(value) {
@@ -1741,7 +1741,7 @@ async function readGameServerContextCore({
       cache: "no-store",
     });
   } catch {
-    return unavailable("The configured game server could not be reached.");
+    return unavailable("The game server could not be reached. Check the connection and retry.", "connection");
   }
 
   const context = await json(response);
@@ -1756,11 +1756,14 @@ async function readGameServerContextCore({
   // A development preference or requested perspective can never promote a server-bound actor.
   const serverRole = binding;
   const isGameMaster = serverRole.role === "game-master";
+  // Shared website authority is independent of stale Player preferences and old deep links.
+  // Do not offer a character-knowledge preview until it has an explicit observer selection.
+  const sharedWebsite = response.headers.get("X-Website-Access") === "shared";
   const contextAudience = isGameMaster
     ? {
         seat: "dm",
-        perspective: normalizePerspective(normalizedRequestedPerspective),
-        allowedPerspectives: ["dm", "player"],
+        perspective: sharedWebsite ? "dm" : normalizePerspective(normalizedRequestedPerspective),
+        allowedPerspectives: sharedWebsite ? ["dm"] : ["dm", "player"],
       }
     : { seat: "player", perspective: "player", allowedPerspectives: ["player"] };
   const effectivePerspective = contextAudience.perspective ?? "player";

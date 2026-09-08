@@ -46,7 +46,9 @@ public static class ControlCenterStatus
             StringComparison.Ordinal);
         return new(
             "ready",
-            new(tailscale ? "tailscale" : "local", tailscale ? principal.Identity?.Name : null),
+            new(tailscale ? "tailscale"
+                : principal.Identity?.AuthenticationType == WebAccessPolicy.AnonymousPublicAuthenticationType
+                    ? "anonymous-public" : "local", tailscale ? principal.Identity?.Name : null),
             Panels);
     }
 

@@ -12,6 +12,9 @@ public sealed class WebRemoteAccessOptions
 
     public bool Enabled { get; set; }
 
+    // Explicit host opt-in: every network visitor receives the website's operator capabilities.
+    public bool AllowAnonymousPublicAccess { get; set; }
+
     public string? TailscaleHost { get; set; }
 
     public string[] AllowedLogins { get; set; } = [];
@@ -20,7 +23,8 @@ public sealed class WebRemoteAccessOptions
 public enum WebAccessMode
 {
     Local,
-    Tailscale
+    Tailscale,
+    AnonymousPublic
 }
 
 public sealed record WebAccessDecision(
@@ -42,6 +46,7 @@ public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
     public const string TailscaleLoginHeader = "Tailscale-User-Login";
     public const string LocalAuthenticationType = "DantesRoleplay.Local";
     public const string TailscaleAuthenticationType = "TailscaleServe";
+    public const string AnonymousPublicAuthenticationType = "DantesRoleplay.AnonymousPublic";
 
     private readonly WebRemoteAccessOptions remote = options.Value;
 
@@ -51,6 +56,8 @@ public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
 
         if (!WebInterfaceSecurity.IsLoopback(context.Connection.RemoteIpAddress))
         {
+            if (remote.AllowAnonymousPublicAccess && context.Connection.RemoteIpAddress is not null)
+                return new WebAccessDecision(true, WebAccessMode.AnonymousPublic);
             return Denied(
                 "LOCAL_ACCESS_REQUIRED",
                 "The web interface accepts direct requests only from this computer.");
@@ -106,6 +113,10 @@ public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
         path.StartsWithSegments("/api/data") ||
         path.StartsWithSegments("/api/changes") ||
         path.StartsWithSegments("/api/session") ||
+        path == "/api/audience-context" ||
+        IsReadinessPath(path) ||
+        IsReadModelMediaPath(path) ||
+        IsApplicationAuxiliaryPath(path) ||
         path.StartsWithSegments("/api/blob-uploads") ||
         path.StartsWithSegments("/api/blobs") ||
         IsApplicationCatalogReadPath(path) ||
@@ -127,6 +138,29 @@ public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
             IsRouteIdentifier(segments[4], 200) && segments[5] == "mechanics" &&
             IsRouteIdentifier(segments[6], 200) &&
             (segments.Length == 7 || segments[7] is "prepare" or "execute");
+    }
+
+    private static bool IsReadinessPath(PathString path)
+    {
+        var segments = path.Value?.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return segments is { Length: 4 } && segments[0] == "api" &&
+            segments[1] == "readiness" && segments[2] == "applications" &&
+            IsRouteIdentifier(segments[3], 63);
+    }
+
+    private static bool IsReadModelMediaPath(PathString path)
+    {
+        var parts = path.Value?.Split('/');
+        return parts is { Length: 5 } && parts[1] == "api" && parts[2] == "read-model-media" &&
+            IsRouteIdentifier(parts[3], 4096) && parts[4] == "content";
+    }
+
+    private static bool IsApplicationAuxiliaryPath(PathString path)
+    {
+        var parts = path.Value?.Split('/');
+        return parts is { Length: 5 or 7 } && parts[1] == "api" && parts[2] == "applications" &&
+            IsRouteIdentifier(parts[3], 63) && (parts.Length == 5 ? parts[4] == "visual-drafts" :
+                parts[4] == "campaigns" && IsRouteIdentifier(parts[5], 200) && parts[6] == "chronology");
     }
 
     private static bool IsApplicationCatalogReadPath(PathString path)
@@ -169,13 +203,15 @@ public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
             !IsRouteIdentifier(segments[2], 63)) return false;
         if (segments.Length == 4) return true;
         if (segments.Length < 6 || !IsRouteIdentifier(segments[4], 200)) return false;
-        if (segments.Length == 6 && segments[5] == "containments") return true;
+        if (segments.Length == 6 && segments[5] is "containments" or "media-batch") return true;
         if (segments[5] != "entities") return false;
         if (segments.Length == 6) return true;
         if (!IsRouteIdentifier(segments[6], 200)) return false;
         if (segments.Length == 7) return true;
         if (segments.Length == 8 && segments[7] == "containment") return true;
         if (segments.Length == 8 && segments[7] == "media") return true;
+        if (segments.Length == 9 && segments[7] == "read-models" &&
+            IsRouteIdentifier(segments[8], 200)) return true;
         if (segments.Length == 10 && segments[7] == "media" &&
             IsRouteIdentifier(segments[8], 200) && segments[9] == "content") return true;
         if (segments.Length < 8 || segments[7] != "components") return false;
@@ -204,10 +240,13 @@ public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
             throw new ArgumentException("A denied access decision cannot create a principal.", nameof(decision));
         }
 
-        var authenticationType = decision.Mode == WebAccessMode.Tailscale
-            ? TailscaleAuthenticationType
-            : LocalAuthenticationType;
-        var name = decision.Login ?? "local";
+        var authenticationType = decision.Mode switch
+        {
+            WebAccessMode.Tailscale => TailscaleAuthenticationType,
+            WebAccessMode.AnonymousPublic => AnonymousPublicAuthenticationType,
+            _ => LocalAuthenticationType
+        };
+        var name = decision.Mode == WebAccessMode.AnonymousPublic ? "anonymous-public" : decision.Login ?? "local";
         return new ClaimsPrincipal(new ClaimsIdentity(
             [
                 new Claim(ClaimTypes.NameIdentifier, name),
@@ -270,14 +309,27 @@ public sealed class WebPrivateOperatorGuard(
 
 public static class WebTrustedPrincipalContextFactory
 {
+    public static TrustedPrincipalContext FromPrincipal(ClaimsPrincipal principal) =>
+        principal.Identity?.IsAuthenticated != true
+            ? TrustedPrincipalContext.Unauthenticated("WEB_IDENTITY_UNAVAILABLE")
+            : principal.Identity.AuthenticationType switch
+            {
+                WebAccessPolicy.LocalAuthenticationType => Create(new(true, WebAccessMode.Local)),
+                WebAccessPolicy.TailscaleAuthenticationType => Create(new(true, WebAccessMode.Tailscale, principal.Identity.Name)),
+                WebAccessPolicy.AnonymousPublicAuthenticationType => Create(new(true, WebAccessMode.AnonymousPublic)),
+                _ => TrustedPrincipalContext.Unauthenticated("WEB_IDENTITY_UNAVAILABLE")
+            };
+
     public static TrustedPrincipalContext Create(WebAccessDecision decision)
     {
         if (!decision.Allowed)
             return TrustedPrincipalContext.Unauthenticated(decision.ErrorCode ?? "WEB_IDENTITY_UNAVAILABLE");
-        var method = decision.Mode == WebAccessMode.Tailscale ? "tailscale-serve" : "local-loopback";
-        var subject = decision.Mode == WebAccessMode.Tailscale
-            ? decision.Login?.Trim().ToLowerInvariant()
-            : "local-operator";
+        var (method, subject) = decision.Mode switch
+        {
+            WebAccessMode.Tailscale => ("tailscale-serve", decision.Login?.Trim().ToLowerInvariant()),
+            WebAccessMode.AnonymousPublic => ("anonymous-public-web", "anonymous-public-operator"),
+            _ => ("local-loopback", "local-operator")
+        };
         if (string.IsNullOrWhiteSpace(subject))
             return TrustedPrincipalContext.Unauthenticated("WEB_IDENTITY_UNAVAILABLE");
         return PrivateOperatorPrincipal.Create(method, subject);

@@ -20,6 +20,8 @@ internal static class AudienceContextWebEndpoint
         CancellationToken cancellationToken)
     {
         context.Response.Headers.CacheControl = "private, no-store";
+        if (SharedWebsiteContext.IsTrusted(context))
+            context.Response.Headers["X-Website-Access"] = "shared";
         var outcome = await SystemAudienceContextHandler.ResolveAsync(
             seats, audiences, bindings, participation, cancellationToken);
         if (outcome.Error is null)
