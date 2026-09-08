@@ -4,6 +4,8 @@ import { readDeferredHubSection } from "../src/server/game-server-context.js";
 import { contract as worldCampaignDirectoryContract } from "../src/server/world-campaign-directory-contract.js";
 import { contract as worldLocationScopeContract } from "../src/server/world-location-scope-contract.js";
 import { contract as worldPeopleHoldingsContract } from "../src/server/world-people-holdings-contract.js";
+import { contract as currentSceneContract } from "../src/server/current-scene-contract.js";
+import { contract as campaignResumeContract } from "../src/server/campaign-resume-contract.js";
 
 const origin = "http://localhost:6217";
 const source = {
@@ -15,9 +17,6 @@ const source = {
   knowledge: { status: "unavailable", entries: [], locations: [] },
 };
 const response = (value, status = 200) => new Response(JSON.stringify(value), { status });
-const component = (id, type, value) => response({
-  entityId: id, qualifiedTypeId: type, valueJson: JSON.stringify(value),
-});
 
 for (const perspective of ["dm", "player"]) {
   test(`deferred history reads all 251 authorized entries with one request (${perspective})`, async () => {
@@ -126,22 +125,46 @@ test("failed or incompatible root scopes never produce empty location success", 
   }
 });
 
-test("Current reuses loaded authorized locations and resolves the existing current-scene contract", async () => {
+test("Current cross-checks registered Resume and Current Scene without raw state reconstruction", async () => {
   const calls = [];
   const result = await readDeferredHubSection({
     origin, section: "current",
-    source: { ...source, locationDirectory: [{ id: "location.caldris.one", name: "Place" }] },
+    source: { ...source, knowledge: { status: "empty", entries: [], locations: [] },
+      locationDirectory: [{ id: "location.caldris.one", name: "Place" }] },
     fetchImpl: async (input) => {
       const target = new URL(input); calls.push(target);
-      if (target.pathname.endsWith("/components/game.core.campaign.current-scene"))
-        return component(source.campaign.id, "game.core.campaign.current-scene",
-          { location: { entityId: "location.caldris.one" } });
-      return response({}, 404);
+      const resume = target.pathname.endsWith(campaignResumeContract.id);
+      const contract = resume ? campaignResumeContract : currentSceneContract;
+      const data = resume ? {
+        version: 1,
+        campaign: { id: source.campaign.id, name: "Fixture", title: "Fixture",
+          premise: "Continue the fixture.", partyGoals: ["Continue."], toneAndBoundaries: ["Keep it safe."] },
+        party: { activeMemberCount: 1 },
+        scene: { locationId: "location.caldris.one", conversationId: null, encounterId: null },
+        activeArc: null, activeChapter: null, activeSession: null, latestRecap: null,
+        affordances: [{ key: "look-around", label: "Look around", summary: "Survey the area." }],
+      } : {
+        version: 1, kind: "exploration",
+        location: { id: "location.caldris.one", kind: "site", summary: "A place.", visibility: "party" },
+        conversationId: null, encounterId: null,
+        affordances: [{ key: "look-around", label: "Look around", summary: "Survey the area." }],
+      };
+      return response({
+        applicationId: "dnd2024", stateSpaceId: "state.fixture", qualifiedQueryId: contract.id,
+        stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+        outputSchemaHash: contract.outputSchemaHash, resultFingerprint: "3".repeat(64),
+        sourceRevisionFingerprint: "4".repeat(64), data,
+      });
     },
   });
   assert.equal(result.currentSituation.status, "ready");
   assert.equal(result.currentSituation.locationId, "location.caldris.one");
-  assert.ok(calls.every((target) => !target.pathname.endsWith("/entities")));
+  assert.deepEqual(result.currentSituation.affordances, [
+    { key: "look-around", label: "Look around", summary: "Survey the area." },
+  ]);
+  assert.equal(calls.length, 2);
+  assert.ok(calls.every((target) => target.pathname.includes("/read-models/") &&
+    !target.pathname.includes("/components/") && !target.pathname.endsWith("/containment")));
 });
 
 test("context discovery follows every registered continuation without hydrating entities", async () => {

@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   CharacterResourceOwner,
   CHARACTER_DOSSIER_OBJECT_ID,
+  CurrentViewResourceOwner,
   TableResourceOwner,
   WorldResourceOwner,
   CAMPAIGN_SUMMARY_OBJECT_ID,
@@ -364,6 +365,49 @@ test("World information resources cache People, Lore, and History independently 
   await owner.loadInformation({ envelope: actor, section: "people" });
   await owner.loadInformation({ envelope: dm, section: "people" });
   assert.equal(reads.people, 3, "observer replacement retires cached private information");
+});
+
+test("Current View deduplicates one campaign resource and fences late observer responses", async () => {
+  type CurrentUpdate = import("../../src/data/object-resources").CurrentViewUpdate;
+  const pending = new Map<string, (value: CurrentUpdate) => void>();
+  let reads = 0;
+  const update = (locationId: string): CurrentUpdate => ({
+    section: "current",
+    currentSituation: locationId
+      ? { status: "ready", kind: "exploration", locationId, affordances: [] }
+      : { status: "unavailable", message: "No current scene." },
+    world: { currentLocationId: locationId, locations: [] },
+    campaign: { mapOverlays: [] },
+  });
+  const owner = new CurrentViewResourceOwner({
+    readCurrent: ({ envelope }) => {
+      reads += 1;
+      return new Promise((resolve) => pending.set(envelope.audience.perspective, resolve));
+    },
+  });
+  const dmEnvelope = scope("dm");
+  const dmFirst = owner.loadCurrent({ envelope: dmEnvelope });
+  const dmDuplicate = owner.loadCurrent({ envelope: dmEnvelope });
+  assert.equal(reads, 1);
+
+  const playerEnvelope = scope("player");
+  const obsolete = dmFirst;
+  const player = owner.loadCurrent({ envelope: playerEnvelope });
+  pending.get("player")?.(update("location.player"));
+  assert.equal((await player).world.currentLocationId, "location.player");
+  pending.get("dm")?.(update("location.dm"));
+  await assert.rejects(obsolete, (error) =>
+    error instanceof ViewReadError && error.category === "cancelled");
+  await assert.rejects(dmDuplicate, (error) =>
+    error instanceof ViewReadError && error.category === "cancelled");
+
+  await owner.loadCurrent({ envelope: playerEnvelope });
+  assert.equal(reads, 2, "the Player result remains cached after the late DM response");
+  assert.equal(owner.invalidateObject(CAMPAIGN_SUMMARY_OBJECT_ID), true);
+  const refreshed = owner.loadCurrent({ envelope: playerEnvelope });
+  pending.get("player")?.(update("location.changed"));
+  assert.equal((await refreshed).world.currentLocationId, "location.changed");
+  assert.equal(reads, 3);
 });
 
 test("local edit state remains pending through submit and retains failed drafts until server confirmation", () => {

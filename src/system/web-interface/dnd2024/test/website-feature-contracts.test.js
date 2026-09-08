@@ -72,6 +72,7 @@ test("W01 preserves all existing registered query and object owners at their cur
     "dnd2024.query.inventory-item-uses",
     "dnd2024.query.inventory-item-recipes",
     "dnd2024.query.faction-directory-page",
+    "dnd2024.query.campaign-resume",
     "dnd2024.query.current-scene",
     "dnd2024.query.encounter-board",
     "dnd2024.query.encounter-board-draft",
@@ -111,6 +112,22 @@ test("W07 registers the component-owned People and Holdings projection", async (
   assert.equal(query?.outputSchema?.properties?.limits?.properties?.contentsDepth?.const, 4);
   assert.equal(query?.outputSchema?.properties?.people?.maxItems, 100);
   assert.equal(query?.outputSchema?.properties?.holdings?.maxItems, 100);
+});
+
+test("W08 composes Current View from the registered resume, scene, and board owners", async () => {
+  const feature = contract.features.find(({ id }) => id === "current-and-play");
+  assert.equal(feature?.target?.slice, "W08");
+  assert.match(feature?.browserAssembly ?? "", /CurrentViewResourceOwner/u);
+  assert.match(feature?.completeness ?? "", /source revision/u);
+  for (const id of [
+    "dnd2024.query.campaign-resume",
+    "dnd2024.query.current-scene",
+    "dnd2024.query.encounter-board",
+  ]) {
+    const query = await findCatalogRecord(catalogQueryRoot, id);
+    assert.equal(query?.status, "active", `${id} remains active`);
+    assert.equal(query?.executor, "mechanic-projection", `${id} remains catalog-owned`);
+  }
 });
 
 test("W01 coverage follows every current navigation section and item/board route", () => {

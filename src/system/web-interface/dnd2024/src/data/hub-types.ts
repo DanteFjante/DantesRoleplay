@@ -862,7 +862,7 @@ export type CurrentSituationReadModel =
         turn?: {
           id: string;
           participationId: string;
-          actorId: string;
+          actorId?: string;
           actorName: string;
           ordinal: number;
           budget?: { actions: number; bonusActions: number; reactions: number };

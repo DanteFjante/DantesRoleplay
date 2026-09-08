@@ -11,6 +11,8 @@ import { contract as characterDossierContract } from "../src/server/character-do
 import { contract as factionDirectoryContract } from "../src/server/faction-directory-contract.js";
 import { contract as inventoryContainerContract } from "../src/server/inventory-container-contract.js";
 import { contract as worldLocationScopeContract } from "../src/server/world-location-scope-contract.js";
+import { contract as campaignResumeContract } from "../src/server/campaign-resume-contract.js";
+import { contract as currentSceneContract } from "../src/server/current-scene-contract.js";
 
 import {
   inheritMediaVisual,
@@ -24,14 +26,12 @@ import {
   readGameServerContext,
   readRegisteredCampaignSummary,
   readRegisteredCampaignDetails,
+  readRegisteredCurrentPlay,
   readRegisteredFactionDirectoryPage,
   readRegisteredWorldLocationScope,
   readDeferredHubSection,
   readKnownOpenRoutes,
-  resolveCurrentSceneRecord,
   resolveRecordedPlaySituation,
-  resolveSceneAffordancesRecord,
-  resolvePresenceLocation,
 } from "../src/server/game-server-context.js";
 
 function worldLocationScopeData(scopeId = "realm-root-7") {
@@ -59,6 +59,43 @@ function worldScopeEnvelope(data) {
     stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
     outputSchemaHash: worldLocationScopeContract.outputSchemaHash, resultFingerprint: "3".repeat(64),
     sourceRevisionFingerprint: "4".repeat(64), data,
+  };
+}
+
+function currentPlayEnvelope(contract, data, sourceRevisionFingerprint = "a".repeat(64)) {
+  return {
+    applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    qualifiedQueryId: contract.id,
+    stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+    outputSchemaHash: contract.outputSchemaHash, resultFingerprint: "3".repeat(64),
+    sourceRevisionFingerprint, data,
+  };
+}
+
+function campaignResumeData(scene, affordances = []) {
+  return {
+    version: 1,
+    campaign: {
+      id: "campaign.thalorien", name: "Thalorien", title: "The Broken Crown",
+      premise: "Keep the realm from falling apart.", partyGoals: ["Protect Brackenford."],
+      toneAndBoundaries: ["Heroic fantasy."],
+    },
+    party: { activeMemberCount: 1 }, scene,
+    activeArc: null, activeChapter: null, activeSession: null, latestRecap: null,
+    affordances,
+  };
+}
+
+function currentSceneData(kind, affordances = []) {
+  return {
+    version: 1, kind,
+    location: {
+      id: "location.thalorien.brackenford", kind: "settlement",
+      summary: "A guarded frontier town.", visibility: "party",
+    },
+    conversationId: kind === "conversation" ? "interaction.brackenford.parley" : null,
+    encounterId: kind === "combat" ? "encounter.brackenford.ambush" : null,
+    affordances,
   };
 }
 
@@ -688,47 +725,6 @@ test("visual media preserves an ordered gallery when an entity has several autho
   ]);
 });
 
-test("current scene records resolve encounter then conversation then exploration", () => {
-  const locations = ["location.thalorien.brackenford"];
-  assert.deepEqual(resolveCurrentSceneRecord({
-    location: { entityId: locations[0] },
-    conversation: { entityId: "interaction.brackenford.parley" },
-    encounter: { entityId: "encounter.brackenford.ambush" },
-  }, locations), {
-    kind: "combat",
-    locationId: locations[0],
-    conversationId: "interaction.brackenford.parley",
-    encounterId: "encounter.brackenford.ambush",
-  });
-  assert.deepEqual(resolveCurrentSceneRecord({
-    location: { entityId: locations[0] },
-    conversation: { entityId: "interaction.brackenford.parley" },
-  }, locations), {
-    kind: "conversation",
-    locationId: locations[0],
-    conversationId: "interaction.brackenford.parley",
-  });
-  assert.deepEqual(resolveCurrentSceneRecord({ location: { entityId: locations[0] } }, locations), {
-    kind: "exploration",
-    locationId: locations[0],
-  });
-});
-
-test("current scene records reject unknown locations and open or malformed references", () => {
-  const locations = ["location.thalorien.brackenford"];
-  assert.equal(resolveCurrentSceneRecord({
-    location: { entityId: "location.thalorien.hidden" },
-  }, locations), null);
-  assert.equal(resolveCurrentSceneRecord({
-    location: { entityId: locations[0] },
-    conversation: { entityId: "interaction.brackenford.parley", name: "Injected" },
-  }, locations), null);
-  assert.equal(resolveCurrentSceneRecord({
-    location: { entityId: locations[0] },
-    guessedMode: "combat",
-  }, locations), null);
-});
-
 test("recorded play situations preserve continuity without becoming authoritative ECS scenes", () => {
   const locationId = "location.thalorien.brackenford";
   assert.deepEqual(resolveRecordedPlaySituation({
@@ -770,64 +766,6 @@ test("recorded play situations preserve continuity without becoming authoritativ
     recentMessages: [],
     currentSituation: { id: "play-situation.2", status: "active", kind: "initiative", summary: "No.", participants: [] },
   }, []), null);
-});
-
-test("scene affordances match the full current scene and filter GM-only context", () => {
-  const currentScene = {
-    kind: "combat",
-    locationId: "location.thalorien.brackenford",
-    conversationId: "interaction.brackenford.parley",
-    encounterId: "encounter.brackenford.ambush",
-  };
-  const record = {
-    scene: {
-      location: { entityId: currentScene.locationId },
-      conversation: { entityId: currentScene.conversationId },
-      encounter: { entityId: currentScene.encounterId },
-    },
-    items: [
-      { key: "take-cover", label: "Take cover", summary: "Move behind the ruined wall.", visibility: "party" },
-      { key: "spring-ambush", label: "Spring the ambush", summary: "Reveal the hidden archers.", visibility: "gm" },
-    ],
-  };
-
-  assert.deepEqual(resolveSceneAffordancesRecord(record, currentScene, "player"), [
-    { key: "take-cover", label: "Take cover", summary: "Move behind the ruined wall." },
-  ]);
-  assert.deepEqual(resolveSceneAffordancesRecord(record, currentScene, "dm"), [
-    { key: "take-cover", label: "Take cover", summary: "Move behind the ruined wall." },
-    { key: "spring-ambush", label: "Spring the ambush", summary: "Reveal the hidden archers." },
-  ]);
-});
-
-test("scene affordances fail closed for stale selectors and duplicate keys", () => {
-  const currentScene = {
-    kind: "conversation",
-    locationId: "location.thalorien.brackenford",
-    conversationId: "interaction.brackenford.parley",
-  };
-  const item = { key: "ask-about-road", label: "Ask about the road", summary: "Learn what lies ahead.", visibility: "party" };
-  assert.equal(resolveSceneAffordancesRecord({
-    scene: {
-      location: { entityId: currentScene.locationId },
-      conversation: { entityId: "interaction.brackenford.stale" },
-    },
-    items: [item],
-  }, currentScene, "player"), null);
-  assert.equal(resolveSceneAffordancesRecord({
-    scene: {
-      location: { entityId: currentScene.locationId },
-      conversation: { entityId: currentScene.conversationId },
-    },
-    items: [item, { ...item, label: "Duplicate" }],
-  }, currentScene, "player"), null);
-  assert.equal(resolveSceneAffordancesRecord({
-    scene: {
-      location: { entityId: currentScene.locationId },
-      conversation: { entityId: currentScene.conversationId },
-    },
-    items: [{ ...item, summary: "   " }],
-  }, currentScene, "player"), null);
 });
 
 test("known ways onward require admitted exact route and destination subjects", async () => {
@@ -968,9 +906,16 @@ test("known ways onward fail closed without destination knowledge", async () => 
 
 test("conversation current scene excludes unapproved participants and summary from Player", async () => {
   const entityRoot = "/api/applications/dnd2024/state-spaces/dnd2024-main/entities";
+  const calls = [];
   const value = await readConversationCurrentScene({
     fetchImpl: async (input) => {
       const requested = new URL(input);
+      calls.push(requested);
+      if (requested.pathname.endsWith("/media-batch")) {
+        return response(200, {
+          applicationId: "dnd2024", stateSpaceId: "dnd2024-main", items: [],
+        });
+      }
       if (requested.pathname.endsWith("/interaction.brackenford.parley")) {
         return response(200, { entityId: "interaction.brackenford.parley", name: "Gatehouse parley" });
       }
@@ -1021,89 +966,27 @@ test("conversation current scene excludes unapproved participants and summary fr
   });
   assert.equal(JSON.stringify(value).includes("CANARY"), false);
   assert.equal(JSON.stringify(value).includes("secret-npc"), false);
+  assert.equal(calls.filter((call) => call.pathname.endsWith("/media-batch")).length, 1);
+  assert.equal(calls.some((call) => call.pathname.includes("/media/")), false);
 });
 
-test("combat current scene reads exact locked Initiative without inventing a turn", async () => {
+test("combat current scene uses the Encounter Board's exact participants and active turn", async () => {
   const entityRoot = "/api/applications/dnd2024/state-spaces/dnd2024-main/entities";
   const encounterId = "encounter.brackenford.ambush";
   const participationId = "participation.brackenford.hero";
+  const envelope = boardEnvelope();
+  envelope.data.participants[0].activeTurn = true;
+  envelope.data.turn = {
+    id: "turn.brackenford.hero", participationId, ordinal: 0,
+  };
+  const calls = [];
   const value = await readCombatCurrentScene({
     fetchImpl: async (input) => {
       const requested = new URL(input);
-      const kind = requested.searchParams.get("qualifiedKind");
-      if (requested.pathname.endsWith(`/entities/${encounterId}`)) {
-        return response(200, { entityId: encounterId, name: "Brackenford ambush" });
-      }
-      if (requested.pathname.endsWith(`/entities/${encounterId}/components/dnd2024.encounter.definition`)) {
-        return response(200, {
-          entityId: encounterId,
-          qualifiedTypeId: "dnd2024.encounter.definition",
-          valueJson: JSON.stringify({ environment: { entityId: "location.thalorien.brackenford" } }),
-        });
-      }
+      calls.push(requested);
       if (requested.pathname.endsWith(`/entities/${encounterId}/read-models/dnd2024.query.encounter-board`)) {
         assert.equal(requested.searchParams.get("perspective"), "player");
-        return response(200, boardEnvelope());
-      }
-      if (requested.pathname.endsWith("/relationships") && kind === "dnd2024.encounter.has-participation") {
-        return response(200, { items: [{
-          fromEntityId: encounterId,
-          toEntityId: participationId,
-          qualifiedKind: kind,
-        }] });
-      }
-      if (requested.pathname.endsWith("/relationships") &&
-          ["dnd2024.encounter.active-round", "dnd2024.encounter.active-turn"].includes(kind)) {
-        return response(200, { items: [] });
-      }
-      if (requested.pathname.endsWith(`/entities/${participationId}/components/dnd2024.encounter.participation`)) {
-        return response(200, {
-          entityId: participationId,
-          qualifiedTypeId: "dnd2024.encounter.participation",
-          valueJson: JSON.stringify({
-            membershipRelationship: {
-              stateSpaceId: "dnd2024-main",
-              fromEntityId: encounterId,
-              toEntityId: participationId,
-              qualifiedKind: "dnd2024.encounter.has-participation",
-            },
-            status: "active",
-          }),
-        });
-      }
-      if (requested.pathname.endsWith(`/entities/${participationId}/components/dnd2024.combat.initiative`)) {
-        return response(200, {
-          entityId: participationId,
-          qualifiedTypeId: "dnd2024.combat.initiative",
-          valueJson: JSON.stringify({
-            encounter: { entityId: encounterId }, status: "locked", result: 17, tieBreakOrder: 0,
-          }),
-        });
-      }
-      if (requested.pathname.endsWith(`/entities/${participationId}/components/dnd2024.combat.position`)) {
-        return response(200, {
-          entityId: participationId,
-          qualifiedTypeId: "dnd2024.combat.position",
-          valueJson: JSON.stringify({
-            encounter: { entityId: encounterId },
-            anchor: { x: 2, y: 3 },
-            footprint: { width: 2, height: 1 },
-            elevationFeet: 5,
-            visibility: "public",
-            revision: 4,
-          }),
-        });
-      }
-      if (requested.pathname.endsWith("/relationships") &&
-          kind === "dnd2024.encounter.participation.for-actor") {
-        return response(200, { items: [{
-          fromEntityId: participationId,
-          toEntityId: "actor.hero",
-          qualifiedKind: kind,
-        }] });
-      }
-      if (requested.pathname.endsWith("/entities/actor.hero")) {
-        return response(200, { entityId: "actor.hero", name: "Hero" });
+        return response(200, envelope);
       }
       throw new Error(`Unexpected request ${requested}`);
     },
@@ -1112,7 +995,7 @@ test("combat current scene reads exact locked Initiative without inventing a tur
     encounterId,
     stateSpaceId: "dnd2024-main",
     perspective: "player",
-    authorizedActorIds: new Set(["actor.hero"]),
+    campaignId: "campaign.thalorien",
   });
   assert.deepEqual(value, {
     status: "ready",
@@ -1120,7 +1003,7 @@ test("combat current scene reads exact locked Initiative without inventing a tur
     combat: {
       id: encounterId,
       name: "Brackenford ambush",
-      participants: [{ id: "actor.hero", name: "Hero", initiative: 17, active: false }],
+      participants: [{ id: participationId, name: "Hero", initiative: 17, active: true }],
       board: {
         revision: 7,
         columns: 12,
@@ -1132,12 +1015,21 @@ test("combat current scene reads exact locked Initiative without inventing a tur
           id: participationId,
           name: "Hero",
           initiative: 17,
-          active: false,
+          active: true,
           position: { x: 2, y: 3, width: 2, height: 1, elevationFeet: 5, revision: 4 },
         }],
+        turn: {
+          id: "turn.brackenford.hero", participationId, actorName: "Hero", ordinal: 0,
+        },
+      },
+      turn: {
+        id: "turn.brackenford.hero", participationId, actorName: "Hero", ordinal: 0,
       },
     },
   });
+  assert.equal(calls.length, 1);
+  assert.equal(calls.some((call) => call.pathname.includes("/components/")), false);
+  assert.equal(calls.some((call) => call.pathname.endsWith("/relationships")), false);
 });
 
 function response(status, body) {
@@ -1212,31 +1104,6 @@ test("normalizes only a credential-free HTTP(S) server origin", () => {
   assert.equal(normalizeGameServerOrigin("file:///campaign"), null);
 });
 
-test("resolves only the ambient actor's exact authorized presence location", () => {
-  const actorId = "actor.thalorien.brackenford.orban";
-  const locations = ["location.thalorien.brackenford"];
-  assert.equal(resolvePresenceLocation({ containment: {
-    containedEntityId: actorId,
-    containerEntityId: "location.thalorien.brackenford",
-    slot: "presence",
-  } }, actorId, locations), "location.thalorien.brackenford");
-  assert.equal(resolvePresenceLocation({ containment: {
-    containedEntityId: "actor.thalorien.someone-else",
-    containerEntityId: "location.thalorien.brackenford",
-    slot: "presence",
-  } }, actorId, locations), null);
-  assert.equal(resolvePresenceLocation({ containment: {
-    containedEntityId: actorId,
-    containerEntityId: "location.thalorien.brackenford",
-    slot: "party",
-  } }, actorId, locations), null);
-  assert.equal(resolvePresenceLocation({ containment: {
-    containedEntityId: actorId,
-    containerEntityId: "location.thalorien.crownmere",
-    slot: "presence",
-  } }, actorId, locations), null);
-});
-
 test("does not read campaign state after an audience denial", async () => {
   const value = await readGameServerContext({
     serverOrigin: "http://localhost:6217",
@@ -1278,4 +1145,77 @@ test("rejects an actor's cross-campaign request before reading campaign detail",
     message: "That campaign is not available to this local table.",
   });
   assert.deepEqual(calls, ["/api/audience-context"]);
+});
+
+test("registered current play cross-checks exact exploration, conversation, and combat transitions", async () => {
+  for (const kind of ["exploration", "conversation", "combat"]) {
+    const scene = currentSceneData(kind, [{
+      key: "continue", label: "Continue", summary: "Continue from authoritative state.",
+    }]);
+    const resumeScene = {
+      locationId: scene.location.id,
+      conversationId: scene.conversationId,
+      encounterId: scene.encounterId,
+    };
+    const calls = [];
+    const result = await readRegisteredCurrentPlay({
+      origin: "http://localhost:6217", applicationId: "dnd2024",
+      stateSpaceId: "dnd2024-main", campaignId: "campaign.thalorien", perspective: "player",
+      fetchImpl: async (input) => {
+        const requested = new URL(input);
+        calls.push(requested);
+        const contract = requested.pathname.endsWith(campaignResumeContract.id)
+          ? campaignResumeContract
+          : currentSceneContract;
+        const data = contract === campaignResumeContract
+          ? campaignResumeData(resumeScene, scene.affordances)
+          : scene;
+        return response(200, currentPlayEnvelope(contract, data));
+      },
+    });
+    assert.equal(result.status, "ready");
+    assert.equal(result.scene.kind, kind);
+    assert.deepEqual(result.scene.affordances, scene.affordances);
+    assert.equal(calls.length, 2);
+    assert.ok(calls.every((call) => call.searchParams.get("campaignId") === "campaign.thalorien"));
+    assert.ok(calls.every((call) => call.searchParams.get("perspective") === "player"));
+  }
+});
+
+test("registered current play treats a Resume null scene as explicit and skips Current Scene", async () => {
+  const calls = [];
+  const result = await readRegisteredCurrentPlay({
+    origin: "http://localhost:6217", applicationId: "dnd2024",
+    stateSpaceId: "dnd2024-main", campaignId: "campaign.thalorien", perspective: "dm",
+    fetchImpl: async (input) => {
+      calls.push(new URL(input));
+      return response(200, currentPlayEnvelope(campaignResumeContract, campaignResumeData(null)));
+    },
+  });
+  assert.equal(result.status, "empty");
+  assert.equal(result.resume.scene, null);
+  assert.equal(calls.length, 1);
+  assert.ok(calls[0].pathname.endsWith(campaignResumeContract.id));
+});
+
+test("registered current play rejects stale cross-query state and preserves Player denial", async () => {
+  const scene = currentSceneData("combat");
+  const resume = campaignResumeData({
+    locationId: scene.location.id, conversationId: null, encounterId: scene.encounterId,
+  });
+  const stale = await readRegisteredCurrentPlay({
+    origin: "http://localhost:6217", applicationId: "dnd2024",
+    stateSpaceId: "dnd2024-main", campaignId: "campaign.thalorien", perspective: "player",
+    fetchImpl: async (input) => new URL(input).pathname.endsWith(campaignResumeContract.id)
+      ? response(200, currentPlayEnvelope(campaignResumeContract, resume, "a".repeat(64)))
+      : response(200, currentPlayEnvelope(currentSceneContract, scene, "b".repeat(64))),
+  });
+  assert.equal(stale.status, "stale");
+
+  const denied = await readRegisteredCurrentPlay({
+    origin: "http://localhost:6217", applicationId: "dnd2024",
+    stateSpaceId: "dnd2024-main", campaignId: "campaign.thalorien", perspective: "player",
+    fetchImpl: async () => response(403, {}),
+  });
+  assert.deepEqual(denied, { status: "forbidden" });
 });

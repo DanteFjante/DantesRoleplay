@@ -4,7 +4,7 @@ import query from "../../../../../../catalog/applications/dnd2024/queries/combat
 
 // The catalog owns tactical rules and audience filtering. This adapter only validates the
 // closed response, binds it to the requested encounter/perspective, and formats its view.
-export async function readEncounterBoard({ fetchImpl, origin, entityRoot, encounterId, perspective, campaignId }) {
+export async function readEncounterBoardProjection({ fetchImpl, origin, entityRoot, encounterId, perspective, campaignId }) {
   try {
     const parameters = new URLSearchParams({ perspective });
     if (campaignId) parameters.set("campaignId", campaignId);
@@ -33,15 +33,22 @@ export async function readEncounterBoard({ fetchImpl, origin, entityRoot, encoun
     const active = data.turn && data.participants.find((entry) => entry.participationId === data.turn.participationId);
     if ((data.turn && !active) || data.participants.some((entry) => entry.activeTurn !== (entry === active))) return null;
     return {
-      ...data.board,
-      terrain: data.terrain.map(({ id, label, area, movementCost }) => ({ id, label, area, movementCost })),
-      obstacles: data.obstacles.map(({ id, label, area }) => ({ id, label, area })),
-      participants: data.participants.map((entry) => ({ id: entry.participationId, name: entry.name,
-        initiative: entry.initiative, active: entry.activeTurn, position: entry.position })),
-      ...(active ? { turn: { ...data.turn, actorName: active.name } } : {}),
+      encounter: data.encounter,
+      board: {
+        ...data.board,
+        terrain: data.terrain.map(({ id, label, area, movementCost }) => ({ id, label, area, movementCost })),
+        obstacles: data.obstacles.map(({ id, label, area }) => ({ id, label, area })),
+        participants: data.participants.map((entry) => ({ id: entry.participationId, name: entry.name,
+          initiative: entry.initiative, active: entry.activeTurn, position: entry.position })),
+        ...(active ? { turn: { ...data.turn, actorName: active.name } } : {}),
+      },
     };
   } catch (error) {
     if (error?.name === "AbortError") throw error;
     return null;
   }
+}
+
+export async function readEncounterBoard(options) {
+  return (await readEncounterBoardProjection(options))?.board ?? null;
 }

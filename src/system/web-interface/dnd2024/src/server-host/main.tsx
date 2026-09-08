@@ -4,12 +4,15 @@ import { createRoot } from "react-dom/client";
 import { BootstrapShell } from "../components/BootstrapShell";
 import {
   CharacterResourceOwner,
+  CurrentViewResourceOwner,
   TableResourceOwner,
   WorldResourceOwner,
   type CampaignContextObjectRequest,
   type CampaignContextUpdate,
   type CampaignDetailsObjectRequest,
   type CharacterResourceRequest,
+  type CurrentViewRequest,
+  type CurrentViewUpdate,
   type FactionObjectRequest,
   type WorldScopeRequest,
   type WorldScopeUpdate,
@@ -94,6 +97,7 @@ async function readEnvelope(
   );
   characterResources.replaceScope(projected);
   worldResources.replaceScope(projected);
+  currentViewResources.replaceScope(projected);
   recordDevelopmentDiagnostic("party-read", {
     applicationId: projected.applicationId,
     stateSpaceId: projected.stateSpaceId,
@@ -137,6 +141,8 @@ const worldResources = new WorldResourceOwner({
   readScope: readWorldScopeObject,
   readInformation: readWorldInformationObject,
 });
+
+const currentViewResources = new CurrentViewResourceOwner({ readCurrent: readCurrentViewObject });
 
 function authorizedCharacter({ envelope, actorId }: CharacterResourceRequest) {
   const member = envelope.party.find((candidate) => candidate.id === actorId);
@@ -348,6 +354,15 @@ async function readWorldInformationObject(
   return update as WorldInformationUpdate;
 }
 
+async function readCurrentViewObject(
+  request: CurrentViewRequest,
+  signal: AbortSignal,
+): Promise<CurrentViewUpdate> {
+  const update = await readDeferredSectionObject(request, "current", signal);
+  if (update.section !== "current") throw new Error("The Current View response is incompatible.");
+  return update;
+}
+
 async function readCampaignContextObject(
   request: CampaignContextObjectRequest,
   signal: AbortSignal,
@@ -368,7 +383,9 @@ async function loadDeferredSection(
       ? loadWorldScope(envelope, envelope.contextSelection?.selectedWorldId ?? envelope.world.id, signal)
       : ["people", "lore", "history"].includes(section)
         ? worldResources.loadInformation({ envelope, section: section as WorldInformationRequest["section"] }, signal)
-        : readDeferredSectionObject({ envelope }, section, signal);
+        : section === "current"
+          ? currentViewResources.loadCurrent({ envelope }, signal)
+          : readDeferredSectionObject({ envelope }, section, signal);
 }
 
 async function loadRulesReference(): Promise<RuleReadModel[]> {
@@ -413,6 +430,7 @@ function subscribeChanges(envelope: ReadyHubEnvelope) {
     tableResources.invalidateAll();
     characterResources.invalidateAll();
     worldResources.invalidateAll();
+    currentViewResources.invalidateAll();
     window.dispatchEvent(new Event("dnd2024-view-invalidated"));
   };
   return subscribeScopedChanges(envelope, {
@@ -422,6 +440,7 @@ function subscribeChanges(envelope: ReadyHubEnvelope) {
       if (!consumers.known) { invalidate(); return; }
       tableResources.invalidateObject(notice.object.qualifiedId);
       if (consumers.character) characterResources.invalidateObject(notice.object.qualifiedId);
+      currentViewResources.invalidateObject(notice.object.qualifiedId);
       window.dispatchEvent(new CustomEvent("dnd2024-object-changed", { detail: notice }));
     },
   });

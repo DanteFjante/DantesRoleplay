@@ -37,6 +37,8 @@ export type WorldScopeUpdate = Extract<DeferredHubUpdate, { section: "locations"
 export type WorldInformationSection = "people" | "lore" | "history";
 export type WorldInformationRequest = { envelope: ReadyHubEnvelope; section: WorldInformationSection };
 export type WorldInformationUpdate = Extract<DeferredHubUpdate, { section: WorldInformationSection }>;
+export type CurrentViewRequest = { envelope: ReadyHubEnvelope };
+export type CurrentViewUpdate = Extract<DeferredHubUpdate, { section: "current" }>;
 
 type TableResourceOwnerOptions = {
   readCampaign: (request: CampaignObjectRequest, signal: AbortSignal) => Promise<HubEnvelope>;
@@ -160,6 +162,20 @@ function isWorldInformationUpdate(value: unknown): value is WorldInformationUpda
   const campaign = update.campaign as Record<string, unknown>;
   return Array.isArray(campaign.quests) && Array.isArray(campaign.clues) &&
     Array.isArray(campaign.mapOverlays);
+}
+
+function isCurrentViewUpdate(value: unknown): value is CurrentViewUpdate {
+  if (!value || typeof value !== "object") return false;
+  const update = value as Record<string, unknown>;
+  if (update.section !== "current" || !update.currentSituation ||
+      typeof update.currentSituation !== "object" || !update.world || typeof update.world !== "object" ||
+      !update.campaign || typeof update.campaign !== "object") return false;
+  const situation = update.currentSituation as Record<string, unknown>;
+  const world = update.world as Record<string, unknown>;
+  const campaign = update.campaign as Record<string, unknown>;
+  return ["ready", "unavailable"].includes(String(situation.status)) &&
+    typeof world.currentLocationId === "string" && Array.isArray(world.locations) &&
+    world.locations.length <= 1_000 && Array.isArray(campaign.mapOverlays);
 }
 
 function validText(value: unknown, maximumLength: number) {
@@ -380,6 +396,56 @@ export class WorldResourceOwner {
   async loadInformation(request: WorldInformationRequest, signal?: AbortSignal, preferCached = true) {
     this.replaceScope(request.envelope);
     return (await this.#information.load(request, { signal, preferCached })).value;
+  }
+
+  invalidateAll() {
+    this.#store.invalidateAll();
+  }
+}
+
+type CurrentViewResourceOwnerOptions = {
+  readCurrent: (request: CurrentViewRequest, signal: AbortSignal) => Promise<CurrentViewUpdate>;
+  maximumEntries?: number;
+  maximumRetainedBytes?: number;
+  maximumAgeMs?: number;
+};
+
+/** Owns the composed scene/resume/board resource and fences late results by observer and campaign. */
+export class CurrentViewResourceOwner {
+  readonly #store: ResourceStore;
+  readonly #current: KeyedResource<CurrentViewRequest, CurrentViewUpdate>;
+  #activeScope: string | null = null;
+
+  constructor(options: CurrentViewResourceOwnerOptions) {
+    this.#store = new ResourceStore({
+      maximumEntries: options.maximumEntries ?? 2,
+      maximumRetainedBytes: options.maximumRetainedBytes ?? 2 * 1024 * 1024,
+    });
+    this.#current = this.#store.define({
+      name: "current-view",
+      cacheKey: scopedCampaignResource,
+      read: options.readCurrent,
+      validate: isCurrentViewUpdate,
+      maximumAgeMs: options.maximumAgeMs ?? 15_000,
+      maximumEntryBytes: 1_100_000,
+    });
+  }
+
+  replaceScope(envelope: ReadyHubEnvelope) {
+    const scope = scopedCampaignResource({ envelope });
+    if (this.#activeScope !== null && this.#activeScope !== scope) this.#store.invalidateAll();
+    this.#activeScope = scope;
+  }
+
+  async loadCurrent(request: CurrentViewRequest, signal?: AbortSignal, preferCached = true) {
+    this.replaceScope(request.envelope);
+    return (await this.#current.load(request, { signal, preferCached })).value;
+  }
+
+  invalidateObject(qualifiedId: string) {
+    if (qualifiedId !== CAMPAIGN_SUMMARY_OBJECT_ID) return false;
+    this.#current.invalidate();
+    return true;
   }
 
   invalidateAll() {

@@ -12,12 +12,13 @@ import { contract as inventoryContainerContract } from "./inventory-container-co
 import { contract as factionDirectoryContract } from "./faction-directory-contract.js";
 import { contract as worldLocationScopeContract } from "./world-location-scope-contract.js";
 import { contract as worldPeopleHoldingsContract } from "./world-people-holdings-contract.js";
+import { contract as currentSceneContract } from "./current-scene-contract.js";
+import { contract as campaignResumeContract } from "./campaign-resume-contract.js";
 
 export { readRegisteredCampaignSummary } from "./campaign-summary.js";
 
 const TOKEN_MAXIMUM = 200;
 const LOCATION_COMPONENT_TYPE_ID = "game.core.world.location";
-const WORLD_MAP_ANCHOR_COMPONENT_TYPE_ID = "game.core.world.map.anchor";
 const WORLD_ROUTE_COMPONENT_TYPE_ID = "game.core.world.route";
 const WORLD_ROUTE_AVAILABILITY_COMPONENT_TYPE_ID = "game.core.world.route.availability";
 const WORLD_ROUTE_RELATIONSHIP_KINDS = {
@@ -25,24 +26,9 @@ const WORLD_ROUTE_RELATIONSHIP_KINDS = {
   origin: "game.core.world.route.from",
   destination: "game.core.world.route.to",
 };
-const CAMPAIGN_CURRENT_SCENE_COMPONENT_TYPE_ID = "game.core.campaign.current-scene";
-const CAMPAIGN_SCENE_AFFORDANCES_COMPONENT_TYPE_ID =
-  "game.core.campaign.scene-affordances";
 const WORLD_INTERACTION_COMPONENT_TYPE_ID = "game.core.world.interaction";
 const WORLD_INTERACTION_PARTICIPANT_RELATIONSHIP_KIND =
   "game.core.world.interaction.participant";
-const ENCOUNTER_DEFINITION_COMPONENT_TYPE_ID = "dnd2024.encounter.definition";
-const ENCOUNTER_PARTICIPATION_COMPONENT_TYPE_ID = "dnd2024.encounter.participation";
-const COMBAT_INITIATIVE_COMPONENT_TYPE_ID = "dnd2024.combat.initiative";
-const ENCOUNTER_ROUND_COMPONENT_TYPE_ID = "dnd2024.encounter.round";
-const ENCOUNTER_TURN_COMPONENT_TYPE_ID = "dnd2024.encounter.turn";
-const COMBAT_TURN_BUDGET_COMPONENT_TYPE_ID = "dnd2024.combat.turn-budget";
-const ENCOUNTER_RELATIONSHIP_KINDS = {
-  participants: "dnd2024.encounter.has-participation",
-  actor: "dnd2024.encounter.participation.for-actor",
-  activeRound: "dnd2024.encounter.active-round",
-  activeTurn: "dnd2024.encounter.active-turn",
-};
 const RECORDED_SITUATION_KINDS = new Set([
   "out-of-character", "conversation", "combat", "exploration", "investigation",
   "travel", "rest", "downtime", "other",
@@ -168,64 +154,9 @@ function text(value, maximum = 2_000) {
     : null;
 }
 
-function containerId(value) {
-  if (typeof value?.containment?.containerEntityId === "string") {
-    return text(value.containment.containerEntityId, 220);
-  }
-  if (typeof value?.containerId === "string") {
-    return text(value.containerId, 220);
-  }
-  if (typeof value?.container === "string") {
-    return text(value.container, 220);
-  }
-  if (value?.container?.id && typeof value.container.id === "string") {
-    return text(value.container.id, 220);
-  }
-  return null;
-}
-
-function containmentSlot(value) {
-  return typeof value?.containment?.slot === "string"
-    ? text(value.containment.slot, 100)
-    : null;
-}
-
-export function resolvePresenceLocation(value, expectedActorId, authorizedLocationIds) {
-  const edge = value?.containment;
-  const containedEntityId = token(edge?.containedEntityId);
-  const locationId = token(edge?.containerEntityId);
-  if (containedEntityId !== expectedActorId || edge?.slot !== "presence" || !locationId) return null;
-  return authorizedLocationIds.includes(locationId) ? locationId : null;
-}
-
 function hasExactKeys(value, keys) {
   return value && typeof value === "object" && !Array.isArray(value) &&
     Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key));
-}
-
-function exactEntityReference(value) {
-  if (!hasExactKeys(value, ["entityId"])) return null;
-  const entityId = token(value.entityId);
-  return entityId ? { entityId } : null;
-}
-
-export function resolveCurrentSceneRecord(value, authorizedLocationIds) {
-  const allowedKeys = ["location", "conversation", "encounter"];
-  if (!value || typeof value !== "object" || Array.isArray(value) ||
-      Object.keys(value).some((key) => !allowedKeys.includes(key)) ||
-      !Object.hasOwn(value, "location")) return null;
-  const location = exactEntityReference(value.location);
-  const conversation = value.conversation === undefined ? null : exactEntityReference(value.conversation);
-  const encounter = value.encounter === undefined ? null : exactEntityReference(value.encounter);
-  if (!location || (value.conversation !== undefined && !conversation) ||
-      (value.encounter !== undefined && !encounter) ||
-      !authorizedLocationIds.includes(location.entityId)) return null;
-  return {
-    kind: encounter ? "combat" : (conversation ? "conversation" : "exploration"),
-    locationId: location.entityId,
-    ...(conversation ? { conversationId: conversation.entityId } : {}),
-    ...(encounter ? { encounterId: encounter.entityId } : {}),
-  };
 }
 
 /**
@@ -284,39 +215,6 @@ export function resolveRecordedPlaySituation(value, authorizedLocationIds) {
   };
 }
 
-export function resolveSceneAffordancesRecord(value, currentScene, perspective) {
-  if (!hasExactKeys(value, ["scene", "items"]) || !currentScene ||
-      !["player", "dm"].includes(perspective)) return null;
-  const selector = resolveCurrentSceneRecord(value.scene, [currentScene.locationId]);
-  if (!selector || selector.locationId !== currentScene.locationId ||
-      selector.conversationId !== currentScene.conversationId ||
-      selector.encounterId !== currentScene.encounterId ||
-      !Array.isArray(value.items) || value.items.length > 24) return null;
-  const keys = new Set();
-  const items = [];
-  for (const item of value.items) {
-    if (!hasExactKeys(item, ["key", "label", "summary", "visibility"])) return null;
-    const key = text(item.key, 64);
-    const label = text(item.label, 120);
-    const summary = text(item.summary, 500);
-    if (!key || !/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u.test(key) ||
-        !label || !/\S/u.test(label) || !summary || !/\S/u.test(summary) ||
-        !["party", "gm"].includes(item.visibility) || keys.has(key)) return null;
-    keys.add(key);
-    if (item.visibility === "party" || perspective === "dm") items.push({ key, label, summary });
-  }
-  return items;
-}
-
-function mapAnchor(value, expectedEntityId) {
-  const parsed = componentValue(value, expectedEntityId, WORLD_MAP_ANCHOR_COMPONENT_TYPE_ID);
-  if (!hasExactKeys(parsed, ["x", "y"])) return null;
-  return Number.isInteger(parsed.x) && parsed.x >= 0 && parsed.x <= 1000 &&
-    Number.isInteger(parsed.y) && parsed.y >= 0 && parsed.y <= 1000
-    ? { x: parsed.x, y: parsed.y }
-    : null;
-}
-
 export function projectMediaVisual(value) {
   if (!value || typeof value !== "object" || Array.isArray(value) || !Array.isArray(value.attachments) ||
       value.attachments.length > 64) return null;
@@ -368,10 +266,6 @@ export function inheritMediaVisual(instanceMedia, definitionMedia) {
   const gallery = [...instanceGallery, ...inherited];
   if (gallery.length > 0) result.gallery = gallery;
   return Object.keys(result).length > 0 ? result : null;
-}
-
-function mediaVisual(value) {
-  return projectMediaVisual(value);
 }
 
 function textList(value, maximumItems, maximumLength) {
@@ -927,6 +821,126 @@ export async function readWorldLocationScopePatch({ fetchImpl = fetch, origin, s
   };
 }
 
+function validCurrentAffordances(value) {
+  if (!Array.isArray(value) || value.length > 24) return false;
+  const keys = new Set();
+  return value.every((item) => hasExactKeys(item, ["key", "label", "summary"]) &&
+    token(item.key) && !keys.has(item.key) && Boolean(keys.add(item.key)) &&
+    text(item.label, 500) && text(item.summary, 2_000));
+}
+
+function validCurrentSceneProjection(value) {
+  if (!hasExactKeys(value, ["version", "kind", "location", "conversationId", "encounterId", "affordances"]) ||
+      value.version !== 1 || !["exploration", "conversation", "combat"].includes(value.kind) ||
+      !hasExactKeys(value.location, ["id", "kind", "summary", "visibility"]) ||
+      !token(value.location.id) || !["region", "settlement", "site", "interior"].includes(value.location.kind) ||
+      !text(value.location.summary, 2_000) || !["public", "party"].includes(value.location.visibility) ||
+      !(value.conversationId === null || token(value.conversationId)) ||
+      !(value.encounterId === null || token(value.encounterId)) || !validCurrentAffordances(value.affordances)) return false;
+  const expectedKind = value.encounterId ? "combat" : value.conversationId ? "conversation" : "exploration";
+  return value.kind === expectedKind;
+}
+
+function validResumeNamed(value, extraKeys, validateExtra) {
+  return hasExactKeys(value, ["id", "name", ...extraKeys]) && token(value.id) && text(value.name, 500) &&
+    validateExtra(value);
+}
+
+function validCampaignResumeProjection(value, campaignId) {
+  if (!hasExactKeys(value, ["version", "campaign", "party", "scene", "activeArc", "activeChapter",
+    "activeSession", "latestRecap", "affordances"]) || value.version !== 1 ||
+    !hasExactKeys(value.campaign, ["id", "name", "title", "premise", "partyGoals", "toneAndBoundaries"]) ||
+    value.campaign.id !== campaignId || !token(value.campaign.id) || !text(value.campaign.name, 500) ||
+    !text(value.campaign.title, 500) || !text(value.campaign.premise, 2_000) ||
+    !Array.isArray(value.campaign.partyGoals) || value.campaign.partyGoals.length < 1 ||
+    value.campaign.partyGoals.length > 3 || !value.campaign.partyGoals.every((item) => text(item, 2_000)) ||
+    !Array.isArray(value.campaign.toneAndBoundaries) || value.campaign.toneAndBoundaries.length < 1 ||
+    value.campaign.toneAndBoundaries.length > 8 ||
+    !value.campaign.toneAndBoundaries.every((item) => text(item, 2_000)) ||
+    !hasExactKeys(value.party, ["activeMemberCount"]) ||
+    !boundedInteger(value.party.activeMemberCount, 0, 1_000_000) || !validCurrentAffordances(value.affordances)) return false;
+  if (value.scene !== null && (!hasExactKeys(value.scene, ["locationId", "conversationId", "encounterId"]) ||
+      !token(value.scene.locationId) || !(value.scene.conversationId === null || token(value.scene.conversationId)) ||
+      !(value.scene.encounterId === null || token(value.scene.encounterId)))) return false;
+  if (value.activeArc !== null && !validResumeNamed(value.activeArc, ["title", "partyStake"],
+    (record) => text(record.title, 500) && text(record.partyStake, 2_000))) return false;
+  if (value.activeChapter !== null && !validResumeNamed(value.activeChapter, ["title", "partyQuestion"],
+    (record) => text(record.title, 500) && text(record.partyQuestion, 2_000))) return false;
+  if (value.activeSession !== null && !validResumeNamed(value.activeSession, ["ordinal", "status"],
+    (record) => Number.isInteger(record.ordinal) && record.ordinal >= 1 && record.status === "active")) return false;
+  if (value.latestRecap !== null) {
+    const recap = value.latestRecap;
+    if (!hasExactKeys(recap, ["sessionId", "ordinal", "chapter", "arc", "milestones"]) ||
+        !token(recap.sessionId) || !Number.isInteger(recap.ordinal) || recap.ordinal < 1 ||
+        !hasExactKeys(recap.chapter, ["id", "title", "partyQuestion"]) || !token(recap.chapter.id) ||
+        !text(recap.chapter.title, 500) || !text(recap.chapter.partyQuestion, 2_000) ||
+        !hasExactKeys(recap.arc, ["id", "title", "partyStake"]) || !token(recap.arc.id) ||
+        !text(recap.arc.title, 500) || !text(recap.arc.partyStake, 2_000) ||
+        !Array.isArray(recap.milestones) || recap.milestones.length > 5 ||
+        !recap.milestones.every((item) => hasExactKeys(item,
+          ["chapterId", "title", "closingSummary", "timestamp", "sequence"]) && token(item.chapterId) &&
+          text(item.title, 500) && text(item.closingSummary, 2_000) && text(item.timestamp, 100) &&
+          Number.isInteger(item.sequence) && item.sequence >= 0)) return false;
+  }
+  return true;
+}
+
+function currentProjectionEvidence(result) {
+  return {
+    stateSpaceFingerprint: result.evidence.stateSpaceFingerprint,
+    resolutionFingerprint: result.evidence.resolutionFingerprint,
+    resultFingerprint: result.evidence.resultFingerprint,
+    sourceRevisionFingerprint: result.evidence.sourceRevisionFingerprint,
+  };
+}
+
+/** Cross-checks Campaign Resume and Current Scene before any scene-specific resource is loaded. */
+export async function readRegisteredCurrentPlay({
+  fetchImpl = fetch, origin, applicationId, stateSpaceId, campaignId, perspective,
+}) {
+  const root = `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities/${encodeURIComponent(campaignId)}/read-models/`;
+  const parameters = new URLSearchParams({ perspective, campaignId });
+  try {
+    const resume = await readModelResponse({
+      fetchImpl,
+      resource: url(origin, `${root}${encodeURIComponent(campaignResumeContract.id)}?${parameters}`),
+      init: { headers: { Accept: "application/json" }, cache: "no-store" },
+      applicationId, stateSpaceId, query: campaignResumeContract,
+      maximumBodyBytes: 270_000, maximumDataBytes: 262_144,
+      statusPolicy: { ready: [200], forbidden: [403], stale: [409], unavailable: "remaining" },
+      validate: (value) => validCampaignResumeProjection(value, campaignId),
+    });
+    if (resume.status !== "ready") return { status: resume.status === "forbidden" ? "forbidden" : "error" };
+    if (resume.data.scene === null) return {
+      status: "empty", resume: resume.data, projection: { resume: currentProjectionEvidence(resume) },
+    };
+    const scene = await readModelResponse({
+      fetchImpl,
+      resource: url(origin, `${root}${encodeURIComponent(currentSceneContract.id)}?${parameters}`),
+      init: { headers: { Accept: "application/json" }, cache: "no-store" },
+      applicationId, stateSpaceId, query: currentSceneContract,
+      maximumBodyBytes: 270_000, maximumDataBytes: 262_144,
+      statusPolicy: { ready: [200], forbidden: [403], stale: [409], unavailable: "remaining" },
+      validate: validCurrentSceneProjection,
+    });
+    if (scene.status !== "ready") return { status: scene.status === "forbidden" ? "forbidden" : "error" };
+    const resumeScene = resume.data.scene;
+    if (scene.evidence.sourceRevisionFingerprint !== resume.evidence.sourceRevisionFingerprint ||
+        scene.data.location.id !== resumeScene.locationId ||
+        scene.data.conversationId !== resumeScene.conversationId ||
+        scene.data.encounterId !== resumeScene.encounterId ||
+        JSON.stringify(scene.data.affordances) !== JSON.stringify(resume.data.affordances)) return { status: "stale" };
+    return {
+      status: "ready", resume: resume.data, scene: scene.data,
+      projection: { resume: currentProjectionEvidence(resume), scene: currentProjectionEvidence(scene) },
+    };
+  } catch (error) {
+    if (error?.name === "AbortError") throw error;
+    return { status: "error" };
+  }
+}
+
 function validWorldPeopleHoldings(value, worldId) {
   if (!hasExactKeys(value, ["version", "state", "world", "locations", "people", "holdings", "limits"]) ||
       value.version !== 1 || !["ready", "forbidden"].includes(value.state) ||
@@ -1425,160 +1439,6 @@ function chronology(value, expectedPerspective) {
   return { status: value.status, perspective: expectedPerspective, entries };
 }
 
-function campaignWorldId(campaignId) {
-  const parts = typeof campaignId === "string" ? campaignId.split(".") : [];
-  return parts.length >= 3 && parts[0] === "campaign" ? token(parts[1]) : null;
-}
-
-function isLocationEntity(item, worldId) {
-  const candidateId = typeof item?.entityId === "string" ? item.entityId : (typeof item?.id === "string" ? item.id : null);
-  return typeof candidateId === "string" && typeof item?.name === "string" && typeof worldId === "string"
-    ? candidateId.startsWith(`location.${worldId}.`) && candidateId.length <= 200 && item.name.length > 0
-    : false;
-}
-
-async function readRawLocationDirectory({
-  fetchImpl,
-  origin,
-  applicationId,
-  stateSpaceId,
-  worldId,
-}) {
-  if (!applicationId || !stateSpaceId || !worldId) return { status: "complete", items: [] };
-  const listRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
-    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
-  const headers = { Accept: "application/json" };
-  const entries = new Map();
-  const directory = await readJsonPages({
-    fetchImpl, origin, path: listRoot, maximumPages: 1_000, maximumItems: 100_000,
-  });
-  if (directory.status !== "complete") {
-    return unavailableOnFirstPage(directory) ? { status: "complete", items: [] } : directory;
-  }
-
-  for (const item of directory.items) {
-    if (!isLocationEntity(item, worldId)) continue;
-    const locationId = typeof item.entityId === "string" ? item.entityId : item.id;
-    const name = text(item.name, 200);
-    if (name && locationId && !entries.has(locationId)) entries.set(locationId, name);
-  }
-
-  if (entries.size === 0) return { status: "complete", items: [] };
-
-  const locationDirectory = await Promise.all(Array.from(entries.entries()).map(async ([id, name]) => {
-    const containmentPath = `/api/applications/${encodeURIComponent(applicationId)}` +
-      `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities/${encodeURIComponent(id)}/containment`;
-    const componentPath = `/api/applications/${encodeURIComponent(applicationId)}` +
-      `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities/${encodeURIComponent(id)}` +
-      `/components/${LOCATION_COMPONENT_TYPE_ID}`;
-    const anchorPath = `/api/applications/${encodeURIComponent(applicationId)}` +
-      `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities/${encodeURIComponent(id)}` +
-      `/components/${WORLD_MAP_ANCHOR_COMPONENT_TYPE_ID}`;
-    const mediaPath = `/api/applications/${encodeURIComponent(applicationId)}` +
-      `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities/${encodeURIComponent(id)}` +
-      "/media";
-    const [containmentResult, componentResult, anchorResult, mediaResult] = await Promise.allSettled([
-      fetchImpl(url(origin, containmentPath), {
-        headers: { Accept: "application/json" },
-        cache: "no-store",
-      }),
-      fetchImpl(url(origin, componentPath), {
-        headers: { Accept: "application/json" },
-        cache: "no-store",
-      }),
-      fetchImpl(url(origin, anchorPath), {
-        headers: { Accept: "application/json" },
-        cache: "no-store",
-      }),
-      fetchImpl(url(origin, mediaPath), {
-        headers: { Accept: "application/json" },
-        cache: "no-store",
-      }),
-    ]);
-    try {
-      const containmentResponse = containmentResult.status === "fulfilled"
-        ? containmentResult.value
-        : null;
-      const componentResponse = componentResult.status === "fulfilled"
-        ? componentResult.value
-        : null;
-      const anchorResponse = anchorResult.status === "fulfilled" ? anchorResult.value : null;
-      const mediaResponse = mediaResult.status === "fulfilled" ? mediaResult.value : null;
-      const [containmentPayload, componentPayload, anchorPayload, mediaPayload] = await Promise.all([
-        containmentResponse?.ok ? json(containmentResponse) : Promise.resolve(null),
-        componentResponse?.ok ? json(componentResponse) : Promise.resolve(null),
-        anchorResponse?.ok ? json(anchorResponse) : Promise.resolve(null),
-        mediaResponse?.ok ? json(mediaResponse) : Promise.resolve(null),
-      ]);
-      const componentValueJson = componentValue(componentPayload, id, LOCATION_COMPONENT_TYPE_ID);
-      const summary = componentValueJson ? text(componentValueJson.summary, 2000) : null;
-      const kind = componentValueJson ? text(componentValueJson.kind, 100) : null;
-      const discoveredContainerId = containerId(containmentPayload);
-      const discoveredContainmentSlot = containmentSlot(containmentPayload);
-      const discoveredMapAnchor = anchorPayload ? mapAnchor(anchorPayload, id) : null;
-      return {
-        id,
-        name,
-        visibility: componentValueJson ? text(componentValueJson.visibility, 100) : null,
-        ...(kind ? { kind } : {}),
-        ...(summary ? { summary } : {}),
-        ...(discoveredContainerId ? { containerId: discoveredContainerId } : {}),
-        ...(discoveredContainmentSlot ? { containmentSlot: discoveredContainmentSlot } : {}),
-        ...(discoveredMapAnchor ? { mapAnchor: discoveredMapAnchor } : {}),
-        mediaPayload,
-      };
-    } catch {
-      return { id, name, visibility: null, mediaPayload: null };
-    }
-  }));
-  return {
-    status: "complete",
-    items: locationDirectory
-      .filter((entry) => entry && typeof entry.id === "string" && typeof entry.name === "string")
-      .sort((left, right) => left.name.localeCompare(right.name)),
-  };
-}
-
-const LOCATION_DIRECTORY_CACHE_MS = 10_000;
-const locationDirectoryCaches = new WeakMap();
-
-async function readLocationDirectory(options) {
-  let locationDirectoryCache = locationDirectoryCaches.get(options.fetchImpl);
-  if (!locationDirectoryCache) {
-    locationDirectoryCache = new Map();
-    locationDirectoryCaches.set(options.fetchImpl, locationDirectoryCache);
-  }
-  const key = [options.origin, options.applicationId, options.stateSpaceId, options.worldId].join("\u0000");
-  const now = Date.now();
-  let cached = locationDirectoryCache.get(key);
-  if (!cached || now - cached.createdAt >= LOCATION_DIRECTORY_CACHE_MS) {
-    cached = {
-      createdAt: now,
-      value: readRawLocationDirectory(options).catch(() => ({
-        status: "incomplete", reason: "page-unavailable", items: [],
-      })),
-    };
-    locationDirectoryCache.set(key, cached);
-  }
-  const rawDirectory = await cached.value;
-  if (rawDirectory.status !== "complete") return rawDirectory;
-  return {
-    status: "complete",
-    items: rawDirectory.items.flatMap((entry) => {
-      if (options.perspective === "player" && entry.visibility !== "public") return [];
-      const selectedMedia = entry.mediaPayload ? mediaVisual(entry.mediaPayload) : null;
-      const selectedVisual = selectedMedia?.map ?? null;
-      const { visibility: _, mediaPayload: __, ...safeEntry } = entry;
-      const { map: ___, ...entityMedia } = selectedMedia ?? {};
-      return [{
-        ...safeEntry,
-        ...(selectedVisual ? { mapVisual: { imageUrl: selectedVisual.imageUrl, alt: selectedVisual.alt } } : {}),
-        ...(Object.keys(entityMedia).length > 0 ? { media: entityMedia } : {}),
-      }];
-    }),
-  };
-}
-
 function relationshipTargetIds(value, expectedFromId, expectedKind) {
   if (!value || !Array.isArray(value.items)) return [];
   return value.items.flatMap((item) => {
@@ -1611,18 +1471,6 @@ async function readExactComponent(fetchImpl, origin, entityRoot, entityId, compo
     return response?.ok
       ? componentValue(await json(response), entityId, componentTypeId)
       : null;
-  } catch {
-    return null;
-  }
-}
-
-async function readEntityMedia(fetchImpl, origin, entityRoot, entityId, perspective) {
-  try {
-    const response = await fetchImpl(url(origin,
-      `${entityRoot}/${encodeURIComponent(entityId)}/media${perspective ? `?perspective=${perspective}` : ""}`), {
-      headers: { Accept: "application/json" }, cache: "no-store",
-    });
-    return response?.ok ? await json(response) : null;
   } catch {
     return null;
   }
@@ -1783,202 +1631,83 @@ function validInteraction(value) {
 }
 
 export async function readConversationCurrentScene({
-  fetchImpl, origin, entityRoot, conversationId, perspective, authorizedActorIds, mediaAssetBaseUrl,
+  fetchImpl, origin, entityRoot, conversationId, perspective, authorizedActorIds,
 }) {
-  const [conversation, interaction, participantIds, sceneMediaValue] = await Promise.all([
+  const [conversation, interaction, participantIds] = await Promise.all([
     readNamedEntity(fetchImpl, origin, entityRoot, conversationId),
     readExactComponent(fetchImpl, origin, entityRoot, conversationId, WORLD_INTERACTION_COMPONENT_TYPE_ID),
     readExactRelationshipTargets(
       fetchImpl, origin, entityRoot, conversationId, WORLD_INTERACTION_PARTICIPANT_RELATIONSHIP_KIND,
     ),
-    readEntityMedia(fetchImpl, origin, entityRoot, conversationId),
   ]);
-  if (!conversation || !validInteraction(interaction) || participantIds === null) return null;
+  if (!conversation || !validInteraction(interaction) || participantIds === null || participantIds.length > 32)
+    return null;
   const visibleIds = perspective === "dm"
     ? participantIds
     : participantIds.filter((id) => authorizedActorIds.has(id));
-  const participants = (await Promise.all(visibleIds.map(async (id) => {
-    const [participant, mediaValue] = await Promise.all([
-      readNamedEntity(fetchImpl, origin, entityRoot, id),
-      readEntityMedia(fetchImpl, origin, entityRoot, id),
-    ]);
-    if (!participant) return null;
-    const media = mediaValue ? projectMediaVisual(mediaValue) : null;
-    return { ...participant, ...(media?.portrait ? { portrait: media.portrait } : {}) };
-  }))).filter(Boolean);
+  const participants = (await Promise.all(visibleIds.map((id) =>
+    readNamedEntity(fetchImpl, origin, entityRoot, id)))).filter(Boolean);
   if (participants.length !== visibleIds.length) return null;
+  const scope = new URL(entityRoot, origin).pathname
+    .match(/^\/api\/applications\/([^/]+)\/state-spaces\/([^/]+)\/entities$/u);
+  const media = scope ? await readAuthorizedMediaBatch({
+    fetchImpl, origin, applicationId: decodeURIComponent(scope[1]), stateSpaceId: decodeURIComponent(scope[2]),
+    entityIds: [conversationId, ...visibleIds], perspective,
+  }) : new Map();
   return {
     status: "ready",
     kind: "conversation",
-    ...(() => {
-      const media = sceneMediaValue
-        ? projectMediaVisual(sceneMediaValue)
-        : null;
-      return media?.scene ? { scene: media.scene } : {};
-    })(),
+    ...(media.get(conversationId)?.scene ? { scene: media.get(conversationId).scene } : {}),
     conversation: {
       id: conversation.id,
       name: conversation.name,
-      participants,
+      participants: participants.map((participant) => ({
+        ...participant,
+        ...(media.get(participant.id)?.portrait ? { portrait: media.get(participant.id).portrait } : {}),
+      })),
       ...(perspective === "dm" ? { summary: interaction.summary } : {}),
     },
   };
 }
 
-function validRound(value, encounterId) {
-  return hasExactKeys(value, ["encounter", "number", "status"]) &&
-    exactEntityReference(value.encounter)?.entityId === encounterId &&
-    Number.isInteger(value.number) && value.number > 0 && value.status === "active";
-}
-
-function validTurn(value, encounterId) {
-  return hasExactKeys(value, ["encounter", "round", "participant", "ordinal", "status"]) &&
-    exactEntityReference(value.encounter)?.entityId === encounterId && exactEntityReference(value.round) &&
-    exactEntityReference(value.participant) && Number.isInteger(value.ordinal) && value.ordinal >= 0 &&
-    value.status === "active";
-}
-
-function validInitiative(value, encounterId) {
-  return hasExactKeys(value, ["encounter", "status", "result", "tieBreakOrder"]) &&
-    exactEntityReference(value.encounter)?.entityId === encounterId && value.status === "locked" &&
-    Number.isInteger(value.result) && Number.isInteger(value.tieBreakOrder) && value.tieBreakOrder >= 0;
-}
-
-function validParticipation(value, encounterId, participationId, stateSpaceId) {
-  if (!hasExactKeys(value, ["membershipRelationship", "status"]) || value.status !== "active") return false;
-  const membership = value.membershipRelationship;
-  return hasExactKeys(membership, ["stateSpaceId", "fromEntityId", "toEntityId", "qualifiedKind"]) &&
-    membership.stateSpaceId === stateSpaceId && membership.fromEntityId === encounterId &&
-    membership.toEntityId === participationId &&
-    membership.qualifiedKind === ENCOUNTER_RELATIONSHIP_KINDS.participants;
-}
-
-function normalizedTurnBudget(value, turnId) {
-  if (!hasExactKeys(value, ["turn", "remaining", "movementSpent", "interactionsUsed"]) ||
-      exactEntityReference(value.turn)?.entityId !== turnId ||
-      !hasExactKeys(value.remaining, ["actions", "bonusActions", "reactions"]) ||
-      ![value.remaining.actions, value.remaining.bonusActions, value.remaining.reactions, value.interactionsUsed]
-        .every((count) => Number.isInteger(count) && count >= 0) || !Array.isArray(value.movementSpent)) return null;
-  return {
-    actions: value.remaining.actions,
-    bonusActions: value.remaining.bonusActions,
-    reactions: value.remaining.reactions,
-  };
-}
-
-
-async function readCombatParticipant({
-  fetchImpl, origin, entityRoot, encounterId, participationId, stateSpaceId,
-}) {
-  const [participation, initiative, actorIds] = await Promise.all([
-    readExactComponent(fetchImpl, origin, entityRoot, participationId, ENCOUNTER_PARTICIPATION_COMPONENT_TYPE_ID),
-    readExactComponent(fetchImpl, origin, entityRoot, participationId, COMBAT_INITIATIVE_COMPONENT_TYPE_ID),
-    readExactRelationshipTargets(
-      fetchImpl, origin, entityRoot, participationId, ENCOUNTER_RELATIONSHIP_KINDS.actor,
-    ),
-  ]);
-  if (!validParticipation(participation, encounterId, participationId, stateSpaceId) ||
-      !validInitiative(initiative, encounterId) || actorIds?.length !== 1) return null;
-  const actor = await readNamedEntity(fetchImpl, origin, entityRoot, actorIds[0]);
-  return actor ? {
-    participationId,
-    actor,
-    initiative: initiative.result,
-    order: initiative.tieBreakOrder,
-  } : null;
-}
-
 export async function readCombatCurrentScene({
-  fetchImpl, origin, entityRoot, encounterId, stateSpaceId, perspective, authorizedActorIds, campaignId,
-  mediaAssetBaseUrl,
+  fetchImpl, origin, entityRoot, encounterId, perspective, campaignId,
 }) {
-  const boardRead = import("./encounter-board.js")
-    .then(({ readEncounterBoard }) => readEncounterBoard({ fetchImpl, origin, entityRoot, encounterId, perspective, campaignId }))
+  const projected = await import("./encounter-board.js")
+    .then(({ readEncounterBoardProjection }) => readEncounterBoardProjection({
+      fetchImpl, origin, entityRoot, encounterId, perspective, campaignId,
+    }))
     .catch((error) => {
       if (error?.name === "AbortError") throw error;
       return null;
     });
-  const [encounter, definition, projectedBoard, participantIds, activeRoundIds, activeTurnIds, sceneMediaValue] = await Promise.all([
-    readNamedEntity(fetchImpl, origin, entityRoot, encounterId),
-    readExactComponent(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_DEFINITION_COMPONENT_TYPE_ID),
-    boardRead,
-    readExactRelationshipTargets(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_RELATIONSHIP_KINDS.participants),
-    readExactRelationshipTargets(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_RELATIONSHIP_KINDS.activeRound),
-    readExactRelationshipTargets(fetchImpl, origin, entityRoot, encounterId, ENCOUNTER_RELATIONSHIP_KINDS.activeTurn),
-    readEntityMedia(fetchImpl, origin, entityRoot, encounterId, perspective),
-  ]);
-  if (!encounter || !definition || participantIds === null || activeRoundIds === null || activeTurnIds === null ||
-      activeRoundIds.length > 1 || activeTurnIds.length > 1) return null;
-  const participantRows = await Promise.all(participantIds.map((participationId) => readCombatParticipant({
-    fetchImpl, origin, entityRoot, encounterId, participationId, stateSpaceId,
-  })));
-  if (participantRows.some((row) => row === null)) return null;
-  const orderedRows = participantRows.sort((left, right) => left.order - right.order);
-  if (orderedRows.some((row, index) => row.order !== index)) return null;
-
-  let round = null;
-  if (activeRoundIds.length === 1) {
-    const value = await readExactComponent(
-      fetchImpl, origin, entityRoot, activeRoundIds[0], ENCOUNTER_ROUND_COMPONENT_TYPE_ID,
-    );
-    if (!validRound(value, encounterId)) return null;
-    round = { id: activeRoundIds[0], number: value.number };
-  }
-  let turn = null;
-  if (activeTurnIds.length === 1) {
-    const turnId = activeTurnIds[0];
-    const [value, budgetValue] = await Promise.all([
-      readExactComponent(fetchImpl, origin, entityRoot, turnId, ENCOUNTER_TURN_COMPONENT_TYPE_ID),
-      readExactComponent(fetchImpl, origin, entityRoot, turnId, COMBAT_TURN_BUDGET_COMPONENT_TYPE_ID),
-    ]);
-    if (!validTurn(value, encounterId) || (round && value.round.entityId !== round.id)) return null;
-    const activeRow = orderedRows.find((row) => row.participationId === value.participant.entityId);
-    if (!activeRow) return null;
-    const budget = normalizedTurnBudget(budgetValue, turnId);
-    turn = {
-      id: turnId,
-      participationId: activeRow.participationId,
-      actorId: activeRow.actor.id,
-      actorName: activeRow.actor.name,
-      ordinal: value.ordinal,
-      ...(budget && (perspective === "dm" || authorizedActorIds.has(activeRow.actor.id)) ? { budget } : {}),
-    };
-  }
-  const visibleRows = perspective === "dm"
-    ? orderedRows
-    : orderedRows.filter((row) => authorizedActorIds.has(row.actor.id));
-  const visibleParticipants = await Promise.all(visibleRows.map(async (row) => {
-    const mediaValue = await readEntityMedia(fetchImpl, origin, entityRoot, row.actor.id);
-    const media = mediaValue ? projectMediaVisual(mediaValue) : null;
-    return {
-      id: row.actor.id,
-      name: row.actor.name,
-      initiative: row.initiative,
-      active: turn?.participationId === row.participationId,
-      ...(media?.portrait ? { portrait: media.portrait } : {}),
-    };
-  }));
-  const sceneMedia = sceneMediaValue
-    ? projectMediaVisual(sceneMediaValue)
-    : null;
+  if (!projected) return null;
+  const board = projected.board;
   return {
     status: "ready",
     kind: "combat",
-    ...(sceneMedia?.scene ? { scene: sceneMedia.scene } : {}),
     combat: {
-      id: encounter.id,
-      name: encounter.name,
-      participants: visibleParticipants,
-      ...(projectedBoard ? { board: projectedBoard } : {}),
-      ...(projectedBoard?.backgroundMediaOrder != null && sceneMediaValue?.attachments ? {
-        background: projectMediaVisual({ attachments: sceneMediaValue.attachments.filter((entry) =>
-          entry.role === "map" && entry.order === projectedBoard.backgroundMediaOrder) })?.map,
+      id: projected.encounter.id,
+      name: projected.encounter.name,
+      participants: board.participants.map((participant) => ({
+        id: participant.id,
+        name: participant.name,
+        initiative: participant.initiative,
+        active: participant.active,
+      })),
+      board,
+      ...(board.turn ? {
+        turn: {
+          id: board.turn.id,
+          participationId: board.turn.participationId,
+          actorName: board.turn.actorName,
+          ordinal: board.turn.ordinal,
+        },
       } : {}),
-      ...(round ? { round } : {}),
-      ...(turn && (perspective === "dm" || authorizedActorIds.has(turn.actorId)) ? { turn } : {}),
     },
   };
 }
+
 
 /**
  * Reads the host-selected application/state-space/seat binding and a server-validated campaign
@@ -2153,109 +1882,6 @@ async function readGameServerContextCore({
     chronology: { status: "unavailable", perspective: effectivePerspective, entries: [] },
   };
 }
-
-async function resolveCurrentSituation({
-  fetchImpl, origin, root, selectedCampaignId, binding, serverRole, contextAudience,
-  currentSceneComponentResponse, currentSceneComponent, playSessionResponse, playSessionEnvelope,
-  locationDirectory, currentLocationId, party, selectedContext, projectedKnowledge, mediaAssetBaseUrl,
-}) {
-  const authorizedLocationIds = locationDirectory.map((location) => location.id);
-  const sceneComponentWasReturned = currentSceneComponentResponse?.ok === true;
-  const sceneRecord = sceneComponentWasReturned
-    ? resolveCurrentSceneRecord(
-      componentValue(currentSceneComponent, selectedCampaignId, CAMPAIGN_CURRENT_SCENE_COMPONENT_TYPE_ID),
-      authorizedLocationIds,
-    )
-    : null;
-  const recordedSituation = playSessionResponse?.ok === true
-    ? resolveRecordedPlaySituation(playSessionEnvelope, authorizedLocationIds)
-    : null;
-  let currentSituation;
-  if (sceneComponentWasReturned && (!sceneRecord ||
-      (serverRole.role === "actor" && currentLocationId !== sceneRecord.locationId))) {
-    currentSituation = {
-      status: "unavailable",
-      message: "The recorded current scene is unavailable to this seat.",
-    };
-  } else if (sceneRecord) {
-    currentLocationId = sceneRecord.locationId;
-    const authorizedActorIds = new Set([
-      ...(serverRole.role === "actor" ? [binding.actorId] : []),
-      ...(party ?? []).map((member) => member.id),
-    ]);
-    if (sceneRecord.kind === "combat") {
-      const resolved = await readCombatCurrentScene({
-        fetchImpl,
-        origin,
-        entityRoot: root,
-        encounterId: sceneRecord.encounterId,
-        campaignId: selectedCampaignId,
-        stateSpaceId: binding.stateSpaceId,
-        perspective: contextAudience.perspective,
-        authorizedActorIds,
-        mediaAssetBaseUrl,
-      });
-      currentSituation = resolved
-        ? { ...resolved, locationId: sceneRecord.locationId }
-        : { status: "unavailable", locationId: sceneRecord.locationId,
-          message: "The current encounter could not be read safely." };
-    } else if (sceneRecord.kind === "conversation") {
-      const resolved = await readConversationCurrentScene({
-        fetchImpl,
-        origin,
-        entityRoot: root,
-        conversationId: sceneRecord.conversationId,
-        perspective: contextAudience.perspective,
-        authorizedActorIds,
-        mediaAssetBaseUrl,
-      });
-      currentSituation = resolved
-        ? { ...resolved, locationId: sceneRecord.locationId }
-        : { status: "unavailable", locationId: sceneRecord.locationId,
-          message: "The current conversation could not be read safely." };
-    } else {
-      currentSituation = { status: "ready", kind: "exploration", locationId: sceneRecord.locationId };
-    }
-  } else if (recordedSituation) {
-    currentSituation = recordedSituation;
-  } else if (serverRole.role === "actor" && currentLocationId) {
-    currentSituation = { status: "ready", kind: "exploration", locationId: currentLocationId };
-  } else {
-    currentSituation = {
-      status: "unavailable",
-      message: "No authoritative current scene has been recorded for this campaign.",
-    };
-  }
-  if (sceneRecord && currentSituation.status === "ready") {
-    const affordanceRecord = await readExactComponent(
-      fetchImpl,
-      origin,
-      root,
-      selectedCampaignId,
-      CAMPAIGN_SCENE_AFFORDANCES_COMPONENT_TYPE_ID,
-    );
-    const affordances = resolveSceneAffordancesRecord(
-      affordanceRecord,
-      sceneRecord,
-      contextAudience.perspective,
-    );
-    if (affordances !== null) currentSituation = { ...currentSituation, affordances };
-  }
-  const knownRoutes = currentSituation.status === "ready" && currentSituation.kind === "exploration"
-    ? await readKnownOpenRoutes({
-      fetchImpl,
-      origin,
-      entityRoot: root,
-      worldId: selectedContext.selectedWorldId,
-      currentLocationId: currentSituation.locationId,
-      perspective: contextAudience.perspective,
-      projectedKnowledge,
-      locationDirectory,
-    })
-    : [];
-  return { currentSituation, currentLocationId, knownRoutes };
-}
-
 
 function registeredCampaignContext(data, projection, campaignId) {
   if (!hasExactKeys(data, ["version", "campaignId", "worldId", "campaign", "world"]) ||
@@ -2682,6 +2308,115 @@ export async function readWorldPeopleHoldings({ fetchImpl = fetch, origin, sourc
   };
 }
 
+/** Composes registered play projections and only the bounded adapters without a registered owner. */
+export async function readCurrentViewPatch({ fetchImpl = fetch, origin, source }) {
+  const { applicationId, stateSpaceId } = source;
+  const campaignId = source.campaign.id;
+  const perspective = source.audience.perspective ?? "player";
+  const preview = source.audience.seat === "dm" && perspective === "player";
+  const current = await readRegisteredCurrentPlay({
+    fetchImpl, origin, applicationId, stateSpaceId, campaignId, perspective,
+  });
+  if (current.status === "forbidden") throw new Error("The current scene is unavailable to this audience.");
+  if (!["ready", "empty"].includes(current.status))
+    throw new Error(current.status === "stale" ? "The current scene changed while it was loading." :
+      "The current scene could not be read safely.");
+
+  let locations = Array.isArray(source.locationDirectory) ? source.locationDirectory : [];
+  if (locations.length === 0) {
+    const worldId = token(source.contextSelection?.selectedWorldId);
+    if (worldId) {
+      const scope = await readRegisteredWorldLocationScope({
+        fetchImpl, origin, applicationId, stateSpaceId, scopeId: worldId, perspective,
+        includeMedia: !preview,
+      });
+      if (scope.status === "ready") locations = scope.items;
+    }
+  }
+  const patch = {};
+  let projectedKnowledge = source.knowledge;
+
+  if (current.status === "empty") {
+    let recorded = null;
+    try {
+      const response = await fetchImpl(url(origin, `/api/applications/${encodeURIComponent(applicationId)}` +
+        `/state-spaces/${encodeURIComponent(stateSpaceId)}/play/sessions/${encodeURIComponent(campaignId)}`),
+      { headers: { Accept: "application/json" }, cache: "no-store" });
+      if (response?.ok) recorded = resolveRecordedPlaySituation(await json(response), locations.map((item) => item.id));
+    } catch (error) { if (error?.name === "AbortError") throw error; }
+    return {
+      ...patch,
+      locationDirectory: locations,
+      locationDirectoryAudience: perspective,
+      currentSituation: recorded ?? {
+        status: "unavailable",
+        message: "No authoritative current scene has been recorded for this campaign.",
+      },
+      currentLocationId: recorded?.locationId ?? null,
+      knownRoutes: [],
+    };
+  }
+
+  const scene = current.scene;
+  let selectedLocation = locations.find((item) => item.id === scene.location.id) ?? null;
+  const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
+  if (!selectedLocation) {
+    const identity = await readNamedEntity(fetchImpl, origin, entityRoot, scene.location.id);
+    if (!identity) throw new Error("The current location identity could not be read safely.");
+    selectedLocation = {
+      id: identity.id, name: identity.name, kind: scene.location.kind, summary: scene.location.summary,
+    };
+    locations = [...locations, selectedLocation];
+  }
+  const authorizedActorIds = new Set([
+    ...(source.audience.seat === "player" ? [source.actor.id] : []),
+    ...(source.party ?? []).map((member) => member.id),
+  ]);
+  let currentSituation;
+  if (scene.kind === "combat") {
+    const combat = await readCombatCurrentScene({
+      fetchImpl, origin, entityRoot, encounterId: scene.encounterId, campaignId,
+      perspective,
+    });
+    currentSituation = combat ? { ...combat, locationId: scene.location.id, affordances: scene.affordances }
+      : { status: "unavailable", locationId: scene.location.id,
+        message: "The current encounter could not be read safely." };
+  } else if (scene.kind === "conversation") {
+    const conversation = await readConversationCurrentScene({
+      fetchImpl, origin, entityRoot, conversationId: scene.conversationId,
+      perspective, authorizedActorIds,
+    });
+    currentSituation = conversation
+      ? { ...conversation, locationId: scene.location.id, affordances: scene.affordances }
+      : { status: "unavailable", locationId: scene.location.id,
+        message: "The current conversation could not be read safely." };
+  } else {
+    currentSituation = {
+      status: "ready", kind: "exploration", locationId: scene.location.id, affordances: scene.affordances,
+    };
+  }
+  if (currentSituation.status === "ready" && currentSituation.kind === "exploration" &&
+      !preview && projectedKnowledge.status === "unavailable") {
+    const lore = await readAuthorizedWorldLore({ fetchImpl, origin, source });
+    projectedKnowledge = lore.knowledge;
+    patch.knowledge = projectedKnowledge;
+  }
+  const knownRoutes = currentSituation.status === "ready" && currentSituation.kind === "exploration"
+    ? await readKnownOpenRoutes({
+      fetchImpl, origin, entityRoot, worldId: source.contextSelection.selectedWorldId,
+      currentLocationId: scene.location.id, perspective, projectedKnowledge, locationDirectory: locations,
+    }) : [];
+  return {
+    ...patch,
+    locationDirectory: locations,
+    locationDirectoryAudience: perspective,
+    currentSituation,
+    currentLocationId: scene.location.id,
+    knownRoutes,
+  };
+}
+
 /**
  * Completes only the requested deferred view. The existing private endpoints remain the
  * authorization boundary; no ambient DM knowledge or media is requested for Player preview.
@@ -2720,12 +2455,6 @@ export async function readDeferredHubSection({ fetchImpl = fetch, origin, source
   const { applicationId, stateSpaceId } = source;
   const campaignId = source.campaign.id;
   const perspective = source.audience.perspective ?? "player";
-  const root = `/api/applications/${encodeURIComponent(applicationId)}` +
-    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
-  const options = {
-    fetchImpl: read, origin, applicationId, stateSpaceId, perspective,
-    worldId: campaignWorldId(campaignId), mediaAssetBaseUrl: "/ui/dnd2024-play/assets/",
-  };
   const patch = {};
   if (section === "context") {
     if (source.audience.seat !== "dm") {
@@ -2769,49 +2498,8 @@ export async function readDeferredHubSection({ fetchImpl = fetch, origin, source
     patch.locationDirectoryAudience = perspective;
   } else if (section === "people") {
     Object.assign(patch, await readWorldPeopleHoldings({ fetchImpl: read, origin, source }));
-  } else {
-    let locations = source.locationDirectory;
-    if (!Array.isArray(locations)) {
-      const result = await readLocationDirectory(options);
-      if (result.status !== "complete") throw new Error("The location directory is incomplete.");
-      locations = result.items;
-      patch.locationDirectory = locations;
-      patch.locationDirectoryAudience = perspective;
-    }
-    if (section === "current") {
-      if (!preview && source.knowledge.status === "unavailable") {
-        const notebook = await read(url(origin, `/api/applications/${encodeURIComponent(applicationId)}` +
-          `/campaigns/${encodeURIComponent(campaignId)}/knowledge`),
-          { headers: { Accept: "application/json" }, cache: "no-store" });
-        if (notebook.ok) {
-          const projected = knowledge(await json(notebook));
-          if (projected.status === "unavailable") throw new Error("Current scene knowledge is malformed.");
-          patch.knowledge = await attachAuthorizedKnowledgeMedia({ ...options, entityRoot: root,
-            projectedKnowledge: projected });
-        }
-      }
-      const readOptional = (path) => read(url(origin, path), {
-        headers: { Accept: "application/json" }, cache: "no-store",
-      });
-      const [sceneResponse, sessionResponse, presenceResponse] = await Promise.all([
-        readOptional(`${root}/${encodeURIComponent(campaignId)}/components/${CAMPAIGN_CURRENT_SCENE_COMPONENT_TYPE_ID}`),
-        readOptional(`/api/applications/${encodeURIComponent(applicationId)}/state-spaces/${encodeURIComponent(stateSpaceId)}` +
-          `/play/sessions/${encodeURIComponent(campaignId)}`),
-        source.audience.seat === "player"
-          ? readOptional(`${root}/${encodeURIComponent(source.actor.id)}/containment`) : null,
-      ]);
-      const present = presenceResponse?.ok ? resolvePresenceLocation(await json(presenceResponse),
-        source.actor.id, locations.map((location) => location.id)) : null;
-      Object.assign(patch, await resolveCurrentSituation({
-        ...options, root, selectedCampaignId: campaignId, binding: { actorId: source.actor.id },
-        serverRole: { role: source.audience.seat === "dm" ? "game-master" : "actor" },
-        contextAudience: source.audience, currentSceneComponentResponse: sceneResponse,
-        currentSceneComponent: await json(sceneResponse), playSessionResponse: sessionResponse,
-        playSessionEnvelope: await json(sessionResponse), locationDirectory: locations,
-        currentLocationId: present, party: source.party, selectedContext: source.contextSelection,
-        projectedKnowledge: patch.knowledge ?? source.knowledge,
-      }));
-    }
+  } else if (section === "current") {
+    Object.assign(patch, await readCurrentViewPatch({ fetchImpl: read, origin, source }));
   }
   if (failure || scope.failure) throw new Error(failure ?? scope.failure);
   return patch;
