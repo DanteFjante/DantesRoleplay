@@ -1,5 +1,6 @@
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Mechanics;
+using System.Text.Json;
 
 namespace DantesRoleplay.Tests;
 
@@ -296,6 +297,32 @@ public sealed class ProjectionResolverTests : IDisposable
         var stringItem = pack.Contains!.Single(item => item.Id == "string");
         Assert.NotNull(stringItem.Components);
         Assert.Empty(stringItem.Components!);
+    }
+
+    [Fact]
+    public async Task Contents_can_filter_large_unrelated_siblings_by_declared_components()
+    {
+        await using var db = _fixture.CreateContext();
+        var world = await WorldAsync(db);
+        await world.CreateEntityAsync("Mapped place", "mapped-place");
+        await world.SetComponentAsync("mapped-place", "marks", """{"mapped":true}""");
+        await world.MoveAsync("mapped-place", "orban", "location");
+        for (var index = 0; index <= ProjectionLimits.MaxContainedNodes; index++)
+        {
+            var id = $"unrelated-{index}";
+            await world.CreateEntityAsync($"Unrelated {index:D4}", id);
+            await world.MoveAsync(id, "orban", "catalog");
+        }
+
+        var result = await new ProjectionResolver(db).ResolveAsync(
+            Requires("""{"roles":{"subject":{"components":[],"includeContents":true,"contentsDepth":1,"contentComponentIds":["marks"],"filterContentsByComponents":true}}}"""),
+            new Dictionary<string, string> { ["subject"] = "orban" });
+
+        Assert.True(result.Ok, string.Join("; ", result.Problems));
+        var mapped = Assert.Single(result.Projection!.Roles["subject"].Contains!);
+        Assert.Equal("mapped-place", mapped.Id);
+        Assert.Equal("true", JsonDocument.Parse(mapped.Components!["marks"]).RootElement
+            .GetProperty("mapped").GetRawText());
     }
 
     [Fact]

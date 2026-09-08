@@ -372,6 +372,9 @@ public sealed record MechanicRequirements
                 requirement.Components.Count + optionalComponents.Count)
                 problems.Add($"Role '{role}' required and optional components must be distinct.");
             var descendantComponents = requirement.ContentComponentIds ?? [];
+            if (requirement.FilterContentsByComponents &&
+                (!requirement.IncludeContents || descendantComponents.Count == 0))
+                problems.Add($"Role '{role}' filterContentsByComponents requires includeContents and at least one contentComponentId.");
             var references = requirement.ComponentReferences ?? [];
             if (references.Count > ProjectionLimits.MaxContentComponentIds)
                 problems.Add($"Role '{role}' may declare at most {ProjectionLimits.MaxContentComponentIds} componentReferences.");
@@ -537,6 +540,11 @@ public sealed record EventMechanicRequirement
 /// The separately declared component allow-list for contained nodes. It never changes what the
 /// root role can see, and an omitted list leaves contained nodes as identity/name/slot only.
 /// </param>
+/// <param name="FilterContentsByComponents">
+/// When true, retain only contained nodes carrying at least one declared content component, plus
+/// the ancestors needed to reach such a node. This opt-in keeps unrelated contents out of bounded
+/// projections without changing the compatible identity-only containment view.
+/// </param>
 public sealed record RoleRequirement(
     IReadOnlyList<string> Components,
     bool Optional = false,
@@ -548,7 +556,8 @@ public sealed record RoleRequirement(
     IReadOnlyList<ComponentReferenceRequirement>? ComponentReferences = null,
     IReadOnlyList<RelationshipComponentRequirement>? RelationshipComponents = null,
     IReadOnlyList<string>? OptionalComponents = null,
-    IReadOnlyList<string>? ContentsRelevantToRoles = null);
+    IReadOnlyList<string>? ContentsRelevantToRoles = null,
+    bool FilterContentsByComponents = false);
 
 /// <summary>One exact application-object input for a pure catalog reducer.</summary>
 public sealed record MechanicObjectRoleRequirement

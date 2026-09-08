@@ -368,6 +368,7 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
                     ? BuildContainedProjection(entityId, requirement.ContentsDepth ?? 1,
                         requirement.ContentComponentIds ?? [], requirement.ContentsDepth is not null || (requirement.ContentComponentIds?.Count ?? 0) > 0,
                         RelevantContentIds(requirement, needed),
+                        requirement.FilterContentsByComponents,
                         contentsByContainer, contentComponentsByEntity, role, problems)
                     : null,
                 requirement.IncludeRelationships
@@ -455,6 +456,7 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
         IReadOnlyList<string> allowedComponentIds,
         bool enforceNodeLimit,
         IReadOnlySet<string>? relevant,
+        bool filterByComponents,
         IReadOnlyDictionary<string, List<ContainmentNode>> contentsByContainer,
         IReadOnlyDictionary<string, Dictionary<string, string>> componentsByEntity,
         string role,
@@ -487,15 +489,6 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
                 if (relevant is not null && !relevant.Contains(child.Id) && (nested is null || nested.Count == 0))
                     continue;
 
-                count++;
-                if (enforceNodeLimit && count > ProjectionLimits.MaxContainedNodes)
-                {
-                    problems.Add($"CONTAINMENT_PROJECTION_LIMIT: Role '{role}' projects more than " +
-                        $"{ProjectionLimits.MaxContainedNodes} contained entities. Declare " +
-                        "'contentsRelevantToRoles' on this role to project only the paths it references.");
-                    return [];
-                }
-
                 IReadOnlyDictionary<string, string>? declaredComponents = null;
                 if (allowedComponentIds.Count > 0)
                 {
@@ -504,6 +497,17 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
                             .Where(component => allowedComponentIds.Contains(component.Key, StringComparer.Ordinal))
                             .ToDictionary(component => component.Key, component => component.Value, StringComparer.Ordinal)
                         : new Dictionary<string, string>(StringComparer.Ordinal);
+                }
+                if (filterByComponents && declaredComponents?.Count == 0 && (nested is null || nested.Count == 0))
+                    continue;
+
+                count++;
+                if (enforceNodeLimit && count > ProjectionLimits.MaxContainedNodes)
+                {
+                    problems.Add($"CONTAINMENT_PROJECTION_LIMIT: Role '{role}' projects more than " +
+                        $"{ProjectionLimits.MaxContainedNodes} contained entities. Declare " +
+                        "'contentsRelevantToRoles' on this role to project only the paths it references.");
+                    return [];
                 }
 
                 projection.Add(new ContainedProjection(child.Id, child.Name, child.Slot, declaredComponents, nested));

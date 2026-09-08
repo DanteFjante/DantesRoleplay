@@ -428,7 +428,8 @@ public sealed class MechanicStoreTests : IDisposable
               "container":{"components":[],"contentsDepth":2},
               "empty":{"components":[],"contentComponentIds":[]},
               "deep":{"components":[],"includeContents":true,"contentsDepth":5},
-              "nested":{"components":[],"includeContents":true,"contentComponentIds":["stats","stats"]}
+              "nested":{"components":[],"includeContents":true,"contentComponentIds":["stats","stats"]},
+              "filtered":{"components":[],"includeContents":true,"filterContentsByComponents":true}
             }}
             """));
 
@@ -437,6 +438,7 @@ public sealed class MechanicStoreTests : IDisposable
         Assert.Contains("includeContents", declaration.Detail);
         Assert.Contains("between 1 and 4", declaration.Detail);
         Assert.Contains("distinct", declaration.Detail);
+        Assert.Contains("filterContentsByComponents", declaration.Detail);
     }
 
     [Fact]
